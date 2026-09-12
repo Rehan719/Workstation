@@ -5030,3 +5030,89 @@ fetched live; refine on the floor re-composes only the draft's headings; `local_
 
 **Docs:** ledger v3 status R1.0 FIXED W456; prompt ledger 1.8 CLOSED and P1.8 ✅ DONE; vision §16;
 living plan §4/§8.
+
+### W457 — delivery-plan P1.9: Care scoring computes — the published tables, in-house, before the AI speaks
+
+**What was wrong (ledger 1.9 · R5.3).** The Care domain promised "validated risk scoring" (the
+Domains hub blurb, the AI Tools catalogue, the Care hub's "Workstation's own AI scores and
+interprets the risk") and computed nothing: the route forwarded the observations verbatim to the
+AI and asked it to "show working for each component". The assessor's case — RR 22, SpO2 94, SBP
+105, HR 95, T 38.2, alert, on air, which the NEWS2 table scores 6 — came back with no number at
+all, only the floor's "Native structured content for Score Calculation…", under a green pass.
+Nothing validated units or completeness.
+
+**What changed (backend):** a new module, `agentic_core/care/scoring.py`, computes the published
+tables in-house — NEWS2 (RCP 2017; SpO2 scales 1 and 2; air/oxygen; ACVPU; the single-parameter-3
+trigger as the RCP LOW-MEDIUM band; the 0 · 1–4 · 5–6 · ≥7 responses), MUST (BAPEN; BMI from
+weight/height when not given; weight-loss % from previous/current weight, or from a loss in kg
+against the current weight), Waterlow (the appetite-row card — the block says it is NOT the 2005
+MST revision; the special-risk groups are additive, "anaemia, smoking" = 3, and never
+default-filled), and NICE CG161 falls as a **labelled factor count, not a score** (the guideline
+defines no numeric total). Every input is parsed for units and range ("38.2C", "101.5 F"
+converted with a warning — an explicit unit only, "36.8 forehead" is 36.8 °C; a unitless 98.6 is
+flagged as probably °F, not refused as out of range; "94%", "22 /min"), key aliases are accepted,
+`spo2_scale` is case-insensitive and refused when it is neither 1 nor 2, and a missing observation
+is NEVER filled — it is named and the total is a lower bound. **A lower-bound total gets no banded
+verdict** unless it is already at the top band (a NEWS2 of ≥7 is high whatever is missing; a
+single 3 is said to have already triggered the low-medium response); scale 2 never scores an SpO2
+of 93% or more without knowing air/oxygen. A tool without a published table says so. The route
+computes the `score` block first, hands the AI the computed summary under "COMPUTED SCORE" — or
+"COMPUTED FACTOR COUNT (NOT a score)" for falls — with "do NOT recompute or restate a different
+total", asks it only to interpret, and returns the block before the narrative; the disclaimer
+says what is computed and what the narrative is.
+
+**Frontend:** the Care hub renders the score block FIRST through `renderExtra` — tool and total
+("≥ 3" when incomplete; "factor count 2" for falls), the band (red / amber / emerald) only when
+there is one, the response line, the table and the decision-aid line, every component with its
+points, the missing list with "the total is a lower bound — no band until the missing observations
+are recorded", the warnings; the tool copy says the score is computed in-house from the published
+table and the AI interprets it; the Domains hub blurb says which tables. The observation template
+now includes `oxygen` and `consciousness` so a NEWS2 is complete. `DomainTool` now persists the
+computed score line WITH the narrative in My Work and in copy/download (the saved record had said
+"the score is computed in-house" above a narrative with no score in it), and its primary field may
+be a keyvalue field (the Assess button had been disabled because the optional clinical-context
+textarea was taken as the primary input).
+
+**Correction to the plan's ACCEPT wording:** the clause asked for "band 'urgent ward-based
+response'" at a total of 6. On the RCP table that is the LOW-MEDIUM label (a single parameter
+scoring 3); a 5–6 total is MEDIUM, "key threshold for urgent response". The code follows the
+published table; the prompt ledger records the correction.
+
+**Tests:** `test_w457_care_scoring_computes_both_ways` — the assessor's case scores exactly 6
+with the component points the refuter computed (2 + 1 + 0 + 1 + 1 + 0 + 1) and the medium band; a
+normal set scores 0 routine; a single 3 is the low-medium trigger at a total of 3; scale 2 on
+oxygen; a ≥7 emergency; a partial set names its missing observations, calls its total a lower
+bound and carries NO band; a partial set with a single 3 says the trigger already applies; "Scale
+2" with an unparseable oxygen leaves SpO2 unscored; a scale of "3" is refused; °F converts with a
+warning, "forehead" does not, a unitless 98.6 is flagged; nonsense is refused with warnings; MUST
+from BMI, from weight/height, from a loss in kg (and refused when the kg cannot be converted);
+Waterlow with all groups stated, with the special groups omitted (missing, no band), additive
+special risks, a pair on a one-value row refused, the empty set unscored; the falls count; a tool
+without a table; the route carries the block, the prompt carries "COMPUTED SCORE … do NOT
+recompute" (and "COMPUTED FACTOR COUNT", never "SCORE", for falls) and no longer asks for a Score
+Calculation; the page renders the block and the honest copy; My Work keeps the score line.
+**Broken by making nothing compute: the guard failed at the route's score block; restored.**
+**Broken again after the refuter (the Waterlow default fill and the band on a lower bound
+re-introduced): the guard failed at the lower-bound band; restored.**
+Suite: 362 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min).
+
+**Browser (fresh backend :8050 serving the rebuilt bundle — `scripts/_w457_probe.mjs`, 7/7):**
+`/care?tab=risk` with the assessor's observations renders "NEWS2 6 · medium · key threshold for
+urgent response" first, each component with its points, the RCP 2017 basis and the decision-aid
+line, above a narrative wearing the amber floor badge and the in-house disclaimer; RR + SpO2 alone
+renders "NEWS2 ≥ 3" with no band chip, the missing list and "no band until". The first probe on
+:8049 caught the disabled Assess button (the primary-field rule) before it passed 6/6.
+
+**Refuted (own diff, one agent): eleven verified findings, all fixed** — Waterlow's four
+special-risk groups were default-filled to "none" and reported complete (and the guard certified
+it); the additive special risks were refused as a pair; the single-parameter-3 trigger was
+labelled medium with the 5–6 response instead of the RCP low-medium; scale 2 with an unknown
+air/oxygen scored SpO2 as if on air; `spo2_scale: "Scale 2"` silently became scale 1; the °F
+heuristic fired on "forehead"/"feverish" and refused a unitless 98.6 as out of range; MUST took a
+loss in kg as a percentage; the Waterlow table claimed the 2005 revision while using the appetite
+row; My Work saved the disclaimer without the score; a lower-bound total wore a definitive band
+(green "LOW" on two observations); the falls prompt called the count a "COMPUTED SCORE". Dismissed
+after checking: every NEWS2 / MUST / Waterlow boundary against the published cards.
+
+**Docs:** ledger v3 status R5.3 FIXED W457; prompt ledger 1.9 CLOSED and P1.9 ✅ DONE (the falls
+count and the ACCEPT-wording correction stated); vision §16; living plan §4/§8.

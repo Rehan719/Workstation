@@ -16,6 +16,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import ai_text
+from agentic_core.care.scoring import compute_score, score_summary
 
 router = APIRouter(prefix="/api/v1/care", tags=["care"])
 
@@ -108,23 +109,35 @@ async def risk_assessment(req: RiskAssessRequest):
     tool_info = next((t for t in _TOOLS if t["id"] == req.tool), None)
     tool_name = tool_info["name"] if tool_info else req.tool.replace("_", " ").title()
 
+    # W457 (P1.9, ledger 1.9 / R5.3) — the score is COMPUTED here from the published table (NEWS2 /
+    # MUST / Waterlow; NICE CG161 as a labelled factor count). The old route asked the AI to "show
+    # working" and forwarded the observations verbatim — the assessor's case (NEWS2 6, urgent) came
+    # back with no score under a green pass. The AI now narrates INTERPRETATION of a score it is told
+    # not to recompute; the block is returned first and the page renders it first.
+    score = compute_score(req.tool, req.patient_data or {})
+    summary = score_summary(score)
+    # NICE CG161 defines no falls score — the prompt must not call the factor count one
+    heading = "COMPUTED FACTOR COUNT (NOT a score — NICE CG161 defines none)" if score.get("tool") == "falls_risk" else "COMPUTED SCORE"
+
     patient_context = ""
     if req.patient_data:
-        patient_context = "Patient observations/data:\n" + "\n".join(
+        patient_context = "Patient observations/data (as recorded):\n" + "\n".join(
             f"  {k}: {v}" for k, v in req.patient_data.items()
         ) + "\n"
 
     prompt = (
-        f"You are a clinical risk assessment specialist. "
-        f"Conduct a {tool_name} assessment.\n\n"
+        f"You are a clinical risk assessment specialist supporting a qualified clinician. "
+        f"Interpret a {tool_name} assessment.\n\n"
         + patient_context
         + (f"Clinical context: {req.clinical_context}\n" if req.clinical_context else "")
+        + f"\n{heading} (authoritative — computed in-house from the published table; do NOT recompute "
+          f"or restate a different total): {summary}\n"
+        + (f"Missing observations: {', '.join(score.get('missing') or [])} — say what recording them would change.\n"
+           if score.get("available") and score.get("missing") else "")
         + "\nProvide:\n"
-        "## Score Calculation (show working for each component)\n"
-        "## Total Score and Risk Level (Low / Medium / High / Very High)\n"
-        "## Clinical Interpretation\n"
-        "## Recommended Actions (prioritised, with urgency)\n"
-        "## Escalation Triggers (what changes would warrant immediate escalation)\n"
+        "## Clinical Interpretation (of the computed score and its components)\n"
+        "## Recommended Actions (prioritised, with urgency, consistent with the computed band)\n"
+        "## Escalation Triggers (what changes would move the score to the next band)\n"
         "## Documentation Guidance\n\n"
         "Reference current clinical guidelines. Be specific about thresholds and actions."
     )
@@ -135,10 +148,14 @@ async def risk_assessment(req: RiskAssessRequest):
         "assessment_id": uuid.uuid4().hex[:10],
         "tool": req.tool,
         "tool_name": tool_name,
+        "score": score,                         # the deterministic block — rendered FIRST
+        "score_summary": summary,
         "assessment": assessment,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": "AI-generated risk assessment aid only. Clinical judgement by a qualified professional is required.",
+        "disclaimer": ("The score is computed in-house from the published table (NEWS2 RCP 2017 · MUST BAPEN · "
+                       "Waterlow · NICE CG161 factor count) and is a decision aid, not a diagnosis; the narrative is "
+                       "an AI interpretation aid only. Clinical judgement by a qualified professional is required."),
     }
 
 

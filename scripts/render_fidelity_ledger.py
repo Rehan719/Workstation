@@ -103,6 +103,10 @@ STATUS = {
             "Transliteration and Translation sections are withheld from the prompt and cut from the text, named, with "
             "a floor_note; a disclaimer key; the tab renders the sourced Arabic (rtl), its source, the reference, the "
             "range note and the floor note; the QMS chip is three-state since W449.",
+    "R5.3": "FIXED W457 (P1.9) — agentic_core/care/scoring.py computes NEWS2 / MUST / Waterlow from the published "
+            "tables (NICE CG161 falls as a labelled factor count), validates units/ranges/completeness, and the route "
+            "returns the score block first with the AI told not to recompute; the hub renders the block first; the "
+            "assessor's case scores 6 · medium (key threshold for urgent response); a lower-bound total gets no band.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

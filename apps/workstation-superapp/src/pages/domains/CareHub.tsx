@@ -76,13 +76,35 @@ export const CareHub: React.FC = () => {
             ) : activeTab === 'risk' ? (
               <DomainTool
                 title="Clinical Risk Assessment"
-                description={<>Pick a validated tool and enter the observations — Workstation's <span className="text-vital">own</span> AI scores and interprets the risk, in-house, as a clinical aid.</>}
+                description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published table</span> (NEWS2 · MUST · Waterlow; NICE CG161 as a factor count) and shown first; Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
                 endpoint="/api/v1/care/risk-assess"
                 resultKey="assessment"
                 submitLabel="Assess risk"
+                renderExtra={(r: any) => r.score && (
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 space-y-2" data-testid="care-score">
+                    {/* W457 (P1.9) — the computed score renders FIRST; the narrative below is interpretation only */}
+                    {r.score.available === false ? (
+                      <p className="text-[10px] text-amber-400 font-bold">{r.score.note}</p>
+                    ) : (
+                      <>
+                        <p className="text-sm font-black text-white">{String(r.score.tool).toUpperCase().replace('_', ' ')} {r.score.tool === 'falls_risk' ? 'factor count ' : r.score.complete === false && r.score.total != null ? '≥ ' : ''}{r.score.total ?? '—'}{r.score.band ? <span className={`ml-2 text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded ${/high|very high|emergency/i.test(r.score.band) ? 'bg-vital/15 text-vital' : /medium|at risk|warranted/i.test(r.score.band) ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>{r.score.band}</span> : null}</p>
+                        {r.score.response && <p className="text-[11px] text-slate-300">{r.score.response}</p>}
+                        <p className="text-[9px] text-slate-500">{r.score.table} · {r.score.basis}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.entries(r.score.components || {}).map(([k, v]: [string, any]) => (
+                            <span key={k} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-400" title={v.note || ''}>{k.replace(/_/g, ' ')}: {String(v.value)} → <b className="text-white">{v.points}</b></span>
+                          ))}
+                        </div>
+                        {(r.score.missing || []).length > 0 && <p className="text-[10px] text-amber-400 font-bold">Incomplete — missing: {r.score.missing.join(' · ')}. The total is a lower bound{r.score.band ? '' : ' — no band until the missing observations are recorded'}.</p>}
+                        {(r.score.warnings || []).length > 0 && <p className="text-[10px] text-amber-300">{r.score.warnings.join(' · ')}</p>}
+                        {r.score.note && (r.score.missing || []).length === 0 && <p className="text-[10px] text-slate-500">{r.score.note}</p>}
+                      </>
+                    )}
+                  </div>
+                )}
                 fields={[
                   { name: 'tool', label: 'Tool', type: 'select', options: ['news2', 'must', 'waterlow', 'falls_risk', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
-                  { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \nsystolic_bp: \npulse: \ntemp: \nconsciousness: ' },
+                  { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \noxygen: air\nsystolic_bp: \npulse: \ntemp: \nconsciousness: alert' },
                   { name: 'clinical_context', label: 'Clinical context (optional)', type: 'textarea', placeholder: 'e.g. 72yo post-op day 2, query chest infection' },
                 ]}
               />

@@ -9306,3 +9306,113 @@ def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
         assert needle in tafsir_block, needle
     tool = Path("apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
     assert "renderExtra?: (result: any) => React.ReactNode" in tool and "{renderExtra && renderExtra(result)}" in tool
+
+
+def test_w457_care_scoring_computes_both_ways(client, monkeypatch):
+    """§3A Care (ledger 1.9 · R5.3) — "validated risk scoring" computed nothing: the route forwarded the
+    observations to the AI and asked it to "show working"; the assessor's case (RR 22 / SpO2 94 / SBP 105 /
+    HR 95 / T 38.2 / alert / air = NEWS2 6, urgent ward-based response) came back with no score.
+
+    The published tables are computed in-house now, validated for units and completeness, returned as a
+    `score` block the page renders first; the AI is handed the computed score and told not to recompute.
+    Both ways: the tables score the published cases (and refuse to guess a missing observation); a tool
+    without a table says so; the narrative prompt carries the computed score; the page renders the block.
+    """
+    from pathlib import Path
+    from agentic_core.care.scoring import score_news2, score_must, score_waterlow, score_falls, compute_score, score_summary
+    from agentic_core.api import care as CARE
+
+    # NEWS2 — the assessor's case, exactly
+    s = score_news2({"resp_rate": "22", "spo2": "94", "systolic_bp": "105", "pulse": "95", "temp": "38.2",
+                     "consciousness": "alert", "oxygen": "air"})
+    assert s["total"] == 6 and s["band"] == "medium" and "key threshold for urgent response" in s["response"] and s["complete"]
+    assert {k: v["points"] for k, v in s["components"].items()} == {"respiratory_rate": 2, "spo2_scale_1": 1, "air_or_oxygen": 0,
+                                                                       "systolic_bp": 1, "pulse": 1, "consciousness": 0, "temperature": 1}
+    # a normal set → 0 routine; a single 3 → urgent even at a low total; scale 2 on oxygen; ≥7 emergency
+    ok = score_news2({"rr": 16, "sats": "97%", "o2": "no", "sbp": 120, "hr": 72, "temperature": 36.8, "acvpu": "A"})
+    assert ok["total"] == 0 and ok["band"] == "low" and "routine" in ok["response"]
+    one3 = score_news2({"rr": 16, "sats": 97, "o2": "no", "sbp": 120, "hr": 72, "temperature": 36.8, "acvpu": "V"})
+    assert one3["total"] == 3 and one3["single_parameter_3"] and one3["band"] == "low-medium" and "urgent ward-based response" in one3["response"]
+    sc2 = score_news2({"rr": 16, "spo2": 95, "spo2_scale": 2, "oxygen": "yes", "sbp": 120, "hr": 72, "temp": 36.8, "acvpu": "A"})
+    assert sc2["components"]["spo2_scale_2"]["points"] == 2 and sc2["components"]["air_or_oxygen"]["points"] == 2
+    em = score_news2({"rr": 26, "spo2": 90, "oxygen": "yes", "sbp": 88, "hr": 135, "temp": 35.0, "acvpu": "P"})
+    assert em["total"] >= 7 and em["band"] == "high" and "emergency" in em["response"]
+    # validation: a missing observation is named and the total is a lower bound; °F converts; nonsense is refused
+    part = score_news2({"resp_rate": "22", "spo2": "94"})
+    assert not part["complete"] and "pulse" in part["missing"] and part["total"] == 3 and "lower bound" in part["note"]
+    assert part["band"] is None and "lower bound" in part["response"]            # no verdict on a lower bound
+    assert score_summary(dict(part, available=True)).startswith("NEWS2 ≥ 3 (lower bound)")
+    part3 = score_news2({"resp_rate": "22", "acvpu": "V"})
+    assert part3["band"] is None and part3["single_parameter_3"] and "already scores 3" in part3["response"]
+    # scale 2 is case-insensitive and never scores a ≥93% SpO2 without knowing air/oxygen; a bad scale is refused
+    sc2u = score_news2({"rr": 16, "spo2": 97, "spo2_scale": "Scale 2", "oxygen": "2L", "sbp": 120, "hr": 72, "temp": 36.8, "acvpu": "A"})
+    assert "spo2_scale_1" not in sc2u["components"] and "spo2_scale_2" not in sc2u["components"] and any("scale 2 needs" in m for m in sc2u["missing"])
+    sc3 = score_news2({"rr": 16, "spo2": 97, "spo2_scale": "3", "oxygen": "no", "sbp": 120, "hr": 72, "temp": 36.8, "acvpu": "A"})
+    assert any("spo2_scale must be 1 or 2" in m for m in sc3["missing"]) and any("not 1 or 2" in w for w in sc3["warnings"])
+    fahr = score_news2({"rr": 16, "spo2": 97, "o2": "no", "sbp": 120, "hr": 72, "temp": "101.5 F", "acvpu": "A"})
+    assert fahr["components"]["temperature"]["value"] == 38.6 and fahr["components"]["temperature"]["points"] == 1 and any("°F" in w for w in fahr["warnings"])
+    bad = score_news2({"rr": "lots", "spo2": 250, "sbp": 120, "hr": 72, "temp": 36.8, "acvpu": "dozy", "o2": "no"})
+    assert "resp_rate" in bad["missing"] and "spo2" in bad["missing"] and "consciousness (ACVPU)" in bad["missing"] and len(bad["warnings"]) >= 3
+    # °F needs an explicit unit — a word starting with f is not one; a unitless 98.6 is flagged, not refused as "out of range"
+    fh = score_news2({"temp": "36.8 forehead"})
+    assert fh["components"]["temperature"]["value"] == 36.8 and not any("°F" in w for w in fh["warnings"])
+    unitless = score_news2({"temp": 98.6})
+    assert "temperature" in unitless["missing"] and any("looks like °F" in w for w in unitless["warnings"])
+
+    # MUST and Waterlow and the falls count
+    m = score_must({"bmi": 18.0, "weight_loss_pct": 12, "acute_disease": "no"})
+    assert m["total"] == 4 and m["band"] == "high" and "dietitian" in m["response"]
+    m2 = score_must({"weight_kg": 70, "height_cm": 175, "previous_weight_kg": 72, "acute_disease": "no"})
+    assert m2["components"]["bmi"]["value"] == 22.9 and m2["total"] == 0 and m2["band"] == "low"
+    m3 = score_must({"weight_kg": 60, "height_cm": 170, "weight_loss": "4 kg", "acute_disease": "no"})   # kg is not a %
+    assert 6.2 <= m3["components"]["unplanned_weight_loss"]["value"] <= 6.3 and m3["components"]["unplanned_weight_loss"]["points"] == 1 and m3["total"] == 1
+    m4 = score_must({"bmi": 22, "weight_loss": "4 kg", "acute_disease": "no"})
+    assert any("weight_loss_pct" in m for m in m4["missing"]) and m4["band"] is None
+    # Waterlow: every group is asked for (none is default-filled), the special risks add, one-value rows refuse pairs
+    wl = score_waterlow({"build": "average", "skin": "dry", "continence": "urinary incontinence", "mobility": "restricted",
+                         "appetite": "poor", "sex": "female", "age": 82, "tissue_malnutrition": "anaemia",
+                         "neurological_deficit": "none", "major_surgery_trauma": "none", "medication": "none"})
+    assert wl["total"] == 0 + 1 + 1 + 3 + 1 + 2 + 5 + 2 + 0 + 0 + 0 and wl["band"] == "high risk" and wl["complete"]
+    wl_part = score_waterlow({"build": "average", "skin": "dry", "continence": "urinary incontinence", "mobility": "restricted",
+                              "appetite": "poor", "sex": "female", "age": 82})
+    assert not wl_part["complete"] and wl_part["band"] is None and sum(1 for m in wl_part["missing"] if m.startswith(("tissue_malnutrition", "neurological_deficit", "major_surgery_trauma", "medication"))) == 4
+    assert score_waterlow({})["total"] is None
+    wl_part_src = {"build": "average", "skin": "dry", "continence": "urinary incontinence", "mobility": "restricted",
+                   "appetite": "poor", "sex": "female", "age": 82, "neurological_deficit": "none",
+                   "major_surgery_trauma": "none", "medication": "none"}
+    wl_add = score_waterlow(dict(wl_part_src, tissue_malnutrition="anaemia, smoking"))
+    assert wl_add["components"]["tissue_malnutrition"]["points"] == 3 and wl_add["total"] == 16 and wl_add["complete"]
+    wl_pair = score_waterlow(dict(wl_part_src, tissue_malnutrition="none", skin="dry, broken"))
+    assert "skin" in wl_pair["missing"] and any("one value only" in w for w in wl_pair["warnings"])
+    assert "2005" not in score_waterlow({})["table"] or "not the 2005" in score_waterlow({})["table"]
+    wl2 = score_waterlow({"build": "average", "skin": "shiny"})
+    assert "skin" in wl2["missing"] and not wl2["complete"]
+    f = score_falls({"falls_history": "yes", "age": 70, "visual_impairment": "no"})
+    assert f["total"] == 2 and "multifactorial assessment warranted" in f["band"] and "not a score" in f["note"]
+    assert compute_score("dementia_care", {})["available"] is False
+
+    # the route: the score block is first-class, the prompt carries it and forbids recomputation
+    seen = {}
+    _real = CARE.ai_text
+    async def _spy(prompt, agent, **kw):
+        seen["prompt"] = prompt
+        return await _real(prompt, agent, **kw)
+    monkeypatch.setattr(CARE, "ai_text", _spy)
+    r = client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": {
+        "resp_rate": "22", "spo2": "94", "systolic_bp": "105", "pulse": "95", "temp": "38.2", "consciousness": "alert", "oxygen": "air"},
+        "clinical_context": "72yo post-op day 2"}).json()
+    assert r["score"]["total"] == 6 and r["score"]["band"] == "medium" and "key threshold for urgent response" in r["score_summary"]
+    assert "COMPUTED SCORE" in seen["prompt"] and "do NOT recompute" in seen["prompt"] and "NEWS2 6" in seen["prompt"]
+    assert "## Score Calculation" not in seen["prompt"]              # the AI is no longer asked to compute
+    assert "computed in-house" in r["disclaimer"] and r["ai_provenance"]["served_by"]
+    assert score_summary(r["score"]).startswith("NEWS2 6 · medium")
+    r2 = client.post("/api/v1/care/risk-assess", json={"tool": "mental_health", "patient_data": {"mood": "low"}}).json()
+    assert r2["score"]["available"] is False and "no published arithmetic" in r2["score"]["note"]
+    r3 = client.post("/api/v1/care/risk-assess", json={"tool": "falls_risk", "patient_data": {"falls_history": "yes", "age": 70}}).json()
+    assert "COMPUTED FACTOR COUNT" in seen["prompt"] and "COMPUTED SCORE" not in seen["prompt"] and r3["score_summary"].startswith("FALLS RISK factor count 2")
+    # the page renders the block first and the copy says what is computed
+    hub = Path("apps/workstation-superapp/src/pages/domains/CareHub.tsx").read_text(encoding="utf-8")
+    assert "data-testid=\"care-score\"" in hub and "r.score.total" in hub and "computed in-house from the published table" in hub
+    assert "own</span> AI scores and interprets the risk" not in hub
+    assert "score_summary" in Path("apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")   # My Work keeps the score
+    assert "validated risk scoring" not in Path("apps/workstation-superapp/src/pages/domains/DomainsHub.tsx").read_text(encoding="utf-8")

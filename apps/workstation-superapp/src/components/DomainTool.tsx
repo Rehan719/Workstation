@@ -76,7 +76,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const [result, setResult] = useState<Record<string, any> | null>(null);
   const [error, setError] = useState('');
 
-  const primary = fields.find(f => f.type === 'textarea')?.name ?? fields[0]?.name;
+  // W457 — the primary field is the first textarea OR key-value field in declaration order: the Care risk
+  // tool's observations are a key-value field and its textarea is the OPTIONAL clinical context, so the
+  // Assess button stayed disabled for a user who had entered every observation (the probe found it).
+  const primary = fields.find(f => f.type === 'textarea' || f.type === 'keyvalue')?.name ?? fields[0]?.name;
   const canSubmit = !primary || (form[primary] || '').trim().length > 0;
 
   // §9/§4.1 multimodal "bring your own data" — attach a text document; its content is inserted into the
@@ -109,7 +112,9 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       try {
         // W456 — the §11 disclosures (a floor note, a disclaimer) travel WITH the saved text, so My Work
         // never shows floor study notes under a title with the disclosures dropped
-        const text = String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2))
+        // W457 — a computed score block (Care) is persisted WITH the narrative it interprets
+        const text = (r.data?.score_summary ? `${r.data.score_summary}\n\n` : '')
+          + String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2))
           + (r.data?.floor_note ? `\n\n[${r.data.floor_note}]` : '')
           + (r.data?.disclaimer ? `\n\n_${r.data.disclaimer}_` : '');
         const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
@@ -126,6 +131,8 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const resultText = result ? String(result[resultKey] ?? result.deliverable ?? JSON.stringify(result, null, 2)) : '';
   // Iterative refinement: each refine builds on the currently-displayed text (in-house /api/v1/refine).
   const displayText = refinedText ?? resultText;
+  // W457 — copy/download carry the computed score line (the on-screen block is rendered separately)
+  const exportText = (result?.score_summary ? `${result.score_summary}\n\n` : '') + displayText;
   const effectiveProv = refineProv ?? prov;
 
   const refine = async () => {
@@ -156,20 +163,20 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   };
 
   const copyResult = async () => {
-    try { await navigator.clipboard.writeText(displayText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
   };
   // E4 — output-format selection (§4.9): export the result in any real, in-house-producible text format.
   const downloadAs = (fmt: 'md' | 'txt' | 'html' | 'json') => {
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'result';
-    let content = displayText, mime = 'text/plain';
+    let content = exportText, mime = 'text/plain';
     if (fmt === 'md') { mime = 'text/markdown'; }
     else if (fmt === 'html') {
       mime = 'text/html';
-      const esc = displayText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const esc = exportText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       content = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem;color:#0f172a}h1{font-size:1.4rem}pre{white-space:pre-wrap;word-wrap:break-word;font-family:inherit}</style></head><body><h1>${title}</h1><pre>${esc}</pre></body></html>`;
     } else if (fmt === 'json') {
       mime = 'application/json';
-      content = JSON.stringify({ title, output: displayText, provenance: effectiveProv ?? null, generated_at: new Date().toISOString() }, null, 2);
+      content = JSON.stringify({ title, output: exportText, provenance: effectiveProv ?? null, generated_at: new Date().toISOString() }, null, 2);
     }
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);

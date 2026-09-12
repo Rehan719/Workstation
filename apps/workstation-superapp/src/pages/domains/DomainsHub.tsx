@@ -15,7 +15,7 @@ const DOMAINS: Domain[] = [
   { name: 'Science', route: '/science', icon: Microscope, tools: 3, blurb: 'Research synthesis into structured evidence; literature-review mapping.' },
   { name: 'Education', route: '/education', icon: GraduationCap, tools: 4, blurb: 'Lesson plans, framework-aligned curricula, assessments with mark schemes.' },
   { name: 'Law', route: '/law', icon: Scale, tools: 2, blurb: 'Contract/document analysis for risks; clause-numbered document drafting.' },
-  { name: 'Care', route: '/care', icon: HeartPulse, tools: 4, blurb: 'SBAR clinical handover, person-centred care plans, validated risk scoring.' },
+  { name: 'Care', route: '/care', icon: HeartPulse, tools: 4, blurb: 'SBAR clinical handover, person-centred care plans, risk scores computed from the published tables (NEWS2 · MUST · Waterlow) with AI interpretation.' },
   { name: 'Employment', route: '/employment', icon: Briefcase, tools: 6, blurb: 'CV tailoring, cover letters, applications, interview prep, career pathing.' },
 ];
 const TOTAL = DOMAINS.reduce((n, d) => n + d.tools, 0);
