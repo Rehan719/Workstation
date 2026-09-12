@@ -309,6 +309,13 @@ async def cascade_orchestration(req: CascadeRequest):
     """
     run_id = uuid.uuid4().hex[:10]
     start = time.time()
+    # W452 (P1.4) — a cascade scoped to a VSB consults its Mode 3 review gates before a single
+    # tier runs: a pending or rejected human review is a 409 with the gate named.
+    if req.scope and req.scope != "workstation":
+        from agentic_core.api.vsb import _load_vsb as _gate_load, _refuse_gated
+        _gated_vsb = _gate_load(req.scope)
+        if _gated_vsb:
+            _refuse_gated(_gated_vsb, "cascade")
 
     biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 

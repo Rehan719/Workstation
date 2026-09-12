@@ -121,6 +121,10 @@ export const VSBCockpit: React.FC = () => {
   const [chiefBusy, setChiefBusy] = useState(false);
   const [chiefResult, setChiefResult] = useState<Dict | null>(null);
 
+  // W452 — a Mode 3 gate refusal arrives as a dict {error, gate, status, …}: render the gate, not '[object Object]'
+  const detailText = (d: any): string => (d && typeof d === 'object')
+    ? (d.error ? `${d.error} — gate '${d.gate}' is ${d.status}` : JSON.stringify(d))
+    : String(d ?? 'failed');
   const runGrowth = async (kind: 'ship' | 'cascade' | 'evolve') => {
     if (!selected) return;
     setGrowthBusy(kind); setGrowthResult(null);
@@ -133,7 +137,7 @@ export const VSBCockpit: React.FC = () => {
       setGrowthResult({ kind, ...r.data });
       loadShipState(selected);   // W338 — the staleness banner reflects the ship immediately
     } catch (e: any) {
-      setGrowthResult({ kind, error: e?.response?.data?.detail ?? e?.message ?? 'failed' });
+      setGrowthResult({ kind, error: detailText(e?.response?.data?.detail ?? e?.message) });
     }
     setGrowthBusy('');
   };
@@ -175,7 +179,7 @@ export const VSBCockpit: React.FC = () => {
       const r = await axios.post(`/api/v1/business-plan/objective/${oid}/orchestrate`, { scope: selected });
       if (r.data?.tree) setObjOrchResult(m => ({ ...m, [oid]: r.data.tree }));
       else setActErr('Orchestration ran but returned no delivery tree.');
-    } catch (e: any) { setActErr(`Orchestration failed: ${e?.response?.data?.detail ?? 'backend unreachable'}`); }
+    } catch (e: any) { setActErr(`Orchestration failed: ${detailText(e?.response?.data?.detail ?? 'backend unreachable')}`); }
     setObjOrch('');
   };
 

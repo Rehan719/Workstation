@@ -11,7 +11,7 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W451).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W452).
   2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
@@ -525,7 +525,11 @@ than trusted once this date is old; a long-running dev process serves the code i
 - **P1.3 delivered (W451, 2026-09-12):** the AI CEO chat — the Living Organisation hub's default tab —
   runs on the owned fabric through `gateway.stream_meta`, grounded in the Board's directives, the living
   plan and the business plan, with `served_by` on every answer (amber on the floor); the persona, the
-  fake tool registration and the canned offline advisory are gone. Eleven Tier-1 items remain open.
+  fake tool registration and the canned offline advisory are gone.
+- **P1.4 delivered (W452, 2026-09-12):** Mode 3 review gates GATE — every lifecycle mover (ship, evolve,
+  cascades, orchestration, the birth-ship, the heartbeat's autonomous moves) refuses with a 409 that names
+  the gate while any gated stage is pending or rejected; gates can be set at birth. Ten Tier-1 items remain
+  open.
 - The fabrication audit is closed (63/63); the §4.5 defect *class* is closed at every reached site;
   the refute-your-own-fixes practice has caught live breaks in **ten consecutive rounds**.
 
@@ -542,7 +546,7 @@ than trusted once this date is old; a long-running dev process serves the code i
   ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
   workstream, the six-step verification each must pass, milestones that are measurements, and the
   definition of complete.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W451). A record of intent
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W452). A record of intent
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
@@ -553,9 +557,10 @@ than trusted once this date is old; a long-running dev process serves the code i
   "Sovereign Investment Civilisation") — are archived under `_archive/docs/` (W446).
 
 **Open against this vision, in one paragraph (regenerated 2026-09-05 from ledger v3; P1.1 closed
-2026-09-12, P1.2 and P1.3 closed the same day):** eleven Tier-1 truth defects on reached surfaces (fourteen
+2026-09-12, P1.2–P1.4 closed the same day):** ten Tier-1 truth defects on reached surfaces (fourteen
 found; the gate that could not fail on the floor closed W449; the body that wore floor scaffold and a
-fallback name closed W450; the AI CEO roleplay closed W451; delivery-plan P1 —
+fallback name closed W450; the AI CEO roleplay closed W451; the review gates that gated nothing closed
+W452; delivery-plan P1 —
 the scaffold-bodied VSB, the detached AI CEO chat, advisory review gates, green floor badges, the
 Employment "live job board", a compliance row that reads nothing, the floor "Translation" heading on
 the tafsir tab, Care scoring that computes nothing, a status page inverted by a failure row, Change
@@ -662,7 +667,7 @@ honesty), P3.3 (the cadence generators).*
   expert twin node exists; the Chief today is a constant values sentence plus the last five stored
   instructions, invoked only by click (`/api/v1/twin/models` holds 0 models; per-VSB Chiefs are titled
   "Digital Twin of default"). Delivery plan P3.4; the scope is an OWNER RULING (P3.0).*
-- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ◐ RECORDS DELIVERED (W126), **GATING NOT YET** (W446 audit, ledger R3.1/R2.2: no lifecycle mover — orchestrate, cascade, evolve, ship, establish — consults `blocks_progress`; a REJECTED design gate stopped nothing. Delivery plan P1.4.) The W126 delivery: per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
+- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ◐ RECORDS DELIVERED (W126); **GATING DELIVERED W452** (every lifecycle mover — orchestrate, cascade, evolve, ship, the birth-ship, the heartbeat — consults `blocks_progress` and refuses with 409 while a gated stage is pending or rejected; gates can be set at birth). Still ◐: the journey runs every stage in one request before the entity exists, so a gate pauses the SHIP, not a stage mid-journey. The W126 delivery: per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
 
 **17.5 The 10 architecture invariants (absolute).** User isolation (scoped to user_id) · mandatory GaaS
 gate on every output · append-only DCS audit · **Arms-Length Agency** (AI CEO cannot instruct the

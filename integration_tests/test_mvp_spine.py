@@ -8930,3 +8930,104 @@ async def _collect_stream(gateway, prompt):
     async for ev in gateway.stream_meta(prompt, agent="w451", augment=False):
         out.append(ev)
     return out
+
+
+def test_w452_mode3_review_gates_gate_every_lifecycle_mover_both_ways(client):
+    """§17.4 Mode 3 (ledger 1.4 · R2.2 R3.1) — the review gate was a record, not a gate.
+
+    Measured live (W452 baseline, :8032): with the design gate REJECTED, ship, evolve, the repo
+    cascade, plan orchestration, the entity's own delivery-swarm run and a fresh establish all
+    returned 200 — byte for byte the same as with the gate approved or absent; `blocks_progress`
+    had one reader, its own GET endpoint, whose docstring promised the lifecycle honoured it.
+
+    Both ways: a pending or rejected gate → 409 {gate, status, blocks_progress} on EVERY mover and
+    the heartbeat's autonomous movers hold with a recorded action; approved (or ungated) → 200;
+    a gate set at birth holds the birth-ship with the gate named; an entity with no gates is untouched.
+    """
+    import asyncio as _aio
+    import json as _json
+    from agentic_core.config import data_path
+
+    def establish(name, **extra):
+        return client.post("/api/v1/genesis/establish", json={
+            "problem": "w452 gates: a halal bakery in Leeds", "name": name, "concept": "a bakery",
+            "design": "ovens and a route", "commercialisation": "subscriptions", "ship_output": False, **extra}).json()
+
+    e = establish("Gate Probe Bakery")
+    vid = e["vsb_id"]
+    client.post(f"/api/v1/vsb/{vid}/repo").json()                      # a repo exists for the cascade leg
+    cascade_id = client.get(f"/api/v1/vsb/{vid}").json()["native_swarm"]["cascade_id"]
+    oid = client.get("/api/v1/business-plan", params={"scope": vid}).json()["objectives"][0]["id"]
+
+    def movers():
+        return {
+            "ship": client.post(f"/api/v1/vsb/{vid}/repo/ship"),
+            # refuter F3 — the ship's parts are movers too (the Genesis card exposes all five)
+            "repo": client.post(f"/api/v1/vsb/{vid}/repo"),
+            "website": client.post(f"/api/v1/vsb/{vid}/website"),
+            "web app": client.post(f"/api/v1/vsb/{vid}/webapp"),
+            "phone app": client.post(f"/api/v1/vsb/{vid}/mobile"),
+            "board pack": client.post(f"/api/v1/vsb/{vid}/board-pack"),
+            "evolve": client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w452"}),
+            "evolution apply": client.post(f"/api/v1/vsb/{vid}/evolution/apply"),
+            "repo cascade": client.post(f"/api/v1/vsb/{vid}/repo/cascade", json={"mission": "w452"}),
+            "cascade": client.post("/api/v1/swarm/cascade", json={"mission": "w452 org cascade", "scope": vid}),
+            "swarm run": client.post("/api/v1/resources/swarm/run", json={"swarm_id": cascade_id}),
+            "orchestrate": client.post(f"/api/v1/business-plan/objective/{oid}/orchestrate", json={"scope": vid}),
+        }
+
+    # gate the design stage: PENDING blocks (a human has been asked; nothing moves until they answer)
+    assert client.post(f"/api/v1/vsb/{vid}/review-gates", json={"stages": ["design"]}).status_code == 200
+    for mover, r in movers().items():
+        assert r.status_code == 409, (mover, r.status_code, r.text[:200])
+        d = r.json()["detail"]
+        assert d["gate"] == "design" and d["status"] == "pending" and d["blocks_progress"] is True and d["mover"] == mover, (mover, d)
+        assert "/review-gates/design/decision" in d["clear_by"]
+    # REJECTED blocks too, and says so
+    client.post(f"/api/v1/vsb/{vid}/review-gates/design/decision", json={"decision": "reject", "note": "not yet"})
+    r = client.post(f"/api/v1/vsb/{vid}/repo/ship")
+    assert r.status_code == 409 and r.json()["detail"]["status"] == "rejected"
+    # the heartbeat's autonomous movers HOLD with a recorded action instead of a silent except-pass
+    from agentic_core.api.vsb import _REPO_STORE, mark_repo_stale
+    ship_p = _REPO_STORE / f"{vid}.ship.json"
+    ship_p.write_text(_json.dumps({"vsb_id": vid, "shipped": True, "stale": False, "surfaces": {}}), encoding="utf-8")
+    assert mark_repo_stale(vid, "w452 drift")
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    _prev = (_hb.auto_ship, _hb.auto_evolve) if hasattr(_hb, "auto_evolve") else (_hb.auto_ship, None)
+    _hb.auto_ship = True
+    try:
+        beat = _aio.run(_hb.beat()) if _aio.iscoroutinefunction(_hb.beat) else _hb.beat()
+    finally:
+        _hb.auto_ship = _prev[0]
+    acts = (beat or {}).get("actions") if isinstance(beat, dict) else None
+    acts = acts if acts is not None else getattr(_hb, "last_actions", [])
+    assert any(a == f"reship_held_by_review_gate:{vid}" for a in acts), acts
+    # (the recorded hold is the evidence — an older stale repo from another test could keep this
+    # stale flag true on its own; the flag is a consistency check, not the proof)
+    assert _json.loads(ship_p.read_text(encoding="utf-8"))["stale"] is True
+    # refuter F2 — the FUNCTION the heartbeat's auto-apply lever calls holds too, not only the endpoint
+    from agentic_core.api.vsb import apply_approved_evolution
+    held = apply_approved_evolution(vid)
+    assert held["applied"] is False and held["reason"] == "review_gate_blocks" and "design" in held["detail"]
+
+    # the other way: APPROVED clears every mover (200), and an UNGATED entity is untouched
+    client.post(f"/api/v1/vsb/{vid}/review-gates/design/decision", json={"decision": "approve", "note": "go"})
+    for mover, r in movers().items():
+        assert r.status_code == 200, (mover, r.status_code, r.text[:200])
+    e2 = establish("Ungated Bakery")
+    assert client.post(f"/api/v1/vsb/{e2['vsb_id']}/repo/ship").status_code == 200
+
+    # a gate set AT BIRTH holds the birth-ship with the gate named; a bad stage id is refused
+    e3 = establish("Born Gated Bakery", ship_output=True, review_gates=["design"])
+    assert e3["initial_ship"]["shipped"] is False and e3["initial_ship"]["deferred"] == "review gate"
+    assert e3["initial_ship"]["gate"] == "design" and e3["initial_ship"]["status"] == "pending"
+    assert not (_REPO_STORE / f"{e3['vsb_id']}.ship.json").exists()
+    assert client.get(f"/api/v1/vsb/{e3['vsb_id']}/review-gates/design").json()["blocks_progress"] is True
+    assert client.post("/api/v1/genesis/establish", json={"problem": "x", "name": "Bad Gate", "review_gates": ["nope"]}).status_code == 400
+    # refuter F1 — the SSE path refuses a bad stage id with a REAL 400 (it had been an empty 200 stream)
+    rs = client.post("/api/v1/genesis/establish/stream", json={"problem": "x", "name": "Bad Gate", "review_gates": ["nope"]})
+    assert rs.status_code == 400 and "unknown review-gate stage" in rs.text
+    # …and the journey path forwards the gates
+    j = client.post("/api/v1/genesis/journey", json={"problem": "w452 journey gates", "name": "Journey Gated",
+                                                     "establish": True, "ship_output": True, "review_gates": ["launch"]}).json()
+    assert j["established_vsb"]["initial_ship"]["deferred"] == "review gate" and j["established_vsb"]["initial_ship"]["gate"] == "launch"

@@ -73,6 +73,13 @@ STATUS = {
     "R4.0": "FIXED W451 (P1.3) — CEOChat renders a provenanceBadge on every answer and the pill reads from the "
             "last answer's provenance ('no answer yet' before one); no 'Planetary Strategy Active', no 'Guardian' "
             "greeting, no dead fallback detector; the SSE parser buffers split lines.",
+    "R2.2": "gating half FIXED W452 (P1.4) — one shared guard; every lifecycle mover (ship, evolve, evolution "
+            "apply, repo cascade, org cascade, fabric swarm run, plan orchestrate, the birth-ship, the heartbeat's "
+            "autonomous evolve/re-ship) refuses with 409 {gate, status, blocks_progress} while any gated stage is "
+            "pending or rejected; gates can be set at birth. The journey still runs every stage in one request "
+            "before the entity exists — a per-stage pause mid-journey is not built.",
+    "R3.1": "FIXED W452 (P1.4) — blocks_progress is consumed by every mover through vsb._refuse_gated; the panel "
+            "says what a gate does; the Cockpit renders the refusal with the gate named.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

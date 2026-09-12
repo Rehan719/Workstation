@@ -1053,6 +1053,8 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                         {gatesOpen && gates && (
                           <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                             <p className="text-[9px] text-slate-500">{gates.mode} — tap a stage to gate/ungate; each change is DCS-audited.</p>
+                            {/* W452 (P1.4) — the copy says what a gate DOES: it used to say only that decisions were recorded */}
+                            <p className="text-[9px] text-amber-300/90">A gated stage that is <b>pending</b> or <b>rejected</b> blocks this enterprise's lifecycle movers — ship, evolve, cascades, plan orchestration and the organism's autonomous re-ship/evolve — with a 409 that names the gate, until a human approves it (or ungates the stage).</p>
                             <div className="flex flex-wrap gap-1.5">
                               {gates.lifecycle.map(stage => {
                                 const st = gates.statuses.find(s => s.stage === stage.id);

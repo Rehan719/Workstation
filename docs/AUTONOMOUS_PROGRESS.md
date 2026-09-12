@@ -4627,3 +4627,90 @@ dependency; CRLF/LF intact; nothing outside `ceo.py` imported what was deleted.
 ledger 1.3 CLOSED and P1.3 ✅ DONE with what it does not close; vision §16; living plan §4/§8. The
 ACCEPT clause "no '[Offline Mode]' text anywhere in the repo" is met in code; the docs keep the
 string as the record of what was wrong, and the guard's grep is scoped to code for that reason.
+
+### W452 — delivery-plan P1.4: Mode 3 review gates gate — a record becomes a gate
+
+**Measured first (:8032, `AI_DISABLE_LOCAL=1`).** The review-gate store was complete and honest
+about itself — four endpoints, DCS-sealed decisions, a computed `blocks_progress` — and read by
+exactly one consumer: its own GET, whose docstring said "used by the lifecycle to honour Mode 3".
+With the design gate REJECTED, `repo/ship`, `evolve`, `repo/cascade`, `business-plan …/orchestrate`,
+the entity's own delivery-swarm run and a fresh establish all returned 200, byte for byte the same
+as with the gate approved, pending or absent; the only "gate"/"review" words in any mover's
+response belonged to the living-QMS gate and the §11 compliance verdict. The Genesis panel painted
+the rejection red and said only that each change was "DCS-audited". A founder who clicked ✗ on
+Solution Design and then watched Ship succeed had no text anywhere telling them the rejection was
+decorative.
+
+**The rule (a decision the ledger left open):** R3.1 inferred stage↔mover from objective titles
+("Deliver the design" ↔ design gate); R2.2 proposed "refuse while ANY gated stage is pending or
+rejected". The entity's `stage` field is frozen at birth and no code links a stage to a mover, so
+the objective-title inference had nothing to stand on; the R2.2 rule needs no mapping and matches
+what a human review gate means — a human has been asked, nothing moves until they answer. Pending
+blocks, rejected blocks, approved and ungated do not.
+
+**What changed (backend):** one shared guard in `vsb.py` — `_gates_blocking(vsb)`,
+`_gate_block_reason(vsb)` for the non-raising callers, `_refuse_gated(vsb, mover)` raising 409
+with `{error, mover, gate, status, blocks_progress, blocking[], clear_by}`. Every lifecycle mover
+consults it: `repo/ship` (beside the W450 pending-name refusal), `evolve`, `evolution/apply`,
+`repo/cascade`, the org `/swarm/cascade` when scoped to a VSB, the fabric `/swarm/run` when the
+saved cascade is VSB-bound, `business-plan …/orchestrate` when the scope is a VSB (checked OUTSIDE
+the grounding try/except that swallows exceptions by design), and the name→ship path, which
+records a gate refusal as a deferral with the gate named rather than an "error". Gates can be set
+AT BIRTH — `EstablishRequest.review_gates` / `JourneyRequest.review_gates`, stage ids validated
+against the lifecycle (400 otherwise) — and a gated stage is pending at birth, so the birth-ship is
+held with `{deferred: "review gate", gate, status, blocks_progress}` on both establish paths (the
+SSE path emits "Ship Held by a Review Gate"). The heartbeat's autonomous evolve and re-ship HOLD a
+gated entity with a recorded action (`evolve_vsb_held_by_review_gate:<id>`,
+`reship_held_by_review_gate:<id>`) and tend the next one — never the silent `except: pass` that
+would have swallowed a 409 and quietly stopped tending.
+
+**Frontend:** the Genesis panel says what a gate does ("a gated stage that is pending or rejected
+blocks this enterprise's lifecycle movers — ship, evolve, cascades, plan orchestration and the
+organism's autonomous re-ship/evolve — with a 409 that names the gate, until a human approves it");
+the Cockpit renders a dict-shaped refusal as "… — gate 'design' is rejected" (it would have shown
+`[object Object]`).
+
+**Tests:** `test_w452_mode3_review_gates_gate_every_lifecycle_mover_both_ways` — gate the design
+stage: PENDING → 409 on all seven movers with `gate/status/blocks_progress/mover/clear_by`;
+REJECTED → 409 with the status; a stale repo behind the gate is NOT re-shipped by the heartbeat and
+the hold is a recorded action; APPROVED → 200 on all seven; an ungated entity ships; a gate set at
+birth holds the birth-ship with the gate named and nothing on disk; a bad stage id is 400; the
+journey path forwards the gates. **Broken by blinding the shared guard (`_gates_blocking` → `[]`): the guard failed at its first
+assertion with the original symptom (ship 200 with the design gate pending), then restored.**
+Suite on the final tree (isolated data dir, `AI_DISABLE_LOCAL=1`): **357 passed · 15 skipped · 0
+failed** (37 min). One subset run had shown a v191 evolution-approval test failing on a note string —
+it passes in the full suite and in the W451 run before this round: a subset-ordering artefact, not
+the gate; recorded here rather than silently.
+
+**Browser (fresh backend :8034 on the final tree — `scripts/_w452_probe.mjs`, 5/5; the pre-refuter tree passed the same 5/5 on :8033):**
+a named journey establishes; the panel's copy says a pending/rejected gate blocks the movers with a
+409; gating Solution Design and rejecting it turns the chip red; the raw API's ship, evolve and org
+cascade are 409 `{gate: design, status: rejected, blocks_progress: true}`; the Cockpit's Ship
+button is refused with "gate 'design' is rejected" (no `[object Object]`); approving the gate lets
+the ship through, coherent.
+
+**Refuted (one adversarial agent on the round's own diff): six findings, all fixed before commit.**
+F1 — the SSE establish path's 400 for a bad gate id was UNREACHABLE: raised inside the generator it
+arrived after the 200 headers as an empty event stream, which the page reads as success — the
+founder would have seen nothing (reproduced live) — validation now runs before the stream starts
+(guarded: a real 400). F2 — the heartbeat's `evolution_auto_apply` lever reaches
+`apply_approved_evolution` directly, and only the HTTP wrapper was guarded: with the lever on, a
+rejected gate blocked the Owner's click but the organism applied the genome mutations on the next
+beat — the hold now lives in the function (`{applied: false, reason: review_gate_blocks}`, guarded).
+F3 — the ship gate was bypassable surface by surface: `/repo`, `/website`, `/webapp`, `/mobile`
+and `/board-pack` — the five buttons under the newborn card — had no gate (the ship is those five
+in sequence) — every generator now refuses like the ship (all five added to the guard's mover
+set). F4 — the probe script is untracked (committed explicitly, never `git add -A`). F5 — contract
+delivery's provider cascade was newly gated but its 409 named "cascade" — it names "contract
+delivery" now. F6 — my `stale is True` assertion after the heartbeat leg could hold on its own
+under a shared data dir (the beat re-ships ONE stale repo, oldest first) — the recorded hold action
+is the evidence; the flag is annotated as a consistency check. Dismissed after checking: no mover
+mutates before its 409 (evolve's stale mark and save come after the guard); the in-process
+re-guard on repo cascade → org cascade is harmless; the heartbeat scan is inside the paced evolve
+tick, not every beat; `clear_by` serialises; TS compiles; every 409 assertion checks `mover`, so
+no wrong-reason pass; CRLF/LF intact.
+
+**Docs:** ledger v3 status R2.2 (gating half) and R3.1 FIXED W452 with what remains (a per-stage
+pause mid-journey — the journey still runs every stage in one request before the entity exists);
+prompt ledger 1.4 CLOSED and P1.4 ✅ DONE with the rule stated; vision §16 and the §17.4 Mode 3
+line; living plan §4/§7 row 1 (stays ◐ for P3.1)/§8.

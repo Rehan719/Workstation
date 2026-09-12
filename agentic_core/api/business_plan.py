@@ -248,6 +248,17 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
     if not obj:
         raise HTTPException(status_code=404, detail=f"Objective {oid} not found in {req.scope}.")
 
+    # W452 (P1.4) — when the scope is a VSB, its Mode 3 review gates are consulted BEFORE the tree
+    # runs (outside the grounding try/except below, which swallows exceptions by design).
+    try:
+        from agentic_core.api.vsb import _load_vsb as _gate_load
+        _gated_vsb = _gate_load(req.scope)
+    except Exception:
+        _gated_vsb = None
+    if _gated_vsb:
+        from agentic_core.api.vsb import _refuse_gated
+        _refuse_gated(_gated_vsb, "orchestrate")
+
     # Ground the run in the live VSB entity (when the scope is a generated VSB) + the plan's strategy.
     grounding = ""
     try:

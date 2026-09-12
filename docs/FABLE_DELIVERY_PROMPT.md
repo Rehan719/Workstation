@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W451) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W452) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W451 (451 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W452 (452 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,11 +192,12 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W451: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W452: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
-fabric with provenance per answer (W451). The first three Tier-1 items of the whole-vision plan
-are closed by execution, not by declaration.
+fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
+(W452). The first four Tier-1 items of the whole-vision plan are closed by execution, not by
+declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -280,7 +281,16 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      the chat runs through gateway/orchestrator with served_by per message (amber on the floor),
      the persona, fake tool registration and canned advisory are deleted, and the pill reads from
      provenance.
- 1.4 MODE 3 REVIEW GATES GATE NOTHING. review_gates/blocks_progress are read by their own four
+ 1.4 [CLOSED W452 — one shared guard (vsb._refuse_gated / _gates_blocking / _gate_block_reason);
+     ship, evolve, evolution/apply, the repo cascade, the org cascade scoped to a VSB, the entity's
+     fabric swarm run, plan orchestrate and the birth-ship all consult it; a PENDING or REJECTED
+     gate → 409 {gate, status, blocks_progress, blocking, clear_by}; gates can be set at birth
+     (EstablishRequest/JourneyRequest.review_gates, validated) and hold the birth-ship with the gate
+     named; the heartbeat's autonomous evolve/re-ship HOLD a gated entity with a recorded action;
+     the Genesis panel says what a gate does; the Cockpit renders the refusal legibly. Guard:
+     test_w452_mode3_review_gates_gate_every_lifecycle_mover_both_ways; probe
+     scripts/_w452_probe.mjs. The text below is the record of what was wrong.]
+     MODE 3 REVIEW GATES GATED NOTHING. review_gates/blocks_progress were read by their own four
      endpoints only; a REJECTED design gate did not stop orchestrate, cascade, evolve or ship; the
      Genesis panel says nothing about advisory, and vision §17.4 said ✅ DELIVERED at the audit
      baseline (corrected to ◐ in W446). [R3.1, R2.2]  DONE WHEN every lifecycle mover
@@ -523,9 +533,18 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       are gone from code (a source grep in the guard). What P1.3 does NOT close: the CEO's
       SUBSTANCE on the floor is the floor's structured frame (labelled as such); the meeting log
       still starts empty until a C-Suite meeting is called.
- P1.4 [1.4 · R2.2 R3.1] Mode 3 gates gate. orchestrate, cascade, /evolve, /repo/ship and establish consult
+ P1.4 ✅ DONE W452 [1.4 · R2.2 R3.1] Mode 3 gates gate. orchestrate, cascade, /evolve, /repo/ship and establish consult
       review_gates; blocking → 409 {gate, status, blocks_progress}; Genesis panel copy honest.
       ACCEPT: rejected design gate → 409 on each mover; approved → 200; guard both ways.
+      DELIVERED W452: measured live first (rejected design gate → 200 on ship, evolve, repo
+      cascade, orchestrate, swarm run and establish, byte for byte the same as approved); then
+      the shared guard on every mover, gates at birth, the heartbeat hold, the panel copy. The
+      rule: any gated stage that is pending OR rejected blocks every mover (a human has been
+      asked; nothing moves until they answer) — the ledger's R2.2 rule, chosen over R3.1's
+      objective-title inference because the entity's `stage` field is frozen at birth and no
+      code links a stage to a mover. What P1.4 does NOT close: a per-stage journey that pauses
+      at a gate mid-run (the journey still runs every stage in one request before the entity
+      exists — gates set at birth hold the SHIP, not the stages).
  P1.5 [1.5 · R3.4 R3.7 R5.1] provenanceBadge class-kill, part 2. All ten sites use .cls/.title; MyWork label;
       BoardOfDirectors + SwarmIntelligence use the helper; the "every badge routes through it"
       claim made true. GUARD: a test that fails on `provenanceBadge(` used with `.label` and no
@@ -805,7 +824,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 332 tests; 45 session guards W419–W451, each broken and
+- integration_tests/test_mvp_spine.py — 333 tests; 46 session guards W419–W452, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -826,7 +845,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w451_probe.mjs (eleven — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w452_probe.mjs (twelve — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

@@ -1375,6 +1375,12 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
         context = req.context or saved.get("context", "")
         name = saved["name"]
         run_vsb_id = saved.get("vsb_id")
+        if run_vsb_id:
+            # W452 (P1.4) — the entity's own delivery swarm honours its Mode 3 review gates
+            from agentic_core.api.vsb import _load_vsb as _gate_load, _refuse_gated
+            _gated_vsb = _gate_load(run_vsb_id)
+            if _gated_vsb:
+                _refuse_gated(_gated_vsb, "swarm run")
         # §7×§5 (W267) — a VSB-bound cascade runs against the LIVING VSB: its CURRENT stage/mission/
         # Chief/open objectives are prepended, so re-runs reflect today, not the establish snapshot.
         if run_vsb_id:

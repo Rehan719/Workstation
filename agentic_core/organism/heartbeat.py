@@ -330,9 +330,16 @@ class OrganismHeartbeat:
             # evolve the least-recently-evolved living VSB (round-robin; system context — the
             # entity's own evolution machinery, proposals recorded on its record, repo refreshed).
             try:
-                from agentic_core.api.vsb import evolve_vsb, EvolveRequest, _load_vsb
+                from agentic_core.api.vsb import evolve_vsb, EvolveRequest, _load_vsb, _gate_block_reason
                 from agentic_core.economy.living_vsbs import list_living
                 _live = (list_living() or {}).get("living_vsbs") or []
+                # W452 (P1.4) — a Mode 3 gate holds the organism's hand too: a gated entity is skipped
+                # WITH a recorded action (never a silent except-pass), and the next one is tended.
+                _held = [v.get("vsb_id") for v in _live
+                         if _gate_block_reason(_load_vsb(v.get("vsb_id")) or {})]
+                for _h in _held:
+                    actions.append(f"evolve_vsb_held_by_review_gate:{_h}")
+                _live = [v for v in _live if v.get("vsb_id") not in _held]
                 if _live:
                     _t = sorted(_live, key=lambda v: ((_load_vsb(v.get("vsb_id")) or {})
                                                       .get("last_evolved") or ""))[0]
@@ -366,6 +373,12 @@ class OrganismHeartbeat:
                             _stale.append((_s.get("stale_since") or "", _s.get("vsb_id")))
                     except Exception:
                         continue
+                # W452 (P1.4) — a stale repo behind a Mode 3 gate is NOT re-shipped; the hold is recorded
+                from agentic_core.api.vsb import _load_vsb as _hb_load, _gate_block_reason as _hb_gate
+                _held_ship = [v for _, v in _stale if _hb_gate(_hb_load(v) or {})]
+                for _h in _held_ship:
+                    actions.append(f"reship_held_by_review_gate:{_h}")
+                _stale = [x for x in _stale if x[1] not in _held_ship]
                 if _stale:
                     _vid = sorted(_stale)[0][1]
                     _res = await ship_vsb_repo(_vid, user=None)

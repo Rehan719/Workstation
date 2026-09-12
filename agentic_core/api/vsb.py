@@ -332,6 +332,7 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     the native fabric, QMS-gated + compliance-screened + document-controlled. The Website/Web-app/Phone-app
     directories are honest scaffolds (later increments), never claimed as built/running apps."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_gated(vsb, "repo")   # W452 (refuter F3) — the body's generators honour the gate as the ship does
     files = _build_repo_files(vsb)
     root = _REPO_STORE / vsb_id
     # W450 (P1.2, ledger 1.2 / R2.9) — the repo step writes one-line SCAFFOLD placeholders for
@@ -571,6 +572,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     a running web app (increment 3) and not deployed/hosted."""
     vsb = _require_vsb_access(vsb_id, user)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
+    _refuse_gated(vsb, "website")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
     concept = _blueprint(vsb)["concept"]     # W301 - canonical accessor (both shapes)
     prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
@@ -836,6 +838,7 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
     a browser (no build) — NOT a server/backend app, not deployed/hosted."""
     vsb = _require_vsb_access(vsb_id, user)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
+    _refuse_gated(vsb, "web app")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     files = _build_webapp_files(vsb)
     from agentic_core.vbs.quality import assure_delivery
     # Gate the app's CONTENT (entity data + section structure), not the raw JS source — the JS legitimately
@@ -973,6 +976,7 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
     (installable + offline-capable when hosted) — NOT a compiled native iOS/Android app, not deployed."""
     vsb = _require_vsb_access(vsb_id, user)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
+    _refuse_gated(vsb, "phone app")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     files = _build_mobile_files(vsb)
     from agentic_core.vbs.quality import assure_delivery
     # gate the CONTENT (entity data + sections), not the raw JS — avoid the `placeholder`-attribute false-fail
@@ -1051,6 +1055,7 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     (document-controlled via the QMS-owned DCMS). The on-demand layer of the §17.3 Living Business System."""
     vsb = _require_vsb_access(vsb_id, user)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
+    _refuse_gated(vsb, "board pack")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     name, challenge = vsb.get("name"), vsb.get("challenge", "")
     bp = _blueprint(vsb)                     # W301 - canonical accessor (both shapes)
     concept, commercial = bp["concept"], bp["commercialisation"]
@@ -1168,6 +1173,41 @@ def _gate_status(rg: dict, stage: str) -> dict:
             "blocks_progress": gated and (not dec or dec.get("decision") == "reject")}
 
 
+def _gates_blocking(vsb: dict) -> list:
+    """W452 (P1.4, ledger 1.4 / R2.2 R3.1) — the gated stages whose human review is PENDING or
+    REJECTED. `blocks_progress` had exactly one reader — its own GET endpoint, whose docstring
+    promised it was 'used by the lifecycle to honour Mode 3' — and a rejected design gate stopped
+    nothing (measured: ship, evolve, cascade, orchestrate, swarm run and establish all 200, byte for
+    byte the same with the gate rejected, pending, approved or absent)."""
+    rg = vsb.get("review_gates") if isinstance(vsb.get("review_gates"), dict) else {"stages": [], "decisions": {}}
+    return [st for st in (_gate_status(rg, s) for s in (rg.get("stages") or [])) if st.get("blocks_progress")]
+
+
+def _gate_block_reason(vsb: dict) -> str | None:
+    """One line for the non-raising callers (the heartbeat's held actions, apply_approved_evolution's
+    honest no-op): why this entity may not move, or None."""
+    blk = _gates_blocking(vsb)
+    if not blk:
+        return None
+    return "review gate blocks progress (Mode 3): " + ", ".join(f"{b['stage']} {b['status']}" for b in blk)
+
+
+def _refuse_gated(vsb: dict, mover: str) -> None:
+    """The shared Mode 3 guard: a lifecycle mover refuses while any gated stage awaits or failed its
+    human review. 409 with the gate, its status and the way out — never a silent pass, never a bare
+    string."""
+    blk = _gates_blocking(vsb)
+    if blk:
+        first = blk[0]
+        raise HTTPException(status_code=409, detail={
+            "error": f"review gate blocks progress — a human review is {first['status']} (Mode 3); {mover} refused",
+            "mover": mover, "gate": first["stage"], "status": first["status"], "blocks_progress": True,
+            "blocking": [{"stage": b["stage"], "status": b["status"]} for b in blk],
+            "clear_by": f"POST /api/v1/vsb/{vsb.get('vsb_id')}/review-gates/{first['stage']}/decision "
+                        "{\"decision\": \"approve\"} — or ungate the stage",
+        })
+
+
 class NameRequest(BaseModel):
     name: str
 
@@ -1233,6 +1273,11 @@ async def name_vsb(vsb_id: str, req: NameRequest, user: dict | None = Depends(ge
             shipped = {"shipped": True, "coherent_whole": _s.get("coherent_whole"),
                        "surfaces": sorted((_s.get("surfaces") or {}).keys()),
                        "commit": (_s.get("version_control") or {}).get("commit")}
+        except HTTPException as exc:
+            # W452 — a gate refusal is a deferral with the gate named, not an "error"
+            shipped = ({"shipped": False, "deferred": "review gate", **exc.detail}
+                       if exc.status_code == 409 and isinstance(exc.detail, dict) else
+                       {"shipped": False, "error": str(exc.detail)[:160]})
         except Exception as exc:
             shipped = {"shipped": False, "error": str(exc)[:160]}
     try:
@@ -1670,6 +1715,7 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     produced in one deliberate act, not four disconnected calls."""
     vsb = _require_vsb_access(vsb_id, user)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
+    _refuse_gated(vsb, "ship")  # W452 — Mode 3: a pending/rejected human review gate blocks the ship
     surfaces: Dict[str, Any] = {}
     for name, gen in (("repo", generate_vsb_repo), ("website", generate_vsb_website),
                       ("webapp", generate_vsb_webapp), ("mobile", generate_vsb_mobile),
@@ -1766,6 +1812,7 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
     (resources/runs/<run_id>.json + a version-control commit) — the repo stops being a snapshot
     and becomes an operating surface. Honest 404 when no repo exists."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_gated(vsb, "repo cascade")   # W452 — Mode 3 gates gate
     root = _REPO_STORE / vsb_id
     casc_path = root / "resources" / "cascades.json"
     if not casc_path.exists():
@@ -1823,6 +1870,7 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
     and generates genome mutations to improve performance.
     """
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_gated(vsb, "evolve")   # W452 — Mode 3 gates gate
 
     # §8 (W310) — the genome is EXPRESSED here: the entity's genome spec, epigenetic traits and
     # previously-APPLIED mutations genuinely shape the next evolution (a real read, not decoration).
@@ -1961,6 +2009,11 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     vsb = _load_vsb(vsb_id)
     if not vsb:
         return {"applied": False, "reason": "vsb_not_found"}
+    # W452 (refuter F2) — the heartbeat's evolution_auto_apply lever reaches this function directly,
+    # so the Mode 3 hold lives HERE, not only on the HTTP wrapper: a gated genome does not mutate.
+    _gate_hold = _gate_block_reason(vsb)
+    if _gate_hold:
+        return {"applied": False, "reason": "review_gate_blocks", "detail": _gate_hold}
     cca_id = vsb.get("evolution_pending_cca")
     if not cca_id:
         return {"applied": False, "reason": "no_pending_evolution"}
@@ -2018,5 +2071,5 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
 async def apply_evolution_endpoint(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§8 (W310) — apply the entity's CCA-APPROVED evolution proposals as genome mutations.
     Refuses honestly while the change request is still awaiting review."""
-    _require_vsb_access(vsb_id, user)
+    _refuse_gated(_require_vsb_access(vsb_id, user), "evolution apply")   # W452 — Mode 3 gates gate
     return apply_approved_evolution(vsb_id)

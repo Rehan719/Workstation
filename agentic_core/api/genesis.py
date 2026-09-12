@@ -23,7 +23,7 @@ from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime, _ai_mjm_lifecycle
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
-from agentic_core.api.vsb import _public_prose
+from agentic_core.api.vsb import _public_prose, _gate_block_reason, _gates_blocking, _LIFECYCLE_STAGE_IDS
 from agentic_core.taxonomy import REALM_LABELS, normalise_realm, realm_directive
 from agentic_core.vbs.quality import assure_delivery
 
@@ -122,6 +122,7 @@ class JourneyRequest(BaseModel):
     realm: str = "enterprise"   # canonical: agentic_core.taxonomy.REALMS (§17.1, W311)
     establish: bool = False     # §4→§5 — culminate the journey by ESTABLISHING the living VSB IDBO enterprise
     name: str = ""              # optional name for the established VSB
+    review_gates: list = []     # W452 — Mode 3 gates set AT BIRTH (stage ids); a gated stage holds the birth-ship
     entity_type: str = "waqf_ltd_hybrid"   # legal/economic form when establishing
     # §4 (W302) — the one continuous workflow ships the newborn's WHOLE living body at birth
     ship_output: bool = True
@@ -524,7 +525,8 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                                      "selection_basis": (stage_5 or {}).get("selection_basis")}
                                     if (stage_5 or {}).get("candidates") else {}),
                 stage_verifications=stage_verifications,
-                ai_provenance=provenance),   # W449 — the entity knows who served its body (F2)
+                ai_provenance=provenance,    # W449 — the entity knows who served its body (F2)
+                review_gates=list(req.review_gates or [])),   # W452 — gates set at birth
                 user=user if isinstance(user, dict) else None)   # W302+W304 - the whole journey flows
         except Exception as e:
             established_vsb = {"error": f"establishment deferred: {e}"}
@@ -585,6 +587,9 @@ class EstablishRequest(BaseModel):
     # on the entity so the repo / webapp / mobile gates know who wrote the concept they measure.
     # Empty for the standalone /establish path: origin unknown → the gate runs as before.
     ai_provenance: dict = {}
+    # W452 (P1.4) — Mode 3 human review gates configured at establishment (stage ids from the
+    # lifecycle); a gated stage is PENDING at birth, and a pending gate holds the birth-ship.
+    review_gates: list = []
 
 
 def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
@@ -685,6 +690,16 @@ _BODY_AGENTS = (("concept", "genesis_concept", "concept"),
                 ("operations", "genesis_operations", "operational intelligence"))
 
 
+def _birth_gates(req: "EstablishRequest") -> dict:
+    """W452 — the Mode 3 gate record at birth: validated stage ids, no decisions yet (pending)."""
+    from fastapi import HTTPException as _HTTPExc
+    stages = [str(s) for s in (req.review_gates or [])]
+    bad = [s for s in stages if s not in _LIFECYCLE_STAGE_IDS]
+    if bad:
+        raise _HTTPExc(status_code=400, detail=f"unknown review-gate stage(s): {bad}; lifecycle stages are {_LIFECYCLE_STAGE_IDS}")
+    return {"stages": stages, "decisions": {}}
+
+
 def _resolve_body_fields(req: "EstablishRequest") -> dict:
     """Replace floor-served body fields on `req` with the pending state; return {field: pending?}."""
     from agentic_core.vbs.quality import floor_served
@@ -770,6 +785,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     from agentic_core.api import vsb as vsb_mod
 
     vsb_id = f"vsb-{_uuid.uuid4().hex[:10]}"
+    birth_gates = _birth_gates(req)                    # W452 — Mode 3 gates at birth (validated first)
     body_pending = _resolve_body_fields(req)          # W450 — floor scaffold never becomes the body
     name, name_source = await _derive_name(req.problem, req.domain, req.name)
 
@@ -829,6 +845,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
             "stage_verifications": req.stage_verifications,
         },
         "ai_provenance": dict(req.ai_provenance or {}),   # W449 — who served the body (F2)
+        "review_gates": birth_gates,                        # W452 — Mode 3 gates, set at birth
         # W450 (P1.2) — the name's source (founder / model / slug) and which body fields are
         # pending the owned model; a slug name is PENDING the founder's choice.
         "name_source": name_source, "name_pending": name_source == "slug",
@@ -904,6 +921,12 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         initial_ship = {"shipped": False, "deferred": "name pending",
                         "reason": "the founder names the enterprise before its body ships — "
                                   f"POST /api/v1/vsb/{vsb_id}/name"}
+    elif req.ship_output and _gates_blocking(entity):
+        # W452 (P1.4) — a Mode 3 gate set at birth holds the birth-ship until a human approves it
+        _g = _gates_blocking(entity)[0]
+        initial_ship = {"shipped": False, "deferred": "review gate", "gate": _g["stage"],
+                        "status": _g["status"], "blocks_progress": True,
+                        "reason": _gate_block_reason(entity)}
     elif req.ship_output:
         try:
             from agentic_core.api.vsb import ship_vsb_repo
@@ -940,6 +963,9 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
     import time as _time
 
     req.owner_id = request_owner_id(user, req.owner_id)   # §17.5 — server-side owner stamp
+    # W452 (refuter F1) — a bad gate id must be a REAL 400: raised inside the generator it arrived
+    # after the 200 headers as an empty stream the page read as success.
+    birth_gates = _birth_gates(req)
 
     def _event(stage: str, label: str, content: str, data: dict | None = None) -> str:
         payload: Dict[str, Any] = {"stage": stage, "label": label, "content": content}
@@ -995,6 +1021,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                                 "selected_candidate": req.selected_candidate,
                                 "stage_verifications": req.stage_verifications},
             "ai_provenance": dict(req.ai_provenance or {}),   # W449 — parity with the blocking path (F2)
+            "review_gates": birth_gates,                        # W452 — parity with the blocking path
             "name_source": name_source, "name_pending": name_source == "slug",   # W450
             "body_pending": body_pending, "ship_requested": bool(req.ship_output),
             "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
@@ -1062,6 +1089,14 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                             "reason": "the founder names the enterprise before its body ships — "
                                       f"POST /api/v1/vsb/{vsb_id}/name"}
             yield _event("ship", "Ship Deferred", "name pending — the founder names the enterprise, then it ships",
+                         initial_ship)
+        elif req.ship_output and _gates_blocking(entity):
+            _g = _gates_blocking(entity)[0]
+            initial_ship = {"shipped": False, "deferred": "review gate", "gate": _g["stage"],
+                            "status": _g["status"], "blocks_progress": True,
+                            "reason": _gate_block_reason(entity)}
+            yield _event("ship", "Ship Held by a Review Gate",
+                         f"Mode 3: the {_g['stage']} gate is {_g['status']} — a human approves it, then it ships",
                          initial_ship)
         elif req.ship_output:
             try:

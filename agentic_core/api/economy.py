@@ -466,6 +466,12 @@ async def deliver_contract(cid: str, user: dict | None = Depends(get_current_use
     _require_economy_access(c["provider_vsb"], user)
     if c["status"] != "accepted":
         raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not accepted.")
+    # W452 (P1.4, refuter F5) — the provider's Mode 3 review gate holds its delivery cascade too,
+    # and the refusal names THIS mover (the inner cascade would have said "cascade")
+    from agentic_core.api.vsb import _load_vsb as _gate_load, _refuse_gated
+    _prov = _gate_load(c["provider_vsb"])
+    if _prov:
+        _refuse_gated(_prov, "contract delivery")
     from agentic_core.api.swarm import CascadeRequest, cascade_orchestration
     run = await cascade_orchestration(CascadeRequest(
         mission=f"Deliver the commissioned work: {c['brief'][:400]}",
