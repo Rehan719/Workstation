@@ -127,6 +127,9 @@ page says so and badges the search and every generated document.
 **W455 (2026-09-12):** delivery-plan **P1.7 delivered** — compliance that reads: the constitutional row
 says what it can check; the audit hash covers the subject; nothing matched is review, not pass; the
 Frameworks card names what each check does; a FAIL deliverable carries its verdict on page one of every export.
+**W456 (2026-09-12):** delivery-plan **P1.8 delivered** — the tafsir tab completes §11: the floor's
+Translation/Transliteration withheld with the reason, a disclaimer, the sourced Arabic and the range cap on
+screen.
 Open items live in `FABLE_DELIVERY_PROMPT.md` (v11 rev 2 — the `<ledger>` and the `<delivery_plan>`
 for the whole of §1–§15).
 
@@ -247,6 +250,8 @@ under a lockstep test, so the API dropped with it in the same commit.
 ---
 
 ## 8. Changelog (dated, append-only)
+- **2026-09-12 (W456)** — delivery-plan P1.8 delivered (the tafsir surface completes §11); §4 updated;
+  glyphs unchanged.
 - **2026-09-12 (W455)** — delivery-plan P1.7 delivered (compliance that reads); §4 updated; glyphs
   unchanged.
 - **2026-09-12 (W454)** — delivery-plan P1.6 delivered (Employment default-tab honesty); §4 updated;

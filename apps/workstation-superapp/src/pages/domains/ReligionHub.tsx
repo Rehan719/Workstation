@@ -138,6 +138,23 @@ export const ReligionHub: React.FC = () => {
                       endpoint="/api/v1/religion/quran-tafsir"
                       resultKey="tafsir"
                       submitLabel="Generate tafsir"
+                      renderExtra={(r: any) => (
+                        <div className="space-y-2" data-testid="tafsir-extra">
+                          {/* W456 (P1.8, §11 rules 2/4/5) — the sourced Arabic, its source, the reference, the range cap and the floor note reach the screen */}
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{r.reference}</p>
+                          {r.arabic_text ? (
+                            <p dir="rtl" lang="ar" className="text-xl leading-loose text-white bg-slate-950 border border-slate-900 rounded-xl p-4 whitespace-pre-wrap">{r.arabic_text}</p>
+                          ) : (
+                            <p className="text-[10px] text-amber-400 font-bold">The authoritative Arabic source is unreachable — the Arabic is never AI-generated, so none is shown.</p>
+                          )}
+                          {r.arabic_source && <p className="text-[9px] text-slate-500">Arabic: {r.arabic_source}</p>}
+                          {r.range_note && <p className="text-[10px] text-amber-400 font-bold">Range: {r.range_note}</p>}
+                          {r.floor_note && <p className="text-[10px] text-amber-300 font-bold leading-snug">{r.floor_note}</p>}
+                          {Array.isArray(r.sections_withheld) && r.sections_withheld.length > 0 && (
+                            <p className="text-[9px] text-slate-500">Withheld on the floor: {r.sections_withheld.join(' · ')}</p>
+                          )}
+                        </div>
+                      )}
                       fields={[
                         { name: 'surah', label: 'Surah (1–114)', type: 'text', default: '1' },
                         { name: 'ayah_start', label: 'Ayah (start)', type: 'text', default: '1' },

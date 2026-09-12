@@ -4959,3 +4959,74 @@ judged a defensible choice worth a stronger style — left as stated.
 
 **Docs:** ledger v3 status R1.1, R1.3, R1.6 FIXED W455 (the watermark-not-block choice stated);
 prompt ledger 1.7 CLOSED and P1.7 ✅ DONE; vision §16; living plan §4/§8.
+
+### W456 — delivery-plan P1.8: the tafsir surface completes §11 — no floor "translation" over sacred text
+
+**What was wrong (ledger 1.8 · R1.0 — the one surface where the vision says honesty binds
+hardest).** The backend half had been honest since W439: the Arabic fetched from alquran.cloud
+and injected as given material, a nonexistent ayah refused, a 20-ayah request capped at ten with
+a range note. But rule 4 of §11 — a translation must come from a model — had been applied to
+`/qep/translation` (a 503 on the floor) and not to `/religion/quran-tafsir`, whose prompt asked
+for "## Transliteration" and "## Translation" and whose floor reply therefore carried both,
+composed out of the headings. The tab rendered `tafsir` + a disclaimer key that did not exist:
+the sourced Arabic, its source line, the reference, the range cap never reached the screen.
+
+**What changed (backend, `religion.py`):** a `_model_available()` pre-check (mirroring
+`/qep/translation`, no side effects) decides BEFORE the prompt is built whether a model can serve:
+on the floor the Transliteration and Translation headings are not asked for at all — the W439
+lesson: a prompt that asks the floor for a translation leaves its scaffold in the interaction log
+and AI memory even if the reply is cut afterwards — and `_withhold_sections` stays as a guard;
+both are named in `sections_withheld`, and a `floor_note` says why — "no translation or transliteration is
+offered (a translation must come from a model; the floor composes headings, not meaning). The
+sourced Arabic above is authentic; the study notes below are a structured frame, not
+scholarship. Study this passage with a qualified teacher." A `disclaimer` on every tafsir
+response, mirroring the fatwa and halal tools: "AI-assisted study aid — NOT a scholarly tafsir
+and NOT a ruling. The Arabic is sourced from alquran.cloud and is never AI-generated …". A
+model-served tafsir keeps its sections and carries no floor note.
+
+**Frontend:** `DomainTool` gains an optional `renderExtra(result)` slot above the text; the
+Tafsir tab uses it to render the reference, the sourced Arabic right-to-left (`dir="rtl"`,
+`lang="ar"`) or the honest "source unreachable — the Arabic is never AI-generated, so none is
+shown", the source line, the range note, the floor note and the withheld list. The QMS chip has
+been three-state since W449.
+
+**Tests:** `test_w456_tafsir_tab_completes_section_11_both_ways` — the cutter both ways; on the
+floor 2:1-20 → both sections withheld and named, the floor note, the disclaimer, the source line,
+`ayah_end 10` with the range note; a model substituted at `ai_text` keeps its Translation section
+with no floor note; the tab's DomainTool slice renders every field. **Broken by letting the
+floor's translation ship again: the guard failed on the first floor assertion; restored.**
+Suite on the final tree (isolated data dir, `AI_DISABLE_LOCAL=1`, no concurrent build): **361 passed ·
+15 skipped · 0 failed** (37 min).
+
+**Browser (fresh backend :8047 on the final tree, serving the rebuilt bundle — `scripts/_w456_probe.mjs`, 7/7):**
+`/religion?tab=tafsir` for 2:1-20 shows "Surah 2:1-10", the range note, the Arabic block right-to-left
+(or the honest unreachable line), the source line, the floor note, "Withheld on the floor:
+Transliteration · Translation", no Translation heading over the text, the scholar disclaimer and the
+amber floor badge. Two probe mistakes of my own, recorded: Playwright's `waitForFunction` takes its
+options as the THIRD argument — my `{ timeout }` in the second position was the function's argument
+and the default 30 s applied (the ten sourced ayah fetches take longer); and `innerText` carries the
+CSS uppercase, so a case-sensitive "Surah" check failed on "SURAH". Both fixed in the probe, not
+by loosening what it checks.
+
+**Refuted (one adversarial agent on the round's own diff): the refute ran while the tree moved —
+I landed the prompt-side pre-check mid-refute, and the refuter's first finding was that my own
+guard and probe still encoded the post-hoc cut (they failed on the current tree). Six findings,
+all fixed before commit.** F1 — guard and probe re-encoded: on the floor the guard now spies the
+prompt (no "## Translation" asked), asserts the sections named as withheld, and with
+`_model_available` substituted True asserts the prompt DOES ask and a model-served tafsir keeps
+its translation. F2 — the floor note claimed "the sourced Arabic above is authentic" when the
+source was unreachable and no Arabic was shown — conditional now, and guarded. F3 — the fallback
+path (a model available, the floor answered anyway) had asked for a translation: its scaffold was
+already in the interaction log and AI memory, and the QMS record sealed the uncut text while the
+response shipped the cut one — refused with a 503 now, exactly as `/qep/translation` refuses it,
+guarded. F4 — `sections_withheld` had become dead on the primary path — it names what was
+withheld by omission (the policy), the cut is the guard. F5 — the model leg had been vacuous
+about the prompt — it captures it. F6 — My Work saved the floor study notes without the floor
+note or the disclaimer — the disclosures travel with the saved text. Dismissed after checking:
+the cutter's edge cases (trailing heading text, last section, sub-headings); the keys are
+additive for every consumer; the disclaimer renders once; React escapes the Arabic; the Arabic is
+fetched live; refine on the floor re-composes only the draft's headings; `local_models()` honours
+`AI_DISABLE_LOCAL`; LF intact; tsc clean.
+
+**Docs:** ledger v3 status R1.0 FIXED W456; prompt ledger 1.8 CLOSED and P1.8 ✅ DONE; vision §16;
+living plan §4/§8.

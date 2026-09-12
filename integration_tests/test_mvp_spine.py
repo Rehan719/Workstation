@@ -9235,3 +9235,74 @@ def test_w455_compliance_reads_what_it_can_and_says_what_it_cannot(client, monke
     d2 = client.post("/api/v1/deliverables/produce", json={"type": "report", "title": "w455 clean", "brief": "bakery", "content": clean}).json()
     assert d2["quality_assurance"]["quality"]["compliance"]["overall"] != "fail"
     assert "COMPLIANCE VERDICT" not in client.get(f"/api/v1/deliverables/{d2['id']}/export", params={"format": "md"}).text
+
+
+def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
+    """§11 rules 2/4/5 (ledger 1.8 · R1.0) — the tafsir tab served a floor "## Translation" section over
+    sacred text: rule 4 (a translation must come from a model) was applied at /qep/translation (503) and
+    not here; the response carried the sourced Arabic, its source, the reference and the range cap, and
+    the tab rendered none of them (DomainTool showed resultKey + disclaimer only — and there was no
+    disclaimer key).
+
+    Both ways: on the floor the Transliteration and Translation sections are WITHHELD (named), a
+    floor_note says why, the disclaimer is present, the Arabic source line is present, 2:1-20 is capped
+    with the range note; a model-served tafsir (substituted at ai_text) keeps its Translation section
+    and carries no floor_note. The tab renders the Arabic, source, reference, range note and floor note.
+    """
+    from pathlib import Path
+    from agentic_core.api import religion as R
+    from agentic_core.api.religion import _withhold_sections
+
+    # the cutter both ways
+    txt = "## Transliteration (of the provided text only)\nbismi\n## Translation (AI-assisted)\nIn the name\n## Exegesis\nreal notes\n"
+    out, removed = _withhold_sections(txt, ("Transliteration", "Translation"))
+    assert removed == ["Transliteration", "Translation"] and "## Exegesis" in out and "Translation" not in out and "bismi" not in out
+    assert _withhold_sections("## Exegesis\nonly", ("Translation",)) == ("## Exegesis\nonly", [])
+
+    # on the floor (this suite): the prompt never ASKS for a translation (nothing to cut, nothing in
+    # memory), the sections are named as withheld, noted, disclaimed; the source line; the range cap
+    seen = {}
+    _real_ai_text = R.ai_text
+    async def _spy(prompt, agent, **kw):
+        seen["prompt"] = prompt
+        return await _real_ai_text(prompt, agent, **kw)
+    monkeypatch.setattr(R, "ai_text", _spy)
+    assert R._model_available() is False                      # the floor: no model resource here
+    tf = client.post("/api/v1/religion/quran-tafsir", json={"surah": 2, "ayah_start": 1, "ayah_end": 20}).json()
+    assert tf["ai_provenance"]["served_by"] == "native"
+    assert "## Translation" not in seen["prompt"] and "## Transliteration" not in seen["prompt"], seen["prompt"][:400]
+    assert "## Translation" not in tf["tafsir"] and "## Transliteration" not in tf["tafsir"]
+    assert set(tf["sections_withheld"]) == {"Transliteration", "Translation"}, tf["sections_withheld"]
+    assert "no translation or transliteration is offered" in tf["floor_note"] and "qualified teacher" in tf["floor_note"]
+    assert ("authentic" in tf["floor_note"]) == bool(tf["arabic_text"])   # the note never claims Arabic it did not show
+    assert "NOT a scholarly tafsir" in tf["disclaimer"] and "never AI-generated" in tf["disclaimer"]
+    assert "arabic_source" in tf and tf["ayah_end"] == 10 and "covers 2:1-10" in tf["range_note"]
+
+    # the other way: with a model available the prompt asks for the translation and a model-served
+    # tafsir keeps it, no floor note; if the floor answers ANYWAY the request is refused (503) rather
+    # than cut and shipped under a seal of the uncut text
+    monkeypatch.setattr(R, "_model_available", lambda: True)
+    async def _model(prompt, agent, **kw):
+        seen["prompt"] = prompt
+        return ("## Transliteration (of the provided text only)\nbismillah\n## Translation (AI-assisted)\nIn the name of God\n## Exegesis\nnotes",
+                {"posture": "in-house-first", "served_by": "ollama:test", "is_external": False})
+    monkeypatch.setattr(R, "ai_text", _model)
+    tf2 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1}).json()
+    assert "## Translation" in seen["prompt"]
+    assert "## Translation" in tf2["tafsir"] and tf2["sections_withheld"] == [] and "floor_note" not in tf2
+    assert "NOT a scholarly tafsir" in tf2["disclaimer"]
+    async def _floor_anyway(prompt, agent, **kw):
+        return ("## Translation\nfloor scaffold", {"posture": "in-house-first", "served_by": "native", "is_external": False})
+    monkeypatch.setattr(R, "ai_text", _floor_anyway)
+    r503 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1})
+    assert r503.status_code == 503 and "not served from the floor" in r503.json()["detail"]
+    monkeypatch.undo()
+
+    # the tab renders what the backend returns
+    hub = Path("apps/workstation-superapp/src/pages/domains/ReligionHub.tsx").read_text(encoding="utf-8")
+    _start = hub.index("endpoint=\"/api/v1/religion/quran-tafsir\"")
+    tafsir_block = hub[_start:hub.index("Halal Certification Pre-Assessment", _start)]   # this tab's DomainTool only
+    for needle in ("renderExtra", "r.arabic_text", "r.arabic_source", "r.reference", "r.range_note", "r.floor_note", "dir=\"rtl\""):
+        assert needle in tafsir_block, needle
+    tool = Path("apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
+    assert "renderExtra?: (result: any) => React.ReactNode" in tool and "{renderExtra && renderExtra(result)}" in tool

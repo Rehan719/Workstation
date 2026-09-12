@@ -99,6 +99,10 @@ STATUS = {
             "vocabulary, an action gate; 'not legal advice', 'not a certification'); the audit hash is SHA3-512 over "
             "the subject; a subject outside every vocabulary is 'review — no engine covers this area', never pass; "
             "coverage is recorded per row.",
+    "R1.0": "FIXED W456 (P1.8) — §11 rule 4 applied to the tafsir route as it was to /translation: on the floor the "
+            "Transliteration and Translation sections are withheld from the prompt and cut from the text, named, with "
+            "a floor_note; a disclaimer key; the tab renders the sourced Arabic (rtl), its source, the reference, the "
+            "range note and the floor note; the QMS chip is three-state since W449.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

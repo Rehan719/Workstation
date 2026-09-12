@@ -208,9 +208,14 @@ async def quran_tafsir(req: QuranTafsirRequest):
         + f"Approach: {req.tafsir_approach}\n"
         f"{approach_instructions}\n\n"
         "Structure as:\n"
-        "## Transliteration (of the provided text only)\n"
-        "## Translation (AI-assisted, working from the provided text; note that scholarly translations differ)\n"
-        "## Context of Revelation (Asbab al-Nuzul) if applicable\n"
+        # W456 (§11 rule 4) — the two sections a MODEL must serve are not asked for on the floor at
+        # all: a prompt that asks the floor for a translation leaves its scaffold in the interaction
+        # log and AI memory even if the reply is cut afterwards (the W439 lesson at /qep/translation).
+        # Checked first, with no side effects; the post-hoc cut below stays as the guard.
+        + (("## Transliteration (of the provided text only)\n"
+            "## Translation (AI-assisted, working from the provided text; note that scholarly translations differ)\n")
+           if _model_available() else "")
+        + "## Context of Revelation (Asbab al-Nuzul) if applicable\n"
         "## Linguistic Analysis (key Arabic terms, root words)\n"
         "## Exegesis (detailed explanation)\n"
         "## Related Verses (cross-references by NAME and number — do not quote their Arabic)\n"
@@ -219,7 +224,36 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "Acknowledge differing scholarly interpretations where they exist."
     )
 
+    _model_expected = _model_available()
     tafsir, provenance = await ai_text(prompt, "religion_tafsir")
+
+    # W456 (P1.8, ledger 1.8 / R1.0) — §11 rule 4 applied HERE as it is at /qep/translation: a
+    # translation must come from a model. The deterministic floor composes each requested heading
+    # out of the prompt, so on the floor the tab was showing a "## Translation" section that was
+    # scaffold over sacred text. On the floor the Transliteration and Translation sections are
+    # WITHHELD — not asked for (above) and, as a guard, cut if they somehow appear — named in
+    # `sections_withheld`, with `floor_note` saying why; the sourced Arabic and the reference stand.
+    # A model-served tafsir keeps them. Refuter (W456): when a model WAS available and the floor
+    # still answered, the prompt had asked for a translation — its scaffold is already in the
+    # interaction log and the QMS record sealed the uncut text — so that case is refused outright,
+    # as /qep/translation refuses it, rather than cut and shipped under a seal of a different text.
+    sections_withheld: list[str] = []
+    floor_note = None
+    if (provenance or {}).get("served_by") == "native":
+        if _model_expected:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=503, detail=(
+                "a model resource was available but the deterministic native floor served this tafsir — "
+                "a tafsir requested with a translation is not served from the floor; retry"))
+        tafsir, _cut = _withhold_sections(tafsir, ("Transliteration", "Translation"))
+        sections_withheld = ["Transliteration", "Translation"]   # withheld by omission from the prompt (or cut)
+        floor_note = ("served by the deterministic native floor — no translation or transliteration is "
+                      "offered (a translation must come from a model; the floor composes headings, not "
+                      "meaning). "
+                      + ("The sourced Arabic above is authentic; " if arabic_text else
+                         "No Arabic is shown because the authoritative source was unreachable; ")
+                      + "the study notes below are a structured frame, not scholarship. Study this passage "
+                        "with a qualified teacher.")
 
     return {
         "tafsir_id": uuid.uuid4().hex[:10],
@@ -234,9 +268,42 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "ayah_end": ayah_end,
         "approach": req.tafsir_approach,
         "tafsir": tafsir,
+        "sections_withheld": sections_withheld,
+        **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        # W456 — the §11 disclaimer the fatwa and halal tools carried and this one did not
+        "disclaimer": (
+            "AI-assisted study aid — NOT a scholarly tafsir and NOT a ruling. The Arabic is sourced from "
+            "alquran.cloud and is never AI-generated; everything else here is AI-labelled content to be read "
+            "with, and checked against, the classical tafasir and a qualified teacher. Scholarly translations "
+            "and interpretations differ; where they do, learn from a scholar."
+        ),
     }
+
+
+def _model_available() -> bool:
+    """W456 — is any MODEL resource (owned local or opt-in external) available to serve? The floor is
+    never a model. Mirrors /qep/translation's pre-check; a refusal has no side effects."""
+    try:
+        from agentic_core.ai.native.model_resource import local_models, external_allowed
+        return bool(local_models()) or external_allowed()
+    except Exception:
+        return False
+
+
+def _withhold_sections(text: str, headings: tuple) -> tuple:
+    """Cut the named `## ` sections (heading + body up to the next `## `) out of a markdown text.
+    Returns (text, [headings actually removed])."""
+    import re as _re
+    removed: list[str] = []
+    out = text or ""
+    for h in headings:
+        pat = _re.compile(rf"(?ms)^##\s+{_re.escape(h)}\b[^\n]*\n.*?(?=^##\s|\Z)")
+        if pat.search(out):
+            out = pat.sub("", out)
+            removed.append(h)
+    return out.strip(), removed
 
 
 class HalalReviewRequest(BaseModel):

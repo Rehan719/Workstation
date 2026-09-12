@@ -55,6 +55,9 @@ interface DomainToolProps {
   fields: DomainField[];     // form fields -> POST body
   resultKey: string;         // response key holding the text result (falls back to JSON)
   submitLabel?: string;
+  // W456 — a tool whose response carries MORE than its text (sourced scripture, a range cap, a floor
+  // note) renders it here, above the text; the Tafsir tab was dropping all of it on the floor.
+  renderExtra?: (result: any) => React.ReactNode;
 }
 
 /**
@@ -62,7 +65,7 @@ interface DomainToolProps {
  * the result with the in-house provenance badge (and any disclaimer). Used to make the solid
  * domain backends (Science/Care/Education/Law…) genuinely reachable by users — DRY across hubs.
  */
-export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate' }) => {
+export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map(f => [f.name, f.default ?? ''])));
@@ -104,7 +107,11 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       setResult(r.data);
       // E3 — save to "My Work" history so the output is revisitable (not lost on navigate).
       try {
-        const text = String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2));
+        // W456 — the §11 disclosures (a floor note, a disclaimer) travel WITH the saved text, so My Work
+        // never shows floor study notes under a title with the disclosures dropped
+        const text = String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2))
+          + (r.data?.floor_note ? `\n\n[${r.data.floor_note}]` : '')
+          + (r.data?.disclaimer ? `\n\n_${r.data.disclaimer}_` : '');
         const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
           input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
         setHistoryId(rec.id);   // W337 — refines update THIS record in place
@@ -253,6 +260,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               </span>
             </div>
           </div>
+          {renderExtra && renderExtra(result)}
           <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
             {displayText}
           </pre>

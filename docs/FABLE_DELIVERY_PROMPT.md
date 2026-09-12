@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W455) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W456) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W455 (455 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W456 (456 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,15 +192,17 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W455: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W456: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
 (W452); P1.5 — every provenance badge routes through the helper, the floor never wears green
 (W453); P1.6 — the Employment hub's default tab tells the truth about its job search (W454); P1.7 —
 compliance that reads: the constitutional row says what it can check, the audit hash covers the
-subject, nothing matched is review not pass, a FAIL rides on page one of every export (W455). The
-first seven Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
+subject, nothing matched is review not pass, a FAIL rides on page one of every export (W455); P1.8 —
+the tafsir tab completes §11: no floor 'translation' over sacred text, the sourced Arabic and the
+scholar line on screen (W456). The first eight Tier-1 items of the whole-vision plan are closed by
+execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -342,7 +344,13 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      (Equality Act 2010 / ERA 1996 / ACAS) whose audit hash is identical for a halal bakery and a
      laundering scheme (it hashes the empty flag set, not the subject); "Sharia/Halal" is a
      substring loop; the Frameworks card presents them as engine-grade coverage. [R1.1, R1.3, R1.6]
- 1.8 THE TAFSIR TAB SERVES A FLOOR "TRANSLATION" SECTION — rule 4 of §11 applied to
+ 1.8 [CLOSED W456 — on the floor the Transliteration and Translation sections are withheld from
+     the prompt AND cut from the text (named in sections_withheld) with a floor_note that says why;
+     a disclaimer key on every tafsir response; the Tafsir tab renders the sourced Arabic (rtl, lang=ar),
+     its source line, the reference, the range note and the floor note through DomainTool's new
+     renderExtra; the QMS chip follows P1.1. Guard: test_w456_tafsir_tab_completes_section_11_both_ways;
+     probe scripts/_w456_probe.mjs. The text below is the record of what was wrong.]
+     THE TAFSIR TAB SERVED A FLOOR "TRANSLATION" SECTION — rule 4 of §11 applied to
      /qep/translation (503) and not to /religion/quran-tafsir; the sourced Arabic, range cap and
      scholar-referral never reach the screen (no disclaimer key; DomainTool renders resultKey +
      disclaimer only); a green QMS chip beside a "review" verdict. [R1.0]
@@ -610,11 +618,16 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       Change-Control id on page one, the row and the button say so; blocking would hide the
       record the reviewer needs. What P1.7 does NOT close: the screens are keyword screens — the
       labels now say so; depth is P2/P3 work.
- P1.8 [1.8 · R1.0] The tafsir surface completes §11. disclaimer key; on the floor refuse the
+ P1.8 ✅ DONE W456 [1.8 · R1.0] The tafsir surface completes §11. disclaimer key; on the floor refuse the
       Translation/Transliteration sections (503 like /translation) or drop the headings with a
       floor_note; Tafsir tab renders arabic_text + arabic_source + reference + range_note; the
       QMS chip follows P1.1. ACCEPT: probe on /religion?tab=tafsir sees sourced Arabic, the
       range note for 2:1-20, the scholar line, and no "Translation" heading over floor text.
+      DELIVERED W456: the ACCEPT probe passes on a fresh floor backend (sourced Arabic rtl,
+      'covers 2:1-10', the disclaimer, the floor note, no Translation heading); broken by letting
+      the floor's translation ship again → the guard fails; restored. What P1.8 does NOT close:
+      the floor's remaining study sections are a structured frame labelled as such (floor note,
+      amber badge, not-assessable chip) — substance needs the owned model.
  P1.9 [1.9 · R5.3] Care scoring computes. NEWS2 / MUST / Waterlow / falls arithmetic in-house from the
       published tables, returned as a deterministic `score` block rendered FIRST; AI narrates
       interpretation only; observations validated for units/completeness; copy corrected.
@@ -872,7 +885,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 336 tests; 49 session guards W419–W455, each broken and
+- integration_tests/test_mvp_spine.py — 337 tests; 50 session guards W419–W456, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -893,7 +906,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w455_probe.mjs (fifteen — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w456_probe.mjs (sixteen — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).
