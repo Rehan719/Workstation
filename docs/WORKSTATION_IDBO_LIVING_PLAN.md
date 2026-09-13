@@ -133,6 +133,9 @@ screen.
 **W457 (2026-09-12):** delivery-plan **P1.9 delivered** — Care scoring computes: NEWS2 / MUST / Waterlow
 from the published tables in-house (falls as a labelled factor count), validated, returned first; the AI
 interprets only.
+**W458 (2026-09-13):** delivery-plan **P1.10 delivered** — disabled ≠ failed: a resource never attempted
+(config-disabled, unknown, or refused by the spend policy) is a labelled SKIP that records nothing, and
+`/native-ai/status` follows the last completion that actually served, naming the row it read.
 Open items live in `FABLE_DELIVERY_PROMPT.md` (v11 rev 2 — the `<ledger>` and the `<delivery_plan>`
 for the whole of §1–§15).
 
@@ -253,6 +256,8 @@ under a lockstep test, so the API dropped with it in the same commit.
 ---
 
 ## 8. Changelog (dated, append-only)
+- **2026-09-13 (W458)** — delivery-plan P1.10 delivered (status honesty; disabled ≠ failed); §4 updated;
+  glyphs unchanged.
 - **2026-09-12 (W457)** — delivery-plan P1.9 delivered (Care scoring computes); §4 updated; glyphs
   unchanged.
 - **2026-09-12 (W456)** — delivery-plan P1.8 delivered (the tafsir surface completes §11); §4 updated;

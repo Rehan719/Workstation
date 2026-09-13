@@ -185,6 +185,35 @@ def model_health(window: int = 40) -> Dict[str, Dict[str, Any]]:
     return out
 
 
+def last_successful_server() -> Dict[str, Any]:
+    """W458 (P1.10, ledger 1.10 · R4.7) — the most recent recorded completion that actually
+    SERVED (success=True). `model_health()` aggregates per model and cannot say whether the newest
+    row was a failure, so /native-ai/status had taken a failed `served_by=ollama` attempt as "ollama
+    served last" and reported `real_model` while the floor served every byte.
+
+    This is a HISTORY question — "what served last" — so, unlike the scoring aggregate, it does NOT
+    apply the health baselines: a baseline says an old row must not SCORE a model, not that the serve
+    never happened (applying it made a rebaseline of `native` resurrect a stale real-model success as
+    "served last" while the floor was serving every byte). A row with no `served_by` attributes the
+    serve to nobody and is skipped rather than reported as an unnamed real model.
+
+    Returns {"served_by", "at", "attempts_since"} — `attempts_since` counts the failed ATTEMPTS
+    (kind="model_attempt") recorded after that success; a measured-quality row is a verdict on work
+    already served, never an attempt that failed."""
+    failed_after = 0
+    for r in reversed(_load()):
+        if r.get("kind") not in ("model_attempt", "model_quality"):
+            continue
+        name = (r.get("served_by") or "").strip()
+        if not name:
+            continue
+        if r.get("success"):
+            return {"served_by": name, "at": r.get("created_at"), "attempts_since": failed_after}
+        if r.get("kind") == "model_attempt":
+            failed_after += 1
+    return {"served_by": None, "at": None, "attempts_since": failed_after}
+
+
 class RecordRequest(BaseModel):
     kind: str
     resource: str
@@ -224,7 +253,14 @@ async def degradation(resource: Optional[str] = None, cycles: int = 3, window: i
     windows (avg latency + success-rate each) and flags a >12.7% latency rise OR >9.3% accuracy drop.
     Real arithmetic over real recorded runs — not a guess."""
     cycles = max(3, int(cycles))
-    rows = [r for r in _load() if (not resource or r.get("resource") == resource)]
+    # W458 — model-learning rows are INFRA telemetry (one per AI call, always success on the floor,
+    # sub-millisecond). Counted in the unfiltered window they displace the business telemetry this
+    # detector exists to measure and the verdict becomes noise — a false "healthy" in one run and a
+    # false "degraded" in the next. /outcomes, /rankings and /summary already exclude them; this
+    # window did not, and W458's own floor-serve recording widened the exposure.
+    _infra = ("model_attempt", "model_quality")
+    rows = [r for r in _load()
+            if (r.get("resource") == resource if resource else r.get("kind") not in _infra)]
     recent = rows[-(cycles * max(1, int(window))):]
     telemetry: List[Dict[str, float]] = []
     if len(recent) >= cycles:
@@ -283,15 +319,26 @@ async def rebaseline_model_health(req: RebaselineRequest):
 async def model_health_view():
     """The fabric's LEARNING surface: per-model track records and which models the native
     orchestrator is currently deprioritising (moved below the always-available native floor)."""
+    # W458 — the badge follows the rule that actually ROUTES (orchestrator._reorder_by_health:
+    # windowed runs and the W380 floor rate), not a stale stricter copy of it
+    from agentic_core.ai.native.orchestrator import _DEMOTE_BELOW_FLOOR_RATE
     h = model_health()
     models = [{"name": name, **stats,
-               "deprioritised": stats["runs"] >= 5 and stats["success_rate"] < 0.6}
+               "deprioritised": (name != "native" and stats["window_runs"] >= 5
+                                 and stats["success_rate"] < _DEMOTE_BELOW_FLOOR_RATE)}
               for name, stats in sorted(h.items(), key=lambda kv: kv[1]["runs"], reverse=True)]
     return {
         "models": models,
         "total_attempts": sum(m["runs"] for m in models),
-        "rule": "A non-native model is deprioritised below the native floor when runs >= 5 and "
-                "success_rate < 0.6 — so the fabric stops wasting time on a model that keeps failing.",
+        "rule": ("A non-native model is flagged here when its windowed runs >= 5 and windowed "
+                 f"success_rate < {_DEMOTE_BELOW_FLOOR_RATE} — the router's own demotion test "
+                 "(orchestrator._reorder_by_health). The router additionally grants a demoted model one "
+                 "probation retry after 10 minutes untried, which this flag does not model: while that "
+                 "retry is pending the router is trying the model although the flag still reads "
+                 "'deprioritised'. Rows counted are recorded attempts AND measured-quality verdicts "
+                 "(kind=model_attempt / model_quality, the same window the router scores); a resource "
+                 "disabled by configuration or refused by the spend policy is never attempted, so it is "
+                 "skipped and recorded nowhere."),
     }
 
 

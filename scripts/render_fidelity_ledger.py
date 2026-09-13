@@ -107,6 +107,16 @@ STATUS = {
             "tables (NICE CG161 falls as a labelled factor count), validates units/ranges/completeness, and the route "
             "returns the score block first with the AI told not to recompute; the hub renders the block first; the "
             "assessor's case scores 6 · medium (key threshold for urgent response); a lower-bound total gets no band.",
+    "R4.7": "FIXED W458 (P1.10) — the status-honesty half: /native-ai/status no longer reads the newest per-model "
+            "aggregate row regardless of success. agentic_core/api/operational_excellence.last_successful_server() "
+            "returns the most recent row that actually SERVED, and mode / floor_active / the basis string follow it "
+            "— naming the row read and the failed attempts recorded since. The native floor serve is recorded, so a "
+            "stale row can be displaced; the basis reaches the screen (data-testid native-status-basis).",
+    "R4.8": "FIXED W458 (P1.10) — a resource that was never ATTEMPTED is a skip, not a failure: _run_model raises "
+            "ResourceSkipped under AI_DISABLE_LOCAL (also for an unknown resource, and from the hourly external "
+            "spend guard), and complete() annotates resources_tried 'ollama (disabled by config, skipped)' while "
+            "recording nothing — no learning-loop row, no immune ai_failure, no breaker failure. One model=local "
+            "call now leaves immune health at 1.0. A REAL failure of an enabled resource still records all three.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

@@ -11,6 +11,7 @@ interface Status {
   selection_order: string[]; guarantee: string; resources: ModelResource[];
   active_model?: string; active_model_label?: string; is_real_model?: boolean;
   mode?: string; floor_active?: boolean; floor_note?: string | null;
+  floor_active_basis?: string;   // W458 — the row the verdict was computed from
 }
 interface Capability { name: string; endpoint: string; kind: string; source: string; in_house: boolean; description: string }
 interface SwarmStep { step: number; role: string; served_by: string; output: string }
@@ -534,6 +535,10 @@ export const NativeAI: React.FC = () => {
             </div>
             {status.floor_active && status.floor_note && (
               <p className="text-[11px] text-slate-400 leading-relaxed mt-2">{status.floor_note}</p>
+            )}
+            {/* W458 (P1.10) — the row the verdict was computed from travels with it, on screen */}
+            {status.floor_active_basis && (
+              <p className="text-[9px] text-slate-500 mt-1" data-testid="native-status-basis">basis: {status.floor_active_basis}</p>
             )}
           </Card>
 

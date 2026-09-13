@@ -27,6 +27,20 @@ def _fire(signal_type: str, source: str, msg: str, intensity: float = 0.5) -> No
         pass
 
 
+class ResourceSkipped(RuntimeError):
+    """W458 (P1.10, ledger 1.10 · R4.8) — a resource that was NOT attempted: disabled by
+    configuration (AI_DISABLE_LOCAL), refused by the hourly external spend policy, or unknown to
+    the fabric. It is a SKIP, like a circuit-open skip — never a model failure: no learning-loop
+    row, no immune threat, no breaker failure. Before this, one `model=local` call on a
+    deterministic deployment recorded an ollama FAILURE, dropped immune health by 0.1, counted a
+    breaker failure, and made /native-ai/status report `real_model` while the floor served."""
+
+    def __init__(self, name: str, reason: str) -> None:
+        super().__init__(f"{name}: {reason}")
+        self.name = name
+        self.reason = reason
+
+
 def _record_model(name: str, success: bool, t0: float) -> None:
     """Record a real per-model-resource attempt (kind=model_attempt) so the orchestrator can
     LEARN which owned/external models actually perform. Best-effort, non-critical."""
@@ -64,6 +78,28 @@ def _organism_report(name: str, success: bool) -> None:
             immune.record(f"model:{name}", "ai_failure")
         except Exception:
             pass
+
+
+# W458 — the floor serve must be RECORDED (without a row, a stale ollama success stays "the most
+# recent successful completion" forever and /native-ai/status keeps claiming a real model). But
+# record_outcome() is a whole-store read-modify-rewrite: on the floor path, which answers in ~2 ms,
+# writing one row per call made a completion ~26x slower and blocked the event loop for the write.
+# The row is therefore THROTTLED: the first floor serve in a process always records, then at most
+# one row per _FLOOR_RECORD_EVERY_S. Status is explicitly history ("not a live probe"), so a bounded
+# lag is honest; the throttle is a module global so a test can set it to 0.
+_FLOOR_RECORD_EVERY_S = 60.0
+_last_floor_record_at: Optional[float] = None
+
+
+def _record_floor_serve(t0: float) -> bool:
+    """Record the native floor serve, throttled. Returns True when a row was written."""
+    global _last_floor_record_at
+    now = time.monotonic()
+    if _last_floor_record_at is not None and (now - _last_floor_record_at) < _FLOOR_RECORD_EVERY_S:
+        return False
+    _last_floor_record_at = now
+    _record_model("native", True, t0)
+    return True
 
 
 _DEMOTE_BELOW_FLOOR_RATE = 0.25   # W380 — only an effectively-dead model goes behind the floor
@@ -196,7 +232,9 @@ class NativeOrchestrator:
                 continue
             tried.append(name)
             if name == "native":
+                _t0 = time.monotonic()
                 out = native_engine.generate(prompt, agent)
+                _record_floor_serve(_t0)   # W458 — the floor serve is RECORDED (throttled), so status can follow it
                 _fire("motor", f"native.{agent}", "served by native engine", 0.4)
                 return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
             _t = time.monotonic()
@@ -218,6 +256,10 @@ class NativeOrchestrator:
                             "is_external": name in ("anthropic", "openai"), "resources_tried": tried}
                 _record_model(name, False, _t)           # empty output = failure
                 _organism_report(name, False)            # §6×§8 (W278) — raises immune + breaker
+            except ResourceSkipped as sk:
+                # W458 — not attempted ≠ failed: annotate like the circuit-open skip, record NOTHING
+                tried[-1] = f"{name} ({sk.reason}, skipped)"
+                continue
             except Exception:
                 _record_model(name, False, _t)           # error/timeout = failure
                 _organism_report(name, False)
@@ -267,7 +309,7 @@ class NativeOrchestrator:
             # AI_DISABLE_LOCAL=1 means NO local inference at all (deterministic deployments / the test suite),
             # even for a directly-named model route — fall through to the native floor.
             if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
-                return ""
+                raise ResourceSkipped(name, "disabled by config")   # W458 — a skip, not a failure
             import json as _json
             import httpx
             # "ollama" → the default model; "ollama:<name>" → that specific owned local model.
@@ -342,7 +384,7 @@ class NativeOrchestrator:
             comp = await client.chat.completions.create(model="gpt-4o-mini", timeout=25,
                                                         messages=[{"role": "user", "content": prompt}])
             return comp.choices[0].message.content or ""
-        return ""
+        raise ResourceSkipped(name, "unknown resource")   # W458 — nothing was attempted
 
     _external_calls: List[float] = []   # timestamps of external attempts (sliding hour window)
     _budget_logged_at: float = 0.0
@@ -368,7 +410,8 @@ class NativeOrchestrator:
                                      "note": "external call refused — serving falls to the owned floor"})
                 except Exception:
                     pass
-            raise RuntimeError(f"external call budget reached ({cap}/hour) — falling to the owned floor")
+            # W458 — a spend-policy refusal is a SKIP, not the provider failing
+            raise ResourceSkipped(provider, f"hourly external budget reached ({cap}/hour)")
         cls._external_calls.append(now)
 
     def _immune_threat(self) -> str:

@@ -34,16 +34,18 @@ async def native_status():
     # §6 (W323) — MEASURED serving mode beside the prediction: the selection head can list a model
     # that keeps failing while the floor actually serves — `mode` now follows what the learning
     # loop MEASURED on the most recent recorded work, never just the optimistic prediction.
+    # W458 (P1.10, ledger 1.10 · R4.7) — measured from the most recent SUCCESSFUL completion. The
+    # per-model aggregate had no notion of "the newest row failed": one config-disabled local
+    # attempt made `measured` = ollama and `mode` = real_model while the floor served everything.
     measured = None
     _last_at = None
+    _failed_since = 0
     try:
-        from agentic_core.api.operational_excellence import model_health
-        _rows = [(k, v) for k, v in (model_health() or {}).items()
-                 if v.get("window_runs", 0) > 0 and v.get("last_at")]
-        if _rows:
-            _rows.sort(key=lambda kv: kv[1].get("last_at", ""), reverse=True)
-            measured = _rows[0][0]
-            _last_at = _rows[0][1].get("last_at")
+        from agentic_core.api.operational_excellence import last_successful_server
+        _last = last_successful_server()
+        measured = _last.get("served_by")
+        _last_at = _last.get("at")
+        _failed_since = int(_last.get("attempts_since") or 0)
     except Exception:
         pass
     mode_predicted = "real_model" if is_real_model else "deterministic_floor"
@@ -61,19 +63,22 @@ async def native_status():
         "mode_predicted": mode_predicted,
         "mode_measured": mode_measured,
         "measured_recent_server": measured,
-        "mode_note": ("mode follows the MEASURED most-recent server when history exists "
-                      "(prediction only until then) — the two disagree when a listed model keeps failing"),
-        # §6 (W424) — `floor_active` is derived from ONE row: the most recent recorded
-        # completion. It answers "what served last", NOT "what is serving now", and the old
-        # name invited the second reading. The value is unchanged; what it MEASURES is now
-        # stated, and the row it was computed from travels with it so the claim is checkable.
+        "mode_note": ("mode follows the most recent completion that actually SERVED (a successful "
+                      "recorded row) when history exists, prediction only until then — the two disagree "
+                      "when a listed model keeps failing, or is disabled by configuration and skipped"),
+        # §6 (W424, corrected W458) — `floor_active` answers "what served last", NOT "what is serving
+        # now": it is derived from ONE row, and since W458 that row is the most recent SUCCESSFUL
+        # completion (a failed or never-attempted resource no longer counts as having served). The row
+        # travels with the verdict in `floor_active_basis`, so the claim is checkable on screen.
         "floor_active": (mode_measured == "deterministic_floor" if mode_measured != "unmeasured"
                          else not is_real_model),
         "floor_active_basis": (
-            ("most recent recorded completion was served by " + str(measured)
-             + " (one row, at " + str(_last_at) + ") — this is history, not a live probe")
+            ("most recent SUCCESSFUL recorded completion was served by " + str(measured)
+             + " (one row, at " + str(_last_at) + ")"
+             + (f"; {_failed_since} failed attempt(s) recorded since" if _failed_since else "")
+             + " — this is history, not a live probe; a resource disabled by configuration is skipped, not counted")
             if measured is not None else
-            "no completion has been recorded yet; predicted from whether a real model is listed"),
+            "no successful completion has been recorded yet; predicted from whether a real model is listed"),
         "floor_note": (None if is_real_model else
                        "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. "
                        "Run a local Ollama model (or enable an external accelerant) for generative prose."),

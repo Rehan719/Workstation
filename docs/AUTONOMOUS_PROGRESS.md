@@ -5116,3 +5116,85 @@ after checking: every NEWS2 / MUST / Waterlow boundary against the published car
 
 **Docs:** ledger v3 status R5.3 FIXED W457; prompt ledger 1.9 CLOSED and P1.9 ✅ DONE (the falls
 count and the ACCEPT-wording correction stated); vision §16; living plan §4/§8.
+
+### W458 — delivery-plan P1.10: disabled ≠ failed, and the status follows what actually served
+
+**What was wrong (ledger 1.10 · R4.7 R4.8).** One call to `/api/v1/native-ai/complete` with
+`model: local` on a deterministic deployment — `AI_DISABLE_LOCAL=1`, which is CI's setting and the
+runtime the fidelity audit is measured on — recorded the local model as an AI **failure**: immune
+health fell from 1.0 to 0.9 with an `ai_failure` event, the self-healing breaker counted a failure
+against `model:ollama`, and the learning loop gained a 0.0-success row that five such calls would
+have turned into a demotion. Nothing had been attempted: `_run_model` returned an empty string for
+a disabled resource and the cascade read empty as failed. `/native-ai/status` then took that failed
+row as "ollama served last" and reported `mode: real_model`, `floor_active: false`, painting the
+page's headline card green — while the deterministic floor had served every byte. The floor's own
+serves were recorded nowhere, so nothing could ever displace the false row.
+
+**What changed (backend).** A resource that was never ATTEMPTED is now a labelled SKIP, never a
+failure. `ResourceSkipped` is raised by `_run_model` under `AI_DISABLE_LOCAL`, for an unknown
+resource, and by the hourly external spend guard; `complete()` catches it exactly as it already
+caught a circuit-open resource — annotating `resources_tried` "ollama (disabled by config,
+skipped)" and recording **nothing**: no learning-loop row, no immune threat, no breaker failure.
+The floor serve IS recorded, so the status can follow it; because `record_outcome` rewrites the
+whole store and the floor answers in about two milliseconds, that row is throttled (the first serve
+in a process, then at most one a minute) rather than written per call, which had made a floor
+completion roughly twenty-six times slower and blocked the event loop for the write.
+`/native-ai/status` derives its verdict from `last_successful_server()` — the most recent row that
+actually served — and names the row it read, with the failed attempts recorded since. That helper
+answers a HISTORY question, so it does not apply the health baselines (a rebaseline says an old row
+must not SCORE a model, not that the serve never happened), it skips a row that names no server
+rather than reporting an unnamed real model, and it counts only real attempts as failures — a
+measured-quality verdict is a judgement on work already served. The `/operations/model-health`
+badge now states exactly what it computes, including the probation retry it does not model, and the
+degradation detector stops counting per-call model rows, which are infra telemetry and were
+displacing the business telemetry it exists to measure.
+
+**Frontend:** the headline card on `/native-ai` carries the row its verdict came from, so "floor
+active" is checkable on screen rather than asserted.
+
+**Tests:** `test_w458_disabled_is_not_failed_and_status_follows_success` — a `model=local` call
+leaves immune health, the breaker and the learning loop untouched, is annotated as skipped, and the
+floor serve is recorded; the status says floor and names the successful row; a failed row newer
+than that success does not flip the verdict, nor does a failed quality verdict count as a failed
+attempt, nor does an unattributed success become an unnamed real model, nor does a rebaseline
+rewrite history (all asserted over a synthetic store, because `record_outcome` stamps whole seconds
+and two rows written in the same second tie under any "newest row" rule — that tie let one of the
+break-test blinds survive until the assertions were re-expressed); the floor row is throttled, not
+written per call; the lifecycle probes write no false failures; the floor is never flagged as
+deprioritised however badly it scores while a genuinely dead model is; seeded business telemetry
+survives fifteen model rows in the degradation window; the basis value is rendered by the element
+that carries its test id. **And both ways: a REAL failure of an attempted resource still records
+all three signals, while a spend-policy refusal on the same path is annotated and recorded
+nowhere.** **Broken four ways — the sentinel removed, the status back on the per-model aggregate,
+the degradation filter removed, the floor serve not recorded — each blind failed the guard on its
+own; restored.**
+Suite: 363 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 35 min).
+
+**Browser (fresh backend :8053 serving the rebuilt bundle — `scripts/_w458_probe.mjs`, 8/8):**
+`/native-ai` says "Deterministic floor active" with its basis line reading "no successful completion
+has been recorded yet"; a completion run from the page reports "tried: native"; the local tier is
+honestly absent while the local model is disabled, and a completion routed to it reports "ollama
+(disabled by config, skipped)" with the floor serving; the organism records no `ai_failure`, immune
+health stays 1.0, the breaker counts no failure, and the learning loop holds no row for the model
+that was never attempted; after a reload the card still says floor and names the successful native
+row it read.
+
+**Refuted (own diff): seven refuters over the diff, twenty-seven claims, eighteen verified by an
+adversarial second pass and all fixed; nine refuted.** The catches: every floor serve rewrote the
+whole outcomes store inside the async path (about twenty-six times slower); those rows flooded the
+one telemetry aggregate that never filtered them, so the degradation verdict became noise — a false
+"healthy" in one run and a false "degraded" in the next; the history helper applied scoring
+baselines, counted a failed quality verdict as a failed attempt, and reported a row that named no
+server as an unnamed real model; the badge's new rule text advertised a probation clause the badge
+does not implement and claimed only attempted runs count when quality verdicts count too; a
+comment and the user-facing `mode_note` still described the pre-round rule; and seven weaknesses in
+my own guard and probe — the probe's central check was structurally unsatisfiable (it required a
+local tier button that exists only when the local model is enabled, which is exactly when the
+"disabled by config" string can never appear), its immune check passed vacuously, the lifecycle
+assertion read the wrong health key, the row-count assertions were fragile against the store's
+2000-row cap, the external-refusal assertion was unfalsifiable, a source grep passed with the
+render block commented out, and an environment-variable patch was inert. Dismissed after checking:
+nine, including claims about pre-existing behaviour this round does not touch.
+
+**Docs:** ledger v3 status R4.7 + R4.8 FIXED W458; prompt ledger 1.10 CLOSED and P1.10 ✅ DONE;
+vision §16; living plan §4/§8.

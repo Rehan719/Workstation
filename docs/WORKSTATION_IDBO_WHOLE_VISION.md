@@ -11,7 +11,7 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W457).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W458).
   2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
@@ -545,7 +545,11 @@ than trusted once this date is old; a long-running dev process serves the code i
   cap and the scholar disclaimer reach the screen.
 - **P1.9 delivered (W457, 2026-09-12):** Care scoring computes — NEWS2, MUST and Waterlow from the
   published tables in-house (falls as a labelled NICE CG161 factor count), validated for units and
-  completeness, returned first; the AI interprets a score it did not invent. Five Tier-1 items remain open.
+  completeness, returned first; the AI interprets a score it did not invent.
+- **P1.10 delivered (W458, 2026-09-13):** a resource disabled by configuration is SKIPPED, never scored as
+  an AI failure (no learning-loop row, no immune threat, no breaker failure), and `/native-ai/status`
+  follows the most recent completion that actually served — naming the row it read. Four Tier-1 items
+  remain open.
 - The fabrication audit is closed (63/63); the §4.5 defect *class* is closed at every reached site;
   the refute-your-own-fixes practice has caught live breaks in **ten consecutive rounds**.
 
@@ -562,7 +566,7 @@ than trusted once this date is old; a long-running dev process serves the code i
   ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
   workstream, the six-step verification each must pass, milestones that are measurements, and the
   definition of complete.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W457). A record of intent
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W458). A record of intent
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
@@ -573,12 +577,14 @@ than trusted once this date is old; a long-running dev process serves the code i
   "Sovereign Investment Civilisation") — are archived under `_archive/docs/` (W446).
 
 **Open against this vision, in one paragraph (regenerated 2026-09-05 from ledger v3; P1.1 closed
-2026-09-12, P1.2–P1.9 closed the same day):** five Tier-1 truth defects on reached surfaces (fourteen
+2026-09-12, P1.2–P1.9 closed the same day, P1.10 on 2026-09-13):** four Tier-1 truth defects on reached
+surfaces (fourteen
 found; the gate that could not fail on the floor closed W449; the body that wore floor scaffold and a
 fallback name closed W450; the AI CEO roleplay closed W451; the review gates that gated nothing closed
 W452; the badges that painted the floor green closed W453; the job search that claimed to be live closed
 W454; the compliance row that could not read closed W455; the tafsir tab's floor translation closed W456;
-the risk scoring that computed nothing closed W457; delivery-plan P1 —
+the risk scoring that computed nothing closed W457; the status that claimed a real model while the floor
+served — and scored a config-disabled resource as a failure — closed W458; delivery-plan P1 —
 the scaffold-bodied VSB, the detached AI CEO chat, advisory review gates, green floor badges, the
 Employment "live job board", a compliance row that reads nothing, the floor "Translation" heading on
 the tafsir tab, Care scoring that computes nothing, a status page inverted by a failure row, Change

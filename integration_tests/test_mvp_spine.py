@@ -4304,7 +4304,7 @@ def test_native_ai_model_discovery_and_named_routing(client):
     assert "auto" in tier_ids and "native" in tier_ids    # the always-present tiers
     # routing to a SPECIFIC named model is honored (tried first), with the floor as graceful fallback
     r = client.post("/api/v1/native-ai/complete", json={"prompt": "x", "model": "ollama:llama3.2"}).json()
-    assert (r.get("resources_tried") or [])[0] == "ollama:llama3.2"
+    assert (r.get("resources_tried") or [])[0].startswith("ollama:llama3.2")   # W458: annotated "(disabled by config, skipped)" under the flag
     assert r.get("output")   # always a real in-house result (floor guarantees it)
     # the ollama resource row advertises its discovered local models
     res = client.get("/api/v1/native-ai/resources").json()
@@ -4320,7 +4320,7 @@ def test_native_ai_model_preference(client):
     assert rn.get("resources_tried") == ["native"]
     # model=local requires the local model first, with the floor as graceful fallback (tries ollama, then native)
     rl = client.post("/api/v1/native-ai/complete", json={"prompt": "summarise", "model": "local"}).json()
-    assert (rl.get("resources_tried") or [])[0] == "ollama"
+    assert (rl.get("resources_tried") or [])[0].startswith("ollama")   # W458: "ollama (disabled by config, skipped)" under the flag
     assert rl.get("output")   # always a real in-house result (floor guarantees it)
 
 
@@ -9416,3 +9416,156 @@ def test_w457_care_scoring_computes_both_ways(client, monkeypatch):
     assert "own</span> AI scores and interprets the risk" not in hub
     assert "score_summary" in Path("apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")   # My Work keeps the score
     assert "validated risk scoring" not in Path("apps/workstation-superapp/src/pages/domains/DomainsHub.tsx").read_text(encoding="utf-8")
+
+
+def test_w458_disabled_is_not_failed_and_status_follows_success(client, monkeypatch):
+    """§6 × §8 (ledger 1.10 · R4.7 R4.8) — ONE `model=local` call on a deterministic deployment
+    (AI_DISABLE_LOCAL=1) recorded an ollama FAILURE: immune health dropped 0.1, the breaker counted a
+    failure, the learning loop gained a 0.0-success row, and /native-ai/status took that failed row as
+    "ollama served last" → `mode: real_model`, `floor_active: false` while the floor served every byte
+    (and the floor serve itself was never recorded, so nothing could displace the row).
+
+    Both ways: a config-disabled resource is SKIPPED (annotated like circuit-open; no learning row, no
+    immune threat, no breaker failure; status stays floor and says why) — AND a real failure of an
+    enabled resource still records all three (the fix must not blanket-mute local failures).
+    """
+    import os as _os
+    from agentic_core.api.operational_excellence import model_health, record_outcome, last_successful_server
+    from agentic_core.organism.immune import immune
+    from agentic_core.organism import self_healing as _sh
+    import importlib
+    ORCH = importlib.import_module("agentic_core.ai.native.orchestrator")   # the MODULE (the package re-exports the instance under the same name)
+    assert _os.environ.get("AI_DISABLE_LOCAL") == "1"          # the suite's deterministic runtime
+
+    def _ollama(key="ollama"):
+        return (model_health() or {}).get(key) or {"runs": 0}
+    def _breaker():
+        return ((_sh.self_healer.status().get("circuits") or {}).get("model:ollama") or {})
+    imm0 = immune.status().get("errors_in_window", 0)
+    runs0 = _ollama().get("runs", 0)
+    brk0 = _breaker().get("total_failures", 0)
+    # the floor row is throttled in production (a whole-store rewrite per call blocked the event
+    # loop); this assertion is about WHETHER it records, so the throttle is opened for it
+    monkeypatch.setattr(ORCH, "_FLOOR_RECORD_EVERY_S", 0.0)
+
+    # 1 — disabled ≠ failed
+    r = client.post("/api/v1/native-ai/complete", json={"prompt": "Say hello in five words.", "model": "local"}).json()
+    assert r["served_by"] == "native"
+    assert r["resources_tried"][0] == "ollama (disabled by config, skipped)" and r["resources_tried"][-1] == "native", r["resources_tried"]
+    assert immune.status().get("errors_in_window", 0) == imm0              # no immune threat
+    assert _ollama().get("runs", 0) <= runs0        # no learning-loop row (the 2000-row cap can only EVICT)
+    assert _breaker().get("total_failures", 0) == brk0                      # no breaker failure
+    # the floor serve IS recorded — asserted on the store's own tail, so the row cap cannot make it flaky
+    from agentic_core.api.operational_excellence import _load as _rows
+    assert [r["served_by"] for r in _rows()][-1] == "native" and _rows()[-1]["success"] is True
+    # 2 — status tells the truth, and says which row it read
+    st = client.get("/api/v1/native-ai/status").json()
+    assert st["mode"] == "deterministic_floor" and st["mode_measured"] == "deterministic_floor" and st["floor_active"] is True
+    assert st["measured_recent_server"] == "native" and "SUCCESSFUL" in st["floor_active_basis"]
+    # the throttle: a burst of floor serves writes ONE row, not one per call (the write is a
+    # whole-store rewrite; per-call it blocked the event loop and made the floor ~26x slower)
+    monkeypatch.setattr(ORCH, "_FLOOR_RECORD_EVERY_S", 60.0)
+    monkeypatch.setattr(ORCH, "_last_floor_record_at", None)
+    n_before = len(_rows())
+    for _ in range(4):
+        client.post("/api/v1/native-ai/complete", json={"prompt": "burst", "model": "native"})
+    assert len(_rows()) == n_before + 1, "the floor row must be throttled, not written per call"
+    monkeypatch.setattr(ORCH, "_FLOOR_RECORD_EVERY_S", 0.0)
+    # A FAILED ollama row NEWER than the floor's success must not flip the verdict. Asserted over a
+    # synthetic store: record_outcome stamps whole seconds, so two rows written in the same second
+    # tie under any "newest row" rule and the assertion would stop discriminating.
+    import agentic_core.api.operational_excellence as OE
+    _real_load, _real_baselines = OE._load, OE._load_baselines
+    _synth = [{"kind": "model_attempt", "resource": "model:ollama", "served_by": "ollama", "success": True,
+               "duration_ms": 900, "created_at": "2026-09-13T00:00:01Z"},
+              {"kind": "model_attempt", "resource": "model:native", "served_by": "native", "success": True,
+               "duration_ms": 2, "created_at": "2026-09-13T00:00:05Z"},
+              {"kind": "model_attempt", "resource": "model:ollama", "served_by": "ollama", "success": False,
+               "duration_ms": 12, "created_at": "2026-09-13T00:00:09Z"}]
+    monkeypatch.setattr(OE, "_load", lambda: list(_synth))
+    assert last_successful_server() == {"served_by": "native", "at": "2026-09-13T00:00:05Z", "attempts_since": 1}
+    st2 = client.get("/api/v1/native-ai/status").json()
+    assert st2["mode"] == "deterministic_floor" and st2["floor_active"] is True and st2["measured_recent_server"] == "native"
+    assert st2["floor_active_basis"].count("1 failed attempt(s) recorded since") == 1
+    # a measured-QUALITY verdict is a judgement on work already served, not an attempt that failed
+    _synth.append({"kind": "model_quality", "resource": "model:ollama", "served_by": "ollama", "success": False,
+                   "duration_ms": 0, "created_at": "2026-09-13T00:00:10Z"})
+    assert last_successful_server()["attempts_since"] == 1
+    # a success row that names no server attributes the serve to nobody — skipped, never reported as
+    # an unnamed REAL MODEL (which is what "measured_recent_server": "" would have claimed)
+    _synth.append({"kind": "model_attempt", "resource": "model:", "served_by": "", "success": True,
+                   "duration_ms": 1, "created_at": "2026-09-13T00:00:11Z"})
+    assert last_successful_server()["served_by"] == "native"
+    assert client.get("/api/v1/native-ai/status").json()["floor_active"] is True
+    # a health baseline stops old rows SCORING a model; it must not rewrite HISTORY — with "native"
+    # rebaselined, the floor still served last and the status still says floor
+    monkeypatch.setattr(OE, "_load_baselines", lambda: {"native": {"since": "2026-09-13T00:00:07Z"}})
+    assert last_successful_server()["served_by"] == "native"
+    assert client.get("/api/v1/native-ai/status").json()["floor_active"] is True
+    monkeypatch.setattr(OE, "_load_baselines", _real_baselines)
+    monkeypatch.setattr(OE, "_load", _real_load)
+    # the lifecycle probes under the flag write NO false failures either — the probes route to the
+    # NAMED model, so the row they would have poisoned is keyed "ollama:<name>", not "ollama"
+    runs_b, named_b = _ollama().get("runs", 0), _ollama("ollama:llama3.2").get("runs", 0)
+    ev = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": "llama3.2"})
+    assert ev.status_code == 200 and ev.json().get("can_serve") is False
+    assert _ollama().get("runs", 0) <= runs_b and _ollama("ollama:llama3.2").get("runs", 0) <= named_b
+    assert ev.json()["score"] is None and all(p["on_target"] is False for p in ev.json()["probes"])
+    # the deprioritise badge: the floor is NEVER flagged however badly it scores, a genuinely dead
+    # model IS — asserted against a synthetic health table so the shared outcomes store keeps its
+    # real history (the old badge rule, runs >= 5 and rate < 0.6, would have flagged both)
+    _real_mh = OE.model_health
+    _row = lambda runs, rate: {"runs": runs, "window_runs": runs, "success_rate": rate, "avg_ms": 9,
+                               "success_runs": int(runs * rate), "success_avg_ms": 9, "success_p90_ms": 9,
+                               "last_at": "2026-09-13T00:00:00Z"}
+    monkeypatch.setattr(OE, "model_health", lambda *a, **k: {"native": _row(12, 0.0), "ollama": _row(9, 0.11),
+                                                             "anthropic": _row(9, 0.55)})
+    mh = client.get("/api/v1/operations/model-health").json()
+    assert {m["name"]: m["deprioritised"] for m in mh["models"]} == {"native": False, "ollama": True, "anthropic": False}
+    assert "never attempted" in mh["rule"] and "probation" in mh["rule"]
+    monkeypatch.setattr(OE, "model_health", _real_mh)
+    # the per-call learning rows must not displace the business telemetry the degradation detector
+    # reads: it is the one aggregate that never filtered them, and a floor row per AI call turned its
+    # verdict into noise (a false "healthy" in one run, a false "degraded" in the next)
+    for i in range(15):
+        record_outcome("deliverable", "deliverable:w458", duration_ms=(10 if i < 5 else 400), success=i < 5)
+    assert client.get("/api/v1/operations/degradation").json()["degraded"] is True
+    for _ in range(15):
+        record_outcome("model_attempt", "model:native", served_by="native", success=True, duration_ms=0)
+    deg = client.get("/api/v1/operations/degradation").json()
+    assert deg["samples"] == 15 and deg["degraded"] is True, deg   # the seeded business signal survives
+    # the annotation reaches the screen: the testid and the value must be on the SAME rendered line
+    src = open("apps/workstation-superapp/src/pages/developers/NativeAI.tsx", encoding="utf-8").read()
+    assert any('data-testid="native-status-basis"' in ln and "{status.floor_active_basis}" in ln
+               for ln in src.splitlines()), "the basis value must be rendered by the element that carries the testid"
+
+    # 3 — a REAL failure of an ATTEMPTED resource still records all three (the fix must not blanket-mute).
+    # The route is exercised end to end; _run_model is substituted because a real Ollama may or may not
+    # be listening on this machine, and the branch under test is "the attempt raised", not the transport.
+    ollama_rows = lambda: sum(1 for r in _rows() if r.get("served_by") == "ollama" and not r.get("success"))
+    fails_b = ollama_rows()
+    async def _boom(self, name, prompt):
+        raise RuntimeError("connection refused")
+    monkeypatch.setattr(ORCH.NativeOrchestrator, "_run_model", _boom)
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    r3 = client.post("/api/v1/native-ai/complete", json={"prompt": "x", "model": "local"}).json()
+    assert r3["served_by"] == "native" and r3["resources_tried"][0] == "ollama"    # attempted: NOT annotated
+    assert immune.status().get("errors_in_window", 0) == imm0 + 1
+    assert ollama_rows() == fails_b + 1                                            # the failure IS recorded
+    assert _breaker().get("total_failures", 0) == brk0 + 1
+    # 4 — a spend-policy refusal is a skip on the same path: annotated, recorded nowhere
+    async def _budget(self, name, prompt):
+        raise ORCH.ResourceSkipped(name, "hourly external budget reached (1/hour)")
+    monkeypatch.setattr(ORCH.NativeOrchestrator, "_run_model", _budget)
+    imm_b, brk_b = immune.status().get("errors_in_window", 0), _breaker().get("total_failures", 0)
+    ol_all_b = sum(1 for r in _rows() if r.get("served_by") == "ollama")
+    r4 = client.post("/api/v1/native-ai/complete", json={"prompt": "x", "model": "local"}).json()
+    assert r4["resources_tried"][0] == "ollama (hourly external budget reached (1/hour), skipped)"
+    assert immune.status().get("errors_in_window", 0) == imm_b and _breaker().get("total_failures", 0) == brk_b
+    assert sum(1 for r in _rows() if r.get("served_by") == "ollama") == ol_all_b   # no row for the refusal
+    # and the guard itself raises that type, so the cascade can tell a refusal from a failure
+    orch = ORCH.NativeOrchestrator()
+    monkeypatch.setattr(ORCH.NativeOrchestrator, "_external_calls", [__import__("time").time()] * 5)
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "1")
+    with __import__("pytest").raises(ORCH.ResourceSkipped):
+        orch._external_budget_check("anthropic")

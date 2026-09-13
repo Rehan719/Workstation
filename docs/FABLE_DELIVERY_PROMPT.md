@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W457) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W458) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W457 (457 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W458 (458 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,7 +192,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W457: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W458: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -202,8 +202,9 @@ compliance that reads: the constitutional row says what it can check, the audit 
 subject, nothing matched is review not pass, a FAIL rides on page one of every export (W455); P1.8 —
 the tafsir tab completes §11: no floor 'translation' over sacred text, the sourced Arabic and the
 scholar line on screen (W456); P1.9 — Care scoring computes the published tables in-house and the AI
-interprets a score it did not invent (W457). The first nine Tier-1 items of the whole-vision plan are
-closed by execution, not by declaration.
+interprets a score it did not invent (W457); P1.10 — a resource disabled by configuration is skipped,
+not scored as a failure, and the status follows the last completion that actually served (W458). The
+first ten Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -366,7 +367,17 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      CARE'S "VALIDATED RISK SCORING" COMPUTED NOTHING — NEWS2/MUST/Waterlow are published tables
      and no arithmetic exists; the assessor's observations (NEWS2 = 6, urgent band) returned no
      score under a green pass. [R5.3]
- 1.10 /native-ai/status REPORTS mode='real_model' WHILE THE FLOOR SERVES EVERYTHING — the most
+ 1.10 [CLOSED W458 — a resource that was never ATTEMPTED is a skip, not a failure: _run_model raises
+      ResourceSkipped under AI_DISABLE_LOCAL (and for an unknown resource, and on a spend-policy
+      refusal), complete() annotates resources_tried 'ollama (disabled by config, skipped)' and records
+      NOTHING — no learning-loop row, no immune threat, no breaker failure; the native floor serve IS
+      recorded; /native-ai/status follows operational_excellence.last_successful_server() (the most
+      recent SUCCESSFUL row) and names the row it read, with the failed attempts since; the
+      deprioritise badge follows the router's own rule. Guard:
+      test_w458_disabled_is_not_failed_and_status_follows_success (both ways — a disabled resource
+      changes nothing AND a real failure still records all three); probe scripts/_w458_probe.mjs.
+      The text below is the record of what was wrong.]
+      /native-ai/status REPORTED mode='real_model' WHILE THE FLOOR SERVED EVERYTHING — the most
      recent model_health row is taken without checking success, and a config-DISABLED local
      model is recorded as a FAILURE (immune health dropped to 0.8 from one API call; the learning
      loop would deprioritise a healthy model on a flag). [R4.7, R4.8]
@@ -650,10 +661,15 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       (missing observations) gets NO band unless it is already at the top; Waterlow's special-risk
       groups are never default-filled and are additive; the Waterlow card implemented is the
       appetite-row card, not the 2005 MST revision — said so on the block.
- P1.10 [1.10 · R4.7 R4.8] Status honesty + disabled ≠ failed. floor_active from the most recent SUCCESSFUL
+ P1.10 ✅ DONE W458 [1.10 · R4.7 R4.8] Status honesty + disabled ≠ failed. floor_active from the most recent SUCCESSFUL
       completion; _run_model under AI_DISABLE_LOCAL raises a sentinel → tried "ollama (disabled
       by config, skipped)", no _record_model/_organism_report. ACCEPT: a model='local' call
       leaves immune health and model-health untouched and status says floor.
+      DELIVERED W458: both ACCEPT clauses in the guard, broken twice (the sentinel removed; the status
+      back on the per-model aggregate) — each blind failed the guard on its own; restored. Beyond the
+      clause: the floor serve is now RECORDED (without it nothing could ever displace a stale row), an
+      unknown resource and a spend-policy refusal are skips too, and the model-health 'deprioritised'
+      badge stopped describing a stricter rule than the one that routes.
  P1.11 [1.11 + the CCA latents · R3.2 R6.2] Change Control enforced. Auth on the CCA (and P2.6's routers);
       submitted_by stamped server-side; override admin-only and never for CRITICAL without an
       explicit admin decision recorded as that principal (not 'cca_ai'); the docstring tiers
@@ -903,7 +919,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 377 tests; 51 session guards W419–W457, each broken and
+- integration_tests/test_mvp_spine.py — 378 tests; 52 session guards W419–W458, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -924,7 +940,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w457_probe.mjs (seventeen — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w458_probe.mjs (eighteen — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).
