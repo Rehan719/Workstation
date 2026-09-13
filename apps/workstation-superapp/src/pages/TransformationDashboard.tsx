@@ -16,7 +16,8 @@ interface Picture {
   transformation_plan: { immediate_gaps: { pillar: string; realisation: number; missing: string[] }[]; short_term: string[]; long_term: string[] };
 }
 
-interface CascadeStage { step: number; tier: string; delegates_to: string; action: string; verified: boolean; signal: string }
+// W461 — verified is three-state: true (checked, passed) · false (checked, failed) · null (not assessable)
+interface CascadeStage { step: number; tier: string; delegates_to: string; action: string; verified: boolean | null; basis?: string | null; signal: string }
 interface OrchRunSummary { transformation_id: string; scope: string; objective: string; validated: boolean; created_at: string }
 interface OrchestrationRun {
   transformation_id: string;
@@ -24,7 +25,7 @@ interface OrchestrationRun {
   cascade: CascadeStage[];
   digital_twin: { model_id: string; simulation: { verdict: string; projected_realisation: number } };
   governance: { status: string; checkpoint?: string };
-  validation: { stages: number; verified_stages: number; end_to_end_chief_to_bto: boolean; biomimetic_signals_fired: number; validated: boolean; report: string };
+  validation: { stages: number; assessable_stages?: number; not_assessable_stages?: number; verified_stages: number; end_to_end_chief_to_bto: boolean; biomimetic_signals_fired: number; validated: boolean; report: string };
 }
 
 function tone(status: string) {
@@ -133,14 +134,16 @@ export const TransformationDashboard: React.FC = () => {
                   <Workflow size={16} /> Transformation Cascade · Chief → Build-to-Order
                 </h3>
                 <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${orch.validation.validated ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                  {orch.validation.validated ? 'VALIDATED' : 'PARTIAL'}
+                  {orch.validation.validated ? 'VALIDATED' : 'NOT VALIDATED'}
                 </span>
               </div>
               <div className="space-y-2 mb-4">
                 {orch.cascade.map(s => (
-                  <div key={s.step} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-950 border border-slate-900">
+                  <div key={s.step} title={s.basis ?? ''} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-950 border border-slate-900">
                     <span className="text-[10px] font-black text-slate-600 w-4">{s.step}</span>
-                    {s.verified ? <CheckCircle2 size={13} className="text-emerald-400 shrink-0" /> : <Circle size={13} className="text-slate-600 shrink-0" />}
+                    {s.verified === true ? <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                      : s.verified === null ? <span className="text-slate-500 font-black text-xs w-[13px] text-center shrink-0" aria-label="not assessable">—</span>
+                      : <Circle size={13} className="text-amber-400 shrink-0" />}
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-black text-white truncate">{s.tier} <span className="text-slate-600 font-bold">→ {s.delegates_to}</span></p>
                       <p className="text-[10px] text-slate-500 truncate">{s.action}</p>
@@ -150,7 +153,7 @@ export const TransformationDashboard: React.FC = () => {
                 ))}
               </div>
               <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
-                <Stat label="Stages verified" value={`${orch.validation.verified_stages}/${orch.validation.stages}`} />
+                <Stat label="Stages verified" value={`${orch.validation.verified_stages}/${orch.validation.assessable_stages ?? orch.validation.stages} assessable`} />
                 <Stat label="Bio signals" value={String(orch.validation.biomimetic_signals_fired)} />
                 <Stat label="Governance" value={orch.governance.status} icon={ShieldCheck} />
                 <Stat label="Twin sim" value={orch.digital_twin.simulation.verdict} />
@@ -173,7 +176,7 @@ export const TransformationDashboard: React.FC = () => {
                       <p className="text-[9px] text-slate-600">{r.scope} · {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</p>
                     </div>
                     <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${r.validated ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                      {r.validated ? 'VALIDATED' : 'PARTIAL'}
+                      {r.validated ? 'VALIDATED' : 'NOT VALIDATED'}
                     </span>
                   </div>
                 ))}

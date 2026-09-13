@@ -17,10 +17,14 @@ VSB delivery organisation, end to end, as one verified living workflow:
 
 Every stage federates a REAL existing module (no duplication), fires a biomimetic
 nervous signal (responsive), and is constitutionally governed (gaas.v5 → UEG).
-The cascade is DETERMINISTIC-first (fast, always works, fully verifiable without an
-AI key); each stage reports `verified`, and the run returns a `validation` summary
-attesting the end-to-end path From Chief To Build-to-Order. `deep=true` additionally
-references the AI-mediated deep engines for richer (key-dependent) output.
+The cascade is DETERMINISTIC-first (fast, always works without an AI key). Each stage reports
+`verified` in THREE states with a `basis` sentence (W461): true — a real check ran and passed;
+false — a real check ran and failed; null — NOT ASSESSABLE, nothing real was checked (the static
+C-Suite and BTO delegation maps; a task list derived from the request alone; a swarm stage the
+deterministic floor served). The run is `validated` only when every ASSESSABLE stage verified and the
+constitutional gate returned 'allowed' — a halted, partial, blocked or ungoverned run never
+validates, and only a validated plan-driven run writes onto the Owner's living plan. `deep=true`
+additionally runs the Chief's cognition on the owned native swarm.
 
     POST /api/v1/transformation/orchestrate
     GET  /api/v1/transformation/orchestrate/runs
@@ -76,13 +80,18 @@ async def orchestrate(req: OrchestrateRequest):
     signals = 0
     cascade: List[Dict[str, Any]] = []
 
-    def stage(step, tier, delegates_to, action, output, verified, signal_type="motor"):
+    def stage(step, tier, delegates_to, action, output, verified, signal_type="motor", basis=None):
+        """W461 — `verified` is THREE-state: True (a real check ran and passed), False (a real check ran
+        and failed), None (NOT ASSESSABLE — nothing real was checked). It used to be coerced with
+        bool(), so a stage that checks nothing could only be reported as verified. `basis` says, in
+        words, what the verdict rests on."""
         nonlocal signals
         if _fire(signal_type, f"transform.{tier}", action[:80], 0.6):
             signals += 1
         cascade.append({"step": step, "tier": tier, "delegates_to": delegates_to,
-                        "action": action, "output": output, "verified": bool(verified),
-                        "signal": signal_type})
+                        "action": action, "output": output,
+                        "verified": None if verified is None else bool(verified),
+                        "basis": basis, "signal": signal_type})
 
     # ── live state (drives DYNAMIC behaviour) ──
     realisation: Dict[str, Any] = {}
@@ -117,7 +126,9 @@ async def orchestrate(req: OrchestrateRequest):
            "mission": plan.get("mission", ""), "vision": plan.get("vision", ""),
            "aims": plan.get("aims", []), "objective": objective,
            "realisation": realisation.get("overall_realisation")},
-          verified=bool(chief), signal_type="cognitive")
+          verified=bool(board.get("chief")), signal_type="cognitive",
+          basis=("the Chief was resolved from the Owner's Board" if board.get("chief") else
+                 "no Chief could be resolved — the Board lookup returned none (the title shown is a placeholder)"))
 
     # ── 2 · Strategy → Board of specialist Directors ──
     directors = board.get("directors", [])
@@ -128,7 +139,9 @@ async def orchestrate(req: OrchestrateRequest):
           f"Deliver strategy via {len(directors)} specialist directors",
           {"directors": director_themes,
            "governance": board.get("governance", "arms-length: Board directs the AI CEO")},
-          verified=len(directors) > 0)
+          verified=len(directors) > 0,
+          basis=(f"{len(directors)} specialist director(s) on the Board" if directors else
+                 "the Board has no specialist directors"))
 
     # ── 3 · Action planning — timelined, resourced tasks (ADAPTIVE: gap→tier) ──
     try:
@@ -149,7 +162,10 @@ async def orchestrate(req: OrchestrateRequest):
         })
     stage(3, "Action Planning Office", "AI CEO",
           "Resourced action plan with timelines, routed gap→owning-tier (adaptive)",
-          {"tasks": action_items}, verified=len(action_items) > 0)
+          {"tasks": action_items},
+          verified=(True if objectives else None),
+          basis=(f"{len(action_items)} task(s) resourced from the living plan's objectives" if objectives else
+                 "not assessable — one task derived from the request; there are no plan objectives to resource"))
 
     # ── 4 · AI CEO → integrate the living management systems (BMS·QMS·DCS·EMS) ──
     living_systems = {"QMS": "ISO 9001 quality", "BMS": "business management",
@@ -170,7 +186,10 @@ async def orchestrate(req: OrchestrateRequest):
           {"living_systems": living_systems,
            "organism_health": organism.get("immune", {}).get("health"),
            "arousal": organism.get("nervous", {}).get("arousal_state")},
-          verified=bool(organism))
+          verified=(organism.get("immune", {}) or {}).get("health") is not None,
+          basis=("organism telemetry read (immune health, nervous arousal); the BMS·QMS·DCS·EMS list is a static label"
+                 if (organism.get("immune", {}) or {}).get("health") is not None else
+                 "no organism telemetry could be read"))
 
     # ── 5 · specialist C-Suite → their Centres of Excellence ──
     csuite_to_coe = {
@@ -180,7 +199,8 @@ async def orchestrate(req: OrchestrateRequest):
     }
     stage(5, "C-Suite", "Centres of Excellence",
           "Delegate to specialist C-Suite, each driving their CoE",
-          {"delegation": csuite_to_coe}, verified=True)
+          {"delegation": csuite_to_coe},
+          verified=None, basis="not assessable — static delegation map — nothing is checked")
 
     # ── 6 · BTO + Build-to-Order + Products + Digital Resources + Biomimetics ──
     # Operational delivery resources = the digital resources the Build-to-Order engine assembles.
@@ -203,7 +223,9 @@ async def orchestrate(req: OrchestrateRequest):
            "biomimetic_systems": biomimetic,
            "products_services_catalogue": [p["name"] for p in products_services_catalogue],
            "build_to_order": "/api/v1/bto/configure", "products": "/api/v1/catalog/products"},
-          verified=True)
+          verified=None,
+          basis=("not assessable — static delegation map — nothing is checked (the resource and catalogue "
+                 "lists are read, but no delivery through Build-to-Order is verified)"))
 
     # ── 7 · Change Control (arms-length governance of the transformation) ──
     cca = {}
@@ -225,7 +247,9 @@ async def orchestrate(req: OrchestrateRequest):
           # returns cca_id / impact_tier / status), so stage 7 reported nulls while claiming verified
           {"change_id": cca.get("cca_id"), "tier": cca.get("impact_tier"),
            "status": cca.get("status")},
-          verified=bool(cca.get("cca_id")))
+          verified=bool(cca.get("cca_id")),
+          basis=(f"change request {cca.get('cca_id')} filed ({cca.get('status')})" if cca.get("cca_id") else
+                 f"no change request was filed ({cca.get('error') or 'no id returned'})"))
 
     # ── 8 · Chief + VSB digital-twin model generation & simulation ──
     twin = _generate_vsb_twin(req, chief, director_themes, action_items, organism, realisation)
@@ -233,7 +257,9 @@ async def orchestrate(req: OrchestrateRequest):
           "Generate the VSB digital-twin model and run a transformation simulation",
           {"model_id": twin["model_id"], "components": twin["components"],
            "simulation": twin["simulation"]},
-          verified=bool(twin.get("model_id")), signal_type="cognitive")
+          verified=bool(twin.get("persisted")), signal_type="cognitive",
+          basis=(f"twin model {twin['model_id']} persisted to the digital-twin store" if twin.get("persisted") else
+                 f"the twin model was generated but NOT persisted ({twin.get('persist_error') or 'unknown error'})"))
 
     # ── 9 · (deep) the Chief's cognition runs on Workstation's OWN native AI swarm ──
     native_cognition = None
@@ -262,11 +288,18 @@ async def orchestrate(req: OrchestrateRequest):
                           for t in swarm_res["trace"]],
                 "synthesis": swarm_res["final"][:800],
             }
+            _served = native_cognition["served_by"]
+            if not swarm_res["trace"]:
+                _v9, _b9 = False, "the swarm returned no stages"
+            elif all(s == "native" for s in _served):
+                _v9, _b9 = None, "not assessable — floor-served: the deterministic floor cannot fail this check"
+            else:
+                _v9, _b9 = True, f"served by an owned model ({', '.join(sorted(set(_served)))})"
             stage(9, "Native AI Swarm (owned)", "AI CEO",
                   "Run the Chief's cognition on Workstation's OWN native swarm (in-house-first)",
-                  {"served_by": native_cognition["served_by"], "any_external": native_cognition["any_external"],
+                  {"served_by": _served, "any_external": native_cognition["any_external"],
                    "synthesis": native_cognition["synthesis"][:200]},
-                  verified=bool(swarm_res["trace"]), signal_type="cognitive")
+                  verified=_v9, signal_type="cognitive", basis=_b9)
         except Exception as e:
             native_cognition = {"error": str(e)[:120]}
 
@@ -280,21 +313,32 @@ async def orchestrate(req: OrchestrateRequest):
         governance = {"status": "ungoverned", "error": str(e)[:120]}
 
     # ── 9 · validation summary ──
-    verified_stages = sum(1 for s in cascade if s["verified"])
+    # W461 — a stage that checks nothing is NOT ASSESSABLE and never counts as verified; the run is
+    # validated only when every assessable stage verified AND the gate ALLOWED it. The old rule counted
+    # constant True stages and accepted any governance status except None/ungoverned/blocked — so a
+    # 'halted' or 'partial' run validated, and a validated run writes onto the Owner's living plan.
+    assessable_stages = sum(1 for s in cascade if s["verified"] is not None)
+    verified_stages = sum(1 for s in cascade if s["verified"] is True)
+    not_assessable = len(cascade) - assessable_stages
     end_to_end = (cascade[0]["tier"].startswith("Chief") and
                   any("Build-to-Order" in (s.get("delegates_to") or "") or
                       s["tier"].startswith("Business Transformation") for s in cascade))
-    validated = verified_stages == len(cascade) and governance.get("status") not in (None, "ungoverned", "blocked")
+    validated = (assessable_stages > 0 and verified_stages == assessable_stages
+                 and governance.get("status") == "allowed")
     validation = {
-        "stages": len(cascade), "verified_stages": verified_stages,
+        "stages": len(cascade), "assessable_stages": assessable_stages,
+        "verified_stages": verified_stages, "not_assessable_stages": not_assessable,
         "end_to_end_chief_to_bto": bool(end_to_end),
         "biomimetic_signals_fired": signals,
         "governed": governance.get("status") not in (None, "ungoverned"),
         "validated": bool(validated),
+        "validated_rule": ("every ASSESSABLE stage verified and governance 'allowed' — a not-assessable stage never "
+                           "counts as verified, and a halted, partial, blocked or ungoverned run never validates"),
         "ai_in_house": bool(native_cognition and "error" not in native_cognition
                             and not native_cognition.get("any_external", False)),
         "report": ("End-to-end transformation cascade ran From Chief To Build-to-Order, "
-                   f"{verified_stages}/{len(cascade)} stages verified, "
+                   f"{verified_stages}/{assessable_stages} assessable stages verified "
+                   f"({not_assessable} not assessable), "
                    f"{signals} biomimetic signals fired, governance: {governance.get('status')}."),
     }
 
@@ -337,7 +381,7 @@ async def orchestrate(req: OrchestrateRequest):
                         "progress_pct": tgt.get("progress_pct", 0),
                         "status": "in_progress" if tgt.get("status") == "planned" else tgt.get("status"),
                         "note": (f"Transformation delivery {run['transformation_id']} — "
-                                 f"{verified_stages}/{len(cascade)} stages verified, "
+                                 f"{verified_stages}/{assessable_stages} assessable stages verified, "
                                  f"governance {governance.get('status')}"),
                         "transformation": {"transformation_id": run["transformation_id"],
                                            "validated": True,
@@ -407,12 +451,16 @@ def _generate_vsb_twin(req, chief, directors, action_items, organism, realisatio
         "verdict": "stable-and-improving" if projected >= real else "needs-intervention",
     }
     model["simulations"].append(simulation)
+    # W461 — a persistence failure used to be swallowed while stage 8 reported the twin verified
+    persisted, persist_error = False, None
     try:
         from agentic_core.api.digital_twin import _save_twin
         _save_twin(model)
-    except Exception:
-        pass
-    return {"model_id": model_id, "components": components, "model_spec": model_spec, "simulation": simulation}
+        persisted = True
+    except Exception as e:
+        persist_error = str(e)[:160]
+    return {"model_id": model_id, "components": components, "model_spec": model_spec, "simulation": simulation,
+            "persisted": persisted, "persist_error": persist_error}
 
 
 @router.get("/orchestrate/runs")

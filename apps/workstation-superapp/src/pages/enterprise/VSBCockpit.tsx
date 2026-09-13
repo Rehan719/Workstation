@@ -799,17 +799,20 @@ export const VSBCockpit: React.FC = () => {
               {tx && (
                 <>
                   <Card className="p-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Cascade ({(tx.cascade || []).length} stages · {tx.validation?.validated ? 'validated' : 'partial'})</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Cascade ({(tx.cascade || []).length} stages · {tx.validation?.verified_stages ?? 0}/{tx.validation?.assessable_stages ?? '—'} assessable verified · {tx.validation?.validated ? 'validated' : 'not validated'})</h4>
                     <div className="space-y-2">
                       {(tx.cascade || []).map((s: Dict, i: number) => (
-                        <div key={i} className="flex items-start gap-3 text-[11px]">
+                        <div key={i} title={s.basis ?? ''} className="flex items-start gap-3 text-[11px]">
                           <span className="text-highlight font-black shrink-0">{s.step}.</span>
                           <div>
                             <span className="text-white font-black uppercase tracking-wide">{s.tier}</span>
                             {s.delegates_to && <span className="text-slate-600"> → {s.delegates_to}</span>}
                             <p className="text-slate-500">{s.action}</p>
                           </div>
-                          {s.verified && <ShieldCheck size={12} className="text-emerald-400 ml-auto shrink-0 mt-0.5" />}
+                          {/* W461 — three states: verified · not assessable (nothing is checked) · checked and failed */}
+                          {s.verified === true ? <ShieldCheck size={12} className="text-emerald-400 ml-auto shrink-0 mt-0.5" />
+                            : s.verified === null ? <span className="text-slate-500 ml-auto shrink-0 font-black" aria-label="not assessable">—</span>
+                            : <span className="text-amber-400 ml-auto shrink-0 font-black" aria-label="checked and not verified">○</span>}
                         </div>
                       ))}
                     </div>

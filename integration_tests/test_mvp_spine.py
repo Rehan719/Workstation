@@ -593,12 +593,16 @@ def test_delivery_moves_the_living_plan(client):
     client.post("/api/v1/board/chief/instruct", json={
         "instruction": "Scale the delivery kitchen", "scope": scope2})
     t = client.post("/api/v1/transformation/orchestrate", json={"scope": scope2}).json()
-    if (t.get("validation") or {}).get("validated"):
-        assert t.get("plan_objective_advanced")
-        p2 = client.get("/api/v1/business-plan", params={"scope": scope2}).json()
-        obj2 = ((p2.get("plan") or p2)["objectives"])[0]
-        assert obj2["status"] == "in_progress"
-        assert any("transformation" in r for r in obj2.get("reviews", []))
+    # W461 — this used to be `if validated:`; under the stricter rule (every ASSESSABLE stage verified AND
+    # governance 'allowed') a regression would have skipped the whole write-back check. This set-up
+    # genuinely validates — the plan has objectives and the gate allows — so it is asserted, not assumed.
+    assert t["governance"]["status"] == "allowed", t["governance"]
+    assert t["validation"]["validated"] is True, t["validation"]
+    assert t.get("plan_objective_advanced")
+    p2 = client.get("/api/v1/business-plan", params={"scope": scope2}).json()
+    obj2 = ((p2.get("plan") or p2)["objectives"])[0]
+    assert obj2["status"] == "in_progress"
+    assert any("transformation" in r for r in obj2.get("reviews", []))
 
 
 def test_chief_instruction_becomes_living_plan_objectives(client):
@@ -2970,8 +2974,18 @@ def test_transformation_orchestrate_end_to_end(client):
     assert cat and all(p.get("name") for p in cat)                       # real catalogue items
     assert not any(str(p.get("name", "")).startswith(("_", ".")) for p in cat)  # no __pycache__/dotdirs leaked
     v = b["validation"]
-    assert v["verified_stages"] == v["stages"]                            # every stage verified
+    # W461 — "every stage verified" was true only because stages 5 and 6 were constant True; they check
+    # nothing and are now NOT ASSESSABLE. Only assessable stages can count as verified.
+    stages = {s["step"]: s for s in b["cascade"]}
+    assert stages[5]["verified"] is None and "static delegation map" in stages[5]["basis"]
+    assert stages[6]["verified"] is None and "static delegation map" in stages[6]["basis"]
+    assert all(s.get("basis") for s in b["cascade"])                     # every verdict says what it rests on
+    assert v["assessable_stages"] == sum(1 for s in b["cascade"] if s["verified"] is not None)
+    assert v["verified_stages"] == sum(1 for s in b["cascade"] if s["verified"] is True)
+    assert v["verified_stages"] == v["assessable_stages"] > 0              # every assessable stage verified
     assert v["end_to_end_chief_to_bto"] is True
+    assert v["validated"] is (v["verified_stages"] == v["assessable_stages"] > 0
+                              and b["governance"]["status"] == "allowed")
     assert v["validated"] is True
     assert v["biomimetic_signals_fired"] >= 1                             # responsive
     assert b["digital_twin"]["model_id"]                                  # twin generated
@@ -3003,6 +3017,114 @@ def test_transformation_orchestrate_deep_native_swarm(client):
     assert all(s in ("native", "ollama") for s in nc["served_by"])       # owned resources only
     assert b["validation"]["ai_in_house"] is True
     assert b["validation"]["stages"] == 9                                # the owned-swarm stage was added
+
+
+def test_w461_transformation_validation_is_honest(client, monkeypatch):
+    """§5 (the transformation cascade that writes onto the Owner's living plan). A run was "validated" when
+    every stage's verified flag was truthy and governance was anything but None/ungoverned/blocked — but
+    stages 5 and 6 were constant True, stage 3's task list always had at least one item, stage 1's Chief
+    was a synthesised placeholder when the Board lookup failed, stage 8 swallowed a failed twin save, a
+    floor-served swarm stage could not fail, and a 'halted' or 'partial' gate still validated. A validated
+    run moves the driving objective planned → in_progress on the Owner's living plan.
+
+    Both ways: a run whose gate is halted or partial, whose twin did not persist, or whose Board could not
+    be read does NOT validate and does NOT touch the plan — AND a genuine plan-driven run still validates
+    and still writes back. Not-assessable stages are reported as such and never counted as verified.
+    """
+    import uuid as _uuid
+    from pathlib import Path
+    from agentic_core.api import transformation_orchestration as TX
+    from agentic_core.gaas.v5.uci_v16_omega import InterceptionResult
+
+    def _plan_scope():
+        scope = f"vsb:w461-{_uuid.uuid4().hex[:8]}"
+        client.post("/api/v1/board/chief/instruct", json={"instruction": "Open a second delivery kitchen", "scope": scope})
+        p = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+        obj = ((p.get("plan") or p)["objectives"])[0]
+        assert obj["status"] == "planned"
+        return scope, obj["id"]
+
+    def _objective(scope, oid):
+        p = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+        return next(o for o in (p.get("plan") or p)["objectives"] if o["id"] == oid)
+
+    def _untouched(run, scope, oid):
+        assert run["validation"]["validated"] is False, run["validation"]
+        assert not run.get("plan_objective_advanced")
+        o = _objective(scope, oid)
+        assert o["status"] == "planned" and not any("transformation" in r for r in o.get("reviews", []))
+
+    # POSITIVE — a genuine plan-driven run validates and writes back (the write-back is not blanket-muted)
+    scope, oid = _plan_scope()
+    ok = client.post("/api/v1/transformation/orchestrate", json={"scope": scope}).json()
+    v = ok["validation"]
+    assert ok["governance"]["status"] == "allowed" and v["validated"] is True
+    steps = {s["step"]: s for s in ok["cascade"]}
+    assert steps[3]["verified"] is True and "living plan" in steps[3]["basis"]        # plan objectives resourced
+    assert steps[5]["verified"] is None and steps[6]["verified"] is None
+    assert v["assessable_stages"] == len(ok["cascade"]) - 2 and v["not_assessable_stages"] == 2
+    assert ok.get("plan_objective_advanced") == oid and _objective(scope, oid)["status"] == "in_progress"
+    assert f"{v['verified_stages']}/{v['assessable_stages']} assessable stages verified" in v["report"]
+
+    # a HALTED gate and a PARTIAL gate never validate, and never touch the plan
+    for status in ("halted", "partial"):
+        scope, oid = _plan_scope()
+        async def _gate(ctx, fn, _s=status):
+            return InterceptionResult(status=_s, reason=f"w461 {_s}", node="w461")
+        monkeypatch.setattr(TX._GOV, "intercept", _gate)
+        run = client.post("/api/v1/transformation/orchestrate", json={"scope": scope}).json()
+        assert run["governance"]["status"] == status
+        assert run["validation"]["verified_stages"] == run["validation"]["assessable_stages"]   # stages all fine…
+        _untouched(run, scope, oid)                                                            # …and still not validated
+        monkeypatch.undo()
+
+    # a twin that did not persist is not verified
+    scope, oid = _plan_scope()
+    import agentic_core.api.digital_twin as DT
+    def _boom(model):
+        raise OSError("twin store unavailable")
+    monkeypatch.setattr(DT, "_save_twin", _boom)
+    run = client.post("/api/v1/transformation/orchestrate", json={"scope": scope}).json()
+    s8 = {s["step"]: s for s in run["cascade"]}[8]
+    assert s8["verified"] is False and "NOT persisted" in s8["basis"] and "twin store unavailable" in s8["basis"]
+    assert run["digital_twin"]["persisted"] is False
+    _untouched(run, scope, oid)
+    monkeypatch.undo()
+
+    # a Board that could not be read does not produce a "verified" Chief
+    scope, oid = _plan_scope()
+    import agentic_core.api.board as BOARD
+    def _no_board(*a, **k):
+        raise RuntimeError("board store unreadable")
+    monkeypatch.setattr(BOARD, "board_for_owner", _no_board)
+    run = client.post("/api/v1/transformation/orchestrate", json={"scope": scope}).json()
+    s1 = {s["step"]: s for s in run["cascade"]}[1]
+    assert s1["verified"] is False and "placeholder" in s1["basis"]
+    _untouched(run, scope, oid)
+    monkeypatch.undo()
+
+    # an ad-hoc objective with no plan objectives: stage 3 is not assessable, not "verified"
+    adhoc = client.post("/api/v1/transformation/orchestrate",
+                        json={"objective": "w461 ad hoc", "scope": f"vsb:w461-empty-{_uuid.uuid4().hex[:6]}"}).json()
+    s3 = {s["step"]: s for s in adhoc["cascade"]}[3]
+    assert s3["verified"] is None and "no plan objectives" in s3["basis"]
+
+    # a floor-served swarm stage is not assessable and does not count as verified
+    deep = client.post("/api/v1/transformation/orchestrate",
+                       json={"objective": "w461 deep", "scope": "workstation", "deep": True}).json()
+    s9 = {s["step"]: s for s in deep["cascade"]}[9]
+    assert deep["native_cognition"]["served_by"] and all(x == "native" for x in deep["native_cognition"]["served_by"])  # AI_DISABLE_LOCAL
+    assert s9["verified"] is None and "floor-served" in s9["basis"]
+    assert deep["validation"]["verified_stages"] == sum(1 for s in deep["cascade"] if s["verified"] is True)
+
+    # the three surfaces render three states and say NOT VALIDATED rather than PARTIAL
+    src = Path("apps/workstation-superapp/src/pages")
+    for rel in ("TransformationDashboard.tsx", "enterprise/VSBSpawnStudio.tsx", "enterprise/VSBCockpit.tsx"):
+        code = (src / rel).read_text(encoding="utf-8")
+        assert "verified === true" in code and "verified === null" in code, rel
+        assert "'PARTIAL'" not in code and "validated ? 'validated' : 'partial'" not in code, rel   # the badge, not pillar status
+    dash = (src / "TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert "assessable" in dash and "'NOT VALIDATED'" in dash
 
 
 def test_vsb_list_org_flags(client):

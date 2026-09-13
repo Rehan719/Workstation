@@ -87,8 +87,8 @@ interface SwarmRunResult {
   trace: { step: number; role: string; served_by: string; output: string }[];
 }
 interface OrchRun {
-  cascade: { step: number; tier: string; verified: boolean }[];
-  validation: { verified_stages: number; stages: number; validated: boolean };
+  cascade: { step: number; tier: string; verified: boolean | null; basis?: string | null }[];   // W461 — three-state
+  validation: { verified_stages: number; assessable_stages?: number; stages: number; validated: boolean };
   governance: { status: string };
   digital_twin: { simulation: { verdict: string } };
 }
@@ -511,16 +511,18 @@ const VSBDetailPanel: React.FC<{
           <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[9px] font-black uppercase text-slate-400">
-                {orch.validation.verified_stages}/{orch.validation.stages} stages · gov {orch.governance.status} · twin {orch.digital_twin.simulation.verdict}
+                {orch.validation.verified_stages}/{orch.validation.assessable_stages ?? orch.validation.stages} assessable · gov {orch.governance.status} · twin {orch.digital_twin.simulation.verdict}
               </span>
               <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${orch.validation.validated ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                {orch.validation.validated ? 'VALIDATED' : 'PARTIAL'}
+                {orch.validation.validated ? 'VALIDATED' : 'NOT VALIDATED'}
               </span>
             </div>
             <div className="flex flex-wrap gap-1">
               {orch.cascade.map(s => (
-                <span key={s.step} className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-500 flex items-center gap-1">
-                  {s.verified ? <CheckCircle2 size={8} className="text-emerald-400" /> : <Circle size={8} />}{s.tier.split(' ')[0]}
+                <span key={s.step} title={s.basis ?? ''} className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-500 flex items-center gap-1">
+                  {s.verified === true ? <CheckCircle2 size={8} className="text-emerald-400" />
+                    : s.verified === null ? <span className="text-slate-500" aria-label="not assessable">—</span>
+                    : <Circle size={8} className="text-amber-400" />}{s.tier.split(' ')[0]}
                 </span>
               ))}
             </div>

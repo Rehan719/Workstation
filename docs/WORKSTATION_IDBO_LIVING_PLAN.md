@@ -142,6 +142,9 @@ source recorded honestly, the twin fallback labelled, every change record writte
 **W460 (2026-09-13):** delivery-plan **P1.12 delivered** — the composer canvas retired for the real
 cascade designer; every unevaluated compliance badge, score and sentence removed or made conditional on a
 real verdict; the Governance Hub flags each UEG event from what it is.
+**W461 (2026-09-13):** transformation stage verification honest — three-state stages with a basis, and a
+run validates (and moves a living-plan objective) only when every assessable stage verified and the gate
+returned 'allowed'; halted, partial and constant-verified runs no longer write back to this plan.
 Open items live in `FABLE_DELIVERY_PROMPT.md` (v11 rev 2 — the `<ledger>` and the `<delivery_plan>`
 for the whole of §1–§15).
 
@@ -262,6 +265,8 @@ under a lockstep test, so the API dropped with it in the same commit.
 ---
 
 ## 8. Changelog (dated, append-only)
+- **2026-09-13 (W461)** — transformation verification honest: halted/partial/constant-verified runs no
+  longer move objectives on this plan; §4 updated.
 - **2026-09-13 (W460)** — delivery-plan P1.12 delivered (composer retired; no unevaluated compliance
   claim); §4 updated; the §7 pillar-4 caveat annotated retired; glyphs unchanged.
 - **2026-09-13 (W459)** — delivery-plan P1.11 delivered (Change Control enforced); §4 updated; the two

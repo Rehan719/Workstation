@@ -5375,3 +5375,41 @@ the compliance mandates docs claiming ENFORCED on the deleted gaas.ts. Split out
 
 **Docs:** ledger v3 status R4.3 FIXED W460; prompt ledger 1.12 CLOSED and P1.12 ✅ DONE; vision §16;
 living plan §4/§7/§8.
+
+### W461 — transformation stage verification is honest: a stage that checks nothing is not assessable, and only an allowed gate validates
+
+**What was wrong (found by the P1.12 audit, split out as its own round).** The transformation cascade
+reported "every stage verified, VALIDATED" on checks that could not fail. `stage()` coerced `verified`
+with `bool()`, so "not assessable" could not be expressed. Stages 5 (C-Suite → CoE) and 6 (BTO →
+Build-to-Order) were hard-coded `verified=True` — static delegation maps that check nothing. Stage 1
+verified a Chief that was synthesised as a placeholder when the Board lookup failed; stage 3 verified a
+task list that always holds at least the request itself; stage 8 swallowed a failed twin save and still
+reported the twin verified; a floor-served swarm stage could not fail its own check. And `validated`
+accepted any governance status except none, ungoverned or blocked — so a halted or partial gate still
+validated, and a validated plan-driven run moves the driving objective planned → in_progress on the
+Owner's living plan.
+
+**Owner-visible behaviour change:** halted runs, partial runs, and runs whose only "verified" stages were
+constants no longer move the Owner's living-plan objectives. A transformation writes back only when every
+ASSESSABLE stage genuinely verified and the constitutional gate returned 'allowed'.
+
+**What changed.** `verified` is three-state with a `basis` sentence on every stage — true (a real check
+ran and passed), false (it ran and failed), null (not assessable). Stages 5 and 6 are null ("static
+delegation map — nothing is checked"); stage 1 verifies only a Chief resolved from the Board; stage 3 is
+null when there are no plan objectives to resource; stage 4 verifies only when organism telemetry was
+read; stage 8 verifies only when the twin actually persisted (`_generate_vsb_twin` returns `persisted` /
+`persist_error`); stage 9 is null when the floor served every swarm stage. Validation adds
+`assessable_stages` / `not_assessable_stages`; `validated = assessable > 0 and verified == assessable and
+governance.status == 'allowed'`; the report says "n/m assessable stages verified". TransformationDashboard,
+VSBSpawnStudio and VSBCockpit render ✓ emerald · — slate · ○ amber with the basis as a tooltip, and
+"NOT VALIDATED" in place of "PARTIAL".
+
+**Tests:** the end-to-end test asserts stages 5/6 not assessable with their basis and `validated` derived
+from the rule; `test_delivery_moves_the_living_plan` no longer hides its write-back check behind
+`if validated:` (it would have gone silently vacuous). New both-ways guard
+`test_w461_transformation_validation_is_honest`: a genuine plan-driven run validates and writes back; a
+halted gate, a partial gate, a twin that did not persist and an unreadable Board each leave the run NOT
+validated and the objective untouched; an ad-hoc run's stage 3 and a floor-served stage 9 are not
+assessable; the three surfaces render three states. **Broken eight ways — each blind failed on its own;
+restored.** Suite 367/15/0 in the isolated worktree on the W461 tree; re-run on the stacked tree with
+W460 and W462 before push. Probe `scripts/_w461_probe.mjs` 4/4 on a fresh backend.
