@@ -24,7 +24,8 @@ export const ConstitutionalUI: React.FC = () => {
 
   // Live GaaS v5 constitutional engine (v16-Omega interceptor + UEG audit log)
   const refreshGaas = () => {
-    fetch('/api/v1/gaas/status').then(r => r.json()).then(setGaas).catch(() => {});
+    // W460 — a failing poll clears the verdict (a stale green NOMINAL used to outlive the backend)
+    fetch('/api/v1/gaas/status').then(r => (r.ok ? r.json() : null)).then(setGaas).catch(() => setGaas(null));
     fetch('/api/v1/gaas/ueg/events?limit=40').then(r => r.json())
       .then(d => setUeg(Array.isArray(d?.events) ? [...d.events].reverse() : [])).catch(() => {});
   };
@@ -72,7 +73,10 @@ export const ConstitutionalUI: React.FC = () => {
                   <h4 className="text-xl font-black uppercase tracking-tight">Adaptation Engine</h4>
                </div>
                <p className="text-sm text-slate-400 font-bold leading-relaxed">
-                  Autonomous self-healing is active. Constitutional AI generates and ratifies low-impact amendments.
+                  LOW-tier changes are auto-approved by Change Control when organism health is at least 0.6 and the immune
+                  threat is NOMINAL or ELEVATED; the immune system's defensive levers are auto-approved only when an admin
+                  runs the immune reconfigure action (nothing triggers it automatically); other changes are reviewed there,
+                  and a CRITICAL one is decided only by an explicit admin decision.
                </p>
                <div className="space-y-4 pt-6 border-t border-aura/10">
                   {/* W411 — "Trust Score 0.96 (SOVEREIGN)" with a fixed w-[96%] bar used to be here.
@@ -103,11 +107,12 @@ export const ConstitutionalUI: React.FC = () => {
                      <Terminal size={18} />
                      <h4 className="text-[11px] font-black uppercase tracking-widest">Constitutional Engine</h4>
                   </div>
-                  <Badge color={gaas?.circuit_breaker?.tripped ? 'vital' : 'emerald-500'}>
-                     {gaas?.circuit_breaker?.tripped ? 'BREAKER OPEN' : 'NOMINAL'}
+                  {/* W460 — "NOMINAL" in green used to show even when the status call never answered */}
+                  <Badge color={!gaas?.circuit_breaker ? 'slate' : gaas.circuit_breaker.tripped ? 'vital' : 'emerald-500'}>
+                     {!gaas?.circuit_breaker ? 'UNAVAILABLE' : gaas.circuit_breaker.tripped ? 'BREAKER OPEN' : 'NOMINAL'}
                   </Badge>
                </div>
-               <p className="text-[9px] font-mono text-slate-600">{gaas?.interceptor ?? 'gaas.v5 · v16-Omega'}</p>
+               <p className="text-[9px] font-mono text-slate-600">{gaas?.interceptor ?? '—'}</p>
                <div className="space-y-3">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
                      <span>Breaker Threshold</span>
@@ -119,7 +124,7 @@ export const ConstitutionalUI: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
                      <span>UEG Events</span>
-                     <span className="text-aura">{gaas?.ueg?.total_events ?? 0}</span>
+                     <span className={gaas?.ueg ? 'text-aura' : 'text-slate-500'}>{gaas?.ueg?.total_events ?? '—'}</span>
                   </div>
                </div>
                {gaas?.ueg?.root_hash && (
@@ -159,7 +164,6 @@ export const ConstitutionalUI: React.FC = () => {
                                <div className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-black text-aura uppercase">Article {art.id}</div>
                                <Badge color={art.category === 'COSMIC' ? 'highlight' : 'aura'}>{art.category}</Badge>
                             </div>
-                            <CheckCircle2 size={20} className="text-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity" />
                          </div>
                          <h3 className="text-3xl font-black mb-4 text-white uppercase tracking-tight">{art.title}</h3>
                          <p className="text-lg text-slate-400 font-bold leading-relaxed">{art.content}</p>

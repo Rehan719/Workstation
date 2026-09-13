@@ -3,7 +3,6 @@ import { useStore } from '@workstation/shared';
 import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Brain, Zap, Clock, TrendingUp, Cpu, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge } from './index';
-import AgentForge from '@superapp/components/organism/AgentForge';
 import OrganismVitals from '@superapp/components/organism/OrganismVitals';
 import NeuralLink from '@superapp/components/organism/NeuralLink';
 import SpatioTemporal from '@superapp/components/organism/SpatioTemporal';
@@ -58,7 +57,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
     { id: 'predictive', name: 'Predictive', icon: Sparkles, color: 'text-vital', description: 'Forecasting' },
     { id: 'neural', name: 'Neural Link', icon: Zap, color: 'text-vital', description: 'L13 Interface' },
     { id: 'spatio', name: 'Spatio-Temporal', icon: Clock, color: 'text-aura', description: 'L14 Mapping' },
-    { id: 'forge', name: 'Agent Forge', icon: Cpu, color: 'text-aura', description: 'Visual Composer' },
+    { id: 'forge', name: 'Swarm Designer', icon: Cpu, color: 'text-aura', description: 'Opens Native AI' },
     { id: 'holo', name: 'Holo Forge', icon: Sparkles, color: 'text-highlight', description: '3D Immersion' },
     { id: 'ethical', name: 'Ethical', icon: ShieldCheck, color: 'text-aura', description: 'Constitutional AI' },
   ];
@@ -446,8 +445,13 @@ const ChannelContent = ({ id }: { id: string }) => {
          </div>
       ),
       forge: (
-         <div className="space-y-6">
-            <AgentForge />
+         <div className="space-y-4 p-6" data-testid="swarm-designer-card">
+            {/* W460 (P1.12) — the Agent Forge canvas was retired: its nodes reached no swarm. */}
+            <p className="text-sm text-slate-300 font-bold leading-relaxed">
+               The swarm cascade designer is on Native AI: role + instruction stages, saved, editable and runnable;
+               each stage reports which resource served it.
+            </p>
+            <Button className="w-full" onClick={() => { window.location.assign('/native-ai?focus=cascade-designer'); }}>Open the cascade designer</Button>
          </div>
       ),
       holo: (
@@ -468,26 +472,13 @@ const ChannelContent = ({ id }: { id: string }) => {
                   <ShieldCheck size={60} className="text-aura" />
                </div>
                <p className="text-[10px] font-black text-aura uppercase tracking-widest mb-4">Constitutional Alignment</p>
-               <p className="text-sm text-white font-bold leading-relaxed relative z-10">
-                  Current session conforms to <span className="text-aura">Floor 24</span> mandates. Article 1126 (Care Ethics) is actively enforcing compassionate guardrails.
+               {/* W460 (P1.12) — this said the session "conforms to Floor 24 mandates", showed a green IDLE veto
+                   window and a 0.08 / 0.1 privacy budget. Nothing evaluates a session; no veto window or ε budget
+                   exists anywhere in the backend. */}
+               <p className="text-sm text-white font-bold leading-relaxed relative z-10" data-testid="ethical-not-evaluated">
+                  Per-session constitutional conformance is not evaluated. Actions routed through the gaas.v5 gate are
+                  recorded on the UEG ledger — open the audit to read them.
                </p>
-            </div>
-
-            <div className="space-y-3">
-               <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-900 border border-slate-800">
-                  <div className="flex items-center gap-3">
-                     <Clock size={16} className="text-slate-500" />
-                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Veto Window Status</span>
-                  </div>
-                  <Badge color="emerald-500">IDLE</Badge>
-               </div>
-               <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-900 border border-slate-800">
-                  <div className="flex items-center gap-3">
-                     <Activity size={16} className="text-slate-500" />
-                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Privacy ε Budget</span>
-                  </div>
-                  <span className="text-xs font-black text-white">0.08 / 0.1</span>
-               </div>
             </div>
 
             <Button variant="outline" className="w-full" onClick={() => { window.location.href = '/audit'; }}>View Full Ethical Audit</Button>

@@ -5,7 +5,7 @@ import { Card, Badge, Button, toast } from '@workstation/ui';
 import {
   ShieldCheck, AlertCircle, CheckCircle2, XCircle, History,
   Lock, Key, Shield, RefreshCw, Eye, EyeOff, Copy, Check,
-  Sparkles, Award, Database, X, Vote, ThumbsUp, ThumbsDown,
+  Sparkles, Award, Database, X, Vote, ThumbsUp, ThumbsDown, Activity,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { progressWidthClass } from '../../lib/progressWidth';
@@ -131,9 +131,15 @@ const AuditTab: React.FC = () => {
   };
   useEffect(() => { load(); }, []);
 
-  const isFlagged = (e: any) => {
-    const d = e?.data ?? {};
-    return d.decision === 'deny' || d.status === 'denied' || String(d.type ?? '').includes('violation');
+  // W460 (P1.12) — the level comes from the backend's classification of what the event IS. The old test
+  // (decision==='deny' / status==='denied' / type contains 'violation') matched nothing the gate writes, so a
+  // blocked action's policy_gate_halt rendered as a green "CHAINED".
+  const flagLevel = (e: any): 'flagged' | 'review' | 'recorded' | 'unclassified' => e?.flag?.level ?? 'unclassified';
+  const isFlagged = (e: any) => flagLevel(e) === 'flagged' || flagLevel(e) === 'review';
+  const levelBadge = (e: any) => {
+    const l = flagLevel(e);
+    return l === 'flagged' ? { color: 'vital', text: 'FLAGGED' } : l === 'review' ? { color: 'highlight', text: 'REVIEW' }
+      : l === 'recorded' ? { color: 'slate', text: 'CHAINED' } : { color: 'slate', text: 'UNCLASSIFIED' };
   };
   const filteredEvents = statusFilter === 'ALL' ? events : events.filter(isFlagged);
   const fmtTs = (ts: number) => { try { return new Date(ts * 1000).toLocaleString(); } catch { return String(ts); } };
@@ -169,8 +175,8 @@ const AuditTab: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         <AuditStatCard label="UEG Events" value={verify ? verify.events : '—'} icon={CheckCircle2} color="text-aura" />
-        <AuditStatCard label="Chain Integrity" value={verify ? (verify.valid ? 'VALID' : 'BROKEN') : '—'} icon={ShieldCheck} color={verify && !verify.valid ? 'text-vital' : 'text-emerald-500'} />
-        <AuditStatCard label="Flagged Events" value={events.filter(isFlagged).length} icon={XCircle} color="text-vital" />
+        <AuditStatCard label="Chain Integrity" value={verify ? (verify.valid ? 'VALID' : 'BROKEN') : '—'} icon={ShieldCheck} color={!verify ? 'text-slate-500' : verify.valid ? 'text-emerald-500' : 'text-vital'} />
+        <AuditStatCard label="Flagged (last loaded)" value={events.filter(e => flagLevel(e) === 'flagged').length} icon={XCircle} color="text-vital" />
         <AuditStatCard label="Root Hash" value={verify ? `${String(verify.root_hash).slice(0, 10)}…` : '—'} icon={AlertCircle} color="text-highlight" />
       </div>
 
@@ -188,7 +194,7 @@ const AuditTab: React.FC = () => {
                     {...({ 'aria-pressed': statusFilter === f ? 'true' : 'false' } as { 'aria-pressed': 'true' | 'false' })}
                     className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${statusFilter === f ? 'bg-slate-800 text-aura' : 'text-slate-500'}`}
                   >
-                    {f === 'ALL' ? 'All' : 'Flagged'}
+                    {f === 'ALL' ? 'All' : 'Flagged + review'}
                   </button>
                 ))}
               </div>
@@ -208,14 +214,14 @@ const AuditTab: React.FC = () => {
 
             <div className="space-y-3">
               {filteredEvents.length === 0 && (
-                <p className="text-sm text-slate-500 font-bold">{loadErr ? 'Event log unavailable.' : statusFilter === 'FLAGGED' ? 'No flagged events — nothing has been denied this epoch.' : 'No constitutional events recorded yet.'}</p>
+                <p className="text-sm text-slate-500 font-bold">{loadErr ? 'Event log unavailable.' : statusFilter === 'FLAGGED' ? 'No flagged or review events among the events loaded.' : 'No constitutional events recorded yet.'}</p>
               )}
               {filteredEvents.map((ev) => (
                 <motion.div key={ev.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                   className="p-5 rounded-2xl bg-slate-950 border border-slate-900 flex items-center justify-between group hover:border-aura/30 transition-all">
                   <div className="flex items-center gap-5">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isFlagged(ev) ? 'bg-vital/10 text-vital' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                      {isFlagged(ev) ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${flagLevel(ev) === 'flagged' ? 'bg-vital/10 text-vital' : flagLevel(ev) === 'review' ? 'bg-highlight/10 text-highlight' : 'bg-slate-800 text-slate-500'}`}>
+                      {isFlagged(ev) ? <AlertCircle size={20} /> : <Activity size={20} />}
                     </div>
                     <div>
                       <p className="text-sm font-black text-white uppercase tracking-widest">{String(ev.data?.type ?? 'event')} · {ev.id}</p>
@@ -223,7 +229,7 @@ const AuditTab: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge color={isFlagged(ev) ? 'vital' : 'emerald-500'}>{isFlagged(ev) ? 'FLAGGED' : 'CHAINED'}</Badge>
+                    <Badge color={levelBadge(ev).color} className="event-level">{levelBadge(ev).text}</Badge>
                     <Button onClick={() => setSelectedEvent(ev)} variant="outline" className="px-3 py-1.5 text-[8px]">View Event</Button>
                   </div>
                 </motion.div>
@@ -274,7 +280,7 @@ const AuditTab: React.FC = () => {
               </div>
               <div className="space-y-3 text-sm font-bold">
                 <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Event</span><span className="text-white font-mono">{selectedEvent.id}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Status</span><Badge color={isFlagged(selectedEvent) ? 'vital' : 'emerald-500'}>{isFlagged(selectedEvent) ? 'FLAGGED' : 'CHAINED'}</Badge></div>
+                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Status</span><Badge color={levelBadge(selectedEvent).color}>{levelBadge(selectedEvent).text}</Badge></div>
                 <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Time</span><span className="text-white">{fmtTs(selectedEvent.timestamp)}</span></div>
                 <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Hash</span><span className="text-white font-mono">{String(selectedEvent.hash ?? '').slice(0, 16)}…</span></div>
                 <div className="pt-4 border-t border-slate-800">

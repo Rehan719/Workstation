@@ -287,7 +287,12 @@ export const VSBSpawnStudio: React.FC = () => {
             className="space-y-3 max-h-[400px] overflow-y-auto pr-2"
           >
             {events.map((ev, i) => {
-              const meta = STAGE_META[ev.stage] ?? { icon: Circle, color: 'text-slate-500' };
+              // W460 — the gate's row is coloured by its verdict: green only for an evaluated pass
+              const meta = ev.stage === 'gaas_complete'
+                ? (ev.data?.passed === true ? STAGE_META.gaas_complete
+                   : ev.data?.passed === false ? { icon: Circle, color: 'text-vital' }
+                   : { icon: ShieldCheck, color: 'text-slate-500' })
+                : (STAGE_META[ev.stage] ?? { icon: Circle, color: 'text-slate-500' });
               const Icon = meta.icon;
               return (
                 <div key={i} className="flex gap-3 items-start p-3 rounded-xl bg-slate-950/50 border border-slate-900">

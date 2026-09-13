@@ -388,7 +388,7 @@ export const VSBEconomy: React.FC = () => {
                 §8→§12 survival instinct: {cycle.energy_state}{cycle.reserve_rate_applied != null ? ` · reserve ${Math.round(cycle.reserve_rate_applied * 100)}%` : ''}
               </p>
             )}
-            <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className="text-emerald-400" /> governance: {gov} · {cycle.biogeochemical_model}</p>
+            <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className={gov === 'allowed' ? 'text-emerald-400' : gov ? 'text-amber-400' : 'text-slate-500'} /> governance: {gov} · {cycle.biogeochemical_model}</p>
           </Card>
 
           {/* Circulation waterfall */}
@@ -501,7 +501,7 @@ export const VSBEconomy: React.FC = () => {
           </div>
           {closeMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {closeMsg}</p>}
           {closeErr && <p className="text-vital text-[10px] font-bold mt-2 flex items-center gap-1.5"><AlertCircle size={12} /> {closeErr}</p>}
-          <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className="text-emerald-400" /> {bp.governance}</p>
+          <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className="text-slate-500" /> {bp.governance}</p>
           <p className="text-[9px] text-amber-400/80 italic mt-1">{bp.disclaimer}</p>
         </Card>
       )}
@@ -550,7 +550,7 @@ export const VSBEconomy: React.FC = () => {
                         not screened
                       </span>
                     ) : (
-                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${v.compliance?.verdict === 'fail' ? 'bg-vital/15 text-vital' : v.compliance?.verdict === 'review' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}
+                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${v.compliance?.verdict === 'fail' ? 'bg-vital/15 text-vital' : v.compliance?.verdict === 'review' ? 'bg-amber-500/15 text-amber-400' : v.compliance?.verdict === 'pass' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}
                         title={`§11 — ${(v.compliance?.verdicts || []).map((x: any) => `${x.framework}:${x.status}`).join(' · ') || 'no framework detail recorded'}${v.compliance?.screened_at ? `
 screened ${v.compliance.screened_at}` : ''}`}>
                         §11 {v.compliance?.verdict}
@@ -561,6 +561,10 @@ screened ${v.compliance.screened_at}` : ''}`}>
               </div>
             ))}
           </div>
+          {/* W460 — the list shows eight; the rest used to vanish with no status and no word */}
+          {(living.living_vsbs || []).length > 8 && (
+            <p className="text-[9px] text-slate-500 font-bold mt-2">{(living.living_vsbs || []).length - 8} more living entities are not shown here, so their §11 status is not shown either.</p>
+          )}
           <p className="text-[9px] text-amber-400/80 italic mt-3">{living.note}</p>
         </Card>
       )}

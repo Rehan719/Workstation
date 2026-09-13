@@ -78,6 +78,8 @@ export const Badge = ({ children, color = 'aura', className = '' }: any) => {
     vital: 'bg-vital/10 text-vital border-vital/20',
     sovereign: 'bg-sovereign/10 text-white border-sovereign/20',
     'emerald-500': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    // W460 — a neutral colour for "not evaluated / unavailable" (unknown colours used to fall back to aura)
+    slate: 'bg-slate-800/60 text-slate-400 border-slate-700',
   };
 
   return (

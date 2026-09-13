@@ -19,7 +19,8 @@ import { OrganismHub } from './pages/organism/OrganismHub';
 // ── 2. Native AI Fabric ──────────────────────────────────────────────────
 import { NativeAI } from './pages/developers/NativeAI';
 import { AIToolsCatalogue } from './pages/AIToolsCatalogue';
-// AI CEO · Board · Swarm · Visual Composer consolidated into one tabbed LivingOrganisationHub (§5 + §6 swarm).
+// AI CEO · Board · Swarm consolidated into one tabbed LivingOrganisationHub (§5 + §6 swarm); the retired
+// Visual Composer's routes land on the real cascade designer on /native-ai (W460).
 import { LivingOrganisationHub } from './pages/LivingOrganisationHub';
 
 // ── 3. Domains ───────────────────────────────────────────────────────────
@@ -141,7 +142,7 @@ function App() {
   const steps = [
     { target: '.neon-text', content: 'Welcome to Workstation IDBO — your living, in-house AI organism.' },
     { target: 'aside nav', content: 'Two ways to work (§3A): ① Work in a Domain — AI-mediated tools across the six domains; ② Build an Enterprise — Concept→Commercialisation into a living VSB. Below sit the Platform, Governance and System areas.' },
-    { target: '.gaas-audit-btn', content: 'Every action is governed by the constitutional GaaS engine.' },
+    { target: '.gaas-audit-btn', content: 'Opens the constitutional audit: the tamper-evident UEG ledger — recorded gate decisions, §11 screens, and the governance bypasses the board and economy paths log (flagged). Modules outside the gate record nothing here.' },
   ];
 
   return (
@@ -167,7 +168,7 @@ function App() {
           <Route path="/ai-tools"           element={<AIToolsCatalogue />} />
           <Route path="/ceo"                element={<LivingOrganisationHub />} />
           <Route path="/board"              element={<Navigate to="/ceo?tab=board" replace />} />
-          <Route path="/visual-composer"    element={<Navigate to="/ceo?tab=composer" replace />} />
+          <Route path="/visual-composer"    element={<Navigate to="/native-ai?focus=cascade-designer" replace />} />
           <Route path="/swarm-intelligence" element={<Navigate to="/ceo?tab=swarm" replace />} />
 
           {/* ── 3. Domains ──────────────────────────────────────────── */}

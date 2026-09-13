@@ -154,7 +154,7 @@ export const BoardOfDirectors: React.FC = () => {
       {result && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-[9px] font-mono text-slate-500">
-            <ShieldCheck size={12} className="text-emerald-400" /> {result.directive_id} · chain: {result.delegation_chain.join(' → ')}
+            <ShieldCheck size={12} className="text-slate-500" /> {result.directive_id} · chain: {result.delegation_chain.join(' → ')}
           </div>
           {/* W270/W284 — apex honesty chips: which OWNED resource served, the gaas verdict, what landed on the plan */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -162,7 +162,7 @@ export const BoardOfDirectors: React.FC = () => {
               (() => { const b = provenanceMapBadge(result.ai_provenance?.served_by, result.ai_provenance?.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={`${b.title ? b.title + ' — ' : ''}calls: ${Object.entries(result.ai_provenance?.served_by ?? {}).map(([k, v]) => `${k}×${v}`).join(' · ') || 'none'}`}>{b.label}</span>; })()
             )}
             {result.governance?.status && (
-              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">gaas: {result.governance.status}</span>
+              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.governance.status === 'allowed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>gaas: {result.governance.status}</span>
             )}
             {typeof result.objectives_added === 'number' && (
               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.objectives_added > 0 ? 'bg-highlight/15 text-highlight' : 'bg-slate-800 text-slate-500'}`}>

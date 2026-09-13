@@ -644,7 +644,7 @@ export const ResourceFabric: React.FC = () => {
                               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300">§8 {runResult.org_cascade.homeostasis.posture}</span>
                             )}
                             {runResult.org_cascade.governance && (
-                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">gov: {runResult.org_cascade.governance}</span>
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400" title="the gate screened the cascade's intent and a fixed attestation — not the delivered output">gov (intent only): {runResult.org_cascade.governance}</span>
                             )}
                             {runResult.org_cascade.ueg_hash && (
                               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300" title={runResult.org_cascade.ueg_hash}>§6 provenance sealed</span>

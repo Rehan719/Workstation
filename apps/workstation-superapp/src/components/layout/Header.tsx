@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({ avatar }) => {
         <button
           type="button"
           onClick={() => { setCurrentTab('audit'); navigate('/audit'); }}
-          className="p-2.5 rounded-xl bg-slate-800 text-emerald-500 hover:scale-105 transition-all gaas-audit-btn"
+          className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:scale-105 transition-all gaas-audit-btn"
           title="Constitutional Audit"
           aria-label="Constitutional Audit"
         >

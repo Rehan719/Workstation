@@ -46,7 +46,7 @@ const IDENTITIES = [
   { n: '2', what: 'A factory of living enterprises', desc: 'Each output is itself a living, self-running VSB IDBO entity.', route: '/projects' },
   { n: '3', what: 'A living organisation', desc: 'Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order.', route: '/ceo' },
   { n: '4', what: 'A reconfigurable resource fabric', desc: 'Engines · reactors · labs · factories + its own AI swarm/models/orchestration.', route: '/resource-fabric' },
-  { n: '5', what: 'An economic organism', desc: 'An autonomous, compliant hybrid Waqf/Trust/Multinational entity (virtual WST).', route: '/economy' },
+  { n: '5', what: 'An economic organism', desc: 'A hybrid Waqf/Trust/Multinational entity (virtual WST; autonomous cycles are opt-in); the living-entities list shows §11 screen status, including never screened.', route: '/economy' },
 ];
 
 // The platform's capability pillars (the vision map) — each a real, reachable surface.

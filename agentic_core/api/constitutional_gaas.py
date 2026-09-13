@@ -85,8 +85,11 @@ async def gaas_intercept(req: InterceptRequest):
 
 @router.get("/ueg/events")
 async def gaas_ueg_events(limit: int = 50):
-    """Recent constitutional events from the Unified Event Graph (audit trail)."""
-    return {"events": _UEG.recent(limit), "summary": _UEG.summary()}
+    """Recent constitutional events from the Unified Event Graph (audit trail). W460 — each event carries
+    `flag` (flagged | review | recorded) computed from what the event IS; the stored nodes are untouched."""
+    from agentic_core.gaas.v5.ueg import classify_event
+    recent = [{**n, "flag": classify_event(n.get("data") or {})} for n in _UEG.recent(limit)]
+    return {"events": recent, "summary": _UEG.summary()}
 
 
 @router.get("/ueg/verify")

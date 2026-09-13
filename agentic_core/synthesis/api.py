@@ -252,7 +252,7 @@ class SynthesisManager:
                 "matching the structure: ese_adoption has early_adopter/fast_follower/laggard each with revenue+market_share, "
                 "aro_efficiency has resource_optimization_gain+cost_reduction_per_patient, "
                 "bto_roadmap has implementation_speed_multiplier+milestone_confidence, "
-                "drad_resilience has compliance_score+adaptation_latency_ms). "
+                "drad_resilience has adaptation_latency_ms). "
                 "No markdown — only the JSON object."
             )
             raw = await self._query(prompt, "simulation")

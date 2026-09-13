@@ -34,7 +34,7 @@ interface JourneyResult {
     criteria_not_measured?: Record<string, string>;
   };
   phase_2_design_development: string;
-  stage_7_operational_intelligence?: string;   // §4.7 — deliverable · compliant · operable
+  stage_7_operational_intelligence?: string;   // §4.7 — deliverability · compliance · operability
   phase_3_commercialisation: string;
   governance: { status: string; checkpoint: string | null; node: string };
   // §5 — each stage verified/tested/validated on real measured proxies.
@@ -51,7 +51,8 @@ interface JourneyResult {
       bar_measured?: { measured: number; attested: number; not_measured: number; summary?: string;
         measured_criteria?: string[]; attested_criteria?: string[] };
       quality_record_hash?: string; document_controlled?: boolean;
-      compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } };
+      compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] };
+      compliance_error?: string };
     biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
   };
   engines_used: string[];
@@ -493,7 +494,7 @@ export const GenesisJourney: React.FC = () => {
             { icon: Eye,        label: 'Innovate & Research',     desc: 'Best/latest approaches: science·tech·business·law' },
             { icon: Brain,      label: 'Model · Simulate · Rank', desc: 'Candidate solutions scored on evidence → best' },
             { icon: Layers,     label: 'Design & Development',    desc: 'Architecture, components, MVP scope' },
-            { icon: ShieldCheck,label: 'Operational Intelligence',desc: 'Deliverable · compliant · operable' },
+            { icon: ShieldCheck,label: 'Operational Intelligence',desc: 'Deliverability · compliance · operability (§11 screens it)' },
             { icon: Rocket,     label: 'Commercialise',           desc: 'GTM + revenue + living VSB blueprint' },
           ].map(({ icon: Icon, label, desc }, i) => {
             const done = !!result;
@@ -635,9 +636,10 @@ export const GenesisJourney: React.FC = () => {
           {result.stage_verifications && (
             <Card className="p-4 border-emerald-500/20">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><ShieldCheck size={13} className="text-emerald-400" /> Stage verification — each stage tested &amp; validated (§5)</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><ShieldCheck size={13} className="text-slate-500" /> Stage verification — each stage tested &amp; validated (§5)</h3>
                 {result.stages_verified && (
-                  <span className="text-[9px] font-black uppercase text-emerald-400">
+                  // W460 — "0/0 verified" was green: emerald only when every ASSESSABLE stage verified
+                  <span className={`text-[9px] font-black uppercase ${(() => { const [n, m] = String(result.stages_verified).split('/').map(Number); return m > 0 && n === m ? 'text-emerald-400' : m === 0 ? 'text-slate-500' : 'text-amber-400'; })()}`}>
                     {result.stages_verified} verified
                     {(result.stages_floor_served || 0) > 0 && (
                       <span className="text-slate-500"> · {result.stages_floor_served} floor-served, not assessable</span>
@@ -745,14 +747,14 @@ export const GenesisJourney: React.FC = () => {
             </Card>
           )}
 
-          {/* §4.7 — Enhance via Operational Intelligence: deliverable · compliant · operable */}
+          {/* §4.7 — Enhance via Operational Intelligence: deliverability · compliance · operability */}
           {result.stage_7_operational_intelligence && (
             <Card className="p-5 border-slate-800">
               <div className="flex items-center gap-2 mb-2">
                 <ShieldCheck size={15} className="text-aura" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-aura">Operational Intelligence (§4.7)</h3>
               </div>
-              <p className="text-[10px] text-slate-600 mb-2">Makes the solution not just innovative but deliverable, compliant (legal · regulatory · EHS · Sharia · ethical) and operable — before commercialisation.</p>
+              <p className="text-[10px] text-slate-600 mb-2">Addresses deliverability, compliance (legal · regulatory · EHS · Sharia · ethical) and operability before commercialisation. The §11 screen below reads the design and commercialisation text — a keyword and vocabulary screen, not a certification.</p>
               <PlainText text={result.stage_7_operational_intelligence} />
             </Card>
           )}
@@ -807,6 +809,13 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                     compliance: {result.quality_assurance.quality.compliance.overall}
                   </span>
                 )}
+                {/* W460 — a screen that raised (or never ran) used to render nothing at all */}
+                {result.quality_assurance.quality && !result.quality_assurance.quality.compliance && (
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-500"
+                    title={result.quality_assurance.quality.compliance_error ? `§11 screen raised: ${result.quality_assurance.quality.compliance_error}` : '§11 did not screen this run'}>
+                    compliance: not screened
+                  </span>
+                )}
               </div>
             )}
 
@@ -847,9 +856,9 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                   )}
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/30">
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
                   <div className="flex items-center gap-2 mb-1">
-                    <ShieldCheck size={14} className="text-emerald-400" />
+                    <ShieldCheck size={14} className="text-slate-500" />
                     <p className="font-black text-white text-sm">{vsb.name}</p>
                     {vsb.name_pending && <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400" title="a working slug from your own words — not a chosen name">working name — pending yours</span>}
                   </div>

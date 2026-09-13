@@ -1546,26 +1546,35 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
 
         # ── Stage 3: GaaS Constitutional Gate ────────────────────────────────
         yield _event("gaas", "Constitutional Gate", "GaaS validation — purpose and ethics alignment...")
-        gaas_passed = True
+        # W460 (refuter) — this started True, so a gate that never ran (no genome/legal paths configured,
+        # or a validator that raised) was recorded and signalled as PASSED. None = not evaluated.
+        gaas_passed = None
         if _gaas is not None:
             try:
                 gaas_result = await _gaas.validate_intent(
                     intent={"type": "vsb_spawn", "domain": req.domain, "challenge": req.challenge[:200]},
                     context={"cascade_status": cascade_result.get("status", "unknown")}
                 )
-                gaas_passed = not gaas_result.get("violations", [])
-                gaas_message = "Constitutional alignment confirmed." if gaas_passed else f"GaaS: {gaas_result.get('violations', [])}"
+                # W460 (second refutation) — the validator's OWN verdict decides: passed=False with no
+                # violations (below the genome's confidence threshold) used to be recorded as PASSED.
+                _violations = gaas_result.get("violations", []) or []
+                gaas_passed = bool(gaas_result.get("passed")) and not _violations
+                gaas_message = ("Constitutional alignment confirmed." if gaas_passed
+                                else f"GaaS: {_violations}" if _violations
+                                else "GaaS: the intent fell below the genome's confidence threshold.")
             except Exception as e:
-                gaas_message = f"GaaS gate: {e}"
+                gaas_message = f"GaaS gate NOT evaluated — the validator raised: {e}"
         else:
-            gaas_message = "Constitutional alignment assumed (configure GAAS_GENOME_PATH + GAAS_LEGAL_PATH for full gate)."
+            gaas_message = ("Constitutional gate NOT evaluated — no genome/legal model is configured "
+                            "(GAAS_GENOME_PATH + GAAS_LEGAL_PATH); nothing was checked.")
         biobus.fire_signal(
-            "reflex" if not gaas_passed else "motor",
+            "reflex" if gaas_passed is False else "motor",
             "vsb.gaas",
-            f"Constitutional gate: {'PASSED' if gaas_passed else 'BLOCKED'}",
-            0.9 if not gaas_passed else 0.5,
+            f"Constitutional gate: {'PASSED' if gaas_passed else 'BLOCKED' if gaas_passed is False else 'NOT EVALUATED'}",
+            0.9 if gaas_passed is False else 0.5,
         )
-        yield _event("gaas_complete", "GaaS Gate Complete", gaas_message, {"passed": gaas_passed})
+        yield _event("gaas_complete", "GaaS Gate Complete", gaas_message,
+                     {"passed": gaas_passed, "evaluated": gaas_passed is not None})
 
         # ── Stage 4: CEO Strategy ─────────────────────────────────────────────
         yield _event("ceo_strategy", "AI CEO Strategy", "CEO generating VSB strategy and specification...")

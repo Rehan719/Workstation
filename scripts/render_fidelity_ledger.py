@@ -129,6 +129,7 @@ STATUS = {
             "human override is attributed to the principal rather than 'cca_ai', and with auth ON an unauthenticated "
             "caller can no longer submit, override or implement at all. The user-isolation half for P2.6's routers "
             "remains open.",
+    "R4.3": """FIXED W460 (P1.12) — the canvas is retired, not wired: VisualAgentComposer.tsx and its Agent Forge copy are deleted and /visual-composer and /ceo?tab=composer land on the real cascade designer (/native-ai?focus=cascade-designer), which renders even when the fabric status call fails and whose define and edit both refuse a cascade with no complete stage. The 'GaaS COMPLIANT' badge is gone, and so is every other unevaluated compliance claim found in src/ (a guard scans for them with comments stripped); the Governance Hub flags each UEG event from what it is. Not in this round (recorded as follow-ups): the org cascade gates a constant attestation; swarm store locking, per-stage model and run ids; /api/v1/swarm auth.""",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

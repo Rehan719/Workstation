@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
 import { apiJson, errorMessage, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, qmsChip } from '../../lib/api';
@@ -32,7 +32,7 @@ interface TreeRun {
   ueg_hash?: string | null; ueg_ledger?: string | null;
   nodes: TreeNodeResult[]; final: string; any_external: boolean;
 }
-interface SavedCascade { id: string; name: string; stages: Stage[]; usage_area: string; created_at: string }
+interface SavedCascade { id: string; name: string; stages: Stage[]; usage_area: string; created_at: string; context?: string }
 
 function kindIcon(kind: string) {
   if (kind === 'native') return Cpu;
@@ -473,9 +473,22 @@ export const NativeAI: React.FC = () => {
   // but reachable by curl only — no page offered an Edit. editingId switches the designer between
   // define (POST) and reconfigure (PUT) of the loaded cascade.
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [designContext, setDesignContext] = useState('');
+  // W460 — /native-ai?focus=cascade-designer (the retired Composer's routes) scrolls to the designer
+  // (refuter) a fixed 250ms timer fired before the status block rendered ABOVE the designer and pushed it
+  // below the fold; scroll once the load has settled, exactly once.
+  const focusedRef = useRef(false);
+  useEffect(() => {
+    if (focusedRef.current || loading) return;
+    if (new URLSearchParams(window.location.search).get('focus') !== 'cascade-designer') return;
+    focusedRef.current = true;
+    const t = window.setTimeout(() => document.getElementById('cascade-designer')?.scrollIntoView({ block: 'start' }), 60);
+    return () => window.clearTimeout(t);
+  }, [loading, status]);
   const startEdit = (c: SavedCascade) => {
     setEditingId(c.id);
     setName(c.name);
+    setDesignContext(c.context ?? '');   // W460 — edit what is saved, not what was last typed
     setStages(c.stages.map(s => ({ role: s.role, instruction: s.instruction })));
   };
 
@@ -486,11 +499,15 @@ export const NativeAI: React.FC = () => {
       const url = editingId ? `/api/v1/resources/swarm/${editingId}` : '/api/v1/resources/swarm/define';
       const r = await fetch(url, {
         method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingId ? { name, stages: valid }
-                                       : { name, context, stages: valid, usage_area: 'synthesis' }),
+        body: JSON.stringify(editingId ? { name, context: designContext, stages: valid }
+                                       : { name, context: designContext, stages: valid, usage_area: 'synthesis' }),
       });
-      if (!r.ok) setError(`Save failed (HTTP ${r.status}).`);   // W344 — never a silent click
-      setEditingId(null);
+      if (!r.ok) {   // W344 — never a silent click; W460 — and say why when the backend says why
+        const detail = await r.json().then(d => d?.detail).catch(() => null);
+        setError(`Save failed (HTTP ${r.status})${detail ? `: ${String(detail)}` : ''}.`);
+      }
+      // W460 — a cascade removed elsewhere (404) used to trap the designer in edit mode against a missing id
+      if (r.ok || (editingId && r.status === 404)) { setEditingId(null); if (r.ok) setDesignContext(''); }
       await loadCascades();
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setSaving(false);
@@ -543,10 +560,10 @@ export const NativeAI: React.FC = () => {
           </Card>
 
           {/* Posture */}
-          <Card className="p-6 border-emerald-500/30 bg-emerald-500/5">
+          <Card className="p-6 border-slate-800">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-black text-white uppercase tracking-wide flex items-center gap-2"><ShieldCheck size={16} className="text-emerald-400" /> Posture</h3>
-              <span className="text-[10px] font-black uppercase px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">{status.posture}</span>
+              <h3 className="text-sm font-black text-white uppercase tracking-wide flex items-center gap-2"><ShieldCheck size={16} className="text-slate-400" /> Posture</h3>
+              <span className="text-[10px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300" title="a routing policy, not a verdict">{status.posture}</span>
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed">{status.guarantee}</p>
             <div className="flex flex-wrap gap-2 mt-3">
@@ -781,13 +798,28 @@ export const NativeAI: React.FC = () => {
             {tree && <TreeView run={tree} />}
           </Card>
 
+        </>
+      )}
+
           {/* Design a bespoke cascade (user design control) */}
-          <Card className="p-6 border-aura/30">
+          {/* W460 (P1.12) — outside the status block: a failed status call used to hide the only real
+              designer, which the retired Composer's routes now land on (#cascade-designer) */}
+          <Card className="p-6 border-aura/30" id="cascade-designer">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-aura mb-1 flex items-center gap-2"><Cpu size={14} /> Design a bespoke swarm cascade</h3>
             <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">Reconfigure the agent stages, name it, and save it as a reusable, re-runnable resource that runs on Workstation's <span className="text-aura">owned</span> resources. This is a first-class Resource-Fabric resource.</p>
             <input value={name} onChange={e => setName(e.target.value)}
               className="w-full text-xs font-bold bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-white mb-3"
               placeholder="Cascade name…" />
+            {editingId && (
+              <p className="text-[10px] text-amber-400 font-bold mb-3 flex items-center gap-2" data-testid="cascade-edit-mode">
+                Editing a saved cascade — Save updates it.
+                <button type="button" onClick={() => setEditingId(null)} className="underline text-slate-400">Stop editing (Save creates a new cascade)</button>
+              </p>
+            )}
+            {/* W460 — the designer has its own context (it used to send the Quick-swarm box silently) */}
+            <input value={designContext} onChange={e => setDesignContext(e.target.value)}
+              className="w-full text-[11px] bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-slate-300 mb-3"
+              placeholder="Context this cascade works on (optional)…" />
             <div className="space-y-2 mb-3">
               {stages.map((s, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -803,7 +835,9 @@ export const NativeAI: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={addStage} className="flex items-center gap-1.5 bg-slate-900 text-slate-300 text-[11px]"><Plus size={12} /> Add stage</Button>
-              <Button onClick={saveCascade} disabled={saving || !name.trim()} className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px]">
+              <Button onClick={saveCascade} disabled={saving || !name.trim() || !stages.some(s => s.role.trim() && s.instruction.trim())}
+                title={stages.some(s => s.role.trim() && s.instruction.trim()) ? 'Save this cascade' : 'A cascade needs at least one stage with a role and an instruction'}
+                className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px]">
                 {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save cascade
               </Button>
             </div>
@@ -836,8 +870,6 @@ export const NativeAI: React.FC = () => {
               ))}
             </div>
           </div>
-        </>
-      )}
     </div>
   );
 };

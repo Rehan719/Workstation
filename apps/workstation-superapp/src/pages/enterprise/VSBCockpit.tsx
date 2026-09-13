@@ -464,7 +464,7 @@ export const VSBCockpit: React.FC = () => {
                   <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
                     {chiefResult.error ? <p className="text-vital">{String(chiefResult.error)}</p> : (
                       <>
-                        <p className="text-emerald-400 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · gaas: {chiefResult.governance?.status ?? '—'}</p>
+                        <p className="text-slate-300 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · gaas: <span className={chiefResult.governance?.status === 'allowed' ? 'text-emerald-400' : chiefResult.governance?.status ? 'text-amber-400' : 'text-slate-500'}>{chiefResult.governance?.status ?? '—'}</span></p>
                         <p className="whitespace-pre-wrap line-clamp-6">{chiefResult.chief_directive}</p>
                       </>
                     )}

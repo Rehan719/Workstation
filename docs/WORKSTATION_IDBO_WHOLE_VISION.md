@@ -11,7 +11,7 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W459).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W460).
   2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
@@ -553,7 +553,12 @@ than trusted once this date is old; a long-running dev process serves the code i
   override is admin-only under auth and a CRITICAL decision is always an explicit admin decision, every
   decision says who asked and what decided it, a review decided by the health rule says so and a CRITICAL
   change is held rather than silently rejected, the twin fallback says there is no twin model, and every
-  change record is written under a compare-and-set. Three Tier-1 items remain open.
+  change record is written under a compare-and-set.
+- **P1.12 delivered (W460, 2026-09-13):** the disconnected composer canvas is retired and its routes land
+  on the real cascade designer; no surface claims compliance nobody evaluated — every such badge, score
+  and sentence is removed or conditional on a real verdict, the spawn and establish gates no longer
+  record an alignment they never checked, and the Governance Hub flags each event from what it is. Two
+  Tier-1 items remain open.
 - The fabrication audit is closed (63/63); the §4.5 defect *class* is closed at every reached site;
   the refute-your-own-fixes practice has caught live breaks in **ten consecutive rounds**.
 
@@ -570,7 +575,7 @@ than trusted once this date is old; a long-running dev process serves the code i
   ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
   workstream, the six-step verification each must pass, milestones that are measurements, and the
   definition of complete.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W459). A record of intent
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W460). A record of intent
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
@@ -581,7 +586,7 @@ than trusted once this date is old; a long-running dev process serves the code i
   "Sovereign Investment Civilisation") — are archived under `_archive/docs/` (W446).
 
 **Open against this vision, in one paragraph (regenerated 2026-09-05 from ledger v3; P1.1 closed
-2026-09-12, P1.2–P1.9 closed the same day, P1.10–P1.11 on 2026-09-13):** three Tier-1 truth defects on reached
+2026-09-12, P1.2–P1.9 closed the same day, P1.10–P1.12 on 2026-09-13):** two Tier-1 truth defects on reached
 surfaces (fourteen
 found; the gate that could not fail on the floor closed W449; the body that wore floor scaffold and a
 fallback name closed W450; the AI CEO roleplay closed W451; the review gates that gated nothing closed
@@ -589,7 +594,8 @@ W452; the badges that painted the floor green closed W453; the job search that c
 W454; the compliance row that could not read closed W455; the tafsir tab's floor translation closed W456;
 the risk scoring that computed nothing closed W457; the status that claimed a real model while the floor
 served — and scored a config-disabled resource as a failure — closed W458; the Change Control tiers that
-were prose closed W459; delivery-plan P1 —
+were prose closed W459; the composer canvas with its unevaluated compliance badge closed W460;
+delivery-plan P1 —
 the scaffold-bodied VSB, the detached AI CEO chat, advisory review gates, green floor badges, the
 Employment "live job board", a compliance row that reads nothing, the floor "Translation" heading on
 the tafsir tab, Care scoring that computes nothing, a status page inverted by a failure row, Change

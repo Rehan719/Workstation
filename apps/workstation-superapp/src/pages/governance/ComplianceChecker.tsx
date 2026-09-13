@@ -68,15 +68,15 @@ export const ComplianceChecker: React.FC = () => {
 
       {result && (
         <div className="space-y-3">
-          <Card className={`p-5 border ${result.overall === 'fail' ? 'border-vital/40 bg-vital/5' : result.overall === 'review' ? 'border-amber-400/40 bg-amber-400/5' : 'border-emerald-400/40 bg-emerald-400/5'}`}>
+          <Card className={`p-5 border ${result.overall === 'fail' ? 'border-vital/40 bg-vital/5' : result.overall === 'review' ? 'border-amber-400/40 bg-amber-400/5' : result.overall === 'pass' ? 'border-emerald-400/40 bg-emerald-400/5' : 'border-slate-700'}`}>
             <div className="flex items-center gap-3">
-              {result.overall === 'fail' ? <XCircle size={20} className="text-vital" /> : result.overall === 'review' ? <AlertTriangle size={20} className="text-amber-400" /> : <CheckCircle2 size={20} className="text-emerald-400" />}
+              {result.overall === 'fail' ? <XCircle size={20} className="text-vital" /> : result.overall === 'review' ? <AlertTriangle size={20} className="text-amber-400" /> : result.overall === 'pass' ? <CheckCircle2 size={20} className="text-emerald-400" /> : <MinusCircle size={20} className="text-slate-500" />}
               <p className="font-black text-white text-lg uppercase">{result.overall}</p>
               <span className="text-[10px] font-mono text-slate-500 ml-auto">{result.jurisdiction}</span>
             </div>
           </Card>
           {result.verdicts.map((v, i) => {
-            const Icon = STATUS_ICON[v.status] ?? CheckCircle2;
+            const Icon = STATUS_ICON[v.status] ?? MinusCircle;   // W460 — an unknown status is never a green check
             return (
               <Card key={i} className="p-4">
                 <div className="flex items-start gap-3">

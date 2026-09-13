@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge, Button, toast } from '@workstation/ui';
-import { BarChart3, TrendingUp, Users, Zap, ShieldCheck, PieChart, ArrowUpRight } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Zap, PieChart, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 // W407 — the four stat cards below were HARDCODED ("$4.2B", "+28%", "2.4x", "0.99") and rendered
@@ -38,11 +38,12 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
           {data?.detail || data?.sim_results_note || data?.projections_note}
         </p>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <StatCard label="Market Size" value={fmtMoney(data?.market_size)} icon={TrendingUp} color="text-aura" />
          <StatCard label="ROI Efficiency" value={fmtPct(sim?.aro_efficiency?.resource_optimization_gain)} icon={Zap} color="text-highlight" />
          <StatCard label="Swarm Multiplier" value={fmtNum(sim?.bto_roadmap?.implementation_speed_multiplier, "x")} icon={Users} color="text-vital" />
-         <StatCard label="GaaS Alignment" value={fmtNum(sim?.drad_resilience?.compliance_score)} icon={ShieldCheck} color="text-emerald-500" />
+         {/* W460 (P1.12) — a green "GaaS Alignment" card showed a number the MODEL invented in its JSON; the
+             constitutional gate never scored this plan. Removed rather than relabelled. */}
       </div>
       <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-8">
          <Card className="@[440px]:col-span-8 p-8 border-slate-900 bg-slate-950/40">

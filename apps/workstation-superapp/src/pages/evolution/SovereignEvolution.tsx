@@ -199,7 +199,7 @@ export const SovereignEvolution: React.FC = () => {
           {roadmap.change_control_submissions?.length > 0 && (
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-4">
-                <ShieldCheck size={16} className="text-emerald-400" />
+                <ShieldCheck size={16} className="text-slate-500" />
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Submitted to Change Control Agency</h3>
               </div>
               <div className="space-y-2">

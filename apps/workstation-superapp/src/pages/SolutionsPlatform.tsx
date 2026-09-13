@@ -173,7 +173,8 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
       scale: buildConfig.scale_tier,
       mesh_topology: buildConfig.regions.length > 1 ? 'multi-region federated' : 'single-region',
       planned_at: new Date().toISOString(),
-      governance: 'Constitutional compliance (gaas.v5) \u00b7 UEG audit chain',
+      // W460 — this plan is assembled in the browser and never sent through the gate; it claimed compliance
+      governance: 'not evaluated — this plan is built in the browser and never sent through gaas.v5',
     };
     setBuiltConfig(config);
     setStatus(s => ({ ...s, build: 'done' }));
@@ -637,7 +638,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                   {[
                     { icon: Globe,   label: 'Global Scale',  desc: 'Multi-region sovereign mesh', color: 'text-emerald-400' },
                     { icon: Factory, label: 'Industrial',     desc: 'OT/SCADA integration layer', color: 'text-orange-400' },
-                    { icon: Shield,  label: 'Governed', desc: 'gaas.v5 constitutional gate + UEG audit chain', color: 'text-amber-400' },
+                    { icon: Shield,  label: 'Audit', desc: 'launch readiness reads the UEG chain integrity — this plan itself is not gated', color: 'text-amber-400' },
                     { icon: Gauge,   label: 'Performance',   desc: 'Real-time TPS benchmarking', color: 'text-cyan-400' },
                   ].map(c => {
                     const Icon = c.icon;

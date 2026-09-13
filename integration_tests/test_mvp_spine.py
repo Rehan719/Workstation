@@ -10046,3 +10046,203 @@ def test_w459_external_cca_writers_compare_and_set(monkeypatch):
         {"event": "implemented", "ts": "2026-09-13T00:00:09Z", "by": "vsb_evolution_apply", "by_verified": False}]))
     store["vsb"] = dict(store["vsb"], evolution_pending_cca=vcid, applied_mutations=[])
     assert V.apply_approved_evolution(vid)["reason"] == "claim_stranded"
+
+
+def test_w460_compliance_badges_are_evaluated_or_absent(client):
+    """§6/§7 + §11 (ledger 1.12 · R4.3) — the Visual Composer tab was a local canvas whose nodes reached no
+    swarm, seeded with fictional model names, printing a green "GaaS COMPLIANT" for nodes nobody evaluated;
+    a second copy (Agent Forge) shipped in the channels dock. Across the app, a dozen more surfaces
+    claimed compliance nobody computed: a session that "conforms to Floor 24 mandates", a green IDLE veto
+    window and a 0.08 / 0.1 privacy budget that exist nowhere, a model-invented "GaaS Alignment" score,
+    a green NOMINAL when the status call never answered, "every action is governed", an "autonomous,
+    compliant" entity, and a Governance Hub that painted a blocked action's halt as a green CHAINED.
+
+    Both ways: every unevaluated claim is gone from the code that renders (comments are stripped), AND the
+    badges that ARE evaluated still render conditionally on a real verdict; the Governance Hub's flag is
+    computed from what each event is, and a genuinely allowed action still reads as recorded.
+    """
+    import re
+    from pathlib import Path
+    from agentic_core.gaas.v5.ueg import classify_event
+
+    # one pass that keeps string literals and removes only real comments: a '/*' inside a string
+    # (accept="image/*", '*/*') is not a comment start, and a comment quoting a marker is still a comment
+    _tok = re.compile(r"""('(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`)|/\*.*?\*/|//[^\n]*""", re.S)
+
+    def _strip_comments(text: str) -> str:
+        return _tok.sub(lambda m: m.group(1) or " ", text)
+
+    # the stripper itself, both ways — it must never hide code, and must remove what is only a comment
+    assert "GaaS COMPLIANT" in _strip_comments("fetch(u, { headers: { Accept: '*/*' } }); <b>GaaS COMPLIANT</b> {/* x */}")
+    assert "GaaS COMPLIANT" in _strip_comments('<input accept="image/*" /> <b>GaaS COMPLIANT</b> {/* x */}')
+    assert "GaaS COMPLIANT" not in _strip_comments('const a = 1; // removed the old "GaaS COMPLIANT" badge')
+    assert "GaaS COMPLIANT" not in _strip_comments("return x/* GaaS COMPLIANT */;")
+    assert "http://h/x" in _strip_comments("const u = 'http://h/x';")
+
+    roots = [Path("apps/workstation-superapp/src"), Path("packages/ui/src"), Path("packages/shared")]
+    MARKERS = {
+        r"(?i)GaaS(?:\s|\{['\"] ['\"]\}|&nbsp;)+COMPLIANT": "a compliance badge nothing evaluated",
+        r"Nematron|Nemoclaw": "fictional model names",
+        r"(?i)session conforms to": "a per-session conformance nobody computes",
+        r"Every action is governed": "a tour claim that every action passes the gate",
+        r"GaaS Alignment": "a model-invented compliance score",
+        r"Constitutional compliance \(gaas\.v5\)": "a browser-built plan claiming compliance",
+        r"(?i)self-healing is active": "an autonomy claim",
+        r"autonomous, compliant": "a compliance claim for every entity",
+        r"Deliverable · compliant": "a stage rail claiming every output is compliant",
+        r"auto-approved as a reflex": "a reflex nothing invokes",
+        r"any action that ran ungated": "a claim that every ungated action is recorded",
+        r"v16-Omega": "a literal engine name shown when the status call failed",
+        r">IDLE<": "a veto window that does not exist",
+        r"0\.08 / 0\.1": "a privacy budget that does not exist",
+        r"valid:\s*true,\s*allowed:\s*true": "a client-side validator that approves everything",
+    }
+    offenders, scanned = [], {str(r): 0 for r in roots}
+    for root in roots:
+        for f in list(root.rglob("*.tsx")) + list(root.rglob("*.ts")):
+            if "node_modules" in f.parts:
+                continue
+            scanned[str(root)] += 1
+            code = _strip_comments(f.read_text(encoding="utf-8", errors="replace"))
+            for pat, why in MARKERS.items():
+                if re.search(pat, code):
+                    offenders.append(f"{f}: {pat} ({why})")
+    assert all(n >= 1 for n in scanned.values()) and sum(scanned.values()) >= 110, scanned   # the instrument is not blind (123 files at W460)
+    assert not offenders, "\n".join(offenders)
+
+    # the retired canvases are gone, their routes land on the real designer, which no status call can hide
+    S = Path("apps/workstation-superapp/src")
+    assert not (S / "components/organism/VisualAgentComposer.tsx").exists()
+    assert not (S / "components/organism/AgentForge.tsx").exists()
+    assert not Path("packages/shared/gaas.ts").exists()
+    hub = (S / "pages/LivingOrganisationHub.tsx").read_text(encoding="utf-8")
+    assert "VisualAgentComposer" not in hub and 'to="/native-ai?focus=cascade-designer"' in hub
+    app = (S / "App.tsx").read_text(encoding="utf-8")
+    assert '"/visual-composer"    element={<Navigate to="/native-ai?focus=cascade-designer" replace />}' in app
+    assert "AgentForge" not in Path("packages/ui/src/CommandCenter.tsx").read_text(encoding="utf-8")
+    nai = (S / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    status_open = nai.index("{status && (")
+    status_close = nai.index("        </>\n      )}", status_open)
+    assert nai.index('id="cascade-designer"') > status_close          # outside the status block
+    assert "!stages.some(s => s.role.trim() && s.instruction.trim())" in nai  # no empty cascade from the page
+
+    # POSITIVE — the badges that ARE evaluated still render, conditionally on the verdict
+    api_ts = (S / "lib/api.ts").read_text(encoding="utf-8")
+    assert "overall === 'pass' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500'" in api_ts
+    rfab = (S / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    assert "gov (intent only): {runResult.org_cascade.governance}" in rfab                 # a constant verdict is never green
+    assert "runResult.org_cascade.governance === 'allowed' ? 'bg-emerald" not in rfab
+    chip = [ln for ln in rfab.splitlines() if "gov (intent only)" in ln]
+    assert len(chip) == 1 and "emerald" not in chip[0]                               # no green, conditional or static
+    # the colour fixes, pinned (each was a green claim on something nobody evaluated)
+    pins = {
+        "pages/enterprise/BoardOfDirectors.tsx": "<ShieldCheck size={12} className=\"text-slate-500\" /> {result.directive_id}",
+        "pages/enterprise/VSBCockpit.tsx": "chiefResult.governance?.status === 'allowed' ? 'text-emerald-400'",
+        "pages/enterprise/VSBEconomy.tsx": "gov === 'allowed' ? 'text-emerald-400' : gov ? 'text-amber-400' : 'text-slate-500'",
+        "pages/governance/ComplianceChecker.tsx": "STATUS_ICON[v.status] ?? MinusCircle",
+        "pages/synthesis/GenesisJourney.tsx": "m > 0 && n === m ? 'text-emerald-400' : m === 0 ? 'text-slate-500' : 'text-amber-400'",
+        "components/layout/Header.tsx": "text-slate-300 hover:text-white hover:scale-105 transition-all gaas-audit-btn",
+        "pages/governance/GovernanceHub.tsx": "color={!verify ? 'text-slate-500' : verify.valid ? 'text-emerald-500' : 'text-vital'}",
+        "pages/governance/ConstitutionalUI.tsx": ".catch(() => setGaas(null))",
+        "pages/enterprise/VSBSpawnStudio.tsx": "ev.data?.passed === true ? STAGE_META.gaas_complete",
+    }
+    for rel, needle in pins.items():
+        assert needle in (S / rel).read_text(encoding="utf-8"), rel
+    assert "compliance_score" not in Path("agentic_core/synthesis/api.py").read_text(encoding="utf-8")
+    vsb_src = Path("agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert "gaas_passed = None" in vsb_src and "'NOT EVALUATED'" in vsb_src     # an unevaluated spawn gate never reads PASSED
+    assert not re.search(r"^\s*gaas_passed = True\s*$", vsb_src, flags=re.M)      # never starts as PASSED
+    assert "<CheckCircle2 size={20} className=\"text-emerald-500 opacity-20" not in (S / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
+    cui = (S / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
+    assert "'UNAVAILABLE'" in cui and "gaas.circuit_breaker.tripped ? 'BREAKER OPEN' : 'NOMINAL'" in cui
+    gh = (S / "pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    assert "e?.flag?.level" in gh and "verify.valid ? 'VALID' : 'BROKEN'" in gh
+    assert "d.decision === 'deny'" not in gh
+
+    # BEHAVIOUR — the flag is what the event IS
+    assert classify_event({"type": "policy_gate_halt"})["level"] == "flagged"
+    assert classify_event({"type": "circuit_breaker_trip"})["level"] == "flagged"
+    assert classify_event({"type": "compliance.screen", "overall": "fail"})["level"] == "flagged"
+    assert classify_event({"type": "compliance.screen", "overall": "review"})["level"] == "review"
+    assert classify_event({"type": "compliance.screen", "overall": "pass"})["level"] == "recorded"
+    assert classify_event({"type": "compliance.screen", "overall": None})["level"] == "review"      # a screen that never ran
+    assert classify_event({"type": "economy.materiality_gate_error"})["level"] == "flagged"
+    assert classify_event({"type": "economy.materiality_hold_filed"})["level"] == "review"
+    assert classify_event({"type": "checkpoint"})["level"] == "recorded"
+    # drift: every adverse event type any producer writes is classified as flagged or review
+    adverse = re.compile(r"halt|trip|fail|bypass|blocked|breach|refus|denied|violation|reject|hold|error")
+    produced = set()
+    for f in Path("agentic_core").rglob("*.py"):
+        for m in re.finditer(r'"type":\s*"([a-z0-9_.]+)"', f.read_text(encoding="utf-8", errors="replace")):
+            if adverse.search(m.group(1)):
+                produced.add(m.group(1))
+    assert len(produced) >= 10, produced                                   # the drift check is not blind
+    unclassified = sorted(t for t in produced if classify_event({"type": t})["level"] == "recorded")
+    assert not unclassified, unclassified
+
+    # …and through the API: a blocked action's events are flagged, a genuinely allowed one is recorded
+    try:
+        blocked = client.post("/api/v1/gaas/intercept", json={
+            "action_type": "w460_probe", "requires_human": True, "human_approved": False}).json()
+        assert blocked["status"] == "blocked", blocked
+        evs = client.get("/api/v1/gaas/ueg/events", params={"limit": 10}).json()["events"]
+        assert all("flag" in e for e in evs)
+        halts = [e for e in evs if (e.get("data") or {}).get("type") in ("policy_gate_halt", "circuit_breaker_trip")]
+        assert halts and all(e["flag"]["level"] == "flagged" for e in halts)
+        client.post("/api/v1/gaas/breaker/reset")
+        ok = client.post("/api/v1/gaas/intercept", json={"action_type": "w460_harmless_probe"}).json()
+        assert ok["status"] == "allowed", ok
+        latest = client.get("/api/v1/gaas/ueg/events", params={"limit": 3}).json()["events"]
+        assert any(e["flag"]["level"] == "recorded" for e in latest)
+    finally:
+        client.post("/api/v1/gaas/breaker/reset")                        # the breaker is shared — leave it closed
+    assert client.get("/api/v1/gaas/status").json()["circuit_breaker"]["tripped"] is False
+
+    # the designer's backend refuses a cascade that could never run, and still saves one that can
+    assert client.post("/api/v1/resources/swarm/define", json={"name": "w460 empty", "stages": []}).status_code == 400
+    assert client.post("/api/v1/resources/swarm/define", json={
+        "name": "w460 blank", "stages": [{"role": "analyst", "instruction": "   "}]}).status_code == 400
+    good = client.post("/api/v1/resources/swarm/define", json={
+        "name": "w460 ok", "stages": [{"role": "analyst", "instruction": "List three risks."}]})
+    assert good.status_code == 200 and good.json()["id"]
+    # …and a saved cascade cannot be EDITED into one that define would refuse
+    sid = good.json()["id"]
+    assert client.put(f"/api/v1/resources/swarm/{sid}", json={
+        "stages": [{"role": "analyst", "instruction": "   "}]}).status_code == 400
+    assert client.put(f"/api/v1/resources/swarm/{sid}", json={
+        "context": "edited context", "stages": [{"role": "analyst", "instruction": "List four risks."}]}).status_code == 200
+    # the designer edits what is saved (context loaded and sent) and scrolls only once the page has settled
+    assert "setDesignContext(c.context ?? '')" in nai and "{ name, context: designContext, stages: valid }" in nai
+    assert "}, [loading, status]);" in nai and "window.setTimeout(() => document.getElementById('cascade-designer')?.scrollIntoView({ block: 'start' }), 250)" not in nai
+    assert "if (r.ok || (editingId && r.status === 404)) { setEditingId(null);" in nai and 'data-testid="cascade-edit-mode"' in nai
+
+    # second refutation — the same unevaluated-verdict class on the paths F1 did not touch
+    import asyncio as _asyncio
+    from types import SimpleNamespace
+    from agentic_core.api import genesis as _genesis
+    gen_src = Path("agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert '"constitutional_alignment": gov.status == "allowed"' not in gen_src      # the gate never reads the enterprise
+    assert gen_src.count("**_establish_gate(gov)") == 2 and '"Constitutionally Attested"' not in gen_src
+    for st in ("allowed", "halted", "blocked"):
+        g = _genesis._establish_gate(SimpleNamespace(status=st, checkpoint_id="cp"))
+        assert g["constitutional_alignment"] is None and g["constitutional_gate"]["status"] == st
+        assert "not screened" in g["constitutional_gate"]["scope"]
+    # the spawn gate follows the validator's OWN verdict: passed=False with no violations is not a pass
+    from agentic_core.api import vsb as _vsb
+    class _BelowThreshold:
+        async def validate_intent(self, intent, context):
+            return {"passed": False, "blocked": False, "violations": []}
+    _saved = _vsb._gaas
+    try:
+        _vsb._gaas = _BelowThreshold()
+        spawn = client.post("/api/v1/vsb/spawn", json={"challenge": "w460 threshold probe", "domain": "business"})
+        gaas_events = [ln for ln in spawn.text.splitlines() if '"gaas_complete"' in ln]
+        assert gaas_events and '"passed": false' in gaas_events[0] and '"evaluated": true' in gaas_events[0], gaas_events
+    finally:
+        _vsb._gaas = _saved
+    gh2 = (S / "pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    assert "value={events.filter(e => flagLevel(e) === 'flagged').length}" in gh2 and "'Flagged + review'" in gh2
+    assert "{gaas?.ueg?.total_events ?? '—'}" in cui
+    gj = (S / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "compliance: not screened" in gj and "not a certification" in gj
+    assert "more living entities are not shown here" in (S / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")

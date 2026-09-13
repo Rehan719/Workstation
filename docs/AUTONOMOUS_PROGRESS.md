@@ -5299,3 +5299,79 @@ at HEAD as well — it depends on an earlier test having recorded a self-healing
 **Docs:** ledger v3 status R3.2 + R6.2 FIXED W459; prompt ledger 1.11 CLOSED and P1.11 ✅ DONE with the
 not-done list; vision §16; living plan §4/§8 and the two W446 caveats annotated closed; the defect
 ledger's two W438 Change Control latents closed.
+
+### W460 — delivery-plan P1.12: the Visual Composer retired, and no surface claims compliance nobody evaluated
+
+**What was wrong (ledger 1.12 · R4.3).** The Living Organisation hub's Composer tab was a local React
+canvas. Its nodes reached no swarm, it was seeded with fictional model names (Nematron-1B, Nemoclaw-3B),
+and it printed a green "GaaS COMPLIANT" for nodes nobody evaluated. A second copy, Agent Forge, shipped
+in the Command Center's channels dock. A read-only audit of the whole app for the same class found more
+than a dozen other surfaces claiming compliance that nothing computed: a session that "conforms to Floor
+24 mandates"; a green IDLE veto window and a 0.08 / 0.1 privacy budget that exist nowhere; a
+`packages/shared/gaas.ts` "validator" whose checks always returned valid; a model-invented "GaaS
+Alignment" score on the business-model simulator; a green NOMINAL when the gaas status call never
+answered; a tour step saying every action is governed; an "autonomous, compliant" entity on the
+dashboard; a browser-built plan headed "Constitutional compliance (gaas.v5)"; green shields and chips on
+Board, Cockpit, economy and Sovereign Evolution results whatever the gate returned; a VSB spawn gate that
+STARTED as passed, so a gate that never ran (no genome configured) was recorded and signalled as PASSED;
+and a Governance Hub that painted a blocked action's policy halt as a green CHAINED row.
+
+**What changed.** VisualAgentComposer.tsx, AgentForge.tsx and packages/shared/gaas.ts are deleted.
+`/visual-composer` and `/ceo?tab=composer` land on the real cascade designer at
+`/native-ai?focus=cascade-designer`, which now renders outside the fabric-status block (a failed status
+call no longer hides it), has its own context box, scrolls into view once the page settles, loads and
+sends the saved context when editing, says when it is in edit mode with a way out, and leaves edit mode
+when the cascade has gone (404). The hub links to the designer; the channels dock's tile opens it. The
+designer's backend refuses a cascade with no complete stage on define AND on edit (400 with the
+reason). Every unevaluated claim listed above is removed or made conditional on a real verdict — a slate
+"—" / "not evaluated" / "UNAVAILABLE" where nothing was checked. The spawn gate starts as NOT EVALUATED,
+follows the validator's own verdict (passed=false with no violations is not a pass) and colours the
+Spawn Studio row green only for an evaluated pass. Genesis establish no longer records
+`constitutional_alignment: true` from a gate that screens only the intent string and domain: it stores
+None with the gate's real status and scope, and the stream event says "Intent gate: <status>".
+`GET /api/v1/gaas/ueg/events` adds a computed `flag` (flagged · review · recorded) from
+`classify_event` — halts, trips, failures, bypasses, refusals, violations and errors are flagged; holds
+and a compliance screen that did not pass are review — and the Governance Hub renders it (Flagged card
+counts flagged only; the filter says "Flagged + review"). The org cascade's governance chip is neutral
+and reads "gov (intent only)" — it gates a constant string, which is recorded as a follow-up, not hidden.
+
+**Tests:** `test_w460_compliance_badges_are_evaluated_or_absent` — a marker scan over 123 source files
+with comments stripped by a string-aware stripper that is itself tested both ways; the retired files
+gone and their routes redirected; the designer outside the status block; colour fixes pinned; the
+classifier's cases and a drift check that every adverse event type any producer writes is classified;
+through the API a blocked action's events flagged and an allowed one recorded (breaker reset in a
+finally); define and edit refusing an incomplete cascade; the establish gate helper returning None for
+every status; a below-threshold validator result streamed as passed false. **Broken nineteen ways across
+three passes (seven on the round, seven on the first refuter fixes, five on the second) — each blind
+failed the guard on its own; restored.** Two blinds were first vacuous (a
+redundant second defence; a chip line the guard did not read) and the guard was strengthened until
+they failed.
+
+**Browser (fresh cold backend :8064 — `scripts/_w460_probe.mjs`, 10/10):** the built bundle carries
+none of the retired claims; both retired routes land on the designer in view, and it renders with the
+status call aborted; the hub has no Composer tab and links to the designer; Save is disabled with no
+complete stage and the API refuses an empty cascade with the reason; a cascade saved from the page runs;
+a blocked action's halt reads FLAGGED and an allowed action reads CHAINED with no green. One earlier run
+failed the in-view check: my probe measured before the page's settle-then-scroll on a cold model probe
+— the probe now waits for the outcome.
+
+**Refuted (own diff), twice.** First pass: sixteen confirmed defects, all fixed — among them the spawn
+gate recorded as PASSED when it never ran, a materiality-gate error and a never-run compliance screen
+classified as recorded, the constant org-cascade verdict still green, the designer's edit silently
+dropping context, the PUT accepting what define refuses, a comment stripper that ate live JSX, and the
+fidelity audit instrument still pointing at the deleted canvas. Second pass on those fixes: twelve
+confirmed, all fixed — the same unevaluated-alignment class on the Genesis establish path, the
+validator's own verdict ignored, a stage rail still saying "compliant", copy overstating what the §11
+screen reads, what the UEG records and what triggers the immune reflex, a Flagged count including review
+holds, "0 UEG events" on a failed poll, a list of eight entities under a claim about every entity, a
+stripper that could still hide code after '*/*', and the designer stuck in edit mode after a 404.
+
+**Recorded, not fixed (the follow-up register, W462):** the org cascade gates a constant attestation;
+one violation trips the shared breaker and the reset route has no user dependency; `/api/v1/swarm` has
+no auth dependency; the swarm store's writers are unlocked, the swarm contract drops a stage's model and
+records no run id; saved cascades cannot be deleted from the page; Command Center's remaining literals;
+the compliance mandates docs claiming ENFORCED on the deleted gaas.ts. Split out as its own round
+(W461): transformation stage verification that could not fail.
+
+**Docs:** ledger v3 status R4.3 FIXED W460; prompt ledger 1.12 CLOSED and P1.12 ✅ DONE; vision §16;
+living plan §4/§7/§8.

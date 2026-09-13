@@ -1249,6 +1249,11 @@ async def define_swarm(req: DefineSwarmRequest, user: dict | None = Depends(get_
     optionally bound to a VSB as its own delivery org (vsb_id + org tiers).
     §14 (W324): owner-stamped; binding to a VSB requires ACCESS to that VSB (previously any caller
     could bind a cascade to another tenant's entity and update_swarm would write into it)."""
+    # W460 (P1.12) — a cascade with no stage (or a blank role/instruction) was saved and then failed at
+    # run time with "Provide stages or a saved swarm_id"; refuse it at definition, as update_swarm does.
+    # (register_swarm itself is left alone: Genesis calls it with a generated org.)
+    if not req.stages or any(not (s.role or "").strip() or not (s.instruction or "").strip() for s in req.stages):
+        raise HTTPException(status_code=400, detail="A cascade needs at least one stage, each with a role and an instruction.")
     if req.vsb_id:
         from agentic_core.api.vsb import _require_vsb_access
         _require_vsb_access(req.vsb_id, user if isinstance(user, dict) else None)
@@ -1270,8 +1275,10 @@ async def update_swarm(sid: str, req: UpdateSwarmRequest,
             # §14 (W324) — cascade mutations are owner-scoped; this also guards the VSB
             # write-back below (binding was validated at define time — W324).
             _require_design_access(c, user, "Swarm cascade", sid)
-            if req.stages is not None and not req.stages:
-                raise HTTPException(status_code=400, detail="A cascade needs at least one stage.")
+            if req.stages is not None and (not req.stages or any(
+                    not (s.role or "").strip() or not (s.instruction or "").strip() for s in req.stages)):
+                # W460 (refuter) — define refused a blank role/instruction; PUT let a saved cascade be edited into one
+                raise HTTPException(status_code=400, detail="A cascade needs at least one stage, each with a role and an instruction.")
             if req.name is not None:
                 c["name"] = req.name
             if req.stages is not None:
@@ -1389,7 +1396,8 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
                 context = f"{live}\n\n{context}".strip()
                 grounded_live = True
     if not stages:
-        raise HTTPException(status_code=400, detail="Provide stages or a saved swarm_id to run.")
+        raise HTTPException(status_code=400, detail=(f"Saved cascade {req.swarm_id} has no stages." if req.swarm_id
+                                                     else "Provide stages or a saved swarm_id to run."))
     from agentic_core.ai.native import orchestrator
     _t0 = time.time()
     res = await orchestrator.swarm(req.agent, stages, context=context,

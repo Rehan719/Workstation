@@ -698,6 +698,20 @@ _BODY_AGENTS = (("concept", "genesis_concept", "concept"),
                 ("operations", "genesis_operations", "operational intelligence"))
 
 
+_ESTABLISH_GATE_SCOPE = "intent + domain only — the enterprise's problem, concept and design are not screened by this gate"
+
+
+def _establish_gate(gov) -> dict:
+    """W460 — what the establish gate actually checked. It screens the constant intent string and the
+    domain, never the enterprise's content, so it cannot attest constitutional alignment: that stays
+    None (not assessed) whatever the gate returned, and the record carries the gate's real status and
+    its scope. (It used to store gov.status == 'allowed' — true for every enterprise, and false only
+    when the breaker was open, i.e. when nothing was evaluated at all.)"""
+    return {"constitutional_alignment": None,
+            "constitutional_gate": {"status": gov.status, "checkpoint": gov.checkpoint_id,
+                                    "scope": _ESTABLISH_GATE_SCOPE}}
+
+
 def _birth_gates(req: "EstablishRequest") -> dict:
     """W452 — the Mode 3 gate record at birth: validated stage ids, no decisions yet (pending)."""
     from fastapi import HTTPException as _HTTPExc
@@ -810,7 +824,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "concept": req.concept[:1000],
         "design": req.design[:1000],
         "commercialisation": req.commercialisation[:1000],
-        "constitutional_alignment": gov.status == "allowed",
+        **_establish_gate(gov),
     }
     try:
         vsb_mod._genome_registry.store_epigenetic_pattern(pattern_id=vsb_id, data=genome_spec, layer=1)
@@ -999,15 +1013,16 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         async def _attest() -> str:
             return "VSB establishment attested under v16-Omega constitutional supervision."
         gov = await _GOV.intercept({"intent": "genesis_establish", "domain": req.domain}, _attest)
-        yield _event("governance", "Constitutionally Attested",
-                     f"gaas.v5 gate: {gov.status}", {"status": gov.status, "checkpoint": gov.checkpoint_id})
+        yield _event("governance", f"Intent gate: {gov.status}",
+                     f"gaas.v5 screened the establish intent and domain — not the enterprise's content — and returned {gov.status}",
+                     {"status": gov.status, "checkpoint": gov.checkpoint_id, "scope": _ESTABLISH_GATE_SCOPE})
 
         # 3 — genome encoding (epigenetic registry)
         genome_spec = {
             "vsb_id": vsb_id, "origin": "genesis_journey", "problem": req.problem,
             "domain": req.domain, "realm": req.realm, "concept": req.concept[:1000],
             "design": req.design[:1000], "commercialisation": req.commercialisation[:1000],
-            "constitutional_alignment": gov.status == "allowed",
+            **_establish_gate(gov),
         }
         try:
             vsb_mod._genome_registry.store_epigenetic_pattern(pattern_id=vsb_id, data=genome_spec, layer=1)

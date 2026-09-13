@@ -28,6 +28,43 @@ logger = logging.getLogger("gaas.v5.ueg")
 _DEFAULT_PATH = os.environ.get("WORKSTATION_UEG_PATH") or os.path.join("meta", "gaas_v5_ueg.json")
 
 
+_ADVERSE_TYPES = frozenset({
+    "policy_gate_halt", "circuit_breaker_trip", "post_validation_failure", "execution_failure",
+    "board.governance_bypass", "economy.governance_bypass", "economy.cycle_blocked",
+    "economy.compliance_fail_hold", "economy.materiality_approval_restore_failed",
+    "immune.quarantine_engaged", "ai.external_budget_breach", "marketplace.recognition_failed",
+    "vsb.evolution.claim_release_failed", "economy.materiality_gate_error",
+})
+_REVIEW_TYPES = frozenset({"economy.materiality_hold_filed", "marketplace.listing_held"})
+_ADVERSE_TOKENS = ("halt", "trip", "failure", "failed", "bypass", "blocked", "breach", "refused",
+                   "denied", "violation", "rejected", "error")
+
+
+def classify_event(data: Dict[str, Any]) -> Dict[str, Any]:
+    """W460 (P1.12) — what a UEG event MEANS for the audit view: "flagged" (a refusal, failure, bypass or
+    breach), "review" (a hold awaiting a decision), or "recorded". The Governance Hub used to flag only
+    decision=='deny' / status=='denied' / a type containing 'violation' — none of which the gate writes — so
+    a blocked action's policy_gate_halt and circuit_breaker_trip rendered as a green "CHAINED".
+    Pure; the stored node and the hash chain are never touched."""
+    data = data or {}
+    t = str(data.get("type") or "")
+    tl = t.lower()
+    if t == "compliance.screen":
+        overall = str(data.get("overall") or "").lower()
+        if overall == "fail":
+            return {"level": "flagged", "why": "§11 compliance screen failed"}
+        if overall == "pass":
+            return {"level": "recorded", "why": None}
+        # review, error, or a screen that never produced a verdict — never a clean "recorded"
+        return {"level": "review", "why": f"§11 compliance screen {overall or 'produced no verdict'}"}
+    if (t in _ADVERSE_TYPES or data.get("decision") == "deny" or data.get("status") in ("denied", "blocked")
+            or any(tok in tl for tok in _ADVERSE_TOKENS)):
+        return {"level": "flagged", "why": t or "adverse decision"}
+    if t in _REVIEW_TYPES or "hold" in tl:
+        return {"level": "review", "why": t}
+    return {"level": "recorded", "why": None}
+
+
 class UEGLogger:
     """Append-only, SHA3-512 hash-chained constitutional event log.
 
