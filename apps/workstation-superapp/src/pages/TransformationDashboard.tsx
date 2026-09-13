@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
   Target, Activity, GitBranch, CheckCircle2, Circle, Loader2,
-  Sparkles, HeartPulse, AlertCircle, Eye, Map, Workflow, ShieldCheck,
+  Sparkles, HeartPulse, AlertCircle, Eye, Map, Workflow, ShieldCheck, ListChecks,
 } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
 
@@ -28,6 +28,17 @@ interface OrchestrationRun {
   validation: { stages: number; assessable_stages?: number; not_assessable_stages?: number; verified_stages: number; end_to_end_chief_to_bto: boolean; biomimetic_signals_fired: number; validated: boolean; report: string };
 }
 
+// W462 — the follow-up register (GET /api/v1/plan/followups): found-but-not-done work, scheduled in plan order
+interface FollowupRow { id: string; title: string; why: string; severity: string; slot: string; source: string }
+interface Followups {
+  available: boolean; reason?: string;
+  counts: { open: number; scheduled: number; high: number; awaiting_owner: number; done: number; dropped: number };
+  next_plan_item: string | null;
+  schedule: { slot: string; title: string; items: FollowupRow[] }[];
+  awaiting_owner: FollowupRow[];
+  integrity: { ok: boolean; problems: string[] };
+}
+
 function tone(status: string) {
   return status === 'realised' ? 'text-emerald-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-500';
 }
@@ -46,10 +57,15 @@ export const TransformationDashboard: React.FC = () => {
   const [orchestrating, setOrchestrating] = useState(false);
   const [runs, setRuns] = useState<OrchRunSummary[]>([]);
   const [error, setError] = useState('');
+  const [followups, setFollowups] = useState<Followups | null>(null);
 
   const load = () => fetch('/api/v1/transformation').then(r => r.json()).then(setPic).catch(() => setError('Failed to load'));
   const loadRuns = () => fetch('/api/v1/transformation/orchestrate/runs').then(r => r.json()).then(d => setRuns(d.runs ?? [])).catch(() => {});
-  useEffect(() => { load(); loadRuns(); }, []);
+  // apiJson, so a 500 or a 404 from an older backend is named as such — never 'backend unreachable'
+  const loadFollowups = () => apiJson<Followups>('/api/v1/plan/followups')
+    .then(setFollowups)
+    .catch(e => setFollowups({ available: false, reason: `The follow-up register could not be loaded (${errorMessage(e)}).` } as Followups));
+  useEffect(() => { load(); loadRuns(); loadFollowups(); }, []);
 
   const tick = async () => {
     setTicking(true);
@@ -232,6 +248,52 @@ export const TransformationDashboard: React.FC = () => {
             </div>
           </Card>
         </>
+      )}
+
+      {/* W462 — every task a round found and did not do, slotted into the delivery plan and scheduled */}
+      {followups && (
+        <Card className="p-6" data-testid="followups-card">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+            <ListChecks size={14} /> Scheduled follow-ups
+          </h3>
+          {!followups.available ? (
+            <p className="text-[11px] text-slate-500">{followups.reason ?? 'The follow-up register is not readable here.'}</p>
+          ) : (
+            <>
+              <p className="text-[10px] text-slate-500 mb-3">
+                {followups.counts.open} open · {followups.counts.scheduled} scheduled ({followups.counts.high} high) · {followups.counts.awaiting_owner} awaiting the Owner · {followups.counts.done} done
+                {followups.next_plan_item ? ` · next plan item ${followups.next_plan_item}` : ''}
+              </p>
+              {!followups.integrity.ok && (
+                <p className="text-[10px] text-amber-400 font-bold mb-3" title={followups.integrity.problems.join('\n')}>
+                  The register is out of step with the plan — {followups.integrity.problems.length} problem(s): {followups.integrity.problems[0]}
+                </p>
+              )}
+              <div className="space-y-3">
+                {followups.schedule.map(s => (
+                  <div key={s.slot}>
+                    <p className="text-[10px] font-black text-white">{s.slot} <span className="text-slate-600 font-bold">— {s.title}</span></p>
+                    {s.items.map(r => (
+                      <p key={r.id} className="text-[10px] text-slate-400 mt-1 pl-3" title={`${r.why} (found ${r.source})`}>
+                        <span className={r.severity === 'high' ? 'text-amber-400 font-black' : 'text-slate-500 font-black'}>{r.id} · {r.severity}</span> {r.title}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+                {followups.awaiting_owner.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-black text-white">Awaiting the Owner <span className="text-slate-600 font-bold">— recorded, never scheduled without your instruction</span></p>
+                    {followups.awaiting_owner.map(r => (
+                      <p key={r.id} className="text-[10px] text-slate-400 mt-1 pl-3" title={`${r.why} (found ${r.source})`}>
+                        <span className="text-slate-500 font-black">{r.id}</span> {r.title}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </Card>
       )}
     </div>
   );

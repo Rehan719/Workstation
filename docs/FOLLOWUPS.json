@@ -1,0 +1,232 @@
+{
+  "about": "The follow-up register: every task a round finds and does not do. Rules and CLI: agentic_core/plan_followups.py, scripts/followups.py. Slots: a delivery-plan item (P2.6), NEXT (its own round, before the next plan item) or OWNER (waits on an Owner decision; never scheduled into a round). Enforced by test_w462_followup_register_is_scheduled_and_in_lockstep.",
+  "items": [
+    {
+      "id": "FU-001",
+      "title": "Transformation stage verification honest — not-assessable stages, twin persistence, validated only on an allowed gate",
+      "why": "stages 5/6 were constant True, a halted or partial gate still validated, and a validated run moves the Owner's living-plan objectives",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "done",
+      "closed_by": "W461",
+      "note": ""
+    },
+    {
+      "id": "FU-002",
+      "title": "A blocked transfer can re-approve an approval an EARLIER action already spent",
+      "why": "_materiality_gate returns None both below the threshold (nothing consumed) and after consuming an approval, and the blocked-transfer paths call _restore_consumed_approval unconditionally, which re-approves the latest implemented record with the matching title — so a blocked non-material transfer can hand the next material transfer a spent approval",
+      "source": "W462 register review (read, not yet reproduced)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/economy/governance.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-003",
+      "title": "test_fabric_organism_systems_run_real is order-dependent",
+      "why": "it fails when run alone (also at 1bde2eb0) and passes inside the full suite — it leans on state an earlier test leaves behind, so a green suite says nothing about it",
+      "source": "W459 (found in passing)",
+      "found": "2026-09-13",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-004",
+      "title": "The compliance mandates docs claim ENFORCED on a file W460 deleted",
+      "why": "docs/compliance/MANDATES.md and MANDATES_FINAL.md list 'GaaS-Validated Mutations — ENFORCED' in packages/shared/gaas.ts, which never validated anything and no longer exists; the other ENFORCED rows need the same reading",
+      "source": "W460 refutation (ruled out of that round's scope)",
+      "found": "2026-09-13",
+      "files": [
+        "docs/compliance/MANDATES.md",
+        "docs/compliance/MANDATES_FINAL.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-005",
+      "title": "The /api/v1/swarm router carries no auth dependency",
+      "why": "agentic_core/api/swarm.py has zero Depends — the org cascade (POST /cascade), CEO delegation (POST /delegate), proposed-catalogue curation and the run histories are callable by anyone when AUTH_ENABLED is on; P2.6 names 'swarm' among its routers, this row pins the routes",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-006",
+      "title": "The org cascade's governance verdict gates a constant string, not the delivery",
+      "why": "swarm.py's _attest returns a fixed attestation sentence, so 'gov: allowed' can never reflect the delivered content; W460 relabelled the chip 'intent only' — the real fix is gating the delivery itself",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-007",
+      "title": "One violation trips the shared circuit breaker, and anyone can reset it",
+      "why": "record_event trips on a single is_violation (no threshold), halting every later action on the node; POST /api/v1/gaas/breaker/reset has no user dependency",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/gaas/v5/circuit_breaker_rl.py",
+        "agentic_core/api/constitutional_gaas.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-008",
+      "title": "swarm_cascades.json writers are not under store_lock",
+      "why": "define, update and delete load-modify-save the store with no lock — a threaded probe during the P1.12 audit lost 38 of 40 concurrent writes",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-009",
+      "title": "The swarm HTTP contract drops per-stage model; runs have no run_id or UEG record",
+      "why": "SwarmStageSpec carries role and instruction only, so a stage's model choice is silently discarded; run_swarm records the outcome under stage 1's served_by alone and writes no run id or ledger entry",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-010",
+      "title": "Saved cascades cannot be deleted from the designer page",
+      "why": "DELETE /api/v1/resources/swarm/{sid} exists but the /native-ai designer offers no way to call it",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-011",
+      "title": "Command Center still carries hard-coded status text",
+      "why": "'in WORK mode for 4 hours', '3D Holographic Engine — Loading...' and 'Real-time stream initializing via libp2p...' are literals nothing measures (not compliance claims, so outside P1.12); no plan item covers packages/ui literals (P2.4's scatter is unreached backend operations)",
+      "source": "W460 audit (P1.12)",
+      "found": "2026-09-13",
+      "files": [
+        "packages/ui/src/CommandCenter.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-012",
+      "title": "A Board ratification queue for changes that need ratification",
+      "why": "W459 deleted requires_ratification rather than give it a consumer; whether the Board ratifies HIGH/CRITICAL changes is a product decision",
+      "source": "W459 (P1.11 NOT DONE b)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-013",
+      "title": "Should Change Control decisions write to the UEG?",
+      "why": "adding a UEG write to the CCA changes what the constitutional ledger holds; the Sanctum copy stopped claiming one in W459",
+      "source": "W459 (P1.11 NOT DONE c)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-014",
+      "title": "Change Control tier map — code_change and economy_material fall to MEDIUM by default",
+      "why": "_TIER_MAP has no entry for them, so their risk tier is an accident of the default rather than a decision",
+      "source": "W459 (P1.11 NOT DONE d)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    }
+  ]
+}

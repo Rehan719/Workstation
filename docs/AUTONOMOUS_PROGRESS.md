@@ -5413,3 +5413,98 @@ validated and the objective untouched; an ad-hoc run's stage 3 and a floor-serve
 assessable; the three surfaces render three states. **Broken eight ways — each blind failed on its own;
 restored.** Suite 367/15/0 in the isolated worktree on the W461 tree; re-run on the stacked tree with
 W460 and W462 before push. Probe `scripts/_w461_probe.mjs` 4/4 on a fresh backend.
+
+### W462 — the follow-up register: every task a round finds and does not do is slotted into the plan and scheduled
+
+**What was wrong.** Work a round found and deferred had nowhere to live that a later round was obliged
+to read. It sat in chat suggestion chips, in a commit message's "Not done" paragraph, or in the prompt
+ledger's "NOT DONE, and why" prose — W459 alone left four such items (a Board ratification queue, a UEG
+write from Change Control, the tier map, P2.6's routers) and W460's audit and refutations left eight
+more. Nothing scheduled them, nothing counted them, and nothing failed when a plan item was marked DONE
+with its leftovers still open. The Owner asked (2026-09-13) that further suggested tasks be integrated
+into the plan and scheduled.
+
+**What changed.** `docs/FOLLOWUPS.json` is the register: one row per deferred task with a title, a why,
+where it was found, the files, a severity, whether it is Owner-gated, a SLOT and a status. A slot is the
+delivery-plan item whose round will do it (P2.6, P2.8, …), NEXT (its own round before the next plan
+item), or OWNER (it waits on an Owner decision and is never scheduled into a round). The schedule is
+derived, not written: `agentic_core/plan_followups.py` reads the plan's own items in order from the real
+`<delivery_plan>` section, with DONE state from the exact `✅ DONE W###` marker right after an item's
+id, and hangs each open row on its slot — NEXT first, then plan order, severity before age. It is rendered
+between markers into the delivery plan (so the next round reads it before choosing work) and into the
+living plan's new §6.4, served at `GET /api/v1/plan/followups` (with counts on `GET /api/v1/plan`), and
+shown as a "Scheduled follow-ups" card on `/transformation`. `scripts/followups.py` adds, lists,
+closes, drops, re-slots (with an explicit --ungate once the Owner has ruled) and checks; every command holds
+an OS lock the OS releases when the holder exits, validates the change and both docs before writing
+anything, and writes the two docs and then the register all-or-nothing (a failed or interrupted write puts
+back what it already replaced, and says so by name if it cannot). The prompt's V6 RECORD step and the
+living plan's §1 now require every found-but-not-done task to be added in the same commit.
+
+**What the check enforces** (`check()`, run by the guard, the API and the CLI): a row on an item marked
+DONE fails (the round closed without doing it — close, drop with a reason, or re-slot); an item line
+that says done in any other form or place fails ("DONE WHEN" excepted), so a mis-typed marker cannot keep
+rows "scheduled" on finished work; owner-gated work is slotted OWNER and nothing else; an unknown slot, a done row with no
+round, a dropped row with no reason and an open row with closed_by fail; a named file must be a
+forward-slash path that exists in the working tree as a file AND is tracked by git (so an unstaged deletion
+or a path that only resolves on Windows cannot pass locally and fail CI);
+a malformed register is reported as problems, never raised; each doc carries exactly one marker block,
+the prompt's inside the delivery plan, and both equal the rendered block in their own line endings.
+
+**Populated with fourteen rows, each checked against the code first** (a draft claim that the swarm
+resource API had no auth or delete was wrong and never entered): FU-001 done in W461; NEXT — a blocked
+transfer that can re-approve an approval an earlier action already spent (read, not yet reproduced), the
+order-dependent `test_fabric_organism_systems_run_real`, the mandates docs claiming ENFORCED on the deleted
+gaas.ts, Command Center's literals; P2.6 — `/api/v1/swarm` auth, the org cascade gating a constant, the
+shared breaker; P2.8 — the swarm store's locking, contract and delete; OWNER — the Board ratification
+queue, a UEG write from Change Control, the tier map.
+
+**Tests:** `test_w462_followup_register_is_scheduled_and_in_lockstep` — the real register clean and in
+lockstep and served by the API; synthetic registers for every rule above; malformed rows reported, not
+raised; the DONE marker's exact form and a cross-reference that is not a marker; either doc's block
+edited, duplicated or moved out of the delivery plan; ordering with ids compared as numbers; an
+owner-gated row never scheduled; the API reporting a broken register, invalid JSON, a checker that raises
+and an absent register — never a 500 — while `/api/v1/plan` stays up; the page's three states.
+The CLI is exercised end to end in a scratch copy (never the repo): three concurrent adds get three
+distinct ids with no row lost, backslash paths are normalised, an owner-gated add is slotted OWNER, a reslot
+of owner-gated work is refused without --ungate, a bad slot is refused with nothing written, no lock is
+left behind; a held lock refuses a writer and a reader, and a killed holder releases it; a write that fails
+or is interrupted part-way is rolled back, and one whose rollback also fails names the files. **Broken
+forty-five ways across five passes (eight, fifteen, ten, six, six) — each blind failed on its own;
+restored.** Three blinds were first vacuous (an owner-gated row the synthetic case never slotted to a plan
+item; an API catch-all nothing reached; a CLI refusal a redundant check also produced) and the guard was
+strengthened until each failed.
+
+**Browser (fresh backend :8066 — `scripts/_w462_probe.mjs`, 7/7):** the API serves the register with
+integrity ok and `/api/v1/plan` carries the same counts; the card shows those counts and the next plan
+item, every scheduled and every Owner-gated row, slots in the API's order; stubbed — a register out of
+step names its problem, a 500 is named as HTTP 500 and not "unreachable", an aborted call says the
+register could not be loaded and never "0 open".
+
+**Refuted (own diff), four times.** First pass — three refuters: twenty confirmed, all fixed — among them
+a malformed row crashing the checker, the API (500) and the CLI instead of being reported; the plan's
+boundary taken from a prose mention of the tag; a DONE marker detected anywhere on the line (a
+cross-reference would read as done); owner-gated rows on finished items passing; the page calling a 500
+'backend unreachable'; guard assertions that could not fail; and two register rows that were wrong (a
+'why' naming meeting routes swarm.py does not have; a Command Center row slotted to an item that does not
+cover it). Second pass on those fixes — two refuters: eighteen confirmed, all fixed — one malformed row
+switching every other rule off (so the CLI accepted bad changes and refused fixes); 'Done W470' and markers
+after the bracket read as open; concurrent CLI runs losing rows; file presence judged by the git index
+rather than the working tree; a non-UTF-8 doc and a NaN in the register each a 500; a reslot silently
+ignoring the owner gate; git spawned inside an async route. Third pass, in a dedicated worktree — five
+confirmed, all fixed: a Windows file handle making a write fail part-way, a stale-lock takeover letting two
+writers in (the lock became an OS lock), an undeletable lock spinning forever, the lock and temps not
+gitignored, the guard not asserting it read the repository's own register. Fourth pass, on the lock and
+writes — four confirmed, all fixed: a rollback that itself failed still reported "nothing was changed",
+Ctrl+C skipping the rollback, read-only commands reading mid-write, and an error naming the temp instead of
+the held file. The one case no write order can cover — a hard kill between two replaces — is reported by
+check and repaired by render.
+
+**Process incident, recovered.** During the second pass a verifier ran `cd <scratch> && git checkout -- .
+&& (add A) & (add B) & wait; …; git checkout -- .` — shell precedence kept the `cd` inside the first
+background job, so the second `add` and the trailing checkout ran in the real repository: every uncommitted
+tracked W462 edit was reverted and a junk row was written to the register. Untracked files survived. The
+tracked edits were re-applied from the round's own scripts in their final form, the junk row removed, the
+guards re-run green; a snapshot now precedes every refutation and the round was committed before the next
+one (memory: refuters must run isolated).
+
+Suite: 369 passed · 15 skipped · 0 failed (full run on the final tree — W460+W461+W462 stacked — isolated DATA_DIR, 37 min).

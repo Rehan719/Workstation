@@ -10368,3 +10368,392 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
     gj = (S / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
     assert "compliance: not screened" in gj and "not a certification" in gj
     assert "more living entities are not shown here" in (S / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+
+
+def test_w462_followup_register_is_scheduled_and_in_lockstep(tmp_path):
+    """W462 — a task a round finds and does not do used to live in a chat chip, a "NOT DONE, and why"
+    paragraph or a commit message, and nothing made a later round pick it up. The register
+    (docs/FOLLOWUPS.json) slots each one to the plan item whose round does it, NEXT, or OWNER, and the
+    schedule is derived from the plan's own item order.
+
+    Both ways: the REAL register passes check(), both plan docs carry exactly the rendered block (each in
+    its own line endings, read as bytes), and the API serves the same schedule; then synthetic registers
+    prove each rule bites — a row on a DONE item, a mis-spelled DONE marker, a cross-reference that is not
+    a DONE marker, an unknown slot, owner-gated work slotted anywhere but OWNER, a done row with no round,
+    a dropped row with no reason, an open row with closed_by, a file not in the repository (or named with
+    backslashes), malformed rows REPORTED rather than raised, one-line text, a duplicated or misplaced
+    marker block, and either doc's block edited by hand. The schedule follows plan order (NEXT first,
+    then P1.13 before P2.x) and never schedules an owner-gated row; the API reports a broken or unreadable
+    register instead of a 500; the page names each state.
+    """
+    import json as _json
+    import pathlib
+
+    from fastapi.testclient import TestClient
+
+    from agentic_core import plan_followups as fu
+    from agentic_core.app_mvp import app
+
+    # the guard validates THIS repository's register — never an inherited scratch root
+    assert fu.ROOT.resolve() == pathlib.Path(__file__).resolve().parents[1], fu.ROOT
+    reg = fu.load()
+    raw_register = fu.REGISTER.read_bytes()
+    prompt = fu.read_doc(fu.PROMPT)
+    living = fu.read_doc(fu.LIVING)
+
+    # ── the real register: clean, rendered into both docs, served by the API ──
+    assert fu.check(reg, prompt, living) == [], fu.check(reg, prompt, living)
+    items = fu.plan_items(prompt)
+    slots = [i["slot"] for i in items]
+    assert slots.index("P1.1") < slots.index("P1.14") < slots.index("P2.1") < slots.index("P4.6")
+    assert len(slots) == len(set(slots)) >= 30
+    assert {"P1.1", "P1.11", "P1.12"} <= {i["slot"] for i in items if i["done"]}
+    assert "\r\n" in living.split(fu.BEGIN, 1)[1].split(fu.END, 1)[0], "the living plan's block must keep CRLF"
+    assert "\r\n" not in prompt, "the prompt is LF (read as bytes, so this can fail)"
+    # the block sits INSIDE the real delivery plan section (the tag line, not a prose mention of it)
+    assert prompt.index("\n<delivery_plan>\n") < prompt.index(fu.BEGIN) < prompt.index("\n</delivery_plan>\n")
+    assert fu.BEGIN in fu.delivery_plan_body(prompt)
+
+    client = TestClient(app)
+    body = client.get("/api/v1/plan/followups").json()
+    s = fu.schedule(reg, prompt)
+    assert body["available"] is True and body["integrity"] == {"ok": True, "problems": []}
+    assert body["counts"] == s["counts"] and s["counts"]["open"] > 0
+    assert [x["slot"] for x in body["schedule"]] == [x["slot"] for x in s["schedule"]]
+    assert body["next_plan_item"] == next(i["slot"] for i in items if not i["done"])
+    plan = client.get("/api/v1/plan").json()
+    assert plan["followups"]["open"] == s["counts"]["open"]
+    assert plan["followups"]["api"] == "/api/v1/plan/followups"
+
+    # ── synthetic registers: each rule bites ──
+    def row(**kw):
+        base = {"id": "FU-900", "title": "t", "why": "w", "source": "test", "found": "2026-09-13",
+                "files": [], "severity": "medium", "owner_gated": False, "slot": "NEXT",
+                "status": "open", "closed_by": None, "note": ""}
+        base.update(kw)
+        return base
+
+    def problems(rows, doc_prompt=None, doc_living=None):
+        r = {"items": rows} if isinstance(rows, list) else rows
+        text = doc_prompt if doc_prompt is not None else fu.splice(prompt, fu.render(r, prompt))
+        return fu.check(r, text, doc_living)
+
+    def has(ps, needle):
+        return any(needle in x for x in ps)
+
+    first_open = next(i["slot"] for i in items if not i["done"])
+    done_slot = next(i["slot"] for i in items if i["done"])
+    tracked_file = "agentic_core/api/living_plan.py"
+    assert problems([row(slot=first_open)]) == []
+    assert has(problems([row(slot=done_slot)]), "already DONE")
+    assert has(problems([row(slot="P9.9")]), "not a delivery-plan item")
+    assert has(problems([row(status="done")]), "closed_by")
+    assert problems([row(status="done", closed_by="W462", slot=done_slot)]) == []
+    assert has(problems([row(status="dropped")]), "without a note")
+    assert has(problems([row(closed_by="W461")]), "open but closed_by is set")
+    assert has(problems([row(files=["agentic_core/no_such_file.py"])]), "not in the working tree")
+    assert problems([row(files=[tracked_file])]) == []
+    assert has(problems([row(files=[tracked_file.replace("/", "\\")])]), "forward slashes")
+    assert has(problems([row(files=[tracked_file.upper()])]), "not in the working tree")      # exact case, as on CI
+    assert has(problems([row(files=["agentic_core/api"])]), "not in the working tree")          # a directory is not a file
+    # the working tree AND the index: an unstaged deletion and an untracked file are both caught
+    _real_tracked = fu._tracked
+    try:
+        fu._tracked = lambda root: {"agentic_core/deleted_but_still_indexed.py", tracked_file}
+        assert has(problems([row(files=["agentic_core/deleted_but_still_indexed.py"])]), "not in the working tree")
+        fu._tracked = lambda root: set()
+        assert has(problems([row(files=[tracked_file])]), "git does not track yet")
+        fu._tracked = lambda root: None                      # no git: the exact-case file walk alone decides
+        assert problems([row(files=[tracked_file])]) == []
+        assert has(problems([row(files=[tracked_file.upper()])]), "not in the working tree")
+        assert has(problems([row(files=["agentic_core/api"])]), "not in the working tree")
+    finally:
+        fu._tracked = _real_tracked
+    assert has(problems([row(owner_gated=True)]), "slotted OWNER")                              # not NEXT…
+    assert has(problems([row(owner_gated=True, slot=first_open)]), "slotted OWNER")             # …nor a plan item
+    assert has(problems([row(owner_gated=True, slot=done_slot)]), "slotted OWNER")              # …nor a DONE one
+    assert problems([row(owner_gated=True, slot="OWNER")]) == []
+    assert has(problems([row(slot="OWNER")]), "owner_gated is false")
+    assert has(problems([row(), row()]), "duplicate")
+    assert has(problems([row(), row(id="FU-900 ")]), "duplicate")                              # a hand-typed near-copy
+    # one malformed row never switches the other rules off
+    mixed_bad = problems([row(id="FU-901", severity="urgent"), row(id="FU-902", slot=done_slot)])
+    assert has(mixed_bad, "severity") and has(mixed_bad, "already DONE")
+    # malformed rows are REPORTED, never raised
+    assert has(problems([row(severity="urgent")]), "severity")
+    assert has(problems([row(owner_gated="false")]), "owner_gated must be true or false")
+    assert has(problems([row(files="agentic_core")]), "files must be a list")
+    assert has(problems([row(why="first line\r\nsecond line")]), "must be one line")
+    missing_why = row()
+    del missing_why["why"]
+    assert has(fu.check({"items": [missing_why]}, prompt, living), "missing why")
+    assert has(fu.check({"items": ["not a row"]}, prompt, living), "not an object")
+    assert has(fu.check({"items": None}, prompt, living), "items list")
+    assert has(fu.check([row()], prompt, living), "items list")
+    assert fu.schedule({"items": None}, prompt)["counts"]["open"] == 0
+
+    # the plan's DONE marker: exactly '✅ DONE W###' right after the id; anything else is reported
+    variant = prompt.replace(f"\n {first_open} [", f"\n {first_open} ✅ Done W999 [", 1)
+    assert variant != prompt
+    assert not next(i for i in fu.plan_items(variant) if i["slot"] == first_open)["done"]
+    assert has(fu.check({"items": []}, fu.splice(variant, fu.render({"items": []}, variant))), "says done")
+    for form in ("Done W470 [", "done - W470 [", "[x] ✅ DONE W470 ["):                    # any other form or place
+        other = prompt.replace(f"\n {first_open} [", f"\n {first_open} {form}", 1)
+        assert other != prompt and not next(i for i in fu.plan_items(other) if i["slot"] == first_open)["done"]
+        assert has(fu.check({"items": []}, fu.splice(other, fu.render({"items": []}, other))), "says done"), form
+    idiom = prompt.replace(f"\n {first_open} [", f"\n {first_open} DONE WHEN the Owner rules [", 1)
+    assert not has(fu.check({"items": []}, fu.splice(idiom, fu.render({"items": []}, idiom))), "says done")
+    twice = prompt.replace(f"\n {first_open} [", f"\n {first_open} [x]\n {first_open} [", 1)
+    assert has(fu.check({"items": []}, fu.splice(twice, fu.render({"items": []}, twice))), "appears 2 times")
+    xref = prompt.replace(f"\n {first_open} [", f"\n {first_open} (see P1.1 ✅ DONE W449) [", 1)
+    assert not next(i for i in fu.plan_items(xref) if i["slot"] == first_open)["done"]    # a cross-reference is not a marker
+
+    # lockstep: either doc's block edited by hand, a duplicated block, a block outside the delivery plan
+    rows = [row(slot=first_open)]
+    block = fu.render({"items": rows}, prompt)
+    good_p, good_l = fu.splice(prompt, block), fu.splice(living, block)
+    assert problems(rows, good_p, good_l) == []
+    assert has(problems(rows, good_p.replace("FU-900 [medium] t", "FU-900 [low] t"), good_l), "delivery plan's follow-up block")
+    assert has(problems(rows, good_p, good_l.replace("FU-900 [medium] t", "FU-900 [low] t")), "living plan's follow-up block")
+    dup = good_l + "\r\n" + fu.BEGIN + "\r\nstale\r\n" + fu.END + "\r\n"
+    assert has(problems(rows, good_p, dup), "exactly one follow-up marker pair")
+    try:
+        fu.splice(dup, block)
+        raise AssertionError("splice must refuse a doc with two marker blocks")
+    except ValueError:
+        pass
+    moved = good_p.replace(fu.BEGIN + "\n" + block + "\n" + fu.END, "")
+    moved = moved.replace("\n<delivery_plan>\n", "\n" + fu.BEGIN + "\n" + block + "\n" + fu.END + "\n<delivery_plan>\n", 1)
+    assert has(problems(rows, moved, good_l), "inside the <delivery_plan> section")
+
+    # ordering: NEXT first, then plan order; severity before age inside a slot (ids as numbers); owner rows never scheduled
+    later = next(i["slot"] for i in items if not i["done"] and i["slot"].startswith("P2."))
+    mixed = {"items": [row(id="FU-901", slot=later), row(id="FU-1000", slot=first_open, severity="low"),
+                       row(id="FU-999", slot=first_open, severity="low"),
+                       row(id="FU-903", slot=first_open, severity="high"), row(id="FU-904", slot="NEXT"),
+                       row(id="FU-905", slot="OWNER", owner_gated=True)]}
+    assert problems(mixed["items"]) == []
+    sch = fu.schedule(mixed, prompt)
+    assert [x["slot"] for x in sch["schedule"]] == ["NEXT", first_open, later]
+    assert [r["id"] for r in sch["schedule"][1]["items"]] == ["FU-903", "FU-999", "FU-1000"]
+    assert [r["id"] for r in sch["awaiting_owner"]] == ["FU-905"]
+    assert sch["counts"] == {"open": 6, "scheduled": 5, "high": 1, "awaiting_owner": 1, "done": 0, "dropped": 0}
+    # defence in depth: even a hand-edited owner-gated row on a plan item is never scheduled (check reports it too)
+    stray = fu.schedule({"items": [row(id="FU-906", slot=later, owner_gated=True)]}, prompt)
+    assert stray["schedule"] == [] and [r["id"] for r in stray["awaiting_owner"]] == ["FU-906"]
+
+    # the API reports a broken register and an unreadable one instead of a 500; /plan never fails because of it
+    real_register = fu.REGISTER
+    try:
+        bad_file = tmp_path / "bad.json"
+        bad_file.write_text(_json.dumps({"items": [row(slot=done_slot)]}), encoding="utf-8")
+        fu.REGISTER = bad_file
+        bad = client.get("/api/v1/plan/followups").json()
+        assert bad["available"] is True and bad["integrity"]["ok"] is False
+        assert has(bad["integrity"]["problems"], "already DONE")
+        malformed = tmp_path / "malformed.json"
+        malformed.write_text(_json.dumps({"items": [missing_why, "not a row"]}), encoding="utf-8")
+        fu.REGISTER = malformed
+        mal = client.get("/api/v1/plan/followups")
+        assert mal.status_code == 200 and mal.json()["integrity"]["ok"] is False
+        assert client.get("/api/v1/plan").status_code == 200
+        broken = tmp_path / "broken.json"
+        nan = tmp_path / "nan.json"
+        nan.write_text('{"items": [{"severity": NaN}]}', encoding="utf-8")
+        fu.REGISTER = nan
+        nanr = client.get("/api/v1/plan/followups")
+        assert nanr.status_code == 200 and nanr.json()["available"] is False and "not valid JSON" in nanr.json()["reason"]
+        broken.write_text("{ not json", encoding="utf-8")
+        fu.REGISTER = broken
+        nj = client.get("/api/v1/plan/followups").json()
+        assert nj["available"] is False and "not valid JSON" in nj["reason"]
+        fu.REGISTER = real_register
+        _real_check = fu.check
+        try:
+            calls = []
+
+            def _mid_write_once(*a, **k):                  # the first read fell between the CLI's two writes
+                calls.append(1)
+                return [fu.LOCKSTEP_PROMPT] if len(calls) == 1 else _real_check(*a, **k)
+            fu.check = _mid_write_once
+            settled = client.get("/api/v1/plan/followups").json()
+            assert len(calls) == 2 and settled["integrity"] == {"ok": True, "problems": []}
+        finally:
+            fu.check = _real_check
+        try:
+            def _checker_defect(*a, **k):
+                raise RuntimeError("checker defect")
+            fu.check = _checker_defect
+            crashed = client.get("/api/v1/plan/followups")
+            assert crashed.status_code == 200 and crashed.json()["available"] is False
+            assert "could not be checked (RuntimeError" in crashed.json()["reason"]
+        finally:
+            fu.check = _real_check
+        real_living = fu.LIVING
+        try:
+            ansi = tmp_path / "ansi_living.md"
+            ansi.write_bytes(living.encode("utf-8") + b"\r\nOwner\x92s note saved as ANSI\r\n")
+            fu.LIVING = ansi
+            enc = client.get("/api/v1/plan/followups")
+            assert enc.status_code == 200 and enc.json()["available"] is False and "not valid UTF-8" in enc.json()["reason"]
+        finally:
+            fu.LIVING = real_living
+        fu.REGISTER = tmp_path / "absent.json"
+        gone = client.get("/api/v1/plan/followups").json()
+        assert gone["available"] is False and "not readable here" in gone["reason"]
+        assert client.get("/api/v1/plan").json()["followups"]["available"] is False
+    finally:
+        fu.REGISTER = real_register
+    assert fu.REGISTER.read_bytes() == raw_register            # nothing in this test wrote the register
+
+    # ── the CLI, end to end, in a scratch copy (WORKSTATION_FOLLOWUPS_ROOT) — never against the repo ──
+    import os as _os
+    import subprocess as _sp
+    import sys as _sys
+    scratch = tmp_path / "root"
+    (scratch / "docs").mkdir(parents=True)
+    (scratch / "agentic_core" / "api").mkdir(parents=True)
+    (scratch / "agentic_core" / "api" / "living_plan.py").write_bytes(b"# stand-in\n")
+    empty = {"items": []}
+    (scratch / "docs" / "FABLE_DELIVERY_PROMPT.md").write_bytes(fu.splice(prompt, fu.render(empty, prompt)).encode("utf-8"))
+    (scratch / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md").write_bytes(fu.splice(living, fu.render(empty, prompt)).encode("utf-8"))
+    (scratch / "docs" / "FOLLOWUPS.json").write_bytes(b'{"items": []}\n')
+    cli_env = dict(_os.environ, WORKSTATION_FOLLOWUPS_ROOT=str(scratch), PYTHONIOENCODING="utf-8")
+    script = str(pathlib.Path("scripts/followups.py").resolve())
+
+    def cli(*argv):
+        return _sp.run([_sys.executable, script, *argv], env=cli_env, capture_output=True, text=True, encoding="utf-8")
+
+    def scratch_rows():
+        return _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+
+    assert cli("check").returncode == 0
+    racers = [_sp.Popen([_sys.executable, script, "add", "--title", f"racer {k}", "--why", "w", "--source", "test",
+                         "--slot", "NEXT", "--files", "agentic_core\\api\\living_plan.py"],
+                        env=cli_env, stdout=_sp.PIPE, stderr=_sp.PIPE) for k in range(3)]
+    assert all(pr.wait(timeout=120) == 0 for pr in racers)
+    got = scratch_rows()
+    assert sorted(r["id"] for r in got) == ["FU-001", "FU-002", "FU-003"], got           # no id handed out twice, no row lost
+    assert all(r["files"] == ["agentic_core/api/living_plan.py"] for r in got)            # backslashes normalised
+    assert cli("check").returncode == 0                                                   # the docs moved with the register
+    assert "note: WORKSTATION_FOLLOWUPS_ROOT is set" in cli("check").stderr          # an override always says so
+    gated = cli("add", "--title", "a ruling", "--why", "w", "--source", "test", "--slot", first_open, "--owner-gated")
+    assert gated.returncode == 0 and "slotted OWNER" in gated.stdout and scratch_rows()[-1]["slot"] == "OWNER"
+    refused = cli("reslot", "FU-004", "--slot", first_open)
+    assert refused.returncode != 0 and "pass --ungate once the Owner has ruled" in (refused.stdout + refused.stderr) and scratch_rows()[-1]["slot"] == "OWNER"
+    assert cli("reslot", "FU-004", "--slot", first_open, "--ungate").returncode == 0
+    assert scratch_rows()[-1]["slot"] == first_open and scratch_rows()[-1]["owner_gated"] is False
+    before_bad = scratch_rows()
+    bad_add = cli("add", "--title", "t", "--why", "w", "--source", "test", "--slot", "P9.9")
+    assert bad_add.returncode == 1 and "REFUSED" in bad_add.stdout and scratch_rows() == before_bad
+    assert cli("check").returncode == 0
+    # a holder the OS has not released keeps the others out; a killed holder releases it (no stale takeover)
+    holder = _sp.Popen([_sys.executable, "-c",
+                        "import sys, time; sys.path.insert(0, sys.argv[1]); sys.argv = sys.argv[:1]; import followups; "
+                        "cm = followups.register_lock(); cm.__enter__(); print('held', flush=True); time.sleep(60)",
+                        str(pathlib.Path("scripts").resolve())], env=cli_env, stdout=_sp.PIPE, text=True)
+    try:
+        assert holder.stdout.readline().strip() == "held"
+        blocked_env = dict(cli_env, FOLLOWUPS_LOCK_WAIT_S="1")
+        waiting = _sp.run([_sys.executable, script, "close", "FU-001", "--by", "W999"], env=blocked_env,
+                          capture_output=True, text=True, encoding="utf-8", timeout=120)
+        assert waiting.returncode != 0 and "another followups.py is writing" in (waiting.stdout + waiting.stderr)
+        reading = _sp.run([_sys.executable, script, "check"], env=blocked_env,       # a reader waits for the writer too
+                          capture_output=True, text=True, encoding="utf-8", timeout=120)
+        assert reading.returncode != 0 and "another followups.py is writing" in (reading.stdout + reading.stderr)
+        assert scratch_rows()[0]["status"] == "open"
+    finally:
+        holder.kill()
+        holder.wait(timeout=30)
+    assert cli("close", "FU-001", "--by", "W999").returncode == 0 and scratch_rows()[0]["status"] == "done"
+    # the lock file and write temps can never be committed
+    ignored = _sp.run(["git", "check-ignore", "docs/FOLLOWUPS.json.lock", "docs/FABLE_DELIVERY_PROMPT.md.tmp"],
+                      capture_output=True, text=True)
+    assert ignored.returncode == 0 and len(ignored.stdout.split()) == 2, ignored
+    # all or nothing: a write that fails part-way puts back what it already replaced
+    a_file, b_file = tmp_path / "a.txt", tmp_path / "b.txt"
+    a_file.write_bytes(b"a-old")
+    b_file.write_bytes(b"b-old")
+    _real_replace = fu.os.replace
+    try:
+        def _held(src, dst):
+            if str(dst).endswith("b.txt"):
+                raise PermissionError(13, "held by another process", str(dst))
+            return _real_replace(src, dst)
+        fu.os.replace = _held
+        fu.REPLACE_TRIES, _tries = 2, fu.REPLACE_TRIES
+        try:
+            fu.write_all([(a_file, b"a-old", b"a-new"), (b_file, b"b-old", b"b-new")])
+            raise AssertionError("write_all must re-raise")
+        except PermissionError:
+            pass
+        finally:
+            fu.REPLACE_TRIES = _tries
+    finally:
+        fu.os.replace = _real_replace
+    assert a_file.read_bytes() == b"a-old" and b_file.read_bytes() == b"b-old"
+    assert not (tmp_path / "b.txt.tmp").exists()
+    # an interrupt (Ctrl+C) mid-write is rolled back too, and leaves no temp
+    try:
+        def _interrupted(src, dst):
+            if str(dst).endswith("b.txt"):
+                raise KeyboardInterrupt
+            return _real_replace(src, dst)
+        fu.os.replace = _interrupted
+        try:
+            fu.write_all([(a_file, b"a-old", b"a-new"), (b_file, b"b-old", b"b-new")])
+            raise AssertionError("write_all must re-raise the interrupt")
+        except KeyboardInterrupt:
+            pass
+    finally:
+        fu.os.replace = _real_replace
+    assert a_file.read_bytes() == b"a-old" and b_file.read_bytes() == b"b-old"
+    assert not (tmp_path / "b.txt.tmp").exists()
+    # …and when a restore ALSO fails, the error names what still carries the change (never "nothing changed")
+    a_file.write_bytes(b"a-old")
+    held_now = {"b.txt"}
+    try:
+        def _held_twice(src, dst):
+            if any(str(dst).endswith(n) for n in held_now):
+                raise PermissionError(13, "held by another process", str(dst))
+            return _real_replace(src, dst)
+        fu.os.replace = _held_twice
+        fu.REPLACE_TRIES, _tries = 1, fu.REPLACE_TRIES
+        real_atomic = fu.atomic_write
+
+        def _atomic_then_hold_a(path, data):
+            real_atomic(path, data)
+            if path == a_file:
+                held_now.add("a.txt")                        # a reader grabbed a.txt right after it was replaced
+        fu.atomic_write = _atomic_then_hold_a
+        try:
+            fu.write_all([(a_file, b"a-old", b"a-new"), (b_file, b"b-old", b"b-new")])
+            raise AssertionError("write_all must re-raise")
+        except fu.PartialWrite as exc:
+            assert exc.unrestored == [a_file] and "not put back: a.txt" in str(exc)
+        finally:
+            fu.atomic_write = real_atomic
+            fu.REPLACE_TRIES = _tries
+    finally:
+        fu.os.replace = _real_replace
+    assert a_file.read_bytes() == b"a-new" and b_file.read_bytes() == b"b-old"
+    # a failure names the file that is held, not the temp it tried to move
+    try:
+        fu.os.replace = lambda src, dst: (_ for _ in ()).throw(PermissionError(13, "held", str(dst)))
+        fu.REPLACE_TRIES, _tries = 1, fu.REPLACE_TRIES
+        try:
+            fu.atomic_write(b_file, b"x")
+            raise AssertionError("must raise")
+        except PermissionError as exc:
+            assert exc.filename == str(b_file) and "held open by another program" in str(exc)
+        finally:
+            fu.REPLACE_TRIES = _tries
+    finally:
+        fu.os.replace = _real_replace
+    assert not (tmp_path / "b.txt.tmp").exists()
+
+    # the page shows each state: the schedule, a register out of step, and a register it could not load
+    page = pathlib.Path("apps/workstation-superapp/src/pages/TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert "apiJson<Followups>('/api/v1/plan/followups')" in page and "Scheduled follow-ups" in page
+    assert "{!followups.integrity.ok && (" in page and "The register is out of step with the plan" in page
+    assert "{followups.reason ?? 'The follow-up register is not readable here.'}" in page

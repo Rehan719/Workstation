@@ -9,9 +9,11 @@ understanding, progress, and vision-alignment programmatically.
 
   GET  /api/v1/plan          — vision pillars, phases (immediate/short/long), adherence scorecard
   GET  /api/v1/plan/state    — grounded current-state snapshot (auto-introspected, live)
+  GET  /api/v1/plan/followups — the follow-up register: found-but-not-done work, scheduled in plan order (W462)
 """
 from __future__ import annotations
 
+import json
 import time
 from typing import Any, Dict, List
 
@@ -104,6 +106,7 @@ async def get_plan():
             "score": round(strong / len(_PILLARS), 2),
         },
         "phases": _PHASES,
+        "followups": _followup_summary(),
         "governance_hierarchy": ["Owner", "Chief (Owner Digital Twin)", "Board of Directors",
                                  "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
         "note": "Source of truth is the markdown doc; GET /plan/state for live current-state.",
@@ -155,3 +158,54 @@ async def get_state():
         pass
 
     return state
+
+
+@router.get("/followups")
+def get_followups():
+    """W462 — the follow-up register: every task a round found and did not do, slotted into the delivery
+    plan and scheduled in the plan's own item order (docs/FOLLOWUPS.json; rules in
+    agentic_core/plan_followups.py). `integrity` is the same check the suite enforces — a problem is
+    reported here rather than hidden, and a register this code cannot read or check is reported too,
+    never a 500. A plain `def`: the check runs `git ls-files`, which must not block the event loop. The
+    docs are not copied into the runtime image, so a deployed backend says the register is unavailable
+    instead of inventing an empty one."""
+    from agentic_core import plan_followups as fu
+    base = {"register": "docs/FOLLOWUPS.json"}
+    try:
+        prompt = fu.read_doc(fu.PROMPT)
+        living = fu.read_doc(fu.LIVING)
+        raw = fu.REGISTER.read_bytes()
+    except OSError as exc:
+        return {**base, "available": False,
+                "reason": f"the follow-up register or the plan docs are not readable here ({type(exc).__name__}) "
+                          "— the docs are not shipped in the runtime image"}
+    except UnicodeDecodeError as exc:
+        return {**base, "available": False,
+                "reason": f"a plan doc is not valid UTF-8 (byte {exc.start}) — re-save it as UTF-8"}
+    try:
+        reg = fu.parse_register(raw)
+    except ValueError as exc:
+        return {**base, "available": False,
+                "reason": f"docs/FOLLOWUPS.json is not valid JSON ({type(exc).__name__}: {str(exc)[:120]})"}
+    try:
+        problems = fu.check(reg, prompt, living)
+        if problems and all(p in fu.LOCKSTEP for p in problems):
+            # the CLI writes the docs, then the register: a read that fell between them sees two moments.
+            # Read once more before reporting drift that may only be a write in progress.
+            prompt, living, reg = fu.read_doc(fu.PROMPT), fu.read_doc(fu.LIVING), fu.parse_register(fu.REGISTER.read_bytes())
+            problems = fu.check(reg, prompt, living)
+        return {**base, "available": True, **fu.schedule(reg, prompt),
+                "integrity": {"ok": not problems, "problems": problems}}
+    except Exception as exc:   # a defect in the checker itself is still reported, never a 500
+        return {**base, "available": False,
+                "reason": f"the follow-up register could not be checked ({type(exc).__name__}: {str(exc)[:120]})"}
+
+
+def _followup_summary() -> Dict[str, Any]:
+    # GET /api/v1/plan must never fail because of the register — it only carries the counts
+    try:
+        from agentic_core import plan_followups as fu
+        s = fu.schedule(fu.load(fu.REGISTER), fu.read_doc(fu.PROMPT))
+        return {**s["counts"], "next_plan_item": s["next_plan_item"], "api": "/api/v1/plan/followups"}
+    except Exception as exc:
+        return {"available": False, "reason": type(exc).__name__, "api": "/api/v1/plan/followups"}

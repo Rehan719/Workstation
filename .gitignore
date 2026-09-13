@@ -74,4 +74,7 @@ meta/*ueg*.json
 meta/genome_ledger.json
 meta/ueg_graph.json
 *.tsbuildinfo
+# W462 — the follow-up CLI's lock file and atomic-write temps (transient; never commit)
+docs/FOLLOWUPS.json.lock
+docs/*.tmp
 *.anchor
