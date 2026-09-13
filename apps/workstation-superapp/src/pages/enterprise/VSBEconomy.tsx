@@ -55,7 +55,7 @@ export const VSBEconomy: React.FC = () => {
   const [gov, setGov] = useState<string>('');
   // Ledger cluster 1 — a MATERIAL cycle returns 200 {cycle:null, governance:held...}; that hold
   // must be VISIBLE (it is exactly the flow the Owner has to approve), never a silent no-op.
-  const [hold, setHold] = useState<{ status?: string; cca_id?: string; note?: string } | null>(null);
+  const [hold, setHold] = useState<{ status?: string; cca_id?: string; note?: string; follows_rejection?: string; rejected_by?: string } | null>(null);
   // §4/§8/§10 — Owner-adjustable profit waterfall (virtual, template-bounded)
   const [wf, setWf] = useState<WaterfallState | null>(null);
   const [wfDraft, setWfDraft] = useState<Record<string, number>>({});   // percentages (0-100) the Owner edits
@@ -357,16 +357,32 @@ export const VSBEconomy: React.FC = () => {
           <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${['blocked', 'halted'].includes(hold.status || '') ? 'text-vital' : 'text-amber-400'}`}>
             <ShieldCheck size={14} /> {['blocked', 'halted'].includes(hold.status || '')
               ? `Blocked by the constitutional gate (${hold.status}) — nothing ran, nothing posted`
-              : hold.status === 'rejected_by_change_control' ? 'Rejected by Change Control — submit a fresh request'
+              : hold.status === 'rejected_by_change_control' ? 'Rejected by Change Control — asked again when the action changes'
               : 'Held for Change Control — Owner approval required'}
           </p>
           <p className="text-xs text-slate-400 mt-2 leading-relaxed">{hold.note || 'This distribution is material and awaits Change Control approval before any WST moves.'}</p>
-          {hold.cca_id && (
+          {hold.cca_id && (hold.status === 'rejected_by_change_control' ? (
+            // W463 — a rejected record cannot be reviewed: the same cycle stays refused; a changed one is asked again
+            <p className="text-[10px] font-mono text-slate-500 mt-2" data-testid="hold-rejected">
+              {/* W463 — a rejection is not always the Owner's: say what rejected it */}
+              Change request: <span className="text-aura">{hold.cca_id}</span> — rejected {hold.rejected_by === 'admin_override' ? 'by an explicit decision'
+                : hold.rejected_by === 'model_decision_marker' ? "by the reviewing model's decision marker"
+                : hold.rejected_by === 'health_threshold_rule' ? 'by the organism-health threshold rule' : 'by Change Control'} for exactly this action. Running the same
+              cycle again is refused; a different amount or new intake is asked again as a fresh hold.
+            </p>
+          ) : hold.follows_rejection ? (
+            // W463 — a hold filed after a rejection is decided only by an explicit decision; "review it" held it again
+            <p className="text-[10px] font-mono text-slate-500 mt-2" data-testid="hold-follows-rejection">
+              Change request: <span className="text-aura">{hold.cca_id}</span> — it follows the rejection of {hold.follows_rejection}, so a
+              review does not decide it: decide it in the{' '}
+              <a href="/governance-hub" className="text-aura underline underline-offset-2">Governance hub's Sovereign Sanctum</a>, then run the cycle again.
+            </p>
+          ) : (
             <p className="text-[10px] font-mono text-slate-500 mt-2">
               Change request: <span className="text-aura">{hold.cca_id}</span> — review it on the{' '}
               <a href="/change-control" className="text-aura underline underline-offset-2">Change Control Agency</a> page, then run the cycle again.
             </p>
-          )}
+          ))}
         </Card>
       )}
 

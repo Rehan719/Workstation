@@ -241,13 +241,14 @@ condition (small integer counts, or dict keys inserted in fixed order).
 | `organism_status.py` dominant_trait | population's dominant trait | FIXED — null + `dominant_trait_tied` |
 | `resource_fabric.py` dominant_trait | same field | FIXED — null + `dominant_trait_tied` |
 | `immune.py` hot_endpoint | most affected endpoint | FIXED — + `hot_endpoint_errors` |
-| `governance.py` verdict | **rejected vs held** | FIXED — most restrictive + `governance_ambiguous` |
+| `governance.py` verdict | **rejected vs held** | FIXED (W433: most restrictive + disclosed) → W463: the situation is removed — at most one live record per action, decided under a per-(VSB, kind, counterparty) lock, ordered by `filed_ns`; an exact legacy tie still reads as the rejection. The `governance_ambiguous` fields are gone |
 | `products.py` top realm | portfolio leader | FIXED — count + tie phrase |
 
 Guards: `test_w433_studio_discloses_a_tied_max_instead_of_naming_one` ·
 `test_w433_cascade_quality_is_credited_to_every_model_that_led` ·
 `test_w433_superlatives_disclose_ties_and_carry_their_magnitude` ·
-`test_w433_governance_tie_resolves_to_the_most_restrictive_and_says_so`.
+`test_w433_governance_tie_cannot_arise_one_live_hold_per_action` (renamed in W463) · the `tie_case` legs of
+`test_w463_hold_lifecycle_reviews_races_and_replays_both_ways`.
 
 The remaining entry below is LATENT — unreached code.
 

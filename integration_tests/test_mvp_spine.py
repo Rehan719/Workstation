@@ -7496,34 +7496,50 @@ def test_w433_superlatives_disclose_ties_and_carry_their_magnitude():
     assert "max(means, key=means.get)" not in stat, "the first-in-dict-order pick is back"
 
 
-def test_w433_governance_tie_resolves_to_the_most_restrictive_and_says_so():
-    """§4.5 class WITH CONSEQUENCE — the two verdicts imply opposite actions.
+def test_w433_governance_tie_cannot_arise_one_live_hold_per_action(monkeypatch):
+    """§4.5 class WITH CONSEQUENCE — two verdicts that imply opposite actions must never be chosen by list order.
 
-    `max(holds, key=submitted_at)` over SECOND-resolution timestamps let list order decide between
-    "rejected_by_change_control" (submit a fresh request) and "held_for_change_control" (wait).
-    This codebase has already been bitten by sub-second ties (W340), so it is a known-live hazard.
-    A tie now resolves to the most restrictive status — refusing to distribute on an ambiguous
-    governance record is recoverable; distributing on one is not — and the ambiguity is REPORTED.
+    W433 resolved SECOND-resolution ties between several hold records for one material action to the most
+    restrictive status and reported the ambiguity. W463 removed the situation instead of arbitrating it: a
+    material economy action has at most ONE live Change Control record (an undecided hold is kept current, an
+    approval that cannot release a request is withdrawn), and the gate's decision for one (VSB, action kind,
+    counterparty) runs under a lock — so concurrent first requests cannot file sibling holds for list order to
+    choose between. Guarded here: four simultaneous first requests for one action file exactly ONE hold, and the
+    list-order fallback does not come back.
     """
-    from agentic_core.economy.governance import _tie_note
-
-    # silent when there is nothing to disclose, so ordinary verdicts are untouched
-    assert _tie_note([]) == {}
-    assert _tie_note([{"cca_id": "a", "status": "rejected"}]) == {}
-    assert _tie_note([{"cca_id": "a", "status": "rejected"},
-                      {"cca_id": "b", "status": "rejected"}]) == {}, (
-        "co-timestamped records that AGREE are not ambiguous")
-
-    amb = _tie_note([{"cca_id": "a", "status": "rejected"},
-                     {"cca_id": "b", "status": "under_review"}])
-    assert amb["governance_ambiguous"] is True
-    assert {c["cca_id"] for c in amb["co_timestamped"]} == {"a", "b"}
-    assert "most restrictive" in amb["ambiguity_note"]
-
-    # and the resolution order itself: rejected outranks under_review outranks approved
     import pathlib
+    import threading
+    import uuid as _uuid
+    from agentic_core.api import change_control as cca
+    from agentic_core.economy import governance as gv
+
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    vsb = f"w433-{_uuid.uuid4().hex[:8]}"
+    intake = {"revenue_wst": 5000.0, "costs_wst": 0.0, "returns_wst": 0.0, "transfers_wst": 0.0, "reserve_rate": 0.2}
+    real_save = cca._save_change
+
+    def slow_save(change):                          # widen the scan→file window the lock must cover
+        import time as _t
+        _t.sleep(0.15)
+        return real_save(change)
+    monkeypatch.setattr(cca, "_save_change", slow_save)
+    out, barrier = [], threading.Barrier(4)
+
+    def first_request():
+        barrier.wait()
+        out.append(gv._materiality_gate(vsb, 4000.0, "api", intake=intake))
+    threads = [threading.Thread(target=first_request) for _ in range(4)]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join(timeout=60)
+    assert len(out) == 4 and all(h is not None and consumed is None for h, consumed in out), out
+    holds = [c for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes())
+             if c and c.get("vsb_id") == vsb and c.get("change_type") == "economy_material"]
+    assert len(holds) == 1, [h["cca_id"] for h in holds]
+    assert {h["cca_id"] for h, _ in out} == {holds[0]["cca_id"]}
+
     src = pathlib.Path("agentic_core/economy/governance.py").read_text(encoding="utf-8", errors="ignore")
-    assert '_RESTRICTIVENESS = {"rejected": 3' in src
     assert 'max(holds, key=lambda c: c.get("submitted_at", ""), default=None)' not in src, (
         "the list-order fallback is back")
 
@@ -8412,8 +8428,8 @@ def test_w442_economy_cluster_integrity_holds(client, monkeypatch):
 
     # 4. hold identity carries the ACTION KIND — a cycle approval can no longer release a transfer
     from agentic_core.api import change_control as cca
-    h_t = gv._materiality_gate(uid, 500.0, source="transfer")
-    h_c = gv._materiality_gate(uid, 500.0, source="api")
+    h_t, _ = gv._materiality_gate(uid, 500.0, source="transfer", counterparty="someone-else")
+    h_c, _ = gv._materiality_gate(uid, 500.0, source="api")
     t_title = (cca._load_change(h_t["cca_id"]) or {}).get("title", "")
     c_title = (cca._load_change(h_c["cca_id"]) or {}).get("title", "")
     assert "material transfer" in t_title and "material distribution" in c_title
@@ -10092,11 +10108,12 @@ def test_w459_external_cca_writers_compare_and_set(monkeypatch):
     ecid = "cca-w459cas0001"
     atomic_write_json(CC._cca_path(ecid), {
         "cca_id": ecid, "title": GOV._HOLD_TITLE_PREFIX + vsb_id, "change_type": "economy_material",
+        "submitted_by": "economy:cycle", "vsb_id": vsb_id, "est_distributable_wst": GOV.MATERIALITY_WST * 10,
         "impact_tier": "MEDIUM", "status": "approved", "decision": "approved",
         "submitted_at": "2026-09-13T00:00:00Z", "description": "", "audit_trail": []})
     monkeypatch.setattr(CC, "_update_change", _move_then("rejected"))
-    out = GOV._materiality_gate(vsb_id, GOV.MATERIALITY_WST * 10, "cycle")
-    assert out and out["status"] == "held_for_change_control" and "concurrently" in out["note"]
+    out, spent = GOV._materiality_gate(vsb_id, GOV.MATERIALITY_WST * 10, "cycle")
+    assert out and out["status"] == "held_for_change_control" and "concurrently" in out["note"] and spent is None
     moved = CC._load_change(ecid)
     assert moved["status"] == "rejected"
     assert not any(e.get("event") == "consumed_by_economy_cycle" for e in moved["audit_trail"])
@@ -10104,11 +10121,13 @@ def test_w459_external_cca_writers_compare_and_set(monkeypatch):
     # ── economy: a restore that meets a busy record says so durably ──
     moved["status"] = "implemented"
     moved["implemented_at"] = "2026-09-13T00:00:01Z"
+    moved["audit_trail"] = [{"event": "consumed_by_economy_cycle", "consume_id": "consume-w459busy"}]
     atomic_write_json(CC._cca_path(ecid), moved)
     def _busy(cca_id, mutate):
         raise HTTPException(status_code=503, detail="Change record is busy")
     monkeypatch.setattr(CC, "_update_change", _busy)
-    GOV._restore_consumed_approval(vsb_id, "cycle", "w459 action never ran")
+    GOV._restore_consumed_approval({"cca_id": ecid, "consume_id": "consume-w459busy"},
+                                   vsb_id=vsb_id, reason="w459 action never ran")
     assert any(e.get("type") == "economy.materiality_approval_restore_failed" for e in events), events
     assert CC._load_change(ecid)["status"] == "implemented"
 
@@ -10757,3 +10776,1461 @@ def test_w462_followup_register_is_scheduled_and_in_lockstep(tmp_path):
     assert "apiJson<Followups>('/api/v1/plan/followups')" in page and "Scheduled follow-ups" in page
     assert "{!followups.integrity.ok && (" in page and "The register is out of step with the plan" in page
     assert "{followups.reason ?? 'The follow-up register is not readable here.'}" in page
+
+
+def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, monkeypatch):
+    """W463 (register FU-002 + its class) — a Change Control approval of a material economy action is filed
+    by the economy, releases the intake it was filed for (no more), is spent once, and is given back only
+    for that action when it did not run.
+
+    What was wrong: the materiality gate accepted ANY approved record whose title matched (a LOW
+    'config_minor' change submitted with the hold's title was auto-approved and released a 4,000,000-WST
+    distribution); it released any amount and any counterparty; it returned a bare None both below the
+    threshold and after spending an approval, so the restore re-discovered its target by title scan and ran
+    even when nothing was consumed — a blocked NON-material transfer or cycle re-approved an approval an
+    EARLIER action had spent, and the next material action spent it twice; the heartbeat spent an approval
+    before its policy pre-gate and never gave it back; the cycle drained receipts that landed after the gate.
+    The first W463 draft's refutation added: exact-amount binding filed a new hold on every beat while
+    revenue arrived and stranded approvals that later released unrelated distributions; a rejection became a
+    dead end; a smaller action could spend a larger approval; a raised cycle action was re-run under the same
+    approval; a debited transfer could get its approval back through the funds re-check branch or a lenient
+    ledger read. Virtual WST only.
+    """
+    import asyncio
+    import json as _json
+    import uuid as _uuid
+    import pytest as _pytest
+
+    import agentic_core.gaas.v5 as g5
+    from agentic_core.api import change_control as cca
+    from agentic_core.config import atomic_write_json
+    from agentic_core.economy import governance as gv
+    from agentic_core.economy import transfers as tr
+    from agentic_core.economy.living_vsbs import operate_vsb, register
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    from agentic_core.economy.revenue import peek_pending, record_event
+    from agentic_core.gaas.v5.policy_gate import ConstitutionalPolicyGate
+    from agentic_core.gaas.v5.ueg import classify_event
+
+    events = []
+    real_log = gv._ueg_log
+    monkeypatch.setattr(gv, "_ueg_log", lambda e: (events.append(e), real_log(e))[1])
+    THRESHOLD = 1000.0
+    monkeypatch.setattr(gv, "MATERIALITY_WST", THRESHOLD)
+
+    def uid(tag):
+        return f"w463-{tag}-{_uuid.uuid4().hex[:6]}"
+
+    def living(tag):
+        v = uid(tag)
+        register(v, f"W463 {tag}", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        return v
+
+    def fund(v, revenue):                                   # a cycle run above the threshold funds the reserve
+        monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+        out = client.post("/api/v1/economy/cycle", json={"vsb_id": v, "entity_type": "waqf_ltd_hybrid",
+                                                         "revenue": revenue, "costs": 0}).json()
+        monkeypatch.setattr(gv, "MATERIALITY_WST", THRESHOLD)
+        assert out["cycle"] is not None, out
+
+    def decide(cid, verdict="approved"):
+        r = client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": verdict, "reviewer_notes": "w463"})
+        assert r.status_code == 200 and cca._load_change(cid)["status"] == verdict, r.text
+
+    def rec(cid):
+        return cca._load_change(cid)
+
+    def trail(cid, event):
+        return [e for e in (rec(cid).get("audit_trail") or []) if e.get("event") == event]
+
+    def holds_for(v):
+        return [c for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes())
+                if c and c.get("vsb_id") == v and c.get("change_type") == "economy_material"]
+
+    def transfer(a, b, amount):
+        return client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": amount})
+
+    class _Blocked:
+        status, output, checkpoint_id = "blocked", None, "chk-w463"
+
+    class _BlockingGov:
+        def __init__(self, *a, **k): pass
+        async def intercept(self, ctx, action): return _Blocked()
+
+    class _ExecThenBlockGov:                                    # the action RAN, then the gate said blocked
+        def __init__(self, *a, **k): pass
+        async def intercept(self, ctx, action):
+            await action()
+            return _Blocked()
+
+    real_gov = g5.UnifiedConstitutionalInterceptorV16Omega
+    real_record = tr.record_transfer
+
+    def with_gov(gov_cls, fn):
+        g5.UnifiedConstitutionalInterceptorV16Omega = gov_cls
+        try:
+            return fn()
+        finally:
+            g5.UnifiedConstitutionalInterceptorV16Omega = real_gov
+
+    def with_record(fake, fn):
+        tr.record_transfer = fake
+        try:
+            return fn()
+        finally:
+            tr.record_transfer = real_record
+
+    def raising(exc):
+        def _f(*a, **k):
+            raise exc
+        return _f
+
+    # ── FU-002 as registered: a blocked NON-material transfer must not resurrect a spent approval ──
+    a, b, c = living("a"), living("b"), living("c")
+    fund(a, 50000)                                                           # reserve 10,000
+    held = transfer(a, b, 1500).json()
+    id1 = held["governance"]["cca_id"]
+    assert held["transfer"] is None and held["governance"]["status"] == "held_for_change_control"
+    assert rec(id1)["est_distributable_wst"] == 1500.0 and rec(id1)["counterparty"] == b
+    decide(id1)
+    assert transfer(a, b, 1500).json()["transfer"]["amount_wst"] == 1500.0
+    assert rec(id1)["status"] == "implemented" and len(trail(id1, "consumed_by_economy_cycle")) == 1
+    failed_before = sum(1 for e in events if e.get("type") == "economy.materiality_approval_restore_failed")
+    small = with_gov(_BlockingGov, lambda: transfer(a, b, 100).json())
+    assert small["transfer"] is None and small["governance"]["status"] == "blocked"
+    assert rec(id1)["status"] == "implemented" and not trail(id1, "approval_restored_action_never_ran")
+    race = with_record(raising(ValueError("Insufficient virtual funds (w463 race)")), lambda: transfer(a, b, 100))
+    assert race.status_code == 400 and rec(id1)["status"] == "implemented"      # the funds re-check path too
+    # nothing consumed → nothing touched, and no adverse "restore failed" noise either
+    assert sum(1 for e in events if e.get("type") == "economy.materiality_approval_restore_failed") == failed_before
+    again = transfer(a, b, 1500).json()
+    assert again["transfer"] is None and again["governance"]["cca_id"] not in (None, id1)   # a FRESH hold
+
+    # ── …and a MATERIAL transfer that spent its approval and did not post gets exactly that one back ──
+    id2 = again["governance"]["cca_id"]
+    decide(id2)
+    blocked = with_gov(_BlockingGov, lambda: transfer(a, b, 1500).json())
+    assert blocked["transfer"] is None and rec(id2)["status"] == "approved" and "implemented_at" not in rec(id2)
+    spent, restored = trail(id2, "consumed_by_economy_cycle"), trail(id2, "approval_restored_action_never_ran")
+    assert len(spent) == 1 and len(restored) == 1 and restored[0]["consume_id"] == spent[0]["consume_id"]
+    raced = with_record(raising(ValueError("Insufficient virtual funds (w463 race)")), lambda: transfer(a, b, 1500))
+    assert raced.status_code == 400 and rec(id2)["status"] == "approved"                    # funds re-check site
+    with _pytest.raises(RuntimeError):                                                      # raised before the debit
+        with_record(raising(RuntimeError("w463 receiver vanished")), lambda: transfer(a, b, 1500))
+    assert rec(id2)["status"] == "approved" and len(trail(id2, "approval_restored_action_never_ran")) == 3
+
+    def _debit_then_raise(*x, **k):
+        real_record(*x, **k)
+        raise RuntimeError("w463 queue write failed after the debit")
+    with _pytest.raises(RuntimeError):
+        with_record(_debit_then_raise, lambda: transfer(a, b, 1500))
+    assert rec(id2)["status"] == "implemented", "a transfer that DEBITED must never get its approval back"
+    assert any(e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == id2
+               for e in events)
+
+    # the funds re-check branch asks the ledger too (a debit then a ValueError keeps the approval spent)
+    id2b = transfer(a, b, 1400).json()["governance"]["cca_id"]
+    decide(id2b)
+
+    def _debit_then_valueerror(*x, **k):
+        real_record(*x, **k)
+        raise ValueError("w463 refused after the debit")
+    assert with_record(_debit_then_valueerror, lambda: transfer(a, b, 1400)).status_code == 400
+    assert rec(id2b)["status"] == "implemented", "the ValueError branch gave back a debited transfer's approval"
+
+    # a replay of a debited transfer repairs the receiver leg instead of being refused by the funds pre-check
+    d, e_ = living("d"), living("e")
+    fund(d, 10000)                                                           # reserve 2,000 < 2 × 1,500
+    idd = transfer(d, e_, 1500).json()["governance"]["cca_id"]
+    decide(idd)
+    calls = {"n": 0}
+
+    def _first_call_debits_then_raises(*x, **k):
+        calls["n"] += 1
+        out = real_record(*x, **k)
+        if calls["n"] == 1:
+            raise OSError("w463 pending store briefly unavailable")
+        return out
+    fixed = with_record(_first_call_debits_then_raises, lambda: transfer(d, e_, 1500))
+    assert fixed.status_code == 200 and fixed.json()["transfer"] is not None, fixed.text
+    assert fixed.json()["transfer"]["idempotent_replay"] is True and fixed.json()["transfer"]["replay_repaired_receiver_leg"] is False
+    assert tr.peek_pending_transfers(e_) == 1500.0 and rec(idd)["status"] == "implemented"
+
+    # a ledger that cannot be read is never "no debit"
+    broken = uid("broken")
+    from agentic_core.economy.ledger import VirtualLedger
+    VirtualLedger(broken).path.write_text("{ half-written", encoding="utf-8")
+    with _pytest.raises(Exception):
+        tr.debit_posted(broken, "xfer-anything")
+    assert tr.debit_posted(uid("nobooks"), "xfer-anything") is False
+
+    # ── the approval names its counterparty: consent for a→b does not release a→c ──
+    to_b = transfer(a, b, 1200).json()
+    id3 = to_b["governance"]["cca_id"]
+    decide(id3)
+    to_c = transfer(a, c, 1200).json()
+    assert to_c["transfer"] is None and to_c["governance"]["cca_id"] not in (None, id3)
+    assert rec(id3)["status"] == "approved"
+    assert transfer(a, b, 1200).json()["transfer"] is not None and rec(id3)["status"] == "implemented"
+    id4 = transfer(a, b, 1100).json()["governance"]["cca_id"]
+    decide(id4)
+    with_gov(_ExecThenBlockGov, lambda: transfer(a, b, 1100))
+    assert rec(id4)["status"] == "implemented", "a transfer that posted must never get its approval back"
+
+    # ── one live hold per action: a growing request keeps ONE hold current; a larger one withdraws the approval ──
+    x = uid("cycle")
+    cyc = lambda revenue, costs=0: client.post("/api/v1/economy/cycle", json={
+        "vsb_id": x, "entity_type": "waqf_ltd_hybrid", "revenue": revenue, "costs": costs}).json()
+    idc1 = cyc(5000)["governance"]["cca_id"]
+    assert rec(idc1)["est_distributable_wst"] == 4000.0
+    assert cyc(5100)["governance"]["cca_id"] == idc1 and rec(idc1)["est_distributable_wst"] == 4080.0
+    assert trail(idc1, "amount_rebound") and len(holds_for(x)) == 1                # re-estimated, no sibling
+    decide(idc1)
+    big = cyc(50000)
+    idc2 = big["governance"]["cca_id"]
+    assert big["cycle"] is None and idc2 not in (None, idc1)
+    assert rec(idc1)["status"] == "withdrawn" and trail(idc1, "withdrawn_superseded")[0]["superseded_by"] == idc2
+    assert cyc(5000)["governance"]["cca_id"] == idc2 and rec(idc2)["est_distributable_wst"] == 4000.0
+    decide(idc2)
+    assert cyc(4000)["cycle"] is not None and rec(idc2)["status"] == "implemented"   # within what was approved
+    # a blocked NON-material cycle does not re-approve anything
+    with_gov(_BlockingGov, lambda: cyc(10))
+    assert rec(idc2)["status"] == "implemented" and not trail(idc2, "approval_restored_action_never_ran")
+    # a blocked MATERIAL cycle gives back exactly what it spent; one that ran does not
+    idc3 = cyc(5000)["governance"]["cca_id"]
+    decide(idc3)
+    assert with_gov(_BlockingGov, lambda: cyc(5000))["cycle"] is None
+    assert rec(idc3)["status"] == "approved" and len(trail(idc3, "approval_restored_action_never_ran")) == 1
+    with_gov(_ExecThenBlockGov, lambda: cyc(5000))
+    assert rec(idc3)["status"] == "implemented", "a cycle that ran must never get its approval back"
+    # a stale handle is skipped — the record's latest spend is not that one — and a reviewer sees it
+    gv._restore_consumed_approval({"cca_id": idc3, "consume_id": "consume-stale"}, vsb_id=x, reason="w463 stale")
+    assert rec(idc3)["status"] == "implemented"
+    skip = [e for e in events if e.get("type") == "economy.materiality_approval_restore_skipped" and e.get("cca_id") == idc3]
+    assert skip and skip[-1]["skip_reason"] == "spent_by_another_action"
+    assert classify_event(skip[-1])["level"] == "review"
+
+    # ── a cycle action that raised part-way is never re-run under the same approval (both paths) ──
+    real_run = EconomicMetabolism.run_cycle
+    runs = {"n": 0}
+
+    def _run_raises(self, *aa, **kk):
+        runs["n"] += 1
+        raise RuntimeError("w463 ledger write failed mid-cycle")
+    idc4 = cyc(6000)["governance"]["cca_id"]
+    decide(idc4)
+    EconomicMetabolism.run_cycle = _run_raises
+    try:
+        with _pytest.raises(RuntimeError):
+            asyncio.run(gv.governed_cycle(x, "waqf_ltd_hybrid", "Rehan", 6000.0))
+    finally:
+        EconomicMetabolism.run_cycle = real_run
+    assert runs["n"] == 1, "the raised cycle action was re-run by the fallback"
+    assert rec(idc4)["status"] == "implemented" and not trail(idc4, "approval_restored_action_never_ran")
+    assert any(e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == idc4 for e in events)
+    hr = living("hraise")
+    idh = gv.governed_cycle_sync(hr, "waqf_ltd_hybrid", "Rehan", 5000.0)["governance"]["cca_id"]
+    decide(idh)
+    EconomicMetabolism.run_cycle = _run_raises
+    try:
+        with _pytest.raises(RuntimeError):
+            gv.governed_cycle_sync(hr, "waqf_ltd_hybrid", "Rehan", 5000.0)
+    finally:
+        EconomicMetabolism.run_cycle = real_run
+    assert rec(idh)["status"] == "implemented"
+    assert any(e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == idh for e in events)
+
+    # ── a rejection answers exactly the action it was filed for; a changed action is asked again ──
+    r_v = uid("reject")
+    rcyc = lambda revenue: client.post("/api/v1/economy/cycle", json={"vsb_id": r_v, "revenue": revenue}).json()
+    rid = rcyc(5_000_000)["governance"]["cca_id"]
+    decide(rid, "rejected")
+    same = rcyc(5_000_000)["governance"]
+    assert same["status"] == "rejected_by_change_control" and same["cca_id"] == rid and len(holds_for(r_v)) == 1
+    assert "submit a fresh request" not in same["note"]
+    corrected = rcyc(5000)["governance"]
+    assert corrected["status"] == "held_for_change_control" and corrected["cca_id"] != rid
+
+    # an API-cycle approval is not spent by the same revenue declared with LOWER costs (a larger distributable)
+    k_v = uid("costs")
+    kcyc = lambda revenue, costs: client.post("/api/v1/economy/cycle", json={"vsb_id": k_v, "revenue": revenue,
+                                                                             "costs": costs}).json()
+    kid = kcyc(6000, 1000)["governance"]["cca_id"]
+    decide(kid)
+    lower = kcyc(6000, 0)
+    assert lower["cycle"] is None and lower["governance"]["cca_id"] != kid and rec(kid)["status"] == "withdrawn"
+
+    # ── the heartbeat: one hold kept current while revenue arrives; the approval releases the events it names ──
+    h = living("heart")
+    ev1 = record_event(h, "revenue", 5000.0, "marketplace", ref="w463-e1")
+    first = operate_vsb(h)
+    hid = first["governance"]["cca_id"]
+    record_event(h, "revenue", 1.0, "marketplace", ref="w463-e2")
+    second = operate_vsb(h)
+    assert second["governance"]["cca_id"] == hid and len(holds_for(h)) == 1      # re-estimated, no sibling per sale
+    decide(hid)
+    record_event(h, "revenue", 7.0, "marketplace", ref="w463-e3")                 # lands after the approval
+    ran = operate_vsb(h)
+    assert "error" not in ran and ran.get("revenue_recognised_wst") == 5001.0, ran     # exactly the events it was filed for
+    assert rec(hid)["status"] == "implemented"
+    assert peek_pending(h)["revenue"] == 7.0, "the late sale must wait for the next cycle, not ride the approval"
+    # a heartbeat approval is not spent by an API cycle (and vice versa)
+    record_event(h, "revenue", 5000.0, "marketplace", ref="w463-e4")
+    hid2 = operate_vsb(h)["governance"]["cca_id"]
+    decide(hid2)
+    api_try = client.post("/api/v1/economy/cycle", json={"vsb_id": h, "revenue": 5000}).json()
+    assert api_try["cycle"] is None and api_try["governance"]["cca_id"] != hid2 and rec(hid2)["status"] == "approved"
+
+    # ── the heartbeat path refuses BEFORE it spends: an approval survives a persistent refusal untouched ──
+    trail_len = len(rec(hid2)["audit_trail"])
+    real_validate = ConstitutionalPolicyGate.validate
+    ConstitutionalPolicyGate.validate = lambda self, *aa, **kk: {"allowed": False, "reason": "w463 refusal"}
+    try:
+        for _ in range(2):
+            assert operate_vsb(h)["governance"]["status"] == "blocked_by_gate"
+    finally:
+        ConstitutionalPolicyGate.validate = real_validate
+    assert rec(hid2)["status"] == "approved" and len(rec(hid2)["audit_trail"]) == trail_len
+
+    # ── nobody else can mint an economy approval — each identity clause on its own ──
+    y = uid("forge")
+    r422 = client.post("/api/v1/cca/submit", json={"title": gv._HOLD_TITLE_PREFIX + y, "change_type": "config_minor",
+                                                  "description": "fix a typo"})
+    assert r422.status_code == 422 and "reserved" in r422.json()["detail"]
+    assert client.post("/api/v1/cca/submit", json={"title": "x", "change_type": "economy_material",
+                                                   "description": "typo"}).status_code == 422
+    assert client.post("/api/v1/cca/submit", json={"title": "[Economy] Rebalance the charity stage label",
+                                                   "change_type": "config_minor", "description": "w463"}).status_code == 200
+    base = {"title": gv._HOLD_TITLE_PREFIX + y, "change_type": "economy_material", "submitted_by": "economy:api",
+            "vsb_id": y, "status": "approved", "impact_tier": "MEDIUM", "est_distributable_wst": 4000.0,
+            "submitted_at": "2026-09-13T00:00:00Z", "description": "", "audit_trail": []}
+    forged = {}
+    for name, patch in {"type": {"change_type": "config_minor"}, "filer": {"submitted_by": "someone"},
+                        "kind": {"submitted_by": "economy:heartbeat"}, "vsb": {"vsb_id": "another-vsb"},
+                        "minted": {"submitted_by_verified": False}}.items():
+        cid = f"cca-w463f{name}{_uuid.uuid4().hex[:4]}"
+        atomic_write_json(cca._cca_path(cid), {**base, "cca_id": cid, **patch})
+        forged[name] = cid
+    fz = client.post("/api/v1/economy/cycle", json={"vsb_id": y, "revenue": 5000, "costs": 0}).json()
+    assert fz["cycle"] is None and fz["governance"]["cca_id"] not in forged.values()
+    assert all(rec(cid)["status"] == "approved" for cid in forged.values()), {n: rec(i)["status"] for n, i in forged.items()}
+
+    # ── a record filed before W463: bound by the amount its description states, never unbound ──
+    def legacy_record(v):
+        cid = f"cca-w463legacy{_uuid.uuid4().hex[:4]}"
+        atomic_write_json(cca._cca_path(cid), {
+            k: val for k, val in {**base, "cca_id": cid, "vsb_id": v, "title": gv._HOLD_TITLE_PREFIX + v,
+                                  "description": "Material virtual distribution: estimated distributable 4000.0 WST"}.items()
+            if k != "est_distributable_wst"})                                    # the c519c497 shape: no amount field
+        return cid
+    lg = uid("legacy")
+    legacy = legacy_record(lg)
+    too_big = client.post("/api/v1/economy/cycle", json={"vsb_id": lg, "revenue": 5_000_000}).json()
+    assert too_big["cycle"] is None and rec(legacy)["status"] == "withdrawn"
+    lg2 = uid("legacy2")
+    legacy2 = legacy_record(lg2)
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": lg2, "revenue": 5000}).json()["cycle"] is not None
+    assert rec(legacy2)["status"] == "implemented" and trail(legacy2, "consumed_by_economy_cycle")[0].get("amount_from_description")
+
+    # ── a cycle drains only what the gate measured: a receipt landing after the gate waits (all run sites) ──
+    q = living("payer")
+    fund(q, 2_000_000)                                                      # reserve 400,000: four late receipts
+    real_gate = gv._materiality_gate
+
+    def late_receipt(p):
+        def gate(vsb_id, est, source, counterparty=None, intake=None):
+            out = real_gate(vsb_id, est, source, counterparty, intake)
+            if vsb_id == p:
+                real_record(q, p, 50000.0, "w463 late receipt")      # lands between the gate and the cycle
+            return out
+        return gate
+
+    class _RaisingGov:
+        def __init__(self, *aa, **kk): pass
+        async def intercept(self, ctx, action): raise RuntimeError("w463 gate unavailable")
+
+    class _NoOutput:
+        status, output, checkpoint_id = "allowed", None, "chk-w463-none"
+
+    class _NoOutputGov:
+        def __init__(self, *aa, **kk): pass
+        async def intercept(self, ctx, action): return _NoOutput()
+
+    for label, runner in [
+        ("sync", lambda p: gv.governed_cycle_sync(p, "waqf_ltd_hybrid", "Rehan", 0.0)),
+        ("async action", lambda p: asyncio.run(gv.governed_cycle(p, "waqf_ltd_hybrid", "Rehan", 0.0))),
+        ("async gate-raised fallback", lambda p: with_gov(_RaisingGov, lambda: asyncio.run(
+            gv.governed_cycle(p, "waqf_ltd_hybrid", "Rehan", 0.0)))),
+        ("async missing-output fallback", lambda p: with_gov(_NoOutputGov, lambda: asyncio.run(
+            gv.governed_cycle(p, "waqf_ltd_hybrid", "Rehan", 0.0)))),
+    ]:
+        p = living("recv")
+        assert transfer(q, p, 200).json()["transfer"] is not None             # 200 pending, below threshold
+        gv._materiality_gate = late_receipt(p)
+        try:
+            out = runner(p)
+        finally:
+            gv._materiality_gate = real_gate
+        assert out["cycle"] is not None, (label, out)
+        assert out["cycle"]["inter_vsb_received_wst"] == 200.0, (label, out["cycle"].get("inter_vsb_received_wst"))
+        assert tr.peek_pending_transfers(p) == 50000.0, label                  # the late receipt still waits
+
+    # …and the venture-returns queue is capped the same way, on both paths
+    from agentic_core.economy.ventures import peek_pending_returns, record_positions, record_return
+    for label, runner in [("sync", lambda v: gv.governed_cycle_sync(v, "waqf_ltd_hybrid", "Rehan", 0.0)),
+                          ("async", lambda v: asyncio.run(gv.governed_cycle(v, "waqf_ltd_hybrid", "Rehan", 0.0)))]:
+        r_v2 = uid("returns")
+        record_positions(r_v2, {"positions": [{"id": "h463", "name": "W463", "domain": "care",
+                                               "score": 0.5, "amount_wst": 100000.0}]})
+        record_return(r_v2, "h463", 300.0)
+
+        def late_return(vsb_id, est, source, counterparty=None, intake=None, _v=r_v2):
+            out = real_gate(vsb_id, est, source, counterparty, intake)
+            if vsb_id == _v:
+                record_return(_v, "h463", 40000.0, "w463 late return")        # lands between the gate and the cycle
+            return out
+        gv._materiality_gate = late_return
+        try:
+            ret = runner(r_v2)
+        finally:
+            gv._materiality_gate = real_gate
+        assert ret["cycle"]["venture_returns_recycled_wst"] == 300.0 and peek_pending_returns(r_v2) == 40000.0, label
+
+
+def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeypatch):
+    """W463 — the second refutation of the redesigned hold lifecycle, each finding pinned both ways. A hold is
+    re-estimated only while SUBMITTED (never under review), and a decision is refused when the amount it would
+    bind is not the amount the reviewer saw; a hold filed after a rejection says so and needs an explicit
+    decision; every release is checked against the approved amount (a lower reserve rate, a vanished cost event,
+    receipts that arrived after the approval); a heartbeat approval with no revenue events can be spent; a hold
+    whose events were consumed elsewhere is retired; two live siblings are reconciled; a transfer that posted is
+    never reported as failed because the gate raised afterwards, and its replay repairs the receiver leg even when
+    the receiver has gone; the ledger answer does not wait on another writer's lock. The third refutation: a
+    rejection stands only while no approved action has run since, and only for the same declared intake; a hold
+    after a rejection says so from the moment it is filed (answer, queue row, notes, pages); a give-back never
+    revives an approval beside a newer record; an event-less heartbeat approval whose receipts are gone is
+    withdrawn, not spent; an economy hold cannot be "implemented" by hand; an allowed action that raised is
+    retried and recorded as that, not as a gate outage. The fourth: a spend counts as "an approved action ran"
+    only once its action started (marked where it starts), so an in-flight spend never lifts a rejection; one
+    filing order that a backward clock step cannot disturb; an API approval whose receipts are gone is withdrawn;
+    a give-back skips beside a newer rejected record and waits for the gate's lock; a record no action can
+    release is retired, not stranded; an unreadable ledger is recorded as unknown. The fifth: an unmarked spend
+    never refuses the rejected action for ever (it is asked, for an explicit decision); only a confirmed debit counts
+    as a run; every start marker is guarded; a rejection says what rejected it; retiring is an admin decision, and a
+    transfer approval whose receiver left the roster is retired with that reason. The sixth: a give-back
+    withdraws undecided holds asked while its action was in flight (and otherwise writes that the action never
+    ran); one reading decides and explains a retirement; a heartbeat hold for a VSB off the roster is unreleasable;
+    an unreadable roster never retires; the roster's own writes no longer lose registrations or deregistrations
+    made during a beat. The seventh: a give-back withdraws only holds its approval can release, and puts them back
+    if the give-back does not land; an Owner decision landing mid-give-back survives; held beats and concurrent
+    pruning keep the roster whole. The eighth: a newer approval already spent also keeps a give-back from
+    reviving the older one, and every revert path is exercised. Virtual WST only.
+    """
+    import os
+    import time as _time
+    import threading
+    import uuid as _uuid
+    import pytest as _pytest
+    from fastapi import HTTPException
+
+    import agentic_core.gaas.v5 as g5
+    from agentic_core.api import change_control as cca
+    from agentic_core.config import atomic_write_json, store_lock
+    from agentic_core.economy import governance as gv
+    from agentic_core.economy import transfers as tr
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.economy.living_vsbs import deregister, operate_vsb, register
+    from agentic_core.economy.revenue import peek_pending, record_event
+
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+
+    def uid(tag):
+        return f"w463l-{tag}-{_uuid.uuid4().hex[:6]}"
+
+    def living(tag):
+        v = uid(tag)
+        register(v, f"W463L {tag}", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        return v
+
+    def fund(v, revenue):
+        monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+        assert client.post("/api/v1/economy/cycle", json={"vsb_id": v, "revenue": revenue}).json()["cycle"]
+        monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+
+    def rec(cid):
+        return cca._load_change(cid)
+
+    def decide(cid, verdict="approved", **extra):
+        return client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": verdict, "reviewer_notes": "w463l", **extra})
+
+    def cyc(v, revenue, costs=0.0, reserve_rate=0.2):
+        return client.post("/api/v1/economy/cycle", json={"vsb_id": v, "revenue": revenue, "costs": costs,
+                                                         "reserve_rate": reserve_rate}).json()
+
+    # ── S1: the amount a decision binds is the amount the reviewer saw ──
+    v1 = uid("review")
+    h1 = cyc(v1, 5000)["governance"]
+    seen = h1["est_distributable_wst"]
+    assert cyc(v1, 6000)["governance"]["approved_or_filed_wst"] == 4800.0            # re-estimated (S5: response is current)
+    stale = decide(h1["cca_id"], expected_est_distributable_wst=seen)
+    assert stale.status_code == 409 and "changed since it was read" in stale.json()["detail"]
+    assert rec(h1["cca_id"])["status"] == "submitted" and rec(h1["cca_id"])["est_distributable_wst"] == 4800.0
+    # a hold under review is never re-estimated
+    cca._update_change(h1["cca_id"], lambda f: f.update(status="under_review"))
+    under = cyc(v1, 50000)["governance"]
+    assert under["cca_id"] == h1["cca_id"] and "under review" in under["note"]
+    assert rec(h1["cca_id"])["est_distributable_wst"] == 4800.0
+    # …and a decision refuses if the amount moved DURING the review (defence in depth)
+    real_query = cca.gateway.query
+
+    async def _query_moves_amount(*a, **k):
+        cca._update_change(h1["cca_id"], lambda f: f.update(est_distributable_wst=999999.0))
+        return "[DECISION: APPROVED]"
+    monkeypatch.setattr(cca.gateway, "query", _query_moves_amount)
+    moved = client.post(f"/api/v1/cca/{h1['cca_id']}/review", json={"reviewer_notes": "w463l"})
+    monkeypatch.setattr(cca.gateway, "query", real_query)
+    assert moved.status_code == 409 and "changed during the review" in moved.json()["detail"]
+    assert rec(h1["cca_id"])["status"] == "under_review"
+
+    # ── S2: a hold filed after a rejection says so and needs an explicit decision ──
+    v2 = uid("followrej")
+    rej = cyc(v2, 50000)["governance"]["cca_id"]
+    assert decide(rej, "rejected").status_code == 200
+    nxt = cyc(v2, 50001)["governance"]
+    after = rec(nxt["cca_id"])
+    assert nxt["cca_id"] != rej and after["follows_rejection"]["cca_id"] == rej and "FOLLOWS A REJECTION" in after["description"]
+    assert after["filed_ns"] > rec(rej)["filed_ns"]                                  # ordered within one second too
+
+    async def _query_approves(*a, **k):
+        return "[DECISION: APPROVED]"
+    monkeypatch.setattr(cca.gateway, "query", _query_approves)
+    reviewed = client.post(f"/api/v1/cca/{nxt['cca_id']}/review", json={"reviewer_notes": "w463l"})
+    monkeypatch.setattr(cca.gateway, "query", real_query)
+    assert reviewed.status_code == 200 and reviewed.json()["hold_reason"] == "follows_rejection_requires_explicit_decision"
+    assert reviewed.json()["recommendation"] == {"verdict": "approved", "source": "model_decision_marker"}
+    assert rec(nxt["cca_id"])["status"] == "under_review"
+    assert decide(nxt["cca_id"]).status_code == 200 and cyc(v2, 50001)["cycle"] is not None
+    assert "follows_rejection" not in rec(cyc(v2, 60000)["governance"]["cca_id"])         # an action ran since: no link
+
+    def tie_case(tag, rej_ns, imp_ns):
+        # a rejection and a spent approval filed within one second: filed_ns orders them; an exact tie reads as the rejection
+        v = uid(tag)
+        common = {"title": gv._HOLD_TITLE_PREFIX + v, "change_type": "economy_material", "submitted_by": "economy:api",
+                  "vsb_id": v, "impact_tier": "MEDIUM", "est_distributable_wst": 40000.0, "description": "",
+                  "audit_trail": [], "submitted_at": "2026-09-13T00:00:09Z",
+                  "intake": {"revenue_wst": 50000.0, "costs_wst": 0.0, "returns_wst": 0.0, "transfers_wst": 0.0,
+                             "reserve_rate": 0.2}}
+        for status, ns in (("rejected", rej_ns), ("implemented", imp_ns)):
+            cid = f"cca-w463lt{_uuid.uuid4().hex[:6]}"
+            atomic_write_json(cca._cca_path(cid), {**common, "cca_id": cid, "status": status,
+                                                   **({"filed_ns": ns} if ns else {})})
+            if status == "rejected":                  # listed after the spent record, so list order would pick it
+                _old = _time.time() - 60
+                os.utime(cca._cca_path(cid), (_old, _old))
+        return "follows_rejection" in rec(cyc(v, 60000)["governance"]["cca_id"])
+    assert tie_case("tie-spent-later", 1, 2) is False
+    assert tie_case("tie-rejected-later", 2, 1) is True
+    assert tie_case("tie-legacy", 0, 0) is True
+
+    # ── S12: a lower reserve rate cannot stretch an approval ──
+    v3 = uid("reserve")
+    k = cyc(v3, 10000, reserve_rate=0.75)["governance"]["cca_id"]
+    assert rec(k)["est_distributable_wst"] == 2500.0 and decide(k).status_code == 200
+    lower = cyc(v3, 10000, reserve_rate=0.0)
+    assert lower["cycle"] is None and lower["governance"]["cca_id"] != k and rec(k)["status"] == "withdrawn"
+    v3b = uid("reserve-default")                                                     # approved at the default rate
+    k2 = cyc(v3b, 5000)["governance"]["cca_id"]
+    assert decide(k2).status_code == 200
+    lower2 = cyc(v3b, 5000, reserve_rate=0.1)
+    assert lower2["cycle"] is None and rec(k2)["status"] == "withdrawn"
+
+    # ── S13: an approval's release is capped: a receipt that arrived after it waits (API) ──
+    q = living("payer")
+    fund(q, 2_000_000)
+    v4 = living("capapi")
+    a4 = cyc(v4, 5000)["governance"]["cca_id"]
+    assert decide(a4).status_code == 200
+    tr.record_transfer(q, v4, 50000.0, "w463l late receipt")                          # bypasses the gate on purpose
+    ran4 = cyc(v4, 5000)
+    assert ran4["cycle"] is not None and ran4["cycle"]["inter_vsb_received_wst"] == 0.0
+    assert tr.peek_pending_transfers(v4) == 50000.0 and rec(a4)["status"] == "implemented"
+
+    # ── S11 + S13 (heartbeat): an approval with no revenue events is spendable, and releases only what it was filed on ──
+    v5 = living("hbreceipt")
+    tr.record_transfer(q, v5, 5000.0, "w463l receipt")
+    h5 = operate_vsb(v5)["governance"]["cca_id"]
+    assert rec(h5)["intake"]["event_ids"] == [] and decide(h5).status_code == 200
+    tr.record_transfer(q, v5, 70000.0, "w463l receipt after the approval")
+    ran5 = operate_vsb(v5)
+    assert "error" not in ran5 and rec(h5)["status"] == "implemented", ran5
+    assert tr.peek_pending_transfers(v5) == 70000.0, "the receipt that arrived after the approval rode along"
+
+    # ── S3: a filed cost event that is no longer pending cannot enlarge the release ──
+    v6 = living("vanishedcost")
+    record_event(v6, "cost", 4000.0, "w463l", ref="w463l-cost")
+    record_event(v6, "revenue", 10000.0, "marketplace", ref="w463l-rev")
+    h6 = operate_vsb(v6)["governance"]["cca_id"]
+    assert rec(h6)["est_distributable_wst"] == 4000.0 and decide(h6).status_code == 200
+    from agentic_core.economy import revenue as _rv
+    cost_id = next(i for i, it in peek_pending(v6)["items"].items() if it["kind"] == "cost")
+    _rv.consume_events(v6, [cost_id])                                                # the cost leaves the pending set
+    gone = operate_vsb(v6)
+    assert gone.get("cycle_ran") is False and rec(h6)["status"] == "withdrawn", gone
+    assert peek_pending(v6)["revenue"] == 10000.0                                    # nothing distributed
+
+    # ── S4: a hold whose events a below-threshold cycle consumed is retired, not left to waste a decision ──
+    v7 = living("retire")
+    record_event(v7, "revenue", 5000.0, "marketplace", ref="w463l-r7")
+    h7 = operate_vsb(v7)["governance"]["cca_id"]
+    record_event(v7, "cost", 4000.0, "w463l", ref="w463l-c7")                         # estimate falls below the threshold
+    ran7 = operate_vsb(v7)
+    assert "error" not in ran7 and ran7.get("revenue_events_consumed") == 2, ran7
+    assert rec(h7)["status"] == "withdrawn"
+
+    # ── S14: the heartbeat's cycle runs on exactly the released events ──
+    v8 = living("exact")
+    record_event(v8, "revenue", 5000.0, "marketplace", ref="w463l-e1")
+    h8 = operate_vsb(v8)["governance"]["cca_id"]
+    record_event(v8, "revenue", 1.0, "marketplace", ref="w463l-e2")
+    assert operate_vsb(v8)["governance"]["cca_id"] == h8
+    assert decide(h8).status_code == 200
+    record_event(v8, "revenue", 7.0, "marketplace", ref="w463l-e3")
+    ran8 = operate_vsb(v8)
+    assert ran8.get("revenue_events_consumed") == 2 and ran8["revenue_recognised_wst"] == 5001.0, ran8
+    assert peek_pending(v8)["revenue"] == 7.0 and rec(h8)["status"] == "implemented"
+
+    # ── S15: an approval landing between the gate's scan and its re-estimate is not rewritten ──
+    v9 = uid("rebcas")
+    h9 = cyc(v9, 5000)["governance"]["cca_id"]
+    real_update = cca._update_change
+    armed = {"on": True}
+
+    def approve_first(cid, mutate):
+        if armed["on"] and cid == h9:
+            armed["on"] = False
+            real_update(cid, lambda f: f.update(status="approved"))
+        return real_update(cid, mutate)
+    monkeypatch.setattr(cca, "_update_change", approve_first)
+    raced = cyc(v9, 50000)["governance"]
+    monkeypatch.setattr(cca, "_update_change", real_update)
+    assert "decided concurrently" in raced["note"] and rec(h9)["est_distributable_wst"] == 4000.0
+    assert rec(h9)["intake"]["revenue_wst"] == 5000.0
+    later = cyc(v9, 50000)                                                           # the larger request does not spend it
+    assert later["cycle"] is None and rec(h9)["status"] == "withdrawn"
+
+    # ── an API approval's own bounds, where the amount alone would not refuse (same estimate) ──
+    v9b = uid("apibounds")
+    b1 = cyc(v9b, 5000)["governance"]["cca_id"]                                      # 5000 / 0 → 4000
+    assert decide(b1).status_code == 200
+    more_rev = cyc(v9b, 5100, costs=80)                                              # 5100 / 80 → 4000: more revenue than declared
+    assert more_rev["cycle"] is None and rec(b1)["status"] == "withdrawn"
+    v9c = uid("apicosts")
+    c1 = cyc(v9c, 5000, costs=1000)["governance"]["cca_id"]                          # 5000 / 1000 → 3000
+    assert rec(c1)["est_distributable_wst"] == 3000.0 and decide(c1).status_code == 200
+    less_cost = cyc(v9c, 4875, costs=900)                                            # 4875 / 900 → 3000: lower costs than declared
+    assert less_cost["cycle"] is None and rec(c1)["status"] == "withdrawn"
+
+    # ── S16: two live siblings for one action are reconciled; a withdraw never overwrites a decided record ──
+    v10 = uid("siblings")
+    intake = {"revenue_wst": 5000.0, "costs_wst": 0.0, "returns_wst": 0.0, "transfers_wst": 0.0, "reserve_rate": 0.2}
+    base = {"title": gv._HOLD_TITLE_PREFIX + v10, "change_type": "economy_material", "submitted_by": "economy:api",
+            "vsb_id": v10, "status": "approved", "impact_tier": "MEDIUM", "est_distributable_wst": 4000.0,
+            "intake": intake, "description": "", "audit_trail": []}
+    s1, s2 = f"cca-w463ls1{_uuid.uuid4().hex[:4]}", f"cca-w463ls2{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(cca._cca_path(s1), {**base, "cca_id": s1, "submitted_at": "2026-09-13T00:00:01Z"})
+    atomic_write_json(cca._cca_path(s2), {**base, "cca_id": s2, "submitted_at": "2026-09-13T00:00:02Z"})
+    assert cyc(v10, 5000)["cycle"] is not None
+    spent_one = {rec(s1)["status"], rec(s2)["status"]}
+    assert spent_one == {"implemented", "withdrawn"}, spent_one
+    fresh10 = cyc(v10, 5000)
+    assert fresh10["cycle"] is None                                                  # the sibling does not release a second cycle
+    s3 = f"cca-w463ls3{_uuid.uuid4().hex[:4]}"                                        # an approval that cannot release, beside an open hold
+    atomic_write_json(cca._cca_path(s3), {**base, "cca_id": s3, "est_distributable_wst": 80.0,
+                                          "intake": {**intake, "revenue_wst": 100.0}, "submitted_at": "2026-09-13T00:00:04Z"})
+    assert cyc(v10, 5000)["governance"]["cca_id"] == fresh10["governance"]["cca_id"]
+    assert rec(s3)["status"] == "withdrawn" and rec(fresh10["governance"]["cca_id"])["status"] == "submitted"
+    done = f"cca-w463ldone{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(cca._cca_path(done), {**base, "cca_id": done, "status": "implemented", "submitted_at": "2026-09-13T00:00:03Z"})
+    gv._withdraw(cca, rec(done), v10, None, "w463l")
+    assert rec(done)["status"] == "implemented"
+
+    # ── S17: a same-estimate change of intake keeps the hold current; a changed event set is asked again ──
+    v11 = uid("sameest")
+    h11 = cyc(v11, 5000)["governance"]["cca_id"]
+    assert cyc(v11, 5100, costs=80)["governance"]["cca_id"] == h11
+    assert rec(h11)["intake"]["revenue_wst"] == 5100.0 and rec(h11)["intake"]["costs_wst"] == 80.0
+    assert decide(h11).status_code == 200 and cyc(v11, 5100, costs=80)["cycle"] is not None
+    v12 = living("hbrej")
+    record_event(v12, "revenue", 5000.0, "marketplace", ref="w463l-r12")
+    r12 = operate_vsb(v12)["governance"]["cca_id"]
+    assert decide(r12, "rejected").status_code == 200
+    assert operate_vsb(v12)["governance"]["status"] == "rejected_by_change_control"
+    record_event(v12, "revenue", 100.0, "marketplace", ref="w463l-r12b")
+    record_event(v12, "cost", 80.0, "w463l", ref="w463l-c12b")                       # same estimate, different events
+    again12 = operate_vsb(v12)["governance"]
+    assert again12["status"] == "held_for_change_control" and again12["cca_id"] != r12
+
+    # ── S18: the reserved hold titles are refused in any casing, for both kinds ──
+    for title in ("[Economy] Material Transfer — x", "  [ECONOMY] material distribution — x"):
+        r = client.post("/api/v1/cca/submit", json={"title": title, "change_type": "config_minor", "description": "w463l"})
+        assert r.status_code == 422 and "reserved" in r.json()["detail"], title
+
+    # ── S6: a transfer that POSTED is returned as posted when the gate raises afterwards (no replay, no double pay) ──
+    s, t_ = living("sender"), living("receiver")
+    fund(s, 10000)
+
+    class _ExecThenRaise:
+        def __init__(self, *a, **k): pass
+        async def intercept(self, ctx, action):
+            await action()
+            raise RuntimeError("w463l checkpoint write failed after execution")
+    calls = {"n": 0}
+    real_record = tr.record_transfer
+
+    def counting(*a, **k):
+        calls["n"] += 1
+        return real_record(*a, **k)
+    real_gov = g5.UnifiedConstitutionalInterceptorV16Omega
+    g5.UnifiedConstitutionalInterceptorV16Omega = _ExecThenRaise
+    tr.record_transfer = counting
+    try:
+        posted = client.post("/api/v1/economy/transfer", json={"from_vsb": s, "to_vsb": t_, "amount": 300})
+    finally:
+        g5.UnifiedConstitutionalInterceptorV16Omega = real_gov
+        tr.record_transfer = real_record
+    assert posted.status_code == 200 and posted.json()["transfer"]["amount_wst"] == 300.0, posted.text
+    assert posted.json()["governance"]["status"] == "gate_raised_after_execution" and calls["n"] == 1
+    assert tr.peek_pending_transfers(t_) == 300.0
+
+    # ── S7: a replay of a debited transfer repairs the receiver leg even when the receiver has gone ──
+    r7 = living("gone")
+    xid = f"xfer-w463l{_uuid.uuid4().hex[:6]}"
+    real_atomic = tr.atomic_write_json
+
+    def pending_write_fails(path, data):
+        if path == tr._PENDING_STORE:
+            raise OSError("w463l pending store unavailable")
+        return real_atomic(path, data)
+    tr.atomic_write_json = pending_write_fails
+    try:
+        with _pytest.raises(OSError):
+            tr.record_transfer(s, r7, 200.0, "w463l", transfer_id=xid)
+    finally:
+        tr.atomic_write_json = real_atomic
+    assert tr.debit_posted(s, xid) is True and tr.peek_pending_transfers(r7) == 0.0
+    deregister(r7)
+    repaired = tr.record_transfer(s, r7, 200.0, "w463l", transfer_id=xid)
+    assert repaired["replay_repaired_receiver_leg"] is True and tr.peek_pending_transfers(r7) == 200.0
+    assert tr.debit_posted(s, xid[:-1]) is False                                      # the id is matched whole
+
+    # ── S8: the ledger answer does not wait on another writer's lock ──
+    held_lock = threading.Event()
+    release = threading.Event()
+
+    def hold_ledger_lock():
+        with store_lock(VirtualLedger(s).path):
+            held_lock.set()
+            release.wait(10)
+    th = threading.Thread(target=hold_ledger_lock)
+    th.start()
+    try:
+        assert held_lock.wait(10)
+        t0 = _time.time()
+        assert tr.debit_posted(s, xid) is True
+        assert _time.time() - t0 < 2.0
+    finally:
+        release.set()
+        th.join(timeout=15)
+
+    # ══ third refutation — each confirmed finding pinned ══
+    import pathlib
+    events = []
+    real_log = gv._ueg_log
+    monkeypatch.setattr(gv, "_ueg_log", lambda e: (events.append(e), real_log(e))[1])
+
+    # GATE-1: a rejection stands only while no approved action for the action has run since it
+    g1 = uid("rej-then-ran")
+    r1 = cyc(g1, 5000)["governance"]["cca_id"]
+    assert decide(r1, "rejected").status_code == 200
+    assert cyc(g1, 5000)["governance"]["status"] == "rejected_by_change_control"         # nothing ran since: it stands
+    f1 = cyc(g1, 6000)["governance"]
+    # SURF-1: the held answer and the queue row say the hold follows the rejection before any review
+    assert f1["follows_rejection"] == r1 and "only an explicit decision" in f1["note"]
+    assert next(x for x in client.get("/api/v1/cca/queue").json()["queue"]
+                if x["cca_id"] == f1["cca_id"])["follows_rejection"] == r1
+    assert decide(f1["cca_id"]).status_code == 200 and cyc(g1, 6000)["cycle"] is not None    # an approved action ran
+    again1 = cyc(g1, 5000)["governance"]
+    assert again1["status"] == "held_for_change_control" and again1["cca_id"] not in (r1, f1["cca_id"]), again1
+    assert "follows_rejection" not in rec(again1["cca_id"]) and "follows_rejection" not in again1
+
+    # GATE-2: an API cycle declaring another intake at the same estimate is a different action, asked again
+    g2 = uid("same-est-new-intake")
+    r2 = cyc(g2, 5000)["governance"]["cca_id"]
+    assert decide(r2, "rejected").status_code == 200
+    changed2 = cyc(g2, 5100, costs=80)["governance"]
+    assert changed2["status"] == "held_for_change_control" and changed2["cca_id"] != r2
+    assert changed2["follows_rejection"] == r2
+
+    # SURF-3: both list surfaces carry what the pages read (a held hold's reason, amount, and the rejection it follows)
+    reviewed2 = client.post(f"/api/v1/cca/{changed2['cca_id']}/review", json={"reviewer_notes": "w463l"})
+    assert reviewed2.json()["hold_reason"] == "follows_rejection_requires_explicit_decision"
+    for listing, key in (("/api/v1/cca/queue", "queue"), ("/api/v1/cca", "changes")):
+        rowx = next(x for x in client.get(listing).json()[key] if x["cca_id"] == changed2["cca_id"])
+        assert rowx["hold_reason"] == "follows_rejection_requires_explicit_decision", listing
+        assert rowx["follows_rejection"] == r2, listing
+        assert rowx["est_distributable_wst"] == rec(changed2["cca_id"])["est_distributable_wst"] == 4000.0, listing
+    under2 = cyc(g2, 5100, costs=80)["governance"]
+    assert "under review" in under2["note"] and "only an explicit decision" in under2["note"]
+    pages = pathlib.Path("apps/workstation-superapp/src/pages")
+    hub = (pages / "governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    ccap = (pages / "enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "c.impact_tier === 'CRITICAL' || c.hold_reason || c.follows_rejection" in hub
+    assert "expected_est_distributable_wst: p.est" in hub and "the decision applies to this amount only" not in hub
+    assert "expected_est_distributable_wst: entries.find(e => e.cca_id === id)?.est_distributable_wst" in ccap
+    assert "entry.change_type !== 'economy_material'" in ccap
+    for page in ("enterprise/VSBEconomy.tsx", "enterprise/EconomyOperations.tsx"):
+        assert "follows_rejection ? (" in (pages / page).read_text(encoding="utf-8"), page
+
+    # SURF-2: the page's review (no override) carrying the amount it read is refused when the hold moved since
+    s2v = uid("stale-request-review")
+    hs = cyc(s2v, 5000)["governance"]
+    assert cyc(s2v, 6000)["governance"]["approved_or_filed_wst"] == 4800.0
+    monkeypatch.setattr(cca.gateway, "query", _query_approves)
+    stale_rr = client.post(f"/api/v1/cca/{hs['cca_id']}/review",
+                           json={"reviewer_notes": "w463l", "expected_est_distributable_wst": hs["est_distributable_wst"]})
+    monkeypatch.setattr(cca.gateway, "query", real_query)
+    assert stale_rr.status_code == 409 and "changed since it was read" in stale_rr.json()["detail"]
+    assert rec(hs["cca_id"])["status"] == "submitted" and rec(hs["cca_id"])["est_distributable_wst"] == 4800.0
+
+    # GATE-3: a give-back never revives an approval beside a newer record for the same action
+    s3v, s3r = uid("restore-src"), "w463l-restore-rx"
+    h3 = gv._materiality_gate(s3v, 2000.0, "transfer", counterparty=s3r)[0]["cca_id"]
+    assert decide(h3).status_code == 200
+    held3, spent3 = gv._materiality_gate(s3v, 2000.0, "transfer", counterparty=s3r)
+    assert held3 is None and spent3["cca_id"] == h3 and spent3["gate"] == {"source": "transfer", "counterparty": s3r}
+    newer3 = gv._materiality_gate(s3v, 2000.0, "transfer", counterparty=s3r)[0]           # a request from another worker
+    assert newer3["cca_id"] != h3 and rec(newer3["cca_id"])["status"] == "submitted"
+    gv._restore_consumed_approval(spent3, vsb_id=s3v, reason="w463l the action never ran")
+    assert rec(h3)["status"] == "approved" and rec(newer3["cca_id"])["status"] == "withdrawn"   # one live record, given back
+    s3b = uid("restore-ok")                                                            # with no newer record: given back
+    h3b = gv._materiality_gate(s3b, 2000.0, "transfer", counterparty=s3r)[0]["cca_id"]
+    assert decide(h3b).status_code == 200
+    _, spent3b = gv._materiality_gate(s3b, 2000.0, "transfer", counterparty=s3r)
+    gv._restore_consumed_approval(spent3b, vsb_id=s3b, reason="w463l the action never ran")
+    assert rec(h3b)["status"] == "approved"
+
+    # GATE-4: an event-less heartbeat approval whose receipts are gone is withdrawn, never spent on a cycle of nothing
+    g4 = living("eventless")
+    tr.record_transfer(q, g4, 5000.0, "w463l receipt")
+    h4 = operate_vsb(g4)["governance"]["cca_id"]
+    assert rec(h4)["intake"]["event_ids"] == [] and decide(h4).status_code == 200
+    tr.consume_pending_transfers(g4)                                                     # drained elsewhere
+    record_event(g4, "revenue", 5000.0, "marketplace", ref="w463l-r4")
+    beat4 = operate_vsb(g4)
+    assert beat4.get("cycle_ran") is False and rec(h4)["status"] == "withdrawn", beat4
+    assert beat4["governance"]["cca_id"] != h4 and peek_pending(g4)["revenue"] == 5000.0
+
+    # SURF-6: an economy hold is released by running its action; implementing it would spend the approval on nothing
+    s6 = uid("implement")
+    h6i = cyc(s6, 5000)["governance"]["cca_id"]
+    assert decide(h6i).status_code == 200
+    assert client.post(f"/api/v1/cca/{h6i}/implement").status_code == 409 and rec(h6i)["status"] == "approved"
+    assert cyc(s6, 5000)["cycle"] is not None and rec(h6i)["status"] == "implemented"
+
+    # TCC-2: an action the gate allowed that raised part-way is retried and recorded as that, not as a gate outage
+    t2s, t2r = living("retry-src"), living("retry-rx")
+    fund(t2s, 10000)
+    fails = {"n": 0}
+
+    def pending_fails_once(path, data):
+        if path == tr._PENDING_STORE and fails["n"] == 0:
+            fails["n"] += 1
+            raise OSError("w463l pending store briefly unavailable")
+        return real_atomic(path, data)
+    tr.atomic_write_json = pending_fails_once
+    try:
+        retried = client.post("/api/v1/economy/transfer", json={"from_vsb": t2s, "to_vsb": t2r, "amount": 300})
+    finally:
+        tr.atomic_write_json = real_atomic
+    assert retried.status_code == 200 and retried.json()["governance"]["status"] == "allowed_action_retried", retried.text
+    assert fails["n"] == 1 and retried.json()["transfer"]["replay_repaired_receiver_leg"] is True
+    assert tr.peek_pending_transfers(t2r) == 300.0
+    assert len([p for p in VirtualLedger(t2s)._load().get("postings", [])
+                if "inter-VSB transfer" in str(p.get("memo"))]) == 1
+
+    # ══ fourth refutation — each confirmed finding pinned ══
+    # GATE-R1 / RF-1: a spend counts as "an approved action ran" only once its action started
+    g6 = uid("in-flight")
+    r6 = cyc(g6, 5000)["governance"]["cca_id"]
+    assert decide(r6, "rejected").status_code == 200
+    f6 = cyc(g6, 6000)["governance"]["cca_id"]
+    assert decide(f6).status_code == 200
+    intake6 = {"revenue_wst": 6000.0, "costs_wst": 0.0, "returns_wst": 0.0, "transfers_wst": 0.0, "reserve_rate": 0.2}
+    held6, spent6 = gv._materiality_gate(g6, 4800.0, "api", intake=intake6)          # spent; its action still in flight
+    assert held6 is None and spent6["cca_id"] == f6 and not gv._action_ran(rec(f6))
+    same6 = cyc(g6, 5000)["governance"]                                                 # the rejected action, from another worker
+    assert same6["status"] == "held_for_change_control" and same6["follows_rejection"] == r6, same6   # asked; explicit only
+    rv6 = client.post(f"/api/v1/cca/{same6['cca_id']}/review", json={"reviewer_notes": "w463l"})
+    assert rv6.json()["hold_reason"] == "follows_rejection_requires_explicit_decision"   # a review cannot approve it
+    gv._restore_consumed_approval(spent6, vsb_id=g6, reason="w463l the in-flight action was blocked")
+    assert rec(f6)["status"] == "implemented"                                           # the hold asked meanwhile is under review
+    assert rec(f6)["audit_trail"][-1]["event"] == "approval_spent_action_never_ran"      # …and the record says nothing ran
+    # a spend whose action is marked started is an approved action that ran: the rejected action is asked plainly
+    g6b = uid("in-flight-ran")
+    r6b = cyc(g6b, 5000)["governance"]["cca_id"]
+    assert decide(r6b, "rejected").status_code == 200
+    f6b = cyc(g6b, 6000)["governance"]["cca_id"]
+    assert decide(f6b).status_code == 200
+    held6b, spent6b = gv._materiality_gate(g6b, 4800.0, "api", intake=intake6)
+    assert held6b is None and spent6b["cca_id"] == f6b and not gv._action_ran(rec(f6b))
+    gv._mark_action_ran(spent6b, g6b, "w463l the action started")
+    assert gv._action_ran(rec(f6b))
+    after6 = cyc(g6b, 5000)["governance"]
+    assert after6["status"] == "held_for_change_control" and "follows_rejection" not in after6, after6
+    # RF5-1: a spend never marked (a worker that died before marking it) does not refuse the rejected action for ever
+    g6c = uid("crashed-spend")
+    r6c = cyc(g6c, 5000)["governance"]["cca_id"]
+    assert decide(r6c, "rejected").status_code == 200
+    f6c = cyc(g6c, 6000)["governance"]["cca_id"]
+    assert cyc(g6c, 5000)["governance"]["cca_id"] == f6c                                # re-estimated onto exactly R's intake
+    assert decide(f6c).status_code == 200
+    assert gv._materiality_gate(g6c, 4000.0, "api", intake={**intake6, "revenue_wst": 5000.0})[0] is None   # spent, never marked
+    asked6c = cyc(g6c, 5000)["governance"]
+    assert asked6c["status"] == "held_for_change_control" and asked6c["follows_rejection"] == r6c, asked6c
+
+    # …and end to end on a transfer: the gate is asked for the rejected transfer while the approved one is in flight
+    ts, trx = living("race-src"), living("race-rx")
+    fund(ts, 50000)
+    rt = client.post("/api/v1/economy/transfer", json={"from_vsb": ts, "to_vsb": trx, "amount": 2000}).json()["governance"]["cca_id"]
+    assert decide(rt, "rejected").status_code == 200
+    ft = client.post("/api/v1/economy/transfer", json={"from_vsb": ts, "to_vsb": trx, "amount": 3000}).json()["governance"]["cca_id"]
+    assert decide(ft).status_code == 200
+    inside = {}
+
+    class _BlockedR:
+        status, output, checkpoint_id = "blocked", None, "chk-w463l"
+
+    class _GateInsideThenBlock:
+        def __init__(self, *a, **k): pass
+
+        async def intercept(self, ctx, action):
+            inside["held"], inside["spent"] = gv._materiality_gate(ts, 2000.0, "transfer", counterparty=trx)
+            return _BlockedR()
+    g5.UnifiedConstitutionalInterceptorV16Omega = _GateInsideThenBlock
+    try:
+        raced_t = client.post("/api/v1/economy/transfer", json={"from_vsb": ts, "to_vsb": trx, "amount": 3000}).json()
+    finally:
+        g5.UnifiedConstitutionalInterceptorV16Omega = real_gov
+    assert raced_t["transfer"] is None and inside["spent"] is None
+    assert inside["held"]["status"] == "held_for_change_control" and inside["held"]["follows_rejection"] == rt
+    assert rec(ft)["status"] == "approved" and rec(inside["held"]["cca_id"])["status"] == "withdrawn"   # nothing ran: given back
+
+    # GATE-R2: a backward wall-clock step does not reorder records (filed_ns decides)
+    g7 = uid("clock-back")
+    real_now = gv._now
+    monkeypatch.setattr(gv, "_now", lambda: "2031-01-01T00:00:05Z")
+    r7b = cyc(g7, 5000)["governance"]["cca_id"]
+    assert decide(r7b, "rejected").status_code == 200
+    monkeypatch.setattr(gv, "_now", lambda: "2031-01-01T00:00:03Z")                    # the wall clock stepped back
+    y7 = cyc(g7, 6000)["governance"]
+    assert y7["follows_rejection"] == r7b and decide(y7["cca_id"]).status_code == 200
+    assert cyc(g7, 6000)["cycle"] is not None and gv._action_ran(rec(y7["cca_id"]))
+    again7 = cyc(g7, 5000)["governance"]
+    monkeypatch.setattr(gv, "_now", real_now)
+    assert again7["status"] == "held_for_change_control" and again7["cca_id"] not in (r7b, y7["cca_id"]), again7
+
+    # RF-2: an API approval whose receipts are gone is withdrawn, never spent on a cycle of nothing
+    from agentic_core.economy import ventures as vn
+    a8 = living("api-nothing")
+    tr.record_transfer(q, a8, 5000.0, "w463l receipt")
+    h8a = cyc(a8, 0)["governance"]
+    assert h8a["status"] == "held_for_change_control" and rec(h8a["cca_id"])["intake"]["transfers_wst"] == 5000.0
+    assert decide(h8a["cca_id"]).status_code == 200
+    tr.consume_pending_transfers(a8)                                                    # drained elsewhere
+    with store_lock(vn._PORTFOLIO_STORE):                                               # venture returns of the other kind pending
+        pdoc = vn._load_portfolio()
+        pdoc[a8] = {"holdings": {}, "pending_returns_wst": 5000.0}
+        vn._save_portfolio(pdoc)
+    nothing8 = cyc(a8, 0)
+    assert nothing8["cycle"] is None and rec(h8a["cca_id"])["status"] == "withdrawn", nothing8
+    assert vn.peek_pending_returns(a8) == 5000.0
+
+    # RF-3: a give-back skips beside a newer REJECTED record, and waits for the gate's lock
+    s9, r9 = uid("restore-rejected"), "w463l-r9"
+    h9r = gv._materiality_gate(s9, 2000.0, "transfer", counterparty=r9)[0]["cca_id"]
+    assert decide(h9r).status_code == 200
+    _, spent9 = gv._materiality_gate(s9, 2000.0, "transfer", counterparty=r9)
+    newer9 = gv._materiality_gate(s9, 2000.0, "transfer", counterparty=r9)[0]["cca_id"]
+    assert decide(newer9, "rejected").status_code == 200
+    gv._restore_consumed_approval(spent9, vsb_id=s9, reason="w463l the action never ran")
+    assert rec(h9r)["status"] == "implemented" and rec(h9r)["audit_trail"][-1]["event"] == "approval_spent_action_never_ran"
+    assert gv._materiality_gate(s9, 2000.0, "transfer", counterparty=r9)[0]["status"] == "rejected_by_change_control"
+    s10, r10 = uid("restore-lock"), "w463l-r10"
+    h10 = gv._materiality_gate(s10, 2000.0, "transfer", counterparty=r10)[0]["cca_id"]
+    assert decide(h10).status_code == 200
+    _, spent10 = gv._materiality_gate(s10, 2000.0, "transfer", counterparty=r10)
+    holding10, release10 = threading.Event(), threading.Event()
+
+    def hold_gate_lock():
+        with gv._gate_lock(s10, "transfer", r10):
+            holding10.set()
+            release10.wait(15)
+    lock_thread = threading.Thread(target=hold_gate_lock)
+    lock_thread.start()
+    try:
+        assert holding10.wait(10)
+        restorer = threading.Thread(target=lambda: gv._restore_consumed_approval(spent10, vsb_id=s10, reason="w463l"))
+        restorer.start()
+        _time.sleep(0.8)
+        assert rec(h10)["status"] == "implemented"                                       # the give-back waits for the lock
+        newer10 = gv._materiality_gate_locked(s10, 2000.0, "transfer", r10, None)[0]["cca_id"]   # a filing under that lock
+    finally:
+        release10.set()
+        lock_thread.join(timeout=15)
+    restorer.join(timeout=15)
+    assert rec(h10)["status"] == "approved" and rec(newer10)["status"] == "withdrawn"     # after the lock: given back, one live
+
+    # RF-4: a rejected answer never carries follows_rejection; a re-estimated follows hold names the explicit decision
+    g11 = uid("rejected-follows")
+    r11 = cyc(g11, 5000)["governance"]["cca_id"]
+    assert decide(r11, "rejected").status_code == 200
+    f11 = cyc(g11, 6000)["governance"]
+    re11 = cyc(g11, 7000)["governance"]
+    assert re11["cca_id"] == f11["cca_id"] and re11["follows_rejection"] == r11 and "only an explicit decision" in re11["note"]
+    assert decide(f11["cca_id"], "rejected").status_code == 200
+    rej11 = cyc(g11, 7000)["governance"]
+    assert rej11["status"] == "rejected_by_change_control" and rej11["cca_id"] == f11["cca_id"]
+    assert "follows_rejection" not in rej11
+    for page, needle in (("enterprise/VSBEconomy.tsx", "hold.status === 'rejected_by_change_control' ? ("),
+                         ("enterprise/EconomyOperations.tsx", "held.status === 'rejected_by_change_control' ? (")):
+        assert needle in (pages / page).read_text(encoding="utf-8"), page                # RF-7: no "review it" for a rejection
+
+    # RF-5: a record no action can ever release is retired, not stranded (a transfer hold filed before W463)
+    lg = uid("legacy-transfer")
+    lid = f"cca-w463llg{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(cca._cca_path(lid), {
+        "cca_id": lid, "title": "[economy] material transfer — " + lg, "change_type": "economy_material",
+        "submitted_by": "economy:transfer", "vsb_id": lg, "status": "approved", "impact_tier": "MEDIUM",
+        "est_distributable_wst": 2000.0, "description": "", "submitted_at": "2026-09-01T00:00:00Z", "audit_trail": []})
+    assert next(x for x in client.get("/api/v1/cca").json()["changes"] if x["cca_id"] == lid)["releasable"] is False
+    assert gv.releasable_by_gate(rec(h6i)) is True
+    assert "names no receiver" in gv.unreleasable_reason(rec(lid))                     # its own reason, roster or not
+    retired = client.post(f"/api/v1/cca/{lid}/implement")
+    assert retired.status_code == 200 and rec(lid)["status"] == "withdrawn"
+    assert rec(lid)["audit_trail"][-1]["event"] == "withdrawn_unreleasable"
+    assert "entry.releasable === false" in (pages / "enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+
+    # RF-6: an unreadable ledger is recorded as unknown, never as a posted debit
+    u12s, u12r = living("unreadable-src"), living("unreadable-rx")
+    fund(u12s, 50000)
+    h12 = client.post("/api/v1/economy/transfer", json={"from_vsb": u12s, "to_vsb": u12r, "amount": 2000}).json()["governance"]["cca_id"]
+    assert decide(h12).status_code == 200
+
+    def raises_before_writing(*a, **k):
+        raise OSError("w463l nothing was written")
+
+    def ledger_unreadable(*a, **k):
+        raise PermissionError("w463l ledger stayed locked")
+    real_debit_posted = tr.debit_posted
+    tr.record_transfer, tr.debit_posted = raises_before_writing, ledger_unreadable
+    try:
+        with _pytest.raises(OSError):
+            client.post("/api/v1/economy/transfer", json={"from_vsb": u12s, "to_vsb": u12r, "amount": 2000})
+    finally:
+        tr.record_transfer, tr.debit_posted = real_record, real_debit_posted
+    spent12 = [e for e in events if e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == h12]
+    assert spent12 and spent12[-1]["debit_confirmed"] is False and "could not be read" in spent12[-1]["note"]
+    assert "the debit posted" not in spent12[-1]["note"] and "PermissionError" in spent12[-1]["ledger_error"]
+    assert rec(h12)["status"] == "implemented" and not gv._action_ran(rec(h12))          # kept spent, but not counted as run
+
+    # the markers are written where each action really starts: a transfer that posted, a heartbeat cycle that ran
+    ts2, trx2 = living("ran-src"), living("ran-rx")
+    fund(ts2, 50000)
+
+    def xfer(amount):
+        return client.post("/api/v1/economy/transfer", json={"from_vsb": ts2, "to_vsb": trx2, "amount": amount}).json()
+    rt2 = xfer(2000)["governance"]["cca_id"]
+    assert decide(rt2, "rejected").status_code == 200
+    ft2 = xfer(3000)["governance"]["cca_id"]
+    assert decide(ft2).status_code == 200
+    assert xfer(3000)["transfer"] and rec(ft2)["status"] == "implemented" and gv._action_ran(rec(ft2))
+    after_t = xfer(2000)["governance"]
+    assert after_t["status"] == "held_for_change_control" and "follows_rejection" not in after_t, after_t
+    hb = living("hb-ran")
+    record_event(hb, "revenue", 5000.0, "marketplace", ref="w463l-hb1")
+    hb_r = operate_vsb(hb)["governance"]["cca_id"]
+    assert decide(hb_r, "rejected").status_code == 200
+    record_event(hb, "revenue", 10.0, "marketplace", ref="w463l-hb2")
+    hb_f = operate_vsb(hb)["governance"]
+    assert hb_f["follows_rejection"] == hb_r and decide(hb_f["cca_id"]).status_code == 200
+    assert operate_vsb(hb).get("revenue_events_consumed") == 2 and gv._action_ran(rec(hb_f["cca_id"]))
+    record_event(hb, "revenue", 5000.0, "marketplace", ref="w463l-hb3")
+    hb_next = operate_vsb(hb)["governance"]
+    assert hb_next["status"] == "held_for_change_control" and "follows_rejection" not in hb_next, hb_next
+
+    # GATE-R2 (restore): after a backward clock step a newer hold still supersedes the spent approval
+    s13, r13 = uid("restore-clock"), "w463l-r13"
+    monkeypatch.setattr(gv, "_now", lambda: "2031-01-01T00:00:05Z")
+    h13 = gv._materiality_gate(s13, 2000.0, "transfer", counterparty=r13)[0]["cca_id"]
+    assert decide(h13).status_code == 200
+    _, spent13 = gv._materiality_gate(s13, 2000.0, "transfer", counterparty=r13)
+    monkeypatch.setattr(gv, "_now", lambda: "2031-01-01T00:00:03Z")                    # the wall clock stepped back
+    newer13 = gv._materiality_gate(s13, 2000.0, "transfer", counterparty=r13)[0]["cca_id"]
+    monkeypatch.setattr(gv, "_now", real_now)
+    gv._restore_consumed_approval(spent13, vsb_id=s13, reason="w463l the action never ran")
+    assert rec(h13)["status"] == "approved" and rec(newer13)["status"] == "withdrawn"     # the newer hold is still seen as newer
+
+    # ══ fifth refutation — each confirmed finding pinned ══
+    # RF5-MARKERS-UNGUARDED: the gate-unavailable and retried paths mark the released action as run
+    class _GateDown:
+        def __init__(self, *a, **k): pass
+
+        async def intercept(self, ctx, action):
+            raise RuntimeError("w463l gate unavailable")
+    m1 = uid("down-cycle")
+    hm1 = cyc(m1, 5000)["governance"]["cca_id"]
+    assert decide(hm1).status_code == 200
+    g5.UnifiedConstitutionalInterceptorV16Omega = _GateDown
+    try:
+        down1 = cyc(m1, 5000)
+    finally:
+        g5.UnifiedConstitutionalInterceptorV16Omega = real_gov
+    assert down1["cycle"] is not None and down1["governance"]["status"] == "ungated_bypass_logged" and gv._action_ran(rec(hm1))
+    md, mdr = living("down-src"), living("down-rx")
+    fund(md, 50000)
+    hmd = client.post("/api/v1/economy/transfer", json={"from_vsb": md, "to_vsb": mdr, "amount": 2000}).json()["governance"]["cca_id"]
+    assert decide(hmd).status_code == 200
+    g5.UnifiedConstitutionalInterceptorV16Omega = _GateDown
+    try:
+        downt = client.post("/api/v1/economy/transfer", json={"from_vsb": md, "to_vsb": mdr, "amount": 2000}).json()
+    finally:
+        g5.UnifiedConstitutionalInterceptorV16Omega = real_gov
+    assert downt["governance"]["status"] == "ungated_bypass_logged" and gv._action_ran(rec(hmd)), downt
+    mr, mrr = living("retry-m-src"), living("retry-m-rx")
+    fund(mr, 50000)
+    hmr = client.post("/api/v1/economy/transfer", json={"from_vsb": mr, "to_vsb": mrr, "amount": 2000}).json()["governance"]["cca_id"]
+    assert decide(hmr).status_code == 200
+    fails2 = {"n": 0}
+
+    def pending_fails_once_again(path, data):
+        if path == tr._PENDING_STORE and fails2["n"] == 0:
+            fails2["n"] += 1
+            raise OSError("w463l pending store briefly unavailable")
+        return real_atomic(path, data)
+    tr.atomic_write_json = pending_fails_once_again
+    try:
+        retried_m = client.post("/api/v1/economy/transfer", json={"from_vsb": mr, "to_vsb": mrr, "amount": 2000}).json()
+    finally:
+        tr.atomic_write_json = real_atomic
+    assert retried_m["governance"]["status"] == "allowed_action_retried" and gv._action_ran(rec(hmr)), retried_m
+
+    # RF5-RELEASABLE-EMPTY-VSB: an empty VSB id is still the gate's VSB id
+    assert gv.releasable_by_gate({"cca_id": "cca-w463lempty", "title": gv._HOLD_TITLE_PREFIX, "change_type": "economy_material",
+                                  "submitted_by": "economy:api", "vsb_id": "", "est_distributable_wst": 2000.0,
+                                  "status": "approved"}) is True
+
+    # RF5-STRANDED-DEREGISTERED + RF5-RETIRE-NO-SCOPE: a transfer approval whose receiver left the roster is retired —
+    # by an admin, with that reason, in the UEG
+    ds, dr = living("dereg-src"), living("dereg-rx")
+    fund(ds, 50000)
+    hdr = client.post("/api/v1/economy/transfer", json={"from_vsb": ds, "to_vsb": dr, "amount": 2000}).json()["governance"]["cca_id"]
+    assert decide(hdr).status_code == 200 and gv.releasable_by_gate(rec(hdr)) is True
+    deregister(dr)
+    assert gv.releasable_by_gate(rec(hdr)) is False and "not a registered living VSB" in gv.unreleasable_reason(rec(hdr))
+    with _pytest.raises(HTTPException) as refused_retire:
+        cca._implement_locked(hdr, False, "w463l-user", True, is_admin=False)
+    assert refused_retire.value.status_code == 403 and rec(hdr)["status"] == "approved"
+    retired2 = client.post(f"/api/v1/cca/{hdr}/implement")
+    assert retired2.status_code == 200 and rec(hdr)["status"] == "withdrawn"
+    assert "not a registered living VSB" in rec(hdr)["audit_trail"][-1]["reason"]
+    assert any(e.get("type") == "economy.materiality_hold_withdrawn" and e.get("cca_id") == hdr for e in events)
+
+    # RF5-PAGE-OWNER-REJECTED: a rejection says what rejected it
+    mk = uid("model-rejected")
+    hmk = cyc(mk, 5000)["governance"]["cca_id"]
+
+    async def _query_rejects(*a, **k):
+        return "[DECISION: REJECTED]"
+    monkeypatch.setattr(cca.gateway, "query", _query_rejects)
+    by_model = client.post(f"/api/v1/cca/{hmk}/review", json={"reviewer_notes": "w463l"}).json()
+    monkeypatch.setattr(cca.gateway, "query", real_query)
+    assert by_model["decision_source"] == "model_decision_marker" and by_model["status"] == "rejected"
+    ans_m = cyc(mk, 5000)["governance"]
+    assert ans_m["status"] == "rejected_by_change_control" and ans_m["rejected_by"] == "model_decision_marker"
+    assert "reviewing model's decision marker" in ans_m["note"] and "Owner" not in ans_m["note"]
+    ov = uid("explicit-rejected")
+    hov = cyc(ov, 5000)["governance"]["cca_id"]
+    assert decide(hov, "rejected").status_code == 200
+    ans_o = cyc(ov, 5000)["governance"]
+    assert ans_o["rejected_by"] == "admin_override" and "by an explicit decision" in ans_o["note"]
+    for page in ("enterprise/VSBEconomy.tsx", "enterprise/EconomyOperations.tsx"):
+        src = (pages / page).read_text(encoding="utf-8")
+        assert "rejected_by === 'model_decision_marker'" in src and "the Owner rejected exactly" not in src, page
+
+    # RF5-2 (the other side): a CONFIRMED debit on a transfer that then failed counts as the released action having run
+    cd_s, cd_r = living("confirmed-src"), living("confirmed-rx")
+    fund(cd_s, 50000)
+    hcd = client.post("/api/v1/economy/transfer", json={"from_vsb": cd_s, "to_vsb": cd_r, "amount": 2000}).json()["governance"]["cca_id"]
+    assert decide(hcd).status_code == 200
+
+    def debit_then_raise(*a, **k):
+        real_record(*a, **k)
+        raise OSError("w463l the receiver queue failed after the debit")
+    tr.record_transfer = debit_then_raise
+    try:
+        with _pytest.raises(OSError):
+            client.post("/api/v1/economy/transfer", json={"from_vsb": cd_s, "to_vsb": cd_r, "amount": 2000})
+    finally:
+        tr.record_transfer = real_record
+    confirmed = [e for e in events if e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == hcd]
+    assert confirmed and confirmed[-1]["debit_confirmed"] is True and gv._action_ran(rec(hcd))
+
+    # ══ sixth refutation — each confirmed finding pinned ══
+    import agentic_core.economy.living_vsbs as lv
+    # RF6-ROSTER-EMPTY-DEFENCE: an unreadable (empty) roster never reads as "the receiver is gone"
+    real_roster_load = lv._load
+    monkeypatch.setattr(lv, "_load", lambda: {})
+    assert gv.unreleasable_reason(rec(hdr)) is None
+    monkeypatch.setattr(lv, "_load", real_roster_load)
+    assert "not a registered living VSB" in gv.unreleasable_reason(rec(hdr))
+
+    # RF6-HEARTBEAT-DEREG-STRANDED: a heartbeat hold for a VSB no longer on the roster can never run
+    hbd = living("hb-dereg")
+    record_event(hbd, "revenue", 5000.0, "marketplace", ref="w463l-hbd")
+    hbd_h = operate_vsb(hbd)["governance"]["cca_id"]
+    assert decide(hbd_h).status_code == 200 and gv.releasable_by_gate(rec(hbd_h)) is True
+    monkeypatch.setattr(lv, "_load", lambda: {})                                       # the roster cannot be read
+    assert gv.unreleasable_reason(rec(hbd_h)) is None
+    assert client.post(f"/api/v1/cca/{hbd_h}/implement").status_code == 409 and rec(hbd_h)["status"] == "approved"
+    monkeypatch.setattr(lv, "_load", real_roster_load)
+    deregister(hbd)
+    assert "no longer on the living roster" in gv.unreleasable_reason(rec(hbd_h))
+
+    # RF6-RETIRE-TOCTOU: one reading decides and explains a retirement; an unknown answer never retires
+    lid2 = f"cca-w463llg2{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(cca._cca_path(lid2), {
+        "cca_id": lid2, "title": "[economy] material transfer — " + lg, "change_type": "economy_material",
+        "submitted_by": "economy:transfer", "vsb_id": lg, "status": "approved", "impact_tier": "MEDIUM",
+        "est_distributable_wst": 2000.0, "description": "", "submitted_at": "2026-09-01T00:00:00Z", "audit_trail": []})
+    real_reason = gv.unreleasable_reason
+    monkeypatch.setattr(gv, "unreleasable_reason", lambda c: None)                    # the one reading says: releasable
+    assert client.post(f"/api/v1/cca/{lid2}/implement").status_code == 409 and rec(lid2)["status"] == "approved"
+    readings = {"n": 0}
+
+    def reason_that_changes(c):                                                        # the roster moves between readings
+        readings["n"] += 1
+        return "w463l the receiver was gone at the first reading" if readings["n"] == 1 else None
+    monkeypatch.setattr(gv, "unreleasable_reason", reason_that_changes)
+    flapped = client.post(f"/api/v1/cca/{lid2}/implement")
+    monkeypatch.setattr(gv, "unreleasable_reason", real_reason)
+    assert flapped.status_code == 200 and readings["n"] == 1 and rec(lid2)["status"] == "withdrawn"
+    assert "w463l the receiver was gone at the first reading" in rec(lid2)["audit_trail"][-1]["reason"]
+    assert "w463l the receiver was gone at the first reading" in flapped.json()["note"]
+    lid3 = f"cca-w463llg3{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(cca._cca_path(lid3), {**rec(lid2), "cca_id": lid3, "status": "approved", "audit_trail": []})
+
+    def reason_raises(c):
+        raise RuntimeError("w463l the roster could not be read")
+    monkeypatch.setattr(gv, "unreleasable_reason", reason_raises)
+    assert client.post(f"/api/v1/cca/{lid3}/implement").status_code == 409 and rec(lid3)["status"] == "approved"
+    monkeypatch.setattr(gv, "unreleasable_reason", real_reason)
+
+    # RF6-ROSTER-LOST-UPDATE: a beat's bookkeeping neither erases a registration nor undoes a deregistration
+    beat_v, joined = living("beat"), uid("joined-mid-beat")
+    real_sync = gv.governed_cycle_sync
+
+    def sync_registers(*a, **k):
+        register(joined, "joined", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        return real_sync(*a, **k)
+    monkeypatch.setattr(gv, "governed_cycle_sync", sync_registers)
+    assert "error" not in operate_vsb(beat_v)
+    monkeypatch.setattr(gv, "governed_cycle_sync", real_sync)
+    roster = lv._load()
+    assert joined in roster and roster[beat_v]["operating_cycles"] == 1
+    gone_v = living("leaves-mid-beat")
+
+    def sync_deregisters(*a, **k):
+        out = real_sync(*a, **k)
+        deregister(gone_v)
+        return out
+    monkeypatch.setattr(gv, "governed_cycle_sync", sync_deregisters)
+    gone_out = operate_vsb(gone_v)
+    monkeypatch.setattr(gv, "governed_cycle_sync", real_sync)
+    assert gone_v not in lv._load() and "error" not in gone_out and "cycle" in gone_out, gone_out
+
+    # ══ seventh refutation — each confirmed finding pinned ══
+    real_update2 = cca._update_change
+    # RF7-GIVEBACK-WITHDRAWS-UNRELEASABLE-REQUEST: a larger request asked meanwhile stays live; the approval stays spent
+    u1s, u1r = uid("gb-larger"), "w463l-gb-rx"
+    ua = gv._materiality_gate(u1s, 2000.0, "transfer", counterparty=u1r)[0]["cca_id"]
+    assert decide(ua).status_code == 200
+    _, uspent = gv._materiality_gate(u1s, 2000.0, "transfer", counterparty=u1r)
+    ub = gv._materiality_gate(u1s, 9000.0, "transfer", counterparty=u1r)[0]["cca_id"]
+    gv._restore_consumed_approval(uspent, vsb_id=u1s, reason="w463l the action never ran")
+    assert rec(ub)["status"] == "submitted" and rec(ua)["status"] == "implemented"
+    assert rec(ua)["audit_trail"][-1]["event"] == "approval_spent_action_never_ran"
+    assert gv._materiality_gate(u1s, 9000.0, "transfer", counterparty=u1r)[0]["cca_id"] == ub
+
+    # RF7-RESTORE-WITHDRAWS-BEFORE-GIVE-BACK: a give-back that does not land puts back the hold it withdrew
+    w1s, w1r = uid("gb-busy"), "w463l-gb-rx2"
+    wa = gv._materiality_gate(w1s, 2000.0, "transfer", counterparty=w1r)[0]["cca_id"]
+    assert decide(wa).status_code == 200
+    _, wspent = gv._materiality_gate(w1s, 2000.0, "transfer", counterparty=w1r)
+    wb = gv._materiality_gate(w1s, 2000.0, "transfer", counterparty=w1r)[0]["cca_id"]
+
+    def busy_on_the_give_back(cid, mutate):
+        if cid == wa:
+            raise HTTPException(status_code=503, detail="w463l the change record is busy")
+        return real_update2(cid, mutate)
+    monkeypatch.setattr(cca, "_update_change", busy_on_the_give_back)
+    gv._restore_consumed_approval(wspent, vsb_id=w1s, reason="w463l the action never ran")
+    monkeypatch.setattr(cca, "_update_change", real_update2)
+    assert rec(wa)["status"] == "implemented" and rec(wb)["status"] == "submitted"
+    assert rec(wb)["audit_trail"][-1]["event"] == "withdrawal_reverted"
+
+    # RF7-WITHDRAW-IF-SUBMITTED-CAS: an Owner decision landing between the scan and the withdrawal survives
+    c1s, c1r = uid("gb-cas"), "w463l-gb-rx3"
+    ca = gv._materiality_gate(c1s, 2000.0, "transfer", counterparty=c1r)[0]["cca_id"]
+    assert decide(ca).status_code == 200
+    _, cspent = gv._materiality_gate(c1s, 2000.0, "transfer", counterparty=c1r)
+    cb = gv._materiality_gate(c1s, 2000.0, "transfer", counterparty=c1r)[0]["cca_id"]
+    real_wis = gv._withdraw_if_submitted
+
+    def owner_approves_first(cca_mod, c, *a, **k):
+        real_update2(c["cca_id"], lambda f: f.update(status="approved"))
+        return real_wis(cca_mod, c, *a, **k)
+    monkeypatch.setattr(gv, "_withdraw_if_submitted", owner_approves_first)
+    gv._restore_consumed_approval(cspent, vsb_id=c1s, reason="w463l the action never ran")
+    monkeypatch.setattr(gv, "_withdraw_if_submitted", real_wis)
+    assert rec(cb)["status"] == "approved" and rec(ca)["status"] == "implemented"
+    assert rec(ca)["audit_trail"][-1]["event"] == "approval_spent_action_never_ran"
+
+    # RF7-HOLD-PATH-LOST-UPDATE: a HELD beat neither erases a registration nor undoes a deregistration
+    held_v, joined2 = living("held-beat"), uid("joined-held-beat")
+    record_event(held_v, "revenue", 5000.0, "marketplace", ref="w463l-held-beat")
+
+    def sync_registers_held(*a, **k):
+        register(joined2, "joined", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        return real_sync(*a, **k)
+    monkeypatch.setattr(gv, "governed_cycle_sync", sync_registers_held)
+    held_out = operate_vsb(held_v)
+    monkeypatch.setattr(gv, "governed_cycle_sync", real_sync)
+    assert held_out["cycle_ran"] is False and held_out["governance"]["status"] == "held_for_change_control", held_out
+    roster2 = lv._load()
+    assert joined2 in roster2 and roster2[held_v]["last_hold"] == "held_for_change_control"
+    held_gone = living("held-leaves")
+    record_event(held_gone, "revenue", 5000.0, "marketplace", ref="w463l-held-leaves")
+
+    def sync_deregisters_held(*a, **k):
+        out = real_sync(*a, **k)
+        deregister(held_gone)
+        return out
+    monkeypatch.setattr(gv, "governed_cycle_sync", sync_deregisters_held)
+    held_gone_out = operate_vsb(held_gone)
+    monkeypatch.setattr(gv, "governed_cycle_sync", real_sync)
+    assert "error" not in held_gone_out and held_gone_out["cycle_ran"] is False and held_gone not in lv._load()
+
+    # RF7-DEREGISTER-LOCK: pruning the roster while others register loses neither a registration nor a deregistration
+    old_ids = [living(f"prune-{i}") for i in range(20)]
+    new_ids = [uid(f"joins-{i}") for i in range(40)]
+    start_line = threading.Barrier(5)
+
+    def pruner():
+        start_line.wait()
+        for o in old_ids:
+            deregister(o)
+
+    def registrar(chunk):
+        start_line.wait()
+        for n in chunk:
+            register(n, "joins", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    workers = [threading.Thread(target=pruner)] + [threading.Thread(target=registrar, args=(new_ids[i::4],)) for i in range(4)]
+    for w in workers:
+        w.start()
+    for w in workers:
+        w.join(timeout=120)
+    roster3 = lv._load()
+    assert [n for n in new_ids if n not in roster3] == [] and [o for o in old_ids if o in roster3] == []
+
+    # ══ eighth refutation — each confirmed finding pinned ══
+    def live_for(vsb):
+        return [c for c in (rec(x["cca_id"]) for x in cca._list_changes())
+                if c and c.get("vsb_id") == vsb and c.get("status") in ("submitted", "under_review", "approved")]
+
+    # RF8-GIVEBACK-IGNORES-SPENT-NEWER-APPROVAL (a): both spends blocked — one live record, never two approvals
+    e1s, e1r = uid("gb-newer-spent"), "w463l-gb-rx4"
+    xa = gv._materiality_gate(e1s, 2000.0, "transfer", counterparty=e1r)[0]["cca_id"]
+    assert decide(xa).status_code == 200
+    _, spent_a = gv._materiality_gate(e1s, 2000.0, "transfer", counterparty=e1r)       # A spends xa, in flight
+    hb = gv._materiality_gate(e1s, 2000.0, "transfer", counterparty=e1r)[0]["cca_id"]  # asked meanwhile
+    assert decide(hb).status_code == 200
+    _, spent_c = gv._materiality_gate(e1s, 2000.0, "transfer", counterparty=e1r)       # C spends hb
+    assert spent_c["cca_id"] == hb
+    gv._restore_consumed_approval(spent_a, vsb_id=e1s, reason="w463l A was blocked")
+    assert rec(xa)["status"] == "implemented" and rec(xa)["audit_trail"][-1]["event"] == "approval_spent_action_never_ran"
+    gv._restore_consumed_approval(spent_c, vsb_id=e1s, reason="w463l C was blocked")
+    assert [c["cca_id"] for c in live_for(e1s)] == [hb]
+    # (b): the newer spend ran — the older approval is not revived to release a second action
+    e2s, e2r = uid("gb-newer-ran"), "w463l-gb-rx5"
+    xa2 = gv._materiality_gate(e2s, 2000.0, "transfer", counterparty=e2r)[0]["cca_id"]
+    assert decide(xa2).status_code == 200
+    _, spent_a2 = gv._materiality_gate(e2s, 2000.0, "transfer", counterparty=e2r)
+    hb2 = gv._materiality_gate(e2s, 2000.0, "transfer", counterparty=e2r)[0]["cca_id"]
+    assert decide(hb2).status_code == 200
+    _, spent_c2 = gv._materiality_gate(e2s, 2000.0, "transfer", counterparty=e2r)
+    gv._mark_action_ran(spent_c2, e2s, "w463l C ran")
+    gv._restore_consumed_approval(spent_a2, vsb_id=e2s, reason="w463l A was blocked")
+    held_d, spent_d = gv._materiality_gate(e2s, 2000.0, "transfer", counterparty=e2r)
+    assert spent_d is None and held_d["status"] == "held_for_change_control" and rec(xa2)["status"] == "implemented"
+
+    # RF8-REVERT-DEFENCES: a give-back whose record MOVED puts back what it withdrew
+    d3s, d3r = uid("gb-moved"), "w463l-gb-rx6"
+    d3a = gv._materiality_gate(d3s, 2000.0, "transfer", counterparty=d3r)[0]["cca_id"]
+    assert decide(d3a).status_code == 200
+    _, d3spent = gv._materiality_gate(d3s, 2000.0, "transfer", counterparty=d3r)
+    d3b = gv._materiality_gate(d3s, 2000.0, "transfer", counterparty=d3r)[0]["cca_id"]
+
+    def moved_on_the_give_back(cid, mutate):
+        if cid == d3a:
+            raise gv._Moved("status_moved", "approved")
+        return real_update2(cid, mutate)
+    monkeypatch.setattr(cca, "_update_change", moved_on_the_give_back)
+    gv._restore_consumed_approval(d3spent, vsb_id=d3s, reason="w463l the action never ran")
+    monkeypatch.setattr(cca, "_update_change", real_update2)
+    assert rec(d3b)["status"] == "submitted" and rec(d3b)["audit_trail"][-1]["event"] == "withdrawal_reverted"
+    # …when a second withdrawal fails, the first is put back and the give-back skips
+    d2s, d2r = uid("gb-two-holds"), "w463l-gb-rx7"
+    d2a = gv._materiality_gate(d2s, 2000.0, "transfer", counterparty=d2r)[0]["cca_id"]
+    assert decide(d2a).status_code == 200
+    _, d2spent = gv._materiality_gate(d2s, 2000.0, "transfer", counterparty=d2r)
+    d2b = gv._materiality_gate(d2s, 2000.0, "transfer", counterparty=d2r)[0]["cca_id"]
+    d2c = f"cca-w463ltwo{_uuid.uuid4().hex[:4]}"                                        # a sibling left by a failed withdraw
+    atomic_write_json(cca._cca_path(d2c), {**rec(d2b), "cca_id": d2c, "filed_ns": int(rec(d2b)["filed_ns"]) + 1,
+                                           "audit_trail": []})
+    withdraw_calls = {"n": 0}
+
+    def second_withdraw_fails(cca_mod, c, *a, **k):
+        withdraw_calls["n"] += 1
+        return False if withdraw_calls["n"] == 2 else real_wis(cca_mod, c, *a, **k)
+    monkeypatch.setattr(gv, "_withdraw_if_submitted", second_withdraw_fails)
+    gv._restore_consumed_approval(d2spent, vsb_id=d2s, reason="w463l the action never ran")
+    monkeypatch.setattr(gv, "_withdraw_if_submitted", real_wis)
+    assert withdraw_calls["n"] == 2 and rec(d2b)["status"] == "submitted" and rec(d2c)["status"] == "submitted"
+    assert rec(d2a)["status"] == "implemented" and rec(d2a)["audit_trail"][-1]["event"] == "approval_spent_action_never_ran"
+    assert "withdrawal_reverted" in [rec(d2b)["audit_trail"][-1]["event"], rec(d2c)["audit_trail"][-1]["event"]]
+    # …and a withdrawal someone else has since acted on is never reverted
+    d5s, d5r = uid("gb-touched"), "w463l-gb-rx8"
+    d5a = gv._materiality_gate(d5s, 2000.0, "transfer", counterparty=d5r)[0]["cca_id"]
+    assert decide(d5a).status_code == 200
+    _, d5spent = gv._materiality_gate(d5s, 2000.0, "transfer", counterparty=d5r)
+    d5b = gv._materiality_gate(d5s, 2000.0, "transfer", counterparty=d5r)[0]["cca_id"]
+
+    def touched_then_busy(cid, mutate):
+        if cid == d5a:
+            real_update2(d5b, lambda f: f["audit_trail"].append({"event": "noted_elsewhere", "ts": "w463l"}))
+            raise HTTPException(status_code=503, detail="w463l the change record is busy")
+        return real_update2(cid, mutate)
+    monkeypatch.setattr(cca, "_update_change", touched_then_busy)
+    gv._restore_consumed_approval(d5spent, vsb_id=d5s, reason="w463l the action never ran")
+    monkeypatch.setattr(cca, "_update_change", real_update2)
+    assert rec(d5b)["status"] == "withdrawn" and rec(d5b)["audit_trail"][-1]["event"] == "noted_elsewhere"

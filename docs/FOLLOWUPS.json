@@ -30,8 +30,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "NEXT",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W463",
       "note": ""
     },
     {
@@ -224,6 +224,169 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-015",
+      "title": "Concurrent settles of one service contract can pay twice",
+      "why": "settle_contract loads vsb_contracts.json, checks status delivered, awaits inter_vsb_transfer with a fresh transfer_id, then saves — no store_lock and no claim on the contract, so two concurrent settles both pass the status check and both debit the client (accept and deliver share the unlocked load-await-save shape)",
+      "source": "W463 class sweep (read, not reproduced)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-016",
+      "title": "Owner-payment accrue and payout write their store without store_lock",
+      "why": "accrue (heartbeat cycles) and payout (API) load-modify-save the shared owner-payments store with no lock — the shared-store concurrency class fixed for the ledger and fund stores in W442/W444; a payout can overdraw or an accrual be lost",
+      "source": "W463 class sweep (read, not reproduced)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-017",
+      "title": "A marketplace purchase can charge the buyer without recording the sale",
+      "why": "consume_tokens runs before the listing save and the receipt write; if either raises there is no refund, so the buyer is charged for a sale nothing records (consume-without-compensation)",
+      "source": "W463 class sweep (read, not reproduced)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/marketplace.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-018",
+      "title": "The optimizer's resource fabric releases resources a pool never consumed",
+      "why": "assemble_pool records the full requirements even when it could not decrement capacity, and disassemble_pool gives all of them back (gpu available 1064 of 64 at unit level); the optimizer engine assembles and releases per call",
+      "source": "W463 class sweep (reproduced at unit level)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/optimizer/fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-019",
+      "title": "The evolution apply's claim release is a status-only compare-and-set",
+      "why": "apply_approved_evolution's _release flips implemented back to approved whenever the status is implemented, without proving the implemented state is this caller's own claim (no claim nonce) — the shape W463 removed from the economy restore; not reachable today",
+      "source": "W463 class-sweep verifier (read)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-020",
+      "title": "genome_engine.py is unimported and its rollback restores by position",
+      "why": "GenomeMutationWorkflow.rollback pops the LAST checkpoint instead of the proposal's, does not persist, and references an undefined GENOME_FILE; nothing imports the module, but layer_registry names the l1_identity directory by path — archive only after the Owner's WIRED-map check",
+      "source": "W463 class sweep (read)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/layers/l1_identity/genome_engine.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-021",
+      "title": "store_lock ignores its timeout when a stale lockfile cannot be removed",
+      "why": "In the stale branch (lockfile older than stale_after) store_lock tries to unlink it and `continue`s whether or not the unlink worked, skipping both the deadline check and the sleep; when the unlink keeps failing, a waiter loops without sleeping until the file goes away, so the documented bounded timeout does not apply. W463 adds callers on the transfer path (debit_posted no longer locks, but record_transfer and the gate lock do). Fix: continue only when the unlink succeeded; otherwise fall through to the deadline check. Guard: a lockfile aged past stale_after that cannot be unlinked times out within timeout.",
+      "source": "W463 refuter (S9)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/config.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-022",
+      "title": "A heartbeat cycle posts before it consumes its events, so a failed consume distributes them twice",
+      "why": "operate_vsb runs governed_cycle_sync (run_cycle writes the ledger) and only then consume_events. If consume_events raises (its store_lock timed out while another writer held revenue_events.json.lock for over 10s, or the write kept failing), operate_vsb returns an error with the cycle already posted and the events still pending; the next beat posts the same events again (reproduced by the W463 refuter with a real held lockfile: one 1000-WST event posted twice). A material cycle's approval stays spent and the next beat files a hold for revenue already distributed. Pre-existing ordering (W313); W463 only changed which ids are consumed. Fix: consume inside governed_cycle_sync after every gate passes and before run_cycle, size the cycle from what was consumed, un-consume those exact ids if run_cycle raises.",
+      "source": "W463 refuter (GATE-5)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/economy/living_vsbs.py",
+        "agentic_core/economy/governance.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-023",
+      "title": "A transfer whose receiver queue write fails twice is left debited with nothing to repair it",
+      "why": "record_transfer debits the sender and queues the receiver in two steps. If the queue write fails on the first attempt and again on the endpoint's single idempotent replay (e.g. the pending-transfers lock held for over 20s), POST /economy/transfer returns 500 with no transfer_id: the sender stays debited, the receiver is never credited, nothing anywhere replays that transfer_id, and a client retry mints a new id and pays again (a material one files a fresh hold). A process that dies between the two steps strands the debit the same way. For a non-material transfer no economy UEG event records it. Pre-existing (the same at c519c497); W463 keeps the approval spent and no longer tells the Owner to re-approve. Fix: reconcile stranded legs (sender postings naming a transfer_id with no pending-store entry are replayed through record_transfer, which is idempotent) on the heartbeat or next access; answer the endpoint with the transfer_id and a debited-receiver-pending status instead of a bare 500; log the non-material case.",
+      "source": "W463 refuter (TCC-1)",
+      "found": "2026-09-13",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/economy/transfers.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-024",
+      "title": "A rejected contract settlement tells the client to retry after a hold that does not exist",
+      "why": "When settle_contract's transfer comes back rejected_by_change_control, it still returns 'settlement HELD by governance — retry after the hold clears', stores settlement.held=True, and ServiceContracts.tsx shows that note and a 'settlement held' badge. No hold exists — the rejection answers exactly that action — and the price and receiver are fixed, so every retry is refused again while that rejection is the newest decided record for the pair. The page also ignores the new rejected_by field. Pre-existing (found by the W463 sixth refutation). Fix: branch on governance.status == 'rejected_by_change_control', say what rejected it (the same wording map as VSBEconomy/TransferPanel) and that retrying the same price is refused; render that on ServiceContracts.tsx.",
+      "source": "W463 refuter (RF6-SETTLE)",
+      "found": "2026-09-14",
+      "files": [
+        "agentic_core/api/economy.py",
+        "apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
       "status": "open",
       "closed_by": null,
       "note": ""

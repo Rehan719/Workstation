@@ -60,6 +60,7 @@ def peek_pending(vsb_id: str) -> Dict[str, Any]:
     revenue = costs = 0.0
     sources: Dict[str, int] = {}
     ids = []
+    items: Dict[str, Dict[str, Any]] = {}
     for ev in _load():
         if ev.get("vsb_id") == vsb_id and not ev.get("consumed"):
             if ev.get("kind") == "revenue":
@@ -68,8 +69,10 @@ def peek_pending(vsb_id: str) -> Dict[str, Any]:
                 costs += float(ev.get("amount_wst") or 0.0)
             sources[ev.get("source", "?")] = sources.get(ev.get("source", "?"), 0) + 1
             ids.append(ev["id"])
+            # W463 — per-event amounts, so a governed cycle can release exactly the events an approval names
+            items[ev["id"]] = {"kind": ev.get("kind"), "amount_wst": float(ev.get("amount_wst") or 0.0)}
     return {"revenue": round(revenue, 6), "costs": round(costs, 6), "events": len(ids),
-            "sources": sources, "ids": ids}
+            "sources": sources, "ids": ids, "items": items}
 
 
 def consume_events(vsb_id: str, ids: list) -> Dict[str, Any]:

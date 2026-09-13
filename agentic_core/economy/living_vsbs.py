@@ -59,12 +59,30 @@ def deregister(vsb_id: str) -> bool:
     so the Owner's own entities received about a sixth of the attention while the rest went to test
     data. Deregistering does not delete the entity; it only stops the organism tending it.
     """
-    d = _load()
-    if vsb_id not in d:
-        return False
-    del d[vsb_id]
-    _save(d)
+    from agentic_core.config import store_lock
+    with store_lock(_STORE):          # W463 (sixth refutation) — serialised with every other roster write
+        d = _load()
+        if vsb_id not in d:
+            return False
+        del d[vsb_id]
+        _save(d)
     return True
+
+
+def _update_entry(vsb_id: str, mutate) -> Optional[Dict[str, Any]]:
+    """W463 (sixth refutation) — operate_vsb held a roster snapshot across a whole governed cycle and wrote it back,
+    erasing registrations made meanwhile and undoing deregistrations. Its bookkeeping now re-reads the roster under
+    the store lock and changes only this entry; an entry deregistered meanwhile stays gone (None is returned)."""
+    from agentic_core.config import store_lock
+    with store_lock(_STORE):
+        d = _load()
+        entry = d.get(vsb_id)
+        if not entry:
+            return None
+        mutate(entry)
+        d[vsb_id] = entry
+        _save(d)
+        return dict(entry)
 
 
 def list_living() -> Dict[str, Any]:
@@ -182,8 +200,7 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     if _latest_screen(vsb_id) == "fail":
         target["last_operated"] = _now()
         target["last_hold"] = "compliance_fail_hold"
-        d[vsb_id] = target
-        _save(d)
+        _update_entry(vsb_id, lambda e: e.update(last_operated=target["last_operated"], last_hold="compliance_fail_hold"))
         try:
             from agentic_core.organism.biobus import biobus
             biobus.fire_signal("reflex", "economy.compliance_hold",
@@ -217,7 +234,7 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         peek = peek_pending(vsb_id)
         res = governed_cycle_sync(vsb_id, target.get("entity_type", "waqf_ltd_hybrid"),
                                   target.get("owner", "Rehan"), peek["revenue"], peek["costs"],
-                                  source="heartbeat")
+                                  source="heartbeat", events=peek)
         report = res.get("cycle")
         if report is None:   # held/blocked by governance — revenue preserved, hold recorded,
             # and the visit still advances the rotation (a hold must intercept EVERY cycle,
@@ -225,19 +242,28 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             gov = res.get("governance") or {}
             target["last_operated"] = _now()
             target["last_hold"] = str(gov.get("status") or "governance_hold")
-            d[vsb_id] = target
-            _save(d)
+            _update_entry(vsb_id, lambda e: e.update(last_operated=target["last_operated"], last_hold=target["last_hold"]))
             return {"vsb_id": vsb_id, "name": target.get("name"),
                     "governance": gov, "cycle_ran": False,
                     "pending_preserved_wst": peek["revenue"],
                     "note": "recognised revenue events remain PENDING (unconsumed) while held"}
-        pend = consume_events(vsb_id, peek["ids"])   # consume exactly what the passed cycle saw
-        target["operating_cycles"] = int(target.get("operating_cycles", 0)) + 1
-        target["last_operated"] = _now()
-        target.pop("last_hold", None)   # a real cycle ran — no standing hold implied
-        target["last_distributable"] = report.get("distributable_profit")
-        d[vsb_id] = target
-        _save(d)
+        # consume exactly what the passed cycle ran on — W463: an approval releases the events it was filed
+        # for, so events that arrived after the hold wait for the next cycle instead of riding along
+        pend = consume_events(vsb_id, res.get("consumed_event_ids", peek["ids"]))
+        if pend["events"]:
+            from agentic_core.economy.governance import retire_heartbeat_holds_for_consumed_events
+            retire_heartbeat_holds_for_consumed_events(vsb_id)
+        stamp = _now()
+
+        def _ran(e: Dict[str, Any]) -> None:
+            e["operating_cycles"] = int(e.get("operating_cycles", 0)) + 1
+            e["last_operated"] = stamp
+            e.pop("last_hold", None)   # a real cycle ran — no standing hold implied
+            e["last_distributable"] = report.get("distributable_profit")
+        fresh_entry = _update_entry(vsb_id, _ran)
+        _ran(target)
+        if fresh_entry:
+            target["operating_cycles"] = fresh_entry["operating_cycles"]
         # §13 (W309/W340) — autonomous DRIFT is honest AND material: only a cycle that genuinely
         # moved the entity's shipped-visible state marks the repo stale. A zero-activity
         # maintenance cycle changed nothing a page shows — marking it stale caused a perpetual

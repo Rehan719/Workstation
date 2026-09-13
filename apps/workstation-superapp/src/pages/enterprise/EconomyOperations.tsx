@@ -227,12 +227,28 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
           <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{held.note || (['blocked', 'halted'].includes(held.status)
             ? 'The gaas.v5 constitutional gate refused this transfer; no WST moved and no Change Control request exists.'
             : 'This transfer is material and awaits Change Control approval before any WST moves.')}</p>
-          {held.cca_id && (
+          {held.cca_id && (held.status === 'rejected_by_change_control' ? (
+            // W463 — a rejected record cannot be reviewed: the same transfer stays refused; a changed one is asked again
+            <p className="text-[10px] font-mono text-slate-500 mt-1.5" data-testid="transfer-rejected">
+              {/* W463 — a rejection is not always the Owner's: say what rejected it */}
+              Change request: <span className="text-aura">{held.cca_id}</span> — rejected {held.rejected_by === 'admin_override' ? 'by an explicit decision'
+                : held.rejected_by === 'model_decision_marker' ? "by the reviewing model's decision marker"
+                : held.rejected_by === 'health_threshold_rule' ? 'by the organism-health threshold rule' : 'by Change Control'} for exactly this transfer. Sending the same
+              transfer again is refused; a different amount is asked again as a fresh hold.
+            </p>
+          ) : held.follows_rejection ? (
+            // W463 — a hold filed after a rejection is decided only by an explicit decision; "review it" held it again
+            <p className="text-[10px] font-mono text-slate-500 mt-1.5" data-testid="transfer-follows-rejection">
+              Change request: <span className="text-aura">{held.cca_id}</span> — it follows the rejection of {held.follows_rejection}, so a
+              review does not decide it: decide it in the{' '}
+              <a href="/governance-hub" className="text-aura underline underline-offset-2">Governance hub's Sovereign Sanctum</a>, then transfer again.
+            </p>
+          ) : (
             <p className="text-[10px] font-mono text-slate-500 mt-1.5">
               Change request: <span className="text-aura">{held.cca_id}</span> — review it on the{' '}
               <a href="/change-control" className="text-aura underline underline-offset-2">Change Control Agency</a> page, then transfer again.
             </p>
-          )}
+          ))}
         </div>
       )}
       {result && (
@@ -246,6 +262,12 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
           <p className="text-[9px] text-slate-600 mt-1">{result.settlement}</p>
           {result.governance?.status === 'ungated_bypass_logged' && (
             <p className="text-[10px] font-black text-vital mt-1.5">governance gate was unavailable — the transfer ran ungated and a loud UEG bypass event was logged.</p>
+          )}
+          {result.governance?.status === 'allowed_action_retried' && (
+            <p className="text-[10px] font-black text-amber-400 mt-1.5">the gate allowed the transfer and it raised part-way; it was retried to completion outside the gate's post-execution check — a loud UEG event was logged.</p>
+          )}
+          {result.governance?.status === 'gate_raised_after_execution' && (
+            <p className="text-[10px] font-black text-amber-400 mt-1.5">the transfer posted, then the governance gate raised while recording it — a loud UEG event was logged.</p>
           )}
           <p className="text-[9px] text-amber-400/80 italic mt-1">{result.disclaimer}</p>
         </div>

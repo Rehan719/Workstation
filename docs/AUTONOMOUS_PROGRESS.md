@@ -5508,3 +5508,143 @@ guards re-run green; a snapshot now precedes every refutation and the round was 
 one (memory: refuters must run isolated).
 
 Suite: 369 passed · 15 skipped · 0 failed (full run on the final tree — W460+W461+W462 stacked — isolated DATA_DIR, 37 min).
+
+### W463 — economy approvals release only what they were filed for (register FU-002 and its class)
+
+**What was wrong.** A material economy action (a distribution or an inter-VSB transfer at or above the
+materiality threshold; virtual WST only) is held until the Owner approves a Change Control record. The gate
+honoured ANY approved record whose title matched: a LOW `config_minor` change submitted through `/cca/submit`
+with the hold's title was auto-approved at submit and released a 4,000,000-WST distribution nobody reviewed.
+An approval released any amount and, for a transfer, any counterparty. The gate returned a bare None both
+below the threshold and after spending an approval, so the give-back re-discovered its target by title scan
+and ran even when nothing had been consumed — a blocked NON-material transfer re-approved an approval an
+earlier action had already spent, and the next material action spent it a second time (FU-002, now
+reproduced). The heartbeat spent an approval before its policy pre-gate and never gave it back; cycles drained
+receipts and venture returns that landed after the gate measured them; a raised cycle was re-run by the
+fallback under the same approval.
+
+**What changed.** A hold is identified by what filed it — change_type `economy_material`, `submitted_by
+economy:<kind of action>`, exactly this VSB, the counterparty for a transfer, none of the keys only
+`submit_change` writes — and `/cca/submit` refuses the reserved type and titles (any casing, both kinds). There
+is at most ONE live record per (VSB, action kind, counterparty), decided under a per-action lock: a submitted
+hold is re-estimated as intake grows (the Owner decides the current amount; never while under review), an
+approval that cannot release a request is withdrawn, never left live to release a later unrelated action. An
+approval releases the intake it was filed for and no more — a transfer up to its amount to its counterparty;
+an API cycle at most its declared revenue, at least its declared costs, pending returns/receipts capped at
+what was filed; a heartbeat cycle exactly the recognised events it was filed for that are still pending —
+and every release is re-estimated at the request's own reserve rate and refused above the approved amount.
+Intake that arrives later waits for the next cycle. The gate hands back `{cca_id, consume_id, release}`; the
+give-back restores exactly that consumption and only while it is the record's latest spend; a cycle that
+started is never given back (it may have partly posted) and says so loudly; a transfer is given back only when
+the sender's ledger (read strictly, without waiting on another writer's lock) shows no debit; a transfer that
+posted is returned as posted when the gate raises afterwards; a replay of a debited transfer repairs the
+receiver leg even if the receiver has since deregistered. A rejection answers exactly the action it was filed
+for; a changed action is asked again as a fresh hold that says it follows the rejection, and Change Control
+decides such a hold only by an explicit decision (a model marker or the health rule is recorded as a
+recommendation). A decision is refused (409) when the hold's amount is not the amount the reviewer read
+(`expected_est_distributable_wst`) or moved during the review. A heartbeat hold whose events a smaller cycle
+consumed is retired. The Sanctum lists held economy holds with their amount and reason and sends the amount
+it showed; the Change Control page does the same; Economy Operations says when a transfer posted but its gate
+raised afterwards.
+
+**Tests:** `test_w463_economy_approvals_release_only_what_they_were_filed_for` (FU-002 as registered, the
+identity, amount and counterparty binding, exact give-back, raised and blocked paths, the ledger's answer,
+one live hold per action, rejections, drain caps) and `test_w463_hold_lifecycle_reviews_races_and_replays_both_ways`
+(a leg per confirmed finding of the second to eighth refutation passes, each pinned both ways — review amount
+binding, follows-rejection and filing order, reserve-rate and late-receipt caps, vanished cost events, retired
+holds, the re-estimate compare-and-set, siblings and withdraws, reserved titles, posted/retried/replayed
+transfers, the lock-free and unreadable ledger, in-flight and crashed spends, the give-back under its lock with
+its withdrawals and reverts, unreleasable records and their retirement, the roster's serialised writes, and the
+page texts). `test_w433` is renamed `test_w433_governance_tie_cannot_arise_one_live_hold_per_action` and guards the
+gate lock: four simultaneous first requests file one hold. "What changed" describes the redesign as first
+built; the refutation passes below record every change made to it since (the shipped behaviour is both together).
+**Broken 139 ways — each blind alone applied, the guards run, the file restored byte-for-byte — across the round's passes and then all 139 again on the final tree: every one fails.** Five blinds were first vacuous (two API-cycle bounds the amount check usually covered, an exact-tie rule that list order happened to satisfy, a retirement guard stubbed to a constant, a no-receiver reason a later roster check masked) and the guards were strengthened until each failed; blind failure lines were read, not just counted.
+
+**Refuted (own diff), eight passes.** First pass on the first draft — seventeen confirmed, all fixed by the
+redesign above (exact-amount binding filed a new hold on every beat and stranded approvals that later released
+unrelated distributions; a rejection became a dead end; a smaller action could spend a larger approval; a
+raised cycle was re-run; a debited transfer could get its approval back through the funds re-check branch or a
+lenient ledger read). Second pass on the redesign — eighteen confirmed: a hold rewritten while under review and
+a decision binding an amount nobody read; a hold after a rejection indistinguishable from a first request; a
+vanished cost event, a lower reserve rate and a late receipt each enlarging a release; a stale heartbeat hold
+wasting a decision; a stale amount in the held answer; a posted transfer replayed and reported failed; a
+replay refused by liveness and funds checks; the ledger answer waiting on another writer's lock; a heartbeat
+approval with no events unspendable; and six guard gaps — all fixed and guarded. One pre-existing defect it
+found outside this diff (store_lock's stale-lockfile branch skips its deadline) is register row FU-021.
+While writing the guard, a same-second tie in the gate's record ordering (whether an action has run since a
+rejection was answered by the directory listing) was found and fixed: holds carry `filed_ns`, and an exact
+tie reads as the rejection. Third pass on those fixes — three refuters, each finding verified by a second
+agent in its own worktree: fourteen confirmed, none refuted. Fixed and guarded: a rejection kept refusing
+its amount for ever after an approved action had run since (and an API-cycle rejection matched on the
+estimate alone, so a different declared intake was refused instead of asked again); a give-back taken
+outside the gate's lock could revive an approval beside a newer hold for the same action (it now takes the
+same lock and skips when a newer live or rejected record exists); an event-less heartbeat approval whose
+receipts were gone was spent on a cycle of nothing; the economy pages told the Owner to "review" a hold
+filed after a rejection (a review only holds it again) and the Sanctum did not list such a hold until
+reviewed (the answer, the queue row and the notes now carry `follows_rejection`, and the pages point at the
+Sanctum); the Sanctum said a decision "applies to this amount only" (an approval releases one action of at
+most that amount); the page's own review path and the list rows the pages read were unguarded; an approved
+economy hold could be "implemented" by hand, spending the approval with nothing run (refused, 409, and the
+button is gone); a transfer the gate allowed that raised part-way was recorded as a gate outage (now
+`allowed_action_retried`); the defect ledger still described the removed tie fields, and the W433 guard's
+name said it reported ties (renamed `test_w433_governance_tie_cannot_arise_one_live_hold_per_action`).
+Registered: FU-022 (a heartbeat cycle posts before it consumes its events, so a failed consume distributes
+them twice — pre-existing ordering) and FU-023 (a transfer whose receiver-queue write fails twice is left
+debited with nothing to repair it — pre-existing).
+Fourth pass on those fixes — two refuters, each finding verified: nine confirmed, none refuted. The serious one
+was introduced by the third pass's own fix: the gate marks an approval implemented when it SPENDS it, before the
+constitutional gate or the action runs, and the new "has an approved action run since the rejection?" test
+counted that spend — so a request for exactly the rejected action, arriving from another worker while the
+spent action was still in flight (and then blocked), filed a plain hold a model review could approve, and the
+give-back then skipped beside it. A spend now counts as run only once the action marks it started
+(`released_action_ran`, written where each cycle starts and where a transfer's debit posted or cannot be ruled
+out), so an in-flight spend never lifts a rejection. Also fixed: ordering read the wall clock before `filed_ns`,
+so a backward clock step reordered records (one filing order now, from `filed_ns`); an API-cycle approval whose
+receipts were gone was spent on a cycle of nothing (as the heartbeat's); a transfer hold filed before W463
+(no counterparty) could never leave "approved" once implement was refused (it is retired as withdrawn, and the
+page offers Retire); the audit note said "the debit posted" when the ledger could not be read (it now records
+`debit_confirmed` and says which); a rejected answer told the Owner to review a record that cannot be reviewed;
+and three guards the refuters could remove unnoticed (the give-back's lock and rejected-record skip, and two
+surface texts) now fail when removed.
+Fifth pass on those fixes — two refuters, each finding verified: seven confirmed, none refuted, all fixed and
+guarded. A spend never marked (a worker that died before marking it, a marker write that failed) made the older
+rejection refuse that exact action for ever, even after the Owner explicitly approved exactly it: the outright
+refusal now stands only while the newest decided record — any spend included — is the rejection, and the
+follows-rejection link still counts only actions known to have run, so such a request is asked again for an
+explicit decision. An unreadable ledger counted as a run (only a confirmed debit does now). Three start markers
+had no guard. An empty VSB id read as unreleasable; a transfer approval whose receiver had left the living roster
+could never be released (both now follow the gate's own test, and the retirement records the reason). Any
+authenticated user could retire an economy record (admin only, logged to the UEG). A rejection by the reviewing
+model's marker or the health rule was described as "the Owner rejected" (the answer carries `rejected_by`, and
+the note and pages say what rejected it).
+Sixth pass on those fixes — two refuters, each finding verified: eight confirmed, none refuted. The fifth pass's
+refusal change let a request for the rejected action file a hold while an approved action was in flight, and a
+blocked give-back then skipped beside it, leaving the Owner's approval spent on nothing: a give-back now withdraws
+the undecided holds asked while its action was in flight and returns the approval (a newer record under review,
+approved or rejected keeps the skip, and the spent record now says in its own trail that its action never ran).
+A retirement read the roster twice and could retire on a "releasable" answer (one reading decides and explains;
+an unknown answer never retires); a heartbeat hold for a VSB off the roster read as releasable; the
+empty-roster defence was unguarded. And one pre-existing defect the roster rule now leans on was fixed rather than
+registered: the heartbeat held a roster snapshot across a whole governed cycle and wrote it back, erasing
+registrations made meanwhile and undoing deregistrations — its bookkeeping now re-reads the roster under the store
+lock and changes only its own entry, and deregistration takes the same lock. Registered: FU-024 (a rejected
+contract settlement still says "retry after the hold clears").
+Seventh pass on those fixes — two refuters, each finding verified: eight confirmed, one refuted. The sixth pass's
+give-back withdrew every newer undecided hold, including one for a larger request the returned approval could not
+release (dropping that request from the Owner's queue with a false reason), and it withdrew before knowing the
+give-back would land: it now withdraws only holds the approval can release, and puts back what it withdrew when the
+give-back does not land. The rest were guards the refuters could remove unnoticed — the withdraw's compare-and-set,
+the held-beat and pruning paths of the roster fix, the empty-roster rule on the heartbeat branch, the deregistered-
+entry check, and a retirement guard that stayed green with its defence removed — each now fails when removed.
+Eighth pass, narrowed to that give-back — one refuter, each finding verified: two confirmed. A newer approval that
+had already been SPENT did not keep a give-back from reviving the older approval (two approvals for one action, or a
+second release if the newer one ran): spent newer records now block the give-back too — a one-word change the
+verifier checked against every guard before it was made. And three revert paths had no guard; each is now exercised
+and fails when removed. The refutation loop stopped here: its last pass found one pre-existing-shape defect with a
+verified one-line fix and a coverage gap, no new class.
+
+**Found and not done:** FU-015 … FU-024 (registered, slotted NEXT/OWNER).
+
+**Browser (fresh backend :8070, bundle rebuilt — `scripts/_w463_probe.mjs`, 13/13):** a material cycle held, rejected (the page says it was rejected by an explicit decision and is asked again when the action changes) and asked again as a hold that follows the rejection — the economy page points at the Sanctum, the Sanctum lists it before any review with its amount and what an approval releases; Change Control shows the amount, a review holds it for the Sanctum, a review of a moved amount is refused and decides nothing; (stubbed) a Sanctum vote on a stale amount is refused and shown; a real vote approves it and the cycle runs once; an approved economy hold offers no Implement; (stubbed) a transfer that posted before its gate raised, and one retried after it raised, say so.
+
+Suite: 371 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 39 min).

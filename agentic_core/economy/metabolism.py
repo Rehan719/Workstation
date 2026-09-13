@@ -95,8 +95,15 @@ class EconomicMetabolism:
         self.charity = CharityIntelligence()
 
     # ── the living cycle ──────────────────────────────────────────────────────
-    def run_cycle(self, revenue: float, costs: float = 0.0, reserve_rate: float = 0.20) -> Dict[str, Any]:
-        """One metabolic cycle: intake → homeostasis → circulation → giving-back → adaptation."""
+    def run_cycle(self, revenue: float, costs: float = 0.0, reserve_rate: float = 0.20,
+                  max_returns_wst: Optional[float] = None,
+                  max_transfers_wst: Optional[float] = None) -> Dict[str, Any]:
+        """One metabolic cycle: intake → homeostasis → circulation → giving-back → adaptation.
+
+        W463 — `max_returns_wst` / `max_transfers_wst` cap what this cycle drains from the pending
+        queues: the governed paths pass what the §3 materiality gate MEASURED, so a receipt that lands
+        between the gate and this cycle waits for the next one (it used to be drained and distributed
+        without the Change Control hold its size required). None = drain everything (ungoverned use)."""
         revenue = max(0.0, float(revenue))
         costs = max(0.0, float(costs))
 
@@ -105,7 +112,7 @@ class EconomicMetabolism:
         returns_recycled = 0.0
         try:
             from .ventures import consume_pending_returns
-            returns_recycled = consume_pending_returns(self.vsb_id)
+            returns_recycled = consume_pending_returns(self.vsb_id, max_amount=max_returns_wst)
             if returns_recycled > 0:
                 revenue = round(revenue + returns_recycled, 2)
         except Exception:
@@ -115,7 +122,7 @@ class EconomicMetabolism:
         transfers_received = 0.0
         try:
             from .transfers import consume_pending_transfers
-            transfers_received = consume_pending_transfers(self.vsb_id)
+            transfers_received = consume_pending_transfers(self.vsb_id, max_amount=max_transfers_wst)
             if transfers_received > 0:
                 revenue = round(revenue + transfers_received, 2)
         except Exception:

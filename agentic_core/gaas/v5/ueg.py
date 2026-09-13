@@ -34,8 +34,12 @@ _ADVERSE_TYPES = frozenset({
     "economy.compliance_fail_hold", "economy.materiality_approval_restore_failed",
     "immune.quarantine_engaged", "ai.external_budget_breach", "marketplace.recognition_failed",
     "vsb.evolution.claim_release_failed", "economy.materiality_gate_error",
+    "economy.materiality_approval_spent_cycle_failed",
 })
-_REVIEW_TYPES = frozenset({"economy.materiality_hold_filed", "marketplace.listing_held"})
+# W463 — a restore refused because the record was spent by another action (or moved) is a hold-shaped
+# fact a reviewer should see, not a plain "recorded" line
+_REVIEW_TYPES = frozenset({"economy.materiality_hold_filed", "marketplace.listing_held",
+                           "economy.materiality_approval_restore_skipped"})
 _ADVERSE_TOKENS = ("halt", "trip", "failure", "failed", "bypass", "blocked", "breach", "refused",
                    "denied", "violation", "rejected", "error")
 

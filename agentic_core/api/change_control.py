@@ -194,6 +194,14 @@ def _update_change(cca_id: str, mutate) -> dict:
         return fresh
 
 
+def _economy_releasable(c: dict) -> bool:
+    try:
+        from agentic_core.economy.governance import releasable_by_gate
+        return bool(releasable_by_gate(c))
+    except Exception:
+        return True   # unknown: never retire on a guess (implement stays refused)
+
+
 def _list_changes(status_filter: str | None = None) -> list[dict]:
     result = []
     # W459 — stat() ran outside the try, so a record removed mid-scan raised out of GET /queue; and
@@ -215,6 +223,15 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
                 "submitted_at": c.get("submitted_at", ""),
                 "reviewed_at": c.get("reviewed_at"),
                 "decision": c.get("decision"),
+                # W463 — a held record (awaiting an explicit decision) and an economy hold's current amount
+                "hold_reason": c.get("hold_reason"),
+                "est_distributable_wst": c.get("est_distributable_wst"),
+                # W463 (third refutation) — a hold filed after a rejection needs an explicit decision from the moment
+                # it is filed (before any review sets hold_reason)
+                "follows_rejection": ((c.get("follows_rejection") or {}).get("cca_id")
+                                      if isinstance(c.get("follows_rejection"), dict) else None),
+                # W463 (fourth refutation) — whether running the economy action can ever release this record
+                **({"releasable": _economy_releasable(c)} if c.get("change_type") == "economy_material" else {}),
             })
         except Exception:
             pass
@@ -284,6 +301,10 @@ class ReviewDecision(BaseModel):
     # this is an admin decision. Required in BOTH auth modes (with auth off there is no admin role
     # to check, so the acknowledgement is the whole gate).
     admin_decision_for_critical: bool = False
+    # W463 — an economy materiality hold is kept current while submitted (its amount grows with new intake).
+    # A reviewer who read an amount sends it here; if the hold no longer carries that amount the decision is
+    # refused (409) rather than approving an amount nobody saw.
+    expected_est_distributable_wst: float | None = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -340,6 +361,17 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     HERE (so nothing unappliable can be approved), and /implement APPLIES it through the
     reconfiguration engine's audited core. Governed live levers are forced to config_major
     (MEDIUM — never auto-approved as a minor tweak)."""
+    # W463 — the economy's materiality holds are filed by the economy itself (governance.py writes them
+    # directly). A submitted change carrying their type or title prefix was indistinguishable from one:
+    # a LOW 'config_minor' request titled "[economy] material distribution — <vsb>" was auto-approved
+    # here and released a 4,000,000-WST distribution nobody reviewed. Refused for every caller.
+    _title = req.title.strip().lower()
+    if req.change_type == "economy_material" or _title.startswith(("[economy] material distribution",
+                                                                    "[economy] material transfer")):
+        raise HTTPException(status_code=422, detail=(
+            "change_type 'economy_material' and the '[economy] material distribution/transfer' titles are "
+            "reserved for the economy's own materiality holds, which it files and keeps current itself; run "
+            "the action (a cycle or transfer) and review the hold it files."))
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
     change_type = req.change_type
     cc = req.config_change
@@ -684,11 +716,18 @@ async def review_change(cca_id: str, req: ReviewDecision,
         if fresh["status"] not in ("submitted", "under_review"):
             raise HTTPException(status_code=409,
                                 detail=f"Change was decided concurrently (status {fresh['status']}).")
+        if (req.expected_est_distributable_wst is not None and fresh.get("est_distributable_wst") is not None
+                and abs(float(fresh["est_distributable_wst"]) - float(req.expected_est_distributable_wst)) > 0.005):
+            raise HTTPException(status_code=409, detail=(
+                f"The hold's amount changed since it was read: it now carries {fresh['est_distributable_wst']} WST, "
+                f"not {req.expected_est_distributable_wst}. Re-read it and decide the current amount."))
         fresh["status"] = "under_review"
         fresh.setdefault("audit_trail", []).append(
             {"event": "review_started", "ts": now, "by": principal, "by_verified": _verified(user)})
 
     c = _update_change(cca_id, _start)
+    # W463 — what the reviewer is deciding: an economy hold's amount and intake as they stood at the start
+    reviewed_amount = (c.get("est_distributable_wst"), c.get("intake"))
 
     biobus.fire_signal("cognitive", "cca.review", f"Reviewing: {c['title']}", 0.6)
 
@@ -751,6 +790,17 @@ async def review_change(cca_id: str, req: ReviewDecision,
                    f"No model recommendation: {why_no_marker}; the organism-health threshold rule "
                    "never decides a CRITICAL change.")
                 + model_out)
+        elif c.get("follows_rejection"):
+            # W463 — the economy re-filed an action after the Owner rejected it: a review (model or rule) never
+            # decides that; the recommendation is recorded and an explicit decision is required
+            decision, held, hold_reason = None, True, "follows_rejection_requires_explicit_decision"
+            decision_source = "held_awaiting_admin"
+            recommendation = ({"verdict": marker, "source": "model_decision_marker"} if marker
+                              else {"verdict": rule_verdict, "source": "health_threshold_rule"})
+            review_text = (
+                f"HELD — this economy hold follows the rejection of {c['follows_rejection'].get('cca_id')}; only an "
+                "explicit decision (override_decision) can approve or reject it. The review's verdict is recorded "
+                "as a recommendation." + model_out)
         elif marker:
             decision, decision_source = marker, "model_decision_marker"
         elif not admin_requested:
@@ -782,6 +832,9 @@ async def review_change(cca_id: str, req: ReviewDecision,
         if fresh["status"] != "under_review":
             raise HTTPException(status_code=409,
                                 detail=f"Change was decided concurrently (status {fresh['status']}).")
+        if (fresh.get("est_distributable_wst"), fresh.get("intake")) != reviewed_amount:
+            raise HTTPException(status_code=409, detail=(
+                "The hold's amount changed during the review; nothing was decided. Re-read it and review again."))
         fresh["review_result"] = review_text
         fresh["decision_source"] = decision_source
         fresh["reviewed_at"] = now
@@ -856,6 +909,37 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
     if c["status"] != "approved":
         raise HTTPException(status_code=400, detail=f"Change must be approved before implementation. Status: {c['status']}")
+    if c.get("change_type") == "economy_material":
+        # W463 (third refutation) — an economy hold carries no config to apply: implementing it only marked the record
+        # "implemented", which spent the Owner's approval with nothing distributed or transferred. W463 (sixth
+        # refutation): one reading decides AND explains a retirement; an unknown answer never retires.
+        try:
+            from agentic_core.economy.governance import _ueg_log as _econ_log, unreleasable_reason
+            why = unreleasable_reason(c)
+        except Exception:
+            _econ_log, why = None, None
+        if why is None:
+            raise HTTPException(status_code=409, detail=(
+                "An economy materiality hold is released by running the action it was filed for (the cycle or the "
+                "transfer), which spends the approval; implementing it here would spend it with nothing run."))
+        # W463 (fourth refutation) — a record the gate can never match (a transfer hold filed before W463 names no
+        # counterparty) could otherwise never leave 'approved': it is retired as what it is — releasing nothing
+        if not is_admin:
+            # W463 (fifth refutation) — with auth enabled a retirement is an admin decision (any authenticated user
+            # could retire another tenant's record)
+            raise HTTPException(status_code=403, detail="Only an admin may retire an economy record.")
+        now_w = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        c["status"] = "withdrawn"
+        c.setdefault("audit_trail", []).append(
+            {"event": "withdrawn_unreleasable", "ts": now_w, "by": principal, "by_verified": verified,
+             "reason": f"{why}; nothing ran"})
+        _save_change(c)
+        if _econ_log:
+            _econ_log({"type": "economy.materiality_hold_withdrawn", "vsb_id": c.get("vsb_id"), "cca_id": cca_id,
+                       "superseded_by": None, "reason": f"retired: {why}"[:200], "by": principal})
+        return {"cca_id": cca_id, "status": "withdrawn",
+                "note": f"This economy record can never be released by running an action ({why}), so it was retired "
+                        "(withdrawn) — nothing was distributed or transferred."}
     _spec = c.get("config_change") or {}
     if _spec and not is_admin:
         from agentic_core.organism.reconfiguration import _GOVERNED_KEYS

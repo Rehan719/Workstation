@@ -317,18 +317,59 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e).strip("'\""))
 
-    held = _materiality_gate(req.from_vsb, round(float(req.amount), 2), source="transfer")
+    # W463 — the gate binds the approval to this amount AND this counterparty, and hands back exactly
+    # what it spent (None when nothing was spent) so a transfer that does not post gives back only that
+    held, consumed = _materiality_gate(req.from_vsb, round(float(req.amount), 2), source="transfer",
+                                       counterparty=req.to_vsb)
     if held is not None:
         return {"transfer": None, "governance": held}
+    from agentic_core.economy.governance import _mark_action_ran, _restore_consumed_approval
 
     # W442 — one transfer_id for the whole request: the gaas fallback could re-run the action
     # after it had ALREADY posted (an interceptor exception after execution), debiting the sender
     # twice for one request. record_transfer is idempotent on the id, so the retry is now a no-op.
     import uuid as _uuid
     _xfer_id = f"xfer-{_uuid.uuid4().hex[:10]}"
+    posted = {"done": False}
+
+    def _give_back_unless_debited(reason: str) -> None:
+        # record_transfer debits and queues in two steps, so the approval comes back only when the sender's
+        # ledger shows NO debit for this transfer id; an unreadable ledger keeps it spent (a second release
+        # would be the worse error) and says so
+        if not consumed or posted["done"]:
+            return
+        from agentic_core.economy.transfers import debit_posted
+        ledger_error = None
+        try:
+            debited = bool(debit_posted(req.from_vsb, _xfer_id))
+        except Exception as err:
+            debited, ledger_error = None, f"{type(err).__name__}: {str(err)[:120]}"
+        if debited is False:
+            _restore_consumed_approval(consumed, vsb_id=req.from_vsb, reason=reason)
+            return
+        # the debit posted, or cannot be ruled out: never given back. Only a CONFIRMED debit counts as the released
+        # action having run (W463, fifth refutation): an unknown one stays unmarked, so it never lifts an older
+        # rejection — a request for the rejected transfer is then asked again only for an explicit decision
+        if debited:
+            _mark_action_ran(consumed, req.from_vsb, "transfer debit posted")
+        # W463 (fourth refutation) — the record says which: a confirmed debit, or a ledger that could not be read
+        _ueg_log({"type": "economy.materiality_approval_spent_cycle_failed", "vsb_id": req.from_vsb,
+                  "source": "transfer", "cca_id": consumed.get("cca_id"),
+                  "consume_id": consumed.get("consume_id"), "transfer_id": _xfer_id,
+                  "debit_confirmed": bool(debited), **({"ledger_error": ledger_error} if ledger_error else {}),
+                  "note": ("the transfer did not complete, but the sender's ledger shows its debit; the approval "
+                           "stays spent. Do NOT re-run the transfer — the debit posted and the receiver leg may be "
+                           "missing (repairing it replays this transfer_id)" if debited else
+                           "the transfer did not complete and the sender's ledger could not be read, so whether its "
+                           "debit posted is unknown; the approval was kept spent for that reason. Check the sender's "
+                           "ledger for this transfer_id before re-approving or re-running the transfer")})
 
     async def _action():
-        return record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+        posted["started"] = True
+        out = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+        posted["done"], posted["out"] = True, out
+        _mark_action_ran(consumed, req.from_vsb, "transfer posted inside the gate")
+        return out
 
     try:
         try:
@@ -341,24 +382,53 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
             if not isinstance(transfer, dict):   # the gate blocked the action — never fabricate a transfer
                 # W442 refuter catch: the materiality approval was consumed before this gate ran;
                 # blocked means nothing posted, so the Owner's approval must not stay spent.
-                from agentic_core.economy.governance import _restore_consumed_approval
-                _restore_consumed_approval(req.from_vsb, "transfer",
-                                           f"gaas gate {result.status} — no transfer posted")
+                if not posted["done"]:
+                    _restore_consumed_approval(consumed, vsb_id=req.from_vsb,
+                                               reason=f"gaas gate {result.status} — no transfer posted")
                 return {"transfer": None, "governance": governance}
         except ValueError:
             raise
         except Exception as e:
-            transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
-            _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
-                      "error": str(e)[:200], "note": "gaas.v5 gate unavailable — transfer ran ungated (logged loudly)."})
-            governance = {"status": "ungated_bypass_logged", "error": str(e)[:160]}
+            if posted["done"]:
+                # W463 (refuter) — the action fully POSTED and the gate raised afterwards (e.g. its checkpoint
+                # write): the transfer is returned as posted, never replayed — a replay that met a second fault
+                # reported a posted transfer as failed, and a client retry paid twice
+                transfer = posted["out"]
+                _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
+                          "error": str(e)[:200], "note": "the transfer posted; the gate raised after execution (logged loudly)."})
+                governance = {"status": "gate_raised_after_execution", "error": str(e)[:160]}
+            elif posted.get("started"):
+                # W463 (third refutation) — the gate ALLOWED the action and the action raised part-way (e.g. the
+                # receiver queue's lock timed out after the debit). That is not a gate outage: the idempotent replay
+                # completes it (repairing the receiver leg), and the record says what happened — the post-execution
+                # check and checkpoint did not run for the retry.
+                transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+                posted["done"], posted["out"] = True, transfer
+                _mark_action_ran(consumed, req.from_vsb, "transfer posted on an idempotent retry")
+                _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
+                          "error": str(e)[:200],
+                          "note": "the gate allowed the transfer and the action raised; it was retried idempotently "
+                                  "outside the gate's post-execution check and checkpoint (logged loudly)."})
+                governance = {"status": "allowed_action_retried", "error": str(e)[:160]}
+            else:
+                transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+                posted["done"], posted["out"] = True, transfer
+                _mark_action_ran(consumed, req.from_vsb, "transfer posted with the gate unavailable")
+                _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
+                          "error": str(e)[:200], "note": "gaas.v5 gate unavailable — transfer ran ungated (logged loudly)."})
+                governance = {"status": "ungated_bypass_logged", "error": str(e)[:160]}
     except ValueError as e:
         # W442 refuter catch: the atomic in-lock funds re-check (a concurrent drain won the race)
-        # used to escape as a 500; it is a clean refusal — and the consumed approval is restored,
-        # because nothing posted.
-        from agentic_core.economy.governance import _restore_consumed_approval
-        _restore_consumed_approval(req.from_vsb, "transfer", "funds re-check refused — nothing posted")
+        # used to escape as a 500; it is a clean refusal — and the consumed approval is restored when
+        # nothing posted. W463: "nothing posted" is the LEDGER's answer, not a progress flag — a replay of
+        # an already-debited transfer could raise here too.
+        _give_back_unless_debited("funds re-check refused — nothing posted")
         raise HTTPException(status_code=400, detail=str(e))
+    except BaseException:
+        # W463 — anything else that stops the transfer (a vanished receiver, a busy store) used to escape
+        # as a 500 with the Owner's approval spent on nothing.
+        _give_back_unless_debited("the transfer raised before it posted — nothing was debited")
+        raise
 
     _ueg_log({"type": "economy.inter_vsb_transfer", **{k: transfer[k] for k in
               ("transfer_id", "from_vsb", "to_vsb", "amount_wst")},

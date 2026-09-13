@@ -222,22 +222,25 @@ def peek_pending_returns(vsb_id: str) -> float:
     return round(pf.get("pending_returns_wst", 0.0), 2)
 
 
-def consume_pending_returns(vsb_id: str) -> float:
+def consume_pending_returns(vsb_id: str, max_amount: Optional[float] = None) -> float:
     """Drain the queued venture returns for a VSB — called by the metabolic cycle at intake so the
-    returns enter THIS cycle's waterfall. Returns the consumed amount (0.0 when none pending)."""
+    returns enter THIS cycle's waterfall. Returns the consumed amount (0.0 when none pending).
+    W463 — `max_amount` caps the drain at what the materiality gate measured; the remainder stays
+    pending for the next cycle."""
     with store_lock(_PORTFOLIO_STORE):
         d = _load_portfolio()
         pf = d.get(vsb_id)
         if not pf:
             return 0.0
         pending = round(pf.get("pending_returns_wst", 0.0), 2)
-        if pending <= 0:
+        take = pending if max_amount is None else round(min(pending, max(0.0, float(max_amount))), 2)
+        if take <= 0:
             return 0.0
-        pf["pending_returns_wst"] = 0.0
-        pf["recycled_total_wst"] = round(pf.get("recycled_total_wst", 0.0) + pending, 2)
+        pf["pending_returns_wst"] = round(pending - take, 2)
+        pf["recycled_total_wst"] = round(pf.get("recycled_total_wst", 0.0) + take, 2)
         d[vsb_id] = pf
         _save_portfolio(d)
-    return pending
+    return take
 
 
 def record_positions(vsb_id: str, allocation: Dict[str, Any]) -> None:

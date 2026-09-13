@@ -24,6 +24,8 @@ interface CCARow {
   submitted_at: string;
   reviewed_at?: string | null;
   decision?: string | null;
+  est_distributable_wst?: number | null;   // W463 — an economy hold's current amount (virtual WST)
+  releasable?: boolean;                    // W463 — whether running the economy action can ever release it
 }
 
 interface CCADetail extends CCARow {
@@ -144,6 +146,13 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
             <span className="font-mono">{entry.change_type}</span>
             <span>·</span>
             <span>{fmtDate(entry.submitted_at)}</span>
+            {entry.est_distributable_wst != null && (
+              <>
+                <span>·</span>
+                {/* W463 — the amount a review of this economy hold decides (it is sent with the review) */}
+                <span className="font-mono text-amber-400/80" data-testid="cca-hold-amount">{entry.est_distributable_wst} WST (virtual)</span>
+              </>
+            )}
             {entry.submitted_by && (
               <>
                 <span>·</span>
@@ -196,7 +205,8 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                   {detail.recommendation?.verdict
                     ? ` (recommendation: ${detail.recommendation.verdict}, from ${detail.recommendation.source === 'model_decision_marker' ? 'the reviewing model' : 'the organism-health rule'})`
                     : ''}
-                  {detail.impact_tier === 'CRITICAL'
+                  {/* W463 — a hold that follows a rejection is held again by any review; only an explicit decision moves it */}
+                  {detail.impact_tier === 'CRITICAL' || detail.hold_reason === 'follows_rejection_requires_explicit_decision'
                     ? ' — decide it in the Governance hub\u2019s Sovereign Sanctum'
                     : ' — a review requested by an admin decides it'}
                 </p>
@@ -223,7 +233,24 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                     Request review
                   </button>
                 )}
-                {entry.status === 'approved' && (
+                {/* W463 — an economy hold is released by running its action; Implement would spend the approval on nothing */}
+                {entry.status === 'approved' && entry.change_type === 'economy_material' && entry.releasable !== false && (
+                  <span className="text-xs text-amber-400/80" data-testid="cca-economy-release-note">
+                    approved — run the cycle or transfer it was filed for to release it
+                  </span>
+                )}
+                {/* W463 — a record no economy action can match (filed before the gate's identity rules) is retired */}
+                {entry.status === 'approved' && entry.change_type === 'economy_material' && entry.releasable === false && (
+                  <button
+                    onClick={e => { e.stopPropagation(); onImplement(entry.cca_id); }}
+                    disabled={refreshing === entry.cca_id}
+                    data-testid="cca-economy-retire"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-600/20 hover:bg-slate-600/35 text-slate-300 border border-slate-500/25 disabled:opacity-50"
+                  >
+                    Retire — no action can release it
+                  </button>
+                )}
+                {entry.status === 'approved' && entry.change_type !== 'economy_material' && (
                   <button
                     onClick={e => { e.stopPropagation(); onImplement(entry.cca_id); }}
                     disabled={refreshing === entry.cca_id}
@@ -420,7 +447,10 @@ export const ChangeControlAgency: React.FC = () => {
   const triggerReview = (id: string) =>
     // ReviewDecision body is required by the endpoint; no override = "request a review" (a model
     // marker, else the organism-health rule — CRITICAL is always held for an explicit admin decision)
-    runAction(id, () => axios.post(`/api/v1/cca/${id}/review`, { reviewer_notes: 'Requested via the Change Control Agency UI' }));
+    runAction(id, () => axios.post(`/api/v1/cca/${id}/review`, { reviewer_notes: 'Requested via the Change Control Agency UI',
+      // W463 — an economy hold's amount as this page showed it; a hold that moved since is refused (409)
+      ...(entries.find(e => e.cca_id === id)?.est_distributable_wst != null
+          ? { expected_est_distributable_wst: entries.find(e => e.cca_id === id)?.est_distributable_wst } : {}) }));
 
   const triggerImplement = (id: string) =>
     runAction(id, () => axios.post(`/api/v1/cca/${id}/implement`));
