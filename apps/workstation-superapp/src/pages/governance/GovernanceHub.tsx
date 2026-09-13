@@ -442,7 +442,9 @@ const SanctumTab: React.FC = () => {
   const [sanctumErr, setSanctumErr] = useState('');
   const [votingId, setVotingId] = useState('');
 
-  // Ledger cluster 3 — the Sanctum is REAL now: proposals are the actual pending CONSTITUTIONAL
+  // W459 — the hold is tier-based, so the Sanctum lists every pending CRITICAL change (not only the
+  // constitutional type), read from the uncapped queue rather than the 50-row list.
+  // Ledger cluster 3 — the Sanctum is REAL now: proposals are the actual pending CRITICAL
   // change requests in the CCA, the access gate is the constitutional ledger answering (no fake
   // reputation timer), and a sovereign vote is the Owner's audit-trailed review override. The old
   // tab hardcoded two proposals and incremented a local percentage that vanished on reload.
@@ -450,10 +452,11 @@ const SanctumTab: React.FC = () => {
     try {
       await apiJson('/api/v1/gaas/ueg/verify');   // the constitutional ledger must answer
       setAccessGranted(true);
-      const d = await apiJson('/api/v1/cca');
-      setProposals((d.changes ?? [])
-        .filter((c: any) => c.change_type === 'constitutional' && ['submitted', 'under_review'].includes(c.status))
-        .map((c: any) => ({ id: c.cca_id, title: c.title, status: c.status, tier: c.impact_tier, submitted_at: c.submitted_at })));
+      const d = await apiJson('/api/v1/cca/queue');
+      setProposals((d.queue ?? [])
+        .filter((c: any) => c.impact_tier === 'CRITICAL' && ['submitted', 'under_review'].includes(c.status))
+        .map((c: any) => ({ id: c.cca_id, title: c.title, status: c.status, tier: c.impact_tier,
+                            change_type: c.change_type, submitted_at: c.submitted_at })));
       setSanctumErr('');
     } catch (e) {
       setAccessGranted(true);   // never fake a lock — show the honest error instead
@@ -466,8 +469,11 @@ const SanctumTab: React.FC = () => {
   const castSovereignVote = async (id: string, decision: 'approved' | 'rejected') => {
     setVotingId(id); setSanctumErr('');
     try {
+      // W459 — the Sanctum button IS the explicit Owner decision on a CRITICAL change, so it sends
+      // the acknowledgement the route now requires (without it the vote is refused, correctly)
       await apiJson(`/api/v1/cca/${id}/review`, { method: 'POST',
-        body: { override_decision: decision, reviewer_notes: 'Sovereign vote — Owner decision from the Sanctum' } });
+        body: { override_decision: decision, admin_decision_for_critical: true,
+                reviewer_notes: 'Sovereign vote — Owner decision from the Sanctum' } });
       toast(`Sovereign ${decision === 'approved' ? 'approval' : 'rejection'} recorded for ${id} — audit-trailed in the CCA`);
       await loadSanctum();
     } catch (e) { setSanctumErr(errorMessage(e)); }
@@ -504,7 +510,7 @@ const SanctumTab: React.FC = () => {
         <div className="@[440px]:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
-              <Sparkles size={20} className="text-aura" /> Meta-Amendments
+              <Sparkles size={20} className="text-aura" /> Pending CRITICAL changes
             </h3>
             <button type="button" onClick={() => setShowProposalForm(v => !v)}
               className="px-5 py-2 border border-aura/30 text-aura font-black rounded-xl text-xs uppercase tracking-widest hover:bg-aura/10 transition-all">
@@ -531,12 +537,17 @@ const SanctumTab: React.FC = () => {
             </div>
           )}
 
+          {/* W459 — a refused vote or a failed load was silent (sanctumErr was set and never shown) */}
+          {sanctumErr && (
+            <p className="text-xs font-bold text-vital" data-testid="sanctum-error">{sanctumErr}</p>
+          )}
+
           <div className="space-y-5">
             {proposals.map(p => (
               <div key={p.id} className="p-7 glass-card border-aura/20 bg-aura/5 hover:bg-aura/10 transition-all">
                 <div className="flex justify-between items-start mb-5">
                   <div className="text-[10px] font-black text-aura uppercase tracking-[0.2em] border border-aura/30 px-3 py-1 rounded-full">{p.status}</div>
-                  <span className="text-sm font-black text-vital">{p.tier ?? 'CRITICAL'} tier</span>
+                  <span className="text-sm font-black text-vital">{p.tier ?? 'CRITICAL'} tier{p.change_type ? ` · ${String(p.change_type).replace(/_/g, ' ')}` : ''}</span>
                 </div>
                 <h4 className="text-xl font-black mb-4 leading-tight">{p.title}</h4>
                 <div className="flex gap-3">
@@ -584,12 +595,13 @@ const SanctumTab: React.FC = () => {
                 <p className="text-2xl font-black text-white">Owner · sovereign</p>
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pending constitutional changes</p>
-                <p className="text-xl font-black text-aura">{proposals.length}</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pending CRITICAL changes</p>
+                <p className="text-xl font-black text-aura">{sanctumErr ? '—' : proposals.length}</p>
               </div>
               <div className="pt-4 border-t border-white/5 text-[10px] text-slate-500 font-bold leading-relaxed">
                 A sovereign vote here writes the Owner's decision straight onto the CRITICAL-tier change
-                request in the Change Control Agency — audit-trailed in the tamper-evident UEG ledger.
+                request in the Change Control Agency — recorded in that change's own audit trail, as an
+                explicit admin decision, with the principal that made it.
               </div>
             </div>
           </section>

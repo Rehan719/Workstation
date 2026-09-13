@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W458) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W459) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W458 (458 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W459 (459 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,7 +192,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W458: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W459: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -203,8 +203,9 @@ subject, nothing matched is review not pass, a FAIL rides on page one of every e
 the tafsir tab completes §11: no floor 'translation' over sacred text, the sourced Arabic and the
 scholar line on screen (W456); P1.9 — Care scoring computes the published tables in-house and the AI
 interprets a score it did not invent (W457); P1.10 — a resource disabled by configuration is skipped,
-not scored as a failure, and the status follows the last completion that actually served (W458). The
-first ten Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
+not scored as a failure, and the status follows the last completion that actually served (W458); P1.11 —
+Change Control reads an identity, gates the override, and says what decided each change (W459). The
+first eleven Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -381,7 +382,25 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      recent model_health row is taken without checking success, and a config-DISABLED local
      model is recorded as a FAILURE (immune health dropped to 0.8 from one API call; the learning
      loop would deprioritise a healthy model on a flag). [R4.7, R4.8]
- 1.11 CHANGE CONTROL'S TIERS ARE PROSE — no auth dependency; submitted_by is free text; override
+ 1.11 [CLOSED W459 — the Change Control Agency reads an identity: the HTTP routes take the principal
+      (auth ON: the authenticated username is stamped and a different claimed name is kept only as
+      submitted_by_claimed; auth OFF: the caller's name is kept, by_verified false, never a
+      fabricated 'admin'); an override is authorised before anything is written — admin only under
+      auth, and a CRITICAL change additionally needs an explicit admin_decision_for_critical in BOTH
+      modes; override_decision accepts only approved/rejected; every decision records who asked
+      (by, by_verified) and what decided (decided_by); a CRITICAL change is NEVER decided by a review
+      (a model marker is only a recommendation — it is held for an explicit admin decision); a review
+      with no model marker says the organism-health threshold rule decided it, and with auth ON that
+      rule verdict is applied only for an admin requester; with auth ON a governed live lever or a
+      config reset is implemented only by an admin; the §17.5 fallback says 'no twin model — health
+      gate only'; every read-modify-write of a change record is a compare-and-set under the record's
+      lock (also the economy consume/restore, and the VSB evolution apply, which claims the approval
+      before mutating the genome); ids are validated before the store is touched; requires_ratification
+      deleted; the docstring rewritten to what the code does. Guards:
+      test_w459_cca_identity_and_override_gate_both_ways, test_w459_cca_decisions_are_serialised,
+      test_w459_external_cca_writers_compare_and_set; probe scripts/_w459_probe.mjs. The text below is
+      the record of what was wrong.]
+      CHANGE CONTROL'S TIERS WERE PROSE — no auth dependency; submitted_by is free text; override
      honoured for CRITICAL; the floor "AI review" is a health-threshold rule; twin pre-validation
      falls to health_gate_default; a human override is attributed to 'cca_ai'. [R3.2, R6.2]
  1.12 THE VISUAL COMPOSER TAB IS A DISCONNECTED CANVAS with fictional model names and a hard-coded
@@ -670,13 +689,22 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       clause: the floor serve is now RECORDED (without it nothing could ever displace a stale row), an
       unknown resource and a spend-policy refusal are skips too, and the model-health 'deprioritised'
       badge stopped describing a stricter rule than the one that routes.
- P1.11 [1.11 + the CCA latents · R3.2 R6.2] Change Control enforced. Auth on the CCA (and P2.6's routers);
+ P1.11 ✅ DONE W459 [1.11 + the CCA latents · R3.2 R6.2] Change Control enforced. Auth on the CCA (and P2.6's routers);
       submitted_by stamped server-side; override admin-only and never for CRITICAL without an
       explicit admin decision recorded as that principal (not 'cca_ai'); the docstring tiers
       implemented or deleted; twin fallback rendered "no twin model — health gate only";
       store_lock on review/twin-prevalidate/implement; requires_ratification gets a Board
       consumer or stops being set. ACCEPT: auth-ON test — non-admin override on CRITICAL → 403;
       audit_trail 'by' = the principal.
+      DELIVERED W459: both ACCEPT clauses in the guard (auth ON: a non-admin override on a CRITICAL
+      change → 403 and the record unmoved; the admin's decision entry by = the admin's username,
+      by_verified true), broken twenty-one ways — each blind failed the guards on its own. NOT DONE, and why:
+      (a) P2.6's other routers (heartbeat, genome, organism_status, sovereign_evolution, board) are
+      untouched — each has its own in-process callers and belongs to P2.6; (b) requires_ratification
+      was DELETED, not given a Board consumer — building a ratification queue is a product decision
+      for the Owner; (c) the Sanctum's copy no longer claims a UEG entry — adding a UEG write to the
+      CCA changes what the constitutional ledger holds and is the Owner's call; (d) _TIER_MAP is
+      unchanged (code_change and economy_material fall through to MEDIUM by default, not by decision).
  P1.12 [1.12 · R4.3] Visual Composer: wire Export/Deploy to /resources/swarm/define + run with the
       returned cascade id, or RETIRE the tab and link the /native-ai designer. Either way the
       "GaaS COMPLIANT" badge goes. ACCEPT: no unevaluated compliance badge in src/.
@@ -919,7 +947,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 378 tests; 52 session guards W419–W458, each broken and
+- integration_tests/test_mvp_spine.py — 381 tests; 55 session guards W419–W459, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -940,7 +968,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w458_probe.mjs (eighteen — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w459_probe.mjs (nineteen — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

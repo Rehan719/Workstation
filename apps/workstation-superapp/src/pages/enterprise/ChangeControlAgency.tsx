@@ -31,7 +31,12 @@ interface CCADetail extends CCARow {
   rationale?: string | null;
   review_result?: string | null;
   rollback_plan?: string | null;
-  twin_prevalidation?: { verdict?: string; source?: string } | null;
+  // W459 — source_label says whether a twin model produced the verdict; decision_source says what
+  // decided the review (a model marker, the organism-health rule, or an explicit admin decision)
+  twin_prevalidation?: { verdict?: string; source?: string; source_label?: string } | null;
+  decision_source?: string | null;
+  hold_reason?: string | null;
+  recommendation?: { verdict?: string; source?: string } | null;
 }
 
 interface CCAStats {
@@ -99,13 +104,21 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
   const toggle = async () => {
     const opening = !expanded;
     setExpanded(opening);
-    if (opening && !detail) {
+    if (opening) {   // W459 — refetch on every open: the record may have moved while the card was closed
       try {
         const r = await axios.get(`/api/v1/cca/${entry.cca_id}`);
         setDetail(r.data);
       } catch { /* the row still renders; detail pane shows an honest fallback below */ }
     }
   };
+
+  // W459 — the detail was fetched once, so after this page's own review/implement the decision and
+  // pre-validation lines stayed stale until a reload; refetch whenever the row itself moves
+  useEffect(() => {
+    if (!expanded) return;
+    axios.get(`/api/v1/cca/${entry.cca_id}`).then(r => setDetail(r.data)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry.status, entry.reviewed_at]);
 
   return (
     <motion.div
@@ -163,13 +176,41 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
               )}
 
               {detail?.twin_prevalidation?.verdict && (
-                <p className="text-xs font-mono text-white/40">
-                  §17.5 twin pre-validation:{' '}
+                <p className="text-xs font-mono text-white/40" data-testid="cca-twin-line">
+                  §17.5 pre-validation:{' '}
                   <span className={detail.twin_prevalidation.verdict === 'pass' ? 'text-green-400' : 'text-red-400'}>
                     {detail.twin_prevalidation.verdict.toUpperCase()}
-                  </span>{' '}({detail.twin_prevalidation.source})
+                  </span>{' '}
+                  {/* W459 — the label, not the raw token: on the floor there is NO twin model and the
+                      verdict is an organism health gate; the old line read as a simulation result */}
+                  <span className={detail.twin_prevalidation.source === 'twin_marker' ? 'text-white/40' : 'text-amber-400/80'}>
+                    ({detail.twin_prevalidation.source_label ?? detail.twin_prevalidation.source})
+                  </span>
                 </p>
               )}
+
+              {detail?.decision_source && (detail.decision_source === 'held_awaiting_admin' ? (
+                // W459 — a HELD record was decided by nothing; it must never read as "decided by"
+                <p className="text-xs font-mono text-amber-400/80" data-testid="cca-decision-source">
+                  held — awaiting an explicit admin decision
+                  {detail.recommendation?.verdict
+                    ? ` (recommendation: ${detail.recommendation.verdict}, from ${detail.recommendation.source === 'model_decision_marker' ? 'the reviewing model' : 'the organism-health rule'})`
+                    : ''}
+                  {detail.impact_tier === 'CRITICAL'
+                    ? ' — decide it in the Governance hub\u2019s Sovereign Sanctum'
+                    : ' — a review requested by an admin decides it'}
+                </p>
+              ) : (
+                <p className="text-xs font-mono text-white/40" data-testid="cca-decision-source">
+                  decided by:{' '}
+                  <span className={detail.decision_source === 'health_threshold_rule' ? 'text-amber-400/80' : 'text-white/60'}>
+                    {detail.decision_source === 'health_threshold_rule' ? 'organism-health threshold rule (not the model)'
+                      : detail.decision_source === 'model_decision_marker' ? 'the reviewing model\u2019s decision marker'
+                      : detail.decision_source === 'admin_override' ? 'an explicit admin decision'
+                      : detail.decision_source}
+                  </span>
+                </p>
+              ))}
 
               <div className="flex items-center gap-2 pt-1">
                 {isPending(entry.status) && (
@@ -179,7 +220,7 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/25 disabled:opacity-50"
                   >
                     {refreshing === entry.cca_id ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />}
-                    AI Review
+                    Request review
                   </button>
                 )}
                 {entry.status === 'approved' && (
@@ -226,7 +267,7 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
       // Auto-approval is signalled by the returned status (the backend sends no auto_approved key).
       setMsg(res.data.status === 'approved'
         ? '✓ Change auto-approved (LOW tier + healthy organism)'
-        : '✓ Change submitted — awaiting AI review');
+        : '✓ Change submitted — awaiting review');
       setTitle(''); setDesc(''); setType('config_minor');
       setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
     } catch (e: any) {
@@ -293,7 +334,7 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
                 <span>Tier: <span className={`font-semibold ${TIER_COLORS[CHANGE_TYPES.find(c=>c.value===type)?.tier as Tier ?? 'LOW'].split(' ')[0]}`}>
                   {CHANGE_TYPES.find(c => c.value === type)?.tier}
                 </span></span>
-                <span>— LOW tier changes are auto-approved when organism health ≥ 60%</span>
+                <span>— LOW tier changes are auto-approved when organism health ≥ 60% and immune threat is NOMINAL or ELEVATED</span>
               </div>
 
               {msg && (
@@ -354,6 +395,17 @@ export const ChangeControlAgency: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // W459 — a 403 is the governance gate answering, not an unreachable backend
+  const actionMessage = (e: any): string => {
+    const status = e?.response?.status;
+    const detail = e?.response?.data?.detail;
+    if (status === 403) return detail || 'Refused — an admin decision is required for this action.';
+    if (status === 401) return 'Sign in required — this action records an identity.';
+    if (status === 409) return detail || 'The record changed while this action was running — reload and retry.';
+    if (status === 503) return detail || 'The change record is busy — retry in a moment.';
+    return detail || 'Action failed — the backend may be unavailable.';
+  };
+
   const runAction = async (id: string, act: () => Promise<unknown>) => {
     setActionId(id); setActionError(null);
     try {
@@ -361,12 +413,13 @@ export const ChangeControlAgency: React.FC = () => {
       await load();
     } catch (e: any) {
       // Surface the real reason — the 409s here (twin pre-validation) are meaningful governance messages.
-      setActionError({ id, message: String(e?.response?.data?.detail ?? 'Request failed — backend unreachable.') });
+      setActionError({ id, message: actionMessage(e) });
     } finally { setActionId(null); }
   };
 
   const triggerReview = (id: string) =>
-    // ReviewDecision body is required by the endpoint; empty overrides = "let the AI decide".
+    // ReviewDecision body is required by the endpoint; no override = "request a review" (a model
+    // marker, else the organism-health rule — CRITICAL is always held for an explicit admin decision)
     runAction(id, () => axios.post(`/api/v1/cca/${id}/review`, { reviewer_notes: 'Requested via the Change Control Agency UI' }));
 
   const triggerImplement = (id: string) =>
@@ -393,7 +446,7 @@ export const ChangeControlAgency: React.FC = () => {
           <GitBranch size={22} className="text-purple-400" />
           Change Control Agency
         </h1>
-        <p className="text-sm text-white/40 mt-1">Governance gateway — every organism change is tier-gated, AI-reviewed, and logged</p>
+        <p className="text-sm text-white/40 mt-1">Governance gateway — every organism change is tier-gated, recorded and audit-trailed; a review is requested for MEDIUM and above, and each record says what decided it</p>
       </div>
 
       {/* Stats row */}

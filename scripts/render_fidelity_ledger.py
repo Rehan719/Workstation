@@ -117,6 +117,18 @@ STATUS = {
             "spend guard), and complete() annotates resources_tried 'ollama (disabled by config, skipped)' while "
             "recording nothing — no learning-loop row, no immune ai_failure, no breaker failure. One model=local "
             "call now leaves immune health at 1.0. A REAL failure of an enabled resource still records all three.",
+    "R3.2": "FIXED W459 (P1.11) — the Change Control Agency reads an identity: the routes stamp the authenticated "
+            "principal (a claimed name is kept only as submitted_by_claimed), an override is admin-only under auth "
+            "and a CRITICAL decision needs an explicit admin_decision_for_critical in both modes, every decision "
+            "records by / by_verified / decided_by (never 'cca_ai' for a human), a review with no model marker says "
+            "the organism-health threshold rule decided it and a CRITICAL one is HELD, and every mutation of a "
+            "change record is a compare-and-set under its lock. Not in this round: P2.6's other routers, a Board "
+            "ratification workflow (the unconsumed flag was deleted), a UEG write.",
+    "R6.2": "FIXED W459 (P1.11) — the §17.5 arms-length half: the pre-validation fallback no longer claims a "
+            "digital-twin forward simulation (method / source_label: 'no twin model — health gate only'), a "
+            "human override is attributed to the principal rather than 'cca_ai', and with auth ON an unauthenticated "
+            "caller can no longer submit, override or implement at all. The user-isolation half for P2.6's routers "
+            "remains open.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

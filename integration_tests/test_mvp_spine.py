@@ -3727,9 +3727,15 @@ def test_cca_immune_reconfigurator(client):
     # HIGH → metabolic_throttle, which HAS a wired consumer (heartbeat) — genuinely implemented
     h = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "HIGH"}).json()
     assert h["status"] == "implemented" and h["applied"]
-    # CRITICAL containment is MEDIUM-tier + flagged for Board ratification
+    # CRITICAL containment is MEDIUM-tier. W459 — it no longer carries `requires_ratification`:
+    # that flag was set here and READ NOWHERE, so the record claimed a Board ratification process
+    # that does not exist while marking itself implemented in the same request. What it does carry
+    # is what decided it — the reflex, not the caller.
     cr = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "CRITICAL"}).json()
-    assert cr["impact_tier"] == "MEDIUM" and cr["requires_ratification"] is True
+    assert cr["impact_tier"] == "MEDIUM" and "requires_ratification" not in cr
+    cr_rec = client.get(f"/api/v1/cca/{cr['cca_id']}").json()
+    assert "requires_ratification" not in cr_rec
+    assert any(a.get("decided_by") == "auto_approve_immune_defence" for a in cr_rec["audit_trail"])
     # a submitted change records the live immune threat that governed the decision
     assert "immune_threat_at_submit" in rec
     # reset the risky levers so the suite leaves clean organism state — through the GOVERNED path
@@ -9569,3 +9575,474 @@ def test_w458_disabled_is_not_failed_and_status_follows_success(client, monkeypa
     monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "1")
     with __import__("pytest").raises(ORCH.ResourceSkipped):
         orch._external_budget_check("anthropic")
+
+
+def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
+    """§5 / §17.5 (ledger 1.11 · R3.2 R6.2) — Change Control's tiers were prose. Not one of its routes
+    read an identity: `submitted_by` was free text, any caller could override a CRITICAL constitutional
+    change, the decision was stamped "cca_ai" even when a human overrode it, a review served by the
+    deterministic floor was recorded as an AI review when the verdict came from an organism-health
+    threshold rule, and the §17.5 record claimed a "digital-twin forward simulation" for a health gate
+    with no twin model behind it.
+
+    Every review branch is FORCED (the serving resource is substituted per case) so no assertion is
+    conditional on what happened to serve. Both ways, in both auth modes: the gate refuses what it
+    must, and the legitimate paths — a review, the read pages, the in-process callers — still work.
+    """
+    import asyncio as _aio
+    import json as _json
+    import pytest as _pytest
+    from agentic_core.auth import core as auth_core
+    from agentic_core.api import change_control as CC
+    if not auth_core._AUTH_DEPS_OK:
+        _pytest.skip("auth crypto deps not installed")
+
+    def _submit(headers=None, **kw):
+        return client.post("/api/v1/cca/submit", json={"title": "W459 probe", "description": "probe", **kw},
+                           headers=headers or {})
+
+    def _rec(cid, headers=None):
+        return client.get(f"/api/v1/cca/{cid}", headers=headers or {}).json()
+
+    def _decisions(rec):
+        return [e for e in rec["audit_trail"] if e["event"] in ("approved", "rejected")]
+
+    serve = {"text": "an assessment with no decision marker"}
+    async def _serving_resource(prompt, agent=None, **kw):
+        return serve["text"]
+    monkeypatch.setattr(CC.gateway, "query", _serving_resource)
+    health = {"h": 0.87}
+    _real_ctx = CC.biobus.organism_context
+    def _ctx():
+        c = dict(_real_ctx())
+        c["composite_health"] = health["h"]
+        return c
+    monkeypatch.setattr(CC.biobus, "organism_context", _ctx)
+
+    # ── LEG A — auth OFF (the shipped single-user default; the half CI runs) ──────────────────
+    assert auth_core.auth_enabled() is False
+    a = _submit(change_type="constitutional", submitted_by="i-claim-to-be-someone-else",
+                title="W459 constitutional probe").json()
+    cid = a["cca_id"]
+    assert a["impact_tier"] == "CRITICAL", a
+    rec = _rec(cid)
+    assert rec["submitted_by"] == "i-claim-to-be-someone-else"      # back-compat: the name is kept
+    assert rec["audit_trail"][0]["by_verified"] is False and rec["submitted_by_verified"] is False
+    assert "submitted_by_claimed" not in rec
+
+    r403 = client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": "approved"})
+    assert r403.status_code == 403 and "admin_decision_for_critical" in r403.json()["detail"]
+    held = _rec(cid)
+    assert held["status"] == "submitted" and held["decision"] is None and not _decisions(held)
+
+    ok = client.post(f"/api/v1/cca/{cid}/review", json={
+        "override_decision": "approved", "admin_decision_for_critical": True,
+        "reviewer_notes": "explicit owner decision"}).json()
+    assert ok["decision"] == "approved" and ok["decision_source"] == "admin_override"
+    (last,) = _decisions(_rec(cid))
+    assert last["by"] == "single-user-mode" and last["by_verified"] is False     # never a fabricated "admin"
+    assert last["decided_by"] == "admin_override" and last["via"] == "admin_override"
+
+    # the vocabulary: a decision is one of two words, and a body is required
+    mid = _submit(change_type="config_major", title="W459 medium probe").json()["cca_id"]
+    for bad in ("implemented", "banana"):
+        assert client.post(f"/api/v1/cca/{mid}/review", json={"override_decision": bad}).status_code == 422
+    assert client.post(f"/api/v1/cca/{mid}/review").status_code == 422
+    assert _rec(mid)["status"] == "submitted"
+
+    # no marker, healthy → the RULE decides, says so, and states the comparison it actually made
+    serve["text"], health["h"] = "an assessment with no decision marker", 0.87
+    rv = client.post(f"/api/v1/cca/{mid}/review", json={}).json()
+    assert rv["decision"] == "approved" and rv["decision_source"] == "health_threshold_rule"
+    m = _rec(mid)
+    assert m["review_result"].startswith("DECIDED BY RULE, NOT BY THE MODEL: no [DECISION: …] marker was returned")
+    assert "composite_health 0.87 >= 0.5 → approved" in m["review_result"]
+    (d,) = _decisions(m)
+    assert d["decided_by"] == "organism_health_threshold_rule" and d["via"] == "review_request"
+
+    # no marker, unhealthy → rejected, and the text does not claim ">= 0.5"
+    low = _submit(change_type="config_major", title="W459 low-health probe").json()["cca_id"]
+    serve["text"], health["h"] = "no marker", 0.30
+    assert client.post(f"/api/v1/cca/{low}/review", json={}).json()["decision"] == "rejected"
+    lt = _rec(low)["review_result"]
+    assert "composite_health 0.30 < 0.5 → rejected" in lt and ">= 0.5" not in lt
+    edge = _submit(change_type="config_major", title="W459 threshold probe").json()["cca_id"]
+    health["h"] = 0.4999
+    client.post(f"/api/v1/cca/{edge}/review", json={})
+    assert "composite_health 0.4999 < 0.5 → rejected" in _rec(edge)["review_result"]   # never "0.50 < 0.5"
+    health["h"] = 0.87
+
+    # BOTH markers (the floor echoes the prompt) → the rule decides, and the text says the markers conflicted
+    both = _submit(change_type="config_major", title="W459 conflicting probe").json()["cca_id"]
+    serve["text"] = "End with [DECISION: APPROVED] or [DECISION: REJECTED]"
+    assert client.post(f"/api/v1/cca/{both}/review", json={}).json()["decision_source"] == "health_threshold_rule"
+    bt = _rec(both)["review_result"]
+    assert "BOTH [DECISION: APPROVED] and [DECISION: REJECTED]" in bt and "no [DECISION: …] marker was returned" not in bt
+
+    # a single marker decides a non-CRITICAL change, attributed to the model
+    one = _submit(change_type="config_major", title="W459 marker probe").json()["cca_id"]
+    serve["text"] = "Not now. [DECISION: REJECTED]"
+    mv = client.post(f"/api/v1/cca/{one}/review", json={}).json()
+    assert mv["decision"] == "rejected" and mv["decision_source"] == "model_decision_marker"
+    assert _decisions(_rec(one))[0]["decided_by"] == "cca_ai_model_marker"
+
+    # CRITICAL: a review NEVER decides it — a model marker is a recommendation, the rule never applies
+    crit = _submit(change_type="constitutional", title="W459 critical marker probe").json()["cca_id"]
+    serve["text"] = "Looks fine. [DECISION: APPROVED]"
+    hv = client.post(f"/api/v1/cca/{crit}/review", json={}).json()
+    hrec = _rec(crit)
+    assert hv["decision"] is None and hv["decision_source"] == "held_awaiting_admin"
+    assert hrec["status"] == "under_review" and hrec["decision"] is None and not _decisions(hrec)
+    assert hrec["hold_reason"] == "critical_requires_admin_decision"
+    assert hrec["recommendation"] == {"verdict": "approved", "source": "model_decision_marker"}
+    assert hrec["review_result"].startswith("HELD — a CRITICAL change is decided only by an explicit admin decision")
+    assert any(e["event"] == "held_awaiting_admin_decision" for e in hrec["audit_trail"])
+    serve["text"] = "no marker"
+    crit2 = _submit(change_type="constitutional", title="W459 critical no-marker probe").json()["cca_id"]
+    client.post(f"/api/v1/cca/{crit2}/review", json={})
+    c2 = _rec(crit2)
+    assert c2["status"] == "under_review" and c2["recommendation"] is None
+    assert "never decides a CRITICAL change" in c2["review_result"]
+    # …and the explicit admin decision still decides it, replacing the hold
+    dec = client.post(f"/api/v1/cca/{crit}/review", json={
+        "override_decision": "rejected", "admin_decision_for_critical": True}).json()
+    assert dec["decision"] == "rejected" and dec["decision_source"] == "admin_override"
+    decided = _rec(crit)
+    assert "hold_reason" not in decided and "recommendation" not in decided        # nothing contradicts the decision
+    assert any(e["event"] == "held_awaiting_admin_decision" and e["recommendation"] for e in decided["audit_trail"])
+
+    # an id that is not ONE safe path segment is refused before the store is touched
+    import os as _os
+    outside = CC._CCA_STORE.parent / "w459_outside_probe"
+    for bad_id in ("..%5Cw459_outside_probe%5Cx", "nope%2A"):
+        assert client.post(f"/api/v1/cca/{bad_id}/implement").status_code == 404
+    assert not outside.exists()
+    assert CC._load_change("..\\w459_outside_probe") is None and not CC._valid_cca_id("a/b")
+
+    # §17.5: with no twin marker the record says there is no twin model
+    hid = _submit(change_type="security_change", title="W459 high probe").json()["cca_id"]
+    serve["text"] = "a simulation narrative with no twin marker"
+    client.post(f"/api/v1/cca/{hid}/review", json={"override_decision": "approved"})
+    tp = _rec(hid)["twin_prevalidation"]
+    assert tp["source"] == "health_gate_default" and tp["source_label"] == "no twin model — health gate only"
+    assert "no twin model" in tp["method"] and "forward simulation" not in tp["method"]
+
+    # the in-process callers have no request and no principal — unchanged
+    ip = _aio.run(CC.submit_change(CC.SubmitChangeRequest(
+        title="W459 in-process probe", change_type="config_major", description="no request at all",
+        submitted_by="compliance_screen")))
+    assert _rec(ip["cca_id"])["submitted_by"] == "compliance_screen" and ip["impact_tier"] == "MEDIUM"
+
+    # ── LEG B — auth ON: the ACCEPT clause ───────────────────────────────────────────────────
+    users_before = _json.loads(_json.dumps(auth_core._load_users()))
+    users = auth_core._load_users()
+    for uname, pw, role in (("w459-user", "pw-user", "user"), ("w459-admin", "pw-admin", "admin")):
+        users[uname] = {"user_id": uname, "username": uname,
+                        "hashed_password": auth_core._pwd_ctx.hash(pw), "role": role,
+                        "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    try:
+        assert auth_core.auth_enabled() is True
+        assert client.get("/api/v1/vsb").status_code == 401          # the instrument is live
+
+        def _hdr(u, p):
+            r = client.post("/api/v1/auth/token", data={"username": u, "password": p})
+            assert r.status_code == 200, r.text
+            return {"Authorization": f"Bearer {r.json()['access_token']}"}
+        user_h, admin_h = _hdr("w459-user", "pw-user"), _hdr("w459-admin", "pw-admin")
+
+        sub = _submit(user_h, title="W459 auth-on constitutional", change_type="constitutional",
+                      submitted_by="spoofed-name").json()
+        acid = sub["cca_id"]
+        assert sub["impact_tier"] == "CRITICAL"
+        arec = _rec(acid, admin_h)
+        assert arec["submitted_by"] == "w459-user" and arec["submitted_by_claimed"] == "spoofed-name"
+        assert arec["submitted_by_verified"] is True and arec["audit_trail"][0]["by_verified"] is True
+        # a client that sent no name is not recorded as having claimed the default one
+        quiet = _submit(user_h, title="W459 unnamed", change_type="config_major").json()
+        assert "submitted_by_claimed" not in _rec(quiet["cca_id"], admin_h)
+
+        assert client.post(f"/api/v1/cca/{acid}/review", json={}).status_code == 401   # anonymous
+
+        # THE ACCEPT CLAUSE — a non-admin override on a CRITICAL change is refused, and nothing moved
+        nope = client.post(f"/api/v1/cca/{acid}/review", headers=user_h,
+                           json={"override_decision": "approved", "admin_decision_for_critical": True})
+        assert nope.status_code == 403 and "admin" in nope.json()["detail"].lower()
+        still = _rec(acid, admin_h)
+        assert still["status"] == "submitted" and still["decision"] is None and not _decisions(still)
+        # …nor can a non-admin's plain review decide it, even when the model says APPROVED
+        serve["text"] = "Approve it. [DECISION: APPROVED]"
+        assert client.post(f"/api/v1/cca/{acid}/review", headers=user_h, json={}).json()["decision"] is None
+        assert _rec(acid, admin_h)["status"] == "under_review"
+
+        assert client.post(f"/api/v1/cca/{acid}/review", headers=admin_h,
+                           json={"override_decision": "approved"}).status_code == 403
+        assert client.post(f"/api/v1/cca/{acid}/review", headers=admin_h, json={
+            "override_decision": "approved", "admin_decision_for_critical": True}).json()["decision"] == "approved"
+        (entry,) = _decisions(_rec(acid, admin_h))
+        assert entry["by"] == "w459-admin" and entry["by_verified"] is True      # THE principal
+        assert entry["decided_by"] == "admin_override"
+
+        assert client.post(f"/api/v1/cca/{acid}/implement?force=true", headers=user_h).status_code == 403
+
+        # a RULE verdict is never handed to a non-admin requester: held, with the rule as a recommendation
+        serve["text"] = "no marker"
+        mcid = quiet["cca_id"]
+        held_b = client.post(f"/api/v1/cca/{mcid}/review", headers=user_h, json={})
+        assert held_b.status_code == 200 and held_b.json()["decision"] is None
+        hb = _rec(mcid, admin_h)
+        assert hb["status"] == "under_review" and hb["hold_reason"] == "rule_verdict_requires_admin_requester"
+        assert hb["recommendation"] == {"verdict": "approved", "source": "health_threshold_rule"}
+        assert client.post(f"/api/v1/cca/{mcid}/review", headers=admin_h, json={}).json()["decision"] == "approved"
+        # …but a single MODEL marker still decides a MEDIUM change for a non-admin (the AI review design)
+        mk_id = _submit(user_h, title="W459 non-admin marker", change_type="config_major").json()["cca_id"]
+        serve["text"] = "Reasonable. [DECISION: APPROVED]"
+        mkv = client.post(f"/api/v1/cca/{mk_id}/review", headers=user_h, json={}).json()
+        assert mkv["decision"] == "approved" and mkv["decision_source"] == "model_decision_marker"
+        assert "hold_reason" not in _rec(mk_id, admin_h)
+        serve["text"] = "no marker"
+
+        # a governed live lever is implemented only by an admin (the same bar as the immune reflex)
+        lever = _submit(user_h, title="W459 governed lever", change_type="config_minor",
+                        config_change={"section": "organism", "key": "metabolic_throttle", "value": False}).json()
+        assert lever["impact_tier"] == "MEDIUM"
+        assert client.post(f"/api/v1/cca/{lever['cca_id']}/review", headers=admin_h, json={}).json()["decision"] == "approved"
+        refused = client.post(f"/api/v1/cca/{lever['cca_id']}/implement", headers=user_h)
+        assert refused.status_code == 403 and "governed live lever" in refused.json()["detail"]
+        assert _rec(lever["cca_id"], admin_h)["status"] == "approved"
+        assert client.post(f"/api/v1/cca/{lever['cca_id']}/implement", headers=admin_h).status_code == 200
+        # a config RESET is a governed act too (it flips every wired lever) — refused to a non-admin;
+        # it is approved but deliberately never implemented here
+        rst = _submit(user_h, title="W459 config reset", change_type="config_minor",
+                      config_change={"reset": True}).json()
+        assert client.post(f"/api/v1/cca/{rst['cca_id']}/review", headers=admin_h, json={}).json()["decision"] == "approved"
+        assert client.post(f"/api/v1/cca/{rst['cca_id']}/implement", headers=user_h).status_code == 403
+        assert _rec(rst["cca_id"], admin_h)["status"] == "approved"
+
+        # NOT blanket-muted: a non-admin still reads the queue and still requests reviews
+        assert client.get("/api/v1/cca", headers=user_h).status_code == 200
+        assert client.get("/api/v1/cca/queue", headers=user_h).status_code == 200
+        assert client.post("/api/v1/cca/immune-reconfigure", headers=user_h, json={}).status_code == 403
+        assert client.post("/api/v1/cca/immune-reconfigure", headers=admin_h, json={}).status_code == 200
+        imm = client.post("/api/v1/cca/immune-reconfigure", headers=admin_h, json={"simulate_threat": "ELEVATED"}).json()
+        first = _rec(imm["cca_id"], admin_h)["audit_trail"][0]
+        assert first["by"] == "immune_system" and first["requested_by"] == "w459-admin" and first["by_verified"] is True
+    finally:
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        auth_core._save_users(users_before)                       # no test accounts left behind
+    assert auth_core.auth_enabled() is False
+    assert "w459-admin" not in auth_core._load_users()
+
+    # the surfaces say what the backend does — asserted on the RENDER expressions, not on type names
+    from pathlib import Path
+    cca_tsx = Path("apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "twin_prevalidation.source_label ??" in cca_tsx                     # rendered, not just typed
+    assert "detail.decision_source === 'held_awaiting_admin'" in cca_tsx and "held — awaiting an explicit admin decision" in cca_tsx
+    assert "if (status === 403)" in cca_tsx and "message: actionMessage(e)" in cca_tsx
+    assert "}, [entry.status, entry.reviewed_at]);" in cca_tsx and "if (opening) {" in cca_tsx   # the detail refetches
+    assert "'organism-health threshold rule (not the model)'" in cca_tsx
+    assert "ai review" not in cca_tsx.lower() and "ai-reviewed" not in cca_tsx.lower()
+    gov_tsx = Path("apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    assert "admin_decision_for_critical: true," in gov_tsx                    # the Sanctum vote is explicit
+    assert "c.impact_tier === 'CRITICAL'" in gov_tsx and "apiJson('/api/v1/cca/queue')" in gov_tsx
+    assert "tamper-evident UEG ledger" not in gov_tsx
+    assert "{sanctumErr && (" in gov_tsx and "data-testid=\"sanctum-error\"" in gov_tsx          # errors are shown
+
+
+def test_w459_cca_decisions_are_serialised(monkeypatch):
+    """Two decisions on ONE change used to race: each loaded the record, ran its own await, and wrote
+    its whole stale dict back. The mutation is now a compare-and-set inside the record's lock, and the
+    lock is never held across an await. Both halves are asserted: the coroutine race (compare-and-set)
+    AND a thread race on _update_change itself (which fails if the lock is removed)."""
+    import asyncio as _aio
+    import threading
+    import time as _t
+    from fastapi import HTTPException
+    from agentic_core.api import change_control as CC
+
+    async def _slow(prompt, agent=None, **kw):
+        await _aio.sleep(0.4)
+        return "a review with no decision marker"
+    monkeypatch.setattr(CC.gateway, "query", _slow)
+
+    async def _race():
+        sub = await CC.submit_change(CC.SubmitChangeRequest(
+            title="W459 race", change_type="config_major", description="two decisions, one record"))
+        cid = sub["cca_id"]
+        t0 = _t.monotonic()
+        out = await _aio.gather(
+            CC.review_change(cid, CC.ReviewDecision()),                               # awaits the model
+            CC.review_change(cid, CC.ReviewDecision(override_decision="rejected")),   # decides at once
+            return_exceptions=True)
+        return cid, out, _t.monotonic() - t0
+
+    cid, (slow, fast), elapsed = _aio.run(_race())
+    winners = [r for r in (slow, fast) if isinstance(r, dict)]
+    losers = [r for r in (slow, fast) if isinstance(r, HTTPException)]
+    assert len(winners) == 1 and len(losers) == 1, (slow, fast)
+    assert losers[0].status_code == 409 and "concurrently" in losers[0].detail
+    rec = CC._load_change(cid)
+    assert rec["status"] in ("approved", "rejected") and rec["decision"] == rec["status"]
+    assert sum(1 for e in rec["audit_trail"] if e["event"] == "review_started") == 2  # both are recorded
+    assert sum(1 for e in rec["audit_trail"] if e["event"] in ("approved", "rejected")) == 1
+    assert elapsed < 3.0, f"{elapsed:.2f}s — the lock must not be held across the model await"
+
+    # the lock itself: two THREADS mutating one record must both land (a removed lock loses one)
+    def _append(tag):
+        def _m(fresh):
+            _t.sleep(0.3)
+            fresh.setdefault("audit_trail", []).append({"event": f"w459_thread_{tag}"})
+        return _m
+    errors = []
+    def _run(tag):
+        try:
+            CC._update_change(cid, _append(tag))
+        except Exception as e:      # pragma: no cover — surfaced below
+            errors.append(e)
+    ths = [threading.Thread(target=_run, args=(n,)) for n in (1, 2)]
+    for th in ths:
+        th.start()
+    for th in ths:
+        th.join()
+    assert not errors, errors
+    events = [e["event"] for e in CC._load_change(cid)["audit_trail"]]
+    assert "w459_thread_1" in events and "w459_thread_2" in events
+
+    # a record lock held by ANOTHER PROCESS (a fresh lockfile beside the record) that cannot be acquired
+    # is "busy" (503) within the short timeout, never a 10s event-loop freeze. (In-process threads
+    # serialise on the per-path RLock, which has no deadline — that half is the thread race above.)
+    lockfile = CC._cca_path(cid).with_suffix(".json.lock")
+    lockfile.write_text("held by another process", encoding="utf-8")
+    t0 = _t.monotonic()
+    try:
+        CC._update_change(cid, lambda fresh: None)
+        assert False, "a held lock must not be acquired"
+    except HTTPException as busy:
+        assert busy.status_code == 503 and "busy" in busy.detail
+    finally:
+        lockfile.unlink()
+    assert 2.0 <= _t.monotonic() - t0 <= 6.0
+
+    # a TimeoutError raised INSIDE the section keeps its own origin
+    def _inner(fresh):
+        raise TimeoutError("store_lock timeout on the organism config store")
+    try:
+        CC._update_change(cid, _inner)
+        assert False
+    except TimeoutError as inner:
+        assert "organism config" in str(inner)
+
+    # the strict loader: a torn record is absent (and listed nowhere), never half-read
+    torn = "cca-w459torn0001"
+    CC._cca_path(torn).write_text('{"cca_id": "cca-w459torn0001", "status": "appr', encoding="utf-8")
+    assert CC._load_change(torn) is None and all(r["cca_id"] != torn for r in CC._list_changes())
+    CC._cca_path(torn).unlink()
+
+
+def test_w459_external_cca_writers_compare_and_set(monkeypatch):
+    """The economy consume/restore and the VSB evolution apply write change records too. Each must be a
+    compare-and-set: a record that moved between the scan and the write is left alone and the caller is
+    told; a busy record is never silently skipped; and the VSB apply CLAIMS the approval before it
+    mutates the genome, so a lost claim mutates nothing."""
+    import json as _json
+    from fastapi import HTTPException
+    from agentic_core.config import atomic_write_json
+    from agentic_core.api import change_control as CC
+    from agentic_core.api import vsb as V
+    from agentic_core.economy import governance as GOV
+
+    real_update = CC._update_change
+
+    def _move_then(status):
+        def _upd(cca_id, mutate):
+            r = CC._load_change(cca_id)
+            r["status"] = status
+            atomic_write_json(CC._cca_path(cca_id), r)
+            return real_update(cca_id, mutate)
+        return _upd
+
+    events = []
+    monkeypatch.setattr(GOV, "_ueg_log", lambda e: events.append(e) or None)
+
+    # ── economy: an approval that is decided elsewhere between the scan and the consume is NOT spent ──
+    vsb_id = "w459-cas-economy"
+    ecid = "cca-w459cas0001"
+    atomic_write_json(CC._cca_path(ecid), {
+        "cca_id": ecid, "title": GOV._HOLD_TITLE_PREFIX + vsb_id, "change_type": "economy_material",
+        "impact_tier": "MEDIUM", "status": "approved", "decision": "approved",
+        "submitted_at": "2026-09-13T00:00:00Z", "description": "", "audit_trail": []})
+    monkeypatch.setattr(CC, "_update_change", _move_then("rejected"))
+    out = GOV._materiality_gate(vsb_id, GOV.MATERIALITY_WST * 10, "cycle")
+    assert out and out["status"] == "held_for_change_control" and "concurrently" in out["note"]
+    moved = CC._load_change(ecid)
+    assert moved["status"] == "rejected"
+    assert not any(e.get("event") == "consumed_by_economy_cycle" for e in moved["audit_trail"])
+
+    # ── economy: a restore that meets a busy record says so durably ──
+    moved["status"] = "implemented"
+    moved["implemented_at"] = "2026-09-13T00:00:01Z"
+    atomic_write_json(CC._cca_path(ecid), moved)
+    def _busy(cca_id, mutate):
+        raise HTTPException(status_code=503, detail="Change record is busy")
+    monkeypatch.setattr(CC, "_update_change", _busy)
+    GOV._restore_consumed_approval(vsb_id, "cycle", "w459 action never ran")
+    assert any(e.get("type") == "economy.materiality_approval_restore_failed" for e in events), events
+    assert CC._load_change(ecid)["status"] == "implemented"
+
+    # ── VSB evolution apply: claim first, mutate only on a won claim ──
+    vid, vcid = "w459-evo-vsb", "cca-w459evo0001"
+    def _record(status):
+        atomic_write_json(CC._cca_path(vcid), {
+            "cca_id": vcid, "title": "W459 evolution", "change_type": "vsb_evolution", "impact_tier": "MEDIUM",
+            "status": status, "submitted_at": "2026-09-13T00:00:00Z", "description": "", "audit_trail": []})
+    store = {"vsb": {"vsb_id": vid, "name": "EvoCo", "evolution_pending_cca": vcid, "epigenetic_traits": {},
+                     "evolution_proposals": [{"trait": "resilience", "proposed_change": "more buffer"}]}}
+    saves = []
+    monkeypatch.setattr(V, "_load_vsb", lambda i: _json.loads(_json.dumps(store["vsb"])))
+    def _save(v):
+        saves.append(v)
+        store["vsb"] = v
+    monkeypatch.setattr(V, "_save_vsb", _save)
+    monkeypatch.setattr(V, "_gate_block_reason", lambda v: None)
+    monkeypatch.setattr(V, "mark_repo_stale", lambda *a, **k: True)
+
+    _record("approved")
+    monkeypatch.setattr(CC, "_update_change", _busy)                    # busy → nothing mutated
+    assert V.apply_approved_evolution(vid)["reason"] == "cca_busy"
+    assert not saves and store["vsb"]["evolution_pending_cca"] == vcid
+
+    monkeypatch.setattr(CC, "_update_change", _move_then("implemented"))  # lost claim → nothing mutated
+    assert V.apply_approved_evolution(vid)["reason"] == "cca_status_implemented"
+    assert not saves and store["vsb"]["evolution_pending_cca"] == vcid
+
+    _record("approved")
+    monkeypatch.setattr(CC, "_update_change", real_update)               # a won claim applies once
+    res = V.apply_approved_evolution(vid)
+    assert res["applied"] is True and res["mutations_applied"] == 1 and len(saves) == 1
+    vrec = CC._load_change(vcid)
+    assert vrec["status"] == "implemented"
+    assert [e["by"] for e in vrec["audit_trail"] if e["event"] == "implemented"] == ["vsb_evolution_apply"]
+    assert V.apply_approved_evolution(vid)["reason"] == "no_pending_evolution"
+
+    # a claim won but a genome save that fails releases the approval, audibly
+    _record("approved")
+    store["vsb"]["evolution_pending_cca"] = vcid
+    def _boom(v):
+        raise OSError("disk full")
+    monkeypatch.setattr(V, "_save_vsb", _boom)
+    try:
+        V.apply_approved_evolution(vid)
+        assert False, "the save failure must surface"
+    except OSError:
+        pass
+    released = CC._load_change(vcid)
+    assert released["status"] == "approved"
+    assert any(e["event"] == "apply_failed_claim_released" for e in released["audit_trail"])
+
+    # a stranded claim (record implemented by the apply, no mutation carrying its id) is named
+    monkeypatch.setattr(V, "_save_vsb", _save)
+    atomic_write_json(CC._cca_path(vcid), dict(released, status="implemented", audit_trail=released["audit_trail"] + [
+        {"event": "implemented", "ts": "2026-09-13T00:00:09Z", "by": "vsb_evolution_apply", "by_verified": False}]))
+    store["vsb"] = dict(store["vsb"], evolution_pending_cca=vcid, applied_mutations=[])
+    assert V.apply_approved_evolution(vid)["reason"] == "claim_stranded"

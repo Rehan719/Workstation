@@ -5198,3 +5198,104 @@ nine, including claims about pre-existing behaviour this round does not touch.
 
 **Docs:** ledger v3 status R4.7 + R4.8 FIXED W458; prompt ledger 1.10 CLOSED and P1.10 ✅ DONE;
 vision §16; living plan §4/§8.
+
+### W459 — delivery-plan P1.11: Change Control enforced — identity, the override gate, and what decided each change
+
+**What was wrong (ledger 1.11 · R3.2 R6.2).** The Change Control Agency's tiers were prose. Not one of
+its twelve routes read an identity: `submitted_by` was free text, and with authentication switched
+on an unauthenticated caller could still submit a CRITICAL constitutional change, override it to
+approved and implement it. Every decision was stamped `"by": "cca_ai"`, including a human's override.
+A review served by the deterministic floor was presented as an AI review when the verdict actually
+came from an organism-health threshold rule, and that rule silently REJECTED any CRITICAL change
+reviewed without an override — terminally, since there is no reopen route. The §17.5 record claimed a
+"digital-twin forward simulation" for a health gate with no twin model behind it. `override_decision`
+accepted any word, so `"implemented"` jumped a CRITICAL change past approval with nothing applied.
+Every load-modify-write on a change record was unserialised. The module docstring promised a GaaS
+gate, a 24-hour cooling period and a manual flag that did not exist, and the immune reflex flagged
+changes "for Board ratification" with no consumer anywhere.
+
+**What changed (backend).** The HTTP routes read the principal; the in-process core `submit_change`
+keeps its name and takes no dependency, so the compliance screen, the VSB evolution gate, homeostasis,
+the Sovereign Evolution Office and the transformation pipeline keep working. With auth ON the record
+is stamped with the authenticated username (a different claimed name survives only as
+`submitted_by_claimed`); with auth OFF the caller's name is kept, `by_verified` is false, and no
+synthetic "admin" is ever written. An override is authorised before anything is written: admin-only
+under auth, and a CRITICAL change additionally needs an explicit `admin_decision_for_critical` in both
+modes. `override_decision` accepts only approved or rejected. Every decision records who asked (`by`,
+`by_verified`, `via`) and what decided (`decided_by`). What a review can decide is explicit: a CRITICAL
+change is never decided by a review — a model marker is kept only as a recommendation and the change
+is held for an admin; a single model marker decides a MEDIUM or HIGH change; with no marker, or
+conflicting markers, the organism-health rule decides and the record says so, with the comparison it
+actually made — and with auth ON a rule verdict is applied only when an admin requested the review.
+With auth ON a governed live lever or a config reset is implemented only by an admin, the same bar as
+the immune reflex that applies those levers. The §17.5 fallback reads "no twin model — health gate
+only". Every mutation of a change record is a compare-and-set under the record's lock, with no await
+inside it and a three-second acquire timeout reported as busy; the economy consume and restore use the
+same compare-and-set, and a failed restore is logged durably; the VSB evolution apply claims the
+approval before mutating the genome, releases the claim audibly if the save fails, and names a
+stranded claim instead of reporting it done. Change ids are validated as a single safe segment before
+the store is touched, the loader is strict with a logged error on corruption and a short retry on a
+Windows sharing violation, and the listing reads through the same loader. `requires_ratification` is
+deleted, the docstring says what the code does, and stage 7 of the transformation pipeline reads the
+keys the CCA actually returns.
+
+**Frontend:** the Change Control page renders the pre-validation label and what decided each change;
+a held record reads "held — awaiting an explicit admin decision", with the recommendation and where to
+decide it, and never "decided by"; the button says "Request review"; a 403 reads as a refusal rather
+than an unreachable backend; the detail refetches when the card opens or the row moves. The Sanctum
+sends the explicit CRITICAL acknowledgement, lists every pending CRITICAL change from the uncapped
+queue with its type, shows its errors, and no longer claims a UEG entry.
+
+**Not done, and why:** P2.6's other routers (heartbeat, genome, organism status, Sovereign Evolution,
+Board) are untouched; `requires_ratification` was deleted rather than given a Board queue, which is a
+product decision for the Owner; the Sanctum's UEG claim was removed rather than made true by adding a
+ledger write, also the Owner's call; `_TIER_MAP` is unchanged.
+
+**Tests:** `test_w459_cca_identity_and_override_gate_both_ways` forces every review branch by
+substituting the serving resource — no assertion is conditional on what happened to serve — in both
+auth modes: the ACCEPT clause (a non-admin override on a CRITICAL change → 403 with the record unmoved;
+the admin's decision entry names the admin, verified); the hold for CRITICAL with and without a
+marker; the rule's true comparison at the threshold; conflicting markers; a non-admin's rule verdict
+held while a non-admin's single marker still decides; the governed-lever and config-reset implement
+gate; unsafe ids refused before the store is touched; the in-process core; test accounts restored.
+`test_w459_cca_decisions_are_serialised`: a coroutine race ends with one decision and both audit
+entries; a thread race on the record lock loses nothing; a lock held by another process is busy within
+the short timeout; a TimeoutError inside the section keeps its origin; a torn record is absent
+everywhere. `test_w459_external_cca_writers_compare_and_set`: the economy consume leaves a moved record
+alone and holds; a busy restore is logged; the VSB apply mutates nothing on a busy or lost claim,
+applies once on a won claim, releases the claim when the save fails, and names a stranded claim.
+**Broken twenty-one ways — each blind failed the guards on its own; restored.** One blind first
+"failed" for the wrong reason (removing only the lock acquire crashed the release); it was redone with
+acquire and release both removed, and then failed on the lost update itself.
+Suite: 366 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 34 min).
+
+**Browser (fresh backend :8058 serving the rebuilt bundle — `scripts/_w459_probe.mjs`, 7/7):** a
+constitutional change submitted from the page is CRITICAL; an incidental override is refused with the
+record unmoved; the card's "Request review" holds it and the same expanded card, with no reload, reads
+"held — awaiting an explicit admin decision — decide it in the Governance hub's Sovereign Sanctum";
+the explicit admin decision is accepted and attributed to the principal, never "cca_ai"; a floor review
+of a MEDIUM change is labelled the organism-health rule in the record and on its card; the §17.5 line
+says there is no twin model. Earlier probe runs caught two faults in my own probe: a check that never
+expanded the card, and a header that claimed an on-page refusal no auth-off button can produce.
+
+**Refuted (own diff), twice.** First pass — seven refuters, forty-five agents: thirty-one confirmed
+claims that collapse to about a dozen defects, including the most serious of the round: with auth ON a
+non-admin could still get a MEDIUM or HIGH change approved by the health rule and implement it,
+governed live levers included, and a model marker could decide a CRITICAL change for any requester;
+also a held CRITICAL change labelled "decided by the health rule", false comparison text, a held
+non-constitutional CRITICAL change that no page could decide, the VSB apply mutating the genome before
+taking the lock, a silent failed restore, a lock timeout blamed on the wrong store, stale strings, and
+guards that passed with the lock removed or skipped their assertions when a model served. Second pass
+on those fixes — four refuters: fourteen confirmed, including /implement taking a filesystem lock on
+an unvalidated id (on Windows a crafted id created directories outside the store), a stale "held"
+card after reopening, a Sanctum that never displayed its errors, a stranded evolution claim reported as
+done, and a threshold printed as "0.50 < 0.5". All fixed; the third guard caught one more fault in my
+own stranded-claim fix, which sat behind a status pre-check that returned first. Dismissed after
+checking in the two passes: fourteen, mostly behaviour that predates this round.
+
+**Found in passing, recorded not fixed:** `test_fabric_organism_systems_run_real` fails when run alone,
+at HEAD as well — it depends on an earlier test having recorded a self-healing breaker call.
+
+**Docs:** ledger v3 status R3.2 + R6.2 FIXED W459; prompt ledger 1.11 CLOSED and P1.11 ✅ DONE with the
+not-done list; vision §16; living plan §4/§8 and the two W446 caveats annotated closed; the defect
+ledger's two W438 Change Control latents closed.

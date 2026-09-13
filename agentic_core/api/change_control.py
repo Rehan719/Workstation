@@ -7,37 +7,64 @@ platform upgrades, policy amendments, and capability additions.
 
 Biological analogy: the CCA mirrors the adaptive immune system's memory B-cells
 — every significant change is reviewed, recorded, and either integrated or
-rejected with reasoning. The constitutional gate (GaaS) is consulted on
-high-impact changes.
+rejected with reasoning.
 
-Governance tiers:
-  LOW    — auto-approved if organism is healthy (config tweaks, minor docs)
-  MEDIUM — AI review required, logged, 24h cooling period
-  HIGH   — AI review + constitutional alignment check + manual flag
-  CRITICAL — blocked pending explicit admin approval
+Governance tiers (W459 — this list is what the code DOES; the earlier version promised a
+constitutional GaaS gate, a 24h cooling period and a manual flag, none of which exist here):
+  LOW    — auto-approved at submit when composite health >= 0.6 AND immune threat is
+           NOMINAL/ELEVATED; otherwise held for review
+  MEDIUM — review required. A single [DECISION: …] marker from the serving model decides it. With
+           no marker (the deterministic floor) or conflicting markers, the verdict is the
+           ORGANISM-HEALTH THRESHOLD RULE (composite_health >= 0.5 → approved, else rejected), and the
+           record says so in `decision_source` and at the head of the review text. With auth
+           enabled, a rule verdict is applied only when an ADMIN requests the review; a non-admin's
+           review is HELD with the rule's verdict recorded as a recommendation.
+  HIGH   — as MEDIUM, plus a recorded §17.5 pre-validation PASS before /implement
+  CRITICAL — NEVER decided by a review. A model marker is recorded as a RECOMMENDATION and the health
+           rule never applies: the change is HELD until an explicit admin decision
+           (admin_decision_for_critical; auth ON: an admin principal)
+  Governed live levers (config_change on a wired key, or a config reset): with auth enabled only an
+  admin may IMPLEMENT them — the same bar as /immune-reconfigure, which applies those levers.
+
+Identity (W459): with auth enabled every human-requested submission and decision is stamped with the
+AUTHENTICATED principal — a client cannot claim another name — and carries `by_verified`, which
+says whether the name was checked. Reflex and machine entries (biobus auto-approval, the immune
+reflex, the VSB evolution apply, the economy cycle) name the mechanism instead. With auth disabled
+(the shipped single-user default) the caller-supplied name is kept for back-compat and
+`by_verified` is false; no synthetic "admin" identity is ever fabricated into the record.
+
+§17.5 pre-validation (W459): there is NO twin model. When the serving resource returns no
+[TWIN: …] marker the verdict comes from an organism HEALTH GATE, and the record now says
+"no twin model — organism health gate only" instead of claiming a forward simulation.
 
   POST /api/v1/cca/submit           — submit a change request
   GET  /api/v1/cca/queue            — pending change requests
-  POST /api/v1/cca/{cca_id}/review  — trigger AI review (auto or on-demand)
+  POST /api/v1/cca/{cca_id}/review  — request a review, or record an explicit admin decision
   GET  /api/v1/cca/approved         — approved change log
   GET  /api/v1/cca/rejected         — rejected change log
   GET  /api/v1/cca/{cca_id}         — get a specific change request
-  POST /api/v1/cca/{cca_id}/implement — mark change as implemented
+  POST /api/v1/cca/{cca_id}/implement — apply + mark an approved change implemented
   GET  /api/v1/cca/impact/{cca_id}  — AI impact assessment
+  GET  /api/v1/cca                  — every change record
+  GET  /api/v1/cca/implemented      — implemented change log
+  POST /api/v1/cca/{cca_id}/twin-prevalidate — run/refresh the §17.5 pre-validation
+  POST /api/v1/cca/immune-reconfigure — the immune system's governed defensive reflex (admin)
 """
 from __future__ import annotations
 
 import json
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.auth.core import auth_enabled, get_current_user, request_owner_id, require_admin
 from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/cca", tags=["change-control-agency"])
@@ -49,28 +76,133 @@ ChangeStatus = Literal["submitted", "under_review", "approved", "rejected", "imp
 ImpactTier = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 
 
+_CCA_ID_RE = __import__("re").compile(r"[A-Za-z0-9_-]{1,80}")
+
+
+def _valid_cca_id(cca_id: str) -> bool:
+    """W459 — a change id is ONE safe path segment. Checked before the store is touched: on Windows a
+    backslash or a drive-letter path passes as a single route segment, and taking the record lock on
+    such an id created directories outside the store and could break another store's stale lockfile."""
+    return isinstance(cca_id, str) and bool(_CCA_ID_RE.fullmatch(cca_id))
+
+
 def _cca_path(cca_id: str) -> Path:
     return _CCA_STORE / f"{cca_id}.json"
 
 
 def _load_change(cca_id: str) -> dict | None:
+    """W459 — one loader for every reader. STRICT: a governance record that does not parse is never
+    half-read and decided upon (a tolerant loader would hand back a recovered prefix that still
+    carries its cca_id); it is treated as absent and the corruption is LOGGED, so the listing and
+    the by-id routes can never disagree about whether a record exists."""
+    import logging
+    if not _valid_cca_id(cca_id):
+        return None
     p = _cca_path(cca_id)
-    return json.loads(p.read_text()) if p.exists() else None
+    if not p.exists():
+        return None
+    for attempt in range(6):
+        try:
+            c = json.loads(p.read_text(encoding="utf-8"))
+            break
+        except PermissionError as e:
+            # Windows: a read that meets another request's atomic os.replace mid-flight is a sharing
+            # violation, not corruption — retry briefly, as the writer itself does
+            if attempt == 5:
+                logging.getLogger("change_control").warning("change record %s stayed locked: %s", cca_id, e)
+                return None
+            time.sleep(0.015 * (attempt + 1))
+        except (OSError, ValueError) as e:
+            logging.getLogger("change_control").error("change record %s is unreadable: %s", cca_id, e)
+            return None
+    if not (isinstance(c, dict) and c.get("cca_id")):
+        logging.getLogger("change_control").warning("change record %s is not a change record", cca_id)
+        return None
+    return c
+
+
+def _mtime(p: Path) -> float:
+    try:
+        return p.stat().st_mtime
+    except OSError:          # removed between the glob and the stat — sort it last, never raise
+        return 0.0
 
 
 def _save_change(change: dict) -> None:
-    # W438 — atomic per the store convention (a torn change file poisons the audit record); the
-    # remaining read-modify-write races across concurrent review/implement on ONE cca_id are
-    # recorded as a latent in NATIVE_PRIMITIVE_DEFECT_LEDGER.md rather than silently left
+    # W438 — atomic per the store convention (a torn change file poisons the audit record). W459: the
+    # per-record serialisation lives in _update_change / _change_mutation; this plain writer is only
+    # for creating a fresh record or for writes already inside that critical section.
     from agentic_core.config import atomic_write_json
     atomic_write_json(_cca_path(change["cca_id"]), change)
 
 
+def _principal(user: Any) -> dict | None:
+    """W459 — the authenticated principal, or None. An in-process call that never went through
+    FastAPI leaves the `Depends(...)` sentinel in the parameter; that is not an identity."""
+    return user if isinstance(user, dict) else None
+
+
+def _actor(user: Any, fallback: str = "single-user-mode") -> str:
+    """Who to STAMP on a record. Auth ON → always the authenticated username (a client cannot claim
+    another name). Auth OFF → the caller-supplied/machine string, never a fabricated 'admin'."""
+    return request_owner_id(_principal(user), fallback)
+
+
+def _verified(user: Any) -> bool:
+    """Whether the name in `by` was actually CHECKED by the auth layer."""
+    return bool(auth_enabled() and _principal(user))
+
+
+@contextmanager
+def _change_mutation(cca_id: str):
+    """W459 — the per-record critical section. Every load→modify→write on one change now runs
+    inside it (concurrent review/implement used to clobber each other's audit entries).
+
+    MUST stay fully synchronous: never `await` inside. The in-process half of store_lock is a
+    per-path RLock — reentrant on the single asyncio thread, so it does NOT separate two
+    coroutines — and acquisition spins on time.sleep, which would block the event loop.
+    """
+    from agentic_core.config import store_lock
+    if not _valid_cca_id(cca_id):
+        raise HTTPException(status_code=404, detail="Change not found.")
+    # A short timeout: the sections are milliseconds long, and a stale lockfile must not freeze the
+    # event loop for 10s on every call. Only a timeout ACQUIRING this record's lock is reported as
+    # "busy" — a TimeoutError raised inside the section (e.g. the organism config store's own lock
+    # during /implement) keeps its own origin instead of being blamed on the change record.
+    lock = store_lock(_cca_path(cca_id), timeout=3.0)
+    try:
+        lock.__enter__()
+    except TimeoutError:
+        raise HTTPException(status_code=503,
+                            detail="Change record is busy — another decision is being written. Retry.") from None
+    try:
+        yield
+    finally:
+        lock.__exit__(None, None, None)
+
+
+def _update_change(cca_id: str, mutate) -> dict:
+    """Re-read INSIDE the lock, mutate the FRESH record, write atomically — so a record loaded
+    before an await is never written back over a newer decision."""
+    from agentic_core.config import atomic_write_json
+    with _change_mutation(cca_id):
+        fresh = _load_change(cca_id)
+        if fresh is None:
+            raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
+        mutate(fresh)
+        atomic_write_json(_cca_path(cca_id), fresh)
+        return fresh
+
+
 def _list_changes(status_filter: str | None = None) -> list[dict]:
     result = []
-    for p in sorted(_CCA_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
+    # W459 — stat() ran outside the try, so a record removed mid-scan raised out of GET /queue; and
+    # the listing now reads through _load_change, so it agrees with the by-id routes on every file
+    for p in sorted(_CCA_STORE.glob("*.json"), key=_mtime, reverse=True):
         try:
-            c = json.loads(p.read_text())
+            c = _load_change(p.stem)
+            if not c:
+                continue
             if status_filter and c.get("status") != status_filter:
                 continue
             result.append({
@@ -143,8 +275,15 @@ class SubmitChangeRequest(BaseModel):
 
 
 class ReviewDecision(BaseModel):
-    override_decision: str | None = None  # "approved" | "rejected" | None (use AI)
+    # W459 — the override used to be free text: `override_decision: "implemented"` jumped a CRITICAL
+    # change straight past approval with nothing applied and no pre-validation recorded, and any
+    # other word was written into `status` outside the ChangeStatus vocabulary.
+    override_decision: Literal["approved", "rejected"] | None = None   # None → review
     reviewer_notes: str = ""
+    # An override on a CRITICAL change is never incidental: the caller must say, explicitly, that
+    # this is an admin decision. Required in BOTH auth modes (with auth off there is no admin role
+    # to check, so the acknowledgement is the whole gate).
+    admin_decision_for_critical: bool = False
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -188,9 +327,14 @@ _IMMUNE_DEFENCE: dict[str, dict] = {
 }
 
 
-@router.post("/submit")
-async def submit_change(req: SubmitChangeRequest):
+async def submit_change(req: SubmitChangeRequest, principal: str | None = None) -> dict:
     """Submit a change request to the Change Control Agency.
+
+    W459 — this is the plain CORE, callable in-process (the compliance screen, the VSB evolution
+    gate, homeostasis, the Sovereign Evolution Office and the transformation pipeline all call it
+    without a request). The HTTP route below reads the authenticated principal and passes it in;
+    a FastAPI dependency must NEVER be added here, or those callers would receive a Depends
+    sentinel instead of an identity.
 
     W438 — a change may carry a structured `config_change` payload; it is validated and coerced
     HERE (so nothing unappliable can be approved), and /implement APPLIES it through the
@@ -221,6 +365,8 @@ async def submit_change(req: SubmitChangeRequest):
                 change_type = "config_major"   # a live lever is never a minor tweak
     tier = _determine_tier(change_type, req.description)
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    # the name on the record is the authenticated one when there is one; otherwise the caller's
+    _by = principal or req.submitted_by or "system"
 
     change = {
         "cca_id": cca_id,
@@ -230,7 +376,11 @@ async def submit_change(req: SubmitChangeRequest):
         "description": req.description,
         "rationale": req.rationale,
         "affected_systems": req.affected_systems,
-        "submitted_by": req.submitted_by,
+        "submitted_by": _by,
+        **({"submitted_by_claimed": req.submitted_by}
+           if (principal and "submitted_by" in req.model_fields_set
+               and req.submitted_by and req.submitted_by != principal) else {}),
+        "submitted_by_verified": bool(principal) and auth_enabled(),
         "submitted_at": now,
         "impact_tier": tier,
         "status": "submitted",
@@ -240,7 +390,8 @@ async def submit_change(req: SubmitChangeRequest):
         "decision": None,
         "reviewed_at": None,
         "implemented_at": None,
-        "audit_trail": [{"event": "submitted", "ts": now, "by": req.submitted_by}],
+        "audit_trail": [{"event": "submitted", "ts": now, "by": _by,
+                         "by_verified": bool(principal) and auth_enabled()}],
     }
 
     # AUTO-APPROVE low-tier changes only when the organism is healthy AND the immune system is not
@@ -260,7 +411,8 @@ async def submit_change(req: SubmitChangeRequest):
         if tier == "LOW" and threat in ("HIGH", "CRITICAL"):
             change["review_result"] = (f"Held for review: immune threat {threat} — auto-approval paused "
                                        "while the organism defends itself.")
-            change["audit_trail"].append({"event": "held_immune_threat", "ts": now, "immune_threat": threat})
+            change["audit_trail"].append({"event": "held_immune_threat", "ts": now, "by": "biobus",
+                                          "immune_threat": threat})
         biobus.fire_signal("sensory", "cca.submit", f"Change submitted: {req.title} [{tier}] (immune: {threat})", 0.5)
 
     _save_change(change)
@@ -272,6 +424,15 @@ async def submit_change(req: SubmitChangeRequest):
     }
 
 
+# NOTE: the decorator must sit directly above its handler — a helper def inserted between them
+# silently rebinds the route (the endpoint then 422s at call time).
+@router.post("/submit")
+async def submit_change_route(req: SubmitChangeRequest,
+                              user: dict | None = Depends(get_current_user)):
+    """HTTP entry: stamps the authenticated principal (auth ON) or keeps the caller's name (OFF)."""
+    return await submit_change(req, principal=_actor(user, req.submitted_by or "system"))
+
+
 class ImmuneReconfigureRequest(BaseModel):
     # Default reads the LIVE immune threat. `simulate_threat` is an honest demonstration/test input
     # that exercises the defensive mapping without mutating global immune state.
@@ -279,15 +440,16 @@ class ImmuneReconfigureRequest(BaseModel):
 
 
 @router.post("/immune-reconfigure")
-async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRequest()):
+async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRequest(),
+                             user: dict = Depends(require_admin)):
     """Immune-system reconfigurator, governed arms-length by the CCA.
 
     Biomimetic defence: when the immune system is under threat it proposes a SAFE, REVERSIBLE
     defensive reconfiguration (tighten generation → throttle load → quarantine failing endpoints).
     The CCA records it as a change-controlled, audited action and — because these are low-risk,
     reversible defensive levers — auto-approves and APPLIES it via the reconfiguration engine (a fast
-    innate-immune reflex that is nonetheless governed; MEDIUM-tier containment is flagged for Board
-    ratification). This wires the arms-length CCA to the Immune system and the Reconfiguration engine.
+    innate-immune reflex that is nonetheless governed). Admin-only: it applies governed live levers.
+    This wires the arms-length CCA to the Immune system and the Reconfiguration engine.
     """
     threat = (req.simulate_threat or _immune_threat()).upper()
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -297,7 +459,6 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
                 "reason": "Immune state nominal — no defensive reconfiguration required."}
 
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
-    requires_ratification = plan["tier"] != "LOW"
     change = {
         "cca_id": cca_id,
         "title": f"Immune defence: {plan['section']}.{plan['key']} = {plan['value']}",
@@ -310,10 +471,13 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
         "impact_tier": plan["tier"],
         "status": "submitted",
         "immune_threat_at_submit": threat,
-        "requires_ratification": requires_ratification,
+        # W459 — `requires_ratification` was set here and read NOWHERE in the repo: the record said
+        # "flagged for Board ratification" while marking itself implemented in the same request.
+        # The flag is gone rather than left as a claim about a process that does not exist.
         "rollback_plan": f"Revert {plan['section']}.{plan['key']} to its prior value via /config/update.",
         "review_result": None, "decision": None, "reviewed_at": None, "implemented_at": None,
-        "audit_trail": [{"event": "submitted", "ts": now, "by": "immune_system", "immune_threat": threat}],
+        "audit_trail": [{"event": "submitted", "ts": now, "by": "immune_system", "immune_threat": threat,
+                         "requested_by": _actor(user), "by_verified": _verified(user)}],
     }
     biobus.fire_signal("sensory", "cca.immune_reconfigure", f"Immune defence proposed [{threat}]", 0.6)
 
@@ -321,9 +485,10 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
     change["status"] = "approved"
     change["decision"] = "auto_approved_immune_defence"
     change["reviewed_at"] = now
-    change["review_result"] = (f"Auto-approved defensive reconfiguration under immune threat {threat}."
-                               + (" Flagged for Board ratification (MEDIUM containment)." if requires_ratification else ""))
-    change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "cca"})
+    change["review_result"] = f"Auto-approved defensive reconfiguration under immune threat {threat}."
+    # the reflex decided, not the caller — the caller's identity is never stamped as the decider
+    change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "cca",
+                                 "decided_by": "auto_approve_immune_defence"})
 
     applied = None
     try:
@@ -358,7 +523,6 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
         "threat_level": threat,
         "impact_tier": plan["tier"],
         "status": change["status"],
-        "requires_ratification": requires_ratification,
         "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": plan["why"]},
         "applied": applied,
         "governed_by": "Change Control Agency (arms-length)",
@@ -397,12 +561,12 @@ async def get_change(cca_id: str):
 
 
 async def _twin_prevalidate(change: dict) -> dict:
-    """§17.5 absolute invariant — digital-twin pre-validation before MAJOR change (HIGH/CRITICAL).
-    Forward-simulates the proposed change against a twin model built from the LIVE organism state
-    (the same simulation pattern as api/digital_twin.py, no persisted model required), extracting an
-    explicit [TWIN: PASS]/[TWIN: FAIL] verdict. When the serving model returns no marker (e.g. the
-    deterministic native floor), the verdict falls back to the ORGANISM HEALTH GATE — pass only when
-    the organism is healthy and not under immune threat — with the source honestly recorded."""
+    """§17.5 invariant — pre-validation before a MAJOR change (HIGH/CRITICAL). There is no registered
+    twin model: the serving resource is ASKED to forward-simulate the change over the live organism
+    state and to end with [TWIN: PASS]/[TWIN: FAIL]. Only a single such marker counts as a model
+    verdict (source twin_marker). With no marker, or both (the deterministic floor echoes the
+    prompt), the verdict is the ORGANISM HEALTH GATE — pass only when the organism is healthy and not
+    under immune threat — recorded as source health_gate_default, "no twin model — health gate only"."""
     ctx = biobus.organism_context()
     prompt = (
         f"You are the digital-twin simulator pre-validating a change BEFORE implementation.\n\n"
@@ -441,34 +605,61 @@ async def _twin_prevalidate(change: dict) -> dict:
         "immune_threat_at_sim": ctx["immune"]["threat_level"],
         "summary": (sim or "")[:600],
         "simulated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "method": "digital-twin forward simulation over the live organism state",
+        # W459 — this string was unconditional, so the health-gate fallback (the only branch the
+        # deterministic floor can reach) claimed a forward simulation that never ran.
+        "method": ("digital-twin forward simulation over the live organism state"
+                   if source == "twin_marker" else
+                   "no twin model — organism health gate only (composite_health >= 0.6 and immune "
+                   "threat in NOMINAL/ELEVATED); the proposed change was NOT simulated"),
+        "source_label": ("model twin verdict" if source == "twin_marker"
+                         else "no twin model — health gate only"),
     }
 
 
 @router.post("/{cca_id}/twin-prevalidate")
-async def twin_prevalidate(cca_id: str):
-    """Run (or refresh) the §17.5 digital-twin pre-validation for a change. Required before
-    /implement on HIGH/CRITICAL tiers."""
+async def twin_prevalidate(cca_id: str, user: dict | None = Depends(get_current_user)):
+    """Run (or refresh) the §17.5 pre-validation for a change. Required before /implement on
+    HIGH/CRITICAL tiers. With no twin model the verdict is an organism health gate, said so."""
     c = _load_change(cca_id)
     if not c:
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
     if c["status"] in ("implemented", "withdrawn"):
         raise HTTPException(status_code=400, detail=f"Change is {c['status']} — pre-validation is moot.")
-    tp = await _twin_prevalidate(c)
-    c["twin_prevalidation"] = tp
-    c.setdefault("audit_trail", []).append(
-        {"event": f"twin_prevalidation_{tp['verdict']}", "ts": tp["simulated_at"], "source": tp["source"]})
-    _save_change(c)
+    tp = await _twin_prevalidate(c)          # the await stays OUTSIDE the lock
+    principal = _actor(user)
+
+    def _merge(fresh: dict) -> None:
+        if fresh["status"] in ("implemented", "withdrawn"):
+            raise HTTPException(status_code=400,
+                                detail=f"Change is {fresh['status']} — pre-validation is moot.")
+        fresh["twin_prevalidation"] = tp
+        fresh.setdefault("audit_trail", []).append(
+            {"event": f"twin_prevalidation_{tp['verdict']}", "ts": tp["simulated_at"],
+             "source": tp["source"], "by": principal, "by_verified": _verified(user)})
+
+    c = _update_change(cca_id, _merge)
     biobus.fire_signal("cognitive", "cca.twin_prevalidate",
                        f"Twin pre-validation {tp['verdict'].upper()}: {c['title']}", 0.6)
     return {"cca_id": cca_id, "twin_prevalidation": tp}
 
 
 @router.post("/{cca_id}/review")
-async def review_change(cca_id: str, req: ReviewDecision):
+async def review_change(cca_id: str, req: ReviewDecision,
+                        user: dict | None = Depends(get_current_user)):
     """
-    Trigger AI review of a change request.
-    Organism context is included so the AI can assess impact against current health.
+    Review a change request, or record an admin's explicit decision on it.
+
+    W459 — three things changed. (1) An override is AUTHORISED before anything is written: with auth
+    enabled only an admin principal may override, and a CRITICAL change additionally requires an
+    explicit `admin_decision_for_critical`. (2) What a review can decide is explicit: a CRITICAL change
+    is ALWAYS held for an explicit admin decision (a model marker is stored only as a recommendation;
+    it used to be silently rejected by the health rule, and rejection is terminal). A single model
+    marker decides a MEDIUM/HIGH change. With no marker, or conflicting markers, the organism-health
+    threshold RULE decides it and the record says so — except that with auth enabled a rule verdict
+    is applied only when an admin requested the review (a non-admin's review is held, with the rule's
+    verdict as a recommendation). (3) The decision is
+    stamped with WHO asked (`by`, `by_verified`) and WHAT decided (`decided_by`), instead of an
+    unconditional "cca_ai" on a human's override.
     """
     c = _load_change(cca_id)
     if not c:
@@ -476,18 +667,37 @@ async def review_change(cca_id: str, req: ReviewDecision):
     if c["status"] not in ("submitted", "under_review"):
         raise HTTPException(status_code=400, detail=f"Change is {c['status']} — cannot review.")
 
+    principal = _actor(user)
+    if req.override_decision:
+        u = _principal(user)
+        if auth_enabled() and (not u or u.get("role") != "admin"):
+            raise HTTPException(status_code=403,
+                                detail="Only an admin may override a Change Control decision.")
+        if c["impact_tier"] == "CRITICAL" and not req.admin_decision_for_critical:
+            raise HTTPException(status_code=403, detail=(
+                "A CRITICAL change is never decided incidentally: resend with "
+                "admin_decision_for_critical: true to record this as an explicit admin decision."))
+
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    c["status"] = "under_review"
-    c["audit_trail"].append({"event": "review_started", "ts": now})
-    _save_change(c)
+
+    def _start(fresh: dict) -> None:
+        if fresh["status"] not in ("submitted", "under_review"):
+            raise HTTPException(status_code=409,
+                                detail=f"Change was decided concurrently (status {fresh['status']}).")
+        fresh["status"] = "under_review"
+        fresh.setdefault("audit_trail", []).append(
+            {"event": "review_started", "ts": now, "by": principal, "by_verified": _verified(user)})
+
+    c = _update_change(cca_id, _start)
 
     biobus.fire_signal("cognitive", "cca.review", f"Reviewing: {c['title']}", 0.6)
 
+    held, hold_reason, recommendation = False, None, None
     if req.override_decision:
-        decision = req.override_decision
+        decision, decision_source = req.override_decision, "admin_override"
         review_text = f"Manual override: {req.reviewer_notes or 'No notes.'}"
     else:
-        # AI review
+        # a review by the serving resource (a model, or the deterministic floor)
         ctx = biobus.organism_context()
         prompt = (
             f"You are the Chief Governance Officer of Workstation IDBO, reviewing a change request.\n\n"
@@ -513,70 +723,167 @@ async def review_change(cca_id: str, req: ReviewDecision):
         )
         review_text = await gateway.query(prompt, agent="cca_review")
 
-        if "[DECISION: APPROVED]" in review_text.upper():
-            decision = "approved"
-        elif "[DECISION: REJECTED]" in review_text.upper():
-            decision = "rejected"
+        _up = (review_text or "").upper()
+        _yes, _no = "[DECISION: APPROVED]" in _up, "[DECISION: REJECTED]" in _up
+        marker = "approved" if (_yes and not _no) else "rejected" if (_no and not _yes) else None
+        why_no_marker = ("the serving resource returned BOTH [DECISION: APPROVED] and [DECISION: REJECTED] "
+                         "(conflicting markers)" if (_yes and _no) else
+                         "no [DECISION: …] marker was returned")
+        _h = float(ctx["composite_health"])
+        rule_verdict = "approved" if _h >= 0.5 else "rejected"
+        # print the value with enough precision that the stated comparison is TRUE as written (0.4999
+        # rounded to "0.50 < 0.5" was a false sentence in the record)
+        _shown = next(f"{_h:.{n}f}" for n in range(2, 12)
+                      if (float(f"{_h:.{n}f}") >= 0.5) == (_h >= 0.5))
+        rule_clause = f"composite_health {_shown} {'>=' if rule_verdict == 'approved' else '<'} 0.5 → {rule_verdict}"
+        _u = _principal(user)
+        admin_requested = (not auth_enabled()) or bool(_u and _u.get("role") == "admin")
+        model_out = "\n\n--- model output ---\n" + (review_text or "")
+        if c["impact_tier"] == "CRITICAL":
+            # never decided by a review: a model marker is a recommendation; the rule never applies
+            decision, held, hold_reason = None, True, "critical_requires_admin_decision"
+            decision_source = "held_awaiting_admin"
+            recommendation = ({"verdict": marker, "source": "model_decision_marker"} if marker else None)
+            review_text = (
+                "HELD — a CRITICAL change is decided only by an explicit admin decision. "
+                + (f"The serving model recommended {marker.upper()}; that is recorded as a "
+                   "recommendation, not a decision." if marker else
+                   f"No model recommendation: {why_no_marker}; the organism-health threshold rule "
+                   "never decides a CRITICAL change.")
+                + model_out)
+        elif marker:
+            decision, decision_source = marker, "model_decision_marker"
+        elif not admin_requested:
+            # auth ON and a non-admin asked: a RULE verdict is not handed to a non-admin requester
+            decision, held, hold_reason = None, True, "rule_verdict_requires_admin_requester"
+            decision_source = "held_awaiting_admin"
+            recommendation = {"verdict": rule_verdict, "source": "health_threshold_rule"}
+            review_text = (
+                f"HELD — {why_no_marker}, so only the organism-health threshold rule could decide this "
+                f"change ({rule_clause}). With authentication enabled a rule verdict is applied only "
+                "when an admin requests the review; it is recorded here as a recommendation."
+                + model_out)
         else:
-            # Default to approved for non-critical when organism is healthy
-            decision = "approved" if (
-                c["impact_tier"] != "CRITICAL" and ctx["composite_health"] >= 0.5
-            ) else "rejected"
+            decision, decision_source = rule_verdict, "health_threshold_rule"
+            review_text = (
+                f"DECIDED BY RULE, NOT BY THE MODEL: {why_no_marker}, so the verdict is the "
+                f"organism-health threshold rule (tier is not CRITICAL; {rule_clause}). The prose below "
+                "is the model's and had NO bearing on the decision."
+                + model_out)
 
-    c["status"] = decision
-    c["decision"] = decision
-    c["reviewed_at"] = now
-    c["review_result"] = review_text
-    c["audit_trail"].append({"event": decision, "ts": now, "by": "cca_ai"})
-
-    # §17.5 — an APPROVED major change (HIGH/CRITICAL) is twin pre-validated at approval time so
+    # §17.5 — an APPROVED major change (HIGH/CRITICAL) is pre-validated at approval time so
     # /implement can enforce "pre-validation before major change" without a second round-trip.
+    # The await stays OUTSIDE the lock.
+    tp = None
     if decision == "approved" and c["impact_tier"] in ("HIGH", "CRITICAL"):
         tp = await _twin_prevalidate(c)
-        c["twin_prevalidation"] = tp
-        c["audit_trail"].append(
-            {"event": f"twin_prevalidation_{tp['verdict']}", "ts": tp["simulated_at"], "source": tp["source"]})
-    _save_change(c)
 
-    signal = "motor" if decision == "approved" else "reflex"
-    biobus.fire_signal(signal, "cca.decision", f"CCA {decision.upper()}: {c['title']}", 0.6)
+    def _decide(fresh: dict) -> None:
+        if fresh["status"] != "under_review":
+            raise HTTPException(status_code=409,
+                                detail=f"Change was decided concurrently (status {fresh['status']}).")
+        fresh["review_result"] = review_text
+        fresh["decision_source"] = decision_source
+        fresh["reviewed_at"] = now
+        trail = fresh.setdefault("audit_trail", [])
+        if held:
+            fresh["hold_reason"] = hold_reason
+            fresh["recommendation"] = recommendation
+            trail.append({"event": "held_awaiting_admin_decision", "ts": now, "by": principal,
+                          "by_verified": _verified(user), "hold_reason": hold_reason,
+                          "recommendation": recommendation})
+            return
+        fresh.pop("hold_reason", None)
+        fresh.pop("recommendation", None)   # superseded by the decision; the held audit entry keeps it
+        fresh["status"] = decision
+        fresh["decision"] = decision
+        trail.append({"event": decision, "ts": now, "by": principal, "by_verified": _verified(user),
+                      "via": "admin_override" if req.override_decision else "review_request",
+                      "decided_by": ("admin_override" if decision_source == "admin_override"
+                                     else "cca_ai_model_marker" if decision_source == "model_decision_marker"
+                                     else "organism_health_threshold_rule")})
+        if tp is not None:
+            fresh["twin_prevalidation"] = tp
+            trail.append({"event": f"twin_prevalidation_{tp['verdict']}", "ts": tp["simulated_at"],
+                          "source": tp["source"], "by": principal, "by_verified": _verified(user)})
+
+    c = _update_change(cca_id, _decide)
+
+    if held:
+        biobus.fire_signal("reflex", "cca.decision", f"CCA HELD ({hold_reason}): {c['title']}", 0.6)
+    else:
+        biobus.fire_signal("motor" if decision == "approved" else "reflex", "cca.decision",
+                           f"CCA {decision.upper()}: {c['title']}", 0.6)
 
     return {
         "cca_id": cca_id,
         "decision": decision,
+        "decision_source": decision_source,
+        "hold_reason": hold_reason,
+        "recommendation": recommendation,
         "review_result": review_text[:500],
         "status": c["status"],
     }
 
 
 @router.post("/{cca_id}/implement")
-async def implement_change(cca_id: str, force: bool = False):
-    """Mark an approved change as implemented. §17.5 invariant: HIGH/CRITICAL changes REQUIRE a
-    recorded digital-twin pre-validation PASS (run at review-approval, or via
-    POST /{cca_id}/twin-prevalidate); a FAIL blocks implementation unless the Owner overrides with
-    ?force=true (the override is audit-trailed, never silent)."""
+async def implement_change(cca_id: str, force: bool = False,
+                           user: dict | None = Depends(get_current_user)):
+    """Apply and mark an approved change implemented. §17.5 invariant: HIGH/CRITICAL changes REQUIRE a
+    recorded pre-validation PASS (run at review-approval, or via POST /{cca_id}/twin-prevalidate); a
+    FAIL blocks implementation unless an admin overrides with ?force=true (audit-trailed). With auth
+    enabled, a change that sets a governed live lever (or resets the config) is implemented only by an
+    admin — the same bar as /immune-reconfigure."""
+    principal = _actor(user)
+    _u = _principal(user)
+    is_admin = (not auth_enabled()) or bool(_u and _u.get("role") == "admin")
+    if force and auth_enabled() and (not _principal(user) or _principal(user).get("role") != "admin"):
+        raise HTTPException(status_code=403,
+                            detail="Only an admin may force past a failed pre-validation.")
+    # W459 — the whole body is one critical section: it contains no await, and two concurrent
+    # /implement calls used to both pass the status check and apply the change twice. The record must
+    # exist (and the id be a safe segment) BEFORE the lock touches the store.
+    if not _valid_cca_id(cca_id) or not _cca_path(cca_id).exists():
+        raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
+    with _change_mutation(cca_id):
+        return _implement_locked(cca_id, force, principal, _verified(user), is_admin)
+
+
+def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
+                      is_admin: bool = True) -> dict:
     c = _load_change(cca_id)
     if not c:
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
     if c["status"] != "approved":
         raise HTTPException(status_code=400, detail=f"Change must be approved before implementation. Status: {c['status']}")
+    _spec = c.get("config_change") or {}
+    if _spec and not is_admin:
+        from agentic_core.organism.reconfiguration import _GOVERNED_KEYS
+        if _spec.get("reset") or (_spec.get("section"), _spec.get("key")) in _GOVERNED_KEYS:
+            raise HTTPException(status_code=403, detail=(
+                "Only an admin may implement a change to a governed live lever (or a config reset) — "
+                "the same bar as the immune reflex that applies those levers."))
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     if c["impact_tier"] in ("HIGH", "CRITICAL"):
         tp = c.get("twin_prevalidation")
         if not tp:
             raise HTTPException(status_code=409, detail=(
-                "§17.5 invariant: this MAJOR change has no recorded digital-twin pre-validation. "
+                "§17.5 invariant: this MAJOR change has no recorded pre-validation. "
                 f"Run POST /api/v1/cca/{cca_id}/twin-prevalidate first."))
         if tp.get("verdict") != "pass" and not force:
             c["audit_trail"].append({"event": "implement_blocked_twin_fail", "ts": now,
+                                     "by": principal, "by_verified": verified,
                                      "twin_source": tp.get("source")})
             _save_change(c)
             raise HTTPException(status_code=409, detail=(
-                "§17.5 invariant: the digital-twin pre-validation FAILED "
-                f"({tp.get('source')}). Implementation blocked; the Owner may override with ?force=true."))
+                "§17.5 invariant: the pre-validation FAILED "
+                f"({tp.get('source_label') or tp.get('source')}). Implementation blocked; an admin may "
+                "override with ?force=true."))
         if tp.get("verdict") != "pass" and force:
-            c["audit_trail"].append({"event": "twin_fail_overridden_by_owner", "ts": now})
+            # W459 — was "twin_fail_overridden_by_owner": an authorship claim the route never read
+            c["audit_trail"].append({"event": "twin_fail_overridden", "ts": now,
+                                     "by": principal, "by_verified": verified})
 
     # W438 — the CCA gains its EXECUTION ARM: /implement used to only MARK a change implemented
     # while applying nothing (the raw ungoverned config route did the applying — that inversion was
@@ -617,7 +924,8 @@ async def implement_change(cca_id: str, force: bool = False):
 
     c["status"] = "implemented"
     c["implemented_at"] = now
-    c["audit_trail"].append({"event": "implemented", "ts": now})
+    c["audit_trail"].append({"event": "implemented", "ts": now, "by": principal,
+                             "by_verified": verified})
     _save_change(c)
 
     biobus.fire_signal("motor", "cca.implement", f"Implemented: {c['title']}", 0.7)

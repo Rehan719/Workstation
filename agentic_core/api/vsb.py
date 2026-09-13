@@ -2017,14 +2017,54 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     cca_id = vsb.get("evolution_pending_cca")
     if not cca_id:
         return {"applied": False, "reason": "no_pending_evolution"}
-    from agentic_core.api.change_control import _load_change, _save_change
+    from agentic_core.api.change_control import _load_change, _update_change
     change = _load_change(cca_id)
     if not change:
         return {"applied": False, "reason": "cca_not_found", "cca_id": cca_id}
+    def _stranded(rec: dict) -> Dict[str, Any] | None:
+        """The apply claimed this approval (record implemented BY the apply) but no applied mutation
+        carries its id: an earlier apply failed after claiming it. Named, never reported as done."""
+        by_apply = any(e.get("event") == "implemented" and e.get("by") == "vsb_evolution_apply"
+                       for e in (rec.get("audit_trail") or []))
+        if (rec.get("status") == "implemented" and by_apply
+                and not any(m.get("cca_id") == cca_id for m in (vsb.get("applied_mutations") or []))):
+            return {"applied": False, "reason": "claim_stranded", "cca_id": cca_id,
+                    "note": ("the change record says this evolution was applied, but no applied mutation "
+                             "carries its id — an earlier apply failed after claiming it; an admin must "
+                             "re-approve or re-apply")}
+        return None
+
     if change.get("status") != "approved":
-        return {"applied": False, "reason": f"cca_status_{change.get('status')}", "cca_id": cca_id}
+        return _stranded(change) or {"applied": False, "reason": f"cca_status_{change.get('status')}",
+                                     "cca_id": cca_id}
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     proposals = vsb.get("evolution_proposals") or []
+    planned = sum(1 for p in proposals if str(p.get("trait") or "").strip())
+    # W459 (refuter) — CLAIM the approval first, under the record's lock, and mutate the genome only
+    # if this caller won the claim. The first version marked the record after mutating: a lock
+    # timeout then left a mutated genome, a cleared pending pointer and a record stuck at
+    # "approved", and two appliers in different processes both applied and both reported it.
+    claim = {"won": False, "status": None, "record": None}
+
+    def _claim(fresh: dict) -> None:
+        claim["status"] = fresh.get("status")
+        claim["record"] = dict(fresh)
+        if fresh.get("status") != "approved":
+            return
+        fresh["status"] = "implemented"
+        fresh["implemented_at"] = now
+        fresh.setdefault("audit_trail", []).append(
+            {"event": "implemented", "ts": now, "by": "vsb_evolution_apply", "by_verified": False,
+             "mutations_applied": planned})
+        claim["won"] = True
+    try:
+        _update_change(cca_id, _claim)
+    except HTTPException as e:   # busy or vanished — nothing has been mutated; the next beat retries
+        return {"applied": False, "reason": ("cca_busy" if e.status_code == 503 else "cca_not_found"),
+                "cca_id": cca_id, "detail": e.detail}
+    if not claim["won"]:
+        return (_stranded(claim["record"] or {}) or
+                {"applied": False, "reason": f"cca_status_{claim['status']}", "cca_id": cca_id})
     applied = []
     traits = vsb.get("epigenetic_traits") or {}
     for p in proposals:
@@ -2038,19 +2078,36 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     vsb["epigenetic_traits"] = traits
     vsb["applied_mutations"] = (vsb.get("applied_mutations") or []) + applied
     vsb["evolution_pending_cca"] = None
-    _save_vsb(vsb)
+    try:
+        _save_vsb(vsb)
+    except Exception:
+        # the claim was won but the genome was not saved: release it, audibly, so the approval is
+        # not consumed by an apply that never landed
+        def _release(fresh: dict) -> None:
+            if fresh.get("status") == "implemented":
+                fresh["status"] = "approved"
+                fresh.pop("implemented_at", None)
+                fresh.setdefault("audit_trail", []).append(
+                    {"event": "apply_failed_claim_released", "ts": now, "by": "vsb_evolution_apply",
+                     "by_verified": False})
+        try:
+            _update_change(cca_id, _release)
+        except Exception as rel_err:
+            import logging
+            logging.getLogger("vsb").error("evolution claim release failed for %s: %s", cca_id, rel_err)
+            try:
+                from agentic_core.gaas.v5 import UEGLogger
+                UEGLogger().log({"type": "vsb.evolution.claim_release_failed", "vsb_id": vsb_id,
+                                 "cca_id": cca_id, "error": str(getattr(rel_err, "detail", None) or rel_err)[:200]})
+            except Exception:
+                pass
+        raise
     try:   # the genome registry tracks the mutated pattern (layer 2 = applied epigenetics)
         _genome_registry.store_epigenetic_pattern(
             pattern_id=vsb_id, data={"applied_mutations": vsb["applied_mutations"][-10:],
                                      "epigenetic_traits": traits}, layer=2)
     except Exception:
         pass
-    change["status"] = "implemented"
-    change["implemented_at"] = now
-    change.setdefault("audit_trail", []).append(
-        {"event": "implemented", "ts": now, "by": "vsb_evolution_apply",
-         "mutations_applied": len(applied)})
-    _save_change(change)
     mark_repo_stale(vsb_id, f"approved evolution mutations applied (cca {cca_id})")
     try:
         from agentic_core.gaas.v5 import UEGLogger

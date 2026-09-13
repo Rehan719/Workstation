@@ -46,6 +46,14 @@ def _tie_note(tied: list) -> dict:
                                f"({', '.join(statuses)}). The most restrictive was applied.")}
 
 
+class _Moved(Exception):
+    """W459 — raised inside a locked change mutation when the record moved since the scan that
+    chose it; the caller decides honestly instead of overwriting the newer decision."""
+
+    def __str__(self) -> str:
+        return str(self.args[0] if self.args else "unknown")
+
+
 def _ueg_log(event: Dict[str, Any]) -> Optional[str]:
     try:
         from agentic_core.gaas.v5 import UEGLogger
@@ -109,10 +117,29 @@ def _restore_consumed_approval(vsb_id: str, source: str, reason: str) -> None:
                  if c and c.get("title") == title and c.get("status") == "implemented"]
         latest = max(cands, key=lambda c: c.get("implemented_at", ""), default=None)
         if latest:
-            latest["status"] = "approved"
-            latest.setdefault("audit_trail", []).append(
-                {"event": "approval_restored_action_never_ran", "ts": _now(), "reason": reason[:200]})
-            cca._save_change(latest)
+            # W459 — the record was chosen by a scan, then written back unconditionally: a decision
+            # taken between the scan and the write was silently overwritten. Re-read and re-assert
+            # the status INSIDE the record's lock; if it moved, leave it alone and say so.
+            def _restore(fresh: dict) -> None:
+                if fresh.get("status") != "implemented":
+                    raise _Moved(fresh.get("status"))
+                fresh["status"] = "approved"
+                fresh.setdefault("audit_trail", []).append(
+                    {"event": "approval_restored_action_never_ran", "ts": _now(),
+                     "by": "economy", "by_verified": False, "reason": reason[:200]})
+            try:
+                cca._update_change(latest["cca_id"], _restore)
+            except _Moved as moved:
+                _ueg_log({"type": "economy.materiality_approval_restore_skipped", "vsb_id": vsb_id,
+                          "cca_id": latest["cca_id"], "status_now": str(moved), "reason": reason[:200]})
+                return
+            except Exception as err:
+                # W459 (refuter) — the record was busy or unreadable: the approval stays consumed, so
+                # say so durably (the docstring promises an AUDIBLE restore), never silently
+                _ueg_log({"type": "economy.materiality_approval_restore_failed", "vsb_id": vsb_id,
+                          "cca_id": latest["cca_id"],
+                          "error": str(getattr(err, "detail", None) or err)[:200], "reason": reason[:200]})
+                return
             _ueg_log({"type": "economy.materiality_approval_restored", "vsb_id": vsb_id,
                       "cca_id": latest["cca_id"], "reason": reason[:200]})
     except Exception:
@@ -161,13 +188,28 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Opt
             latest = max(_tied_latest,
                          key=lambda c: _RESTRICTIVENESS.get(str(c.get("status")), 0))
         if latest and latest.get("status") == "approved":
-            # consume the approval — one approval authorises one material cycle
-            latest["status"] = "implemented"
-            latest["implemented_at"] = _now()
-            latest.setdefault("audit_trail", []).append(
-                {"event": "consumed_by_economy_cycle", "ts": _now(), "source": source,
-                 "est_distributable_wst": est_distributable})
-            cca._save_change(latest)
+            # consume the approval — one approval authorises one material cycle. W459: the consume
+            # is a compare-and-set inside the record's lock, so two concurrent cycles cannot both
+            # spend the same approval (the scan above is not atomic with the write).
+            def _consume(fresh: dict) -> None:
+                if fresh.get("status") != "approved":
+                    raise _Moved(fresh.get("status"))
+                fresh["status"] = "implemented"
+                fresh["implemented_at"] = _now()
+                fresh.setdefault("audit_trail", []).append(
+                    {"event": "consumed_by_economy_cycle", "ts": _now(), "source": source,
+                     "by": f"economy:{source}", "by_verified": False,
+                     "est_distributable_wst": est_distributable})
+            try:
+                cca._update_change(latest["cca_id"], _consume)
+            except _Moved as moved:
+                # somebody decided it between the scan and the write — hold, never spend twice
+                return {"status": "held_for_change_control", "cca_id": latest["cca_id"],
+                        "impact_tier": latest.get("impact_tier"),
+                        "est_distributable_wst": est_distributable,
+                        "materiality_threshold_wst": MATERIALITY_WST,
+                        "note": ("The approval was consumed or changed concurrently (status now "
+                                 f"{moved}) — this cycle is held rather than spending it twice.")}
             _ueg_log({"type": "economy.materiality_approved_consumed", "vsb_id": vsb_id,
                       "cca_id": latest["cca_id"], "est_distributable_wst": est_distributable})
             return None
@@ -200,7 +242,8 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Opt
             "submitted_at": now, "impact_tier": cca._determine_tier("economy_material", ""),
             "status": "submitted", "vsb_id": vsb_id, "rollback_plan": "No action taken while held.",
             "review_result": None, "decision": None, "reviewed_at": None, "implemented_at": None,
-            "audit_trail": [{"event": "submitted", "ts": now, "by": f"economy:{source}"}],
+            "audit_trail": [{"event": "submitted", "ts": now, "by": f"economy:{source}",
+                             "by_verified": False}],
         }
         cca._save_change(change)
         _ueg_log({"type": "economy.materiality_hold_filed", "vsb_id": vsb_id, "cca_id": cca_id,

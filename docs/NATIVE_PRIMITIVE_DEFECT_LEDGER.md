@@ -305,10 +305,17 @@ first-by-position as "arbitration" (it now warns exactly what it does), and
 
 ## Latent entries added by the W438 refuter pass
 
+- **[CLOSED W459]** **CCA change-record read-modify-write races** — every mutation of a change record
+  is now a compare-and-set under the record's lock (`_update_change` / `_change_mutation`, no await
+  inside the lock), including the economy consume/restore and the VSB evolution apply, which claims
+  the approval before mutating the genome; guarded by `test_w459_cca_decisions_are_serialised` and
+  `test_w459_external_cca_writers_compare_and_set`. The original entry follows.
 - **CCA change-record read-modify-write races** (`agentic_core/api/change_control.py`) — W438 made
   `_save_change` atomic, but concurrent review/twin-prevalidate/implement on ONE cca_id still
   load-modify-save without a lock and can lose audit-trail entries. Low contention today (one
   owner); serialise with store_lock if the CCA ever serves concurrent reviewers.
+- **[CLOSED W459 — the flag was deleted, not given a consumer; a Board ratification queue is a product
+  decision for the Owner]** The original entry follows.
 - **`requires_ratification` has no consumer** (`change_control.py` immune path) — the MEDIUM
   containment defence flags itself "for Board ratification" and no Board surface reads the flag;
   the change reports implemented immediately. Either wire a Board queue for flagged changes or

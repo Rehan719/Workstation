@@ -233,7 +233,7 @@ _REGISTRY: List[Dict[str, Any]] = [
        "/api/v1/swarm/cascade",
        ["delivery", "build_to_order", "commercialisation", "governance"]),
     _R("change_control", "Change Control Agency", "enterprise_org", "governance",
-       "Arms-length governance: LOW auto-approve, MEDIUM/HIGH AI review, CRITICAL blocked.",
+       "Arms-length governance: LOW auto-approved when healthy; MEDIUM/HIGH reviewed (a model marker, else the organism-health rule — said so, and with auth on applied only for an admin requester); CRITICAL held for an explicit admin decision.",
        ["change submission", "tiered review", "governed implementation"],
        {"title": "str", "change_type": "str", "description": "str"}, "/api/v1/cca/submit",
        ["governance", "evolution", "delivery"]),

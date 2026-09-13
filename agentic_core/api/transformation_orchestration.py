@@ -221,9 +221,11 @@ async def orchestrate(req: OrchestrateRequest):
         cca = {"error": str(e)[:120]}
     stage(7, "Change Control Agency (arms-length)", "Digital Twin",
           "Submit the transformation under arms-length change control",
-          {"change_id": cca.get("change_id") or cca.get("id"), "tier": cca.get("tier"),
+          # W459 — these read `change_id`/`tier`, which submit_change has never returned (it
+          # returns cca_id / impact_tier / status), so stage 7 reported nulls while claiming verified
+          {"change_id": cca.get("cca_id"), "tier": cca.get("impact_tier"),
            "status": cca.get("status")},
-          verified=bool(cca.get("change_id") or cca.get("id") or cca.get("status")))
+          verified=bool(cca.get("cca_id")))
 
     # ── 8 · Chief + VSB digital-twin model generation & simulation ──
     twin = _generate_vsb_twin(req, chief, director_themes, action_items, organism, realisation)
