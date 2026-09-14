@@ -58,7 +58,9 @@ def validate_transfer(from_vsb: str, to_vsb: str, amount: float) -> float:
 
 def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
                     transfer_id: str | None = None) -> Dict[str, Any]:
-    """One inter-VSB transfer: validates (see validate_transfer), posts the sender's books, queues
+    """One inter-VSB transfer: checks the amount's shape and refuses a self-transfer, then — only for a
+    transfer id not yet debited — checks the receiver's liveness and the sender's funds inside the ledger lock
+    (a replay skips both and repairs a missing receiver leg), posts the sender's books, queues
     the receiver's intake. Virtual funds are conserved — nothing created, nothing negative.
 
     W442 — the funds check now runs ATOMICALLY with the debit (inside the ledger's store lock):

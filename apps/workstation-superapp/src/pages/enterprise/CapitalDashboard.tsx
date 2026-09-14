@@ -326,8 +326,9 @@ export const CapitalDashboard: React.FC = () => {
             </div>
             <p className="mt-6 text-[10px] font-bold text-slate-600 leading-relaxed">
                 Read-only view of <code>/api/v1/cca</code>. No voting mechanism exists on this page —
-                change requests are reviewed and decided in the Change Control Agency (/change-control),
-                and any decision you see above was recorded there.
+                change requests are reviewed in the Change Control Agency (/change-control); a CRITICAL change, or an economy hold
+                filed after a rejection, is decided only by an explicit decision in the Sovereign Sanctum of the Governance hub.
+                Every decision you see above is recorded in the Change Control Agency store.
             </p>
         </Card>
       )}

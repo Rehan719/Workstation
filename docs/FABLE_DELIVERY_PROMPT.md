@@ -36,8 +36,11 @@
 > roadmap parts are 2025-dated and SUPERSEDED by appendix A.10) · `VISION_FIDELITY_LEDGER.md`
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
-> a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W463) ·
+> a lockstep test; since W462 its §6.4 carries the rendered follow-up schedule) · `FOLLOWUPS.json` +
+> `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task, slotted NEXT, to a
+> plan item, or OWNER; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
+> primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W463) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -71,13 +74,13 @@ code. Read the ledger before the code; read <delivery_plan> before choosing work
 
 CAVEAT THAT HAS COST THIS PROJECT TIME REPEATEDLY: a long-running dev process serves the code it
 booted with. Boot a FRESH backend before probing behaviour (this project increments a port per
-round: :8011 → :8024 so far), and kill + rerun any full suite the moment the tree changes under it
+round: :8011 → :8070 so far), and kill + rerun any full suite the moment the tree changes under it
 — the committed state must equal the suite-verified state, byte for byte.
 
 Round after round of green CI did not prevent 63 fabrications, a money store with no lock, a gate
-that took percents, a bus with no riders, a parallel marketplace nothing could serve — or, found
-this round, a certificate printer masquerading as a quality gate and a hub whose DEFAULT TAB was a
-roleplay. None was found by the test suite. They were found by <method>, and since W437 by
+that took percents, a bus with no riders, a parallel marketplace nothing could serve — or, found by
+the W446 re-audit and closed since (W449, W451), a certificate printer masquerading as a quality gate
+and a hub whose DEFAULT TAB was a roleplay. None was found by the test suite. They were found by <method>, and since W437 by
 adversarial refuters set on each round's own fixes. Read <method> before you read the code.
 </role>
 
@@ -104,7 +107,9 @@ B — CANONICAL REALM SET: four user-type Realms (Enterprise · Learning · Deve
     DOMAINS as realms into the projects API (ledger R5.5) — same plan item.
 
 C — WHAT TO BUILD NEXT: the reach backlog is COMPLETE. The next work is <delivery_plan> P1, in
-    order — the truth defects the audit found on reached, used surfaces. The 67-op scatter is P2.4.
+    order — the truth defects the audit found on reached, used surfaces. P1.1–P1.12 are DONE
+    (W449–W460); what comes next is the follow-up register's NEXT rows, then P1.13 and P1.14 — see
+    WHERE THE PLAN STANDS in <delivery_plan>, just above its follow-ups. The 67-op scatter is P2.4.
 
 D — DECIDED BY THE OWNER AND DELIVERED: Realm gets teeth at NARROW scope (W427/W434); an EXPLICIT
     owner-scoped user profile, never implicit recall (W428); a BUNDLED browser-side PDF extractor,
@@ -126,9 +131,12 @@ E — FEDERATION (Owner decision 2026-08-31, now recorded as vision §18-E): cro
     delivered and are not what this ruling gates.
 
 STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for them):
-    the single lifecycle (ledger item 1) · whether §17.1's Products axis is built or amended ·
+    the single lifecycle (ledger 3.10) · whether §17.1's Products axis is built or amended ·
     whether §17.5's KPI gate is built or amended · the scope of §17.4 Mode 2 (an expert twin node)
-    · the Stripe key roll · the 162 test-owned entities.
+    · the Stripe key roll · the 162 test-owned entities · and the follow-up register's OWNER rows
+    (W459, W463): FU-012 a Board ratification queue · FU-013 whether Change Control decisions write
+    to the UEG · FU-014 the risk tier for code_change and economy_material · FU-020 archiving the
+    unimported genome_engine.py after the WIRED-map check.
 </answers_to_the_owner>
 
 <ordering>
@@ -136,7 +144,9 @@ Work in this order. It is not effort order — it is "how much a real person is 
 
   TIER 1 — TRUTH DEFECTS. The system tells a user something untrue, or certifies what it could
            not assess. THE AUDIT FOUND FOURTEEN, ALL ON REACHED SURFACES — they are <delivery_plan>
-           P1, and P1 is worked before anything else. The pattern behind most of them: a gate,
+           P1. TWELVE ARE CLOSED (P1.1–P1.12, W449–W460); P1.13 and P1.14 remain and come before any
+           P2–P4 item — after the follow-up register's NEXT rows, which run before the next plan item
+           (W462). The pattern behind most of them: a gate,
            badge or chip that CANNOT FAIL on the floor — the configuration CI runs and any box
            without a local model gets (NOT the shipped default: with AI_DISABLE_LOCAL unset and
            Ollama discoverable, the gateway serves from the local model), and the one that served
@@ -160,14 +170,14 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 WHERE THE EFFORT WENT — and what the campaign proved.
 
 The execution log runs W1→W463 (463 is the highest NUMBER, not a count; heading-format enumeration
-undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
+undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
 "backend existed, nobody could reach it") · native AI · the resource fabric · verification/guards/
 refutation · the §5 org · docs/canon reconciliation · economy · output · cleanup · organism ·
 honesty/fabrication · domains. Two engineering classes consumed whole rounds late: tenant
 isolation (nine surfaces found open one at a time, W252→W443) and shared-store concurrency (each
-round finding one more unlocked writer, W241→W444).
+round finding one more unlocked writer, W241→W463).
 
 FOUR ERAS: build-out (W1–W126, the fabric, domains, org, cockpit, economy, repo/site/app) ·
 convergence and cleanup (W127–W175, five Owner-directed reviews archived ~20 incoherent pages, ~460
@@ -406,8 +416,9 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
       before mutating the genome); ids are validated before the store is touched; requires_ratification
       deleted; the docstring rewritten to what the code does. Guards:
       test_w459_cca_identity_and_override_gate_both_ways, test_w459_cca_decisions_are_serialised,
-      test_w459_external_cca_writers_compare_and_set; probe scripts/_w459_probe.mjs. The text below is
-      the record of what was wrong.]
+      test_w459_external_cca_writers_compare_and_set; probe scripts/_w459_probe.mjs. W463 then bound
+      what an economy approval releases (register FU-002 — see P1.11). The text below is the record of
+      what was wrong.]
       CHANGE CONTROL'S TIERS WERE PROSE — no auth dependency; submitted_by is free text; override
      honoured for CRITICAL; the floor "AI review" is a health-threshold rule; twin pre-validation
      falls to health_gate_default; a human override is attributed to 'cca_ai'. [R3.2, R6.2]
@@ -431,7 +442,9 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
  1.14 THE BOARD PACK CERTIFIES A CONTENTLESS NARRATIVE — required sections are found in the
      preamble the handler itself wrote; three "assembled fresh" packs carry one byte-identical
      DCS hash; the Chief's Opening stores prompt-echo, drops the floor prefix, and has no owner-
-     edit surface. [R3.6, R3.5, R3.3]
+     edit surface. [R3.6, R3.5, R3.3]  [PARTLY CLOSED — on the floor the pack's QMS gate is 'not
+     assessable' (W449) and its narrative 'narrative pending the owned model' (W450); what remains,
+     and what the content hash in the seal does and does not cover, is recorded under P1.14.]
 
 TIER 2 — REACH AND INVISIBLE SHORTFALLS
  2.1 FLOOR CASCADES GROUND STAGES 2+ IN THE ENGINE'S OWN MARKER TEXT ("external dependency ·
@@ -440,13 +453,17 @@ TIER 2 — REACH AND INVISIBLE SHORTFALLS
      and inside the journey the two helpers that bypass the problem prefix (_ai_cognitive_prime,
      _ai_mjm_lifecycle) let the engine describe itself — 'architecture specialised · cognitive
      architecture' — while engines_used is a constant list, not provenance. [R4.1, R2.7]
- 2.2 PROVENANCE STOPS AT THE API BOUNDARY for 47 gateway.query() sites and R4.2's seven output
+ 2.2 PROVENANCE STOPS AT THE API BOUNDARY for 47 gateway.query() sites (46 since W450 moved the Spawn
+     Studio's CEO specification to query_meta; 44 of them under agentic_core/api, the scope of P2.2's
+     guard) and R4.2's seven output
      pages (Intelligence Lab, Forge, Synthesis Studio/Nexus, BTO, Sovereign Evolution, Organism
      Dashboard) — plus the Business Plan's Chief's Opening card (R3.3). [R4.2, R4.9, R3.3]
  2.3 THE AVATAR ANSWERS ITS OWN PERSONA LINE under the floor; the user's language preference is
      returned null and never shown; /status pings Ollama regardless of the disable flag; the
-     profile's profile_applied flag is dropped, so the W428 profile is stored, shown and inert
-     with no signal. [R5.4, R5.7]
+     profile's profile_applied flag is dropped on the ai_text / _ai_provenance path every domain tool
+     takes, so the W428 profile is stored, shown and inert with no signal (W451 carries profile_applied
+     in the terminal SSE frame of the CEO chat and the v310 business-plan, projects and synthesis
+     streams — backend only; no page renders it). [R5.4, R5.7]
  2.4 THE ORGANISM DEFENDS ON PAPER: reflex arcs registered = 0 (register_reflex has no caller —
      "reflex: 542" in the payload is a signal CATEGORY); immune-reconfigure has no caller; the
      survival instinct keys off an ATP simulator that cannot fall below its threshold; Cardio-
@@ -461,7 +478,10 @@ TIER 2 — REACH AND INVISIBLE SHORTFALLS
      R6.0's refuter: POST /api/ai/query → "[POLICY VIOLATION]". [R6.0]
  2.6 THE CONTROL PERIMETER HAS NO AUTH — heartbeat, genome, organism-status, sovereign-evolution,
      board, CCA, business-plan, swarm, studio: any caller under auth could stop the heart or run
-     economy cycles across every tenant. [R6.2, R3.2]
+     economy cycles across every tenant. [R6.2, R3.2]  [PARTLY CLOSED — the CCA's write routes read an
+     identity since W459 (retiring an economy record admin-only under auth since W463); its read routes
+     (no auth dependency at all) and every
+     other router here stay open — P2.6.]
  2.7 "BESPOKE PER SOLUTION" IS ONE FIXED 4-STAGE TEMPLATE per VSB; the tree's planner flag
      ('deterministic_template') is never rendered under copy saying "autonomously decomposes";
      the Forge UI exposes neither per-stage config nor Rerun although the API accepts both
@@ -494,9 +514,9 @@ TIER 3 — CAPABILITY GAPS
      at production and never again, and nothing on Deliverables says so). [R6.7, R2.4, R1.5]
  3.8 §9 DEPTH — i18n chrome only on three pages; AI output English; profile inert on the floor. [R5.7]
  3.9 §13 — no repo file/zip endpoint or clickable tree; the entity's products not listed (v2 §13
-     finding, not re-assessed in v3; the adjacent v3 entry is R2.6 — 'Generate VSB Repository' after a
-     birth-ship REGRESSES the public website to a one-line scaffold while the ship manifest says
-     stale=false — which P3.7 also closes). [R2.6]
+     finding, not re-assessed in v3). [R2.6 — its regression half CLOSED W450 with P1.2: /repo no longer
+     overwrites a generated website/webapp/mobile surface, labels integrated_surfaces by what is on
+     disk, and a rename marks a shipped body stale; the file/zip endpoint and clickable tree remain — P3.7]
  3.10 §4 · §17.1 — THERE IS NO SINGLE LIFECYCLE (OWNER RULING, unchanged from v11 rev 1): eight
      vocabularies; 219 of 219 VSBs at "commercialise" and never advanced — 218 born from the
      genesis.py:687/:852 literals, one via vsb.py's spawn path (`stage: req.scope`; re-counted
@@ -529,9 +549,10 @@ AI_ALLOW_EXTERNAL / REAL_MONEY_ENABLED.
 
 RECORDED, LATENT — NATIVE_PRIMITIVE_DEFECT_LEDGER.md: four unreached fabricating functions
 (GenomeEvolutionEngine.run_evolution_cycle, TopologyDefense.simplicial_repair,
-AccuracyValidator.get_aggregate_accuracy, network/planetary.py) and two DORMANT ON REACHED CCA
-ROUTES (the read-modify-write race; requires_ratification with no Board consumer) — the second is
-now folded into plan item P1.11. Also standing: 162 test-owned entities (the Owner's call).
+AccuracyValidator.get_aggregate_accuracy, network/planetary.py) and two formerly DORMANT ON REACHED CCA
+ROUTES, both CLOSED W459 with P1.11 (the read-modify-write race: every change-record mutation is now a
+compare-and-set under the record's lock; requires_ratification: deleted, and a Board ratification
+queue is FU-012, awaiting the Owner). Also standing: 162 test-owned entities (the Owner's call).
 </ledger>
 
 <delivery_plan>
@@ -572,6 +593,29 @@ half of P2 depend on; 1.3 and 1.5 are where users land. P2 follows (P2.1 unblock
 content that P3 builds on). P3 items marked OWNER RULING are put to the Owner with evidence at
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
+WHERE THE PLAN STANDS (updated W463, 2026-09-14 — every round that closes an item or runs between
+items updates this block in the same commit; nothing checks that what it says is true, so keep it true
+by hand, and never start a line here with one space and an item id — that is read as a plan item and
+fails the suite).
+  DONE — P1.1 to P1.12, in order, W449–W460: each is marked below with what it DELIVERED; P1.1–P1.5,
+    P1.7, P1.8, P1.11 and P1.12 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
+    leftover). Only P1.11's and P1.12's leftovers were back-filled into the register (FU-005…FU-014);
+    since W462 (V6) a round registers what it leaves in the same commit.
+  DONE BETWEEN ITEMS — rounds the plan did not list, recorded here so the plan reads whole:
+    W461  transformation stage verification made honest, split out of the P1.12 audit (register
+          FU-001): a stage that checks nothing is 'not assessable', and only an allowed gate validates
+          a run or moves a living-plan objective. (P2.8's clause about the realisation engine —
+          agentic_core/api/transformation.py measuring delivery, not route existence — is a different
+          engine and stays open.)
+    W462  the follow-up register: docs/FOLLOWUPS.json + scripts/followups.py, the schedule rendered
+          below, V6's same-commit rule; the suite fails when an item marked ✅ DONE still carries an open row.
+    W463  register FU-002 and its class: the economy's materiality approvals release only what they
+          were filed for — P1.11's Change Control work carried into the economy's own holds (see the
+          note under P1.11); FU-015…FU-024 registered; the documentation swept after the push.
+  NEXT — the register's NEXT rows (FU-003, FU-004, FU-011, FU-015…FU-019, FU-021…FU-024), then P1.13,
+    then P1.14, then MILESTONE M1.
+  WAITING ON THE OWNER — register rows FU-012, FU-013, FU-014, FU-020 (never scheduled into a round).
+
 <!-- followups:begin (generated by scripts/followups.py render - never edit by hand) -->
 SCHEDULED FOLLOW-UPS — every task a round finds and does not do is a row in docs/FOLLOWUPS.json,
 added in the same commit (python scripts/followups.py add), slotted to the plan item whose round does
@@ -606,7 +650,7 @@ Open 22 (18 scheduled, 0 high · 4 awaiting the Owner) · done 2 · dropped 0.
     FU-020 [low] genome_engine.py is unimported and its rollback restores by position — GenomeMutationWorkflow.rollback pops the LAST checkpoint instead of the proposal's, does not persist, and references an undefined GENOME_FILE; nothing imports the module, but layer_registry names the l1_identity directory by path — archive only after the Owner's WIRED-map check (found W463 class sweep (read))
 <!-- followups:end -->
 
-PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
+PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; no P2–P4 item ships until these do — the register's NEXT rows run between items, see WHERE THE PLAN STANDS)
  P1.1 ✅ DONE W449 [ledger 1.1 + 3.11's attestation half · R1.2 R1.4 R2.0 R2.5 R3.6 R3.7 R5.2] The gate that cannot fail — class-kill. assure_delivery(served_by=…) →
       floor-served: qms_gate_passed=None, 'verified'/'specifically designed' source 'none', basis
       "not assessable — the floor emits the requested headings"; ai_text() measures against the
@@ -763,6 +807,20 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       for the Owner; (c) the Sanctum's copy no longer claims a UEG entry — adding a UEG write to the
       CCA changes what the constitutional ledger holds and is the Owner's call; (d) _TIER_MAP is
       unchanged (code_change and economy_material fall through to MEDIUM by default, not by decision).
+      Each is now tracked: (a) rides with P2.6; (b) is register row FU-012, (c) FU-013, (d) FU-014 —
+      all three waiting on the Owner.
+      CARRIED FURTHER IN W463 (register FU-002, closed): this item made the economy's consume/restore a
+      compare-and-set but did not bind what an approval releases — any approved record with the hold's
+      title released any amount, and a blocked transfer could hand back an approval an earlier action
+      had spent. W463: a hold is identified by what filed it; one live record per action under a gate
+      lock; an approval releases only the intake it was filed for, is spent once and given back only
+      when its action never ran; a review or an explicit decision is refused when the caller sent the
+      amount it read (expected_est_distributable_wst) and the hold no longer carries it, or when the
+      hold's amount moved during the review; a hold filed after a rejection needs an explicit decision
+      (the Sanctum lists it); an
+      economy hold cannot be implemented by hand. Guards:
+      test_w463_economy_approvals_release_only_what_they_were_filed_for,
+      test_w463_hold_lifecycle_reviews_races_and_replays_both_ways; probe scripts/_w463_probe.mjs.
  P1.12 ✅ DONE W460 [1.12 · R4.3] Visual Composer: wire Export/Deploy to /resources/swarm/define + run with the
       returned cascade id, or RETIRE the tab and link the /native-ai designer. Either way the
       "GaaS COMPLIANT" badge goes. ACCEPT: no unevaluated compliance badge in src/.
@@ -775,7 +833,11 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       cascade's gate screens a constant attestation (the chip now says 'intent only'; gating the delivery
       is P2.6); one violation trips the shared breaker and its reset has no user dependency (P2.6);
       /api/v1/swarm has no auth dependency (P2.6); the swarm store's writers are unlocked, the contract
-      drops a stage's model, runs carry no run id, and the page cannot delete a cascade (P2.8).
+      drops a stage's model, runs carry no run id, and the page cannot delete a cascade (P2.8); the
+      mandates docs claim ENFORCED on the deleted gaas.ts (FU-004) and Command Center keeps hard-coded
+      status literals (FU-011) (both NEXT).
+      SPLIT OUT OF THIS AUDIT AND DONE: W461 — transformation stage verification honest (register
+      FU-001; guard test_w461_transformation_validation_is_honest; probe scripts/_w461_probe.mjs).
  P1.13 [1.13 · R5.6 R5.8] Catalogue honesty. Marketplace counts only routed entries as live; the six Domain
       Signature literals badged legacy or retired; the "QEP Flagship" tab removed from the five
       non-Religion hubs; DomainsHub/AIToolsCatalogue counts derived from ONE tool registry the
@@ -785,6 +847,19 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       "unchanged since <date>"; provenance badge on the Genesis card; plan parser keeps the
       floor prefix as provenance; POST /business-plan/set wired to an owner-edit surface; the
       Chief's Opening badged. ACCEPT: three assemblies on an unchanged VSB show one version.
+      ALREADY DONE TOWARDS IT: a floor-served pack's gate is 'not assessable' and the Genesis card's
+      QMS chip reads 'QMS: —' (W449); a floor-served narrative is 'narrative pending the owned model'
+      (W450); the pack refuses a pending working name (W450) and a blocking review gate (W452); the
+      Cockpit's Chief's Opening card on a Genesis-seeded plan wears the seeding's provenance badge and
+      names the pending fields (W450, W453). CAUTION: the DCS seal covers a content hash (W449), but the
+      sealed content is only the name, the 'Sections: …' preamble and the narrative — the layers and
+      the economy are outside it, and a floor narrative is one constant string — so an identical hash
+      means an identical narrative, not an unchanged pack. What remains: the section check still reads
+      that preamble (coverage 1.0 on every pack; it decides a verdict only on a MODEL-served one), the
+      empty-blueprint refusal, the 'unchanged since' disclosure (keyed on what the pack carries, not the
+      seal alone), the Genesis card's provenance badge, and the Chief's Opening on business_plan.py
+      /generate (gateway.query, no provenance, the prefix dropped by the parser) and BusinessPlan.tsx
+      (no badge; nothing calls /business-plan/set).
  MILESTONE M1: fidelity workflow re-run → Tier-1 count 0; ledger v4.
 
 PHASE P2 — REACH AND DISCLOSURE (Tier 2; ~8 rounds + the scatter)
@@ -815,6 +890,12 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; ~8 rounds + the scatter)
       gateway.query_meta; guardrails regex → word-boundary/context. ACCEPT: auth-ON suite —
       401 on POST /heartbeat/stop; "exploit the market opportunity" passes; every query_meta
       response carries a gate checkpoint.
+      ALREADY DONE TOWARDS IT: the CCA's write routes read an identity (W459, P1.11) and retiring an
+      economy record (POST /{id}/implement on an unreleasable economy hold) is admin-only under auth
+      (W463); the CCA's READ routes (GET /api/v1/cca, /queue, /approved, /rejected, /implemented, /{id},
+      /impact/{id}) carry no auth dependency — with AUTH_ENABLED on, a caller who is not signed in still
+      reads every change record and can trigger an impact assessment on any of them — that, and every
+      other router named here, is what remains. Register rows FU-005, FU-006, FU-007 ride here.
  P2.7 [2.4 · R4.5 R4.6 R6.1 R6.3 R6.4 R6.5 R6.8] The organism defends for real (the honest half first, then the wiring). layers_note
       truthful (Immune, Nervous bus, Self-healing, Musculoskeletal engaged; Cardiovascular and
       Endocrine not implemented; Respiratory = Agent Hub, records only) and the W434 sentence
@@ -904,6 +985,10 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; pre-flights built by us, switches flipped
 
 EFFORT, HONESTLY: ~33 rounds at the current cadence before P4 — P1 alone is the campaign's
 largest single phase and it is the one that matters most, because it is the one users meet.
+Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), plus three rounds between items — W461
+and W463 each worked a task an earlier round found and deferred, and W462 built the register after the
+Owner asked (2026-09-13) that suggested tasks be scheduled into the plan — and at W463 the register held
+twelve open NEXT rows before P1.13. Budget for that on top of the ~33.
 Do not shorten it by declaring; shorten it by measuring.
 </delivery_plan>
 
@@ -1036,7 +1121,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w459_probe.mjs (nineteen — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w463_probe.mjs (twenty-three — W441, the retirement round, needed none; W445–W448 added none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

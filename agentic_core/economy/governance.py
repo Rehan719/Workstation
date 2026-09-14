@@ -6,9 +6,11 @@ Three binding rules the model states, previously unenforced on the always-on pat
     no gate at all).
   • "Every cycle's split is logged to the UEG" — an explicit tamper-evident event carrying the
     per-stage WST amounts, not just a generic checkpoint.
-  • "material/large actions route to Change Control" — distributions whose estimated distributable
-    profit meets the materiality threshold are HELD until a Change Control approval exists (the
-    approval is consumed on use; below-threshold cycles proceed ungated-by-CC as designed).
+  • "material/large actions route to Change Control" — distributions (and inter-VSB transfers) whose estimated
+    amount meets the materiality threshold are HELD until the Change Control hold the economy itself filed for
+    that action is approved (W463: one approval releases one action of the same kind — same VSB, and the same
+    counterparty for a transfer — for at most the amount and intake it was filed for, and is spent once;
+    below-threshold actions proceed ungated-by-CC as designed).
 
 All amounts are virtual/simulated WST — no real funds move (real-money rails stay Owner-gated).
 """
@@ -108,7 +110,8 @@ def _restore_consumed_approval(consumed: Optional[Dict[str, Any]], *, vsb_id: st
     the hold's title) and ran whether or not this action had consumed anything: a blocked NON-material
     transfer or cycle re-approved an approval an EARLIER successful action had spent (or one an admin
     implemented), and the next material action spent it a second time. It now restores exactly the
-    consumption the gate handed back — `consumed` = {cca_id, consume_id}, or None when nothing was
+    consumption the gate handed back — `consumed` = {cca_id, consume_id, release, gate} (gate = the action's
+    source/counterparty, whose lock the restore takes), or None when nothing was
     consumed (then nothing is touched) — and only while that record's latest spend is still THIS one."""
     if not consumed:
         return
@@ -604,11 +607,14 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str,
                       intake: Optional[Dict[str, Any]] = None) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """§3 'material actions route to Change Control'. Returns (held, consumed):
       held      — None → proceed; a dict → the action is HELD (or was rejected) and must NOT run;
-      consumed  — None unless an approval was spent for this action, then {cca_id, consume_id, release}:
-                  `release` bounds what the action may take (see _fits), and cca_id/consume_id are the
-                  exact handle _restore_consumed_approval needs if the action does not run after all.
+      consumed  — None unless an approval was spent for this action, then {cca_id, consume_id, release, gate}:
+                  `release` bounds what the action may take (see _fits); cca_id/consume_id plus `gate` =
+                  {source, counterparty} are the exact handle _restore_consumed_approval needs if the action
+                  does not run after all (the gate names the per-action lock the give-back takes and the action
+                  whose newer records it checks).
     `intake` describes what the action would take: {revenue_wst, costs_wst, returns_wst, transfers_wst}
-    for an API cycle, plus event_ids for a heartbeat cycle; None for a transfer (its amount is the estimate)."""
+    plus reserve_rate for an API cycle; the same plus event_ids and event_items (the per-event amounts a release
+    re-estimates from) for a heartbeat cycle; None for a transfer (its amount is the estimate)."""
     if est_distributable < MATERIALITY_WST:
         return None, None
     try:

@@ -6,7 +6,7 @@ backend is configured by [`render.yaml`](../render.yaml); the frontend by
 `/api/*` to the Render service. CI ([`.github/workflows/spine.yml`](../.github/workflows/spine.yml))
 boots the backend + runs the integration suite and builds the frontend on every push.
 
-> Older guides under `docs/deployment/`, `docs/deployment_guide.md`, and `DEPLOY_QEP.md` are kept
+> Older guides under `_archive/docs/deployment/`, `_archive/docs/deployment_guide.md`, and `_archive/docs/DEPLOY_QEP.md` are kept
 > for reference but this file is the current source of truth.
 
 ## AI posture — in-house-first (no external key required)
@@ -80,8 +80,8 @@ fees). Nothing chargeable is triggered autonomously.
 ## Payments & money safety (READ BEFORE LAUNCH)
 
 The payments rails (`agentic_core/api/v310/payments.py`) operate in modes
-`simulation → test → live_gated → live`. **Live charges require BOTH a `sk_live_` key AND
-`STRIPE_LIVE_ENABLED=true`** — otherwise the code refuses to move real money.
+`simulation → test → live_gated → live`. **Live charges require ALL THREE: `REAL_MONEY_ENABLED = True` in code (`agentic_core/economy/owner_payments.py` — a reviewed code change, currently `False`), a `sk_live_` key, AND
+`STRIPE_LIVE_ENABLED=true`** — otherwise the code refuses to move real money. While the constant is `False`, a live key reports `live_gated` whatever the env switches say.
 
 - Keep money **virtual/simulated**: leave `STRIPE_SECRET_KEY` unset (or a `sk_test_` test key) and
   **do not** set `STRIPE_LIVE_ENABLED`.

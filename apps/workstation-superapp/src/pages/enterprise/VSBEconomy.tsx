@@ -358,7 +358,7 @@ export const VSBEconomy: React.FC = () => {
             <ShieldCheck size={14} /> {['blocked', 'halted'].includes(hold.status || '')
               ? `Blocked by the constitutional gate (${hold.status}) — nothing ran, nothing posted`
               : hold.status === 'rejected_by_change_control' ? 'Rejected by Change Control — asked again when the action changes'
-              : 'Held for Change Control — Owner approval required'}
+              : 'Held for Change Control — awaiting a Change Control decision'}
           </p>
           <p className="text-xs text-slate-400 mt-2 leading-relaxed">{hold.note || 'This distribution is material and awaits Change Control approval before any WST moves.'}</p>
           {hold.cca_id && (hold.status === 'rejected_by_change_control' ? (

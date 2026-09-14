@@ -110,7 +110,7 @@ vercel deploy
 
 **Backend → Render**
 
-`render.yaml` is committed. Connect the repo in Render dashboard; set `ANTHROPIC_API_KEY` in environment variables.
+`render.yaml` is committed. Connect the repo in Render dashboard; no AI key is required (the backend serves on its native fabric). An `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` is used only when `AI_ALLOW_EXTERNAL=true` — see `docs/DEPLOYMENT.md`.
 
 ## Architecture
 
@@ -137,7 +137,7 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **≈295 integration tests passing / 15 skipped** (last CI-green full run; grows every round); production
+> Verified in CI on every push: backend boots clean; **370 integration tests passing / 16 skipped** (last CI-green full run, W463; grows every round); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.
@@ -159,7 +159,7 @@ older `ACTION_PLAN.md` is archived under `_archive/docs/`); cycle-by-cycle progr
 **`docs/AUTONOMOUS_PROGRESS.md`**. Summary:
 
 **Phase 1 — ✅ done**: authentication (opt-in JWT, resilient crypto imports), integration test
-suite (≈295 passing at the last CI-green run), clean boot verified, frontend↔backend integration (all 18 previously-broken
+suite (370 passing at the last CI-green run, W463), clean boot verified, frontend↔backend integration (all 18 previously-broken
 endpoints wired), production build verified + code-split.
 
 **Phase 2 — in progress (non-gated)**: deeper domain-specific AI depth across Realm × Domain,
@@ -170,4 +170,4 @@ until directed), production deployment hardening, live AI key in the running env
 
 ---
 
-*Previous session documentation has been moved to `/archive`.*
+*Previous session documentation has been moved to `_archive/`.*

@@ -13,7 +13,10 @@ Governance tiers (W459 — this list is what the code DOES; the earlier version 
 constitutional GaaS gate, a 24h cooling period and a manual flag, none of which exist here):
   LOW    — auto-approved at submit when composite health >= 0.6 AND immune threat is
            NOMINAL/ELEVATED; otherwise held for review
-  MEDIUM — review required. A single [DECISION: …] marker from the serving model decides it. With
+  MEDIUM — review required (economy materiality holds, change_type economy_material, are MEDIUM; one
+           filed after a rejection of its action — follows_rejection — is never decided by a review: it is
+           HELD with hold_reason follows_rejection_requires_explicit_decision until an explicit decision).
+           Otherwise a single [DECISION: …] marker from the serving model decides it. With
            no marker (the deterministic floor) or conflicting markers, the verdict is the
            ORGANISM-HEALTH THRESHOLD RULE (composite_health >= 0.5 → approved, else rejected), and the
            record says so in `decision_source` and at the head of the review text. With auth
@@ -43,7 +46,10 @@ reflex, the VSB evolution apply, the economy cycle) name the mechanism instead. 
   GET  /api/v1/cca/approved         — approved change log
   GET  /api/v1/cca/rejected         — rejected change log
   GET  /api/v1/cca/{cca_id}         — get a specific change request
-  POST /api/v1/cca/{cca_id}/implement — apply + mark an approved change implemented
+  POST /api/v1/cca/{cca_id}/implement — apply + mark an approved change implemented (an approved
+                                       economy_material hold is never implemented here: refused 409 while an
+                                       action can still release it or that cannot be determined, otherwise
+                                       retired as 'withdrawn' — admin only)
   GET  /api/v1/cca/impact/{cca_id}  — AI impact assessment
   GET  /api/v1/cca                  — every change record
   GET  /api/v1/cca/implemented      — implemented change log
@@ -686,7 +692,9 @@ async def review_change(cca_id: str, req: ReviewDecision,
     explicit `admin_decision_for_critical`. (2) What a review can decide is explicit: a CRITICAL change
     is ALWAYS held for an explicit admin decision (a model marker is stored only as a recommendation;
     it used to be silently rejected by the health rule, and rejection is terminal). A single model
-    marker decides a MEDIUM/HIGH change. With no marker, or conflicting markers, the organism-health
+    marker decides a MEDIUM/HIGH change — except an economy hold filed after a rejection of its action
+    (follows_rejection), which any review HOLDS (hold_reason follows_rejection_requires_explicit_decision, the
+    verdict kept as a recommendation) for an explicit decision. With no marker, or conflicting markers, the organism-health
     threshold RULE decides it and the record says so — except that with auth enabled a rule verdict
     is applied only when an admin requested the review (a non-admin's review is held, with the rule's
     verdict as a recommendation). (3) The decision is
@@ -882,7 +890,11 @@ async def review_change(cca_id: str, req: ReviewDecision,
 @router.post("/{cca_id}/implement")
 async def implement_change(cca_id: str, force: bool = False,
                            user: dict | None = Depends(get_current_user)):
-    """Apply and mark an approved change implemented. §17.5 invariant: HIGH/CRITICAL changes REQUIRE a
+    """Apply and mark an approved change implemented. An economy materiality hold (change_type
+    economy_material) is never implemented here: it is refused 409 unless the record's own reading shows no
+    action can ever release it (running the action it was filed for is what spends the approval), and only
+    then retired as 'withdrawn' (admin only when auth is enabled).
+    §17.5 invariant: HIGH/CRITICAL changes REQUIRE a
     recorded pre-validation PASS (run at review-approval, or via POST /{cca_id}/twin-prevalidate); a
     FAIL blocks implementation unless an admin overrides with ?force=true (audit-trailed). With auth
     enabled, a change that sets a governed live lever (or resets the config) is implemented only by an

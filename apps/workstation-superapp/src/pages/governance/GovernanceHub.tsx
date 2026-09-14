@@ -626,7 +626,7 @@ const SanctumTab: React.FC = () => {
               <div className="pt-4 border-t border-white/5 text-[10px] text-slate-500 font-bold leading-relaxed">
                 A sovereign vote here writes the Owner's decision straight onto the change request in the
                 Change Control Agency — a CRITICAL-tier change, or one a review held for an explicit decision
-                (such as an economy hold filed after a rejection) — recorded in that change's own audit trail,
+                (or an economy hold filed after a rejection, listed here from the moment it is filed — a review without an explicit decision would only hold it) — recorded in that change's own audit trail,
                 as an explicit admin decision, with the principal that made it.
               </div>
             </div>

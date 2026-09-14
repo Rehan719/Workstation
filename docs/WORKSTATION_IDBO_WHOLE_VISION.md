@@ -274,8 +274,8 @@ workstream **W1 — Native AI Resource Fabric**.)
 > `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` holds the real-vs-mock record, and
 > `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` records the primitives' audit: **all 10 audited
 > primitives FIXED and WIRED (W437)**; what remains there is latent — four unreached fabricating
-> functions, plus two dormant governance gaps on reached CCA routes (latent by absent
-> contention/consumers, not by unreachability).
+> functions (the two governance gaps it recorded on reached CCA routes — change-record write races and
+> an unconsumed ratification flag — were closed W459).
 
 ## 7. The Reconfigurable Resource Fabric + Digital Resources (with user design control)
 

@@ -222,7 +222,7 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
             <ShieldCheck size={13} /> {['blocked', 'halted'].includes(held.status)
               ? `Blocked by the constitutional gate (${held.status}) — nothing ran, nothing posted`
               : held.status === 'rejected_by_change_control' ? 'Rejected by Change Control'
-              : 'Held for Change Control — Owner approval required'}
+              : 'Held for Change Control — awaiting a Change Control decision'}
           </p>
           <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{held.note || (['blocked', 'halted'].includes(held.status)
             ? 'The gaas.v5 constitutional gate refused this transfer; no WST moved and no Change Control request exists.'

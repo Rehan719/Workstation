@@ -8,13 +8,13 @@ Workstation is an open-source AI-mediated workspace (Apache 2.0). Contributions 
 2. **Products** — extend Factory, Reactor, Incubator, or Synthesis Studio with new product types
 3. **Persistence** — migrate file-based JSON store to SQLite/PostgreSQL
 4. **Frontend** — improve UI, add export formats, improve the domain hub pages
-5. **Security** — report vulnerabilities via `SECURITY.md`
+5. **Security** — report vulnerabilities privately to the repository owner, not in a public issue (the repository has no current `SECURITY.md` policy file; the copy under `_archive/docs/security/SECURITY.md` is archived and its contact channels are not maintained)
 
 ## Standards
 
 **No fabricated metrics.** No commit message, PR description, or document in this repository may use the words "certified", "converged", or "passed" without a test or measurement that would catch a false positive. Percentage claims (uptime, resolution rate, viral coefficient) require a real data source — not a calculation applied to invented inputs.
 
-**No silent simulation.** Any endpoint on the MVP path (`app_mvp.py`) must make a real LLM call or return a clearly labelled error. Do not add `# Simulation` blocks, hardcoded responses, or `random.uniform()` calls to endpoints mounted in `app_mvp.py`.
+**No silent simulation.** Any endpoint on the MVP path (`app_mvp.py`) must return real output — computed from the real stores, or served by the native AI fabric (or an opted-in external provider) with honest provenance (`served_by`, `is_external`) — or a clearly labelled error. Do not add `# Simulation` blocks, hardcoded responses, or `random.uniform()` calls to endpoints mounted in `app_mvp.py`.
 
 **Working code over documentation.** A PR that adds a working feature with no comment is better than a PR that adds documentation for a feature that doesn't exist.
 
