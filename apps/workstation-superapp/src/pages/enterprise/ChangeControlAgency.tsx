@@ -26,6 +26,10 @@ interface CCARow {
   decision?: string | null;
   est_distributable_wst?: number | null;   // W463 — an economy hold's current amount (virtual WST)
   releasable?: boolean;                    // W463 — whether running the economy action can ever release it
+  // W464 (FU-012) — what decided it, and whether a review's approval of a HIGH change still waits for the Board
+  decision_source?: string | null;
+  awaiting_board_ratification?: boolean;
+  board_ratification?: 'ratified' | 'refused' | null;
 }
 
 interface CCADetail extends CCARow {
@@ -44,10 +48,22 @@ interface CCADetail extends CCARow {
 interface CCAStats {
   total: number;
   pending: number;
+  awaiting: number;
   approved: number;
   rejected: number;
   implemented: number;
 }
+
+// W464 — what decided a record, in words (a raw token is never shown as the reason)
+const DECIDED_BY_WORDS: Record<string, string> = {
+  health_threshold_rule: 'organism-health threshold rule (not the model)',
+  model_decision_marker: 'the reviewing model’s decision marker',
+  admin_override: 'an explicit admin decision',
+  board_refusal: 'the Board, on the Owner’s direction — ratification refused',
+  low_tier_auto_approval: 'LOW-tier auto-approval (organism healthy, no immune threat)',
+  immune_defence_reflex: 'the immune system’s defensive reflex',
+  unrecorded_decision: 'not recorded (decided before W459) — read as a review’s',
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -80,6 +96,7 @@ const CHANGE_TYPES = [
   { value: 'config_minor',       label: 'Config — Minor',        tier: 'LOW'      },
   { value: 'config_major',       label: 'Config — Major',        tier: 'MEDIUM'   },
   { value: 'organism_mutation',  label: 'Organism Mutation',     tier: 'HIGH'     },
+  { value: 'code_change',        label: 'Code Change',           tier: 'HIGH'     },
   { value: 'constitutional',     label: 'Constitutional Change',  tier: 'CRITICAL' },
 ];
 
@@ -214,16 +231,24 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                 <p className="text-xs font-mono text-white/40" data-testid="cca-decision-source">
                   decided by:{' '}
                   <span className={detail.decision_source === 'health_threshold_rule' ? 'text-amber-400/80' : 'text-white/60'}>
-                    {detail.decision_source === 'health_threshold_rule' ? 'organism-health threshold rule (not the model)'
-                      : detail.decision_source === 'model_decision_marker' ? 'the reviewing model\u2019s decision marker'
-                      : detail.decision_source === 'admin_override' ? 'an explicit admin decision'
-                      : detail.decision_source}
+                    {DECIDED_BY_WORDS[detail.decision_source] ?? detail.decision_source}
                   </span>
+                  {/* W464 (FU-012) \u2014 a review's approval of a HIGH change is not final until the Board ratifies it */}
+                  {entry.awaiting_board_ratification ? ' \u2014 approved by a review, awaiting Board ratification'
+                    : entry.board_ratification === 'ratified' ? ' \u2014 ratified by the Board on the Owner\u2019s direction' : ''}
                 </p>
               ))}
 
               <div className="flex items-center gap-2 pt-1">
-                {isPending(entry.status) && (
+                {/* W464 (FU-014) \u2014 a material economy action is CRITICAL: a review never decides it, and requesting
+                    one would only freeze the hold's amount; the Owner decides it in the Sanctum */}
+                {isPending(entry.status) && entry.change_type === 'economy_material' && (
+                  <a href="/governance-hub" onClick={e => e.stopPropagation()} data-testid="cca-economy-sanctum-note"
+                     className="text-xs text-amber-400/80 underline">
+                    decided only by the Owner &mdash; in the Governance hub&rsquo;s Sovereign Sanctum
+                  </a>
+                )}
+                {isPending(entry.status) && entry.change_type !== 'economy_material' && (
                   <button
                     onClick={e => { e.stopPropagation(); onReview(entry.cca_id); }}
                     disabled={refreshing === entry.cca_id}
@@ -250,7 +275,13 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                     Retire — no action can release it
                   </button>
                 )}
-                {entry.status === 'approved' && entry.change_type !== 'economy_material' && (
+                {entry.status === 'approved' && entry.change_type !== 'economy_material' && entry.awaiting_board_ratification && (
+                  <a href="/ceo?tab=board" onClick={e => e.stopPropagation()} data-testid="cca-awaiting-ratification"
+                     className="text-xs text-orange-300/90 underline">
+                    approved by review — awaiting Board ratification (ratify or refuse it on the Board page)
+                  </a>
+                )}
+                {entry.status === 'approved' && entry.change_type !== 'economy_material' && !entry.awaiting_board_ratification && (
                   <button
                     onClick={e => { e.stopPropagation(); onImplement(entry.cca_id); }}
                     disabled={refreshing === entry.cca_id}
@@ -391,12 +422,12 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-type FilterTab = 'all' | 'pending' | 'approved' | 'rejected' | 'implemented';
+type FilterTab = 'all' | 'pending' | 'awaiting' | 'approved' | 'rejected' | 'implemented';
 
 export const ChangeControlAgency: React.FC = () => {
   const [entries, setEntries] = useState<CCARow[]>([]);
   const [filter, setFilter] = useState<FilterTab>('all');
-  const [stats, setStats] = useState<CCAStats>({ total: 0, pending: 0, approved: 0, rejected: 0, implemented: 0 });
+  const [stats, setStats] = useState<CCAStats>({ total: 0, pending: 0, awaiting: 0, approved: 0, rejected: 0, implemented: 0 });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -411,10 +442,12 @@ export const ChangeControlAgency: React.FC = () => {
       setEntries(all);
       setLoadError(null);
       const pending = all.filter(e => isPending(e.status)).length;
-      const approved = all.filter(e => e.status === 'approved').length;
+      // W464 — an approval waiting for Board ratification is not counted as approved
+      const awaiting = all.filter(e => e.status === 'approved' && e.awaiting_board_ratification).length;
+      const approved = all.filter(e => e.status === 'approved' && !e.awaiting_board_ratification).length;
       const rejected = all.filter(e => e.status === 'rejected').length;
       const implemented = all.filter(e => e.status === 'implemented').length;
-      setStats({ total: all.length, pending, approved, rejected, implemented });
+      setStats({ total: all.length, pending, awaiting, approved, rejected, implemented });
     } catch {
       setLoadError('Could not load the change queue — backend unreachable.');
     } finally { setLoading(false); }
@@ -446,11 +479,9 @@ export const ChangeControlAgency: React.FC = () => {
 
   const triggerReview = (id: string) =>
     // ReviewDecision body is required by the endpoint; no override = "request a review" (a model
-    // marker, else the organism-health rule — CRITICAL is always held for an explicit admin decision)
-    runAction(id, () => axios.post(`/api/v1/cca/${id}/review`, { reviewer_notes: 'Requested via the Change Control Agency UI',
-      // W463 — an economy hold's amount as this page showed it; a hold that moved since is refused (409)
-      ...(entries.find(e => e.cca_id === id)?.est_distributable_wst != null
-          ? { expected_est_distributable_wst: entries.find(e => e.cca_id === id)?.est_distributable_wst } : {}) }));
+    // marker, else the organism-health rule — CRITICAL is always held for an explicit admin decision).
+    // W464: never offered for an economy hold (CRITICAL — the Owner decides it in the Sanctum)
+    runAction(id, () => axios.post(`/api/v1/cca/${id}/review`, { reviewer_notes: 'Requested via the Change Control Agency UI' }));
 
   const triggerImplement = (id: string) =>
     runAction(id, () => axios.post(`/api/v1/cca/${id}/implement`));
@@ -459,11 +490,16 @@ export const ChangeControlAgency: React.FC = () => {
     ? entries
     : filter === 'pending'
       ? entries.filter(e => isPending(e.status))
-      : entries.filter(e => e.status === filter);
+      : filter === 'awaiting'
+        ? entries.filter(e => e.status === 'approved' && e.awaiting_board_ratification)
+        : filter === 'approved'
+          ? entries.filter(e => e.status === 'approved' && !e.awaiting_board_ratification)
+          : entries.filter(e => e.status === filter);
 
   const FILTER_TABS: { id: FilterTab; label: string; count: number; color: string }[] = [
     { id: 'all',         label: 'All',         count: stats.total,       color: 'text-white/60'   },
     { id: 'pending',     label: 'Pending',      count: stats.pending,     color: 'text-yellow-400' },
+    { id: 'awaiting',    label: 'Awaiting Board', count: stats.awaiting,  color: 'text-orange-300' },
     { id: 'approved',    label: 'Approved',     count: stats.approved,    color: 'text-green-400'  },
     { id: 'rejected',    label: 'Rejected',     count: stats.rejected,    color: 'text-red-400'    },
     { id: 'implemented', label: 'Implemented',  count: stats.implemented, color: 'text-blue-400'   },
@@ -476,13 +512,14 @@ export const ChangeControlAgency: React.FC = () => {
           <GitBranch size={22} className="text-purple-400" />
           Change Control Agency
         </h1>
-        <p className="text-sm text-white/40 mt-1">Governance gateway — every organism change is tier-gated, recorded and audit-trailed; a review is requested for MEDIUM and above, and each record says what decided it</p>
+        <p className="text-sm text-white/40 mt-1">Governance gateway — every organism change is tier-gated, recorded and audit-trailed, and each record says what decided it. A review decides MEDIUM and HIGH changes (a HIGH change a review approves waits for Board ratification); CRITICAL changes — every material economy action among them — are decided only by the Owner&rsquo;s explicit decision. Decisions made since W464 are also written to the constitutional ledger (each decision&rsquo;s response says whether its entry landed); earlier decisions are in this store only.</p>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: 'Pending', value: stats.pending, color: 'text-yellow-400' },
+          { label: 'Awaiting Board', value: stats.awaiting, color: 'text-orange-300' },
           { label: 'Approved', value: stats.approved, color: 'text-green-400' },
           { label: 'Rejected', value: stats.rejected, color: 'text-red-400' },
           { label: 'Implemented', value: stats.implemented, color: 'text-blue-400' },

@@ -17,6 +17,9 @@ is the digital twin of *that* VSB's owner.
   GET  /api/v1/board/charter          — the board charter + arms-length governance model
   POST /api/v1/board/chief/instruct   — Owner instructs their Chief twin → board directive → AI CEO action plan
   POST /api/v1/board/directive        — the board issues a directive on a topic (directors weigh in)
+  GET  /api/v1/board/ratifications    — W464: HIGH changes a review approved, waiting for the Board to ratify them
+  POST /api/v1/board/ratifications/{cca_id} — W464: record the Board's decision (ratify | refuse) on the Owner's
+                                        direction (admin only with auth on; on_owner_direction: true in both modes)
 """
 from __future__ import annotations
 
@@ -25,10 +28,12 @@ import time
 import uuid
 from pathlib import Path
 from agentic_core.config import data_path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from agentic_core.auth.core import auth_enabled, get_current_user
 
 from agentic_core.ai.gateway import gateway
 
@@ -228,7 +233,17 @@ async def board_status(scope: str = "workstation"):
         "directors": [d for d in _BOARD if d["id"] != "chief"],
         "live": snapshot,
         "recent_directives": _load()[-5:],
+        # W464 (FU-012) — how many changes wait for the Board (the queue itself: GET /ratifications)
+        "pending_ratifications": _pending_ratification_count(),
     }
+
+
+def _pending_ratification_count() -> Optional[int]:
+    try:
+        from agentic_core.api.change_control import pending_ratifications as _pr
+        return len(_pr())
+    except Exception:
+        return None
 
 
 @router.get("/charter")
@@ -242,7 +257,49 @@ async def board_charter():
             "update, control and impact all VSB living processes (highest authority)."
         ),
         "applies_to": "The Workstation IDBO and every VSB IDBO entity it generates.",
+        # W464 (FU-012, the Owner's ruling of 2026-09-14) — the Board's ratification duty. A change reaching the Board
+        # for ratification is a request flowing UP from Change Control, not an instruction to the Board.
+        "ratification": (
+            "A HIGH-tier change approved by a review (the reviewing model's decision marker or the organism-health "
+            "threshold rule) waits for the Board to ratify it; nothing implements it until the Board, on the Owner's "
+            "direction, ratifies or refuses it. The Owner's own explicit decisions need no ratification, and every "
+            "material economy action is decided by the Owner directly (CRITICAL)."),
     }
+
+
+class RatificationDecision(BaseModel):
+    decision: Literal["ratify", "refuse"]
+    notes: str = ""
+    # A ratification is the Owner's decision recorded by the Board, never incidental: required in BOTH auth modes
+    # (with auth off there is no admin role to check, so the acknowledgement is the whole gate).
+    on_owner_direction: bool = False
+
+
+@router.get("/ratifications")
+async def ratification_queue():
+    """W464 (FU-012) — the Board's ratification queue: every HIGH change a review approved that no Board decision has
+    ratified yet (read from the full Change Control records, uncapped)."""
+    from agentic_core.api.change_control import pending_ratifications
+    rows = pending_ratifications()
+    return {"pending": rows, "total": len(rows),
+            "rule": ("A HIGH change approved by a review waits here; the Board ratifies or refuses it on the Owner's "
+                     "direction. Nothing implements it until then.")}
+
+
+@router.post("/ratifications/{cca_id}")
+async def decide_ratification(cca_id: str, req: RatificationDecision,
+                              user: dict | None = Depends(get_current_user)):
+    """W464 (FU-012) — the Board records the Owner's decision on a change awaiting ratification. With auth enabled only
+    an admin principal may (the name stamped is the authenticated one — a client cannot claim the Owner's); in both
+    modes the caller must send on_owner_direction: true. No AI call decides it."""
+    from agentic_core.api import change_control as cca
+    u = cca._principal(user)
+    if auth_enabled() and (not u or u.get("role") != "admin"):
+        raise HTTPException(status_code=403, detail="Only an admin may record a Board ratification decision.")
+    if not req.on_owner_direction:
+        raise HTTPException(status_code=403, detail=(
+            "A ratification is the Owner's decision, recorded by the Board: resend with on_owner_direction: true."))
+    return cca.ratify_change(cca_id, req.decision, req.notes, cca._actor(user), cca._verified(user))
 
 
 class ChiefInstruction(BaseModel):

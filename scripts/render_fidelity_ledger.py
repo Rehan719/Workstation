@@ -122,8 +122,10 @@ STATUS = {
             "and a CRITICAL decision needs an explicit admin_decision_for_critical in both modes, every decision "
             "records by / by_verified / decided_by (never 'cca_ai' for a human), a review with no model marker says "
             "the organism-health threshold rule decided it and a CRITICAL one is HELD, and every mutation of a "
-            "change record is a compare-and-set under its lock. Not in this round: P2.6's other routers, a Board "
-            "ratification workflow (the unconsumed flag was deleted), a UEG write.",
+            "change record is a compare-and-set under its lock. Not in that round: P2.6's other routers, a Board "
+            "ratification workflow (the unconsumed flag was deleted), a UEG write — the last two built W464 on the "
+            "Owner's rulings of 2026-09-14 (a HIGH change a review approved waits for Board ratification; Change "
+            "Control decisions are written to the UEG; economy_material CRITICAL, code_change HIGH).",
     "R6.2": "FIXED W459 (P1.11) — the §17.5 arms-length half: the pre-validation fallback no longer claims a "
             "digital-twin forward simulation (method / source_label: 'no twin model — health gate only'), a "
             "human override is attributed to the principal rather than 'cca_ai', and with auth ON an unauthenticated "

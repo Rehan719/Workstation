@@ -5650,3 +5650,121 @@ verified one-line fix and a coverage gap, no new class.
 Suite: 371 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 39 min).
 
 **Documentation sweep (follow-up commit, 2026-09-14).** After the push, eight read-only auditors went through every document — the delivery prompt, the living plan and whole vision, the economic model, README/CONTRIBUTING/DEPLOYMENT/OPERATIONS, the four ledgers, the understanding/review/audit docs, this entry, and the docstrings and page copy of the W463 surfaces — for current-state claims now false, and each finding went to a second agent that tried to refute it (44 found, 37 kept, 7 dropped). Fixed: stale counters (the log's 402 headings, probe ports to :8070, 23 committed probes, the suite figures in the living plan, understanding doc and README), the concurrency class's range (W241→W463), two CCA defects the prompt and vision still called dormant (closed W459), the economic model's governance section (now states the materiality threshold and what approving or rejecting a hold does), the living plan's persistence and change-control rows and the plan API's phase line, DEPLOYMENT's live-charge gate (three switches, not two) and archived-guide paths, an OPERATIONS page describing mechanisms that do not exist, README's key and archive notes, CONTRIBUTING's security and LLM-call rules, the Change Control docstrings (follows-rejection holds, the implement refusal/retirement), the gate and transfer docstrings, and page copy that said every economy hold needs Owner approval or is decided on the Change Control page. The delivery plan itself then recorded what is done (the Owner's catch: it had not): a WHERE THE PLAN STANDS block (P1.1–P1.12 done; W461, W462 and W463 run between items; the register's NEXT rows before P1.13; the Owner's rows), P1.11's and P1.12's leftovers tied to their register rows, and — from a second verified sweep of the whole prompt (21 kept, 3 dropped) — <ordering> and the P1 header no longer saying P1 comes before everything, answer C and the Owner list current, the board-pack work W449–W452 already did recorded under P1.14 and ledger 1.14, ledger 3.9's regression marked closed by W450, ledger 2.2's query count (46) and 2.3's profile_applied half, P2.6's CCA progress (its read routes carry no auth dependency), the register named among the companions, and the native ledger's four open latents. README's last CI-green figures are W463's run: 370 passed / 16 skipped.
+
+
+### W464 — the Owner's four rulings on Change Control and the genome engine (register FU-012, FU-013, FU-014, FU-020)
+
+**What was wrong.** The register's four OWNER rows had waited since W459/W463, and each left a governance gap
+the Owner had to rule on. W459 deleted `requires_ratification` rather than give it a consumer: a HIGH change
+approved by a single model marker, or by the organism-health rule, went straight to /implement (FU-012).
+Change Control wrote no decision to the constitutional ledger; a hash-chained record existed only for the
+economy's own events (FU-013). `_TIER_MAP` had no entry for `code_change` or `economy_material`, so both fell to
+MEDIUM by the default: every material economy action (a distribution or transfer at or above the materiality
+threshold, virtual WST) could be approved by a model review, and the tier was stamped once at filing, with
+nothing re-reading the map at decision time (FU-014). `genome_engine.py`'s rollback popped the LAST checkpoint
+whatever was asked (after A then B, undoing A removed B and kept A). It wrote nothing, a failed write still
+returned True after logging a ratification, deletions stayed in memory, checkpoints lived only in memory, and
+GENOME_FILE resolved through `config.paths` to a directory one level ABOVE the repository, outside test
+isolation (FU-020).
+
+**The Owner ruled (2026-09-14):**
+- FU-012: a HIGH change a REVIEW approved waits for Board ratification.
+- FU-013: Change Control DECISIONS only go to the UEG.
+- FU-014: economy_material is CRITICAL and code_change is HIGH.
+- FU-020: fix genome_engine.py and keep it unwired.
+
+**What changed.**
+- **Board ratification (FU-012).** `awaiting_board_ratification` is derived from the record, so an approval made
+  before the ruling waits too. It holds for an approved, non-economy record at effective tier HIGH or above whose
+  approval came from a review, and that the Board has not ratified. `/implement` refuses such a record (409, and
+  `?force` does not pass it), before anything is written. The same predicate runs inside the VSB evolution claim,
+  the v191 mirror, the organism counts and the list/detail rows. The Board decides through `GET
+  /api/v1/board/ratifications` (the uncapped queue, read from the full records) and `POST
+  /api/v1/board/ratifications/{cca_id}` (`ratify` | `refuse`). With auth on, only an admin may post, stamped
+  with the authenticated name. In both modes the caller must send `on_owner_direction: true`. No AI call decides
+  it. The decision is a compare-and-set under the record's lock. A refusal rejects the change with
+  `decision_source board_refusal`; a ratification lets `/implement` proceed, and its §17.5 check still applies.
+  The Board page lists each waiting change with what approved it, its pre-validation and the review text.
+  Ratify and Refuse stay disabled until the decision is ticked as the Owner's direction, and a refused call is
+  shown as the refusal. The Change Control page shows "awaiting Board ratification" with no Implement button and
+  an "Awaiting Board" count; the organism dashboard and the Capital dashboard count and badge these changes
+  apart from plain approvals.
+- **Decisions on the ledger (FU-013).** Each Change Control decision writes one UEG event, after the record lands
+  and outside its lock: every approval (a review's, the Owner's, the LOW auto-approval, the immune reflex), every
+  rejection, a retirement through /implement, and both Board decisions (`cca.change_approved` /
+  `cca.change_rejected` / `cca.change_retired` / `board.change_ratified` / `board.change_ratification_refused`).
+  A held review or a submission writes nothing, and a refused compare-and-set writes nothing. A ledger failure
+  never undoes the decision; the response says `ueg_logged: false`. `classify_event` names the refusals as flagged
+  and reads an approval still awaiting ratification as review. Events carry no review text or model output. The
+  LOW auto-approval and the immune reflex now also record `decision_source`.
+- **Tiers (FU-014).** `code_change` HIGH, `economy_material` CRITICAL. A record is decided and implemented under
+  its EFFECTIVE tier (the tier map is a floor; a stored tier is never lowered), stamped when a review starts or
+  the gate keeps a hold current. A review of an economy hold records a recommendation. The W463 branch that held
+  only a hold filed after a rejection is gone, since no review decides any of them; the follows link stays as
+  information. An override without `admin_decision_for_critical` is refused, and the refusal names the Sanctum.
+  No §17.5 pre-validation runs for an economy hold (its implement path never reads one). The gate releases only
+  an approval recorded as the Owner's explicit decision. An approval a review made before the ruling, or one with
+  no decision recorded, is withdrawn saying why and the action is asked again as a fresh CRITICAL hold. It never
+  displaces a newer hold on a give-back, and `/implement` can retire it. Earlier rejections still stand
+  (refusing is the restrictive side) and still say what made them. Every held answer says only the Owner decides.
+  The economy pages and the Change Control page send the Owner to the Sanctum, never to request a review.
+- **Genome engine (FU-020).**
+  - `rollback(proposal_id)` restores THAT proposal's own checkpoint, persists it, names the later changes it
+    discards and drops their checkpoints.
+  - The genome, its checkpoints and the rollback record persist together in one document under
+    `data_path("genome_engine")`; every mutation re-reads it inside the store lock.
+  - A new article's id is chosen there from the genome just read.
+  - Ratification is logged only after the write lands.
+  - A store (or a checkpoint) that does not parse or has the wrong shape is refused, never replaced by the seed.
+  - Importing the module reads and writes nothing (the engine is lazy).
+  - The module is still unwired.
+
+**Refuted (own diff), three passes.**
+- **First pass:** five dimensions, 24 findings, 18 confirmed, all fixed and guarded.
+  - Records decided before W459 carry no `decision_source`, so a pre-W459 review approval skipped ratification
+    and could be implemented. `approval_source` now reads what decided a record: an override is recognised by its
+    "Manual override:" review text, a pre-W464 auto-approval by its decision, and anything else as an
+    unrecorded decision, read as a review's (fail closed). The economy gate uses the same reading.
+  - The organism and Capital dashboards counted or badged an awaiting approval as approved.
+  - Copy claimed every decision is on the ledger; it now says what lands.
+  - A hold decided while the gate ran was answered as awaiting a decision (now `decided_concurrently`).
+  - A generated article id chosen from memory overwrote another article.
+  - The strict loader raised on a wrong-shaped store and coerced a malformed rollback record.
+  - A JSX escape rendered literally.
+  - Five test guards had gone vacuous or order-dependent: the genome import check, the ratification counts
+    against leftovers, W463's S15 mid-scan approval and its follows-note assertions, and residue left in the store.
+- **Second pass:** 15 confirmed, nine distinct.
+  - The §17.5 test's hand-approved record now read as awaiting ratification.
+  - The economy's `rejected_by` still read the raw source.
+  - A hold that only moved to under_review was answered as decided.
+  - The Board page and the Sanctum copy needed the same scoping.
+  - A checkpoint that is not a genome could be restored.
+  - A bool or a missing id key was accepted as an article id.
+  - The import probe could not see a store read.
+- **Third pass:** 2 confirmed, both low: `delete_article` still accepted a bool id, and the probe's regex was stale.
+  The loop stopped there.
+
+**Found and not done:** FU-025 … FU-033 (registered). Among them: a pre-existing order-dependent test found in
+passing, reproduced at HEAD (FU-025); `config/paths.py` resolving one level above the repo, so the live AI memory
+store sits outside it (FU-026 — relocating it needs a migration); MANDATES.md certifying a 1127-article genome
+(FU-027); and Board ratification being apex-only while the Board's other routes trust a client-supplied owner
+(FU-029, P2.6).
+
+**Browser (fresh backend :8073, bundle rebuilt).**
+- `scripts/_w464_probe.mjs`, 11/11:
+  - a code_change is HIGH and a review's approval waits;
+  - /change-control shows it awaiting the Board with no Implement, and a forced /implement is refused;
+  - the Board page lists it with Ratify disabled until it is ticked as the Owner's direction;
+  - (stubbed 403) a refused ratification is shown as the refusal;
+  - Ratify and Refuse move the records;
+  - the ledger nodes classify review / recorded / flagged;
+  - a material cycle files a CRITICAL hold, the economy page points to the Sanctum, and /change-control offers
+    no review;
+  - a Sanctum vote approves with no pre-validation, the toast says it reached the ledger, and the cycle runs.
+- `scripts/_w463_probe.mjs`, 13/13, updated for CRITICAL holds: an economy hold has no Request review, and card
+  selectors are exact now that every economy hold appears in the Sanctum.
+- `scripts/_w459_probe.mjs`, 7/7.
+
+**Broken 89 ways.** Each blind was applied alone, the guards were run, and the file was restored byte-for-byte: 67 on the first draft, 13 more for the first refutation's fixes, 9 for the second's and third's. All 89 were run again on the final tree with nothing else running, and every one fails; none stays green. Four new guards: test_w464_board_ratifies_what_a_review_approved_before_anything_acts, test_w464_change_control_decisions_are_written_to_the_ledger, test_w464_every_material_economy_action_is_decided_by_the_owner, test_w464_genome_engine_rollback_restores_the_proposals_own_checkpoint. Tests the ruling changed were updated to it, never loosened: W313/W249 approve economy holds with the CRITICAL acknowledgement; W463's follows-rejection holds now expect critical_requires_admin_decision; hand-written approvals that model the Owner's decision carry decision_source admin_override; the §17.5 test's hand approval is the Owner's.
+
+Suite: 375 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 390 items from 351 test functions).

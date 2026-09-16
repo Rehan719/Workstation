@@ -40,7 +40,7 @@
 > `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task, slotted NEXT, to a
 > plan item, or OWNER; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
 > primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
-> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W463) ·
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W464) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -130,13 +130,22 @@ E — FEDERATION (Owner decision 2026-08-31, now recorded as vision §18-E): cro
     key — never open discovery. Entity-to-entity contracts and transfers within ONE instance are
     delivered and are not what this ruling gates.
 
+F — CHANGE CONTROL AND THE GENOME ENGINE (Owner rulings 2026-09-14, the register's four OWNER rows,
+    DELIVERED W464): a HIGH change approved by a REVIEW (the model's marker or the health rule — and a
+    decision made before W459 that recorded no source, read as a review's) waits for BOARD RATIFICATION
+    on the Owner's direction before anything acts on it (FU-012; GET/POST /api/v1/board/ratifications,
+    the Board page) · Change Control writes its DECISIONS — approvals, rejections, retirements, Board
+    ratification decisions — to the UEG, never its submissions or holds (FU-013) · economy_material is
+    CRITICAL, so every material economy action is decided only by the Owner's explicit decision in the
+    Sanctum and the gate releases only such an approval; code_change is HIGH (FU-014) ·
+    genome_engine.py FIXED AND KEPT, still unwired: rollback restores the proposal's own checkpoint and
+    persists (FU-020). Do not reopen these; build on them.
+
 STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for them):
     the single lifecycle (ledger 3.10) · whether §17.1's Products axis is built or amended ·
     whether §17.5's KPI gate is built or amended · the scope of §17.4 Mode 2 (an expert twin node)
-    · the Stripe key roll · the 162 test-owned entities · and the follow-up register's OWNER rows
-    (W459, W463): FU-012 a Board ratification queue · FU-013 whether Change Control decisions write
-    to the UEG · FU-014 the risk tier for code_change and economy_material · FU-020 archiving the
-    unimported genome_engine.py after the WIRED-map check.
+    · the Stripe key roll · the 162 test-owned entities. The follow-up register holds no OWNER rows
+    (the four it held were ruled 2026-09-14 and delivered W464 — see F).
 </answers_to_the_owner>
 
 <ordering>
@@ -169,7 +178,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W463 (463 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W464 (464 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -177,7 +186,7 @@ The dominant themes: UI reach/wiring (the largest — a very large fraction of w
 refutation · the §5 org · docs/canon reconciliation · economy · output · cleanup · organism ·
 honesty/fabrication · domains. Two engineering classes consumed whole rounds late: tenant
 isolation (nine surfaces found open one at a time, W252→W443) and shared-store concurrency (each
-round finding one more unlocked writer, W241→W463).
+round finding one more unlocked writer, W241→W464).
 
 FOUR ERAS: build-out (W1–W126, the fabric, domains, org, cockpit, economy, repo/site/app) ·
 convergence and cleanup (W127–W175, five Owner-directed reviews archived ~20 incoherent pages, ~460
@@ -202,7 +211,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W463: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W464: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -222,7 +231,9 @@ then the follow-up register — every task a round finds and does not do is a ro
 scheduled, rendered below, and the suite fails when a finished item still carries one (W462);
 then the register's first NEXT row — a Change Control approval of a material economy action is filed by the
 economy, releases only the intake it was filed for, is spent once and given back only for that action, and a
-decision binds only the amount the reviewer read (W463).
+decision binds only the amount the reviewer read (W463); then the Owner's four rulings — Board
+ratification of what a review approved, Change Control decisions on the constitutional ledger, every
+material economy action decided by the Owner alone, and the genome engine's rollback made real (W464).
 The first twelve Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
@@ -551,8 +562,8 @@ RECORDED, LATENT — NATIVE_PRIMITIVE_DEFECT_LEDGER.md: four unreached fabricati
 (GenomeEvolutionEngine.run_evolution_cycle, TopologyDefense.simplicial_repair,
 AccuracyValidator.get_aggregate_accuracy, network/planetary.py) and two formerly DORMANT ON REACHED CCA
 ROUTES, both CLOSED W459 with P1.11 (the read-modify-write race: every change-record mutation is now a
-compare-and-set under the record's lock; requires_ratification: deleted, and a Board ratification
-queue is FU-012, awaiting the Owner). Also standing: 162 test-owned entities (the Owner's call).
+compare-and-set under the record's lock; requires_ratification: deleted — and W464 built the Board
+ratification queue the Owner ruled for, FU-012). Also standing: 162 test-owned entities (the Owner's call).
 </ledger>
 
 <delivery_plan>
@@ -593,7 +604,7 @@ half of P2 depend on; 1.3 and 1.5 are where users land. P2 follows (P2.1 unblock
 content that P3 builds on). P3 items marked OWNER RULING are put to the Owner with evidence at
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
-WHERE THE PLAN STANDS (updated W463, 2026-09-14 — every round that closes an item or runs between
+WHERE THE PLAN STANDS (updated W464, 2026-09-16 — every round that closes an item or runs between
 items updates this block in the same commit; nothing checks that what it says is true, so keep it true
 by hand, and never start a line here with one space and an item id — that is read as a plan item and
 fails the suite).
@@ -612,22 +623,30 @@ fails the suite).
     W463  register FU-002 and its class: the economy's materiality approvals release only what they
           were filed for — P1.11's Change Control work carried into the economy's own holds (see the
           note under P1.11); FU-015…FU-024 registered; the documentation swept after the push.
-  NEXT — the register's NEXT rows (FU-003, FU-004, FU-011, FU-015…FU-019, FU-021…FU-024), then P1.13,
-    then P1.14, then MILESTONE M1.
-  WAITING ON THE OWNER — register rows FU-012, FU-013, FU-014, FU-020 (never scheduled into a round).
+    W464  the register's four OWNER rows, on the Owner's rulings of 2026-09-14 (answers F): FU-012
+          Board ratification of HIGH changes a review approved; FU-013 Change Control decisions on the
+          UEG; FU-014 economy_material CRITICAL and code_change HIGH, the gate releasing only the Owner's
+          approval; FU-020 genome_engine.py fixed and kept. P1.11's NOT DONE (b), (c) and (d) are closed by
+          it (see P1.11). FU-025…FU-033 registered.
+  NEXT — the register's NEXT rows (FU-003, FU-004, FU-011, FU-015…FU-019, FU-021…FU-028, FU-031…FU-033),
+    then P1.13, then P1.14, then MILESTONE M1. FU-029 and FU-030 ride with P2.6.
+  WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
+    rulings, not register rows).
 
 <!-- followups:begin (generated by scripts/followups.py render - never edit by hand) -->
 SCHEDULED FOLLOW-UPS — every task a round finds and does not do is a row in docs/FOLLOWUPS.json,
 added in the same commit (python scripts/followups.py add), slotted to the plan item whose round does
 it, NEXT (its own round), or OWNER (waits on an Owner decision; never scheduled). A round that marks a
 plan item "✅ DONE W###" closes or re-slots that item's rows first — the suite fails otherwise.
-Open 22 (18 scheduled, 0 high · 4 awaiting the Owner) · done 2 · dropped 0.
+Open 27 (27 scheduled, 0 high · 0 awaiting the Owner) · done 6 · dropped 0.
   NEXT — its own round, before P1.13
     FU-003 [medium] test_fabric_organism_systems_run_real is order-dependent — it fails when run alone (also at 1bde2eb0) and passes inside the full suite — it leans on state an earlier test leaves behind, so a green suite says nothing about it (found W459 (found in passing))
     FU-004 [medium] The compliance mandates docs claim ENFORCED on a file W460 deleted — docs/compliance/MANDATES.md and MANDATES_FINAL.md list 'GaaS-Validated Mutations — ENFORCED' in packages/shared/gaas.ts, which never validated anything and no longer exists; the other ENFORCED rows need the same reading (found W460 refutation (ruled out of that round's scope))
     FU-015 [medium] Concurrent settles of one service contract can pay twice — settle_contract loads vsb_contracts.json, checks status delivered, awaits inter_vsb_transfer with a fresh transfer_id, then saves — no store_lock and no claim on the contract, so two concurrent settles both pass the status check and both debit the client (accept and deliver share the unlocked load-await-save shape) (found W463 class sweep (read, not reproduced))
     FU-016 [medium] Owner-payment accrue and payout write their store without store_lock — accrue (heartbeat cycles) and payout (API) load-modify-save the shared owner-payments store with no lock — the shared-store concurrency class fixed for the ledger and fund stores in W442/W444; a payout can overdraw or an accrual be lost (found W463 class sweep (read, not reproduced))
     FU-023 [medium] A transfer whose receiver queue write fails twice is left debited with nothing to repair it — record_transfer debits the sender and queues the receiver in two steps. If the queue write fails on the first attempt and again on the endpoint's single idempotent replay (e.g. the pending-transfers lock held for over 20s), POST /economy/transfer returns 500 with no transfer_id: the sender stays debited, the receiver is never credited, nothing anywhere replays that transfer_id, and a client retry mints a new id and pays again (a material one files a fresh hold). A process that dies between the two steps strands the debit the same way. For a non-material transfer no economy UEG event records it. Pre-existing (the same at c519c497); W463 keeps the approval spent and no longer tells the Owner to re-approve. Fix: reconcile stranded legs (sender postings naming a transfer_id with no pending-store entry are replayed through record_transfer, which is idempotent) on the heartbeat or next access; answer the endpoint with the transfer_id and a debited-receiver-pending status instead of a bare 500; log the non-material case. (found W463 refuter (TCC-1))
+    FU-025 [medium] test_v191_evolution_approvals_route_through_change_control is order-dependent — it passes alone and in the full suite order but fails after the organism-status tests (the same -k selection fails at b97e38e7): its LOW proposal is only auto-approved when composite health is at least 0.6, and an earlier test leaves the organism less healthy, so the approval stays under_change_control and the re-approve answer is 'Already with the Change Control Agency.' — the same class as FU-003 (found W464 (found in passing, reproduced at HEAD))
+    FU-026 [medium] config/paths.py resolves BASE_DIR one level above the repository — BASE_DIR = Path(__file__).resolve().parent.parent.parent is the repo's parent (C:/Users/rehan), so without WORKSTATION_DATA_DIR the live MEMORY_FILE, INTERACTIONS_DB, L7 registry, meeting log and chroma store live in <repo-parent>/data and ensure_dirs() creates logs/genome/models directories there at import (ai/memory.py, ai/logger.py, v138 ceo, synthesis, ingestion, qep_flagship import it). Fixing the path relocates the live AI memory store: migrate it deliberately (copy, verify, switch), never move it silently (found W464 genome_engine audit (read; paths confirmed))
     FU-011 [low] Command Center still carries hard-coded status text — 'in WORK mode for 4 hours', '3D Holographic Engine — Loading...' and 'Real-time stream initializing via libp2p...' are literals nothing measures (not compliance claims, so outside P1.12); no plan item covers packages/ui literals (P2.4's scatter is unreached backend operations) (found W460 audit (P1.12))
     FU-017 [low] A marketplace purchase can charge the buyer without recording the sale — consume_tokens runs before the listing save and the receipt write; if either raises there is no refund, so the buyer is charged for a sale nothing records (consume-without-compensation) (found W463 class sweep (read, not reproduced))
     FU-018 [low] The optimizer's resource fabric releases resources a pool never consumed — assemble_pool records the full requirements even when it could not decrement capacity, and disassemble_pool gives all of them back (gpu available 1064 of 64 at unit level); the optimizer engine assembles and releases per call (found W463 class sweep (reproduced at unit level))
@@ -635,19 +654,21 @@ Open 22 (18 scheduled, 0 high · 4 awaiting the Owner) · done 2 · dropped 0.
     FU-021 [low] store_lock ignores its timeout when a stale lockfile cannot be removed — In the stale branch (lockfile older than stale_after) store_lock tries to unlink it and `continue`s whether or not the unlink worked, skipping both the deadline check and the sleep; when the unlink keeps failing, a waiter loops without sleeping until the file goes away, so the documented bounded timeout does not apply. W463 adds callers on the transfer path (debit_posted no longer locks, but record_transfer and the gate lock do). Fix: continue only when the unlink succeeded; otherwise fall through to the deadline check. Guard: a lockfile aged past stale_after that cannot be unlinked times out within timeout. (found W463 refuter (S9))
     FU-022 [low] A heartbeat cycle posts before it consumes its events, so a failed consume distributes them twice — operate_vsb runs governed_cycle_sync (run_cycle writes the ledger) and only then consume_events. If consume_events raises (its store_lock timed out while another writer held revenue_events.json.lock for over 10s, or the write kept failing), operate_vsb returns an error with the cycle already posted and the events still pending; the next beat posts the same events again (reproduced by the W463 refuter with a real held lockfile: one 1000-WST event posted twice). A material cycle's approval stays spent and the next beat files a hold for revenue already distributed. Pre-existing ordering (W313); W463 only changed which ids are consumed. Fix: consume inside governed_cycle_sync after every gate passes and before run_cycle, size the cycle from what was consumed, un-consume those exact ids if run_cycle raises. (found W463 refuter (GATE-5))
     FU-024 [low] A rejected contract settlement tells the client to retry after a hold that does not exist — When settle_contract's transfer comes back rejected_by_change_control, it still returns 'settlement HELD by governance — retry after the hold clears', stores settlement.held=True, and ServiceContracts.tsx shows that note and a 'settlement held' badge. No hold exists — the rejection answers exactly that action — and the price and receiver are fixed, so every retry is refused again while that rejection is the newest decided record for the pair. The page also ignores the new rejected_by field. Pre-existing (found by the W463 sixth refutation). Fix: branch on governance.status == 'rejected_by_change_control', say what rejected it (the same wording map as VSBEconomy/TransferPanel) and that retrying the same price is refused; render that on ServiceContracts.tsx. (found W463 refuter (RF6-SETTLE))
+    FU-027 [low] MANDATES.md certifies a 1127-article genome that does not exist — docs/compliance/MANDATES.md and MANDATES_FINAL.md mark '1127-Article Genome' VERIFIED, 'seeded in genome/constitution.work and Merkle-DAG'; no such file exists and the genome engine's seed holds 3 articles — a false VERIFIED claim beside FU-004's false ENFORCED rows (found W464 genome_engine audit (read))
+    FU-028 [low] genome_engine's self-healing cycle would ratify a fixed template, and its validator reads a CWD-relative file at import — GenomeMutationWorkflow.run_self_healing_cycle applies ConstitutionalAI.generate_amendment's fixed template with authorized=True (unreachable today only because the validator's PQC rule refuses its context), and validator.py builds validator_l1 at import from the CWD-relative genome/constitution.work, which the engine no longer writes; both stay unwired (the Owner kept the module unwired, W464) (found W464 genome_engine audit (read))
+    FU-031 [low] A decision whose ledger write failed leaves no mark on the record, and nothing reconciles it — Change Control writes a decision's UEG node after the record lands (W464, FU-013); a failed write or a process that dies in between leaves the decision without a node, reported only in that response (ueg_logged false) and the server log — the record carries nothing a later reconciliation could find, so the gap is invisible after the response (found W464 UEG audit (read))
+    FU-032 [low] The audit views read an Owner's rejection as a fault — classify_event flags cca.change_rejected and board.change_ratification_refused (a refusal); the Governance Hub shows them red FLAGGED and counts them with failures without rendering flag.why, and ConstitutionalUI's UEG tab ignores flag entirely (tone keyed to two event types) (found W464 UEG audit (read))
+    FU-033 [low] A review of a change record missing rationale, affected_systems or rollback_plan answers 500 — review_change builds its prompt with c['rationale'], c['affected_systems'] and c['rollback_plan'] — a record written without them (hand-written or by an older writer) raises KeyError after _start has already moved it to under_review (found W464 (found writing the tier guard))
   P2.6 — The perimeter and the gate
     FU-005 [medium] The /api/v1/swarm router carries no auth dependency — agentic_core/api/swarm.py has zero Depends — the org cascade (POST /cascade), CEO delegation (POST /delegate), proposed-catalogue curation and the run histories are callable by anyone when AUTH_ENABLED is on; P2.6 names 'swarm' among its routers, this row pins the routes (found W460 audit (P1.12))
     FU-006 [medium] The org cascade's governance verdict gates a constant string, not the delivery — swarm.py's _attest returns a fixed attestation sentence, so 'gov: allowed' can never reflect the delivered content; W460 relabelled the chip 'intent only' — the real fix is gating the delivery itself (found W460 audit (P1.12))
     FU-007 [medium] One violation trips the shared circuit breaker, and anyone can reset it — record_event trips on a single is_violation (no threshold), halting every later action on the node; POST /api/v1/gaas/breaker/reset has no user dependency (found W460 audit (P1.12))
+    FU-029 [medium] Board ratification is apex-only, and the Board's other routes trust a client-supplied owner — GET/POST /api/v1/board/ratifications cover every change (admin under auth; on_owner_direction in both modes) — a VSB-scoped change is not routed to that VSB's own board or tenant owner; board.py's chief/instruct and directive still take 'owner' from the request body and carry no auth dependency (the P2.6 perimeter) (found W464 Board audit (read))
+    FU-030 [low] In single-user mode a HIGH override needs no acknowledgement, so it skips Board ratification — with auth off any client's override_decision is recorded as admin_override (the Owner's explicit decision) and a HIGH change approved that way is not queued for ratification; CRITICAL requires admin_decision_for_critical, HIGH requires nothing (found W464 ratification audit (read))
   P2.8 — Bespoke swarms
     FU-008 [medium] swarm_cascades.json writers are not under store_lock — define, update and delete load-modify-save the store with no lock — a threaded probe during the P1.12 audit lost 38 of 40 concurrent writes (found W460 audit (P1.12))
     FU-009 [low] The swarm HTTP contract drops per-stage model; runs have no run_id or UEG record — SwarmStageSpec carries role and instruction only, so a stage's model choice is silently discarded; run_swarm records the outcome under stage 1's served_by alone and writes no run id or ledger entry (found W460 audit (P1.12))
     FU-010 [low] Saved cascades cannot be deleted from the designer page — DELETE /api/v1/resources/swarm/{sid} exists but the /native-ai designer offers no way to call it (found W460 audit (P1.12))
-  AWAITING THE OWNER — recorded, never scheduled into a round without the Owner's instruction:
-    FU-012 [medium] A Board ratification queue for changes that need ratification — W459 deleted requires_ratification rather than give it a consumer; whether the Board ratifies HIGH/CRITICAL changes is a product decision (found W459 (P1.11 NOT DONE b))
-    FU-014 [medium] Change Control tier map — code_change and economy_material fall to MEDIUM by default — _TIER_MAP has no entry for them, so their risk tier is an accident of the default rather than a decision (found W459 (P1.11 NOT DONE d))
-    FU-013 [low] Should Change Control decisions write to the UEG? — adding a UEG write to the CCA changes what the constitutional ledger holds; the Sanctum copy stopped claiming one in W459 (found W459 (P1.11 NOT DONE c))
-    FU-020 [low] genome_engine.py is unimported and its rollback restores by position — GenomeMutationWorkflow.rollback pops the LAST checkpoint instead of the proposal's, does not persist, and references an undefined GENOME_FILE; nothing imports the module, but layer_registry names the l1_identity directory by path — archive only after the Owner's WIRED-map check (found W463 class sweep (read))
 <!-- followups:end -->
 
 PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; no P2–P4 item ships until these do — the register's NEXT rows run between items, see WHERE THE PLAN STANDS)
@@ -807,8 +828,15 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; no P2–P4 item ships until these 
       for the Owner; (c) the Sanctum's copy no longer claims a UEG entry — adding a UEG write to the
       CCA changes what the constitutional ledger holds and is the Owner's call; (d) _TIER_MAP is
       unchanged (code_change and economy_material fall through to MEDIUM by default, not by decision).
-      Each is now tracked: (a) rides with P2.6; (b) is register row FU-012, (c) FU-013, (d) FU-014 —
-      all three waiting on the Owner.
+      Each is now tracked: (a) rides with P2.6; (b) was register row FU-012, (c) FU-013, (d) FU-014.
+      [(b), (c) AND (d) CLOSED W464 on the Owner's rulings of 2026-09-14: a HIGH change a review approved
+      waits for Board ratification (GET/POST /api/v1/board/ratifications, the Board page) and nothing acts
+      on it until then; every Change Control decision is written to the UEG (cca.change_approved /
+      _rejected / _retired, board.change_ratified / _ratification_refused); _TIER_MAP gives code_change
+      HIGH and economy_material CRITICAL, decided under each record's effective tier. Guards:
+      test_w464_board_ratifies_what_a_review_approved_before_anything_acts,
+      test_w464_change_control_decisions_are_written_to_the_ledger,
+      test_w464_every_material_economy_action_is_decided_by_the_owner; probe scripts/_w464_probe.mjs.]
       CARRIED FURTHER IN W463 (register FU-002, closed): this item made the economy's consume/restore a
       compare-and-set but did not bind what an approval releases — any approved record with the hold's
       title released any amount, and a blocked transfer could hand back an approval an earlier action
@@ -985,10 +1013,11 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; pre-flights built by us, switches flipped
 
 EFFORT, HONESTLY: ~33 rounds at the current cadence before P4 — P1 alone is the campaign's
 largest single phase and it is the one that matters most, because it is the one users meet.
-Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), plus three rounds between items — W461
-and W463 each worked a task an earlier round found and deferred, and W462 built the register after the
-Owner asked (2026-09-13) that suggested tasks be scheduled into the plan — and at W463 the register held
-twelve open NEXT rows before P1.13. Budget for that on top of the ~33.
+Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), plus four rounds between items — W461
+and W463 each worked a task an earlier round found and deferred, W462 built the register after the
+Owner asked (2026-09-13) that suggested tasks be scheduled into the plan, and W464 delivered the Owner's
+rulings on the register's four OWNER rows — and at W464 the register holds nineteen open NEXT rows (and two
+new rows riding with P2.6) before P1.13. Budget for that on top of the ~33.
 Do not shorten it by declaring; shorten it by measuring.
 </delivery_plan>
 
@@ -1100,7 +1129,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 386 tests; 60 session guards W419–W463, each broken and
+- integration_tests/test_mvp_spine.py — 390 tests; 64 session guards W419–W464, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).

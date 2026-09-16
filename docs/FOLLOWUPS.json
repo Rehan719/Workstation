@@ -192,8 +192,8 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W464",
       "note": ""
     },
     {
@@ -208,8 +208,8 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W464",
       "note": ""
     },
     {
@@ -224,8 +224,8 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W464",
       "note": ""
     },
     {
@@ -320,8 +320,8 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W464",
       "note": ""
     },
     {
@@ -383,6 +383,150 @@
       "files": [
         "agentic_core/api/economy.py",
         "apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-025",
+      "title": "test_v191_evolution_approvals_route_through_change_control is order-dependent",
+      "why": "it passes alone and in the full suite order but fails after the organism-status tests (the same -k selection fails at b97e38e7): its LOW proposal is only auto-approved when composite health is at least 0.6, and an earlier test leaves the organism less healthy, so the approval stays under_change_control and the re-approve answer is 'Already with the Change Control Agency.' — the same class as FU-003",
+      "source": "W464 (found in passing, reproduced at HEAD)",
+      "found": "2026-09-16",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-026",
+      "title": "config/paths.py resolves BASE_DIR one level above the repository",
+      "why": "BASE_DIR = Path(__file__).resolve().parent.parent.parent is the repo's parent (C:/Users/rehan), so without WORKSTATION_DATA_DIR the live MEMORY_FILE, INTERACTIONS_DB, L7 registry, meeting log and chroma store live in <repo-parent>/data and ensure_dirs() creates logs/genome/models directories there at import (ai/memory.py, ai/logger.py, v138 ceo, synthesis, ingestion, qep_flagship import it). Fixing the path relocates the live AI memory store: migrate it deliberately (copy, verify, switch), never move it silently",
+      "source": "W464 genome_engine audit (read; paths confirmed)",
+      "found": "2026-09-16",
+      "files": [
+        "config/paths.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-027",
+      "title": "MANDATES.md certifies a 1127-article genome that does not exist",
+      "why": "docs/compliance/MANDATES.md and MANDATES_FINAL.md mark '1127-Article Genome' VERIFIED, 'seeded in genome/constitution.work and Merkle-DAG'; no such file exists and the genome engine's seed holds 3 articles — a false VERIFIED claim beside FU-004's false ENFORCED rows",
+      "source": "W464 genome_engine audit (read)",
+      "found": "2026-09-16",
+      "files": [
+        "docs/compliance/MANDATES_FINAL.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-028",
+      "title": "genome_engine's self-healing cycle would ratify a fixed template, and its validator reads a CWD-relative file at import",
+      "why": "GenomeMutationWorkflow.run_self_healing_cycle applies ConstitutionalAI.generate_amendment's fixed template with authorized=True (unreachable today only because the validator's PQC rule refuses its context), and validator.py builds validator_l1 at import from the CWD-relative genome/constitution.work, which the engine no longer writes; both stay unwired (the Owner kept the module unwired, W464)",
+      "source": "W464 genome_engine audit (read)",
+      "found": "2026-09-16",
+      "files": [
+        "agentic_core/layers/l1_identity/validator.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-029",
+      "title": "Board ratification is apex-only, and the Board's other routes trust a client-supplied owner",
+      "why": "GET/POST /api/v1/board/ratifications cover every change (admin under auth; on_owner_direction in both modes) — a VSB-scoped change is not routed to that VSB's own board or tenant owner; board.py's chief/instruct and directive still take 'owner' from the request body and carry no auth dependency (the P2.6 perimeter)",
+      "source": "W464 Board audit (read)",
+      "found": "2026-09-16",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-030",
+      "title": "In single-user mode a HIGH override needs no acknowledgement, so it skips Board ratification",
+      "why": "with auth off any client's override_decision is recorded as admin_override (the Owner's explicit decision) and a HIGH change approved that way is not queued for ratification; CRITICAL requires admin_decision_for_critical, HIGH requires nothing",
+      "source": "W464 ratification audit (read)",
+      "found": "2026-09-16",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-031",
+      "title": "A decision whose ledger write failed leaves no mark on the record, and nothing reconciles it",
+      "why": "Change Control writes a decision's UEG node after the record lands (W464, FU-013); a failed write or a process that dies in between leaves the decision without a node, reported only in that response (ueg_logged false) and the server log — the record carries nothing a later reconciliation could find, so the gap is invisible after the response",
+      "source": "W464 UEG audit (read)",
+      "found": "2026-09-16",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-032",
+      "title": "The audit views read an Owner's rejection as a fault",
+      "why": "classify_event flags cca.change_rejected and board.change_ratification_refused (a refusal); the Governance Hub shows them red FLAGGED and counts them with failures without rendering flag.why, and ConstitutionalUI's UEG tab ignores flag entirely (tone keyed to two event types)",
+      "source": "W464 UEG audit (read)",
+      "found": "2026-09-16",
+      "files": [
+        "apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-033",
+      "title": "A review of a change record missing rationale, affected_systems or rollback_plan answers 500",
+      "why": "review_change builds its prompt with c['rationale'], c['affected_systems'] and c['rollback_plan'] — a record written without them (hand-written or by an older writer) raises KeyError after _start has already moved it to under_review",
+      "source": "W464 (found writing the tier guard)",
+      "found": "2026-09-16",
+      "files": [
+        "agentic_core/api/change_control.py"
       ],
       "severity": "low",
       "owner_gated": false,

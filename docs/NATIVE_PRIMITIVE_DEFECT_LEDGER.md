@@ -316,7 +316,10 @@ first-by-position as "arbitration" (it now warns exactly what it does), and
   load-modify-save without a lock and can lose audit-trail entries. Low contention today (one
   owner); serialise with store_lock if the CCA ever serves concurrent reviewers.
 - **[CLOSED W459 — the flag was deleted, not given a consumer; a Board ratification queue is a product
-  decision for the Owner]** The original entry follows.
+  decision for the Owner. The Owner ruled 2026-09-14 (register FU-012): W464 built it — a HIGH change approved
+  by a review waits for Board ratification before anything acts on it (`awaiting_board_ratification`,
+  `GET/POST /api/v1/board/ratifications`); the immune reflex stays outside it, decided by its mechanism]**
+  The original entry follows.
 - **`requires_ratification` has no consumer** (`change_control.py` immune path) — the MEDIUM
   containment defence flags itself "for Board ratification" and no Board surface reads the flag;
   the change reports implemented immediately. Either wire a Board queue for flagged changes or

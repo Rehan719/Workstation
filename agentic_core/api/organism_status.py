@@ -131,23 +131,27 @@ def _cca_state() -> dict:
     try:
         cca_store = data_path("change_control")
         if not cca_store.exists():
-            return {"pending": 0, "approved": 0, "implemented": 0}
-        pending = approved = implemented = 0
+            return {"pending": 0, "approved": 0, "awaiting_board_ratification": 0, "implemented": 0}
+        from agentic_core.api.change_control import awaiting_board_ratification
+        pending = approved = awaiting = implemented = 0
         for p in cca_store.glob("*.json"):
             try:
-                c = json.loads(p.read_text())
+                c = json.loads(p.read_text(encoding="utf-8"))
                 s = c.get("status", "")
                 if s in ("submitted", "under_review"):
                     pending += 1
+                elif awaiting_board_ratification(c):
+                    awaiting += 1          # W464 (FU-012) — not approved until the Board ratifies it
                 elif s == "approved":
                     approved += 1
                 elif s == "implemented":
                     implemented += 1
             except Exception:
                 pass
-        return {"pending": pending, "approved": approved, "implemented": implemented}
+        return {"pending": pending, "approved": approved, "awaiting_board_ratification": awaiting,
+                "implemented": implemented}
     except Exception:
-        return {"pending": 0, "approved": 0, "implemented": 0}
+        return {"pending": 0, "approved": 0, "awaiting_board_ratification": 0, "implemented": 0}
 
 
 def _genome_state() -> dict:

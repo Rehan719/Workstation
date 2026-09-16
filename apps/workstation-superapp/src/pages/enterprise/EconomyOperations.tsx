@@ -222,12 +222,19 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
             <ShieldCheck size={13} /> {['blocked', 'halted'].includes(held.status)
               ? `Blocked by the constitutional gate (${held.status}) — nothing ran, nothing posted`
               : held.status === 'rejected_by_change_control' ? 'Rejected by Change Control'
-              : 'Held for Change Control — awaiting a Change Control decision'}
+              // W464 (refutation) — no decision is pending in these two cases: never send the Owner to decide one
+              : held.decided_concurrently ? 'Held — the change request was decided while this transfer ran; transfer again'
+              : !held.cca_id ? 'Held — the governance check could not complete; no WST moved'
+              : 'Held for Change Control — awaiting the Owner\'s decision'}
           </p>
           <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{held.note || (['blocked', 'halted'].includes(held.status)
             ? 'The gaas.v5 constitutional gate refused this transfer; no WST moved and no Change Control request exists.'
-            : 'This transfer is material and awaits Change Control approval before any WST moves.')}</p>
-          {held.cca_id && (held.status === 'rejected_by_change_control' ? (
+            : 'This transfer is material: no WST moves until the Owner approves it in the Sovereign Sanctum.')}</p>
+          {held.cca_id && (held.decided_concurrently ? (
+            <p className="text-[10px] font-mono text-slate-500 mt-1.5" data-testid="transfer-decided-concurrently">
+              Change request: <span className="text-aura">{held.cca_id}</span> — decided while this transfer ran. Transfer again.
+            </p>
+          ) : held.status === 'rejected_by_change_control' ? (
             // W463 — a rejected record cannot be reviewed: the same transfer stays refused; a changed one is asked again
             <p className="text-[10px] font-mono text-slate-500 mt-1.5" data-testid="transfer-rejected">
               {/* W463 — a rejection is not always the Owner's: say what rejected it */}
@@ -237,16 +244,19 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
               transfer again is refused; a different amount is asked again as a fresh hold.
             </p>
           ) : held.follows_rejection ? (
-            // W463 — a hold filed after a rejection is decided only by an explicit decision; "review it" held it again
+            // W463 — a hold filed after a rejection says so. W464: every material hold is decided only by the Owner
             <p className="text-[10px] font-mono text-slate-500 mt-1.5" data-testid="transfer-follows-rejection">
-              Change request: <span className="text-aura">{held.cca_id}</span> — it follows the rejection of {held.follows_rejection}, so a
-              review does not decide it: decide it in the{' '}
+              Change request: <span className="text-aura">{held.cca_id}</span> — it follows the rejection of {held.follows_rejection}.
+              Only your explicit decision decides it: decide it in the{' '}
               <a href="/governance-hub" className="text-aura underline underline-offset-2">Governance hub's Sovereign Sanctum</a>, then transfer again.
             </p>
           ) : (
-            <p className="text-[10px] font-mono text-slate-500 mt-1.5">
-              Change request: <span className="text-aura">{held.cca_id}</span> — review it on the{' '}
-              <a href="/change-control" className="text-aura underline underline-offset-2">Change Control Agency</a> page, then transfer again.
+            // W464 (FU-014) — a material transfer is CRITICAL: a review never decides it, so the page no longer sends the
+            // Owner to request one
+            <p className="text-[10px] font-mono text-slate-500 mt-1.5" data-testid="transfer-held-sanctum">
+              Change request: <span className="text-aura">{held.cca_id}</span> — a material transfer is decided only by your explicit
+              decision: decide it in the{' '}
+              <a href="/governance-hub" className="text-aura underline underline-offset-2">Governance hub's Sovereign Sanctum</a>, then transfer again.
             </p>
           ))}
         </div>

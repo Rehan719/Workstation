@@ -30,7 +30,8 @@ interface OrganismStatus {
   operations: {
     lifecycle:     { total_projects: number; by_stage: Record<string,number>; running: number; commercialisation_rate: number; pipeline_health: string };
     vsb:           { total: number; operational: number; domains: string[] };
-    change_control: { pending: number; approved: number; implemented: number };
+    // W464 — an approval a review made of a HIGH change is counted apart until the Board ratifies it
+    change_control: { pending: number; approved: number; awaiting_board_ratification?: number; implemented: number };
   };
   recommended: { temperature: string; should_throttle: boolean; max_parallel_agents: number; priority: string };
 }
@@ -473,9 +474,10 @@ export const OrganismDashboard: React.FC = () => {
               <GitMerge size={13} className="opacity-60" />
               Change Control Agency
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-4 gap-2 text-center">
               {[
                 { label: 'Pending',     count: operations.change_control.pending,     color: 'text-yellow-400' },
+                { label: 'Awaiting Board', count: operations.change_control.awaiting_board_ratification ?? 0, color: 'text-orange-300' },
                 { label: 'Approved',    count: operations.change_control.approved,    color: 'text-green-400'  },
                 { label: 'Implemented', count: operations.change_control.implemented, color: 'text-blue-400'   },
               ].map(({ label, count, color }) => (
@@ -490,6 +492,13 @@ export const OrganismDashboard: React.FC = () => {
                 <AlertTriangle size={12} />
                 {operations.change_control.pending} change{operations.change_control.pending !== 1 ? 's' : ''} awaiting review
               </div>
+            )}
+            {(operations.change_control.awaiting_board_ratification ?? 0) > 0 && (
+              <a href="/ceo?tab=board" data-testid="organism-awaiting-ratification"
+                 className="mt-2 flex items-center gap-2 text-xs text-orange-300 font-mono bg-orange-500/10 border border-orange-500/20 rounded-lg p-2">
+                <AlertTriangle size={12} />
+                {operations.change_control.awaiting_board_ratification} approved by review — awaiting Board ratification
+              </a>
             )}
           </div>
 

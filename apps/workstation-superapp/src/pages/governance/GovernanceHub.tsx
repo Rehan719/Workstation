@@ -461,8 +461,9 @@ const SanctumTab: React.FC = () => {
       const d = await apiJson('/api/v1/cca/queue');
       setProposals((d.queue ?? [])
         // W463 — also every change HELD for an explicit decision (a hold_reason), and every economy hold filed
-        // after a rejection from the moment it is filed (a review would only hold it again): no other page can
-        // decide those, so they were stranded
+        // after a rejection from the moment it is filed: no other page can decide those, so they were stranded.
+        // W464 (FU-014) — every material economy hold is CRITICAL now (the queue reports the tier a record is decided
+        // under, so a hold filed as MEDIUM before the ruling is listed too): all of them are decided here
         .filter((c: any) => (c.impact_tier === 'CRITICAL' || c.hold_reason || c.follows_rejection) && ['submitted', 'under_review'].includes(c.status))
         .map((c: any) => ({ id: c.cca_id, title: c.title, status: c.status, tier: c.impact_tier,
                             change_type: c.change_type, submitted_at: c.submitted_at,
@@ -483,12 +484,14 @@ const SanctumTab: React.FC = () => {
     try {
       // W459 — the Sanctum button IS the explicit Owner decision on a CRITICAL change, so it sends
       // the acknowledgement the route now requires (without it the vote is refused, correctly)
-      await apiJson(`/api/v1/cca/${id}/review`, { method: 'POST',
+      const res = await apiJson(`/api/v1/cca/${id}/review`, { method: 'POST',
         body: { override_decision: decision, admin_decision_for_critical: true,
                 // W463 — the amount this card showed: if the hold moved since, the decision is refused (409)
                 ...(p?.est != null ? { expected_est_distributable_wst: p.est } : {}),
                 reviewer_notes: 'Sovereign vote — Owner decision from the Sanctum' } });
-      toast(`Sovereign ${decision === 'approved' ? 'approval' : 'rejection'} recorded for ${id} — audit-trailed in the CCA`);
+      // W464 (FU-013) — the decision is on the change record and, when the write landed, on the constitutional ledger
+      toast(`Sovereign ${decision === 'approved' ? 'approval' : 'rejection'} recorded for ${id} — on the change's audit trail`
+            + (res?.ueg_logged === true ? ' and the constitutional ledger' : res?.ueg_logged === false ? ' (the ledger entry did not land)' : ''));
       await loadSanctum();
     } catch (e) { setSanctumErr(errorMessage(e)); }
     setVotingId('');
@@ -625,9 +628,12 @@ const SanctumTab: React.FC = () => {
               </div>
               <div className="pt-4 border-t border-white/5 text-[10px] text-slate-500 font-bold leading-relaxed">
                 A sovereign vote here writes the Owner's decision straight onto the change request in the
-                Change Control Agency — a CRITICAL-tier change, or one a review held for an explicit decision
-                (or an economy hold filed after a rejection, listed here from the moment it is filed — a review without an explicit decision would only hold it) — recorded in that change's own audit trail,
-                as an explicit admin decision, with the principal that made it.
+                Change Control Agency — a CRITICAL-tier change (every material economy action is one: only
+                your explicit decision here releases or refuses it), or one a review held for an explicit
+                decision — recorded in that change's own audit trail, as an explicit admin decision, with the
+                principal that made it, and, when that write lands, on the constitutional ledger (the confirmation
+                says whether it did). A HIGH-tier change a review
+                approved is ratified or refused on the Board page instead.
               </div>
             </div>
           </section>

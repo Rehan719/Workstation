@@ -55,7 +55,7 @@ export const VSBEconomy: React.FC = () => {
   const [gov, setGov] = useState<string>('');
   // Ledger cluster 1 — a MATERIAL cycle returns 200 {cycle:null, governance:held...}; that hold
   // must be VISIBLE (it is exactly the flow the Owner has to approve), never a silent no-op.
-  const [hold, setHold] = useState<{ status?: string; cca_id?: string; note?: string; follows_rejection?: string; rejected_by?: string } | null>(null);
+  const [hold, setHold] = useState<{ status?: string; cca_id?: string; note?: string; follows_rejection?: string; rejected_by?: string; decided_concurrently?: boolean } | null>(null);
   // §4/§8/§10 — Owner-adjustable profit waterfall (virtual, template-bounded)
   const [wf, setWf] = useState<WaterfallState | null>(null);
   const [wfDraft, setWfDraft] = useState<Record<string, number>>({});   // percentages (0-100) the Owner edits
@@ -358,10 +358,17 @@ export const VSBEconomy: React.FC = () => {
             <ShieldCheck size={14} /> {['blocked', 'halted'].includes(hold.status || '')
               ? `Blocked by the constitutional gate (${hold.status}) — nothing ran, nothing posted`
               : hold.status === 'rejected_by_change_control' ? 'Rejected by Change Control — asked again when the action changes'
-              : 'Held for Change Control — awaiting a Change Control decision'}
+              // W464 (refutation) — no decision is pending in these two cases: never send the Owner to decide one
+              : hold.decided_concurrently ? 'Held — the change request was decided while this cycle ran; run it again'
+              : !hold.cca_id ? 'Held — the governance check could not complete; nothing ran'
+              : 'Held for Change Control — awaiting the Owner\'s decision'}
           </p>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">{hold.note || 'This distribution is material and awaits Change Control approval before any WST moves.'}</p>
-          {hold.cca_id && (hold.status === 'rejected_by_change_control' ? (
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">{hold.note || 'This distribution is material: no WST moves until the Owner approves it in the Sovereign Sanctum.'}</p>
+          {hold.cca_id && (hold.decided_concurrently ? (
+            <p className="text-[10px] font-mono text-slate-500 mt-2" data-testid="hold-decided-concurrently">
+              Change request: <span className="text-aura">{hold.cca_id}</span> — decided while this cycle ran. Run the cycle again.
+            </p>
+          ) : hold.status === 'rejected_by_change_control' ? (
             // W463 — a rejected record cannot be reviewed: the same cycle stays refused; a changed one is asked again
             <p className="text-[10px] font-mono text-slate-500 mt-2" data-testid="hold-rejected">
               {/* W463 — a rejection is not always the Owner's: say what rejected it */}
@@ -371,16 +378,19 @@ export const VSBEconomy: React.FC = () => {
               cycle again is refused; a different amount or new intake is asked again as a fresh hold.
             </p>
           ) : hold.follows_rejection ? (
-            // W463 — a hold filed after a rejection is decided only by an explicit decision; "review it" held it again
+            // W463 — a hold filed after a rejection says so. W464: every material hold is decided only by the Owner
             <p className="text-[10px] font-mono text-slate-500 mt-2" data-testid="hold-follows-rejection">
-              Change request: <span className="text-aura">{hold.cca_id}</span> — it follows the rejection of {hold.follows_rejection}, so a
-              review does not decide it: decide it in the{' '}
+              Change request: <span className="text-aura">{hold.cca_id}</span> — it follows the rejection of {hold.follows_rejection}.
+              Only your explicit decision decides it: decide it in the{' '}
               <a href="/governance-hub" className="text-aura underline underline-offset-2">Governance hub's Sovereign Sanctum</a>, then run the cycle again.
             </p>
           ) : (
-            <p className="text-[10px] font-mono text-slate-500 mt-2">
-              Change request: <span className="text-aura">{hold.cca_id}</span> — review it on the{' '}
-              <a href="/change-control" className="text-aura underline underline-offset-2">Change Control Agency</a> page, then run the cycle again.
+            // W464 (FU-014) — a material distribution is CRITICAL: a review never decides it, so the page no longer sends
+            // the Owner to request one
+            <p className="text-[10px] font-mono text-slate-500 mt-2" data-testid="hold-held-sanctum">
+              Change request: <span className="text-aura">{hold.cca_id}</span> — a material distribution is decided only by your
+              explicit decision: decide it in the{' '}
+              <a href="/governance-hub" className="text-aura underline underline-offset-2">Governance hub's Sovereign Sanctum</a>, then run the cycle again.
             </p>
           ))}
         </Card>

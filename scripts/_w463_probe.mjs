@@ -5,8 +5,9 @@
 //     hold is decided in the Sanctum (a review does not decide it);
 //   · The Sanctum lists that hold from the moment it is filed, with its amount and what an approval releases;
 //   · /change-control shows the hold's amount; a review holds it for an explicit decision and the page says where
-//     that decision is made; a review of a hold whose amount moved since the page read it is refused (409) and
-//     nothing is decided; an approved economy hold offers no Implement (running its action releases it);
+//     that decision is made; (W464) the page offers no review of an economy hold at all — it is CRITICAL, decided by
+//     the Owner in the Sanctum — and the API still refuses a review whose amount moved (409, nothing decided); an
+//     approved economy hold offers no Implement (running its action releases it);
 //   · (stubbed, labelled) a Sanctum vote on an amount the hold no longer carries is refused and shown; a real vote
 //     approves it and the cycle then runs once;
 //   · (stubbed, labelled) a transfer that posted before its gate raised, and one the gate allowed that was retried,
@@ -43,8 +44,10 @@ const openSanctum = async (page) => {
   await page.locator('button:has-text("The Sanctum")').click();
   await page.waitForSelector('text=THE SANCTUM', { timeout: 60000 });
 };
-const cardOf = (page) => page.locator('div.glass-card', { has: page.locator(`text=${TITLE}`) }).first();
-const ccaRow = (page, title) => page.locator('div.bg-white\\/4', { has: page.locator(`text=${title}`) }).first();
+// W464 — exact title matches: every economy hold is CRITICAL now, so the Sanctum also lists the hold filed for
+// `${VSB}-cca`, whose title starts with this one (a substring match picked that card)
+const cardOf = (page) => page.locator('div.glass-card', { has: page.getByText(TITLE, { exact: true }) }).first();
+const ccaRow = (page, title) => page.locator('div.bg-white\\/4', { has: page.getByText(title, { exact: true }) }).first();
 
 // ── /economy: held → rejected → asked again ──
 await p.goto(`${BASE}/economy?vsb=${VSB}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -67,7 +70,7 @@ const holdA = first.governance?.cca_id;
 const pageA = await p.evaluate(() => document.body.innerText);
 check('a material cycle is held on the page, naming its change request',
   first.cycle === null && !!holdA && /Held for Change Control/i.test(pageA) && pageA.includes(holdA));
-const rej = await api(p, `/api/v1/cca/${holdA}/review`, { override_decision: 'rejected', reviewer_notes: 'w463 probe' });
+const rej = await api(p, `/api/v1/cca/${holdA}/review`, { override_decision: 'rejected', admin_decision_for_critical: true, reviewer_notes: 'w463 probe' });
 const again = await runCycle(5000);
 const pageR = await p.evaluate(() => document.body.innerText);
 const rejectedLine = await p.evaluate(() => document.querySelector('[data-testid="hold-rejected"]')?.innerText || '');
@@ -111,10 +114,10 @@ await p.waitForFunction((t) => [...document.querySelectorAll('[data-testid="cca-
 const heldLine = await rowB.locator('[data-testid="cca-decision-source"]').innerText().catch(() => '');
 console.log('  row:', rowText.replace(/\n/g, ' | ').slice(0, 200), '\n  held line:', heldLine);
 check('the Change Control page shows the hold\'s amount, and a review held it for the Sanctum',
-  reviewB.json?.hold_reason === 'follows_rejection_requires_explicit_decision' && /4800 WST \(virtual\)/.test(rowText)
+  reviewB.json?.hold_reason === 'critical_requires_admin_decision' && /4800 WST \(virtual\)/.test(rowText)
   && /held — awaiting an explicit admin decision/.test(heldLine) && /Sovereign Sanctum/.test(heldLine));
 
-// a review of a hold whose amount moved since the page read it is refused and decides nothing
+// W464 — the page offers no review of an economy hold (CRITICAL); a review whose amount moved is still refused by the API
 const holdE = (await api(p, '/api/v1/economy/cycle', { vsb_id: CCA_VSB, revenue: 5000, costs: 0 })).json?.governance?.cca_id;
 await p.goto(`${BASE}/change-control`, { waitUntil: 'domcontentloaded', timeout: 45000 });
 await p.waitForSelector(`text=[economy] material distribution — ${CCA_VSB}`, { timeout: 60000 }).catch(() => {});
@@ -122,15 +125,16 @@ await dismissTour(p);
 const rowE = ccaRow(p, `[economy] material distribution — ${CCA_VSB}`);
 const shownE = await rowE.innerText().catch(() => '');
 await rowE.locator('div.cursor-pointer').first().click();
+await p.waitForSelector('[data-testid="cca-economy-sanctum-note"]', { timeout: 30000 }).catch(() => {});
+const reviewButtonsE = await rowE.locator('button:has-text("Request review")').count();
+const sanctumNoteE = await rowE.locator('[data-testid="cca-economy-sanctum-note"]').innerText().catch(() => '');
 const moved = await api(p, '/api/v1/economy/cycle', { vsb_id: CCA_VSB, revenue: 6000, costs: 0 });   // re-estimated to 4800 behind the page
-await dismissTour(p);
-await rowE.locator('button:has-text("Request review")').click();
-await p.waitForFunction(() => /changed since it was read/i.test(document.body.innerText), null, { timeout: 30000 }).catch(() => {});
-const refusedE = await rowE.innerText().catch(() => '');
+const staleE = await api(p, `/api/v1/cca/${holdE}/review`, { reviewer_notes: 'w463 probe', expected_est_distributable_wst: 4000 });
 const recE = await record(holdE);
-console.log('  refused:', (refusedE.match(/The hold's amount[^\n]*/) || [''])[0]);
-check('a review of a hold whose amount moved since the page read it is refused (409) and nothing is decided',
-  /4000 WST \(virtual\)/.test(shownE) && moved.json?.governance?.cca_id === holdE && /changed since it was read/.test(refusedE)
+console.log('  sanctum note:', sanctumNoteE, '| refused:', staleE.json?.detail?.slice(0, 80));
+check('(W464) the page offers no review of an economy hold and says the Owner decides it in the Sanctum; a review of a moved amount is refused (409)',
+  /4000 WST \(virtual\)/.test(shownE) && reviewButtonsE === 0 && /decided only by the Owner — in the Governance hub/.test(sanctumNoteE)
+  && moved.json?.governance?.cca_id === holdE && staleE.status === 409 && /changed since it was read/.test(staleE.json?.detail || '')
   && recE?.status === 'submitted' && recE?.est_distributable_wst === 4800);
 
 // ── The Sanctum: a stale vote is refused; a real vote decides ──
@@ -158,7 +162,7 @@ const detail = await cardOf(p).locator('[data-testid="sanctum-hold-detail"]').in
 const heading = await p.evaluate(() => document.body.innerText);
 console.log('  sanctum detail:', detail);
 check('the Sanctum lists the held economy hold with its amount and why it is held',
-  /Amount: 4800 WST \(virtual\)/.test(detail) && /Held: follows rejection requires explicit decision/.test(detail)
+  /Amount: 4800 WST \(virtual\)/.test(detail) && /Held: critical requires admin decision/.test(detail)
   && /Awaiting an explicit decision/i.test(heading) && !/Pending CRITICAL changes/i.test(heading));
 await dismissTour(p);
 await cardOf(p).locator('button:has-text("Sovereign Approve")').click();

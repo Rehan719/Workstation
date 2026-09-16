@@ -6,7 +6,10 @@ its predecessor with a SHA3-512 hash, so the entire governance history forms a
 verifiable Merkle-DAG: altering any past event invalidates every hash after it.
 
 Used by the v16-Omega interceptor and the self-tuning circuit breaker to record
-gates, halts, executions, failures and checkpoints.
+gates, halts, executions, failures and checkpoints — and by the modules that log their own
+constitutional facts to it: the economy, the Board, marketplace, VSB evolution, the organism's
+configuration engine, and (W464, FU-013) Change Control's DECISIONS — approvals, rejections,
+retirements and the Board's ratification decisions (never its submissions or holds).
 """
 from __future__ import annotations
 
@@ -35,6 +38,9 @@ _ADVERSE_TYPES = frozenset({
     "immune.quarantine_engaged", "ai.external_budget_breach", "marketplace.recognition_failed",
     "vsb.evolution.claim_release_failed", "economy.materiality_gate_error",
     "economy.materiality_approval_spent_cycle_failed",
+    # W464 (FU-013) — named explicitly, not left to the "rejected"/"refused" tokens: a later token edit must not turn
+    # a refusal into a clean "recorded" line
+    "cca.change_rejected", "board.change_ratification_refused",
 })
 # W463 — a restore refused because the record was spent by another action (or moved) is a hold-shaped
 # fact a reviewer should see, not a plain "recorded" line
@@ -61,6 +67,10 @@ def classify_event(data: Dict[str, Any]) -> Dict[str, Any]:
             return {"level": "recorded", "why": None}
         # review, error, or a screen that never produced a verdict — never a clean "recorded"
         return {"level": "review", "why": f"§11 compliance screen {overall or 'produced no verdict'}"}
+    if t == "cca.change_approved" and data.get("awaiting_board_ratification"):
+        # W464 (FU-012) — approved by a review, not yet ratified: nothing may act on it, so it is not a clean
+        # "recorded" approval. Classification is per node: the Board's own board.change_ratified node follows it.
+        return {"level": "review", "why": "approved by a review — awaiting Board ratification"}
     if (t in _ADVERSE_TYPES or data.get("decision") == "deny" or data.get("status") in ("denied", "blocked")
             or any(tok in tl for tok in _ADVERSE_TOKENS)):
         return {"level": "flagged", "why": t or "adverse decision"}

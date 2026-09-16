@@ -13,19 +13,35 @@ Governance tiers (W459 — this list is what the code DOES; the earlier version 
 constitutional GaaS gate, a 24h cooling period and a manual flag, none of which exist here):
   LOW    — auto-approved at submit when composite health >= 0.6 AND immune threat is
            NOMINAL/ELEVATED; otherwise held for review
-  MEDIUM — review required (economy materiality holds, change_type economy_material, are MEDIUM; one
-           filed after a rejection of its action — follows_rejection — is never decided by a review: it is
-           HELD with hold_reason follows_rejection_requires_explicit_decision until an explicit decision).
-           Otherwise a single [DECISION: …] marker from the serving model decides it. With
+  MEDIUM — review required. A single [DECISION: …] marker from the serving model decides it. With
            no marker (the deterministic floor) or conflicting markers, the verdict is the
            ORGANISM-HEALTH THRESHOLD RULE (composite_health >= 0.5 → approved, else rejected), and the
            record says so in `decision_source` and at the head of the review text. With auth
            enabled, a rule verdict is applied only when an ADMIN requests the review; a non-admin's
            review is HELD with the rule's verdict recorded as a recommendation.
-  HIGH   — as MEDIUM, plus a recorded §17.5 pre-validation PASS before /implement
+  HIGH   — as MEDIUM, plus a recorded §17.5 pre-validation PASS before /implement. W464 (FU-012, the Owner's
+           ruling of 2026-09-14): a HIGH change approved by a REVIEW (the model's marker or the health rule)
+           waits for BOARD RATIFICATION — /implement, and anything else acting on the approval, refuses it until
+           the Board records the Owner's direction (POST /api/v1/board/ratifications/{cca_id}). The Owner's own
+           explicit decision (override_decision) needs no ratification.
   CRITICAL — NEVER decided by a review. A model marker is recorded as a RECOMMENDATION and the health
            rule never applies: the change is HELD until an explicit admin decision
-           (admin_decision_for_critical; auth ON: an admin principal)
+           (admin_decision_for_critical; auth ON: an admin principal). W464 (FU-014): economy materiality
+           holds (change_type economy_material) are CRITICAL — every material economy action is decided only
+           by the Owner's explicit decision in the Governance hub's Sovereign Sanctum — and code_change is HIGH.
+  A record is decided and implemented under its EFFECTIVE tier (effective_tier): the tier it was filed with,
+  raised to its change type's tier-map entry, so a record filed before a tier-map change is decided under the
+  tier the map now gives it.
+
+Decisions on the constitutional ledger (W464, FU-013): every Change Control decision — an approval (a review's, the
+Owner's, the LOW auto-approval, the immune reflex), a rejection, a retirement through /implement, and a Board
+ratification decision — writes one UEG event (cca.change_approved / cca.change_rejected / cca.change_retired /
+board.change_ratified / board.change_ratification_refused) after the record lands; submissions and holds stay in
+the record's own audit trail. The economy gate's own withdrawals of its holds (superseded, unreleasable, not the
+Owner's) are the economy's machine actions and reach the UEG as economy.materiality_hold_withdrawn. Decisions made
+before W464 have no such event. A ledger write that fails never undoes the decision: the response says
+`ueg_logged: false` and the failure is logged.
+
   Governed live levers (config_change on a wired key, or a config reset): with auth enabled only an
   admin may IMPLEMENT them — the same bar as /immune-reconfigure, which applies those levers.
 
@@ -46,7 +62,8 @@ reflex, the VSB evolution apply, the economy cycle) name the mechanism instead. 
   GET  /api/v1/cca/approved         — approved change log
   GET  /api/v1/cca/rejected         — rejected change log
   GET  /api/v1/cca/{cca_id}         — get a specific change request
-  POST /api/v1/cca/{cca_id}/implement — apply + mark an approved change implemented (an approved
+  POST /api/v1/cca/{cca_id}/implement — apply + mark an approved change implemented (refused 409 while the
+                                       change awaits Board ratification; an approved
                                        economy_material hold is never implemented here: refused 409 while an
                                        action can still release it or that cannot be determined, otherwise
                                        retired as 'withdrawn' — admin only)
@@ -223,12 +240,17 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
                 "cca_id": c["cca_id"],
                 "title": c.get("title", ""),
                 "change_type": c.get("change_type", ""),
-                "impact_tier": c.get("impact_tier", "MEDIUM"),
+                # W464 — the tier the record is decided under (a record filed before a tier-map change reads its new tier)
+                "impact_tier": effective_tier(c),
                 "status": c.get("status", "submitted"),
                 "submitted_by": c.get("submitted_by", "system"),
                 "submitted_at": c.get("submitted_at", ""),
                 "reviewed_at": c.get("reviewed_at"),
                 "decision": c.get("decision"),
+                # W464 (FU-012) — what decided it, and whether the approval still waits for the Board
+                "decision_source": approval_source(c),
+                "awaiting_board_ratification": awaiting_board_ratification(c),
+                "board_ratification": _ratification_decision(c),
                 # W463 — a held record (awaiting an explicit decision) and an economy hold's current amount
                 "hold_reason": c.get("hold_reason"),
                 "est_distributable_wst": c.get("est_distributable_wst"),
@@ -261,6 +283,11 @@ _TIER_MAP: dict[str, ImpactTier] = {
     "security_change":      "HIGH",
     "integration_add":      "LOW",
     "integration_remove":   "MEDIUM",
+    # W464 (FU-014, the Owner's ruling of 2026-09-14) — both fell through to MEDIUM by the default, so their tier
+    # was an accident rather than a decision. A code correction is HIGH (a review's approval waits for Board
+    # ratification); a material economy action is CRITICAL (decided only by the Owner's explicit decision).
+    "code_change":          "HIGH",
+    "economy_material":     "CRITICAL",
 }
 
 
@@ -271,6 +298,96 @@ def _determine_tier(change_type: str, description: str) -> ImpactTier:
     if any(k in description.lower() for k in critical_keywords):
         return "CRITICAL"
     return base
+
+
+_TIER_RANK = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+REVIEW_DECISION_SOURCES = ("model_decision_marker", "health_threshold_rule")
+
+
+def effective_tier(c: dict) -> str:
+    """W464 (FU-014) — the tier a record is DECIDED and IMPLEMENTED under: the tier stamped when it was filed, raised
+    to its change type's tier-map entry. The tier is stamped once, at filing, and nothing re-read the map when a
+    decision was made — so after the Owner's ruling an economy hold filed as MEDIUM by the old default could still be
+    approved by a model marker, and release money. A stored tier is never lowered (keyword elevation stands)."""
+    stored = c.get("impact_tier") if isinstance(c, dict) and c.get("impact_tier") in _TIER_RANK else "MEDIUM"
+    floor = _TIER_MAP.get(str((c or {}).get("change_type") or "")) if isinstance(c, dict) else None
+    return floor if floor and _TIER_RANK[floor] > _TIER_RANK[stored] else stored
+
+
+def _stamp_effective_tier(fresh: dict) -> None:
+    """Raise a stored tier to its effective tier, keeping the tier it was filed with (call inside the record lock)."""
+    tier = effective_tier(fresh)
+    if fresh.get("impact_tier") != tier:
+        fresh.setdefault("impact_tier_filed", fresh.get("impact_tier"))
+        fresh["impact_tier"] = tier
+
+
+def _ratification_decision(c: dict) -> str | None:
+    r = c.get("board_ratification") if isinstance(c, dict) else None
+    return r.get("decision") if isinstance(r, dict) else None
+
+
+def approval_source(c: dict) -> str | None:
+    """W464 (refutation) — what decided a record, including records decided before W459 wrote `decision_source`.
+    Before W459 a review and an override both left only {event, by: "cca_ai"} in the trail; an override's review text
+    began "Manual override:" (the only mark that tells them apart). A pre-W464 auto-approval names itself in
+    `decision`. Anything else with no source is an UNRECORDED decision — read as a review's, never as the Owner's
+    (fail closed: such an approval waits for the Board, and the economy gate does not release it)."""
+    if not isinstance(c, dict):
+        return None
+    src = c.get("decision_source")
+    if src:
+        return str(src)
+    if c.get("status") not in ("approved", "implemented", "rejected"):
+        return None
+    if str(c.get("review_result") or "").startswith("Manual override:"):
+        return "admin_override"
+    if c.get("decision") == "auto_approved":
+        return "low_tier_auto_approval"
+    if c.get("decision") == "auto_approved_immune_defence":
+        return "immune_defence_reflex"
+    return "unrecorded_decision"
+
+
+def awaiting_board_ratification(c: dict) -> bool:
+    """W464 (FU-012, the Owner's ruling of 2026-09-14) — a HIGH change approved by a REVIEW (the reviewing model's
+    decision marker or the organism-health threshold rule — not the Owner's explicit decision) waits for the Board to
+    ratify it, and nothing acts on the approval until then. Derived from the record itself, so an approval a review
+    made before the ruling waits too — including one made before W459 recorded what decided it (approval_source: an
+    unrecorded decision reads as a review's). A CRITICAL change is never approved by a review (and one that reached
+    'approved' some other way is caught here as well). An economy materiality hold is excluded: it is decided only by
+    the Owner, and its own gate never releases a review's approval (economy.governance)."""
+    return (isinstance(c, dict) and c.get("status") == "approved"
+            and c.get("change_type") != "economy_material"
+            and _TIER_RANK[effective_tier(c)] >= _TIER_RANK["HIGH"]
+            and approval_source(c) in REVIEW_DECISION_SOURCES + ("unrecorded_decision",)
+            and _ratification_decision(c) != "ratified")
+
+
+def _log_decision(event: dict) -> bool:
+    """W464 (FU-013) — write one Change Control DECISION to the constitutional ledger. Called only after the record has
+    landed and outside its lock: a hash-chained entry cannot be taken back, so it must never describe a decision a
+    compare-and-set then refused, and a slow ledger must never hold the record lock. Never raises: a failed write is
+    logged and reported to the caller (`ueg_logged: false`) — it never undoes the decision."""
+    import logging
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        return bool(UEGLogger().log(event))
+    except Exception as e:
+        logging.getLogger("change_control").error("decision %s for %s was not written to the UEG: %s",
+                                                  event.get("type"), event.get("cca_id"), e)
+        return False
+
+
+def _decision_fields(c: dict) -> dict:
+    """The short, stable facts a decision event carries (never review text or model output: the Hub renders event data
+    verbatim, and every UEG write rewrites the whole ledger)."""
+    return {"cca_id": c.get("cca_id"), "title": str(c.get("title") or "")[:120],
+            "change_type": c.get("change_type"), "impact_tier": effective_tier(c),
+            **({"vsb_id": c.get("vsb_id")} if c.get("vsb_id") else {}),
+            **({"est_distributable_wst": c.get("est_distributable_wst")}
+               if c.get("est_distributable_wst") is not None else {}),
+            **({"counterparty": c.get("counterparty")} if c.get("counterparty") else {})}
 
 
 # ── Request models ────────────────────────────────────────────────────────────
@@ -377,7 +494,7 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         raise HTTPException(status_code=422, detail=(
             "change_type 'economy_material' and the '[economy] material distribution/transfer' titles are "
             "reserved for the economy's own materiality holds, which it files and keeps current itself; run "
-            "the action (a cycle or transfer) and review the hold it files."))
+            "the action (a cycle or transfer) and decide the hold it files in the Governance hub's Sovereign Sanctum."))
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
     change_type = req.change_type
     cc = req.config_change
@@ -441,6 +558,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     if tier == "LOW" and ctx["composite_health"] >= 0.6 and threat in ("NOMINAL", "ELEVATED"):
         change["status"] = "approved"
         change["decision"] = "auto_approved"
+        # W464 — every record says what decided it (the mechanism, named)
+        change["decision_source"] = "low_tier_auto_approval"
         change["reviewed_at"] = now
         change["review_result"] = f"Auto-approved: LOW impact, organism healthy, immune threat {threat}."
         change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "biobus", "immune_threat": threat})
@@ -454,10 +573,19 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         biobus.fire_signal("sensory", "cca.submit", f"Change submitted: {req.title} [{tier}] (immune: {threat})", 0.5)
 
     _save_change(change)
+    ueg_logged = None
+    if change["status"] == "approved":
+        # W464 (FU-013) — an auto-approval is a decision; the submission itself stays in the audit trail
+        ueg_logged = _log_decision({"type": "cca.change_approved", **_decision_fields(change),
+                                    "decision": "approved", "decision_source": "low_tier_auto_approval",
+                                    "decided_by": "biobus", "by": "biobus", "by_verified": False,
+                                    "immune_threat": threat,
+                                    "composite_health": round(float(ctx["composite_health"]), 4)})
     return {
         "cca_id": cca_id,
         "impact_tier": tier,
         "status": change["status"],
+        **({"ueg_logged": ueg_logged} if ueg_logged is not None else {}),
         "message": f"Change request {cca_id} submitted. Tier: {tier}. Status: {change['status']}.",
     }
 
@@ -511,7 +639,8 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
         "immune_threat_at_submit": threat,
         # W459 — `requires_ratification` was set here and read NOWHERE in the repo: the record said
         # "flagged for Board ratification" while marking itself implemented in the same request.
-        # The flag is gone rather than left as a claim about a process that does not exist.
+        # The flag is gone. W464: Board ratification now exists (awaiting_board_ratification), for HIGH
+        # changes a review approved; this reflex is LOW/MEDIUM and decided by the mechanism, so it is outside it.
         "rollback_plan": f"Revert {plan['section']}.{plan['key']} to its prior value via /config/update.",
         "review_result": None, "decision": None, "reviewed_at": None, "implemented_at": None,
         "audit_trail": [{"event": "submitted", "ts": now, "by": "immune_system", "immune_threat": threat,
@@ -522,6 +651,7 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
     # Arms-length governance: auto-approve the defensive (reversible) reconfiguration, then apply it.
     change["status"] = "approved"
     change["decision"] = "auto_approved_immune_defence"
+    change["decision_source"] = "immune_defence_reflex"   # W464 — the mechanism that decided, named
     change["reviewed_at"] = now
     change["review_result"] = f"Auto-approved defensive reconfiguration under immune threat {threat}."
     # the reflex decided, not the caller — the caller's identity is never stamped as the decider
@@ -556,11 +686,19 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
         change["audit_trail"].append({"event": "apply_failed", "ts": now, "error": str(e)})
 
     _save_change(change)
+    # W464 (FU-013) — the reflex's approval is a decision. Written after the record is saved: the config_update node
+    # the reconfiguration engine wrote precedes it in the chain.
+    ueg_logged = _log_decision({"type": "cca.change_approved", **_decision_fields(change), "decision": "approved",
+                                "decision_source": "immune_defence_reflex", "decided_by": "auto_approve_immune_defence",
+                                "by": "cca", "by_verified": False, "requested_by": _actor(user),
+                                "requested_by_verified": _verified(user), "immune_threat": threat,
+                                "implemented": change["status"] == "implemented"})
     return {
         "cca_id": cca_id,
         "threat_level": threat,
         "impact_tier": plan["tier"],
         "status": change["status"],
+        "ueg_logged": ueg_logged,
         "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": plan["why"]},
         "applied": applied,
         "governed_by": "Change Control Agency (arms-length)",
@@ -595,7 +733,15 @@ async def get_change(cca_id: str):
     c = _load_change(cca_id)
     if not c:
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
-    return c
+    # W464 — the tier it is decided under, and whether the approval waits for the Board (read-time; the stored
+    # record keeps the tier it was filed with until a decision stamps the effective one)
+    tier = effective_tier(c)
+    return {**c, "impact_tier": tier,
+            **({"impact_tier_filed": c.get("impact_tier")} if tier != c.get("impact_tier") else {}),
+            # a record decided before W459 carries no decision_source: say what it is read as (approval_source)
+            **({"decision_source": approval_source(c), "decision_source_inferred": True}
+               if not c.get("decision_source") and approval_source(c) else {}),
+            "awaiting_board_ratification": awaiting_board_ratification(c)}
 
 
 async def _twin_prevalidate(change: dict) -> dict:
@@ -611,7 +757,7 @@ async def _twin_prevalidate(change: dict) -> dict:
         f"Twin model — the live organism state:\n"
         f"  Composite health: {ctx['composite_health']:.0%} | mode: {ctx['mode']}\n"
         f"  Immune threat: {ctx['immune']['threat_level']} | circadian: {ctx['circadian']['cycle']}\n\n"
-        f"Proposed change ({change['impact_tier']}): {change['title']}\n"
+        f"Proposed change ({effective_tier(change)}): {change['title']}\n"
         f"Type: {change['change_type']}\nDescription: {change['description']}\n"
         f"Affected systems: {', '.join(change.get('affected_systems') or []) or 'not specified'}\n"
         f"Rollback plan: {change.get('rollback_plan') or 'not provided'}\n\n"
@@ -692,14 +838,18 @@ async def review_change(cca_id: str, req: ReviewDecision,
     explicit `admin_decision_for_critical`. (2) What a review can decide is explicit: a CRITICAL change
     is ALWAYS held for an explicit admin decision (a model marker is stored only as a recommendation;
     it used to be silently rejected by the health rule, and rejection is terminal). A single model
-    marker decides a MEDIUM/HIGH change — except an economy hold filed after a rejection of its action
-    (follows_rejection), which any review HOLDS (hold_reason follows_rejection_requires_explicit_decision, the
-    verdict kept as a recommendation) for an explicit decision. With no marker, or conflicting markers, the organism-health
+    marker decides a MEDIUM/HIGH change. With no marker, or conflicting markers, the organism-health
     threshold RULE decides it and the record says so — except that with auth enabled a rule verdict
     is applied only when an admin requested the review (a non-admin's review is held, with the rule's
     verdict as a recommendation). (3) The decision is
     stamped with WHO asked (`by`, `by_verified`) and WHAT decided (`decided_by`), instead of an
     unconditional "cca_ai" on a human's override.
+
+    W464 — the tier is the record's EFFECTIVE tier (effective_tier), stamped on the record when the review starts.
+    Economy materiality holds are CRITICAL (FU-014): a review of one records a recommendation only, and the Owner's
+    explicit decision (with admin_decision_for_critical) decides it; the §17.5 pre-validation is not run for one (its
+    implement path never reads it). A HIGH change a review approves waits for Board ratification (FU-012). Every
+    decision — not a hold — is written to the UEG after the record lands (FU-013); the response says `ueg_logged`.
     """
     c = _load_change(cca_id)
     if not c:
@@ -708,15 +858,19 @@ async def review_change(cca_id: str, req: ReviewDecision,
         raise HTTPException(status_code=400, detail=f"Change is {c['status']} — cannot review.")
 
     principal = _actor(user)
+    # W464 (FU-014) — decided under the EFFECTIVE tier: the change type fixes the floor, and it never changes
+    tier = effective_tier(c)
     if req.override_decision:
         u = _principal(user)
         if auth_enabled() and (not u or u.get("role") != "admin"):
             raise HTTPException(status_code=403,
                                 detail="Only an admin may override a Change Control decision.")
-        if c["impact_tier"] == "CRITICAL" and not req.admin_decision_for_critical:
+        if tier == "CRITICAL" and not req.admin_decision_for_critical:
             raise HTTPException(status_code=403, detail=(
                 "A CRITICAL change is never decided incidentally: resend with "
-                "admin_decision_for_critical: true to record this as an explicit admin decision."))
+                "admin_decision_for_critical: true to record this as an explicit admin decision."
+                + (" A material economy action is CRITICAL: it is decided only by the Owner's explicit decision "
+                   "(the Governance hub's Sovereign Sanctum)." if c.get("change_type") == "economy_material" else "")))
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
@@ -729,11 +883,13 @@ async def review_change(cca_id: str, req: ReviewDecision,
             raise HTTPException(status_code=409, detail=(
                 f"The hold's amount changed since it was read: it now carries {fresh['est_distributable_wst']} WST, "
                 f"not {req.expected_est_distributable_wst}. Re-read it and decide the current amount."))
+        _stamp_effective_tier(fresh)
         fresh["status"] = "under_review"
         fresh.setdefault("audit_trail", []).append(
             {"event": "review_started", "ts": now, "by": principal, "by_verified": _verified(user)})
 
     c = _update_change(cca_id, _start)
+    tier = effective_tier(c)
     # W463 — what the reviewer is deciding: an economy hold's amount and intake as they stood at the start
     reviewed_amount = (c.get("est_distributable_wst"), c.get("intake"))
 
@@ -750,7 +906,7 @@ async def review_change(cca_id: str, req: ReviewDecision,
             f"You are the Chief Governance Officer of Workstation IDBO, reviewing a change request.\n\n"
             f"Change Title: {c['title']}\n"
             f"Type: {c['change_type']}\n"
-            f"Impact Tier: {c['impact_tier']}\n"
+            f"Impact Tier: {tier}\n"
             f"Description: {c['description']}\n"
             f"Rationale: {c['rationale'] or 'Not provided.'}\n"
             f"Affected Systems: {', '.join(c['affected_systems']) or 'Not specified.'}\n"
@@ -786,29 +942,25 @@ async def review_change(cca_id: str, req: ReviewDecision,
         _u = _principal(user)
         admin_requested = (not auth_enabled()) or bool(_u and _u.get("role") == "admin")
         model_out = "\n\n--- model output ---\n" + (review_text or "")
-        if c["impact_tier"] == "CRITICAL":
-            # never decided by a review: a model marker is a recommendation; the rule never applies
+        if tier == "CRITICAL":
+            # never decided by a review: a model marker is a recommendation; the rule never applies.
+            # W464 — this now covers every economy materiality hold (FU-014), so the W463 branch that held only a hold
+            # filed after a rejection is gone: no review decides any of them. The follows link stays information.
             decision, held, hold_reason = None, True, "critical_requires_admin_decision"
             decision_source = "held_awaiting_admin"
             recommendation = ({"verdict": marker, "source": "model_decision_marker"} if marker else None)
+            _follows = c.get("follows_rejection") if isinstance(c.get("follows_rejection"), dict) else None
             review_text = (
-                "HELD — a CRITICAL change is decided only by an explicit admin decision. "
+                ("HELD — a material economy action is CRITICAL: it is decided only by the Owner's explicit decision "
+                 "(the Governance hub's Sovereign Sanctum). "
+                 + (f"It follows the rejection of {_follows.get('cca_id')}. " if _follows else "")
+                 if c.get("change_type") == "economy_material" else
+                 "HELD — a CRITICAL change is decided only by an explicit admin decision. ")
                 + (f"The serving model recommended {marker.upper()}; that is recorded as a "
                    "recommendation, not a decision." if marker else
                    f"No model recommendation: {why_no_marker}; the organism-health threshold rule "
                    "never decides a CRITICAL change.")
                 + model_out)
-        elif c.get("follows_rejection"):
-            # W463 — the economy re-filed an action after the Owner rejected it: a review (model or rule) never
-            # decides that; the recommendation is recorded and an explicit decision is required
-            decision, held, hold_reason = None, True, "follows_rejection_requires_explicit_decision"
-            decision_source = "held_awaiting_admin"
-            recommendation = ({"verdict": marker, "source": "model_decision_marker"} if marker
-                              else {"verdict": rule_verdict, "source": "health_threshold_rule"})
-            review_text = (
-                f"HELD — this economy hold follows the rejection of {c['follows_rejection'].get('cca_id')}; only an "
-                "explicit decision (override_decision) can approve or reject it. The review's verdict is recorded "
-                "as a recommendation." + model_out)
         elif marker:
             decision, decision_source = marker, "model_decision_marker"
         elif not admin_requested:
@@ -833,7 +985,9 @@ async def review_change(cca_id: str, req: ReviewDecision,
     # /implement can enforce "pre-validation before major change" without a second round-trip.
     # The await stays OUTSIDE the lock.
     tp = None
-    if decision == "approved" and c["impact_tier"] in ("HIGH", "CRITICAL"):
+    # W464 — not for an economy hold: its implement path returns before the §17.5 check and the gate never reads the
+    # verdict, so every Sanctum vote paid for a model call whose FAIL was shown in red on a record that then released
+    if decision == "approved" and tier in ("HIGH", "CRITICAL") and c.get("change_type") != "economy_material":
         tp = await _twin_prevalidate(c)
 
     def _decide(fresh: dict) -> None:
@@ -863,12 +1017,40 @@ async def review_change(cca_id: str, req: ReviewDecision,
                       "decided_by": ("admin_override" if decision_source == "admin_override"
                                      else "cca_ai_model_marker" if decision_source == "model_decision_marker"
                                      else "organism_health_threshold_rule")})
+        if awaiting_board_ratification(fresh):
+            # W464 (FU-012) — a hold on the approval, so it stays in the record's own trail (not the ledger)
+            trail.append({"event": "awaiting_board_ratification", "ts": now, "by": "cca", "by_verified": False,
+                          "approved_by": decision_source,
+                          "note": "a HIGH change approved by a review waits for the Board to ratify it on the "
+                                  "Owner's direction before anything acts on it"})
         if tp is not None:
             fresh["twin_prevalidation"] = tp
             trail.append({"event": f"twin_prevalidation_{tp['verdict']}", "ts": tp["simulated_at"],
                           "source": tp["source"], "by": principal, "by_verified": _verified(user)})
 
     c = _update_change(cca_id, _decide)
+    awaiting = awaiting_board_ratification(c)
+
+    # W464 (FU-013) — the decision is on the record; now it goes to the constitutional ledger (never a hold). Written
+    # before anything else can raise, so a later failure cannot skip it.
+    ueg_logged = None
+    if not held:
+        _decided_by = ("admin_override" if decision_source == "admin_override"
+                       else "cca_ai_model_marker" if decision_source == "model_decision_marker"
+                       else "organism_health_threshold_rule")
+        _common = {**_decision_fields(c), "decision_source": decision_source, "decided_by": _decided_by,
+                   "via": "admin_override" if req.override_decision else "review_request",
+                   "by": principal, "by_verified": _verified(user),
+                   **({"follows_rejection": c["follows_rejection"].get("cca_id")}
+                      if isinstance(c.get("follows_rejection"), dict) else {}),
+                   **({"notes": req.reviewer_notes[:200]} if req.override_decision and req.reviewer_notes else {})}
+        if decision == "approved":
+            ueg_logged = _log_decision({"type": "cca.change_approved", **_common, "decision": "approved",
+                                        "awaiting_board_ratification": awaiting,
+                                        **({"twin_prevalidation": {"verdict": tp["verdict"], "source": tp["source"]}}
+                                           if tp else {})})
+        else:
+            ueg_logged = _log_decision({"type": "cca.change_rejected", **_common, "decision": "rejected"})
 
     if held:
         biobus.fire_signal("reflex", "cca.decision", f"CCA HELD ({hold_reason}): {c['title']}", 0.6)
@@ -884,6 +1066,9 @@ async def review_change(cca_id: str, req: ReviewDecision,
         "recommendation": recommendation,
         "review_result": review_text[:500],
         "status": c["status"],
+        "impact_tier": tier,
+        "awaiting_board_ratification": awaiting,
+        **({"ueg_logged": ueg_logged} if ueg_logged is not None else {}),
     }
 
 
@@ -911,7 +1096,21 @@ async def implement_change(cca_id: str, force: bool = False,
     if not _valid_cca_id(cca_id) or not _cca_path(cca_id).exists():
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
     with _change_mutation(cca_id):
-        return _implement_locked(cca_id, force, principal, _verified(user), is_admin)
+        result = _implement_locked(cca_id, force, principal, _verified(user), is_admin)
+    # W464 (FU-013) — a retirement's ledger events are written after the record lock is released (a slow ledger never
+    # holds the record, and the entries describe a write that has landed)
+    retired = result.pop("_retired", None)
+    if retired:
+        try:
+            from agentic_core.economy.governance import _ueg_log as _econ_log
+            _econ_log({"type": "economy.materiality_hold_withdrawn", "vsb_id": retired.get("vsb_id"), "cca_id": cca_id,
+                       "superseded_by": None, "reason": f"retired: {retired['why']}"[:200], "by": principal})
+        except Exception:
+            pass
+        result["ueg_logged"] = _log_decision({"type": "cca.change_retired", **_decision_fields(retired["record"]),
+                                              "decision": "withdrawn", "reason": str(retired["why"])[:200],
+                                              "by": principal, "by_verified": _verified(user)})
+    return result
 
 
 def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
@@ -921,15 +1120,25 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
     if c["status"] != "approved":
         raise HTTPException(status_code=400, detail=f"Change must be approved before implementation. Status: {c['status']}")
+    if awaiting_board_ratification(c):
+        # W464 (FU-012) — before anything is written or applied, and ?force never passes it (force answers a failed
+        # pre-validation, not a missing ratification)
+        raise HTTPException(status_code=409, detail=(
+            "This HIGH change was approved by a review ("
+            + ("the reviewing model's decision marker" if approval_source(c) == "model_decision_marker"
+               else "the organism-health threshold rule" if approval_source(c) == "health_threshold_rule"
+               else "a decision recorded before W459 with no source, read as a review's")
+            + "), so it waits for the Board to ratify it on the Owner's direction before it is implemented. "
+              "Ratify or refuse it on the Board page (POST /api/v1/board/ratifications/" + cca_id + ")."))
     if c.get("change_type") == "economy_material":
         # W463 (third refutation) — an economy hold carries no config to apply: implementing it only marked the record
         # "implemented", which spent the Owner's approval with nothing distributed or transferred. W463 (sixth
         # refutation): one reading decides AND explains a retirement; an unknown answer never retires.
         try:
-            from agentic_core.economy.governance import _ueg_log as _econ_log, unreleasable_reason
+            from agentic_core.economy.governance import unreleasable_reason
             why = unreleasable_reason(c)
         except Exception:
-            _econ_log, why = None, None
+            why = None
         if why is None:
             raise HTTPException(status_code=409, detail=(
                 "An economy materiality hold is released by running the action it was filed for (the cycle or the "
@@ -946,12 +1155,10 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
             {"event": "withdrawn_unreleasable", "ts": now_w, "by": principal, "by_verified": verified,
              "reason": f"{why}; nothing ran"})
         _save_change(c)
-        if _econ_log:
-            _econ_log({"type": "economy.materiality_hold_withdrawn", "vsb_id": c.get("vsb_id"), "cca_id": cca_id,
-                       "superseded_by": None, "reason": f"retired: {why}"[:200], "by": principal})
         return {"cca_id": cca_id, "status": "withdrawn",
                 "note": f"This economy record can never be released by running an action ({why}), so it was retired "
-                        "(withdrawn) — nothing was distributed or transferred."}
+                        "(withdrawn) — nothing was distributed or transferred.",
+                "_retired": {"why": why, "vsb_id": c.get("vsb_id"), "record": c}}
     _spec = c.get("config_change") or {}
     if _spec and not is_admin:
         from agentic_core.organism.reconfiguration import _GOVERNED_KEYS
@@ -961,7 +1168,7 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
                 "the same bar as the immune reflex that applies those levers."))
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    if c["impact_tier"] in ("HIGH", "CRITICAL"):
+    if effective_tier(c) in ("HIGH", "CRITICAL"):     # W464 — the effective tier (a re-tiered type needs it too)
         tp = c.get("twin_prevalidation")
         if not tp:
             raise HTTPException(status_code=409, detail=(
@@ -1027,6 +1234,84 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
     biobus.fire_signal("motor", "cca.implement", f"Implemented: {c['title']}", 0.7)
     return {"cca_id": cca_id, "status": "implemented", "implemented_at": now, "applied": applied,
             "twin_prevalidation": (c.get("twin_prevalidation") or {}).get("verdict")}
+
+
+def pending_ratifications() -> list[dict]:
+    """W464 (FU-012) — every change awaiting Board ratification, newest first, read from the FULL records (a list row
+    carries no review text or pre-validation). Uncapped: the queue must never hide one."""
+    rows = []
+    for p in sorted(_CCA_STORE.glob("*.json"), key=_mtime, reverse=True):
+        c = _load_change(p.stem)
+        if not c or not awaiting_board_ratification(c):
+            continue
+        tp = c.get("twin_prevalidation") if isinstance(c.get("twin_prevalidation"), dict) else None
+        approved_at = next((e.get("ts") for e in reversed(c.get("audit_trail") or [])
+                            if e.get("event") == "approved"), c.get("reviewed_at"))
+        rows.append({"cca_id": c["cca_id"], "title": c.get("title", ""), "change_type": c.get("change_type"),
+                     "impact_tier": effective_tier(c), "status": c.get("status"),
+                     "decision_source": approval_source(c), "approved_at": approved_at,
+                     "submitted_by": c.get("submitted_by"), "submitted_at": c.get("submitted_at"),
+                     "vsb_id": c.get("vsb_id"), "description": str(c.get("description") or "")[:600],
+                     "review_result": str(c.get("review_result") or "")[:1200],
+                     "twin_prevalidation": ({"verdict": tp.get("verdict"), "source": tp.get("source"),
+                                             "source_label": tp.get("source_label")} if tp else None)})
+    return rows
+
+
+def ratify_change(cca_id: str, decision: str, notes: str, principal: str, verified: bool) -> dict:
+    """W464 (FU-012) — record the Board's ratification decision on a change awaiting it: the Owner's direction, recorded
+    by the Board (no model decides it — the Chief has no twin model). Compare-and-set under the record's lock: the
+    change must still be approved, by a review, and not already ratified — so a ratification can never race an
+    implement, a second ratification, or a refusal. Ratified: the approval stands and /implement may proceed (its
+    §17.5 pre-validation check still applies). Refused: the change is REJECTED (decision_source board_refusal), which
+    nothing implements. The decision is then written to the UEG (FU-013)."""
+    if decision not in ("ratify", "refuse"):
+        raise HTTPException(status_code=422, detail="decision must be 'ratify' or 'refuse'.")
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    seen: dict = {}
+
+    def _ratify(fresh: dict) -> None:
+        if not awaiting_board_ratification(fresh):
+            raise HTTPException(status_code=409, detail=(
+                f"Change {cca_id} is not awaiting Board ratification (status {fresh.get('status')}, decided by "
+                f"{approval_source(fresh) or 'nothing recorded'}"
+                + (f", Board decision {_ratification_decision(fresh)}" if _ratification_decision(fresh) else "")
+                + "). Only a HIGH change approved by a review waits for the Board."))
+        seen["approval_decision_source"] = approval_source(fresh)
+        fresh["board_ratification"] = {
+            "decision": "ratified" if decision == "ratify" else "refused", "at": now, "by": principal,
+            "by_verified": verified, "on_owner_direction": True, "notes": (notes or "")[:500],
+            "approval_decision_source": approval_source(fresh)}
+        trail = fresh.setdefault("audit_trail", [])
+        if decision == "ratify":
+            trail.append({"event": "board_ratified", "ts": now, "by": principal, "by_verified": verified,
+                          "on_owner_direction": True})
+        else:
+            fresh["status"] = "rejected"
+            fresh["decision"] = "rejected"
+            fresh["decision_source"] = "board_refusal"
+            fresh["reviewed_at"] = now
+            trail.append({"event": "board_ratification_refused", "ts": now, "by": principal, "by_verified": verified,
+                          "on_owner_direction": True, "approval_decision_source": seen["approval_decision_source"]})
+
+    c = _update_change(cca_id, _ratify)
+    _event = {**_decision_fields(c), "approval_decision_source": seen.get("approval_decision_source"),
+              "by": principal, "by_verified": verified, "on_owner_direction": True,
+              **({"notes": notes[:200]} if notes else {}), "status_after": c.get("status")}
+    if decision == "ratify":
+        ueg_logged = _log_decision({"type": "board.change_ratified", **_event, "decision": "ratified"})
+    else:
+        ueg_logged = _log_decision({"type": "board.change_ratification_refused", **_event, "decision": "refused"})
+    try:
+        biobus.fire_signal("motor" if decision == "ratify" else "reflex", "board.ratification",
+                           f"Board {'RATIFIED' if decision == 'ratify' else 'REFUSED'}: {c.get('title')}", 0.7)
+    except Exception:
+        pass
+    return {"cca_id": cca_id, "decision": "ratified" if decision == "ratify" else "refused",
+            "status": c.get("status"), "by": principal, "by_verified": verified, "ueg_logged": ueg_logged,
+            "note": ("Ratified — the approval stands; the change may now be implemented (a HIGH change still needs a "
+                     "recorded §17.5 pre-validation PASS)." if decision == "ratify" else
+                     "Refused — the change is rejected and will not be implemented.")}
 
 
 @router.get("/impact/{cca_id}")

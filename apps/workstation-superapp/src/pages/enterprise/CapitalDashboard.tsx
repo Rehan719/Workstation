@@ -51,6 +51,7 @@ interface CcaChange {
   submitted_by: string;
   submitted_at: string;
   decision?: string | null;
+  awaiting_board_ratification?: boolean;   // W464 — a review's approval of a HIGH change, not yet ratified
 }
 
 export const CapitalDashboard: React.FC = () => {
@@ -304,13 +305,18 @@ export const CapitalDashboard: React.FC = () => {
                                 <p className="text-[10px] font-black text-aura uppercase tracking-widest mb-1">{change.cca_id}</p>
                                 <h4 className="text-lg font-black text-white break-words">{change.title}</h4>
                             </div>
+                            {/* W464 — an approval waiting for Board ratification is not a final, green APPROVED */}
                             <Badge className={
-                                change.status === 'implemented' || change.status === 'approved'
+                                change.status === 'approved' && change.awaiting_board_ratification
+                                    ? 'bg-orange-500/10 text-orange-300'
+                                    : change.status === 'implemented' || change.status === 'approved'
                                     ? 'bg-green-500/10 text-green-500'
                                     : change.status === 'rejected'
                                         ? 'bg-red-500/10 text-red-400'
                                         : 'bg-highlight/10 text-highlight'
-                            }>{change.status.replace(/_/g, ' ').toUpperCase()}</Badge>
+                            }>{change.status === 'approved' && change.awaiting_board_ratification
+                                ? 'APPROVED BY REVIEW — AWAITING BOARD'
+                                : change.status.replace(/_/g, ' ').toUpperCase()}</Badge>
                         </div>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                             {change.change_type} · impact {change.impact_tier} · by {change.submitted_by}
@@ -326,9 +332,11 @@ export const CapitalDashboard: React.FC = () => {
             </div>
             <p className="mt-6 text-[10px] font-bold text-slate-600 leading-relaxed">
                 Read-only view of <code>/api/v1/cca</code>. No voting mechanism exists on this page —
-                change requests are reviewed in the Change Control Agency (/change-control); a CRITICAL change, or an economy hold
-                filed after a rejection, is decided only by an explicit decision in the Sovereign Sanctum of the Governance hub.
-                Every decision you see above is recorded in the Change Control Agency store.
+                change requests are reviewed in the Change Control Agency (/change-control); a CRITICAL change — every material
+                economy hold among them — is decided only by the Owner's explicit decision in the Sovereign Sanctum of the
+                Governance hub, and a HIGH change a review approved waits for Board ratification. Every decision you see above
+                is recorded in the Change Control Agency store; decisions made since W464 are also written to the constitutional
+                ledger when that write lands (the constitutional audit shows each entry).
             </p>
         </Card>
       )}

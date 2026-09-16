@@ -3821,9 +3821,11 @@ def test_cca_twin_prevalidation_gates_major_changes(client):
     cid2 = sub2["cca_id"]
     r2 = cca._load_change(cid2)
     r2["status"] = "approved"
+    r2["decision_source"] = "admin_override"      # W464 — the Owner's approval: this test is the §17.5 gate, not ratification
     r2.pop("twin_prevalidation", None)
     cca._save_change(r2)
-    assert client.post(f"/api/v1/cca/{cid2}/implement").status_code == 409
+    first = client.post(f"/api/v1/cca/{cid2}/implement")
+    assert first.status_code == 409 and "§17.5" in first.json()["detail"], first.text
     pv = client.post(f"/api/v1/cca/{cid2}/twin-prevalidate").json()
     assert (pv.get("twin_prevalidation") or {}).get("verdict") in ("pass", "fail")
     if pv["twin_prevalidation"]["verdict"] == "pass":
@@ -5580,7 +5582,8 @@ def test_materiality_hold_preserves_the_held_revenue(client):
     assert peek_pending("vsb-w313t")["revenue"] == 400000.0
     cca_id = (r1.get("governance") or {}).get("cca_id")
     rv = client.post(f"/api/v1/cca/{cca_id}/review",
-                     json={"override_decision": "approved", "reviewer_notes": "w313t owner approval"})
+                     json={"override_decision": "approved", "reviewer_notes": "w313t owner approval",
+                           "admin_decision_for_critical": True})      # W464 — an economy hold is CRITICAL
     assert rv.status_code == 200
     r2 = lv.operate_vsb("vsb-w313t")
     if r2.get("cycle_ran") is False and (r2.get("governance") or {}).get("cca_id"):
@@ -5589,7 +5592,8 @@ def test_materiality_hold_preserves_the_held_revenue(client):
         # must still be fully preserved at this point.
         assert peek_pending("vsb-w313t")["revenue"] == 400000.0
         client.post(f"/api/v1/cca/{(r2['governance'])['cca_id']}/review",
-                    json={"override_decision": "approved", "reviewer_notes": "w313t dup owner approval"})
+                    json={"override_decision": "approved", "reviewer_notes": "w313t dup owner approval",
+                          "admin_decision_for_critical": True})
         r2 = lv.operate_vsb("vsb-w313t")
     assert r2.get("revenue_recognised_wst") == 400000.0, f"post-approval operate: {r2}"
     assert (r2.get("distributable_wst") or 0) > 0
@@ -5632,7 +5636,8 @@ def test_economy_cycles_governed_and_ueg_logged(client):
     assert g.get("status") == "held_for_change_control" and g.get("cca_id")
     assert held.get("cycle") is None                    # the distribution did NOT run while held
     ap = client.post(f"/api/v1/cca/{g['cca_id']}/review",
-                     json={"override_decision": "approved", "reviewer_notes": "owner approves"}).json()
+                     json={"override_decision": "approved", "reviewer_notes": "owner approves",
+                           "admin_decision_for_critical": True}).json()     # W464 — an economy hold is CRITICAL
     assert (ap.get("status") or ap.get("decision")) in ("approved", "auto_approved")
     ok = client.post("/api/v1/economy/cycle", json={"vsb_id": vid2, "entity_type": "waqf_ltd_hybrid",
                                                     "revenue": 400000, "costs": 0}).json()
@@ -10110,10 +10115,12 @@ def test_w459_external_cca_writers_compare_and_set(monkeypatch):
         "cca_id": ecid, "title": GOV._HOLD_TITLE_PREFIX + vsb_id, "change_type": "economy_material",
         "submitted_by": "economy:cycle", "vsb_id": vsb_id, "est_distributable_wst": GOV.MATERIALITY_WST * 10,
         "impact_tier": "MEDIUM", "status": "approved", "decision": "approved",
+        "decision_source": "admin_override",      # W464 — only the Owner's explicit approval is spendable
         "submitted_at": "2026-09-13T00:00:00Z", "description": "", "audit_trail": []})
     monkeypatch.setattr(CC, "_update_change", _move_then("rejected"))
     out, spent = GOV._materiality_gate(vsb_id, GOV.MATERIALITY_WST * 10, "cycle")
     assert out and out["status"] == "held_for_change_control" and "concurrently" in out["note"] and spent is None
+    assert out.get("decided_concurrently") is True and "follows_rejection" not in out   # W464: no page asks for a decision
     moved = CC._load_change(ecid)
     assert moved["status"] == "rejected"
     assert not any(e.get("event") == "consumed_by_economy_cycle" for e in moved["audit_trail"])
@@ -10834,7 +10841,9 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
         assert out["cycle"] is not None, out
 
     def decide(cid, verdict="approved"):
-        r = client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": verdict, "reviewer_notes": "w463"})
+        # W464 — an economy hold is CRITICAL: the Owner's explicit decision carries the acknowledgement
+        r = client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": verdict, "reviewer_notes": "w463",
+                                                         "admin_decision_for_critical": True})
         assert r.status_code == 200 and cca._load_change(cid)["status"] == verdict, r.text
 
     def rec(cid):
@@ -11103,6 +11112,7 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
                                                    "change_type": "config_minor", "description": "w463"}).status_code == 200
     base = {"title": gv._HOLD_TITLE_PREFIX + y, "change_type": "economy_material", "submitted_by": "economy:api",
             "vsb_id": y, "status": "approved", "impact_tier": "MEDIUM", "est_distributable_wst": 4000.0,
+            "decision_source": "admin_override",   # W464 — the Owner's approval: each identity clause still refuses it
             "submitted_at": "2026-09-13T00:00:00Z", "description": "", "audit_trail": []}
     forged = {}
     for name, patch in {"type": {"change_type": "config_minor"}, "filer": {"submitted_by": "someone"},
@@ -11261,7 +11271,8 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
         return cca._load_change(cid)
 
     def decide(cid, verdict="approved", **extra):
-        return client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": verdict, "reviewer_notes": "w463l", **extra})
+        return client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": verdict, "reviewer_notes": "w463l",
+                                                            "admin_decision_for_critical": True, **extra})
 
     def cyc(v, revenue, costs=0.0, reserve_rate=0.2):
         return client.post("/api/v1/economy/cycle", json={"vsb_id": v, "revenue": revenue, "costs": costs,
@@ -11306,7 +11317,8 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     monkeypatch.setattr(cca.gateway, "query", _query_approves)
     reviewed = client.post(f"/api/v1/cca/{nxt['cca_id']}/review", json={"reviewer_notes": "w463l"})
     monkeypatch.setattr(cca.gateway, "query", real_query)
-    assert reviewed.status_code == 200 and reviewed.json()["hold_reason"] == "follows_rejection_requires_explicit_decision"
+    # W464 — every economy hold is CRITICAL: a review holds it for the Owner (the follows link is information)
+    assert reviewed.status_code == 200 and reviewed.json()["hold_reason"] == "critical_requires_admin_decision"
     assert reviewed.json()["recommendation"] == {"verdict": "approved", "source": "model_decision_marker"}
     assert rec(nxt["cca_id"])["status"] == "under_review"
     assert decide(nxt["cca_id"]).status_code == 200 and cyc(v2, 50001)["cycle"] is not None
@@ -11408,7 +11420,8 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     def approve_first(cid, mutate):
         if armed["on"] and cid == h9:
             armed["on"] = False
-            real_update(cid, lambda f: f.update(status="approved"))
+            # W464 (refutation) — the Owner's approval: otherwise the owner-only rule, not the amount bound, refuses below
+            real_update(cid, lambda f: f.update(status="approved", decision="approved", decision_source="admin_override"))
         return real_update(cid, mutate)
     monkeypatch.setattr(cca, "_update_change", approve_first)
     raced = cyc(v9, 50000)["governance"]
@@ -11435,7 +11448,7 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     intake = {"revenue_wst": 5000.0, "costs_wst": 0.0, "returns_wst": 0.0, "transfers_wst": 0.0, "reserve_rate": 0.2}
     base = {"title": gv._HOLD_TITLE_PREFIX + v10, "change_type": "economy_material", "submitted_by": "economy:api",
             "vsb_id": v10, "status": "approved", "impact_tier": "MEDIUM", "est_distributable_wst": 4000.0,
-            "intake": intake, "description": "", "audit_trail": []}
+            "decision_source": "admin_override", "intake": intake, "description": "", "audit_trail": []}
     s1, s2 = f"cca-w463ls1{_uuid.uuid4().hex[:4]}", f"cca-w463ls2{_uuid.uuid4().hex[:4]}"
     atomic_write_json(cca._cca_path(s1), {**base, "cca_id": s1, "submitted_at": "2026-09-13T00:00:01Z"})
     atomic_write_json(cca._cca_path(s2), {**base, "cca_id": s2, "submitted_at": "2026-09-13T00:00:02Z"})
@@ -11555,7 +11568,7 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     assert cyc(g1, 5000)["governance"]["status"] == "rejected_by_change_control"         # nothing ran since: it stands
     f1 = cyc(g1, 6000)["governance"]
     # SURF-1: the held answer and the queue row say the hold follows the rejection before any review
-    assert f1["follows_rejection"] == r1 and "only an explicit decision" in f1["note"]
+    assert f1["follows_rejection"] == r1 and gv._EXPLICIT.strip() in f1["note"] and "only an explicit decision" in f1["note"]
     assert next(x for x in client.get("/api/v1/cca/queue").json()["queue"]
                 if x["cca_id"] == f1["cca_id"])["follows_rejection"] == r1
     assert decide(f1["cca_id"]).status_code == 200 and cyc(g1, 6000)["cycle"] is not None    # an approved action ran
@@ -11573,20 +11586,21 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
 
     # SURF-3: both list surfaces carry what the pages read (a held hold's reason, amount, and the rejection it follows)
     reviewed2 = client.post(f"/api/v1/cca/{changed2['cca_id']}/review", json={"reviewer_notes": "w463l"})
-    assert reviewed2.json()["hold_reason"] == "follows_rejection_requires_explicit_decision"
+    assert reviewed2.json()["hold_reason"] == "critical_requires_admin_decision"
     for listing, key in (("/api/v1/cca/queue", "queue"), ("/api/v1/cca", "changes")):
         rowx = next(x for x in client.get(listing).json()[key] if x["cca_id"] == changed2["cca_id"])
-        assert rowx["hold_reason"] == "follows_rejection_requires_explicit_decision", listing
+        assert rowx["hold_reason"] == "critical_requires_admin_decision", listing
         assert rowx["follows_rejection"] == r2, listing
         assert rowx["est_distributable_wst"] == rec(changed2["cca_id"])["est_distributable_wst"] == 4000.0, listing
     under2 = cyc(g2, 5100, costs=80)["governance"]
-    assert "under review" in under2["note"] and "only an explicit decision" in under2["note"]
+    assert "under review" in under2["note"] and gv._EXPLICIT.strip() in under2["note"] and "only an explicit decision" in under2["note"]
     pages = pathlib.Path("apps/workstation-superapp/src/pages")
     hub = (pages / "governance/GovernanceHub.tsx").read_text(encoding="utf-8")
     ccap = (pages / "enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
     assert "c.impact_tier === 'CRITICAL' || c.hold_reason || c.follows_rejection" in hub
     assert "expected_est_distributable_wst: p.est" in hub and "the decision applies to this amount only" not in hub
-    assert "expected_est_distributable_wst: entries.find(e => e.cca_id === id)?.est_distributable_wst" in ccap
+    # W464 — the page never requests a review of an economy hold (CRITICAL: the Owner decides it in the Sanctum)
+    assert "isPending(entry.status) && entry.change_type !== 'economy_material' && (" in ccap
     assert "entry.change_type !== 'economy_material'" in ccap
     for page in ("enterprise/VSBEconomy.tsx", "enterprise/EconomyOperations.tsx"):
         assert "follows_rejection ? (" in (pages / page).read_text(encoding="utf-8"), page
@@ -11671,7 +11685,7 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     same6 = cyc(g6, 5000)["governance"]                                                 # the rejected action, from another worker
     assert same6["status"] == "held_for_change_control" and same6["follows_rejection"] == r6, same6   # asked; explicit only
     rv6 = client.post(f"/api/v1/cca/{same6['cca_id']}/review", json={"reviewer_notes": "w463l"})
-    assert rv6.json()["hold_reason"] == "follows_rejection_requires_explicit_decision"   # a review cannot approve it
+    assert rv6.json()["hold_reason"] == "critical_requires_admin_decision"   # a review cannot approve it (W464: CRITICAL)
     gv._restore_consumed_approval(spent6, vsb_id=g6, reason="w463l the in-flight action was blocked")
     assert rec(f6)["status"] == "implemented"                                           # the hold asked meanwhile is under review
     assert rec(f6)["audit_trail"][-1]["event"] == "approval_spent_action_never_ran"      # …and the record says nothing ran
@@ -11796,7 +11810,7 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     assert decide(r11, "rejected").status_code == 200
     f11 = cyc(g11, 6000)["governance"]
     re11 = cyc(g11, 7000)["governance"]
-    assert re11["cca_id"] == f11["cca_id"] and re11["follows_rejection"] == r11 and "only an explicit decision" in re11["note"]
+    assert re11["cca_id"] == f11["cca_id"] and re11["follows_rejection"] == r11 and gv._EXPLICIT.strip() in re11["note"]
     assert decide(f11["cca_id"], "rejected").status_code == 200
     rej11 = cyc(g11, 7000)["governance"]
     assert rej11["status"] == "rejected_by_change_control" and rej11["cca_id"] == f11["cca_id"]
@@ -11927,7 +11941,7 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     # RF5-RELEASABLE-EMPTY-VSB: an empty VSB id is still the gate's VSB id
     assert gv.releasable_by_gate({"cca_id": "cca-w463lempty", "title": gv._HOLD_TITLE_PREFIX, "change_type": "economy_material",
                                   "submitted_by": "economy:api", "vsb_id": "", "est_distributable_wst": 2000.0,
-                                  "status": "approved"}) is True
+                                  "status": "approved", "decision_source": "admin_override"}) is True   # W464: the Owner's
 
     # RF5-STRANDED-DEREGISTERED + RF5-RETIRE-NO-SCOPE: a transfer approval whose receiver left the roster is retired —
     # by an admin, with that reason, in the UEG
@@ -11954,7 +11968,11 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     monkeypatch.setattr(cca.gateway, "query", _query_rejects)
     by_model = client.post(f"/api/v1/cca/{hmk}/review", json={"reviewer_notes": "w463l"}).json()
     monkeypatch.setattr(cca.gateway, "query", real_query)
-    assert by_model["decision_source"] == "model_decision_marker" and by_model["status"] == "rejected"
+    # W464 — a model review no longer rejects an economy hold (CRITICAL): it holds it with the recommendation…
+    assert by_model["decision_source"] == "held_awaiting_admin" and by_model["status"] == "under_review", by_model
+    assert by_model["recommendation"] == {"verdict": "rejected", "source": "model_decision_marker"}
+    # …but a rejection a model review made before the ruling still stands and still says what made it
+    cca._update_change(hmk, lambda f: f.update(status="rejected", decision="rejected", decision_source="model_decision_marker"))
     ans_m = cyc(mk, 5000)["governance"]
     assert ans_m["status"] == "rejected_by_change_control" and ans_m["rejected_by"] == "model_decision_marker"
     assert "reviewing model's decision marker" in ans_m["note"] and "Owner" not in ans_m["note"]
@@ -12097,7 +12115,7 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     real_wis = gv._withdraw_if_submitted
 
     def owner_approves_first(cca_mod, c, *a, **k):
-        real_update2(c["cca_id"], lambda f: f.update(status="approved"))
+        real_update2(c["cca_id"], lambda f: f.update(status="approved", decision="approved", decision_source="admin_override"))
         return real_wis(cca_mod, c, *a, **k)
     monkeypatch.setattr(gv, "_withdraw_if_submitted", owner_approves_first)
     gv._restore_consumed_approval(cspent, vsb_id=c1s, reason="w463l the action never ran")
@@ -12234,3 +12252,700 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     gv._restore_consumed_approval(d5spent, vsb_id=d5s, reason="w463l the action never ran")
     monkeypatch.setattr(cca, "_update_change", real_update2)
     assert rec(d5b)["status"] == "withdrawn" and rec(d5b)["audit_trail"][-1]["event"] == "noted_elsewhere"
+
+
+def _w464_ledger_nodes(cca_id=None, types=None):
+    """The constitutional ledger's nodes (whichever path this process writes), optionally for one change / some types."""
+    from agentic_core.gaas.v5 import UEGLogger
+    nodes = [n.get("data") or {} for n in UEGLogger()._read().get("nodes", [])]
+    return [d for d in nodes if (cca_id is None or d.get("cca_id") == cca_id)
+            and (types is None or d.get("type") in types)]
+
+
+def _w464_serving(monkeypatch, CC, review="[DECISION: APPROVED]", twin="[TWIN: PASS]", calls=None):
+    """Substitute the serving resource per agent so no assertion depends on what happened to serve."""
+    serve = {"review": review, "twin": twin}
+
+    async def _q(prompt, agent=None, **kw):
+        if calls is not None:
+            calls.append(agent)
+        return serve["twin"] if agent == "cca_twin_prevalidation" else serve["review"]
+    monkeypatch.setattr(CC.gateway, "query", _q)
+    return serve
+
+
+def _w464_healthy(monkeypatch, CC, h=0.87):
+    real_ctx = CC.biobus.organism_context
+
+    def _ctx():
+        c = dict(real_ctx())
+        c["composite_health"] = h
+        c["immune"] = {**(c.get("immune") or {}), "threat_level": "NOMINAL"}
+        return c
+    monkeypatch.setattr(CC.biobus, "organism_context", _ctx)
+    monkeypatch.setattr(CC, "_immune_threat", lambda: "NOMINAL")
+
+
+def test_w464_board_ratifies_what_a_review_approved_before_anything_acts(client, monkeypatch):
+    """FU-012 — the Owner's ruling of 2026-09-14: a HIGH change approved by a REVIEW (the model's decision marker or the
+    organism-health rule, not the Owner's explicit decision) waits for Board ratification, and /implement — and
+    anything else acting on the approval — refuses it until the Board records the Owner's decision. W459 had deleted
+    the only ratification flag because nothing consumed it; this is the consumer. Both ways, in both auth modes."""
+    import asyncio as _aio
+    import json as _json
+    import uuid as _uuid
+    import pytest as _pytest
+    from agentic_core.api import change_control as CC
+    from agentic_core.auth import core as auth_core
+    from agentic_core.config import atomic_write_json
+    from agentic_core.gaas.v5.ueg import classify_event
+
+    _w464_healthy(monkeypatch, CC)
+    serve = _w464_serving(monkeypatch, CC)
+    # what already waits in this store (another run's leftovers): the counts below are exact against it
+    base = {x["cca_id"] for x in CC.pending_ratifications()}
+
+    def submit(change_type="code_change", **kw):
+        r = client.post("/api/v1/cca/submit", json={"title": f"W464 {change_type} {_uuid.uuid4().hex[:6]}",
+                                                     "description": "w464 ratification probe",
+                                                     "change_type": change_type, **kw})
+        assert r.status_code == 200, r.text
+        return r.json()
+
+    def rec(cid):
+        return CC._load_change(cid)
+
+    def row(cid):
+        return next(x for x in client.get("/api/v1/cca").json()["changes"] if x["cca_id"] == cid)
+
+    # FU-014 rider: code_change is HIGH by decision, not MEDIUM by default
+    sub = submit()
+    cid = sub["cca_id"]
+    assert sub["impact_tier"] == "HIGH" and CC._TIER_MAP["code_change"] == "HIGH"
+
+    # ── a model marker approves it: approved, but awaiting the Board ──
+    rv = client.post(f"/api/v1/cca/{cid}/review", json={"reviewer_notes": "w464"}).json()
+    assert rv["status"] == "approved" and rv["decision_source"] == "model_decision_marker", rv
+    assert rv["awaiting_board_ratification"] is True and rv["ueg_logged"] is True
+    assert CC.awaiting_board_ratification(rec(cid)) is True
+    assert row(cid)["awaiting_board_ratification"] is True and client.get(f"/api/v1/cca/{cid}").json()["awaiting_board_ratification"] is True
+    assert any(e["event"] == "awaiting_board_ratification" for e in rec(cid)["audit_trail"])
+    assert rec(cid)["twin_prevalidation"]["verdict"] == "pass"
+    # the ledger node says so, and reads REVIEW (nothing may act on it yet)
+    appr = _w464_ledger_nodes(cid, {"cca.change_approved"})
+    assert len(appr) == 1 and appr[0]["awaiting_board_ratification"] is True
+    assert classify_event(appr[0])["level"] == "review"
+
+    # ── nothing acts on it: /implement (force too), the VSB evolution claim, the v191 mirror, the organism count ──
+    trail_before = len(rec(cid)["audit_trail"])
+    for force in ("false", "true"):
+        imp = client.post(f"/api/v1/cca/{cid}/implement?force={force}")
+        assert imp.status_code == 409 and "ratif" in imp.json()["detail"].lower(), imp.text
+    assert rec(cid)["status"] == "approved" and len(rec(cid)["audit_trail"]) == trail_before     # nothing written
+    with _pytest.raises(Exception) as locked:
+        CC._implement_locked(cid, True, "w464", False, is_admin=True)
+    assert getattr(locked.value, "status_code", None) == 409
+
+    from agentic_core.api import vsb as vsb_mod
+    vid = f"w464-evo-{_uuid.uuid4().hex[:6]}"
+    evo = f"cca-w464evo{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(evo), {
+        "cca_id": evo, "title": "W464 evolution", "change_type": "vsb_evolution", "impact_tier": "HIGH",
+        "status": "approved", "decision": "approved", "decision_source": "model_decision_marker",
+        "submitted_at": "2026-09-14T00:00:00Z", "description": "", "audit_trail": []})
+    vsb_mod._save_vsb({"vsb_id": vid, "name": "W464 evo", "evolution_pending_cca": evo,
+                       "evolution_proposals": [{"trait": "w464", "proposed_change": "x"}]})
+    held_evo = vsb_mod.apply_approved_evolution(vid)
+    assert held_evo["applied"] is False and held_evo["reason"] == "cca_status_awaiting_board_ratification", held_evo
+    assert rec(evo)["status"] == "approved"
+
+    from agentic_core.api.v191 import evolution as v191
+    monkeypatch.setattr(v191, "_save", lambda proposals: None)
+    mirrored = v191._mirror_cca_outcomes([{"status": "under_change_control", "cca_id": cid}])
+    assert mirrored[0]["status"] == "under_change_control"
+    from agentic_core.api.organism_status import _cca_state
+    assert _cca_state()["awaiting_board_ratification"] == len(base) + 2
+
+    # ── the Board's queue lists it, from the full record ──
+    q = client.get("/api/v1/board/ratifications").json()
+    mine = next(x for x in q["pending"] if x["cca_id"] == cid)
+    assert mine["decision_source"] == "model_decision_marker" and mine["twin_prevalidation"]["verdict"] == "pass"
+    assert {cid, evo} <= {x["cca_id"] for x in q["pending"]} and q["total"] == len(base) + 2
+    assert client.get("/api/v1/board/status").json()["pending_ratifications"] == q["total"]
+    assert "ratif" in client.get("/api/v1/board/charter").json()["ratification"].lower()
+
+    # ── the Board decides, only on the Owner's direction ──
+    no_ack = client.post(f"/api/v1/board/ratifications/{cid}", json={"decision": "ratify"})
+    assert no_ack.status_code == 403 and "on_owner_direction" in no_ack.json()["detail"]
+    assert client.post(f"/api/v1/board/ratifications/{cid}", json={"decision": "approve", "on_owner_direction": True}).status_code == 422
+    assert CC.awaiting_board_ratification(rec(cid)) is True
+    ok = client.post(f"/api/v1/board/ratifications/{cid}",
+                     json={"decision": "ratify", "notes": "w464 owner", "on_owner_direction": True})
+    assert ok.status_code == 200 and ok.json()["decision"] == "ratified" and ok.json()["ueg_logged"] is True, ok.text
+    assert rec(cid)["board_ratification"]["decision"] == "ratified" and rec(cid)["status"] == "approved"
+    assert CC.awaiting_board_ratification(rec(cid)) is False and row(cid)["board_ratification"] == "ratified"
+    again = client.post(f"/api/v1/board/ratifications/{cid}", json={"decision": "refuse", "on_owner_direction": True})
+    assert again.status_code == 409 and rec(cid)["status"] == "approved"                  # never decided twice
+    rat = _w464_ledger_nodes(cid, {"board.change_ratified"})
+    assert len(rat) == 1 and classify_event(rat[0])["level"] == "recorded" and rat[0]["on_owner_direction"] is True
+    assert cid not in [x["cca_id"] for x in client.get("/api/v1/board/ratifications").json()["pending"]]
+    done = client.post(f"/api/v1/cca/{cid}/implement")
+    assert done.status_code == 200 and rec(cid)["status"] == "implemented", done.text
+    released_evo = client.post(f"/api/v1/board/ratifications/{evo}", json={"decision": "ratify", "on_owner_direction": True})
+    assert released_evo.status_code == 200
+    try:
+        after_evo = vsb_mod.apply_approved_evolution(vid)
+    except Exception as exc:                  # what follows a won claim is not under test here
+        after_evo = {"reason": f"raised after the claim: {exc}"}
+    assert after_evo.get("reason") != "cca_status_awaiting_board_ratification", after_evo
+    CC._cca_path(evo).unlink(missing_ok=True)                          # nothing hand-written is left behind
+    vsb_mod._vsb_path(vid).unlink(missing_ok=True)
+
+    # ── the health rule approves another; the Board refuses it: rejected, never implemented ──
+    serve["review"] = "an assessment with no decision marker"
+    rid = submit(change_type="organism_mutation")["cca_id"]
+    by_rule = client.post(f"/api/v1/cca/{rid}/review", json={"reviewer_notes": "w464"}).json()
+    assert by_rule["decision_source"] == "health_threshold_rule" and by_rule["awaiting_board_ratification"] is True
+    refused = client.post(f"/api/v1/board/ratifications/{rid}", json={"decision": "refuse", "on_owner_direction": True})
+    assert refused.status_code == 200 and refused.json()["status"] == "rejected"
+    assert rec(rid)["decision_source"] == "board_refusal" and rec(rid)["board_ratification"]["approval_decision_source"] == "health_threshold_rule"
+    assert client.post(f"/api/v1/cca/{rid}/implement").status_code == 400
+    ref = _w464_ledger_nodes(rid, {"board.change_ratification_refused"})
+    assert len(ref) == 1 and classify_event(ref[0])["level"] == "flagged"
+
+    # ── the Owner's explicit decision needs no ratification ──
+    oid = submit(change_type="security_change")["cca_id"]
+    own = client.post(f"/api/v1/cca/{oid}/review", json={"override_decision": "approved", "reviewer_notes": "w464"}).json()
+    assert own["decision_source"] == "admin_override" and own["awaiting_board_ratification"] is False
+    assert client.post(f"/api/v1/board/ratifications/{oid}", json={"decision": "ratify", "on_owner_direction": True}).status_code == 409
+    assert client.post(f"/api/v1/cca/{oid}/implement").status_code == 200
+    assert classify_event(_w464_ledger_nodes(oid, {"cca.change_approved"})[0])["level"] == "recorded"
+
+    # ── records approved before the ruling: a review's approval waits (derived, not a flag set at approval) ──
+    legacy = f"cca-w464leg{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(legacy), {
+        "cca_id": legacy, "title": "W464 legacy code change", "change_type": "code_change", "impact_tier": "MEDIUM",
+        "status": "approved", "decision": "approved", "decision_source": "model_decision_marker",
+        "submitted_at": "2026-09-01T00:00:00Z", "description": "", "audit_trail": []})
+    assert CC.effective_tier(rec(legacy)) == "HIGH" and CC.awaiting_board_ratification(rec(legacy)) is True
+    assert client.get(f"/api/v1/cca/{legacy}").json()["impact_tier_filed"] == "MEDIUM"
+    assert client.post(f"/api/v1/cca/{legacy}/implement").status_code == 409
+    # W464 (refutation) — before W459 a review wrote NO decision_source (only {event, by: "cca_ai"}): an unrecorded
+    # decision is read as a review's and waits; the Board can decide it; a pre-W459 override is recognised and does not
+    pre459 = f"cca-w464pre{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(pre459), {
+        "cca_id": pre459, "title": "W464 pre-W459 review approval", "change_type": "organism_mutation", "impact_tier": "HIGH",
+        "status": "approved", "decision": "approved", "review_result": "assessment ... [DECISION: APPROVED]",
+        "twin_prevalidation": {"verdict": "pass", "source": "twin_marker"},
+        "submitted_at": "2026-09-01T00:00:00Z", "description": "", "audit_trail": [{"event": "approved", "by": "cca_ai"}]})
+    assert CC.approval_source(rec(pre459)) == "unrecorded_decision" and CC.awaiting_board_ratification(rec(pre459)) is True
+    assert client.get(f"/api/v1/cca/{pre459}").json()["decision_source_inferred"] is True
+    assert pre459 in {x["cca_id"] for x in client.get("/api/v1/board/ratifications").json()["pending"]}
+    assert client.post(f"/api/v1/cca/{pre459}/implement").status_code == 409
+    assert client.post(f"/api/v1/board/ratifications/{pre459}", json={"decision": "refuse", "on_owner_direction": True}).status_code == 200
+    assert rec(pre459)["status"] == "rejected" and rec(pre459)["board_ratification"]["approval_decision_source"] == "unrecorded_decision"
+    override459 = {**rec(legacy), "decision_source": None, "review_result": "Manual override: owner", "change_type": "organism_mutation"}
+    assert CC.approval_source(override459) == "admin_override" and CC.awaiting_board_ratification(override459) is False
+    for mech, src in (("auto_approved", "low_tier_auto_approval"), ("auto_approved_immune_defence", "immune_defence_reflex")):
+        assert CC.approval_source({**override459, "review_result": None, "decision": mech}) == src
+    for other in ("rejected", "implemented", "submitted"):
+        assert CC.awaiting_board_ratification({**rec(legacy), "status": other}) is False
+    assert CC.awaiting_board_ratification({**rec(legacy), "change_type": "economy_material", "impact_tier": "HIGH"}) is False
+    assert CC.awaiting_board_ratification({**rec(legacy), "change_type": "config_minor", "impact_tier": "LOW"}) is False
+    assert CC.awaiting_board_ratification({**rec(legacy), "board_ratification": {"decision": "refused"}}) is True
+    assert CC.effective_tier({"change_type": "config_minor", "impact_tier": "CRITICAL"}) == "CRITICAL"     # never lowered
+    for leftover in (legacy, pre459):
+        CC._cca_path(leftover).unlink(missing_ok=True)
+
+    # ── the pages say it and act on it ──
+    from pathlib import Path
+    pages = Path("apps/workstation-superapp/src/pages")
+    board = (pages / "enterprise/BoardOfDirectors.tsx").read_text(encoding="utf-8")
+    assert "apiJson<{ pending: PendingRatification[] }>('/api/v1/board/ratifications')" in board
+    assert "on_owner_direction: ownerDirection[id] === true" in board and "setRatResult({ id, ok: false, message: errorMessage(e) })" in board
+    assert "q.decision_source === 'unrecorded_decision' ?" in board          # never the raw token
+    ccap = (pages / "enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "entry.change_type !== 'economy_material' && !entry.awaiting_board_ratification && (" in ccap
+    assert 'data-testid="cca-awaiting-ratification"' in ccap and "board_refusal:" in ccap and "unrecorded_decision:" in ccap
+    organism = (pages / "organism/OrganismDashboard.tsx").read_text(encoding="utf-8")
+    assert "count: operations.change_control.awaiting_board_ratification ?? 0," in organism     # counted, not dropped
+    capital = (pages / "enterprise/CapitalDashboard.tsx").read_text(encoding="utf-8")
+    assert "? 'APPROVED BY REVIEW — AWAITING BOARD'" in capital   # never a plain green APPROVED
+
+    # ── auth ON: only an admin records it, and the name is the authenticated one ──
+    users_before = _json.loads(_json.dumps(auth_core._load_users()))
+    if not auth_core._AUTH_DEPS_OK:
+        return
+    serve["review"] = "[DECISION: APPROVED]"
+    pend = submit(change_type="policy_amendment")["cca_id"]
+    assert client.post(f"/api/v1/cca/{pend}/review", json={"reviewer_notes": "w464"}).json()["awaiting_board_ratification"] is True
+    users = auth_core._load_users()
+    for uname, pw, role in (("w464-user", "pw-user", "user"), ("w464-admin", "pw-admin", "admin")):
+        users[uname] = {"user_id": uname, "username": uname, "hashed_password": auth_core._pwd_ctx.hash(pw),
+                        "role": role, "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    try:
+        def _hdr(u, p):
+            r = client.post("/api/v1/auth/token", data={"username": u, "password": p})
+            assert r.status_code == 200, r.text
+            return {"Authorization": f"Bearer {r.json()['access_token']}"}
+        user_h, admin_h = _hdr("w464-user", "pw-user"), _hdr("w464-admin", "pw-admin")
+        body = {"decision": "ratify", "on_owner_direction": True}
+        assert client.post(f"/api/v1/board/ratifications/{pend}", json=body).status_code == 401
+        assert client.post(f"/api/v1/board/ratifications/{pend}", json=body, headers=user_h).status_code == 403
+        assert CC.awaiting_board_ratification(rec(pend)) is True
+        by_admin = client.post(f"/api/v1/board/ratifications/{pend}", json={**body, "notes": "w464"}, headers=admin_h)
+        assert by_admin.status_code == 200, by_admin.text
+        assert rec(pend)["board_ratification"]["by"] == "w464-admin" and rec(pend)["board_ratification"]["by_verified"] is True
+    finally:
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        auth_core._save_users(users_before)
+    assert "w464-admin" not in auth_core._load_users()
+
+
+def test_w464_change_control_decisions_are_written_to_the_ledger(client, monkeypatch):
+    """FU-013 — the Owner's ruling: Change Control writes its DECISIONS to the constitutional ledger (approvals,
+    rejections, retirements, Board ratification decisions); submissions and holds stay in the record's own trail. A
+    decision is written after the record lands and outside its lock: a refused compare-and-set writes nothing, and a
+    ledger that fails never undoes the decision (the response says ueg_logged false)."""
+    import asyncio as _aio
+    import uuid as _uuid
+    from agentic_core.api import change_control as CC
+    from agentic_core.config import atomic_write_json
+    from agentic_core.gaas.v5 import UEGLogger
+    from agentic_core.gaas.v5.ueg import classify_event
+
+    _w464_healthy(monkeypatch, CC)
+    serve = _w464_serving(monkeypatch, CC, review="no marker at all")
+
+    def submit(change_type, **kw):
+        return client.post("/api/v1/cca/submit", json={"title": f"W464L {change_type} {_uuid.uuid4().hex[:6]}",
+                                                        "description": "w464 ledger probe",
+                                                        "change_type": change_type, **kw}).json()
+
+    def nodes(cid):
+        return [d for d in _w464_ledger_nodes(cid) if str(d.get("type", "")).startswith(("cca.", "board."))]
+
+    # a LOW auto-approval is a decision — exactly one node, naming the mechanism
+    low = submit("config_minor")
+    assert low["status"] == "approved" and low["ueg_logged"] is True
+    ln = nodes(low["cca_id"])
+    assert [n["type"] for n in ln] == ["cca.change_approved"] and ln[0]["decision_source"] == "low_tier_auto_approval"
+    assert CC._load_change(low["cca_id"])["decision_source"] == "low_tier_auto_approval"
+    # a submission that is only held writes nothing; a held review writes nothing
+    med = submit("config_major")
+    assert med["status"] == "submitted" and "ueg_logged" not in med and nodes(med["cca_id"]) == []
+    crit = submit("constitutional")
+    held = client.post(f"/api/v1/cca/{crit['cca_id']}/review", json={"reviewer_notes": "w464"}).json()
+    assert held["hold_reason"] == "critical_requires_admin_decision" and "ueg_logged" not in held
+    assert nodes(crit["cca_id"]) == []
+    # a rejection (the Owner's) — one node, flagged; an approval by the rule — one node, recorded
+    rej = client.post(f"/api/v1/cca/{crit['cca_id']}/review",
+                      json={"override_decision": "rejected", "admin_decision_for_critical": True, "reviewer_notes": "no"}).json()
+    rn = nodes(crit["cca_id"])
+    assert rej["ueg_logged"] is True and [n["type"] for n in rn] == ["cca.change_rejected"]
+    assert rn[0]["decision_source"] == "admin_override" and rn[0]["by_verified"] is False and rn[0]["notes"] == "no"
+    assert classify_event(rn[0])["level"] == "flagged"
+    ok = client.post(f"/api/v1/cca/{med['cca_id']}/review", json={"reviewer_notes": "w464"}).json()
+    mn = nodes(med["cca_id"])
+    assert ok["decision_source"] == "health_threshold_rule" and [n["type"] for n in mn] == ["cca.change_approved"]
+    assert classify_event(mn[0])["level"] == "recorded" and "review_result" not in mn[0] and "w464 ledger probe" not in str(mn[0])
+
+    # a refused compare-and-set writes no node (the amount moved during the review)
+    moving = submit("config_major")["cca_id"]
+
+    async def _moves(prompt, agent=None, **kw):
+        CC._update_change(moving, lambda f: f.update(status="rejected"))
+        return "[DECISION: APPROVED]"
+    monkeypatch.setattr(CC.gateway, "query", _moves)
+    assert client.post(f"/api/v1/cca/{moving}/review", json={"reviewer_notes": "w464"}).status_code == 409
+    assert nodes(moving) == []
+    _w464_serving(monkeypatch, CC, review="[DECISION: APPROVED]")
+
+    # a ledger that fails never undoes the decision
+    failing = submit("config_major")["cca_id"]
+    real_log = UEGLogger.log
+
+    def _timeout(self, event):
+        raise TimeoutError("w464 ledger busy")
+    monkeypatch.setattr(UEGLogger, "log", _timeout)
+    dec = client.post(f"/api/v1/cca/{failing}/review", json={"reviewer_notes": "w464"})
+    monkeypatch.setattr(UEGLogger, "log", real_log)
+    assert dec.status_code == 200 and dec.json()["ueg_logged"] is False and CC._load_change(failing)["status"] == "approved"
+    assert nodes(failing) == []
+
+    # the immune reflex's approval, and a retirement, are decisions too
+    imm = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "ELEVATED"}).json()   # no live lever moves
+    im = nodes(imm["cca_id"])
+    assert imm["ueg_logged"] is True and [n["type"] for n in im] == ["cca.change_approved"]
+    assert im[0]["decision_source"] == "immune_defence_reflex"
+    lg = f"w464-retire-{_uuid.uuid4().hex[:6]}"
+    lid = f"cca-w464ret{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(lid), {
+        "cca_id": lid, "title": "[economy] material transfer — " + lg, "change_type": "economy_material",
+        "submitted_by": "economy:transfer", "vsb_id": lg, "status": "approved", "impact_tier": "MEDIUM",
+        "decision_source": "admin_override", "est_distributable_wst": 2000.0, "description": "",
+        "submitted_at": "2026-09-01T00:00:00Z", "audit_trail": []})
+    retired = client.post(f"/api/v1/cca/{lid}/implement")
+    assert retired.status_code == 200 and retired.json()["ueg_logged"] is True and "_retired" not in retired.json()
+    tn = nodes(lid)
+    assert [n["type"] for n in tn] == ["cca.change_retired"] and classify_event(tn[0])["level"] == "recorded"
+    assert "names no receiver" in tn[0]["reason"]
+
+    # every decision type classifies as the ruling reads it
+    assert classify_event({"type": "cca.change_rejected"})["level"] == "flagged"
+    assert classify_event({"type": "board.change_ratification_refused"})["level"] == "flagged"
+    assert classify_event({"type": "cca.change_approved", "awaiting_board_ratification": True})["level"] == "review"
+    assert classify_event({"type": "cca.change_approved", "awaiting_board_ratification": False})["level"] == "recorded"
+    for recorded in ("cca.change_retired", "board.change_ratified"):
+        assert classify_event({"type": recorded})["level"] == "recorded"
+
+    # the Sanctum and the tour say what now happens, bound to the response
+    from pathlib import Path
+    gov = Path("apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    assert "when that write lands, on the constitutional ledger" in gov and "and written to the constitutional ledger" not in gov
+    assert "res?.ueg_logged === true ? ' and the constitutional ledger'" in gov
+    capital = Path("apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx").read_text(encoding="utf-8")
+    ccap = Path("apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "decisions made since W464 are also written to the constitutional" in capital and "store and on the constitutional ledger" not in capital
+    assert "Decisions made since W464 are also written to the constitutional ledger" in ccap and "Every decision is also written" not in ccap
+    assert "\\u2014" not in "".join(l for l in ccap.splitlines() if not l.strip().startswith(("{/*", "//")) and "'" not in l)
+    app = Path("apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    assert "Change Control decisions and Board ratifications" in app and "Modules outside the gate record nothing here" not in app
+
+
+def test_w464_every_material_economy_action_is_decided_by_the_owner(client, monkeypatch):
+    """FU-014 — the Owner's ruling: economy_material is CRITICAL. Every material economy hold is decided only by the
+    Owner's explicit decision; a review records a recommendation. The tier was stamped once at filing and nothing
+    re-read the map at decision time, so the ruling reaches holds filed before it (effective_tier), and the gate
+    releases only an approval recorded as the Owner's explicit decision — a review's approval made before the ruling,
+    or one with no decision recorded, is withdrawn and the action asked again (fail closed)."""
+    import uuid as _uuid
+    from agentic_core.api import change_control as CC
+    from agentic_core.config import atomic_write_json
+    from agentic_core.economy import governance as gv
+
+    calls = []
+    _w464_healthy(monkeypatch, CC)
+    _w464_serving(monkeypatch, CC, calls=calls)
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+
+    def uid(tag):
+        return f"w464e-{tag}-{_uuid.uuid4().hex[:6]}"
+
+    def cyc(v, revenue, costs=0.0):
+        return client.post("/api/v1/economy/cycle", json={"vsb_id": v, "revenue": revenue, "costs": costs}).json()
+
+    def rec(cid):
+        return CC._load_change(cid)
+
+    assert CC._TIER_MAP["economy_material"] == "CRITICAL" and CC._determine_tier("economy_material", "") == "CRITICAL"
+
+    # a new hold is CRITICAL, and every held answer says only the Owner decides it (not only a follows-rejection one)
+    v1 = uid("new")
+    h1 = cyc(v1, 5000)["governance"]
+    assert h1["status"] == "held_for_change_control" and h1["impact_tier"] == "CRITICAL" and rec(h1["cca_id"])["impact_tier"] == "CRITICAL"
+    assert "only an explicit decision of the Owner" in h1["note"] and "follows_rejection" not in h1
+    assert gv._EXPLICIT.strip() not in h1["note"] and "decided_concurrently" not in h1
+    # a review — the model says APPROVED — holds it, records the recommendation, and runs no pre-validation
+    rv = client.post(f"/api/v1/cca/{h1['cca_id']}/review", json={"reviewer_notes": "w464"}).json()
+    assert rv["hold_reason"] == "critical_requires_admin_decision" and rv["status"] == "under_review", rv
+    assert rv["recommendation"] == {"verdict": "approved", "source": "model_decision_marker"}
+    assert "Owner's explicit decision" in rec(h1["cca_id"])["review_result"]
+    # an override without the acknowledgement is refused and names the Sanctum
+    bare = client.post(f"/api/v1/cca/{h1['cca_id']}/review", json={"override_decision": "approved"})
+    assert bare.status_code == 403 and "Sanctum" in bare.json()["detail"]
+    calls.clear()
+    own = client.post(f"/api/v1/cca/{h1['cca_id']}/review",
+                      json={"override_decision": "approved", "admin_decision_for_critical": True, "reviewer_notes": "owner"})
+    assert own.status_code == 200 and own.json()["status"] == "approved", own.text
+    assert "cca_twin_prevalidation" not in calls and "twin_prevalidation" not in rec(h1["cca_id"])
+    assert cyc(v1, 5000)["cycle"] is not None and rec(h1["cca_id"])["status"] == "implemented"
+
+    # a hold filed as MEDIUM before the ruling is decided as CRITICAL: listed so, held by a review, re-stamped
+    v2 = uid("legacy-hold")
+    lh = f"cca-w464lh{_uuid.uuid4().hex[:4]}"
+    intake = {"revenue_wst": 5000.0, "costs_wst": 0.0, "returns_wst": 0.0, "transfers_wst": 0.0, "reserve_rate": 0.2}
+    base = {"title": gv._HOLD_TITLE_PREFIX + v2, "change_type": "economy_material", "submitted_by": "economy:api",
+            "vsb_id": v2, "impact_tier": "MEDIUM", "est_distributable_wst": 4000.0, "intake": intake,
+            "description": "", "rationale": "VSB_ECONOMIC_LEGAL_MODEL §3", "affected_systems": ["economy", "capital"],
+            "rollback_plan": "No action taken while held.", "submitted_at": "2026-09-10T00:00:00Z", "audit_trail": []}
+    atomic_write_json(CC._cca_path(lh), {**base, "cca_id": lh, "status": "submitted"})
+    listed = next(x for x in client.get("/api/v1/cca/queue").json()["queue"] if x["cca_id"] == lh)
+    assert listed["impact_tier"] == "CRITICAL"
+    detail = client.get(f"/api/v1/cca/{lh}").json()
+    assert detail["impact_tier"] == "CRITICAL" and detail["impact_tier_filed"] == "MEDIUM"
+    assert client.post(f"/api/v1/cca/{lh}/review", json={"override_decision": "approved"}).status_code == 403
+    lrv = client.post(f"/api/v1/cca/{lh}/review", json={"reviewer_notes": "w464"}).json()
+    assert lrv["status"] == "under_review" and lrv["hold_reason"] == "critical_requires_admin_decision", lrv
+    assert rec(lh)["impact_tier"] == "CRITICAL" and rec(lh)["impact_tier_filed"] == "MEDIUM"
+    # …and a legacy hold the gate keeps current is re-stamped too
+    v2b = uid("legacy-rebound")
+    lhb = f"cca-w464lhb{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(lhb), {**base, "title": gv._HOLD_TITLE_PREFIX + v2b, "vsb_id": v2b,
+                                          "cca_id": lhb, "status": "submitted"})
+    kept = cyc(v2b, 6000)["governance"]
+    assert kept["cca_id"] == lhb and kept["impact_tier"] == "CRITICAL" and rec(lhb)["impact_tier"] == "CRITICAL"
+    # a rejection a review made before the ruling still stands, says what made it, and answers with the tier it is under
+    v2c = uid("legacy-rejected")
+    lrj = f"cca-w464lrj{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(lrj), {**base, "title": gv._HOLD_TITLE_PREFIX + v2c, "vsb_id": v2c, "cca_id": lrj,
+                                          "status": "rejected", "decision": "rejected", "decision_source": "model_decision_marker"})
+    refused = cyc(v2c, 5000)["governance"]
+    assert refused["status"] == "rejected_by_change_control" and refused["rejected_by"] == "model_decision_marker", refused
+    assert refused["impact_tier"] == "CRITICAL" and rec(lrj)["impact_tier"] == "MEDIUM"
+    # …and a pre-W459 override rejection (no decision_source; its review text marks it) reads as the Owner's, as the
+    # Change Control pages read it (W464 second refutation: one reading of what decided a record)
+    v2d = uid("legacy-override-rejected")
+    lor = f"cca-w464lor{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(lor), {**base, "title": gv._HOLD_TITLE_PREFIX + v2d, "vsb_id": v2d, "cca_id": lor,
+                                          "status": "rejected", "decision": "rejected", "review_result": "Manual override: no"})
+    by_owner = cyc(v2d, 5000)["governance"]
+    assert by_owner["rejected_by"] == "admin_override" and "by an explicit decision" in by_owner["note"], by_owner
+    # a hold that only moved to under_review while the gate ran was not decided: the answer says it is under review
+    v2e = uid("review-started-meanwhile")
+    he = cyc(v2e, 5000)["governance"]["cca_id"]
+    real_update = CC._update_change
+    armed = {"on": True}
+
+    def review_starts_first(cid, mutate):
+        if armed["on"] and cid == he:
+            armed["on"] = False
+            real_update(cid, lambda f: f.update(status="under_review"))
+        return real_update(cid, mutate)
+    monkeypatch.setattr(CC, "_update_change", review_starts_first)
+    mid_review = cyc(v2e, 6000)["governance"]
+    monkeypatch.setattr(CC, "_update_change", real_update)
+    assert "decided_concurrently" not in mid_review and "under review" in mid_review["note"], mid_review
+    assert "only an explicit decision of the Owner" in mid_review["note"] and rec(he)["status"] == "under_review"
+
+    # an approval not recorded as the Owner's releases nothing: withdrawn, saying why, and the action asked again
+    for source in ("model_decision_marker", "health_threshold_rule", None):
+        v3 = uid(f"review-approved-{source}")
+        ra = f"cca-w464ra{_uuid.uuid4().hex[:4]}"
+        atomic_write_json(CC._cca_path(ra), {**base, "title": gv._HOLD_TITLE_PREFIX + v3, "vsb_id": v3, "cca_id": ra,
+                                             "status": "approved", "decision": "approved",
+                                             **({"decision_source": source} if source else {})})
+        assert gv.releasable_by_gate(rec(ra)) is False and "not by the Owner's explicit decision" in gv.unreleasable_reason(rec(ra))
+        out = cyc(v3, 5000)
+        assert out["cycle"] is None and out["governance"]["cca_id"] != ra and out["governance"]["impact_tier"] == "CRITICAL", out
+        assert rec(ra)["status"] == "withdrawn" and "not by the Owner's explicit decision" in rec(ra)["audit_trail"][-1]["reason"]
+    # the same approval recorded as the Owner's decision releases exactly as before
+    v4 = uid("owner-approved")
+    oa = f"cca-w464oa{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(oa), {**base, "title": gv._HOLD_TITLE_PREFIX + v4, "vsb_id": v4, "cca_id": oa,
+                                         "status": "approved", "decision": "approved", "decision_source": "admin_override"})
+    assert gv.unreleasable_reason(rec(oa)) is None and cyc(v4, 5000)["cycle"] is not None and rec(oa)["status"] == "implemented"
+    # a review's approval beside an open hold is withdrawn as not the Owner's
+    v5 = uid("beside-open")
+    op, rb = f"cca-w464op{_uuid.uuid4().hex[:4]}", f"cca-w464rb{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(op), {**base, "title": gv._HOLD_TITLE_PREFIX + v5, "vsb_id": v5, "cca_id": op,
+                                         "status": "submitted", "submitted_at": "2026-09-11T00:00:00Z"})
+    atomic_write_json(CC._cca_path(rb), {**base, "title": gv._HOLD_TITLE_PREFIX + v5, "vsb_id": v5, "cca_id": rb,
+                                         "status": "approved", "decision_source": "model_decision_marker"})
+    assert cyc(v5, 5000)["governance"]["cca_id"] == op
+    assert rec(rb)["status"] == "withdrawn" and "not by the Owner's explicit decision" in rec(rb)["audit_trail"][-1]["reason"]
+    # a retired review-approval: the admin may retire it through /implement (the gate never spends it)
+    v6 = uid("retire-review-approval")
+    rr = f"cca-w464rr{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(rr), {**base, "title": gv._HOLD_TITLE_PREFIX + v6, "vsb_id": v6, "cca_id": rr,
+                                         "status": "approved", "decision_source": "health_threshold_rule"})
+    gone = client.post(f"/api/v1/cca/{rr}/implement")
+    assert gone.status_code == 200 and rec(rr)["status"] == "withdrawn" and "organism-health threshold rule" in gone.json()["note"]
+
+    # a spent review-approval handed back never displaces the newer hold asked meanwhile
+    v7 = uid("restore-not-owner")
+    sp, nw = f"cca-w464sp{_uuid.uuid4().hex[:4]}", f"cca-w464nw{_uuid.uuid4().hex[:4]}"
+    consume_id = "consume-w464" + _uuid.uuid4().hex[:6]
+    atomic_write_json(CC._cca_path(sp), {**base, "title": gv._HOLD_TITLE_PREFIX + v7, "vsb_id": v7, "cca_id": sp,
+                                         "status": "implemented", "decision_source": "model_decision_marker", "filed_ns": 10,
+                                         "audit_trail": [{"event": "consumed_by_economy_cycle", "consume_id": consume_id}]})
+    atomic_write_json(CC._cca_path(nw), {**base, "title": gv._HOLD_TITLE_PREFIX + v7, "vsb_id": v7, "cca_id": nw,
+                                         "status": "submitted", "filed_ns": 20})
+    gv._restore_consumed_approval({"cca_id": sp, "consume_id": consume_id, "release": {},
+                                   "gate": {"source": "api", "counterparty": None}}, vsb_id=v7, reason="w464 never ran")
+    assert rec(nw)["status"] == "submitted" and rec(sp)["status"] == "implemented"
+    sp2, nw2 = f"cca-w464sq{_uuid.uuid4().hex[:4]}", f"cca-w464nx{_uuid.uuid4().hex[:4]}"
+    v8 = uid("restore-owner")
+    atomic_write_json(CC._cca_path(sp2), {**rec(sp), "title": gv._HOLD_TITLE_PREFIX + v8, "vsb_id": v8, "cca_id": sp2,
+                                          "decision_source": "admin_override"})
+    atomic_write_json(CC._cca_path(nw2), {**rec(nw), "title": gv._HOLD_TITLE_PREFIX + v8, "vsb_id": v8, "cca_id": nw2})
+    gv._restore_consumed_approval({"cca_id": sp2, "consume_id": consume_id, "release": {},
+                                   "gate": {"source": "api", "counterparty": None}}, vsb_id=v8, reason="w464 never ran")
+    assert rec(nw2)["status"] == "withdrawn" and rec(sp2)["status"] == "approved"            # the Owner's comes back
+
+    # the pages send the Owner to the Sanctum, never to request a review; the model document says CRITICAL
+    from pathlib import Path
+    pages = Path("apps/workstation-superapp/src/pages/enterprise")
+    for page, testid, concurrent in (("VSBEconomy.tsx", 'data-testid="hold-held-sanctum"', "hold.decided_concurrently ? ("),
+                                     ("EconomyOperations.tsx", 'data-testid="transfer-held-sanctum"', "held.decided_concurrently ? (")):
+        src = (pages / page).read_text(encoding="utf-8")
+        assert testid in src and "review it on the" not in src and concurrent in src, page
+    # a pre-W459 override (no decision_source; its review text marks it) is the Owner's and releases; a review's does not
+    v9 = uid("pre-w459-override")
+    po = f"cca-w464po{_uuid.uuid4().hex[:4]}"
+    atomic_write_json(CC._cca_path(po), {**base, "title": gv._HOLD_TITLE_PREFIX + v9, "vsb_id": v9, "cca_id": po,
+                                         "status": "approved", "decision": "approved",
+                                         "review_result": "Manual override: owner approves", "audit_trail": [{"event": "approved", "by": "cca_ai"}]})
+    assert CC.approval_source(rec(po)) == "admin_override" and cyc(v9, 5000)["cycle"] is not None and rec(po)["status"] == "implemented"
+    assert CC.approval_source({**rec(po), "status": "approved", "review_result": "[DECISION: APPROVED]"}) == "unrecorded_decision"
+    model = Path("docs/VSB_ECONOMIC_LEGAL_MODEL.md").read_text(encoding="utf-8")
+    assert "CRITICAL" in model and "MEDIUM-tier `economy_material`" not in model and "MEDIUM tier, by the tier map" not in model
+
+
+def test_w464_genome_engine_rollback_restores_the_proposals_own_checkpoint(tmp_path, monkeypatch):
+    """FU-020 — the Owner's ruling: fix genome_engine.py and keep it (unwired). rollback() popped the LAST checkpoint
+    whatever was asked, never persisted, and GENOME_FILE resolved outside the repository through config.paths."""
+    import importlib
+    import json as _json
+    import threading
+    from pathlib import Path
+    import agentic_core.layers.l1_identity.genome_engine as ge
+    from agentic_core.config import data_path
+    from agentic_core.layers.ueg import ueg as stub
+
+    src = Path(ge.__file__).read_text(encoding="utf-8")
+    assert "from config.paths" not in src and "import config.paths" not in src
+    assert ge.GENOME_FILE == data_path("genome_engine", "constitution.json")
+    ge = importlib.reload(ge)
+    assert ge._ENGINE is None and "genome_engine" not in vars(ge)              # the default engine is only lazy (PEP 562)
+    assert not any(isinstance(v, ge.GenomeMutationWorkflow) for v in vars(ge).values())
+    # W464 (refutation) — the import itself, in a fresh process on a fresh data directory: no store read, nothing created
+    import os as _os
+    import subprocess
+    import sys as _sys
+    fresh = tmp_path / "import-data"
+    fresh.mkdir()
+    # (W464 second refutation) every exists/read of a path under the genome_engine store directory is recorded: a store
+    # READ at import creates nothing, so the directory listing alone could not see it
+    recorder = ("import os, pathlib\n"
+                "seen = []\n"
+                "_exists, _read = pathlib.Path.exists, pathlib.Path.read_text\n"
+                "def _rec(p): seen.append(str(p)) if 'genome_engine' in str(p) else None\n"
+                "pathlib.Path.exists = lambda p, *a, **k: (_rec(p), _exists(p, *a, **k))[1]\n"
+                "pathlib.Path.read_text = lambda p, *a, **k: (_rec(p), _read(p, *a, **k))[1]\n"
+                "import agentic_core.layers.l1_identity.genome_engine as g\n"
+                "print('SEEN', seen)\n"
+                "print('FILE', g.GENOME_FILE)\n"
+                "print('LIST', sorted(os.listdir(os.environ['DATA_DIR'])))\n")
+    probe = subprocess.run(
+        [_sys.executable, "-c", recorder],
+        env={**_os.environ, "DATA_DIR": str(fresh), "WORKSTATION_DATA_DIR": str(fresh), "AI_DISABLE_LOCAL": "1",
+             "WORKSTATION_UEG_PATH": str(fresh / "ueg.json")},
+        capture_output=True, text=True, timeout=180)
+    assert probe.returncode == 0, probe.stderr[-800:]
+    tagged = {ln.split(" ", 1)[0]: ln.split(" ", 1)[1] for ln in probe.stdout.splitlines()
+              if ln.split(" ", 1)[0] in ("SEEN", "FILE", "LIST") and " " in ln}
+    assert tagged.get("SEEN") == "[]", probe.stdout[-600:]                  # the store was not even looked at
+    assert tagged.get("FILE", "").startswith(str(fresh)) and "genome_engine" not in tagged.get("LIST", "x genome_engine")
+
+    store = tmp_path / "genome.json"
+    e = ge.GenomeMutationWorkflow(store_path=store)
+
+    def ids(doc_or_engine):
+        g = doc_or_engine.genome if hasattr(doc_or_engine, "genome") else doc_or_engine["genome"]
+        return [a["id"] for a in g["constitution"]["articles"]]
+
+    def disk():
+        return _json.loads(store.read_text(encoding="utf-8"))
+
+    assert e.apply_mutation("A", {"id": 5001, "title": "a", "content": "x"}, authorized=True)
+    assert e.apply_mutation("B", {"id": 5002, "title": "b", "content": "y"}, authorized=True)
+    assert ids(disk()) == [1, 42, 1127, 5001, 5002] and [c["proposal_id"] for c in disk()["history"]] == ["A", "B"]
+    # rolling back B keeps A (the old rollback would have done this for ANY id)
+    rb = e.rollback("B")
+    assert rb["rolled_back"] is True and rb["discarded"] == [] and ids(e) == [1, 42, 1127, 5001] == ids(disk())
+    assert e.apply_mutation("C", {"id": 5003, "title": "c", "content": "z"}, authorized=True)
+    # rolling back A restores A's own checkpoint: C (applied after it) goes too, and is named
+    ra = e.rollback("A")
+    assert ra["rolled_back"] is True and ra["discarded"] == ["C"] and ids(e) == [1, 42, 1127] == ids(disk())
+    assert disk()["history"] == [] and [r["proposal_id"] for r in disk()["rollbacks"]] == ["B", "A"]
+    assert ids(ge.GenomeMutationWorkflow(store_path=store)) == [1, 42, 1127]   # a restart reads what was persisted
+    assert e.rollback("A")["rolled_back"] is False and e.rollback("nope")["reason"] == "no checkpoint for proposal nope"
+
+    # a proposal id names one checkpoint; a delete persists, with its own checkpoint, and rolls back
+    monkeypatch.setattr(stub, "current_level", "FULL")
+    assert e.apply_mutation("D", {"id": 5004, "title": "d", "content": "w"}, authorized=True)
+    assert not e.apply_mutation("D", {"id": 5005, "title": "e", "content": "v"}, authorized=True) and "already" in e.last_error
+    assert e.delete_article(5004, authorized=True, proposal_id="del-5004") and 5004 not in ids(disk())
+    assert e.rollback("del-5004")["rolled_back"] is True and 5004 in ids(disk())
+    assert not e.delete_article(999999, authorized=True) and not e.apply_mutation("X", {"id": 1}, authorized=False)
+    # a patch with no id key is a typo, not a new article; a bool is not an article id (True == 1 rewrote article 1)
+    before_ids = ids(disk())
+    assert e.apply_mutation("TYPO", {"title": "typo", "ID": 42}, authorized=True) is False
+    assert e.apply_mutation("BOOL", {"id": True, "title": "hijack"}, authorized=True) is False
+    assert ids(disk()) == before_ids and not any(a.get("title") == "hijack" for a in disk()["genome"]["constitution"]["articles"])
+    assert e.delete_article(True, authorized=True) is False and e.delete_article(42.0, authorized=True) is False
+    assert ids(disk()) == before_ids
+
+    # a write that fails reports False, changes nothing, and logs no ratification
+    import agentic_core.config as cfg
+    monkeypatch.setattr(stub, "current_level", "FULL")
+    assert any(x["payload"].get("proposal_id") == "D" and x["event_type"] == "AMENDMENT_RATIFIED" for x in stub.events)
+    before_disk, before_mem = store.read_text(encoding="utf-8"), _json.dumps(e.genome)
+    real_write = cfg.atomic_write_json
+
+    def _fail(path, data):
+        raise OSError("w464 disk full")
+    monkeypatch.setattr(cfg, "atomic_write_json", _fail)
+    assert e.apply_mutation("F", {"id": 5006, "title": "f", "content": "u"}, authorized=True) is False
+    assert "not persisted" in e.last_error and store.read_text(encoding="utf-8") == before_disk
+    assert _json.dumps(e.genome) == before_mem
+    assert not any(x["payload"].get("proposal_id") == "F" for x in stub.events)      # no ratification logged
+    monkeypatch.setattr(cfg, "atomic_write_json", real_write)
+
+    # two engines on one store: each mutation re-reads the store inside the lock, so neither loses the other's
+    e1, e2 = ge.GenomeMutationWorkflow(store_path=store), ge.GenomeMutationWorkflow(store_path=store)
+    assert e1.apply_mutation("P1", {"id": 6001, "title": "p1", "content": "1"}, authorized=True)
+    assert e2.apply_mutation("P2", {"id": 6002, "title": "p2", "content": "2"}, authorized=True)
+    assert {6001, 6002} <= set(ids(disk()))
+    errs = []
+
+    def worker(n):
+        eng = ge.GenomeMutationWorkflow(store_path=store)
+        if not eng.apply_mutation(f"T{n}", {"id": 7000 + n, "title": "t", "content": "t"}, authorized=True):
+            errs.append(eng.last_error)
+    ts = [threading.Thread(target=worker, args=(n,)) for n in range(6)]
+    [t.start() for t in ts]
+    [t.join(timeout=30) for t in ts]
+    assert not errs and {7000 + n for n in range(6)} <= set(ids(disk())), errs
+
+    # a checkpoint that is not a genome is refused before anything is replaced (restoring it wrote a store the engine
+    # then refused for ever)
+    doc_now = disk()
+    doc_now["history"].append({"proposal_id": "BADCP", "timestamp": 0, "data": "{}"})
+    store.write_text(_json.dumps(doc_now), encoding="utf-8")
+    bad_cp = ge.GenomeMutationWorkflow(store_path=store).rollback("BADCP")
+    assert bad_cp["rolled_back"] is False and "not a genome" in bad_cp["reason"] and disk() == doc_now
+
+    # a store that does not parse is never replaced by the seed
+    store.write_text("{not json", encoding="utf-8")
+    broken = ge.GenomeMutationWorkflow(store_path=store)
+    assert broken.load_error and broken.apply_mutation("G", {"id": 5007}, authorized=True) is False
+    assert store.read_text(encoding="utf-8") == "{not json"
+    # …nor one that parses but has the wrong shape (the constructor never raises; nothing is rewritten)
+    for bad in ({"genome": {"constitution": ["x"]}, "history": []},
+                {"genome": {"constitution": {"articles": ["x"]}}, "history": []},
+                {"genome": {"constitution": {"articles": []}}, "history": [], "rollbacks": {"A": {"discarded": ["B"]}}},
+                {"genome": {"constitution": {"articles": []}}, "history": ["x"]}):
+        store.write_text(_json.dumps(bad), encoding="utf-8")
+        shaped = ge.GenomeMutationWorkflow(store_path=store)
+        assert shaped.load_error and "not a genome document" in shaped.load_error, bad
+        assert shaped.apply_mutation("S", {"id": 5008}, authorized=True) is False
+        assert _json.loads(store.read_text(encoding="utf-8")) == bad
+
+    # generated amendments never take an existing id: the id is chosen inside the store lock, from the store
+    mem = ge.GenomeMutationWorkflow()
+    prop = mem.propose_autonomous_evolution({"latency_ms": 500})
+    assert prop["id"] is None
+    assert mem.store_path is None and mem.apply_mutation("M", prop, authorized=True) and len(ids(mem)) == 4
+    assert mem.last_article_id > 1127 and mem.last_article_id in ids(mem)
+    store2 = tmp_path / "genome2.json"
+    s1, s2 = ge.GenomeMutationWorkflow(store_path=store2), ge.GenomeMutationWorkflow(store_path=store2)
+    p1, p2 = s1.propose_autonomous_evolution({"latency_ms": 500}), s2.propose_autonomous_evolution({"latency_ms": 500})
+    q1 = s1.propose_autonomous_evolution({"latency_ms": 900})                              # one engine, two proposals
+    assert s1.apply_mutation("N1", {**p1, "title": "one"}, authorized=True) and s2.apply_mutation("N2", {**p2, "title": "two"}, authorized=True)
+    assert s1.apply_mutation("N3", {**q1, "title": "three"}, authorized=True)
+    titles = {a["title"] for a in _json.loads(store2.read_text(encoding="utf-8"))["genome"]["constitution"]["articles"]}
+    assert {"one", "two", "three"} <= titles and len(set(ids(ge.GenomeMutationWorkflow(store_path=store2)))) == 6

@@ -8,7 +8,8 @@ Three binding rules the model states, previously unenforced on the always-on pat
     per-stage WST amounts, not just a generic checkpoint.
   • "material/large actions route to Change Control" — distributions (and inter-VSB transfers) whose estimated
     amount meets the materiality threshold are HELD until the Change Control hold the economy itself filed for
-    that action is approved (W463: one approval releases one action of the same kind — same VSB, and the same
+    that action is approved — W464: by the Owner's explicit decision only, the hold being CRITICAL (W463: one
+    approval releases one action of the same kind — same VSB, and the same
     counterparty for a transfer — for at most the amount and intake it was filed for, and is spent once;
     below-threshold actions proceed ungated-by-CC as designed).
 
@@ -159,8 +160,9 @@ def _restore_locked(cca, cca_id: Optional[str], consume_id: Optional[str], vsb_i
             # W463 (eighth refutation): a newer record already SPENT counts too — the Owner's later approval replaced this
             # one, and giving this one back beside it left two approvals for one action (or released a second action).
             def _releasable_by_mine(c: Dict[str, Any]) -> bool:
+                # W464 — an approval that is not the Owner's releases nothing: it never displaces a newer hold
                 b = _bound_est(c)
-                return b is not None and _fits(mine, b, c.get("intake")) is not None
+                return _owner_decided(mine) and b is not None and _fits(mine, b, c.get("intake")) is not None
             blocking = [c for c in newer if c.get("status") != "submitted" or not _releasable_by_mine(c)]
             if not blocking:
                 for c in newer:
@@ -280,11 +282,35 @@ _REJECTED_BY_WORDS = {"admin_override": "by an explicit decision",
 
 
 def _rejected_by(c: Dict[str, Any]) -> str:
-    """W463 (fifth refutation) — what rejected a record. A rejection is not always the Owner's: a MEDIUM hold can be
-    rejected by the reviewing model's marker or the organism-health rule, and the answer and the pages said "the
-    Owner rejected" regardless."""
-    src = c.get("decision_source")
+    """W463 (fifth refutation) — what rejected a record. A rejection is not always the Owner's: before W464 a MEDIUM
+    hold could be rejected by the reviewing model's marker or the organism-health rule, and the answer and the pages
+    said "the Owner rejected" regardless. W464: every hold is CRITICAL now (only the Owner decides one), but those
+    earlier rejections still stand — refusing an action is the restrictive side — and still say what made them."""
+    from agentic_core.api.change_control import approval_source
+    src = approval_source(c)                       # W464 — the same reading as the Change Control pages
     return src if src in _REJECTED_BY_WORDS else "change_control"
+
+
+def _owner_decided(c: Dict[str, Any]) -> bool:
+    """W464 (FU-014, the Owner's ruling of 2026-09-14) — a material economy action is released only by the Owner's
+    explicit decision. An approval recorded any other way — by the reviewing model's marker or the organism-health rule
+    (holds were MEDIUM before the ruling), or with no decision recorded at all — releases nothing: fail closed. One
+    reading for the whole system: Change Control's approval_source (an override made before W459 recorded a source is
+    still recognised by its "Manual override:" review text)."""
+    from agentic_core.api.change_control import approval_source
+    return approval_source(c) == "admin_override"
+
+
+_NOT_OWNER_DECIDED = ("it was approved {by}, not by the Owner's explicit decision, and a material economy action is "
+                      "released only by the Owner's decision")
+
+
+def _not_owner_reason(c: Dict[str, Any]) -> str:
+    from agentic_core.api.change_control import approval_source
+    by = {"model_decision_marker": "by the reviewing model's decision marker",
+          "health_threshold_rule": "by the organism-health threshold rule"}.get(
+        str(approval_source(c) or ""), "with no explicit decision recorded")
+    return _NOT_OWNER_DECIDED.format(by=by)
 
 
 def _action_ran(c: Dict[str, Any]) -> bool:
@@ -292,7 +318,8 @@ def _action_ran(c: Dict[str, Any]) -> bool:
     marks an approval implemented when it SPENDS it, before the constitutional gate or the action runs; counting
     that spend as "an approved action ran since the rejection" let a request for exactly the rejected action,
     arriving from another worker while the spent action was still in flight (and then blocked), file a plain hold a
-    model review could approve. A spend counts once the action marked it started (see _mark_action_ran). A record
+    model review could approve (before W464 made every hold CRITICAL; the link now keeps the Owner told that the
+    hold follows a rejection). A spend counts once the action marked it started (see _mark_action_ran). A record
     implemented some other way, or spent before W463 (no consume handle), counts as it always did."""
     if c.get("status") != "implemented":
         return False
@@ -342,6 +369,9 @@ def unreleasable_reason(c: Dict[str, Any]) -> Optional[str]:
         return "a transfer hold filed before W463 names no receiver, so no transfer can match it"
     if not _is_economy_hold(c, vsb_id, _hold_title(vsb_id, source), source, counterparty):
         return "no economy action presents this record's identity"
+    if c.get("status") == "approved" and not _owner_decided(c):
+        # W464 (FU-014) — the gate never spends it (see _owner_decided), so it can be retired
+        return _not_owner_reason(c)
     if source in ("transfer", "heartbeat"):
         try:
             from agentic_core.economy.living_vsbs import _STORE as _ROSTER, _load as _living
@@ -369,8 +399,10 @@ def _gate_lock(vsb_id: str, source: str, counterparty: Optional[str]):
     lock_dir.mkdir(parents=True, exist_ok=True)
     return store_lock(lock_dir / f"{key}.json")
 _OPEN = ("submitted", "under_review")
-_EXPLICIT = (" It follows a rejection of this action, so a review does not decide it: only an explicit decision "
-             "(the Governance hub's Sovereign Sanctum) can approve or reject it.")
+# W464 (FU-014) — every material economy hold is CRITICAL: said on every held answer, not only a follows-rejection one
+_OWNER_DECIDES = (" A review never decides a material economy action: only an explicit decision of the Owner does (the "
+                  "Governance hub's Sovereign Sanctum).")
+_EXPLICIT = " It follows a rejection of this action."
 # keys only submit_change writes: a record carrying one was minted by a submitter, not by the economy
 _SUBMIT_ONLY_KEYS = ("submitted_by_verified", "immune_threat_at_submit", "config_change")
 _LEGACY_EST = re.compile(r"estimated distributable ([0-9]+(?:\.[0-9]+)?) WST")
@@ -492,10 +524,11 @@ def _same_action(c: Dict[str, Any], est: float, intake: Optional[Dict[str, Any]]
 
 
 def _held(c: Dict[str, Any], est: float, note: str, status: str = "held_for_change_control", **extra) -> Dict[str, Any]:
-    # W463 (third refutation) — a hold filed after a rejection is decided only by an explicit decision; the pages
-    # could not tell it apart and told the Owner to "review it" (a review holds it again)
+    # W463 (third refutation) — a hold filed after a rejection says so (the pages show the link). W464: the tier is the
+    # one the hold is decided under (CRITICAL), not the MEDIUM a hold filed before the ruling was stamped with
+    from agentic_core.api.change_control import effective_tier
     follows = c.get("follows_rejection") if status == "held_for_change_control" else None
-    return {"status": status, "cca_id": c.get("cca_id"), "impact_tier": c.get("impact_tier"),
+    return {"status": status, "cca_id": c.get("cca_id"), "impact_tier": effective_tier(c),
             "est_distributable_wst": est, "approved_or_filed_wst": _bound_est(c),
             "materiality_threshold_wst": MATERIALITY_WST, "note": note,
             **({"follows_rejection": follows.get("cca_id")} if isinstance(follows, dict) else {}), **extra}
@@ -639,8 +672,9 @@ def _materiality_gate_locked(vsb_id: str, est_distributable: float, source: str,
     newest = lambda rows: sorted(rows, key=_order_key, reverse=True)       # see _order_key (same-second ties)
     live = [c for c in records if c.get("status") in _LIVE]
 
-    # 1 — an approval that can release this request is spent (compare-and-set; never spent twice)
-    for c in newest([c for c in live if c.get("status") == "approved"]):
+    # 1 — an approval that can release this request is spent (compare-and-set; never spent twice). W464 (FU-014): only
+    # the Owner's explicit approval; any other approval is withdrawn below (steps 2 and 4) and the action asked again
+    for c in newest([c for c in live if c.get("status") == "approved" and _owner_decided(c)]):
         release = _fits(c, est_distributable, intake)
         if release is None:
             continue
@@ -660,8 +694,9 @@ def _materiality_gate_locked(vsb_id: str, est_distributable: float, source: str,
         try:
             cca._update_change(c["cca_id"], _consume)
         except _Moved as moved:
+            # W464 (refutation) — flagged, so no page tells the Owner a decision is pending on a record that was just decided
             return _held(c, est_distributable, "The approval was consumed or changed concurrently (status now "
-                         f"{moved}) — this action is held rather than spending it twice."), None
+                         f"{moved}) — this action is held rather than spending it twice.", decided_concurrently=True), None
         for other in live:
             if other["cca_id"] != c["cca_id"]:
                 _withdraw(cca, other, vsb_id, c["cca_id"], "another record for the same action was spent")
@@ -677,19 +712,22 @@ def _materiality_gate_locked(vsb_id: str, est_distributable: float, source: str,
     if open_:
         hold = open_[0]
         for other in open_[1:] + stale_approvals:
-            _withdraw(cca, other, vsb_id, hold["cca_id"], "superseded by the current hold for this action")
+            _withdraw(cca, other, vsb_id, hold["cca_id"],
+                      "superseded by the current hold for this action"
+                      if other.get("status") != "approved" or _owner_decided(other) else _not_owner_reason(other))
         if hold.get("status") == "under_review":
-            # W463 (refuter) — a hold under review is NOT re-estimated: the reviewer decides the amount they
+            # W463 (refuter) — a hold under review is NOT re-estimated: the decider decides the amount they
             # were shown. Intake that arrived meanwhile waits for the next hold.
             return _held(hold, est_distributable,
                          f"Material action — the hold {hold['cca_id']} is under review for the amount it was filed "
                          "with; intake that arrived since waits for the next hold."
-                         + (_EXPLICIT if hold.get("follows_rejection") else "")), None
+                         + (_EXPLICIT if hold.get("follows_rejection") else "") + _OWNER_DECIDES), None
         before = _bound_est(hold)
 
         def _rebound(fresh: dict) -> None:
             if fresh.get("status") != "submitted":
                 raise _Moved(fresh.get("status"))
+            cca._stamp_effective_tier(fresh)      # W464 — a hold filed as MEDIUM before the ruling reads CRITICAL
             if before is None or abs(float(before) - est_distributable) > 0.005 or fresh.get("intake") != intake:
                 fresh["est_distributable_wst"] = est_distributable
                 fresh["intake"] = intake
@@ -701,12 +739,18 @@ def _materiality_gate_locked(vsb_id: str, est_distributable: float, source: str,
         try:
             hold = cca._update_change(hold["cca_id"], _rebound)
         except _Moved as moved:
+            if str(moved) in _OPEN:
+                # W464 (second refutation) — a review started meanwhile: nothing was decided, the Owner still decides it
+                return _held(hold, est_distributable,
+                             f"Material action — the hold {hold['cca_id']} is under review for the amount it was filed "
+                             "with; intake that arrived since waits for the next hold."
+                             + (_EXPLICIT if hold.get("follows_rejection") else "") + _OWNER_DECIDES), None
             return _held(hold, est_distributable, f"The hold was decided concurrently (status now {moved}) — "
-                         "retry the action."), None
+                         "retry the action.", decided_concurrently=True), None
         return _held(hold, est_distributable,
-                     f"Material action — awaiting Change Control approval (POST /api/v1/cca/{hold['cca_id']}/review); "
-                     "the hold's amount is kept current until it is reviewed."
-                     + (_EXPLICIT if hold.get("follows_rejection") else "")), None
+                     f"Material action — awaiting the Owner's decision on Change Control hold {hold['cca_id']}; "
+                     "the hold's amount is kept current until it is decided."
+                     + (_EXPLICIT if hold.get("follows_rejection") else "") + _OWNER_DECIDES), None
 
     # 3 — a rejection answers exactly the action it was filed for, while no approved action has run since it.
     # W463 (third refutation): it used to be checked against the newest rejection alone, so once an approved action
@@ -714,8 +758,8 @@ def _materiality_gate_locked(vsb_id: str, est_distributable: float, source: str,
     # W463 (fifth refutation): the refusal stands only while the newest decided record — any spend included, run or
     # still in flight — is the rejection. The follows link (step 4) counts only spends whose action is KNOWN to have
     # run: a request for the rejected action during an unmarked spend (in flight, or a worker that died before
-    # marking it) is asked again as a hold only an explicit decision can approve — never refused for ever, and never
-    # a plain hold a model review could approve.
+    # marking it) is asked again as a hold that says it follows the rejection — never refused for ever. (W464: every
+    # hold is decided only by the Owner, so the link is information for the Owner, no longer the only protection.)
     decided_any = newest([c for c in records if c.get("status") in ("rejected", "implemented")])
     decided = newest([c for c in records if c.get("status") == "rejected" or _action_ran(c)])
     if (decided_any and decided_any[0].get("status") == "rejected"
@@ -728,8 +772,8 @@ def _materiality_gate_locked(vsb_id: str, est_distributable: float, source: str,
                      "new intake).", status="rejected_by_change_control", rejected_by=by), None
 
     # 4 — file a hold through the real CCA machinery (same store the CCA UI reviews). W463 (refuter): a hold
-    # filed after a rejection of this action says so — the reviewer sees the earlier refusal, and Change
-    # Control decides such a hold only by an explicit decision (never the model or the health rule).
+    # filed after a rejection of this action says so — the Owner sees the earlier refusal. W464 (FU-014): every hold is
+    # filed CRITICAL, so Change Control decides it only by the Owner's explicit decision (never the model or the rule).
     follows = None
     if decided and decided[0].get("status") == "rejected":           # no approved action has run since
         r0 = decided[0]
@@ -755,12 +799,14 @@ def _materiality_gate_locked(vsb_id: str, est_distributable: float, source: str,
     }
     cca._save_change(change)
     for other in stale_approvals:
-        _withdraw(cca, other, vsb_id, cca_id, "the approval could not release this request; a fresh hold replaces it")
+        _withdraw(cca, other, vsb_id, cca_id,
+                  "the approval could not release this request; a fresh hold replaces it"
+                  if _owner_decided(other) else _not_owner_reason(other) + "; a fresh hold replaces it")
     _ueg_log({"type": "economy.materiality_hold_filed", "vsb_id": vsb_id, "cca_id": cca_id,
               "est_distributable_wst": est_distributable, "threshold_wst": MATERIALITY_WST})
-    return _held(change, est_distributable, "Material action — a Change Control request was filed and the "
-                 f"action is held until approved (POST /api/v1/cca/{cca_id}/review)."
-                 + (_EXPLICIT if follows else "")), None
+    return _held(change, est_distributable, f"Material action — Change Control hold {cca_id} was filed and the "
+                 "action is held until the Owner approves it."
+                 + (_EXPLICIT if follows else "") + _OWNER_DECIDES), None
 
 
 async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: float,

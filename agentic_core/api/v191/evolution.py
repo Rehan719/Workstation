@@ -51,8 +51,10 @@ def _mirror_cca_outcomes(proposals: list[dict]) -> list[dict]:
     for p in proposals:
         if p.get("status") == "under_change_control" and p.get("cca_id"):
             try:
-                from agentic_core.api.change_control import _load_change
+                from agentic_core.api.change_control import _load_change, awaiting_board_ratification
                 c = _load_change(p["cca_id"]) or {}
+                if awaiting_board_ratification(c):
+                    continue   # W464 (FU-012) — not approved until the Board ratifies it
                 if c.get("status") in ("approved", "implemented"):
                     p["status"] = "approved"
                     p["resolved_at"] = c.get("implemented_at") or c.get("reviewed_at")

@@ -11,7 +11,7 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W463).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W464).
   2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
@@ -210,6 +210,18 @@ instruct the Board/genome):
   development, establishment, management) per task/objective/plan.
 - **Change Control (arms-length Agency)** — governs all change at arm's length from operations.
 
+**Recorded W464 — the Owner's rulings of 2026-09-14 on Change Control, as built** (`agentic_core/api/change_control.py`,
+`agentic_core/api/board.py`, `agentic_core/economy/governance.py`): a **HIGH** change approved by a **review** (the
+reviewing model's decision marker or the organism-health threshold rule — and a decision made before W459 that recorded
+no source, read as a review's) **waits for Board ratification**: nothing implements or applies it until the Board, on
+the Owner's direction, ratifies or refuses it (`GET/POST /api/v1/board/ratifications`; with auth on only an admin
+records it, and in both modes the caller states it is the Owner's direction; no AI call decides it). The Owner's own
+explicit decision needs no ratification. **Every material economy action is CRITICAL** — decided only by the Owner's
+explicit decision in the Governance hub's Sovereign Sanctum, the gate releasing only such an approval; `code_change` is
+HIGH. **Change Control's decisions** — approvals, rejections, retirements and the Board's ratification decisions — are
+written to the constitutional ledger (the UEG) after the record lands; submissions and holds stay in the record's own
+audit trail.
+
 **Recorded W446 — the Board of specialist Directors, as the canon elsewhere names them and as built
 (`agentic_core/api/board.py`):** the Chief (the Owner's digital twin) chairs Directors of **Strategy &
 Vision · Technology & Architecture · Governance & Compliance · Biomimetic Systems** (the highest authority
@@ -275,7 +287,8 @@ workstream **W1 — Native AI Resource Fabric**.)
 > `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` records the primitives' audit: **all 10 audited
 > primitives FIXED and WIRED (W437)**; what remains there is latent — four unreached fabricating
 > functions (the two governance gaps it recorded on reached CCA routes — change-record write races and
-> an unconsumed ratification flag — were closed W459).
+> an unconsumed ratification flag — were closed W459; the Board ratification queue the Owner then ruled for
+> was built W464).
 
 ## 7. The Reconfigurable Resource Fabric + Digital Resources (with user design control)
 
@@ -575,7 +588,7 @@ than trusted once this date is old; a long-running dev process serves the code i
   ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
   workstream, the six-step verification each must pass, milestones that are measurements, and the
   definition of complete.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W463). A record of intent
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W464). A record of intent
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.

@@ -1,4 +1,4 @@
-import { provenanceMapBadge } from '../../lib/api';
+import { provenanceMapBadge, apiJson, errorMessage } from '../../lib/api';
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -16,6 +16,14 @@ interface Charter {
   owner?: { name?: string; role?: string; vision_summary?: string };
   arms_length_agency?: string;
   applies_to?: string;
+  ratification?: string;   // W464 — the Board's ratification duty
+}
+// W464 (FU-012) — a HIGH change a review approved, waiting for the Board (GET /api/v1/board/ratifications)
+interface PendingRatification {
+  cca_id: string; title: string; change_type?: string; impact_tier?: string;
+  decision_source?: string; approved_at?: string | null; submitted_by?: string; vsb_id?: string | null;
+  description?: string; review_result?: string;
+  twin_prevalidation?: { verdict?: string; source?: string; source_label?: string } | null;
 }
 interface Status {
   board: string; represents_owner: string; hierarchy: string[];
@@ -50,13 +58,45 @@ export const BoardOfDirectors: React.FC = () => {
   const [open, setOpen] = useState<'directive' | 'plan'>('directive');
   const [charter, setCharter] = useState<Charter | null>(null);
   const [loadErr, setLoadErr] = useState('');
+  // W464 (FU-012) — the ratification queue and the Board's decision on it
+  const [ratQueue, setRatQueue] = useState<PendingRatification[] | null>(null);
+  const [ratLoadErr, setRatLoadErr] = useState('');
+  const [ratNotes, setRatNotes] = useState<Record<string, string>>({});
+  const [ownerDirection, setOwnerDirection] = useState<Record<string, boolean>>({});
+  const [ratBusy, setRatBusy] = useState<string | null>(null);
+  const [ratResult, setRatResult] = useState<{ id: string; ok: boolean; message: string } | null>(null);
+
+  const loadRatifications = async () => {
+    try {
+      const r = await apiJson<{ pending: PendingRatification[] }>('/api/v1/board/ratifications');
+      setRatQueue(r.pending ?? []);
+      setRatLoadErr('');
+    } catch (e) { setRatLoadErr(`Could not load the ratification queue — ${errorMessage(e)}`); }
+  };
 
   useEffect(() => {
     fetch('/api/v1/board/status').then(r => r.json()).then(setStatus)
       .catch(() => setLoadErr('Could not load the board status.'));
     fetch('/api/v1/board/charter').then(r => r.json()).then(setCharter)
       .catch(() => setLoadErr('Could not load the board charter.'));
+    loadRatifications();
   }, []);
+
+  const decideRatification = async (id: string, decision: 'ratify' | 'refuse') => {
+    setRatBusy(id); setRatResult(null);
+    try {
+      const r = await apiJson<{ decision: string; note?: string; ueg_logged?: boolean }>(
+        `/api/v1/board/ratifications/${id}`,
+        { method: 'POST', body: { decision, notes: ratNotes[id] ?? '', on_owner_direction: ownerDirection[id] === true } });
+      setRatResult({ id, ok: true, message: `${r.decision.toUpperCase()} — ${r.note ?? ''}${r.ueg_logged === false ? ' (the ledger entry did not land — see the server log)' : ' Recorded on the constitutional ledger.'}` });
+    } catch (e) {
+      // the backend's own refusal (403 not an admin / no Owner direction, 409 no longer awaiting) — never a success
+      setRatResult({ id, ok: false, message: errorMessage(e) });
+    } finally {
+      setRatBusy(null);
+      loadRatifications();
+    }
+  };
 
   const instruct = async () => {
     if (!instruction.trim()) return;
@@ -98,6 +138,9 @@ export const BoardOfDirectors: React.FC = () => {
           {charter.applies_to && (
             <p className="text-[10px] font-bold text-slate-500 mt-3">Applies to: {charter.applies_to}</p>
           )}
+          {charter.ratification && (
+            <p className="text-[11px] text-slate-400 font-semibold leading-relaxed mt-3" data-testid="board-ratification-duty">{charter.ratification}</p>
+          )}
           {charter.owner?.role && (
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mt-3">
               {charter.owner.name ?? 'Owner'} · {charter.owner.role}
@@ -105,6 +148,76 @@ export const BoardOfDirectors: React.FC = () => {
           )}
         </Card>
       )}
+
+      {/* W464 (FU-012) — the ratification queue: a HIGH change a review approved waits here; nothing implements it
+          until the Board records the Owner's decision. No AI call decides it. */}
+      <Card className="p-6 space-y-4 border-orange-400/20" data-testid="board-ratifications">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+            <ShieldCheck size={13} /> Pending Board ratification
+            {ratQueue && <span className="text-orange-300" data-testid="board-ratification-count">{ratQueue.length}</span>}
+          </h3>
+          <button type="button" onClick={loadRatifications} className="text-[10px] font-bold text-slate-500 hover:text-slate-300">Refresh</button>
+        </div>
+        <p className="text-[11px] text-slate-500 leading-relaxed">
+          A HIGH-tier change approved by a review — the reviewing model&rsquo;s decision marker or the organism-health
+          threshold rule, not your explicit decision; a decision made before W459 that recorded no source is read as a
+          review&rsquo;s — is not implemented until the Board ratifies it on your direction.
+          Refusing it rejects the change. Each decision is recorded on the change and, when that write lands, on the
+          constitutional ledger (the result below says whether it did).
+        </p>
+        {ratLoadErr && <p role="alert" className="text-[10px] font-bold text-vital">{ratLoadErr}</p>}
+        {ratQueue && ratQueue.length === 0 && !ratLoadErr && (
+          <p className="text-[11px] text-slate-600">No change is waiting for ratification.</p>
+        )}
+        {ratResult && !(ratQueue ?? []).some(q => q.cca_id === ratResult.id) && (
+          <p role="status" data-testid="board-ratification-result" className={`text-[11px] font-bold ${ratResult.ok ? 'text-emerald-400' : 'text-vital'}`}>{ratResult.id}: {ratResult.message}</p>
+        )}
+        {(ratQueue ?? []).map(q => (
+          <div key={q.cca_id} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2" data-testid="board-ratification-row">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-black text-white">{q.title}</p>
+              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300">{q.impact_tier}</span>
+              <span className="text-[9px] font-mono text-slate-500">{q.change_type} · {q.cca_id}</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              approved by: {q.decision_source === 'model_decision_marker' ? 'the reviewing model\u2019s decision marker'
+                : q.decision_source === 'health_threshold_rule' ? 'the organism-health threshold rule (not the model)'
+                : q.decision_source === 'unrecorded_decision' ? 'a decision made before W459 that recorded no source (read as a review\u2019s)'
+                : q.decision_source}
+              {q.approved_at ? ` · ${q.approved_at}` : ''}{q.submitted_by ? ` · submitted by ${q.submitted_by}` : ''}{q.vsb_id ? ` · VSB ${q.vsb_id}` : ''}
+            </p>
+            <p className="text-[11px] text-slate-500">
+              §17.5 pre-validation: {q.twin_prevalidation?.verdict
+                ? `${q.twin_prevalidation.verdict.toUpperCase()} (${q.twin_prevalidation.source_label ?? q.twin_prevalidation.source})`
+                : 'none recorded — implementing it will still need one'}
+            </p>
+            {q.description && <p className="text-[11px] text-slate-400 leading-relaxed">{q.description}</p>}
+            {q.review_result && (
+              <details className="text-[10px] text-slate-500"><summary className="cursor-pointer">The review that approved it</summary>
+                <pre className="whitespace-pre-wrap font-mono mt-1">{q.review_result}</pre></details>
+            )}
+            <input value={ratNotes[q.cca_id] ?? ''} onChange={e => setRatNotes(n => ({ ...n, [q.cca_id]: e.target.value }))}
+              placeholder="Notes for the record (optional)"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-[11px] text-white placeholder:text-slate-600" />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-testid="board-ratification-owner-direction" checked={ownerDirection[q.cca_id] === true}
+                onChange={e => setOwnerDirection(o => ({ ...o, [q.cca_id]: e.target.checked }))} className="accent-highlight w-4 h-4" />
+              <span className="text-[11px] font-bold text-slate-400">I record this decision as the Owner&rsquo;s direction</span>
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={() => decideRatification(q.cca_id, 'ratify')} disabled={ratBusy === q.cca_id || ownerDirection[q.cca_id] !== true}
+                className="bg-emerald-600/80 text-white text-xs" data-testid="board-ratify">Ratify</Button>
+              <Button onClick={() => decideRatification(q.cca_id, 'refuse')} disabled={ratBusy === q.cca_id || ownerDirection[q.cca_id] !== true}
+                className="bg-slate-800 text-slate-200 text-xs" data-testid="board-refuse">Refuse</Button>
+              {ratBusy === q.cca_id && <Loader2 size={14} className="animate-spin text-slate-500" />}
+              {ratResult?.id === q.cca_id && (
+                <p role="status" className={`text-[11px] font-bold ${ratResult.ok ? 'text-emerald-400' : 'text-vital'}`}>{ratResult.message}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </Card>
 
       {/* Hierarchy */}
       {status && (

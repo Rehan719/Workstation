@@ -2060,6 +2060,12 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
         claim["record"] = dict(fresh)
         if fresh.get("status") != "approved":
             return
+        # W464 (FU-012) — an approval still waiting for Board ratification is not acted on (the same rule /implement
+        # applies; checked under the record's lock so a ratification cannot race it)
+        from agentic_core.api.change_control import awaiting_board_ratification
+        if awaiting_board_ratification(fresh):
+            claim["status"] = "awaiting_board_ratification"
+            return
         fresh["status"] = "implemented"
         fresh["implemented_at"] = now
         fresh.setdefault("audit_trail", []).append(

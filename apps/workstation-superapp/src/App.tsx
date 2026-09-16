@@ -142,7 +142,7 @@ function App() {
   const steps = [
     { target: '.neon-text', content: 'Welcome to Workstation IDBO — your living, in-house AI organism.' },
     { target: 'aside nav', content: 'Two ways to work (§3A): ① Work in a Domain — AI-mediated tools across the six domains; ② Build an Enterprise — Concept→Commercialisation into a living VSB. Below sit the Platform, Governance and System areas.' },
-    { target: '.gaas-audit-btn', content: 'Opens the constitutional audit: the tamper-evident UEG ledger — recorded gate decisions, §11 screens, and the governance bypasses the board and economy paths log (flagged). Modules outside the gate record nothing here.' },
+    { target: '.gaas-audit-btn', content: 'Opens the constitutional audit: the tamper-evident UEG ledger — recorded gate decisions, §11 screens, Change Control decisions and Board ratifications, and the governance bypasses the board and economy paths log (flagged).' },
   ];
 
   return (
