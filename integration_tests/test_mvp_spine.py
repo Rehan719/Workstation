@@ -14367,3 +14367,535 @@ def test_w467_a_heartbeat_cycle_distributes_its_recognised_events_once(client, m
     swarm_src = _inspect.getsource(_swarm)
     assert '"type": "economy.recognition_failed", "source": "cascade_delivery"' in swarm_src and '"recognition_failed": why' in swarm_src
     assert 'failed = "cost" if _rev else "revenue"' in swarm_src and '"amount_wst": _cost if _rev else 250.0' in swarm_src
+
+
+def test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced(client, monkeypatch, request):
+    """FU-041 — a VSB's ledger was read tolerantly: a file it could not parse whole (a BOM, a truncation, a list, UTF-16,
+    a sharing violation) read as EMPTY books, and the next posting saved those empty books over the real ones. One
+    heartbeat cycle wiped a ledger by itself; /close-period and /cycle did it through the API (200), /ledger and
+    /board-pack showed zeros, a transfer answered "insufficient funds: 0.0" (400), and a development spend reported the
+    fund empty. A visit whose cycle raised never advanced the rotation, so the heartbeat tended that one entity forever.
+    Virtual WST only."""
+    import json as _json
+    import uuid as _uuid
+    import pytest as _pytest
+
+    from agentic_core.api import change_control as cca
+    from agentic_core.economy import governance as gv
+    from agentic_core.economy import ledger as lg
+    from agentic_core.economy import living_vsbs as lv
+    from agentic_core.economy import revenue as rev
+    from agentic_core.economy import transfers as tr
+    from agentic_core.economy.ledger import LedgerUnavailable, VirtualLedger
+    from agentic_core.gaas.v5 import UEGLogger
+
+    made = []
+
+    def living(tag):
+        v = f"w468-{tag}-{_uuid.uuid4().hex[:6]}"
+        lv.register(v, f"W468 {tag}", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        made.append(v)
+        return v
+
+    def _cleanup():
+        for v in made:
+            try:
+                left = rev.peek_pending(v).get("ids") or []
+                if left:
+                    rev.consume_events(v, left, token="cyc-w468cleanup")
+                    rev.settle_consume_token(v, "cyc-w468cleanup")
+            except Exception:
+                pass
+            try:
+                for c in holds_for(v):                   # a hold a leg filed never outlives its deregistered entity
+                    if c.get("status") in ("submitted", "under_review", "approved"):
+                        cca._update_change(c["cca_id"], lambda r: r.update(status="withdrawn"))
+            except Exception:
+                pass
+            try:
+                (lg._STORE / f"{v}_ledger.json").unlink(missing_ok=True)
+                lv.deregister(v)
+            except Exception:
+                pass
+    request.addfinalizer(_cleanup)
+
+    def events_of(kind, v):
+        return [(n.get("data") or {}) for n in UEGLogger()._read().get("nodes", [])
+                if (n.get("data") or {}).get("type") == kind and (n.get("data") or {}).get("vsb_id") == v]
+
+    def holds_for(v):
+        return [c for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes())
+                if c and c.get("vsb_id") == v and c.get("change_type") == "economy_material"]
+
+    # the refusal is its own kind: the transfer route reads ValueError as a refused funds check
+    assert not issubclass(LedgerUnavailable, ValueError) and issubclass(tr.SenderLedgerUnavailable, LedgerUnavailable)
+
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+    a = living("books")
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 500}).json()["cycle"]
+    path = VirtualLedger(a).path
+    good = path.read_bytes()
+    books = _json.loads(good)
+    assert books["accounts"]["reserve_fund"] > 0 and books["postings"]
+
+    # ── every shape a tolerant read turned into empty books (or a prefix) is refused by every writer, bytes unchanged ──
+    def variant(name):
+        d = _json.loads(good)
+        if name == "bom":
+            return b"\xef\xbb\xbf" + good
+        if name == "truncated":
+            return good[: len(good) // 2]
+        if name == "trailing_garbage":
+            return good + b"\n}"
+        if name == "list":
+            return _json.dumps([d]).encode()
+        if name == "utf16":
+            return good.decode("utf-8").encode("utf-16")
+        if name == "empty_file":
+            return b""
+        if name == "nan_balance":
+            d["accounts"]["reserve_fund"] = float("nan")
+        elif name == "accounts_not_a_map":
+            d["accounts"] = []
+        elif name == "string_amount":
+            d["postings"][0]["amount"] = "10"
+        elif name == "close_beyond_postings":
+            d["closes"] = [{"posting_index": len(d["postings"]) + 1, "net_profit_wst": 0.0}]
+        elif name == "entries_not_a_list":
+            d["entries"] = {"0": {}}
+        elif name == "huge_integer":
+            d["accounts"]["reserve_fund"] = 10 ** 400
+        elif name == "postings_without_accounts":
+            d.pop("accounts")
+        elif name == "entries_without_balances":
+            d.pop("balances")
+        elif name == "close_postings_without_closes":
+            d["postings"].append({"ts": "2026-09-17T00:00:00Z", "debit": "revenue", "credit": "retained_earnings",
+                                  "amount": 1.0, "memo": "period close — income → retained earnings"})
+            d.pop("closes")
+        elif name == "nested_too_deep":
+            return b"[" * 100000 + b"]" * 100000
+        return _json.dumps(d).encode()
+
+    for name in ("bom", "truncated", "trailing_garbage", "list", "utf16", "empty_file", "nan_balance",
+                 "accounts_not_a_map", "string_amount", "close_beyond_postings", "entries_not_a_list", "huge_integer",
+                 "postings_without_accounts", "entries_without_balances", "close_postings_without_closes",
+                 "nested_too_deep"):
+        bad = variant(name)
+        path.write_bytes(bad)
+        led = VirtualLedger(a)
+        stmt = led.statement()
+        assert led.load_error and stmt["available"] is False and "balances" not in stmt, name
+        for write in (lambda: led.record("revenue", 5.0, memo="w468"), lambda: led.post("cash", "revenue", 5.0),
+                      led.close_period):
+            with _pytest.raises(LedgerUnavailable):
+                write()
+            assert path.read_bytes() == bad, name
+        for reader in (led.statements, led.trial_balance, led.balances):
+            with _pytest.raises(LedgerUnavailable):
+                reader()
+        with _pytest.raises(LedgerUnavailable):
+            tr._read_ledger_strict(path)
+    path.write_bytes(good)
+    # the shape check itself answers a number no float holds (the save path runs it outside the read's catch)
+    assert "non-finite" in (lg._shape_problem({"accounts": {"reserve_fund": 10 ** 400}}) or "")
+    assert "not a ledger object" in (lg._shape_problem([{"postings": []}]) or "")
+
+    # ── a sharing violation is retried; one that persists refuses the write ──
+    real_rb = type(path).read_bytes
+    fails = {"left": 0}
+
+    def _rb(self):
+        if str(self) == str(path) and fails["left"] > 0:
+            fails["left"] -= 1
+            raise fails.get("exc", PermissionError)("w468 sharing violation")
+        return real_rb(self)
+    monkeypatch.setattr(type(path), "read_bytes", _rb)
+    fails["left"] = 4
+    assert VirtualLedger(a).load_error is None
+    fails["left"] = 5
+    locked_out = VirtualLedger(a)
+    assert locked_out.load_error and "PermissionError" in locked_out.load_error
+    fails["left"] = 5
+    with _pytest.raises(LedgerUnavailable):
+        locked_out.record("revenue", 1.0, memo="w468 locked out")
+    fails["exc"], fails["left"] = FileNotFoundError, 4
+    assert VirtualLedger(a).load_error is None
+    fails["left"] = 5
+    vanished = VirtualLedger(a)
+    assert vanished.load_error and "FileNotFoundError" in vanished.load_error
+    monkeypatch.setattr(type(path), "read_bytes", real_rb)
+    assert path.read_bytes() == good
+    lost = living("never-written")
+    assert VirtualLedger(lost).load_error is None and VirtualLedger(lost).statement()["entry_count"] == 0
+
+    # ── ledgers written before a key existed still post (missing keys take their defaults) ──
+    legacy = living("legacy")
+    lp = lg._STORE / f"{legacy}_ledger.json"
+    lp.write_bytes(_json.dumps({"vsb_id": legacy, "postings": []}).encode())
+    VirtualLedger(legacy).record("revenue", 10.0, memo="w468 legacy")
+    assert VirtualLedger(legacy).statement()["total_revenue"] == 10.0
+    lp.write_bytes(_json.dumps({"vsb_id": legacy, "currency": "WST", "entries": [], "balances": {"revenue": 5.0}}).encode())
+    VirtualLedger(legacy).record("revenue", 10.0, memo="w468 legacy 2")
+    after = _json.loads(lp.read_bytes())
+    assert after["balances"]["revenue"] == 15.0 and len(after["postings"]) == 1 and after["closes"] == []
+
+    # ── the writer keeps the reader's shape: a posting that would overflow a balance is refused and nothing is saved
+    #    (the strict read would otherwise refuse the ledger's own file for good) ──
+    ov = living("overflow")
+    big = VirtualLedger(ov)
+    big.record("reserves", 1e308, memo="w468 near the float limit")
+    saved = (lg._STORE / f"{ov}_ledger.json").read_bytes()
+    with _pytest.raises(lg.LedgerWriteRefused):
+        big.record("reserves", 1e308, memo="w468 overflow")
+    assert (lg._STORE / f"{ov}_ledger.json").read_bytes() == saved and VirtualLedger(ov).load_error is None
+    assert big.statement()["balances"]["reserves"] == 1e308                    # the instance keeps the books as saved
+    too_big = client.post("/api/v1/economy/cycle", json={"vsb_id": ov, "revenue": 0, "costs": 1e16})
+    assert too_big.status_code == 422, too_big.text
+
+    # ── the routes: refused (503) or said unreadable, never zeros, and never written ──
+    real_lock0 = lg.store_lock
+
+    class _LedgerBusy:
+        def __init__(self, p, *x, **k):
+            self.p, self.cm = p, real_lock0(p, *x, **k)
+
+        def __enter__(self):
+            if str(self.p) == str(path):
+                raise TimeoutError("w468 the ledger's lock is held elsewhere")
+            return self.cm.__enter__()
+
+        def __exit__(self, *exc):
+            return self.cm.__exit__(*exc)
+    monkeypatch.setattr(lg, "store_lock", _LedgerBusy)
+    busy = client.post("/api/v1/economy/close-period", json={"vsb_id": a})
+    monkeypatch.setattr(lg, "store_lock", real_lock0)
+    assert busy.status_code == 503 and "Nothing was closed" in busy.json()["detail"] and path.read_bytes() == good
+    bom = b"\xef\xbb\xbf" + good
+    path.write_bytes(bom)
+    closed = client.post("/api/v1/economy/close-period", json={"vsb_id": a})
+    assert closed.status_code == 503 and "Nothing was closed" in closed.json()["detail"], closed.text
+    assert client.get(f"/api/v1/economy/ledger/{a}").status_code == 503
+    pack = client.get(f"/api/v1/economy/board-pack?vsb_id={a}")
+    assert pack.status_code == 503 and "not shown rather than showing empty books" in pack.json()["detail"]
+    status = client.get(f"/api/v1/economy/status?vsb_id={a}")
+    assert status.status_code == 200 and status.json()["ledger"]["available"] is False
+    assert "balances" not in status.json()["ledger"]
+    b = living("receiver")
+    with _pytest.raises(tr.SenderLedgerUnavailable):
+        tr.validate_transfer(a, b, 10)
+    sent = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 10})
+    assert sent.status_code == 503 and sent.headers.get("x-transfer-debited") == "false", sent.text
+    assert "Nothing was debited" in sent.json()["detail"] and path.read_bytes() == bom
+    with _pytest.raises(tr.SenderLedgerUnavailable):
+        tr.record_transfer(a, b, 10.0, "w468 direct")
+    assert path.read_bytes() == bom
+    real_validate = tr.validate_transfer
+    monkeypatch.setattr(tr, "validate_transfer", lambda *x, **k: 10.0)          # the ledger broke after validation
+    late = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 10})
+    monkeypatch.setattr(tr, "validate_transfer", real_validate)
+    assert late.status_code == 503 and late.headers.get("x-transfer-debited") == "false", late.text
+    assert late.json()["detail"].lower().count("nothing was debited") == 1 and path.read_bytes() == bom, late.text
+
+    # /cycle: refused before the gate — nothing drained, no hold filed even when material, said once on the UEG
+    payer = living("payer")
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": payer, "revenue": 5000}).json()["cycle"]
+    tr.record_transfer(payer, a, 30.0, "w468 receipt")
+    pend = tr.peek_pending_transfers(a)
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1.0)
+    for _ in range(2):
+        cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 100})
+        assert cyc.status_code == 503 and "No cycle ran and nothing was posted" in cyc.json()["detail"], cyc.text
+    assert path.read_bytes() == bom and tr.peek_pending_transfers(a) == pend and holds_for(a) == []
+    assert len(events_of("economy.cycle_ledger_unavailable", a)) == 1
+    # repaired, written outside a cycle (a period close) and broken the same way again: a new outage, said again
+    path.write_bytes(good)
+    assert client.post("/api/v1/economy/close-period", json={"vsb_id": a}).status_code == 200
+    path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 100}).status_code == 503
+    assert len(events_of("economy.cycle_ledger_unavailable", a)) == 2
+    path.write_bytes(bom)
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+
+    # …and a ledger that breaks between the check and the first write: the drained receipts go back, nothing is posted
+    path.write_bytes(good)
+    real_lock, real_rs = lg.store_lock, lg.read_strict
+    inside = {"on": False}
+
+    class _Flag:
+        def __init__(self, p, *x, **k):
+            self.cm, self.mine = real_lock(p, *x, **k), str(p) == str(path)
+
+        def __enter__(self):
+            got = self.cm.__enter__()
+            inside["on"] = self.mine
+            return got
+
+        def __exit__(self, *exc):
+            inside["on"] = False
+            return self.cm.__exit__(*exc)
+
+    def _breaks_inside_the_lock(p, v):
+        if inside["on"] and str(p) == str(path):
+            raise LedgerUnavailable("w468 the ledger broke mid-cycle")
+        return real_rs(p, v)
+    monkeypatch.setattr(lg, "store_lock", _Flag)
+    monkeypatch.setattr(lg, "read_strict", _breaks_inside_the_lock)
+    mid = client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 100})
+    monkeypatch.setattr(lg, "store_lock", real_lock)
+    monkeypatch.setattr(lg, "read_strict", real_rs)
+    assert mid.status_code == 503 and "No cycle ran and nothing was posted" in mid.json()["detail"], mid.text
+    assert path.read_bytes() == good and tr.peek_pending_transfers(a) == pend
+    assert events_of("economy.cycle_intake_given_back", a)
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    early = EconomicMetabolism(a)
+    path.write_bytes(bom)
+    prog = {}
+    with _pytest.raises(LedgerUnavailable):
+        early.run_cycle(100.0, progress=prog)
+    assert "receipts_drained_wst" not in prog and tr.peek_pending_transfers(a) == pend and path.read_bytes() == bom
+    path.write_bytes(good)
+    ran = client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 100})
+    assert ran.status_code == 200 and ran.json()["cycle"] and tr.peek_pending_transfers(a) == 0.0
+    assert a not in gv._LEDGER_UNAVAILABLE_SAID
+
+    # …and when the drained receipts cannot be put back either, the answer says they are on no queue (not "run again")
+    tr.record_transfer(payer, a, 20.0, "w468 a receipt that cannot go back")
+    after_ran = path.read_bytes()
+
+    def _queue_stays_busy(*x, **k):
+        raise TimeoutError("w468 the receipts queue stayed busy")
+    with monkeypatch.context() as mp:
+        mp.setattr(lg, "store_lock", _Flag)
+        mp.setattr(lg, "read_strict", _breaks_inside_the_lock)
+        mp.setattr(tr, "return_pending_transfers", _queue_stays_busy)
+        not_back = client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 100})
+    assert not_back.status_code == 503 and path.read_bytes() == after_ran, not_back.text
+    assert "inter vsb receipts it had drained could not be put back" in not_back.json()["detail"], not_back.text
+    assert "server log with its amount" in not_back.json()["detail"]        # never claims a UEG record that may not exist
+
+    # ── the heartbeat: an unreadable ledger is a recorded visit, refused before any gate; a visit that raises still
+    #    advances the rotation. The roster patches are scoped, so the cleanup deregisters through the real roster ──
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 100.0)                 # the unreadable entity's 400 WST would be material
+    boom = living("hb-raises")
+    bad_hb = living("hb-unreadable")
+    g1, g2 = living("hb-good1"), living("hb-good2")
+    four = {boom, bad_hb, g1, g2}
+    real_load, real_save = lv._load, lv._save
+    bad_path = lg._STORE / f"{bad_hb}_ledger.json"
+    bad_bytes = b"\xef\xbb\xbf" + _json.dumps({"vsb_id": bad_hb, "entries": [], "postings": [],
+                                               "accounts": {"reserve_fund": 700.0}}).encode()
+    bad_path.write_bytes(bad_bytes)
+    rev.record_event(bad_hb, "revenue", 400.0, "marketplace", ref="w468-hb")
+    real_sync = gv.governed_cycle_sync
+    raising, tagged = {boom}, set()
+
+    def _raises_for(vsb_id, *x, **k):
+        if vsb_id in raising:
+            err = RuntimeError("w468 this entity's cycle raised")
+            if vsb_id in tagged:
+                err.past_change_control = True                  # as the cycle tags a raise past the materiality gate
+            raise err
+        return real_sync(vsb_id, *x, **k)
+    with monkeypatch.context() as mp:
+        mp.setattr(lv, "_load", lambda: {k: v for k, v in real_load().items() if k in four})
+        mp.setattr(lv, "_save", lambda d: real_save({**real_load(), **d}))
+        mp.setattr(gv, "governed_cycle_sync", _raises_for)
+        visits = [lv.operate_one() for _ in range(4)]
+        assert sorted(v["vsb_id"] for v in visits) == sorted(four), visits
+        roster = real_load()
+        assert roster[boom]["last_operated"] and "RuntimeError" in roster[boom]["last_error"], roster[boom]
+        unreadable = next(v for v in visits if v["vsb_id"] == bad_hb)
+        assert unreadable["cycle_ran"] is False and unreadable["governance"]["status"] == "ledger_unavailable", unreadable
+        assert roster[bad_hb]["last_hold"] == "ledger_unavailable" and rev.peek_pending(bad_hb)["revenue"] == 400.0
+        assert "could not be read" in unreadable["note"], unreadable
+        assert bad_path.read_bytes() == bad_bytes and holds_for(bad_hb) == []     # refused before the materiality gate
+        row = next(r for r in lv.list_living()["living_vsbs"] if r["vsb_id"] == bad_hb)
+        assert "ledger could not be read whole — no cycle runs" in row["economy_held"]["consequence"], row
+        # repaired: the hold is what the last visit found, and the ledger is read now
+        bad_path.write_bytes(bad_bytes[3:])
+        row = next(r for r in lv.list_living()["living_vsbs"] if r["vsb_id"] == bad_hb)
+        assert "reads whole now" in row["economy_held"]["consequence"], row
+        assert "runs a cycle" not in row["economy_held"]["consequence"], row          # the next visit may still be held
+        # a visit that raises says the raise; a ledger hold it did not find again (the raise was not the ledger's
+        # refusal) is dropped, while a Change Control hold stays (it may still await the Owner)
+        raising.add(bad_hb)
+        assert "error" in lv.operate_vsb(bad_hb)
+        row = next(r for r in lv.list_living()["living_vsbs"] if r["vsb_id"] == bad_hb)
+        assert "last_hold" not in real_load()[bad_hb] and not row["economy_held"]["held"], row
+        assert "RuntimeError" in (row["economy_held"]["last_visit_error"] or ""), row
+        lv._update_entry(g1, lambda e: e.update(last_hold="held_for_change_control"))
+        raising.add(g1)
+        assert "error" in lv.operate_vsb(g1) and real_load()[g1]["last_hold"] == "held_for_change_control"
+        # an unreadable ledger stands in front of that decision: the row says both, and the decision is the hold again
+        # once the ledger reads (both on a hold visit and on a raised visit)
+        VirtualLedger(g1).record("revenue", 0.0, memo="w468 g1 books")
+        g1_path = lg._STORE / f"{g1}_ledger.json"
+        g1_bytes = g1_path.read_bytes()
+        g1_path.write_bytes(b"\xef\xbb\xbf" + g1_bytes)
+        assert "error" in lv.operate_vsb(g1)                                  # a raise while the ledger is unreadable
+        row = next(r for r in lv.list_living()["living_vsbs"] if r["vsb_id"] == g1)
+        assert real_load()[g1]["last_hold"] == "ledger_unavailable", real_load()[g1]
+        assert row["economy_held"]["standing_decision"] == "held_for_change_control", row
+        assert "Change Control decision (held for change control) stands behind it" in row["economy_held"]["consequence"]
+        raising.discard(g1)
+        assert lv.operate_vsb(g1)["governance"]["status"] == "ledger_unavailable"      # a hold visit keeps it apart too
+        assert real_load()[g1].get("decision_hold") == "held_for_change_control"
+        g1_path.write_bytes(g1_bytes)
+        raising.add(g1)
+        assert "error" in lv.operate_vsb(g1)                                  # repaired: the decision is the hold again
+        assert real_load()[g1]["last_hold"] == "held_for_change_control" and "decision_hold" not in real_load()[g1]
+        tagged.add(g1)                                   # …unless this visit got past Change Control before it raised
+        assert "error" in lv.operate_vsb(g1) and "last_hold" not in real_load()[g1]
+        tagged.clear()
+        raising.discard(g1)
+        # a cycle that RAN and whose roster bookkeeping then raised is recorded as the cycle, not as a failed visit
+        real_update = lv._update_entry
+        failed = {"once": False}
+
+        def _bookkeeping_raises(vid, fn):
+            if getattr(fn, "__name__", "") == "_ran" and not failed["once"]:
+                failed["once"] = True
+                raise TimeoutError("w468 the roster lock stayed busy")
+            return real_update(vid, fn)
+        lv._update_entry(g1, lambda e: e.update(last_hold="held_for_change_control", decision_hold="held_for_change_control"))
+        cycles_before = int(real_load()[g1].get("operating_cycles", 0))
+        mp.setattr(lv, "_update_entry", _bookkeeping_raises)
+        booked = lv.operate_vsb(g1)
+        mp.setattr(lv, "_update_entry", real_update)
+        after_book = real_load()[g1]
+        assert booked.get("cycle_ran") is True and failed["once"], booked
+        assert not {"last_hold", "last_error", "decision_hold"} & set(after_book), after_book
+        assert int(after_book["operating_cycles"]) == cycles_before + 1, after_book
+        lv._update_entry(g1, lambda e: e.update(decision_hold="held_for_change_control"))
+        assert lv.operate_vsb(g1).get("cycle") and "decision_hold" not in real_load()[g1]       # a real cycle clears it
+        # the cycle tags a raise that came after the materiality gate, on both heartbeat paths
+        from agentic_core.economy.metabolism import EconomicMetabolism as _EM
+
+        def _cycle_raises(self, *x, **k):
+            raise TimeoutError("w468 the ledger's lock stayed busy")
+        real_run = _EM.run_cycle
+        mp.setattr(_EM, "run_cycle", _cycle_raises)
+        for ev in (rev.peek_pending(g2), None):
+            with _pytest.raises(TimeoutError) as tag:
+                real_sync(g2, "waqf_ltd_hybrid", "Rehan", 0.0, 0.0, source="heartbeat", events=ev)
+            assert getattr(tag.value, "past_change_control", False) is True
+        mp.setattr(_EM, "run_cycle", real_run)
+        # …but a hold the raising visit got past is dropped: a compliance hold (the screen passed to reach the cycle),
+        # and a ledger hold when the raise was not the ledger's refusal
+        lv._update_entry(g2, lambda e: e.update(last_hold="compliance_fail_hold"))
+        raising.add(g2)
+        assert "error" in lv.operate_vsb(g2) and "last_hold" not in real_load()[g2]
+        raising.clear()
+        bad_path.write_bytes(bad_bytes)
+        assert lv.operate_vsb(bad_hb)["governance"]["status"] == "ledger_unavailable"     # the hold, found again
+        bad_path.write_bytes(bad_bytes[3:])
+        raising.add(bad_hb)
+        assert "error" in lv.operate_vsb(bad_hb) and "last_hold" not in real_load()[bad_hb]
+        raising.clear()
+        # a raise that came before the ledger was read, while the ledger still cannot be read, keeps (or sets) the
+        # ledger hold — the row follows the ledger as it reads now
+        bad_path.write_bytes(bad_bytes)
+        lv._update_entry(bad_hb, lambda e: e.pop("last_hold", None))
+        raising.add(bad_hb)
+        assert "error" in lv.operate_vsb(bad_hb) and real_load()[bad_hb]["last_hold"] == "ledger_unavailable"
+        lv._update_entry(g2, lambda e: e.update(last_hold="intake_unavailable"))
+        raising.add(g2)
+        assert "error" in lv.operate_vsb(g2) and "last_hold" not in real_load()[g2]      # an outcome the raise superseded
+        raising.clear()
+        bad_path.write_bytes(bad_bytes[3:])
+        # when the fresh ledger read itself fails, a ledger hold stays (unknown is not readable) and any other goes
+        class _ReadRaises:
+            def __init__(self, *x, **k):
+                raise OSError("w468 the economy store path is not a directory")
+        lv._update_entry(bad_hb, lambda e: e.update(last_hold="ledger_unavailable"))
+        lv._update_entry(g2, lambda e: e.update(last_hold="blocked_by_gate"))
+        raising.update({bad_hb, g2})
+        mp.setattr(lg, "VirtualLedger", _ReadRaises)
+        visited = [lv.operate_vsb(bad_hb), lv.operate_vsb(g2)]
+        mp.setattr(lg, "VirtualLedger", VirtualLedger)
+        raising.clear()
+        assert all("error" in v for v in visited), visited
+        assert real_load()[bad_hb]["last_hold"] == "ledger_unavailable" and "last_hold" not in real_load()[g2]
+        # a hold visit from a plain Change Control hold while the ledger cannot be read keeps the decision apart…
+        VirtualLedger(g2).record("revenue", 0.0, memo="w468 g2 books")
+        g2_path = lg._STORE / f"{g2}_ledger.json"
+        g2_bytes = g2_path.read_bytes()
+        lv._update_entry(g2, lambda e: (e.update(last_hold="held_for_change_control"), e.pop("decision_hold", None)))
+        g2_path.write_bytes(b"\xef\xbb\xbf" + g2_bytes)
+        assert lv.operate_vsb(g2)["governance"]["status"] == "ledger_unavailable"
+        assert real_load()[g2].get("decision_hold") == "held_for_change_control", real_load()[g2]
+        g2_path.write_bytes(g2_bytes)
+        # …and a later hold of another kind (the gate passed; the intake could not be consumed) no longer stands behind it
+        real_consume = rev.consume_events
+
+        def _consume_fails(*x, **k):
+            raise TimeoutError("w468 the revenue store stayed busy")
+        rev.record_event(g2, "revenue", 5.0, "marketplace", ref="w468-g2-small")
+        mp.setattr(rev, "consume_events", _consume_fails)
+        assert lv.operate_vsb(g2)["governance"]["status"] == "intake_unavailable"
+        mp.setattr(rev, "consume_events", real_consume)
+        assert real_load()[g2]["last_hold"] == "intake_unavailable" and "decision_hold" not in real_load()[g2]
+        # a visit that FOUND a hold and whose roster write of it raised records that hold, not the previous visit's
+        lv._update_entry(g2, lambda e: e.pop("last_hold", None))
+        rev.record_event(g2, "revenue", 500.0, "marketplace", ref="w468-g2-material")    # material: a hold is filed
+        failed_held = {"once": False}
+
+        def _held_write_raises(vid, fn):
+            if getattr(fn, "__name__", "") == "_held" and not failed_held["once"]:
+                failed_held["once"] = True
+                raise TimeoutError("w468 the roster lock stayed busy")
+            return real_update(vid, fn)
+        mp.setattr(lv, "_update_entry", _held_write_raises)
+        held_raised = lv.operate_vsb(g2)
+        mp.setattr(lv, "_update_entry", real_update)
+        assert failed_held["once"] and held_raised.get("held") == "held_for_change_control", held_raised
+        assert real_load()[g2].get("last_hold") == "held_for_change_control" and "last_error" not in real_load()[g2]
+        assert lv.operate_vsb(boom).get("cycle") and "last_error" not in real_load()[boom]     # a real cycle clears it
+    assert payer in lv._load() and a in lv._load()                     # the roster patches are gone before the cleanup
+    bad_path.write_bytes(bad_bytes)
+    from agentic_core.gaas.v5.ueg import classify_event
+    assert classify_event({"type": "economy.cycle_ledger_unavailable", "vsb_id": bad_hb})["level"] == "flagged"
+
+    # ── a development spend says the fund is unknown, never "empty", and draws nothing ──
+    spend = lv.spend_self_investment(bad_hb, "w468 autonomous evolution")
+    assert spend["ledger_unavailable"] is True and spend["funded"] is False and spend["spent_wst"] == 0.0, spend
+    assert "empty" not in spend["note"] and bad_path.read_bytes() == bad_bytes
+    assert events_of("economy.self_investment_spend_refused", bad_hb) and not events_of("economy.self_investment_spend", bad_hb)
+    assert classify_event({"type": "economy.self_investment_spend_refused", "vsb_id": bad_hb})["level"] == "flagged"
+
+    # ── a write the ledger refuses to save is answered (409, never a bare 500) and a refused spend is recorded ──
+    def _refuse(*x, **k):
+        raise lg.LedgerWriteRefused("w468 the books would hold a non-finite balance")
+    with monkeypatch.context() as mp:
+        mp.setattr(lg.VirtualLedger, "record", _refuse)
+        refused_spend = lv.spend_self_investment(a, "w468 refused at its write")
+        mp.setattr(lg.VirtualLedger, "close_period", _refuse)
+        closing = client.post("/api/v1/economy/close-period", json={"vsb_id": a})
+        cyc_refused = client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 10})
+        mp.setattr(tr, "record_transfer", _refuse)
+        xfer_refused = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 1})
+    assert refused_spend.get("ledger_write_refused") is True and refused_spend["funded"] is False, refused_spend
+    assert any(e.get("ledger_write_refused") for e in events_of("economy.self_investment_spend_refused", a))
+    assert closing.status_code == 409 and "Nothing was closed" in closing.json()["detail"], closing.text
+    assert cyc_refused.status_code == 409 and "No cycle ran and nothing was posted" in cyc_refused.json()["detail"], cyc_refused.text
+    assert xfer_refused.status_code == 409 and xfer_refused.headers.get("x-transfer-debited") == "false", xfer_refused.text
+    assert "Nothing was debited" in xfer_refused.json()["detail"]
+
+    # ── the pages show the server's reason, never "no ledger yet" or "backend unreachable" ──
+    from pathlib import Path as _Path
+    pages = _Path("apps/workstation-superapp/src/pages/enterprise")
+    econ = (pages / "VSBEconomy.tsx").read_text(encoding="utf-8")
+    cockpit = (pages / "VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert "setError(why || `HTTP ${r.status}`); setRunning(false); return;" in econ
+    assert "if (typeof d === 'string') return d;" in cockpit and "if (reasons) return `${fallback}: ${reasons}.`;" in cockpit
+    for page in (econ, cockpit):                    # a 422 names the field it refused
+        assert "Array.isArray(d.loc) && d.loc.length ? `${d.loc[d.loc.length - 1]}: `" in page or \
+            "Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: `" in page
+    assert "reasons ? `No cycle ran — ${reasons}.` : ''" in econ
+    assert "if (issuedFor !== selectedRef.current) return;\n      setDetail(d); setPlan(p); setLedger(l.data); setLedgerErr(l.err); setLoading(false);" in cockpit
+    assert "if (issuedFor === selectedRef.current) {\n        setLastCycle(r.data.cycle || null);\n        setLedger(l.data); setLedgerErr(l.err);" in cockpit
+    assert "setActErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));" in cockpit
+    assert "setLastCycle(null); setLedgerErr(''); setActErr('');" in cockpit and "setCycling(true); setActErr('');" in cockpit
+    assert 'data-testid="ledger-error">{ledgerErr}</p>' in cockpit
+    assert "{v.economy_held?.last_visit_error && (" in econ and 'data-testid="living-visit-error">' in econ

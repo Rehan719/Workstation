@@ -50,6 +50,44 @@ def _ueg_log(event: Dict[str, Any]) -> Optional[str]:
         return None
 
 
+# W468 (register FU-041) — what was last said on the UEG about each VSB's unreadable ledger, so a heartbeat that visits
+# it on every round says so once per error, not once per beat (the roster's last_hold says it every visit). Keyed on the
+# file's size and modification time too (refutation): a ledger repaired, written outside a cycle and broken the same way
+# again is a new outage, and is said again.
+_LEDGER_UNAVAILABLE_SAID: Dict[str, str] = {}
+
+
+def _ledger_unavailable(vsb_id: str, source: str, error: str, path: Any = None) -> Dict[str, Any]:
+    """W468 (register FU-041) — the answer for a cycle whose VSB ledger cannot be read whole, given BEFORE any gate:
+    nothing is measured, no hold is filed, no approval is spent and nothing is consumed or drained."""
+    said = error
+    try:
+        if path is not None:
+            st = os.stat(path)
+            said = f"{error}|{st.st_mtime_ns}|{st.st_size}"
+    except OSError:
+        pass
+    if _LEDGER_UNAVAILABLE_SAID.get(vsb_id) != said:
+        if _ueg_log({"type": "economy.cycle_ledger_unavailable", "vsb_id": vsb_id, "source": source,
+                     "error": error[:300],
+                     "note": "this VSB's ledger could not be read whole, so no cycle ran: nothing was posted, consumed "
+                             "or drained, and nothing is written to the ledger until it can be read"}):
+            _LEDGER_UNAVAILABLE_SAID[vsb_id] = said
+    return {"cycle": None, "governance": {
+        "status": "ledger_unavailable", "error": error,
+        "note": "this VSB's ledger could not be read whole, so no cycle ran — nothing was posted, and the recognised "
+                "revenue and queued intake wait for a cycle that can post them"}}
+
+
+def _past_change_control(err: BaseException) -> None:
+    """W468 (fifth refutation) — a heartbeat cycle that raises after the materiality gate let it through says so on the
+    exception, so the living roster never keeps describing the entity as held by Change Control after this visit."""
+    try:
+        err.past_change_control = True
+    except Exception:
+        pass
+
+
 def _log_split(report: Dict[str, Any], waterfall_source: str, source: str) -> None:
     """The binding '§4: every cycle's split is logged to the UEG' — explicit per-stage amounts."""
     circ = report.get("circulation") or {}
@@ -846,6 +884,12 @@ async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: flo
     """The governed metabolic cycle (async/API path): materiality → gaas.v5 gate → run → UEG split log."""
     from agentic_core.economy.metabolism import EconomicMetabolism
     metab = EconomicMetabolism(vsb_id, entity_type, owner)
+    # W468 (register FU-041) — refused BEFORE the gate (the route answers 503): an unreadable ledger read as empty books,
+    # and this cycle then posted onto them, replacing the real books
+    if metab.ledger.load_error:
+        _ledger_unavailable(vsb_id, source, metab.ledger.load_error, metab.ledger.path)
+        metab.ledger.require_readable()
+    _LEDGER_UNAVAILABLE_SAID.pop(vsb_id, None)
 
     peek_returns, peek_transfers = _pending_parts(vsb_id)
     intake = {"revenue_wst": round(float(revenue), 2), "costs_wst": round(float(costs), 2),
@@ -874,6 +918,11 @@ async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: flo
                                max_returns_wst=cap_returns, max_transfers_wst=cap_transfers, progress=progress)
 
     def _raised(err: BaseException) -> None:
+        try:
+            err.ledger_written = bool(progress.get("ledger_written"))   # W468 — the route says which it was
+            err.intake_not_given_back = [k for k, ok in (progress.get("intake_given_back") or {}).items() if not ok]
+        except Exception:
+            pass
         if progress.get("ledger_written"):
             _spent_on_a_raised_cycle(consumed, vsb_id, source, err)
         else:
@@ -951,6 +1000,11 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
     caller consumes those, never the whole peek."""
     from agentic_core.economy.metabolism import EconomicMetabolism
     metab = EconomicMetabolism(vsb_id, entity_type, owner)
+    # W468 (register FU-041) — before every gate: a heartbeat cycle on an unreadable ledger posted onto empty books and
+    # wiped the real ones by itself; a material one would also file a hold for a cycle that cannot post
+    if metab.ledger.load_error:
+        return _ledger_unavailable(vsb_id, source, metab.ledger.load_error, metab.ledger.path)
+    _LEDGER_UNAVAILABLE_SAID.pop(vsb_id, None)
 
     # W463 — the side-effect-free policy pre-gate runs FIRST. It used to run after the materiality
     # gate had already spent the Owner's approval, and a refusal never gave it back: the approval was
@@ -1009,6 +1063,7 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
             report = metab.run_cycle(revenue, costs, reserve_rate, max_returns_wst=cap_returns,
                                      max_transfers_wst=cap_transfers, progress=plain)
         except BaseException as err:
+            _past_change_control(err)
             if plain.get("ledger_written"):
                 _spent_on_a_raised_cycle(consumed, vsb_id, source, err)
             else:
@@ -1096,6 +1151,7 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
         report = metab.run_cycle(revenue, costs, reserve_rate, max_returns_wst=cap_returns,
                                  max_transfers_wst=cap_transfers, progress=progress)
     except BaseException as err:
+        _past_change_control(err)
         why = f"{type(err).__name__}: {str(err)[:160]}"
         written = bool(progress.get("ledger_written"))
         events_back: Optional[bool] = None
@@ -1115,7 +1171,8 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
             note = "the cycle wrote part of its ledger: its events stay consumed and are never distributed again"
         else:
             lost = ([] if events_back else ["some of its events"]) + [k.replace("_", " ") for k, ok in intake_back.items() if not ok]
-            note = ("the cycle wrote nothing: its events and the intake it drained were given back" if not lost else
+            note = ("the cycle wrote nothing: what it had taken (its events, and any intake it drained) was given back"
+                    if not lost else
                     "the cycle wrote nothing, but " + " and ".join(lost) + " could not be given back (see the "
                     "give-back records)")
         _ueg_log({"type": "economy.cycle_raised", "vsb_id": vsb_id, "source": source, "error": why,

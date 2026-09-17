@@ -7,13 +7,132 @@ money moves. The ledger backs the economic metabolism's statements and audit.
 from __future__ import annotations
 
 import json
+import math
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
+from agentic_core.config import atomic_write_json, data_path, store_lock
 from typing import Any, Dict, List, Optional
 
 _STORE = data_path("economy")
+
+
+class LedgerUnavailable(RuntimeError):
+    """W468 (register FU-041) — a VSB's ledger file exists but cannot be read whole (not UTF-8, not JSON, not a ledger's
+    shape, or unreadable on disk). Nothing is written to it: the tolerant loader it replaces read such a file as EMPTY
+    books, and the next posting saved those empty books over the real ones. (Deliberately not a ValueError: the transfer
+    route reads ValueError as a refused funds check.)"""
+
+
+class LedgerWriteRefused(RuntimeError):
+    """W468 (refutation) — a write would save books in a shape the strict read refuses (e.g. a posting that overflows a
+    balance to Infinity): nothing is saved. The writer keeps the reader's shape, so the ledger's own writes can never
+    freeze it."""
+
+
+def _read_ledger_file(path: Path) -> bytes:
+    """The ledger's bytes. A Windows reader can meet PermissionError while another process replaces the file
+    (os.replace), so a few retries come first."""
+    for attempt in range(5):
+        try:
+            return path.read_bytes()
+        except (PermissionError, FileNotFoundError):
+            if attempt == 4:
+                raise
+            time.sleep(0.05)
+    raise PermissionError(str(path))
+
+
+def _new_books(vsb_id: str) -> Dict[str, Any]:
+    return {"vsb_id": vsb_id, "currency": "WST", "entries": [],
+            "balances": {a: 0.0 for a in ACCOUNTS},
+            "postings": [], "accounts": {}, "closes": []}
+
+
+def _number_ok(v: Any) -> bool:
+    if not isinstance(v, (int, float)) or isinstance(v, bool):
+        return False
+    try:
+        return math.isfinite(v)
+    except OverflowError:          # an integer too large for a float is no amount any writer produces
+        return False
+
+
+def _shape_problem(data: Any) -> Optional[str]:
+    """What makes a parsed file not a ledger this code can post to, or None. A key that is present must be
+    well-formed; a missing key takes its default (ledgers written before a key existed stay readable)."""
+    if not isinstance(data, dict):
+        return f"not a ledger object ({type(data).__name__})"
+    entries = data.get("entries", [])
+    if not (isinstance(entries, list) and all(isinstance(e, dict) for e in entries)):
+        return "'entries' is not a list of entries"
+    for key in ("balances", "accounts"):
+        book = data.get(key, {})
+        if not isinstance(book, dict):
+            return f"'{key}' is not an account map"
+        bad = [k for k, v in book.items() if not _number_ok(v)]
+        if bad:
+            return f"'{key}' holds a non-finite or non-numeric balance ({str(bad[0])[:40]})"
+    postings = data.get("postings", [])
+    if not isinstance(postings, list):
+        return "'postings' is not a list"
+    for i, p in enumerate(postings):
+        if not (isinstance(p, dict) and isinstance(p.get("debit"), str) and isinstance(p.get("credit"), str)
+                and _number_ok(p.get("amount"))):
+            return f"posting {i} is not a balanced posting (debit, credit, finite amount)"
+    # W468 (refutation) — a key is defaulted only where some writer could have left it out: postings and accounts have
+    # always been written together (W256), entries with balances, and a period close's postings with its close marker.
+    # Defaulting them instead read books whose map was lost as EMPTY double-entry books.
+    if postings and "accounts" not in data:
+        return "postings without the 'accounts' they were posted to"
+    if entries and "balances" not in data:
+        return "entries without the 'balances' they were recorded to"
+    if "closes" not in data and any(str(p.get("memo") or "").startswith("period close") for p in postings):
+        return "period-close postings without the 'closes' that mark them"
+    closes = data.get("closes", [])
+    if not isinstance(closes, list):
+        return "'closes' is not a list"
+    for i, c in enumerate(closes):
+        idx = c.get("posting_index") if isinstance(c, dict) else None
+        if not (isinstance(idx, int) and not isinstance(idx, bool) and 0 <= idx <= len(postings)):
+            return f"close {i} does not name a posting index within the postings"
+    return None
+
+
+def read_strict(path: Path, vsb_id: str) -> Dict[str, Any]:
+    """W468 (register FU-041) — THE ledger read. A file that does not exist is new, empty books; a file that exists is
+    read whole or refused (LedgerUnavailable) — never answered with empty books or a valid prefix."""
+    path = Path(path)
+    try:
+        if not path.exists():
+            return _new_books(vsb_id)
+        raw = _read_ledger_file(path)
+    except FileNotFoundError as err:
+        # gone for every retry: new books only when it is really gone (a file seen during a replace is not "no ledger")
+        try:
+            gone = not path.exists()
+        except OSError:
+            gone = False
+        if gone:
+            return _new_books(vsb_id)
+        raise LedgerUnavailable(f"{vsb_id}'s ledger could not be read ({type(err).__name__})") from err
+    except OSError as err:
+        raise LedgerUnavailable(f"{vsb_id}'s ledger could not be read ({type(err).__name__})") from err
+    try:
+        data = json.loads(raw.decode("utf-8"))
+        problem = _shape_problem(data)
+    except Exception as err:
+        # W468 (refutation) — not UTF-8, not JSON, nested too deep to parse (RecursionError) or a number no float holds:
+        # every way a file cannot be read whole is the same refusal (these used to escape and make construction raise)
+        raise LedgerUnavailable(f"{vsb_id}'s ledger could not be read whole ({type(err).__name__}: "
+                                f"{str(err)[:80]})") from err
+    if problem:
+        raise LedgerUnavailable(f"{vsb_id}'s ledger could not be read whole: {problem}")
+    fresh = _new_books(vsb_id)
+    for key in ("vsb_id", "currency", "entries", "balances", "postings", "accounts", "closes"):
+        data.setdefault(key, fresh[key])
+    return data
+
 
 # Chart of accounts (simplified, biomimetic-aware).
 ACCOUNTS = ["revenue", "reserves", "owner", "self_investment",
@@ -54,19 +173,41 @@ class VirtualLedger:
         self.vsb_id = vsb_id
         _STORE.mkdir(parents=True, exist_ok=True)
         self.path = _STORE / f"{vsb_id}_ledger.json"
-        self._data = self._load()
+        # W468 (register FU-041) — construction never raises (entity establishment builds a metabolism only for its
+        # template): an unreadable ledger is held as `load_error`, every reader says so, and every write re-reads
+        # strictly under the lock and is refused.
+        self.load_error: Optional[str] = None
+        try:
+            self._data = read_strict(self.path, vsb_id)
+        except LedgerUnavailable as err:
+            self.load_error = str(err)
+            self._data = _new_books(vsb_id)
 
     def _load(self) -> Dict[str, Any]:
-        # W442 — the tolerant loader (quarantine, never silent-wipe): a half-written file used to
-        # reset the BOOKS to empty and the next save made the wipe permanent.
-        data = load_json_tolerant(self.path, None) if self.path.exists() else None
-        if isinstance(data, dict):
-            return data
-        return {"vsb_id": self.vsb_id, "currency": "WST", "entries": [],
-                "balances": {a: 0.0 for a in ACCOUNTS},
-                "postings": [], "accounts": {}, "closes": []}
+        # W468 (register FU-041) — strict. The W442 tolerant loader's comment said "quarantine, never silent-wipe", but a
+        # file it could not parse (a BOM, a truncation, a list, UTF-16, a sharing violation) read as EMPTY books and the
+        # next posting saved them over the real ones — one heartbeat cycle wiped a ledger by itself.
+        return read_strict(self.path, self.vsb_id)
+
+    def require_readable(self) -> None:
+        """Raise LedgerUnavailable when this ledger could not be read at construction."""
+        if self.load_error:
+            raise LedgerUnavailable(self.load_error)
+
+    def check_readable(self) -> None:
+        """A fresh strict read (no lock): raises LedgerUnavailable when the file cannot be read whole now."""
+        try:
+            read_strict(self.path, self.vsb_id)
+        except LedgerUnavailable as err:
+            self.load_error = str(err)
+            raise
 
     def _save(self) -> None:
+        # W468 (refutation) — the writer keeps the reader's shape: two ordinary cycles could overflow a balance to
+        # Infinity, and the strict read then refused the ledger's own file for good
+        problem = _shape_problem(self._data)
+        if problem:
+            raise LedgerWriteRefused(f"{self.vsb_id}'s ledger was not saved: the books would hold {problem}")
         atomic_write_json(self.path, self._data)
 
     @contextmanager
@@ -74,11 +215,17 @@ class VirtualLedger:
         """W442 — the money store had NO lock: /transfer, /close-period and heartbeat cycles all
         construct independent instances on the same file, and last-writer-wins silently lost
         postings (the shared-store concurrency class). Every mutation now re-loads INSIDE the
-        cross-process lock — the __init__ snapshot is never trusted for a write."""
+        cross-process lock — the __init__ snapshot is never trusted for a write. W468: the re-load is
+        strict, so a ledger that cannot be read whole raises here and nothing is saved over it."""
         with store_lock(self.path):
-            self._data = self._load()
+            self._data = read_strict(self.path, self.vsb_id)
+            self.load_error = None
             yield
-            self._save()
+            try:
+                self._save()
+            except LedgerWriteRefused:
+                self._data = read_strict(self.path, self.vsb_id)     # this instance keeps the books as saved
+                raise
 
     # ── double-entry core ─────────────────────────────────────────────────────
     def post(self, debit: str, credit: str, amount: float, memo: str = "",
@@ -133,6 +280,7 @@ class VirtualLedger:
     def trial_balance(self) -> Dict[str, Any]:
         """The double-entry invariant, GENUINELY verified: the sum of debit-normal account balances
         (assets + expenses) must equal the sum of credit-normal balances (income + equity + liabilities)."""
+        self.require_readable()
         accts = self._data.get("accounts", {})
         debit_side = round(sum(v for k, v in accts.items() if CHART.get(k, "asset") in _DEBIT_NORMAL), 2)
         credit_side = round(sum(v for k, v in accts.items() if CHART.get(k, "asset") not in _DEBIT_NORMAL), 2)
@@ -141,6 +289,7 @@ class VirtualLedger:
                 "postings": len(self._data.get("postings", []))}
 
     def balances(self) -> Dict[str, float]:
+        self.require_readable()
         return dict(self._data["balances"])
 
     # ── statements + period close (§9.1: P&L · balance sheet · cash flow, CFO-prepared) ──
@@ -151,6 +300,7 @@ class VirtualLedger:
     def statements(self) -> Dict[str, Any]:
         """The three statements for the CURRENT period (postings since the last close), computed ONLY
         from the real double-entry postings — nothing estimated, nothing fabricated."""
+        self.require_readable()
         start = self._period_start_index()
         period = self._data.get("postings", [])[start:]
 
@@ -231,10 +381,18 @@ class VirtualLedger:
                 "retained_earnings_wst": round(self._data.get("accounts", {}).get("retained_earnings", 0.0), 2)}
 
     def statement(self) -> Dict[str, Any]:
+        if self.load_error:
+            # W468 — no figures at all rather than zeros: empty books read as "this entity has nothing"
+            return {"vsb_id": self.vsb_id, "currency": "WST (virtual)", "available": False,
+                    "error": self.load_error,
+                    "note": "this ledger could not be read whole, so no balance is shown and nothing is posted to it "
+                            "until it can be",
+                    "disclaimer": "Virtual/simulated WST units — not real money."}
         bal = self._data["balances"]
         return {
             "vsb_id": self.vsb_id,
             "currency": "WST (virtual)",
+            "available": True,
             "balances": bal,
             # W442 — TWO BOOKS, disclosed: 'balances' is the legacy cumulative intake/distribution
             # view (record()-driven flows only) — transfers out and period closes never touch it,

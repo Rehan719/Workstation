@@ -19,14 +19,16 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
+from agentic_core.economy.ledger import LedgerUnavailable
 
 _PENDING_STORE = data_path("economy_pending_transfers.json")
 logger = logging.getLogger(__name__)
 
 
-class SenderLedgerUnavailable(RuntimeError):
+class SenderLedgerUnavailable(LedgerUnavailable):
     """W466 (third refutation) — the sender's ledger exists but cannot be read whole: no transfer is posted (a tolerant
-    read would debit against a valid prefix while a stranded debit on the unreadable part stays hidden)."""
+    read would debit against a valid prefix while a stranded debit on the unreadable part stays hidden). W468: one kind
+    of LedgerUnavailable, raised from the ledger's own strict read."""
 
 
 class TransferNotDebited(RuntimeError):
@@ -137,12 +139,18 @@ def _validate_shape(from_vsb: str, to_vsb: str, amount: float) -> float:
 def validate_transfer(from_vsb: str, to_vsb: str, amount: float) -> float:
     """Side-effect-free validation (callable BEFORE the governance gate so errors map to clean HTTP
     codes). Raises ValueError (→400) on bad amounts/self-transfer/insufficient funds, KeyError
-    (→404) when the receiver is not a registered living VSB. Returns the rounded amount."""
+    (→404) when the receiver is not a registered living VSB, SenderLedgerUnavailable (→503) when the
+    sender's ledger cannot be read whole. Returns the rounded amount."""
     # W442 — NaN passed EVERY guard below (nan <= 0 and reserve < nan are both False), and one
     # NaN posting set reserve_fund=NaN, permanently disabling the insufficient-funds check.
     amount = _validate_shape(from_vsb, to_vsb, amount)
     from agentic_core.economy.ledger import VirtualLedger
-    reserve = round((VirtualLedger(from_vsb)._data.get("accounts") or {}).get("reserve_fund", 0.0), 2)
+    sender = VirtualLedger(from_vsb)
+    if sender.load_error:
+        # W468 (register FU-041) — an unreadable ledger read as empty books, so this answered "insufficient funds:
+        # 0.0" (a 400) for an entity whose funds are unknown
+        raise SenderLedgerUnavailable(f"{sender.load_error}; nothing was debited")
+    reserve = round((sender._data.get("accounts") or {}).get("reserve_fund", 0.0), 2)
     if reserve < amount:
         raise ValueError(f"Insufficient virtual funds: {from_vsb} reserve fund holds {reserve} WST "
                          f"< transfer {amount} WST.")
@@ -184,13 +192,12 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
         raise ValueError("A VSB cannot transfer to itself.")
     _receiver_id_ok(to_vsb, transfer_id)
     with store_lock(sender.path):
-        if sender.path.exists():
-            try:
-                _read_ledger_strict(sender.path)
-            except Exception as err:
-                raise SenderLedgerUnavailable(f"{from_vsb}'s ledger could not be read ({type(err).__name__}); nothing "
-                                              "was debited") from err
-        sender._data = sender._load()
+        # W468 — the ledger's own strict read (one reader): the books this debit is checked and posted against are
+        # the whole file, or nothing is posted
+        try:
+            sender._data = sender._load()
+        except LedgerUnavailable as err:
+            raise SenderLedgerUnavailable(f"{err}; nothing was debited") from err
         reserve = round((sender._data.get("accounts") or {}).get("reserve_fund", 0.0), 2)
         already = any(_posting_names(p, transfer_id) for p in sender._data.get("postings", []))
         if already:
@@ -302,20 +309,11 @@ def _ledger_path(vsb_id: str):
 
 
 def _read_ledger_strict(path) -> Dict[str, Any]:
-    """A ledger read that raises rather than answering empty books (the ledger's own loader is tolerant)."""
-    import json as _json
-    data = None
-    for attempt in range(5):
-        try:
-            data = _json.loads(path.read_text(encoding="utf-8"))
-            break
-        except PermissionError:
-            if attempt == 4:
-                raise
-            time.sleep(0.05)
-    if not isinstance(data, dict):
-        raise ValueError(f"{path.name} is not a ledger object")
-    return data
+    """A ledger read that raises (LedgerUnavailable) rather than answering empty books. W468: the ledger's own strict
+    read, shape-checked — this module no longer keeps a second reader of its own."""
+    from agentic_core.economy.ledger import read_strict
+    name = getattr(path, "name", str(path))
+    return read_strict(path, name[: -len("_ledger.json")] if name.endswith("_ledger.json") else name)
 
 
 def _close_receiver_leg(from_vsb: str, transfer_id: str) -> bool:

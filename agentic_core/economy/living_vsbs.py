@@ -85,6 +85,21 @@ def _update_entry(vsb_id: str, mutate) -> Optional[Dict[str, Any]]:
         return dict(entry)
 
 
+def _ledger_hold_text(vsb_id: Any, decision: Any = None) -> str:
+    """W468 (refutation) — the hold is what the LAST visit found; the ledger is read now, so a repaired ledger is never
+    still described as unreadable. A Change Control decision behind it is named (sixth refutation)."""
+    behind = (f" — and a Change Control decision ({str(decision).replace('_', ' ')}) stands behind it" if decision else "")
+    try:
+        from agentic_core.economy.ledger import VirtualLedger
+        readable = VirtualLedger(str(vsb_id)).load_error is None
+    except Exception:
+        readable = False
+    if readable:
+        return ("its ledger could not be read whole at the last visit and reads whole now — the next visit tries its "
+                "cycle again" + behind)
+    return "its ledger could not be read whole — no cycle runs and nothing is posted to it until it can be" + behind
+
+
 def list_living() -> Dict[str, Any]:
     """§11 × §13 (W421) — each row now carries the entity's LIVE compliance standing and any economic
     hold it causes. Both existed only as side effects before: `_latest_screen` was read by
@@ -113,7 +128,14 @@ def list_living() -> Dict[str, Any]:
             "reason": r.get("last_hold"),
             "consequence": ("distributions are held — no economy cycle runs until a re-screen clears it"
                             if r.get("last_hold") == "compliance_fail_hold"
-                            else ("this entity's cycle is held by governance" if r.get("last_hold") else None)),
+                            else (_ledger_hold_text(r.get("vsb_id"), r.get("decision_hold"))
+                                  if r.get("last_hold") == "ledger_unavailable"
+                                  else ("this entity's cycle is held by governance" if r.get("last_hold") else None))),
+            # W468 — the last visit's raise, when that is what happened (a raise is not a hold)
+            "last_visit_error": r.get("last_error"),
+            # W468 (sixth refutation) — a Change Control decision (pending or already decided) the ledger hold stands
+            # in front of
+            "standing_decision": r.get("decision_hold"),
         }
     return {"living_vsbs": rows, "total": len(rows),
             "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy "
@@ -136,6 +158,10 @@ def operate_one() -> Optional[Dict[str, Any]]:
     return operate_vsb(target["vsb_id"])
 
 
+# W468 (refutations 2–4) — holds that record an Owner's decision (or a hold awaiting one): a heartbeat visit that raises
+# does not change them. Every other hold is an earlier visit's outcome, which a later visit's raise supersedes.
+_DECISION_HOLDS = frozenset({"held_for_change_control", "rejected_by_change_control", "governance_hold"})
+
 DEV_SPEND_WST = 50.0   # §12 (W330) — the per-action development cost drawn from self_investment
 
 
@@ -152,6 +178,21 @@ def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_W
         reg = d.get(vsb_id) or {}
         m = EconomicMetabolism(vsb_id, reg.get("entity_type", "waqf_ltd_hybrid"),
                                reg.get("owner", "Rehan"))
+        if m.ledger.load_error:
+            # W468 (register FU-041) — an unreadable ledger read as empty books, and this reported "balance empty — ran
+            # unfunded" for a fund whose balance is unknown
+            rec = {"vsb_id": vsb_id, "purpose": purpose[:120], "requested_wst": float(amount), "spent_wst": 0.0,
+                   "funded": False, "ledger_unavailable": True, "error": m.ledger.load_error[:200],
+                   "note": "the entity's ledger could not be read whole, so nothing was drawn from self_investment and "
+                           "whether the fund could have paid for this action is unknown"}
+            try:
+                # its own type (refutation): the audit views read "self_investment_spend" as a clean, recorded spend
+                from agentic_core.economy.governance import _ueg_log
+                _ueg_log({"type": "economy.self_investment_spend_refused", **rec,
+                          "disclaimer": "Virtual/simulated WST — no real funds moved."})
+            except Exception:
+                pass
+            return rec
         bal = float((m.ledger.statement().get("balances") or {}).get("self_investment", 0.0))
         spent = round(min(max(bal, 0.0), float(amount)), 6)
         if spent > 0:
@@ -173,7 +214,22 @@ def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_W
             pass
         return rec
     except Exception as exc:
-        return {"vsb_id": vsb_id, "error": str(exc)[:160], "funded": False}
+        from agentic_core.economy.ledger import LedgerUnavailable, LedgerWriteRefused
+        out = {"vsb_id": vsb_id, "error": str(exc)[:160], "funded": False,
+               **({"ledger_unavailable": True} if isinstance(exc, LedgerUnavailable) else {}),
+               **({"ledger_write_refused": True} if isinstance(exc, LedgerWriteRefused) else {})}
+        if isinstance(exc, (LedgerUnavailable, LedgerWriteRefused)):
+            # W468 (second refutation) — refused at its write (the ledger broke after the balance was read): recorded,
+            # never only returned to a caller that discards it
+            try:
+                from agentic_core.economy.governance import _ueg_log
+                _ueg_log({"type": "economy.self_investment_spend_refused", **out, "purpose": purpose[:120],
+                          "requested_wst": float(amount), "spent_wst": 0.0,
+                          "note": "the spend was refused at its ledger write; nothing was drawn from self_investment",
+                          "disclaimer": "Virtual/simulated WST — no real funds moved."})
+            except Exception:
+                pass
+        return out
 
 
 def _latest_screen(vsb_id: str) -> Optional[str]:
@@ -200,7 +256,8 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     if _latest_screen(vsb_id) == "fail":
         target["last_operated"] = _now()
         target["last_hold"] = "compliance_fail_hold"
-        _update_entry(vsb_id, lambda e: e.update(last_operated=target["last_operated"], last_hold="compliance_fail_hold"))
+        _update_entry(vsb_id, lambda e: (e.update(last_operated=target["last_operated"], last_hold="compliance_fail_hold"),
+                                         e.pop("last_error", None)))
         try:
             from agentic_core.organism.biobus import biobus
             biobus.fire_signal("reflex", "economy.compliance_hold",
@@ -217,6 +274,7 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
                 "held": "compliance_fail_hold",
                 "note": "latest §11 screen is FAIL — distributions held until a re-screen clears it"}
+    cycle_done: Dict[str, Any] = {"report": None, "booked": False, "held": None, "held_booked": False}
     try:
         # §3 — the ALWAYS-ON path is governed too: constitutional pre-gate + materiality hold +
         # per-cycle UEG split logging (previously this path ran completely ungated + unlogged).
@@ -242,7 +300,18 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             gov = res.get("governance") or {}
             target["last_operated"] = _now()
             target["last_hold"] = str(gov.get("status") or "governance_hold")
-            _update_entry(vsb_id, lambda e: e.update(last_operated=target["last_operated"], last_hold=target["last_hold"]))
+            def _held(e: Dict[str, Any]) -> None:
+                # W468 (sixth refutation) — the row has one hold: a Change Control decision an unreadable ledger now
+                # stands in front of is kept apart (decision_hold), never overwritten
+                prior = e.get("last_hold") if e.get("last_hold") in _DECISION_HOLDS else e.get("decision_hold")
+                e.pop("decision_hold", None)
+                if target["last_hold"] == "ledger_unavailable" and prior:
+                    e["decision_hold"] = prior
+                e.update(last_operated=target["last_operated"], last_hold=target["last_hold"])
+                e.pop("last_error", None)
+            cycle_done["held"] = _held           # (seventh refutation) a raise from here on is this hold's bookkeeping
+            _update_entry(vsb_id, _held)
+            cycle_done["held_booked"] = True
             try:
                 preserved = peek_pending(vsb_id)["revenue"]      # what is ACTUALLY pending now (never a stale peek)
             except Exception:
@@ -251,8 +320,10 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                     "governance": gov, "cycle_ran": False,
                     "pending_preserved_wst": preserved,
                     "note": ("recognised revenue events remain PENDING (unconsumed) while held"
-                             if gov.get("status") not in ("intake_unavailable", "intake_consumed_elsewhere") else
+                             if gov.get("status") not in ("intake_unavailable", "intake_consumed_elsewhere",
+                                                          "ledger_unavailable") else
                              gov.get("note") or "no cycle ran; recognised revenue events were not distributed")}
+        cycle_done["report"] = report       # the cycle ran: a later raise is its bookkeeping, not a failed visit
         # W467 (register FU-022) — the governed cycle consumed exactly what it ran on BEFORE it ran (W463: an approval
         # releases the events it was filed for); this path no longer consumes after the ledger has posted
         pend = res.get("consumed") or {"events": 0, "revenue": 0.0, "costs": 0.0}
@@ -265,8 +336,11 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             e["operating_cycles"] = int(e.get("operating_cycles", 0)) + 1
             e["last_operated"] = stamp
             e.pop("last_hold", None)   # a real cycle ran — no standing hold implied
+            e.pop("last_error", None)
+            e.pop("decision_hold", None)
             e["last_distributable"] = report.get("distributable_profit")
         fresh_entry = _update_entry(vsb_id, _ran)
+        cycle_done["booked"] = True
         _ran(target)
         if fresh_entry:
             target["operating_cycles"] = fresh_entry["operating_cycles"]
@@ -289,4 +363,69 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                                   else "no_activity_maintenance_cycle"),
                 "governance": (res.get("governance") or {}).get("status")}
     except Exception as e:
+        # W468 — a visit that RAISED is still a visit: last_operated used to advance only on a cycle or a hold, so the
+        # least-recently-operated pick chose the same failing entity on every beat and no other entity was tended again
+        why = f"{type(e).__name__}: {str(e)[:160]}"
+        stamp = _now()
+        if cycle_done["report"] is not None:
+            # (sixth refutation) the cycle RAN and posted; only the roster's bookkeeping of the visit raised. The row records
+            # the cycle (the bookkeeping retried once), never a failed visit or a hold the cycle got past.
+            if not cycle_done["booked"]:
+                done = cycle_done["report"]
+
+                def _late(en: Dict[str, Any]) -> None:
+                    en["operating_cycles"] = int(en.get("operating_cycles", 0)) + 1
+                    en["last_operated"] = stamp
+                    for key in ("last_hold", "last_error", "decision_hold"):
+                        en.pop(key, None)
+                    en["last_distributable"] = done.get("distributable_profit")
+                try:
+                    _update_entry(vsb_id, _late)
+                except Exception:
+                    pass
+            return {"vsb_id": vsb_id, "error": str(e)[:160], "cycle_ran": True,
+                    "note": "the cycle ran and posted; only the roster's bookkeeping of the visit raised"}
+        if cycle_done["held"] is not None:
+            # (seventh refutation) the visit FOUND a hold; only the roster's bookkeeping of it raised. The row records that
+            # hold (the bookkeeping retried once), never the previous visit's hold or a failed visit.
+            if not cycle_done["held_booked"]:
+                try:
+                    _update_entry(vsb_id, cycle_done["held"])
+                except Exception:
+                    pass
+            return {"vsb_id": vsb_id, "error": str(e)[:160], "cycle_ran": False, "held": target.get("last_hold"),
+                    "note": "the visit found a hold; only the roster's bookkeeping of it raised"}
+        # the ledger as it reads NOW decides the ledger hold (the raise may have come before this visit read it)
+        try:
+            from agentic_core.economy.ledger import VirtualLedger
+            unreadable_now: Optional[bool] = VirtualLedger(vsb_id).load_error is not None
+        except Exception:
+            unreadable_now = None
+
+        past_cc = bool(getattr(e, "past_change_control", False))     # the cycle got past the materiality gate
+
+        def _raised(en: Dict[str, Any]) -> None:
+            # (refutations 2–5) the row keeps only what is still true after a visit that raised: a ledger hold exactly
+            # while the ledger cannot be read (it stops every cycle first); a Change Control hold unless this visit got
+            # past Change Control; a ledger hold when the fresh read itself failed. Anything else — a compliance hold
+            # (reaching the cycle proves the screen is not FAIL), an intake or gate hold — is an earlier outcome this
+            # raise supersedes (last_error says the raise).
+            en.update(last_operated=stamp, last_error=why)
+            hold = en.get("last_hold")
+            # (sixth refutation) a Change Control decision — the hold itself, or one kept behind a ledger hold — stands
+            # unless this visit got past Change Control; it is kept apart while the ledger hold is in front of it
+            decision = None if past_cc else (hold if hold in _DECISION_HOLDS else en.get("decision_hold"))
+            en.pop("decision_hold", None)
+            if unreadable_now or (unreadable_now is None and hold == "ledger_unavailable"):
+                en["last_hold"] = "ledger_unavailable"
+                if decision:
+                    en["decision_hold"] = decision
+            elif decision:
+                en["last_hold"] = decision
+            else:
+                en.pop("last_hold", None)
+        try:
+            _update_entry(vsb_id, _raised)
+        except Exception:
+            pass
         return {"vsb_id": vsb_id, "error": str(e)[:160]}

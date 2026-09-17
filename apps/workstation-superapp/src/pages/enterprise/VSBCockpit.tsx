@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { provenanceBadge, provenanceMapBadge } from '../../lib/api';
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
@@ -32,6 +32,9 @@ export const VSBCockpit: React.FC = () => {
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
   const [vsbFilter, setVsbFilter] = useState('');
   const [selected, setSelected] = useState<string>('');
+  // W468 (refutation) — the entity on screen now: a late ledger or cycle answer for a previously selected entity is dropped
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
   const [detail, setDetail] = useState<Dict | null>(null);
   const [plan, setPlan] = useState<Dict | null>(null);
   const [objOrch, setObjOrch] = useState('');                 // objective id being delivered by the Chief
@@ -57,6 +60,18 @@ export const VSBCockpit: React.FC = () => {
   const [pendingImage, setPendingImage] = useState<{ b64: string; name: string } | null>(null);
   const [chatLang, setChatLang] = useState('');   // '' = English; otherwise respond in this language
   const [ledger, setLedger] = useState<Dict | null>(null);
+  // W468 — a ledger that could not be loaded used to read "No ledger yet — run an economic cycle to seed it"
+  const [ledgerErr, setLedgerErr] = useState('');
+  const serverDetail = (e: any, fallback: string): string => {
+    const d = e?.response?.data?.detail;
+    if (typeof d === 'string') return d;
+    // a refused input (422) carries a list of reasons, not a string
+    const reasons = Array.isArray(d)
+      ? d.map((x: any) => x?.msg && `${Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: ` : ''}${x.msg}`)
+        .filter(Boolean).join('; ') : '';
+    if (reasons) return `${fallback}: ${reasons}.`;
+    return e?.response ? `${fallback} (HTTP ${e.response.status}).` : `${fallback} — backend unreachable.`;
+  };
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
   const [cycling, setCycling] = useState(false);
   const [cycleRevenue, setCycleRevenue] = useState('');
@@ -102,12 +117,17 @@ export const VSBCockpit: React.FC = () => {
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null); setMessages([]); setLastCycle(null);
+    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setActErr('');
+    const issuedFor = selected;
     Promise.all([
       axios.get(`/api/v1/vsb/${selected}`).then(r => r.data).catch(() => null),
       axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => r.data).catch(() => null),
-      axios.get(`/api/v1/economy/ledger/${selected}`).then(r => r.data).catch(() => null),
-    ]).then(([d, p, l]) => { setDetail(d); setPlan(p); setLedger(l); setLoading(false); });
+      axios.get(`/api/v1/economy/ledger/${selected}`).then(r => ({ data: r.data, err: '' }))
+        .catch(e => ({ data: null, err: serverDetail(e, 'Could not load the ledger') })),
+    ]).then(([d, p, l]) => {
+      if (issuedFor !== selectedRef.current) return;
+      setDetail(d); setPlan(p); setLedger(l.data); setLedgerErr(l.err); setLoading(false);
+    });
     loadDeliverables(selected);
     loadShipState(selected);
   }, [selected]);
@@ -254,19 +274,26 @@ export const VSBCockpit: React.FC = () => {
 
   const runCycle = async () => {
     if (!selected || cycling) return;
-    setCycling(true);
+    const issuedFor = selected;
+    setCycling(true); setActErr('');
     try {
       // W414 — this posted only { vsb_id }, and the backend defaulted revenue to 10000.0. Every
       // click therefore ran a cycle on ten thousand WST that nobody earned, writing the resulting
       // distributions to the real ledger. The figure is now supplied explicitly, and zero is zero.
       const r = await axios.post('/api/v1/economy/cycle', {
-        vsb_id: selected,
+        vsb_id: issuedFor,
         revenue: Number(cycleRevenue) || 0,
       });
-      setLastCycle(r.data.cycle || null);
-      const l = await axios.get(`/api/v1/economy/ledger/${selected}`).then(x => x.data).catch(() => null);
-      if (l) setLedger(l);
-    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
+      const l = await axios.get(`/api/v1/economy/ledger/${issuedFor}`).then(x => ({ data: x.data, err: '' }))
+        .catch(e => ({ data: null, err: serverDetail(e, 'Could not load the ledger') }));
+      if (issuedFor === selectedRef.current) {
+        setLastCycle(r.data.cycle || null);
+        setLedger(l.data); setLedgerErr(l.err);
+      }
+    } catch (e: any) {
+      // W344 · W468 — the server's reason, when it gave one; named for its entity when another is on screen by now
+      setActErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));
+    }
     setCycling(false);
   };
 
@@ -718,7 +745,8 @@ export const VSBCockpit: React.FC = () => {
                     </div>
                     <p className="text-[10px] text-slate-500 mt-3">Total revenue: <span className="text-white font-bold">{Number(ledger.total_revenue || 0).toLocaleString()}</span> · distributed: <span className="text-white font-bold">{Number(ledger.total_distributed || 0).toLocaleString()}</span> · entries: {ledger.entry_count ?? 0}</p>
                   </>
-                ) : <p className="text-slate-600 text-xs">No ledger yet — run an economic cycle to seed it.</p>}
+                ) : ledgerErr ? <p role="alert" className="text-vital text-xs font-bold" data-testid="ledger-error">{ledgerErr}</p>
+                  : <p className="text-slate-600 text-xs">No ledger yet — run an economic cycle to seed it.</p>}
                 {ledger?.disclaimer && <p className="text-[9px] text-slate-600 italic mt-3">{ledger.disclaimer}</p>}
               </Card>
 

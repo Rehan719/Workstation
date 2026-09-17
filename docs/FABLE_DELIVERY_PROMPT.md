@@ -40,7 +40,7 @@
 > `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task, slotted NEXT, to a
 > plan item, or OWNER; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
 > primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
-> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W467) ·
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W468) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -178,7 +178,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W467 (467 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W468 (468 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -186,7 +186,7 @@ The dominant themes: UI reach/wiring (the largest — a very large fraction of w
 refutation · the §5 org · docs/canon reconciliation · economy · output · cleanup · organism ·
 honesty/fabrication · domains. Two engineering classes consumed whole rounds late: tenant
 isolation (nine surfaces found open one at a time, W252→W443) and shared-store concurrency (each
-round finding one more unlocked writer, W241→W467).
+round finding one more unlocked writer, W241→W468).
 
 FOUR ERAS: build-out (W1–W126, the fabric, domains, org, cockpit, economy, repo/site/app) ·
 convergence and cleanup (W127–W175, five Owner-directed reviews archived ~20 incoherent pages, ~460
@@ -211,7 +211,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W467: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W468: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -239,7 +239,8 @@ unpaid settlement said as what it was, and the owner-payments store locked, atom
 as empty (W465); then a transfer whose sender was debited and whose receiver was never credited found and completed
 once, and every failed transfer answered from the ledger (W466); then a heartbeat cycle that distributes its
 recognised revenue once — consumed before it runs, given back only when nothing was written — on a revenue store
-refused rather than overwritten when unreadable (W467).
+refused rather than overwritten when unreadable (W467); then a VSB ledger that cannot be read whole refused by every
+writer and said so on every surface, never replaced by empty books (W468).
 The first twelve Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
@@ -610,7 +611,7 @@ half of P2 depend on; 1.3 and 1.5 are where users land. P2 follows (P2.1 unblock
 content that P3 builds on). P3 items marked OWNER RULING are put to the Owner with evidence at
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
-WHERE THE PLAN STANDS (updated W467, 2026-09-17 — every round that closes an item or runs between
+WHERE THE PLAN STANDS (updated W468, 2026-09-17 — every round that closes an item or runs between
 items updates this block in the same commit; nothing checks that what it says is true, so keep it true
 by hand, and never start a line here with one space and an item id — that is read as a plan item and
 fails the suite).
@@ -658,8 +659,17 @@ fails the suite).
           counts as run only once it writes, too. The revenue store is read strictly (refused, never
           overwritten), its cap keeps pending and in-flight events, and a consume whose process stopped is
           given back by the stranded-consume pass. FU-048 registered.
+    W468  the register's NEXT row FU-041 (virtual WST): a VSB ledger is read strictly, one reader for every
+          module. A file that cannot be read whole is refused (LedgerUnavailable), never answered with empty
+          books or a valid prefix, and every write re-reads it under the lock and saves nothing. The writer
+          keeps the reader's shape (an overflowing posting is refused). Cycles are refused before any gate
+          (API 503/409, heartbeat ledger_unavailable, said once per outage on the UEG); the close, ledger and
+          board-pack routes answer 503, a transfer from an unreadable sender 503 with nothing debited. A
+          heartbeat visit that raises advances the rotation and says so, and the roster's hold follows what
+          is still true. Both economy pages show the server's reason. Eight refutation passes; FU-049 to
+          FU-066 registered (18).
   NEXT — the register's NEXT rows (FU-003, FU-004, FU-011, FU-017…FU-019, FU-021, FU-025…FU-028,
-    FU-031…FU-037, FU-039…FU-042, FU-045, FU-047, FU-048), then P1.13, then P1.14, then MILESTONE M1. FU-029 and FU-030 ride with P2.6.
+    FU-031…FU-037, FU-039, FU-040, FU-042, FU-045, FU-047…FU-066), then P1.13, then P1.14, then MILESTONE M1. FU-029 and FU-030 ride with P2.6.
   WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
     rulings, not register rows).
 
@@ -668,7 +678,7 @@ SCHEDULED FOLLOW-UPS — every task a round finds and does not do is a row in do
 added in the same commit (python scripts/followups.py add), slotted to the plan item whose round does
 it, NEXT (its own round), or OWNER (waits on an Owner decision; never scheduled). A round that marks a
 plan item "✅ DONE W###" closes or re-slots that item's rows first — the suite fails otherwise.
-Open 33 (33 scheduled, 0 high · 0 awaiting the Owner) · done 15 · dropped 0.
+Open 50 (50 scheduled, 0 high · 0 awaiting the Owner) · done 16 · dropped 0.
   NEXT — its own round, before P1.13
     FU-003 [medium] test_fabric_organism_systems_run_real is order-dependent — it fails when run alone (also at 1bde2eb0) and passes inside the full suite — it leans on state an earlier test leaves behind, so a green suite says nothing about it (found W459 (found in passing))
     FU-004 [medium] The compliance mandates docs claim ENFORCED on a file W460 deleted — docs/compliance/MANDATES.md and MANDATES_FINAL.md list 'GaaS-Validated Mutations — ENFORCED' in packages/shared/gaas.ts, which never validated anything and no longer exists; the other ENFORCED rows need the same reading (found W460 refutation (ruled out of that round's scope))
@@ -677,8 +687,13 @@ Open 33 (33 scheduled, 0 high · 0 awaiting the Owner) · done 15 · dropped 0.
     FU-034 [medium] A service contract can be offered to an entity that is not living, and nothing declines or cancels one — offer_contract never checks that the client and provider are registered living entities: the W465 probe offered a contract to a provider id that exists nowhere, accepted it, and delivered it (a whole provider-scoped org cascade ran — 15-25 minutes on a local model) before settle refused the transfer with 404. There is no decline for the provider or cancel for the client, so such a contract sits 'delivered' forever. Fix: validate both parties at offer (and again at accept), add decline/cancel with their own UEG events, and let the page offer them. (found W465 audit (read) and probe (reproduced))
     FU-035 [medium] A settlement's materiality approval is bound to the client-provider pair, not to the contract — A contract settlement goes through the transfer gate, which binds an approval to the sender, the counterparty and an amount ceiling (W463). Two material contracts between the same client and provider therefore share one hold identity: the Owner's approval of contract A's settlement releases contract B's settlement of an equal or smaller price if B settles first, and A is then asked again. Virtual WST. Fix: carry the contract id into the gate's action identity (source 'contract:<id>') so a hold, an approval and a rejection name exactly one contract. (found W465 audit (read))
     FU-036 [medium] A failed owner accrual is reported but never re-applied, so the Owner's balance stays short — Since W465 a cycle whose owner accrual fails says so (owner_accrual.accrued false, economy.owner_accrual_failed on the UEG, an error log) — but nothing re-applies the missing credit: the ledger shows the owner stage distributed while owner payments never received it. Fix: record the failed accrual durably (the UEG event carries vsb, amount and cycle), and reconcile on the next successful accrual or heartbeat — re-apply each unreconciled failure once, idempotent on its cycle id. (found W465 audit (read))
-    FU-041 [medium] A VSB ledger that cannot be read is replaced by empty books on the next posting — VirtualLedger's writers load tolerantly (ledger.py:59-81): a ledger with a BOM, or one that does not parse, reads as empty books, and the next posting writes them back — every posting and balance gone, including the transfer_out debits that settle retries and transfer replays read as evidence (reproduced: 2 postings became 1, reserve 495 became 1). The same class W465 closed for the pending-transfers, contract and owner-payments stores. Fix: a strict read for every writer (refuse, never overwrite) with the route answering 503. (found W466 pre-audit of FU-023/FU-022 (reproduced))
     FU-042 [medium] The constitutional ledger's chain is replaced when its file cannot be read — UEGLogger._read is tolerant (ueg.py:136-141): one log call on a chain file with a BOM or a parse failure replaced 5 nodes with 1 (reproduced) — the append-only, hash-chained audit trail every governance claim cites is silently restarted. Fix: a strict read in the writer that refuses (and reports the refusal to the caller, whose ueg_logged then reads false) rather than starting a new chain over the old one. (found W466 pre-audit of FU-023/FU-022 (reproduced))
+    FU-049 [medium] An unreadable compliance-history file lifts every FAIL hold — living_vsbs._latest_screen and list_living read vsb_compliance_history.json with load_json_tolerant: a file with a BOM (or one that does not parse) reads as {}, so operate_vsb sees no FAIL screen and runs distribution cycles for entities whose latest screen FAILED, and the roster shows them never screened. Since W468 a visit that raises also drops a compliance_fail_hold (reaching the cycle is taken as proof the screen is not FAIL), which is only true while the history reads. Fix: a strict read; an unreadable history holds every entity whose screen cannot be known. (found W468 second refutation (reproduced))
+    FU-050 [medium] The living-VSB roster is replaced when its file cannot be read — living_vsbs._load returns {} for any read failure, and register() then writes back a roster holding only the new entity (a BOM roster kept 1 of 3 entries), so the heartbeat stops tending every other entity. Also operate_one's sort calls int() on every entry's operating_cycles, so one corrupt entry stops the rotation for all. Fix: a strict read for every writer (register, deregister, _update_entry); refuse, never overwrite; skip a malformed entry with a record. (found W468 pre-audit of FU-041/FU-042 (reproduced))
+    FU-051 [medium] The Owner's waterfall overrides are replaced when their file cannot be read — metabolism._load_waterfall_overrides answers {} on any failure and POST /economy/waterfall saves without a lock or an atomic write: one save on an unreadable store kept only the new override, and a cycle on an unreadable store silently uses the template (waterfall_source entity_template). Fix: strict, locked, atomic; a cycle says when the override store could not be read. (found W468 pre-audit of FU-041/FU-042 (reproduced))
+    FU-052 [medium] The venture portfolio is replaced when its file cannot be read — ventures._load_portfolio is tolerant: record_positions on an unreadable portfolio kept only the new position, losing holdings and pending returns. Fix: a strict read for every writer. (found W468 pre-audit of FU-041/FU-042 (reproduced))
+    FU-054 [medium] A failed UEG write inside the constitutional interceptor turns a decided action into an exception — uci_v16_omega.intercept writes to the UEG unprotected (policy halt, execution failure, checkpoint): when that write raises (an unreadable chain, a store lock timeout) intercept raises, so board chief_instruct re-runs its action, governed_cycle reports ungated_bypass_logged although the gate allowed it, a transfer that posted answers 500 and genesis journeys 500. It also records any action exception as a circuit-breaker failure, and when its execution_failure log raises, that error replaces the action's own (a /cycle LedgerUnavailable then answers 500). Fix: the interceptor wraps its own UEG writes (ueg_logged on the result; blocked stays blocked; the original exception is re-raised). Pairs with FU-042. (found W468 pre-audit of FU-041/FU-042 (reproduced))
+    FU-056 [medium] An unreadable VSB ledger has no repair path — W468 refuses an unreadable ledger for good (every cycle, close and transfer answers 503) and the pages say to try again once it can be read, but nothing in the product can make it readable: a stray BOM, a truncation or a pre-W442 NaN posting needs a hand edit. Fix: an admin repair (copy to quarantine, a lossless re-read or the valid prefix, UEG-logged with what was lost), like FU-042's chain recovery. (found W468 first refutation (reproduced))
     FU-011 [low] Command Center still carries hard-coded status text — 'in WORK mode for 4 hours', '3D Holographic Engine — Loading...' and 'Real-time stream initializing via libp2p...' are literals nothing measures (not compliance claims, so outside P1.12); no plan item covers packages/ui literals (P2.4's scatter is unreached backend operations) (found W460 audit (P1.12))
     FU-017 [low] A marketplace purchase can charge the buyer without recording the sale — consume_tokens runs before the listing save and the receipt write; if either raises there is no refund, so the buyer is charged for a sale nothing records (consume-without-compensation) (found W463 class sweep (read, not reproduced))
     FU-018 [low] The optimizer's resource fabric releases resources a pool never consumed — assemble_pool records the full requirements even when it could not decrement capacity, and disassemble_pool gives all of them back (gpu available 1064 of 64 at unit level); the optimizer engine assembles and releases per call (found W463 class sweep (reproduced at unit level))
@@ -695,6 +710,18 @@ Open 33 (33 scheduled, 0 high · 0 awaiting the Owner) · done 15 · dropped 0.
     FU-045 [low] The heartbeat drops a failed entity visit silently, and revenue.consume_pending is ungated dead code — heartbeat.py:239-243 discards operate_vsb's error result, so a failed or partly posted non-material cycle leaves no trace anywhere (reproduced); and revenue.consume_pending (revenue.py:108-134) has no callers yet would consume every pending event without any gate if one were added. Fix: log the failed visit (UEG + log) and delete the dead function. (found W466 pre-audit of FU-023/FU-022 (reproduced))
     FU-047 [low] A transfer stranded before W466 can only be found by hand — W466 completes a stranded transfer (the sender debited, the receiver never credited) only when its debit carries the receiver-leg marker written since W466: a debit made earlier cannot prove whether its receiver was credited once its id left the receiver's 50-row display window (and before W465 no durable credited-id list existed), so completing it could credit the receiver twice. POST /transfers/{id}/complete refuses such a debit (409) and the pass never lists it. Fix, if any exist: a one-off Owner-reviewed audit listing unmarked transfer_out debits with no credited-id and no display-window entry, completed individually on the Owner's decision. (found W466 pre-audit (reproduced: replaying an old id re-credited it))
     FU-048 [low] A heartbeat cycle whose process stopped mid-cycle leaves the Owner's approval spent and asks again — W467 consumes a cycle's recognised events before it runs; if the process is killed between that consume and the cycle's first ledger write, the stranded-consume pass (every fifth beat with autonomous economy on) gives the events back after 15 minutes, but a material cycle's approval stays implemented without a released_action_ran marker (it reads as still in flight — the restrictive side), so the next beat files a fresh CRITICAL hold for the same events and the Owner decides twice. The economy.cycle_intake_consumed record names the approval's cca_id and consume_id. Fix: when the pass gives back a token's events, restore that approval if its trail has no released_action_ran for that consume_id (the W463 give-back rules). (found W467 first refutation (reproduced by killing a process))
+    FU-053 [low] More stores are read tolerantly and then written back — Same class as FU-041, found by reading: agent_hub post_message/register_agent/update_handoff_status, integration_surface.spawn_twin, resource_fabric.run_composition, swarm curate and cascade, heartbeat.screen_living_vsb, and config.mutate_json (no callers). Each answers empty on a failed read and saves over the store. Fix: one strict-read helper for writers, applied store by store. (found W468 pre-audit of FU-041/FU-042 (by reading))
+    FU-055 [low] The default UEG path is relative to the working directory — ueg.py resolves its default chain path relative to CWD, so a backend started from another directory starts a separate chain (found by reading). Fix: resolve through config.data_path. (found W468 pre-audit of FU-041/FU-042 (by reading))
+    FU-057 [low] A transfer refused on a retry says nothing was debited although an earlier attempt may have — _transfer_core answers any SenderLedgerUnavailable with X-Transfer-Debited: false and 'Nothing was debited' (true of this request only): a settlement retried under its persisted transfer id, whose first attempt debited, is told nothing was debited once the ledger becomes unreadable. And a gated action that raised is retried outside the gate (W463 design), so a refusal inside the action runs again ungated. Fix: say 'this attempt debited nothing; an earlier attempt under this id may have' and keep the retry inside the gate's decision. (found W468 second refutation (reproduced))
+    FU-058 [low] A cycle whose ledger write times out answers a bare 500 — /cycle maps only LedgerUnavailable (503) and LedgerWriteRefused (409): a store_lock TimeoutError or a PermissionError from atomic_write_json during a cycle's writes still escapes as a 500 with no statement of what was written; the async governed_cycle writes no economy.cycle_raised record when its cycle raises (the heartbeat path does); and the strict read's retry sleeps block the event loop in async routes. Fix: map them with the ledger_written wording, and move the retries off the loop. (found W468 first refutation (reproduced))
+    FU-059 [low] The economy pages keep earlier figures beside a new refusal — VSBEconomy.runCycle and VSBCockpit leave the previous cycle's report and balances on screen under a refused or partly written cycle; the cockpit shows nothing for a 200 hold (cycle null), its other actions (growth, chief, transformation, deliverables, ship state) are not tied to the selected entity, avatars/api.py reads the raw roster hold (stale after a repair, and blind to decision_hold and last_error), and doClosePeriod parses a non-JSON error body as JSON. Fix: clear or label the stale figures, render the hold, and guard every entity-scoped load as W468 guarded the ledger. (found W468 first refutation (reproduced))
+    FU-060 [low] A development spend posts as a distribution and two spends can overdraw the fund — spend_self_investment checks the balance on the construction snapshot and records under the lock without re-checking, so two concurrent spends each draw the whole balance (self_investment goes negative); and record('self_investment', kind='debit') posts Dr distribution_self_investment / Cr cash, the same as a distribution, so a spend increases the distribution expense; a spend that fails for any other reason (a busy ledger lock) is recorded nowhere. Fix: check inside the lock and post a development-spend account. (found W468 second refutation (reproduced))
+    FU-061 [low] Books near the float limit: a period close saves and then answers 500 — With balances near 1.7e308 WST (only a crafted or imported ledger reaches this; cycle inputs are bounded at 1e15 since W468), close_period's statement sums overflow to inf: the close marker is saved with an Infinity net profit and the route answers a bare 500 (JSON cannot carry inf). The ledger's save check covers balances and posting amounts, not the close marker's figures. Fix: compute the statements before saving and refuse (LedgerWriteRefused, 409) when any figure is not finite. (found W468 third refutation (reproduced))
+    FU-062 [low] A revenue event can record a non-finite amount — revenue.record_event does not check that amount_wst is finite, so a NaN or inf event would be written to a store its own strict reader then refuses, or distributed into a ledger the ledger then refuses to save. Fix: refuse non-finite amounts at record_event. (found W468 first refutation (reproduced))
+    FU-063 [low] Visit outcomes are reported inconsistently across heartbeat, genesis and pages — heartbeat counts a held or refused visit (ledger_unavailable, compliance or governance hold) as an operate_vsb action and sets last_vsb_operated; genesis's streaming establish says 'cycle ran' for an operate_vsb result that has only an error, and a result {error, cycle_ran True} (a cycle that posted and whose roster bookkeeping raised) is counted as not operated; list_living shows statuses that are not holds (intake_unavailable, intake_consumed_elsewhere) as 'held by governance'; a gate-error hold (no Change Control record) is kept on a raise as if it were a decision; the compliance branch's roster write sits outside the try (a raise there leaves last_operated unchanged); and two visits of one entity at once can clobber each other's row. Fix: report held, refused, raised and ran as four outcomes everywhere. Related to FU-045. (found W468 first refutation (reproduced))
+    FU-064 [low] The roster's ledger-hold text reads every held entity's whole ledger on each call — list_living describes a ledger_unavailable hold from a live strict read of that entity's ledger; the heartbeat and pages call it often, and with large ledgers this is seconds per call (4 s for 60 held rows of 4 MB, measured). Negligible at today's sizes. Fix: cache by the file's size and mtime. (found W468 second refutation (reproduced))
+    FU-065 [low] A ledger that keeps reserves only in the legacy balances refuses every transfer — A ledger written before W256 holds entries and balances but no accounts: validate_transfer reads reserve_fund from accounts (0.0) and refuses any transfer as insufficient funds, although the legacy view shows reserves. Fix: say the ledger predates double entry, or migrate it once. (found W468 second refutation (reproduced))
+    FU-066 [low] A W463 test leaves a half-written ledger in the shared test store — test_w463 (around line 10975) writes a '{ half-written' ledger under uid 'broken' and never removes it, so every later reconcile pass in the same store counts one unreadable ledger. Fix: remove it in the test's cleanup. (found W468 first refutation (reproduced))
   P2.6 — The perimeter and the gate
     FU-005 [medium] The /api/v1/swarm router carries no auth dependency — agentic_core/api/swarm.py has zero Depends — the org cascade (POST /cascade), CEO delegation (POST /delegate), proposed-catalogue curation and the run histories are callable by anyone when AUTH_ENABLED is on; P2.6 names 'swarm' among its routers, this row pins the routes (found W460 audit (P1.12))
     FU-006 [medium] The org cascade's governance verdict gates a constant string, not the delivery — swarm.py's _attest returns a fixed attestation sentence, so 'gov: allowed' can never reflect the delivered content; W460 relabelled the chip 'intent only' — the real fix is gating the delivery itself (found W460 audit (P1.12))
@@ -1054,8 +1081,9 @@ and W463 each worked a task an earlier round found and deferred, W462 built the 
 Owner asked (2026-09-13) that suggested tasks be scheduled into the plan, and W464 delivered the Owner's
 rulings on the register's four OWNER rows, and W465 worked three of its NEXT rows (FU-015, FU-016, FU-024) and
 registered thirteen more it found (closing two of them, FU-038 and FU-046, itself), and W466 worked FU-023 and
-registered one more, and W467 worked FU-022, FU-043 and FU-044 and registered one more — and at W467 the register
-holds twenty-five open NEXT rows (and eight riding with P2.6 and P2.8) before P1.13. Budget for that on top of the ~33.
+registered one more, and W467 worked FU-022, FU-043 and FU-044 and registered one more, and W468 worked FU-041 and
+registered eighteen more — and at W468 the register holds forty-two open NEXT rows (and eight riding with P2.6 and
+P2.8) before P1.13. Budget for that on top of the ~33.
 Do not shorten it by declaring; shorten it by measuring.
 </delivery_plan>
 
@@ -1167,7 +1195,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 394 tests; 68 session guards W419–W467, each broken and
+- integration_tests/test_mvp_spine.py — 395 tests; 69 session guards W419–W468, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).

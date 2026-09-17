@@ -40,6 +40,8 @@ _ADVERSE_TYPES = frozenset({
     "economy.materiality_approval_spent_cycle_failed",
     # W467 — a cycle that raised (whether or not it wrote), and one whose intake could not be consumed
     "economy.cycle_raised", "economy.cycle_intake_unavailable",
+    # W468 — a cycle refused because its VSB ledger could not be read whole
+    "economy.cycle_ledger_unavailable",
     # W464 (FU-013) — named explicitly, not left to the "rejected"/"refused" tokens: a later token edit must not turn
     # a refusal into a clean "recorded" line
     "cca.change_rejected", "board.change_ratification_refused",

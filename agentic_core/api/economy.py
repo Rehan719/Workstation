@@ -28,6 +28,7 @@ from agentic_core.economy.metabolism import (
     _save_waterfall_overrides, _WATERFALL_STAGES,
 )
 from agentic_core.economy.charity import CharityIntelligence
+from agentic_core.economy.ledger import LedgerUnavailable, LedgerWriteRefused
 
 router = APIRouter(prefix="/api/v1/economy", tags=["vsb-economy"])
 
@@ -100,10 +101,23 @@ class CycleRequest(BaseModel):
     # calculation is worse than a missing field. Zero means zero.
     # W442 — NaN/inf/negative inputs are refused at the model: a NaN revenue would have written
     # NaN into every waterfall account (and negative figures corrupt shared totals).
-    revenue: float = Field(default=0.0, ge=0.0, allow_inf_nan=False)
-    costs: float = Field(default=0.0, ge=0.0, allow_inf_nan=False)
+    # W468 (refutation) — bounded: two cycles of costs=1e308 overflowed the ledger's balances to Infinity (the ledger now
+    # refuses to save that, but a figure no enterprise reports is refused here first, with a clean 422)
+    revenue: float = Field(default=0.0, ge=0.0, le=1e15, allow_inf_nan=False)
+    costs: float = Field(default=0.0, ge=0.0, le=1e15, allow_inf_nan=False)
     reserve_rate: float = Field(default=0.20, ge=0.0, le=1.0, allow_inf_nan=False)
     owner: str = "Rehan"
+
+
+def _intake_not_back(e: BaseException) -> str:
+    """W468 (third refutation) — a cycle that drained receipts or venture returns and then wrote nothing gives them
+    back; when that give-back failed, 'nothing was posted' is true of the ledger but the drained intake is on no queue."""
+    lost = getattr(e, "intake_not_given_back", None) or []
+    if not lost:
+        return ""
+    return (" The " + " and ".join(k.replace("_", " ") for k in lost) + " it had drained could not be put back on their "
+            "queue — running the cycle again does not bring them back. Each failed give-back is written to the server "
+            "log with its amount, and to the UEG as economy.cycle_intake_give_back_failed when the UEG can be written.")
 
 
 @router.post("/cycle")
@@ -131,8 +145,24 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
     except Exception:
         pass
     from agentic_core.economy.governance import governed_cycle
-    result = await governed_cycle(req.vsb_id, entity_type, owner,
-                                  req.revenue, req.costs, req.reserve_rate, source="api")
+    try:
+        result = await governed_cycle(req.vsb_id, entity_type, owner,
+                                      req.revenue, req.costs, req.reserve_rate, source="api")
+    except LedgerUnavailable as e:
+        # W468 (register FU-041) — this used to post onto empty books and answer 200, replacing the real ones
+        written = bool(getattr(e, "ledger_written", False))
+        raise HTTPException(status_code=503, detail=(
+            f"{e}. " + ("The cycle stopped after writing part of its ledger — do NOT run it again; the ledger needs "
+                        "checking first." if written else
+                        "No cycle ran and nothing was posted — run it again once the ledger can be read.")
+            + _intake_not_back(e))) from None
+    except LedgerWriteRefused as e:
+        # W468 (second refutation) — a posting that would leave the books in a shape the ledger refuses was not saved
+        written = bool(getattr(e, "ledger_written", False))
+        raise HTTPException(status_code=409, detail=(
+            f"{e}. " + ("The cycle stopped after writing part of its ledger — do NOT run it again; the ledger needs "
+                        "checking first." if written else "No cycle ran and nothing was posted.")
+            + _intake_not_back(e))) from None
     if isinstance(result, dict):
         result["attribution"] = {"owner": owner, "entity_type": entity_type, "basis": attribution}
         # §13 (W338) — USER-driven cycles drift the living record too: a cycle that genuinely
@@ -418,6 +448,14 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
     # side-effect-free validation FIRST → clean HTTP codes, nothing posted on refusal
     try:
         validate_transfer(req.from_vsb, req.to_vsb, req.amount)
+    except SenderLedgerUnavailable as e:
+        # W468 (register FU-041) — an unreadable sender ledger read as empty books and answered 400 "insufficient funds"
+        why = str(e).replace("; nothing was debited", "")
+        again = "settle" if context == "settlement" else "retry"
+        raise HTTPException(status_code=503, headers={"X-Transfer-Debited": "false",
+                                                      **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
+                            detail=(f"{why}. Nothing was debited — {again} again once the ledger is readable (a debit "
+                                    "from an earlier transfer may be stranded on it)."))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except KeyError as e:
@@ -479,7 +517,8 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         except Exception:
             debited = None
         settling = context == "settlement"
-        why = (str(e).replace("; nothing was written", "") or type(e).__name__).strip("'\"")
+        why = (str(e).replace("; nothing was written", "").replace("; nothing was debited", "")
+               or type(e).__name__).strip("'\"")
         headers = {"X-Transfer-Id": _xfer_id,
                    "X-Transfer-Debited": "true" if debited else ("false" if debited is False else "unknown")}
         again = "settle" if settling else "retry"
@@ -492,6 +531,9 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         if debited is False:
             if isinstance(e, ValueError):
                 return HTTPException(status_code=400, detail=str(e), headers=headers)
+            if isinstance(e, LedgerWriteRefused):
+                # W468 (second refutation) — the posting would have left the sender's books in a refused shape
+                return HTTPException(status_code=409, headers=headers, detail=f"{why}. Nothing was debited.")
             if isinstance(e, KeyError):
                 return HTTPException(status_code=404, detail=why, headers=headers)
             if isinstance(e, PendingStoreUnavailable):
@@ -1090,7 +1132,17 @@ async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_
     # financial statement header); resolve from the stores like /waterfall does.
     entity_type, et_source = _resolve_entity_type(req.vsb_id, req.entity_type)
     m = EconomicMetabolism(req.vsb_id, entity_type, req.owner)
-    result = m.ledger.close_period()
+    try:
+        result = m.ledger.close_period()
+    except LedgerUnavailable as e:
+        # W468 (register FU-041) — an unreadable ledger was closed as empty books and saved over the real ones (200)
+        raise HTTPException(status_code=503, detail=(
+            f"{e}. Nothing was closed — close the period again once the ledger can be read.")) from None
+    except LedgerWriteRefused as e:
+        raise HTTPException(status_code=409, detail=f"{e}. Nothing was closed.") from None
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail=(
+            "The ledger is busy with another posting. Nothing was closed — close the period again.")) from None
     # W442 — the docstring claims "UEG-logged (tamper-evident)" but the log call was swallowed
     # try/except-pass; the response now SAYS whether the tamper-evident event actually landed.
     ueg_logged = False
@@ -1135,6 +1187,11 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
     except Exception:
         pass
     m = EconomicMetabolism(vsb_id, entity_type, _owner)
+    if m.ledger.load_error:
+        # W468 (register FU-041) — an unreadable ledger was shown as zero revenue and balanced, empty statements
+        raise HTTPException(status_code=503, detail=(
+            f"{m.ledger.load_error}. The board pack is not shown rather than showing empty books; nothing was "
+            "changed."))
     stmt = m.ledger.statement()
     bal = stmt["balances"]
     stages = ("owner", "self_investment", "capital_fund", "user_projects", "charity")
@@ -1188,7 +1245,12 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
 @router.get("/ledger/{vsb_id}")
 async def get_ledger(vsb_id: str, user: dict | None = Depends(get_current_user)):
     _require_economy_access(vsb_id, user)
-    return EconomicMetabolism(vsb_id).status()["ledger"]
+    m = EconomicMetabolism(vsb_id)
+    if m.ledger.load_error:
+        # W468 (register FU-041) — never zero balances for books that could not be read
+        raise HTTPException(status_code=503, detail=(
+            f"{m.ledger.load_error}. No balances are shown rather than empty books; nothing was changed."))
+    return m.status()["ledger"]
 
 
 @router.get("/charity/candidates")

@@ -198,7 +198,16 @@ export const VSBEconomy: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vsb_id: vsbId, entity_type: entity, revenue, costs }),
       });
-      if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
+      if (!r.ok) {
+        // W468 — the server says why (e.g. a ledger that could not be read, and that nothing was posted); a bare status hid it
+        const fail = await r.json().catch(() => null);
+        // a refused input (422) carries a list of reasons, not a string
+        const reasons = Array.isArray(fail?.detail)
+          ? fail.detail.map((d: any) => d?.msg && `${Array.isArray(d.loc) && d.loc.length ? `${d.loc[d.loc.length - 1]}: ` : ''}${d.msg}`)
+            .filter(Boolean).join('; ') : '';
+        const why = typeof fail?.detail === 'string' ? fail.detail : reasons ? `No cycle ran — ${reasons}.` : '';
+        setError(why || `HTTP ${r.status}`); setRunning(false); return;
+      }
       const d = await r.json();
       setCycle(d.cycle); setGov(d.governance?.status ?? '');
       setHold(d.cycle == null ? (d.governance ?? { status: 'no_cycle', note: 'The cycle returned no result.' }) : null);
@@ -648,6 +657,13 @@ export const VSBEconomy: React.FC = () => {
                       <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital"
                         title={v.economy_held.consequence || 'this entity is held'}>
                         held · {String(v.economy_held.reason).replace(/_/g, ' ')}
+                      </span>
+                    )}
+                    {/* W468 — a heartbeat visit that raised advances the rotation; without this it looked freshly tended */}
+                    {v.economy_held?.last_visit_error && (
+                      <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400"
+                        title={`The last heartbeat visit raised: ${v.economy_held.last_visit_error}`} data-testid="living-visit-error">
+                        last visit failed
                       </span>
                     )}
                     {v.compliance?.never_screened ? (

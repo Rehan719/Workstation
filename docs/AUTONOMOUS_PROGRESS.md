@@ -6138,3 +6138,127 @@ spent approval is left spent (unmarked, reading as still in flight), so the next
   none stays green. New guard: test_w467_a_heartbeat_cycle_distributes_its_recognised_events_once.
 
 Suite: 379 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 394 items from 355 test functions).
+
+### W468 — an unreadable VSB ledger is refused, never replaced by empty books (register FU-041)
+
+**What was wrong.** Virtual WST throughout. Each of these was reproduced by the pre-audit in fresh data directories.
+- **Books replaced.** A VSB ledger was read tolerantly. A file that did not parse whole (a byte-order mark, a truncation,
+  a list, UTF-16, a sharing violation) read as EMPTY books, and the next posting saved those empty books over the real
+  ones. A heartbeat cycle wiped a ledger by itself (reserve 100 → 0). `/close-period` and `/cycle` did it through the API
+  and answered 200. The code comment said "quarantine, never silent-wipe".
+- **False answers.** `/ledger` and `/board-pack` showed zeros ("balanced"). A transfer from that entity answered 400
+  "insufficient funds: 0.0". A development spend reported the fund empty.
+- **Starved rotation.** A heartbeat visit that raised never advanced `last_operated`, so the least-recently-operated pick
+  chose that entity on every beat and no other entity was tended.
+- **Silent pages.** A refused cycle showed a bare "HTTP 503" on the Economy page. The cockpit said "No ledger yet — run
+  an economic cycle" for a ledger it could not load and "backend unreachable" for a cycle the server refused.
+
+**What changed.**
+- **One strict read.** `ledger.read_strict` is the only way a VSB ledger is read, and the transfers module delegates to it.
+  - A file that does not exist is new books. A file that exists is read whole or refused (`LedgerUnavailable`, not a
+    ValueError), including every parse failure (a number no float holds, nesting too deep to parse).
+  - It checks the shape: finite balances and amounts, balanced postings, closes within the postings. A key an older
+    ledger lacks takes its default, but keys that were always written together must appear together.
+  - All 256 live ledgers read under it before and after the tightening.
+- **Refused writes.**
+  - `VirtualLedger()` never raises; it holds `load_error`, and its readers say the ledger is unavailable (no zeros).
+  - Every write re-reads strictly under the store lock and is refused, and nothing is saved.
+  - The writer keeps the reader's shape: a posting that would overflow a balance is refused (`LedgerWriteRefused`), so
+    the ledger's own writes can never freeze it.
+  - Cycle revenue and costs are bounded at 1e15 WST.
+- **Cycles refused before any gate.**
+  - The API cycle answers 503 (409 for a refused write). It says whether anything was written, and when drained intake
+    could not be put back.
+  - The heartbeat cycle returns `ledger_unavailable`, said once per outage on the UEG and flagged in the audit views.
+  - `run_cycle` checks before it drains a queue.
+  - `/close-period`, `/ledger` and `/board-pack` answer 503, and `/status` says the ledger is unavailable. A transfer from
+    an unreadable sender answers 503 with `X-Transfer-Debited: false`.
+  - A refused development spend is its own flagged UEG type.
+- **The roster.**
+  - A visit that raises advances the rotation and says the raise (`last_visit_error`, a "last visit failed" badge).
+  - Its hold follows what is still true:
+    - the ledger hold while the ledger cannot be read now;
+    - a Change Control decision unless the visit got past Change Control (the cycle tags that raise);
+    - a decision that an unreadable ledger stands in front of is kept apart and named (`standing_decision`).
+  - A cycle that ran, or a hold that was found, is recorded even when the roster write raised once.
+- **Pages.** Both pages show the server's reason, including a refused field's name. The cockpit drops a late answer for
+  an entity no longer on screen, and clears an action's error on a new action or an entity switch.
+
+**Refuted (own diff), eight passes; every confirmed finding fixed and guarded.** Each finding was checked by two
+independent verifiers, one reproducing it and one judging reach and scope. Counts are findings (confirmed by both /
+split / refuted by both).
+- **First pass:** four lenses, 17 (9/7/1).
+  - The guard's own cleanup ran while its roster patches were live, leaving nine test entities on the shared roster.
+  - OverflowError and RecursionError escaped the read.
+  - The writer could save an Infinity that the reader then refused for good.
+  - Books missing a key that is always written together read as empty.
+  - A refused spend was logged as a clean one.
+  - The once-per-outage record never re-armed.
+  - The heartbeat's refuse-before-the-gate order was unguarded.
+  - The cockpit kept stale errors and took late answers.
+- **Second pass:** 11 (4/4/3).
+  - The first pass's roster fix wiped Change Control holds awaiting the Owner.
+  - A refused write reached three routes as a bare 500.
+  - A write-time spend refusal left no record.
+  - The new 1e15 bound showed as a bare 422.
+- **Third to seventh passes:** 6 (2/2/2), 3 (3/0/0), 5 (3/1/1), 3 (3/0/0), 5 (2/1/2). Most concerned one small rule,
+  what a raised visit does to the roster's hold. It went: pop every hold → keep every hold → decide by hold name and
+  exception type → decide by facts read at the time. It converged only when the sixth pass walked the whole table (prior
+  hold × raise point × ledger state) against a written invariant. The same passes found:
+  - the 409/503 answer did not say when drained intake could not go back, and later claimed a UEG record that may not
+    exist;
+  - no page showed a visit that raised;
+  - a cycle that ran but whose bookkeeping raised was shown as a failed visit;
+  - an unreadable ledger overwrote a standing Change Control decision on the row.
+- **Eighth pass:** one test-hygiene finding, split and fixed — a new leg left a Change Control hold record behind, which
+  the cleanup now withdraws. Nothing else: the bookkeeping retry is idempotent across 40 row × status combinations, and
+  every mutation of the last fix fails its leg.
+
+**Found and not done:** eighteen rows registered, FU-049 to FU-066.
+- Medium:
+  - an unreadable compliance history lifts every FAIL hold;
+  - the living roster, the waterfall overrides and the venture portfolio are each replaced when unreadable;
+  - a failed UEG write inside the interceptor turns a decided action into an exception;
+  - an unreadable VSB ledger has no repair path.
+- Low:
+  - more tolerant stores;
+  - the relative UEG path;
+  - retry wording and cycle 500s;
+  - stale page figures;
+  - spend accounting;
+  - the float limit at a period close;
+  - non-finite revenue events;
+  - visit-outcome reporting;
+  - list_living's live read cost;
+  - legacy-balances transfers;
+  - a W463 test's leftover ledger.
+
+**Browser (fresh backend :8076, bundle rebuilt).** `scripts/_w468_probe.mjs`, seeded by `scripts/_w468_probe_seed.py`
+(one REAL unreadable ledger: a byte-order mark in front of valid books, and one entity whose last visit raised). 10/10 on
+the final pages:
+- the board pack says the ledger could not be read, and shows no figures;
+- Run Metabolic Cycle shows the server's reason;
+- the living roster shows the entity whose last visit raised;
+- Close period on a ledger that became unreadable says nothing was closed, and writes nothing;
+- the cockpit ledger panel says why it shows no balances;
+- a refused cycle shows its reason in the cockpit, never "backend unreachable";
+- switching to a readable entity shows its balances, with no stale error;
+- a revenue beyond the bound is refused naming the field;
+- (stubbed network failure) an unreached backend is said so.
+
+The unreadable file's sha256 was unchanged. The first run caught the probe's own mistake: Close period is not rendered
+without a board pack, so that check now uses a pack loaded before the ledger broke. The probe ran before the sixth to
+eighth passes, whose fixes did not touch a page.
+
+**Broken 89 ways.** Each blind was applied alone, the guards were run, and the file was restored byte-for-byte.
+- Blinds were written on the first draft and for every pass's fixes; blinds whose lines a later fix rewrote were redefined.
+- **Vacuous and fixed:** three.
+  - The first draft's statements blind was masked by the trial balance's own check (widened).
+  - The explicit OverflowError catch and the list check were each masked by the read's broad catch. Both are now guarded
+    by a direct assertion on the shape check.
+- **Interruption:** the session ended mid-run once and left one blind applied. It was found by diffing against the
+  snapshot and restored from it.
+- **Final run:** all 89 on the final tree; every one fails, none stays green.
+- New guard: test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced.
+
+Suite: 380 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 395 items from 356 test functions).

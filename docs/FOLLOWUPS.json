@@ -664,8 +664,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "NEXT",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W468",
       "note": ""
     },
     {
@@ -775,6 +775,308 @@
       "files": [
         "agentic_core/economy/revenue.py",
         "agentic_core/economy/governance.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-049",
+      "title": "An unreadable compliance-history file lifts every FAIL hold",
+      "why": "living_vsbs._latest_screen and list_living read vsb_compliance_history.json with load_json_tolerant: a file with a BOM (or one that does not parse) reads as {}, so operate_vsb sees no FAIL screen and runs distribution cycles for entities whose latest screen FAILED, and the roster shows them never screened. Since W468 a visit that raises also drops a compliance_fail_hold (reaching the cycle is taken as proof the screen is not FAIL), which is only true while the history reads. Fix: a strict read; an unreadable history holds every entity whose screen cannot be known.",
+      "source": "W468 second refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/living_vsbs.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-050",
+      "title": "The living-VSB roster is replaced when its file cannot be read",
+      "why": "living_vsbs._load returns {} for any read failure, and register() then writes back a roster holding only the new entity (a BOM roster kept 1 of 3 entries), so the heartbeat stops tending every other entity. Also operate_one's sort calls int() on every entry's operating_cycles, so one corrupt entry stops the rotation for all. Fix: a strict read for every writer (register, deregister, _update_entry); refuse, never overwrite; skip a malformed entry with a record.",
+      "source": "W468 pre-audit of FU-041/FU-042 (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/living_vsbs.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-051",
+      "title": "The Owner's waterfall overrides are replaced when their file cannot be read",
+      "why": "metabolism._load_waterfall_overrides answers {} on any failure and POST /economy/waterfall saves without a lock or an atomic write: one save on an unreadable store kept only the new override, and a cycle on an unreadable store silently uses the template (waterfall_source entity_template). Fix: strict, locked, atomic; a cycle says when the override store could not be read.",
+      "source": "W468 pre-audit of FU-041/FU-042 (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/metabolism.py",
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-052",
+      "title": "The venture portfolio is replaced when its file cannot be read",
+      "why": "ventures._load_portfolio is tolerant: record_positions on an unreadable portfolio kept only the new position, losing holdings and pending returns. Fix: a strict read for every writer.",
+      "source": "W468 pre-audit of FU-041/FU-042 (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/ventures.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-053",
+      "title": "More stores are read tolerantly and then written back",
+      "why": "Same class as FU-041, found by reading: agent_hub post_message/register_agent/update_handoff_status, integration_surface.spawn_twin, resource_fabric.run_composition, swarm curate and cascade, heartbeat.screen_living_vsb, and config.mutate_json (no callers). Each answers empty on a failed read and saves over the store. Fix: one strict-read helper for writers, applied store by store.",
+      "source": "W468 pre-audit of FU-041/FU-042 (by reading)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/api/agent_hub.py",
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/api/swarm.py",
+        "agentic_core/organism/heartbeat.py",
+        "agentic_core/config.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-054",
+      "title": "A failed UEG write inside the constitutional interceptor turns a decided action into an exception",
+      "why": "uci_v16_omega.intercept writes to the UEG unprotected (policy halt, execution failure, checkpoint): when that write raises (an unreadable chain, a store lock timeout) intercept raises, so board chief_instruct re-runs its action, governed_cycle reports ungated_bypass_logged although the gate allowed it, a transfer that posted answers 500 and genesis journeys 500. It also records any action exception as a circuit-breaker failure, and when its execution_failure log raises, that error replaces the action's own (a /cycle LedgerUnavailable then answers 500). Fix: the interceptor wraps its own UEG writes (ueg_logged on the result; blocked stays blocked; the original exception is re-raised). Pairs with FU-042.",
+      "source": "W468 pre-audit of FU-041/FU-042 (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/gaas/v5/uci_v16_omega.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-055",
+      "title": "The default UEG path is relative to the working directory",
+      "why": "ueg.py resolves its default chain path relative to CWD, so a backend started from another directory starts a separate chain (found by reading). Fix: resolve through config.data_path.",
+      "source": "W468 pre-audit of FU-041/FU-042 (by reading)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/gaas/v5/ueg.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-056",
+      "title": "An unreadable VSB ledger has no repair path",
+      "why": "W468 refuses an unreadable ledger for good (every cycle, close and transfer answers 503) and the pages say to try again once it can be read, but nothing in the product can make it readable: a stray BOM, a truncation or a pre-W442 NaN posting needs a hand edit. Fix: an admin repair (copy to quarantine, a lossless re-read or the valid prefix, UEG-logged with what was lost), like FU-042's chain recovery.",
+      "source": "W468 first refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/ledger.py",
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-057",
+      "title": "A transfer refused on a retry says nothing was debited although an earlier attempt may have",
+      "why": "_transfer_core answers any SenderLedgerUnavailable with X-Transfer-Debited: false and 'Nothing was debited' (true of this request only): a settlement retried under its persisted transfer id, whose first attempt debited, is told nothing was debited once the ledger becomes unreadable. And a gated action that raised is retried outside the gate (W463 design), so a refusal inside the action runs again ungated. Fix: say 'this attempt debited nothing; an earlier attempt under this id may have' and keep the retry inside the gate's decision.",
+      "source": "W468 second refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-058",
+      "title": "A cycle whose ledger write times out answers a bare 500",
+      "why": "/cycle maps only LedgerUnavailable (503) and LedgerWriteRefused (409): a store_lock TimeoutError or a PermissionError from atomic_write_json during a cycle's writes still escapes as a 500 with no statement of what was written; the async governed_cycle writes no economy.cycle_raised record when its cycle raises (the heartbeat path does); and the strict read's retry sleeps block the event loop in async routes. Fix: map them with the ledger_written wording, and move the retries off the loop.",
+      "source": "W468 first refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-059",
+      "title": "The economy pages keep earlier figures beside a new refusal",
+      "why": "VSBEconomy.runCycle and VSBCockpit leave the previous cycle's report and balances on screen under a refused or partly written cycle; the cockpit shows nothing for a 200 hold (cycle null), its other actions (growth, chief, transformation, deliverables, ship state) are not tied to the selected entity, avatars/api.py reads the raw roster hold (stale after a repair, and blind to decision_hold and last_error), and doClosePeriod parses a non-JSON error body as JSON. Fix: clear or label the stale figures, render the hold, and guard every entity-scoped load as W468 guarded the ledger.",
+      "source": "W468 first refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "agentic_core/avatars/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-060",
+      "title": "A development spend posts as a distribution and two spends can overdraw the fund",
+      "why": "spend_self_investment checks the balance on the construction snapshot and records under the lock without re-checking, so two concurrent spends each draw the whole balance (self_investment goes negative); and record('self_investment', kind='debit') posts Dr distribution_self_investment / Cr cash, the same as a distribution, so a spend increases the distribution expense; a spend that fails for any other reason (a busy ledger lock) is recorded nowhere. Fix: check inside the lock and post a development-spend account.",
+      "source": "W468 second refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/living_vsbs.py",
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-061",
+      "title": "Books near the float limit: a period close saves and then answers 500",
+      "why": "With balances near 1.7e308 WST (only a crafted or imported ledger reaches this; cycle inputs are bounded at 1e15 since W468), close_period's statement sums overflow to inf: the close marker is saved with an Infinity net profit and the route answers a bare 500 (JSON cannot carry inf). The ledger's save check covers balances and posting amounts, not the close marker's figures. Fix: compute the statements before saving and refuse (LedgerWriteRefused, 409) when any figure is not finite.",
+      "source": "W468 third refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/ledger.py",
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-062",
+      "title": "A revenue event can record a non-finite amount",
+      "why": "revenue.record_event does not check that amount_wst is finite, so a NaN or inf event would be written to a store its own strict reader then refuses, or distributed into a ledger the ledger then refuses to save. Fix: refuse non-finite amounts at record_event.",
+      "source": "W468 first refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/revenue.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-063",
+      "title": "Visit outcomes are reported inconsistently across heartbeat, genesis and pages",
+      "why": "heartbeat counts a held or refused visit (ledger_unavailable, compliance or governance hold) as an operate_vsb action and sets last_vsb_operated; genesis's streaming establish says 'cycle ran' for an operate_vsb result that has only an error, and a result {error, cycle_ran True} (a cycle that posted and whose roster bookkeeping raised) is counted as not operated; list_living shows statuses that are not holds (intake_unavailable, intake_consumed_elsewhere) as 'held by governance'; a gate-error hold (no Change Control record) is kept on a raise as if it were a decision; the compliance branch's roster write sits outside the try (a raise there leaves last_operated unchanged); and two visits of one entity at once can clobber each other's row. Fix: report held, refused, raised and ran as four outcomes everywhere. Related to FU-045.",
+      "source": "W468 first refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/organism/heartbeat.py",
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-064",
+      "title": "The roster's ledger-hold text reads every held entity's whole ledger on each call",
+      "why": "list_living describes a ledger_unavailable hold from a live strict read of that entity's ledger; the heartbeat and pages call it often, and with large ledgers this is seconds per call (4 s for 60 held rows of 4 MB, measured). Negligible at today's sizes. Fix: cache by the file's size and mtime.",
+      "source": "W468 second refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/living_vsbs.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-065",
+      "title": "A ledger that keeps reserves only in the legacy balances refuses every transfer",
+      "why": "A ledger written before W256 holds entries and balances but no accounts: validate_transfer reads reserve_fund from accounts (0.0) and refuses any transfer as insufficient funds, although the legacy view shows reserves. Fix: say the ledger predates double entry, or migrate it once.",
+      "source": "W468 second refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/transfers.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-066",
+      "title": "A W463 test leaves a half-written ledger in the shared test store",
+      "why": "test_w463 (around line 10975) writes a '{ half-written' ledger under uid 'broken' and never removes it, so every later reconcile pass in the same store counts one unreadable ledger. Fix: remove it in the test's cleanup.",
+      "source": "W468 first refutation (reproduced)",
+      "found": "2026-09-17",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
       ],
       "severity": "low",
       "owner_gated": false,

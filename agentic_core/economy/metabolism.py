@@ -111,6 +111,10 @@ class EconomicMetabolism:
         revenue = max(0.0, float(revenue))
         costs = max(0.0, float(costs))
 
+        # W468 (register FU-041) — a ledger that cannot be read whole is refused BEFORE anything is drained from the
+        # return and receipt queues (its first write would be refused anyway, and the drained intake only given back)
+        self.ledger.check_readable()
+
         # §6 — venture RETURNS RECYCLE into the waterfall: queued returns on this VSB's portfolio
         # are consumed here as intake revenue, so they genuinely enter this cycle's distribution.
         returns_recycled = 0.0
