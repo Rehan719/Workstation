@@ -40,7 +40,7 @@
 > `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task, slotted NEXT, to a
 > plan item, or OWNER; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
 > primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
-> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W465) ·
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W466) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -178,7 +178,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W465 (465 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W466 (466 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -186,7 +186,7 @@ The dominant themes: UI reach/wiring (the largest — a very large fraction of w
 refutation · the §5 org · docs/canon reconciliation · economy · output · cleanup · organism ·
 honesty/fabrication · domains. Two engineering classes consumed whole rounds late: tenant
 isolation (nine surfaces found open one at a time, W252→W443) and shared-store concurrency (each
-round finding one more unlocked writer, W241→W465).
+round finding one more unlocked writer, W241→W466).
 
 FOUR ERAS: build-out (W1–W126, the fabric, domains, org, cockpit, economy, repo/site/app) ·
 convergence and cleanup (W127–W175, five Owner-directed reviews archived ~20 incoherent pages, ~460
@@ -211,7 +211,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W465: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W466: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -236,7 +236,8 @@ ratification of what a review approved, Change Control decisions on the constitu
 material economy action decided by the Owner alone, and the genome engine's rollback made real (W464); then
 three NEXT rows on the economy's stores — a service contract paid once under a claimed transfer id and every
 unpaid settlement said as what it was, and the owner-payments store locked, atomic and refused rather than read
-as empty (W465).
+as empty (W465); then a transfer whose sender was debited and whose receiver was never credited found and completed
+once, and every failed transfer answered from the ledger (W466).
 The first twelve Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
@@ -607,7 +608,7 @@ half of P2 depend on; 1.3 and 1.5 are where users land. P2 follows (P2.1 unblock
 content that P3 builds on). P3 items marked OWNER RULING are put to the Owner with evidence at
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
-WHERE THE PLAN STANDS (updated W465, 2026-09-17 — every round that closes an item or runs between
+WHERE THE PLAN STANDS (updated W466, 2026-09-17 — every round that closes an item or runs between
 items updates this block in the same commit; nothing checks that what it says is true, so keep it true
 by hand, and never start a line here with one space and an item id — that is read as a plan item and
 fails the suite).
@@ -640,8 +641,15 @@ fails the suite).
           round registered and its fifth refutation fixed); a failed owner accrual is reported. FU-034…FU-046
           registered (FU-041…FU-046 by the audit that prepared FU-022 and FU-023; FU-046 — a W465 regression — closed
           in the same round).
-  NEXT — the register's NEXT rows (FU-003, FU-004, FU-011, FU-017…FU-019, FU-021…FU-023, FU-025…FU-028,
-    FU-031…FU-037, FU-039…FU-045), then P1.13, then P1.14, then MILESTONE M1. FU-029 and FU-030 ride with P2.6.
+    W466  the register's NEXT row FU-023 (virtual WST): a debit now carries its transfer and an open receiver
+          leg, closed once the receiver's queue holds the id; a stranded transfer (the sender debited, the
+          receiver never credited) is found and completed once — by a replay that can never debit — from the
+          page's Complete button, the reconcile route, or the heartbeat while autonomous economy is on; every
+          failed transfer is answered from the sender's ledger and the receiver's queue, naming the id, and a
+          sender ledger that cannot be read whole posts nothing. Debits made before W466 are never completed
+          (FU-047 registered).
+  NEXT — the register's NEXT rows (FU-003, FU-004, FU-011, FU-017…FU-019, FU-021, FU-022, FU-025…FU-028,
+    FU-031…FU-037, FU-039…FU-045, FU-047), then P1.13, then P1.14, then MILESTONE M1. FU-029 and FU-030 ride with P2.6.
   WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
     rulings, not register rows).
 
@@ -650,11 +658,10 @@ SCHEDULED FOLLOW-UPS — every task a round finds and does not do is a row in do
 added in the same commit (python scripts/followups.py add), slotted to the plan item whose round does
 it, NEXT (its own round), or OWNER (waits on an Owner decision; never scheduled). A round that marks a
 plan item "✅ DONE W###" closes or re-slots that item's rows first — the suite fails otherwise.
-Open 35 (35 scheduled, 0 high · 0 awaiting the Owner) · done 11 · dropped 0.
+Open 35 (35 scheduled, 0 high · 0 awaiting the Owner) · done 12 · dropped 0.
   NEXT — its own round, before P1.13
     FU-003 [medium] test_fabric_organism_systems_run_real is order-dependent — it fails when run alone (also at 1bde2eb0) and passes inside the full suite — it leans on state an earlier test leaves behind, so a green suite says nothing about it (found W459 (found in passing))
     FU-004 [medium] The compliance mandates docs claim ENFORCED on a file W460 deleted — docs/compliance/MANDATES.md and MANDATES_FINAL.md list 'GaaS-Validated Mutations — ENFORCED' in packages/shared/gaas.ts, which never validated anything and no longer exists; the other ENFORCED rows need the same reading (found W460 refutation (ruled out of that round's scope))
-    FU-023 [medium] A transfer whose receiver queue write fails twice is left debited with nothing to repair it — record_transfer debits the sender and queues the receiver in two steps. If the queue write fails on the first attempt and again on the endpoint's single idempotent replay (e.g. the pending-transfers lock held for over 20s), POST /economy/transfer returns 500 with no transfer_id: the sender stays debited, the receiver is never credited, nothing anywhere replays that transfer_id, and a client retry mints a new id and pays again (a material one files a fresh hold). A process that dies between the two steps strands the debit the same way. For a non-material transfer no economy UEG event records it. Pre-existing (the same at c519c497); W463 keeps the approval spent and no longer tells the Owner to re-approve. Fix: reconcile stranded legs (sender postings naming a transfer_id with no pending-store entry are replayed through record_transfer, which is idempotent) on the heartbeat or next access; answer the endpoint with the transfer_id and a debited-receiver-pending status instead of a bare 500; log the non-material case. (found W463 refuter (TCC-1))
     FU-025 [medium] test_v191_evolution_approvals_route_through_change_control is order-dependent — it passes alone and in the full suite order but fails after the organism-status tests (the same -k selection fails at b97e38e7): its LOW proposal is only auto-approved when composite health is at least 0.6, and an earlier test leaves the organism less healthy, so the approval stays under_change_control and the re-approve answer is 'Already with the Change Control Agency.' — the same class as FU-003 (found W464 (found in passing, reproduced at HEAD))
     FU-026 [medium] config/paths.py resolves BASE_DIR one level above the repository — BASE_DIR = Path(__file__).resolve().parent.parent.parent is the repo's parent (C:/Users/rehan), so without WORKSTATION_DATA_DIR the live MEMORY_FILE, INTERACTIONS_DB, L7 registry, meeting log and chroma store live in <repo-parent>/data and ensure_dirs() creates logs/genome/models directories there at import (ai/memory.py, ai/logger.py, v138 ceo, synthesis, ingestion, qep_flagship import it). Fixing the path relocates the live AI memory store: migrate it deliberately (copy, verify, switch), never move it silently (found W464 genome_engine audit (read; paths confirmed))
     FU-034 [medium] A service contract can be offered to an entity that is not living, and nothing declines or cancels one — offer_contract never checks that the client and provider are registered living entities: the W465 probe offered a contract to a provider id that exists nowhere, accepted it, and delivered it (a whole provider-scoped org cascade ran — 15-25 minutes on a local model) before settle refused the transfer with 404. There is no decline for the provider or cancel for the client, so such a contract sits 'delivered' forever. Fix: validate both parties at offer (and again at accept), add decline/cancel with their own UEG events, and let the page offer them. (found W465 audit (read) and probe (reproduced))
@@ -679,6 +686,7 @@ Open 35 (35 scheduled, 0 high · 0 awaiting the Owner) · done 11 · dropped 0.
     FU-039 [low] A settle that raises leaves the previous attempt's unpaid outcome on the contract — settle_contract records an outcome only when the transfer answers; any exception exit (a crash after the debit, a 503 from the ledger or the pending store) releases the claim and leaves the settlement field of an EARLIER attempt, so the page can still show 'held for the Owner' after the Owner approved and the latest attempt failed for another reason. Nothing is paid twice and settling again completes it. Fix: on an exception exit, record outcome 'unknown' with the error (inside the release mutation), and let the page say settle again. (found W465 third refutation (reproduced, pre-existing))
     FU-040 [low] A cycle swallows a failed venture-returns intake silently, and the Board page cites a server log it may not have — W465 made a failed inter-VSB receipts intake visible (inter_vsb_receipts_error, a warning log) and made the gate measure only receipts the intake can take; consume_pending_returns in the same cycle still swallows every error as 0 recycled with no report or log, and its peek may read differently. Separately BoardOfDirectors.tsx tells the Owner to 'see the server log' when a ratification's ledger entry did not land — check that the server logs that case (the W465 owner-accrual alert did not until the third refutation). (found W465 third refutation (read))
     FU-045 [low] The heartbeat drops a failed entity visit silently, and revenue.consume_pending is ungated dead code — heartbeat.py:239-243 discards operate_vsb's error result, so a failed or partly posted non-material cycle leaves no trace anywhere (reproduced); and revenue.consume_pending (revenue.py:108-134) has no callers yet would consume every pending event without any gate if one were added. Fix: log the failed visit (UEG + log) and delete the dead function. (found W466 pre-audit of FU-023/FU-022 (reproduced))
+    FU-047 [low] A transfer stranded before W466 can only be found by hand — W466 completes a stranded transfer (the sender debited, the receiver never credited) only when its debit carries the receiver-leg marker written since W466: a debit made earlier cannot prove whether its receiver was credited once its id left the receiver's 50-row display window (and before W465 no durable credited-id list existed), so completing it could credit the receiver twice. POST /transfers/{id}/complete refuses such a debit (409) and the pass never lists it. Fix, if any exist: a one-off Owner-reviewed audit listing unmarked transfer_out debits with no credited-id and no display-window entry, completed individually on the Owner's decision. (found W466 pre-audit (reproduced: replaying an old id re-credited it))
   P2.6 — The perimeter and the gate
     FU-005 [medium] The /api/v1/swarm router carries no auth dependency — agentic_core/api/swarm.py has zero Depends — the org cascade (POST /cascade), CEO delegation (POST /delegate), proposed-catalogue curation and the run histories are callable by anyone when AUTH_ENABLED is on; P2.6 names 'swarm' among its routers, this row pins the routes (found W460 audit (P1.12))
     FU-006 [medium] The org cascade's governance verdict gates a constant string, not the delivery — swarm.py's _attest returns a fixed attestation sentence, so 'gov: allowed' can never reflect the delivered content; W460 relabelled the chip 'intent only' — the real fix is gating the delivery itself (found W460 audit (P1.12))
@@ -1037,8 +1045,9 @@ Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), plus four rounds
 and W463 each worked a task an earlier round found and deferred, W462 built the register after the
 Owner asked (2026-09-13) that suggested tasks be scheduled into the plan, and W464 delivered the Owner's
 rulings on the register's four OWNER rows, and W465 worked three of its NEXT rows (FU-015, FU-016, FU-024) and
-registered thirteen more it found (closing two of them, FU-038 and FU-046, itself) — and at W465 the register holds
-twenty-seven open NEXT rows (and eight riding with P2.6 and P2.8) before P1.13. Budget for that on top of the ~33.
+registered thirteen more it found (closing two of them, FU-038 and FU-046, itself), and W466 worked FU-023 and
+registered one more — and at W466 the register holds twenty-seven open NEXT rows (and eight riding with P2.6 and
+P2.8) before P1.13. Budget for that on top of the ~33.
 Do not shorten it by declaring; shorten it by measuring.
 </delivery_plan>
 
@@ -1150,7 +1159,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 392 tests; 66 session guards W419–W465, each broken and
+- integration_tests/test_mvp_spine.py — 393 tests; 67 session guards W419–W466, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).

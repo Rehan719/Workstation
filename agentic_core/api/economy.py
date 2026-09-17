@@ -14,6 +14,8 @@ biomimetic systems and governed by gaas.v5.
 """
 from __future__ import annotations
 
+import asyncio
+import re
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -318,13 +320,100 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
     return await _transfer_core(req)
 
 
+class CompleteTransferRequest(BaseModel):
+    from_vsb: str
+
+
+_TRANSFER_ID_RE = re.compile(r"^xfer-[A-Za-z0-9]{1,40}$")
+
+
+@router.post("/transfers/{transfer_id}/complete")
+async def complete_transfer(transfer_id: str, req: CompleteTransferRequest,
+                            user: dict | None = Depends(get_current_user)):
+    """W466 (register FU-023) — complete ONE transfer whose sender was debited and whose receiver was never credited:
+    the receiver is credited once, and nothing is ever debited (a replay that requires the debit). Only a debit made
+    since W466 carries the marker this needs; the sender must be the caller's own entity."""
+    _require_economy_access(req.from_vsb, user)
+    if not _TRANSFER_ID_RE.match(transfer_id):
+        raise HTTPException(status_code=422, detail="Not a transfer id.")
+    from agentic_core.economy import transfers as _tr
+    rep = await asyncio.to_thread(_tr.reconcile_receiver_legs, 0.0, 1, transfer_id, req.from_vsb)
+    if rep.get("skipped"):
+        raise HTTPException(status_code=503, detail=f"{rep['skipped']} — nothing was done; complete it again later.")
+    item = (rep.get("items") or [{}])[0]
+    outcome = item.get("outcome")
+    if outcome == "completed":
+        return {"status": "completed", "transfer_id": transfer_id, "to_vsb": item.get("to_vsb"),
+                "amount_wst": item.get("amount_wst"), "receiver_living": item.get("receiver_living"),
+                "note": "The receiver was credited once; nothing was debited again (virtual WST)."}
+    if outcome in ("already_credited", "close_failed"):
+        return {"status": "already_credited", "transfer_id": transfer_id,
+                "note": "The receiver's queue already held this transfer — nothing more was credited."
+                        + (" Its ledger mark could not be closed just now (nothing is missing); completing it again, or "
+                           "the reconciliation pass, closes it." if outcome == "close_failed" else "")}
+    if outcome == "left_to_settlement":
+        raise HTTPException(status_code=409, detail=(
+            "A service-contract settlement is completing this payment right now — settle it again if it fails; "
+            "nothing was done here."))
+    if outcome == "failed":
+        raise HTTPException(status_code=503, detail=f"The transfer could not be completed ({item.get('error')}) — "
+                                                    "nothing was debited; complete it again once the cause clears.")
+    # no open leg: say which of the three it is
+    try:
+        path = _tr._ledger_path(req.from_vsb)
+        postings = _tr._read_ledger_strict(path).get("postings", []) if path.exists() else []
+    except Exception as err:
+        raise HTTPException(status_code=503, detail=(
+            f"{req.from_vsb}'s ledger could not be read ({type(err).__name__}) — nothing was done."))
+    mine = [p for p in postings if _tr._posting_names(p, transfer_id)]
+    if not mine:
+        raise HTTPException(status_code=404, detail=(
+            f"No debit for transfer {transfer_id} on {req.from_vsb}'s ledger — there is nothing to complete."))
+    if any(isinstance(p.get("transfer"), dict) and p.get("receiver_leg") == "credited" for p in mine):
+        return {"status": "already_credited", "transfer_id": transfer_id,
+                "note": "This transfer's receiver was already credited — nothing more was done."}
+    if any(isinstance(p.get("transfer"), dict) for p in mine):
+        # W466 (refutation) — a MARKED debit the pass could not examine (its ledger unreadable for a moment, or not yet
+        # old enough to be seen): never the "before W466" answer, which would be untrue and discourage the retry
+        raise HTTPException(status_code=503, detail=(
+            f"Transfer {transfer_id}'s receiver leg is still open but could not be examined just now "
+            f"({rep.get('ledgers_unreadable') or 0} ledger(s) unreadable) — nothing was done; complete it again."))
+    raise HTTPException(status_code=409, detail=(
+        f"Transfer {transfer_id} was debited before W466 and carries no receiver-leg record, so whether its receiver "
+        "was credited cannot be proven — completing it could credit the receiver twice. Check the receiver's queue "
+        "for this id; nothing was done."))
+
+
+@router.get("/transfers/open")
+async def open_transfers(from_vsb: str, user: dict | None = Depends(get_current_user)):
+    """W466 (refutation) — the sender's transfers whose debit posted and whose receiver credit is missing (marked since
+    W466), so the page can offer Complete for each even after a reload or an entity switch; legs whose receiver WAS
+    credited (only the ledger mark is open) and payments a live settlement is completing are listed apart. Read-only."""
+    _require_economy_access(from_vsb, user)
+    from agentic_core.economy import transfers as _tr
+    res = await asyncio.to_thread(_tr.open_legs_for, from_vsb)
+    return {"from_vsb": from_vsb, **res, "disclaimer": "Virtual/simulated WST — no real funds moved."}
+
+
+@router.post("/transfers/reconcile")
+async def reconcile_transfers(user: dict | None = Depends(get_current_user)):
+    """W466 (register FU-023) — complete every stranded transfer (a debited sender, an uncredited receiver) older than
+    two minutes. Platform-scoped (admin-only under auth). The heartbeat runs the same pass every fifth beat while
+    autonomous economy is on."""
+    _require_economy_access("workstation-idbo", user)
+    from agentic_core.economy.transfers import reconcile_receiver_legs
+    rep = await asyncio.to_thread(reconcile_receiver_legs)
+    return {**rep, "disclaimer": "Virtual/simulated WST — no real funds moved."}
+
+
 async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None, *, context: str = "transfer") -> dict:
     """The transfer itself, after the caller's access check. W465: a service-contract settlement passes the
     transfer id its claim persisted, so a retry after a crash posts under the SAME id (record_transfer is idempotent
     on it) instead of minting a fresh one and debiting the client twice. Every dependency stays imported at call
     time (tests substitute them on their modules)."""
     from agentic_core.economy.governance import _materiality_gate, _ueg_log
-    from agentic_core.economy.transfers import PendingStoreUnavailable, record_transfer, validate_transfer
+    from agentic_core.economy.transfers import (PendingStoreUnavailable, SenderLedgerUnavailable, record_transfer,
+                                                validate_transfer)
 
     # side-effect-free validation FIRST → clean HTTP codes, nothing posted on refusal
     try:
@@ -380,6 +469,83 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
                            "the transfer did not complete and the sender's ledger could not be read, so whether its "
                            "debit posted is unknown; the approval was kept spent for that reason. Check the sender's "
                            "ledger for this transfer_id before re-approving or re-running the transfer")})
+
+    def _failure_answer(e: Exception):
+        """What the caller is told when the transfer did not complete: the sender's ledger decides. Returns the
+        exception to raise (the original one only for an unexpected fault that debited nothing)."""
+        from agentic_core.economy.transfers import debit_posted
+        try:
+            debited = bool(debit_posted(req.from_vsb, _xfer_id))
+        except Exception:
+            debited = None
+        settling = context == "settlement"
+        why = (str(e).replace("; nothing was written", "") or type(e).__name__).strip("'\"")
+        headers = {"X-Transfer-Id": _xfer_id,
+                   "X-Transfer-Debited": "true" if debited else ("false" if debited is False else "unknown")}
+        again = "settle" if settling else "retry"
+        if isinstance(e, SenderLedgerUnavailable):
+            # refused under the ledger's lock before any posting: this request debited nothing
+            headers["X-Transfer-Debited"] = "false"
+            return HTTPException(status_code=503, headers=headers, detail=(
+                f"{why}. Nothing was debited — {again} again once the ledger is readable (a debit from an earlier "
+                "transfer may be stranded on it)."))
+        if debited is False:
+            if isinstance(e, ValueError):
+                return HTTPException(status_code=400, detail=str(e), headers=headers)
+            if isinstance(e, KeyError):
+                return HTTPException(status_code=404, detail=why, headers=headers)
+            if isinstance(e, PendingStoreUnavailable):
+                return HTTPException(status_code=503, headers=headers, detail=(
+                    f"{why}. Nothing was debited — {again} again once the store is readable."))
+            if isinstance(e, TimeoutError):
+                return HTTPException(status_code=503, headers=headers, detail=(
+                    f"A store this {'settlement' if settling else 'transfer'} needs was busy ({why}). Nothing was "
+                    f"debited — {again} again."))
+            return e
+        if debited:
+            # …and the receiver's queue says whether the credit landed (an error raised after both steps is not a
+            # missing leg, and must not be told to complete one)
+            try:
+                from agentic_core.economy.transfers import _read_pending
+                rec = _read_pending().get(req.to_vsb) or {}
+                ids = rec.get("credited_ids") if isinstance(rec.get("credited_ids"), list) else [
+                    t.get("transfer_id") for t in (rec.get("transfers") or []) if isinstance(t, dict)]
+                receiver = "credited" if _xfer_id in set(ids) else "not_credited"
+            except Exception:
+                receiver = "unknown"
+            headers["X-Transfer-Receiver"] = receiver
+            if receiver == "credited":
+                return HTTPException(status_code=500, headers=headers, detail=(
+                    f"{'This settlement' if settling else f'Transfer {_xfer_id}'} posted — the "
+                    f"{'client' if settling else 'sender'} was debited and the {'provider' if settling else 'receiver'} "
+                    f"credited — but the request then failed ({type(e).__name__}: {why}). Nothing is missing; "
+                    + ("settle again to record it — it pays nothing more." if settling else "do NOT re-run it.")))
+            logged = _ueg_log({"type": "economy.transfer_receiver_leg_missing", "vsb_id": req.from_vsb,
+                               "to_vsb": req.to_vsb, "amount_wst": req.amount, "transfer_id": _xfer_id,
+                               "context": context, "error": f"{type(e).__name__}: {why[:200]}",
+                               "receiver_credited": None if receiver == "unknown" else False,
+                               "note": "the sender was debited and the receiver was not credited; completing this "
+                                       "transfer id credits the receiver once and never debits again"})
+            reached = ("has not reached the {q}'s queue" if receiver == "not_credited" else
+                       "may not have reached the {q}'s queue (that queue could not be read)")
+            if settling:
+                detail = (f"{why}. This settlement's payment ({_xfer_id}) debited the client but "
+                          + reached.format(q="provider") + " — settle again once the cause clears: it completes the "
+                          "payment without paying twice.")
+            else:
+                detail = (f"{why}. Transfer {_xfer_id} debited the sender (its ledger shows the debit) but "
+                          + reached.format(q="receiver") + ". Do NOT re-run the transfer — a new request debits again. "
+                          f"Complete it once the cause clears (POST /api/v1/economy/transfers/{_xfer_id}/complete, the "
+                          "page's Complete button): the receiver is credited once and nothing is debited again"
+                          + (" (recorded on the constitutional ledger)." if logged else
+                             "; the ledger entry recording it did not land — note the transfer id now."))
+            return HTTPException(status_code=503, detail=detail, headers=headers)
+        return HTTPException(status_code=503, headers=headers, detail=(
+            f"{why}. Whether this {'settlement' if settling else 'transfer'} ({_xfer_id}) debited the "
+            + ("client is unknown (its ledger could not be read) — settle again: it asks the ledger first and never "
+               "pays twice." if settling else
+               "sender is unknown (its ledger could not be read) — check the sender's ledger for this id before "
+               "re-running; a new request would debit again.")))
 
     async def _action():
         posted["started"] = True
@@ -440,54 +606,23 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
                 _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
                           "error": str(e)[:200], "note": "gaas.v5 gate unavailable — transfer ran ungated (logged loudly)."})
                 governance = {"status": "ungated_bypass_logged", "error": str(e)[:160]}
-    except ValueError as e:
-        # W442 refuter catch: the atomic in-lock funds re-check (a concurrent drain won the race)
-        # used to escape as a 500; it is a clean refusal — and the consumed approval is restored when
-        # nothing posted. W463: "nothing posted" is the LEDGER's answer, not a progress flag — a replay of
-        # an already-debited transfer could raise here too.
-        _give_back_unless_debited("funds re-check refused — nothing posted")
-        raise HTTPException(status_code=400, detail=str(e))
-    except PendingStoreUnavailable as e:
-        # W465 — the receiver's queue could not be read (it is checked before the debit, so normally nothing posted);
-        # a refusal of the store, not a server fault, and the answer says what the sender's ledger shows
-        _give_back_unless_debited("the receiver's pending-transfers store could not be read — nothing posted")
-        from agentic_core.economy.transfers import debit_posted
-        try:
-            debited = bool(debit_posted(req.from_vsb, _xfer_id))
-        except Exception:
-            debited = None
-        settling = context == "settlement"
-        why = str(e).replace("; nothing was written", "")
-        if debited is False:
-            detail = f"{why}. Nothing was debited — {'settle' if settling else 'retry'} again once the store is readable."
-        elif debited:
-            logged = _ueg_log({"type": "economy.transfer_receiver_leg_missing", "vsb_id": req.from_vsb,
-                               "to_vsb": req.to_vsb, "amount_wst": req.amount, "transfer_id": _xfer_id,
-                               "context": context, "error": why[:200],
-                               "note": "the sender was debited and the receiver's pending queue could not be written; "
-                                       "replaying this transfer_id through record_transfer completes the credit once, "
-                                       "without a second debit"})
-            if settling:
-                detail = (f"{why}. This settlement's payment ({_xfer_id}) debited the client but has not reached the "
-                          "provider's queue — settle again once the store is readable: it completes the payment "
-                          "without paying twice.")
-            else:
-                detail = (f"{why}. Transfer {_xfer_id} debited the sender (its ledger shows the debit) but has not "
-                          "reached the receiver's queue. Do NOT re-run the transfer — a new request debits again. The "
-                          "receiver's credit is completed by replaying this transfer id once the store is readable"
-                          + (" (recorded on the constitutional ledger)." if logged else
-                             "; the ledger entry recording it did not land — note the transfer id now."))
-        else:
-            detail = (f"{why}. Whether this {'settlement' if settling else 'transfer'} ({_xfer_id}) debited the "
-                      + ("client is unknown (its ledger could not be read) — settle again: it asks the ledger first "
-                         "and never pays twice." if settling else
-                         "sender is unknown (its ledger could not be read) — check the sender's ledger for this id "
-                         "before re-running; a new request would debit again."))
-        raise HTTPException(status_code=503, detail=detail) from None
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        # W442 refuter catch: the atomic in-lock funds re-check (a concurrent drain won the race) is a clean refusal,
+        # and the consumed approval is restored when nothing posted. W463: "nothing posted" is the LEDGER's answer,
+        # not a progress flag. W466 (register FU-023): EVERY failure asks the ledger — a failure after the debit (a
+        # busy or unwritable receiver queue, twice) used to answer a bare 500 with no transfer id, and a retry minted
+        # a new id and paid again.
+        _give_back_unless_debited("funds re-check refused — nothing posted" if isinstance(e, ValueError)
+                                  else "the transfer raised before it posted — nothing was debited")
+        answer = _failure_answer(e)
+        if answer is e:
+            raise
+        raise answer from None
     except BaseException:
-        # W463 — anything else that stops the transfer (a vanished receiver, a busy store) used to escape
-        # as a 500 with the Owner's approval spent on nothing.
-        _give_back_unless_debited("the transfer raised before it posted — nothing was debited")
+        # an interruption (not an error): the approval comes back only when the ledger shows no debit
+        _give_back_unless_debited("the transfer was interrupted before it posted — nothing was debited")
         raise
 
     _ueg_log({"type": "economy.inter_vsb_transfer", **{k: transfer[k] for k in
@@ -839,6 +974,13 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
                     f"An earlier attempt of this settlement debited the client; completing it needs the provider's "
                     f"pending-transfers store, which could not be read ({err}). Nothing more was paid — settle again "
                     "once it is readable; it completes the payment without paying twice.")) from None
+            except Exception as err:
+                # W466 — a busy or unwritable queue here used to answer a bare 500; the claim keeps the id either way
+                raise HTTPException(status_code=503, headers={"X-Transfer-Id": xid, "X-Transfer-Debited": "true"},
+                                    detail=(f"An earlier attempt of this settlement debited the client; completing it "
+                                            f"failed ({type(err).__name__}: {str(err)[:160]}). Nothing more was paid — "
+                                            "settle again once the cause clears; it completes the payment without "
+                                            "paying twice.")) from None
             result = {"transfer": replayed,
                       "governance": {"status": "replay_of_posted_debit",
                                      "note": "an earlier attempt of this settlement had already debited the client; "
@@ -851,15 +993,22 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
         raise
 
     transfer, gov, unknown = result.get("transfer"), (result.get("governance") or {}), False
+    unknown_why = None
     if not transfer:
         # a gate that answers without a transfer after the action ran must not leave a paid contract unsettled
         try:
-            if _tr.debit_posted(client, xid):
-                transfer = _tr.record_transfer(client, provider, price, memo, transfer_id=xid)
-                gov = {**gov, "note": "the gate answered without a transfer, but the client's ledger shows this "
-                                      "settlement's debit; it was completed"}
+            debited_now = _tr.debit_posted(client, xid)
         except Exception:
-            unknown = True
+            unknown, unknown_why = True, None
+        else:
+            if debited_now:
+                try:
+                    transfer = _tr.record_transfer(client, provider, price, memo, transfer_id=xid)
+                    gov = {**gov, "note": "the gate answered without a transfer, but the client's ledger shows this "
+                                          "settlement's debit; it was completed"}
+                except Exception as err:
+                    # W466 — the debit is CONFIRMED; only completing it failed (the note used to blame the ledger)
+                    unknown, unknown_why = True, f"{type(err).__name__}: {str(err)[:160]}"
     answer: dict = {}
 
     def _apply(rows: list):
@@ -879,8 +1028,11 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
             answer["note"] = "Another settle of this contract took over while this one ran; its answer stands."
             return _public_contract(cur)
         if unknown:
-            kind, note = "unknown", ("Whether this payment posted could not be determined (the client's ledger could not "
-                                     "be read) — settle again: it asks the ledger first and never pays twice.")
+            kind, note = "unknown", (
+                "Whether this payment posted could not be determined (the client's ledger could not be read) — settle "
+                "again: it asks the ledger first and never pays twice." if unknown_why is None else
+                f"This payment debited the client, but completing it failed ({unknown_why}) — settle again: it "
+                "completes the payment without paying twice.")
             cl["claim"], cl["at_epoch"] = None, 0
         else:
             kind, note = _settlement_outcome(gov, client, provider)

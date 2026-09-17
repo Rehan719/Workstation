@@ -11,14 +11,27 @@ Semantics (virtual WST only — no real funds, real-money rails stay Owner-gated
 """
 from __future__ import annotations
 
+import calendar
+import logging
 import math
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
 
 _PENDING_STORE = data_path("economy_pending_transfers.json")
+logger = logging.getLogger(__name__)
+
+
+class SenderLedgerUnavailable(RuntimeError):
+    """W466 (third refutation) — the sender's ledger exists but cannot be read whole: no transfer is posted (a tolerant
+    read would debit against a valid prefix while a stranded debit on the unreadable part stays hidden)."""
+
+
+class TransferNotDebited(RuntimeError):
+    """W466 — a replay-only call (require_debit=True) found no debit for its transfer id on the sender's ledger.
+    Nothing was posted: a reconciliation never debits."""
 
 
 class PendingStoreUnavailable(RuntimeError):
@@ -137,7 +150,7 @@ def validate_transfer(from_vsb: str, to_vsb: str, amount: float) -> float:
 
 
 def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
-                    transfer_id: str | None = None) -> Dict[str, Any]:
+                    transfer_id: str | None = None, require_debit: bool = False) -> Dict[str, Any]:
     """One inter-VSB transfer: checks the amount's shape and refuses a self-transfer, then — only for a
     transfer id not yet debited — checks the receiver's liveness and the sender's funds inside the ledger lock
     (a replay skips both and repairs a missing receiver leg), posts the sender's books, queues
@@ -146,7 +159,12 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
     W442 — the funds check now runs ATOMICALLY with the debit (inside the ledger's store lock):
     two concurrent transfers both reading reserve=100 used to both pass validation and both post.
     A caller-supplied transfer_id makes the posting IDEMPOTENT (the gaas fallback path could
-    retry after the action had already executed — one request, two debits)."""
+    retry after the action had already executed — one request, two debits).
+
+    W466 — a new debit carries its transfer as DATA (`transfer`: id, receiver, amount; `receiver_leg`: open), and
+    the leg is closed once the receiver's queue holds the id, so a debit whose receiver leg never landed can be
+    FOUND and completed (reconcile_receiver_legs). require_debit=True is the replay-only mode a completion uses: a
+    transfer id with no debit raises TransferNotDebited and nothing is posted."""
     from agentic_core.economy.ledger import VirtualLedger
     sender = VirtualLedger(from_vsb)
     transfer_id = transfer_id or f"xfer-{uuid.uuid4().hex[:10]}"
@@ -166,11 +184,19 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
         raise ValueError("A VSB cannot transfer to itself.")
     _receiver_id_ok(to_vsb, transfer_id)
     with store_lock(sender.path):
+        if sender.path.exists():
+            try:
+                _read_ledger_strict(sender.path)
+            except Exception as err:
+                raise SenderLedgerUnavailable(f"{from_vsb}'s ledger could not be read ({type(err).__name__}); nothing "
+                                              "was debited") from err
         sender._data = sender._load()
         reserve = round((sender._data.get("accounts") or {}).get("reserve_fund", 0.0), 2)
         already = any(_posting_names(p, transfer_id) for p in sender._data.get("postings", []))
         if already:
             posted = False
+        elif require_debit:
+            raise TransferNotDebited(f"no debit for transfer {transfer_id} on {from_vsb}'s ledger — nothing was posted")
         else:
             from agentic_core.economy.living_vsbs import _load as _living
             if to_vsb not in _living():
@@ -178,9 +204,11 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
             if reserve < amount:
                 raise ValueError(f"Insufficient virtual funds: {from_vsb} reserve fund holds "
                                  f"{reserve} WST < transfer {amount} WST.")
-            sender._apply_posting("transfer_out", "reserve_fund", amount,
-                                  memo=f"inter-VSB transfer → {to_vsb} ({transfer_id})"
-                                       + (f" — {memo}" if memo else ""))
+            posting = sender._apply_posting("transfer_out", "reserve_fund", amount,
+                                            memo=f"inter-VSB transfer → {to_vsb} ({transfer_id})"
+                                                 + (f" — {memo}" if memo else ""))
+            posting["transfer"] = {"id": transfer_id, "to_vsb": to_vsb, "amount_wst": amount}
+            posting["receiver_leg"] = "open"
             sender._save()
             posted = True
 
@@ -214,6 +242,10 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
             d[to_vsb] = rec
             atomic_write_json(_PENDING_STORE, d)
 
+    # W466 — the receiver's queue holds the id: close the debit's leg (a close that does not land leaves it open; the
+    # reconciliation then finds the id already credited and only closes it)
+    leg_closed = _close_receiver_leg(from_vsb, transfer_id)
+
     return {
         "transfer_id": transfer_id, "from_vsb": from_vsb, "to_vsb": to_vsb,
         "amount_wst": amount, "memo": memo, "at": _now(),
@@ -222,6 +254,7 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
         "replay_repaired_receiver_leg": repaired,
         "sender_reserve_fund_after_wst": round(reserve - amount, 2) if posted else reserve,
         "receiver_pending_wst": rec["pending_wst"],
+        "receiver_leg_closed": leg_closed,
         "settlement": "the receiver's next metabolic cycle consumes this as intake revenue "
                       "(enters its §4 waterfall)",
         "disclaimer": "Virtual/simulated WST — no real funds moved.",
@@ -256,11 +289,22 @@ def debit_posted(from_vsb: str, transfer_id: str) -> bool:
     lock: every write of this transfer id was made by the asking request's own calls, which have returned,
     and atomic_write_json (os.replace) means an unlocked read sees a whole file — so a writer holding the
     lock for another transfer can no longer keep the answer (and the approval) hostage."""
-    import json as _json
-    from agentic_core.economy.ledger import VirtualLedger
-    path = VirtualLedger(from_vsb).path
+    path = _ledger_path(from_vsb)
     if not path.exists():
         return False
+    data = _read_ledger_strict(path)
+    return any(_posting_names(p, transfer_id) for p in data.get("postings", []))
+
+
+def _ledger_path(vsb_id: str):
+    from agentic_core.economy.ledger import _STORE as _LEDGERS
+    return _LEDGERS / f"{vsb_id}_ledger.json"
+
+
+def _read_ledger_strict(path) -> Dict[str, Any]:
+    """A ledger read that raises rather than answering empty books (the ledger's own loader is tolerant)."""
+    import json as _json
+    data = None
     for attempt in range(5):
         try:
             data = _json.loads(path.read_text(encoding="utf-8"))
@@ -271,7 +315,199 @@ def debit_posted(from_vsb: str, transfer_id: str) -> bool:
             time.sleep(0.05)
     if not isinstance(data, dict):
         raise ValueError(f"{path.name} is not a ledger object")
-    return any(_posting_names(p, transfer_id) for p in data.get("postings", []))
+    return data
+
+
+def _close_receiver_leg(from_vsb: str, transfer_id: str) -> bool:
+    """W466 — mark the debit's receiver leg credited, under the ledger's lock, from a STRICT read (a tolerant read of
+    an unreadable ledger would write empty books back). Returns whether a leg was closed; never raises."""
+    path = _ledger_path(from_vsb)
+    try:
+        with store_lock(path):
+            if not path.exists():
+                return False
+            data = _read_ledger_strict(path)
+            closed, dirty = False, False
+            for p in data.get("postings", []) or []:
+                if not (_posting_names(p, transfer_id) and isinstance(p.get("transfer"), dict)):
+                    continue
+                if p.get("receiver_leg") == "open":
+                    p["receiver_leg"], p["receiver_leg_closed_at"] = "credited", _now()
+                    closed = dirty = True
+                elif p.get("receiver_leg") == "credited":
+                    closed = True          # closed already (a concurrent completion or the original request)
+            if dirty:
+                atomic_write_json(path, data)
+            return closed
+    except Exception as err:
+        logger.warning("could not close the receiver leg of %s on %s's ledger: %s", transfer_id, from_vsb, err)
+        return False
+
+
+def _age_s(ts: Any, now: float) -> Optional[float]:
+    try:
+        return now - calendar.timegm(time.strptime(str(ts), "%Y-%m-%dT%H:%M:%SZ"))
+    except (ValueError, OverflowError):
+        return None
+
+
+def _open_receiver_legs(min_age_s: float, from_vsb: Optional[str] = None) -> Tuple[List[Dict[str, Any]], int]:
+    """Every debit whose receiver leg is still open, from a strict read of each ledger (unreadable ledgers are
+    counted, never guessed at). Only debits made since W466 carry the marker: an unmarked debit is never a candidate
+    (records written before W466 could not tell a credited id from an uncredited one once it left the receiver's
+    50-row window, so completing them could credit a receiver twice)."""
+    from agentic_core.economy.ledger import _STORE as _LEDGERS
+    now = time.time()
+    legs: List[Dict[str, Any]] = []
+    unreadable = 0
+    paths = [_ledger_path(from_vsb)] if from_vsb is not None else sorted(_LEDGERS.glob("*_ledger.json"))
+    for path in paths:
+        if not path.exists():
+            continue
+        try:
+            data = _read_ledger_strict(path)
+        except Exception:
+            unreadable += 1
+            continue
+        sender = path.name[: -len("_ledger.json")]
+        for p in data.get("postings", []) or []:
+            t = p.get("transfer") if isinstance(p, dict) else None
+            if not (isinstance(t, dict) and p.get("receiver_leg") == "open" and p.get("debit") == "transfer_out"):
+                continue
+            tid, to_vsb = t.get("id"), t.get("to_vsb")
+            if not (isinstance(tid, str) and isinstance(to_vsb, str) and _posting_names(p, tid)):
+                continue
+            amount = p.get("amount")
+            if not (_amount_ok(amount) and _amount_ok(t.get("amount_wst")) and round(float(amount), 2)
+                    == round(float(t.get("amount_wst")), 2) and amount > 0):
+                continue
+            age = _age_s(p.get("ts"), now)
+            if age is None or age < min_age_s:
+                continue
+            memo = str(p.get("memo") or "")
+            legs.append({"transfer_id": tid, "from_vsb": sender, "to_vsb": to_vsb, "amount_wst": round(float(amount), 2),
+                         "memo": memo.split(" — ", 1)[1] if " — " in memo else "", "debited_at": p.get("ts"),
+                         "age_s": round(age, 1)})
+    return legs, unreadable
+
+
+def open_legs_for(from_vsb: str) -> Dict[str, Any]:
+    """W466 (second refutation) — a sender's open legs as the page must show them: only a debit whose receiver credit is
+    MISSING is stranded. A leg the receiver's queue already holds (its close did not land) is nothing to complete, and a
+    payment a live settlement claim is completing belongs to that settlement — both listed apart, never as stranded.
+    When the receiver queue cannot be read, the legs are listed with receiver_unknown (whether they landed is unknown)."""
+    legs, unreadable = _open_receiver_legs(0.0, from_vsb)
+    out: Dict[str, Any] = {"open": [], "credited_unclosed": [], "settling": [], "ledger_unreadable": bool(unreadable),
+                           "receiver_queue_unreadable": False}
+    try:
+        pending = _read_pending()
+    except PendingStoreUnavailable:
+        pending, out["receiver_queue_unreadable"] = None, True
+    claims = _live_settle_claims() or set()
+    for g in legs:
+        row = {k: g[k] for k in ("transfer_id", "to_vsb", "amount_wst", "debited_at")}
+        if g["transfer_id"] in claims:
+            out["settling"].append(row)
+            continue
+        if pending is None:
+            out["open"].append({**row, "receiver_unknown": True})
+            continue
+        rec = pending.get(g["to_vsb"]) or {}
+        credited = rec.get("credited_ids") if isinstance(rec.get("credited_ids"), list) else [
+            t.get("transfer_id") for t in (rec.get("transfers") or []) if isinstance(t, dict)]
+        (out["credited_unclosed"] if g["transfer_id"] in set(credited) else out["open"]).append(row)
+    return out
+
+
+def _live_settle_claims() -> Optional[set]:
+    """Transfer ids a service-contract settle is completing right now (a live claim). None when the contract store
+    cannot be read (a completion stays money-safe then: the settle's own replay and this one credit the id once)."""
+    try:
+        from agentic_core.api.economy import _claim_live, _read_contracts
+        return {c["settling"].get("transfer_id") for c in _read_contracts()
+                if isinstance(c, dict) and isinstance(c.get("settling"), dict) and _claim_live(c["settling"])}
+    except Exception:
+        return None
+
+
+_RECONCILE_FAILURES_LOGGED: set = set()
+
+
+def reconcile_receiver_legs(min_age_s: float = 120.0, limit: int = 50, transfer_id: Optional[str] = None,
+                            from_vsb: Optional[str] = None) -> Dict[str, Any]:
+    """W466 (register FU-023) — complete every transfer whose sender was debited and whose receiver was never
+    credited. A candidate is a MARKED debit (made since W466) whose receiver leg is still open, at least min_age_s
+    old (a transfer still in flight is not stranded). Each is replayed with require_debit=True, holding no lock, so a
+    completion credits the receiver once and can never debit; an id the receiver's queue already holds is only
+    closed. A transfer a live settlement claim is completing is left to that settlement. Returns what it did; logs
+    every completion (economy.transfer_leg_reconciled) and each failure once per process."""
+    from agentic_core.economy.governance import _ueg_log
+    report: Dict[str, Any] = {"open_legs": 0, "reconciled": 0, "closed_only": 0, "skipped_settling": 0, "failed": 0,
+                              "close_failed": 0, "ledgers_unreadable": 0, "items": []}
+    try:
+        pending = _read_pending()
+    except PendingStoreUnavailable as err:
+        report["skipped"] = f"the pending-transfers store could not be read ({err})"
+        return report
+    legs, report["ledgers_unreadable"] = _open_receiver_legs(min_age_s, from_vsb)
+    if transfer_id is not None:
+        legs = [g for g in legs if g["transfer_id"] == transfer_id and (from_vsb is None or g["from_vsb"] == from_vsb)]
+    report["open_legs"] = len(legs)
+    claims = _live_settle_claims()
+    if claims is None:
+        report["settle_claims_unreadable"] = True
+        claims = set()
+    for leg in legs[: max(0, int(limit))]:
+        tid = leg["transfer_id"]
+        if tid in claims:
+            report["skipped_settling"] += 1
+            report["items"].append({**leg, "outcome": "left_to_settlement"})
+            continue
+        rec = pending.get(leg["to_vsb"]) or {}
+        credited = rec.get("credited_ids") if isinstance(rec.get("credited_ids"), list) else [
+            t.get("transfer_id") for t in (rec.get("transfers") or []) if isinstance(t, dict)]
+        if tid in set(credited):
+            if _close_receiver_leg(leg["from_vsb"], tid):
+                report["closed_only"] += 1
+                report["items"].append({**leg, "outcome": "already_credited"})
+            else:
+                # the receiver holds the id (nothing is missing); only the ledger's mark could not be written — said, and
+                # left for a later pass
+                report["close_failed"] += 1
+                report["items"].append({**leg, "outcome": "close_failed",
+                                        "error": "the receiver was credited; its leg could not be marked closed"})
+            continue
+        try:
+            out = record_transfer(leg["from_vsb"], leg["to_vsb"], leg["amount_wst"], leg["memo"], transfer_id=tid,
+                                  require_debit=True)
+        except Exception as err:
+            report["failed"] += 1
+            why = f"{type(err).__name__}: {str(err)[:160]}"
+            report["items"].append({**leg, "outcome": "failed", "error": why})
+            if tid not in _RECONCILE_FAILURES_LOGGED:
+                _RECONCILE_FAILURES_LOGGED.add(tid)
+                _ueg_log({"type": "economy.transfer_leg_reconcile_failed", "vsb_id": leg["from_vsb"], **leg,
+                          "error": why, "disclaimer": "Virtual/simulated WST — no real funds moved."})
+                logger.warning("could not complete stranded transfer %s: %s", tid, why)
+            continue
+        if not out.get("replay_repaired_receiver_leg"):
+            report["closed_only"] += 1           # credited meanwhile (a settle or another completion got there first)
+            report["items"].append({**leg, "outcome": "already_credited"})
+            continue
+        report["reconciled"] += 1
+        _RECONCILE_FAILURES_LOGGED.discard(tid)
+        try:
+            from agentic_core.economy.living_vsbs import _load as _living
+            receiver_living = leg["to_vsb"] in _living()
+        except Exception:
+            receiver_living = None
+        report["items"].append({**leg, "outcome": "completed", "receiver_living": receiver_living})
+        _ueg_log({"type": "economy.transfer_leg_reconciled", "vsb_id": leg["from_vsb"], **leg,
+                  "receiver_living": receiver_living,
+                  "note": "the sender had been debited and the receiver never credited; the receiver was credited once "
+                          "(a replay that cannot debit)",
+                  "disclaimer": "Virtual/simulated WST — no real funds moved."})
+    return report
 
 
 def peek_pending_transfers(vsb_id: str) -> float:

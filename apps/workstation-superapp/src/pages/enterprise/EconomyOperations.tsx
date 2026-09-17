@@ -150,6 +150,32 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
   const [result, setResult] = useState<any>(null);
   const [held, setHeld] = useState<any>(null);
   const [err, setErr] = useState('');
+  // W466 (FU-023) — a transfer the server says DEBITED the sender without crediting the receiver: its id, and the
+  // completion's own answer
+  const [stranded, setStranded] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
+  const [completeMsg, setCompleteMsg] = useState('');
+  const [completeErr, setCompleteErr] = useState('');
+  // W466 (refutation) — the server's list of this sender's open legs, so a stranded transfer is still offered for
+  // completion after an entity switch or a reload (the id from the failed answer alone lived only in this component)
+  const [openLegs, setOpenLegs] = useState<{ transfer_id: string; to_vsb: string; amount_wst: number; receiver_unknown?: boolean }[]>([]);
+  const [openErr, setOpenErr] = useState('');
+  // W466 (third refutation) — "could not check" is unknown, never "nothing stranded": a fresh mount knows no legs, so
+  // Transfer stays locked until a check has actually read the ledger
+  const [openChecked, setOpenChecked] = useState(false);
+  const loadOpen = () =>
+    fetch(`/api/v1/economy/transfers/open?from_vsb=${encodeURIComponent(fromVsb)}`)
+      .then(async r => {
+        const d = await r.json().catch(() => null);
+        if (!r.ok || !d || !Array.isArray(d.open)) { setOpenChecked(false); setOpenErr('Could not check for debited transfers awaiting completion.'); return; }
+        // an answer that could not read the ledger lists nothing it could not see: keep what is already known
+        if (d.ledger_unreadable) { setOpenChecked(false); setOpenErr('The ledger could not be read to check for debited transfers awaiting completion.'); return; }
+        setOpenErr(d.receiver_queue_unreadable ? 'The receivers\' queues could not be read — a listed transfer may already have reached its receiver; completing it credits nothing twice.' : '');
+        setOpenLegs(d.open);
+        setOpenChecked(true);
+      }).catch(() => { setOpenChecked(false); setOpenErr('Could not check for debited transfers awaiting completion.'); });
+  useEffect(() => { loadOpen(); }, [fromVsb]);
+  const strandedIds = Array.from(new Set([...(stranded ? [stranded] : []), ...openLegs.map(l => l.transfer_id)]));
 
   const targets = entities.filter(e => e.vsb_id !== fromVsb);
 
@@ -157,19 +183,51 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
     // W465 — the page is told while a transfer runs, so the entity picker stays locked and this panel (keyed by the
     // sending entity) is never replaced before the answer — a transfer id, a hold, or "do NOT re-run" — is shown
     setBusy(true); onBusyChange?.(true); setErr(''); setResult(null); setHeld(null);
+    setStranded(null); setCompleteMsg(''); setCompleteErr('');
     try {
       const r = await fetch('/api/v1/economy/transfer', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from_vsb: fromVsb, to_vsb: to, amount, memo }),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); return; }
+      // W466 — a failure can answer with no JSON at all (a bare 500 read as a parse error before): never guess it
+      // posted nothing
+      const d = await r.json().catch(() => null);
+      if (!r.ok) {
+        setErr(typeof d?.detail === 'string' ? d.detail
+          : `The transfer failed (HTTP ${r.status}) and returned no details — it may have debited ${fromVsb}. Check its ledger before sending it again.`);
+        const debited = r.headers.get('X-Transfer-Debited');
+        const tid = r.headers.get('X-Transfer-Id');
+        // Complete is offered only for a debit whose receiver credit is missing (or unknown), never for one that posted
+        setStranded(debited === 'true' && tid && r.headers.get('X-Transfer-Receiver') !== 'credited' ? tid : null);
+        return;
+      }
+      if (!d) { setErr('The transfer answered without a body — check the sender\'s ledger before sending it again.'); return; }
       if (d.transfer == null) { setHeld(d.governance ?? { note: 'The transfer returned no result.' }); return; }
       setResult({ ...d.transfer, governance: d.governance });
       setAmount(0); setMemo('');
       onDone?.();
     } catch (e: any) { setErr(e?.message ?? String(e)); }
-    finally { setBusy(false); onBusyChange?.(false); }
+    finally { setBusy(false); onBusyChange?.(false); loadOpen(); }
+  };
+
+  const completeStranded = async (tid: string) => {
+    setCompleting(true); onBusyChange?.(true); setCompleteMsg(''); setCompleteErr('');
+    try {
+      const r = await fetch(`/api/v1/economy/transfers/${encodeURIComponent(tid)}/complete`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_vsb: fromVsb }),
+      });
+      const d = await r.json().catch(() => null);
+      if (!r.ok) {
+        setCompleteErr(typeof d?.detail === 'string' ? d.detail : `The completion failed (HTTP ${r.status}) — nothing was debited; try again.`);
+        return;
+      }
+      setCompleteMsg(`${d?.status === 'completed' ? 'Completed' : 'Already credited'} · ${tid} — ${d?.note ?? ''}`);
+      if (stranded === tid) { setStranded(null); setErr(''); }
+      setOpenLegs(legs => legs.filter(l => l.transfer_id !== tid));
+      onDone?.();
+    } catch (e: any) { setCompleteErr(e?.message ?? String(e)); }
+    finally { setCompleting(false); onBusyChange?.(false); loadOpen(); }
   };
 
   return (
@@ -209,7 +267,9 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
             <input value={memo} onChange={e => setMemo(e.target.value)} aria-label="transfer memo"
               className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-highlight/50" />
           </div>
-          <Button onClick={doTransfer} disabled={busy || !to || amount <= 0}
+          <Button onClick={doTransfer} disabled={busy || completing || !openChecked || strandedIds.length > 0 || !to || amount <= 0}
+            title={strandedIds.length > 0 ? 'Complete the debited transfer first — sending it again would debit the sender again.'
+              : !openChecked ? 'Checking for debited transfers awaiting completion — a transfer is offered once that check has read the ledger.' : undefined}
             className="flex items-center gap-2 bg-highlight text-sovereign text-xs">
             {busy ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
             Transfer
@@ -286,6 +346,33 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
         </div>
       )}
       {err && <p className="text-vital text-[10px] font-bold mt-3 flex items-center gap-1.5"><AlertCircle size={12} /> {err}</p>}
+      {strandedIds.map(tid => {
+        const leg = openLegs.find(l => l.transfer_id === tid);
+        return (
+          <div key={tid} className="mt-3 p-3 rounded-2xl border border-amber-500/40 bg-amber-500/5" data-testid="transfer-stranded">
+            <p className="text-[10px] text-amber-300 font-bold leading-relaxed">
+              Transfer <span className="font-mono">{tid}</span>{leg ? ` (${leg.amount_wst.toLocaleString()} WST → ${leg.to_vsb})` : ''} debited {fromVsb} but
+              {leg?.receiver_unknown ? ' may not have reached' : ' has not reached'} the receiver. Do not send it again — complete it: the receiver is credited once and nothing is debited again.
+            </p>
+            <Button onClick={() => completeStranded(tid)} disabled={completing} data-testid="transfer-complete"
+              className="mt-2 flex items-center gap-2 bg-highlight text-sovereign text-xs">
+              {completing ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
+              Complete transfer
+            </Button>
+          </div>
+        );
+      })}
+      {openErr && (
+        <p className="text-amber-400 text-[10px] font-bold mt-3 flex items-center gap-2" data-testid="transfer-open-error">
+          {openErr}
+          {!openChecked && (
+            <button type="button" onClick={loadOpen} data-testid="transfer-open-retry"
+              className="underline underline-offset-2 text-amber-300 hover:text-white">Check again</button>
+          )}
+        </p>
+      )}
+      {completeMsg && <p className="text-emerald-400 text-[10px] font-bold mt-3" data-testid="transfer-complete-result">{completeMsg}</p>}
+      {completeErr && <p className="text-vital text-[10px] font-bold mt-3 flex items-center gap-1.5" data-testid="transfer-complete-error"><AlertCircle size={12} /> {completeErr}</p>}
     </Card>
   );
 };

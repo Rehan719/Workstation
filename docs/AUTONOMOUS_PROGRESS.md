@@ -5942,3 +5942,116 @@ contract offered, accepted and delivered to an entity that exists nowhere.
 Two new guards: test_w465_a_service_contract_is_paid_once_and_its_store_keeps_every_change, test_w465_owner_payments_are_locked_atomic_and_never_overwrite_an_unreadable_store.
 
 Suite: 377 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 36 min; 392 items from 353 test functions).
+
+### W466 — a stranded inter-VSB transfer is found and completed once, and every failed transfer is answered from the ledger (register FU-023)
+
+**What was wrong.** Virtual WST throughout. `record_transfer` debits the sender (under the ledger's lock), then
+queues the receiver's credit (under the queue's lock).
+- **The route answered with nothing usable.** When the queue step failed on the request and on its one retry (the
+  queue's lock held elsewhere for more than 10 s, an atomic write that kept failing), `POST /economy/transfer` answered
+  a bare plain-text 500. There was no transfer id and no record for a non-material transfer. The page then showed a
+  JSON parse error.
+- **Nothing could find the stranded debit.** The sender stayed debited, the receiver was never credited, and nothing
+  anywhere could find the debit or complete it.
+- **A retry paid again.** A client retry minted a new id and paid a second time.
+- **A settlement blamed the wrong thing.** When completing an earlier attempt's debit raised, the settlement answered
+  500. When the gate answered without a transfer and the completion failed, the note blamed an unreadable ledger even
+  though the debit was confirmed.
+
+**Pre-audit (read-only, reproduced in fresh data dirs).** The register's proposed fix — replay stranded ids — was
+safe only for new transfers. Replaying an OLD id re-credited it once the id had left the receiver's 50-row window
+(25 WST created), so the design marks new debits and completes only marked ones.
+
+**What changed.**
+- **The debit records its transfer.** A new debit carries its transfer as data (`transfer`: id, receiver, amount;
+  `receiver_leg`: `open`). `record_transfer` closes the leg once the receiver's queue holds the id, under the ledger's
+  lock and from a STRICT read, so a damaged ledger is never written back.
+- **A replay that can never debit.** `record_transfer(require_debit=True)` raises `TransferNotDebited` for an id with
+  no debit, and nothing is posted.
+- **Finding and completing stranded transfers.** `reconcile_receiver_legs` reads every ledger strictly and finds
+  marked debits whose leg is still open and at least 2 minutes old (one still in flight is not stranded).
+  - An id the receiver already holds is only closed.
+  - A transfer a live settlement claim is completing is left to that settlement.
+  - Every other one is replayed with `require_debit=True`, holding no lock, so the receiver is credited once.
+  - Unreadable ledgers are counted; an unreadable queue skips the pass.
+  - Every completion writes `economy.transfer_leg_reconciled`, and each failure writes
+    `economy.transfer_leg_reconcile_failed` once per process.
+  - Debits made before W466 carry no marker and are never completed: whether they were credited cannot be proven.
+- **Where it runs.** `POST /api/v1/economy/transfers/{id}/complete` completes one transfer, scoped to the sender's
+  owner. It answers `completed` or `already_credited`; 409 for a live settlement claim or a pre-W466 debit; 404 for no
+  debit; 422 for a malformed id. `POST /api/v1/economy/transfers/reconcile` runs the pass (platform-scoped). The
+  heartbeat runs the pass every fifth beat while autonomous economy is on (the Owner's existing opt-in) and reports it
+  in `status().last_transfer_reconcile`. A failing pass never breaks the beat.
+- **Every failed transfer asks the ledger.** The route answers what it finds, with `X-Transfer-Id`,
+  `X-Transfer-Debited` and `X-Transfer-Receiver` headers:
+  - Nothing debited: 400 / 404 / 503 for a refusal, a missing receiver, an unreadable queue or a busy store. An
+    unexpected fault stays a fault.
+  - Debited, and the receiver's queue holds the id: 500 "posted — nothing is missing; do NOT re-run it".
+  - Debited, receiver not credited (or unknown): 503 naming the id — "Do NOT re-run the transfer … Complete it" —
+    plus `economy.transfer_receiver_leg_missing`.
+  - Ledger unreadable: 503 "whether it debited is unknown", naming the id.
+- **Settlements.** Completing an earlier attempt's debit answers 503 "settle again" for any failure. The unknown-outcome
+  note separates a ledger that could not be read from a completion that failed.
+- **A sender ledger that cannot be read whole posts nothing.** `record_transfer` refuses (`SenderLedgerUnavailable`,
+  503 "nothing was debited") instead of debiting against a valid prefix while a stranded debit on the rest stays hidden.
+- **The page.**
+  - `TransferPanel` never reads a bodiless failure as JSON ("it may have debited — check its ledger before sending it
+    again").
+  - It lists the sender's open legs from the ledger (`GET /api/v1/economy/transfers/open`), so a stranded transfer
+    survives a reload or an entity switch. Legs whose receiver was credited, and payments a live settlement is
+    completing, are listed apart and never as stranded.
+  - It offers **Complete transfer** only for a debit whose receiver credit is missing.
+  - Transfer stays disabled while one is open, and until a check has actually read the ledger ("Check again" retries a
+    failed check).
+- **Existing tests changed by the ruling.** Four W463 legs expected the old bare exceptions or a 400 after a debit;
+  they now assert the ledger's answers (a 500 that says the transfer posted in full, a 503 that says the debit is
+  unknown). Their approval assertions are unchanged.
+
+**Refuted (own diff), three passes; all confirmed findings fixed and guarded.**
+- **First pass:** three lenses, 8 confirmed, all low (0 refuted).
+  - A failed close of an already-credited leg was dropped from the report, and Complete answered an untrue "debited
+    before W466" 409 for it.
+  - Two test clauses could never fail.
+  - A stranded transfer's Complete button was lost on an entity switch or a reload (the id lived only in the
+    component; now the page lists open legs from the ledger).
+  - The heartbeat test mutated the singleton the test client's own heartbeat was beating (now a private instance).
+- **Second pass:** 7 confirmed, all low (0 refuted).
+  - A leg a concurrent closer had already closed read as a failed close.
+  - The open-leg list showed legs whose receiver WAS credited, and live settlement payments, as stranded.
+  - A note promised a pass that does not run by default.
+  - An unreadable-ledger answer wiped the page's known legs and unlocked Transfer.
+- **Third pass:** 1 confirmed (low), 1 refuted: on a fresh mount, a check that could not read the ledger left Transfer
+  enabled, so a reload plus a damaged ledger could let the Owner pay again. Fixed on the page and in record_transfer.
+  The third pass's own fix was probed but not refuted again.
+
+**Found and not done:** FU-047 — a transfer stranded BEFORE W466 carries no marker and can only be found by hand (completing it could
+credit its receiver twice). The pre-audit's in-passing rows were registered with W465 (FU-041…FU-046); FU-022 (the
+heartbeat's consume ordering) is next.
+
+**Browser (fresh backend :8075, bundle rebuilt).** `scripts/_w466_probe.mjs` (seeded by `scripts/_w466_probe_seed.py`,
+which leaves one REAL stranded debit), 6/6 on the final page:
+- The real stranded debit is listed on load, with its amount and receiver. Transfer is disabled, and the debit survives
+  an entity switch.
+- Complete credits the receiver once through the real route; a second completion credits nothing, and nothing is left
+  open.
+- (stubbed 503) A debited-uncredited answer offers Complete at once and blocks a second send.
+- (stubbed unreadable-ledger check) Transfer stays locked until a check reads the ledger, and "Check again" clears it.
+- (stubbed bodiless 500) The panel says the transfer may have debited the sender and offers no Complete.
+- (stubbed 500, posted in full) The panel offers no Complete.
+
+The first probe run caught its own selector artifact: `has-text("Transfer")` also matched "Complete transfer".
+
+**Broken 40 ways.** Each blind was applied alone, the guards were run, and the file was restored byte-for-byte.
+- **Written:** 24 on the first draft, 5 for the first refutation's fixes, 6 for the second's and 5 for the third's.
+- **Vacuous and fixed:** two stayed green on the first run. The page needle for the JSON-safe error also matched the
+  Complete handler's identical line, so it was scoped to the transfer handler. A "tolerant read" blind could not
+  cause the harm, because a tolerant read of a damaged ledger finds no leg and writes nothing; it was replaced by a
+  lenient read that accepts the damaged file and rewrites it. Both fail now.
+- **Final run:** all 40 run again on the final tree, with nothing else running. Every one fails; none stays green.
+
+New guard: test_w466_a_stranded_transfer_is_found_and_completed_once.
+
+Suite: 377 passed · 15 skipped · 1 failed on the final tree (isolated DATA_DIR, 36 min; 393 items from 354 test
+functions). The failure was a W465 page needle that checked the transfer panel's `finally` line exactly, which W466
+extended with the open-leg refresh. The needle was updated, and it, both W465 guards, the W466 guard and the
+doc-lockstep tests were re-run green (7 passed). The full suite was not re-run after that test-only change.

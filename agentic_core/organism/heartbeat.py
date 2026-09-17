@@ -126,6 +126,7 @@ class OrganismHeartbeat:
         self.last_genome: Optional[Dict[str, Any]] = None   # last genome-population vital sign on the beat
         self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
         self.last_vsb_operated: Optional[str] = None   # §4 — last living VSB autonomously operated on the beat
+        self.last_transfer_reconcile: Optional[Dict[str, Any]] = None   # W466 — last stranded-transfer pass
         self.last_vsb_evolved: Optional[Dict[str, Any]] = None   # §8×§3 (W309) — last child VSB evolved on the tick
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
@@ -241,6 +242,23 @@ class OrganismHeartbeat:
                     actions.append("operate_vsb")
             except Exception:
                 pass
+            # W466 (register FU-023) — every fifth beat, complete transfers whose sender was debited and whose receiver
+            # was never credited (a replay that cannot debit; see transfers.reconcile_receiver_legs). Runs only with
+            # autonomous economy on — the same opt-in as the cycles above — and says what it did in status().
+            if self.beats % 5 == 0:
+                try:
+                    from agentic_core.economy.transfers import reconcile_receiver_legs
+                    rep = reconcile_receiver_legs()
+                    self.last_transfer_reconcile = {
+                        "beat": self.beats, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        **{k: rep.get(k) for k in ("open_legs", "reconciled", "closed_only", "skipped_settling",
+                                                   "failed", "close_failed", "ledgers_unreadable", "skipped")}}
+                    if rep.get("reconciled"):
+                        actions.append("transfer_reconcile")
+                except Exception as err:
+                    self.last_transfer_reconcile = {"beat": self.beats,
+                                                    "error": f"{type(err).__name__}: {str(err)[:160]}"}
+                    logger.warning("stranded-transfer reconciliation failed on beat %s: %s", self.beats, err)
 
         # 2f. §11 (W288) — CONTINUOUS compliance: re-screen ONE living VSB per beat (round-robin,
         #     least-recently-screened), so an entity screened at establishment is re-evaluated as its
@@ -547,6 +565,7 @@ class OrganismHeartbeat:
             "last_genome": self.last_genome,
             "last_evolution": self.last_evolution,
             "last_vsb_operated": self.last_vsb_operated,
+            "last_transfer_reconcile": self.last_transfer_reconcile,
             "last_vsb_evolved": self.last_vsb_evolved,
             "last_reshipped": getattr(self, "last_reshipped", None),
             "auto_ship": self.auto_ship,

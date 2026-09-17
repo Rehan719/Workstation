@@ -370,8 +370,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "NEXT",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W466",
       "note": ""
     },
     {
@@ -747,6 +747,23 @@
       "slot": "NEXT",
       "status": "done",
       "closed_by": "W465",
+      "note": ""
+    },
+    {
+      "id": "FU-047",
+      "title": "A transfer stranded before W466 can only be found by hand",
+      "why": "W466 completes a stranded transfer (the sender debited, the receiver never credited) only when its debit carries the receiver-leg marker written since W466: a debit made earlier cannot prove whether its receiver was credited once its id left the receiver's 50-row display window (and before W465 no durable credited-id list existed), so completing it could credit the receiver twice. POST /transfers/{id}/complete refuses such a debit (409) and the pass never lists it. Fix, if any exist: a one-off Owner-reviewed audit listing unmarked transfer_out debits with no credited-id and no display-window entry, completed individually on the Owner's decision.",
+      "source": "W466 pre-audit (reproduced: replaying an old id re-credited it)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/transfers.py",
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
       "note": ""
     }
   ]

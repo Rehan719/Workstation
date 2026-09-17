@@ -10931,8 +10931,11 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
     def _debit_then_raise(*x, **k):
         real_record(*x, **k)
         raise RuntimeError("w463 queue write failed after the debit")
-    with _pytest.raises(RuntimeError):
-        with_record(_debit_then_raise, lambda: transfer(a, b, 1500))
+    # W466 — a failure after the debit is answered from the ledger and the receiver's queue, never as a bare exception:
+    # this one posted in full before it raised
+    posted_then_failed = with_record(_debit_then_raise, lambda: transfer(a, b, 1500))
+    assert posted_then_failed.status_code == 500 and posted_then_failed.headers["x-transfer-debited"] == "true"
+    assert posted_then_failed.headers["x-transfer-receiver"] == "credited" and "do NOT re-run" in posted_then_failed.json()["detail"]
     assert rec(id2)["status"] == "implemented", "a transfer that DEBITED must never get its approval back"
     assert any(e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == id2
                for e in events)
@@ -10944,7 +10947,8 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
     def _debit_then_valueerror(*x, **k):
         real_record(*x, **k)
         raise ValueError("w463 refused after the debit")
-    assert with_record(_debit_then_valueerror, lambda: transfer(a, b, 1400)).status_code == 400
+    refused_after = with_record(_debit_then_valueerror, lambda: transfer(a, b, 1400))
+    assert refused_after.status_code == 500 and refused_after.headers["x-transfer-debited"] == "true"   # W466: it posted
     assert rec(id2b)["status"] == "implemented", "the ValueError branch gave back a debited transfer's approval"
 
     # a replay of a debited transfer repairs the receiver leg instead of being refused by the funds pre-check
@@ -11848,8 +11852,10 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     real_debit_posted = tr.debit_posted
     tr.record_transfer, tr.debit_posted = raises_before_writing, ledger_unreadable
     try:
-        with _pytest.raises(OSError):
-            client.post("/api/v1/economy/transfer", json={"from_vsb": u12s, "to_vsb": u12r, "amount": 2000})
+        # W466 — whether it debited is unknown (the ledger cannot be read): a 503 that says so, naming the id
+        unknown12 = client.post("/api/v1/economy/transfer", json={"from_vsb": u12s, "to_vsb": u12r, "amount": 2000})
+        assert unknown12.status_code == 503 and unknown12.headers["x-transfer-debited"] == "unknown", unknown12.text
+        assert "is unknown" in unknown12.json()["detail"]
     finally:
         tr.record_transfer, tr.debit_posted = real_record, real_debit_posted
     spent12 = [e for e in events if e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == h12]
@@ -11996,8 +12002,8 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
         raise OSError("w463l the receiver queue failed after the debit")
     tr.record_transfer = debit_then_raise
     try:
-        with _pytest.raises(OSError):
-            client.post("/api/v1/economy/transfer", json={"from_vsb": cd_s, "to_vsb": cd_r, "amount": 2000})
+        confirmed_resp = client.post("/api/v1/economy/transfer", json={"from_vsb": cd_s, "to_vsb": cd_r, "amount": 2000})
+        assert confirmed_resp.status_code == 500 and confirmed_resp.headers["x-transfer-debited"] == "true"   # W466
     finally:
         tr.record_transfer = real_record
     confirmed = [e for e in events if e.get("type") == "economy.materiality_approval_spent_cycle_failed" and e.get("cca_id") == hcd]
@@ -13564,7 +13570,8 @@ def test_w465_owner_payments_are_locked_atomic_and_never_overwrite_an_unreadable
     assert page.count("if (issuedFor !== currentVsb.current) return;") == 4 and "setCycle(null); setGov(''); setHold(null);" in page
     assert "disabled={running || payingOut || closing || wfSaving || transferring}" in page
     ops = Path("apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
-    assert "onBusyChange={setTransferring}" in page and "finally { setBusy(false); onBusyChange?.(false); }" in ops
+    # (W466 added the open-leg refresh to the same finally; the release still runs on every exit)
+    assert "onBusyChange={setTransferring}" in page and "finally { setBusy(false); onBusyChange?.(false); loadOpen(); }" in ops
     assert "setBusy(true); onBusyChange?.(true);" in ops       # the lock itself, not only its release
     assert "if (!live) return;" in page and "return () => { live = false; };" in page     # the waterfall load too
     # the ledger entry of a failed accrual is claimed only when it landed
@@ -13578,3 +13585,356 @@ def test_w465_owner_payments_are_locked_atomic_and_never_overwrite_an_unreadable
     # the list reload never clears the note of an unpaid settlement it follows
     assert ".then(d => { setContracts(d.contracts ?? []); setLoadErr(''); })" in contracts_page
     assert "setError('')" not in contracts_page.split("const load = useCallback")[1].split("}, []);")[0]
+
+
+def test_w466_a_stranded_transfer_is_found_and_completed_once(client, monkeypatch, tmp_path, request):
+    """FU-023 — record_transfer debits the sender and queues the receiver in two steps. A queue step that failed on the
+    request and on its one retry (a busy or unwritable receiver queue) answered a bare 500 with no transfer id; nothing
+    anywhere could find the stranded debit, the receiver was never credited, and a client retry minted a new id and
+    paid again. Virtual WST only."""
+    import asyncio as _aio
+    import json as _json
+    import threading
+    import time as _time
+    import uuid as _uuid
+    from pathlib import Path
+    import pytest as _pytest
+
+    import agentic_core.gaas.v5 as g5
+    from agentic_core.api import economy as E
+    from agentic_core.config import store_lock as _real_store_lock
+    from agentic_core.economy import governance as gv
+    from agentic_core.economy import transfers as tr
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.economy.living_vsbs import register
+    from agentic_core.gaas.v5 import UEGLogger
+
+    def uid(tag):
+        return f"w466-{tag}-{_uuid.uuid4().hex[:6]}"
+
+    def living(tag):
+        v = uid(tag)
+        register(v, f"W466 {tag}", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        return v
+
+    a, b = living("sender"), living("receiver")
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 50000}).json()["cycle"]
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    def debits(v, xid):
+        return [p for p in VirtualLedger(v)._load().get("postings", []) if tr._posting_names(p, xid)]
+
+    def events(kind, xid):
+        return [n for n in UEGLogger()._read().get("nodes", [])
+                if (n.get("data") or {}).get("type") == kind and (n.get("data") or {}).get("transfer_id") == xid]
+
+    class _QueueBusy(_real_store_lock):
+        """The receiver queue's lock is held elsewhere for longer than the timeout — what store_lock raises."""
+        def __enter__(self):
+            if self._lockpath.name.startswith("economy_pending_transfers"):
+                raise TimeoutError(f"store_lock timeout on {self._lockpath.name}")
+            return super().__enter__()
+
+    mine = []
+
+    def _cleanup():
+        try:
+            E._mutate_contracts(lambda rows: rows.__setitem__(slice(None), [r for r in rows if r.get("id") not in mine]))
+        except Exception:
+            pass
+    request.addfinalizer(_cleanup)
+
+    # ── a completed transfer's debit carries its transfer as data, and its receiver leg is closed ──
+    ok = tr.record_transfer(a, b, 10.0, "w466 ok")
+    okp = debits(a, ok["transfer_id"])
+    assert len(okp) == 1 and okp[0]["transfer"] == {"id": ok["transfer_id"], "to_vsb": b, "amount_wst": 10.0}
+    assert okp[0]["receiver_leg"] == "credited" and ok["receiver_leg_closed"] is True
+
+    # ── the route: the receiver queue stays busy on the request and its retry → 503 naming the id, one debit ──
+    b0 = tr.peek_pending_transfers(b)
+    monkeypatch.setattr(tr, "store_lock", _QueueBusy)
+    r = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 25, "memo": "w466 stranded"})
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    assert r.status_code == 503 and r.headers.get("x-transfer-debited") == "true", r.text
+    xid = r.headers["x-transfer-id"]
+    detail = r.json()["detail"]
+    assert xid in detail and "Do NOT re-run" in detail and f"/transfers/{xid}/complete" in detail
+    assert "has not reached the receiver's queue" in detail and r.headers.get("x-transfer-receiver") == "not_credited"
+    # the page can list it for completion, from the ledger — it survives a reload or an entity switch
+    listed = client.get(f"/api/v1/economy/transfers/open?from_vsb={a}").json()
+    assert xid in [g["transfer_id"] for g in listed["open"]] and ok["transfer_id"] not in [g["transfer_id"] for g in listed["open"]]
+    assert len(debits(a, xid)) == 1 and debits(a, xid)[0]["receiver_leg"] == "open" and tr.peek_pending_transfers(b) == b0
+    assert events("economy.transfer_receiver_leg_missing", xid)
+    # a busy queue BEFORE any debit is a clean refusal, never a debit
+    class _LedgerBusy(_real_store_lock):
+        def __enter__(self):
+            if self._lockpath.name.endswith("_ledger.json.lock"):
+                raise TimeoutError(f"store_lock timeout on {self._lockpath.name}")
+            return super().__enter__()
+    a_postings = len(VirtualLedger(a)._load().get("postings", []))
+    monkeypatch.setattr(tr, "store_lock", _LedgerBusy)
+    rb = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 5})
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    assert rb.status_code == 503 and rb.headers.get("x-transfer-debited") == "false" and "Nothing was debited" in rb.json()["detail"]
+    assert len(VirtualLedger(a)._load().get("postings", [])) == a_postings
+
+    # ── a pass with the default minimum age leaves a fresh debit alone (it may still be in flight) ──
+    assert tr.reconcile_receiver_legs(transfer_id=xid)["open_legs"] == 0 and tr.peek_pending_transfers(b) == b0
+
+    # ── completing it credits the receiver once, never debits, closes the leg, and says so; again changes nothing ──
+    done = client.post(f"/api/v1/economy/transfers/{xid}/complete", json={"from_vsb": a})
+    assert done.status_code == 200 and done.json()["status"] == "completed", done.text
+    assert tr.peek_pending_transfers(b) == round(b0 + 25.0, 2) and len(debits(a, xid)) == 1
+    assert debits(a, xid)[0]["receiver_leg"] == "credited" and events("economy.transfer_leg_reconciled", xid)
+    again = client.post(f"/api/v1/economy/transfers/{xid}/complete", json={"from_vsb": a})
+    assert again.status_code == 200 and again.json()["status"] == "already_credited"
+    assert tr.peek_pending_transfers(b) == round(b0 + 25.0, 2) and len(debits(a, xid)) == 1
+    assert xid not in [g["transfer_id"] for g in client.get(f"/api/v1/economy/transfers/open?from_vsb={a}").json()["open"]]
+
+    # ── an id the receiver already holds (its leg's close did not land) is only closed ──
+    xc = f"xfer-w466{_uuid.uuid4().hex[:6]}"
+    real_close = tr._close_receiver_leg
+    monkeypatch.setattr(tr, "_close_receiver_leg", lambda *x, **k: False)
+    tr.record_transfer(a, b, 3.0, "w466 close lost", transfer_id=xc)
+    monkeypatch.setattr(tr, "_close_receiver_leg", real_close)
+    assert debits(a, xc)[0]["receiver_leg"] == "open"
+    b1 = tr.peek_pending_transfers(b)
+    rc = tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xc)
+    assert rc["closed_only"] == 1 and rc["reconciled"] == 0 and tr.peek_pending_transfers(b) == b1
+    assert debits(a, xc)[0]["receiver_leg"] == "credited"
+    xcf = f"xfer-w466{_uuid.uuid4().hex[:6]}"
+    monkeypatch.setattr(tr, "_close_receiver_leg", lambda *x, **k: False)
+    tr.record_transfer(a, b, 2.0, "w466 close keeps failing", transfer_id=xcf)
+    b1 = tr.peek_pending_transfers(b)
+    rcf = tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xcf)
+    assert rcf["close_failed"] == 1 and rcf["items"][0]["outcome"] == "close_failed" and tr.peek_pending_transfers(b) == b1
+    open_now = client.get(f"/api/v1/economy/transfers/open?from_vsb={a}").json()
+    assert xcf in [g["transfer_id"] for g in open_now["credited_unclosed"]] and xcf not in [g["transfer_id"] for g in open_now["open"]]
+    cf = client.post(f"/api/v1/economy/transfers/{xcf}/complete", json={"from_vsb": a})
+    monkeypatch.setattr(tr, "_close_receiver_leg", real_close)
+    assert cf.status_code == 200 and cf.json()["status"] == "already_credited" and "could not be closed" in cf.json()["note"], cf.text
+    assert "a later pass closes it" not in cf.json()["note"]      # no pass runs by default: never promised
+    assert tr.peek_pending_transfers(b) == b1
+    real_open_legs = tr._open_receiver_legs
+    monkeypatch.setattr(tr, "_open_receiver_legs", lambda min_age_s, from_vsb=None: ([], 1))
+    unseen = client.post(f"/api/v1/economy/transfers/{xcf}/complete", json={"from_vsb": a})
+    monkeypatch.setattr(tr, "_open_receiver_legs", real_open_legs)
+    assert unseen.status_code == 503 and "still open" in unseen.json()["detail"] and "before W466" not in unseen.json()["detail"], unseen.text
+    assert tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xcf)["closed_only"] == 1
+    # B1 — a leg another closer closed meanwhile is closed, never a failed close
+    assert tr._close_receiver_leg(a, xcf) is True and debits(a, xcf)[0]["receiver_leg"] == "credited"
+    stale = [{"transfer_id": xcf, "from_vsb": a, "to_vsb": b, "amount_wst": 2.0, "memo": "", "debited_at": "x", "age_s": 1.0}]
+    monkeypatch.setattr(tr, "_open_receiver_legs", lambda min_age_s, from_vsb=None: (stale, 0))
+    raced = tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xcf)
+    monkeypatch.setattr(tr, "_open_receiver_legs", real_open_legs)
+    assert raced["closed_only"] == 1 and raced["close_failed"] == 0, raced
+
+    # ── a completion never debits: no debit for the id → TransferNotDebited, nothing posted anywhere ──
+    a_postings = len(VirtualLedger(a)._load().get("postings", []))
+    with _pytest.raises(tr.TransferNotDebited):
+        tr.record_transfer(a, b, 1.0, "w466", transfer_id=f"xfer-w466none{_uuid.uuid4().hex[:4]}", require_debit=True)
+    ghost = {"transfer_id": f"xfer-w466ghost{_uuid.uuid4().hex[:4]}", "from_vsb": a, "to_vsb": b, "amount_wst": 2.0,
+             "memo": "", "debited_at": "2026-09-17T00:00:00Z", "age_s": 999.0}
+    real_open = tr._open_receiver_legs
+    monkeypatch.setattr(tr, "_open_receiver_legs", lambda min_age_s, from_vsb=None: ([ghost], 0))
+    rg = tr.reconcile_receiver_legs(min_age_s=0)
+    monkeypatch.setattr(tr, "_open_receiver_legs", real_open)
+    assert rg["failed"] == 1 and "TransferNotDebited" in rg["items"][0]["error"] and events("economy.transfer_leg_reconcile_failed", ghost["transfer_id"])
+    assert len(VirtualLedger(a)._load().get("postings", [])) == a_postings and tr.peek_pending_transfers(b) == b1
+
+    # ── a debit made before W466 carries no marker: never a candidate, and the route refuses to guess ──
+    xl = f"xfer-w466legacy{_uuid.uuid4().hex[:4]}"
+    legacy = VirtualLedger(a)
+    with legacy._locked():
+        legacy._apply_posting("transfer_out", "reserve_fund", 4.0, memo=f"inter-VSB transfer → {b} ({xl})")
+    assert tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xl)["open_legs"] == 0
+    refused = client.post(f"/api/v1/economy/transfers/{xl}/complete", json={"from_vsb": a})
+    assert refused.status_code == 409 and "before W466" in refused.json()["detail"] and tr.peek_pending_transfers(b) == b1
+    assert client.post(f"/api/v1/economy/transfers/xfer-w466nosuch/complete", json={"from_vsb": a}).status_code == 404
+    assert client.post("/api/v1/economy/transfers/not-an-id/complete", json={"from_vsb": a}).status_code == 422
+
+    # ── a transfer a live settlement claim is completing is left to that settlement ──
+    xs = f"xfer-w466{_uuid.uuid4().hex[:6]}"
+    monkeypatch.setattr(tr, "store_lock", _QueueBusy)
+    with _pytest.raises(TimeoutError):
+        tr.record_transfer(a, b, 6.0, "w466 claimed", transfer_id=xs)
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    cid = f"ctr-w466{_uuid.uuid4().hex[:6]}"
+    mine.append(cid)
+    E._mutate_contracts(lambda rows: rows.append({
+        "id": cid, "client_vsb": a, "provider_vsb": b, "brief": "w466", "price_wst": 6.0, "status": "delivered",
+        "delivery": {"run_id": "w466"}, "settlement": None, "offered_at": "2026-09-17T00:00:00Z",
+        "settling": {"claim": "w466-live", "transfer_id": xs, "at": "now", "at_epoch": _time.time()}}))
+    assert tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xs)["skipped_settling"] == 1
+    listed_claim = client.get(f"/api/v1/economy/transfers/open?from_vsb={a}").json()
+    assert xs in [g["transfer_id"] for g in listed_claim["settling"]] and xs not in [g["transfer_id"] for g in listed_claim["open"]]
+    claimed_resp = client.post(f"/api/v1/economy/transfers/{xs}/complete", json={"from_vsb": a})
+    assert claimed_resp.status_code == 409 and "settlement is completing" in claimed_resp.json()["detail"], claimed_resp.text
+    E._mutate_contracts(lambda rows: next(x for x in rows if x["id"] == cid)["settling"].update(claim=None, at_epoch=0))
+    b2 = tr.peek_pending_transfers(b)
+    assert tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xs)["reconciled"] == 1
+    assert tr.peek_pending_transfers(b) == round(b2 + 6.0, 2) and len(debits(a, xs)) == 1
+
+    # ── unreadable stores: an unreadable queue skips the whole pass; an unreadable ledger is counted, never written ──
+    xu = f"xfer-w466{_uuid.uuid4().hex[:6]}"
+    monkeypatch.setattr(tr, "store_lock", _QueueBusy)
+    with _pytest.raises(TimeoutError):
+        tr.record_transfer(a, b, 1.5, "w466 unknown receiver", transfer_id=xu)
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    pstore = tmp_path / "economy_pending_transfers.json"
+    pstore.write_bytes(_json.dumps({}).encode("utf-16"))
+    real_pending = tr._PENDING_STORE
+    monkeypatch.setattr(tr, "_PENDING_STORE", pstore)
+    skipped = tr.reconcile_receiver_legs(min_age_s=0)
+    unknown_list = client.get(f"/api/v1/economy/transfers/open?from_vsb={a}").json()
+    monkeypatch.setattr(tr, "_PENDING_STORE", real_pending)
+    assert unknown_list["receiver_queue_unreadable"] is True
+    assert [g.get("receiver_unknown") for g in unknown_list["open"] if g["transfer_id"] == xu] == [True], unknown_list
+    assert tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xu)["reconciled"] == 1
+    assert "could not be read" in skipped.get("skipped", "") and pstore.read_bytes() == _json.dumps({}).encode("utf-16")
+    bom_vsb = uid("bom")
+    bom_path = tr._ledger_path(bom_vsb)
+    bom_bytes = b"\xef\xbb\xbf" + _json.dumps({"vsb_id": bom_vsb, "postings": []}).encode()
+    bom_path.write_bytes(bom_bytes)
+    request.addfinalizer(lambda: bom_path.unlink(missing_ok=True))
+    assert tr.reconcile_receiver_legs(min_age_s=0, transfer_id="xfer-none")["ledgers_unreadable"] >= 1
+    assert bom_path.read_bytes() == bom_bytes
+    # closing a leg on a ledger that cannot be read strictly never writes it back (a tolerant read would write books)
+    xb = f"xfer-w466{_uuid.uuid4().hex[:6]}"
+    bom_open = b"\xef\xbb\xbf" + _json.dumps({"vsb_id": bom_vsb, "postings": [{
+        "ts": "2026-09-17T00:00:00Z", "debit": "transfer_out", "credit": "reserve_fund", "amount": 1.0,
+        "memo": f"inter-VSB transfer → {b} ({xb})", "transfer": {"id": xb, "to_vsb": b, "amount_wst": 1.0},
+        "receiver_leg": "open"}]}).encode()
+    bom_path.write_bytes(bom_open)
+    assert tr._close_receiver_leg(bom_vsb, xb) is False and bom_path.read_bytes() == bom_open
+    # a sender whose ledger cannot be read whole posts no new transfer (a tolerant read would debit against the valid
+    # prefix while a stranded debit on the rest stays hidden) — directly and through the route
+    dirty = uid("dirty")
+    dirty_path = tr._ledger_path(dirty)
+    dirty_bytes = _json.dumps({"vsb_id": dirty, "currency": "WST", "entries": [], "balances": {}, "closes": [],
+                               "accounts": {"reserve_fund": 500.0}, "postings": []}).encode() + b"\n}"
+    dirty_path.write_bytes(dirty_bytes)
+    request.addfinalizer(lambda: dirty_path.unlink(missing_ok=True))
+    with _pytest.raises(tr.SenderLedgerUnavailable):
+        tr.record_transfer(dirty, b, 1.0, "w466 dirty sender")
+    dr = client.post("/api/v1/economy/transfer", json={"from_vsb": dirty, "to_vsb": b, "amount": 1})
+    assert dr.status_code == 503 and dr.headers.get("x-transfer-debited") == "false", dr.text
+    assert "Nothing was debited" in dr.json()["detail"] and dirty_path.read_bytes() == dirty_bytes
+    # the platform pass answers with what it did
+    swept = client.post("/api/v1/economy/transfers/reconcile")
+    assert swept.status_code == 200 and {"open_legs", "reconciled", "closed_only", "failed"} <= set(swept.json())
+
+    # ── eight completions at once credit the receiver once ──
+    xk = f"xfer-w466{_uuid.uuid4().hex[:6]}"
+    monkeypatch.setattr(tr, "store_lock", _QueueBusy)
+    with _pytest.raises(TimeoutError):
+        tr.record_transfer(a, b, 7.0, "w466 race", transfer_id=xk)
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    b3 = tr.peek_pending_transfers(b)
+    ts = [threading.Thread(target=lambda: tr.reconcile_receiver_legs(min_age_s=0, transfer_id=xk)) for _ in range(8)]
+    [t.start() for t in ts]
+    [t.join(timeout=60) for t in ts]
+    assert tr.peek_pending_transfers(b) == round(b3 + 7.0, 2) and len(debits(a, xk)) == 1
+    assert debits(a, xk)[0]["receiver_leg"] == "credited"
+
+    # ── settle: completing an earlier attempt's debit while the queue is busy answers 503; settling again completes it
+    xs2 = f"xfer-w466{_uuid.uuid4().hex[:6]}"
+    cid2 = f"ctr-w466{_uuid.uuid4().hex[:6]}"
+    mine.append(cid2)
+    monkeypatch.setattr(tr, "store_lock", _QueueBusy)
+    with _pytest.raises(TimeoutError):
+        tr.record_transfer(a, b, 8.0, f"contract {cid2} settlement", transfer_id=xs2)
+    E._mutate_contracts(lambda rows: rows.append({
+        "id": cid2, "client_vsb": a, "provider_vsb": b, "brief": "w466", "price_wst": 8.0, "status": "delivered",
+        "delivery": {"run_id": "w466"}, "settlement": None, "offered_at": "2026-09-17T00:00:00Z",
+        "settling": {"claim": None, "transfer_id": xs2, "at": "then", "at_epoch": 0}}))
+    busy = client.post(f"/api/v1/economy/contracts/{cid2}/settle")
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    assert busy.status_code == 503 and "Nothing more was paid" in busy.json()["detail"], busy.text
+    assert busy.headers.get("x-transfer-id") == xs2
+    b4 = tr.peek_pending_transfers(b)
+    fin = client.post(f"/api/v1/economy/contracts/{cid2}/settle").json()
+    assert fin["status"] == "settled" and fin["settlement"]["governance"]["status"] == "replay_of_posted_debit", fin
+    assert tr.peek_pending_transfers(b) == round(b4 + 8.0, 2) and len(debits(a, xs2)) == 1
+
+    # ── settle: the gate answers without a transfer after the debit, and completing it fails → the note blames the
+    #    completion (the debit is confirmed), never the ledger; settling again completes it ──
+    cid3 = f"ctr-w466{_uuid.uuid4().hex[:6]}"
+    mine.append(cid3)
+    E._mutate_contracts(lambda rows: rows.append({
+        "id": cid3, "client_vsb": a, "provider_vsb": b, "brief": "w466", "price_wst": 9.0, "status": "delivered",
+        "delivery": {"run_id": "w466"}, "settlement": None, "offered_at": "2026-09-17T00:00:00Z"}))
+
+    class _Blocked:
+        status, output, checkpoint_id = "blocked", None, None
+
+    class _SwallowsTheAction:
+        def __init__(self, *x, **k): pass
+
+        async def intercept(self, ctx, action):
+            try:
+                await action()
+            except Exception:
+                pass
+            return _Blocked()
+    real_gov = g5.UnifiedConstitutionalInterceptorV16Omega
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", _SwallowsTheAction)
+    monkeypatch.setattr(tr, "store_lock", _QueueBusy)
+    unk = client.post(f"/api/v1/economy/contracts/{cid3}/settle").json()
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", real_gov)
+    assert unk["settlement"]["outcome"] == "unknown" and "debited the client" in unk["note"], unk
+    assert "ledger could not be read" not in unk["note"]
+    fin3 = client.post(f"/api/v1/economy/contracts/{cid3}/settle").json()
+    assert fin3["status"] == "settled" and len([p for p in VirtualLedger(a)._load()["postings"]
+                                                 if f"contract {cid3} settlement" in str(p.get("memo"))]) == 1
+
+    # ── the heartbeat runs the pass on every fifth beat, only with autonomous economy on; a failing pass never
+    #    breaks the beat ──
+    from agentic_core.economy import living_vsbs as lv
+    from agentic_core.organism.heartbeat import OrganismHeartbeat
+    heartbeat = OrganismHeartbeat()
+    for flag in ("auto_evolve", "auto_align", "auto_compliance", "auto_ship", "auto_economy"):
+        setattr(heartbeat, flag, False)
+    calls = []
+    monkeypatch.setattr(lv, "operate_one", lambda *x, **k: None)
+    monkeypatch.setattr(tr, "reconcile_receiver_legs", lambda *x, **k: calls.append(1) or {"open_legs": 1, "reconciled": 1})
+    loop = _aio.new_event_loop()
+    try:
+        monkeypatch.setattr(heartbeat, "auto_economy", False)
+        monkeypatch.setattr(heartbeat, "beats", 4)
+        loop.run_until_complete(heartbeat.beat())
+        assert calls == []
+        monkeypatch.setattr(heartbeat, "auto_economy", True)
+        monkeypatch.setattr(heartbeat, "beats", 5)
+        loop.run_until_complete(heartbeat.beat())             # beat 6: not a fifth beat
+        assert calls == []
+        monkeypatch.setattr(heartbeat, "beats", 9)
+        rec = loop.run_until_complete(heartbeat.beat())       # beat 10
+        assert calls == [1] and heartbeat.last_transfer_reconcile["reconciled"] == 1
+        assert "transfer_reconcile" in (rec.get("actions") or [])
+
+        def _raises(*x, **k):
+            raise OSError("w466 a ledger directory vanished")
+        monkeypatch.setattr(tr, "reconcile_receiver_legs", _raises)
+        monkeypatch.setattr(heartbeat, "beats", 14)
+        rec2 = loop.run_until_complete(heartbeat.beat())      # beat 15
+        assert "OSError" in heartbeat.last_transfer_reconcile["error"] and rec2.get("beat") == 15
+        assert "last_transfer_reconcile" in heartbeat.status()
+    finally:
+        loop.close()
+
+    # ── the page: a debited failure offers Complete (never a second send); a bodiless failure never reads as nothing
+    #    posted ──
+    ops = Path("apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
+    send_handler = ops.split("const doTransfer = async")[1].split("const completeStranded = async")[0]
+    assert "const d = await r.json().catch(() => null);" in send_handler and "r.headers.get('X-Transfer-Debited')" in send_handler
+    assert "r.headers.get('X-Transfer-Receiver') !== 'credited'" in ops      # never Complete for a transfer that posted
+    assert 'data-testid="transfer-complete"' in ops and "/complete`" in ops
+    assert "disabled={busy || completing || !openChecked || strandedIds.length > 0 || !to || amount <= 0}" in ops
+    # "could not check" is unknown, never "nothing stranded": only a readable answer unlocks Transfer, and it can be retried
+    assert ops.count("setOpenChecked(true);") == 1 and ops.count("setOpenChecked(false);") == 3
+    assert 'data-testid="transfer-open-retry"' in ops
+    assert "/api/v1/economy/transfers/open?from_vsb=" in ops and "useEffect(() => { loadOpen(); }, [fromVsb]);" in ops
+    assert "if (d.ledger_unreadable) { setOpenChecked(false); setOpenErr(" in ops and "leg?.receiver_unknown ? ' may not have reached' : ' has not reached'" in ops
