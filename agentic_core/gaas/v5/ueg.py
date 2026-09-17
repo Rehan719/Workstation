@@ -38,6 +38,8 @@ _ADVERSE_TYPES = frozenset({
     "immune.quarantine_engaged", "ai.external_budget_breach", "marketplace.recognition_failed",
     "vsb.evolution.claim_release_failed", "economy.materiality_gate_error",
     "economy.materiality_approval_spent_cycle_failed",
+    # W467 — a cycle that raised (whether or not it wrote), and one whose intake could not be consumed
+    "economy.cycle_raised", "economy.cycle_intake_unavailable",
     # W464 (FU-013) — named explicitly, not left to the "rejected"/"refused" tokens: a later token edit must not turn
     # a refusal into a clean "recorded" line
     "cca.change_rejected", "board.change_ratification_refused",

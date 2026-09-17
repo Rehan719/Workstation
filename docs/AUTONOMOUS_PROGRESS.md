@@ -6055,3 +6055,86 @@ Suite: 377 passed · 15 skipped · 1 failed on the final tree (isolated DATA_DIR
 functions). The failure was a W465 page needle that checked the transfer panel's `finally` line exactly, which W466
 extended with the open-leg refresh. The needle was updated, and it, both W465 guards, the W466 guard and the
 doc-lockstep tests were re-run green (7 passed). The full suite was not re-run after that test-only change.
+
+### W467 — a heartbeat cycle distributes its recognised revenue once, and the revenue store is refused rather than overwritten (register FU-022, FU-043, FU-044)
+
+**What was wrong.** Virtual WST throughout. All three were reproduced by the pre-audit in fresh data directories.
+- **Events distributed twice (FU-022).** `operate_vsb` ran the governed cycle, which posted its ledger, and only
+  THEN consumed the recognised revenue events. When that consume failed (the revenue store's lock held elsewhere for
+  more than 10 s), the events stayed pending and the next beat posted them again: two 1000-WST intake postings for one
+  event. A cycle that raised after posting part of its ledger also left its events pending. For a material cycle the
+  next beat filed a new hold for revenue already distributed.
+- **Drained intake lost (FU-044).** A cycle that raised at its first ledger write had already drained inter-VSB receipts
+  and venture returns from their queues; they reached no ledger (a 300-WST receipt vanished).
+- **Revenue store overwritten and trimmed (FU-043).** The revenue store was read tolerantly, so one `record_event` on a
+  store with a BOM kept 1 event of 2,000. Its cap dropped the oldest rows whatever their state, so a held entity's
+  pending 5,000-WST event vanished once 2,000 newer events existed.
+
+**What changed.**
+- **Consume before running.** `governed_cycle_sync` (the heartbeat path) consumes the events it was gated on under a
+  `cyc-` token AFTER every gate and BEFORE `run_cycle` (`economy.cycle_intake_consumed`). It runs on exactly the ids it
+  consumed. If another cycle took some first, it is gated again — against the approval's released estimate, or the
+  gated estimate, or the threshold — and runs nothing when it would exceed it. `operate_vsb` no longer consumes.
+  - A consume that fails runs nothing: the Owner's approval comes back and the events stay pending (status
+    `intake_unavailable`).
+- **What a raise gives back.** `run_cycle(progress=…)` reports whether its first ledger write (one atomic save) landed,
+  stamps the intake entry with the token, and gives back the receipts and returns it drained when that write raises
+  (`economy.cycle_intake_given_back`, or `…_give_back_failed` with the amount).
+  - Nothing written: the events (by token), the drained intake and the approval come back.
+  - Anything written: the events stay consumed, the token is settled and a spent approval stays spent.
+  - `economy.cycle_raised` records what actually came back and is flagged in the audit views.
+  - The released action counts as run only once the first write lands. The same rule now covers the API cycle, which
+    used to mark its approval run and keep it spent even when nothing was written.
+- **The revenue store.**
+  - Every writer and the gate's peek read it strictly (`RevenueStoreUnavailable`: not UTF-8, not JSON, not an event
+    list), so an unreadable store is refused, never overwritten.
+  - The cap drops only consumed, settled events — never a pending one, and never one a cycle is still carrying.
+  - `unconsume_events` touches only its own token.
+- **Stranded consumes.** The stranded-consume pass (`reconcile_stranded_consumes`, every fifth beat with autonomous
+  economy on) finds tokens older than 15 minutes. With no ledger entry carrying the token (the process stopped, or
+  its give-back failed) it gives the events back (`economy.cycle_intake_reconciled`). With one, it settles the token.
+- **Holds.** A hold filed for events that are stuck under a token (no ledger entry carries it) is not retired as
+  "consumed by a cycle"; a posted cycle's events are, even when its settle failed, and the pass retires such a hold when
+  it settles the token.
+- **Swarm.** A delivery's tariff that the refused store could not record is said on the UEG and in the response
+  (`economy.recognition_failed`, naming which write failed), never dropped silently.
+- **Existing test changed by the ruling.** A W463 stub that raised "mid-cycle" now reports its first write through
+  `progress`, so its approval-stays-spent assertions keep their meaning.
+
+**Refuted (own diff), three passes; every confirmed finding fixed and guarded.**
+- **First pass:** three lenses, 14 confirmed (0 refuted), nine distinct.
+  - The cap could drop a cycle's own in-flight events before it handed them back (now it keeps token rows until the
+    cycle settles).
+  - `economy.cycle_raised` claimed a give-back that had failed, and the consumed-elsewhere answer claimed an approval
+    hand-back it never checked.
+  - The API cycle still kept its approval spent (and marked run) when nothing was written.
+  - A re-sized cycle was never gated again, so losing cost events let it distribute more than was gated.
+  - A process that died between consume and first write stranded the events silently (the stranded-consume pass).
+  - The swarm delivery tariff was dropped silently when the store was refused.
+  - An assertion could not fail, and the cap fixture did not test pending events older than consumed ones.
+- **Second pass:** 8 confirmed (0 refuted).
+  - A restored approval was withdrawn while its events were only stuck.
+  - A release with no estimate of its own skipped the re-gate.
+  - Two notes told the Owner to act by hand, and misnamed the cause.
+  - The recognition failure named the wrong amount.
+  - A raised cycle read as a clean record.
+  - The W466 heartbeat test ran the real pass on the shared store.
+  - A reconcile fixture depended on the clock and on fixed ids.
+  - The cadence was unchecked.
+- **Third pass:** 1 confirmed (low). A cycle that posted and only failed to settle its token kept a hold for events
+  already distributed; a token now counts as stuck only when its ledger has no entry carrying it. That fix was blinded
+  but not refuted again.
+
+**Found and not done:** FU-048 — when a cycle's process stops mid-cycle, the pass gives its events back but the Owner's
+spent approval is left spent (unmarked, reading as still in flight), so the next beat asks the Owner again.
+
+**Browser.** No page changed in W467, so no probe was run.
+
+**Broken 37 ways.** Each blind was applied alone, the guards were run, and the file was restored byte-for-byte.
+- **Written:** 18 on the first draft, 14 for the first refutation's fixes, 4 for the second's and 1 for the third's.
+- **Vacuous and fixed:** one first-draft blind stayed green. Writing the run marker before the first write was masked,
+  because a restored approval never reads as run, so a leg was added where the hand-back itself fails.
+- **Final runs:** 36 run on the tree before the third fix, and the 2 that cover its line run after it. Every one fails;
+  none stays green. New guard: test_w467_a_heartbeat_cycle_distributes_its_recognised_events_once.
+
+Suite: 379 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 394 items from 355 test functions).

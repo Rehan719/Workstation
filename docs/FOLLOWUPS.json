@@ -353,8 +353,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "NEXT",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W467",
       "note": ""
     },
     {
@@ -696,8 +696,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "NEXT",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W467",
       "note": ""
     },
     {
@@ -712,8 +712,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "NEXT",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W467",
       "note": ""
     },
     {
@@ -758,6 +758,23 @@
       "files": [
         "agentic_core/economy/transfers.py",
         "agentic_core/api/economy.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "NEXT",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-048",
+      "title": "A heartbeat cycle whose process stopped mid-cycle leaves the Owner's approval spent and asks again",
+      "why": "W467 consumes a cycle's recognised events before it runs; if the process is killed between that consume and the cycle's first ledger write, the stranded-consume pass (every fifth beat with autonomous economy on) gives the events back after 15 minutes, but a material cycle's approval stays implemented without a released_action_ran marker (it reads as still in flight — the restrictive side), so the next beat files a fresh CRITICAL hold for the same events and the Owner decides twice. The economy.cycle_intake_consumed record names the approval's cca_id and consume_id. Fix: when the pass gives back a token's events, restore that approval if its trail has no released_action_ran for that consume_id (the W463 give-back rules).",
+      "source": "W467 first refutation (reproduced by killing a process)",
+      "found": "2026-09-17",
+      "files": [
+        "agentic_core/economy/revenue.py",
+        "agentic_core/economy/governance.py"
       ],
       "severity": "low",
       "owner_gated": false,

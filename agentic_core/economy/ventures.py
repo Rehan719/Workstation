@@ -243,6 +243,23 @@ def consume_pending_returns(vsb_id: str, max_amount: Optional[float] = None) -> 
     return take
 
 
+def return_pending_returns(vsb_id: str, amount: float) -> None:
+    """W467 (register FU-044) — give back venture returns a cycle drained (consume_pending_returns) when that cycle then
+    wrote nothing to the ledger: they reached no books, so they wait for the next cycle."""
+    amount = round(float(amount), 2)
+    if amount <= 0:
+        return
+    with store_lock(_PORTFOLIO_STORE):
+        d = _load_portfolio()
+        pf = d.get(vsb_id)
+        if not isinstance(pf, dict):
+            raise KeyError(f"no venture portfolio for {vsb_id} to give {amount} WST of drained returns back to")
+        pf["pending_returns_wst"] = round(pf.get("pending_returns_wst", 0.0) + amount, 2)
+        pf["recycled_total_wst"] = round(max(0.0, pf.get("recycled_total_wst", 0.0) - amount), 2)
+        d[vsb_id] = pf
+        _save_portfolio(d)
+
+
 def record_positions(vsb_id: str, allocation: Dict[str, Any]) -> None:
     """Track an allocation's positions in the VSB's venture portfolio (virtual; best-effort).
 

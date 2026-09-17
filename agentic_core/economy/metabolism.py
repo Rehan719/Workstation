@@ -100,7 +100,8 @@ class EconomicMetabolism:
     # ── the living cycle ──────────────────────────────────────────────────────
     def run_cycle(self, revenue: float, costs: float = 0.0, reserve_rate: float = 0.20,
                   max_returns_wst: Optional[float] = None,
-                  max_transfers_wst: Optional[float] = None) -> Dict[str, Any]:
+                  max_transfers_wst: Optional[float] = None,
+                  progress: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """One metabolic cycle: intake → homeostasis → circulation → giving-back → adaptation.
 
         W463 — `max_returns_wst` / `max_transfers_wst` cap what this cycle drains from the pending
@@ -144,8 +145,30 @@ class EconomicMetabolism:
             effective_reserve = round(min(0.6, reserve_rate + 0.15), 3)
             energy_state = "conserving (low organism energy)"
 
+        if progress is not None:
+            progress["returns_drained_wst"], progress["receipts_drained_wst"] = returns_recycled, transfers_received
+
         # 1. Intake
-        self.ledger.record("revenue", revenue, memo="cycle intake (revenue)")
+        # W467 (register FU-044) — the first write is ONE atomic save: when it raises, nothing was written, so the returns
+        # and receipts this cycle drained go back to their queues (they used to vanish, posted nowhere). W467 (FU-022):
+        # the caller learns whether the ledger was written (`progress`), so a cycle that wrote nothing can give back the
+        # events it consumed, and the released action counts as run only once it has written.
+        try:
+            self.ledger.record("revenue", revenue, memo="cycle intake (revenue)",
+                               ref=(progress or {}).get("cycle_token"))
+        except BaseException:
+            given = self._give_back_drained(returns_recycled, transfers_received)
+            if progress is not None:
+                progress["intake_given_back"] = given
+            raise
+        if progress is not None:
+            progress["ledger_written"] = True
+            hook = progress.get("on_ledger_written")
+            if callable(hook):
+                try:
+                    hook()
+                except Exception as _hook_err:
+                    logger.warning("cycle for %s: the first-write hook raised: %s", self.vsb_id, _hook_err)
 
         # 2. Homeostasis — reserves first (legal/operating + prudential; energy-adjusted §8→§12)
         reserves = round(costs + revenue * effective_reserve, 2)
@@ -270,6 +293,39 @@ class EconomicMetabolism:
             "metabolic_energy": self._atp_ratio(),
             "ledger": self.ledger.statement(),
         }
+
+    def _give_back_drained(self, returns_wst: float, receipts_wst: float) -> Dict[str, bool]:
+        """W467 (register FU-044) — put back what this cycle drained before its first write failed. Never raises: a
+        give-back that fails is written to the UEG and the log with its amount, so it can be reconciled by hand.
+        Returns, per intake that was drained, whether it went back."""
+        outcome: Dict[str, bool] = {}
+        for kind, amount in (("venture_returns", returns_wst), ("inter_vsb_receipts", receipts_wst)):
+            if not amount or amount <= 0:
+                continue
+            try:
+                if kind == "venture_returns":
+                    from .ventures import return_pending_returns
+                    return_pending_returns(self.vsb_id, amount)
+                else:
+                    from .transfers import return_pending_transfers
+                    return_pending_transfers(self.vsb_id, amount)
+                event = {"type": "economy.cycle_intake_given_back", "vsb_id": self.vsb_id, "intake": kind,
+                         "amount_wst": amount, "note": "the cycle's first ledger write failed; nothing was posted"}
+                outcome[kind] = True
+            except Exception as err:
+                outcome[kind] = False
+                why = f"{type(err).__name__}: {str(err)[:160]}"
+                logger.error("cycle for %s drained %s WST of %s, wrote nothing, and could not give it back: %s",
+                             self.vsb_id, amount, kind, why)
+                event = {"type": "economy.cycle_intake_give_back_failed", "vsb_id": self.vsb_id, "intake": kind,
+                         "amount_wst": amount, "error": why,
+                         "note": "drained from its queue and posted nowhere — put it back by hand"}
+            try:
+                from agentic_core.gaas.v5 import UEGLogger
+                UEGLogger().log({**event, "disclaimer": "Virtual/simulated WST — no real funds moved."})
+            except Exception:
+                pass
+        return outcome
 
     # ── biomimetic integration helpers (guarded) ──────────────────────────────
     @staticmethod

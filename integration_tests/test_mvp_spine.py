@@ -11029,6 +11029,12 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
 
     def _run_raises(self, *aa, **kk):
         runs["n"] += 1
+        # W467 — mid-cycle means AFTER the first ledger write: the stub reports that write, as run_cycle does (a cycle
+        # that raises before writing anything hands the approval back — test_w467 covers that side)
+        if isinstance(kk.get("progress"), dict):
+            kk["progress"]["ledger_written"] = True
+            if callable(kk["progress"].get("on_ledger_written")):
+                kk["progress"]["on_ledger_written"]()
         raise RuntimeError("w463 ledger write failed mid-cycle")
     idc4 = cyc(6000)["governance"]["cca_id"]
     decide(idc4)
@@ -13900,6 +13906,8 @@ def test_w466_a_stranded_transfer_is_found_and_completed_once(client, monkeypatc
     calls = []
     monkeypatch.setattr(lv, "operate_one", lambda *x, **k: None)
     monkeypatch.setattr(tr, "reconcile_receiver_legs", lambda *x, **k: calls.append(1) or {"open_legs": 1, "reconciled": 1})
+    import agentic_core.economy.revenue as _rev_mod   # W467 — the same beat runs the stranded-consume pass; keep it off the shared store
+    monkeypatch.setattr(_rev_mod, "reconcile_stranded_consumes", lambda *x, **k: {"stranded": 0, "given_back": 0})
     loop = _aio.new_event_loop()
     try:
         monkeypatch.setattr(heartbeat, "auto_economy", False)
@@ -13938,3 +13946,424 @@ def test_w466_a_stranded_transfer_is_found_and_completed_once(client, monkeypatc
     assert 'data-testid="transfer-open-retry"' in ops
     assert "/api/v1/economy/transfers/open?from_vsb=" in ops and "useEffect(() => { loadOpen(); }, [fromVsb]);" in ops
     assert "if (d.ledger_unreadable) { setOpenChecked(false); setOpenErr(" in ops and "leg?.receiver_unknown ? ' may not have reached' : ' has not reached'" in ops
+
+
+def test_w467_a_heartbeat_cycle_distributes_its_recognised_events_once(client, monkeypatch, tmp_path):
+    """FU-022 / FU-043 / FU-044 — the heartbeat's governed cycle posted its ledger and only THEN consumed the recognised
+    revenue events; a consume that failed (its lock busy past the timeout) left them pending and the next beat
+    distributed them again. A cycle that raised after it started left its events pending too; one that raised at its
+    first write had already drained receipts and returns that then reached no ledger. The revenue store was read
+    tolerantly (an unreadable store was overwritten with one event) and its cap dropped events still pending. Virtual
+    WST only."""
+    import inspect as _inspect
+    import json as _json
+    import uuid as _uuid
+    import pytest as _pytest
+
+    from agentic_core.config import store_lock as _real_store_lock
+    from agentic_core.economy import governance as gv
+    from agentic_core.economy import living_vsbs as lv
+    from agentic_core.economy import revenue as rev
+    from agentic_core.economy import transfers as tr
+    from agentic_core.economy.charity import CharityIntelligence
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.gaas.v5 import UEGLogger
+
+    def living(tag):
+        v = f"w467-{tag}-{_uuid.uuid4().hex[:6]}"
+        lv.register(v, f"W467 {tag}", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        return v
+
+    def intake_postings(v):
+        return [e for e in VirtualLedger(v)._load().get("entries", [])
+                if e.get("account") == "revenue" and e.get("memo") == "cycle intake (revenue)" and e.get("amount")]
+
+    def events_of(kind, v):
+        return [(n.get("data") or {}) for n in UEGLogger()._read().get("nodes", [])
+                if (n.get("data") or {}).get("type") == kind and (n.get("data") or {}).get("vsb_id") == v]
+
+    def decide(cid):
+        r = client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": "approved",
+                                                           "admin_decision_for_critical": True, "reviewer_notes": "w467"})
+        assert r.status_code == 200, r.text
+
+    def rec(cid):
+        from agentic_core.api import change_control as cca
+        return cca._load_change(cid)
+
+    def ran_marks(cid):
+        return sum(1 for e in (rec(cid).get("audit_trail") or []) if e.get("event") == "released_action_ran")
+
+    class _EventsBusy(_real_store_lock):
+        """The revenue-events lock is held elsewhere past the timeout — what store_lock raises."""
+        def __enter__(self):
+            if self._lockpath.name.startswith("revenue_events"):
+                raise TimeoutError(f"store_lock timeout on {self._lockpath.name}")
+            return super().__enter__()
+
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    # ── FU-022: the consume fails → no cycle runs, nothing is posted, the event waits; the next beat posts it ONCE ──
+    h1 = living("busy")
+    rev.record_event(h1, "revenue", 1000.0, "marketplace", ref="w467-1")
+    monkeypatch.setattr(rev, "store_lock", _EventsBusy)
+    busy = lv.operate_vsb(h1)
+    monkeypatch.setattr(rev, "store_lock", _real_store_lock)
+    assert busy.get("cycle_ran") is False and busy["governance"]["status"] == "intake_unavailable", busy
+    assert intake_postings(h1) == [] and rev.peek_pending(h1)["revenue"] == 1000.0 and events_of("economy.cycle_intake_unavailable", h1)
+    ran1 = lv.operate_vsb(h1)
+    assert ran1.get("revenue_recognised_wst") == 1000.0 and len(intake_postings(h1)) == 1, ran1
+    assert all("consume_token" not in ev for ev in rev._read_rows() if ev.get("vsb_id") == h1)       # settled
+    assert intake_postings(h1)[0].get("ref", "").startswith("cyc-")          # the entry names the cycle's token
+    again1 = lv.operate_vsb(h1)
+    assert again1.get("revenue_events_consumed") == 0 and len(intake_postings(h1)) == 1 and rev.peek_pending(h1)["events"] == 0
+
+    # ── …and a material cycle's approval comes back untouched when nothing ran, then is spent once ──
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    h2 = living("busy-material")
+    rev.record_event(h2, "revenue", 5000.0, "marketplace", ref="w467-2")
+    hold2 = lv.operate_vsb(h2)["governance"]["cca_id"]
+    decide(hold2)
+    monkeypatch.setattr(rev, "store_lock", _EventsBusy)
+    assert lv.operate_vsb(h2)["governance"]["status"] == "intake_unavailable"
+    monkeypatch.setattr(rev, "store_lock", _real_store_lock)
+    assert rec(hold2)["status"] == "approved" and ran_marks(hold2) == 0 and intake_postings(h2) == []
+    ran2 = lv.operate_vsb(h2)
+    assert ran2.get("revenue_recognised_wst") == 5000.0 and rec(hold2)["status"] == "implemented" and gv._action_ran(rec(hold2))
+    assert len(intake_postings(h2)) == 1
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    # ── FU-044 + FU-022: the cycle raises AT its first write → nothing posted; its events AND the receipts it drained
+    #    are given back; the next beat posts them once ──
+    s = living("sender")
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": s, "revenue": 50000}).json()["cycle"]
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+    h3 = living("first-write")
+    tr.record_transfer(s, h3, 300.0, "w467 receipt")
+    rev.record_event(h3, "revenue", 800.0, "marketplace", ref="w467-3")
+    real_record = VirtualLedger.record
+
+    def _fails_at(account_name):
+        def _record(self, account, amount, memo="", kind="credit", ref=None):
+            if account == account_name:
+                raise OSError(f"w467 the ledger write for {account_name} failed")
+            return real_record(self, account, amount, memo, kind, ref)
+        return _record
+    monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
+    failed3 = lv.operate_vsb(h3)
+    monkeypatch.setattr(VirtualLedger, "record", real_record)
+    assert "error" in failed3 and intake_postings(h3) == [], failed3
+    assert rev.peek_pending(h3)["revenue"] == 800.0 and tr.peek_pending_transfers(h3) == 300.0
+    raised3 = events_of("economy.cycle_raised", h3)
+    assert raised3 and raised3[-1]["ledger_written"] is False and raised3[-1]["events_given_back"] is True
+    assert [e["intake"] for e in events_of("economy.cycle_intake_given_back", h3)] == ["inter_vsb_receipts"]
+    raw3 = [ev for ev in rev._read_rows() if ev.get("vsb_id") == h3]
+    assert all("consume_token" not in ev and ev.get("consumed") is False for ev in raw3)
+    ran3 = lv.operate_vsb(h3)
+    assert ran3.get("revenue_recognised_wst") == 800.0 and tr.peek_pending_transfers(h3) == 0.0
+    assert len(intake_postings(h3)) == 1 and intake_postings(h3)[0]["amount"] == 1100.0, intake_postings(h3)
+    assert lv.operate_vsb(h3).get("revenue_events_consumed") == 0 and len(intake_postings(h3)) == 1
+    # drained venture returns go back too, and a give-back that fails is recorded with its amount
+    from agentic_core.economy import ventures as vn
+    given = []
+    monkeypatch.setattr(vn, "consume_pending_returns", lambda vsb_id, max_amount=None: 50.0)
+    monkeypatch.setattr(vn, "return_pending_returns", lambda vsb_id, amount: given.append((vsb_id, amount)))
+    h3b = living("returns")
+    monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
+    lv.operate_vsb(h3b)
+    assert given == [(h3b, 50.0)] and [e["intake"] for e in events_of("economy.cycle_intake_given_back", h3b)] == ["venture_returns"]
+
+    def _give_back_fails(vsb_id, amount):
+        raise OSError("w467 the portfolio store is busy")
+    monkeypatch.setattr(vn, "return_pending_returns", _give_back_fails)
+    lv.operate_vsb(h3b)
+    monkeypatch.setattr(VirtualLedger, "record", real_record)
+    failed_back = events_of("economy.cycle_intake_give_back_failed", h3b)
+    assert failed_back and failed_back[-1]["amount_wst"] == 50.0 and "OSError" in failed_back[-1]["error"]
+    raised3b = events_of("economy.cycle_raised", h3b)[-1]
+    assert raised3b["intake_given_back"] == {"venture_returns": False} and "could not be given back" in raised3b["note"], raised3b
+    monkeypatch.undo()                     # restores vn and every earlier patch; re-apply what the rest of the test needs
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+    # a MATERIAL cycle that raises at its first write hands its approval back, unmarked (it never ran)
+    real_restore = gv._restore_consumed_approval
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    h5 = living("first-write-material")
+    rev.record_event(h5, "revenue", 5000.0, "marketplace", ref="w467-5")
+    hold5 = lv.operate_vsb(h5)["governance"]["cca_id"]
+    decide(hold5)
+    monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
+    assert "error" in lv.operate_vsb(h5)
+    monkeypatch.setattr(VirtualLedger, "record", real_record)
+    assert rec(hold5)["status"] == "approved" and ran_marks(hold5) == 0 and rev.peek_pending(h5)["revenue"] == 5000.0
+    ran5 = lv.operate_vsb(h5)
+    assert ran5.get("revenue_recognised_wst") == 5000.0 and rec(hold5)["status"] == "implemented" and len(intake_postings(h5)) == 1
+    # …and when that hand-back itself fails, the spent approval is still never counted as run (nothing was written)
+    h5b = living("first-write-material-kept")
+    rev.record_event(h5b, "revenue", 5000.0, "marketplace", ref="w467-5b")
+    hold5b = lv.operate_vsb(h5b)["governance"]["cca_id"]
+    decide(hold5b)
+    monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
+    monkeypatch.setattr(gv, "_restore_consumed_approval", lambda *x, **k: "failed")
+    assert "error" in lv.operate_vsb(h5b)
+    monkeypatch.setattr(VirtualLedger, "record", real_record)
+    monkeypatch.setattr(gv, "_restore_consumed_approval", real_restore)
+    assert rec(hold5b)["status"] == "implemented" and not gv._action_ran(rec(hold5b))
+
+    # ── the cycle raises AFTER its first write (reserves; or charity allocation, after everything posted) → its events
+    #    stay consumed and are never distributed again; a material approval stays spent and counts as run ──
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 500.0)
+    real_allocate = CharityIntelligence.allocate
+    for label, breaker in (("reserves", ("record", _fails_at("reserves"))), ("charity", ("allocate", None))):
+        h4 = living(f"after-write-{label}")
+        rev.record_event(h4, "revenue", 900.0, "marketplace", ref=f"w467-4-{label}")
+        hold4 = lv.operate_vsb(h4)["governance"]["cca_id"]
+        decide(hold4)
+        if label == "reserves":
+            monkeypatch.setattr(VirtualLedger, "record", breaker[1])
+        else:
+            def _allocate_raises(self, *x, **k):
+                raise RuntimeError("w467 charity allocation failed")
+            monkeypatch.setattr(CharityIntelligence, "allocate", _allocate_raises)
+        failed4 = lv.operate_vsb(h4)
+        monkeypatch.setattr(VirtualLedger, "record", real_record)
+        monkeypatch.setattr(CharityIntelligence, "allocate", real_allocate)
+        assert "error" in failed4 and len(intake_postings(h4)) == 1 and rev.peek_pending(h4)["events"] == 0, (label, failed4)
+        raised4 = events_of("economy.cycle_raised", h4)
+        assert raised4 and raised4[-1]["ledger_written"] is True and raised4[-1]["events_given_back"] is None, label
+        from agentic_core.gaas.v5.ueg import classify_event as _classify
+        assert _classify(raised4[-1])["level"] == "flagged", label
+        assert rec(hold4)["status"] == "implemented" and gv._action_ran(rec(hold4)), label
+        assert any(e.get("cca_id") == hold4 for e in events_of("economy.materiality_approval_spent_cycle_failed", h4))
+        assert lv.operate_vsb(h4).get("revenue_events_consumed") == 0 and len(intake_postings(h4)) == 1, label
+
+    # ── another consumer takes the events between the gate and the cycle: a material cycle runs nothing and hands
+    #    the approval back ──
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    h6 = living("stolen")
+    rev.record_event(h6, "revenue", 4000.0, "marketplace", ref="w467-6")
+    hold6 = lv.operate_vsb(h6)["governance"]["cca_id"]
+    decide(hold6)
+    real_gate = gv._materiality_gate
+
+    def _gate_then_another_consumer(*x, **k):
+        out = real_gate(*x, **k)
+        rev.consume_events(h6, rev.peek_pending(h6)["ids"], token="w467-another-cycle")
+        return out
+    monkeypatch.setattr(gv, "_materiality_gate", _gate_then_another_consumer)
+    stolen = lv.operate_vsb(h6)
+    monkeypatch.setattr(gv, "_materiality_gate", real_gate)
+    assert stolen["governance"]["status"] == "intake_consumed_elsewhere" and intake_postings(h6) == [], stolen
+    assert rec(hold6)["status"] == "approved" and stolen["governance"]["approval_returned"] == "restored"
+    rev.settle_consume_token(h6, "w467-another-cycle")
+    assert stolen["pending_preserved_wst"] == 0.0                        # taken elsewhere: nothing is pending
+    # C5 — a cycle re-sized to fewer events is gated again: losing COST events to another consumer must not let it
+    # distribute above the threshold unheld
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    h6b = living("resized")
+    r_small = rev.record_event(h6b, "revenue", 250.0, "marketplace", ref="w467-6b-r1")
+    c_big = rev.record_event(h6b, "cost", 1000.0, "cascade_delivery_cost", ref="w467-6b-c1")
+    r_big = rev.record_event(h6b, "revenue", 1500.0, "marketplace", ref="w467-6b-r2")
+
+    def _gate_then_costs_taken(*x, **k):
+        out = real_gate(*x, **k)
+        rev.consume_events(h6b, [r_small["id"], c_big["id"]], token="w467-another-cycle")
+        return out
+    monkeypatch.setattr(gv, "_materiality_gate", _gate_then_costs_taken)
+    resized = lv.operate_vsb(h6b)
+    monkeypatch.setattr(gv, "_materiality_gate", real_gate)
+    assert resized["governance"]["status"] == "intake_consumed_elsewhere" and intake_postings(h6b) == [], resized
+    assert rev.peek_pending(h6b)["ids"] == [r_big["id"]]                  # its own event went back, gated next beat
+    rev.settle_consume_token(h6b, "w467-another-cycle")
+    h6c = living("resized-legacy-release")
+    rev.record_event(h6c, "revenue", 3000.0, "marketplace", ref="w467-6c-r1")
+    c6c = rev.record_event(h6c, "cost", 1000.0, "cascade_delivery_cost", ref="w467-6c-c1")
+    rev.record_event(h6c, "revenue", 1500.0, "marketplace", ref="w467-6c-r2")
+    hold6c = lv.operate_vsb(h6c)["governance"]["cca_id"]
+    decide(hold6c)
+
+    def _legacy_release_then_cost_taken(*x, **k):
+        out = real_gate(*x, **k)
+        if out[1] and isinstance(out[1].get("release"), dict):
+            out[1]["release"].pop("release_est_wst", None)          # a release that carries no estimate of its own
+        rev.consume_events(h6c, [c6c["id"]], token="w467-another-cycle")
+        return out
+    monkeypatch.setattr(gv, "_materiality_gate", _legacy_release_then_cost_taken)
+    legacy = lv.operate_vsb(h6c)
+    monkeypatch.setattr(gv, "_materiality_gate", real_gate)
+    assert legacy["governance"]["status"] == "intake_consumed_elsewhere" and intake_postings(h6c) == [], legacy
+    rev.settle_consume_token(h6c, "w467-another-cycle")
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    # ── a give-back touches only its own token's events ──
+    h7 = living("tokens")
+    e7 = rev.record_event(h7, "revenue", 5.0, "marketplace", ref="w467-7")
+    rev.consume_events(h7, [e7["id"]], token="cyc-a")
+    assert rev.unconsume_events(h7, "cyc-b")["events"] == 0 and rev.peek_pending(h7)["events"] == 0
+    assert rev.unconsume_events(h7, "cyc-a")["events"] == 1 and rev.peek_pending(h7)["revenue"] == 5.0
+
+    # ── the cycle wrote nothing but its events cannot be put back → they stay consumed (never distributed twice) and
+    #    the failure is on the ledger ──
+    h8 = living("unconsume-fails")
+    rev.record_event(h8, "revenue", 600.0, "marketplace", ref="w467-8")
+
+    def _unconsume_fails(*x, **k):
+        raise TimeoutError("w467 the revenue store is busy")
+    real_unconsume = rev.unconsume_events
+    monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
+    monkeypatch.setattr(rev, "unconsume_events", _unconsume_fails)
+    failed8 = lv.operate_vsb(h8)
+    monkeypatch.setattr(VirtualLedger, "record", real_record)
+    monkeypatch.setattr(rev, "unconsume_events", real_unconsume)
+    assert "error" in failed8 and intake_postings(h8) == [] and rev.peek_pending(h8)["events"] == 0
+    assert events_of("economy.cycle_events_unconsume_failed", h8)
+    assert lv.operate_vsb(h8).get("revenue_events_consumed") == 0 and intake_postings(h8) == []
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    h9 = living("stuck-hold")
+    rev.record_event(h9, "revenue", 5000.0, "marketplace", ref="w467-9")
+    hold9 = lv.operate_vsb(h9)["governance"]["cca_id"]
+    decide(hold9)
+    monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
+    monkeypatch.setattr(rev, "unconsume_events", _unconsume_fails)
+    assert "error" in lv.operate_vsb(h9)
+    monkeypatch.setattr(VirtualLedger, "record", real_record)
+    monkeypatch.setattr(rev, "unconsume_events", real_unconsume)
+    assert rec(hold9)["status"] == "approved"
+    rev.record_event(h9, "revenue", 100.0, "marketplace", ref="w467-9-small")
+    assert lv.operate_vsb(h9).get("revenue_events_consumed") == 1
+    assert rec(hold9)["status"] == "approved", rec(hold9)["status"]      # stuck is not "consumed by a cycle"
+    swept = rev.reconcile_stranded_consumes(min_age_s=0)
+    assert swept["given_back"] >= 2 and rev.peek_pending(h9)["revenue"] == 5000.0 and rev.peek_pending(h8)["revenue"] == 600.0
+    ran9 = lv.operate_vsb(h9)
+    assert ran9.get("revenue_recognised_wst") == 5000.0 and rec(hold9)["status"] == "implemented"
+    # …but a cycle that POSTED and only failed to settle its token distributed them: the hold filed for them is retired
+    h10 = living("settle-fails")
+    rev.record_event(h10, "revenue", 5000.0, "marketplace", ref="w467-10")
+    hold10 = lv.operate_vsb(h10)["governance"]["cca_id"]
+    rev.record_event(h10, "cost", 4500.0, "cascade_delivery_cost", ref="w467-10-cost")    # now below the threshold
+    real_settle = rev.settle_consume_token
+
+    def _settle_fails(*x, **k):
+        raise TimeoutError("w467 the revenue store is busy")
+    monkeypatch.setattr(rev, "settle_consume_token", _settle_fails)
+    ran10 = lv.operate_vsb(h10)
+    monkeypatch.setattr(rev, "settle_consume_token", real_settle)
+    assert ran10.get("revenue_events_consumed") == 2 and len(intake_postings(h10)) == 1, ran10
+    assert rec(hold10)["status"] == "withdrawn", rec(hold10)["status"]
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    # ── the heartbeat path no longer consumes after the ledger has posted ──
+    assert "consume_events(" not in _inspect.getsource(lv.operate_vsb)
+
+    # ── FU-043: an unreadable store is refused by every writer and the governed peek, never overwritten; the cap
+    #    drops only consumed events ──
+    store = tmp_path / "revenue_events.json"
+    monkeypatch.setattr(rev, "_STORE", store)
+    bom = b"\xef\xbb\xbf" + _json.dumps([{"id": "rev-x", "vsb_id": "w467", "kind": "revenue", "amount_wst": 1.0,
+                                          "consumed": False}]).encode()
+    for bad in (bom, b"[{\"id\": \"rev-x\", \"vsb_id\"", b"{}", _json.dumps([{"id": "rev-y", "vsb_id": "w467", "amount_wst": "5"}]).encode()):
+        store.write_bytes(bad)
+        for fn in (lambda: rev.record_event("w467", "revenue", 2.0, "marketplace"), lambda: rev.peek_pending("w467"),
+                   lambda: rev.consume_events("w467", ["rev-x"], token="t")):
+            with _pytest.raises(rev.RevenueStoreUnavailable):
+                fn()
+        assert store.read_bytes() == bad
+    rows = ([{"id": f"rev-p{i}", "vsb_id": "w467-held", "kind": "revenue", "amount_wst": 1.0, "consumed": False} for i in range(20)]
+            + [{"id": f"rev-t{i}", "vsb_id": "w467-flight", "kind": "revenue", "amount_wst": 1.0, "consumed": True,
+                "consume_token": "cyc-inflight"} for i in range(5)]
+            + [{"id": f"rev-c{i}", "vsb_id": "w467", "kind": "revenue", "amount_wst": 1.0, "consumed": True} for i in range(1985)])
+    store.write_text(_json.dumps(rows), encoding="utf-8")
+    rev.record_event("w467-new", "revenue", 3.0, "marketplace")
+    kept = _json.loads(store.read_text(encoding="utf-8"))
+    assert len(kept) == 2000 and sum(1 for r in kept if not r["consumed"]) == 21
+    assert {f"rev-p{i}" for i in range(20)} | {f"rev-t{i}" for i in range(5)} <= {r["id"] for r in kept}
+    all_pending = [{"id": f"rev-q{i}", "vsb_id": "w467-held", "kind": "revenue", "amount_wst": 1.0, "consumed": False} for i in range(2001)]
+    store.write_text(_json.dumps(all_pending), encoding="utf-8")
+    rev.record_event("w467-new", "revenue", 3.0, "marketplace")
+    assert len(_json.loads(store.read_text(encoding="utf-8"))) == 2002          # a pending event is never dropped
+
+    # ── C6: a cycle that died between its consume and its first write is reconciled — given back when its VSB's ledger
+    #    has no entry carrying the token, settled when it has ──
+    old = "2000-01-01T00:00:00Z"
+    died, died_tok = f"w467-died-{_uuid.uuid4().hex[:6]}", f"cyc-died-{_uuid.uuid4().hex[:6]}"
+    stranded_rows = [
+        {"id": "rev-s1", "vsb_id": died, "kind": "revenue", "amount_wst": 40.0, "consumed": True,
+         "consumed_at": old, "consume_token": died_tok},
+        {"id": "rev-s2", "vsb_id": "w467-posted", "kind": "revenue", "amount_wst": 30.0, "consumed": True,
+         "consumed_at": old, "consume_token": "cyc-posted"},
+        {"id": "rev-s3", "vsb_id": "w467-fresh", "kind": "revenue", "amount_wst": 20.0, "consumed": True,
+         "consumed_at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ", __import__("time").gmtime()),
+         "consume_token": "cyc-fresh"}]
+    store.write_text(_json.dumps(stranded_rows), encoding="utf-8")
+    posted_ledger = VirtualLedger("w467-posted")
+    posted_ledger.record("revenue", 30.0, memo="cycle intake (revenue)", ref="cyc-posted")
+    try:
+        recon = rev.reconcile_stranded_consumes()
+    finally:
+        posted_ledger.path.unlink(missing_ok=True)
+    after = {r["id"]: r for r in _json.loads(store.read_text(encoding="utf-8"))}
+    assert recon["given_back"] == 1 and recon["settled"] == 1, recon
+    assert after["rev-s1"]["consumed"] is False and "consume_token" not in after["rev-s1"]
+    assert after["rev-s2"]["consumed"] is True and "consume_token" not in after["rev-s2"]
+    assert after["rev-s3"].get("consume_token") == "cyc-fresh"              # a consume still in flight is left alone
+    assert any(n.get("token") == died_tok for n in events_of("economy.cycle_intake_reconciled", died))
+    monkeypatch.undo()
+
+    # ── C4: the API cycle follows the same rule — a first write that fails hands the approval back unmarked, and the
+    #    receipts it drained wait for the next cycle ──
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 100.0)
+    ap = living("api")
+    s2 = living("api-sender")
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": s2, "revenue": 50000}).json()["cycle"]
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 100.0)
+    tr.record_transfer(s2, ap, 300.0, "w467 api receipt")
+    held_api = client.post("/api/v1/economy/cycle", json={"vsb_id": ap, "revenue": 0}).json()
+    hold_api = held_api["governance"]["cca_id"]
+    decide(hold_api)
+    monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
+    with _pytest.raises(OSError):
+        client.post("/api/v1/economy/cycle", json={"vsb_id": ap, "revenue": 0})
+    monkeypatch.setattr(VirtualLedger, "record", real_record)
+    assert rec(hold_api)["status"] == "approved" and ran_marks(hold_api) == 0 and tr.peek_pending_transfers(ap) == 300.0
+    api_ran = client.post("/api/v1/economy/cycle", json={"vsb_id": ap, "revenue": 0}).json()
+    assert api_ran["cycle"] and rec(hold_api)["status"] == "implemented" and ran_marks(hold_api) == 1, api_ran
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    # ── the heartbeat runs the stranded-consume pass on the same fifth beat, only with autonomous economy on ──
+    import asyncio as _aio
+    from agentic_core.organism.heartbeat import OrganismHeartbeat
+    hb = OrganismHeartbeat()
+    for flag in ("auto_evolve", "auto_align", "auto_compliance", "auto_ship", "auto_economy"):
+        setattr(hb, flag, False)
+    passes = []
+    monkeypatch.setattr(lv, "operate_one", lambda *x, **k: None)
+    monkeypatch.setattr(tr, "reconcile_receiver_legs", lambda *x, **k: {"open_legs": 0, "reconciled": 0})
+    monkeypatch.setattr(rev, "reconcile_stranded_consumes", lambda *x, **k: passes.append(1) or {"stranded": 1, "given_back": 1})
+    loop = _aio.new_event_loop()
+    try:
+        hb.beats = 9
+        loop.run_until_complete(hb.beat())
+        assert passes == []
+        hb.auto_economy, hb.beats = True, 9
+        beat = loop.run_until_complete(hb.beat())
+        assert passes == [1] and hb.last_intake_reconcile["given_back"] == 1 and "intake_reconcile" in beat["actions"]
+        assert "last_intake_reconcile" in hb.status()
+        hb.beats = 10
+        loop.run_until_complete(hb.beat())                                     # beat 11: not a fifth beat
+        assert passes == [1]
+
+        def _pass_raises(*x, **k):
+            raise OSError("w467 the revenue store directory vanished")
+        monkeypatch.setattr(rev, "reconcile_stranded_consumes", _pass_raises)
+        hb.beats = 14
+        survived = loop.run_until_complete(hb.beat())                          # beat 15
+        assert "OSError" in hb.last_intake_reconcile["error"] and survived.get("beat") == 15
+    finally:
+        loop.close()
+
+    # ── C9: a refused revenue store never drops a delivery's tariff silently ──
+    import agentic_core.api.swarm as _swarm
+    swarm_src = _inspect.getsource(_swarm)
+    assert '"type": "economy.recognition_failed", "source": "cascade_delivery"' in swarm_src and '"recognition_failed": why' in swarm_src
+    assert 'failed = "cost" if _rev else "revenue"' in swarm_src and '"amount_wst": _cost if _rev else 250.0' in swarm_src

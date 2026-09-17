@@ -530,6 +530,23 @@ def peek_pending_transfers(vsb_id: str) -> float:
     return round(rec.get("pending_wst", 0.0), 2)
 
 
+def return_pending_transfers(vsb_id: str, amount: float) -> None:
+    """W467 (register FU-044) — give back inter-VSB receipts a cycle drained (consume_pending_transfers) when that cycle
+    then wrote nothing to the ledger: they reached no books, so they wait for the next cycle."""
+    amount = round(float(amount), 2)
+    if amount <= 0:
+        return
+    with store_lock(_PENDING_STORE):
+        d = _read_pending()
+        rec = d.get(vsb_id)
+        if not isinstance(rec, dict):
+            raise PendingStoreUnavailable(f"no pending record for {vsb_id} to give {amount} WST of drained receipts back to")
+        rec["pending_wst"] = round(rec.get("pending_wst", 0.0) + amount, 2)
+        rec["consumed_total_wst"] = round(max(0.0, rec.get("consumed_total_wst", 0.0) - amount), 2)
+        d[vsb_id] = rec
+        atomic_write_json(_PENDING_STORE, d)
+
+
 def consume_pending_transfers(vsb_id: str, max_amount: Optional[float] = None) -> float:
     """Drain the queued inter-VSB receipts for a VSB — called by the metabolic cycle at intake.
     Returns the consumed amount (0.0 when none pending). W463 — `max_amount` caps the drain at what the

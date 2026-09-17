@@ -127,6 +127,7 @@ class OrganismHeartbeat:
         self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
         self.last_vsb_operated: Optional[str] = None   # §4 — last living VSB autonomously operated on the beat
         self.last_transfer_reconcile: Optional[Dict[str, Any]] = None   # W466 — last stranded-transfer pass
+        self.last_intake_reconcile: Optional[Dict[str, Any]] = None     # W467 — last stranded-consume pass
         self.last_vsb_evolved: Optional[Dict[str, Any]] = None   # §8×§3 (W309) — last child VSB evolved on the tick
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
@@ -259,6 +260,16 @@ class OrganismHeartbeat:
                     self.last_transfer_reconcile = {"beat": self.beats,
                                                     "error": f"{type(err).__name__}: {str(err)[:160]}"}
                     logger.warning("stranded-transfer reconciliation failed on beat %s: %s", self.beats, err)
+                # W467 (refutation) — and recognised events a cycle consumed but never posted (the process stopped)
+                try:
+                    from agentic_core.economy.revenue import reconcile_stranded_consumes
+                    irep = reconcile_stranded_consumes()
+                    self.last_intake_reconcile = {"beat": self.beats, **irep}
+                    if irep.get("given_back"):
+                        actions.append("intake_reconcile")
+                except Exception as err:
+                    self.last_intake_reconcile = {"beat": self.beats, "error": f"{type(err).__name__}: {str(err)[:160]}"}
+                    logger.warning("stranded-intake reconciliation failed on beat %s: %s", self.beats, err)
 
         # 2f. §11 (W288) — CONTINUOUS compliance: re-screen ONE living VSB per beat (round-robin,
         #     least-recently-screened), so an entity screened at establishment is re-evaluated as its
@@ -566,6 +577,7 @@ class OrganismHeartbeat:
             "last_evolution": self.last_evolution,
             "last_vsb_operated": self.last_vsb_operated,
             "last_transfer_reconcile": self.last_transfer_reconcile,
+            "last_intake_reconcile": self.last_intake_reconcile,
             "last_vsb_evolved": self.last_vsb_evolved,
             "last_reshipped": getattr(self, "last_reshipped", None),
             "auto_ship": self.auto_ship,

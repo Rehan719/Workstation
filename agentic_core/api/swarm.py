@@ -876,6 +876,7 @@ async def cascade_orchestration(req: CascadeRequest):
     # economic organism (virtual WST; honest simulation constants, never real money). Best-effort.
     economic_event = None
     if req.scope != "workstation" and quality.get("qms_gate_passed") is True:   # W449 — never on None
+        _rev, _cost = None, None
         try:
             from agentic_core.economy.revenue import SIM_DELIVERY_TARIFF_WST, record_event
             _rev = record_event(req.scope, "revenue", SIM_DELIVERY_TARIFF_WST, "cascade_delivery",
@@ -888,8 +889,23 @@ async def cascade_orchestration(req: CascadeRequest):
                              note="BMS unit-economics estimate for this run (simulated constants)")
             economic_event = {"revenue_wst": _rev["amount_wst"], "cost_wst": _cost,
                               "basis": "simulated tariff + BMS estimate — virtual WST only"}
-        except Exception:
-            pass
+        except Exception as exc:
+            # W467 (refutation) — the revenue store now REFUSES when it cannot be read whole; the delivery's tariff (or
+            # its cost) is then not recognised — said in the response and on the UEG, never silently dropped
+            why = f"{type(exc).__name__}: {str(exc)[:160]}"
+            failed = "cost" if _rev else "revenue"
+            economic_event = {"recognition_failed": why, "failed": failed, "revenue_recorded": bool(_rev),
+                              "revenue_wst": (_rev or {}).get("amount_wst", 250.0), "cost_wst": _cost,
+                              "basis": "simulated tariff — virtual WST only"}
+            try:
+                from agentic_core.gaas.v5 import UEGLogger
+                UEGLogger().log({"type": "economy.recognition_failed", "source": "cascade_delivery", "run_id": run_id,
+                                 "vsb_id": req.scope, "failed": failed,
+                                 "amount_wst": _cost if _rev else 250.0, "cost_wst": _cost,
+                                 "revenue_recorded": bool(_rev),
+                                 "error": why, "disclaimer": "Virtual/simulated WST — no real funds moved."})
+            except Exception:
+                pass
 
     # §5 (W268) — PERSIST the cascade run (previously only /delegate persisted; cascade runs — with
     # their appraisals and Development Actions — evaporated at response time). Compact + capped + atomic;

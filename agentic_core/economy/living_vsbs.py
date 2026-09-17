@@ -230,7 +230,7 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         # gate passes. A materiality/policy hold therefore PRESERVES the recognised revenue it
         # holds (previously consume-before-gate destroyed it — the CCA approval then authorised a
         # distribution of nothing).
-        from agentic_core.economy.revenue import peek_pending, consume_events
+        from agentic_core.economy.revenue import peek_pending
         peek = peek_pending(vsb_id)
         res = governed_cycle_sync(vsb_id, target.get("entity_type", "waqf_ltd_hybrid"),
                                   target.get("owner", "Rehan"), peek["revenue"], peek["costs"],
@@ -243,13 +243,19 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             target["last_operated"] = _now()
             target["last_hold"] = str(gov.get("status") or "governance_hold")
             _update_entry(vsb_id, lambda e: e.update(last_operated=target["last_operated"], last_hold=target["last_hold"]))
+            try:
+                preserved = peek_pending(vsb_id)["revenue"]      # what is ACTUALLY pending now (never a stale peek)
+            except Exception:
+                preserved = None
             return {"vsb_id": vsb_id, "name": target.get("name"),
                     "governance": gov, "cycle_ran": False,
-                    "pending_preserved_wst": peek["revenue"],
-                    "note": "recognised revenue events remain PENDING (unconsumed) while held"}
-        # consume exactly what the passed cycle ran on — W463: an approval releases the events it was filed
-        # for, so events that arrived after the hold wait for the next cycle instead of riding along
-        pend = consume_events(vsb_id, res.get("consumed_event_ids", peek["ids"]))
+                    "pending_preserved_wst": preserved,
+                    "note": ("recognised revenue events remain PENDING (unconsumed) while held"
+                             if gov.get("status") not in ("intake_unavailable", "intake_consumed_elsewhere") else
+                             gov.get("note") or "no cycle ran; recognised revenue events were not distributed")}
+        # W467 (register FU-022) — the governed cycle consumed exactly what it ran on BEFORE it ran (W463: an approval
+        # releases the events it was filed for); this path no longer consumes after the ledger has posted
+        pend = res.get("consumed") or {"events": 0, "revenue": 0.0, "costs": 0.0}
         if pend["events"]:
             from agentic_core.economy.governance import retire_heartbeat_holds_for_consumed_events
             retire_heartbeat_holds_for_consumed_events(vsb_id)

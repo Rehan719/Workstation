@@ -630,8 +630,28 @@ def retire_heartbeat_holds_for_consumed_events(vsb_id: str) -> int:
     Owner's decision. It is withdrawn instead (compare-and-set), saying why."""
     try:
         from agentic_core.api import change_control as cca
-        from agentic_core.economy.revenue import peek_pending
+        from agentic_core.economy.revenue import _read_rows, peek_pending
         pending = set(peek_pending(vsb_id).get("ids") or [])
+        # W467 (second refutation) — an event a cycle consumed but never settled (its cyc- token is still on it: the
+        # cycle wrote nothing and its give-back failed, or the process stopped) is STUCK, not distributed; the
+        # stranded-consume pass gives it back, so the hold filed for it is not retired as "consumed by a cycle"
+        # W467 (third refutation) — …but only when that cycle did NOT post: a cycle that wrote its ledger (its intake
+        # entry carries the token) and only failed to settle distributed them, and its hold is retired as before. An
+        # unreadable ledger keeps them counted as stuck (the restrictive side).
+        stuck: Dict[str, List[str]] = {}
+        for ev in _read_rows():
+            tok = str(ev.get("consume_token") or "")
+            if ev.get("vsb_id") == vsb_id and ev.get("consumed") and tok.startswith("cyc-"):
+                stuck.setdefault(tok, []).append(ev["id"])
+        if stuck:
+            from agentic_core.economy.transfers import _ledger_path, _read_ledger_strict
+            path = _ledger_path(vsb_id)
+            try:
+                refs = {e.get("ref") for e in ((_read_ledger_strict(path).get("entries") or []) if path.exists() else [])
+                        if isinstance(e, dict)}
+            except Exception:
+                refs = set()
+            pending |= {i for tok, ids in stuck.items() if tok not in refs for i in ids}
         title = _hold_title(vsb_id, "heartbeat")
         retired = 0
         for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes()):
@@ -844,15 +864,24 @@ async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: flo
     # no fallback path can ever re-run it — W463: nor re-run an action that STARTED and raised
     # (it may have posted part of the intake; running it again posted it twice, "ungated").
     executed = {"started": False, "done": False, "report": None}
+    # W467 (refutation) — the released action counts as run only once the cycle has WRITTEN its ledger (the first
+    # write is one atomic save); a cycle that raised before it hands the approval back, as the heartbeat path does
+    progress: Dict[str, Any] = {"on_ledger_written": lambda: _mark_action_ran(consumed, vsb_id, f"{source} cycle wrote its ledger")}
 
     def _run():
         # W463 — consume at most what the gate measured (and what an approval was filed for)
         return metab.run_cycle(revenue, costs, reserve_rate,
-                               max_returns_wst=cap_returns, max_transfers_wst=cap_transfers)
+                               max_returns_wst=cap_returns, max_transfers_wst=cap_transfers, progress=progress)
+
+    def _raised(err: BaseException) -> None:
+        if progress.get("ledger_written"):
+            _spent_on_a_raised_cycle(consumed, vsb_id, source, err)
+        else:
+            _restore_consumed_approval(consumed, vsb_id=vsb_id,
+                                       reason="the cycle raised before its first ledger write — nothing was posted")
 
     async def _action():
         executed["started"] = True
-        _mark_action_ran(consumed, vsb_id, f"{source} cycle started inside the gate")
         executed["report"] = _run()
         executed["done"] = True
         return executed["report"]
@@ -882,14 +911,13 @@ async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: flo
                                            "nothing ran, nothing was posted"}}
         if not getattr(result, "output", None) and not executed["done"]:
             executed["started"] = True
-            _mark_action_ran(consumed, vsb_id, f"{source} cycle started after the gate returned no output")
         report = (result.output if getattr(result, "output", None)
                   else (executed["report"] if executed["done"] else _run()))
         governance: Dict[str, Any] = {"status": result.status, "checkpoint": result.checkpoint_id}
     except Exception as e:
         if executed["started"] and not executed["done"]:
-            # the gate ran and allowed the action, which then raised part-way: never re-run it
-            _spent_on_a_raised_cycle(consumed, vsb_id, source, e)
+            # the gate ran and allowed the action, which then raised: never re-run it
+            _raised(e)
             raise
         # §3 demands the gate; if the gate itself fails we do NOT hide it — run the (virtual) cycle
         # but emit a LOUD tamper-evident bypass event and say so in the response. NEVER a re-run:
@@ -897,10 +925,9 @@ async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: flo
         try:
             if not executed["done"]:
                 executed["started"] = True
-                _mark_action_ran(consumed, vsb_id, f"{source} cycle started with the gate unavailable")
             report = executed["report"] if executed["done"] else _run()
         except BaseException as err:
-            _spent_on_a_raised_cycle(consumed, vsb_id, source, err)
+            _raised(err)
             raise
         _ueg_log({"type": "economy.governance_bypass", "vsb_id": vsb_id, "source": source,
                   "error": str(e)[:200], "note": "gaas.v5 gate unavailable — cycle ran ungated (logged loudly)."})
@@ -961,8 +988,8 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
     if events is not None:
         intake["event_ids"] = event_ids
         intake["event_items"] = {i: items.get(i) for i in event_ids}
-    held, consumed = _materiality_gate(vsb_id, _estimate_distributable(
-        revenue + peek_returns + peek_transfers, costs, reserve_rate), source, intake=intake)
+    gate_est = _estimate_distributable(revenue + peek_returns + peek_transfers, costs, reserve_rate)
+    held, consumed = _materiality_gate(vsb_id, gate_est, source, intake=intake)
     if held is not None:
         return {"cycle": None, "governance": held}
 
@@ -976,12 +1003,130 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
                     if items.get(i, {}).get("kind") != "revenue")
     cap_returns = min(peek_returns, release.get("max_returns_wst", peek_returns))
     cap_transfers = min(peek_transfers, release.get("max_transfers_wst", peek_transfers))
-    _mark_action_ran(consumed, vsb_id, f"{source} cycle started")
+    if events is None:
+        plain: Dict[str, Any] = {"on_ledger_written": lambda: _mark_action_ran(consumed, vsb_id, f"{source} cycle wrote its ledger")}
+        try:
+            report = metab.run_cycle(revenue, costs, reserve_rate, max_returns_wst=cap_returns,
+                                     max_transfers_wst=cap_transfers, progress=plain)
+        except BaseException as err:
+            if plain.get("ledger_written"):
+                _spent_on_a_raised_cycle(consumed, vsb_id, source, err)
+            else:
+                _restore_consumed_approval(consumed, vsb_id=vsb_id,
+                                           reason="the cycle raised before its first ledger write — nothing was posted")
+            raise
+        _log_split(report, metab.waterfall_source, source)
+        return {"cycle": report, "governance": governance, "consumed_event_ids": consumed_event_ids}
+
+    # W467 (register FU-022) — the recognised events are CONSUMED BEFORE the cycle runs, under a token, after every gate
+    # has passed. They used to be consumed by the caller AFTER run_cycle had posted, so a consume that failed (its lock
+    # busy past the timeout) left them pending and the next beat distributed them a second time. Now: a consume that
+    # fails runs nothing; a cycle that raises before its first ledger write gives back exactly its own events (and the
+    # Owner's approval); a cycle that wrote anything keeps them consumed and the approval spent (it may have partly
+    # posted — the W463 rule).
+    from agentic_core.economy.revenue import consume_events, settle_consume_token, unconsume_events
+    token = f"cyc-{uuid.uuid4().hex[:12]}"
+
+    def _give_back_events(ids: List[str]) -> Optional[bool]:
+        # exactly this cycle's events go back; a partial or failed give-back is recorded, naming what is missing
+        try:
+            back = set(unconsume_events(vsb_id, token).get("ids") or [])
+        except Exception as uerr:
+            back, why_back = set(), f"{type(uerr).__name__}: {str(uerr)[:160]}"
+        else:
+            why_back = "some of this cycle's events were no longer in the store"
+        missing = [i for i in ids if i not in back]
+        if missing:
+            _ueg_log({"type": "economy.cycle_events_unconsume_failed", "vsb_id": vsb_id, "source": source,
+                      "event_ids": missing, "token": token, "error": why_back,
+                      "note": "the cycle wrote nothing, but these consumed events could not be put back now. They "
+                              "keep this cycle's token, so they are never distributed twice; with autonomous economy on "
+                              "the stranded-consume pass puts them back after 15 minutes "
+                              "(economy.cycle_intake_reconciled), otherwise they must be put back to pending by hand. "
+                              "Do not re-record them."})
+        return not missing
     try:
-        report = metab.run_cycle(revenue, costs, reserve_rate,
-                                 max_returns_wst=cap_returns, max_transfers_wst=cap_transfers)
+        took = consume_events(vsb_id, consumed_event_ids, token=token)
+    except Exception as err:
+        why = f"{type(err).__name__}: {str(err)[:160]}"
+        _restore_consumed_approval(consumed, vsb_id=vsb_id,
+                                   reason="the cycle's recognised events could not be consumed — nothing ran")
+        _ueg_log({"type": "economy.cycle_intake_unavailable", "vsb_id": vsb_id, "source": source, "error": why,
+                  "event_ids": consumed_event_ids,
+                  "note": "the events stay pending and nothing was distributed; the next cycle takes them"})
+        return {"cycle": None, "governance": {"status": "intake_unavailable", "error": why,
+                                              "note": "the recognised revenue events could not be consumed, so no "
+                                                      "cycle ran; they stay pending for the next one"}}
+    flipped = list(took.get("ids") or [])
+    if set(flipped) != set(consumed_event_ids):
+        # another consumer took some of them first: this cycle would run on exactly what IT consumed
+        consumed_event_ids = flipped
+        revenue = sum(float(items.get(i, {}).get("amount_wst") or 0.0) for i in flipped
+                      if items.get(i, {}).get("kind") == "revenue")
+        costs = sum(float(items.get(i, {}).get("amount_wst") or 0.0) for i in flipped
+                    if items.get(i, {}).get("kind") != "revenue")
+        # W467 (refutation) — re-sized, it is gated again: losing COST events to the other consumer can raise the
+        # distributable above what the gate measured (above the threshold, or above what an approval released)
+        new_est = _estimate_distributable(revenue + cap_returns + cap_transfers, costs, reserve_rate)
+        if consumed:
+            bound = release.get("release_est_wst")
+            over = new_est > float(bound if bound is not None else gate_est) + 0.005
+        else:
+            over = new_est >= MATERIALITY_WST
+        if over or (consumed and not flipped and cap_returns <= 0 and cap_transfers <= 0):
+            events_back = _give_back_events(flipped) if flipped else True
+            returned = _restore_consumed_approval(
+                consumed, vsb_id=vsb_id, reason="another cycle consumed events this one was gated on — nothing ran")
+            said = ("" if not consumed else
+                    " and the approval was handed back" if returned == "restored" else
+                    " and the approval could not be handed back (it stays spent)")
+            _ueg_log({"type": "economy.cycle_intake_consumed_elsewhere", "vsb_id": vsb_id, "source": source,
+                      "event_ids": flipped, "events_given_back": events_back, "approval_returned": returned,
+                      "estimate_after_wst": new_est})
+            return {"cycle": None, "governance": {"status": "intake_consumed_elsewhere", "approval_returned": returned,
+                                                  "note": "another cycle consumed some of the recognised events first; "
+                                                          "nothing ran" + said}}
+    _ueg_log({"type": "economy.cycle_intake_consumed", "vsb_id": vsb_id, "source": source, "token": token,
+              "event_ids": flipped, "revenue_wst": revenue, "costs_wst": costs,
+              "cca_id": (consumed or {}).get("cca_id"), "consume_id": (consumed or {}).get("consume_id"),
+              "note": "consumed before the cycle runs; the cycle's first ledger entry carries this token"})
+    progress: Dict[str, Any] = {"cycle_token": token,
+                                "on_ledger_written": lambda: _mark_action_ran(consumed, vsb_id, f"{source} cycle wrote its ledger")}
+    try:
+        report = metab.run_cycle(revenue, costs, reserve_rate, max_returns_wst=cap_returns,
+                                 max_transfers_wst=cap_transfers, progress=progress)
     except BaseException as err:
-        _spent_on_a_raised_cycle(consumed, vsb_id, source, err)
+        why = f"{type(err).__name__}: {str(err)[:160]}"
+        written = bool(progress.get("ledger_written"))
+        events_back: Optional[bool] = None
+        returned = None
+        if not written:
+            events_back = _give_back_events(flipped) if flipped else True
+            returned = _restore_consumed_approval(consumed, vsb_id=vsb_id,
+                                                  reason="the cycle raised before its first ledger write — nothing was posted")
+        else:
+            _spent_on_a_raised_cycle(consumed, vsb_id, source, err)
+            try:
+                settle_consume_token(vsb_id, token)
+            except Exception:
+                pass
+        intake_back = progress.get("intake_given_back") or {}
+        if written:
+            note = "the cycle wrote part of its ledger: its events stay consumed and are never distributed again"
+        else:
+            lost = ([] if events_back else ["some of its events"]) + [k.replace("_", " ") for k, ok in intake_back.items() if not ok]
+            note = ("the cycle wrote nothing: its events and the intake it drained were given back" if not lost else
+                    "the cycle wrote nothing, but " + " and ".join(lost) + " could not be given back (see the "
+                    "give-back records)")
+        _ueg_log({"type": "economy.cycle_raised", "vsb_id": vsb_id, "source": source, "error": why,
+                  "ledger_written": written, "event_ids": flipped, "events_given_back": events_back,
+                  "intake_given_back": intake_back, "approval_returned": returned,
+                  "returns_drained_wst": progress.get("returns_drained_wst"),
+                  "receipts_drained_wst": progress.get("receipts_drained_wst"), "note": note})
         raise
+    try:
+        settle_consume_token(vsb_id, token)
+    except Exception:
+        pass                       # the token only keeps these events past the cap a while longer
     _log_split(report, metab.waterfall_source, source)
-    return {"cycle": report, "governance": governance, "consumed_event_ids": consumed_event_ids}
+    return {"cycle": report, "governance": governance, "consumed_event_ids": consumed_event_ids, "consumed": took}

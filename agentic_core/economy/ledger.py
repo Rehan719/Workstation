@@ -11,7 +11,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 _STORE = data_path("economy")
 
@@ -107,7 +107,8 @@ class VirtualLedger:
         self._data.setdefault("postings", []).append(posting)
         return posting
 
-    def record(self, account: str, amount: float, memo: str = "", kind: str = "credit") -> Dict[str, Any]:
+    def record(self, account: str, amount: float, memo: str = "", kind: str = "credit",
+               ref: Optional[str] = None) -> Dict[str, Any]:
         """Record an entry (LEGACY single-sided surface — kept intact for existing readers). Also
         makes the corresponding BALANCED double-entry posting, so the real books stay double-entry
         while the legacy balances/statement remain byte-compatible."""
@@ -120,6 +121,7 @@ class VirtualLedger:
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "account": account, "kind": kind, "amount": round(amount, 2),
                 "memo": memo, "balance_after": self._data["balances"][account],
+                **({"ref": ref} if ref else {}),
             }
             self._data["entries"].append(entry)
             # the balanced posting this legacy entry really means
