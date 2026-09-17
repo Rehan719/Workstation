@@ -20,6 +20,7 @@ metabolic system and the nervous signal bus. Virtual/simulated throughout.
 from __future__ import annotations
 
 import json
+import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -27,6 +28,8 @@ from agentic_core.config import data_path
 from .entities import get_template
 from .ledger import VirtualLedger
 from .charity import CharityIntelligence
+
+logger = logging.getLogger(__name__)
 
 # §4/§8/§10 — the Owner can adjust the profit-distribution proportions per VSB (virtual). Overrides persist
 # here and are loaded over the entity-template default; they are always bounded by the template's binding
@@ -120,13 +123,17 @@ class EconomicMetabolism:
 
         # federation — inter-VSB RECEIPTS enter this cycle's waterfall the same way (W262).
         transfers_received = 0.0
+        receipts_error = None
         try:
             from .transfers import consume_pending_transfers
             transfers_received = consume_pending_transfers(self.vsb_id, max_amount=max_transfers_wst)
             if transfers_received > 0:
                 revenue = round(revenue + transfers_received, 2)
-        except Exception:
+        except Exception as _rx_err:
+            # W465 — the receipts stay queued (nothing was taken); the report says why none entered this cycle
             transfers_received = 0.0
+            receipts_error = f"{type(_rx_err).__name__}: {str(_rx_err)[:160]}"
+            logger.warning("cycle for %s took no inter-VSB receipts: %s", self.vsb_id, receipts_error)
 
         # §8→§12 ECONOMIC SURVIVAL INSTINCT — when the LIVING ORGANISM's metabolic energy is depleted, the
         # economic organism conserves more (raises reserves), mirroring the §8 homeostatic survival instinct.
@@ -156,12 +163,34 @@ class EconomicMetabolism:
                 self.ledger.record(stage, amount, memo=f"circulation → {_CYCLE_ROLE.get(stage, stage)}")
 
         # 4b. §7 — the Owner's share accrues to the Owner-Payments ledger (virtual WST; real rails gated).
-        try:
-            from .owner_payments import accrue as _accrue_owner
-            if splits.get("owner", 0.0) > 0:
+        # W465 (FU-016) — a failed accrual used to vanish (`except: pass`) while the ledger above already showed
+        # the owner stage as distributed; it is now said in the report and on the UEG.
+        owner_accrual: Dict[str, Any] = {"accrued": False, "amount_wst": splits.get("owner", 0.0)}
+        if splits.get("owner", 0.0) > 0:
+            try:
+                from .owner_payments import accrue as _accrue_owner
                 _accrue_owner(self.vsb_id, splits["owner"], self.owner, memo="cycle owner share (§4 waterfall)")
-        except Exception:
-            pass
+                owner_accrual["accrued"] = True
+            except Exception as _acc_err:
+                owner_accrual["error"] = f"{type(_acc_err).__name__}: {str(_acc_err)[:160]}"
+                try:
+                    from agentic_core.gaas.v5 import UEGLogger
+                    UEGLogger().log({"type": "economy.owner_accrual_failed", "vsb_id": self.vsb_id,
+                                     "amount_wst": splits["owner"], "error": owner_accrual["error"],
+                                     "note": "the cycle distributed the owner stage but the owner-payments store "
+                                             "did not record it; the Owner's balance is short by this amount",
+                                     "disclaimer": "Virtual/simulated WST — no real funds moved."})
+                    owner_accrual["ueg_logged"] = True
+                    logger.warning("owner accrual NOT recorded for %s (%s WST): %s", self.vsb_id, splits["owner"],
+                                   owner_accrual["error"])
+                except Exception as _ueg_err:
+                    owner_accrual["ueg_logged"] = False
+                    # the page sends the Owner to the server log for this case: the record must be here
+                    logger.error("owner accrual NOT recorded and NOT on the UEG for %s (%s WST): accrual error %s; "
+                                 "UEG error %s", self.vsb_id, splits["owner"], owner_accrual["error"],
+                                 f"{type(_ueg_err).__name__}: {str(_ueg_err)[:160]}")
+        else:
+            owner_accrual["note"] = "no owner share this cycle"
 
         # 4c. §12 (W294) — the capital_fund stage COMPOUNDS into the shared Sovereign Capital Fund
         #     (energy storage genuinely STORES — previously only a ledger row; the endowment loop
@@ -203,12 +232,14 @@ class EconomicMetabolism:
             "intake_revenue": revenue,
             "venture_returns_recycled_wst": returns_recycled,   # §6 — returns that re-entered this waterfall
             "inter_vsb_received_wst": transfers_received,       # federation — receipts from other VSBs (W262)
+            **({"inter_vsb_receipts_error": receipts_error} if receipts_error else {}),   # W465 — none taken, and why
             "homeostasis_reserves": reserves,
             "reserve_rate_applied": effective_reserve,   # §8→§12: energy-adjusted (conserves more when low)
             "energy_state": energy_state,
             "distributable_profit": distributable,
             "circulation": {k: {"amount_wst": v, "role": _CYCLE_ROLE.get(k, k)} for k, v in splits.items()},
             "capital_fund_contribution": capital_contribution,   # §12 (W294) — compounded into the pool
+            "owner_accrual": owner_accrual,                      # §7 (W465) — whether the owner share was recorded
             "giving_back": charity_alloc,
             "venture_investment": ventures_alloc,
             "metabolic_energy": metabolic_energy,

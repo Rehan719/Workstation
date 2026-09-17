@@ -13,6 +13,9 @@
  *     delivery reads as weak — nothing here upgrades it.
  *   • Settlement can be HELD by governance. The backend then leaves the contract at "delivered" and
  *     says so; this shows the hold rather than implying payment succeeded.
+ *   • W465 — only a contract that came back SETTLED is reported paid. An unpaid settlement says what it was
+ *     (held for the Owner, rejected — retrying the same price is refused —, refused by the gate, a gate error),
+ *     never "held" for all of them; a settle already in progress is shown as such.
  *   • Every action reports its real failure. A 409 ("contract is accepted, not offered") is a fact
  *     about state, not a glitch to swallow.
  *   • Money is virtual WST. No real-money rail is involved.
@@ -33,10 +36,23 @@ interface Contract {
   price_wst: number;
   status: string;                       // offered | accepted | delivered | settled
   delivery?: { run_id?: string; quality?: unknown; served_by?: unknown } | null;
-  settlement?: { transfer_id?: string; held?: boolean; governance?: unknown } | null;
+  // W465 — outcome says what the last settle attempt was: paid | held | rejected | blocked | gate_error |
+  // decided_concurrently | unknown (a contract settled before W465 carries only transfer_id)
+  settlement?: { transfer_id?: string; held?: boolean; outcome?: string; rejected_by?: string; cca_id?: string;
+                 governance?: { status?: string } | null } | null;
+  settling?: { since?: string } | null;
   offered_at?: string;
   note?: string;
 }
+
+const UNPAID_OUTCOME: Record<string, string> = {
+  held: 'held for the Owner',
+  rejected: 'payment rejected',
+  blocked: 'refused by the gate',
+  gate_error: 'governance check failed',
+  decided_concurrently: 'decided meanwhile — settle again',
+  unknown: 'outcome unknown — settle again',
+};
 
 const NEXT_ACTION: Record<string, { verb: string; path: string; who: string }> = {
   offered:   { verb: 'Accept',  path: 'accept',  who: 'provider' },
@@ -107,6 +123,9 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // W465 — the list's own load error: the reload after an action used to clear the action's error, so the note
+  // of an unpaid settlement (held for the Owner, rejected, refused) vanished the moment it was shown
+  const [loadErr, setLoadErr] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [notice, setNotice] = useState('');
@@ -120,8 +139,8 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
   const load = useCallback(() => {
     setLoading(true);
     apiJson<{ contracts?: Contract[] }>('/api/v1/economy/contracts')
-      .then(d => { setContracts(d.contracts ?? []); setError(''); })
-      .catch(e => setError(errorMessage(e)))
+      .then(d => { setContracts(d.contracts ?? []); setLoadErr(''); })
+      .catch(e => setLoadErr(errorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
   useEffect(load, [load]);
@@ -160,11 +179,13 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
     }
     try {
       const res = await apiJson<Contract>(`/api/v1/economy/contracts/${c.id}/${step.path}`, { method: 'POST' });
-      // A held settlement comes back 200 with the contract still "delivered" and a note. Report it.
-      if (res.settlement?.held || (res.note && /held/i.test(res.note))) {
-        setNotice(res.note || 'Settlement was held by governance — the contract stays delivered. Retry once the hold clears.');
-      } else if (step.path === 'settle') {
-        setNotice(`Settled — transfer ${res.settlement?.transfer_id ?? 'recorded'} (virtual WST).`);
+      // W465 — a settle is reported paid only when the contract came back settled; anything else says what it was
+      if (step.path === 'settle') {
+        if (res.status === 'settled') {
+          setNotice(`Settled — transfer ${res.settlement?.transfer_id ?? '(id not returned)'} (virtual WST).${res.note ? ` ${res.note}` : ''}`);
+        } else {
+          setError(res.note || 'The settlement did not complete — the contract stays delivered and nothing was paid.');
+        }
       } else {
         setNotice(`Contract ${res.status}.`);
       }
@@ -230,9 +251,15 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
       </div>
 
       {error && (
-        <div role="alert" className="flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
+        <div role="alert" data-testid="contract-action-error" className="flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
           <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
           <p className="text-[10px] font-bold text-vital leading-relaxed">{error}</p>
+        </div>
+      )}
+      {loadErr && (
+        <div role="alert" data-testid="contracts-load-error" className="flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
+          <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
+          <p className="text-[10px] font-bold text-vital leading-relaxed">{loadErr}</p>
         </div>
       )}
       {notice && (
@@ -271,8 +298,13 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
                     <span className="text-aura">{c.price_wst.toLocaleString()} WST</span>
                     {q && <><span>·</span><span>quality {q}</span></>}
                     {servedByText(c.delivery?.served_by) && <><span>·</span><span>served by {servedByText(c.delivery?.served_by)}</span></>}
-                    {c.settlement?.held && <Badge className="text-[8px]">settlement held</Badge>}
-                    {c.settlement?.transfer_id && <><span>·</span><span>transfer {String(c.settlement.transfer_id).slice(0, 10)}</span></>}
+                    {c.status !== 'settled' && c.settlement && (c.settlement.outcome ? UNPAID_OUTCOME[c.settlement.outcome] : c.settlement.held) && (
+                      <Badge className="text-[8px]" data-testid="contract-settlement-outcome">
+                        {c.settlement.outcome ? UNPAID_OUTCOME[c.settlement.outcome] : 'settlement held'}
+                      </Badge>
+                    )}
+                    {c.settling?.since && <Badge className="text-[8px]">settlement in progress</Badge>}
+                    {c.status === 'settled' && c.settlement?.transfer_id && <><span>·</span><span>transfer {String(c.settlement.transfer_id)}</span></>}
                     {c.status === 'accepted' && (
                       <span className="normal-case tracking-normal font-semibold text-slate-500">
                         · delivering runs a full org cascade (~22 model calls) — expect 15–25 minutes

@@ -87,7 +87,7 @@ _PHASES: Dict[str, List[str]] = {
         "Cross-VSB federation & marketplace (partial — in-instance contracts/transfers/marketplace live; cross-instance honestly simulated by Owner decision, vision §18-E)",
         "User isolation (the §17.5 invariant) on business routers (partial — open on the control perimeter: heartbeat, genome, organism-status, sovereign-evolution, board, change-control, business-plan, swarm; delivery plan P2.6)",
         "Digital-twin pre-validation in Change Control (HIGH/CRITICAL) (done, W253 — health-gate fallback when no twin model; P1.11)",
-        "Persistence hardening (partial — store_lock + atomic writes across the ledger/revenue/transfer/fund/venture/UEG/living-registry stores, the registry's last unserialised writers closed in W463; the owner-payments store (no lock, no atomic write) and service-contract settles are still unlocked, FU-016/FU-015; DB Owner-gated), GaaS YAML genome activation",
+        "Persistence hardening (partial — store_lock + atomic writes across the ledger/revenue/transfer/fund/venture/UEG/living-registry stores, the registry's last unserialised writers closed in W463, the owner-payments store and the service-contract store (claimed settles under a persisted transfer id) in W465; DB Owner-gated), GaaS YAML genome activation",
         "The whole-vision delivery plan — FABLE_DELIVERY_PROMPT.md v11 rev 2: P1 truth → P2 reach/disclosure → P3 capability → P4 Owner switches",
     ],
 }

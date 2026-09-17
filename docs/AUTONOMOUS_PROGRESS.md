@@ -5768,3 +5768,177 @@ store sits outside it (FU-026 — relocating it needs a migration); MANDATES.md 
 **Broken 89 ways.** Each blind was applied alone, the guards were run, and the file was restored byte-for-byte: 67 on the first draft, 13 more for the first refutation's fixes, 9 for the second's and third's. All 89 were run again on the final tree with nothing else running, and every one fails; none stays green. Four new guards: test_w464_board_ratifies_what_a_review_approved_before_anything_acts, test_w464_change_control_decisions_are_written_to_the_ledger, test_w464_every_material_economy_action_is_decided_by_the_owner, test_w464_genome_engine_rollback_restores_the_proposals_own_checkpoint. Tests the ruling changed were updated to it, never loosened: W313/W249 approve economy holds with the CRITICAL acknowledgement; W463's follows-rejection holds now expect critical_requires_admin_decision; hand-written approvals that model the Owner's decision carry decision_source admin_override; the §17.5 test's hand approval is the Owner's.
 
 Suite: 375 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 390 items from 351 test functions).
+
+### W465 — a service contract is paid once and every unpaid settlement is said as what it was; the owner-payments store is locked and never read as empty (register FU-015, FU-016, FU-024)
+
+**What was wrong.** Virtual WST throughout.
+- **Service contracts (FU-015).**
+  - Every contract route loaded the whole `vsb_contracts.json`, changed one row and saved the whole store, with no lock.
+  - Deliver held its copy across a provider-scoped org cascade (15–25 minutes on a local model) and wrote it back
+    over any settlement made meanwhile, on any contract. That contract's Settle button then reappeared, and
+    settling again paid a second time. This needs only one worker.
+  - Two settles of one contract could both pass `delivered`.
+  - A retry after a crash between the debit and the receiver's credit minted a fresh transfer id and debited the
+    client again.
+  - The tolerant read turned an unreadable store into `[]`, and the next write replaced every contract.
+  - The 500-row cap dropped the oldest rows whatever their state.
+  - A NaN price broke `GET /contracts` for every party, and a price of 0 or less could never settle.
+- **Unpaid settlements (FU-024).** Every settle answer without a transfer was stored as `held: true`, with "retry after
+  the hold clears". That included a rejection (no hold exists, and retrying the same price is refused), a gate
+  refusal and a gate error.
+- **Transfers.**
+  - A receiver's credited transfer ids were known only from its 50-row display window, so a late replay credited
+    the provider twice.
+  - A transfer memo containing "(xfer-…)" matched as that id's debit.
+- **Owner payments (FU-016).**
+  - The owner-payments store was read with every error swallowed: an unreadable store read as EMPTY, and the next
+    accrual, or merely viewing the page (`status()` wrote), replaced every account.
+  - It was written with no lock and not atomically, so two accruals lost one and two payouts could spend one balance.
+  - A failed accrual vanished while the ledger showed the owner stage distributed.
+  - The page stored an error answer as the account and showed 0 WST with a live payout button.
+
+**What changed.**
+- **Contracts.**
+  - Every change runs through `_mutate_contracts`: under the store's lock (a busy lock → 503), a strict read (an
+    unreadable or non-UTF-8 store → 503, never overwritten), an atomic write. The cap drops only settled rows, and
+    never the row being changed.
+  - A settle first CLAIMS the contract (`settling`: a claim token, a random transfer id persisted on the claim, a
+    timestamp). A second settle while the claim is live (10 minutes) is refused with 409 and pays nothing.
+  - A stale or released claim's transfer id is reused. The settle asks the client's ledger whether that id already
+    debited (`debit_posted`, matched only where the system writes the id: the memo head of a `transfer_out`
+    posting). If it did, the settle completes it through `record_transfer` (`replay_of_posted_debit`): no second
+    debit, and no second approval asked for or spent.
+  - A failure to record the result releases the claim (keeping its id) and answers 503 "the payment posted … settle
+    again … it will not pay twice", with `economy.contract_settlement_record_failed` on the UEG.
+  - Deliver binds its result with a compare-and-set: 409 when another delivery bound first, and nothing written over
+    a change made meanwhile.
+  - `price_wst` must be finite and > 0.
+  - The transfer route's body became `_transfer_core(req, transfer_id, context=…)`.
+  - The claim's token and transfer id are never shown. A live claim reads "settlement in progress", and a released
+    one reads as nothing.
+- **Outcomes (FU-024).** An unpaid settlement records `outcome` with a note that says what happened. The contract stays
+  `delivered` and only `held` is flagged held. The outcomes:
+  - `held` for the Owner (its cca_id, decided in the Sanctum);
+  - `rejected` (and by whom);
+  - `blocked` by the gaas gate (naming an approval spent on the attempt, and whether the give-back RESTORED it, a
+    newer record SUPERSEDED it, or it FAILED and stays spent — `_restore_consumed_approval` now returns which);
+  - `gate_error` (keeping the earlier hold's reference);
+  - `decided_concurrently`;
+  - `unknown`.
+
+  The page reports "Settled" only for a contract that came back settled, shows the outcome badge and the whole
+  transfer id, and a list reload no longer wipes the note of an unpaid settlement (the probe caught that).
+- **Transfers.**
+  - Each receiver keeps an untrimmed `credited_ids` list, so an id is credited once, however late the replay.
+  - The pending-transfers store is read STRICTLY by every writer (`PendingStoreUnavailable`, not a ValueError),
+    and every receiver record's shape is checked (finite non-negative amounts, a list queue).
+    `record_transfer` checks it before the debit and again inside the queue's lock, so an unreadable queue refuses
+    a transfer instead of replacing every receiver's queue.
+  - The route answers 503 saying what the sender's ledger shows (nothing debited; a confirmed debit — do NOT re-run,
+    `economy.transfer_receiver_leg_missing` on the UEG; or unknown). A settlement's answer says settle again.
+  - The gate's receipts estimate reads the store the same way, so no approval is asked for receipts the cycle
+    cannot take, and a cycle that took none says why (`inter_vsb_receipts_error`).
+- **Owner payments (FU-016).**
+  - `accrue` and `payout` change the store under its lock with an atomic write; the payout's balance check runs
+    inside the lock.
+  - Reading an account writes nothing.
+  - An unreadable store (not UTF-8, not JSON, the wrong shape) is refused (`OwnerPaymentsUnavailable` → 503, "no
+    payout was recorded"), and the board pack's owner section reads `available: false`.
+  - A cycle whose accrual fails reports `owner_accrual` (`accrued: false`, the error, `ueg_logged`), writes
+    `economy.owner_accrual_failed`, and logs it (at error level when that ledger entry did not land either).
+  - The page shows a refusal as a refusal. It drops an answer for an entity the Owner switched away from, clears
+    the cycle card, hold, messages and waterfall split on a switch, and locks the entity picker while a cycle,
+    payout, period close, waterfall save or transfer runs. It claims the accrual failure is on the ledger only when it is.
+
+**Refuted (own diff), seven passes.**
+- **First pass:** 12 confirmed, all fixed.
+  - A settle retry credited the provider again once 50 later transfers had reached it (the durable credited ids).
+  - A failed record write kept the claim fresh, so "settle again" met 409 for 10 minutes.
+  - The gate-error and blocked notes said no Change Control request existed and dropped the live hold's id.
+  - A non-UTF-8 owner-payments store escaped as a 500.
+  - The page could still show zero balances or another entity's figures, never rendered a failed accrual, and kept
+    a board-pack alert after a good load.
+  - A released claim showed "settlement in progress" forever.
+  - The crash test's stub already queued the receiver, so it could not detect a replay that completed nothing.
+  - The test left contracts behind that the cap would eventually trim.
+- **Second pass:** 4 confirmed.
+  - The pending store's tolerant read could wipe every credited-id list (strict reads).
+  - A blocked note claimed a give-back when nothing was spent.
+  - A late answer for a previous entity landed on screen.
+  - The accrual alert claimed a ledger entry unconditionally.
+- **Third pass:** 7 confirmed, all low.
+  - The gate measured receipts the strict intake refused, so an approval was spent on a cycle that took nothing.
+  - The blocked note said "handed back" when the give-back failed.
+  - The post-debit 503 hedged a confirmed debit and offered a replay no route performs.
+  - The in-lock strict read was never exercised by a test.
+  - A transfer finishing after a switch left the board-pack spinner stuck.
+  - The page cited a server log that had no record.
+  - The previous entity's waterfall split stayed editable and saveable.
+- **Fourth pass:** 3 confirmed, all low.
+  - An unreadable spent record made OLDER records read as newer, so the note said a newer record replaced the
+    approval (now a failed give-back).
+  - The gate coerced a numeric-string amount the intake refuses (the estimate now reads exactly as the intake).
+  - Keying the transfer panel by entity discarded a running transfer's answer on a switch (a transfer in flight
+    now locks the entity picker).
+- **Fifth pass:** 2 confirmed, both low.
+  - The estimate still measured a record whose other fields the intake could not do arithmetic on (a null
+    consumed total). Fixed at the class: the strict read shape-checks every record and refuses the whole store
+    before any estimate or debit. That also closes FU-038, which this round had registered.
+  - The picker lock's call itself was unguarded.
+- **Sixth pass:** 2 confirmed, one medium.
+  - The shape check still accepted unhashable ids inside `credited_ids` and `transfers`, which record_transfer hashes
+    after the debit: a debit, then a 500, on every retry (medium). Ids must now be strings.
+  - An integer too large for a float made the check itself raise, so every transfer answered 500 instead of 503.
+- **Seventh pass:** 2 confirmed, both low.
+  - The receiver-id guard read the bare id, so an id with the dash at its edge still put the separator into the
+    memo (latent: every generated id is vsb-<hex>). It now checks the memo record_transfer writes, for the receiver
+    and the transfer id.
+  - Its test could not fail (an unregistered id is refused as unknown anyway); it now uses registered receivers.
+  The loop stopped there: the seventh pass found only a latent gap and a test gap in the sixth's narrow fix. Both
+  were fixed and blinded, and the fix to them was not refuted again.
+
+**Found and not done:** FU-034 … FU-046 (registered, NEXT; FU-038 — a malformed pending record debiting before it
+failed — was closed in this round by the fifth refutation's fix):
+- a contract offered to an entity that is not living, and no decline/cancel (the probe reproduced it — a cascade ran
+  for a provider that exists nowhere);
+- a settlement's approval bound to the client–provider pair rather than the contract;
+- a failed owner accrual never re-applied;
+- a second delivery running a whole cascade before its 409;
+- an exception exit leaving the previous attempt's outcome on the contract;
+- the venture-returns intake still silent, and the Board page's "see the server log" to check.
+- and, from the audit that prepared W466 (FU-022/FU-023), reproduced in fresh data dirs: the VSB ledger, the
+  constitutional ledger's chain and the revenue-events store are each replaced when unreadable (the class W465 closed
+  for three other stores); the revenue cap drops pending events; a cycle raising at its first write loses the receipts it
+  drained; the heartbeat drops a failed visit silently. By reading only, a W465 regression: a receiver id containing
+  " — " would make a replay debit again (FU-046) — closed in this round: such an id is refused before anything is read.
+
+FU-023 (a stranded transfer debit with no repair) stays open: W465 now names the id and logs it for the
+pending-store case only.
+
+**Browser (fresh backend :8074, ECONOMY_MATERIALITY_WST=1000, bundle rebuilt).** `scripts/_w465_probe.mjs` (seeded by
+`scripts/_w465_probe_seed.py`), 8/8:
+- Settle on the page pays once and shows the whole transfer id.
+- Two settles of one contract at once debit the client once.
+- A material settlement shows held for the Owner, with no "Settled" notice and nothing paid.
+- After the Owner rejects it, the page says the payment was rejected, with no hold to wait for.
+- (stubbed 503) An owner-payments or board-pack refusal shows as a refusal, with no balance or payout button.
+- (stubbed) A failed owner accrual names a ledger entry only when it landed.
+- (stubbed delay) A late owner-payments answer for the entity switched away from is dropped.
+- (stubbed delay) A transfer in flight locks the entity picker, and its "do NOT re-run" answer shows when it lands.
+
+The first run caught a real page bug: the contract list's reload wiped the note of an unpaid settlement the moment it
+was shown. It also caught a probe artifact (a Windows `\r` in the seeded provider id), which revealed FU-034 — a
+contract offered, accepted and delivered to an entity that exists nowhere.
+
+**Broken 74 ways.** Each blind was applied alone, the guards were run, and the file was restored byte-for-byte.
+- **Written:** 24 on the first draft, 10 for the first refutation's fixes, 14 for the second's, 13 for the third's,
+  4 for the fourth's (one of them later retired: the fifth fix made its code unreachable), 4 for the fifth's, 4 for
+  the sixth's and 2 for the seventh's.
+- **Vacuous and fixed:** one blind stayed green on its first final run: nothing checked that a live claim hides its
+  transfer id. A guard was added and it fails now.
+- **Final runs:** all 72 run again on the tree before the seventh fix, with nothing else running, and the three that
+  cover the seventh fix run after it. Every one fails; none stays green.
+
+Two new guards: test_w465_a_service_contract_is_paid_once_and_its_store_keeps_every_change, test_w465_owner_payments_are_locked_atomic_and_never_overwrite_an_unreadable_store.
+
+Suite: 377 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 36 min; 392 items from 353 test functions).

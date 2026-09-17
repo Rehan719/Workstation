@@ -237,8 +237,12 @@ async def owner_payments(vsb_id: str = "workstation-idbo", owner: str = "Rehan",
     """§7 — the Owner's accrued share (virtual WST) from each cycle's §4 owner stage, plus history. Real-money
     payout rails are DISABLED and gated; no real funds move."""
     _require_economy_access(vsb_id, user)
-    from agentic_core.economy.owner_payments import status
-    return status(vsb_id, owner)
+    from agentic_core.economy.owner_payments import OwnerPaymentsUnavailable, status
+    try:
+        return status(vsb_id, owner)
+    except OwnerPaymentsUnavailable as e:
+        # W465 (FU-016) — an unreadable store is said, never shown as zero balances
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 class PayoutRequest(BaseModel):
@@ -252,11 +256,16 @@ async def owner_payout(req: PayoutRequest, user: dict | None = Depends(get_curre
     """Record a VIRTUAL Owner payout (reduces the accrued balance). NO real funds move — real-money rails are
     gated until the Owner explicitly authorises them AND a compliance/KYC review passes."""
     _require_economy_access(req.vsb_id, user)
-    from agentic_core.economy.owner_payments import payout
+    from agentic_core.economy.owner_payments import OwnerPaymentsUnavailable, payout
     try:
         return payout(req.vsb_id, req.amount, req.owner)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OwnerPaymentsUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{e} — no payout was recorded.")
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail=(
+            "The owner-payments store is busy (another write held its lock) — no payout was recorded. Retry."))
 
 
 @router.get("/living-vsbs")
@@ -306,8 +315,16 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
     # could drain any tenant's reserve by naming it as from_vsb. (Receiving is a payment — the
     # recipient needs no consent to be paid.)
     _require_economy_access(req.from_vsb, user)
+    return await _transfer_core(req)
+
+
+async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None, *, context: str = "transfer") -> dict:
+    """The transfer itself, after the caller's access check. W465: a service-contract settlement passes the
+    transfer id its claim persisted, so a retry after a crash posts under the SAME id (record_transfer is idempotent
+    on it) instead of minting a fresh one and debiting the client twice. Every dependency stays imported at call
+    time (tests substitute them on their modules)."""
     from agentic_core.economy.governance import _materiality_gate, _ueg_log
-    from agentic_core.economy.transfers import record_transfer, validate_transfer
+    from agentic_core.economy.transfers import PendingStoreUnavailable, record_transfer, validate_transfer
 
     # side-effect-free validation FIRST → clean HTTP codes, nothing posted on refusal
     try:
@@ -329,7 +346,7 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
     # after it had ALREADY posted (an interceptor exception after execution), debiting the sender
     # twice for one request. record_transfer is idempotent on the id, so the retry is now a no-op.
     import uuid as _uuid
-    _xfer_id = f"xfer-{_uuid.uuid4().hex[:10]}"
+    _xfer_id = transfer_id or f"xfer-{_uuid.uuid4().hex[:10]}"
     posted = {"done": False}
 
     def _give_back_unless_debited(reason: str) -> None:
@@ -380,11 +397,17 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
             transfer = result.output
             governance = {"status": result.status, "checkpoint": result.checkpoint_id}
             if not isinstance(transfer, dict):   # the gate blocked the action — never fabricate a transfer
+                if consumed:
+                    governance["approval_cca_id"] = consumed.get("cca_id")   # W465 — the settle note names it
                 # W442 refuter catch: the materiality approval was consumed before this gate ran;
                 # blocked means nothing posted, so the Owner's approval must not stay spent.
                 if not posted["done"]:
-                    _restore_consumed_approval(consumed, vsb_id=req.from_vsb,
-                                               reason=f"gaas gate {result.status} — no transfer posted")
+                    returned = _restore_consumed_approval(consumed, vsb_id=req.from_vsb,
+                                                          reason=f"gaas gate {result.status} — no transfer posted")
+                    if consumed:
+                        governance["approval_returned"] = returned   # W465 — what the give-back actually did
+                elif consumed:
+                    governance["approval_returned"] = "not_returned_action_ran"
                 return {"transfer": None, "governance": governance}
         except ValueError:
             raise
@@ -424,6 +447,43 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
         # an already-debited transfer could raise here too.
         _give_back_unless_debited("funds re-check refused — nothing posted")
         raise HTTPException(status_code=400, detail=str(e))
+    except PendingStoreUnavailable as e:
+        # W465 — the receiver's queue could not be read (it is checked before the debit, so normally nothing posted);
+        # a refusal of the store, not a server fault, and the answer says what the sender's ledger shows
+        _give_back_unless_debited("the receiver's pending-transfers store could not be read — nothing posted")
+        from agentic_core.economy.transfers import debit_posted
+        try:
+            debited = bool(debit_posted(req.from_vsb, _xfer_id))
+        except Exception:
+            debited = None
+        settling = context == "settlement"
+        why = str(e).replace("; nothing was written", "")
+        if debited is False:
+            detail = f"{why}. Nothing was debited — {'settle' if settling else 'retry'} again once the store is readable."
+        elif debited:
+            logged = _ueg_log({"type": "economy.transfer_receiver_leg_missing", "vsb_id": req.from_vsb,
+                               "to_vsb": req.to_vsb, "amount_wst": req.amount, "transfer_id": _xfer_id,
+                               "context": context, "error": why[:200],
+                               "note": "the sender was debited and the receiver's pending queue could not be written; "
+                                       "replaying this transfer_id through record_transfer completes the credit once, "
+                                       "without a second debit"})
+            if settling:
+                detail = (f"{why}. This settlement's payment ({_xfer_id}) debited the client but has not reached the "
+                          "provider's queue — settle again once the store is readable: it completes the payment "
+                          "without paying twice.")
+            else:
+                detail = (f"{why}. Transfer {_xfer_id} debited the sender (its ledger shows the debit) but has not "
+                          "reached the receiver's queue. Do NOT re-run the transfer — a new request debits again. The "
+                          "receiver's credit is completed by replaying this transfer id once the store is readable"
+                          + (" (recorded on the constitutional ledger)." if logged else
+                             "; the ledger entry recording it did not land — note the transfer id now."))
+        else:
+            detail = (f"{why}. Whether this {'settlement' if settling else 'transfer'} ({_xfer_id}) debited the "
+                      + ("client is unknown (its ledger could not be read) — settle again: it asks the ledger first "
+                         "and never pays twice." if settling else
+                         "sender is unknown (its ledger could not be read) — check the sender's ledger for this id "
+                         "before re-running; a new request would debit again."))
+        raise HTTPException(status_code=503, detail=detail) from None
     except BaseException:
         # W463 — anything else that stops the transfer (a vanished receiver, a busy store) used to escape
         # as a 500 with the Owner's approval spent on nothing.
@@ -445,17 +505,131 @@ class ContractRequest(BaseModel):
     client_vsb: str
     provider_vsb: str
     brief: str
-    price_wst: float = 100.0
+    # W465 — a NaN price was stored and then broke GET /contracts for every party (JSON refuses NaN), and a price of 0
+    # or below could never settle (its transfer is refused at the model): both refused at the offer
+    price_wst: float = Field(default=100.0, gt=0, allow_inf_nan=False)
+
+
+# W465 (register FU-015) — the contract store is written only by a read-modify-write under its lock. Every route used
+# to load the whole list, change one row and save the whole list: deliver held its copy across a 15–25 minute cascade
+# and wrote it back, erasing whatever happened meanwhile — a settlement of another contract included, whose Settle
+# button then reappeared and paid the provider a second time — and two settles of one contract could both pass the
+# 'delivered' check. A settle now CLAIMS the contract, and its transfer id is persisted on the claim, so a retry after a
+# crash completes the same transfer (the ledger is idempotent on the id) instead of paying twice.
+_CONTRACT_CAP = 500
+_SETTLE_CLAIM_STALE_S = 600      # a settle takes seconds; its locks time out in tens of seconds
+
+
+def _contracts_path():
+    from agentic_core.config import data_path
+    return data_path("vsb_contracts.json")
+
+
+def _contract_ts() -> str:
+    import time as _time
+    return _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
+
+
+def _read_contracts() -> list:
+    """STRICT read: a missing store is empty; a store that exists but cannot be read whole is refused (503). The
+    tolerant read answered [] for an unreadable store, and the next offer then wrote a store of one contract."""
+    import json as _json
+    import time as _time
+    p = _contracts_path()
+    if not p.exists():
+        return []
+    raw = None
+    for attempt in range(5):
+        try:
+            raw = p.read_text(encoding="utf-8")
+            break
+        except FileNotFoundError:
+            return []
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=503, detail=(
+                "The service-contract store is not valid UTF-8 — nothing was done (an unreadable store is never overwritten)."))
+        except PermissionError:
+            if attempt == 4:
+                raise HTTPException(status_code=503, detail="The service-contract store stayed locked — nothing was done. Retry.")
+            _time.sleep(0.05 * (attempt + 1))
+        except OSError as e:
+            raise HTTPException(status_code=503,
+                                detail=f"The service-contract store could not be read ({str(e)[:120]}) — nothing was done.")
+    try:
+        rows = _json.loads(raw)
+    except ValueError:
+        raise HTTPException(status_code=503, detail=(
+            "The service-contract store is unreadable — nothing was done (an unreadable store is never overwritten)."))
+    if not isinstance(rows, list) or not all(isinstance(r, dict) and r.get("id") for r in rows):
+        raise HTTPException(status_code=503, detail="The service-contract store is not a list of contracts — nothing was done.")
+    return rows
 
 
 def _load_contracts() -> list:
-    from agentic_core.config import data_path, load_json_tolerant
-    return load_json_tolerant(data_path("vsb_contracts.json"), []) or []
+    return _read_contracts()
 
 
-def _save_contracts(rows: list) -> None:
-    from agentic_core.config import atomic_write_json, data_path
-    atomic_write_json(data_path("vsb_contracts.json"), rows[-500:])
+def _trim_contracts(rows: list, keep: Optional[str] = None) -> list:
+    """Beyond the cap only the oldest SETTLED contracts are dropped — never `keep`, the contract the current change
+    touched (a settle's own write dropped the row it had just settled once the store held 500 unsettled rows). The old
+    `rows[-500:]` dropped the oldest rows whatever their state — an accepted contract whose cascade was running, or a
+    delivered one still owed. With nothing droppable the store stays above the cap: nothing is lost."""
+    excess = len(rows) - _CONTRACT_CAP
+    if excess <= 0:
+        return rows
+    drop = set()
+    for i, r in enumerate(rows):
+        if len(drop) >= excess:
+            break
+        if r.get("status") == "settled" and not r.get("settling") and r.get("id") != keep:
+            drop.add(i)
+    return [r for i, r in enumerate(rows) if i not in drop]
+
+
+def _mutate_contracts(change, keep: Optional[str] = None):
+    """Read-modify-write under the store lock. `change(rows)` raises HTTPException to refuse (nothing is written). It
+    never awaits: the lock is held only for the synchronous read, change and atomic write. `keep` names the contract
+    the change touched, which the cap never drops in the same write."""
+    from agentic_core.config import atomic_write_json, store_lock
+    lock = store_lock(_contracts_path(), timeout=5.0)
+    try:
+        lock.__enter__()
+    except TimeoutError:
+        raise HTTPException(status_code=503,
+                            detail="The service-contract store is busy — another change is being written. Retry.") from None
+    try:
+        rows = _read_contracts()
+        out = change(rows)
+        atomic_write_json(_contracts_path(), _trim_contracts(rows, keep))
+        return out
+    finally:
+        lock.__exit__(None, None, None)
+
+
+def _find_contract(rows: list, cid: str) -> dict:
+    c = next((x for x in rows if x.get("id") == cid), None)
+    if not c:
+        raise HTTPException(status_code=404, detail=f"Contract {cid} not found.")
+    return c
+
+
+def _claim_live(cl) -> bool:
+    """A settle claim that still holds the contract: the same test the claim itself applies."""
+    import time as _time
+    return (isinstance(cl, dict) and bool(cl.get("claim"))
+            and _time.time() - float(cl.get("at_epoch") or 0) < _SETTLE_CLAIM_STALE_S)
+
+
+def _public_contract(c: dict) -> dict:
+    """A contract as the parties see it: a LIVE settle claim shows only since when (its transfer id stays server-side);
+    a released or stale claim, kept only so a retry reuses its transfer id, is not shown as a settlement in progress."""
+    out = dict(c)
+    cl = out.get("settling")
+    if isinstance(cl, dict) and _claim_live(cl):
+        out["settling"] = {"since": cl.get("at")}
+    else:
+        out.pop("settling", None)
+    return out
 
 
 def _contract_ueg(event: dict) -> None:
@@ -482,11 +656,9 @@ async def offer_contract(req: ContractRequest, user: dict | None = Depends(get_c
         "provider_vsb": req.provider_vsb, "brief": req.brief[:1000],
         "price_wst": round(float(req.price_wst), 2), "status": "offered",
         "delivery": None, "settlement": None,
-        "offered_at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ", __import__("time").gmtime()),
+        "offered_at": _contract_ts(),
     }
-    rows = _load_contracts()
-    rows.append(contract)
-    _save_contracts(rows)
+    _mutate_contracts(lambda rows: rows.append(contract))
     _contract_ueg({"type": "economy.contract_offered", "contract_id": contract["id"],
                    "client_vsb": req.client_vsb, "provider_vsb": req.provider_vsb,
                    "price_wst": contract["price_wst"]})
@@ -503,7 +675,7 @@ async def list_contracts(vsb_id: Optional[str] = None,
             return True
         except HTTPException:
             return False
-    rows = [c for c in _load_contracts() if _can(c["client_vsb"]) or _can(c["provider_vsb"])]
+    rows = [_public_contract(c) for c in _load_contracts() if _can(c["client_vsb"]) or _can(c["provider_vsb"])]
     if vsb_id:
         rows = [c for c in rows if vsb_id in (c["client_vsb"], c["provider_vsb"])]
     return {"contracts": rows[::-1], "total": len(rows)}
@@ -511,15 +683,14 @@ async def list_contracts(vsb_id: Optional[str] = None,
 
 @router.post("/contracts/{cid}/accept")
 async def accept_contract(cid: str, user: dict | None = Depends(get_current_user)):
-    rows = _load_contracts()
-    c = next((x for x in rows if x["id"] == cid), None)
-    if not c:
-        raise HTTPException(status_code=404, detail=f"Contract {cid} not found.")
-    _require_economy_access(c["provider_vsb"], user)   # only the provider accepts
-    if c["status"] != "offered":
-        raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not offered.")
-    c["status"] = "accepted"
-    _save_contracts(rows)
+    def _accept(rows: list) -> dict:
+        c = _find_contract(rows, cid)
+        _require_economy_access(c["provider_vsb"], user)   # only the provider accepts
+        if c["status"] != "offered":
+            raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not offered.")
+        c["status"] = "accepted"
+        return _public_contract(c)
+    c = _mutate_contracts(_accept)
     _contract_ueg({"type": "economy.contract_accepted", "contract_id": cid})
     return c
 
@@ -528,11 +699,10 @@ async def accept_contract(cid: str, user: dict | None = Depends(get_current_user
 async def deliver_contract(cid: str, user: dict | None = Depends(get_current_user)):
     """The provider DELIVERS: a REAL org cascade runs scoped to the provider entity (its own
     Chief/CEO tiers ground in ITS living plan — W280), and the run's summary + QMS verdict bind
-    to the contract. Honest: a weak delivery carries its real verdict, never a fabricated pass."""
-    rows = _load_contracts()
-    c = next((x for x in rows if x["id"] == cid), None)
-    if not c:
-        raise HTTPException(status_code=404, detail=f"Contract {cid} not found.")
+    to the contract. Honest: a weak delivery carries its real verdict, never a fabricated pass.
+    W465 — the cascade runs outside the store's lock and binds only if the contract is still accepted when it
+    finishes (a concurrent delivery that bound first wins; this run is reported unbound, never written over it)."""
+    c = _find_contract(_read_contracts(), cid)
     _require_economy_access(c["provider_vsb"], user)
     if c["status"] != "accepted":
         raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not accepted.")
@@ -546,42 +716,210 @@ async def deliver_contract(cid: str, user: dict | None = Depends(get_current_use
     run = await cascade_orchestration(CascadeRequest(
         mission=f"Deliver the commissioned work: {c['brief'][:400]}",
         domain="enterprise", scope=c["provider_vsb"]))
-    c["delivery"] = {"run_id": run.get("run_id"), "quality": run.get("quality"),
-                     "served_by": (run.get("ai_provenance") or {}).get("served_by")}
-    c["status"] = "delivered"
-    _save_contracts(rows)
+    delivery = {"run_id": run.get("run_id"), "quality": run.get("quality"),
+                "served_by": (run.get("ai_provenance") or {}).get("served_by")}
+
+    def _bind(rows: list) -> dict:
+        cur = next((x for x in rows if x.get("id") == cid), None)
+        if cur is None:
+            raise HTTPException(status_code=409, detail=(
+                f"Contract {cid} no longer exists; delivery run {run.get('run_id')} ran but is bound to nothing."))
+        if cur["status"] != "accepted":
+            raise HTTPException(status_code=409, detail=(
+                f"Contract {cid} became {cur['status']} while this delivery ran (another delivery bound first); "
+                f"run {run.get('run_id')} is not bound to it."))
+        cur["delivery"] = delivery
+        cur["status"] = "delivered"
+        return _public_contract(cur)
+    c = _mutate_contracts(_bind)
     _contract_ueg({"type": "economy.contract_delivered", "contract_id": cid,
                    "run_id": run.get("run_id")})
     return c
+
+
+def _settlement_outcome(gov: dict, client: str, provider: str) -> tuple:
+    """W465 (register FU-024) — what a transfer answered without a transfer MEANS for the settlement. Every such answer
+    used to be recorded as `held: True` with "settlement HELD by governance — retry after the hold clears", including a
+    rejection (no hold exists; retrying the same price is refused), a gate refusal and a gate error."""
+    from agentic_core.economy.governance import _REJECTED_BY_WORDS
+    st = str((gov or {}).get("status") or "")
+    if st == "rejected_by_change_control":
+        by = _REJECTED_BY_WORDS.get(str(gov.get("rejected_by") or ""), "by Change Control")
+        return "rejected", (f"Change Control rejected exactly this payment ({by}) — nothing was paid. Settling again at "
+                            f"this price is refused while that rejection is the newest decision on payments from "
+                            f"{client} to {provider}.")
+    if st == "held_for_change_control":
+        if gov.get("decided_concurrently"):
+            return "decided_concurrently", ("The Change Control hold for this payment was decided while this settle ran "
+                                             "— nothing was paid; settle again.")
+        if not gov.get("cca_id"):
+            return "gate_error", ("The governance check could not complete — nothing was paid; any Change Control hold "
+                                  "already filed for this payment is unchanged. Settle again.")
+        return "held", (f"Held for the Owner's decision (Change Control hold {gov.get('cca_id')}, decided in the "
+                        "Governance hub's Sovereign Sanctum) — nothing was paid; settle again once it is approved.")
+    ref, returned = gov.get("approval_cca_id"), gov.get("approval_returned")
+    if not ref:
+        spent = ""
+    elif returned == "restored":
+        spent = f" The Owner approval {ref} spent on this attempt was handed back — settling again spends it."
+    elif returned == "superseded":
+        spent = (f" The Owner approval {ref} spent on this attempt stays spent: a newer Change Control record for this "
+                 "payment replaced it.")
+    else:
+        spent = (f" The Owner approval {ref} spent on this attempt could not be handed back (its Change Control record "
+                 "was busy or had changed) and stays spent — settling again asks the Owner again.")
+    return "blocked", f"The constitutional gate answered '{st or 'no status'}' — nothing was paid." + spent
 
 
 @router.post("/contracts/{cid}/settle")
 async def settle_contract(cid: str, user: dict | None = Depends(get_current_user)):
     """The client SETTLES: payment moves through the EXISTING transfer primitive (gaas-gated,
     materiality-held, double-entry, UEG-logged); the provider's next metabolic cycle recognises
-    the intake. A governance hold is recorded honestly — the contract stays 'delivered' until
-    the hold clears and settle is retried."""
-    rows = _load_contracts()
-    c = next((x for x in rows if x["id"] == cid), None)
-    if not c:
-        raise HTTPException(status_code=404, detail=f"Contract {cid} not found.")
-    _require_economy_access(c["client_vsb"], user)     # only the client pays
-    if c["status"] != "delivered":
-        raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not delivered.")
-    result = await inter_vsb_transfer(TransferRequest(
-        from_vsb=c["client_vsb"], to_vsb=c["provider_vsb"], amount=c["price_wst"],
-        memo=f"contract {cid} settlement"), user=user)
-    if not result.get("transfer"):
-        c["settlement"] = {"held": True, "governance": result.get("governance")}
-        _save_contracts(rows)
-        return {**c, "note": "settlement HELD by governance — retry after the hold clears"}
-    c["settlement"] = {"transfer_id": result["transfer"].get("transfer_id"),
-                       "governance": result.get("governance")}
-    c["status"] = "settled"
-    _save_contracts(rows)
-    _contract_ueg({"type": "economy.contract_settled", "contract_id": cid,
-                   "transfer_id": c["settlement"]["transfer_id"], "price_wst": c["price_wst"]})
-    return c
+    the intake. W465: the settle CLAIMS the contract first (a second settle while one runs is refused, 409), under a
+    transfer id persisted on the claim — a retry after a crash asks the client's ledger whether that id already
+    debited and, if so, completes it instead of paying again. What an unpaid settlement means (held for the Owner,
+    rejected, refused by the gate, a gate error) is recorded and said as it is; the contract stays 'delivered'."""
+    import time as _time
+    import uuid as _uuid
+    c0 = _find_contract(_read_contracts(), cid)
+    _require_economy_access(c0["client_vsb"], user)     # only the client pays
+    token = _uuid.uuid4().hex
+
+    def _claim(rows: list) -> dict:
+        c = _find_contract(rows, cid)
+        if c["status"] == "settled":
+            return {"state": "settled", "contract": _public_contract(c)}
+        if c["status"] != "delivered":
+            raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not delivered.")
+        cl = c.get("settling") if isinstance(c.get("settling"), dict) else None
+        if cl and _claim_live(cl):
+            raise HTTPException(status_code=409, detail=(
+                f"A settlement of contract {cid} is already in progress (since {cl.get('at')}) — this request paid "
+                "nothing. Retry when it has finished."))
+        # a stale or released claim's transfer id is REUSED: its attempt may have debited the client
+        xid = (cl or {}).get("transfer_id") or f"xfer-{_uuid.uuid4().hex[:10]}"
+        c["settling"] = {"claim": token, "transfer_id": xid, "at": _contract_ts(), "at_epoch": _time.time()}
+        return {"state": "claimed", "contract": dict(c), "transfer_id": xid}
+
+    claim = _mutate_contracts(_claim, keep=cid)
+    if claim["state"] == "settled":
+        return {**claim["contract"], "note": "Already settled — nothing more was paid."}
+    xid, c = claim["transfer_id"], claim["contract"]
+    client, provider, price = c["client_vsb"], c["provider_vsb"], c["price_wst"]
+    memo = f"contract {cid} settlement"
+
+    def _release() -> None:
+        # the claim stays on the contract with its transfer id, immediately reclaimable: the next settle asks the
+        # ledger first, so reusing the id can never pay twice
+        def _rel(rows: list) -> None:
+            cur = next((x for x in rows if x.get("id") == cid), None)
+            cl = (cur or {}).get("settling")
+            if isinstance(cl, dict) and cl.get("claim") == token:
+                cl["claim"], cl["at_epoch"] = None, 0
+        try:
+            _mutate_contracts(_rel, keep=cid)
+        except Exception:
+            pass                       # the claim goes stale on its own
+
+    from agentic_core.economy import transfers as _tr
+    try:
+        try:
+            already = bool(_tr.debit_posted(client, xid))
+        except Exception as err:
+            raise HTTPException(status_code=503, detail=(
+                f"The client's ledger could not be read ({type(err).__name__}), so whether an earlier attempt of this "
+                "settlement debited it is unknown — nothing was done. Retry."))
+        if already:
+            # an earlier attempt of THIS settlement debited the client and did not finish: complete it (the replay
+            # repairs a missing receiver leg); no second debit, and no second approval asked for or spent
+            try:
+                replayed = _tr.record_transfer(client, provider, price, memo, transfer_id=xid)
+            except _tr.PendingStoreUnavailable as err:
+                raise HTTPException(status_code=503, detail=(
+                    f"An earlier attempt of this settlement debited the client; completing it needs the provider's "
+                    f"pending-transfers store, which could not be read ({err}). Nothing more was paid — settle again "
+                    "once it is readable; it completes the payment without paying twice.")) from None
+            result = {"transfer": replayed,
+                      "governance": {"status": "replay_of_posted_debit",
+                                     "note": "an earlier attempt of this settlement had already debited the client; "
+                                             "it was completed, not paid again"}}
+        else:
+            result = await _transfer_core(TransferRequest(from_vsb=client, to_vsb=provider, amount=price, memo=memo),
+                                          transfer_id=xid, context="settlement")
+    except BaseException:
+        _release()
+        raise
+
+    transfer, gov, unknown = result.get("transfer"), (result.get("governance") or {}), False
+    if not transfer:
+        # a gate that answers without a transfer after the action ran must not leave a paid contract unsettled
+        try:
+            if _tr.debit_posted(client, xid):
+                transfer = _tr.record_transfer(client, provider, price, memo, transfer_id=xid)
+                gov = {**gov, "note": "the gate answered without a transfer, but the client's ledger shows this "
+                                      "settlement's debit; it was completed"}
+        except Exception:
+            unknown = True
+    answer: dict = {}
+
+    def _apply(rows: list):
+        cur = next((x for x in rows if x.get("id") == cid), None)
+        if cur is None:
+            return None
+        cl = cur.get("settling") if isinstance(cur.get("settling"), dict) else {}
+        mine = cl.get("claim") == token
+        if transfer:
+            if cur["status"] == "delivered":
+                cur["status"] = "settled"
+                cur["settlement"] = {"outcome": "paid", "transfer_id": transfer.get("transfer_id"),
+                                     "governance": gov, "at": _contract_ts()}
+            cur.pop("settling", None)
+            return _public_contract(cur)
+        if not mine:
+            answer["note"] = "Another settle of this contract took over while this one ran; its answer stands."
+            return _public_contract(cur)
+        if unknown:
+            kind, note = "unknown", ("Whether this payment posted could not be determined (the client's ledger could not "
+                                     "be read) — settle again: it asks the ledger first and never pays twice.")
+            cl["claim"], cl["at_epoch"] = None, 0
+        else:
+            kind, note = _settlement_outcome(gov, client, provider)
+            cur.pop("settling", None)
+        prior_cca = (cur.get("settlement") or {}).get("cca_id") if isinstance(cur.get("settlement"), dict) else None
+        cca_ref = gov.get("cca_id") or (prior_cca if kind in ("gate_error", "blocked", "unknown", "decided_concurrently") else None)
+        cur["settlement"] = {"outcome": kind, "held": kind == "held", "governance": gov, "at": _contract_ts(),
+                             **({"cca_id": cca_ref} if cca_ref else {}),
+                             **({"rejected_by": gov.get("rejected_by")} if gov.get("rejected_by") else {})}
+        answer["note"] = note
+        return _public_contract(cur)
+
+    try:
+        out = _mutate_contracts(_apply, keep=cid)
+    except Exception:
+        # the claim is released (its transfer id kept): the "settle again" this answer asks for must not meet a 409
+        _release()
+        if transfer:
+            _contract_ueg({"type": "economy.contract_settlement_record_failed", "contract_id": cid,
+                           "transfer_id": transfer.get("transfer_id"), "price_wst": price,
+                           "note": "the payment posted but the contract record could not be updated; settling again "
+                                   "completes the record without paying twice"})
+            raise HTTPException(status_code=503, detail=(
+                f"The payment posted (transfer {transfer.get('transfer_id')}) but the contract record could not be "
+                "updated — settle again to record it; it will not pay twice.")) from None
+        raise
+    if out is None:
+        if transfer:
+            _contract_ueg({"type": "economy.contract_settlement_record_failed", "contract_id": cid,
+                           "transfer_id": transfer.get("transfer_id"), "price_wst": price,
+                           "note": "the payment posted but the contract no longer exists in the store"})
+        raise HTTPException(status_code=409, detail=(
+            f"Contract {cid} no longer exists"
+            + (f"; its payment posted (transfer {transfer.get('transfer_id')})." if transfer else "; nothing was paid.")))
+    if transfer and out.get("status") == "settled":
+        _contract_ueg({"type": "economy.contract_settled", "contract_id": cid,
+                       "transfer_id": transfer.get("transfer_id"), "price_wst": price,
+                       "governance": gov.get("status")})
+    return {**out, **({"note": answer["note"]} if answer.get("note") else {})}
 
 
 class ClosePeriodRequest(BaseModel):
@@ -651,7 +989,15 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
     revenue = round(bal.get("revenue", 0.0), 2)
     reserves = round(bal.get("reserves", 0.0), 2)
     distributed = round(sum(bal.get(s, 0.0) for s in stages), 2)
-    owner = _owner_status(vsb_id, m.owner)
+    try:
+        owner = _owner_status(vsb_id, m.owner)
+        owner_section = {"accrued_wst": owner["accrued_total_wst"], "paid_out_wst": owner["paid_out_total_wst"],
+                         "balance_wst": owner["balance_wst"], "real_money_rails": owner["real_money_rails"],
+                         "available": True}
+    except Exception as _own_err:
+        # W465 (FU-016) — the rest of the pack stands; this section says it could not be read (never zeros)
+        owner_section = {"available": False, "real_money_rails": "DISABLED",
+                         "error": f"the owner-payments store could not be read: {str(_own_err)[:160]}"}
     ventures = _venture_portfolio(vsb_id)
 
     try:
@@ -672,8 +1018,7 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
             "distribution_by_stage": {s: round(bal.get(s, 0.0), 2) for s in stages},
         },
         "waterfall": {"effective": m.waterfall, "source": m.waterfall_source},
-        "owner_payments": {"accrued_wst": owner["accrued_total_wst"], "paid_out_wst": owner["paid_out_total_wst"],
-                           "balance_wst": owner["balance_wst"], "real_money_rails": owner["real_money_rails"]},
+        "owner_payments": owner_section,
         "venture_portfolio": {"invested_total_wst": ventures["invested_total"],
                               "positions": ventures.get("positions_count", 0),
                               "holdings": ventures.get("holdings", [])[:5]},

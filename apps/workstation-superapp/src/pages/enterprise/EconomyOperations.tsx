@@ -140,8 +140,9 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
 
 // ── Federation transfer (Owner-initiated, between the Owner's own entities) ───
 
-export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: string; name?: string }[]; onDone?: () => void }> =
-  ({ fromVsb, entities, onDone }) => {
+export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: string; name?: string }[]; onDone?: () => void;
+                                        onBusyChange?: (busy: boolean) => void }> =
+  ({ fromVsb, entities, onDone, onBusyChange }) => {
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState(0);
   const [memo, setMemo] = useState('');
@@ -153,20 +154,22 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
   const targets = entities.filter(e => e.vsb_id !== fromVsb);
 
   const doTransfer = async () => {
-    setBusy(true); setErr(''); setResult(null); setHeld(null);
+    // W465 — the page is told while a transfer runs, so the entity picker stays locked and this panel (keyed by the
+    // sending entity) is never replaced before the answer — a transfer id, a hold, or "do NOT re-run" — is shown
+    setBusy(true); onBusyChange?.(true); setErr(''); setResult(null); setHeld(null);
     try {
       const r = await fetch('/api/v1/economy/transfer', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from_vsb: fromVsb, to_vsb: to, amount, memo }),
       });
       const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(false); return; }
-      if (d.transfer == null) { setHeld(d.governance ?? { note: 'The transfer returned no result.' }); setBusy(false); return; }
+      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); return; }
+      if (d.transfer == null) { setHeld(d.governance ?? { note: 'The transfer returned no result.' }); return; }
       setResult({ ...d.transfer, governance: d.governance });
       setAmount(0); setMemo('');
       onDone?.();
     } catch (e: any) { setErr(e?.message ?? String(e)); }
-    setBusy(false);
+    finally { setBusy(false); onBusyChange?.(false); }
   };
 
   return (

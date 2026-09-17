@@ -102,7 +102,7 @@ def _hold_title(vsb_id: str, source: str) -> str:
             else _HOLD_TITLE_PREFIX + vsb_id)
 
 
-def _restore_consumed_approval(consumed: Optional[Dict[str, Any]], *, vsb_id: str, reason: str) -> None:
+def _restore_consumed_approval(consumed: Optional[Dict[str, Any]], *, vsb_id: str, reason: str) -> Optional[str]:
     """W442 refuter catch: _materiality_gate consumes the Owner's approval at gate time, BEFORE
     the constitutional gate or the action runs. When the action then never runs (gate blocked, or
     the atomic funds re-check refused a raced transfer), the approval must not stay spent.
@@ -113,16 +113,19 @@ def _restore_consumed_approval(consumed: Optional[Dict[str, Any]], *, vsb_id: st
     implemented), and the next material action spent it a second time. It now restores exactly the
     consumption the gate handed back — `consumed` = {cca_id, consume_id, release, gate} (gate = the action's
     source/counterparty, whose lock the restore takes), or None when nothing was
-    consumed (then nothing is touched) — and only while that record's latest spend is still THIS one."""
+    consumed (then nothing is touched) — and only while that record's latest spend is still THIS one.
+
+    W465 — it returns what happened, so no answer claims a give-back that did not happen: "restored", "superseded"
+    (a newer record for the action replaced it), "moved" (the record changed meanwhile), "failed" (busy or
+    unreadable; the approval stays spent), or None when nothing was consumed."""
     if not consumed:
-        return
+        return None
     cca_id, consume_id = consumed.get("cca_id"), consumed.get("consume_id")
     gate = consumed.get("gate") if isinstance(consumed.get("gate"), dict) else None
     try:
         from agentic_core.api import change_control as cca
         if gate is None:
-            _restore_locked(cca, cca_id, consume_id, vsb_id, reason, None)
-            return
+            return _restore_locked(cca, cca_id, consume_id, vsb_id, reason, None)
         # W463 (third refutation) — the restore ran outside the gate's per-action lock: between the spend and the
         # give-back another request (another worker) could file a fresh hold for the same action, and the restore
         # then revived the older approval beside it — two live records, and the revived approval was spent even
@@ -130,19 +133,26 @@ def _restore_consumed_approval(consumed: Optional[Dict[str, Any]], *, vsb_id: st
         # live or rejected record exists for the action.
         try:
             with _gate_lock(vsb_id, gate.get("source"), gate.get("counterparty")):
-                _restore_locked(cca, cca_id, consume_id, vsb_id, reason, gate)
+                return _restore_locked(cca, cca_id, consume_id, vsb_id, reason, gate)
         except Exception as err:
             _ueg_log({"type": "economy.materiality_approval_restore_failed", "vsb_id": vsb_id, "cca_id": cca_id,
                       "error": f"gate lock: {str(getattr(err, 'detail', None) or err)[:180]}", "reason": reason[:200]})
+            return "failed"
     except Exception:
-        pass
+        return "failed"
 
 
 def _restore_locked(cca, cca_id: Optional[str], consume_id: Optional[str], vsb_id: str, reason: str,
-                    gate: Optional[Dict[str, Any]]) -> None:
+                    gate: Optional[Dict[str, Any]]) -> str:
     withdrawn: List[Dict[str, Any]] = []
     if gate is not None:
-        mine = cca._load_change(cca_id) or {}
+        mine = cca._load_change(cca_id)
+        if not mine:
+            # W465 (fourth refutation) — compared against {}, every OLDER record for the action read as newer and the
+            # answer said a newer record replaced the approval; the approval stays spent and the answer says it failed
+            _ueg_log({"type": "economy.materiality_approval_restore_failed", "vsb_id": vsb_id, "cca_id": cca_id,
+                      "error": "the spent approval's record could not be read", "reason": reason[:200]})
+            return "failed"
         source, counterparty = str(gate.get("source") or ""), gate.get("counterparty")
         title = _hold_title(vsb_id, source)
         newer = [c for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes())
@@ -186,7 +196,7 @@ def _restore_locked(cca, cca_id: Optional[str], consume_id: Optional[str], vsb_i
                     cca._update_change(cca_id, _note)
                 except Exception:
                     pass
-                return
+                return "superseded"
     def _restore(fresh: dict) -> None:
         if fresh.get("status") != "implemented":
             raise _Moved("status_moved", fresh.get("status"))
@@ -207,7 +217,7 @@ def _restore_locked(cca, cca_id: Optional[str], consume_id: Optional[str], vsb_i
         _ueg_log({"type": "economy.materiality_approval_restore_skipped", "vsb_id": vsb_id,
                   "cca_id": cca_id, "skip_reason": moved.args[0],
                   "status_now": str(moved.args[1] if len(moved.args) > 1 else ""), "reason": reason[:200]})
-        return
+        return "moved"
     except Exception as err:
         # W459 (refuter) — the record was busy or unreadable: the approval stays consumed, so
         # say so durably (the docstring promises an AUDIBLE restore), never silently
@@ -215,9 +225,10 @@ def _restore_locked(cca, cca_id: Optional[str], consume_id: Optional[str], vsb_i
         _ueg_log({"type": "economy.materiality_approval_restore_failed", "vsb_id": vsb_id,
                   "cca_id": cca_id,
                   "error": str(getattr(err, "detail", None) or err)[:200], "reason": reason[:200]})
-        return
+        return "failed"
     _ueg_log({"type": "economy.materiality_approval_restored", "vsb_id": vsb_id,
               "cca_id": cca_id, "consume_id": consume_id, "reason": reason[:200]})
+    return "restored"
 
 
 def _spent_on_a_raised_cycle(consumed: Optional[Dict[str, Any]], vsb_id: str, source: str,

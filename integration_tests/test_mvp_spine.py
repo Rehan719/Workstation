@@ -12949,3 +12949,632 @@ def test_w464_genome_engine_rollback_restores_the_proposals_own_checkpoint(tmp_p
     assert s1.apply_mutation("N3", {**q1, "title": "three"}, authorized=True)
     titles = {a["title"] for a in _json.loads(store2.read_text(encoding="utf-8"))["genome"]["constitution"]["articles"]}
     assert {"one", "two", "three"} <= titles and len(set(ids(ge.GenomeMutationWorkflow(store_path=store2)))) == 6
+
+
+def test_w465_a_service_contract_is_paid_once_and_its_store_keeps_every_change(client, monkeypatch, tmp_path, request):
+    """FU-015 / FU-024 — every contract route loaded the whole store, changed one row and saved the whole store: a
+    delivery held its copy across a 15–25 minute cascade and wrote it back over a settlement made meanwhile (whose
+    Settle button then reappeared and paid again), two settles could both pass 'delivered', a retry after a crash
+    minted a fresh transfer id and debited the client twice, and every unpaid answer was recorded as a hold. Virtual
+    WST only."""
+    import asyncio as _aio
+    import json as _json
+    import threading
+    import uuid as _uuid
+    import pytest as _pytest
+    from fastapi import HTTPException
+
+    import agentic_core.gaas.v5 as g5
+    from agentic_core.api import economy as E
+    from agentic_core.api import change_control as cca
+    from agentic_core.economy import governance as gv
+    from agentic_core.economy import transfers as tr
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.economy.living_vsbs import register
+
+    def uid(tag):
+        return f"w465-{tag}-{_uuid.uuid4().hex[:6]}"
+
+    def living(tag):
+        v = uid(tag)
+        register(v, f"W465 {tag}", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        return v
+
+    def fund(v, revenue):
+        monkeypatch.setattr(gv, "MATERIALITY_WST", 1e15)
+        assert client.post("/api/v1/economy/cycle", json={"vsb_id": v, "revenue": revenue}).json()["cycle"]
+        monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    mine = []
+
+    def _cleanup():
+        def _drop(rows):
+            rows[:] = [r for r in rows if r.get("id") not in mine]
+        try:
+            E._mutate_contracts(_drop)
+        except Exception:
+            pass
+    request.addfinalizer(_cleanup)
+
+    def delivered(a, b, price):
+        cid = f"ctr-w465{_uuid.uuid4().hex[:6]}"
+        mine.append(cid)
+        E._mutate_contracts(lambda rows: rows.append({
+            "id": cid, "client_vsb": a, "provider_vsb": b, "brief": "w465", "price_wst": price, "status": "delivered",
+            "delivery": {"run_id": "w465-run"}, "settlement": None, "offered_at": "2026-09-17T00:00:00Z"}))
+        return cid
+
+    def contract(cid):
+        return next(c for c in E._read_contracts() if c["id"] == cid)
+
+    def debits(v, memo_part):
+        return [p for p in VirtualLedger(v)._load().get("postings", [])
+                if p.get("debit") == "transfer_out" and memo_part in str(p.get("memo"))]
+
+    def queued(v, xid):
+        d = _json.loads(tr._PENDING_STORE.read_text(encoding="utf-8")) if tr._PENDING_STORE.exists() else {}
+        return [t for t in ((d.get(v) or {}).get("transfers") or []) if t.get("transfer_id") == xid]
+
+    a, b = living("client"), living("provider")
+    fund(a, 50000)
+
+    # ── two settles of one contract at once: one pays, the other is refused — never two debits ──
+    class _SlowGov:                         # yields inside the gate, so two settles really interleave
+        def __init__(self, *x, **k): pass
+
+        async def intercept(self, ctx, action):
+            await _aio.sleep(0.4)
+            out = await action()
+
+            class _R:
+                status, output, checkpoint_id = "allowed", out, "chk-w465"
+            return _R()
+    c1 = delivered(a, b, 120.0)
+    real_gov = g5.UnifiedConstitutionalInterceptorV16Omega
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", _SlowGov)
+    answers = []
+
+    def settle_in_thread():
+        try:
+            answers.append(("ok", _aio.run(E.settle_contract(c1, user=None))))
+        except HTTPException as e:
+            answers.append((e.status_code, e.detail))
+    ts = [threading.Thread(target=settle_in_thread) for _ in range(2)]
+    [t.start() for t in ts]
+    [t.join(timeout=60) for t in ts]
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", real_gov)
+    oks = [x for kind, x in answers if kind == "ok"]
+    assert len(answers) == 2 and len(oks) >= 1, answers
+    assert len(debits(a, f"contract {c1} settlement")) == 1, (answers, debits(a, c1))
+    assert contract(c1)["status"] == "settled" and "settling" not in contract(c1)
+    assert any(kind == 409 and "already in progress" in str(x) for kind, x in answers) or len(oks) == 2
+    xid1 = contract(c1)["settlement"]["transfer_id"]
+    assert len(queued(b, xid1)) == 1
+    again = client.post(f"/api/v1/economy/contracts/{c1}/settle")
+    assert again.status_code == 200 and again.json()["status"] == "settled" and "nothing more was paid" in again.json()["note"]
+    assert len(debits(a, f"contract {c1} settlement")) == 1
+
+    # ── a settle that crashed after its debit is COMPLETED by the retry, never paid twice ──
+    c2 = delivered(a, b, 130.0)
+    real_core = E._transfer_core
+
+    async def _debit_then_crash(req, transfer_id=None, **_kw):
+        real_atomic = tr.atomic_write_json
+
+        def pending_write_fails(path, data):
+            if path == tr._PENDING_STORE:
+                raise OSError("w465 the process died between the debit and the receiver's credit")
+            return real_atomic(path, data)
+        tr.atomic_write_json = pending_write_fails
+        try:
+            tr.record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=transfer_id)
+        finally:
+            tr.atomic_write_json = real_atomic
+    monkeypatch.setattr(E, "_transfer_core", _debit_then_crash)
+    with _pytest.raises(OSError):
+        client.post(f"/api/v1/economy/contracts/{c2}/settle")
+    monkeypatch.setattr(E, "_transfer_core", real_core)
+    stuck = contract(c2)
+    assert stuck["status"] == "delivered" and stuck["settling"]["transfer_id"] and stuck["settling"]["at_epoch"] == 0
+    assert len(debits(a, f"contract {c2} settlement")) == 1 and queued(b, stuck["settling"]["transfer_id"]) == []
+    pend0 = tr.peek_pending_transfers(b)
+    listed = next(x for x in client.get("/api/v1/economy/contracts").json()["contracts"] if x["id"] == c2)
+    assert "settling" not in listed                     # a released claim is not a settlement in progress (id server-side)
+    done = client.post(f"/api/v1/economy/contracts/{c2}/settle").json()
+    assert done["status"] == "settled" and done["settlement"]["governance"]["status"] == "replay_of_posted_debit", done
+    assert len(debits(a, f"contract {c2} settlement")) == 1 and len(queued(b, done["settlement"]["transfer_id"])) == 1
+    assert done["settlement"]["transfer_id"] == stuck["settling"]["transfer_id"]
+    assert tr.peek_pending_transfers(b) == round(pend0 + 130.0, 2)       # the missing credit landed, once
+
+    # ── the record write fails after the payment posted: the claim is released at once, and a retry made after 50
+    #    other transfers reached the provider completes the record without crediting the provider a second time ──
+    c9 = delivered(a, b, 140.0)
+    real_mutate = E._mutate_contracts
+    failed_once = {"n": 0}
+
+    def _apply_fails_once(change, keep=None):
+        if change.__name__ == "_apply" and failed_once["n"] == 0:
+            failed_once["n"] += 1
+            raise HTTPException(status_code=503, detail="w465 the contract store is busy")
+        return real_mutate(change, keep=keep)
+    monkeypatch.setattr(E, "_mutate_contracts", _apply_fails_once)
+    posted_503 = client.post(f"/api/v1/economy/contracts/{c9}/settle")
+    monkeypatch.setattr(E, "_mutate_contracts", real_mutate)
+    assert posted_503.status_code == 503 and "will not pay twice" in posted_503.json()["detail"], posted_503.text
+    assert contract(c9)["status"] == "delivered" and contract(c9)["settling"]["at_epoch"] == 0     # released, not 409
+    xid9 = contract(c9)["settling"]["transfer_id"]
+    fund_b_before = tr.peek_pending_transfers(b)
+    for i in range(55):
+        tr.record_transfer(a, b, 1.0, f"w465 other {i}")
+    assert queued(b, xid9) == []                                         # the display window no longer holds it
+    late = client.post(f"/api/v1/economy/contracts/{c9}/settle").json()
+    assert late["status"] == "settled" and late["settlement"]["governance"]["status"] == "replay_of_posted_debit", late
+    assert tr.peek_pending_transfers(b) == round(fund_b_before + 55.0, 2)   # never credited a second time
+    assert len(debits(a, f"contract {c9} settlement")) == 1
+
+    # ── a settle already claimed (and not stale) is refused, paying nothing ──
+    c3 = delivered(a, b, 110.0)
+
+    def _fresh_claim(rows):
+        c = next(x for x in rows if x["id"] == c3)
+        import time as _t
+        c["settling"] = {"claim": "someone-else", "transfer_id": "xfer-w465other", "at": "now", "at_epoch": _t.time()}
+    E._mutate_contracts(_fresh_claim)
+    busy = client.post(f"/api/v1/economy/contracts/{c3}/settle")
+    assert busy.status_code == 409 and "already in progress" in busy.json()["detail"]
+    assert debits(a, f"contract {c3} settlement") == []
+    shown = next(x for x in client.get("/api/v1/economy/contracts").json()["contracts"] if x["id"] == c3)
+    assert shown["settling"] == {"since": "now"}       # a live claim is shown; its claim token and transfer id never are
+
+    # ── a delivery binds only if the contract is still accepted, and never writes over a change made meanwhile ──
+    from agentic_core.api import swarm as sw
+    real_cascade = sw.cascade_orchestration
+    c4 = delivered(a, b, 100.0)
+    E._mutate_contracts(lambda rows: next(x for x in rows if x["id"] == c4).update(status="accepted", delivery=None))
+    c5 = delivered(a, b, 105.0)
+    during = {"inner": None}
+
+    async def _cascade_meanwhile(req):
+        if during["inner"] is None:
+            during["inner"] = "running"
+            await E.settle_contract(c5, user=None)                         # another contract settles meanwhile
+            during["inner"] = await E.deliver_contract(c4, user=None)      # and a second delivery binds first
+        return {"run_id": f"run-{_uuid.uuid4().hex[:6]}", "quality": {"qms_gate_passed": None}, "ai_provenance": {}}
+    monkeypatch.setattr(sw, "cascade_orchestration", _cascade_meanwhile)
+    outer = client.post(f"/api/v1/economy/contracts/{c4}/deliver")
+    monkeypatch.setattr(sw, "cascade_orchestration", real_cascade)
+    assert outer.status_code == 409 and "another delivery bound first" in outer.json()["detail"], outer.text
+    assert contract(c4)["status"] == "delivered" and contract(c4)["delivery"]["run_id"] == during["inner"]["delivery"]["run_id"]
+    assert contract(c5)["status"] == "settled"                              # the stale write no longer erases it
+
+    # ── what an unpaid settlement was (FU-024): held for the Owner, rejected, refused by the gate, a gate error ──
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    c6 = delivered(a, b, 2000.0)
+    held = client.post(f"/api/v1/economy/contracts/{c6}/settle").json()
+    assert held["status"] == "delivered" and held["settlement"]["outcome"] == "held" and held["settlement"]["held"] is True
+    assert "Sovereign Sanctum" in held["note"] and held["settlement"]["cca_id"]
+
+    def _gate_breaks_once(*x, **k):
+        raise RuntimeError("w465 gate lock timed out")
+    real_locked0 = gv._materiality_gate_locked
+    monkeypatch.setattr(gv, "_materiality_gate_locked", _gate_breaks_once)
+    mid = client.post(f"/api/v1/economy/contracts/{c6}/settle").json()
+    monkeypatch.setattr(gv, "_materiality_gate_locked", real_locked0)
+    assert mid["settlement"]["outcome"] == "gate_error" and mid["settlement"]["cca_id"] == held["settlement"]["cca_id"], mid
+    assert "unchanged" in mid["note"] and "no Change Control request exists" not in mid["note"]
+    decided = client.post(f"/api/v1/cca/{held['settlement']['cca_id']}/review",
+                          json={"override_decision": "rejected", "admin_decision_for_critical": True, "reviewer_notes": "w465"})
+    assert decided.status_code == 200
+    rej = client.post(f"/api/v1/economy/contracts/{c6}/settle").json()
+    assert rej["status"] == "delivered" and rej["settlement"]["outcome"] == "rejected" and rej["settlement"]["held"] is False
+    assert rej["settlement"]["rejected_by"] == "admin_override" and "by an explicit decision" in rej["note"]
+    assert "refused" in rej["note"] and "retry after the hold clears" not in rej["note"]
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+
+    class _Blocked:
+        status, output, checkpoint_id = "blocked", None, None
+
+    class _BlockingGov:
+        def __init__(self, *x, **k): pass
+
+        async def intercept(self, ctx, action):
+            return _Blocked()
+    c7 = delivered(a, b, 90.0)
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", _BlockingGov)
+    blk = client.post(f"/api/v1/economy/contracts/{c7}/settle").json()
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", real_gov)
+    assert blk["status"] == "delivered" and blk["settlement"]["outcome"] == "blocked" and blk["settlement"]["held"] is False
+    # no approval was spent on a non-material payment: the note claims no give-back
+    assert "nothing was paid" in blk["note"] and "given back" not in blk["note"] and "handed back" not in blk["note"]
+    assert "no Change Control request exists" not in blk["note"] and "settling" not in contract(c7)
+    # a MATERIAL payment the Owner approved and the gate then blocked names the approval spent on the attempt, which
+    # comes back: the next settle spends it and pays
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 1000.0)
+    c10 = delivered(a, b, 2100.0)
+    held10 = client.post(f"/api/v1/economy/contracts/{c10}/settle").json()
+    assert held10["settlement"]["outcome"] == "held", held10
+    ok10 = client.post(f"/api/v1/cca/{held10['settlement']['cca_id']}/review",
+                       json={"override_decision": "approved", "admin_decision_for_critical": True, "reviewer_notes": "w465"})
+    assert ok10.status_code == 200, ok10.text
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", _BlockingGov)
+    blk10 = client.post(f"/api/v1/economy/contracts/{c10}/settle").json()
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", real_gov)
+    assert blk10["settlement"]["outcome"] == "blocked" and held10["settlement"]["cca_id"] in blk10["note"], blk10
+    assert "was handed back" in blk10["note"] and debits(a, f"contract {c10} settlement") == []
+    assert blk10["settlement"]["governance"]["approval_returned"] == "restored"
+    paid10 = client.post(f"/api/v1/economy/contracts/{c10}/settle").json()
+    assert paid10["status"] == "settled" and len(debits(a, f"contract {c10} settlement")) == 1, paid10
+    # …and when the give-back itself fails (the record busy), the note says the approval stays spent — never that it
+    # came back
+    c12 = delivered(a, b, 2200.0)
+    held12 = client.post(f"/api/v1/economy/contracts/{c12}/settle").json()
+    assert client.post(f"/api/v1/cca/{held12['settlement']['cca_id']}/review",
+                       json={"override_decision": "approved", "admin_decision_for_critical": True,
+                             "reviewer_notes": "w465"}).status_code == 200
+    real_update = cca._update_change
+
+    def _restore_busy(cid, change, *x, **k):
+        if getattr(change, "__name__", "") == "_restore":
+            raise HTTPException(status_code=503, detail="w465 the change record is busy")
+        return real_update(cid, change, *x, **k)
+    monkeypatch.setattr(cca, "_update_change", _restore_busy)
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", _BlockingGov)
+    blk12 = client.post(f"/api/v1/economy/contracts/{c12}/settle").json()
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", real_gov)
+    monkeypatch.setattr(cca, "_update_change", real_update)
+    assert blk12["settlement"]["outcome"] == "blocked" and blk12["settlement"]["governance"]["approval_returned"] == "failed"
+    assert "handed back" not in blk12["note"].replace("could not be handed back", "") and "stays spent" in blk12["note"], blk12
+    assert cca._load_change(held12["settlement"]["cca_id"])["status"] == "implemented"
+    # …and when the spent approval's own record cannot be read at the give-back, older records for the pair never
+    # read as a newer one that replaced it: the give-back failed, and the note says so
+    c14 = delivered(a, b, 2300.0)
+    held14 = client.post(f"/api/v1/economy/contracts/{c14}/settle").json()
+    assert client.post(f"/api/v1/cca/{held14['settlement']['cca_id']}/review",
+                       json={"override_decision": "approved", "admin_decision_for_critical": True,
+                             "reviewer_notes": "w465"}).status_code == 200
+    armed = {"on": False}
+
+    class _BlocksThenRecordUnreadable(_BlockingGov):
+        async def intercept(self, ctx, action):
+            armed["on"] = True              # the approval was spent; the give-back comes next
+            return _Blocked()
+    real_load_change = cca._load_change
+
+    def _unreadable_once(cid, *x, **k):
+        if armed["on"] and cid == held14["settlement"]["cca_id"]:
+            armed["on"] = False
+            return None
+        return real_load_change(cid, *x, **k)
+    monkeypatch.setattr(cca, "_load_change", _unreadable_once)
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", _BlocksThenRecordUnreadable)
+    blk14 = client.post(f"/api/v1/economy/contracts/{c14}/settle").json()
+    monkeypatch.setattr(g5, "UnifiedConstitutionalInterceptorV16Omega", real_gov)
+    monkeypatch.setattr(cca, "_load_change", real_load_change)
+    assert blk14["settlement"]["governance"]["approval_returned"] == "failed", blk14
+    assert "newer Change Control record" not in blk14["note"] and "stays spent" in blk14["note"]
+    c8 = delivered(a, b, 2500.0)
+
+    def _gate_breaks(*x, **k):
+        raise RuntimeError("w465 gate store unavailable")
+    real_locked = gv._materiality_gate_locked
+    monkeypatch.setattr(gv, "_materiality_gate_locked", _gate_breaks)
+    err = client.post(f"/api/v1/economy/contracts/{c8}/settle").json()
+    monkeypatch.setattr(gv, "_materiality_gate_locked", real_locked)
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 250000.0)
+    assert err["settlement"]["outcome"] == "gate_error" and "could not complete" in err["note"], err
+    assert debits(a, f"contract {c6} settlement") == debits(a, f"contract {c7} settlement") == []
+
+    # ── the offer refuses a price that can never settle or be listed ──
+    for bad in ('NaN', '0', '-5', 'Infinity'):
+        r = client.post("/api/v1/economy/contracts", content=('{"client_vsb": "%s", "provider_vsb": "%s", "brief": "x", '
+                                                               '"price_wst": %s}' % (a, b, bad)),
+                        headers={"Content-Type": "application/json"})
+        assert r.status_code == 422, (bad, r.status_code)
+
+    # ── an unreadable store is refused, never overwritten; the cap drops only settled contracts ──
+    store = tmp_path / "vsb_contracts.json"
+    real_path = E._contracts_path
+    monkeypatch.setattr(E, "_contracts_path", lambda: store)
+    store.write_text("[{\"id\": \"ctr-x\", \"status\": \"deliv", encoding="utf-8")
+    refused = client.post("/api/v1/economy/contracts", json={"client_vsb": a, "provider_vsb": b, "brief": "w465", "price_wst": 10})
+    assert refused.status_code == 503 and store.read_text(encoding="utf-8") == "[{\"id\": \"ctr-x\", \"status\": \"deliv"
+    assert client.get("/api/v1/economy/contracts").status_code == 503
+    rows = ([{"id": f"ctr-live{i}", "status": "delivered", "client_vsb": a, "provider_vsb": b, "price_wst": 1.0} for i in range(5)]
+            + [{"id": f"ctr-done{i}", "status": "settled", "client_vsb": a, "provider_vsb": b, "price_wst": 1.0} for i in range(500)])
+    store.write_text(_json.dumps(rows), encoding="utf-8")
+    assert client.post("/api/v1/economy/contracts", json={"client_vsb": a, "provider_vsb": b, "brief": "w465", "price_wst": 10}).status_code == 200
+    kept = _json.loads(store.read_text(encoding="utf-8"))
+    assert len(kept) == 500 and {f"ctr-live{i}" for i in range(5)} <= {r["id"] for r in kept}
+    assert "ctr-done0" not in {r["id"] for r in kept} and kept[-1]["status"] == "offered"
+    full = [{"id": f"ctr-open{i}", "status": "delivered", "client_vsb": a, "provider_vsb": b, "price_wst": 1.0} for i in range(501)]
+    store.write_text(_json.dumps(full), encoding="utf-8")
+    E._mutate_contracts(lambda rows: next(r for r in rows if r["id"] == "ctr-open7").update(status="settled"), keep="ctr-open7")
+    after = {r["id"]: r for r in _json.loads(store.read_text(encoding="utf-8"))}
+    assert len(after) == 501 and after["ctr-open7"]["status"] == "settled"     # nothing droppable: nothing dropped
+    monkeypatch.setattr(E, "_contracts_path", real_path)
+
+    # ── a transfer id is matched only where the system wrote it: a memo naming an id is not that id's debit ──
+    planted = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 1,
+                                                             "memo": "(xfer-w465planted)"})
+    assert planted.status_code == 200
+    assert tr.debit_posted(a, "xfer-w465planted") is False
+    assert tr._memo_names("inter-VSB transfer → x (xfer-real) — (xfer-evil)", "xfer-evil") is False
+    assert tr._memo_names("inter-VSB transfer → x (xfer-real) — (xfer-evil)", "xfer-real") is True
+    assert tr._memo_names("note (xfer-real)", "xfer-real") is False
+    # …and a receiver is never credited twice for one id, even when the queue already holds it
+    xid = f"xfer-w465{_uuid.uuid4().hex[:6]}"
+    from agentic_core.config import atomic_write_json as _awj, store_lock as _sl
+    with _sl(tr._PENDING_STORE):
+        d = _json.loads(tr._PENDING_STORE.read_text(encoding="utf-8")) if tr._PENDING_STORE.exists() else {}
+        rec = d.get(b) or {"vsb_id": b, "pending_wst": 0.0, "transfers": []}
+        rec["transfers"] = (rec.get("transfers") or []) + [{"transfer_id": xid, "from_vsb": a, "amount_wst": 7.0}]
+        rec["credited_ids"] = (rec.get("credited_ids") or [t.get("transfer_id") for t in rec["transfers"][:-1]]) + [xid]
+        rec["pending_wst"] = round(rec.get("pending_wst", 0.0) + 7.0, 2)
+        d[b] = rec
+        _awj(tr._PENDING_STORE, d)
+    before_pending = tr.peek_pending_transfers(b)
+    out = tr.record_transfer(a, b, 7.0, "w465", transfer_id=xid)
+    assert out["idempotent_replay"] is False and tr.peek_pending_transfers(b) == before_pending and len(queued(b, xid)) == 1
+
+    # ── a pending store that cannot be read is refused by every writer, before any debit, and never overwritten: a
+    #    tolerant read answered {} and the write replaced every receiver's queue and credited ids (a late replay then
+    #    credited its provider twice) ──
+    pstore = tmp_path / "economy_pending_transfers.json"
+    real_pending = tr._PENDING_STORE
+    monkeypatch.setattr(tr, "_PENDING_STORE", pstore)
+    xid16 = f"xfer-w465{_uuid.uuid4().hex[:6]}"
+    tr.record_transfer(a, b, 3.0, "w465 before re-encoding", transfer_id=xid16)
+    assert tr.consume_pending_transfers(b) == 3.0 and tr.peek_pending_transfers(b) == 0
+    good = pstore.read_text(encoding="utf-8")
+    pstore.write_bytes(good.encode("utf-16"))
+    other = living("other")
+    a_before = len(VirtualLedger(a)._load().get("postings", []))
+    with _pytest.raises(tr.PendingStoreUnavailable):
+        tr.record_transfer(a, other, 2.0, "w465 while unreadable")
+    with _pytest.raises(tr.PendingStoreUnavailable):
+        tr.consume_pending_transfers(b)
+    assert pstore.read_bytes() == good.encode("utf-16") and len(VirtualLedger(a)._load().get("postings", [])) == a_before
+    route = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": other, "amount": 2})
+    assert route.status_code == 503 and "Nothing was debited" in route.json()["detail"], route.text
+    assert pstore.read_bytes() == good.encode("utf-16") and len(VirtualLedger(a)._load().get("postings", [])) == a_before
+    for bad in (b"{\"w465\": {\"pending_wst\": 1", b"[]"):
+        pstore.write_bytes(bad)
+        with _pytest.raises(tr.PendingStoreUnavailable):
+            tr.record_transfer(a, other, 2.0, "w465 while unreadable")
+        assert pstore.read_bytes() == bad
+    pstore.write_text(good, encoding="utf-8")
+    replay16 = tr.record_transfer(a, b, 3.0, "w465 before re-encoding", transfer_id=xid16)
+    assert replay16["idempotent_replay"] is True and tr.peek_pending_transfers(b) == 0      # consumed once, never again
+    # a settlement whose debit posted is completed only once the provider's queue is readable, and says so meanwhile
+    c11 = delivered(a, b, 150.0)
+    monkeypatch.setattr(E, "_transfer_core", _debit_then_crash)
+    with _pytest.raises(OSError):
+        client.post(f"/api/v1/economy/contracts/{c11}/settle")
+    monkeypatch.setattr(E, "_transfer_core", real_core)
+    good11 = pstore.read_bytes()
+    pstore.write_bytes(good11.decode("utf-8").encode("utf-16"))
+    waiting = client.post(f"/api/v1/economy/contracts/{c11}/settle")
+    assert waiting.status_code == 503 and "Nothing more was paid" in waiting.json()["detail"], waiting.text
+    assert contract(c11)["status"] == "delivered" and contract(c11)["settling"]["at_epoch"] == 0
+    assert pstore.read_bytes() == good11.decode("utf-8").encode("utf-16") and len(debits(a, f"contract {c11} settlement")) == 1
+    pstore.write_bytes(good11)
+    done11 = client.post(f"/api/v1/economy/contracts/{c11}/settle").json()
+    assert done11["status"] == "settled" and done11["settlement"]["governance"]["status"] == "replay_of_posted_debit", done11
+    assert tr.peek_pending_transfers(b) == 150.0 and len(debits(a, f"contract {c11} settlement")) == 1
+
+    # the store turns unreadable AFTER the pre-debit check passed (inside the queue's lock): the in-lock read refuses
+    # it too, nothing is overwritten, and each answer says what the ledger shows and what completes it
+    import re as _re
+    from agentic_core.config import store_lock as _real_store_lock
+
+    class _EncodedOnEntry(_real_store_lock):
+        def __enter__(self):
+            out = super().__enter__()
+            if self._lockpath.name.startswith("economy_pending_transfers") and not pstore.read_bytes().startswith(b"\xff\xfe"):
+                pstore.write_bytes(pstore.read_bytes().decode("utf-8").encode("utf-16"))
+            return out
+    good_now = pstore.read_bytes()
+    other_before = tr.peek_pending_transfers(other)
+    xin = f"xfer-w465{_uuid.uuid4().hex[:6]}"
+    monkeypatch.setattr(tr, "store_lock", _EncodedOnEntry)
+    with _pytest.raises(tr.PendingStoreUnavailable):
+        tr.record_transfer(a, other, 2.0, "w465 in-lock", transfer_id=xin)
+    assert pstore.read_bytes() == good_now.decode("utf-8").encode("utf-16") and tr.debit_posted(a, xin) is True
+    pstore.write_bytes(good_now)
+    rout = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": other, "amount": 3})
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    assert rout.status_code == 503 and "debited the sender" in rout.json()["detail"] and "Do NOT re-run" in rout.json()["detail"]
+    assert "nothing was written" not in rout.json()["detail"] and "may have" not in rout.json()["detail"], rout.text
+    xroute = _re.search(r"xfer-[0-9a-f]{10}", rout.json()["detail"]).group(0)
+    pstore.write_bytes(good_now)
+    for xid_, amt in ((xin, 2.0), (xroute, 3.0)):
+        rep = tr.record_transfer(a, other, amt, "w465 in-lock", transfer_id=xid_)
+        assert rep["idempotent_replay"] is True and rep["replay_repaired_receiver_leg"] is True, rep
+    assert tr.peek_pending_transfers(other) == round(other_before + 5.0, 2) and tr.debit_posted(a, xroute) is True
+    c13 = delivered(a, b, 160.0)
+    b_before13 = tr.peek_pending_transfers(b)
+    monkeypatch.setattr(tr, "store_lock", _EncodedOnEntry)
+    s13 = client.post(f"/api/v1/economy/contracts/{c13}/settle")
+    monkeypatch.setattr(tr, "store_lock", _real_store_lock)
+    assert s13.status_code == 503 and "debited the client" in s13.json()["detail"] and "settle again" in s13.json()["detail"], s13.text
+    pstore.write_bytes(pstore.read_bytes().decode("utf-16").encode("utf-8"))
+    done13 = client.post(f"/api/v1/economy/contracts/{c13}/settle").json()
+    assert done13["status"] == "settled" and done13["settlement"]["governance"]["status"] == "replay_of_posted_debit", done13
+    assert tr.peek_pending_transfers(b) == round(b_before13 + 160.0, 2) and len(debits(a, f"contract {c13} settlement")) == 1
+
+    # the gate measures only receipts the cycle can take: a store the intake refuses measures nothing, and the cycle
+    # says why it took none
+    stray = _json.dumps({other: {"vsb_id": other, "pending_wst": 5000.0, "transfers": [], "credited_ids": []}}).encode() + b"\n}"
+    saved = pstore.read_bytes()
+    pstore.write_bytes(stray)
+    assert tr.peek_pending_transfers(other) == 0.0
+    with _pytest.raises(tr.PendingStoreUnavailable):
+        tr.consume_pending_transfers(other)
+    cyc_other = client.post("/api/v1/economy/cycle", json={"vsb_id": other, "revenue": 100}).json()
+    rep_other = cyc_other.get("cycle") or {}
+    assert rep_other.get("inter_vsb_received_wst") == 0.0 and "PendingStoreUnavailable" in rep_other.get("inter_vsb_receipts_error", ""), cyc_other
+    assert pstore.read_bytes() == stray
+    # a record the intake could not do arithmetic on is refused whole by the strict read: the gate measures nothing,
+    # the intake takes nothing, and a transfer to that receiver is refused BEFORE its debit
+    a_postings = len(VirtualLedger(a)._load().get("postings", []))
+    for bad_rec in ({"pending_wst": "400000", "transfers": []}, {"pending_wst": 400000.0, "consumed_total_wst": None},
+                    {"pending_wst": float("nan")}, {"pending_wst": -500000.0}, {"pending_wst": 5.0, "transfers": "abc"},
+                    {"pending_wst": 5.0, "transfers": [1]}, {"pending_wst": 5.0, "credited_ids": "x"}, 5,
+                    {"pending_wst": 5.0, "credited_ids": [{"id": "x"}]}, {"pending_wst": 5.0, "transfers": [{"transfer_id": ["x"]}]},
+                    {"pending_wst": 10 ** 400}):
+        raw_bad = _json.dumps({other: bad_rec}).encode()
+        pstore.write_bytes(raw_bad)
+        assert gv._pending_parts(other)[1] == 0.0 and tr.peek_pending_transfers(other) == 0.0, bad_rec
+        with _pytest.raises(tr.PendingStoreUnavailable):
+            tr.consume_pending_transfers(other)
+        with _pytest.raises(tr.PendingStoreUnavailable):
+            tr.record_transfer(a, other, 1.0, "w465 malformed record")
+        assert pstore.read_bytes() == raw_bad and len(VirtualLedger(a)._load().get("postings", [])) == a_postings, bad_rec
+    pstore.write_bytes(saved)
+    # a receiver (or transfer) id that would put the memo separator into the transfer's memo — inside the id or at its
+    # edge — is refused before its debit: REGISTERED living receivers, so only this check stands between the call and
+    # a debit whose replay (same transfer id) would debit again
+    pstore.write_bytes(saved)
+    for hidden in ("w465 — hidden", f"w465-edge-{_uuid.uuid4().hex[:4]} —", f"— w465-edge-{_uuid.uuid4().hex[:4]}", "—"):
+        register(hidden, "W465 memo-separator receiver", "waqf_ltd_hybrid", "enterprise", "Rehan")
+        xh = f"xfer-w465{_uuid.uuid4().hex[:6]}"
+        for fn in (lambda: tr.record_transfer(a, hidden, 1.0, "w465", transfer_id=xh),
+                   lambda: tr.record_transfer(a, hidden, 1.0, "w465", transfer_id=xh),
+                   lambda: tr.validate_transfer(a, hidden, 1.0)):
+            with _pytest.raises(ValueError, match="cannot put"):
+                fn()
+        assert len(VirtualLedger(a)._load().get("postings", [])) == a_postings, hidden
+        from agentic_core.economy.living_vsbs import deregister as _dereg
+        _dereg(hidden)
+    with _pytest.raises(ValueError, match="cannot put"):
+        tr.record_transfer(a, other, 1.0, "w465", transfer_id="xfer-w465 — x")
+    assert len(VirtualLedger(a)._load().get("postings", [])) == a_postings
+    monkeypatch.setattr(tr, "_PENDING_STORE", real_pending)
+
+    # ── the page reports a settlement paid only when it came back settled, and says what an unpaid one was ──
+    from pathlib import Path
+    page = Path("apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx").read_text(encoding="utf-8")
+    assert "if (res.status === 'settled') {" in page and "UNPAID_OUTCOME[c.settlement.outcome]" in page
+    assert "/held/i.test(res.note)" not in page and ".slice(0, 10)" not in page
+
+
+def test_w465_owner_payments_are_locked_atomic_and_never_overwrite_an_unreadable_store(client, monkeypatch, tmp_path, caplog):
+    """FU-016 — the owner-payments store was read with every error swallowed (an unreadable store read as EMPTY and the
+    next accrual — or a page view, which also wrote — replaced every account with one), written non-atomically with
+    no lock (two accruals lost one; two payouts could both spend one balance), and a failed accrual vanished while the
+    ledger showed the owner stage distributed. Virtual WST only."""
+    import inspect as _inspect
+    import json as _json
+    import threading
+    import uuid as _uuid
+    from agentic_core.economy import owner_payments as op
+
+    store = tmp_path / "owner_payments.json"
+    monkeypatch.setattr(op, "_STORE", store)
+    vid = f"w465-owner-{_uuid.uuid4().hex[:6]}"
+
+    # a read creates nothing
+    st = client.get(f"/api/v1/economy/owner-payments?vsb_id={vid}")
+    assert st.status_code == 200 and st.json()["balance_wst"] == 0 and not store.exists()
+    op.accrue("w465-other", 5.0)
+    client.get(f"/api/v1/economy/owner-payments?vsb_id={vid}")
+    assert set(_json.loads(store.read_text(encoding="utf-8"))) == {"w465-other"}
+
+    # concurrent accruals all land; concurrent payouts never spend one balance twice
+    def accrue_one():
+        op.accrue(vid, 1.0)
+    ts = [threading.Thread(target=accrue_one) for _ in range(20)]
+    [t.start() for t in ts]
+    [t.join(timeout=60) for t in ts]
+    assert op.status(vid)["accrued_total_wst"] == 20.0 and len(op.status(vid)["entries"]) == 20
+    results = []
+
+    def pay_two():
+        try:
+            op.payout(vid, 2.0)
+            results.append("paid")
+        except ValueError:
+            results.append("refused")
+    ts = [threading.Thread(target=pay_two) for _ in range(15)]
+    [t.start() for t in ts]
+    [t.join(timeout=60) for t in ts]
+    assert results.count("paid") == 10 and results.count("refused") == 5
+    assert op.status(vid)["paid_out_total_wst"] == 20.0 and op.status(vid)["balance_wst"] == 0.0
+
+    # an unreadable store is refused everywhere and never overwritten
+    for broken in ('{"w465-other": {"accrued": 5.0, "paid_out": 0.0, "entr', '[]', '{"a": {"accrued": "x", "paid_out": 0, "entries": []}}'):
+        store.write_text(broken, encoding="utf-8")
+        g = client.get(f"/api/v1/economy/owner-payments?vsb_id={vid}")
+        assert g.status_code == 503, broken
+        p = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": vid, "amount": 1})
+        assert p.status_code == 503 and "no payout was recorded" in p.json()["detail"]
+        try:
+            op.accrue(vid, 3.0)
+            raise AssertionError("an accrual into an unreadable store must raise")
+        except op.OwnerPaymentsUnavailable:
+            pass
+        assert store.read_text(encoding="utf-8") == broken
+    utf16 = '{"w465-other": {"accrued": 5.0, "paid_out": 0.0, "entries": []}}'.encode("utf-16")
+    store.write_bytes(utf16)
+    assert client.get(f"/api/v1/economy/owner-payments?vsb_id={vid}").status_code == 503
+    p16 = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": vid, "amount": 1})
+    assert p16.status_code == 503 and "no payout was recorded" in p16.json()["detail"] and store.read_bytes() == utf16
+    # a cycle whose accrual fails says so in its report (and on the ledger of events) — never silently
+    store.write_text("{not json", encoding="utf-8")
+    cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid", "revenue": 10000}).json()
+    acc = (cyc.get("cycle") or {}).get("owner_accrual") or {}
+    assert acc.get("accrued") is False and "OwnerPaymentsUnavailable" in acc.get("error", ""), cyc.get("cycle")
+    from agentic_core.gaas.v5 import UEGLogger
+    assert any((n.get("data") or {}).get("type") == "economy.owner_accrual_failed" and (n.get("data") or {}).get("vsb_id") == vid
+               for n in UEGLogger()._read().get("nodes", []))
+    assert acc.get("ueg_logged") is True
+    # …and when that ledger entry does not land either, the report says so (the page then claims no ledger entry)
+    real_log = UEGLogger.log
+
+    def _log_refuses(self, event, *x, **k):
+        if isinstance(event, dict) and event.get("type") == "economy.owner_accrual_failed":
+            raise TimeoutError("w465 the constitutional ledger is busy")
+        return real_log(self, event, *x, **k)
+    monkeypatch.setattr(UEGLogger, "log", _log_refuses)
+    import logging as _logging
+    caplog.set_level(_logging.WARNING, logger="agentic_core.economy.metabolism")
+    unlogged = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid", "revenue": 10000}).json()
+    monkeypatch.setattr(UEGLogger, "log", real_log)
+    un_acc = (unlogged.get("cycle") or {}).get("owner_accrual") or {}
+    assert un_acc.get("accrued") is False and un_acc.get("ueg_logged") is False, unlogged.get("cycle")
+    # the page sends the Owner to the server log for this case: the record is there
+    assert any(r.levelno >= _logging.ERROR and "NOT on the UEG" in r.getMessage() and vid in r.getMessage()
+               for r in caplog.records), [r.getMessage() for r in caplog.records][-5:]
+    bp = client.get(f"/api/v1/economy/board-pack?vsb_id={vid}&entity_type=waqf_ltd_hybrid")
+    assert bp.status_code == 200 and bp.json()["owner_payments"]["available"] is False
+    assert store.read_text(encoding="utf-8") == "{not json"
+    store.write_text("{}", encoding="utf-8")
+    ok_cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid", "revenue": 10000}).json()
+    assert (ok_cyc.get("cycle") or {}).get("owner_accrual", {}).get("accrued") is True and op.status(vid)["accrued_total_wst"] > 0
+
+    # the store follows the convention, and the page shows a refusal instead of zeros
+    src = _inspect.getsource(op)
+    assert "store_lock(_STORE)" in src and "atomic_write_json(_STORE, d)" in src and "write_text(" not in src
+    from pathlib import Path
+    page = Path("apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="owner-payments-error"' in page and "bp.owner_payments?.available === false ? 'unavailable'" in page
+    assert 'data-testid="owner-accrual-failed"' in page and 'data-testid="board-pack-error"' in page
+    assert "setPay(null); setBp(null); setPayLoadErr(''); setBpLoadErr('');" in page and "typeof d.balance_wst !== 'number'" in page
+    # an answer for an entity the Owner switched away from is dropped, and nothing that acts on one can outlive a switch
+    assert page.count("if (issuedFor !== currentVsb.current) return;") == 4 and "setCycle(null); setGov(''); setHold(null);" in page
+    assert "disabled={running || payingOut || closing || wfSaving || transferring}" in page
+    ops = Path("apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
+    assert "onBusyChange={setTransferring}" in page and "finally { setBusy(false); onBusyChange?.(false); }" in ops
+    assert "setBusy(true); onBusyChange?.(true);" in ops       # the lock itself, not only its release
+    assert "if (!live) return;" in page and "return () => { live = false; };" in page     # the waterfall load too
+    # the ledger entry of a failed accrual is claimed only when it landed
+    assert "cycle.owner_accrual.ueg_logged === true" in page and "the ledger entry did not land either" in page
+    # a refresh issued for an entity no longer on screen never leaves its spinner up; a transfer refreshes the entity
+    # on screen; another entity's waterfall split is never left editable, and a failed load says so
+    assert "if (issuedFor === currentVsb.current) setBpLoading(true);" in page and "onDone={() => { loadBoardPackRef.current(); }}" in page
+    assert "<TransferPanel key={vsbId}" in page and "setWf(null); setWfDraft({}); setWfLoadErr('');" in page
+    assert 'data-testid="waterfall-error"' in page
+    contracts_page = Path("apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx").read_text(encoding="utf-8")
+    # the list reload never clears the note of an unpaid settlement it follows
+    assert ".then(d => { setContracts(d.contracts ?? []); setLoadErr(''); })" in contracts_page
+    assert "setError('')" not in contracts_page.split("const load = useCallback")[1].split("}, []);")[0]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -22,6 +22,8 @@ interface Cycle {
   metabolic_energy: number | null; entity_name: string; capital_preserved: boolean;
   energy_state?: string; reserve_rate_applied?: number;   // §8→§12 economic survival instinct
   biogeochemical_model: string;
+  // W465 (FU-016) — whether this cycle's owner share was recorded in Owner Payments
+  owner_accrual?: { accrued: boolean; amount_wst: number; error?: string; note?: string; ueg_logged?: boolean };
 }
 
 interface WaterfallState {
@@ -46,6 +48,10 @@ export const VSBEconomy: React.FC = () => {
   // established VSBs (the backend was already fully per-VSB; only this UI pinned the apex).
   const [sp] = useSearchParams();
   const [vsbId, setVsbId] = useState(sp.get('vsb') ?? 'workstation-idbo');
+  // W465 — the entity a load was issued for is compared with the one on screen when its answer lands: an answer for
+  // an entity the Owner has since switched away from is dropped, never shown under the new one
+  const currentVsb = useRef(vsbId);
+  currentVsb.current = vsbId;
   const [entity, setEntity] = useState('waqf_ltd_hybrid');
   const [revenue, setRevenue] = useState(10000);
   const [costs, setCosts] = useState(1000);
@@ -62,6 +68,8 @@ export const VSBEconomy: React.FC = () => {
   const [wfSaving, setWfSaving] = useState(false);
   const [wfMsg, setWfMsg] = useState('');
   const [wfErr, setWfErr] = useState<string[]>([]);
+  const [wfLoadErr, setWfLoadErr] = useState('');
+  const [transferring, setTransferring] = useState(false);   // a TransferPanel transfer in flight
   // §7 — Owner-payments ledger (virtual; real rails disabled+gated)
   const [pay, setPay] = useState<any>(null);
   const [payoutAmt, setPayoutAmt] = useState(0);
@@ -69,17 +77,51 @@ export const VSBEconomy: React.FC = () => {
   const [payMsg, setPayMsg] = useState('');
   const [payErr, setPayErr] = useState('');
 
-  const loadOwnerPay = () =>
-    fetch(`/api/v1/economy/owner-payments?vsb_id=${encodeURIComponent(vsbId)}`)
-      .then(r => r.json()).then(setPay).catch(() => {});
+  // W465 (FU-016) — an error answer used to be stored as the account and shown as 0 WST with a live payout button;
+  // the store's own refusal (503: unreadable, never overwritten) is now shown as what it is
+  const [payLoadErr, setPayLoadErr] = useState('');
+  const loadOwnerPay = () => {
+    const issuedFor = vsbId;
+    return fetch(`/api/v1/economy/owner-payments?vsb_id=${encodeURIComponent(issuedFor)}`)
+      .then(async r => {
+        const d = await r.json().catch(() => null);
+        if (issuedFor !== currentVsb.current) return;   // a late answer for another entity
+        // an error answer, or a body that is not an account, is never stored as one (it rendered as 0 WST)
+        if (!r.ok || !d || typeof d.balance_wst !== 'number') {
+          setPay(null);
+          setPayLoadErr(typeof d?.detail === 'string' ? d.detail : `Could not load the owner payments (HTTP ${r.status}).`);
+          return;
+        }
+        setPayLoadErr('');
+        setPay(d);
+      }).catch(() => {
+        if (issuedFor !== currentVsb.current) return;
+        setPay(null); setPayLoadErr('Could not load the owner payments — showing nothing rather than zero balances.');
+      });
+  };
   // §7 — the live financial Board Pack (capstone statement)
   const [bp, setBp] = useState<any>(null);
   const [bpLoading, setBpLoading] = useState(false);
+  const [bpLoadErr, setBpLoadErr] = useState('');   // its own state: a later good load clears it
   const loadBoardPack = () => {
-    setBpLoading(true);
-    fetch(`/api/v1/economy/board-pack?vsb_id=${encodeURIComponent(vsbId)}&entity_type=${entity}`)
-      .then(r => r.json()).then(setBp).catch(() => setLoadErr('Could not load the board pack — showing nothing rather than stale figures.')).finally(() => setBpLoading(false));
+    const issuedFor = vsbId;
+    if (issuedFor === currentVsb.current) setBpLoading(true);
+    fetch(`/api/v1/economy/board-pack?vsb_id=${encodeURIComponent(issuedFor)}&entity_type=${entity}`)
+      .then(async r => {
+        const d = await r.json().catch(() => null);
+        if (issuedFor !== currentVsb.current) return;   // a late answer for another entity
+        if (!r.ok || !d) { setBp(null); setBpLoadErr(typeof d?.detail === 'string' ? d.detail : `Could not load the board pack (HTTP ${r.status}).`); return; }
+        setBpLoadErr('');
+        setBp(d);
+      }).catch(() => {
+        if (issuedFor !== currentVsb.current) return;
+        setBp(null); setBpLoadErr('Could not load the board pack — showing nothing rather than stale figures.');
+      }).finally(() => { if (issuedFor === currentVsb.current) setBpLoading(false); });
   };
+  // a transfer that finishes after an entity switch refreshes the pack of the entity ON SCREEN, not the one its
+  // button was rendered for
+  const loadBoardPackRef = useRef(loadBoardPack);
+  loadBoardPackRef.current = loadBoardPack;
   // §4 — the established living VSB enterprises the organism autonomously tends
   const [living, setLiving] = useState<any>(null);
   // W395 — these loads used to fail silently (`.catch(() => {})`), leaving the page's headline
@@ -97,16 +139,35 @@ export const VSBEconomy: React.FC = () => {
   }, []);
 
   // W298 - the scoped ledgers follow the selected entity
-  useEffect(() => { loadOwnerPay(); loadBoardPack(); }, [vsbId]);
+  // W465 — another entity's figures, cycle report, hold and messages are cleared on a switch (its waterfall split by
+  // the waterfall effect, its transfer form by remounting the panel); a load still in flight for the previous entity
+  // is dropped when it lands (the guard above), and the picker is locked while a cycle, payout, period close,
+  // waterfall save or transfer runs, so none of those can finish under a different entity than the one it acted on
+  useEffect(() => {
+    setPay(null); setBp(null); setPayLoadErr(''); setBpLoadErr('');
+    setCycle(null); setGov(''); setHold(null); setError('');
+    setPayMsg(''); setPayErr(''); setCloseMsg(''); setCloseErr('');
+    loadOwnerPay(); loadBoardPack();
+  }, [vsbId]);
 
   // Load the effective waterfall whenever the entity form changes (per VSB = workstation-idbo).
   useEffect(() => {
+    let live = true;   // W465 — an answer for a previous entity or form is dropped
+    // …and the previous entity's split is never left on screen, editable and saveable under this one
+    setWf(null); setWfDraft({}); setWfLoadErr('');
     setWfMsg(''); setWfErr([]);
     fetch(`/api/v1/economy/waterfall?vsb_id=${encodeURIComponent(vsbId)}&entity_type=${entity}`)
-      .then(r => r.json()).then((d: WaterfallState) => {
+      .then(async r => {
+        const d = await r.json().catch(() => null) as WaterfallState | null;
+        if (!live) return;
+        if (!r.ok || !d || !Array.isArray(d.stages) || !d.waterfall) {
+          setWfLoadErr(`Could not load the waterfall (HTTP ${r.status}) — showing nothing rather than another entity's split.`);
+          return;
+        }
         setWf(d);
-        setWfDraft(Object.fromEntries((d.stages || []).map(s => [s, Math.round((d.waterfall[s] ?? 0) * 100)])));
-      }).catch(() => {});
+        setWfDraft(Object.fromEntries(d.stages.map(s => [s, Math.round((d.waterfall[s] ?? 0) * 100)])));
+      }).catch(() => { if (live) setWfLoadErr("Could not load the waterfall — showing nothing rather than another entity's split."); });
+    return () => { live = false; };
   }, [entity, vsbId]);
 
   const wfDraftSum = Object.values(wfDraft).reduce((a, b) => a + (Number(b) || 0), 0);
@@ -141,7 +202,7 @@ export const VSBEconomy: React.FC = () => {
       const d = await r.json();
       setCycle(d.cycle); setGov(d.governance?.status ?? '');
       setHold(d.cycle == null ? (d.governance ?? { status: 'no_cycle', note: 'The cycle returned no result.' }) : null);
-      loadOwnerPay();   // the cycle accrued the Owner's §4 share — refresh the ledger
+      loadOwnerPay();   // refresh the ledger (the cycle's report says whether the Owner's §4 share was recorded)
       loadBoardPack();  // refresh the live financial Board Pack
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setRunning(false);
@@ -192,6 +253,9 @@ export const VSBEconomy: React.FC = () => {
         {loadErr && (
           <p role="alert" className="text-[10px] font-bold text-vital mt-2">{loadErr}</p>
         )}
+        {bpLoadErr && (
+          <p role="alert" className="text-[10px] font-bold text-vital mt-2" data-testid="board-pack-error">{bpLoadErr}</p>
+        )}
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The VSB's value flows like a <span className="text-highlight">biogeochemical nutrient cycle</span> — intake →
           homeostasis → circulation → giving-back → storage → growth. A hybrid Waqf/Trust/Multinational entity that pays
@@ -203,7 +267,8 @@ export const VSBEconomy: React.FC = () => {
       <Card className="p-5">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Entity</span>
-          <select value={vsbId} onChange={e => setVsbId(e.target.value)}
+          <select value={vsbId} onChange={e => setVsbId(e.target.value)} disabled={running || payingOut || closing || wfSaving || transferring}
+            title={running || payingOut || closing || wfSaving || transferring ? 'Wait for the running action to finish before switching entity.' : undefined}
             className="text-xs bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-highlight/50">
             <option value="workstation-idbo">Workstation IDBO (apex)</option>
             {((living?.living_vsbs) ?? []).map((v: any) => (
@@ -233,6 +298,9 @@ export const VSBEconomy: React.FC = () => {
       </Card>
 
       {/* §4/§8/§10 — Owner-adjustable profit-distribution waterfall (virtual, template-bounded) */}
+      {wfLoadErr && (
+        <p role="alert" className="text-[10px] font-bold text-vital" data-testid="waterfall-error">{wfLoadErr}</p>
+      )}
       {wf && (
         <Card className="p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
@@ -305,6 +373,9 @@ export const VSBEconomy: React.FC = () => {
       </Card>
 
       {/* §7 — Owner-Payments ledger (virtual; real rails disabled + gated) */}
+      {payLoadErr && (
+        <p role="alert" className="text-[10px] font-bold text-vital" data-testid="owner-payments-error">{payLoadErr}</p>
+      )}
       {pay && (
         <Card className="p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
@@ -415,6 +486,15 @@ export const VSBEconomy: React.FC = () => {
               </p>
             )}
             <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className={gov === 'allowed' ? 'text-emerald-400' : gov ? 'text-amber-400' : 'text-slate-500'} /> governance: {gov} · {cycle.biogeochemical_model}</p>
+            {cycle.owner_accrual && cycle.owner_accrual.accrued === false && cycle.owner_accrual.error && (
+              <p role="alert" data-testid="owner-accrual-failed" className="text-[10px] font-bold text-vital mt-2">
+                The owner share of {cycle.owner_accrual.amount_wst.toLocaleString()} WST was distributed but NOT recorded in Owner
+                Payments ({cycle.owner_accrual.error}) — your balance is short by this amount
+                {cycle.owner_accrual.ueg_logged === true
+                  ? ' (logged on the constitutional ledger).'
+                  : ' (the ledger entry did not land either — see the server log).'}
+              </p>
+            )}
           </Card>
 
           {/* Circulation waterfall */}
@@ -476,7 +556,7 @@ export const VSBEconomy: React.FC = () => {
             <Metric label="Revenue (cumulative)" value={`${(bp.profit_and_loss?.total_revenue_wst ?? 0).toLocaleString()} WST`} />
             <Metric label="Reserves" value={`${(bp.profit_and_loss?.total_reserves_wst ?? 0).toLocaleString()} WST`} />
             <Metric label="Distributed" value={`${(bp.profit_and_loss?.total_distributed_wst ?? 0).toLocaleString()} WST`} tone="good" />
-            <Metric label="Owner balance" value={`${(bp.owner_payments?.balance_wst ?? 0).toLocaleString()} WST`} tone="good" />
+            <Metric label="Owner balance" value={bp.owner_payments?.available === false ? 'unavailable' : `${(bp.owner_payments?.balance_wst ?? 0).toLocaleString()} WST`} tone={bp.owner_payments?.available === false ? undefined : 'good'} />
           </div>
           <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3 mt-3">
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
@@ -539,8 +619,8 @@ export const VSBEconomy: React.FC = () => {
       {/* W442 — the governed federation transfer primitive, Owner-initiated (previously reachable
           only via contract settlement). Rendered always: the honest empty state names the
           precondition (a registered living receiver). */}
-      <TransferPanel fromVsb={vsbId} entities={(living?.living_vsbs ?? []).map((v: any) => ({ vsb_id: v.vsb_id, name: v.name }))}
-        onDone={() => { loadBoardPack(); }} />
+      <TransferPanel key={vsbId} fromVsb={vsbId} entities={(living?.living_vsbs ?? []).map((v: any) => ({ vsb_id: v.vsb_id, name: v.name }))}
+        onDone={() => { loadBoardPackRef.current(); }} onBusyChange={setTransferring} />
 
       {/* §4 — living enterprises the organism autonomously tends (continually operated on the heartbeat) */}
       {living && (living.living_vsbs?.length ?? 0) > 0 && (
