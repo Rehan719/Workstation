@@ -8,13 +8,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QEPStudio } from '../../components/QEPStudio';
 import { QEPFlagshipFeatures } from '../../components/QEPFlagshipFeatures';
 import { LearnTeachModule } from '../../components/LearnTeachModule';
-import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
+import { toolsFor } from '../../lib/toolRegistry';
 
 interface Madhab { id: string; name: string; region: string; founder: string }
 
 export const ReligionHub: React.FC = () => {
+  const T = toolsFor('/religion');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
    const { layout, emotionalAdjustment } = useAdaptiveUI();
   const { user } = useStore();
@@ -120,7 +121,7 @@ export const ReligionHub: React.FC = () => {
                     </motion.div>
                   ) : activeTab === 'dialogue' ? (
                     <DomainTool
-                      title="Comparative Fiqh Research"
+                      title={T['dialogue'].title}
                       description={<>Pose a question of Islamic jurisprudence — Workstation's <span className="text-aura">own</span> AI researches it within your chosen madhab, in-house, with scholarly humility.</>}
                       endpoint="/api/v1/religion/fatwa-research"
                       resultKey="research"
@@ -133,7 +134,7 @@ export const ReligionHub: React.FC = () => {
                     />
                   ) : activeTab === 'tafsir' ? (
                     <DomainTool
-                      title="Qur'anic Tafsir"
+                      title={T['tafsir'].title}
                       description={<>Study an ayah — Workstation's <span className="text-aura">own</span> AI offers structured tafsir (classical, thematic, contemporary or linguistic), in-house, drawing on the classical mufassirun.</>}
                       endpoint="/api/v1/religion/quran-tafsir"
                       resultKey="tafsir"
@@ -164,7 +165,7 @@ export const ReligionHub: React.FC = () => {
                     />
                   ) : activeTab === 'halal' ? (
                     <DomainTool
-                      title="Halal Certification Pre-Assessment"
+                      title={T['halal'].title}
                       description={<>Describe a product — Workstation's <span className="text-aura">own</span> AI gives a halal pre-assessment (ingredient flags, process concerns, certification guidance), in-house, with scholarly humility.</>}
                       endpoint="/api/v1/religion/halal-review"
                       resultKey="assessment"
@@ -179,7 +180,7 @@ export const ReligionHub: React.FC = () => {
                     />
                   ) : activeTab === 'hadith' ? (
                     <DomainTool
-                      title="Hadith Study (Ulum al-Hadith)"
+                      title={T['hadith'].title}
                       description={<>Enter a hadith (text or reference) — Workstation's <span className="text-aura">own</span> AI researches its narration, isnad, grading and sharh, in-house, with scholarly humility. Research only — grading must be verified against authenticated collections and a qualified scholar.</>}
                       endpoint="/api/v1/religion/hadith-study"
                       resultKey="study"

@@ -89,7 +89,8 @@ export const BTOCatalog: React.FC = () => {
   const handleBuildToOrder = async () => {
     const catalog = blueprint?.components?.products?.catalog;
     const list = Array.isArray(catalog) ? catalog : (catalog?.products || []);
-    const slugs = list.map((p: any) => p.slug).filter(Boolean).slice(0, 3);   // bounded: build the first few
+    // W470 — only a served entry is buildable (the blueprint's catalogue is served-only; older answers are filtered too)
+    const slugs = list.filter((p: any) => p.live).map((p: any) => p.slug).filter(Boolean).slice(0, 3);   // bounded: build the first few
     if (slugs.length === 0) return;
     setBtoBuilding(true);
     setBtoResult(null);

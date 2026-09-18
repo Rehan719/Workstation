@@ -34,6 +34,8 @@ interface CatalogProduct {
   features: string[];
   source: string | null;
   route: string | null;
+  status?: 'live' | 'source' | 'legacy';   // W470 — live: a served surface; source: a pointer, nothing served; legacy: an archived directory
+  live?: boolean;
 }
 
 // W392 — the TRADEABLE layer. The catalogue above says what exists; a listing says what someone has
@@ -170,11 +172,12 @@ export const LivingMarketplace: React.FC = () => {
           Living <span className="text-aura">Marketplace</span>
         </h1>
         <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">
-          Sovereign Economy · {catalogProducts.length} Live Products
+          Sovereign Economy · {catalogProducts.filter(p => p.live).length} live products · {catalogProducts.length} registered directories
         </p>
         <p className="text-slate-500 text-xs font-semibold mt-3 max-w-2xl leading-relaxed">
-          The platform's registered products and capabilities — every entry runs on Workstation's own
-          native AI fabric and opens to a live surface. Listings reflect what is actually built.
+          The platform's registered product directories. Only an entry marked live opens to a served surface on
+          Workstation's own native AI fabric; a source entry is a pointer to code nothing serves yet, and a legacy
+          entry is an archived directory that was never a product. Listings say which is which.
         </p>
       </header>
 
@@ -281,6 +284,12 @@ export const LivingMarketplace: React.FC = () => {
                             </span>
                           </div>
                           <h3 className="text-base font-black mb-1 text-white leading-tight">{product.name}</h3>
+                          {product.status === 'legacy' && (
+                            <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-1" data-testid="catalog-legacy">Legacy archive — not a served product</p>
+                          )}
+                          {product.status === 'source' && (
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1" data-testid="catalog-source">Source pointer — nothing served yet</p>
+                          )}
                           <p className="text-[9px] font-mono text-slate-600 uppercase mb-4 truncate">{product.slug}</p>
                           <div className="space-y-1.5 mb-5 flex-1">
                             {product.features.map(f => (
@@ -294,7 +303,7 @@ export const LivingMarketplace: React.FC = () => {
                             <Badge variant="outline" className={`font-black text-[9px] ${isPremium ? 'border-highlight/40 text-highlight' : 'border-slate-800 text-slate-400'}`}>
                               {product.tier}
                             </Badge>
-                            {product.route && (
+                            {product.live && product.route && (
                               <button
                                 type="button"
                                 onClick={() => navigate(product.route!)}

@@ -66,7 +66,8 @@ const OUTPUT_TYPES = [
   { id: 'linkedin_profile', label: 'LinkedIn Profile', icon: Linkedin },
 ];
 
-export const ApplicationStudio: React.FC = () => {
+// W470 — the title is the registry's (the Employment hub passes toolsFor('/employment')['studio'].title)
+export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   const [uploads, setUploads] = useState<IngestedFile[]>([]);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [classifying, setClassifying] = useState(false);
@@ -243,7 +244,7 @@ export const ApplicationStudio: React.FC = () => {
   return (
     <div className="space-y-10">
       <div>
-        <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Application Studio</h3>
+        <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">{title}</h3>
         <p className="text-slate-500 font-bold text-sm">Upload your materials, then generate tailored application outputs.</p>
       </div>
 

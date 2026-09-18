@@ -1,5 +1,10 @@
 # Handover — W469 → W470 (to Claude Fable 5.1)
 
+> **W470 shipped** (2026-09-18, Claude Fable 5.1): P1.13 ✅ DONE — see `docs/AUTONOMOUS_PROGRESS.md` (`### W470`).
+> PLAN NOW in `docs/FABLE_DELIVERY_PROMPT.md` now says **Next: P1.14 Board pack + Chief's Opening honesty**. §1 below
+> is the state as handed over at W469; §3–§6 (the rhythm, the constraints, the lessons, the environment) still apply
+> to every round. The next free probe port is :8080.
+
 Written 2026-09-18 by the session that shipped W469 (Claude Opus 5), on the Owner's instruction: "leave a
 handover for Fable to start W470". The Owner (Rehan) is switching models for W470. Nothing in W470 has been
 started. Read this whole page first. Then read `docs/FABLE_DELIVERY_PROMPT.md` whole: that prompt is the

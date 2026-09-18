@@ -1148,28 +1148,57 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-071",
+      "title": "Nine source-pointer product directories are still listed as products of a kind",
+      "why": "The catalogue now marks them status source ('a pointer, nothing served yet') and no consumer builds from them, but products/ still holds nine metadata.json directories (business_incubator, cognitive_scraper, gse, molecular_sdk, nanophotonic_navigation, scraping_suite, uviap, mjm-intelligence-engine, signature-product-suite) whose only substance is a pointer at SDK source. Fix: for each, either serve it (a route and a real page) or retire the directory; the scatter item decides which, per the reach audit.",
+      "source": "W470",
+      "found": "2026-09-18",
+      "files": [
+        "agentic_core/catalog/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-072",
+      "title": "The six legacy signature-product directories still sit in products/ with self-declaring manifests",
+      "why": "products/Care … products/Science each carry a manifest.json self-declaring PRODUCTION_READY, WCAG 2.2 AAA and nine injection formats that nothing serves; W470 lists them as legacy archives and routes nothing to them, but the directories remain where a reader takes them for products. Fix: move them to _archive/products/ (LEGACY_ARCHIVES then empties) and keep one line in the catalogue saying they were archived.",
+      "source": "W470",
+      "found": "2026-09-18",
+      "files": [
+        "agentic_core/catalog/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-073",
+      "title": "A done --hand-to merge lifts the taker's own broad matchers to the handed route's position",
+      "why": "merge_routes (W469 refutation 2) places the merged route at the EARLIEST position of the routes merged so the handed area keeps its precedence — but the taker's original matchers move with it: done P1.13 --hand-to P1.16 put P1.16's broad prefixes (integration_tests/, docs/, …) at position 1, ahead of every specific route, so a docs+economy row would have gone to hygiene instead of P2.9. W470 re-added P1.16 last by hand and gave P1.13's area to P2.4. Fix: keep the taker's route where it was and carry only the handed matchers forward — either a second route for the same item marked handed_from, or a per-matcher position; and check() should refuse a merge that would move a route holding a directory prefix broader than the handed one ahead of any other route.",
+      "source": "W470 (found by running done P1.13 --hand-to P1.16)",
+      "found": "2026-09-18",
+      "files": [
+        "agentic_core/plan_followups.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P1.16",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [
-    {
-      "slot": "P1.13",
-      "files": [
-        "apps/workstation-superapp/src/pages/domains/",
-        "apps/workstation-superapp/src/pages/AIToolsCatalogue.tsx",
-        "apps/workstation-superapp/src/pages/marketplace/",
-        "agentic_core/api/tools.py"
-      ],
-      "words": [
-        "marketplace count",
-        "marketplace counts",
-        "domain signature",
-        "qep flagship",
-        "tool registry",
-        "catalogue count",
-        "catalogue counts"
-      ],
-      "note": "catalogue honesty"
-    },
     {
       "slot": "P1.14",
       "files": [
@@ -1257,6 +1286,27 @@
       ],
       "words": [],
       "note": "the organism and its heartbeat"
+    },
+    {
+      "slot": "P2.4",
+      "files": [
+        "agentic_core/catalog/",
+        "products/",
+        "apps/workstation-superapp/src/pages/domains/",
+        "apps/workstation-superapp/src/pages/AIToolsCatalogue.tsx",
+        "apps/workstation-superapp/src/pages/marketplace/",
+        "agentic_core/api/tools.py"
+      ],
+      "words": [
+        "marketplace count",
+        "marketplace counts",
+        "domain signature",
+        "qep flagship",
+        "tool registry",
+        "catalogue count",
+        "catalogue counts"
+      ],
+      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470)"
     },
     {
       "slot": "P1.16",

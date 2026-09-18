@@ -3,13 +3,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, HeartPulse, History } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { QEPDashboard } from '../../components/QEPDashboard';
-import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
+import { toolsFor } from '../../lib/toolRegistry';
 
 export const CareHub: React.FC = () => {
+  const T = toolsFor('/care');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'clinical');
@@ -45,22 +44,13 @@ export const CareHub: React.FC = () => {
                <button type="button" onClick={() => setActiveTab('care-plan')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'care-plan' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Care Plan</button>
                <button type="button" onClick={() => setActiveTab('risk')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'risk' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Risk Assess</button>
                <button type="button" onClick={() => setActiveTab('safeguarding')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'safeguarding' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Safeguarding</button>
-               <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
 
          <div className="space-y-12">
-            {activeTab === 'qep' ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-                 <QEPDashboard domain="care" />
-                 <div className="pt-12 border-t border-white/5">
-                    <h3 className="text-3xl font-black text-white mb-10 uppercase tracking-tighter">Bio-Digital Diagnostic Lab</h3>
-                    <QEPImmersiveTools domain="care" />
-                 </div>
-              </motion.div>
-            ) : activeTab === 'care-plan' ? (
+            {activeTab === 'care-plan' ? (
               <DomainTool
-                title="Care Plan Builder"
+                title={T['care-plan'].title}
                 description={<>Describe the person and their needs — Workstation's <span className="text-vital">own</span> AI drafts a structured, person-centred care plan (goals, interventions, review schedule), in-house.</>}
                 endpoint="/api/v1/care/care-plan"
                 resultKey="care_plan"
@@ -75,7 +65,7 @@ export const CareHub: React.FC = () => {
               />
             ) : activeTab === 'risk' ? (
               <DomainTool
-                title="Clinical Risk Assessment"
+                title={T['risk'].title}
                 description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published table</span> (NEWS2 · MUST · Waterlow; NICE CG161 as a factor count) and shown first; Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
                 endpoint="/api/v1/care/risk-assess"
                 resultKey="assessment"
@@ -110,7 +100,7 @@ export const CareHub: React.FC = () => {
               />
             ) : activeTab === 'safeguarding' ? (
               <DomainTool
-                title="Safeguarding Triage"
+                title={T['safeguarding'].title}
                 description={<>Describe a safeguarding concern — Workstation's <span className="text-vital">own</span> AI structures the right response under the Care Act 2014 (immediate-safety check, category, who to notify, what to record, consent &amp; Making Safeguarding Personal), in-house. Process guidance only — if anyone is in immediate danger, call 999.</>}
                 endpoint="/api/v1/care/safeguarding"
                 resultKey="guidance"
@@ -124,7 +114,7 @@ export const CareHub: React.FC = () => {
               />
             ) : (
               <DomainTool
-                title="Clinical Handover (SBAR)"
+                title={T['clinical'].title}
                 description={<>Compose a structured clinical handover — Workstation's <span className="text-vital">own</span> AI drafts it using the SBAR/ISBAR framework, in-house.</>}
                 endpoint="/api/v1/care/handover"
                 resultKey="handover"

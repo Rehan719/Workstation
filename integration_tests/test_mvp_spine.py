@@ -6937,9 +6937,15 @@ def test_w423_domainshub_tool_counts_match_what_is_wired():
     hub_file = {"Religion": "ReligionHub", "Science": "ScienceHub", "Education": "EducationHub",
                 "Law": "LawHub", "Care": "CareHub", "Employment": "EmploymentHub"}
 
-    declared = dict(re.findall(r"name: '([A-Za-z]+)'.*?tools: (\d+)",
-                               (root / "DomainsHub.tsx").read_text(encoding="utf-8", errors="ignore")))
-    assert set(declared) == set(hub_file), "DomainsHub no longer lists exactly the six canonical domains"
+    # W470 — DomainsHub types no number any more: it counts the ONE tool registry the hubs mount from. The
+    # guard now reads the registry's <DomainTool>-kind entries ('form') per domain against the hubs' mounts.
+    registry = "\n".join(ln for ln in (root.parent.parent / "lib/toolRegistry.ts").read_text(encoding="utf-8").splitlines()
+                         if not ln.lstrip().startswith("//"))            # a commented-out entry is no entry
+    declared = {m.group(1): str(m.group(2).count("form("))
+                for m in re.finditer(r"\{ name: '([A-Za-z]+)', route: '/[a-z]+', tools: \[\n(.*?)\n  \]\}", registry, re.S)}
+    front = (root / "DomainsHub.tsx").read_text(encoding="utf-8", errors="ignore")
+    assert "TOOL_REGISTRY" in front and not re.search(r"tools: \d", front), "DomainsHub must count the registry, never a typed number"
+    assert set(declared) == set(hub_file), "the registry no longer lists exactly the six canonical domains"
 
     for domain, stem in hub_file.items():
         src = (root / (stem + ".tsx")).read_text(encoding="utf-8", errors="ignore")
@@ -6948,7 +6954,7 @@ def test_w423_domainshub_tool_counts_match_what_is_wired():
             "DomainsHub advertises %s tools for %s but %s wires %d"
             % (declared[domain], domain, stem, wired))
 
-    assert sum(int(v) for v in declared.values()) == 23
+    assert sum(int(v) for v in declared.values()) == 23      # the forms; the registry also names 2 custom surfaces + the flagship
 
 
 def test_w425_regeneration_improves_the_prior_draft_and_says_whether_it_did(client):
@@ -9450,7 +9456,7 @@ def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
     # the tab renders what the backend returns
     hub = Path("apps/workstation-superapp/src/pages/domains/ReligionHub.tsx").read_text(encoding="utf-8")
     _start = hub.index("endpoint=\"/api/v1/religion/quran-tafsir\"")
-    tafsir_block = hub[_start:hub.index("Halal Certification Pre-Assessment", _start)]   # this tab's DomainTool only
+    tafsir_block = hub[_start:hub.index("title={T['halal'].title}", _start)]   # this tab's DomainTool only (W470: titles come from the registry)
     for needle in ("renderExtra", "r.arabic_text", "r.arabic_source", "r.reference", "r.range_note", "r.floor_note", "dir=\"rtl\""):
         assert needle in tafsir_block, needle
     tool = Path("apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
@@ -15029,8 +15035,12 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
         assert "repair that route" in str(exc)
     # the real routes: each earlier item owns its own surfaces before a later item's broad prefix can take them
     real_order = [rt["slot"] for rt in routes]
-    assert real_order.index("P1.13") < real_order.index("P2.9") and real_order.index("P1.14") < real_order.index("P2.9")
-    assert fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")["slot"] == "P1.13"
+    assert real_order.index("P1.14") < real_order.index("P2.9")
+    # (W470) P1.13 is done; its catalogue area passed to the scatter item P2.4, whose route sits before the broad
+    # hygiene prefixes of P1.16 — the LAST route, always (a done --hand-to merge once lifted it to first)
+    assert real_order[-1] == "P1.16" and real_order.index("P2.4") < real_order.index("P1.16")
+    assert fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")["slot"] == "P2.4"
+    assert fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.9"
     assert fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py"], "medium")["slot"] == "P2.3"
     assert fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.9"
     # the high count is of rows riding an item (an unscheduled high row is listed on its own)
@@ -15214,3 +15224,180 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     assert 'data-testid="plan-unreadable"' in page
     assert "{followups.plan.readable === false || followups.plan.total === 0 ? (" in page    # never 'every item is done'
     assert 'hidden={followups.plan.readable === false || followups.plan.total === 0}' in page    # no 'Done 0 of 0'
+
+
+def test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_tabs(client, tmp_path):
+    """W470 — P1.13 Catalogue honesty (ledger R5.6, R5.8).
+
+    R5.8: DomainsHub said 23 tools, /ai-tools listed 18, the hubs mounted 24 — three hand-kept lists. Now ONE
+    registry (src/lib/toolRegistry.ts) is what the hubs mount their titles from and what both front doors count
+    and list; this guard parses the registry and every hub and fails when they disagree, when a hub types a
+    title, or when a front door types a number. The 'QEP Flagship' tab on the five non-Religion hubs (engines
+    'not wired to a backend yet', tools 'planned') is gone with its two components; QEP lives in Religion.
+    R5.6: the marketplace called every products/ directory a 'Live Product' (20). The catalogue now says which
+    entries a route serves (live), which are source pointers (source) and which are archived signature-product
+    directories (legacy, never routed, never opened); the page counts live only and badges the rest."""
+    import pathlib
+    import re
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app_src = root / "apps/workstation-superapp/src"
+    hubs = app_src / "pages/domains"
+    reg_src = "\n".join(ln for ln in (app_src / "lib/toolRegistry.ts").read_text(encoding="utf-8").splitlines()
+                        if not ln.lstrip().startswith("//"))             # a commented-out entry is no entry
+
+    # ── the registry, parsed: one block per domain, one entry per tool ──
+    domains = {}
+    for m in re.finditer(r"\{ name: '([A-Za-z]+)', route: '(/[a-z]+)', tools: \[\n(.*?)\n  \]\}", reg_src, re.S):
+        name, route, body = m.groups()
+        tools = {}
+        for e in re.finditer(r"form\('([a-z-]+)', (\"[^\"]+\"|'[^']+'),", body):
+            tools[e.group(1)] = ("form", e.group(2)[1:-1])
+        for e in re.finditer(r"\{ tab: '([a-z-]+)', kind: '(custom|flagship)', title: '([^']+)'", body):
+            tools[e.group(1)] = (e.group(2), e.group(3))
+        domains[name] = {"route": route, "tools": tools}
+    assert set(domains) == {"Religion", "Science", "Education", "Law", "Care", "Employment"}, list(domains)
+    total = sum(len(d["tools"]) for d in domains.values())
+    assert total >= 25, total
+    assert domains["Religion"]["tools"]["qep"][0] == "flagship"            # the flagship, in Religion only
+    assert sum(1 for d in domains.values() for k, v in d["tools"].items() if v[0] == "flagship") == 1
+
+    # ── every hub mounts from the registry: form count == <DomainTool> mounts, every title via T['tab'].title ──
+    hub_file = {"Religion": "ReligionHub", "Science": "ScienceHub", "Education": "EducationHub",
+                "Law": "LawHub", "Care": "CareHub", "Employment": "EmploymentHub"}
+    for name, stem in hub_file.items():
+        src = (hubs / f"{stem}.tsx").read_text(encoding="utf-8")
+        d = domains[name]
+        forms = {tab for tab, (kind, _) in d["tools"].items() if kind == "form"}
+        assert f"const T = toolsFor('{d['route']}');" in src, stem
+        mounted = re.findall(r"<DomainTool\s+title=\{T\['([a-z-]+)'\]\.title\}", src)
+        assert sorted(mounted) == sorted(forms), (stem, mounted, sorted(forms))
+        assert src.count("<DomainTool") == len(forms), (stem, src.count("<DomainTool"), len(forms))
+        assert not re.search(r"<DomainTool\s+title=\"", src), f"{stem} types a tool title by hand"
+        for tab in d["tools"]:                                              # every registry tab is a real tab
+            assert f"setActiveTab('{tab}')" in src or f"['{tab}', " in src, (stem, tab)
+        if name != "Religion":                                             # the dead flagship tab is gone
+            assert "'qep'" not in src and "QEP" not in src, stem
+            assert "QEPDashboard" not in src and "QEPImmersiveTools" not in src, stem
+        else:
+            assert "setActiveTab('qep')" in src and "<QEPStudio" in src   # the REAL one stays
+    assert not (app_src / "components/QEPDashboard.tsx").exists()
+    assert not (app_src / "components/QEPImmersiveTools.tsx").exists()
+    for f in app_src.rglob("*.tsx"):                                       # imported nowhere (a comment may recall it)
+        src_f = f.read_text(encoding="utf-8")
+        assert "components/QEPDashboard'" not in src_f and "components/QEPImmersiveTools'" not in src_f, f
+    for name, d in domains.items():                                        # a custom surface's title is the registry's too
+        for tab, (kind, title) in d["tools"].items():
+            if kind == "custom":
+                hub_src = (hubs / f"{hub_file[name]}.tsx").read_text(encoding="utf-8")
+                assert f"T['{tab}'].title" in hub_src, (name, tab)
+                assert not re.search(r"(['\">])" + re.escape(title) + r"(['\"<])", hub_src), (name, tab, "typed by hand")
+    studio = (app_src / "components/employment/ApplicationStudio.tsx").read_text(encoding="utf-8")
+    assert "{title}</h3>" in studio and ">Application Studio</h3>" not in studio
+
+    # ── both front doors derive from the registry and type no number ──
+    front = (hubs / "DomainsHub.tsx").read_text(encoding="utf-8")
+    assert "from '../../lib/toolRegistry'" in front and "const TOTAL = TOOL_TOTAL;" in front
+    assert not re.search(r"tools: \d", front) and "blurb: '" not in front
+    assert "blurbOf(d.route)" in front and "toolsOf(d.route).length" in front
+    cat = (app_src / "pages/AIToolsCatalogue.tsx").read_text(encoding="utf-8")
+    assert "const DOMAINS: DomainTools[] = TOOL_REGISTRY;" in cat and "const TOTAL = TOOL_TOTAL;" in cat
+    assert "{t.title}" in cat and not re.search(r"\{ tab: '[a-z]+', name: '", cat)
+    assert "to={`${d.route}?tab=${t.tab}`}" in cat                       # each entry opens its real tab
+    # (refutation) the header claims refine/export only of the form tools, not of the surfaces or the flagship
+    assert "{FORMS} form tools whose output is" in cat and "each output is" not in cat
+    assert "every form tool's output is runnable" in front and "and is runnable, iteratively refinable" not in front
+
+    # ── the catalogue API: live is what a route serves; the six signature directories are legacy ──
+    from agentic_core.catalog import api as catalog
+    body = client.get("/api/v1/catalog/products").json()
+    products = body["products"]
+    assert body["count"] == len(products) >= 12 and all(p["status"] in ("live", "source", "legacy") for p in products)
+    assert body["counts"] == catalog.catalogue_counts(products)          # the API says the honest numbers itself
+    by_slug = {p["slug"]: p for p in products}
+    for slug in ("Care", "Education", "Employment", "Law", "Religion", "Science"):
+        p = by_slug[slug]
+        assert p["status"] == "legacy" and p["route"] is None and p["live"] is False, p
+        assert p["category"] == "Legacy archive" and "not a served product" in " ".join(p["features"]), p
+    for p in products:
+        assert p["live"] == (p["status"] == "live") == bool(p["route"]), p
+        if p["status"] == "source":
+            assert p["route"] is None, p
+    counts = catalog.catalogue_counts(products)
+    assert counts["registered"] == len(products) and counts["live"] + counts["source"] + counts["legacy"] == len(products)
+    assert 0 < counts["live"] < counts["registered"] and counts["legacy"] == 6, counts
+    assert set(catalog.LEGACY_ARCHIVES) == {"Care", "Education", "Employment", "Law", "Religion", "Science"}
+    assert not (set(catalog.LEGACY_ARCHIVES) & set(catalog.ROUTE_OVERRIDES)), "a legacy archive must never route"
+    # the SDK/source pointers open nothing: no route in any metadata.json is honoured as live without a served page
+    for p in products:
+        if p["status"] == "live":
+            assert p["route"].startswith("/"), p
+
+    # ── the page counts live only, badges legacy and source, and offers Open only for a served surface ──
+    page = (app_src / "pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
+    assert "{catalogProducts.filter(p => p.live).length} live products · {catalogProducts.length} registered directories" in page
+    assert "Live Products" not in page and "opens to a live surface" not in page
+    assert 'data-testid="catalog-legacy"' in page and "Legacy archive — not a served product" in page
+    assert 'data-testid="catalog-source"' in page
+    assert "{product.live && product.route && (" in page
+
+    # ── (refutation) every consumer of the catalogue builds, seeds, ranks and delivers only what a route serves ──
+    served = {p["slug"] for p in products if p["live"]}
+    unserved = {p["slug"] for p in products if not p["live"]}
+    assert catalog.served_products() == [p for p in products if p["live"]]
+    for rel, needle in (("agentic_core/api/marketplace.py", "products = served_products()"),
+                        ("agentic_core/catalog/bto.py", "selected = [p for p in asked if p.get(\"live\")]"),
+                        ("agentic_core/api/resource_fabric.py", "ps = served_products()"),
+                        ("agentic_core/api/resource_fabric.py", "[p[\"slug\"] for p in served_products()[:2]]"),
+                        ("agentic_core/api/transformation_orchestration.py", "for p in served_products()")):
+        assert needle in (root / rel).read_text(encoding="utf-8"), (rel, needle)
+    assert "list.filter((p: any) => p.live)" in (app_src / "pages/BTOCatalog.tsx").read_text(encoding="utf-8")
+    # Build-to-Order: a legacy archive or a source pointer is answered as what it is, never BUILT
+    b = client.post("/api/v1/bto/build", json={"entity_name": "w470", "product_resources": ["Care", "business_incubator"],
+                                              "objective": "x"}).json()
+    assert b["delivered_count"] == 0 and [x["status"] for x in b["built"]] == ["NOT_BUILT", "NOT_BUILT"], b
+    assert "legacy archive" in b["built"][0]["reason"] and "source pointer" in b["built"][1]["reason"]
+    c = client.post("/api/v1/bto/configure", json={"entity_name": "w470", "components": ["products"],
+                                                  "product_resources": ["Care", "capital_fund"]}).json()
+    assert c["resource_count"] == 1 and [x["slug"] for x in c["product_resources"]] == ["capital_fund"]
+    assert [x["slug"] for x in c["not_buildable"]] == ["Care"] and "legacy archive" in c["not_buildable"][0]["reason"]
+    comp = c["components"]["products"]
+    assert {p["slug"] for p in comp["catalog"]} == served and comp["counts"] == counts
+    assert {p["slug"] for p in comp["not_served"]} == unserved
+    # the marketplace's listings layer: no active catalogue-derived listing for an unserved directory, and a store
+    # seeded before W470 (the six archives as active listings routed to the hubs) is withdrawn at boot
+    from agentic_core.api import marketplace as mk
+    active = client.get("/api/v1/marketplace/listings").json()
+    active = active.get("listings", active) if isinstance(active, dict) else active
+    tagged = {t for l in active for t in (l.get("tags") or [])}
+    assert not (tagged & {s.lower() for s in unserved}), tagged & {s.lower() for s in unserved}
+    assert tagged & {s.lower() for s in served}
+    import json as _json2, time as _time2, uuid as _uuid2
+    stale = {"id": _uuid2.uuid4().hex[:12], "name": "Care Domain Signature Product", "description": "VSB-SIG-CARE Series",
+             "author": "Platform catalogue", "category": "Domain", "price_wst": 0.0, "tier": "Domain", "tags": ["care"],
+             "certified": False, "status": "active", "creator_id": "platform", "origin": "catalog", "route": "/care",
+             "sales_count": 0, "created_at": _time2.time(), "updated_at": _time2.time()}
+    sold = dict(stale, id=_uuid2.uuid4().hex[:12], tags=["law"], route="/law", sales_count=2)
+    for doc in (stale, sold):
+        (mk._LISTINGS_DIR / f"{doc['id']}.json").write_text(_json2.dumps(doc), encoding="utf-8")
+    try:
+        withdrawn = mk._retire_unserved_seeds()
+        assert "Care Domain Signature Product" in withdrawn
+        assert not (mk._LISTINGS_DIR / f"{stale['id']}.json").exists()
+        kept = _json2.loads((mk._LISTINGS_DIR / f"{sold['id']}.json").read_text(encoding="utf-8"))
+        assert kept["status"] == "draft" and kept["route"] == "" and "Withdrawn" in kept["description"]   # the receipt resolves
+        assert mk._retire_unserved_seeds() == []                                # settled: nothing left to withdraw
+        assert mk._seed_from_catalog() == 0                                    # the served listings are still there
+    finally:
+        for doc in (stale, sold):
+            (mk._LISTINGS_DIR / f"{doc['id']}.json").unlink(missing_ok=True)
+    # seeding an EMPTY store seeds the served entries only (the boot store above may have been seeded already)
+    real_dir = mk._LISTINGS_DIR
+    mk._LISTINGS_DIR = tmp_path / "w470_listings"
+    mk._LISTINGS_DIR.mkdir()
+    try:
+        assert mk._seed_from_catalog() == len(served)
+        seeded = {t for p in mk._LISTINGS_DIR.glob("*.json") for t in _json2.loads(p.read_text(encoding="utf-8"))["tags"]}
+        assert seeded == {s.lower() for s in served}, seeded
+    finally:
+        mk._LISTINGS_DIR = real_dir

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, Briefcase, History } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { QEPDashboard } from '../../components/QEPDashboard';
-import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { ApplicationStudio } from '../../components/employment/ApplicationStudio';
 import { DomainTool } from '../../components/DomainTool';
+import { toolsFor } from '../../lib/toolRegistry';
 
 export const EmploymentHub: React.FC = () => {
+  const T = toolsFor('/employment');   // W470 — the one tool registry the front doors count from
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   // W454 (P1.6, ledger 1.6) — the hub opens on the CV tools; the Application Studio (whose job search is
   // AI-synthesised examples, not a live board) is one click away and says what it is.
@@ -59,28 +59,20 @@ export const EmploymentHub: React.FC = () => {
                <span className="truncate">Employment Engines</span>
             </h3>
             <div className="flex gap-2 @[480px]:gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 max-w-full overflow-x-auto custom-scrollbar">
-               {([['studio', 'Application Studio'], ['cv', 'CV Tailor'], ['cover', 'Cover Letter'], ['application', 'Application Form'], ['interview', 'Interview Prep'], ['path', 'Career Path'], ['salary', 'Salary Negotiation'], ['qep', 'QEP Flagship']] as [string, string][]).map(([id, label]) => (
+               {([['studio', T['studio'].title], ['cv', 'CV Tailor'], ['cover', 'Cover Letter'], ['application', 'Application Form'], ['interview', 'Interview Prep'], ['path', 'Career Path'], ['salary', 'Salary Negotiation']] as [string, string][]).map(([id, label]) => (
                  <button key={id} type="button" onClick={() => setActiveTab(id)} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === id ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>{label}</button>
                ))}
             </div>
          </div>
 
          <div className="space-y-12">
-            {activeTab === 'qep' ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-                 <QEPDashboard domain="employment" />
-                 <div className="pt-12 border-t border-white/5">
-                    <h3 className="text-xl @[480px]:text-2xl @[680px]:text-3xl font-black text-white mb-10 uppercase tracking-tighter break-words">Virtual Skill Garden</h3>
-                    <QEPImmersiveTools domain="employment" />
-                 </div>
-              </motion.div>
-            ) : activeTab === 'studio' ? (
+            {activeTab === 'studio' ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                 <ApplicationStudio />
+                 <ApplicationStudio title={T['studio'].title} />
               </motion.div>
             ) : activeTab === 'cv' ? (
               <DomainTool
-                title="CV / Résumé Tailor"
+                title={T['cv'].title}
                 description={<>Tailor your CV to a target role — Workstation's <span className="text-aura">own</span> AI rewrites it as achievement-led, ATS-friendly bullets, in-house.</>}
                 endpoint="/api/v1/employment/cv"
                 resultKey="cv"
@@ -94,7 +86,7 @@ export const EmploymentHub: React.FC = () => {
               />
             ) : activeTab === 'cover' ? (
               <DomainTool
-                title="Cover Letter"
+                title={T['cover'].title}
                 description={<>Draft a focused, tailored cover letter — Workstation's <span className="text-aura">own</span> AI, in-house, no generic filler.</>}
                 endpoint="/api/v1/employment/cover-letter"
                 resultKey="cover_letter"
@@ -108,7 +100,7 @@ export const EmploymentHub: React.FC = () => {
               />
             ) : activeTab === 'application' ? (
               <DomainTool
-                title="Application Form & Supporting Statement"
+                title={T['application'].title}
                 description={<>Paste the person specification and your experience — Workstation's <span className="text-aura">own</span> AI drafts a criterion-by-criterion supporting statement and answers your form questions, in-house, never inventing experience.</>}
                 endpoint="/api/v1/employment/application"
                 resultKey="statement"
@@ -124,7 +116,7 @@ export const EmploymentHub: React.FC = () => {
               />
             ) : activeTab === 'interview' ? (
               <DomainTool
-                title="Interview Preparation"
+                title={T['interview'].title}
                 description={<>Prepare for an interview — Workstation's <span className="text-aura">own</span> AI gives likely questions + STAR frameworks, in-house.</>}
                 endpoint="/api/v1/employment/interview-prep"
                 resultKey="prep"
@@ -137,7 +129,7 @@ export const EmploymentHub: React.FC = () => {
               />
             ) : activeTab === 'path' ? (
               <DomainTool
-                title="Career Path & Skills Gap"
+                title={T['path'].title}
                 description={<>Map a development roadmap from your current to your target role — Workstation's <span className="text-aura">own</span> AI, in-house, with an honest assessment.</>}
                 endpoint="/api/v1/employment/career-path"
                 resultKey="roadmap"
@@ -151,7 +143,7 @@ export const EmploymentHub: React.FC = () => {
               />
             ) : activeTab === 'salary' ? (
               <DomainTool
-                title="Salary & Offer Negotiation"
+                title={T['salary'].title}
                 description={<>Build a compensation strategy — Workstation's <span className="text-aura">own</span> AI gives market positioning, a target range, negotiation scripts, non-salary levers and BATNA, in-house. Reasoned guidance, not live salary data.</>}
                 endpoint="/api/v1/employment/salary-negotiation"
                 resultKey="plan"

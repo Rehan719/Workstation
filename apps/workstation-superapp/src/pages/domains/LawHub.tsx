@@ -5,13 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, Landmark, History, ScrollText, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { QEPDashboard } from '../../components/QEPDashboard';
-import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
+import { toolsFor } from '../../lib/toolRegistry';
 
 export const LawHub: React.FC = () => {
+  const T = toolsFor('/law');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'compliance');
@@ -63,22 +62,13 @@ export const LawHub: React.FC = () => {
                <button type="button" onClick={() => setActiveTab('compliance')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'compliance' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Compliance</button>
                <button type="button" onClick={() => setActiveTab('draft')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'draft' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Draft</button>
                <button type="button" onClick={() => setActiveTab('research')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'research' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Research</button>
-               <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
 
          <div className="space-y-12">
-            {activeTab === 'qep' ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-                 <QEPDashboard domain="law" />
-                 <div className="pt-12 border-t border-white/5">
-                    <h3 className="text-3xl font-black text-white mb-10 uppercase tracking-tighter">Constitutional Simulation</h3>
-                    <QEPImmersiveTools domain="law" />
-                 </div>
-              </motion.div>
-            ) : activeTab === 'research' ? (
+            {activeTab === 'research' ? (
               <DomainTool
-                title="Legal Research (IRAC)"
+                title={T['research'].title}
                 description={<>Ask a legal question — Workstation's <span className="text-aura">own</span> AI researches it via the IRAC method (Issue · Relevant Law · Application · Conclusion) with practical steps, risks and next actions, in-house. Informational only — not legal advice.</>}
                 endpoint="/api/v1/law/research"
                 resultKey="analysis"
@@ -92,7 +82,7 @@ export const LawHub: React.FC = () => {
               />
             ) : activeTab === 'draft' ? (
               <DomainTool
-                title="Legal Document Drafter"
+                title={T['draft'].title}
                 description={<>Pick a template — Workstation's <span className="text-aura">own</span> AI drafts the full document (clause-numbered Markdown) for your parties and jurisdiction, in-house.</>}
                 endpoint="/api/v1/law/generate"
                 resultKey="document"
@@ -107,7 +97,7 @@ export const LawHub: React.FC = () => {
             ) : (
               <div className="space-y-5">
                  <div>
-                    <h4 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2"><ScrollText size={18} className="text-aura" /> Legal Document Analyser</h4>
+                    <h4 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2"><ScrollText size={18} className="text-aura" /> {T['compliance'].title}</h4>
                     <p className="text-[11px] text-slate-500 font-bold mt-1 max-w-2xl leading-relaxed">Paste a contract or legal document — Workstation's <span className="text-aura">own</span> AI runs a structured England &amp; Wales analysis (key clauses, risks, missing provisions, recommendations) in-house.</p>
                  </div>
                  <textarea value={docText} onChange={e => setDocText(e.target.value)} rows={6}

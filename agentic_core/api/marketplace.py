@@ -182,8 +182,49 @@ def _retire_invented_seeds() -> list[str]:
     return removed
 
 
+def _retire_unserved_seeds() -> list[str]:
+    """W470 — a catalogue-derived listing for a directory the catalogue no longer serves (a legacy
+    signature-product archive, a source pointer) is withdrawn: a store seeded before W470 carried the six
+    archives as active listings with category 'Domain' and a route to the hub, under a catalogue grid that
+    badges the same directory 'legacy archive'. As with the fabricated seeds, one with a recorded sale is kept
+    for its receipt, moved to draft and told what it is."""
+    try:
+        from agentic_core.catalog.api import served_products
+        served = {str(p.get("slug", "")).lower() for p in served_products()}
+    except Exception:                                        # a catalogue read must never block boot
+        return []
+    removed, kept = [], []
+    for path in _LISTINGS_DIR.glob("*.json"):
+        doc = _read_doc(path)
+        if doc is None or doc.get("origin") != "catalog":
+            continue
+        slug = next((t for t in (doc.get("tags") or []) if isinstance(t, str)), "")
+        if slug in served:
+            continue
+        if doc.get("sales_count"):
+            if doc.get("status") != "draft" or doc.get("route"):
+                doc["status"], doc["route"], doc["certified"] = "draft", "", False
+                doc["description"] = ((doc.get("description") or "").rstrip()
+                                      + " [Withdrawn: the catalogue no longer serves this directory — it is a legacy "
+                                        "archive or a source pointer, not a product. Retained for its recorded sale.]").strip()
+                doc["updated_at"] = time.time()
+                atomic_write_json(path, doc)
+            kept.append(doc.get("name", "?"))
+            continue
+        try:
+            path.unlink()
+            removed.append(doc.get("name", "?"))
+        except OSError:
+            pass
+    if removed or kept:
+        import logging
+        logging.getLogger(__name__).warning("marketplace: withdrew %d catalogue listing(s) for unserved directories "
+                                            "(%d kept as draft for their sales): %s", len(removed), len(kept), removed + kept)
+    return removed
+
+
 def _seed_from_catalog() -> int:
-    """Seed listings from the REAL registered product catalogue.
+    """Seed listings from the REAL registered product catalogue — only the entries a route serves (W470).
 
     Every field here is a fact about something that exists: name, category and tier come from the
     product the catalogue actually serves, and `route` is the real in-app route. What is NOT known is
@@ -199,12 +240,12 @@ def _seed_from_catalog() -> int:
         if doc is not None and doc.get("origin") == "catalog":
             return 0
     try:
-        from agentic_core.catalog.api import list_products   # local: avoids an import cycle at boot
-        products = list_products()
+        from agentic_core.catalog.api import served_products   # local: avoids an import cycle at boot
+        products = served_products()
     except Exception:                                        # a catalogue read must never block boot
         return 0
     n = 0
-    for prod in products:
+    for prod in products:                                    # served only: never a legacy archive or a source pointer
         lid = uuid.uuid4().hex[:12]
         listing = Listing(
             id=lid,
@@ -229,6 +270,7 @@ def _seed_from_catalog() -> int:
 
 
 _retire_invented_seeds()
+_retire_unserved_seeds()
 _seed_from_catalog()
 
 

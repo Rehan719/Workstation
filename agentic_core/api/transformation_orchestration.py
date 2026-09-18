@@ -209,11 +209,11 @@ async def orchestrate(req: OrchestrateRequest):
     biomimetic = [r["name"] for r in registry if r.get("resource_class") == "organism_system"]
     # Products/Services catalogue = what Build-to-Order actually delivers (the REAL platform catalogue).
     try:
-        from agentic_core.catalog.api import list_products
+        from agentic_core.catalog.api import served_products   # W470 — what Build-to-Order can deliver
         products_services_catalogue = [
             {"name": p.get("name") or p.get("title") or p.get("slug"), "slug": p.get("slug"),
              "tagline": p.get("tagline") or p.get("description", "")[:120]}
-            for p in list_products()
+            for p in served_products()
         ]
     except Exception:
         products_services_catalogue = []

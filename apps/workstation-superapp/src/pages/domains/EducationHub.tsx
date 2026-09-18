@@ -3,13 +3,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, GraduationCap, History } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { QEPDashboard } from '../../components/QEPDashboard';
-import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
+import { toolsFor } from '../../lib/toolRegistry';
 
 export const EducationHub: React.FC = () => {
+  const T = toolsFor('/education');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'lessons');
@@ -45,22 +44,13 @@ export const EducationHub: React.FC = () => {
                <button type="button" onClick={() => setActiveTab('curriculum')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'curriculum' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Curriculum</button>
                <button type="button" onClick={() => setActiveTab('assessment')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'assessment' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Assessment</button>
                <button type="button" onClick={() => setActiveTab('feedback')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'feedback' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Marking</button>
-               <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
 
          <div className="space-y-12">
-            {activeTab === 'qep' ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-                 <QEPDashboard domain="education" />
-                 <div className="pt-12 border-t border-white/5">
-                    <h3 className="text-3xl font-black text-white mb-10 uppercase tracking-tighter">Universal Aula VR</h3>
-                    <QEPImmersiveTools domain="education" />
-                 </div>
-              </motion.div>
-            ) : activeTab === 'curriculum' ? (
+            {activeTab === 'curriculum' ? (
               <DomainTool
-                title="Curriculum Designer"
+                title={T['curriculum'].title}
                 description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI builds a structured, framework-aligned curriculum (week-by-week plan, objectives, assessment), in-house.</>}
                 endpoint="/api/v1/education/curriculum"
                 resultKey="curriculum"
@@ -75,7 +65,7 @@ export const EducationHub: React.FC = () => {
               />
             ) : activeTab === 'assessment' ? (
               <DomainTool
-                title="Assessment Builder"
+                title={T['assessment'].title}
                 description={<>Generate a ready-to-use assessment — Workstation's <span className="text-highlight">own</span> AI builds quizzes, rubrics, exams, project briefs or formative checks with mark schemes, in-house.</>}
                 endpoint="/api/v1/education/assessment"
                 resultKey="assessment"
@@ -90,7 +80,7 @@ export const EducationHub: React.FC = () => {
               />
             ) : activeTab === 'feedback' ? (
               <DomainTool
-                title="Marking & Feedback"
+                title={T['feedback'].title}
                 description={<>Paste a student's work — Workstation's <span className="text-highlight">own</span> AI marks it against the task and any rubric and returns constructive, actionable feedback with an indicative level, in-house. An aid for your judgement — indicative only, never a final grade.</>}
                 endpoint="/api/v1/education/feedback"
                 resultKey="feedback"
@@ -106,7 +96,7 @@ export const EducationHub: React.FC = () => {
               />
             ) : (
               <DomainTool
-                title="Lesson Plan Generator"
+                title={T['lessons'].title}
                 description={<>Describe a lesson — Workstation's <span className="text-highlight">own</span> AI produces a classroom-ready plan (objectives, sequence, differentiation, assessment), in-house.</>}
                 endpoint="/api/v1/education/lesson-plan"
                 resultKey="lesson_plan"

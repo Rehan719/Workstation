@@ -6304,3 +6304,71 @@ repeated on its own, with a tripwire that stops it if a plan doc changes outside
 - New guard: test_w469_the_plan_carries_every_followup_and_keeps_itself_current. Probe: scripts/_w469_probe.mjs (4/4).
 
 Suite: 381 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 396 items from 357 test functions).
+
+### W470 — P1.13 Catalogue honesty: one tool registry, no dead flagship tab, a marketplace that counts what is served
+
+The first round by Claude Fable 5.1, from the W469 handover (`docs/HANDOVER_W470.md`).
+
+**What was wrong** (ledger R5.6, R5.8 — both reproduced by the assessor and the refuter in W446).
+- **Three hand-kept lists.** DomainsHub typed 23 tools, /ai-tools listed 18, the hubs mounted 24 forms. The catalogue
+  omitted hadith study, experiment design, marking, safeguarding, legal research and salary negotiation; the DomainsHub
+  blurbs omitted five of them too. A W423 guard held the DomainsHub numbers to the mounts, and nothing held the list.
+- **A dead tab under a flagship name.** Science, Law, Education, Care and Employment each showed a 'QEP Flagship' tab
+  that rendered four engine cards ('not wired to a backend yet — nothing was run') and two 'planned' tools. Honest on
+  click, dead by design, and contrary to the Owner's directive that QEP lives in Religion.
+- **'20 Live Products'.** The marketplace called every directory under products/ a live product: six were the
+  'Domain Signature Product' literals whose only substance is an archived directory with a manifest self-declaring
+  PRODUCTION_READY and WCAG 2.2 AAA (served by no route; Open took you to the domain hub), and nine were source-file
+  pointers. Its own copy said every entry 'opens to a live surface'.
+
+**What changed.**
+- **One registry.** `apps/workstation-superapp/src/lib/toolRegistry.ts`: 26 entries in six domains — 23 `<DomainTool>`
+  forms, two hand-built surfaces (Law's analyser, the Employment Application Studio) and the QEP flagship, in Religion
+  only. Every hub mounts its titles from it (`title={T['tab'].title}`); DomainsHub counts, blurbs and totals from it;
+  /ai-tools lists, describes and deep-links from it (`?tab=`), with a `surface` / `flagship` chip where the entry is
+  not a form.
+- **The dead tab is gone** from the five hubs, with `QEPDashboard.tsx` and `QEPImmersiveTools.tsx` (rendered nowhere
+  else; ReligionHub imported the second and never used it). ReligionHub's real QEP tab (QEPStudio) stays.
+- **The catalogue says what each directory is.** `status`: live (a route serves it), source (a pointer, nothing
+  served), legacy (the six signature-product archives — category 'Legacy archive', route None, features saying
+  'not a served product'); `live` on every entry; `counts` on the response (registered 20 · live 5 · source 9 ·
+  legacy 6). The marketplace header counts live only and names the registered total; legacy and source entries are
+  badged; Open appears only for a live entry.
+
+**Guards.** `test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_tabs` parses the registry and
+every hub: form count equals mounts, every mount reads its title from the registry, every registry tab is a real hub
+tab, no hub types a title, no front door types a number, the flagship exists once and in Religion, the two components
+are gone; the API's statuses, the legacy set, the counts, and the page's needles. `test_w423` now reads the registry
+instead of the deleted `tools: N` literals.
+
+**Refuted (own diff), one pass in three isolated worktrees — four confirmed, all fixed and guarded.** The catalogue
+API said *legacy*, but every other consumer of `list_products()` still treated those entries as products: the
+marketplace seeded the six archives as active tradeable listings (and a store seeded before W470 kept them with
+category 'Domain' and a route to the hub, under a grid badging the same directory legacy); Build-to-Order reported a
+legacy archive BUILT from the brief 'not a served product', `/bto/configure` blueprinted it, the resource fabric ranked
+it, the transformation orchestrator listed it as deliverable; the /ai-tools header claimed refine/export of the three
+non-form entries; the Employment studio title was still typed by hand. The class was fixed once: `served_products()`
+in the catalogue module is the only list a consumer may seed, build, rank or deliver from — the marketplace seeds
+served entries only and withdraws unserved catalogue listings at boot (one with a sale is kept as draft for its
+receipt), Build-to-Order answers NOT_BUILT with the reason, configure returns `not_buildable`, the fabric and the
+orchestrator rank and list served entries — and the front-door copy scopes its claim to the form tools.
+**Process.** The refuters ran in three detached `git worktree`s made from a `git stash create` snapshot (the W469
+lesson); `git status` and the snapshot diff were checked before any finding was acted on — nothing moved.
+Three edits went through a heredoc and mangled escapes (twice in the guard, once in the probe); each was caught by
+the parse check or the probe and redone with the Edit tool, as the handover said.
+
+**Broken 29 ways** (each blind alone, guards run, byte-restored); every one fails, none stays green. Six were
+vacuous on first run and were fixed by tightening the guard, not the blind: a commented-out registry entry still parsed
+(strip `//` lines), a redundant ternary duplicated data the overrides already held (removed), the seed rule masked the
+seeding blind (seed an empty store), a second `T['studio'].title` reference satisfied a needle (assert no typed copy),
+and two text needles survived because the import line kept the word (exact-line needles).
+**Register.** FU-071 (nine source-pointer directories: serve or retire, P2.4), FU-072 (the six legacy directories
+archived out of products/, P2.4), FU-073 (`done --hand-to` merged P1.13's route into P1.16's at the earliest position,
+which lifted P1.16's broad hygiene prefixes to the first route — a W469 rule's side effect, caught by running it; P1.16
+was put back last, P1.13's area given to the scatter item P2.4, and the guard now holds P1.16 last).
+Probe: `scripts/_w470_probe.mjs` (5/5 on a fresh backend at :8079).
+
+Suite: 381 passed · 15 skipped · 1 failed (full run on the final tree, isolated DATA_DIR, 37 min; 397 items
+from 358 test functions). The failure was test_w456's needle for the halal tool's typed title, which W470 replaced with the
+registry mount; the needle was retargeted and re-run green together with the W470, W423, W462 and W469 guards. The full
+suite was not re-run for that test-only edit.

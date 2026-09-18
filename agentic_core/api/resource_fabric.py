@@ -690,8 +690,8 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
                     "immune_threat": threat,
                     "output": f"Governance: tier {tier} → {verdict} (organism health {round(float(health), 3)}, immune {threat})."}
         if rid == "products_catalogue":
-            from agentic_core.catalog.api import list_products
-            ps = list_products()
+            from agentic_core.catalog.api import list_products, served_products
+            ps = served_products()                           # W470 — never rank a legacy archive as a match
             obj_tokens = {w for w in str(objective).lower().replace(",", " ").split() if len(w) > 3}
             def _score(p):
                 hay = (str(p.get("name", "")) + " " + str(p.get("category", "")) + " "
@@ -701,12 +701,12 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             top = [{"slug": p["slug"], "name": p["name"], "tier": p.get("tier"), "match": _score(p)}
                    for p in ranked[:5]]
             return {"resource": "products_catalogue", "ran": "/api/v1/catalog/products",
-                    "total_products": len(ps), "top_matches": top,
+                    "total_products": len(ps), "registered_directories": len(list_products()), "top_matches": top,
                     "output": json.dumps(top, default=str)[:400]}
         if rid == "build_to_order":
             from agentic_core.catalog.bto import configure_bto, BTOConfigureRequest
-            from agentic_core.catalog.api import list_products
-            slugs = _csv(cfg.get("product_resources")) or [p["slug"] for p in list_products()[:2]]
+            from agentic_core.catalog.api import served_products
+            slugs = _csv(cfg.get("product_resources")) or [p["slug"] for p in served_products()[:2]]   # W470
             comps = _csv(cfg.get("components")) or ["vsb", "csuite"]
             bp = await configure_bto(BTOConfigureRequest(
                 entity_name=str(cfg.get("entity_name") or objective)[:80],

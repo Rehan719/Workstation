@@ -41,7 +41,7 @@
 > `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task riding the plan item
 > that owns its area, or OWNER; W469 retired NEXT and generates PLAN NOW; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
 > primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
-> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W469) ·
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W470) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -108,8 +108,8 @@ B — CANONICAL REALM SET: four user-type Realms (Enterprise · Learning · Deve
     DOMAINS as realms into the projects API (ledger R5.5) — same plan item.
 
 C — WHAT TO BUILD NEXT: the reach backlog is COMPLETE. The next work is <delivery_plan> P1, in
-    order — the truth defects the audit found on reached, used surfaces. P1.1–P1.12 are DONE
-    (W449–W460); what comes next is P1.13, P1.14, P1.15 and P1.16 — the register's rows ride the items
+    order — the truth defects the audit found on reached, used surfaces. P1.1–P1.13 are DONE
+    (W449–W460, W470); what comes next is P1.14, P1.15 and P1.16 — the register's rows ride the items
     that own their areas (W469). PLAN NOW, in WHERE THE PLAN STANDS, is generated from the plan and the
     register and says what is next. The 67-op scatter is P2.4.
 
@@ -155,7 +155,7 @@ Work in this order. It is not effort order — it is "how much a real person is 
 
   TIER 1 — TRUTH DEFECTS. The system tells a user something untrue, or certifies what it could
            not assess. THE AUDIT FOUND FOURTEEN, ALL ON REACHED SURFACES — they are <delivery_plan>
-           P1. TWELVE ARE CLOSED (P1.1–P1.12, W449–W460); P1.13 and P1.14 remain, with P1.15 and P1.16
+           P1. THIRTEEN ARE CLOSED (P1.1–P1.13, W449–W460, W470); P1.14 remains, with P1.15 and P1.16
            added W469 to carry the follow-up register's store and hygiene rows, and all four come before any
            P2–P4 item. The pattern behind most of them: a gate,
            badge or chip that CANNOT FAIL on the floor — the configuration CI runs and any box
@@ -180,7 +180,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W469 (469 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W470 (470 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -213,7 +213,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W469: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W470: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -244,7 +244,10 @@ recognised revenue once — consumed before it runs, given back only when nothin
 refused rather than overwritten when unreadable (W467); then a VSB ledger that cannot be read whole refused by every
 writer and said so on every surface, never replaced by empty books (W468); then, on the Owner's word, the
 plan made to carry every follow-up and keep itself current — NEXT retired, routes, PLAN NOW live (W469).
-The first twelve Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
+Then, after the W469 handover to Claude Fable 5.1, P1.13 — the catalogue made honest: one tool registry the
+hubs mount from and both front doors count from, the dead flagship tab gone from five hubs, and the
+marketplace counting only what a route serves (W470).
+The first thirteen Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -617,12 +620,12 @@ half of P2 depend on; 1.3 and 1.5 are where users land. P2 follows (P2.1 unblock
 content that P3 builds on). P3 items marked OWNER RULING are put to the Owner with evidence at
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
-WHERE THE PLAN STANDS (updated W469, 2026-09-18 — every round that closes an item or runs between
+WHERE THE PLAN STANDS (updated W470, 2026-09-18 — every round that closes an item or runs between
 items updates this block in the same commit. PLAN NOW, below, is generated from the plan's items and the
 register and checked by the suite (W469); the DONE lines are history, kept true by hand. Never start a line
 here with one space and an item id — that is read as a plan item and fails the suite).
-  DONE — P1.1 to P1.12, in order, W449–W460: each is marked below with what it DELIVERED; P1.1–P1.5,
-    P1.7, P1.8, P1.11 and P1.12 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
+  DONE — P1.1 to P1.13, in order, W449–W460 and W470: each is marked below with what it DELIVERED; P1.1–P1.5,
+    P1.7, P1.8, P1.11, P1.12 and P1.13 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
     leftover). Only P1.11's and P1.12's leftovers were back-filled into the register (FU-005…FU-014);
     since W462 (V6) a round registers what it leaves in the same commit.
   DONE BETWEEN ITEMS — rounds the plan did not list, recorded here so the plan reads whole:
@@ -683,13 +686,12 @@ here with one space and an item id — that is read as a plan item and fails the
 <!-- plannow:begin (generated by scripts/followups.py render - never edit by hand) -->
 PLAN NOW — generated from the delivery plan's items and docs/FOLLOWUPS.json by scripts/followups.py on
 every register change (add · close · drop · reslot · route · done · render); never edit between the markers.
-  Next: P1.13 Catalogue honesty — no follow-ups ride it.
-  Then, in order (the follow-ups riding each): P1.14 0 · P1.15 11 · P1.16 12 · P2.1 0 · P2.2 0 · P2.3 0 ·
-    P2.4 0 · P2.5 0 · P2.6 9 · P2.7 1 · P2.8 3 · P2.9 18 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 ·
-    P3.5 0 · P3.6 0 · P3.7 0 · P3.8 0 · P3.9 0 · P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 ·
-    P4.5 0 · P4.6 0
-  Done: 12 of 43 items — P1 12/16 · P2 0/9 · P3 0/12 · P4 0/6.
-  Follow-ups: 54 open — 54 ride a plan item (0 high), 0 unscheduled, 0 awaiting the Owner; 16 done, 0 dropped.
+  Next: P1.14 Board pack + Chief's Opening honesty — no follow-ups ride it.
+  Then, in order (the follow-ups riding each): P1.15 11 · P1.16 13 · P2.1 0 · P2.2 0 · P2.3 0 · P2.4 2 ·
+    P2.5 0 · P2.6 9 · P2.7 1 · P2.8 3 · P2.9 18 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 ·
+    P3.6 0 · P3.7 0 · P3.8 0 · P3.9 0 · P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
+  Done: 13 of 43 items — P1 13/16 · P2 0/9 · P3 0/12 · P4 0/6.
+  Follow-ups: 57 open — 57 ride a plan item (0 high), 0 unscheduled, 0 awaiting the Owner; 16 done, 0 dropped.
 <!-- plannow:end -->
   WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
     rulings, not register rows).
@@ -700,7 +702,7 @@ the same commit (python scripts/followups.py add routes it to the plan item that
 rides the next open item) or slotted OWNER (waits on an Owner decision; never scheduled). A round that
 finishes an item marks it with python scripts/followups.py done P1.13 --by W### — its rows move along the
 routes or are closed first; the suite fails on a row left on a finished item.
-Open 54 (54 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 16 · dropped 0.
+Open 57 (57 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 16 · dropped 0.
   P1.15 — Stores that refuse, never replace — the class-kill
     FU-042 [medium] The constitutional ledger's chain is replaced when its file cannot be read — UEGLogger._read is tolerant (ueg.py:136-141): one log call on a chain file with a BOM or a parse failure replaced 5 nodes with 1 (reproduced) — the append-only, hash-chained audit trail every governance claim cites is silently restarted. Fix: a strict read in the writer that refuses (and reports the refusal to the caller, whose ueg_logged then reads false) rather than starting a new chain over the old one. (found W466 pre-audit of FU-023/FU-022 (reproduced))
     FU-049 [medium] An unreadable compliance-history file lifts every FAIL hold — living_vsbs._latest_screen and list_living read vsb_compliance_history.json with load_json_tolerant: a file with a BOM (or one that does not parse) reads as {}, so operate_vsb sees no FAIL screen and runs distribution cycles for entities whose latest screen FAILED, and the roster shows them never screened. Since W468 a visit that raises also drops a compliance_fail_hold (reaching the cycle is taken as proof the screen is not FAIL), which is only true while the history reads. Fix: a strict read; an unreadable history holds every entity whose screen cannot be known. (found W468 second refutation (reproduced))
@@ -718,6 +720,7 @@ Open 54 (54 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 
     FU-004 [medium] The compliance mandates docs claim ENFORCED on a file W460 deleted — docs/compliance/MANDATES.md and MANDATES_FINAL.md list 'GaaS-Validated Mutations — ENFORCED' in packages/shared/gaas.ts, which never validated anything and no longer exists; the other ENFORCED rows need the same reading (found W460 refutation (ruled out of that round's scope))
     FU-025 [medium] test_v191_evolution_approvals_route_through_change_control is order-dependent — it passes alone and in the full suite order but fails after the organism-status tests (the same -k selection fails at b97e38e7): its LOW proposal is only auto-approved when composite health is at least 0.6, and an earlier test leaves the organism less healthy, so the approval stays under_change_control and the re-approve answer is 'Already with the Change Control Agency.' — the same class as FU-003 (found W464 (found in passing, reproduced at HEAD))
     FU-026 [medium] config/paths.py resolves BASE_DIR one level above the repository — BASE_DIR = Path(__file__).resolve().parent.parent.parent is the repo's parent (C:/Users/rehan), so without WORKSTATION_DATA_DIR the live MEMORY_FILE, INTERACTIONS_DB, L7 registry, meeting log and chroma store live in <repo-parent>/data and ensure_dirs() creates logs/genome/models directories there at import (ai/memory.py, ai/logger.py, v138 ceo, synthesis, ingestion, qep_flagship import it). Fixing the path relocates the live AI memory store: migrate it deliberately (copy, verify, switch), never move it silently (found W464 genome_engine audit (read; paths confirmed))
+    FU-073 [medium] A done --hand-to merge lifts the taker's own broad matchers to the handed route's position — merge_routes (W469 refutation 2) places the merged route at the EARLIEST position of the routes merged so the handed area keeps its precedence — but the taker's original matchers move with it: done P1.13 --hand-to P1.16 put P1.16's broad prefixes (integration_tests/, docs/, …) at position 1, ahead of every specific route, so a docs+economy row would have gone to hygiene instead of P2.9. W470 re-added P1.16 last by hand and gave P1.13's area to P2.4. Fix: keep the taker's route where it was and carry only the handed matchers forward — either a second route for the same item marked handed_from, or a per-matcher position; and check() should refuse a merge that would move a route holding a directory prefix broader than the handed one ahead of any other route. (found W470 (found by running done P1.13 --hand-to P1.16))
     FU-011 [low] Command Center still carries hard-coded status text — 'in WORK mode for 4 hours', '3D Holographic Engine — Loading...' and 'Real-time stream initializing via libp2p...' are literals nothing measures (not compliance claims, so outside P1.12); no plan item covers packages/ui literals (P2.4's scatter is unreached backend operations) (found W460 audit (P1.12))
     FU-027 [low] MANDATES.md certifies a 1127-article genome that does not exist — docs/compliance/MANDATES.md and MANDATES_FINAL.md mark '1127-Article Genome' VERIFIED, 'seeded in genome/constitution.work and Merkle-DAG'; no such file exists and the genome engine's seed holds 3 articles — a false VERIFIED claim beside FU-004's false ENFORCED rows (found W464 genome_engine audit (read))
     FU-028 [low] genome_engine's self-healing cycle would ratify a fixed template, and its validator reads a CWD-relative file at import — GenomeMutationWorkflow.run_self_healing_cycle applies ConstitutionalAI.generate_amendment's fixed template with authorized=True (unreachable today only because the validator's PQC rule refuses its context), and validator.py builds validator_l1 at import from the CWD-relative genome/constitution.work, which the engine no longer writes; both stay unwired (the Owner kept the module unwired, W464) (found W464 genome_engine audit (read))
@@ -726,6 +729,9 @@ Open 54 (54 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 
     FU-068 [low] reslot --gate silently ignores --slot — reslot FU-007 --gate --slot P2.1 slots the row OWNER and drops the --slot without a word. Fix: refuse --slot with --gate, or say it was ignored. (found W469 own review)
     FU-069 [low] A plain done word in a plan item's first line reads as a malformed done marker — plan_items flags malformed_done when _DONE_MENTION (a check mark, or the word done not followed by when) appears anywhere in the rest of an item's first line, so a new item whose text says, for example, 'counted as done only when verified' or 'not done by the floor' fails check as if its marker were malformed, and mark_done refuses it. Fix: look for a done marker only right after the id and the bracket, not in the prose. (found W469 own review)
     FU-070 [low] Plan item texts keep hand-written rider lists that drift from the register — P2.6's text says register rows FU-005, FU-006 and FU-007 ride it; since W469 nine do. Other items name their riders by hand too. Fix: item texts point at PLAN NOW and the rendered schedule instead of listing rows, or check() compares any FU ids an item names with the rows riding it. (found W469 second refutation (refuted as a W469 defect, real as drift))
+  P2.4 — The scatter: 67 ops in 38 clusters, 3–4 per round, audit-before-wire, retire freely
+    FU-071 [low] Nine source-pointer product directories are still listed as products of a kind — The catalogue now marks them status source ('a pointer, nothing served yet') and no consumer builds from them, but products/ still holds nine metadata.json directories (business_incubator, cognitive_scraper, gse, molecular_sdk, nanophotonic_navigation, scraping_suite, uviap, mjm-intelligence-engine, signature-product-suite) whose only substance is a pointer at SDK source. Fix: for each, either serve it (a route and a real page) or retire the directory; the scatter item decides which, per the reach audit. (found W470)
+    FU-072 [low] The six legacy signature-product directories still sit in products/ with self-declaring manifests — products/Care … products/Science each carry a manifest.json self-declaring PRODUCTION_READY, WCAG 2.2 AAA and nine injection formats that nothing serves; W470 lists them as legacy archives and routes nothing to them, but the directories remain where a reader takes them for products. Fix: move them to _archive/products/ (LEGACY_ARCHIVES then empties) and keep one line in the catalogue saying they were archived. (found W470)
   P2.6 — The perimeter and the gate
     FU-005 [medium] The /api/v1/swarm router carries no auth dependency — agentic_core/api/swarm.py has zero Depends — the org cascade (POST /cascade), CEO delegation (POST /delegate), proposed-catalogue curation and the run histories are callable by anyone when AUTH_ENABLED is on; P2.6 names 'swarm' among its routers, this row pins the routes (found W460 audit (P1.12))
     FU-006 [medium] The org cascade's governance verdict gates a constant string, not the delivery — swarm.py's _attest returns a fixed attestation sentence, so 'gov: allowed' can never reflect the delivered content; W460 relabelled the chip 'intent only' — the real fix is gating the delivery itself (found W460 audit (P1.12))
@@ -958,10 +964,29 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; n
       status literals (FU-011) (both ride P1.16 since W469; they were NEXT).
       SPLIT OUT OF THIS AUDIT AND DONE: W461 — transformation stage verification honest (register
       FU-001; guard test_w461_transformation_validation_is_honest; probe scripts/_w461_probe.mjs).
- P1.13 [1.13 · R5.6 R5.8] Catalogue honesty. Marketplace counts only routed entries as live; the six Domain
+ P1.13 ✅ DONE W470 [1.13 · R5.6 R5.8] Catalogue honesty. Marketplace counts only routed entries as live; the six Domain
       Signature literals badged legacy or retired; the "QEP Flagship" tab removed from the five
       non-Religion hubs; DomainsHub/AIToolsCatalogue counts derived from ONE tool registry the
       hubs mount from. GUARD: a test that counts mounted DomainTool forms against the registry.
+      DELIVERED W470 (Claude Fable 5.1's first round, from the W469 handover): ONE registry
+      (src/lib/toolRegistry.ts — 26 entries: 23 forms, Law's analyser and the Employment studio as
+      surfaces, and the QEP flagship in Religion only) that every hub mounts its titles from and both
+      front doors count, list, link and describe from; the guard parses the registry and every hub and
+      fails on a typed title, a typed number, a tab no hub has, or the flagship anywhere but Religion.
+      The 'QEP Flagship' tab is gone from the five non-Religion hubs with its two components (engines
+      'not wired to a backend yet', tools 'planned' — dead by design). The catalogue API says what each
+      products/ directory is — live (a route serves it: 5), source (a pointer, nothing served: 9),
+      legacy (the six signature-product archives, category 'Legacy archive', never routed: 6) — and the
+      marketplace counts live only, badges the rest and offers Open only for a served surface.
+      Refuted once (four confirmed: every other consumer of the catalogue — marketplace seeding,
+      Build-to-Order, the resource fabric, the orchestrator — still treated a legacy archive as a product;
+      fixed as one class: served_products() is the only list a consumer may build, seed, rank or deliver
+      from); broken 29 ways, each blind failing alone.
+      NOT DONE, and why — rows in the register: the nine source-pointer directories are still listed as
+      products of a kind (FU-071, P2.4: serve them or retire them); the six legacy directories still sit
+      in products/ with self-declaring manifests (FU-072, P2.4: archive them); and running done
+      --hand-to P1.16 lifted P1.16's broad hygiene prefixes to the first route (FU-073, P1.16: the merge
+      must carry only the handed matchers forward) — P1.16 was put back last and P1.13's area given to P2.4.
  P1.14 [1.14 · R3.3 R3.5 R3.6] Board pack + Chief's Opening honesty. Required-section check against the narrative
       only; empty blueprint → "no concept recorded — pack not assembled"; identical DCS hash →
       "unchanged since <date>"; provenance badge on the Genesis card; plan parser keeps the
@@ -1132,7 +1157,7 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; pre-flights built by us, switches flipped
 
 EFFORT, HONESTLY: ~33 rounds at the current cadence before P4 — P1 alone is the campaign's
 largest single phase and it is the one that matters most, because it is the one users meet.
-Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), plus four rounds between items — W461
+Measured so far: P1.1–P1.12 took twelve rounds (W449–W460) and P1.13 one (W470), plus four rounds between items — W461
 and W463 each worked a task an earlier round found and deferred, W462 built the register after the
 Owner asked (2026-09-13) that suggested tasks be scheduled into the plan, and W464 delivered the Owner's
 rulings on the register's four OWNER rows, and W465 worked three of its NEXT rows (FU-015, FU-016, FU-024) and
@@ -1256,7 +1281,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 396 tests; 70 session guards W419–W469, each broken and
+- integration_tests/test_mvp_spine.py — 397 tests; 71 session guards W419–W470, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).

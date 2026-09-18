@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.catalog.api import list_products
+from agentic_core.catalog.api import catalogue_counts, list_products, not_served_reason, served_products
 
 router = APIRouter(prefix="/bto", tags=["BTO Configurator"])
 
@@ -70,7 +70,12 @@ def _build_component(kind: str) -> Dict[str, Any]:
         from agentic_core.taxonomy import REALM_LABELS
         return {"available": list(REALM_LABELS.values()), "route": COMPONENT_ROUTES["realms"]}
     if kind == "products":
-        return {"catalog": list_products(), "route": COMPONENT_ROUTES["products"]}
+        # W470 — the blueprint's catalogue is what a route serves; the rest is named, never built from
+        every = list_products()
+        return {"catalog": served_products(), "counts": catalogue_counts(every),
+                "not_served": [{"slug": p["slug"], "name": p["name"], "status": p["status"], "reason": not_served_reason(p)}
+                               for p in every if not p.get("live")],
+                "route": COMPONENT_ROUTES["products"]}
     if kind == "services":
         return {"available": ["Synthesis Studio", "Capital Fund", "Living Marketplace"], "route": COMPONENT_ROUTES["services"]}
     return {"status": "Unknown component"}
@@ -126,9 +131,12 @@ async def build_to_order(request: BTOBuildRequest):
     output on Workstation's OWN engines, not just an 'INTEGRATED' descriptor. Closes the
     Catalogue → Build-to-Order → delivery path."""
     slug_index: Dict[str, Dict[str, Any]] = {p["slug"]: p for p in list_products()}
-    selected = [slug_index[s] for s in request.product_resources if s in slug_index]
+    asked = [slug_index[s] for s in request.product_resources if s in slug_index]
+    selected = [p for p in asked if p.get("live")]
     objective = request.objective or f"Build-to-order delivery for {request.entity_name}"
-    built: List[Dict[str, Any]] = []
+    # W470 — a legacy archive or a source pointer is never built: it is answered as what it is
+    built: List[Dict[str, Any]] = [{"slug": p["slug"], "name": p["name"], "status": "NOT_BUILT",
+                                    "reason": not_served_reason(p)} for p in asked if not p.get("live")]
     if selected:
         from agentic_core.api.deliverables import produce, ProduceRequest
         for p in selected:
@@ -172,8 +180,11 @@ async def configure_bto(request: BTOConfigureRequest):
     integrated = [
         _integrate_product(slug_index[slug])
         for slug in request.product_resources
-        if slug in slug_index
+        if slug in slug_index and slug_index[slug].get("live")        # W470 — served entries only
     ]
+    not_buildable = [{"slug": slug, "name": slug_index[slug]["name"], "status": slug_index[slug]["status"],
+                      "reason": not_served_reason(slug_index[slug])}
+                     for slug in request.product_resources if slug in slug_index and not slug_index[slug].get("live")]
 
     blueprint = {
         "blueprint_id": str(uuid.uuid4()),
@@ -181,6 +192,7 @@ async def configure_bto(request: BTOConfigureRequest):
         "timestamp": datetime.datetime.utcnow().isoformat(),
         "components": {kind: _build_component(kind) for kind in request.components},
         "product_resources": integrated,
+        "not_buildable": not_buildable,
         "resource_count": len(integrated),
         "component_count": len(request.components),
         "provisioned": False,

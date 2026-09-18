@@ -3,22 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Heart, Microscope, GraduationCap, Scale, HeartPulse, Briefcase, Sparkles, Rocket, ArrowRight } from 'lucide-react';
 import { useT } from '../../lib/i18n';
+import { TOOL_REGISTRY, TOOL_TOTAL } from '../../lib/toolRegistry';
 
 // Offering 1 (WHOLE_VISION §3A) — the Domains section's front door: domain-specific AI-mediated tools &
 // resources for working in any domain/realm, usable directly without establishing an enterprise. All
 // tools run on Workstation's OWN native fabric (honest in-house provenance). The full launcher with every
 // tool + tab lives at /ai-tools; this page frames the offering and routes into each domain hub.
-interface Domain { name: string; route: string; icon: React.ComponentType<any>; tools: number; blurb: string }
+// W470 — the counts come from the ONE tool registry the hubs mount from (never a number typed here)
+interface Domain { name: string; route: string; icon: React.ComponentType<any> }
+const toolsOf = (route: string) => TOOL_REGISTRY.find(d => d.route === route)?.tools ?? [];
+// the blurb is the tools themselves, so a tool added to a hub is named here the same day (the hand-written
+// blurbs had silently dropped five of them)
+const blurbOf = (route: string) => toolsOf(route).map(x => x.title).join(' · ') + '.';
 
 const DOMAINS: Domain[] = [
-  { name: 'Religion', route: '/religion', icon: Heart, tools: 4, blurb: 'Comparative fiqh research, Qur’anic tafsir, halal pre-assessment.' },
-  { name: 'Science', route: '/science', icon: Microscope, tools: 3, blurb: 'Research synthesis into structured evidence; literature-review mapping.' },
-  { name: 'Education', route: '/education', icon: GraduationCap, tools: 4, blurb: 'Lesson plans, framework-aligned curricula, assessments with mark schemes.' },
-  { name: 'Law', route: '/law', icon: Scale, tools: 2, blurb: 'Contract/document analysis for risks; clause-numbered document drafting.' },
-  { name: 'Care', route: '/care', icon: HeartPulse, tools: 4, blurb: 'SBAR clinical handover, person-centred care plans, risk scores computed from the published tables (NEWS2 · MUST · Waterlow) with AI interpretation.' },
-  { name: 'Employment', route: '/employment', icon: Briefcase, tools: 6, blurb: 'CV tailoring, cover letters, applications, interview prep, career pathing.' },
+  { name: 'Religion', route: '/religion', icon: Heart },
+  { name: 'Science', route: '/science', icon: Microscope },
+  { name: 'Education', route: '/education', icon: GraduationCap },
+  { name: 'Law', route: '/law', icon: Scale },
+  { name: 'Care', route: '/care', icon: HeartPulse },
+  { name: 'Employment', route: '/employment', icon: Briefcase },
 ];
-const TOTAL = DOMAINS.reduce((n, d) => n + d.tools, 0);
+const TOTAL = TOOL_TOTAL;
 
 export const DomainsHub: React.FC = () => {
   const navigate = useNavigate();
@@ -40,7 +46,7 @@ export const DomainsHub: React.FC = () => {
         <Card className="p-6 border-aura/40 bg-aura/5">
           <div className="flex items-center gap-2 mb-2"><Sparkles size={16} className="text-aura" /><h3 className="text-xs font-black uppercase tracking-widest text-aura">{t('domains.off1.tag', 'Offering 1 · You are here')}</h3></div>
           <p className="text-sm font-black text-white mb-1">{t('domains.off1.title', 'Work now with domain tools')}</p>
-          <p className="text-[11px] text-slate-400 leading-relaxed">Get best-in-class capability on demand inside your domain — without building an enterprise. {TOTAL} tools across {DOMAINS.length} domains.</p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">Get best-in-class capability on demand inside your domain — without building an enterprise. {TOTAL} tools across {DOMAINS.length} domains — counted from the one tool registry every hub mounts from.</p>
         </Card>
         <Card className="p-6 border-highlight/30 hover:border-highlight/60 transition-colors cursor-pointer" onClick={() => navigate('/genesis')}>
           <div className="flex items-center gap-2 mb-2"><Rocket size={16} className="text-highlight" /><h3 className="text-xs font-black uppercase tracking-widest text-highlight">{t('domains.off2.tag', 'Offering 2')}</h3></div>
@@ -65,9 +71,9 @@ export const DomainsHub: React.FC = () => {
                   </div>
                   <p className="font-black text-white text-sm uppercase tracking-wide">{t(`nav.${d.route.slice(1)}`, d.name)}</p>
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{d.tools} {t('domains.tools', 'tools')}</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{toolsOf(d.route).length} {t('domains.tools', 'tools')}</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">{d.blurb}</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">{blurbOf(d.route)}</p>
               <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-aura/70 flex items-center gap-1 group-hover:text-aura">{t('domains.open', 'Open')} {t(`nav.${d.route.slice(1)}`, d.name)} <ArrowRight size={11} /></p>
             </Card>
           ))}
@@ -76,7 +82,8 @@ export const DomainsHub: React.FC = () => {
 
       <p className="text-[10px] text-slate-600 leading-relaxed max-w-2xl">
         Every tool runs on Workstation IDBO’s own native AI fabric (in-house-first; external providers are optional
-        accelerants, never dependencies) and is runnable, iteratively refinable, and exportable (Copy / Download .md).
+        accelerants, never dependencies); every form tool's output is runnable, iteratively refinable, and exportable
+        (Copy / Download .md), and the hand-built surfaces and the QEP flagship are labelled as such on /ai-tools.
       </p>
     </div>
   );
