@@ -1,6 +1,7 @@
 # Fable Delivery Prompt — Workstation IDBO (v11, revision 2)
 
-> Paste the block below into a Claude Fable 5 session pointed at this repository.
+> Paste the block below into a Claude Fable 5 session pointed at this repository. **W470 onward: Claude Fable 5.1 —
+> read `docs/HANDOVER_W470.md` first** (the state at W469, the next item, the rhythm, and the lessons that cost a round).
 >
 > **How v11 rev 2 was derived (W446).** v11 (rev 1, 2026-09-04) closed the Tier-2 reach campaign
 > and carried a ONE-entry ledger. It was honest about one thing it could not know: its companion
