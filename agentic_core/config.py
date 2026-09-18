@@ -114,6 +114,80 @@ def atomic_write_json(path, data, indent: int = 2) -> None:
 # one copy gets hardened and the other silently does not.
 
 
+class StoreUnavailable(RuntimeError):
+    """W472 (P1.15, the store class W442→W468) — a JSON store that EXISTS but cannot be read whole. Every writer
+    that meets it saves nothing and the caller says so; it is never answered as empty, as defaults, or as a valid
+    prefix (each of those, written back, replaced the store: the ledger W468, the revenue events W467, the owner
+    payments W465 — and the roster, the compliance history, the overrides, the portfolio and the UEG chain here)."""
+
+    def __init__(self, path, problem: str):
+        from pathlib import Path as _Path
+        self.path = str(path)
+        self.problem = problem
+        super().__init__(f"{_Path(path).name} could not be read whole ({problem}) — nothing was written")
+
+
+def read_json_strict(path, missing, expect=None):
+    """W472 — the ONE strict read a writer uses. A file that does not exist is a new store (`missing`, deep-copied,
+    or called when callable). A file that exists is read whole or refused with StoreUnavailable: a byte-order mark,
+    bytes that are not UTF-8, text that is not JSON, a non-finite number (NaN/Infinity), a nesting too deep to parse,
+    a value not of `expect`'s type, or a file the OS would not hand over after retries (a sharing violation that
+    lasts). A file seen missing during another writer's replace is retried, not read as new."""
+    import codecs as _codecs
+    import copy as _copy
+    import json as _json
+    import time as _time
+    from pathlib import Path as _Path
+    p = _Path(path)
+
+    def _new():
+        return missing() if callable(missing) else _copy.deepcopy(missing)
+
+    raw = None
+    for attempt in range(5):
+        try:
+            if not p.exists():
+                if attempt == 0:
+                    return _new()
+                _time.sleep(0.05)                 # seen missing while a replace was in flight: look again
+                if not p.exists():
+                    return _new()
+            raw = p.read_bytes()
+            break
+        except FileNotFoundError:
+            if attempt == 4:
+                return _new()
+            _time.sleep(0.05)
+        except PermissionError as e:
+            if attempt == 4:
+                raise StoreUnavailable(p, f"stayed locked by another process ({e.__class__.__name__})") from e
+            _time.sleep(0.05 * (attempt + 1))
+        except OSError as e:
+            raise StoreUnavailable(p, f"{e.__class__.__name__}: {str(e)[:80]}") from e
+    if raw is None:
+        return _new()
+    if raw.startswith(_codecs.BOM_UTF8):
+        raise StoreUnavailable(p, "a byte-order mark in front of the JSON")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise StoreUnavailable(p, f"not valid UTF-8 (byte {e.start})") from e
+
+    def _no_constant(name):
+        raise ValueError(f"a non-finite number ({name})")
+
+    try:
+        data = _json.loads(text, parse_constant=_no_constant)
+    except RecursionError as e:
+        raise StoreUnavailable(p, "nested too deep to parse") from e
+    except ValueError as e:
+        raise StoreUnavailable(p, f"not valid JSON: {str(e)[:80]}") from e
+    if expect is not None and not isinstance(data, expect):
+        want = getattr(expect, "__name__", str(expect))
+        raise StoreUnavailable(p, f"wrong shape: a {type(data).__name__}, expected a {want}")
+    return data
+
+
 def load_json_tolerant(path, default):
     """Corruption-tolerant JSON load: a partial/interleaved/truncated store returns the recoverable
     JSON prefix when one exists, else the caller's default — never raises into the caller (a corrupt
@@ -195,11 +269,13 @@ class store_lock:
                 try:
                     age = _time.time() - _os.path.getmtime(str(self._lockpath))
                     if age > self._stale_after:
+                        # W472 (register FU-021) — `continue` only once the stale file is gone; a stale lockfile
+                        # that cannot be removed used to be retried without sleeping and without the deadline
                         try:
                             _os.unlink(str(self._lockpath))
+                            continue
                         except OSError:
                             pass
-                        continue
                 except OSError:
                     pass
                 if _time.monotonic() >= deadline:
@@ -242,7 +318,7 @@ def mutate_json(path, mutator, default):
     value. `mutator` must be pure w.r.t. the store (side-effect-free apart from producing the new
     value)."""
     with store_lock(path):
-        current = load_json_tolerant(path, default)
+        current = read_json_strict(path, default)      # W472 — a store that cannot be read whole is never mutated
         new_value = mutator(current)
         atomic_write_json(path, new_value)
         return new_value

@@ -34,14 +34,19 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     history (capped); a REGRESSION (prior non-fail → fail) registers with the immune system and
     marks the shipped repo stale (§13 drift honesty, W309). Reusable: the heartbeat's rotation
     (W288) and the ESTABLISHMENT first-screen (W309 — birth is alive) share this one path."""
-    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict
     from agentic_core.economy.living_vsbs import list_living
     living = (list_living() or {}).get("living_vsbs") or []
     target = next((v for v in living if v.get("vsb_id") == vsb_id), None)
     if not target:
         return None
     store_path = data_path("vsb_compliance_history.json")
-    hist: Dict[str, Any] = load_json_tolerant(store_path, {}) or {}
+    try:
+        hist: Dict[str, Any] = read_json_strict(store_path, dict, expect=dict)   # W472 (FU-049/FU-053)
+    except StoreUnavailable as e:
+        # the screen would run, but its verdict has nowhere honest to go: the history is not replaced
+        return {"vsb_id": vsb_id, "overall": None, "regression": False, "history_unavailable": str(e),
+                "note": "the compliance history could not be read whole — the screen was not recorded"}
     # the CURRENT living text: registration identity + the scoped plan's objectives
     parts = [str(target.get("name") or ""), str(target.get("mission") or ""),
              str(target.get("domain") or "")]
@@ -238,7 +243,9 @@ class OrganismHeartbeat:
             try:
                 from agentic_core.economy.living_vsbs import operate_one
                 op = operate_one()
-                if op and not op.get("error"):
+                if op and op.get("held") == "roster_unavailable":
+                    actions.append("roster_unavailable")           # W472 — nothing was tended, and the beat says so
+                elif op and not op.get("error"):
                     self.last_vsb_operated = op.get("vsb_id")
                     actions.append("operate_vsb")
             except Exception:

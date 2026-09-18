@@ -1088,12 +1088,12 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     # §7 (W274) — the run itself PERSISTS (compact + capped + atomic): design id/version, what ran,
     # provenance, the QMS verdict, and any plan binding — queryable at GET /compositions/runs.
     try:
-        from agentic_core.config import atomic_write_json, load_json_tolerant
+        from agentic_core.config import StoreUnavailable, atomic_write_json, read_json_strict
         _served: Dict[str, int] = {}
         for t in (res.get("trace") or []):
             _served[t.get("served_by", "native")] = _served.get(t.get("served_by", "native"), 0) + 1
         _cr_store = data_path("composition_runs.json")
-        _cr = load_json_tolerant(_cr_store, []) or []
+        _cr = read_json_strict(_cr_store, list, expect=list)        # W472 (FU-053) — refused, never replaced
         _cr.append({
             "run_id": run_id, "composition_id": cid, "name": comp["name"],
             "owner_id": comp.get("owner_id"),   # §14 (W324) — runs inherit the design's tenant
@@ -1110,10 +1110,13 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
         atomic_write_json(_cr_store, _cr[-100:])
-    except Exception:
-        pass
+        run_record = {"persisted": True}
+    except Exception as _exc:
+        # W472 — the run happened; whether its record was filed is said, never assumed
+        run_record = {"persisted": False, "reason": (str(_exc) if _exc.__class__.__name__ == "StoreUnavailable"
+                                                     else f"{_exc.__class__.__name__}: {str(_exc)[:120]}")}
 
-    return {"run_id": run_id, "plan_binding": plan_binding,
+    return {"run_id": run_id, "plan_binding": plan_binding, "run_record": run_record,
             "composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
             "objective": objective, "posture": "in-house-first", "quality_assurance": qa,
             # W273 — run-time honesty: the design's simulation verdicts (explicit warning when

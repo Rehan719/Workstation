@@ -245,9 +245,12 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
     commercial content is exactly where the screen must have teeth), then a real marketplace
     listing is created, VSB-attributed so sales feed the entity's economy (W293). Closes the
     §5→§13→§12 loop: delivery org proposes → curation publishes → sales fund the organism."""
-    from agentic_core.config import data_path as _dp, load_json_tolerant as _ljt, atomic_write_json as _awj
+    from agentic_core.config import StoreUnavailable as _SU, data_path as _dp, read_json_strict as _rjs, atomic_write_json as _awj
     store = _dp("proposed_catalogue.json")
-    rows = _ljt(store, []) or []
+    try:
+        rows = _rjs(store, list, expect=list)                      # W472 (FU-053) — refused, never replaced
+    except _SU as e:
+        raise HTTPException(status_code=503, detail=f"{e}; nothing was curated")
     prop = next((p for p in rows if p.get("run_id") == run_id), None)
     if not prop:
         raise HTTPException(status_code=404, detail=f"No proposed catalogue for run {run_id}.")
@@ -347,9 +350,14 @@ async def cascade_orchestration(req: CascadeRequest):
     # prompt carries the development action its managing tier set last run (persisted by the appraisal
     # pass below), closing the "each tier manages, appraises and DEVELOPS the tier below" loop
     # cycle-over-cycle. Development Actions previously had zero consumers.
-    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict
     _DEV_STORE = data_path("tier_development.json")
-    _prior_dev: dict = load_json_tolerant(_DEV_STORE, {}) or {}
+    _tier_stores_error: str | None = None
+    _persistence: dict = {}                                  # W472 — every store this run files, and whether it did
+    try:
+        _prior_dev: dict = read_json_strict(_DEV_STORE, dict, expect=dict)    # W472 (FU-053)
+    except StoreUnavailable as _e:
+        _prior_dev, _tier_stores_error = {}, str(_e)
     development_applied: dict = {}
 
     # §5 (W281) — persistent tier IDENTITY: each tier accumulates a record across cascades (runs
@@ -357,7 +365,10 @@ async def cascade_orchestration(req: CascadeRequest):
     # scratch — "lead and develop their specialised resources" holds OVER TIME. Deterministic
     # accumulation of real run data; no extra AI calls.
     _IDENT_STORE = data_path("tier_identity.json")
-    _tier_ident: dict = load_json_tolerant(_IDENT_STORE, {}) or {}
+    try:
+        _tier_ident: dict = read_json_strict(_IDENT_STORE, dict, expect=dict)   # W472 (FU-053)
+    except StoreUnavailable as _e:
+        _tier_ident, _tier_stores_error = {}, (_tier_stores_error or str(_e))
     tier_identity_applied: dict = {}
 
     def _dev_for(appraisal_key: str, manager_label: str) -> str:
@@ -631,14 +642,18 @@ async def cascade_orchestration(req: CascadeRequest):
                 catalogue_items.append(_nm)
         catalogue_items = list(dict.fromkeys(catalogue_items))[:8]
         _cat_store = data_path("proposed_catalogue.json")
-        _cat = load_json_tolerant(_cat_store, []) or []
+        _cat = read_json_strict(_cat_store, list, expect=list)      # W472 (FU-053) — refused, never replaced
         _cat.append({"run_id": run_id, "mission": req.mission[:160], "domain": req.domain,
                      "status": "proposed", "items": catalogue_items,
                      "raw": products_services_catalogue[:2000],
                      "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
         atomic_write_json(_cat_store, _cat[-50:])
-    except Exception:
-        pass
+        _persistence["proposed_catalogue"] = {"persisted": True}
+    except Exception as _pe:
+        # W472 (refutation) — what did not get filed is SAID; a swallowed NameError used to file nothing silently
+        _persistence["proposed_catalogue"] = {"persisted": False,
+                                              "reason": (str(_pe) if _pe.__class__.__name__ == "StoreUnavailable"
+                                                         else f"{_pe.__class__.__name__}: {str(_pe)[:120]}")}
 
     # ── §10 Solution-Quality Bar + the living QMS gate — run BEFORE the appraisal pass (W268) so the
     # appraising tiers judge against this run's REAL measured outcomes, not just same-run prose.
@@ -755,8 +770,13 @@ async def cascade_orchestration(req: CascadeRequest):
                                "last_appraisal": str(_text)[:300],
                                "last_run_id": run_id,
                                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
-        atomic_write_json(_DEV_STORE, _prior_dev)
-        atomic_write_json(_IDENT_STORE, _tier_ident)
+        if _tier_stores_error:
+            # W472 — a tier store that could not be read whole is not written back over
+            development_applied["not_persisted"] = _tier_stores_error
+            tier_identity_applied["not_persisted"] = _tier_stores_error
+        else:
+            atomic_write_json(_DEV_STORE, _prior_dev)
+            atomic_write_json(_IDENT_STORE, _tier_ident)
     except Exception:
         pass
 
@@ -911,9 +931,8 @@ async def cascade_orchestration(req: CascadeRequest):
     # their appraisals and Development Actions — evaporated at response time). Compact + capped + atomic;
     # a non-colliding store (swarm_cascades.json holds fabric cascade DEFINITIONS, not runs).
     try:
-        from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
         _runs_store = data_path("org_cascade_runs.json")
-        _runs = load_json_tolerant(_runs_store, []) or []
+        _runs = read_json_strict(_runs_store, list, expect=list)    # W472 (FU-053) — refused, never replaced
         _runs.append({
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
             "csuite_engaged": selected, "appraisals": appraisals,
@@ -930,12 +949,16 @@ async def cascade_orchestration(req: CascadeRequest):
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
         atomic_write_json(_runs_store, _runs[-100:])
-    except Exception:
-        pass
+        _persistence["org_cascade_runs"] = {"persisted": True}
+    except Exception as _pe:
+        _persistence["org_cascade_runs"] = {"persisted": False,
+                                            "reason": (str(_pe) if _pe.__class__.__name__ == "StoreUnavailable"
+                                                       else f"{_pe.__class__.__name__}: {str(_pe)[:120]}")}
 
     return {
         "run_id": run_id,
         "mission": req.mission,
+        "persistence": _persistence,                          # W472 — which stores took this run's record
         # §5 (W280) — which living plan grounded the apex tiers + the objective this run delivered.
         "business_plan_scope": req.scope,
         "plan_binding": plan_binding,

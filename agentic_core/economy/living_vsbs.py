@@ -13,9 +13,11 @@ import json
 import time
 from typing import Any, Dict, List, Optional
 
-from agentic_core.config import atomic_write_json, data_path
+from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict
 
 _STORE = data_path("living_vsbs.json")
+_HISTORY = data_path("vsb_compliance_history.json")
+HISTORY_UNREADABLE = "unreadable"          # W472 — _latest_screen's answer when the history cannot be read whole
 
 
 def _now() -> str:
@@ -23,10 +25,24 @@ def _now() -> str:
 
 
 def _load() -> Dict[str, Any]:
+    """W472 (register FU-050) — THE roster read: whole, or StoreUnavailable. The tolerant read answered {} for a roster
+    it could not parse, and register() then wrote back a roster holding only the new entity (a BOM roster kept 1 of 3
+    entries) — the heartbeat stopped tending every other enterprise."""
+    return read_json_strict(_STORE, dict, expect=dict)
+
+
+def _int0(v: Any) -> int:
+    """A malformed entry's count never stops the rotation for every entity (FU-050)."""
     try:
-        return json.loads(_STORE.read_text()) if _STORE.exists() else {}
-    except Exception:
-        return {}
+        return int(v or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _history() -> Dict[str, Any]:
+    """W472 (register FU-049) — the compliance history, whole or StoreUnavailable (a BOM history read as {} lifted
+    every FAIL hold and ran distributions for entities whose latest screen failed)."""
+    return read_json_strict(_HISTORY, dict, expect=dict)
 
 
 def _save(d: Dict[str, Any]) -> None:
@@ -105,13 +121,20 @@ def list_living() -> Dict[str, Any]:
     hold it causes. Both existed only as side effects before: `_latest_screen` was read by
     `operate_vsb` to decide a hold, and the hold was written to the store and the UEG — but the
     entity's OWNER had no way to see either. A held enterprise looked simply idle."""
-    d = _load()
-    rows = sorted(d.values(), key=lambda v: v.get("registered_at", ""), reverse=True)
     try:
-        from agentic_core.config import data_path, load_json_tolerant
-        hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
-    except Exception:
-        hist = {}
+        d = _load()
+    except StoreUnavailable as e:
+        # W472 — a roster that cannot be read whole is said, never shown as an empty roster
+        return {"living_vsbs": [], "total": 0, "roster_unavailable": str(e),
+                "note": "the living roster could not be read whole — no entity is tended and nothing is written to "
+                        "it until it can be read (virtual/simulated — no real funds)"}
+    rows = sorted([v for v in d.values() if isinstance(v, dict)], key=lambda v: str(v.get("registered_at") or ""),
+                  reverse=True)
+    hist_error = None
+    try:
+        hist = _history()
+    except StoreUnavailable as e:
+        hist, hist_error = {}, str(e)
     for r in rows:
         h = hist.get(r.get("vsb_id")) or {}
         verdict = h.get("overall")
@@ -121,13 +144,18 @@ def list_living() -> Dict[str, Any]:
             "verdict": verdict,
             "screened_at": h.get("screened_at") or h.get("at"),
             "verdicts": h.get("verdicts") or [],
-            "never_screened": not bool(verdict),
+            "never_screened": (not bool(verdict)) if not hist_error else None,
+            # W472 (FU-049) — a history that cannot be read whole: the standing is UNKNOWN, not clean
+            "history_unavailable": hist_error,
         }
         r["economy_held"] = {
             "held": bool(r.get("last_hold")),
             "reason": r.get("last_hold"),
             "consequence": ("distributions are held — no economy cycle runs until a re-screen clears it"
                             if r.get("last_hold") == "compliance_fail_hold"
+                            else ("its compliance standing cannot be known — the compliance history could not be "
+                                  "read whole; no cycle runs until it can be")
+                            if r.get("last_hold") == "compliance_history_unavailable"
                             else (_ledger_hold_text(r.get("vsb_id"), r.get("decision_hold"))
                                   if r.get("last_hold") == "ledger_unavailable"
                                   else ("this entity's cycle is held by governance" if r.get("last_hold") else None))),
@@ -137,7 +165,7 @@ def list_living() -> Dict[str, Any]:
             # in front of
             "standing_decision": r.get("decision_hold"),
         }
-    return {"living_vsbs": rows, "total": len(rows),
+    return {"living_vsbs": rows, "total": len(rows), "history_unavailable": hist_error,
             "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy "
                     "cycles on the circadian heartbeat). Virtual/simulated — no real funds."}
 
@@ -145,16 +173,21 @@ def list_living() -> Dict[str, Any]:
 def operate_one() -> Optional[Dict[str, Any]]:
     """Autonomously operate the least-recently-operated living VSB: one virtual economy cycle. Round-robin,
     paced by the heartbeat. Returns a compact record, or None when there are no living VSBs. Best-effort."""
-    d = _load()
-    if not d:
+    try:
+        d = _load()
+    except StoreUnavailable as e:
+        # W472 (FU-050) — an unreadable roster is a said outcome of the beat, never an empty roster
+        return {"cycle_ran": False, "held": "roster_unavailable", "note": str(e)}
+    entries = [v for v in d.values() if isinstance(v, dict) and isinstance(v.get("vsb_id"), str)]
+    if not entries:
         return None
     # pick the least-recently-operated (None sorts first). §8 (W340) — FAIR under bursts: the
     # second-resolution timestamps tie when beats fire sub-second (the audit observed 23×/8×/7×
     # starvation), so ties break by FEWEST operating cycles, then registration order — every
     # entity gets tended even under a burst of manual beats.
-    target = sorted(d.values(), key=lambda v: (v.get("last_operated") or "",
-                                               int(v.get("operating_cycles", 0)),
-                                               v.get("registered_at", "")))[0]
+    target = sorted(entries, key=lambda v: (str(v.get("last_operated") or ""),
+                                            _int0(v.get("operating_cycles")),        # W472 — one bad entry never stops all
+                                            str(v.get("registered_at") or "")))[0]
     return operate_vsb(target["vsb_id"])
 
 
@@ -233,27 +266,55 @@ def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_W
 
 
 def _latest_screen(vsb_id: str) -> Optional[str]:
-    """The entity's latest §11 screen verdict from the per-VSB compliance history (W288), or None."""
+    """The entity's latest §11 screen verdict from the per-VSB compliance history (W288), None when never screened,
+    or HISTORY_UNREADABLE (W472, FU-049) when the history exists and cannot be read whole — never None for that."""
     try:
-        from agentic_core.config import data_path, load_json_tolerant
-        hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
-        return (hist.get(vsb_id) or {}).get("overall")
-    except Exception:
-        return None
+        hist = _history()
+    except StoreUnavailable:
+        return HISTORY_UNREADABLE
+    entry = hist.get(vsb_id)
+    return entry.get("overall") if isinstance(entry, dict) else None
 
 
 def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     """Operate ONE living VSB (one governed virtual economy cycle). §11×§12 (W309): an entity whose
     LATEST compliance screen is FAIL has its distributions HELD — the survival instinct has teeth;
     the hold lifts as soon as a re-screen clears it. Best-effort; honest records either way."""
-    d = _load()
+    try:
+        d = _load()
+    except StoreUnavailable as e:
+        return {"vsb_id": vsb_id, "cycle_ran": False, "held": "roster_unavailable", "note": str(e)}
     target = d.get(vsb_id)
     if not target:
         return None
+    screen = _latest_screen(vsb_id)
+    if screen == HISTORY_UNREADABLE:
+        # W472 (FU-049) — a history that cannot be read whole means the standing is UNKNOWN: held, said, no cycle
+        target["last_operated"] = _now()
+
+        def _hold_unknown(e: Dict[str, Any]) -> None:
+            # (refutation) a Change Control decision this hold now stands in front of is kept apart, never overwritten
+            prior = e.get("last_hold") if e.get("last_hold") in _DECISION_HOLDS else e.get("decision_hold")
+            e.pop("decision_hold", None)
+            if prior:
+                e["decision_hold"] = prior
+            e.update(last_operated=target["last_operated"], last_hold="compliance_history_unavailable")
+            e.pop("last_error", None)
+        _update_entry(vsb_id, _hold_unknown)
+        try:
+            from agentic_core.economy.governance import _ueg_log
+            _ueg_log({"type": "economy.compliance_history_unavailable", "vsb_id": vsb_id,
+                      "note": "the compliance history could not be read whole — standing unknown, cycle held"})
+        except Exception:
+            pass
+        return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
+                "held": "compliance_history_unavailable",
+                "note": "the §11 compliance history could not be read whole — the entity's standing cannot be "
+                        "known, so no cycle runs and nothing is posted until it can be read"}
     # §11 teeth (W309) — last screen FAIL → the economy is held, no cycle runs. The tending is
     # still RECORDED (last_operated advances) so a held entity never starves the round-robin —
     # the organism visited it; the visit's outcome was a hold.
-    if _latest_screen(vsb_id) == "fail":
+    if screen == "fail":
         target["last_operated"] = _now()
         target["last_hold"] = "compliance_fail_hold"
         _update_entry(vsb_id, lambda e: (e.update(last_operated=target["last_operated"], last_hold="compliance_fail_hold"),

@@ -631,6 +631,16 @@ export const VSBEconomy: React.FC = () => {
       <TransferPanel key={vsbId} fromVsb={vsbId} entities={(living?.living_vsbs ?? []).map((v: any) => ({ vsb_id: v.vsb_id, name: v.name }))}
         onDone={() => { loadBoardPackRef.current(); }} onBusyChange={setTransferring} />
 
+      {/* W472 (P1.15) — a roster or a compliance history that could not be read whole is SAID here, never an empty list */}
+      {living?.roster_unavailable && (
+        <Card className="p-6 border-amber-500/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-1" data-testid="roster-unavailable">Living roster unavailable</p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">{living.roster_unavailable}. No entity is tended and nothing is written to the roster until it can be read whole.</p>
+        </Card>
+      )}
+      {living?.history_unavailable && (
+        <p className="text-[10px] text-amber-400/90 font-bold" data-testid="history-unavailable">Compliance history unavailable — {living.history_unavailable}. Each entity's standing is unknown, not clean; no cycle runs until it can be read whole.</p>
+      )}
       {/* §4 — living enterprises the organism autonomously tends (continually operated on the heartbeat) */}
       {living && (living.living_vsbs?.length ?? 0) > 0 && (
         <Card className="p-6">

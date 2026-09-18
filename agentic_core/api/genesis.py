@@ -902,8 +902,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         _register_living(vsb_id, name, req.entity_type, req.domain, req.owner_id)
         entity["living"] = {"autonomous_operation": "registered — the organism tends this VSB on the circadian "
                             "heartbeat (paced virtual economy cycles)", "virtual": True}
-    except Exception:
-        pass
+    except Exception as _exc:
+        # W472 (refutation) — a refused registration is SAID on the entity, never silently dropped
+        entity["living"] = {"registered": False, "reason": f"{_exc.__class__.__name__}: {str(_exc)[:160]}",
+                            "note": "not registered on the living roster — the organism does not tend this entity "
+                                    "until the roster reads whole and it is registered"}
     # W315 — the ONE shared plan-seeding core (both establish paths call it)
     _seed_plan_from_journey(vsb_id, name, req, entity)
     _attach_delivery_swarm(entity, vsb_id, name, req.problem, req.domain, req.concept)
@@ -966,6 +969,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
 
     return {
         "vsb_id": vsb_id,
+        "living": entity.get("living"),          # W472 (refutation) — registered, or refused and why
         "name": name,
         "name_source": name_source, "name_pending": name_source == "slug",   # W450
         "body_pending": body_pending,                                          # W450

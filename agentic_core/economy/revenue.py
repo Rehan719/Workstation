@@ -109,8 +109,12 @@ def record_event(vsb_id: str, kind: str, amount_wst: float, source: str, ref: st
     §12 (W349) — the append is SERIALISED: the Round-10 concurrency audit measured 89% of
     recorded events destroyed under concurrent writers (unserialised load-modify-write clobbered
     the store). The cross-process store_lock makes recording exactly-once."""
+    amount = float(amount_wst)
+    if not math.isfinite(amount):
+        # W472 (register FU-062) — a NaN or Infinity event would be written to a store its own reader then refuses
+        raise ValueError(f"revenue event refused: amount must be finite, got {amount_wst!r}")
     ev = {"id": f"rev-{uuid.uuid4().hex[:10]}", "vsb_id": vsb_id, "kind": kind,
-          "amount_wst": round(float(amount_wst), 6), "source": source, "ref": ref,
+          "amount_wst": round(amount, 6), "source": source, "ref": ref,
           "note": note, "consumed": False,
           "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     with store_lock(_STORE):

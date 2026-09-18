@@ -24,7 +24,7 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from agentic_core.config import data_path
+from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict
 from .entities import get_template
 from .ledger import VirtualLedger
 from .charity import CharityIntelligence
@@ -39,15 +39,13 @@ _WATERFALL_OVERRIDES = data_path("economy_waterfall_overrides.json")
 
 
 def _load_waterfall_overrides() -> Dict[str, Dict[str, float]]:
-    try:
-        return json.loads(_WATERFALL_OVERRIDES.read_text()) if _WATERFALL_OVERRIDES.exists() else {}
-    except Exception:
-        return {}
+    """W472 (register FU-051) — whole or StoreUnavailable: one save on an unreadable store used to keep only the new
+    override, and a cycle on one silently used the template."""
+    return read_json_strict(_WATERFALL_OVERRIDES, dict, expect=dict)
 
 
 def _save_waterfall_overrides(d: Dict[str, Dict[str, float]]) -> None:
-    _WATERFALL_OVERRIDES.parent.mkdir(parents=True, exist_ok=True)
-    _WATERFALL_OVERRIDES.write_text(json.dumps(d, indent=2))
+    atomic_write_json(_WATERFALL_OVERRIDES, d)          # W472 — atomic; the route holds the store lock
 
 
 def validate_waterfall(proportions: Dict[str, Any], template: Dict[str, Any]) -> Tuple[Dict[str, float], List[str]]:
@@ -88,12 +86,23 @@ class EconomicMetabolism:
         self.waterfall = dict(self.template["waterfall"])
         # §4/§8/§10 — apply any Owner-set override (re-normalised; bounded by the template) over the default.
         self.waterfall_source = "entity_template"
-        _ov = _load_waterfall_overrides().get(vsb_id)
+        self.overrides_error: Optional[str] = None
+        try:
+            _ov = _load_waterfall_overrides().get(vsb_id)
+        except StoreUnavailable as e:
+            # W472 (FU-051) — the Owner's overrides cannot be known: the template applies and the cycle SAYS so
+            _ov, self.overrides_error, self.waterfall_source = None, str(e), "overrides_unavailable"
         if _ov:
             merged = {s: float(_ov.get(s, self.waterfall.get(s, 0.0))) for s in _WATERFALL_STAGES}
-            tot = sum(merged.values()) or 1.0
-            self.waterfall = {k: round(v / tot, 4) for k, v in merged.items()}
-            self.waterfall_source = "owner_override"
+            # W472 (refutation) — a STORED override is re-validated against the form every time it is applied: one
+            # saved while the roster could not be read was bound to the caller's claim, not the entity's form
+            _bounded, _violations = validate_waterfall(merged, self.template)
+            if _violations:
+                self.waterfall_source = "entity_template (stored override violates the form; ignored)"
+                self.override_violations = _violations
+            else:
+                self.waterfall = _bounded
+                self.waterfall_source = "owner_override"
         self.ledger = VirtualLedger(vsb_id)
         self.charity = CharityIntelligence()
 
@@ -118,11 +127,15 @@ class EconomicMetabolism:
         # §6 — venture RETURNS RECYCLE into the waterfall: queued returns on this VSB's portfolio
         # are consumed here as intake revenue, so they genuinely enter this cycle's distribution.
         returns_recycled = 0.0
+        venture_store_note: Optional[str] = None
         try:
             from .ventures import consume_pending_returns
             returns_recycled = consume_pending_returns(self.vsb_id, max_amount=max_returns_wst)
             if returns_recycled > 0:
                 revenue = round(revenue + returns_recycled, 2)
+        except StoreUnavailable as e:
+            # W472 (refutation) — the portfolio could not be read whole: no returns entered, and the report says so
+            returns_recycled, venture_store_note = 0.0, f"venture returns not consumed: {e}"
         except Exception:
             returns_recycled = 0.0
 
@@ -245,6 +258,10 @@ class EconomicMetabolism:
                 cands = real_candidates(exclude_vsb=self.vsb_id)
                 ventures_alloc = VentureIntelligence(cands or None).allocate(splits["user_projects"])
                 record_positions(self.vsb_id, ventures_alloc)
+        except StoreUnavailable as e:
+            # W472 (refutation) — the stage was distributed; the positions were NOT recorded, and the report says so
+            ventures_alloc = {"positions_recorded": False, "reason": str(e), "allocation": ventures_alloc}
+            venture_store_note = (venture_store_note + "; " if venture_store_note else "") + f"positions not recorded: {e}"
         except Exception:
             ventures_alloc = None
 
@@ -269,6 +286,7 @@ class EconomicMetabolism:
             "owner_accrual": owner_accrual,                      # §7 (W465) — whether the owner share was recorded
             "giving_back": charity_alloc,
             "venture_investment": ventures_alloc,
+            "venture_store_note": venture_store_note,          # W472 — an unreadable portfolio is said, not silent
             "metabolic_energy": metabolic_energy,
             "capital_preserved": self.template["capital_preserved"],
             "biogeochemical_model": "nutrient cycle: intake → homeostasis → circulation → return → storage → growth",
@@ -293,6 +311,9 @@ class EconomicMetabolism:
             "entity_type": self.entity_type,
             "entity_name": self.template["name"],
             "waterfall": self.waterfall,
+            # W472 (FU-051) — where the proportions came from; an override store that could not be read whole is SAID
+            "waterfall_source": self.waterfall_source,
+            "overrides_error": self.overrides_error,
             "capital_preserved": self.template["capital_preserved"],
             "metabolic_energy": self._atp_ratio(),
             "ledger": self.ledger.statement(),

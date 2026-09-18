@@ -14963,7 +14963,8 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     open_slots = {i["slot"] for i in items if not i["done"]}
     routes = fu.raw_routes(reg)
     assert routes and all(rt["slot"] in open_slots for rt in routes)
-    assert {"P1.15", "P1.16", "P2.9"} <= {rt["slot"] for rt in routes}
+    assert {"P1.16", "P2.9"} <= {rt["slot"] for rt in routes}    # (W472: P1.15 is done; its words ride P1.16's route)
+    assert "unreadable" in next(rt for rt in routes if rt["slot"] == "P1.16")["words"]
     assert len({rt["slot"] for rt in routes}) == len(routes)                                  # one route per item
     # the routes agree with the plan as filed: every open, non-gated row is where route_row would send it today
     # (the refutation found FU-045/FU-063 routed to P2.7 by a broad word while they were economy rows of P2.9)
@@ -15621,3 +15622,352 @@ def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeyp
     assert "if (v && v !== ((plan as any)[k] || '')) body[k] = v;" in bp          # the page sends only what changed
     ck = (root / "enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
     assert "filter((s: any) => s && !s.error && !s.deferred).length} of {" in ck   # 'Shipped N of M surfaces'
+
+
+def test_w472_stores_refuse_never_replace_the_class(client, monkeypatch, tmp_path):
+    """W472 — P1.15 Stores that refuse, never replace: the class-kill (register FU-021, FU-042, FU-049, FU-050, FU-051,
+    FU-052, FU-053, FU-054, FU-055, FU-056, FU-062).
+
+    Five rounds fixed this one store at a time (W465 contracts and owner payments, W467 revenue, W468 the ledger).
+    Now ONE strict read (config.read_json_strict) serves every writer: a store that exists and cannot be read whole —
+    a byte-order mark, bytes that are not UTF-8, text that is not JSON, a truncation, trailing garbage, a wrong type,
+    a non-finite number — is refused (StoreUnavailable) and the bytes are unchanged, never answered as empty and
+    written back. The table below breaks every store the register named in every shape and checks the writer
+    refuses, the bytes stand, and the surface that reads it says so. Also: store_lock's stale timeout (FU-021), the
+    interceptor's own UEG writes (FU-054), the chain's default path (FU-055), a repair path for a refused ledger
+    (FU-056), and a non-finite revenue amount refused at the door (FU-062)."""
+    import codecs
+    import json as _json
+    import math
+    import os
+    import pathlib
+    import time as _time
+
+    import pytest
+
+    from agentic_core import config as cfg
+    from agentic_core.config import StoreUnavailable, mutate_json, read_json_strict, store_lock
+
+    SHAPES = {
+        "a byte-order mark": lambda good: codecs.BOM_UTF8 + good,
+        "not UTF-8": lambda good: b"\xff\xfe" + good,
+        "a truncation": lambda good: good[: max(1, len(good) // 2)],
+        "trailing garbage": lambda good: good + b"\n}}]garbage",
+        "a wrong type": lambda good: (b"[1, 2]" if good.lstrip().startswith(b"{") else b'{"not": "a list"}'),
+        "a non-finite number": lambda good: (b'{"x": NaN}' if good.lstrip().startswith(b"{") else b"[Infinity]"),
+    }
+
+    # ── the helper itself ──
+    p = tmp_path / "s.json"
+    assert read_json_strict(p, dict) == {} and read_json_strict(p, list) == [] and read_json_strict(p, None) is None
+    p.write_bytes(b'{"a": 1}')
+    assert read_json_strict(p, dict, expect=dict) == {"a": 1}
+    for name, mk in SHAPES.items():
+        p.write_bytes(mk(b'{"a": 1}'))
+        before = p.read_bytes()
+        with pytest.raises(StoreUnavailable) as ei:
+            read_json_strict(p, dict, expect=dict)
+        assert "s.json" in str(ei.value) and "nothing was written" in str(ei.value) and p.read_bytes() == before, name
+    p.write_bytes(b'"a string"')
+    with pytest.raises(StoreUnavailable):
+        read_json_strict(p, dict, expect=dict)
+    p.write_bytes(codecs.BOM_UTF8 + b'{"n": 1}')
+    before = p.read_bytes()
+    with pytest.raises(StoreUnavailable):
+        mutate_json(p, lambda d: dict(d, n=2), {})            # FU-053: mutate_json never mutates what it cannot read
+    assert p.read_bytes() == before
+    # FU-021 — a stale lockfile that cannot be removed: the documented timeout still applies
+    store = tmp_path / "locked.json"
+    lockp = store.with_suffix(store.suffix + ".lock")
+    lockp.write_text("held by a crashed process")
+    old = _time.time() - 600
+    os.utime(lockp, (old, old))
+    real_unlink = os.unlink
+
+    def _stubborn(path, *a, **k):
+        if str(path) == str(lockp):
+            raise PermissionError("cannot remove")
+        return real_unlink(path, *a, **k)
+    monkeypatch.setattr(os, "unlink", _stubborn)
+    # bounded: the bug this guards spins forever, so the acquisition runs in a worker and is given 5 seconds
+    import threading
+    outcome: dict = {}
+
+    def _acquire():
+        try:
+            with store_lock(store, timeout=0.6, stale_after=1.0):
+                outcome["result"] = "acquired"
+        except TimeoutError:
+            outcome["result"] = "timeout"
+        except Exception as e:                                          # pragma: no cover - reported, not hidden
+            outcome["result"] = f"{e.__class__.__name__}: {e}"
+    worker = threading.Thread(target=_acquire, daemon=True)
+    worker.start()
+    worker.join(5.0)
+    assert outcome.get("result") == "timeout", outcome.get("result", "the lock loop never returned (it spun without its deadline)")
+    monkeypatch.undo()
+    real_unlink(lockp)
+
+    # ── the store table: every store the register named, every shape ──
+    from agentic_core.economy import living_vsbs as lv
+    from agentic_core.economy import metabolism as mb
+    from agentic_core.economy import ventures as vt
+    from agentic_core.organism import heartbeat as hb
+    vid = "w472-store-co"
+    lv.register(vid, "W472 Store Co", "waqf_ltd_hybrid", "care", "pytest")
+    assert hb.screen_living_vsb(vid)["overall"] in ("pass", "review", "fail")
+    assert client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                          "proportions": {"owner": 0.2, "self_investment": 0.3, "capital_fund": 0.2,
+                                                                          "user_projects": 0.2, "charity": 0.1}}).status_code == 200
+    vt.record_positions(vid, {"positions": [{"id": "h1", "name": "H1", "amount_wst": 10.0, "score": 0.5}]})
+    twins_store = cfg.data_path("federation_twins.json")
+    assert client.post("/api/v210/federation/spawn-twin", json={"node_id": "n-w472"}).status_code in (200, 201)
+    catalogue_store = cfg.data_path("proposed_catalogue.json")
+    if not catalogue_store.exists():
+        cfg.atomic_write_json(catalogue_store, [])
+    reg_dir = pathlib.Path(__import__("agentic_core.api.agent_hub", fromlist=["_REG_DIR"])._REG_DIR)
+    assert client.post("/api/v1/hub/agents/register", json={"agent_id": "w472-agent", "role": "ENGINEERING", "capability_tags": ["t"]}).status_code == 201
+
+    def refused_by(fn):
+        try:
+            out = fn()
+        except StoreUnavailable:
+            return "raised"
+        return out
+
+    table = [
+        ("the living roster", lv._STORE,
+         lambda: refused_by(lambda: lv.register("w472-other", "Other")),
+         lambda r: r == "raised",
+         lambda: (lv.list_living()["roster_unavailable"], lv.operate_one()["held"],
+                  client.get("/api/v1/economy/living-vsbs").json()["roster_unavailable"]),
+         lambda s: bool(s[0]) and s[1] == "roster_unavailable" and "could not be read whole" in s[2]),
+        ("the compliance history", lv._HISTORY,
+         lambda: hb.screen_living_vsb(vid),
+         lambda r: r["overall"] is None and r["history_unavailable"],
+         lambda: (lv._latest_screen(vid), lv.operate_vsb(vid), lv.list_living()["living_vsbs"]),
+         lambda s: s[0] == lv.HISTORY_UNREADABLE and s[1]["held"] == "compliance_history_unavailable"
+                   and all(r["compliance"]["history_unavailable"] and r["compliance"]["never_screened"] is None for r in s[2])),
+        ("the Owner's waterfall overrides", mb._WATERFALL_OVERRIDES,
+         lambda: client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                                "proportions": {"owner": 0.1, "self_investment": 0.4, "capital_fund": 0.2,
+                                                                                "user_projects": 0.2, "charity": 0.1}}).status_code,
+         lambda r: r == 503,
+         lambda: (mb.EconomicMetabolism(vid, "waqf_ltd_hybrid").waterfall_source,
+                  client.get(f"/api/v1/economy/status?vsb_id={vid}").json()),
+         lambda s: s[0] == "overrides_unavailable" and s[1]["waterfall_source"] == "overrides_unavailable"
+                   and "could not be read whole" in s[1]["overrides_error"]),
+        ("the venture portfolio", vt._PORTFOLIO_STORE,
+         lambda: refused_by(lambda: vt.record_positions(vid, {"positions": [{"id": "h2", "name": "H2", "amount_wst": 5.0}]})),
+         lambda r: r == "raised",
+         lambda: vt.portfolio(vid),
+         lambda s: "unavailable" in s and s["holdings"] == []),
+        ("the federation twins", twins_store,
+         lambda: client.post("/api/v210/federation/spawn-twin", json={"node_id": "n-w472-b"}).status_code,
+         lambda r: r == 503, lambda: None, lambda s: True),
+        ("the proposed catalogue", catalogue_store,
+         lambda: client.post("/api/v1/swarm/catalogue/proposed/run-w472/curate",
+                             json={"item": "Thing", "description": "d"}).status_code,
+         lambda r: r == 503, lambda: None, lambda s: True),
+        ("an agent's registration", reg_dir / "w472-agent.json",
+         lambda: (client.post("/api/v1/hub/agents/register", json={"agent_id": "w472-agent", "role": "ENGINEERING", "capability_tags": []}).status_code,
+                  client.delete("/api/v1/hub/agents/w472-agent").status_code),
+         lambda r: r == (503, 503), lambda: None, lambda s: True),
+    ]
+    for label, path, write, refused, read, said in table:
+        path = pathlib.Path(path)
+        good = path.read_bytes()
+        assert good and _json.loads(good.decode("utf-8")) is not None, label
+        for shape, mk in SHAPES.items():
+            bad = mk(good)
+            path.write_bytes(bad)
+            try:
+                r = write()
+                assert refused(r), (label, shape, r)
+                assert path.read_bytes() == bad, (label, shape, "the writer changed the bytes")
+                assert said(read()), (label, shape, "the surface did not say it")
+            finally:
+                path.write_bytes(good)
+        assert path.read_bytes() == good
+
+    # ── the constitutional ledger's chain (FU-042, FU-054, FU-055) ──
+    from agentic_core.gaas.v5 import ueg as ueg_mod
+    from agentic_core.gaas.v5.ueg import UEGLogger, UEGUnavailable
+    from agentic_core.gaas.v5.uci_v16_omega import UnifiedConstitutionalInterceptorV16Omega
+    chain = str(tmp_path / "chain.json")
+    logger = UEGLogger(chain)
+    logger.log({"type": "w472.first"})
+    logger.log({"type": "w472.second"})
+    good = pathlib.Path(chain).read_bytes()
+    assert len(_json.loads(good)["nodes"]) == 2
+    for shape, mk in SHAPES.items():
+        bad = mk(good)
+        pathlib.Path(chain).write_bytes(bad)
+        with pytest.raises(UEGUnavailable) as ei:
+            logger.log({"type": "w472.third"})
+        assert "nothing was appended" in str(ei.value) and pathlib.Path(chain).read_bytes() == bad, shape
+        # FU-054 — the interceptor's decision stands; whether it reached the ledger is said
+        uci = UnifiedConstitutionalInterceptorV16Omega("w472-node", ueg_logger=logger)
+        res = __import__("asyncio").run(uci.intercept({"intent": "read"}, lambda: {"ok": True}))
+        assert res.status == "allowed" and res.output == {"ok": True} and res.ueg_logged is False, shape
+        with pytest.raises(ZeroDivisionError):                     # the action's OWN error, never the ledger's
+            __import__("asyncio").run(uci.intercept({"intent": "read"}, lambda: 1 / 0))
+    pathlib.Path(chain).write_bytes(good)
+    assert logger.log({"type": "w472.third"}) and len(logger._read()["nodes"]) == 3
+    res = __import__("asyncio").run(UnifiedConstitutionalInterceptorV16Omega("w472-node", ueg_logger=logger)
+                                    .intercept({"intent": "read"}, lambda: "fine"))
+    assert res.status == "allowed" and res.ueg_logged is True
+    # FU-055 — the default chain path resolves through data_path, never the working directory
+    monkeypatch.delenv("WORKSTATION_UEG_PATH", raising=False)
+    assert pathlib.Path(ueg_mod._default_ueg_path()).resolve() == (cfg.data_path("meta", "gaas_v5_ueg.json")).resolve()
+    assert not ueg_mod._default_ueg_path().startswith("meta")
+    monkeypatch.setenv("WORKSTATION_UEG_PATH", chain)
+    assert ueg_mod._default_ueg_path() == chain
+    monkeypatch.undo()
+
+    # ── a non-finite revenue amount is refused at the door (FU-062) ──
+    from agentic_core.economy import revenue as rv
+    rv_before = rv._STORE.read_bytes() if rv._STORE.exists() else None
+    for amt in (float("nan"), float("inf"), -float("inf")):
+        with pytest.raises(ValueError):
+            rv.record_event(vid, "revenue", amt, "w472")
+    assert (rv._STORE.read_bytes() if rv._STORE.exists() else None) == rv_before
+
+    # ── a refused ledger has a repair path (FU-056): quarantine, lossless recovery, what was lost said ──
+    from agentic_core.economy import ledger as lg
+    lvid = "w472-repair-co"
+    assert client.post("/api/v1/economy/cycle", json={"vsb_id": lvid, "revenue": 120.0}).status_code in (200, 201, 409)
+    lpath = lg._STORE / f"{lvid}_ledger.json"
+    good_ledger = lpath.read_bytes()
+    balances_before = client.get(f"/api/v1/economy/ledger/{lvid}").json()["balances"]
+    n_quarantine = len(list(lg._STORE.glob(f"{lvid}_ledger.quarantine-*.json")))
+    # a BOM: recovered whole
+    lpath.write_bytes(codecs.BOM_UTF8 + good_ledger)
+    assert client.get(f"/api/v1/economy/ledger/{lvid}").status_code == 503
+    rep = client.post(f"/api/v1/economy/ledger/{lvid}/repair").json()
+    assert rep["repaired"] is True and any("byte-order mark" in x for x in rep["lost"]) and rep["quarantine"]
+    assert client.get(f"/api/v1/economy/ledger/{lvid}").json()["balances"] == balances_before
+    assert len(list(lg._STORE.glob(f"{lvid}_ledger.quarantine-*.json"))) == n_quarantine + 1
+    # trailing garbage: the valid prefix is the ledger, the tail is counted
+    lpath.write_bytes(good_ledger + b"\n{garbage")
+    rep = client.post(f"/api/v1/economy/ledger/{lvid}/repair").json()
+    assert rep["repaired"] is True and any("trailing byte" in x for x in rep["lost"])
+    assert client.get(f"/api/v1/economy/ledger/{lvid}").json()["balances"] == balances_before
+    # a posting whose amount no float holds is dropped and COUNTED, never invented
+    books = _json.loads(good_ledger.decode("utf-8"))
+    books["postings"].append({"debit": "cash", "credit": "revenue", "amount": 1.0, "memo": "w472 nan"})
+    text = _json.dumps(books).replace('"amount": 1.0, "memo": "w472 nan"', '"amount": NaN, "memo": "w472 nan"')
+    lpath.write_bytes(text.encode("utf-8"))
+    assert client.get(f"/api/v1/economy/ledger/{lvid}").status_code == 503
+    rep = client.post(f"/api/v1/economy/ledger/{lvid}/repair").json()
+    assert rep["repaired"] is True and any("posting(s)" in x for x in rep["lost"]) and rep["postings"] == len(books["postings"]) - 1
+    # a truncation with no valid prefix, and a non-finite balance: refused, quarantined, nothing written
+    for shape_bytes, needle in ((good_ledger[: len(good_ledger) // 2], "no valid JSON prefix"),
+                                (good_ledger.replace(b'"balances": {', b'"balances": {"cash": NaN, ', 1), "hand audit")):
+        lpath.write_bytes(shape_bytes)
+        r = client.post(f"/api/v1/economy/ledger/{lvid}/repair")
+        assert r.status_code == 409 and "quarantined" in r.json()["detail"] and needle in r.json()["detail"]
+        assert lpath.read_bytes() == shape_bytes
+    lpath.write_bytes(good_ledger)
+    assert client.post(f"/api/v1/economy/ledger/{lvid}/repair").json()["repaired"] is False   # nothing to repair
+    assert client.post("/api/v1/economy/ledger/nope-w472/repair").json()["repaired"] is False
+
+    # ── the surface says it (both ways: the page carries the refusal) ──
+    page = pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="roster-unavailable"' in page and "{living.roster_unavailable}" in page
+    assert 'data-testid="history-unavailable"' in page
+    for rel, needle in (("agentic_core/api/resource_fabric.py", "read_json_strict(_cr_store, list, expect=list)"),
+                        ("agentic_core/api/swarm.py", "read_json_strict(_DEV_STORE, dict, expect=dict)"),
+                        ("agentic_core/api/swarm.py", "read_json_strict(_IDENT_STORE, dict, expect=dict)"),
+                        ("agentic_core/config.py", "current = read_json_strict(path, default)")):
+        assert needle in pathlib.Path(rel).read_text(encoding="utf-8"), (rel, needle)
+    # ── (refutation) the roster's other readers: a transfer, the entity-type binding, a cycle, a birth, the heartbeat ──
+    roster_good = lv._STORE.read_bytes()
+    lv._STORE.write_bytes(codecs.BOM_UTF8 + roster_good)
+    try:
+        t = client.post("/api/v1/economy/transfer", json={"from_vsb": lvid, "to_vsb": vid, "amount": 5.0})
+        assert t.status_code == 503 and t.headers.get("X-Transfer-Debited") == "false", (t.status_code, t.text[:200])
+        w = client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "entity_type": "sole",
+                                                           "proportions": {"owner": 0.5, "self_investment": 0.5}})
+        assert w.status_code == 503 and "cannot be known" in w.json()["detail"]         # never the caller's claim
+        c = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 10.0, "owner": "Mallory", "entity_type": "sole"})
+        assert c.status_code == 503 and "no cycle ran" in c.json()["detail"]
+        born = client.post("/api/v1/genesis/establish", json={"problem": "w472 born while unreadable", "domain": "care",
+                                                              "name": "W472UnreadCo", "ship_output": False}).json()
+        assert born["living"]["registered"] is False and "could not be read whole" in born["living"]["reason"]
+        _ent = client.get(f"/api/v1/vsb/{born['vsb_id']}").json()
+        _ent = _ent.get("entity", _ent)
+        assert _ent["living"]["registered"] is False                          # said on the entity too
+        from agentic_core.organism import heartbeat as _hbm
+        beat = _hbm.OrganismHeartbeat()
+        beat.auto_economy = True
+        res = __import__("asyncio").run(beat.beat())
+        assert "operate_vsb" not in res["actions"] and "roster_unavailable" in res["actions"], res["actions"]
+        assert lv._STORE.read_bytes() == codecs.BOM_UTF8 + roster_good
+    finally:
+        lv._STORE.write_bytes(roster_good)
+    # a stored override is re-validated against the FORM when applied: a nonprofit never pays an Owner share
+    ov_good = mb._WATERFALL_OVERRIDES.read_bytes()
+    try:
+        ovs = _json.loads(ov_good.decode("utf-8"))
+        ovs[vid] = {"owner": 0.5, "self_investment": 0.5, "capital_fund": 0.0, "user_projects": 0.0, "charity": 0.0}
+        cfg.atomic_write_json(mb._WATERFALL_OVERRIDES, ovs)
+        m_np = mb.EconomicMetabolism(vid, "nonprofit")
+        assert m_np.waterfall["owner"] == 0.0 and "violates the form" in m_np.waterfall_source
+    finally:
+        mb._WATERFALL_OVERRIDES.write_bytes(ov_good)
+    # the chain's read side says 'unreadable', and only the DEFAULT chain is seeded from a legacy one
+    pathlib.Path(chain).write_bytes(codecs.BOM_UTF8 + good)
+    assert logger.verify_chain()["valid"] is False and "unreadable" in logger.verify_chain()["reason"]
+    assert logger.summary()["total_events"] is None and logger.summary()["unreadable"]
+    pathlib.Path(chain).write_bytes(good)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("WORKSTATION_UEG_PATH", raising=False)            # the env override alone would disable it
+    (tmp_path / "meta").mkdir()
+    (tmp_path / "meta" / "gaas_v5_ueg.json").write_bytes(good)           # a legacy chain in the working directory
+    other = UEGLogger(str(tmp_path / "other_chain.json"))
+    assert len(other._read()["nodes"]) == 0                              # an explicit chain is never seeded from it
+    monkeypatch.undo()
+    # the compliance-history hold keeps a standing Change Control decision
+    hist_good = lv._HISTORY.read_bytes()
+    try:
+        lv._update_entry(vid, lambda e: e.update(last_hold="held_for_change_control"))
+        lv._HISTORY.write_bytes(b"[not a history]")
+        lv.operate_vsb(vid)
+        row = next(r for r in lv.list_living()["living_vsbs"] if r["vsb_id"] == vid)
+        assert row["last_hold"] == "compliance_history_unavailable" and row["decision_hold"] == "held_for_change_control"
+    finally:
+        lv._HISTORY.write_bytes(hist_good)
+        lv._update_entry(vid, lambda e: (e.pop("last_hold", None), e.pop("decision_hold", None)))
+    # the evolution proposals never read 'unreadable' as a posture
+    assert lv.HISTORY_UNREADABLE == "unreadable"
+    vsb_src = pathlib.Path("agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert 'if _scr and _scr not in ("pass", "unreadable")' in vsb_src
+    # the repair never invents books: postings without accounts, entries without balances, a malformed finite posting
+    for mutate, needle in ((lambda b: b.pop("accounts"), "postings without the accounts"),
+                           (lambda b: b.pop("balances"), "entries without the balances"),
+                           (lambda b: b["postings"].__setitem__(0, dict(b["postings"][0], debit=None)), "amount is finite")):
+        books = _json.loads(good_ledger.decode("utf-8"))
+        if not books.get("entries"):
+            books["entries"] = [{"note": "w472"}]
+        mutate(books)
+        lpath.write_bytes(_json.dumps(books).encode("utf-8"))
+        r = client.post(f"/api/v1/economy/ledger/{lvid}/repair")
+        assert r.status_code == 409 and needle in r.json()["detail"], (needle, r.text[:200])
+        assert _json.loads(lpath.read_bytes().decode("utf-8")) == books
+    # a dropped non-finite posting re-indexes every later period boundary, never silently moves one
+    books = _json.loads(good_ledger.decode("utf-8"))
+    n0 = len(books["postings"])
+    books["postings"].insert(0, {"debit": "cash", "credit": "revenue", "amount": 1.0, "memo": "w472 nan first"})
+    books["closes"] = [{"posting_index": n0 + 1, "period": "w472"}]
+    text = _json.dumps(books).replace('"amount": 1.0, "memo": "w472 nan first"', '"amount": NaN, "memo": "w472 nan first"')
+    lpath.write_bytes(text.encode("utf-8"))
+    rep = client.post(f"/api/v1/economy/ledger/{lvid}/repair").json()
+    assert rep["repaired"] is True and any("re-indexed" in x for x in rep["lost"])
+    assert _json.loads(lpath.read_bytes().decode("utf-8"))["closes"][0]["posting_index"] == n0
+    lpath.write_bytes(good_ledger)
+    # the cascade's own persists say whether they filed (the removed tolerant import used to leave a NameError swallowed)
+    swarm_src = pathlib.Path("agentic_core/api/swarm.py").read_text(encoding="utf-8")
+    assert '_persistence["proposed_catalogue"] = {"persisted": True}' in swarm_src and '"persistence": _persistence' in swarm_src
+    assert "load_json_tolerant(_cat_store" not in swarm_src and "load_json_tolerant(_runs_store" not in swarm_src
+    lv.deregister(vid)

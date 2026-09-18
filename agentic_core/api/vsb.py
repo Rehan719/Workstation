@@ -1551,8 +1551,11 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
         _register_living(vsb_id, name, entity_type, domain, owner_id)
         entity["living"] = {"autonomous_operation": "registered — the organism tends this VSB on the "
                             "circadian heartbeat (paced virtual economy cycles)", "virtual": True}
-    except Exception:
-        pass
+    except Exception as _exc:
+        # W472 (refutation) — a refused registration is SAID on the entity, never silently dropped
+        entity["living"] = {"registered": False, "reason": f"{_exc.__class__.__name__}: {str(_exc)[:160]}",
+                            "note": "not registered on the living roster — the organism does not tend this entity "
+                                    "until the roster reads whole and it is registered"}
     # Seeded living business plan (Chief/Board own it) — only if none exists for this VSB yet
     try:
         from agentic_core.api import business_plan as bp_mod
@@ -2045,7 +2048,7 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
         try:
             from agentic_core.economy.living_vsbs import _latest_screen
             _scr = _latest_screen(vsb_id)
-            if _scr and _scr != "pass" and len(proposals) < 3:
+            if _scr and _scr not in ("pass", "unreadable") and len(proposals) < 3:   # W472 — 'unreadable' is no posture
                 proposals.append({
                     "trait": "compliance_posture",
                     "proposed_change": (f"remediate the §11 screen posture (currently '{_scr}') "

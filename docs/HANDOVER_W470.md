@@ -7,7 +7,11 @@
 > the lessons, the environment) still apply to every round. Two lessons since: never `sed -i` a CRLF file
 > (`reference-sed-strips-crlf-trap` in memory), and `done --hand-to` lifts the taker's broad prefixes to the handed
 > route's position (FU-073) — remove the finished item's route first and add the area to its next owner by hand.
-> The next free probe port is :8081.
+> **W472 shipped** (2026-09-19): P1.15 ✅ DONE — one strict read (`config.read_json_strict` → `StoreUnavailable`) for
+> every writer; eleven register rows closed. PLAN NOW now says **Next: P1.16 Canon and suite hygiene — 14 follow-ups
+> ride it**. Lesson: a blind that re-creates a hang needs a guard leg that bounds itself (a worker thread + timeout)
+> and a harness with a per-blind timeout — B07 spun for an hour before the still output file gave it away.
+> The next free probe port is :8082.
 
 Written 2026-09-18 by the session that shipped W469 (Claude Opus 5), on the Owner's instruction: "leave a
 handover for Fable to start W470". The Owner (Rehan) is switching models for W470. Nothing in W470 has been

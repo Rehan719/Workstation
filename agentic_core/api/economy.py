@@ -25,9 +25,10 @@ from agentic_core.auth.core import get_current_user, user_can_access
 from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY, get_template
 from agentic_core.economy.metabolism import (
     EconomicMetabolism, validate_waterfall, _load_waterfall_overrides,
-    _save_waterfall_overrides, _WATERFALL_STAGES,
+    _save_waterfall_overrides, _WATERFALL_STAGES, _WATERFALL_OVERRIDES as _WATERFALL_OVERRIDES_PATH,
 )
 from agentic_core.economy.charity import CharityIntelligence
+from agentic_core.config import StoreUnavailable
 from agentic_core.economy.ledger import LedgerUnavailable, LedgerWriteRefused
 
 router = APIRouter(prefix="/api/v1/economy", tags=["vsb-economy"])
@@ -84,8 +85,9 @@ async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str = DE
         rec = _lv_load().get(vsb_id)
         if rec and rec.get("owner"):
             owner, owner_source = str(rec["owner"]), "living_registry"
-    except Exception:
-        pass
+    except Exception as e:                        # W472 — an unreadable roster is not the platform default
+        if e.__class__.__name__ == "StoreUnavailable":
+            owner_source = "living_registry_unavailable"
     out = EconomicMetabolism(vsb_id, entity_type, owner).status()
     out["attribution"] = {"entity_type_source": et_source, "owner_source": owner_source}
     return out
@@ -134,7 +136,12 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
     owner, entity_type, attribution = req.owner, req.entity_type, "request_values"
     try:
         from agentic_core.economy.living_vsbs import list_living
-        reg = next((v for v in (list_living() or {}).get("living_vsbs", [])
+        _living = list_living() or {}
+        if _living.get("roster_unavailable"):
+            # W472 (refutation) — the cycle never runs on request values while the roster cannot be read
+            raise HTTPException(status_code=503, detail=(f"{_living['roster_unavailable']}; the entity's owner and "
+                                                         "form cannot be known — no cycle ran, nothing was written"))
+        reg = next((v for v in _living.get("living_vsbs", [])
                     if v.get("vsb_id") == req.vsb_id), None)
         if reg:
             owner = reg.get("owner") or owner
@@ -142,6 +149,8 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
             attribution = "living_registration"
             if req.owner != "Rehan" and req.owner != owner:
                 attribution = f"living_registration (request owner '{req.owner}' overridden)"
+    except HTTPException:
+        raise
     except Exception:
         pass
     from agentic_core.economy.governance import governed_cycle
@@ -212,6 +221,10 @@ def _resolve_entity_type(vsb_id: str, claimed: str) -> tuple:
         rec = _lv_load().get(vsb_id)
         if rec and rec.get("entity_type"):
             return str(rec["entity_type"]), "living_registry"
+    except StoreUnavailable as e:
+        # W472 (refutation) — an unreadable roster used to fall through to the caller's CLAIM, reopening W313
+        # (a nonprofit paid an Owner profit share under a claimed 'sole' form); the binding cannot be known
+        raise HTTPException(status_code=503, detail=f"{e}; the entity's form cannot be known — nothing was changed")
     except Exception:
         pass
     try:
@@ -241,9 +254,17 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
             "constraints": {"distributes_profit": template["distributes_profit"],
                             "capital_preserved": template["capital_preserved"]},
             "stages": _WATERFALL_STAGES})
-    overrides = _load_waterfall_overrides()
-    overrides[req.vsb_id] = waterfall
-    _save_waterfall_overrides(overrides)
+    # W472 (register FU-051) — locked, strict, atomic: an unreadable store is refused, never replaced
+    from agentic_core.config import StoreUnavailable, store_lock
+    try:
+        with store_lock(_WATERFALL_OVERRIDES_PATH):
+            overrides = _load_waterfall_overrides()
+            overrides[req.vsb_id] = waterfall
+            _save_waterfall_overrides(overrides)
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{e} — the Owner's waterfall overrides are unchanged")
+    except TimeoutError as e:
+        raise HTTPException(status_code=503, detail=f"the waterfall store is busy ({e}); nothing was written")
     # Constitutional audit — the Owner adjusting the distribution policy is a material, logged act.
     try:
         from agentic_core.gaas.v5 import UEGLogger
@@ -460,6 +481,11 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         raise HTTPException(status_code=400, detail=str(e))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e).strip("'\""))
+    except StoreUnavailable as e:
+        # W472 (refutation) — the living roster could not be read whole: the receiver cannot be known, nothing debited
+        raise HTTPException(status_code=503, headers={"X-Transfer-Debited": "false",
+                                                      **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
+                            detail=f"{e}; the receiver cannot be confirmed — nothing was debited")
 
     # W463 — the gate binds the approval to this amount AND this counterparty, and hands back exactly
     # what it spent (None when nothing was spent) so a transfer that does not post gives back only that
@@ -522,6 +548,10 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         headers = {"X-Transfer-Id": _xfer_id,
                    "X-Transfer-Debited": "true" if debited else ("false" if debited is False else "unknown")}
         again = "settle" if settling else "retry"
+        if isinstance(e, StoreUnavailable) and debited is False:
+            headers["X-Transfer-Debited"] = "false"
+            return HTTPException(status_code=503, headers=headers, detail=(
+                f"{why}. Nothing was debited — {again} again once the store is readable."))
         if isinstance(e, SenderLedgerUnavailable):
             # refused under the ledger's lock before any posting: this request debited nothing
             headers["X-Transfer-Debited"] = "false"
@@ -1251,6 +1281,19 @@ async def get_ledger(vsb_id: str, user: dict | None = Depends(get_current_user))
         raise HTTPException(status_code=503, detail=(
             f"{m.ledger.load_error}. No balances are shown rather than empty books; nothing was changed."))
     return m.status()["ledger"]
+
+
+@router.post("/ledger/{vsb_id}/repair")
+async def repair_ledger(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    """W472 (register FU-056) — repair a ledger the strict read refuses: the file is quarantined beside the books,
+    what can be recovered without inventing a figure is written back, and what was lost is said here and on the
+    constitutional ledger. Owner-scoped. Refuses (409) when nothing recoverable remains."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy import ledger as _ledger
+    try:
+        return _ledger.repair(_ledger._STORE / f"{vsb_id}_ledger.json", vsb_id)
+    except LedgerUnavailable as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.get("/charity/candidates")

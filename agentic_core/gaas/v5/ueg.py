@@ -28,7 +28,26 @@ logger = logging.getLogger("gaas.v5.ueg")
 # processes each hold only an in-process lock, so they corrupt each other's chain) — point tests and
 # isolated deployments at their own ledger. Defaults to meta/gaas_v5_ueg.json so existing setups are
 # unchanged.
-_DEFAULT_PATH = os.environ.get("WORKSTATION_UEG_PATH") or os.path.join("meta", "gaas_v5_ueg.json")
+_LEGACY_PATH = os.path.join("meta", "gaas_v5_ueg.json")      # pre-W472: relative to the working directory
+
+
+def _default_ueg_path() -> str:
+    """W472 (register FU-055) — the chain's default location resolves through config.data_path, never the working
+    directory (a backend started from another directory used to start a separate chain)."""
+    env = os.environ.get("WORKSTATION_UEG_PATH")
+    if env:
+        return env
+    from agentic_core.config import data_path
+    return str(data_path("meta", "gaas_v5_ueg.json"))
+
+
+_DEFAULT_PATH = _default_ueg_path()
+
+
+class UEGUnavailable(RuntimeError):
+    """W472 (register FU-042) — the constitutional ledger's chain file exists but cannot be read whole. Nothing is
+    appended: the tolerant read answered an EMPTY chain and the next log call started a new chain over the old one
+    (5 nodes replaced by 1, reproduced) — the append-only, hash-chained audit trail silently restarted."""
 
 
 _ADVERSE_TYPES = frozenset({
@@ -131,18 +150,44 @@ class UEGLogger:
             try:
                 with store_lock(self.storage_path):
                     if not os.path.exists(self.storage_path):
-                        self._write({"nodes": [], "root_hash": None})
+                        # W472 (FU-055) — a chain left at the old working-directory path is carried over ONCE,
+                        # bytes intact, so moving the default location never splits the audit trail
+                        # (refutation) only the DEFAULT chain is seeded from the legacy one — an explicit
+                        # storage_path is another chain, never a copy of production's
+                        if (not os.environ.get("WORKSTATION_UEG_PATH")
+                                and os.path.abspath(self.storage_path) == os.path.abspath(_DEFAULT_PATH)
+                                and os.path.exists(_LEGACY_PATH)
+                                and os.path.abspath(_LEGACY_PATH) != os.path.abspath(self.storage_path)):
+                            import shutil
+                            shutil.copyfile(_LEGACY_PATH, self.storage_path)
+                            logger.warning("UEG: chain carried over from %s to %s", _LEGACY_PATH, self.storage_path)
+                        else:
+                            self._write({"nodes": [], "root_hash": None})
             except Exception:
                 # never let lock contention stop construction — but only create when still absent
                 if not os.path.exists(self.storage_path):
                     self._write({"nodes": [], "root_hash": None})
 
     def _read(self) -> Dict[str, Any]:
+        """Tolerant read — READ-ONLY views only (verify_chain, listings). Every append goes through _read_strict."""
         try:
             with open(self.storage_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, FileNotFoundError, OSError):
             return {"nodes": [], "root_hash": None}
+
+    def _read_strict(self) -> Dict[str, Any]:
+        """W472 (FU-042) — the chain as the writer reads it: whole, or UEGUnavailable and nothing appended."""
+        from agentic_core.config import StoreUnavailable, read_json_strict
+        try:
+            graph = read_json_strict(self.storage_path, {"nodes": [], "root_hash": None}, expect=dict)
+        except StoreUnavailable as e:
+            raise UEGUnavailable(f"the constitutional ledger's chain could not be read whole ({e.problem}) — "
+                                 "nothing was appended") from e
+        if not isinstance(graph.get("nodes"), list):
+            raise UEGUnavailable("the constitutional ledger's chain could not be read whole (nodes is not a list) — "
+                                 "nothing was appended")
+        return graph
 
     def _write(self, graph: Dict[str, Any]) -> None:
         # W351 — atomic: a torn whole-file write under contention wiped the chain
@@ -161,7 +206,7 @@ class UEGLogger:
         separate processes (the heartbeat + API workers write the same chain in production)."""
         from agentic_core.config import store_lock
         with self._lock, store_lock(self.storage_path):
-            graph = self._read()
+            graph = self._read_strict()               # W472 — refused, never restarted
             base = {
                 "id": f"event_{len(graph['nodes'])}",
                 "timestamp": time.time(),
@@ -208,7 +253,19 @@ class UEGLogger:
     def recent(self, limit: int = 50) -> List[Dict[str, Any]]:
         return self._read()["nodes"][-limit:]
 
+    def unreadable(self) -> Optional[str]:
+        """W472 (refutation) — why the chain cannot be read whole right now, or None. The read side never
+        answers an unreadable chain as an empty one."""
+        try:
+            self._read_strict()
+            return None
+        except UEGUnavailable as e:
+            return str(e)
+
     def summary(self) -> Dict[str, Any]:
+        bad = self.unreadable()
+        if bad:
+            return {"total_events": None, "root_hash": None, "by_type": {}, "unreadable": bad}
         graph = self._read()
         nodes = graph["nodes"]
         by_type: Dict[str, int] = {}
@@ -223,6 +280,9 @@ class UEGLogger:
 
     def verify_chain(self) -> Dict[str, Any]:
         """Recompute every hash and confirm the chain has not been tampered with."""
+        bad = self.unreadable()
+        if bad:
+            return {"valid": False, "reason": f"unreadable: {bad}"}
         graph = self._read()
         prev: Optional[str] = None
         for node in graph["nodes"]:

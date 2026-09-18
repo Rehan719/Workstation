@@ -336,8 +336,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -680,8 +680,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -795,8 +795,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -811,8 +811,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -828,8 +828,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -844,8 +844,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -865,8 +865,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -881,8 +881,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -897,8 +897,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -914,8 +914,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -1015,8 +1015,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W472",
       "note": ""
     },
     {
@@ -1212,6 +1212,22 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-075",
+      "title": "Read-only readers still use load_json_tolerant; retire the tolerant loader once every writer is strict",
+      "why": "W472 made every WRITER read strictly (config.read_json_strict). The read-only readers that summarise or list — revenue._load (pending_summary), ueg._read (recent), agent_hub listing reads, integration_surface listings, resource_fabric composition/swarm listings, swarm proposed_catalogue/org_cascade_runs listings, business_plan._load — still use load_json_tolerant or a bare json.loads with a fallback: honest as readers (they never write back) but a listing over an unreadable store shows fewer rows without saying so. Fix: give each listing an 'unavailable' answer via read_json_strict and delete load_json_tolerant when no caller remains.",
+      "source": "W472",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/config.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P1.16",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [
@@ -1234,21 +1250,6 @@
         "ratification"
       ],
       "note": "the perimeter and the gate"
-    },
-    {
-      "slot": "P1.15",
-      "files": [],
-      "words": [
-        "cannot be read",
-        "unreadable",
-        "tolerantly",
-        "stale lockfile",
-        "non-finite",
-        "ueg chain",
-        "ueg path",
-        "ueg write"
-      ],
-      "note": "stores that refuse, never replace (the W442→W468 class)"
     },
     {
       "slot": "P2.8",
@@ -1334,10 +1335,20 @@
         "packages/ui/",
         "agentic_core/layers/",
         "scripts/followups.py",
-        "agentic_core/plan_followups.py"
+        "agentic_core/plan_followups.py",
+        "agentic_core/config.py"
       ],
-      "words": [],
-      "note": "canon and suite hygiene before M1, and the register's own tooling (the broad prefixes: last)"
+      "words": [
+        "cannot be read",
+        "unreadable",
+        "tolerantly",
+        "stale lockfile",
+        "non-finite",
+        "ueg chain",
+        "ueg path",
+        "ueg write"
+      ],
+      "note": "canon and suite hygiene before M1, the register's own tooling, and the store class after P1.15 (W472; the broad prefixes: last)"
     }
   ]
 }

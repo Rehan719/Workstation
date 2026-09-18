@@ -134,6 +134,127 @@ def read_strict(path: Path, vsb_id: str) -> Dict[str, Any]:
     return data
 
 
+def repair(path: Path, vsb_id: str) -> Dict[str, Any]:
+    """W472 (register FU-056) — the way back for a ledger the strict read refuses. The bytes are QUARANTINED first
+    (a copy beside the ledger, never deleted), then what can be recovered without inventing a figure is recovered: a
+    byte-order mark stripped; the valid JSON prefix when the tail is garbage or a truncation; postings whose amount
+    no float holds dropped and COUNTED. A balance that is non-finite is not reset — that needs a hand audit, and the
+    repair refuses. The recovered books must pass the strict read before they are written, and what was lost is
+    said in the answer and on the constitutional ledger."""
+    import codecs
+    import shutil
+    from agentic_core.config import atomic_write_json, store_lock
+    path = Path(path)
+    with store_lock(path):
+        try:
+            read_strict(path, vsb_id)
+            return {"vsb_id": vsb_id, "repaired": False, "reason": "the ledger reads whole — nothing to repair"}
+        except LedgerUnavailable as err:
+            problem = str(err)
+        if not path.exists():
+            return {"vsb_id": vsb_id, "repaired": False, "reason": "no ledger file"}
+        raw = _read_ledger_file(path)
+        ts = time.strftime("%Y-%m-%dT%H-%M-%SZ", time.gmtime())
+        quarantine = path.with_name(f"{path.stem}.quarantine-{ts}.json")
+        shutil.copyfile(path, quarantine)
+        lost: List[str] = []
+        text = raw
+        if text.startswith(codecs.BOM_UTF8):
+            text = text[len(codecs.BOM_UTF8):]
+            lost.append("a byte-order mark (removed)")
+        try:
+            s = text.decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise LedgerUnavailable(f"{vsb_id}'s ledger is not UTF-8 (byte {e.start}); quarantined as "
+                                    f"{quarantine.name}, nothing recovered") from e
+        try:
+            data = json.loads(s)
+        except ValueError:
+            try:
+                data, end = json.JSONDecoder().raw_decode(s.lstrip())
+                tail = len(s.lstrip()) - end
+                lost.append(f"{tail} trailing byte(s) after the valid JSON (a truncation or garbage)")
+            except ValueError as e:
+                raise LedgerUnavailable(f"{vsb_id}'s ledger holds no valid JSON prefix; quarantined as "
+                                        f"{quarantine.name}, nothing recovered") from e
+        if not isinstance(data, dict):
+            raise LedgerUnavailable(f"{vsb_id}'s ledger is not a ledger object ({type(data).__name__}); "
+                                    f"quarantined as {quarantine.name}, nothing recovered")
+        # (refutation) the three W468 'written together' rules are refused BEFORE any key is defaulted: defaulting
+        # 'accounts' or 'balances' here wrote exactly the empty books the strict read exists to refuse
+        postings = data.get("postings")
+        entries = data.get("entries")
+        if isinstance(postings, list) and postings and "accounts" not in data:
+            raise LedgerUnavailable(f"{vsb_id}'s ledger holds postings without the accounts they were posted to — a hand "
+                                    f"audit is needed; quarantined as {quarantine.name}, nothing written")
+        if isinstance(entries, list) and entries and "balances" not in data:
+            raise LedgerUnavailable(f"{vsb_id}'s ledger holds entries without the balances they were recorded to — a hand "
+                                    f"audit is needed; quarantined as {quarantine.name}, nothing written")
+        if isinstance(postings, list) and "closes" not in data and any(
+                isinstance(p, dict) and str(p.get("memo") or "").startswith("period close") for p in postings):
+            raise LedgerUnavailable(f"{vsb_id}'s ledger holds period-close postings without the closes that mark them — a "
+                                    f"hand audit is needed; quarantined as {quarantine.name}, nothing written")
+        if isinstance(postings, list):
+            # a posting whose amount is finite is never dropped: its figure is already in the accounts (a malformed
+            # debit/credit on a finite amount needs a hand audit); only an amount no float holds is dropped
+            malformed = [i for i, p in enumerate(postings)
+                         if not (isinstance(p, dict) and isinstance(p.get("debit"), str) and isinstance(p.get("credit"), str))
+                         and _number_ok((p or {}).get("amount") if isinstance(p, dict) else None)]
+            if malformed:
+                raise LedgerUnavailable(f"{vsb_id}'s posting {malformed[0]} is malformed but its amount is finite and "
+                                        f"already in the accounts — a hand audit is needed; quarantined as "
+                                        f"{quarantine.name}, nothing written")
+            drop = [i for i, p in enumerate(postings) if not (isinstance(p, dict) and _number_ok(p.get("amount")))]
+            if drop:
+                keep = [p for i, p in enumerate(postings) if i not in set(drop)]
+                lost.append(f"{len(drop)} posting(s) whose amount no float holds (dropped; the accounts were not "
+                            "adjusted — a non-finite amount was never applied to them)")
+                data["postings"] = keep
+                closes = data.get("closes")
+                if isinstance(closes, list):
+                    # a period boundary names a posting index: every boundary after a dropped posting moves back by
+                    # the number dropped before it, so no posting silently changes period; a boundary ON a dropped
+                    # posting is refused
+                    reindexed = []
+                    for c in closes:
+                        idx = c.get("posting_index") if isinstance(c, dict) else None
+                        if not isinstance(idx, int):
+                            continue
+                        if idx in drop:
+                            raise LedgerUnavailable(f"{vsb_id}'s period close marks a posting whose amount no float holds "
+                                                    f"— a hand audit is needed; quarantined as {quarantine.name}, nothing "
+                                                    "written")
+                        shift = sum(1 for d in drop if d < idx)
+                        reindexed.append(dict(c, posting_index=idx - shift))
+                    if reindexed != closes:
+                        lost.append(f"{len(reindexed)} period close boundary(ies) re-indexed after the dropped posting(s)")
+                        data["closes"] = reindexed
+        for key in ("balances", "accounts"):
+            book = data.get(key, {})
+            if isinstance(book, dict) and any(not _number_ok(v) for v in book.values()):
+                raise LedgerUnavailable(f"{vsb_id}'s '{key}' holds a balance no float holds — a hand audit is needed; "
+                                        f"quarantined as {quarantine.name}, nothing written")
+        fresh = _new_books(vsb_id)
+        for key in ("vsb_id", "currency", "entries", "balances", "postings", "accounts", "closes"):
+            data.setdefault(key, fresh[key])
+        still = _shape_problem(data)
+        if still:
+            raise LedgerUnavailable(f"{vsb_id}'s ledger is still not a ledger after recovery ({still}); quarantined as "
+                                    f"{quarantine.name}, nothing written")
+        atomic_write_json(path, data)
+        read_strict(path, vsb_id)                     # what was written reads whole — or the raise says it did not
+    record = {"vsb_id": vsb_id, "repaired": True, "problem": problem, "quarantine": quarantine.name, "lost": lost,
+              "postings": len(data.get("postings") or []), "entries": len(data.get("entries") or []),
+              "note": "recovered without inventing a figure; the original bytes are kept in the quarantine copy"}
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.ledger_repaired", **record})
+        record["ueg_logged"] = True
+    except Exception:
+        record["ueg_logged"] = False
+    return record
+
+
 # Chart of accounts (simplified, biomimetic-aware).
 ACCOUNTS = ["revenue", "reserves", "owner", "self_investment",
             "capital_fund", "user_projects", "charity"]

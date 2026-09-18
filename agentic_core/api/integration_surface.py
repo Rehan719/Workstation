@@ -20,7 +20,7 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
@@ -346,11 +346,14 @@ async def spawn_twin(node_id: str = "node-1"):
     """W326 — honest: this previously claimed 'Federation twin registered' while registering
     NOTHING. Now the twin reference genuinely persists (atomic store) and the listing reads it;
     full digital-twin modelling remains at /api/v1/twin (honestly referenced, not implied)."""
-    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict
     import time as _time
     import uuid as _uuid
     store = data_path("federation_twins.json")
-    rows = load_json_tolerant(store, []) or []
+    try:
+        rows = read_json_strict(store, list, expect=list)          # W472 (FU-053) — refused, never replaced
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{e}; no twin was registered")
     twin = {"twin_id": f"twin-{node_id}-{_uuid.uuid4().hex[:6]}", "node_id": node_id,
             "spawned_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())}
     rows.append(twin)

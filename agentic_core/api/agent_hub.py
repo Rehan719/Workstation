@@ -40,7 +40,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from agentic_core.auth.core import auth_enabled, get_current_user, user_can_access
-from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
+from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, load_json_tolerant, read_json_strict, store_lock
 from agentic_core.organism.biobus import biobus
 
 _MSG_DIR = Path((os.getenv("ACH_MESSAGES_DIR") or str(data_path("agent_messages"))))
@@ -285,12 +285,12 @@ async def post_message(req: PostMessageRequest,
     if reg_path.exists():
         try:
             with store_lock(reg_path):
-                rec = load_json_tolerant(reg_path, None)
+                rec = read_json_strict(reg_path, None, expect=dict)          # W472 — a registration it cannot read whole is left alone
                 if isinstance(rec, dict):
                     rec["last_active"] = msg.timestamp
                     atomic_write_json(reg_path, rec)
-        except (OSError, TimeoutError):
-            pass  # non-fatal; the message itself is already persisted
+        except (OSError, TimeoutError, StoreUnavailable):
+            pass  # non-fatal; the message itself is already persisted, and an unreadable registration is not rewritten
 
     delivered = await _broadcast({"event": "message", "data": msg.model_dump()})
 
@@ -392,7 +392,10 @@ async def register_agent(req: RegisterAgentRequest,
     )
     reg_path = _REG_DIR / f"{req.agent_id}.json"
     with store_lock(reg_path):
-        prev = load_json_tolerant(reg_path, None) if reg_path.exists() else None
+        try:
+            prev = read_json_strict(reg_path, None, expect=dict)               # W472 — never overwrite what cannot be read whole
+        except StoreUnavailable as e:
+            raise HTTPException(status_code=503, detail=f"{e}; the registration is unchanged")
         if isinstance(prev, dict):
             # W443 refuter catch: without this, an authenticated tenant could OVERWRITE another
             # user's registration (re-stamping registered_by) and then pass the deregister gate —
@@ -456,7 +459,10 @@ async def deregister_agent(agent_id: str,
     reg_path = _REG_DIR / f"{agent_id}.json"
     if not reg_path.exists():
         raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' is not registered.")
-    rec = load_json_tolerant(reg_path, None) or {"agent_id": agent_id}
+    try:
+        rec = read_json_strict(reg_path, None, expect=dict) or {"agent_id": agent_id}   # W472 — an unreadable registration is not deleted
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{e}; the registration was not removed")
     if auth_enabled() and not user_can_access(user, _owner_for_access(rec)):
         raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' is not registered.")
     reg_path.unlink(missing_ok=True)

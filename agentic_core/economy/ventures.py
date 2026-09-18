@@ -17,7 +17,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from agentic_core.config import data_path, load_json_tolerant, store_lock
+from agentic_core.config import StoreUnavailable, data_path, read_json_strict, store_lock
 
 _PORTFOLIO_STORE = data_path("economy_ventures_portfolio.json")
 
@@ -158,10 +158,9 @@ class VentureIntelligence:
 # ── Portfolio persistence (§6: tracked as portfolio positions; returns recycle into the waterfall) ─────────
 
 def _load_portfolio() -> Dict[str, Any]:
-    # W442 — tolerant load: a corrupt file used to read as {} and the next save erased every
-    # holding (the shared-store concurrency class' silent-wipe half).
-    d = load_json_tolerant(_PORTFOLIO_STORE, {}) if _PORTFOLIO_STORE.exists() else {}
-    return d if isinstance(d, dict) else {}
+    """W472 (register FU-052) — whole or StoreUnavailable. W442's tolerant load still read a corrupt file as {} when
+    no prefix parsed, and record_positions then kept only the new position (holdings and pending returns lost)."""
+    return read_json_strict(_PORTFOLIO_STORE, dict, expect=dict)
 
 
 def _save_portfolio(d: Dict[str, Any]) -> None:
@@ -218,7 +217,10 @@ def record_return(vsb_id: str, holding_id: str, amount: float, memo: str = "") -
 def peek_pending_returns(vsb_id: str) -> float:
     """W442 — READ-ONLY view of the queued returns, for the §3 materiality estimate (the gate
     must see what the cycle will consume, or stuffing this queue bypasses Change Control)."""
-    pf = _load_portfolio().get(vsb_id) or {}
+    try:
+        pf = _load_portfolio().get(vsb_id) or {}
+    except StoreUnavailable:
+        return 0.0            # a READ-ONLY estimate; the drain itself (a writer) refuses on the same file
     return round(pf.get("pending_returns_wst", 0.0), 2)
 
 
@@ -297,7 +299,13 @@ def _record_positions_locked(vsb_id: str, positions) -> None:
 def portfolio(vsb_id: str) -> Dict[str, Any]:
     # W442 refuter catch: pending_returns_wst lived in the store but never in this response, so
     # the panel's headline badge read 0 forever — the exact invisibility W442 claimed to fix.
-    pf = _load_portfolio().get(vsb_id)
+    try:
+        pf = _load_portfolio().get(vsb_id)
+    except StoreUnavailable as e:
+        # W472 — never zero holdings for a portfolio that could not be read
+        return {"vsb_id": vsb_id, "currency": "WST", "unavailable": str(e), "holdings": [],
+                "note": "the venture portfolio could not be read whole — no figures are shown and nothing is written "
+                        "to it until it can be read (virtual)"}
     if not pf:
         return {"vsb_id": vsb_id, "currency": "WST", "invested_total": 0.0,
                 "positions_count": 0, "holdings": [], "pending_returns_wst": 0.0,

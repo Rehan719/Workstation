@@ -6427,3 +6427,60 @@ caught by putil's EOL report on the next edit, repaired byte-exact, recorded in 
 putil.apply or the Edit tool.
 
 Suite: 383 passed · 15 skipped · 0 fail (full run on the final tree, isolated DATA_DIR, 39 min; 398 items from 359 test functions).
+
+### W472 — P1.15 Stores that refuse, never replace: the class-kill
+
+**What was wrong** (register FU-021, FU-042, FU-049–FU-056, FU-062 — the store class W442→W468).
+Five rounds had fixed one store at a time. Every other writer still read its store with a tolerant loader that
+answered EMPTY (or a valid prefix) for a file it could not parse, and then wrote that emptiness back over the real
+store: the living roster (a BOM roster kept 1 of 3 entities — the heartbeat stopped tending the rest), the
+compliance history (an unreadable one read as 'never screened' and LIFTED every FAIL hold), the Owner's waterfall
+overrides (one save kept only the new override; a cycle silently used the template), the venture portfolio
+(holdings and pending returns lost), the constitutional ledger's chain (5 nodes replaced by 1 — the audit trail
+silently restarted), and the smaller stores FU-053 named. The interceptor's own UEG writes could turn an allowed
+action into an exception. The chain's default path was relative to the working directory. store_lock ignored its
+timeout when a stale lockfile could not be removed. A revenue event could record NaN. A refused ledger had no way
+back but a hand edit.
+
+**What changed.**
+- `config.read_json_strict(path, missing, expect)` and `StoreUnavailable`: the ONE strict read for writers. Missing
+  file → a new store; existing file → whole or refused (BOM, not UTF-8, not JSON, non-finite number, too deep, wrong
+  type, a sharing violation that lasts), with the bytes unchanged. `mutate_json` uses it.
+- Applied store by store: living roster (`register`/`deregister`/`_update_entry` refuse; `list_living` says
+  `roster_unavailable`; `operate_one` says `held: roster_unavailable`; a malformed entry never stops the rotation);
+  compliance history (`_latest_screen` → `unreadable`; `operate_vsb` HOLDS with `compliance_history_unavailable`;
+  `screen_living_vsb` does not record; the roster rows say `history_unavailable`, standing unknown); waterfall
+  overrides (locked, strict, atomic; `POST /economy/waterfall` 503; `waterfall_source = overrides_unavailable`);
+  venture portfolio (`record_positions`/returns refuse; `portfolio()` says unavailable); the UEG chain (`_read_strict`
+  in `log`; `UEGUnavailable`; the default path through `data_path("meta", …)`, a legacy `./meta` chain carried over
+  once); the interceptor (`_ueg` wraps every write; `ueg_logged` on the result; an action's own error is re-raised);
+  federation twins, proposed catalogue, agent registrations (503, nothing written); composition runs (`run_record`
+  says whether the run was filed); tier stores (not written back over); `store_lock` stale branch; `record_event`
+  refuses a non-finite amount; `ledger.repair` + `POST /economy/ledger/{id}/repair`.
+- The roster page (VSBEconomy) says when the roster or the history could not be read whole.
+
+**Refuted (own diff), one pass in three isolated worktrees — twenty-three real verdicts across three lenses (duplicates included), two refuted; all fixed as rules and guarded.** The first cut made the stores strict but left
+their READERS behind: a transfer, a cycle and a waterfall save on an unreadable roster answered 500 or fell to the
+caller's claim (a nonprofit paid an Owner share under a claimed 'sole' form — W313 reopened); a birth swallowed its
+refused registration; the heartbeat recorded `operate_vsb` on a beat that tended nothing; the cascade's own persists
+filed nothing (a removed tolerant import left a NameError swallowed by `except Exception`); the chain's `verify_chain`
+and `summary` answered an unreadable chain as empty, and any explicit chain was seeded from the legacy one; a cycle on
+an unreadable portfolio said nothing; evolution read the `unreadable` sentinel as a compliance posture; and the repair
+could default the accounts away (empty books with `lost: []`), drop a finite posting, or move a period boundary.
+Fixed as rules: every reader of a strict store says `unavailable` (503 with nothing debited/changed), a stored override
+is re-validated against the form each time it is applied, `run_record`/`persistence` say whether a run was filed, the
+chain's read side says `unreadable`, the repair refuses the three 'written together' shapes and any finite posting and
+re-indexes period boundaries. Two claims were refuted (the decision-hold overwrite and the probe's restore); the
+hold-preserving code is kept as a W468-pattern safeguard.
+**Process.** Blind B07 (the stale-lock loop) re-created the FU-021 bug exactly and the guard's lock leg spun forever —
+found by the output file not moving for an hour; the leg now runs the acquisition in a worker with a 5-second bound
+and the harness has a per-blind timeout. The verify phase hit the usage limit mid-run and was resumed from the
+cached finders. The guard caught three real slips of its own on the way: a missing `HTTPException` import, a
+registration of the wrong shape overwritten, and a route that validated before it read.
+
+**Broken 40 ways** (each blind alone, guards run, byte-restored); every one fails, none stays green.
+Guard: test_w472_stores_refuse_never_replace_the_class — the table: seven stores × six shapes, the chain × six, the
+interceptor, the lock, the revenue door, the repair path; the page needles.
+Probe: scripts/_w472_probe.mjs on a fresh backend at :8081.
+
+Suite: 384 passed · 15 skipped · 0 fail (full run on the final tree, isolated DATA_DIR, 42 min; 399 items from 360 test functions).
