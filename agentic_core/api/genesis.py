@@ -953,8 +953,13 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         try:
             from agentic_core.api.vsb import ship_vsb_repo
             _s = await ship_vsb_repo(vsb_id, user=user if isinstance(user, dict) else None)
+            # W471 — only the surfaces that shipped are listed as shipped; a refused or deferred one is named
+            _surf = _s.get("surfaces") or {}
             initial_ship = {"shipped": True, "coherent_whole": _s.get("coherent_whole"),
-                            "surfaces": sorted((_s.get("surfaces") or {}).keys()),
+                            "surfaces": sorted(k for k, v in _surf.items()
+                                               if not (isinstance(v, dict) and ("error" in v or "deferred" in v))),
+                            "refused": {k: (v.get("error") or v.get("deferred")) for k, v in _surf.items()
+                                        if isinstance(v, dict) and ("error" in v or "deferred" in v)},
                             "commit": (_s.get("version_control") or {}).get("commit")}
         except Exception as exc:
             initial_ship = {"shipped": False, "error": str(exc)[:160]}

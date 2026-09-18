@@ -86,6 +86,10 @@ interface PwaManifest {
 interface BoardPack {
   vsb_id: string; name: string; kind: string; narrative: string; dcs_registered: boolean; dcs_hash?: string;
   layers: Record<string, unknown>;
+  // W471 — who composed the narrative, and whether this assembly changed anything
+  ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
+  version?: number; unchanged?: boolean; unchanged_since?: string; generated_at?: string;
+  concept_source?: string; concept_note?: string;
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
@@ -379,7 +383,11 @@ export const GenesisJourney: React.FC = () => {
     setPackBusy(true); setPack(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/board-pack`, { method: 'POST' });
-      if (res.ok) setPack(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+      if (res.ok) setPack(await res.json());
+      else {   // W471 — the server's reason (no concept recorded, name pending, a review gate), never a bare status
+        const d = await res.json().catch(() => null);
+        setError(typeof d?.detail === 'string' ? d.detail : `Action failed (HTTP ${res.status}).`);
+      }
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setPackBusy(false);
   };
@@ -1040,6 +1048,14 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Board Pack</span>
                               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{Object.keys(pack.layers).join(' · ')}</span>
                               {pack.dcs_registered && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={pack.dcs_hash}>DCS-registered</span>}
+                              {pack.ai_provenance?.served_by && (() => { const b = provenanceMapBadge(pack.ai_provenance.served_by, pack.ai_provenance.any_external); return (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title} data-testid="pack-provenance">{b.label}</span>
+                              ); })()}
+                              {pack.version && (
+                                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300" data-testid="pack-version" title="the version moves only when what the pack carries changes">
+                                  v{pack.version}{pack.unchanged && pack.unchanged_since ? ` · unchanged since ${pack.unchanged_since}` : ''}
+                                </span>
+                              )}
                               {(() => { const c = qmsChip(pack.quality_assurance?.quality, 'QMS:'); return c && (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
@@ -1049,6 +1065,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                 </span>
                               )}
                             </div>
+                            {pack.concept_note && <p className="text-[9px] text-amber-400/80" data-testid="pack-concept-note">{pack.concept_note}</p>}
                             <pre className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">{pack.narrative.slice(0, 1200)}</pre>
                           </div>
                         )}

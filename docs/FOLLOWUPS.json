@@ -1196,21 +1196,25 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-074",
+      "title": "The Cockpit's plan tab has no owner-edit surface and no owner-edited marks",
+      "why": "W471 wired the owner-edit form (POST /business-plan/set with clear) and the owner-edited marks into BusinessPlan.tsx only; VSBCockpit's plan tab shows the Chief's Opening with its provenance badge and pending list but the founder cannot set or clear a field there and set fields are not marked. Fix: mount the same edit form and marks on the Cockpit's plan tab (one component shared by both pages).",
+      "source": "W471",
+      "found": "2026-09-18",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [
-    {
-      "slot": "P1.14",
-      "files": [
-        "agentic_core/api/business_plan.py"
-      ],
-      "words": [
-        "board pack",
-        "chief's opening",
-        "business plan"
-      ],
-      "note": "board pack and the Chief's Opening"
-    },
     {
       "slot": "P2.6",
       "files": [
@@ -1307,6 +1311,19 @@
         "catalogue counts"
       ],
       "note": "the scatter: the catalogue and the product directories (P1.13's area since W470)"
+    },
+    {
+      "slot": "P3.3",
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "words": [
+        "board pack",
+        "chief's opening",
+        "business plan",
+        "living business system"
+      ],
+      "note": "§17.3 cadence owns the board pack and the plan's layers after P1.14 (W471)"
     },
     {
       "slot": "P1.16",

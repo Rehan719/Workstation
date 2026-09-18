@@ -41,7 +41,7 @@
 > `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task riding the plan item
 > that owns its area, or OWNER; W469 retired NEXT and generates PLAN NOW; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
 > primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
-> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W470) ·
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W471) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -108,8 +108,8 @@ B — CANONICAL REALM SET: four user-type Realms (Enterprise · Learning · Deve
     DOMAINS as realms into the projects API (ledger R5.5) — same plan item.
 
 C — WHAT TO BUILD NEXT: the reach backlog is COMPLETE. The next work is <delivery_plan> P1, in
-    order — the truth defects the audit found on reached, used surfaces. P1.1–P1.13 are DONE
-    (W449–W460, W470); what comes next is P1.14, P1.15 and P1.16 — the register's rows ride the items
+    order — the truth defects the audit found on reached, used surfaces. P1.1–P1.14 are DONE
+    (W449–W460, W470, W471); what comes next is P1.15 and P1.16 — the register's rows ride the items
     that own their areas (W469). PLAN NOW, in WHERE THE PLAN STANDS, is generated from the plan and the
     register and says what is next. The 67-op scatter is P2.4.
 
@@ -155,7 +155,7 @@ Work in this order. It is not effort order — it is "how much a real person is 
 
   TIER 1 — TRUTH DEFECTS. The system tells a user something untrue, or certifies what it could
            not assess. THE AUDIT FOUND FOURTEEN, ALL ON REACHED SURFACES — they are <delivery_plan>
-           P1. THIRTEEN ARE CLOSED (P1.1–P1.13, W449–W460, W470); P1.14 remains, with P1.15 and P1.16
+           P1. FOURTEEN ARE CLOSED (P1.1–P1.14, W449–W460, W470, W471); P1.15 and P1.16 remain,
            added W469 to carry the follow-up register's store and hygiene rows, and all four come before any
            P2–P4 item. The pattern behind most of them: a gate,
            badge or chip that CANNOT FAIL on the floor — the configuration CI runs and any box
@@ -180,7 +180,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W470 (470 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W471 (471 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -213,7 +213,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W470: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W471: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -246,8 +246,10 @@ writer and said so on every surface, never replaced by empty books (W468); then,
 plan made to carry every follow-up and keep itself current — NEXT retired, routes, PLAN NOW live (W469).
 Then, after the W469 handover to Claude Fable 5.1, P1.13 — the catalogue made honest: one tool registry the
 hubs mount from and both front doors count from, the dead flagship tab gone from five hubs, and the
-marketplace counting only what a route serves (W470).
-The first thirteen Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
+marketplace counting only what a route serves (W470); then P1.14 — the board pack measured on its narrative,
+refused over an empty blueprint, versioned by what it carries, and the Chief's Opening that writes nothing from
+the floor and is the owner's to edit (W471).
+The first fourteen Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -620,12 +622,12 @@ half of P2 depend on; 1.3 and 1.5 are where users land. P2 follows (P2.1 unblock
 content that P3 builds on). P3 items marked OWNER RULING are put to the Owner with evidence at
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
-WHERE THE PLAN STANDS (updated W470, 2026-09-18 — every round that closes an item or runs between
+WHERE THE PLAN STANDS (updated W471, 2026-09-18 — every round that closes an item or runs between
 items updates this block in the same commit. PLAN NOW, below, is generated from the plan's items and the
 register and checked by the suite (W469); the DONE lines are history, kept true by hand. Never start a line
 here with one space and an item id — that is read as a plan item and fails the suite).
-  DONE — P1.1 to P1.13, in order, W449–W460 and W470: each is marked below with what it DELIVERED; P1.1–P1.5,
-    P1.7, P1.8, P1.11, P1.12 and P1.13 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
+  DONE — P1.1 to P1.14, in order, W449–W460, W470 and W471: each is marked below with what it DELIVERED; P1.1–P1.5,
+    P1.7, P1.8, P1.11, P1.12, P1.13 and P1.14 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
     leftover). Only P1.11's and P1.12's leftovers were back-filled into the register (FU-005…FU-014);
     since W462 (V6) a round registers what it leaves in the same commit.
   DONE BETWEEN ITEMS — rounds the plan did not list, recorded here so the plan reads whole:
@@ -686,12 +688,12 @@ here with one space and an item id — that is read as a plan item and fails the
 <!-- plannow:begin (generated by scripts/followups.py render - never edit by hand) -->
 PLAN NOW — generated from the delivery plan's items and docs/FOLLOWUPS.json by scripts/followups.py on
 every register change (add · close · drop · reslot · route · done · render); never edit between the markers.
-  Next: P1.14 Board pack + Chief's Opening honesty — no follow-ups ride it.
-  Then, in order (the follow-ups riding each): P1.15 11 · P1.16 13 · P2.1 0 · P2.2 0 · P2.3 0 · P2.4 2 ·
-    P2.5 0 · P2.6 9 · P2.7 1 · P2.8 3 · P2.9 18 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 ·
-    P3.6 0 · P3.7 0 · P3.8 0 · P3.9 0 · P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
-  Done: 13 of 43 items — P1 13/16 · P2 0/9 · P3 0/12 · P4 0/6.
-  Follow-ups: 57 open — 57 ride a plan item (0 high), 0 unscheduled, 0 awaiting the Owner; 16 done, 0 dropped.
+  Next: P1.15 Stores that refuse, never replace — the class-kill — 11 follow-ups ride it.
+  Then, in order (the follow-ups riding each): P1.16 13 · P2.1 0 · P2.2 0 · P2.3 0 · P2.4 2 · P2.5 0 · P2.6 9 ·
+    P2.7 1 · P2.8 3 · P2.9 19 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 · P3.6 0 · P3.7 0 ·
+    P3.8 0 · P3.9 0 · P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
+  Done: 14 of 43 items — P1 14/16 · P2 0/9 · P3 0/12 · P4 0/6.
+  Follow-ups: 58 open — 58 ride a plan item (0 high), 0 unscheduled, 0 awaiting the Owner; 16 done, 0 dropped.
 <!-- plannow:end -->
   WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
     rulings, not register rows).
@@ -702,7 +704,7 @@ the same commit (python scripts/followups.py add routes it to the plan item that
 rides the next open item) or slotted OWNER (waits on an Owner decision; never scheduled). A round that
 finishes an item marks it with python scripts/followups.py done P1.13 --by W### — its rows move along the
 routes or are closed first; the suite fails on a row left on a finished item.
-Open 57 (57 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 16 · dropped 0.
+Open 58 (58 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 16 · dropped 0.
   P1.15 — Stores that refuse, never replace — the class-kill
     FU-042 [medium] The constitutional ledger's chain is replaced when its file cannot be read — UEGLogger._read is tolerant (ueg.py:136-141): one log call on a chain file with a BOM or a parse failure replaced 5 nodes with 1 (reproduced) — the append-only, hash-chained audit trail every governance claim cites is silently restarted. Fix: a strict read in the writer that refuses (and reports the refusal to the caller, whose ueg_logged then reads false) rather than starting a new chain over the old one. (found W466 pre-audit of FU-023/FU-022 (reproduced))
     FU-049 [medium] An unreadable compliance-history file lifts every FAIL hold — living_vsbs._latest_screen and list_living read vsb_compliance_history.json with load_json_tolerant: a file with a BOM (or one that does not parse) reads as {}, so operate_vsb sees no FAIL screen and runs distribution cycles for entities whose latest screen FAILED, and the roster shows them never screened. Since W468 a visit that raises also drops a compliance_fail_hold (reaching the cycle is taken as proof the screen is not FAIL), which is only true while the history reads. Fix: a strict read; an unreadable history holds every entity whose screen cannot be known. (found W468 second refutation (reproduced))
@@ -767,6 +769,7 @@ Open 57 (57 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 
     FU-063 [low] Visit outcomes are reported inconsistently across heartbeat, genesis and pages — heartbeat counts a held or refused visit (ledger_unavailable, compliance or governance hold) as an operate_vsb action and sets last_vsb_operated; genesis's streaming establish says 'cycle ran' for an operate_vsb result that has only an error, and a result {error, cycle_ran True} (a cycle that posted and whose roster bookkeeping raised) is counted as not operated; list_living shows statuses that are not holds (intake_unavailable, intake_consumed_elsewhere) as 'held by governance'; a gate-error hold (no Change Control record) is kept on a raise as if it were a decision; the compliance branch's roster write sits outside the try (a raise there leaves last_operated unchanged); and two visits of one entity at once can clobber each other's row. Fix: report held, refused, raised and ran as four outcomes everywhere. Related to FU-045. (found W468 first refutation (reproduced))
     FU-064 [low] The roster's ledger-hold text reads every held entity's whole ledger on each call — list_living describes a ledger_unavailable hold from a live strict read of that entity's ledger; the heartbeat and pages call it often, and with large ledgers this is seconds per call (4 s for 60 held rows of 4 MB, measured). Negligible at today's sizes. Fix: cache by the file's size and mtime. (found W468 second refutation (reproduced))
     FU-065 [low] A ledger that keeps reserves only in the legacy balances refuses every transfer — A ledger written before W256 holds entries and balances but no accounts: validate_transfer reads reserve_fund from accounts (0.0) and refuses any transfer as insufficient funds, although the legacy view shows reserves. Fix: say the ledger predates double entry, or migrate it once. (found W468 second refutation (reproduced))
+    FU-074 [low] The Cockpit's plan tab has no owner-edit surface and no owner-edited marks — W471 wired the owner-edit form (POST /business-plan/set with clear) and the owner-edited marks into BusinessPlan.tsx only; VSBCockpit's plan tab shows the Chief's Opening with its provenance badge and pending list but the founder cannot set or clear a field there and set fields are not marked. Fix: mount the same edit form and marks on the Cockpit's plan tab (one component shared by both pages). (found W471)
 <!-- followups:end -->
 
 PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; no P2–P4 item ships until these do)
@@ -987,7 +990,7 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; n
       in products/ with self-declaring manifests (FU-072, P2.4: archive them); and running done
       --hand-to P1.16 lifted P1.16's broad hygiene prefixes to the first route (FU-073, P1.16: the merge
       must carry only the handed matchers forward) — P1.16 was put back last and P1.13's area given to P2.4.
- P1.14 [1.14 · R3.3 R3.5 R3.6] Board pack + Chief's Opening honesty. Required-section check against the narrative
+ P1.14 ✅ DONE W471 [1.14 · R3.3 R3.5 R3.6] Board pack + Chief's Opening honesty. Required-section check against the narrative
       only; empty blueprint → "no concept recorded — pack not assembled"; identical DCS hash →
       "unchanged since <date>"; provenance badge on the Genesis card; plan parser keeps the
       floor prefix as provenance; POST /business-plan/set wired to an owner-edit surface; the
@@ -1005,6 +1008,30 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; n
       seal alone), the Genesis card's provenance badge, and the Chief's Opening on business_plan.py
       /generate (gateway.query, no provenance, the prefix dropped by the parser) and BusinessPlan.tsx
       (no badge; nothing calls /business-plan/set).
+      DELIVERED W471 (Claude Fable 5.1): the board pack measures its required sections against the
+      NARRATIVE alone (the 'Sections: …' preamble was inside the measured text — coverage 1.0 on every
+      pack; a floor pack now reads 0.0, not assessable); a pack is grounded in the blueprint's concept
+      or, failing that, the founder's problem statement — and SAYS which (concept_source, 'no concept
+      recorded yet' on the Genesis card); an entity with neither is refused — 'no concept recorded —
+      pack not assembled' (409, pointing at the new POST /{id}/concept, the founder's way out; a concept
+      pending the owned model still assembles, as the rest of the body ships since W450); a ship with
+      nothing to ground a pack on defers the pack, names why, and is not a coherent whole (the birth
+      answer lists only what shipped); every pack carries a content hash over what it holds (name · layers ·
+      economy · narrative), a version that moves only when that changes, and 'unchanged since', decided
+      by the hash never the clock — three assemblies of an unchanged VSB show ONE version (the ACCEPT
+      clause; the history says versions apart from assemblies, and two assemblies in one second no longer
+      overwrite each other); the Genesis card badges the narrative's provenance through the shared helper,
+      shows the version, and shows the server's refusal. The Chief's Opening: /generate uses query_meta,
+      writes NOTHING from the native floor (the fields stay pending; the answer says so), keeps the draft's
+      preamble as provenance, fills only UNSET fields (empty, or W450's pending marker) from a model and
+      never an owner's words, and MERGES its provenance (Genesis' name_source and pending list stay; the
+      badge moves only when something was written); /set is the owner-edit surface (clear works; only a
+      CHANGED value is stamped owner-edited; the floor's marker is refused as an edit), wired from
+      BusinessPlan.tsx with the provenance badge, the pending fields and a note when a generation wrote
+      nothing. Refuted once (seven confirmed, all fixed and guarded); broken 34 ways, each blind failing alone.
+      NOT DONE, and why: the Cockpit's plan tab shows the opening's provenance but has no owner-edit
+      surface (FU-074, P2.9); the pack's 'strategic' and 'action_plan' layers are still labels over the
+      CEO specification and the board roster with no cadence — that is P3.3's item, not a register row.
  P1.15 [register · the store class, W442→W468] Stores that refuse, never replace — the class-kill. Every
       store a writer reads is read strictly or not at all: a file that exists and cannot be read whole is
       refused (the writer saves nothing and the caller says so), never answered as empty, as a valid prefix
@@ -1157,7 +1184,7 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; pre-flights built by us, switches flipped
 
 EFFORT, HONESTLY: ~33 rounds at the current cadence before P4 — P1 alone is the campaign's
 largest single phase and it is the one that matters most, because it is the one users meet.
-Measured so far: P1.1–P1.12 took twelve rounds (W449–W460) and P1.13 one (W470), plus four rounds between items — W461
+Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), P1.13 one (W470) and P1.14 one (W471), plus four rounds between items — W461
 and W463 each worked a task an earlier round found and deferred, W462 built the register after the
 Owner asked (2026-09-13) that suggested tasks be scheduled into the plan, and W464 delivered the Owner's
 rulings on the register's four OWNER rows, and W465 worked three of its NEXT rows (FU-015, FU-016, FU-024) and
@@ -1281,7 +1308,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 397 tests; 71 session guards W419–W470, each broken and
+- integration_tests/test_mvp_spine.py — 398 tests; 72 session guards W419–W471, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).

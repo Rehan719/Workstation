@@ -2855,9 +2855,22 @@ def test_vsb_board_pack(client):
     # §17.3 — the Living Business System's on-demand Board Pack: assembled FRESH from the VSB's live data
     # (Constitutional · Strategic · Action · Operational) + an in-house AI-CEO narrative, QMS-gated +
     # compliance-screened + DCS-registered (document-controlled via the QMS-owned DCMS).
+    # W471 (P1.14) — a pack over an empty blueprint used to be grounded in nothing. A bare birth carries the
+    # founder's problem statement, so its pack assembles and SAYS it is grounded in that, not in a concept; an
+    # entity with neither is refused: no concept recorded, no pack
+    from agentic_core.api import vsb as _vmod
+    bare = client.post("/api/v1/genesis/establish",
+                       json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
+                             "name": "Halal Community Meals Bare"}).json()["vsb_id"]
+    grounded = client.post(f"/api/v1/vsb/{bare}/board-pack").json()
+    assert grounded["concept_source"] == "challenge" and "no concept recorded yet" in grounded["concept_note"]
+    _v = _vmod._load_vsb(bare); _v["challenge"] = ""; _vmod._save_vsb(_v)
+    refused = client.post(f"/api/v1/vsb/{bare}/board-pack")
+    assert refused.status_code == 409 and "no concept recorded — pack not assembled" in refused.json()["detail"]
     est = client.post("/api/v1/genesis/establish",
                       json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
-                            "name": "Halal Community Meals"})   # W450: a founder names what publishes
+                            "name": "Halal Community Meals", "concept": "weekly halal meal boxes for families",
+                            "design": "d", "commercialisation": "subscription"})   # W450: a founder names what publishes
     vid = est.json()["vsb_id"]
     m = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
     assert m["kind"] == "board_pack"
@@ -15035,7 +15048,8 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
         assert "repair that route" in str(exc)
     # the real routes: each earlier item owns its own surfaces before a later item's broad prefix can take them
     real_order = [rt["slot"] for rt in routes]
-    assert real_order.index("P1.14") < real_order.index("P2.9")
+    # (W471) P1.14 is done too; the board pack and the plan's layers pass to P3.3 (§17.3 cadence), before P1.16
+    assert real_order.index("P3.3") < real_order.index("P1.16")
     # (W470) P1.13 is done; its catalogue area passed to the scatter item P2.4, whose route sits before the broad
     # hygiene prefixes of P1.16 — the LAST route, always (a done --hand-to merge once lifted it to first)
     assert real_order[-1] == "P1.16" and real_order.index("P2.4") < real_order.index("P1.16")
@@ -15401,3 +15415,209 @@ def test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_ta
         assert seeded == {s.lower() for s in served}, seeded
     finally:
         mk._LISTINGS_DIR = real_dir
+
+
+def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeypatch):
+    """W471 — P1.14 Board pack + Chief's Opening honesty (ledger R3.3, R3.5, R3.6).
+
+    The board pack's section check read its own 'Sections: …' preamble (coverage 1.0 on every pack); a pack
+    assembled over an empty blueprint was grounded in nothing and DCS-registered; three assemblies of an
+    unchanged VSB carried one seal and were shown as three fresh packs. Now: the narrative alone is measured;
+    an empty concept is refused ('no concept recorded — pack not assembled'); the pack carries a content hash
+    over what it holds, a version that moves only when that changes, and 'unchanged since'; the Genesis card
+    badges the narrative's provenance. The Chief's Opening: /generate writes NOTHING from the native floor
+    (prompt echo that ignored the founder's words used to become the plan, permanently), keeps the draft's
+    preamble as provenance, fills only empty fields from a model; /set is the owner-edit surface (clear
+    works, edits are marked); BusinessPlan.tsx badges the opening and carries the edit form."""
+    import pathlib
+    import re
+    from agentic_core.ai import gateway as gw
+
+    # ── the board pack ──
+    from agentic_core.api import vsb as _vmod
+    bare = client.post("/api/v1/genesis/establish", json={"problem": "w471 empty blueprint", "domain": "care",
+                                                         "name": "W471BareCo", "ship_output": False}).json()["vsb_id"]
+    over_problem = client.post(f"/api/v1/vsb/{bare}/board-pack").json()      # grounded in the problem, and says so
+    assert over_problem["concept_source"] == "challenge" and "no concept recorded yet" in over_problem["concept_note"]
+    _v = _vmod._load_vsb(bare); _v["challenge"] = ""; _vmod._save_vsb(_v)     # neither a concept nor a challenge
+    r = client.post(f"/api/v1/vsb/{bare}/board-pack")
+    assert r.status_code == 409 and "no concept recorded — pack not assembled" in r.json()["detail"]
+    assert client.get(f"/api/v1/vsb/{bare}/board-packs").json()["total"] == 1   # the refusal filed nothing
+    vid = client.post("/api/v1/genesis/establish", json={
+        "problem": "w471 halal tutoring", "domain": "education", "name": "W471PackCo",
+        "concept": "after-school Quran and maths tutoring circles", "design": "d",
+        "commercialisation": "monthly family subscription"}).json()["vsb_id"]
+    # the birth ship (W302) already assembled the first pack; every assembly since carries the same content
+    born = client.get(f"/api/v1/vsb/{vid}/board-pack").json()
+    assert born["version"] == 1 and born["unchanged"] is False and born["unchanged_since"] == born["generated_at"]
+    packs = [client.post(f"/api/v1/vsb/{vid}/board-pack").json() for _ in range(3)]
+    first = packs[0]
+    assert first["quality_assurance"]["quality"]["delivery_coverage"] == 0.0     # the pending narrative names no section
+    assert first["quality_assurance"]["quality"]["qms_gate_passed"] is None
+    assert first["ai_provenance"]["served_by"] == {"native": 1}
+    assert len(first["content_hash"]) == 64 and first["content_hash"] == born["content_hash"]
+    for p in packs:
+        assert p["version"] == 1 and p["unchanged"] is True and p["unchanged_since"] == born["generated_at"], p["version"]
+        assert p["dcs_hash"] == born["dcs_hash"]
+    hist = client.get(f"/api/v1/vsb/{vid}/board-packs").json()
+    assert hist["total"] >= 3 and hist["versions"] == 1                          # ACCEPT: three assemblies, one version
+    assert {h["version"] for h in hist["board_packs"]} == {1}
+    # the VSB changes (a generation advances) → what the pack carries changes → version 2, unchanged since now
+    ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w471"})
+    assert ev.status_code == 200, ev.text
+    p4 = client.post(f"/api/v1/vsb/{vid}/board-pack").json()          # (the evolve's re-ship assembled v2 already)
+    assert p4["content_hash"] != first["content_hash"] and p4["version"] == 2
+    assert client.get(f"/api/v1/vsb/{vid}/board-packs").json()["versions"] == 2
+    # a model-served narrative is measured on ITS text: a narrative naming the sections covers them
+    async def _model(prompt, agent="assistant", **kw):
+        return {"output": ("## Executive Summary\nA tutoring circle business.\n## Strategic Position\nLocal.\n"
+                           "## Action Priorities\nEnrol.\n## Key Risks\nTutors.\n## Recommendation\nProceed."),
+                "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _model)
+    p5 = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+    assert p5["quality_assurance"]["quality"]["delivery_coverage"] == 1.0 and p5["version"] == 3
+    assert "Sections:" not in p5["narrative"]
+
+    # ── the Chief's Opening ──
+    monkeypatch.undo()
+    scope = "w471-plan"
+    g = client.post("/api/v1/business-plan/generate", json={
+        "scope": scope, "context": "A halal meal-prep subscription for university students in Leeds"}).json()
+    assert g["served_by"] == "native" and g["written"] == [] and g["objectives_added"] == 0
+    assert "structured floor" in g["reason"] and "nothing was written" in g["reason"]
+    plan = client.get(f"/api/v1/business-plan?scope={scope}").json()
+    for f in ("executive_summary", "concept", "vision", "mission", "strategy"):
+        assert plan[f] == "", f                                                   # the floor wrote nothing
+    assert plan["chief_draft"] and plan["provenance"]["generation"]["served_by"] == "native"
+    assert "served_by" not in plan["provenance"]                                  # nothing written: no badge to wear
+    assert set(plan["provenance"]["body_pending"]) == {"executive_summary", "concept", "vision", "mission", "strategy"}
+    assert plan["provenance"]["preamble"]                                         # the floor's marker, kept
+    # a model draft: its preamble is kept as provenance, EMPTY fields are filled, an owner's words never replaced
+    client.post("/api/v1/business-plan/set", json={"scope": scope, "vision": "Every student eats well."})
+    async def _chief(prompt, agent="assistant", **kw):
+        return {"output": ("Drafted by the owned model.\n## Executive Summary\nMeal boxes for Leeds students.\n"
+                           "## Concept\nWeekly halal boxes.\n## Vision\nMODEL VISION\n## Mission\nFeed students.\n"
+                           "## Strategy\nCampus partnerships.\n## Objectives\n- Launch | 100 subscribers | Q1 | CMO\n"),
+                "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _chief)
+    g2 = client.post("/api/v1/business-plan/generate", json={"scope": scope, "context": "x"}).json()
+    assert g2["served_by"] == "ollama:test" and g2["objectives_added"] == 1
+    assert set(g2["written"]) == {"executive_summary", "concept", "mission", "strategy"}    # vision was the owner's
+    plan = client.get(f"/api/v1/business-plan?scope={scope}").json()
+    assert plan["vision"] == "Every student eats well." and plan["concept"] == "Weekly halal boxes."
+    assert plan["provenance"]["preamble"] == "Drafted by the owned model." and plan["provenance"]["body_pending"] == []
+    assert plan["owner_edits"]["vision"]
+    # the owner-edit surface: clear empties a field and is recorded; a floor field the owner sets leaves 'pending'
+    s = client.post("/api/v1/business-plan/set", json={"scope": scope, "clear": ["concept"], "mission": "Owner mission"}).json()
+    assert s["concept"] == "" and s["mission"] == "Owner mission" and s["owner_edits"]["concept"] and s["owner_edits"]["mission"]
+    monkeypatch.undo()
+    scope2 = "w471-plan-2"
+    client.post("/api/v1/business-plan/generate", json={"scope": scope2, "context": "y"})
+    s2 = client.post("/api/v1/business-plan/set", json={"scope": scope2, "concept": "The founder's concept."}).json()
+    assert "concept" not in s2["provenance"]["body_pending"] and "vision" in s2["provenance"]["body_pending"]
+
+    # ── the pages ──
+    root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    bp = (root / "enterprise/BusinessPlan.tsx").read_text(encoding="utf-8")
+    assert "fetch('/api/v1/business-plan/set'" in bp and 'data-testid="plan-owner-edit"' in bp
+    assert "provenanceMapBadge(plan.provenance.served_by" in bp and 'data-testid="plan-pending"' in bp
+    assert 'data-testid="plan-owner-edited"' in bp and 'data-testid="plan-generate-note"' in bp
+    assert "clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim()" in bp
+    gj = (root / "synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "provenanceMapBadge(pack.ai_provenance.served_by" in gj and 'data-testid="pack-version"' in gj
+    assert "unchanged since ${pack.unchanged_since}" in gj
+    assert "typeof d?.detail === 'string' ? d.detail" in gj                     # the server's refusal, shown
+    vsb_src = pathlib.Path("agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert "qa = await assure_delivery(narrative, [" in vsb_src and "Sections: Executive Summary · Strategic Position" not in vsb_src
+
+    # ── (refutation) the recorded concept, the way out, the ship's honesty, the rename, the provenance merge ──
+    # a spawned entity has no blueprint: its CHALLENGE is the founder's concept, so it assembles a pack
+    sp = client.post("/api/v1/vsb/spawn", json={"challenge": "a halal bakery for Leeds students", "name": "W471SpawnCo",
+                                                "domain": "business"})                         # an SSE stream
+    sp_id = re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', sp.text).group(1)
+    sp_pack = client.post(f"/api/v1/vsb/{sp_id}/board-pack")
+    assert sp_pack.status_code == 200 and sp_pack.json()["concept_source"] == "challenge"
+    # an entity with neither is refused, and the refusal names a route that exists; recording a concept is the way out
+    r = client.post(f"/api/v1/vsb/{bare}/board-pack")
+    assert r.status_code == 409 and f"/api/v1/vsb/{bare}/concept" in r.json()["detail"]
+    assert client.post(f"/api/v1/vsb/{bare}/concept", json={"concept": "content pending the owned model — x"}).status_code == 422
+    assert client.post(f"/api/v1/vsb/{bare}/concept", json={"concept": "short"}).status_code == 422
+    rec = client.post(f"/api/v1/vsb/{bare}/concept", json={"concept": "Community meal boxes cooked by local volunteers."}).json()
+    assert rec["concept_source"] == "founder" and rec["blueprint"]["concept"].startswith("Community meal boxes")
+    assert client.post(f"/api/v1/vsb/{bare}/board-pack").status_code == 200
+    # a ship with nothing to ground a pack on never lists the pack as shipped: deferred, named, not a coherent whole
+    _v = _vmod._load_vsb(bare); _v["genesis_blueprint"] = {}; _v["challenge"] = ""; _vmod._save_vsb(_v)
+    shipped = client.post(f"/api/v1/vsb/{bare}/repo/ship").json()
+    assert "deferred" in shipped["surfaces"]["board_pack"] and "no concept recorded" in shipped["surfaces"]["board_pack"]["deferred"]
+    assert shipped["coherent_whole"] is False
+    assert "board_pack" in shipped["surfaces_refused"] and "board_pack" not in shipped["surfaces_shipped"]
+    assert set(shipped["surfaces_shipped"]) == {"repo", "website", "webapp", "mobile"}
+    gsrc = pathlib.Path("agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert '"refused": {k: (v.get("error") or v.get("deferred"))' in gsrc         # the birth answer lists the refused
+    born2 = client.post("/api/v1/genesis/establish", json={"problem": "w471 seeded plan birth", "domain": "care",
+                                                           "name": "W471NoConceptCo", "ship_output": False}).json()
+    # a rename changes what the pack carries: the version moves
+    before_name = client.get(f"/api/v1/vsb/{vid}/board-pack").json()
+    assert client.post(f"/api/v1/vsb/{vid}/name", json={"name": "W471 Renamed Co"}).status_code == 200
+    renamed = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+    assert renamed["content_hash"] != before_name["content_hash"] and renamed["version"] == before_name["version"] + 1
+    assert _vmod._pack_content_hash({}, {}, "n", "A") != _vmod._pack_content_hash({}, {}, "n", "B")   # the name is hashed itself
+
+    # the provenance is MERGED: a founder-written opening is never badged 'floor' by a generation that wrote nothing,
+    # Genesis' name_source and pending list survive, and W450's pending marker counts as unset (fillable, pending)
+    gen_scope = born2["vsb_id"]
+    seeded = client.get(f"/api/v1/business-plan?scope={gen_scope}").json()
+    assert seeded["executive_summary"].startswith("W471NoConceptCo is a living VSB")   # Genesis' seed, the founder's words
+    assert seeded["provenance"]["name_source"] == "founder"
+    g3 = client.post("/api/v1/business-plan/generate", json={"scope": gen_scope, "context": "x"}).json()
+    assert g3["written"] == []
+    merged = client.get(f"/api/v1/business-plan?scope={gen_scope}").json()["provenance"]
+    assert merged["name_source"] == "founder" and merged["generation"]["served_by"] == "native"
+    assert merged.get("served_by") is None                                       # nothing written: the badge does not move
+    client.post("/api/v1/business-plan/set", json={"scope": "w471-mark", "concept": "content pending the owned model — z"})
+    marked = client.get("/api/v1/business-plan?scope=w471-mark").json()
+    assert marked["concept"] == ""                                               # the marker is not an owner's edit (422)
+    # a field holding W450's pending marker (a floor journey's concept) is unset: pending, and a model may fill it
+    from agentic_core.api import business_plan as _bpmod
+    floor_born = client.post("/api/v1/genesis/establish", json={
+        "problem": "w471 floor journey", "domain": "care", "name": "W471FloorCo", "ship_output": False,
+        "concept": "floor text", "design": "d", "commercialisation": "m",
+        "ai_provenance": {"served_by": "native"}}).json()["vsb_id"]
+    fplan = _bpmod._load(floor_born)
+    fplan["concept"] = "content pending the owned model — this enterprise has not yet composed its own concept"
+    _bpmod._save(fplan)
+    assert "concept" in _bpmod._pending_fields(fplan)
+    async def _fill(prompt, agent="assistant", **kw):
+        return {"output": "## Concept\nThe model's concept.", "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _fill)
+    g6 = client.post("/api/v1/business-plan/generate", json={"scope": floor_born, "context": "x"}).json()
+    assert g6["written"] == ["concept"] and _bpmod._load(floor_born)["concept"] == "The model's concept."
+    monkeypatch.undo()
+    # an owner's edit is stamped only when the value CHANGED; an unchanged re-send is not an edit
+    s3 = client.post("/api/v1/business-plan/set", json={"scope": scope, "strategy": "Owner strategy."}).json()
+    stamp = s3["owner_edits"]["strategy"]
+    assert "concept" in s3["owner_edits"]
+    s4 = client.post("/api/v1/business-plan/set", json={"scope": scope, "strategy": "Owner strategy.", "vision": s3["vision"]}).json()
+    assert s4["owner_edits"]["strategy"] == stamp and s4["owner_edits"]["vision"] == s3["owner_edits"]["vision"]
+    s5 = client.post("/api/v1/business-plan/set", json={"scope": scope, "clear": ["concept"]}).json()   # already empty
+    assert s5["owner_edits"]["concept"] == s3["owner_edits"]["concept"]
+    # a cleared field a model later fills is the MODEL's, not owner-edited; '###' and '**Heading**' drafts parse;
+    # a draft with no recognised heading writes nothing and says so
+    async def _alt(prompt, agent="assistant", **kw):
+        return {"output": "**Concept**\nModel concept after the clear.\n### Vision\nIgnored: the owner's stays.",
+                "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _alt)
+    g4 = client.post("/api/v1/business-plan/generate", json={"scope": scope, "context": "x"}).json()
+    assert g4["written"] == ["concept"]
+    p6 = client.get(f"/api/v1/business-plan?scope={scope}").json()
+    assert p6["concept"] == "Model concept after the clear." and "concept" not in p6["owner_edits"]
+    assert p6["vision"] == "Every student eats well." and p6["provenance"]["served_by"] == {"ollama:test": 1}
+    async def _blank(prompt, agent="assistant", **kw):
+        return {"output": "Just prose, no headings at all.", "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _blank)
+    g5 = client.post("/api/v1/business-plan/generate", json={"scope": scope, "context": "x"}).json()
+    assert g5["written"] == [] and "no recognised" in g5["reason"]
+    monkeypatch.undo()
+    assert "if (v && v !== ((plan as any)[k] || '')) body[k] = v;" in bp          # the page sends only what changed
+    ck = (root / "enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert "filter((s: any) => s && !s.error && !s.deferred).length} of {" in ck   # 'Shipped N of M surfaces'

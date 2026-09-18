@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
-import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown } from 'lucide-react';
+import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
+import { provenanceMapBadge } from '../../lib/api';
 
 interface Objective {
   id: string; title: string; kpi: string; timeline: string; owner_role: string;
@@ -15,7 +16,9 @@ interface Objective {
 }
 interface RoadmapPhase { timeline: string; progress_pct: number; complete: boolean; count: number; objectives: { title: string }[] }
 interface Roadmap { living: boolean; phases: RoadmapPhase[]; overall_progress_pct: number; current_phase: string | null; next_milestone: { phase: string; title: string } | null; note?: string }
-interface Plan { scope: string; owner: string; executive_summary: string; concept: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
+// W471 — who wrote the opening (the generation's provenance) and which fields the owner set
+interface PlanProvenance { served_by?: Record<string, number>; any_external?: boolean; generated_at?: string; preamble?: string; body_pending?: string[]; written?: string[] }
+interface Plan { provenance?: PlanProvenance; owner_edits?: Record<string, string>; scope: string; owner: string; executive_summary: string; concept: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
 
 const STATUS_TONE: Record<string, string> = { done: 'text-emerald-400', in_progress: 'text-highlight', blocked: 'text-vital', planned: 'text-slate-500' };
 
@@ -32,12 +35,31 @@ export const BusinessPlan: React.FC = () => {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [scope]);
 
   const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
+  const [genNote, setGenNote] = useState('');  // W471 — a generation that wrote nothing says so
+  const [edit, setEdit] = useState<Record<string, string> | null>(null);   // W471 — the owner-edit surface
+  const [saving, setSaving] = useState(false);
+  const OPENING: [string, string][] = [['executive_summary', 'Executive Summary'], ['concept', 'Concept'], ['vision', 'Vision'], ['mission', 'Mission'], ['strategy', 'Strategy']];
+  const openEdit = () => plan && setEdit(Object.fromEntries(OPENING.map(([k]) => [k, (plan as any)[k] || ''])));
+  const saveEdit = async () => {
+    if (!plan || !edit) return;
+    setSaving(true); setActErr('');
+    // only what the owner CHANGED is sent: an untouched Chief/model text is never re-stamped as the owner's
+    const clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim() && (plan as any)[k]);
+    const body: Record<string, unknown> = { scope, owner: plan.owner, clear };
+    OPENING.forEach(([k]) => { const v = edit[k].trim(); if (v && v !== ((plan as any)[k] || '')) body[k] = v; });
+    try {
+      const r = await fetch('/api/v1/business-plan/set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) setActErr(`Owner edit not saved (HTTP ${r.status})`); else setEdit(null);
+    } catch { setActErr('Backend unreachable — the owner edit was NOT saved'); }
+    setSaving(false); load();
+  };
   const generate = async () => {
     setBusy(true);
     setActErr('');
     try {
       const r = await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) });
       if (!r.ok) setActErr(`Generate failed (HTTP ${r.status})`);
+      else { const d = await r.json().catch(() => null); setGenNote(d?.reason || (d?.written?.length ? `Chief wrote: ${d.written.join(', ')}` : '')); }
       await load();
     } catch { setActErr('Backend unreachable — nothing changed'); }
     setBusy(false);
@@ -90,15 +112,47 @@ export const BusinessPlan: React.FC = () => {
 
       {plan && (
         <>
-          {(plan.executive_summary || plan.concept || plan.vision) && (
-            <Card className="p-8 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent">
-              <div className="flex items-center gap-3 mb-4">
+          {genNote && <p className="text-[11px] text-amber-400/90 font-bold" data-testid="plan-generate-note">{genNote}</p>}
+          {(plan.executive_summary || plan.concept || plan.vision || plan.provenance) && (
+            <Card className="p-8 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent" data-testid="chiefs-opening">
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <Crown size={18} className="text-highlight" />
                 <h3 className="text-sm font-black text-white uppercase tracking-wide">Chief's Opening — Executive Summary · Concept · Vision</h3>
+                {/* W471 (P1.14) — who wrote it: the generation's provenance through the shared map helper; pending fields named */}
+                {plan.provenance?.served_by && (() => { const b = provenanceMapBadge(plan.provenance.served_by, plan.provenance.any_external); return (
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title} data-testid="plan-provenance">{b.label}</span>
+                ); })()}
+                {(plan.provenance?.body_pending?.length ?? 0) > 0 && (
+                  <span className="text-[9px] text-amber-400/80" data-testid="plan-pending" title="the deterministic floor served these; nothing was written — set them yourself, or generate once the owned model serves">pending the owned model: {plan.provenance!.body_pending!.join(' · ')}</span>
+                )}
+                <button type="button" onClick={openEdit} className="ml-auto text-[9px] font-black uppercase tracking-widest text-highlight border border-highlight/40 rounded-lg px-2 py-1 flex items-center gap-1" data-testid="plan-owner-edit-open"><PenLine size={10} /> Owner: edit</button>
               </div>
-              {plan.executive_summary && <Field label="Executive Summary" value={plan.executive_summary} />}
-              {plan.concept && <Field label="Concept" value={plan.concept} />}
-              {plan.vision && <Field label="Vision" value={plan.vision} />}
+              {plan.executive_summary && <Field label="Executive Summary" value={plan.executive_summary} edited={plan.owner_edits?.executive_summary} />}
+              {plan.concept && <Field label="Concept" value={plan.concept} edited={plan.owner_edits?.concept} />}
+              {plan.vision && <Field label="Vision" value={plan.vision} edited={plan.owner_edits?.vision} />}
+              {!plan.executive_summary && !plan.concept && !plan.vision && (
+                <p className="text-[11px] text-slate-500">No opening recorded yet — nothing here is the Chief's framing until the owned model composes it or you set it.</p>
+              )}
+            </Card>
+          )}
+
+          {edit && (
+            <Card className="p-6 border-highlight/40" data-testid="plan-owner-edit">
+              <div className="flex items-center gap-2 mb-3"><PenLine size={14} className="text-highlight" /><h3 className="text-[10px] font-black uppercase tracking-widest text-highlight">Owner edit — set or clear the opening and strategic layers</h3></div>
+              <p className="text-[10px] text-slate-500 mb-3">Your words replace the Chief's on save; an emptied field is cleared (POST /api/v1/business-plan/set). Each set field is marked owner-edited.</p>
+              <div className="space-y-3">
+                {OPENING.map(([k, label]) => (
+                  <label key={k} className="block">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</span>
+                    <textarea value={edit[k]} onChange={e => setEdit({ ...edit, [k]: e.target.value })} rows={k === 'vision' || k === 'mission' ? 1 : 3}
+                      className="mt-1 w-full text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300" data-testid={`plan-edit-${k}`} />
+                  </label>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button onClick={saveEdit} disabled={saving} className="bg-highlight text-sovereign text-xs flex items-center gap-2" data-testid="plan-owner-edit-save">{saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />} Save</Button>
+                <Button onClick={() => setEdit(null)} disabled={saving} className="bg-slate-900 text-slate-300 text-xs">Cancel</Button>
+              </div>
             </Card>
           )}
 
@@ -109,8 +163,8 @@ export const BusinessPlan: React.FC = () => {
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Chief: AI-Generate
               </Button>
             </div>
-            {plan.mission && <Field label="Mission" value={plan.mission} />}
-            {plan.strategy && <Field label="Strategy" value={plan.strategy} />}
+            {plan.mission && <Field label="Mission" value={plan.mission} edited={plan.owner_edits?.mission} />}
+            {plan.strategy && <Field label="Strategy" value={plan.strategy} edited={plan.owner_edits?.strategy} />}
             {plan.aims?.length > 0 && (
               <div className="mt-3">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Aims</p>
@@ -220,9 +274,11 @@ export const BusinessPlan: React.FC = () => {
   );
 };
 
-const Field: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+const Field: React.FC<{ label: string; value: string; edited?: string }> = ({ label, value, edited }) => (
   <div className="mb-3">
-    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">{label}</p>
+    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">{label}
+      {edited && <span className="ml-2 text-emerald-400/80 normal-case tracking-normal" title={`set by the owner at ${edited}`} data-testid="plan-owner-edited">owner-edited</span>}
+    </p>
     <p className="text-sm text-slate-300 leading-relaxed">{value}</p>
   </div>
 );

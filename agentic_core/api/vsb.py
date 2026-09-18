@@ -1046,6 +1046,78 @@ async def get_vsb_mobile_file(vsb_id: str, name: str, user: dict | None = Depend
 # pack is built FRESH each call from the VSB's live entity data + an in-house AI-CEO narrative, then
 # QMS-gated + §11-compliance-screened + DOCUMENT-CONTROLLED (DCS-registered) via the QMS-owned DCMS.
 _BOARDPACK_STORE = data_path("vsb_board_packs")
+def _recorded_concept(vsb: dict, bp: dict) -> str:
+    """W471 — what the enterprise has recorded to ground a pack on: the Genesis blueprint's concept, else the
+    founder's challenge / problem statement (a spawned entity carries no blueprint; a bare birth carries only its
+    problem). A concept PENDING the owned model (W450's marker) is a recorded, honest state: the pack assembles
+    with a pending narrative, as the rest of the body ships. The pack SAYS which of the two grounded it."""
+    return (bp.get("concept") or "").strip() or str(vsb.get("challenge") or "").strip()
+
+
+def _concept_source(vsb: dict, bp: dict) -> str:
+    if (bp.get("concept") or "").strip():
+        return "blueprint"
+    return "challenge" if str(vsb.get("challenge") or "").strip() else ""
+
+
+def _no_concept_reason(vsb: dict) -> str:
+    return (f"no concept recorded — pack not assembled: the enterprise {vsb.get('vsb_id')} has no concept in its "
+            f"blueprint and no challenge; record the founder's concept at POST /api/v1/vsb/{vsb.get('vsb_id')}/concept "
+            "before a board pack is assembled")
+
+
+def _refuse_empty_blueprint(vsb: dict, bp: dict) -> None:
+    """W471 (P1.14, ledger R3.6) — a board pack assembled over an empty blueprint was grounded in nothing
+    ('Concept: . Commercialisation: .') and still DCS-registered with green chips. No concept recorded, no pack."""
+    if not _recorded_concept(vsb, bp):
+        raise HTTPException(status_code=409, detail=_no_concept_reason(vsb))
+
+
+class ConceptRequest(BaseModel):
+    concept: str
+
+
+@router.post("/{vsb_id}/concept")
+async def record_vsb_concept(vsb_id: str, req: ConceptRequest, user: dict | None = Depends(get_current_user)):
+    """W471 — the founder records the enterprise's concept in its own words (the way out of 'no concept recorded'
+    for an entity born without a blueprint). Never the floor's marker; the blueprint's other phases are kept."""
+    vsb = _require_vsb_access(vsb_id, user)
+    concept = (req.concept or "").strip()
+    low = concept.lower()
+    if len(concept) < 10 or len(concept) > 2000 or "native structured engine" in low or low.startswith("content pending"):
+        raise HTTPException(status_code=422, detail="concept must be 10–2000 characters of the founder's own words")
+    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
+    bp = dict(bp, concept=concept)
+    vsb["genesis_blueprint"] = bp
+    vsb["concept_source"] = "founder"
+    _save_vsb(vsb)
+    return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb)}
+
+
+def _pack_content_hash(layers: dict, economy: dict, narrative: str, name: str = "") -> str:
+    """W471 — the hash of what the pack CARRIES (layers · economy · narrative), so 'unchanged' means the pack
+    is unchanged. The DCS seal covers only the narrative and its verdict, and a floor narrative is one constant
+    string, so an identical seal meant an identical narrative, not an unchanged pack."""
+    import hashlib as _h
+    return _h.sha3_256(json.dumps({"name": name, "layers": layers, "economy": economy, "narrative": narrative},
+                                  sort_keys=True, default=str).encode("utf-8")).hexdigest()
+
+
+def _pack_version(vsb_id: str, content_hash: str, ts: str) -> tuple[int, str, bool]:
+    """(version, unchanged_since, unchanged): the version moves only when the content hash does; three assemblies
+    of an unchanged VSB show ONE version, unchanged since the first of them. `unchanged` is decided by the hash,
+    never by the clock (two assemblies in one second are still the same pack)."""
+    p = _BOARDPACK_STORE / vsb_id / "latest.json"
+    if p.exists():
+        try:
+            prev = json.loads(p.read_text(encoding="utf-8"))
+            if prev.get("content_hash") == content_hash:
+                return (int(prev.get("version") or 1),
+                        str(prev.get("unchanged_since") or prev.get("generated_at") or ts), True)
+            return int(prev.get("version") or 1) + 1, ts, False
+        except (json.JSONDecodeError, OSError, ValueError):
+            pass
+    return 1, ts, False
 
 
 @router.post("/{vsb_id}/board-pack")
@@ -1058,7 +1130,10 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     _refuse_gated(vsb, "board pack")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     name, challenge = vsb.get("name"), vsb.get("challenge", "")
     bp = _blueprint(vsb)                     # W301 - canonical accessor (both shapes)
-    concept, commercial = bp["concept"], bp["commercialisation"]
+    _refuse_empty_blueprint(vsb, bp)          # W471 — no concept recorded, no pack
+    concept, commercial = _recorded_concept(vsb, bp), bp["commercialisation"]
+    concept_source = _concept_source(vsb, bp)
+    concept_label = "Concept" if concept_source == "blueprint" else "Founder's problem statement (no concept recorded yet)"
 
     constitutional = {"mission": f"Deliver: {challenge}"[:280], "vision": challenge,
                       "values": "Integrity · Compassion · Excellence · Halal/Sharia · Beneficence · Stewardship",
@@ -1071,7 +1146,7 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     meta = await gateway.query_meta(
         f"You are the AI CEO assembling a fresh Board Pack for the VSB '{name}'. Live data — stage: "
         f"{operational['stage']}; generation: {operational['generation']}; domain: {operational['domain']}; "
-        f"governance: {operational['governance']}. Concept: {concept[:500]}. Commercialisation: "
+        f"governance: {operational['governance']}. {concept_label}: {concept[:500]}. Commercialisation: "
         f"{commercial[:400]}.\n\nProduce a concise board pack:\n## Executive Summary\n## Strategic Position\n"
         "## Action Priorities (this period)\n## Key Risks\n## Recommendation",
         agent="vsb-board-pack", augment=False)   # W332 — persisted board pack: no cross-request recall
@@ -1086,24 +1161,37 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
                  if sb == "native" else _public_prose(meta.get("output", "") or "").strip())
 
     from agentic_core.vbs.quality import assure_delivery
-    combined = (f"Board Pack — {name}. Sections: Executive Summary · Strategic Position · Action Priorities "
-                f"· Key Risks · Recommendation.\n{narrative}")
-    qa = await assure_delivery(combined, ["Executive Summary", "Strategic Position", "Action Priorities",
-                                          "Recommendation"], label="board_pack",
+    # W471 — the required sections are measured against the NARRATIVE alone. The 'Sections: …' preamble
+    # used to be inside the measured text, so every pack read coverage 1.0 whatever the narrative held.
+    qa = await assure_delivery(narrative, ["Executive Summary", "Strategic Position", "Action Priorities",
+                                           "Recommendation"], label="board_pack",
                                served_by=prov["served_by"])
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    layers = {
+        "constitutional": constitutional,                                  # genome-locked
+        "strategic": {"ceo": vsb.get("ceo_specification") or {}},           # AI CEO
+        "action_plan": {"board": vsb.get("board") or {}},                   # BTO / board
+        "operational": operational,                                         # live snapshot
+    }
+    economy = vsb.get("economy") or {}
+    content_hash = _pack_content_hash(layers, economy, narrative, str(name or ""))
+    version, unchanged_since, unchanged = _pack_version(vsb_id, content_hash, ts)
     pack = {
         "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
-        "layers": {
-            "constitutional": constitutional,                                  # genome-locked
-            "strategic": {"ceo": vsb.get("ceo_specification") or {}},           # AI CEO
-            "action_plan": {"board": vsb.get("board") or {}},                   # BTO / board
-            "operational": operational,                                         # live snapshot
-        },
-        "economy": vsb.get("economy") or {},
+        "layers": layers,
+        "economy": economy,
         "narrative": narrative,
         "ai_provenance": prov,
         "quality_assurance": qa,
+        # W471 — what the pack carries, versioned: the same content is the same version, said as unchanged since
+        "content_hash": content_hash,
+        "concept_source": concept_source,        # blueprint | challenge — what grounded the pack, said plainly
+        "concept_note": ("" if concept_source == "blueprint" else
+                         "no concept recorded yet — this pack is grounded in the founder's problem statement; record a "
+                         f"concept at POST /api/v1/vsb/{vsb_id}/concept"),
+        "version": version,
+        "unchanged_since": unchanged_since,
+        "unchanged": unchanged,
         # DCS registration: the document-control hash from the QMS-owned DCMS (ISO 9001 §7.5)
         "dcs_registered": bool(qa.get("quality", {}).get("document_controlled")),
         "dcs_hash": qa.get("quality", {}).get("quality_record_hash"),
@@ -1111,7 +1199,9 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     }
     root = _BOARDPACK_STORE / vsb_id
     root.mkdir(parents=True, exist_ok=True)
-    (root / f"{ts.replace(':', '-')}.json").write_text(json.dumps(pack, indent=2), encoding="utf-8")
+    # W471 — one file per ASSEMBLY: named by the second alone, two assemblies in one second overwrote each other
+    # and the history under-counted (three assemblies read as two)
+    (root / f"{ts.replace(':', '-')}-{uuid.uuid4().hex[:6]}.json").write_text(json.dumps(pack, indent=2), encoding="utf-8")
     (root / "latest.json").write_text(json.dumps(pack, indent=2), encoding="utf-8")
     try:
         biobus.fire_signal("cognitive", "vsb.board_pack", f"{name}: board pack assembled", 0.6)
@@ -1145,10 +1235,15 @@ async def list_vsb_board_packs(vsb_id: str, user: dict | None = Depends(get_curr
             try:
                 d = json.loads(fp.read_text(encoding="utf-8"))
                 packs.append({"generated_at": d.get("generated_at"), "dcs_hash": d.get("dcs_hash"),
-                              "dcs_registered": d.get("dcs_registered")})
+                              "dcs_registered": d.get("dcs_registered"),
+                              "version": d.get("version"), "content_hash": d.get("content_hash"),
+                              "unchanged_since": d.get("unchanged_since")})
             except (json.JSONDecodeError, OSError):
                 pass
-    return {"vsb_id": vsb_id, "board_packs": packs, "total": len(packs)}
+    versions = len({p.get("content_hash") for p in packs if p.get("content_hash")})
+    return {"vsb_id": vsb_id, "board_packs": packs, "total": len(packs),
+            "versions": versions,                      # W471 — distinct packs, not assemblies
+            "note": "each assembly is filed; the version moves only when what the pack carries changes"}
 
 
 # ── §17.4 Mode 3 — optional human review gates at any Concept→Commercialisation stage (set in the VSB
@@ -1729,6 +1824,10 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     for name, gen in (("repo", generate_vsb_repo), ("website", generate_vsb_website),
                       ("webapp", generate_vsb_webapp), ("mobile", generate_vsb_mobile),
                       ("board_pack", generate_vsb_board_pack)):
+        if name == "board_pack" and not _recorded_concept(vsb, _blueprint(vsb)):
+            # W471 — no concept recorded: the pack is deferred and says why; the ship is not a coherent whole
+            surfaces[name] = {"deferred": _no_concept_reason(vsb)}
+            continue
         try:
             m = await gen(vsb_id, user=user)   # W295 - authorised context flows through
             q = ((m.get("quality_assurance") or {}).get("quality") or {})
@@ -1741,7 +1840,7 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     # §13 (W319) — the ship-level version-control record is HONEST: it aggregates the surfaces'
     # REAL gate results (previously qa=None rendered a fabricated 'QMS fail · compliance None'
     # message even when every surface passed).
-    _ok = [s for s in surfaces.values() if "error" not in s]
+    _ok = [s for s in surfaces.values() if "error" not in s and "deferred" not in s]
     _overalls = [s.get("compliance_overall") for s in _ok if s.get("compliance_overall")]
     _vals = [s.get("qms_gate_passed") for s in _ok]
     # W449 — three states aggregate honestly: any FAIL → False; else any not-assessable → None;
@@ -1756,7 +1855,10 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     unified = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "shipped": True,
         "surfaces": surfaces,
-        "coherent_whole": all("error" not in s for s in surfaces.values()),
+        "coherent_whole": all("error" not in s and "deferred" not in s for s in surfaces.values()),
+        "surfaces_shipped": sorted(k for k, s in surfaces.items() if "error" not in s and "deferred" not in s),
+        "surfaces_refused": {k: (s.get("error") or s.get("deferred")) for k, s in surfaces.items()
+                             if "error" in s or "deferred" in s},
         "version_control": _version_control_commit(root, vsb_id, "ship", _agg_qa),
         "stale": False,
         "shipped_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

@@ -804,7 +804,7 @@ export const VSBCockpit: React.FC = () => {
                     {growthResult.error ? (
                       <p className="text-vital">{String(growthResult.error)}</p>
                     ) : growthResult.kind === 'ship' ? (
-                      <p>Shipped {Object.keys(growthResult.surfaces || {}).length} surfaces · coherent whole: {String(growthResult.coherent_whole)} · commit {growthResult.version_control?.commit}</p>
+                      <p>Shipped {Object.values(growthResult.surfaces || {}).filter((s: any) => s && !s.error && !s.deferred).length} of {Object.keys(growthResult.surfaces || {}).length} surfaces · coherent whole: {String(growthResult.coherent_whole)} · commit {growthResult.version_control?.commit}</p>
                     ) : growthResult.kind === 'cascade' ? (
                       <p>Cascade run {growthResult.repo_run?.run_id} · plan: {growthResult.repo_run?.plan_binding?.result ?? '—'} · committed {growthResult.version_control?.commit}</p>
                     ) : (

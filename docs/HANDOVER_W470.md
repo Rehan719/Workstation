@@ -1,9 +1,13 @@
 # Handover — W469 → W470 (to Claude Fable 5.1)
 
 > **W470 shipped** (2026-09-18, Claude Fable 5.1): P1.13 ✅ DONE — see `docs/AUTONOMOUS_PROGRESS.md` (`### W470`).
-> PLAN NOW in `docs/FABLE_DELIVERY_PROMPT.md` now says **Next: P1.14 Board pack + Chief's Opening honesty**. §1 below
-> is the state as handed over at W469; §3–§6 (the rhythm, the constraints, the lessons, the environment) still apply
-> to every round. The next free probe port is :8080.
+> **W471 shipped** (2026-09-18): P1.14 ✅ DONE (`### W471` in the log). PLAN NOW now says
+> **Next: P1.15 Stores that refuse, never replace — 11 follow-ups ride it** (the W442→W468 store class; each row
+> names its store and its fix). §1 below is the state as handed over at W469; §3–§6 (the rhythm, the constraints,
+> the lessons, the environment) still apply to every round. Two lessons since: never `sed -i` a CRLF file
+> (`reference-sed-strips-crlf-trap` in memory), and `done --hand-to` lifts the taker's broad prefixes to the handed
+> route's position (FU-073) — remove the finished item's route first and add the area to its next owner by hand.
+> The next free probe port is :8081.
 
 Written 2026-09-18 by the session that shipped W469 (Claude Opus 5), on the Owner's instruction: "leave a
 handover for Fable to start W470". The Owner (Rehan) is switching models for W470. Nothing in W470 has been

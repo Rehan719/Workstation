@@ -6372,3 +6372,58 @@ Suite: 381 passed · 15 skipped · 1 failed (full run on the final tree, isolate
 from 358 test functions). The failure was test_w456's needle for the halal tool's typed title, which W470 replaced with the
 registry mount; the needle was retargeted and re-run green together with the W470, W423, W462 and W469 guards. The full
 suite was not re-run for that test-only edit.
+
+### W471 — P1.14 Board pack + Chief's Opening honesty
+
+**What was wrong** (ledger R3.3, R3.5, R3.6).
+- **A section check that read itself.** The board pack's required-section coverage was measured on a text that began
+  'Sections: Executive Summary · Strategic Position · …' — so every pack read coverage 1.0 whatever the narrative held,
+  including the floor's pending line.
+- **A pack over nothing.** An entity with an empty blueprint assembled a pack grounded in 'Concept: . Commercialisation: .'
+  and filed it DCS-registered.
+- **Three fresh packs, one seal.** The DCS seal covers the narrative and its verdict; a floor narrative is one constant
+  string, so three assemblies of an unchanged VSB carried the same seal and the history showed three point-in-time packs
+  — and, found on the way, two assemblies in one second overwrote each other (files named by the second).
+- **The Chief's Opening was the floor's echo, permanently.** `/generate` parsed the native floor's prompt-echo into the
+  plan's five fields (ignoring the founder's words), dropped the floor's own disclosure line before the first heading,
+  filled the fields once and never again, and no page could edit or clear them.
+
+**What changed.**
+- `assure_delivery` measures the narrative alone; the Genesis card and the guard see 0.0 on a floor pack, 1.0 on a
+  model narrative that names its sections.
+- `_refuse_empty_blueprint`: 'no concept recorded — pack not assembled' (409). A concept *pending the owned model* is a
+  recorded, honestly marked state and still assembles, as W450 ships the rest of the body.
+- `content_hash` = sha3 over layers · economy · narrative; `version` moves only when it changes; `unchanged` and
+  `unchanged_since` are decided by the hash (two assemblies in one second are the same pack); pack files are named
+  per assembly; `/board-packs` says `versions` apart from `total`. The Genesis card shows the provenance badge
+  (shared helper), `v{n} · unchanged since …`, and the server's refusal text.
+- `parse_chief_draft` returns the sections and the PREAMBLE; `/generate` uses `query_meta`, writes nothing when the
+  floor served (reason returned and shown), fills only empty fields from a model, records `provenance` (served_by,
+  preamble, body_pending, written); `/set` accepts `clear`, marks `owner_edits`, and lifts set fields out of pending.
+  BusinessPlan.tsx: the badge, the pending list, the generate note, 'owner-edited' marks, and the owner-edit form.
+
+**Refuted (own diff), one pass in three isolated worktrees — seven confirmed, all fixed and guarded.** The first cut refused every entity whose
+blueprint concept was empty — which is every SPAWNED entity (no blueprint at all) and every bare birth, with no route to
+record a concept: the refusal named a way out that did not exist, and a refused pack still appeared in the birth's
+'shipped' list. Fixed as a rule, not a patch: the recorded concept is the blueprint's concept or the founder's
+challenge, the pack says which (`concept_source`, 'no concept recorded yet'), `POST /{id}/concept` records the
+founder's words, the ship defers a pack it cannot ground and is not a coherent whole, the birth answer lists only what
+shipped and names what was refused. Also confirmed and fixed: `/generate` replaced the plan's provenance wholesale
+(Genesis' `name_source` lost, a founder-written opening badged 'floor' by a generation that wrote nothing, W450's
+pending marker not seen as pending) — now merged, the badge moving only when something was written, and a marker
+field is unset (fillable, pending); the owner-edit form re-sent every field so `/set` stamped untouched Chief text as
+the owner's — now only a CHANGED value is an edit, and the floor's marker is refused as one; a cleared field a model
+later filled kept its owner-edited mark; a model draft with `###`/`**Heading**` forms parsed nothing, and one with
+no recognised heading returned no reason; a rename did not move the pack's version (the name is hashed).
+**Process.** Two of the guard's first assertions were wrong about the code, not the code about the product: the birth
+ship (W302) already assembles the first pack, and `/evolve` re-ships (W290) — both times the guard was corrected, not
+the behaviour. A `git stash create` snapshot preceded the refutation and the break runs; `git status` matched after each.
+
+**Broken 34 ways** (each blind alone, guards run, byte-restored); every one fails, none stays green.
+Guard: test_w471_board_pack_and_chiefs_opening_are_honest_both_ways (test_vsb_board_pack updated for the refusal).
+Probe: scripts/_w471_probe.mjs (4/4 on a fresh backend at :8080).
+**Process.** A `sed -i` on the CRLF vsb.py rewrote it as LF (2196-line diff) although its pattern matched nothing —
+caught by putil's EOL report on the next edit, repaired byte-exact, recorded in memory: CRLF files only through
+putil.apply or the Edit tool.
+
+Suite: 383 passed · 15 skipped · 0 fail (full run on the final tree, isolated DATA_DIR, 39 min; 398 items from 359 test functions).

@@ -91,6 +91,36 @@ async def _q(prompt: str, agent: str) -> str:
         return f"[{agent} unavailable: {e}]"
 
 
+def parse_chief_draft(draft: str) -> tuple[Dict[str, str], str]:
+    """W471 — the Chief's '## Section' blocks as {field: text}, and the PREAMBLE (every line before the
+    first heading — the native floor's provenance marker and role line). The old parser dropped the
+    preamble, so the floor's own disclosure never reached the plan."""
+    sec_map = {"executive summary": "executive_summary", "concept": "concept", "vision": "vision",
+               "mission": "mission", "strategy": "strategy"}
+    cur = None
+    seen_heading = False
+    buf: Dict[str, List[str]] = {}
+    pre: List[str] = []
+    for line in (draft or "").splitlines():
+        s = line.strip()
+        head = None
+        if s.startswith("#"):
+            head = s.lstrip("#").strip()
+        elif s.startswith("**") and s.endswith("**") and len(s) > 4:
+            head = s.strip("*").strip()
+        if head is not None:
+            cur = sec_map.get(head.split("(")[0].strip().lower())   # an unmapped heading (Objectives) is skipped
+            seen_heading = True
+            continue
+        if not seen_heading:
+            if s:
+                pre.append(s)
+            continue
+        if cur and s and "|" not in s:
+            buf.setdefault(cur, []).append(s)
+    return {f: " ".join(ls).strip()[:1200] for f, ls in buf.items()}, " ".join(pre).strip()[:600]
+
+
 def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
     """LIVING roadmap — derived from the plan's objectives (the Chief delivers Aims/Mission/Objectives
     via Strategy AND a living Roadmap). Time-phases the objectives, computes per-phase + overall
@@ -164,6 +194,24 @@ async def list_plans():
     return {"plans": plans, "total": len(plans)}
 
 
+_OPENING_FIELDS = ("executive_summary", "concept", "vision", "mission", "strategy")
+_PENDING_MARK = "content pending the owned model"      # W450's pending-body marker (genesis._PENDING_BODY)
+
+
+def _is_unset(value: Any) -> bool:
+    """A field with nothing in it, or W450's pending marker — both are 'not yet composed'."""
+    return not str(value or "").strip() or str(value).strip().startswith(_PENDING_MARK)
+
+
+def _pending_fields(plan: Dict[str, Any]) -> List[str]:
+    """body_pending as the plan stands: the seeded pending list (Genesis names design/commercialisation/operations
+    too) plus every opening field that is unset — minus any the owner or a model has since filled."""
+    seeded = [f for f in ((plan.get("provenance") or {}).get("body_pending") or []) if isinstance(f, str)]
+    out = [f for f in seeded if f not in _OPENING_FIELDS or _is_unset(plan.get(f))]
+    out += [f for f in _OPENING_FIELDS if _is_unset(plan.get(f)) and f not in out]
+    return out
+
+
 class SetPlanRequest(BaseModel):
     scope: str = "workstation"
     owner: str = "Rehan"
@@ -173,19 +221,33 @@ class SetPlanRequest(BaseModel):
     mission: str = ""
     strategy: str = ""
     aims: List[str] = []
+    clear: List[str] = []            # W471 — fields the owner empties (a set of "" never cleared anything)
 
 
 @router.post("/set")
 async def set_plan(req: SetPlanRequest):
-    """Chief/Board set the plan's constitutional + strategic layers."""
+    """Chief/Board set the plan's constitutional + strategic layers — the owner-edit surface (W471: wired
+    from BusinessPlan.tsx; an owner's edit is recorded per field and lifts the field out of 'pending')."""
     plan = _load(req.scope)
     plan.update({"owner": req.owner or plan.get("owner", "Rehan")})
-    for f in ("executive_summary", "concept", "vision", "mission", "strategy"):
-        v = getattr(req, f)
-        if v:
+    ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    edits = plan.setdefault("owner_edits", {})
+    for f in _OPENING_FIELDS:
+        v = (getattr(req, f) or "").strip()
+        if v and v.lower().startswith(_PENDING_MARK):
+            raise HTTPException(status_code=422, detail=f"{f}: the floor's pending marker is not an owner's edit")
+        if f in req.clear:
+            if plan.get(f):                          # clearing what was there is an edit; clearing nothing is not
+                plan[f] = ""
+                edits[f] = ts
+        elif v and v != (plan.get(f) or ""):         # (refutation) only a CHANGED value is an owner's edit
             plan[f] = v
+            edits[f] = ts
     if req.aims:
         plan["aims"] = req.aims
+    prov = plan.get("provenance")
+    if isinstance(prov, dict):
+        prov["body_pending"] = _pending_fields(plan)
     _save(plan)
     return plan
 
@@ -355,43 +417,64 @@ async def generate_plan(req: GenerateRequest):
         "## Mission (one line)\n## Strategy (3-4 sentences)\n"
         "## Objectives (4-6, each: TITLE | KPI | TIMELINE | OWNER_ROLE)"
     )
-    draft = await _q(prompt, "business_plan_chief")
-
-    # Parse the Chief's prose '## Section' blocks into the plan (Executive Summary · Concept · Vision ·
-    # Mission · Strategy). Only fill EMPTY fields — never clobber owner-edited content on a refresh.
-    _sec_map = {"executive summary": "executive_summary", "concept": "concept", "vision": "vision",
-                "mission": "mission", "strategy": "strategy"}
-    _cur = None
-    _buf: Dict[str, List[str]] = {}
-    for _line in draft.splitlines():
-        _s = _line.strip()
-        if _s.startswith("## "):
-            _cur = _sec_map.get(_s[3:].split("(")[0].strip().lower())
-            continue
-        if _cur and _s and "|" not in _s:
-            _buf.setdefault(_cur, []).append(_s)
-    for _field, _lines in _buf.items():
-        _text = " ".join(_lines).strip()
-        if _text and not plan.get(_field):
-            plan[_field] = _text[:1200]
-
-    # Parse objectives from the draft (TITLE | KPI | TIMELINE | OWNER_ROLE lines) — shared helper
-    # so the Board's chief_instruct delegation lands objectives the same way (§5 apex closure, W265).
-    new_objs = parse_objective_lines(draft)
-    plan["objectives"].extend(new_objs)
-    added = len(new_objs)
+    # W471 (P1.14, ledger R3.3) — the Chief's draft carries its PROVENANCE. On the native floor the "draft"
+    # is prompt echo that ignores the founder's words (the floor keyed on the prompt's preamble), so nothing
+    # is written to the plan from it: the floor's output is kept as chief_draft with its marker, the fields
+    # stay pending the owned model, and the answer says so. A model-served draft fills EMPTY fields only —
+    # never an owner's words on a refresh — and its preamble is kept as provenance, not dropped.
+    try:
+        meta = await gateway.query_meta(prompt, agent="business_plan_chief")
+    except Exception as e:
+        meta = {"output": f"[business_plan_chief unavailable: {e}]", "served_by": "unavailable", "is_external": False}
+    draft = str(meta.get("output") or "")
+    sb = str(meta.get("served_by") or "native")
+    sections, preamble = parse_chief_draft(draft)
+    ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    written: List[str] = []
+    added = 0
+    if sb in ("native", "unavailable"):
+        reason = ("structured floor — not model analysis; nothing was written to the plan (the fields stay "
+                  "pending the owned model; the owner can set them)" if sb == "native"
+                  else "the owned model was unavailable; nothing was written to the plan")
+    else:
+        for field, text in sections.items():
+            if text and _is_unset(plan.get(field)):          # empty, or W450's pending marker — never an owner's words
+                plan[field] = text
+                written.append(field)
+                (plan.get("owner_edits") or {}).pop(field, None)   # a model's text is not an owner's edit
+        # Parse objectives from the draft (TITLE | KPI | TIMELINE | OWNER_ROLE lines) — shared helper
+        # so the Board's chief_instruct delegation lands objectives the same way (§5 apex closure, W265).
+        new_objs = parse_objective_lines(draft)
+        plan["objectives"].extend(new_objs)
+        added = len(new_objs)
+        reason = "" if written or added else (
+            "the owned model served a draft but nothing was written — no recognised section met a field still "
+            "unset (edit or clear a field to let the model fill it)" if sections else
+            "the owned model's draft carried no recognised '## Section' headings — nothing was written")
     plan["chief_draft"] = draft
-    if not plan.get("vision"):
-        plan["vision"] = "AI-mediated working that generates living VSB IDBO entities for every user."
+    # (refutation) MERGE into the plan's provenance: Genesis' name_source and seeded pending list stay; the
+    # opening's served_by describes who wrote what is on screen, so it moves only when this generation wrote
+    prov = dict(plan.get("provenance") or {})
+    prov["generation"] = {"served_by": sb, "any_external": bool(meta.get("is_external")), "generated_at": ts,
+                          "preamble": preamble, "written": written, "objectives_added": added, "reason": reason}
+    if written:
+        prov["served_by"] = {sb: 1}
+        prov["any_external"] = bool(meta.get("is_external"))
+    prov["preamble"] = preamble                                # the floor's marker / the model's lead-in, kept
+    prov["written"] = written
+    prov["body_pending"] = _pending_fields(dict(plan, provenance=prov))
+    plan["provenance"] = prov
     _save(plan)
 
     try:
         from agentic_core.organism.biobus import biobus
-        biobus.fire_signal("cognitive", "business_plan.generate", f"{req.scope}: +{added} objectives", 0.7)
+        biobus.fire_signal("cognitive", "business_plan.generate",
+                           f"{req.scope}: +{added} objectives, {len(written)} field(s) written ({sb})", 0.7)
     except Exception:
         pass
 
-    return {"scope": req.scope, "chief_draft": draft, "objectives_added": added, "plan": plan}
+    return {"scope": req.scope, "chief_draft": draft, "objectives_added": added, "written": written,
+            "served_by": sb, "reason": reason, "provenance": plan["provenance"], "plan": plan}
 
 
 @router.get("/progress")
