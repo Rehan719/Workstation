@@ -9,12 +9,14 @@ understanding, progress, and vision-alignment programmatically.
 
   GET  /api/v1/plan          — vision pillars, phases (immediate/short/long), adherence scorecard
   GET  /api/v1/plan/state    — grounded current-state snapshot (auto-introspected, live)
-  GET  /api/v1/plan/followups — the follow-up register: found-but-not-done work, scheduled in plan order (W462)
+  GET  /api/v1/plan/followups — the follow-up register: found-but-not-done work, scheduled in plan order (W462), and
+                                the delivery plan's live state — PLAN NOW and the routes (W469)
 """
 from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter
@@ -175,10 +177,15 @@ def get_followups():
         prompt = fu.read_doc(fu.PROMPT)
         living = fu.read_doc(fu.LIVING)
         raw = fu.REGISTER.read_bytes()
+    except FileNotFoundError as exc:
+        return {**base, "available": False,
+                "reason": f"{Path(str(exc.filename)).name if exc.filename else 'a plan doc'} is not readable here "
+                          "(missing) — the docs are not shipped in the runtime image"}
     except OSError as exc:
         return {**base, "available": False,
-                "reason": f"the follow-up register or the plan docs are not readable here ({type(exc).__name__}) "
-                          "— the docs are not shipped in the runtime image"}
+                "reason": f"{Path(str(exc.filename)).name if exc.filename else 'a plan doc'} could not be read "
+                          f"({exc.strerror or type(exc).__name__}) — it may be locked by another program; the next "
+                          "read tries again"}
     except UnicodeDecodeError as exc:
         return {**base, "available": False,
                 "reason": f"a plan doc is not valid UTF-8 (byte {exc.start}) — re-save it as UTF-8"}
@@ -192,10 +199,16 @@ def get_followups():
         if problems and all(p in fu.LOCKSTEP for p in problems):
             # the CLI writes the docs, then the register: a read that fell between them sees two moments.
             # Read once more before reporting drift that may only be a write in progress.
-            prompt, living, reg = fu.read_doc(fu.PROMPT), fu.read_doc(fu.LIVING), fu.parse_register(fu.REGISTER.read_bytes())
+            try:
+                prompt, living, reg = fu.read_doc(fu.PROMPT), fu.read_doc(fu.LIVING), fu.parse_register(fu.REGISTER.read_bytes())
+            except OSError as exc:
+                return {**base, "available": False,
+                        "reason": f"{Path(str(exc.filename)).name if exc.filename else 'a plan doc'} could not be "
+                                  f"read ({exc.strerror or type(exc).__name__}) — the next read tries again"}
             problems = fu.check(reg, prompt, living)
-        return {**base, "available": True, **fu.schedule(reg, prompt),
-                "integrity": {"ok": not problems, "problems": problems}}
+        # W469 — the delivery plan's live state, derived on every call from the plan's items and the register
+        return {**base, "available": True, **fu.schedule(reg, prompt), "plan": fu.plan_now(reg, prompt),
+                "routes": fu._routes(reg), "integrity": {"ok": not problems, "problems": problems}}
     except Exception as exc:   # a defect in the checker itself is still reported, never a 500
         return {**base, "available": False,
                 "reason": f"the follow-up register could not be checked ({type(exc).__name__}: {str(exc)[:120]})"}
@@ -205,7 +218,10 @@ def _followup_summary() -> Dict[str, Any]:
     # GET /api/v1/plan must never fail because of the register — it only carries the counts
     try:
         from agentic_core import plan_followups as fu
-        s = fu.schedule(fu.load(fu.REGISTER), fu.read_doc(fu.PROMPT))
-        return {**s["counts"], "next_plan_item": s["next_plan_item"], "api": "/api/v1/plan/followups"}
+        reg, prompt = fu.load(fu.REGISTER), fu.read_doc(fu.PROMPT)
+        s = fu.schedule(reg, prompt)
+        p = fu.plan_now(reg, prompt)
+        return {**s["counts"], "next_plan_item": s["next_plan_item"],
+                "plan_items_done": p["done"], "plan_items_total": p["total"], "api": "/api/v1/plan/followups"}
     except Exception as exc:
         return {"available": False, "reason": type(exc).__name__, "api": "/api/v1/plan/followups"}

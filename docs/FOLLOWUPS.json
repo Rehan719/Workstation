@@ -1,5 +1,5 @@
 {
-  "about": "The follow-up register: every task a round finds and does not do. Rules and CLI: agentic_core/plan_followups.py, scripts/followups.py. Slots: a delivery-plan item (P2.6), NEXT (its own round, before the next plan item) or OWNER (waits on an Owner decision; never scheduled into a round). Enforced by test_w462_followup_register_is_scheduled_and_in_lockstep.",
+  "about": "The follow-up register: every task a round finds and does not do. Rules and CLI: agentic_core/plan_followups.py, scripts/followups.py. Slots: a delivery-plan item (P2.6) or OWNER (waits on an Owner decision; never scheduled into a round). NEXT was retired in W469: a row rides an open plan item, chosen by 'routes' (first matching route in order wins: a file prefix ending '/' or an exact file, or whole lowercase words of the title) when added with --slot auto. 'done P1.13 --by W470' marks an item done and moves its riders along the routes. PLAN NOW (the generated block in the prompt and living plan §6.4) says what is next. Enforced by test_w462_followup_register_is_scheduled_and_in_lockstep and test_w469_the_plan_carries_every_followup_and_keeps_itself_current.",
   "items": [
     {
       "id": "FU-001",
@@ -45,7 +45,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -62,7 +62,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -175,7 +175,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -271,7 +271,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -287,7 +287,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.7",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -303,7 +303,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.6",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -335,7 +335,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -402,7 +402,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -418,7 +418,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -434,7 +434,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -450,7 +450,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -498,7 +498,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.6",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -514,7 +514,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.6",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -530,7 +530,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.6",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -546,7 +546,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -563,7 +563,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -580,7 +580,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -596,7 +596,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -630,7 +630,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -647,7 +647,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -679,7 +679,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -728,7 +728,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -761,7 +761,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -778,7 +778,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -794,7 +794,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -810,7 +810,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -827,7 +827,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -843,7 +843,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -864,7 +864,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -880,7 +880,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -896,7 +896,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -913,7 +913,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -929,7 +929,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -946,7 +946,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -964,7 +964,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -981,7 +981,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -998,7 +998,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -1014,7 +1014,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.15",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -1032,7 +1032,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -1048,7 +1048,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -1064,7 +1064,7 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -1080,10 +1080,197 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "NEXT",
+      "slot": "P1.16",
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-067",
+      "title": "close and drop rewrite a row that is already closed",
+      "why": "followups.py close sets status done and closed_by on any row, and drop sets dropped and its note, without checking the row is open: closing FU-001 again with --by W470 silently rewrites the round that closed it, and drop turns a done row dropped. Fix: refuse unless the row is open (a reopen command if one is ever needed).",
+      "source": "W469 own review",
+      "found": "2026-09-18",
+      "files": [
+        "scripts/followups.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P1.16",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-068",
+      "title": "reslot --gate silently ignores --slot",
+      "why": "reslot FU-007 --gate --slot P2.1 slots the row OWNER and drops the --slot without a word. Fix: refuse --slot with --gate, or say it was ignored.",
+      "source": "W469 own review",
+      "found": "2026-09-18",
+      "files": [
+        "scripts/followups.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P1.16",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-069",
+      "title": "A plain done word in a plan item's first line reads as a malformed done marker",
+      "why": "plan_items flags malformed_done when _DONE_MENTION (a check mark, or the word done not followed by when) appears anywhere in the rest of an item's first line, so a new item whose text says, for example, 'counted as done only when verified' or 'not done by the floor' fails check as if its marker were malformed, and mark_done refuses it. Fix: look for a done marker only right after the id and the bracket, not in the prose.",
+      "source": "W469 own review",
+      "found": "2026-09-18",
+      "files": [
+        "agentic_core/plan_followups.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P1.16",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-070",
+      "title": "Plan item texts keep hand-written rider lists that drift from the register",
+      "why": "P2.6's text says register rows FU-005, FU-006 and FU-007 ride it; since W469 nine do. Other items name their riders by hand too. Fix: item texts point at PLAN NOW and the rendered schedule instead of listing rows, or check() compares any FU ids an item names with the rows riding it.",
+      "source": "W469 second refutation (refuted as a W469 defect, real as drift)",
+      "found": "2026-09-18",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P1.16",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    }
+  ],
+  "routes": [
+    {
+      "slot": "P1.13",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/",
+        "apps/workstation-superapp/src/pages/AIToolsCatalogue.tsx",
+        "apps/workstation-superapp/src/pages/marketplace/",
+        "agentic_core/api/tools.py"
+      ],
+      "words": [
+        "marketplace count",
+        "marketplace counts",
+        "domain signature",
+        "qep flagship",
+        "tool registry",
+        "catalogue count",
+        "catalogue counts"
+      ],
+      "note": "catalogue honesty"
+    },
+    {
+      "slot": "P1.14",
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "words": [
+        "board pack",
+        "chief's opening",
+        "business plan"
+      ],
+      "note": "board pack and the Chief's Opening"
+    },
+    {
+      "slot": "P2.6",
+      "files": [
+        "agentic_core/api/change_control.py",
+        "apps/workstation-superapp/src/pages/governance/",
+        "agentic_core/api/board.py",
+        "agentic_core/auth/",
+        "agentic_core/gaas/v5/circuit_breaker_rl.py",
+        "agentic_core/api/constitutional_gaas.py"
+      ],
+      "words": [
+        "auth dependency",
+        "governance verdict",
+        "circuit breaker",
+        "evolution apply",
+        "change control",
+        "ratification"
+      ],
+      "note": "the perimeter and the gate"
+    },
+    {
+      "slot": "P1.15",
+      "files": [],
+      "words": [
+        "cannot be read",
+        "unreadable",
+        "tolerantly",
+        "stale lockfile",
+        "non-finite",
+        "ueg chain",
+        "ueg path",
+        "ueg write"
+      ],
+      "note": "stores that refuse, never replace (the W442→W468 class)"
+    },
+    {
+      "slot": "P2.8",
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/api/swarm.py",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "words": [],
+      "note": "bespoke swarms"
+    },
+    {
+      "slot": "P2.9",
+      "files": [
+        "agentic_core/economy/",
+        "agentic_core/api/economy.py",
+        "agentic_core/api/marketplace.py",
+        "apps/workstation-superapp/src/pages/enterprise/"
+      ],
+      "words": [],
+      "note": "the economy's flows, told as they happened"
+    },
+    {
+      "slot": "P2.3",
+      "files": [
+        "agentic_core/avatars/"
+      ],
+      "words": [
+        "avatar",
+        "profile applied"
+      ],
+      "note": "avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)"
+    },
+    {
+      "slot": "P2.7",
+      "files": [
+        "agentic_core/organism/",
+        "agentic_core/optimizer/"
+      ],
+      "words": [],
+      "note": "the organism and its heartbeat"
+    },
+    {
+      "slot": "P1.16",
+      "files": [
+        "integration_tests/",
+        "docs/",
+        "config/",
+        "packages/ui/",
+        "agentic_core/layers/",
+        "scripts/followups.py",
+        "agentic_core/plan_followups.py"
+      ],
+      "words": [],
+      "note": "canon and suite hygiene before M1, and the register's own tooling (the broad prefixes: last)"
     }
   ]
 }

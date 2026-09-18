@@ -6262,3 +6262,45 @@ eighth passes, whose fixes did not touch a page.
 - New guard: test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced.
 
 Suite: 380 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 395 items from 356 test functions).
+
+### W469 — the plan carries every follow-up and keeps itself current (the Owner's instruction)
+
+**What was wrong.** The Owner asked (2026-09-17) why P1.13 had not started after W460. The register's NEXT slot meant
+"its own round, before the next plan item", and every round since W462 registered more NEXT rows than it closed
+(25 → 42). So the next plan item could never come: the queue in front of it grew faster than it drained. The plan's
+"what is next" was a hand-kept line, and nothing showed the plan's live state.
+
+**What changed.**
+- **NEXT retired.** The 42 NEXT rows ride the plan items that own their areas. Three items were added: P1.15 (stores that
+  refuse, never replace — the W442→W468 class), P1.16 (canon and suite hygiene before M1), P2.9 (the economy's flows told
+  as they happened). A row slotted NEXT now fails `check` with the command that fixes it; history rows keep NEXT.
+- **Routes.** `docs/FOLLOWUPS.json` carries `routes`: a file prefix ending `/` or an exact file, or whole lowercase title
+  words; the first matching route in order wins; a high row rides the next open item; a route to a finished item is
+  skipped. `add` routes by default; `route`, `routes`, `route --from` manage them. `check` reports a route to a finished
+  or unknown item, a malformed one, two routes to one item, and a directory named without its `/`.
+- **PLAN NOW.** A generated block (next item, the rows riding each open item, done per phase, follow-up counts, any
+  unscheduled row) in WHERE THE PLAN STANDS and in living plan §6.4, re-rendered on every register change and checked in
+  lockstep. A plan the code cannot read is said as that, never as "every item is done".
+- **done.** `followups.py done P1.13 --by W470` marks the item, refuses while rows ride it unless `--reroute` moves them
+  along the routes, and hands its routes to `--hand-to` (merged at the earliest position, so the area keeps its
+  precedence). The register is written first; a done that half-landed is finished by running the same command again.
+- **Live.** `/api/v1/plan/followups` serves `plan` and `routes`; `/api/v1/plan` carries items done/total. The
+  `/transformation` card ("Delivery plan — live") re-reads every minute, keeps the last good plan when a refresh fails or
+  the server says the register is unavailable, and never shows a server path.
+
+**Refuted (own diff), two passes.** The first found the route-precedence flaw (a broad word sent economy rows FU-045 and
+FU-063 to the organism item), a high count that included unscheduled rows, an unreadable plan reported as finished, a
+done that could not be finished after a partial write, and a page that lost the plan on a 200 "unavailable"; all fixed
+and guarded, and the suite now asserts every open row sits where its routes would send it. The second (seven confirmed,
+two refuted) found the merge moving a handed area behind every other route (7 of P1.15's 11 rows went elsewhere), a
+malformed route merged letter by letter, P1.13/P1.14 and P2.3 with no routes (their rows fell to P2.9), an unreadable
+plan listing every row as unscheduled, and a server path in the API's reason; all fixed and guarded.
+**Process fault, recorded.** A second-pass refuter ran `done P1.15` against the REAL repository while the break run was
+going (it had been told to work in a copy). The break run's failures after that point were the mutation, not the blinds;
+the docs were restored byte-for-byte from the `git stash create` snapshot taken before the run, and the break run was
+repeated on its own, with a tripwire that stops it if a plan doc changes outside the harness.
+
+**Broken 47 ways** (each blind alone, guards run, byte-restored); every one fails, none stays green.
+- New guard: test_w469_the_plan_carries_every_followup_and_keeps_itself_current. Probe: scripts/_w469_probe.mjs (4/4).
+
+Suite: 381 passed · 15 skipped · 0 failed (full run on the final tree, isolated DATA_DIR, 37 min; 396 items from 357 test functions).

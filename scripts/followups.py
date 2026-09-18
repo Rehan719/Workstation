@@ -1,14 +1,23 @@
 """Follow-up register CLI — see agentic_core/plan_followups.py for the rules.
 
-  python scripts/followups.py add --title T --why W --source W462 --slot P2.6 [--files a,b] [--severity high|medium|low] [--owner-gated]
+  python scripts/followups.py add --title T --why W --source W462 [--slot P2.6|auto|OWNER] [--files a,b] [--severity high|medium|low] [--owner-gated]
+                                              # no --slot (or auto): routed to the plan item that owns its area
   python scripts/followups.py list [--all]
   python scripts/followups.py close FU-007 --by W463
   python scripts/followups.py drop FU-007 --note "why it is not worth doing"
-  python scripts/followups.py reslot FU-007 --slot P2.1 [--ungate]     # --ungate once the Owner has ruled
-  python scripts/followups.py reslot FU-007 --gate                     # it waits on the Owner after all
-  python scripts/followups.py schedule        # the ordered schedule as the plan will show it
-  python scripts/followups.py render          # rewrite the marker blocks in both plan docs
-  python scripts/followups.py check           # exit 1 on any problem (the suite's guard runs the same check)
+  python scripts/followups.py reslot FU-007 --slot P2.1|auto [--ungate]   # --ungate once the Owner has ruled
+  python scripts/followups.py reslot FU-007 --gate                        # it waits on the Owner after all
+  python scripts/followups.py routes          # which plan item owns which area (in precedence order)
+  python scripts/followups.py route --slot P2.9 [--files a/,b.py] [--words "cannot be read,ueg"] [--note N] [--position 1]
+  python scripts/followups.py route --slot P2.9 --remove
+  python scripts/followups.py route --from P2.8 --slot P2.7       # hand an item's area on: its matchers join P2.7's route
+  python scripts/followups.py done P1.13 --by W470 [--reroute] [--hand-to P1.14]
+                                              # mark an item ✅ DONE; move its open rows along the routes; hand its routes on
+  python scripts/followups.py schedule        # PLAN NOW and the ordered schedule, as the plan will show them
+  python scripts/followups.py render          # rewrite both generated blocks in both plan docs
+  python scripts/followups.py check           # exit 1 on any problem (the suite's guards run the same check)
+
+W469 — NEXT is retired: every row rides the plan item that owns its area (see agentic_core/plan_followups.py).
 
 Every mutating command holds the register's lock, validates the change AND both docs, then writes the two docs
 and the register last (each atomically), so the register and the plans move together. A file named on a row
@@ -110,7 +119,7 @@ def main() -> int:
     a.add_argument("--title", required=True)
     a.add_argument("--why", required=True)
     a.add_argument("--source", required=True, help="the round / refuter that found it, e.g. 'W460 refuter'")
-    a.add_argument("--slot", required=True, help="a plan item (P2.6), NEXT, or OWNER")
+    a.add_argument("--slot", default="auto", help="a plan item (P2.6), auto (route it; the default) or OWNER")
     a.add_argument("--files", default="")
     a.add_argument("--severity", default="medium", choices=fu.SEVERITIES)
     a.add_argument("--owner-gated", action="store_true")
@@ -124,16 +133,30 @@ def main() -> int:
     d.add_argument("--note", required=True)
     rs = sub.add_parser("reslot")
     rs.add_argument("id")
-    rs.add_argument("--slot")
+    rs.add_argument("--slot", help="a plan item, or auto to route it")
     g = rs.add_mutually_exclusive_group()
     g.add_argument("--ungate", action="store_true", help="the Owner has ruled: schedule it into --slot")
     g.add_argument("--gate", action="store_true", help="it waits on the Owner: slot OWNER")
+    sub.add_parser("routes")
+    ro = sub.add_parser("route")
+    ro.add_argument("--slot", required=True)
+    ro.add_argument("--files", default="", help="comma-separated file paths or directory prefixes ending in /")
+    ro.add_argument("--words", default="", help="comma-separated whole words matched in a row's title (lower case)")
+    ro.add_argument("--note", default="")
+    ro.add_argument("--position", type=int, default=0, help="1-based precedence for a new route (default: last)")
+    ro.add_argument("--remove", action="store_true")
+    ro.add_argument("--from", dest="from_slot", default="", help="merge every route to this item into --slot's route")
+    dn = sub.add_parser("done")
+    dn.add_argument("slot")
+    dn.add_argument("--by", required=True)
+    dn.add_argument("--reroute", action="store_true", help="move the item's open rows along the routes")
+    dn.add_argument("--hand-to", dest="hand_to", default="", help="the open item the finished item's routes now send to")
     sub.add_parser("schedule")
     sub.add_parser("render")
     sub.add_parser("check")
     args = ap.parse_args()
 
-    if args.cmd in ("check", "list", "schedule"):
+    if args.cmd in ("check", "list", "schedule", "routes"):
         with register_lock():                      # never read the register and the docs from different moments
             reg, prompt, living = _texts()
         if args.cmd == "check":
@@ -150,6 +173,19 @@ def main() -> int:
                     gate = " OWNER-GATED" if r.get("owner_gated") is True else ""
                     print(f"{r.get('id')} {str(r.get('status')):7} {str(r.get('slot')):6} [{r.get('severity')}]{gate} {r.get('title')}")
             return 0
+        if args.cmd == "routes":
+            items = {i["slot"]: i for i in fu.plan_items(prompt)}
+            for n, rt in enumerate(fu.raw_routes(reg), 1):
+                if not isinstance(rt, dict):
+                    print(f"{n}. (malformed)")
+                    continue
+                it = items.get(rt.get("slot"))
+                state = "not a plan item" if it is None else (f"DONE {it['done_by']}" if it["done"] else "open")
+                print(f"{n}. {rt.get('slot')} [{state}] files={rt.get('files', [])} words={rt.get('words', [])}"
+                      + (f" — {rt['note']}" if rt.get("note") else ""))
+            return 0
+        print(fu.render_plan_now(reg, prompt))
+        print()
         print(fu.render(reg, prompt))
         return 0
 
@@ -159,17 +195,31 @@ def main() -> int:
         if not isinstance(reg, dict) or not isinstance(reg.get("items"), list):
             sys.exit("REFUSED — the register must be an object with an items list")
 
+        new_prompt_src = prompt                    # `done` edits the plan itself; every other command keeps it
+        said = []
         if args.cmd == "add":
             nums = [fu.id_number(r.get("id")) for r in reg["items"] if isinstance(r, dict)]
             n = max([x for x in nums if x is not None] or [0]) + 1
             slot = args.slot.strip()
+            title = _one_line(args.title)
+            files = [fu.normalise_path(f) for f in args.files.split(",") if f.strip()]
+            if slot.upper() in fu.RETIRED_SLOTS:
+                sys.exit(f"REFUSED — slot {slot} is retired (W469): a row rides the plan item that owns its area "
+                         "(leave --slot out to route it, or name the item)")
             if args.owner_gated and slot != "OWNER":
-                print(f"note: owner-gated work is slotted OWNER (not {slot})")
+                if slot != "auto":                 # only a slot the caller named is worth a note
+                    print(f"note: owner-gated work is slotted OWNER (not {slot})")
                 slot = "OWNER"
+            elif slot == "auto":
+                routed = fu.route_row(reg, prompt, title, files, args.severity)
+                if not routed["slot"]:
+                    sys.exit(f"REFUSED — {routed['reason']}")
+                slot = routed["slot"]
+                said.append(f"routed to {slot} — {routed['by']}")
             reg["items"].append({
-                "id": f"FU-{n:03d}", "title": _one_line(args.title), "why": _one_line(args.why),
+                "id": f"FU-{n:03d}", "title": title, "why": _one_line(args.why),
                 "source": _one_line(args.source), "found": time.strftime("%Y-%m-%d"),
-                "files": [fu.normalise_path(f) for f in args.files.split(",") if f.strip()],
+                "files": files,
                 "severity": args.severity, "owner_gated": bool(args.owner_gated),
                 "slot": slot, "status": "open", "closed_by": None, "note": "",
             })
@@ -191,13 +241,107 @@ def main() -> int:
                     sys.exit(f"REFUSED — {args.id} is owner-gated; pass --ungate once the Owner has ruled")
                 if args.ungate:
                     r["owner_gated"] = False
-                r["slot"] = args.slot.strip()
+                slot = args.slot.strip()
+                if slot.upper() in fu.RETIRED_SLOTS:
+                    sys.exit(f"REFUSED — slot {slot} is retired (W469): use --slot auto or name the plan item")
+                if slot == "auto":
+                    routed = fu.route_row(reg, prompt, str(r.get("title") or ""), list(r.get("files") or []),
+                                          str(r.get("severity") or ""))
+                    if not routed["slot"]:
+                        sys.exit(f"REFUSED — {args.id}: {routed['reason']}")
+                    slot = routed["slot"]
+                    said.append(f"{args.id} routed to {slot} — {routed['by']}")
+                r["slot"] = slot
+        elif args.cmd == "route":
+            routes = reg.setdefault("routes", [])
+            if not isinstance(routes, list):
+                sys.exit("REFUSED — the register's routes are not a list; repair it by hand first")
+            target = args.slot.strip()
+            open_items = {i["slot"] for i in fu.plan_items(prompt) if not i["done"]}
+            if args.remove:
+                kept = [rt for rt in routes if not (isinstance(rt, dict) and rt.get("slot") == target)]
+                if len(kept) == len(routes):
+                    sys.exit(f"REFUSED — no route sends rows to {target}")
+                routes[:] = kept
+                said.append(f"removed the route(s) to {target}")
+            elif target not in open_items:
+                sys.exit(f"REFUSED — {target} is not an open delivery-plan item; a route sends new rows only to one")
+            elif args.from_slot.strip():
+                src = args.from_slot.strip()
+                if src == target:
+                    sys.exit("REFUSED — --from and --slot name the same item")
+                try:
+                    n = fu.merge_routes(reg, src, target)
+                except ValueError as exc:
+                    sys.exit(f"REFUSED — {exc}")
+                if not n:
+                    sys.exit(f"REFUSED — no route sends rows to {src}")
+                said.append(f"{n} route(s) to {src} merged into the route to {target}")
+            else:
+                new_route = {"slot": args.slot.strip(),
+                             "files": [fu.normalise_path(f) for f in args.files.split(",") if f.strip()],
+                             "words": [" ".join(w.split()).lower() for w in args.words.split(",") if w.strip()]}
+                if args.note.strip():
+                    new_route["note"] = _one_line(args.note)
+                same = [i for i, rt in enumerate(routes) if isinstance(rt, dict) and rt.get("slot") == new_route["slot"]]
+                if same:
+                    routes[same[0]] = new_route
+                    said.append(f"route {same[0] + 1} to {new_route['slot']} replaced")
+                else:
+                    at = len(routes) if args.position <= 0 else min(args.position - 1, len(routes))
+                    routes.insert(at, new_route)
+                    said.append(f"route to {new_route['slot']} added at position {at + 1}")
+        elif args.cmd == "done":
+            slot = args.slot.strip()
+            by = args.by.strip()
+            same = [i for i in fu.plan_items(prompt) if i["slot"] == slot and i["done"] and i["done_by"] == by]
+            try:
+                # done by THIS round already (a done whose other writes did not land): finish it, do not refuse it
+                new_prompt_src = prompt if same else fu.mark_done(prompt, slot, by)
+            except ValueError as exc:
+                sys.exit(f"REFUSED — {exc}")
+            open_after = {i["slot"] for i in fu.plan_items(new_prompt_src) if not i["done"]}
+            riders = [r for r in fu.raw_items(reg) if isinstance(r, dict) and r.get("status") == "open"
+                      and r.get("slot") == slot and r.get("owner_gated") is not True]
+            if riders and not args.reroute:       # unfinished work is named first
+                sys.exit(f"REFUSED — {len(riders)} open row(s) ride {slot}: "
+                         + ", ".join(str(r.get("id")) for r in riders)
+                         + " — close each one it did, or pass --reroute to move the rest along the routes")
+            hand = args.hand_to.strip()
+            if hand and hand not in open_after:   # checked whenever it is given, never silently ignored
+                sys.exit(f"REFUSED — --hand-to {hand} is not an open delivery-plan item")
+            routes = fu.raw_routes(reg)
+            to_finished = [rt for rt in routes if isinstance(rt, dict) and rt.get("slot") == slot]
+            if to_finished and not hand:
+                sys.exit(f"REFUSED — {len(to_finished)} route(s) still send new rows to {slot}: pass --hand-to "
+                         "<the open item that owns that area now> (its matchers join that item's route)")
+            if same and not to_finished and not riders:
+                sys.exit(f"REFUSED — {slot} is already DONE {by}, with no rows riding it and no route to it: nothing left to do")
+            if hand:
+                try:
+                    n = fu.merge_routes(reg, slot, hand)
+                except ValueError as exc:
+                    sys.exit(f"REFUSED — {exc}")
+                said.append(f"{n} route(s) handed from {slot} to {hand}" if n else
+                            f"note: no route sent rows to {slot}; --hand-to {hand} had nothing to hand")
+            for r in riders:
+                routed = fu.route_row(reg, new_prompt_src, str(r.get("title") or ""), list(r.get("files") or []),
+                                      str(r.get("severity") or ""))
+                if not routed["slot"]:
+                    sys.exit(f"REFUSED — {r.get('id')} cannot be moved along the routes: re-slot it first "
+                             f"(python scripts/followups.py reslot {r.get('id')} --slot P…) or add a route that owns it")
+                said.append(f"{r.get('id')} moved from {slot} to {routed['slot']} — {routed['by']}")
+                r["slot"] = routed["slot"]
+            said.insert(0, f"{slot} already ✅ DONE {by} — finished what was left" if same else f"{slot} marked ✅ DONE {by}")
 
         # validate EVERYTHING before writing ANYTHING: both docs must splice, and the change must not ADD a
         # problem (one already there does not block the command that fixes it; lockstep is what render fixes)
-        block = fu.render(reg, prompt)
+        if not fu.plan_items(new_prompt_src):     # never render a plan it could not read, never write past it
+            sys.exit("REFUSED — the delivery plan's <delivery_plan> section has no items this code can read; repair "
+                     "it first (python scripts/followups.py check names the problem)")
         try:
-            new_prompt, new_living = fu.splice(prompt, block), fu.splice(living, block)
+            new_prompt = fu.splice_all(new_prompt_src, reg, new_prompt_src)
+            new_living = fu.splice_all(living, reg, new_prompt_src)
         except ValueError as exc:
             sys.exit(f"REFUSED — {exc}; repair the doc's markers first")
         if args.cmd != "render":
@@ -208,12 +352,22 @@ def main() -> int:
                 return 1
         writes = [(fu.PROMPT, prompt.encode("utf-8"), new_prompt.encode("utf-8")),
                   (fu.LIVING, living.encode("utf-8"), new_living.encode("utf-8"))]
-        if args.cmd != "render":                   # last: the register never moves unless both docs did
-            writes.append((fu.REGISTER, fu.REGISTER.read_bytes(),
-                           (json.dumps(reg, indent=2, ensure_ascii=False) + "\n").encode("utf-8")))
+        if args.cmd not in ("render",):
+            reg_write = (fu.REGISTER, fu.REGISTER.read_bytes(),
+                         (json.dumps(reg, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
+            if args.cmd == "done":
+                # the register FIRST; whatever lands, running the same done again finishes it (a done item marked
+                # by the same round is completed, not refused)
+                writes.insert(0, reg_write)
+            else:
+                writes.append(reg_write)           # last: the register never moves unless both docs did
         try:
             fu.write_all(writes)
         except fu.PartialWrite as exc:
+            if args.cmd == "done":
+                sys.exit(f"REFUSED — {exc.cause}; these files carry the change and could not be put back: "
+                         f"{', '.join(str(p) for p in exc.unrestored)} (every other file is as it was). Run the same "
+                         "done command again once the files are free — it finishes whatever did not land")
             sys.exit(f"REFUSED — {exc.cause}; these files still carry the change and could not be put back: "
                      f"{', '.join(str(p) for p in exc.unrestored)} — run python scripts/followups.py render once "
                      "they are free (the register was not changed)")
@@ -222,6 +376,8 @@ def main() -> int:
                      "nothing was changed (files already written were put back)")
         if args.cmd == "add":
             print(f"added {added_id}")
+        for line in said:
+            print(line)
     print("rendered into", fu.PROMPT.name, "and", fu.LIVING.name)
     return 0
 

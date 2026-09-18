@@ -30,14 +30,23 @@ interface OrchestrationRun {
 
 // W462 — the follow-up register (GET /api/v1/plan/followups): found-but-not-done work, scheduled in plan order
 interface FollowupRow { id: string; title: string; why: string; severity: string; slot: string; source: string }
+// W469 — the delivery plan's live state (PLAN NOW), derived on every call from the plan's items and the register
+interface PlanItemNow { slot: string; title: string; followups: number; by_severity: Record<string, number> }
+interface PlanNow {
+  next: PlanItemNow | null; open_items: PlanItemNow[]; phases: { phase: string; done: number; total: number }[];
+  done: number; total: number; unscheduled: string[]; readable?: boolean;
+}
 interface Followups {
   available: boolean; reason?: string;
-  counts: { open: number; scheduled: number; high: number; awaiting_owner: number; done: number; dropped: number };
+  counts: { open: number; scheduled: number; high: number; awaiting_owner: number; done: number; dropped: number; unscheduled?: number };
   next_plan_item: string | null;
   schedule: { slot: string; title: string; items: FollowupRow[] }[];
+  unscheduled?: FollowupRow[];
   awaiting_owner: FollowupRow[];
+  plan?: PlanNow;
   integrity: { ok: boolean; problems: string[] };
 }
+const PLAN_REFRESH_MS = 60_000;
 
 function tone(status: string) {
   return status === 'realised' ? 'text-emerald-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-500';
@@ -58,14 +67,32 @@ export const TransformationDashboard: React.FC = () => {
   const [runs, setRuns] = useState<OrchRunSummary[]>([]);
   const [error, setError] = useState('');
   const [followups, setFollowups] = useState<Followups | null>(null);
+  const [followupsAt, setFollowupsAt] = useState('');       // when the live plan was last read
+  const [followupsErr, setFollowupsErr] = useState('');     // a refresh that failed keeps the last good plan on screen
 
   const load = () => fetch('/api/v1/transformation').then(r => r.json()).then(setPic).catch(() => setError('Failed to load'));
   const loadRuns = () => fetch('/api/v1/transformation/orchestrate/runs').then(r => r.json()).then(d => setRuns(d.runs ?? [])).catch(() => {});
   // apiJson, so a 500 or a 404 from an older backend is named as such — never 'backend unreachable'
   const loadFollowups = () => apiJson<Followups>('/api/v1/plan/followups')
-    .then(setFollowups)
-    .catch(e => setFollowups({ available: false, reason: `The follow-up register could not be loaded (${errorMessage(e)}).` } as Followups));
+    .then(d => {
+      if (!d.available) {
+        setFollowupsErr(d.reason ?? 'the register is not readable');
+        setFollowups(prev => (prev && prev.available ? prev : d));
+        return;
+      }
+      setFollowups(d); setFollowupsErr(''); setFollowupsAt(new Date().toLocaleTimeString());
+    })
+    .catch(e => {
+      const why = `The follow-up register could not be loaded (${errorMessage(e)}).`;
+      setFollowupsErr(errorMessage(e));
+      setFollowups(prev => (prev && prev.available ? prev : { available: false, reason: why } as Followups));
+    });
   useEffect(() => { load(); loadRuns(); loadFollowups(); }, []);
+  // W469 — the plan is live: re-read from the plan and the register every minute while the page is open
+  useEffect(() => {
+    const t = setInterval(loadFollowups, PLAN_REFRESH_MS);
+    return () => clearInterval(t);
+  }, []);
 
   const tick = async () => {
     setTicking(true);
@@ -253,16 +280,43 @@ export const TransformationDashboard: React.FC = () => {
       {/* W462 — every task a round found and did not do, slotted into the delivery plan and scheduled */}
       {followups && (
         <Card className="p-6" data-testid="followups-card">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-            <ListChecks size={14} /> Scheduled follow-ups
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2">
+            <ListChecks size={14} /> Delivery plan — live
           </h3>
+          <p className="text-[9px] text-slate-600 mb-3" data-testid="plan-live-stamp">
+            {followupsAt
+              ? `Read from the delivery plan and the follow-up register at ${followupsAt} · refreshes every minute`
+              : (followupsErr ? 'The delivery plan has not been read yet · retrying every minute' : 'Reading the delivery plan…')}
+            {followupsErr && followupsAt ? ` · the last refresh failed (${followupsErr}) — showing the plan as last read` : ''}
+          </p>
           {!followups.available ? (
             <p className="text-[11px] text-slate-500">{followups.reason ?? 'The follow-up register is not readable here.'}</p>
           ) : (
             <>
+              {followups.plan && (
+                <div className="mb-3" data-testid="plan-now">
+                  <p className="text-[10px] text-slate-400" hidden={followups.plan.readable === false || followups.plan.total === 0}>
+                    Done {followups.plan.done} of {followups.plan.total} items — {followups.plan.phases.map(p => `${p.phase} ${p.done}/${p.total}`).join(' · ')}
+                  </p>
+                  {followups.plan.readable === false || followups.plan.total === 0 ? (
+                    <p className="text-[11px] font-black text-amber-400 mt-1" data-testid="plan-unreadable">
+                      The delivery plan could not be read — no items were found in it, so nothing here says what is next or done.
+                    </p>
+                  ) : followups.plan.next ? (
+                    <p className="text-[11px] font-black text-white mt-1" data-testid="plan-next">
+                      Next: {followups.plan.next.slot} <span className="text-slate-300 font-bold">{followups.plan.next.title}</span>
+                      <span className="text-slate-500 font-bold"> — {followups.plan.next.followups
+                        ? `${followups.plan.next.followups} follow-up${followups.plan.next.followups === 1 ? '' : 's'} ride it`
+                        : 'no follow-ups ride it'}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] font-black text-emerald-400 mt-1">Every delivery-plan item is done.</p>
+                  )}
+                </div>
+              )}
               <p className="text-[10px] text-slate-500 mb-3">
-                {followups.counts.open} open · {followups.counts.scheduled} scheduled ({followups.counts.high} high) · {followups.counts.awaiting_owner} awaiting the Owner · {followups.counts.done} done
-                {followups.next_plan_item ? ` · next plan item ${followups.next_plan_item}` : ''}
+                {followups.counts.open} follow-ups open · {followups.counts.scheduled} ride a plan item ({followups.counts.high} high)
+                {followups.counts.unscheduled ? ` · ${followups.counts.unscheduled} unscheduled` : ''} · {followups.counts.awaiting_owner} awaiting the Owner · {followups.counts.done} done
               </p>
               {!followups.integrity.ok && (
                 <p className="text-[10px] text-amber-400 font-bold mb-3" title={followups.integrity.problems.join('\n')}>
@@ -280,6 +334,16 @@ export const TransformationDashboard: React.FC = () => {
                     ))}
                   </div>
                 ))}
+                {(followups.unscheduled ?? []).length > 0 && (
+                  <div data-testid="plan-unscheduled">
+                    <p className="text-[10px] font-black text-amber-400">Unscheduled <span className="text-slate-500 font-bold">— riding no open plan item; each needs a slot</span></p>
+                    {(followups.unscheduled ?? []).map(r => (
+                      <p key={r.id} className="text-[10px] text-slate-400 mt-1 pl-3" title={`${r.why} (found ${r.source})`}>
+                        <span className="text-amber-400 font-black">{r.id} · slot {r.slot}</span> {r.title}
+                      </p>
+                    ))}
+                  </div>
+                )}
                 {followups.awaiting_owner.length > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-white">Awaiting the Owner <span className="text-slate-600 font-bold">— recorded, never scheduled without your instruction</span></p>
