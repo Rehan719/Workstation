@@ -928,7 +928,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     # than legitimate use, and the QMS verdict is noisy on the native floor) surface as explicit
     # warnings on the run response (commit_ready · usage_area_supported · quality_warning) with the
     # PUT reconfigure path to fix the design. A creative run is never blocked on a noisy signal.
-    commit_ready = bool(comp.get("commit_ready", True))
+    commit_ready = comp.get("commit_ready", True)          # W475 — tri-state (None: the gate could not assess)
     _area_ok = bool((comp.get("model") or {}).get("usage_area_supported_by_all", True))
 
     def _eff_cfg(r: Dict[str, Any]) -> Dict[str, Any]:
@@ -1123,7 +1123,9 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             # W273 — run-time honesty: the design's simulation verdicts (explicit warning when
             # either failed — never silent, never a hard wall) + which resources got per-run overrides.
             "commit_ready": commit_ready, "usage_area_supported": _area_ok,
-            "quality_warning": (None if commit_ready else
+            "quality_warning": ("The gate could not assess this design's pre-run simulation (floor/template-served): "
+                                "commit at your judgement — nothing here certifies it." if commit_ready is None else
+                                None if commit_ready else
                                 "This design's pre-run simulation did not pass the §10 quality bar"
                                 + ("" if _area_ok else " (usage area not declared by every composed resource)")
                                 + " — review quality_assurance and consider reconfiguring (PUT /compositions/{cid})."),
@@ -1502,8 +1504,15 @@ async def _simulate_configuration(name: str, resource_ids: List[str], usage_area
                  + ", ".join(model["combined_capabilities"][:24]) + ".") if n else ""
     qa = await assure_delivery(plan_text, [r["name"] for r in resolved], label="composition",
                                served_by="template")
-    commit_ready = bool(qa["quality"].get("qms_gate_passed") is not False
-                        and model["usage_area_supported_by_all"])
+    # W475 (ledger v4 R4.2) — tri-state: True (gate passed, areas supported) · False (gate failed or an area
+    # unsupported) · None (the gate could NOT assess — a template/floor-served simulation is not 'ready').
+    _gate = qa["quality"].get("qms_gate_passed")
+    if _gate is False or not model["usage_area_supported_by_all"]:
+        commit_ready = False
+    elif _gate is None:
+        commit_ready = None
+    else:
+        commit_ready = True
     return resolved, model, qa, commit_ready
 
 

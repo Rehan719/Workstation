@@ -188,11 +188,15 @@ class EconomicMetabolism:
                     logger.warning("cycle for %s: the first-write hook raised: %s", self.vsb_id, _hook_err)
 
         # 2. Homeostasis — reserves first (legal/operating + prudential; energy-adjusted §8→§12)
-        reserves = round(costs + revenue * effective_reserve, 2)
-        self.ledger.record("reserves", reserves, memo="homeostasis (reserves + costs)")
+        # W475 (ledger v4 R6.1) — declared costs are an EXPENSE (Dr operating_costs / Cr cash), never a reserve:
+        # the P&L used to show no cost and the balance sheet a reserve that included spent money.
+        if costs > 0:
+            self.ledger.record("costs", costs, memo="declared operating costs")
+        reserves = round(revenue * effective_reserve, 2)
+        self.ledger.record("reserves", reserves, memo="homeostasis (prudential reserve)")
 
-        # 3. Distributable profit
-        distributable = round(max(0.0, revenue - reserves), 2)
+        # 3. Distributable profit — what remains after costs and the reserve (the same total as before)
+        distributable = round(max(0.0, revenue - costs - reserves), 2)
 
         # 4. Circulation — the waterfall
         splits: Dict[str, float] = {}
@@ -278,6 +282,7 @@ class EconomicMetabolism:
             "inter_vsb_received_wst": transfers_received,       # federation — receipts from other VSBs (W262)
             **({"inter_vsb_receipts_error": receipts_error} if receipts_error else {}),   # W465 — none taken, and why
             "homeostasis_reserves": reserves,
+            "operating_costs": costs,                  # W475 — posted as an expense, not inside the reserve
             "reserve_rate_applied": effective_reserve,   # §8→§12: energy-adjusted (conserves more when low)
             "energy_state": energy_state,
             "distributable_profit": distributable,

@@ -109,7 +109,7 @@ async def get_plan():
         },
         "phases": _PHASES,
         "followups": _followup_summary(),
-        "governance_hierarchy": ["Owner", "Chief (Owner Digital Twin)", "Board of Directors",
+        "governance_hierarchy": ["Owner", "Chief (the Owner's charter; twin model planned)", "Board of Directors",
                                  "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
         "note": "Source of truth is the markdown doc; GET /plan/state for live current-state.",
     }

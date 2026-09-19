@@ -32,6 +32,44 @@ _HARAM = re.compile(
     r"brewer|distiller|gambling|gambl\w*|casino|lottery|lotteries|betting|wager|"
     r"pork|lard|bacon|haram|pornograph|exploitat)\w*",
     re.IGNORECASE)
+# W475 (ledger v4 R1.0) — a haram term inside a NEGATING phrase ('avoids riba', 'no alcohol', 'free of interest')
+# is not an offer of it. The screen cannot tell offered from avoided, so such a subject is REVIEW with the phrase
+# quoted — never FAIL, and never 'Prohibited element' (a fact the screen cannot know).
+# W475 (refutation) — the negator must GOVERN the term: bare 'free' / 'non' / 'zero' are adjectives ('a free casino
+# app', 'non-stop gambling', 'zero-fee betting' are offers), a double negation is an offer ('does not avoid alcohol'),
+# 'not only riba' is an offer, and punctuation ends the phrase ('no, we charge riba'). The suffix form is a negation
+# ('riba-free', 'pork free menu'), and so is a hyphen-attached 'non-' ('non-alcoholic').
+_NEGATOR_WORD = re.compile(r"^(?:avoid\w*|without|no|never|not|prohibit\w*|exclud\w*|forbid\w*|reject\w*|refus\w*)$",
+                           re.IGNORECASE)
+_NOT_WORDS = ("not", "never", "no", "cannot")
+_SCOPE_BREAKERS = ("but", "except", "yet", "instead", "rather", "however", "only", "just", "merely")
+
+
+def _negated(text: str, m) -> bool:
+    """True when the haram term matched at `m` is governed by a negation — the subject says it AVOIDS it."""
+    if re.match(r"[\s\-]free\b", text[m.end():m.end() + 8], re.IGNORECASE):
+        return True                                           # 'riba-free financing', 'our pork free menu'
+    if text[max(0, m.start() - 4):m.start()].lower() == "non-":
+        return True                                           # 'non-alcoholic'
+    tail = re.search(r"[A-Za-z'\s\-]*$", text[max(0, m.start() - 80):m.start()]).group(0)   # stops at punctuation
+    if re.search(r"\bfree\s+(?:of|from)\s+(?:[A-Za-z'\-]+\s+){0,2}$", tail, re.IGNORECASE):
+        return True                                           # 'free of alcohol', 'free from interest-bearing debt'
+    toks = re.findall(r"([A-Za-z']+)(-?)", tail)                      # (word, '-' when hyphen-attached)
+    words = [w for w, _ in toks]
+    for i in range(len(words) - 1, max(-1, len(words) - 5), -1):   # the nearest negator, at most 3 words away
+        if words[i].lower() in _SCOPE_BREAKERS:
+            return False                                      # 'no alcohol but beer', 'not just coffee but alcohol'
+        if _NEGATOR_WORD.match(words[i]) and toks[i][1] == "-":
+            continue                                          # 'no-deposit casino', 'no-fee betting': an adjective
+        if _NEGATOR_WORD.match(words[i]):
+            prev = words[i - 1].lower() if i > 0 else ""
+            nxt = words[i + 1].lower() if i + 1 < len(words) else ""
+            if prev in _NOT_WORDS or prev.endswith("n't"):
+                return False                                  # double negation: 'does not avoid alcohol'
+            if words[i].lower() == "not" and nxt in ("only", "just", "merely"):
+                return False                                  # 'not only riba'
+            return True
+    return False
 _ILLEGAL = re.compile(
     r"\b(fraud|launder|illegal|counterfeit|insider[- ]trad|bribe|narcotic|trafficking|smuggl)\w*",
     re.IGNORECASE)
@@ -134,8 +172,18 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
     # nothing, and nothing here can say the subject is halal. Positive halal vocabulary + no haram
     # term is a pass OF THE SCREEN, labelled as such.
     halal_cov = "vocabulary"
-    if _HARAM.search(text):
-        halal_status, halal_reason = "fail", f"Prohibited element: '{_HARAM.search(text).group(0)}'"
+    _hits = list(_HARAM.finditer(text))
+    _offered = [m for m in _hits if not _negated(text, m)]
+    _negated_only = bool(_hits) and not _offered
+    if _offered:
+        halal_status, halal_reason = "fail", (f"haram term present in the text: '{_offered[0].group(0)}' — a keyword "
+                                              "screen, not a certification")
+    elif _hits:
+        _m = _hits[0]
+        _phrase = " ".join(text[max(0, _m.start() - 24):min(len(text), _m.end() + 6)].split())
+        halal_status, halal_reason = "review", (f"haram-vocabulary term '{_m.group(0)}' appears only in a negating "
+                                                f"phrase ('{_phrase}'); the screen cannot tell offered from avoided — "
+                                                "review, not a certification")
     elif _HALAL_VOCAB.search(text):
         halal_status, halal_reason = "pass", ("halal vocabulary present and no prohibited (haram) term — "
                                               "a keyword screen, not a certification")
@@ -145,10 +193,11 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
     try:
         _audit = _halal_engine().audit_transaction({"description": text})
         _viols = _audit.get("violations") or []
-        if _viols and halal_status != "fail":
+        if _viols and halal_status != "fail" and not _negated_only:
             halal_status, halal_reason = "fail", f"Engine violations: {', '.join(_viols)}."
         elif _viols:
-            halal_reason = f"{halal_reason} Engine also flags: {', '.join(_viols)}."
+            halal_reason = (f"{halal_reason} Engine also flags: {', '.join(_viols)}"
+                            + (" (its keyword rule matched the same negated phrase)." if _negated_only else "."))
         halal_reason += " (engine-backed)"
     except Exception:
         halal_reason += " (built-in rules)"

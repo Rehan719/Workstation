@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { provenanceBadge } from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, FileText, Leaf, Calendar, AlertTriangle,
@@ -56,7 +57,7 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
 
 // ── Result display ────────────────────────────────────────────────────────────
 
-function ResultPanel({ result, expanded, onToggle }: { result: string; expanded: boolean; onToggle: () => void }) {
+function ResultPanel({ result, prov, expanded, onToggle }: { result: string; prov?: any; expanded: boolean; onToggle: () => void }) {
   const download = () => {
     const blob = new Blob([result], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -70,9 +71,15 @@ function ResultPanel({ result, expanded, onToggle }: { result: string; expanded:
   return (
     <div className="bg-white/3 border border-white/10 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-white/5" onClick={onToggle}>
-        <div className="flex items-center gap-2 text-sm text-green-400 font-semibold">
-          <CheckCircle2 size={15} />
-          Framework Generated
+        {/* W475 (ledger v4 R1.2) — the header says what served the text: the floor's frame is never a green 'generated' */}
+        <div className="flex items-center gap-2 text-sm font-semibold flex-wrap">
+          {prov ? (() => { const b = provenanceBadge(prov.served_by, prov.is_external); return (
+            <>
+              <CheckCircle2 size={15} className="text-white/40" />
+              <span className="text-white/80">Framework text</span>
+              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
+            </>
+          ); })() : <span className="text-white/60">Result</span>}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={e => { e.stopPropagation(); download(); }} className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-white/70">
@@ -88,6 +95,7 @@ function ResultPanel({ result, expanded, onToggle }: { result: string; expanded:
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 max-h-96 overflow-y-auto">
+              {prov?.floor_note && <p className="text-[11px] text-amber-400/90 font-semibold mb-2">{prov.floor_note}</p>}
               <pre className="text-xs text-white/70 font-mono whitespace-pre-wrap leading-relaxed">{result}</pre>
             </div>
           </motion.div>
@@ -109,7 +117,7 @@ const DOMAIN_OPTIONS = [
   { value: 'manufacturing', label: 'Manufacturing' },
 ];
 
-function QMSPanel({ onResult }: { onResult: (r: string) => void }) {
+function QMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [size, setSize] = useState('small');
@@ -120,7 +128,7 @@ function QMSPanel({ onResult }: { onResult: (r: string) => void }) {
     setLoading(true);
     try {
       const res = await axios.post('/api/v1/mgmt/qms/generate', { organisation_name: org, domain, size });
-      onResult(res.data.framework);
+      onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
       onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
@@ -143,7 +151,7 @@ function QMSPanel({ onResult }: { onResult: (r: string) => void }) {
   );
 }
 
-function BMSPanel({ onResult }: { onResult: (r: string) => void }) {
+function BMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   const [org, setOrg] = useState('');
   const [mission, setMission] = useState('');
   const [domain, setDomain] = useState('general');
@@ -155,7 +163,7 @@ function BMSPanel({ onResult }: { onResult: (r: string) => void }) {
     setLoading(true);
     try {
       const res = await axios.post('/api/v1/mgmt/bms/generate', { organisation_name: org, mission, domain, planning_horizon: horizon });
-      onResult(res.data.framework);
+      onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
       onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
@@ -179,7 +187,7 @@ function BMSPanel({ onResult }: { onResult: (r: string) => void }) {
   );
 }
 
-function DCSPanel({ onResult }: { onResult: (r: string) => void }) {
+function DCSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [loading, setLoading] = useState(false);
@@ -189,7 +197,7 @@ function DCSPanel({ onResult }: { onResult: (r: string) => void }) {
     setLoading(true);
     try {
       const res = await axios.post('/api/v1/mgmt/dcs/generate', { organisation_name: org, domain });
-      onResult(res.data.framework);
+      onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
       onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
@@ -211,7 +219,7 @@ function DCSPanel({ onResult }: { onResult: (r: string) => void }) {
   );
 }
 
-function EMSPanel({ onResult }: { onResult: (r: string) => void }) {
+function EMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [sector, setSector] = useState('services');
@@ -222,7 +230,7 @@ function EMSPanel({ onResult }: { onResult: (r: string) => void }) {
     setLoading(true);
     try {
       const res = await axios.post('/api/v1/mgmt/ems/generate', { organisation_name: org, domain, sector });
-      onResult(res.data.framework);
+      onResult(res.data.framework, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
       onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
@@ -245,7 +253,7 @@ function EMSPanel({ onResult }: { onResult: (r: string) => void }) {
   );
 }
 
-function AuditPanel({ onResult }: { onResult: (r: string) => void }) {
+function AuditPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   const [org, setOrg] = useState('');
   const [standard, setStandard] = useState('ISO 9001');
   const [loading, setLoading] = useState(false);
@@ -255,7 +263,7 @@ function AuditPanel({ onResult }: { onResult: (r: string) => void }) {
     setLoading(true);
     try {
       const res = await axios.post('/api/v1/mgmt/audit/schedule', { organisation_name: org, audit_standard: standard, year: new Date().getFullYear() });
-      onResult(res.data.schedule);
+      onResult(res.data.schedule, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
       onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
@@ -277,7 +285,7 @@ function AuditPanel({ onResult }: { onResult: (r: string) => void }) {
   );
 }
 
-function RiskPanel({ onResult }: { onResult: (r: string) => void }) {
+function RiskPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
   const [org, setOrg] = useState('');
   const [domain, setDomain] = useState('general');
   const [context, setContext] = useState('');
@@ -289,7 +297,7 @@ function RiskPanel({ onResult }: { onResult: (r: string) => void }) {
     setLoading(true);
     try {
       const res = await axios.post('/api/v1/mgmt/risk-register', { organisation_name: org, domain, context, num_risks: parseInt(numRisks) });
-      onResult(res.data.register);
+      onResult(res.data.register, res.data.ai_provenance);
     } catch (e: any) {
       // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
       onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
@@ -319,14 +327,16 @@ export const ManagementSystemsHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('qms');
   const [standards, setStandards] = useState<Standard[]>([]);
   const [result, setResult] = useState<string | null>(null);
+  const [resultProv, setResultProv] = useState<any>(null);
   const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards ?? [])).catch(() => {});
   }, []);
 
-  const handleResult = (r: string) => {
+  const handleResult = (r: string, prov?: any) => {
     setResult(r);
+    setResultProv(prov ?? null);
     setExpanded(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -358,7 +368,7 @@ export const ManagementSystemsHub: React.FC = () => {
       <AnimatePresence>
         {result && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-            <ResultPanel result={result} expanded={expanded} onToggle={() => setExpanded(e => !e)} />
+            <ResultPanel result={result} prov={resultProv} expanded={expanded} onToggle={() => setExpanded(e => !e)} />
           </motion.div>
         )}
       </AnimatePresence>

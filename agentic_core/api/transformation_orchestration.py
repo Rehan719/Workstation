@@ -119,8 +119,8 @@ async def orchestrate(req: OrchestrateRequest):
         board = board_for_owner(req.owner_id, plan.get("vision", ""))
     except Exception:
         pass
-    chief = board.get("chief", {"title": f"Chief — Digital Twin of {req.owner_id}"})
-    stage(1, "Chief (Owner Digital Twin)", "Board",
+    chief = board.get("chief", {"title": f"Chief — {req.owner_id}'s charter and instructions (no twin model)"})
+    stage(1, "Chief (the Owner's charter)", "Board",
           f"Set the transformation mandate: {objective}",
           {"chief": chief.get("title"),
            "mission": plan.get("mission", ""), "vision": plan.get("vision", ""),

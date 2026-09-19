@@ -1513,6 +1513,7 @@ def test_tree_planner_swarm_planned_with_honest_floor(client):
     assert r["planner"] == "deterministic_template"       # AI_DISABLE_LOCAL → the honest floor
     assert len(r["nodes"]) >= 4 and r["final"]            # the template tree still genuinely ran
     orig_complete, orig_up = orchestrator.complete, mr.ollama_up
+    _had_instance_attr = set(vars(orchestrator))
     try:
         mr.ollama_up = lambda: True
 
@@ -1531,7 +1532,13 @@ def test_tree_planner_swarm_planned_with_honest_floor(client):
         _, planner2 = loop.run_until_complete(orchestrator._plan_tree_adaptive("g", 10.0))
         assert planner2 == "deterministic_template"       # invalid DAG → deterministic fallback
     finally:
-        orchestrator.complete, mr.ollama_up = orig_complete, orig_up
+        # W475 — restore the CLASS method: assigning the bound copy back pinned it on the instance and shadowed every
+        # later class-level patch (an order-dependent failure far from here)
+        if "complete" in vars(orchestrator) and "complete" not in _had_instance_attr:
+            del orchestrator.complete
+        else:
+            orchestrator.complete = orig_complete
+        mr.ollama_up = orig_up
 
 
 def test_delegate_standard_catalogue_landing_and_stage_models(client):
@@ -2509,7 +2516,7 @@ def test_resource_compose(client):
     assert body["name"] == "test-composition"
     assert len(body["resources"]) >= 1
     # W111 — a committed configuration is modelled + QMS-gated + document-controlled under the QMS
-    assert body["model"]["pipeline"] and isinstance(body["commit_ready"], bool)
+    assert body["model"]["pipeline"] and body["commit_ready"] in (True, False, None)   # W475: tri-state
     assert body["quality_assurance"]["quality"]["document_controlled"] is True
 
 
@@ -2524,7 +2531,7 @@ def test_resource_compose_model_and_simulate_before_commit(client):
     assert m["pipeline"] and m["combined_capabilities"] and m["usage_area_supported_by_all"] is True
     q = sim["simulation"]["quality"]
     assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and len(q["bar"]) >= 12   # W449: a template plan is not assessable
-    assert sim["simulation"]["biomimetic"]["layers"] and sim["commit_ready"] is True
+    assert sim["simulation"]["biomimetic"]["layers"] and sim["commit_ready"] is None      # W475 (R4.2): the gate could not assess
     # an incompatible selection (gaas_v5 supports governance/delivery/evolution, not 'design') is caught
     bad = client.post("/api/v1/resources/compose/simulate",
                       json={"name": "bad", "resource_ids": ["bdp", "gaas_v5"], "usage_area": "design"}).json()
@@ -2757,7 +2764,9 @@ def test_vsb_repo_generation(client):
     assert {"README.md", "BUSINESS_PLAN.md", "ORGANISATION.md", "genome.json",
             "web/index.html", "webapp/README.md", "mobile/manifest.webmanifest"} <= tree
     q = m["quality_assurance"]["quality"]
-    assert q["qms_gate_passed"] is True and q["document_controlled"] is True          # §10 + QMS-owned DCMS
+    # W475 (ledger v4 R2.1) — this entity was established with no concept / design / commercialisation, so the document
+    # is the generator's scaffold: the gate records 'not assessable' (it used to pass the generator's own headings)
+    assert q["qms_gate_passed"] is None and "not assessable" in q.get("qms_basis", "") and q["document_controlled"] is True          # §10 + QMS-owned DCMS
     assert q["compliance"]["overall"] in ("pass", "review", "fail")                   # §11 screened
     # the integrated surfaces are present + HONESTLY labelled as scaffolds (no fabricated built apps)
     surf = m["integrated_surfaces"]
@@ -2805,7 +2814,9 @@ def test_vsb_webapp_generation(client):
     paths = {f["path"] for f in m["files"]}
     assert {"webapp/index.html", "webapp/app.js", "webapp/data.json", "webapp/styles.css"} <= paths
     q = m["quality_assurance"]["quality"]
-    assert q["qms_gate_passed"] is True and q["document_controlled"] is True
+    # W475 (ledger v4 R2.1) — this entity was established with no concept / design / commercialisation, so the document
+    # is the generator's scaffold: the gate records 'not assessable' (it used to pass the generator's own headings)
+    assert q["qms_gate_passed"] is None and "not assessable" in q.get("qms_basis", "") and q["document_controlled"] is True
     assert q["compliance"]["overall"] in ("pass", "review", "fail")
     # served as real, runnable client-side files; data-driven; known files only (no traversal)
     idx = client.get(f"/api/v1/vsb/{vid}/webapp/page/index")
@@ -2834,7 +2845,9 @@ def test_vsb_mobile_pwa_generation(client):
     assert {"mobile/index.html", "mobile/app.js", "mobile/manifest.webmanifest", "mobile/sw.js",
             "mobile/icon.svg", "mobile/styles.css", "mobile/data.json"} <= paths
     q = m["quality_assurance"]["quality"]
-    assert q["qms_gate_passed"] is True and q["document_controlled"] is True
+    # W475 (ledger v4 R2.1) — this entity was established with no concept / design / commercialisation, so the document
+    # is the generator's scaffold: the gate records 'not assessable' (it used to pass the generator's own headings)
+    assert q["qms_gate_passed"] is None and "not assessable" in q.get("qms_basis", "") and q["document_controlled"] is True
     assert q["compliance"]["overall"] in ("pass", "review", "fail")
     # served PWA files with correct content-types; manifest + SW registration present
     idx = client.get(f"/api/v1/vsb/{vid}/mobile/page/index")
@@ -4123,7 +4136,8 @@ def test_chief_orchestrates_objective_in_house(client):
     assert b["objective_id"] == oid and b["grounded_in"] == scope
     assert b["tree"]["node_count"] >= 4 and b["tree"]["final"]
     assert b["tree"]["ueg_hash"] and len(b["tree"]["ueg_hash"]) == 128
-    assert b["tree"]["decision"]["recommendation"] in ("proceed", "refine", "hold")
+    # W475 (ledger v4 R4.1) — on the floor the gate cannot assess the run, so no recommendation is made
+    assert b["tree"]["decision"]["recommendation"] is None and "not assessable" in b["tree"]["decision"]["basis"]
     # the run is recorded as an auditable review (with the orchestration provenance) on the objective
     plan = client.get("/api/v1/business-plan", params={"scope": scope}).json()
     o = next(o for o in plan["objectives"] if o["id"] == oid)
@@ -4141,7 +4155,24 @@ def test_native_biomimetic_signaling_in_house(client):
     assert strong["supra_threshold"] is True and weak["supra_threshold"] is False
     assert strong["activation"] > weak["activation"] and "Hill" in strong["method"]
     # the workflow tree carries the same honest transform over its consensus strength
-    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    t_floor = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    assert t_floor.get("signal_response") is None                    # nothing transduced from a consensus it cannot have
+    # W475 (ledger v4 R4.1) — on the floor the gate cannot assess the tree, so nothing downstream certifies it; the
+    # capability is held on a run the gate CAN assess (the nodes served by a stand-in model, patched on the instance)
+    from agentic_core.ai.native import orchestrator as _orc      # the package re-exports the singleton
+    _real_complete = type(_orc).complete
+
+    async def _model_served(prompt, agent="assistant", timeout=30.0, **kw):
+        res = await _real_complete(_orc, prompt, agent=agent, timeout=timeout, **kw)
+        return dict(res, served_by="stand-in-model", is_external=False)
+    import pytest as _pytest
+    _mp = _pytest.MonkeyPatch()
+    _mp.setattr(_orc, "complete", _model_served)
+    try:
+        t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    finally:
+        _mp.undo()
+    assert (t.get("governance") or {}).get("qms_passed") is not None, t.get("governance")
     sr = t.get("signal_response")
     assert sr and 0.0 <= sr["activation"] <= 1.0 and isinstance(sr["supra_threshold"], bool) and "Hill" in sr["method"]
     assert "latency_s" not in sr and sr["k50"] == 0.5 and sr["basis"]
@@ -4160,7 +4191,25 @@ def test_native_swarm_consensus_in_house(client):
         {"voter": "c", "choice": "y"}, {"voter": "d", "choice": "z"}]}).json()
     assert split["reached"] is False and split["choice"] is None     # 2/4 < 0.66
     # the tree carries a real consensus across its OWN independent owned signals
-    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    t_floor = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    cf = t_floor.get("consensus") or {}
+    assert cf.get("reached") is False and cf.get("proceed_fraction") is None and "not assessable" in cf.get("basis", "")
+    # W475 (ledger v4 R4.1) — on the floor the gate cannot assess the tree, so nothing downstream certifies it; the
+    # capability is held on a run the gate CAN assess (the nodes served by a stand-in model, patched on the instance)
+    from agentic_core.ai.native import orchestrator as _orc      # the package re-exports the singleton
+    _real_complete = type(_orc).complete
+
+    async def _model_served(prompt, agent="assistant", timeout=30.0, **kw):
+        res = await _real_complete(_orc, prompt, agent=agent, timeout=timeout, **kw)
+        return dict(res, served_by="stand-in-model", is_external=False)
+    import pytest as _pytest
+    _mp = _pytest.MonkeyPatch()
+    _mp.setattr(_orc, "complete", _model_served)
+    try:
+        t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    finally:
+        _mp.undo()
+    assert (t.get("governance") or {}).get("qms_passed") is not None, t.get("governance")
     con = t.get("consensus")
     assert con and "swarm" in con["method"] and isinstance(con["reached"], bool)
     assert set(con["votes"].keys()) == {"qms", "validation", "minimax", "immune"}
@@ -4241,7 +4290,23 @@ def test_native_minimax_decision_in_house(client):
     # optimiser with its own `_util`, which genuinely varies per action and reads real run signals.
     # Same engine, two callers, opposite outcomes — for the right reason. If this half ever starts
     # returning None too, the fix has over-reached and is refusing decisions it can actually make.
-    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    # W475 (ledger v4 R4.1) — the control needs a run the gate CAN assess: on the floor it is 'not assessable' and no
+    # recommendation is made, so the nodes are served by a stand-in model here
+    t_floor = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    assert (t_floor.get("decision") or {}).get("recommendation") is None
+    from agentic_core.ai.native import orchestrator as _orc      # the package re-exports the singleton
+    _real_complete = type(_orc).complete
+
+    async def _model_served(prompt, agent="assistant", timeout=30.0, **kw):
+        res = await _real_complete(_orc, prompt, agent=agent, timeout=timeout, **kw)
+        return dict(res, served_by="stand-in-model", is_external=False)
+    import pytest as _pytest
+    _mp = _pytest.MonkeyPatch()
+    _mp.setattr(_orc, "complete", _model_served)
+    try:
+        t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    finally:
+        _mp.undo()
     dec = t.get("decision")
     assert dec and dec["recommendation"] in ("proceed", "refine", "hold"), (
         "the discriminating utility must still produce a decision: %r" % (dec,))
@@ -16287,3 +16352,291 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
     rm2.metric_history = [[0.1, 0.01, 0.2, 0.0, 1.0, 0.1]] * 12
     out = rm2.train_model()
     assert out["status"] == "TRAINED_NOT_SAVED" and out["model_path"] is None and out["saved"] is False, out
+
+def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkeypatch):
+    """W475 — P1.17 The second truth pass (register FU-080…FU-093; ledger v4 R1.0, R1.1, R1.2, R2.0, R2.1, R3.0, R3.1,
+    R3.4, R4.0, R4.1, R4.2, R5.0, R6.0, R6.1). Each leg is the entry's own claim, re-assessed by execution."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── R1.0: a haram term in a negating phrase is REVIEW with the phrase quoted; an offered one is FAIL ──
+    avoids = client.post("/api/v1/compliance/check",
+                         json={"subject": "A UK savings app compliant with Sharia that avoids riba and offers profit-sharing"}).json()
+    sh = next(v for v in avoids["verdicts"] if v["framework"] == "sharia_halal")
+    assert sh["status"] == "review" and "negating phrase" in sh["reason"] and "avoids riba" in sh["reason"], sh
+    assert "Prohibited element" not in sh["reason"] and avoids["overall"] != "fail", avoids["overall"]
+    offered = client.post("/api/v1/compliance/check", json={"subject": "fund it via riba interest-bearing loans"}).json()
+    so = next(v for v in offered["verdicts"] if v["framework"] == "sharia_halal")
+    assert so["status"] == "fail" and "haram term present" in so["reason"] and "Prohibited element" not in so["reason"]
+    assert "f\"Prohibited element: '" not in (root / "agentic_core/api/compliance.py").read_text(encoding="utf-8")   # the old verdict string
+    # the engine's own keyword rule matching the SAME negated phrase never flips the review to a fail
+    from agentic_core.api import compliance as _cmp
+    class _Eng:
+        def audit_transaction(self, tx):
+            return {"violations": ["HARAM_ELEMENT_ALCOHOL"], "is_compliant": False}
+    monkeypatch.setattr(_cmp, "_halal_engine", lambda: _Eng())
+    dry = client.post("/api/v1/compliance/check", json={"subject": "A family restaurant that serves no alcohol and no pork"}).json()
+    sd = next(v for v in dry["verdicts"] if v["framework"] == "sharia_halal")
+    assert sd["status"] == "review" and "Engine also flags" in sd["reason"] and "same negated phrase" in sd["reason"], sd
+    monkeypatch.undo()
+    # (refutation) the negator must GOVERN the term: adjectives, double negation, 'not only' and punctuation are offers;
+    # the suffix form and a hyphen-attached 'non-' are negations
+    from agentic_core.api.compliance import screen_compliance as _screen
+    def _halal(t):
+        return next(v for v in _screen(t)["verdicts"] if v["framework"] == "sharia_halal")["status"]
+    for t in ("A free casino games app for UK players", "Free betting tips delivered daily", "Non-stop gambling fun",
+              "Zero-fee gambling platform", "A bar that does not avoid alcohol; we serve it all night",
+              "Free fine wine subscription club", "free alcohol for every guest", "no, we charge riba",
+              "not only riba but also fees", "A bar that doesn't avoid alcohol",
+              # (refutation, consumers) a hyphen-compound negator is an adjective; 'but' ends a negation's scope
+              "A zero-commission gambling app for UK punters", "a no-deposit casino bonus site",
+              "We sell not just coffee but alcohol at night", "no alcohol but beer on tap"):
+        assert _halal(t) == "fail", t
+    for t in ("riba-free financing", "our pork-free menu", "without gambling of any kind",
+              "a fund free of interest-bearing debt", "non-alcoholic drinks only", "we never serve alcohol"):
+        assert _halal(t) == "review", t
+
+    # ── R1.1: the floor-served tafsir body never carries the sourced Arabic (cut or whole); arabic_text stays whole ──
+    tf = client.post("/api/v1/religion/quran-tafsir", json={"surah": 2, "ayah_start": 285, "ayah_end": 286}).json()
+    arabic = re.compile(r"[؀-ۿ]")
+    if tf.get("arabic_text"):                                   # the source was reachable
+        assert arabic.search(tf["arabic_text"])
+        assert not arabic.search(tf.get("tafsir") or ""), "the notes repeat (and cut) the sourced Arabic"
+    assert "THE AUTHENTIC ARABIC TEXT" not in (tf.get("tafsir") or "")
+    assert "Subject: tafsir of" in (root / "agentic_core/api/religion.py").read_text(encoding="utf-8")
+    # the notes never carry the sourced text, whatever its length — held without the network: a stand-in source of
+    # plain abjad letters (no scripture is typed here) long enough that the old 220-character cut would fire
+    import agentic_core.religious_domain.api as _rda
+    async def _long_source(surah, ayah):
+        return "ابجد هوز حطي كلمن سعفص قرشت " * 12
+    monkeypatch.setattr(_rda, "fetch_ayah_arabic", _long_source)
+    tf1 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 2, "ayah_start": 255, "ayah_end": 255}).json()
+    assert arabic.search(tf1.get("arabic_text") or ""), "the stand-in source did not reach arabic_text"
+    assert not arabic.search(tf1.get("tafsir") or ""), "the notes repeat (and cut) the sourced text"
+    monkeypatch.undo()
+    # (refutation) the unreachable-source branch never says the Arabic is shown above
+    async def _no_source(surah, ayah):
+        return None
+    monkeypatch.setattr(_rda, "fetch_ayah_arabic", _no_source)
+    tf2 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 2, "ayah_start": 255, "ayah_end": 255}).json()
+    assert tf2.get("arabic_text") is None
+    assert "shown to the reader above" not in (tf2.get("tafsir") or ""), "the notes point at Arabic that is not there"
+    monkeypatch.undo()
+
+    # ── R1.2: a generated management document carries provenance, a floor note, and no recalled stranger's text ──
+    from agentic_core.ai import memory as _mem
+    seed = "zebrafishaquaponics"                            # letters only: a token the floor's extractor CAN emit
+    try:
+        _mem.memory.add_memory(f"User: Quality measure for {seed} farms\nAI: Quality measure for {seed} farms — recalled",
+                               {"source": "w475-guard"})
+    except Exception:
+        pass
+    assert any(seed in c for c in _mem.memory.query_memory(f"Quality measure for {seed} farms", k=5)), "the seed is not recallable"
+    qms = client.post("/api/v1/mgmt/qms/generate",
+                      json={"organisation_name": "Zed Bakery", "domain": "food", "products_services": "sourdough bread"}).json()
+    assert qms["ai_provenance"]["served_by"] and "floor_note" in qms["ai_provenance"]
+    assert seed not in qms["framework"], "another interaction's text reached the document"
+    assert "gateway.query(" not in (root / "agentic_core/api/management_systems.py").read_text(encoding="utf-8")
+    # the mechanism: every generator composes with recall OFF (a seeded row cannot win the floor's term ranking in a
+    # fresh store, so the flag itself is what the guard holds)
+    import agentic_core.api.management_systems as _mgs
+    seen = {}
+    async def _rec(prompt, agent, timeout=30.0, owner_id=None, augment=False):
+        seen["augment"] = augment
+        return "Framework text", {"served_by": "native", "is_external": False, "posture": "in-house-first"}
+    monkeypatch.setattr(_mgs, "ai_text", _rec)
+    rr = client.post("/api/v1/mgmt/qms/generate", json={"organisation_name": "Rec Co", "domain": "food"}).json()
+    assert seen.get("augment") is False and rr["ai_provenance"]["floor_note"], seen
+    assert (rr["ai_provenance"].get("quality") or {}).get("qms_gate_passed") is None      # recorded; not a pass on the floor
+    monkeypatch.undo()
+    # (refutation) the reached page renders what served the text — no unconditional green 'Framework Generated'
+    mh = (root / "apps/workstation-superapp/src/pages/enterprise/ManagementSystemsHub.tsx").read_text(encoding="utf-8")
+    assert "Framework Generated" not in mh and "provenanceBadge(prov.served_by" in mh and "prov?.floor_note" in mh
+    assert mh.count("res.data.ai_provenance);") == 6
+
+    # ── R2.0: establishment says the lever's truth; the listing says whether any cycle runs ──
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    monkeypatch.setattr(_hb, "running", True)            # a beating heart; the lever decides (a stopped one: below)
+    monkeypatch.setattr(_hb, "auto_economy", False)
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "second truth pass living text", "domain": "enterprise", "name": "TruthPassCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    living = est.get("living") or {}
+    assert living.get("autonomous_cycles") is False and "OFF" in living.get("autonomous_operation", ""), living
+    assert "tends this VSB on the circadian" not in living.get("autonomous_operation", "")
+    lst = client.get("/api/v1/economy/living-vsbs").json()
+    assert lst.get("autonomous_cycles") is False and "Self-run" in lst.get("autonomous_cycles_note", "")
+    monkeypatch.setattr(_hb, "auto_economy", True)
+    est2 = client.post("/api/v1/genesis/establish", json={
+        "problem": "second truth pass living text on", "domain": "enterprise", "name": "TruthPassOnCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    assert (est2.get("living") or {}).get("autonomous_cycles") is True
+    monkeypatch.setattr(_hb, "auto_economy", False)
+    # (refutation, consumers) a STOPPED heartbeat tends nothing, lever or not — a stand-in heart, so the real loop is
+    # never stopped by the test
+    import types as _types
+    import agentic_core.organism.heartbeat as _hbmod
+    from agentic_core.economy.living_vsbs import living_statement
+    monkeypatch.setattr(_hbmod, "heartbeat", _types.SimpleNamespace(auto_economy=True, running=False))
+    stopped = living_statement()
+    assert stopped["autonomous_cycles"] is False and "heartbeat is stopped" in stopped["autonomous_operation"], stopped
+    lst2 = client.get("/api/v1/economy/living-vsbs").json()
+    assert lst2.get("autonomous_cycles") is False and "stopped" in lst2.get("autonomous_cycles_note", ""), lst2
+    monkeypatch.setattr(_hbmod, "heartbeat", _hb)
+    # (refutation) the shared enrichment path (SSE establishment, /vsb/spawn, the Studio) says the same
+    from agentic_core.api import vsb as _vsbmod
+    enr = _vsbmod.enrich_vsb_entity({"vsb_id": f"vsb-w475-{__import__('uuid').uuid4().hex[:6]}", "name": "Enrich Probe Co"},
+                                    owner_id="default", problem="p")
+    assert (enr.get("living") or {}).get("autonomous_cycles") is False, enr.get("living")
+    assert "tends this VSB on the circadian" not in (enr.get("living") or {}).get("autonomous_operation", "")
+    src_all = "\n".join((root / p).read_text(encoding="utf-8") for p in (
+        "agentic_core/api/vsb.py", "agentic_core/api/genesis.py", "agentic_core/api/synthesis_studio.py"))
+    assert src_all.count('"registered — the organism tends this VSB') == 0, "a writer still states tending unconditionally"
+    ve = (root / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert "operates continually on the circadian heartbeat" not in ve and "living.autonomous_cycles === false" in ve
+
+    # ── R2.1: a scaffold-composed document is 'template' to the gate; the entity's own body is measured ──
+    from agentic_core.api import vsb as _vsb
+    assert _vsb._body_served_by({"concept": "", "design": "", "commercialisation": ""}) == "template"
+    assert _vsb._body_served_by({"concept": "content pending the owned model — x", "design": "d",
+                                 "commercialisation": "m", "ai_provenance": {"served_by": "llama"}}) == "template"
+    assert _vsb._body_served_by({"concept": "real", "design": "d", "commercialisation": "m",
+                                 "ai_provenance": {"served_by": "llama"}}) == "llama"
+    # (refutation) the STORED shape: establishment keeps the body under genesis_blueprint — a founder-written body is
+    # the entity's own and is measured; a bare one is 'template'
+    written = client.post("/api/v1/genesis/establish", json={
+        "problem": "bicycle repair co-operative", "domain": "enterprise", "name": "FounderWrittenCo",
+        "concept": "A member-owned bicycle repair co-operative for the town centre.",
+        "design": "Two bays, a parts store and a booking page.", "commercialisation": "Repairs and annual memberships."}).json()
+    rec = _vsb._load_vsb(written["vsb_id"])
+    assert "concept" not in rec and _vsb._blueprint(rec)["concept"].startswith("A member-owned")
+    assert _vsb._body_served_by(rec) != "template", "a founder-written body was treated as scaffold"
+    bare = client.post("/api/v1/genesis/establish", json={"problem": "bare body", "domain": "enterprise",
+                                                          "name": "BareBodyCo"}).json()
+    assert _vsb._body_served_by(_vsb._load_vsb(bare["vsb_id"])) == "template"
+    rep = client.post(f"/api/v1/vsb/{bare['vsb_id']}/repo")
+    if rep.status_code == 200:                                  # a gate may hold the ship; the rule is the helper's
+        q = ((rep.json().get("quality_assurance") or {}).get("quality") or {})
+        assert q.get("qms_gate_passed") is None, "a scaffold-composed repository passed its own headings"
+
+    # ── R3.0: on the floor no officer takes a stance; a stance comes only from a reply's last line ──
+    from agentic_core.api.v138 import ceo as _ceo
+    import asyncio
+    reg = _ceo.ToolRegistry()
+    out = asyncio.run(reg.call_meeting("W475 meeting on the floor"))
+    assert out["officers_deliberated"] == [] and len(out["officers_floor_served"]) >= 1, out
+    assert out["status"] == "NO_POSITIONS_RECORDED" and out["log_updated"] is True     # (refutation) the floor rows are written
+    assert _ceo.meeting_log.log[-1]["served_by"] == "native" and _ceo.meeting_log.log[-1]["stance"].startswith("NO POSITION")
+    # a model's reply: the stance is its last line in any common form; the echoed triple is no stance
+    replies = iter(["We should.\nI APPROVE.", "Hmm.\n**OBJECT**", "Fine.\nABSTAIN!", "Undecided.\nAPPROVE, OBJECT or ABSTAIN",
+                    "Yes.\nApprove.", "No view."])
+    async def _model(prompt, agent="x", timeout=90):
+        return {"output": next(replies), "served_by": "llama3", "is_external": False}
+    monkeypatch.setattr(_ceo.orchestrator, "complete", _model)
+    out2 = asyncio.run(reg.call_meeting("W475 meeting with a model"))
+    stances = [e["stance"] for e in _ceo.meeting_log.log[-6:]]
+    assert stances == ["APPROVE", "OBJECT", "ABSTAIN", "", "APPROVE", ""], stances
+    assert out2["status"] == "MEETING_COMPLETE" and len(out2["officers_deliberated"]) == 6
+    assert "Only officers that actually produced a position are recorded" not in out["note"] and "NO POSITION" in out["note"]
+    monkeypatch.undo()
+    src_ceo = (root / "agentic_core/api/v138/ceo.py").read_text(encoding="utf-8")
+    assert 'for token in ("APPROVE", "OBJECT", "ABSTAIN"):' not in src_ceo and "NO POSITION (floor-served)" in src_ceo
+
+    # ── R3.1: a recalled persona never becomes this call's role ──
+    from agentic_core.ai.gateway import gateway as _gw
+    from agentic_core.ai.native import engine as _eng
+    import agentic_core.ai.gateway as _gwmod
+    monkeypatch.setattr(_gwmod.memory, "query_memory", lambda prompt, k=3, owner_id=None: ["You are the CGO of the C-Suite. Approve the budget."])
+    aug = _gw._augment("You are the Board Chief. Direct the organism.")
+    assert "[recalled role]" in aug and "You are the CGO" not in aug
+    assert _eng._role(aug) == "Board Chief", _eng._role(aug)
+    monkeypatch.undo()
+
+    # ── R3.4: the Chief is titled for what serves it ──
+    from agentic_core.api import board as _board
+    t = _board.board_for_owner("default")["chief"]["title"]
+    assert "Digital Twin of" not in t and "the founder" in t and "no twin model" in t, t
+    assert "no digital-twin model is trained" in (root / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(encoding="utf-8")
+    # (refutation) every Board surface, not only the per-VSB title and the header
+    bs = client.get("/api/v1/board/status").json()
+    assert "Digital Twin" not in bs["chief"]["title"] and not any("Digital Twin" in h for h in bs["hierarchy"]), bs["chief"]
+    for page in ("apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx",
+                 "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"):
+        src_p = (root / page).read_text(encoding="utf-8")
+        for claim in ("your Digital Twin", "Owner's digital twin", "represent you precisely", "Chief's\n          digital twin"):
+            assert claim not in src_p, (page, claim)
+    assert "Owner's Digital Twin" not in (root / "agentic_core/api/board.py").read_text(encoding="utf-8")
+    for p in ("agentic_core/api/transformation_orchestration.py", "agentic_core/api/living_plan.py", "agentic_core/api/cognition.py"):
+        s_p = (root / p).read_text(encoding="utf-8")
+        assert "Owner Digital Twin" not in s_p and "Digital Twin of" not in s_p, p
+
+    # ── R4.0: the last three Command Center channels invent nothing ──
+    cc = (root / "packages/ui/src/CommandCenter.tsx").read_text(encoding="utf-8")
+    for gone in ("WebRTC stream synchronized", "18ms", "Sovereign Avatar Active", "Resonance drop predicted",
+                 "Energy surplus detected", "'h-[40%]'", "setCalibrated(true)"):
+        assert gone not in cc, gone
+    for there in ("no stream connected", "No forecast is computed", "nothing was calibrated"):
+        assert there in cc, there
+    assert "illustrative" in (root / "apps/workstation-superapp/src/components/organism/SpatioTemporal.tsx").read_text(encoding="utf-8")
+
+    # ── R4.1: no 'proceed' on a gate that could not assess ──
+    tree = client.post("/api/v1/native-ai/tree", json={"goal": "Plan a halal bakery launch"}).json()
+    assert (tree.get("governance") or {}).get("qms_passed") is None, "the suite runs on the floor: the gate cannot assess"
+    d = tree.get("decision") or {}
+    assert d.get("recommendation") is None and "not assessable" in (d.get("basis") or ""), d
+    # (refutation) the consensus is not assessable either — the voters left do not read the content
+    cons = tree.get("consensus") or {}
+    assert cons.get("reached") is False and cons.get("choice") is None and cons.get("proceed_fraction") is None, cons
+    assert cons["votes"]["minimax"] == "abstain" and "not assessable" in cons.get("basis", ""), cons
+    assert tree.get("signal_response") is None                                    # nothing transduced from nothing
+    na = (root / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    assert "run.consensus.proceed_fraction == null ? 'not assessable'" in na
+
+    # ── R4.2: commit_ready is tri-state and the run says the gate could not assess ──
+    sim = client.post("/api/v1/resources/compose/simulate",
+                      json={"name": "w475-rig", "resource_ids": ["bdp", "cognitive_cascade"], "usage_area": "design"}).json()
+    assert sim["simulation"]["quality"]["qms_gate_passed"] is None and sim["commit_ready"] is None, sim["commit_ready"]
+    assert "commit_ready: boolean | null" in (root / "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+
+    # ── R5.0: live only over a route that exists ──
+    from agentic_core.catalog import api as _cat
+    app_tsx = (root / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    routes = set(re.findall(r'<Route path="([^"]+)"', app_tsx))
+    for slug, route in _cat.ROUTE_OVERRIDES.items():
+        assert route in routes, (slug, route, "counted live over a route App.tsx does not serve")
+    body = client.get("/api/v1/catalog/products").json()
+    assert all(p["route"] in routes for p in body["products"] if p["status"] == "live"), "a live product opens nothing"
+
+    # ── R6.0: the realisation figure says what it measures; the cannot-fail check is gone ──
+    real = client.get("/api/v1/transformation/realisation").json()
+    assert "API surface coverage" in real.get("measure", "")
+    assert not any(c["label"] == "Organism systems healthy" for p in real["pillars"] for c in p["evidence"])
+    td = (root / "apps/workstation-superapp/src/pages/TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert "API surface coverage — not delivery" in td and "computed from the live organism" not in td
+    assert "(computed from live evidence)" not in td
+    hm = (root / "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx").read_text(encoding="utf-8")
+    assert 'label="Realisation"' not in hm and "API coverage (not delivery)" in hm and "ticking vision-realisation" not in hm
+
+    # ── R6.1: costs are an expense; the reserve holds only the reserve ──
+    from agentic_core.economy.metabolism import EconomicMetabolism as VSBMetabolism
+    from agentic_core.economy.ledger import VirtualLedger
+    vid = f"w475-{__import__('uuid').uuid4().hex[:8]}"                    # a fresh ledger every run
+    met = VSBMetabolism(vid)
+    out = met.run_cycle(revenue=1000.0, costs=200.0, reserve_rate=0.20)
+    assert out["operating_costs"] == 200.0 and out["homeostasis_reserves"] == 200.0, out
+    led = VirtualLedger(vid)
+    assert led.balances().get("costs") == 200.0 and led.balances().get("reserves") == 200.0, led.balances()
+    stm = led.statements()
+    assert stm["profit_and_loss"]["expenses"].get("operating_costs") == 200.0, stm["profit_and_loss"]   # the P&L shows the cost
+    assert stm["balance_sheet"]["assets"].get("reserve_fund") == 200.0, stm["balance_sheet"]           # the reserve holds only the reserve
+    assert stm["profit_and_loss"]["net_profit_wst"] == 200.0 and led.trial_balance()["balanced"] is True
+    # (refutation, consumers) the board pack's P&L carries the costs, and its figures reconcile to the revenue
+    pack = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid}).json()
+    pl = pack["profit_and_loss"]
+    assert pl["total_costs_wst"] == 200.0, pl
+    assert abs(pl["total_costs_wst"] + pl["total_reserves_wst"] + pl["total_distributed_wst"] - pl["total_revenue_wst"]) < 0.02, pl
+    # (refutation) the pages label the two figures as what they are
+    ve2 = (root / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert 'label="Costs + reserves"' not in ve2 and 'label="Operating costs"' in ve2 and 'label="Reserve"' in ve2
+    assert "['Operating costs', lastCycle.operating_costs]" in (root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")

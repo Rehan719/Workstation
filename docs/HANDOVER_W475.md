@@ -1,5 +1,16 @@
 # Handover — W474 → W475 (Claude Fable 5.1 → Claude Opus)
 
+> **W475 shipped** (2026-09-19, Claude Fable 5.1 → Claude Opus 5): P1.17 ✅ DONE — the fourteen ledger-v4 Tier-1
+> entries closed by execution; FU-080…FU-093 closed. §2 and §3 below are history. Refuted twice (25 real findings, 0
+> refuted — one class: a fix that changed the API or one writer while a second writer, the reached page or a guard
+> leg still said the old untruth), 42 blinds all failing, probe `scripts/_w475_probe.mjs` 12/12 (:8084/:8085), suite
+> 386/15/0 (401 items). **Next: MILESTONE M1 re-run (W476)** — §4 below; fresh backend on **:8086**. PLAN NOW names
+> P2.1 because a milestone is not an item; the plan text puts the M1 re-run first. Lessons: a test that "restores" a
+> method by assigning the bound copy back pins it on the instance and shadows every later class-level patch — patch
+> the instance, restore by deleting; a leg that depends on the live Quran source is network-dependent — use a stand-in
+> source of plain abjad letters (never type scripture into a test); en dashes do not survive a bash heredoc into
+> Python on this machine — use the Edit tool.
+
 Written 2026-09-19 by the Fable 5.1 session at the end of its weekly allowance, on the Owner's instruction. Read
 this page, then `docs/HANDOVER_W470.md` §3–§6 (the rhythm, the binding constraints, the lessons, the environment —
 all still apply), then `docs/FABLE_DELIVERY_PROMPT.md` whole (the brief). The Owner's standing directive for this

@@ -53,7 +53,7 @@ interface HistoryRun {
   created_at: string;
 }
 interface Simulation {
-  name: string; usage_area: string; commit_ready: boolean; saved: boolean; note?: string;
+  name: string; usage_area: string; commit_ready: boolean | null; saved: boolean; note?: string;
   model: {
     pipeline: string[]; combined_capabilities: string[]; resource_classes: Record<string, number>;
     biomimetic_resources: number; shared_usage_areas: string[]; usage_area_supported_by_all: boolean;
@@ -470,8 +470,8 @@ export const ResourceFabric: React.FC = () => {
           <div className="mt-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Modelled &amp; simulated before commit</span>
-              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.commit_ready ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
-                {sim.commit_ready ? 'commit-ready' : 'not commit-ready'}
+              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.commit_ready === null ? 'bg-slate-800 text-slate-400' : sim.commit_ready ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`} title={sim.commit_ready === null ? 'the gate could not assess this simulation — commit at your judgement' : undefined}>
+                {sim.commit_ready === null ? 'gate could not assess — commit at your judgement' : sim.commit_ready ? 'commit-ready' : 'not commit-ready'}
               </span>
               {(() => { const c = qmsChip(sim.simulation?.quality, 'QMS gate:'); return c && (
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`}

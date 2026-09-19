@@ -38,7 +38,7 @@ def _has(routes: Set[str], prefix: str) -> bool:
 
 # The living tiers the knowledge system is wired into (each with its endpoint).
 _TIERS = [
-    {"tier": "Chief (Owner Digital Twin) + Board", "endpoint": "/api/v1/board", "role": "apex direction; represents the Owner"},
+    {"tier": "Chief (the Owner's charter; twin model planned) + Board", "endpoint": "/api/v1/board", "role": "apex direction; represents the Owner"},
     {"tier": "AI CEO → C-Suite → CoE (swarm cascade)", "endpoint": "/api/v1/swarm", "role": "executes direction; org intelligence"},
     {"tier": "BTO / Build-to-Order / Catalogue", "endpoint": "/api/v1/catalog", "role": "production & delivery"},
     {"tier": "Arms-length Change Control Agency", "endpoint": "/api/v1/cca", "role": "governs material changes"},

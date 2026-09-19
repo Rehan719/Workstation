@@ -20,9 +20,9 @@ interface Stage { role: string; instruction: string }
 interface TreeNodeDef { id: string; role: string; depends_on: string[] }
 interface TreeNodeResult extends TreeNodeDef { served_by: string; is_external: boolean; output: string }
 interface TreeGovernance { governed_by: string; qms_passed: boolean | null; qms_basis?: string; qms_coverage_proxy: number; dcms_hash: string; dcms_algo: string; dcms_version: number }
-interface TreeDecision { recommendation: string; consistency: number; worst_case_utility: number; method: string; stressors: string[] }
+interface TreeDecision { recommendation: string | null; consistency: number | null; worst_case_utility: number | null; method: string; stressors: string[]; basis?: string }
 interface TreeValidation { max_branch_overlap: number; integrated: boolean; branches_checked: number; method: string }
-interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number; method: string }
+interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number | null; method: string; basis?: string }
 interface TreeSignal { input_strength: number; activation: number; supra_threshold: boolean; k50: number; hill: number; basis: string; method: string }
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
@@ -127,15 +127,15 @@ function TreeView({ run }: { run: TreeRun }) {
       {run.consensus && (
         <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
           <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Swarm consensus</span>
-          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.consensus.reached && run.consensus.choice === 'proceed' ? 'bg-emerald-500/15 text-emerald-400' : run.consensus.reached ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>{run.consensus.reached ? (run.consensus.choice || 'reached') : 'no consensus'}</span>
-          <span className="text-[8px] font-bold uppercase text-slate-500">{Math.round(run.consensus.proceed_fraction * 100)}% proceed · {Object.keys(run.consensus.votes).length} voters · ≥{Math.round(run.consensus.threshold * 100)}%</span>
+          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.consensus.reached && run.consensus.choice === 'proceed' ? 'bg-emerald-500/15 text-emerald-400' : run.consensus.reached ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>{run.consensus.reached ? (run.consensus.choice || 'reached') : run.consensus.proceed_fraction == null ? 'not assessable' : 'no consensus'}</span>
+          <span className="text-[8px] font-bold uppercase text-slate-500">{run.consensus.proceed_fraction == null ? (run.consensus.basis || 'the gate could not assess this run') : `${Math.round(run.consensus.proceed_fraction * 100)}% proceed`} · {Object.keys(run.consensus.votes).length} voters · ≥{Math.round(run.consensus.threshold * 100)}%</span>
         </div>
       )}
       {run.decision && (
         <div className="mt-2 p-2.5 rounded-xl bg-highlight/5 border border-highlight/20 flex items-center flex-wrap gap-2">
           <span className="text-[8px] font-black uppercase tracking-widest text-highlight">Minimax decision</span>
-          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-highlight/15 text-highlight">{run.decision.recommendation}</span>
-          <span className="text-[8px] font-bold uppercase text-slate-500">consistency {Math.round(run.decision.consistency * 100)}% · worst-case {run.decision.worst_case_utility}</span>
+          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${run.decision.recommendation ? 'bg-highlight/15 text-highlight' : 'bg-slate-800 text-slate-400'}`}>{run.decision.recommendation ?? 'not assessable'}</span>
+          <span className="text-[8px] font-bold uppercase text-slate-500">{run.decision.consistency == null ? (run.decision.basis || 'the gate could not assess this run') : `consistency ${Math.round(run.decision.consistency * 100)}% · worst-case ${run.decision.worst_case_utility}`}</span>
           <span className="text-[8px] text-slate-600">vs {run.decision.stressors.join(' · ')}</span>
         </div>
       )}

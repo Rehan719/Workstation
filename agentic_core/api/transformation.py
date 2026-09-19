@@ -113,7 +113,6 @@ _PILLARS: List[Dict[str, Any]] = [
         ("gaas.v5 gate live", lambda r, d: _has(r, "/api/v1/gaas")),
     ]},
     {"id": "biomimetic", "pillar": "Biomimetic + biogeo-physical mediation", "evidence": [
-        ("Organism systems healthy", lambda r, d: d.get("organism_health") is not None),
         ("Economic metabolism live", lambda r, d: _has(r, "/api/v1/economy")),
     ]},
     {"id": "economy", "pillar": "VSB as hybrid Waqf/Trust autonomous economy", "evidence": [
@@ -153,6 +152,10 @@ def _realise() -> Dict[str, Any]:
                         "status": status, "evidence": checks})
     overall = round(total / len(_PILLARS), 3) if _PILLARS else 0.0
     return {"overall_realisation": overall, "pillars": pillars, "evidence_counts": data,
+            # W475 (ledger v4 R6.0) — this figure is API SURFACE COVERAGE (routers mounted, stores non-empty), not
+            # delivery; the delivery measure is the plan's item states at /api/v1/plan/state.
+            "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery "
+                       "(the delivery measure is /api/v1/plan/state)",
             "reconciled_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 

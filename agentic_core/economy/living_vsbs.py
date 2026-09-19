@@ -50,6 +50,27 @@ def _save(d: Dict[str, Any]) -> None:
     atomic_write_json(_STORE, d)
 
 
+def living_statement() -> dict:
+    """W475 (ledger v4 R2.0) — what a newly registered entity is told about being tended, for EVERY writer (the
+    blocking and streamed establishment, /vsb/spawn, the Studio): the present tense only when the heartbeat's economy
+    lever is ON — it is off by default, so only the birth cycle ran and every founder was told otherwise."""
+    try:
+        from agentic_core.organism.heartbeat import heartbeat as _hb
+        lever = bool(getattr(_hb, "auto_economy", False))
+        beating = bool(getattr(_hb, "running", False))
+        auto = lever and beating                    # (refutation) a stopped heartbeat tends nothing, lever or not
+    except Exception:
+        lever, beating, auto = False, False, False
+    return {"autonomous_operation": ("registered — the organism tends this VSB on the circadian heartbeat (paced "
+                                     "virtual economy cycles)" if auto else
+                                     "registered on the living roster — autonomous economy cycles are OFF ("
+                                     + ("the heartbeat's Self-run lever is off" if not lever else
+                                        "the heartbeat is stopped, so nothing beats although Self-run is on")
+                                     + "), so only the birth cycle ran; enable Self-run and start the heartbeat on the "
+                                     "Heartbeat page for the organism to tend this VSB"),
+            "autonomous_cycles": auto, "virtual": True}
+
+
 def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
              domain: str = "enterprise", owner: str = "Rehan") -> Dict[str, Any]:
     """Register an established VSB as a living entity the organism will autonomously tend.

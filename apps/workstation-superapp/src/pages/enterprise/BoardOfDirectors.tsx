@@ -119,8 +119,9 @@ export const BoardOfDirectors: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Board of Directors</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The apex governance tier — above the AI CEO. Chaired by your <span className="text-highlight">Chief</span>,
-          a digital twin of you ({status?.represents_owner ?? 'the Owner'}) that represents you faithfully in your
-          presence and absence, and directs the whole organism on your behalf.
+          standing for you ({status?.represents_owner ?? 'the Owner'}) in your presence and absence and directing the
+          whole organism on your behalf. Today the Chief is your standing charter plus your last instructions, served
+          on the owned fabric — no digital-twin model is trained yet (Mode 2 is planned, P3.4).
         </p>
       </header>
 
@@ -239,14 +240,14 @@ export const BoardOfDirectors: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-highlight/20 flex items-center justify-center"><Crown size={18} className="text-highlight" /></div>
           <div>
-            <h3 className="font-black text-white text-sm uppercase tracking-wide">Instruct your Chief (your Digital Twin)</h3>
+            <h3 className="font-black text-white text-sm uppercase tracking-wide">Instruct your Chief</h3>
             <p className="text-[10px] text-slate-500 font-bold">Faithfully interpreted → board directive → delegated to the AI CEO</p>
           </div>
         </div>
         <textarea
           value={instruction}
           onChange={e => setInstruction(e.target.value)}
-          placeholder="Give your Chief an instruction — a wish, a priority, a decision. It will represent you precisely and direct the organism accordingly."
+          placeholder="Give your Chief an instruction — a wish, a priority, a decision. It is recorded as your instruction and grounds the Chief's direction of the organism."
           rows={3}
           className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none"
         />

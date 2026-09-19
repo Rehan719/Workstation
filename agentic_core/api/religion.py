@@ -201,6 +201,13 @@ async def quran_tafsir(req: QuranTafsirRequest):
     prompt = (
         f"You are an Islamic scholar and Quranic exegete. "
         f"Provide a scholarly tafsir (exegesis) of {reference}.\n\n"
+        # W475 (ledger v4 R1.1) — the floor grounds its frame in a LABELLED subject; without one it took the longest
+        # sentence — the sourced Arabic — and cut it at 220 characters mid-word under 'THE AUTHENTIC ARABIC TEXT'.
+        # The reader sees the whole sourced text above the notes (arabic_text); the notes never repeat it.
+        + (f"Subject: tafsir of {reference} — the sourced Arabic is shown to the reader above these notes and is not "
+           "repeated in them\n\n" if arabic_text else
+           # (refutation) the source was unreachable: nothing is shown above, so the subject says so
+           f"Subject: tafsir of {reference} — the authoritative Arabic text could not be fetched and is not quoted\n\n")
         + (f"THE AUTHENTIC ARABIC TEXT (sourced from alquran.cloud — quote ONLY this; never "
            f"produce Quranic Arabic from memory):\n{arabic_text}\n\n" if arabic_text else
            "NOTE: the authoritative text source is unreachable. Do NOT reproduce the Arabic text "

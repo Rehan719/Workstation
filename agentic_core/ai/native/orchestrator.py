@@ -679,6 +679,13 @@ class NativeOrchestrator:
             _fire("cognitive", "native.tree", f"minimax decision: {res['selected_action']}", 0.5)
         except Exception:
             decision = None
+        # W475 (ledger v4 R4.1) — a gate that could not assess is not a signal: the minimax is not fed an
+        # unassessable proxy and recommends nothing; the consensus voter abstains (as the QMS voter already did).
+        if decision is not None and (governance or {}).get("qms_passed") is None:
+            decision = {"recommendation": None, "consistency": None, "worst_case_utility": None,
+                        "method": decision.get("method"), "stressors": decision.get("stressors"),
+                        "basis": "not assessable — the QMS gate could not assess this run (every node floor-served); "
+                                 "no decision is made on an unassessable proxy"}
 
         # SWARM CONSENSUS (owned): the tree's INDEPENDENT owned checks VOTE — do they agree? Real
         # threshold consensus (agentic_core/swarm.ConsensusEngine) over the QMS · validation · minimax ·
@@ -692,7 +699,8 @@ class NativeOrchestrator:
             voters = {
                 "qms": "proceed" if _qv is True else "caution" if _qv is False else "abstain",
                 "validation": "proceed" if (validation or {}).get("integrated") else "caution",
-                "minimax": "proceed" if (decision or {}).get("recommendation") == "proceed" else "caution",
+                "minimax": ("proceed" if (decision or {}).get("recommendation") == "proceed"
+                            else "abstain" if (decision or {}).get("recommendation") is None else "caution"),
                 "immune": "proceed" if threat == "NOMINAL" else "caution",
             }
             ce = ConsensusEngine(threshold=0.66)
@@ -705,7 +713,13 @@ class NativeOrchestrator:
                          "votes": voters, "abstained": [v for v, c in voters.items() if c == "abstain"],
                          "proceed_fraction": round(proceed_votes / len(_cast), 3) if _cast else 0.0,
                          "method": "threshold consensus (owned swarm)"}
-            _fire("cognitive", "native.tree", f"swarm consensus: {agreed or 'none'}", 0.4)
+            if _qv is None:
+                # W475 (refutation, ledger v4 R4.1) — the two voters left (validation, immune) are content-independent:
+                # on a run the gate could not assess they cannot certify 'proceed'
+                consensus.update({"reached": False, "choice": None, "proceed_fraction": None,
+                                  "basis": "not assessable — the QMS gate could not assess this run; the remaining "
+                                           "voters do not read the content"})
+            _fire("cognitive", "native.tree", f"swarm consensus: {consensus.get('choice') or 'none'}", 0.4)
         except Exception:
             consensus = None
 
@@ -719,8 +733,8 @@ class NativeOrchestrator:
             # W437 refuter catch: the old `(consensus or {}).get(..., 0.5)` fabricated the input when
             # consensus failed — 0.5 >= K50 reported "supra-threshold" for a run whose consensus was
             # never computed. No consensus → no signal_response, honestly absent.
-            if consensus is None:
-                raise ValueError("consensus unavailable — signal transduction has no input")
+            if consensus is None or consensus.get("proceed_fraction") is None:
+                raise ValueError("consensus unavailable or not assessable — signal transduction has no input")
             strength = float(consensus["proceed_fraction"])
             casc = EmpiricalSignalTransduction(hill=4.5).transform(strength)
             act = float(casc["activation"])

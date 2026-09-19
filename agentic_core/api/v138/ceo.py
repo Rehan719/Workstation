@@ -233,7 +233,7 @@ class ToolRegistry:
         an empty record is honest, a unanimous invented approval is not.
         """
         agents = ["CEvO", "CGO", "CPEO", "CBO", "CoS", "CEnvO"]
-        posted, failed = [], []
+        posted, failed, floor_served = [], [], []
         for agent in agents:
             prompt = (f"You are the {agent} of an AI C-Suite. State your position on this agenda "
                       "in at most two sentences, then end with exactly one word on its own line: "
@@ -247,21 +247,29 @@ class ToolRegistry:
             if not text:
                 failed.append(agent)
                 continue
-            stance = ""
-            for token in ("APPROVE", "OBJECT", "ABSTAIN"):
-                if token in text.upper():
-                    stance = token
-                    break
-            meeting_log.post_argument(agent, text[:600], stance)
+            # W475 (ledger v4 R3.0) — a stance is the reply's LAST line, and only a model takes one: the floor
+            # echoes the instruction sentence ('… APPROVE, OBJECT or ABSTAIN'), which used to be minuted as a position.
+            _served = (res or {}).get("served_by") or "native"
+            _last = ([ln.strip() for ln in text.splitlines() if ln.strip()] or [""])[-1].upper()
+            _named = set(__import__("re").findall(r"\b(APPROVE|OBJECT|ABSTAIN)\b", _last))
+            stance = _named.pop() if len(_named) == 1 else ""   # 'I APPROVE.', '**APPROVE**', 'OBJECT!'; the echo names three
+            if _served == "native":
+                floor_served.append(agent)
+                meeting_log.post_argument(agent, f"[floor-served — no position taken] {text[:520]}",
+                                          "NO POSITION (floor-served)", served_by=_served)
+                continue
+            meeting_log.post_argument(agent, text[:600], stance, served_by=_served)
             posted.append(agent)
         return {
             "status": "MEETING_COMPLETE" if posted else "NO_POSITIONS_RECORDED",
             "agenda": agenda,
             "officers_deliberated": posted,
+            "officers_floor_served": floor_served,      # W475 — recorded as no position, never as a stance
             "officers_unavailable": failed,
-            "log_updated": bool(posted),
-            "note": ("Only officers that actually produced a position are recorded. "
-                     "Nothing is written for an officer whose reply could not be obtained."),
+            "log_updated": bool(posted or floor_served),   # (refutation) floor rows are written too
+            "note": ("A position is taken only from a model's reply (its last line). A floor-served reply is minuted "
+                     "as 'NO POSITION (floor-served)'; nothing is written for an officer whose reply could not be "
+                     "obtained."),
         }
     async def get_system_vitals(self):
         """Real host vitals from psutil.

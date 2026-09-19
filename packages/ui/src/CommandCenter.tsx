@@ -332,6 +332,7 @@ const ChannelContent = ({ id }: { id: string }) => {
    const { currentRealm, currentMode, setCurrentRealm, setCurrentMode } = useStore();
    const [calibrating, setCalibrating] = useState(false);
    const [calibrated, setCalibrated] = useState(false);
+   const [calibrateNote, setCalibrateNote] = useState('');
    const [suggestionDismissed, setSuggestionDismissed] = useState(false);
    const [restApplied, setRestApplied] = useState(false);
 
@@ -342,12 +343,11 @@ const ChannelContent = ({ id }: { id: string }) => {
    };
 
    const handleCalibrateVoice = () => {
-      setCalibrating(true);
+      // W475 (ledger v4 R4.0) — no voice pipeline exists: nothing is calibrated, and the button says so instead of
+      // a 1.2 s timer that always ended 'Calibrated'.
+      setCalibrating(false);
       setCalibrated(false);
-      setTimeout(() => {
-         setCalibrating(false);
-         setCalibrated(true);
-      }, 1200);
+      setCalibrateNote('Voice calibration is not built — nothing was calibrated');
    };
 
    const handleApplyRest = () => {
@@ -368,17 +368,16 @@ const ChannelContent = ({ id }: { id: string }) => {
                </div>
             </div>
             <div className="space-y-2">
-               <h4 className="text-lg font-black text-white">Sovereign Avatar Active</h4>
+               <h4 className="text-lg font-black text-white">Avatar — no stream connected</h4>
                <p className="text-xs text-slate-400 font-bold leading-relaxed px-6">
-                  WebRTC stream synchronized. Current Persona: <span className="text-aura uppercase tracking-widest">{currentRealm}</span>.
-                  <br/>Latency: <span className="text-emerald-500">18ms</span>
+                  Nothing streams here and no latency is measured. Persona: <span className="text-aura uppercase tracking-widest">{currentRealm}</span>.
                </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
                <Button variant="outline" className="text-[9px]" onClick={handleSwitchPersona}>Switch Persona</Button>
                <Button variant="outline" className="text-[9px]" onClick={handleCalibrateVoice} disabled={calibrating}>
                   {calibrating ? <Loader2 size={14} className="animate-spin" /> : calibrated ? <CheckCircle2 size={14} className="text-emerald-500" /> : null}
-                  {calibrating ? 'Calibrating...' : calibrated ? 'Calibrated' : 'Calibrate Voice'}
+                  {calibrateNote || 'Calibrate Voice'}
                </Button>
             </div>
          </div>
@@ -397,25 +396,18 @@ const ChannelContent = ({ id }: { id: string }) => {
          <div className="space-y-6">
             <div className="p-6 rounded-3xl bg-slate-900/50 border border-white/5 space-y-6">
                <div className="flex justify-between items-center">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Time-Series Forecast</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Time-Series Forecast — not built</p>
                   <TrendingUp size={16} className="text-aura" />
                </div>
-               <div className="h-24 flex items-end gap-1 px-2">
-                  {[
-                    'h-[40%]', 'h-[65%]', 'h-[35%]', 'h-[80%]', 'h-[50%]', 'h-[90%]',
-                    'h-[70%]', 'h-[45%]', 'h-[85%]', 'h-[60%]', 'h-[35%]', 'h-[75%]'
-                  ].map((h, i) => (
-                    <div key={i} className={`flex-1 bg-aura/20 rounded-t-sm ${h}`} />
-                  ))}
-               </div>
+               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">No forecast is computed — nothing streams into this channel</p>
                <div className="space-y-4">
                   <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-900">
                      <Activity size={18} className="text-vital" />
-                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Resonance drop predicted at 14:00Z.</p>
+                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No prediction is made — no model runs here.</p>
                   </div>
                   <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-900">
                      <Zap size={18} className="text-aura" />
-                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Energy surplus detected in L2 CL1 nodes.</p>
+                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No energy telemetry is connected — nothing is detected.</p>
                   </div>
                </div>
             </div>

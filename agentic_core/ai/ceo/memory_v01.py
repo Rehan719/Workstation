@@ -80,11 +80,12 @@ class MeetingLog:
     def __init__(self) -> None:
         self.log: list[dict] = []
 
-    def post_argument(self, agent: str, argument: str, stance: str = "") -> None:
+    def post_argument(self, agent: str, argument: str, stance: str = "", served_by: str = "") -> None:
         self.log.append({
             "agent": agent,
             "argument": argument,
             "stance": stance,
+            "served_by": served_by,          # W475 (ledger v4 R3.0) — who produced the position
             "at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
         })
         del self.log[:-self.MAX_ENTRIES]

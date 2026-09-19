@@ -900,8 +900,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     try:
         from agentic_core.economy.living_vsbs import register as _register_living
         _register_living(vsb_id, name, req.entity_type, req.domain, req.owner_id)
-        entity["living"] = {"autonomous_operation": "registered — the organism tends this VSB on the circadian "
-                            "heartbeat (paced virtual economy cycles)", "virtual": True}
+        # W475 (ledger v4 R2.0) — the present tense is earned only when the heartbeat's economy lever is ON; it is
+        # off by default, so only the birth cycle ran and the founder was told the organism was tending the VSB.
+        from agentic_core.economy.living_vsbs import living_statement
+        entity["living"] = living_statement()
     except Exception as _exc:
         # W472 (refutation) — a refused registration is SAID on the entity, never silently dropped
         entity["living"] = {"registered": False, "reason": f"{_exc.__class__.__name__}: {str(_exc)[:160]}",
@@ -1074,7 +1076,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                          {"entity_type": entity["economy"].get("entity_type")})
         if entity.get("living"):
             yield _event("living", "Registered as a Living Entity",
-                         "The organism tends this VSB on the circadian heartbeat (governed economy cycles).")
+                         (entity.get("living") or {}).get("autonomous_operation")
+                         or (entity.get("living") or {}).get("note") or "registered on the living roster")
         if entity.get("business_plan_scope"):
             yield _event("plan", "Business Plan Seeded",
                          "A living business plan (Chief/Board-owned) opens with the founder's idea.")

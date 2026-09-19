@@ -102,6 +102,9 @@ class ModelGateway:
         # them `[recalled prompt]`/`[recalled reply]` keeps the content legible to the model while
         # ensuring the real `User: {prompt}` line below is the only subject candidate.
         def _neutral(c: str) -> str:
+            # W475 (ledger v4 R3.1) — a recalled prompt's persona ('You are the CGO …') must not become THIS
+            # call's '_Acting as:' line: the engine reads the first persona in the text it is given.
+            c = __import__("re").sub(r"\b(?:You are|As)\s+(?:the|a|an)\b", "[recalled role]", c)
             return c.replace("User:", "[recalled prompt]").replace("AI:", "[recalled reply]")
         recall = "\n".join(f"- {_neutral(c[:280])}" for c in ctx)
         return ("[native memory recall — prior Workstation interactions matched by token overlap; "

@@ -14,7 +14,6 @@ PRODUCTS_DIR = Path(__file__).resolve().parent.parent.parent / "products"
 ROUTE_OVERRIDES: Dict[str, str] = {
     "capital_fund": "/capital",
     "digital_reactor": "/reactor",
-    "enterprise-file-hub": "/text-index",
     "OctoVeritasEngine": "/constitution",
     "qep-sdk": "/qep-religion",
 }

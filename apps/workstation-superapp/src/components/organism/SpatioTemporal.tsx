@@ -14,7 +14,7 @@ const SpatioTemporal: React.FC = () => {
     return (
         <div className="p-5 bg-black/90 text-white rounded-xl border border-cyan-400/60">
             <div className="flex justify-between items-center mb-5">
-                <h2 className="text-xs font-black uppercase tracking-widest text-cyan-400">4D Spatio-Temporal Dashboard (L14)</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-cyan-400">4D Spatio-Temporal Dashboard (L14) — illustrative: no data is mapped</h2>
                 <div className="flex items-center gap-3">
                     <label htmlFor="time-scale" className="text-[10px] uppercase tracking-widest text-slate-500 font-black">
                         Time Scale

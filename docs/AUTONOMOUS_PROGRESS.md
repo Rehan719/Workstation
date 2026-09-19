@@ -6571,3 +6571,87 @@ Tiers (non-DELIVERED): **Tier-1 14** · Tier-2 19 · Tier-3 17. MILESTONE M1 is 
 Register: FU-080…FU-093.
 
 Suite: 385 passed · 15 skipped · 0 failed (400 items, 361 functions; 38-min full run on the final tree, isolated DATA_DIR)
+
+### W475 — P1.17 The second truth pass: the fourteen ledger-v4 truth defects
+
+**What was wrong** (register FU-080…FU-093 — the standing Tier-1 entries of `VISION_FIDELITY_LEDGER.md` v4, W474).
+MILESTONE M1 re-measured the product after Phase P1 and found fourteen surfaces the first pass never walked, each
+telling a user something untrue or certifying what it could not assess: the halal screen failed a subject that
+AVOIDS a haram term ('avoids riba' → 'Prohibited element: riba') and sealed the FAIL into deliverables and exports;
+the floor-served tafsir repeated the sourced Arabic cut mid-word under 'THE AUTHENTIC ARABIC TEXT'; the QMS
+generator mined another organisation's recalled interaction into a bakery's document with no provenance;
+establishment said the organism was tending the enterprise while the heartbeat's economy lever was off; the shipped
+repository's gate could not fail on the non-floor path; the CEO chat's meeting path minuted the floor's echo of
+'APPROVE, OBJECT or ABSTAIN' as six officers' stances; the floor's '_Acting as:' line named the PREVIOUS call's persona
+when recall was injected; the Board presented a digital twin that has no model; three Command Center channels
+invented readings ('WebRTC stream synchronized · Latency 18ms', a 1.2 s 'Calibrated', a forecast of nothing); the
+native tree recommended 'proceed' and the fabric said 'commit-ready' on gates that could not assess; the marketplace
+counted a product live over a route that does not exist; the Transformation page reported 'realisation 1.0' from
+router-mount checks that cannot fail; a cycle's declared costs were posted to the reserve fund.
+
+**What changed.**
+- `compliance.py`: a haram term inside a negating phrase ('avoids riba', 'no alcohol', 'free of interest') is REVIEW
+  with the phrase quoted, never FAIL; the fail reason is 'haram term present in the text', never 'Prohibited element';
+  the engine's keyword rule matching the same negated phrase does not flip the review.
+- `religion.py`: the tafsir prompt carries a `Subject:` label, so the floor grounds its frame in the reference and
+  never in the Arabic block (`engine._subject` cut it at 220 characters); the sourced text stands whole above the notes.
+- `management_systems.py`: all seven generators compose through `ai_text(augment=False)` and return `ai_provenance`
+  with a `floor_note` on the native floor.
+- `genesis.py` + `economy.py`: the living text says 'autonomous economy cycles are OFF … enable Self-run' unless the
+  heartbeat's lever is on (`living.autonomous_cycles`); `GET /economy/living-vsbs` carries `autonomous_cycles`.
+- `vsb.py`: `_body_served_by` — a scaffold-composed document (no concept/design/commercialisation, or fields still
+  pending the owned model) is 'template' to the repo/webapp/mobile gates, which then record 'not assessable'.
+- `v138/ceo.py`: an officer's stance is the reply's LAST line and only from a model; a floor-served reply is minuted
+  'NO POSITION (floor-served)' under `officers_floor_served`, never as a stance.
+- `gateway.py`: `_augment` neutralises 'You are the …' / 'As a …' inside recall lines, so the engine's role is this
+  call's.
+- `board.py` + BoardOfDirectors/VSBCockpit: the Chief is titled as the founder's standing charter and last
+  instructions on the owned fabric — 'no twin model is trained (Mode 2 planned, P3.4)'.
+- CommandCenter + SpatioTemporal: 'Avatar — no stream connected', 'No forecast is computed', 'nothing was
+  calibrated', 'illustrative: no data is mapped'.
+- `orchestrator.py` + NativeAI: with `qms_passed` None the decision is `recommendation: null` with a `basis`; the
+  minimax voter abstains. `resource_fabric.py` + ResourceFabric: `commit_ready` is tri-state; None renders 'gate could
+  not assess — commit at your judgement' and the run's `quality_warning` says so.
+- `catalog/api.py`: `enterprise-file-hub` no longer routes to `/text-index` (no such page); the guard checks every
+  override route against `App.tsx`.
+- `transformation.py` + TransformationDashboard: the figure carries `measure: API surface coverage — not delivery`
+  and is labelled so; the 'Organism systems healthy' check (`is not None`) is gone.
+- `ledger.py` + `metabolism.py`: declared costs post Dr `operating_costs` / Cr cash (a new expense account in
+  `CHART`); the reserve is `revenue × rate` only; distributable = revenue − costs − reserve (the same total as before).
+
+**Refuted (own diff), twice in isolated worktrees — 25 findings, all verified real, 0 refuted; all fixed as rules.** The refuters found one class across the first cut: a fix that changed the API or
+ONE writer while a second writer, the reached page, or a guard leg still said the old untruth. Concretely: the negation
+window read bare 'free' / 'non' / 'zero' as negators (so 'a free casino app' dropped to review with a false reason),
+missed 'riba-free', and read 'does not avoid alcohol' and 'a no-deposit casino' as avoided — the rule is now a governing
+negator at most three plain words away, no punctuation between, double negation and 'not only' / 'but' ending the
+scope, hyphen-compound negators as adjectives, the suffix form and 'non-' as negations (29 cases held by the guard);
+the unreachable-source tafsir said the Arabic was shown above; the management page still showed a green 'Framework
+Generated' over the floor's frame and no QMS record was made; the shared enrichment path (streamed establishment,
+/vsb/spawn, the Studio) and the roster page still said 'tends', and the lever was read without checking the heartbeat
+was beating — one `living_statement()` now serves every writer; `_body_served_by` read the body at the top level while
+establishment stores it under `genesis_blueprint`, so every entity became 'template' (founder-written bodies included);
+the consensus still certified 'proceed' at 100% from two content-blind voters and its chip stayed emerald; the Board
+status, hierarchy, instruction card, Cockpit heading, transformation run, living-plan hierarchy and cognition tier still
+named a twin; the meeting note and `log_updated` denied the rows the fix itself wrote, and stances like 'I APPROVE.'
+were dropped; the cycle card labelled the reserve 'Costs + reserves' and the board pack's P&L dropped the costs; the
+Heartbeat tab still showed 'Realisation 97%' in green. Two existing tests demanded a floor 'proceed' — retargeted, with
+the minimax control now run on a model-served tree (the utility still decides when the gate can assess). Three guard
+legs were vacuous (an `or True` on a key that does not exist; a network-dependent tafsir leg; a synthetic record shape)
+and are now executing legs.
+**The first full run on the fixed tree failed six tests — each asserting an untruth this round removed.** Three
+(`test_vsb_repo/webapp/mobile_generation`) asserted the shipped gate PASSES for an entity established with no body —
+the R2.1 defect itself; they now assert 'not assessable', still document-controlled. Two (`test_native_biomimetic_*`,
+`test_native_swarm_consensus_*`) read a signal and a consensus off a floor run; they now assert neither is certified on
+the floor and hold both capabilities on a run the gate can assess. The minimax control passed alone and failed only in
+the full run: `test_tree_planner_swarm_planned_with_honest_floor` "restored" `orchestrator.complete` by assigning the
+bound method back, which pins it on the instance and shadows every later class-level patch (shown directly: `complete`
+becomes an instance attribute). The controls now patch the instance, and the restore deletes the pinned copy.
+
+**Broken 42 ways** (each blind alone, guard run, byte-restored); every one fails. Two blinds were vacuous on
+the first run and made real: the engine-flip branch needed a subject the engine flags ('serves no alcohol'), and the
+recall leak cannot be reproduced from one seeded row (the floor ranks terms), so the guard holds the `augment=False`
+flag itself.
+Guard: test_w475_second_truth_pass_ledger_v4_tier1_entries — one leg per entry, each executing the entry's own claim.
+Probe: scripts/_w475_probe.mjs 12/12 on a fresh backend at :8084 (ten API halves, the served bundle's texts).
+
+Suite: 386 passed · 15 skipped · 0 fail (full run on the final tree, isolated DATA_DIR, 39 min; 401 items from 362 test functions).

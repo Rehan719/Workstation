@@ -322,8 +322,8 @@ export const VSBCockpit: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living VSB Enterprise</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">VSB Cockpit</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          Interact with a generated living VSB IDBO Enterprise — its organisational structure, the Chief's
-          digital twin &amp; Board, the living business plan, the management systems (BMS · QMS · DCS · EMS),
+          Interact with a generated living VSB IDBO Enterprise — its organisational structure, the Chief
+          &amp; Board, the living business plan, the management systems (BMS · QMS · DCS · EMS),
           and an end-to-end transformation run. All live from Workstation's <span className="text-highlight">own</span> in-house systems.
         </p>
       </header>
@@ -499,8 +499,8 @@ export const VSBCockpit: React.FC = () => {
                 )}
               </Card>
               <Card className="p-6 space-y-2 border-aura/30">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-aura flex items-center gap-2"><Crown size={14} /> Chief of the Board (Owner's digital twin)</h4>
-                <p className="text-white font-black">{chief.title || chief.name || `Chief — Digital Twin of ${board.owner || detail.owner_id}`}</p>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-aura flex items-center gap-2"><Crown size={14} /> Chief of the Board (the founder's charter — no twin model is trained)</h4>
+                <p className="text-white font-black">{chief.title || chief.name || `Chief of the Board — ${board.owner || detail.owner_id || 'the founder'}'s charter and instructions (no twin model)`}</p>
                 {chief.role && <p className="text-[11px] text-slate-500">{chief.role}</p>}
                 {board.vision_summary && <p className="text-[11px] text-slate-400 leading-relaxed mt-2">{board.vision_summary}</p>}
                 {board.governance && <p className="text-[9px] font-mono text-slate-600 mt-2">{typeof board.governance === 'string' ? board.governance : JSON.stringify(board.governance)}</p>}
@@ -754,7 +754,7 @@ export const VSBCockpit: React.FC = () => {
                 <Card className="p-6 border-highlight/30">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3">Latest metabolic cycle</h4>
                   <div className="grid grid-cols-2 @[560px]:grid-cols-3 gap-3 text-[11px]">
-                    {[['Intake revenue', lastCycle.intake_revenue], ['Homeostasis reserves', lastCycle.homeostasis_reserves], ['Distributable profit', lastCycle.distributable_profit], ['Giving back', lastCycle.giving_back], ['Metabolic energy', lastCycle.metabolic_energy]].map(([label, val]) => val != null && (
+                    {[['Intake revenue', lastCycle.intake_revenue], ['Operating costs', lastCycle.operating_costs], ['Reserve', lastCycle.homeostasis_reserves], ['Distributable profit', lastCycle.distributable_profit], ['Giving back', lastCycle.giving_back], ['Metabolic energy', lastCycle.metabolic_energy]].map(([label, val]) => val != null && (
                       <div key={label as string}><span className="text-slate-500">{label}: </span><span className="text-white font-bold">{typeof val === 'number' ? Number(val).toLocaleString() : String(val)}</span></div>
                     ))}
                   </div>

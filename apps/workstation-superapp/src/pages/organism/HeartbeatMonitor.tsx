@@ -68,7 +68,7 @@ export const HeartbeatMonitor: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Organism Heartbeat</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The circadian rhythm that makes Workstation <span className="text-highlight">run itself continuously</span> — pulsing the
-          nervous system, checking homeostasis, ticking vision-realisation, and logging every beat to the constitutional UEG.
+          nervous system, checking homeostasis, ticking API-surface coverage (router and store checks — not delivery), and logging every beat to the constitutional UEG.
           Cheap by default; expensive AI cognition is opt-in and paced.
         </p>
       </header>
@@ -96,7 +96,7 @@ export const HeartbeatMonitor: React.FC = () => {
             <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
               <Metric icon={Phase} label="Circadian Phase" value={s.circadian_phase.replace('_', ' ')} />
               <Metric icon={Activity} label="Intensity" value={`${Math.round(s.phase_intensity * 100)}%`} />
-              <Metric icon={Activity} label="Realisation" value={s.last_realisation != null ? `${Math.round(s.last_realisation * 100)}%` : '—'} tone="good" />
+              <Metric icon={Activity} label="API coverage (not delivery)" value={s.last_realisation != null ? `${Math.round(s.last_realisation * 100)}%` : '—'} />
               <Metric icon={ShieldCheck} label="Auto-evolve" value={s.auto_evolve ? 'ON' : 'OFF'} tone={s.auto_evolve ? 'good' : undefined} />
             </div>
             <div className="mt-5 pt-4 border-t border-slate-800">
@@ -176,7 +176,7 @@ export const HeartbeatMonitor: React.FC = () => {
                           self-healed ATP {b.self_recovery}
                         </span>
                       )}
-                      {b.realisation != null && <span className="text-emerald-400">{Math.round(b.realisation * 100)}%</span>}
+                      {b.realisation != null && <span className="text-slate-400" title="API surface coverage — not delivery">{Math.round(b.realisation * 100)}% cov</span>}
                     </div>
                   </div>
                 ))}

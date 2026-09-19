@@ -127,7 +127,7 @@ export const TransformationDashboard: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living Alignment</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Vision · Realisation · Transformation</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          One living picture, computed from the live organism: <span className="text-highlight">your vision</span>, how far the
+          One living picture — the realisation figure is API surface coverage (routers mounted, stores non-empty), not delivery: <span className="text-highlight">your vision</span>, how far the
           <span className="text-highlight"> current state realises it</span>, and the <span className="text-highlight">transformation plan</span> to close the gap.
           Continuously self-introspecting.
         </p>
@@ -156,7 +156,7 @@ export const TransformationDashboard: React.FC = () => {
             <p className="text-slate-400 text-sm font-bold leading-relaxed mb-4">{pic.vision_summary}</p>
             <div className="flex items-end gap-3 mb-2">
               <span className="text-5xl font-black text-emerald-400">{overall}%</span>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">overall realised</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">API surface coverage — not delivery (see the delivery plan)</span>
             </div>
             <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-emerald-400 to-highlight transition-all duration-700" style={{ width: `${overall}%` }} />
@@ -229,7 +229,7 @@ export const TransformationDashboard: React.FC = () => {
 
           {/* Pillars — vision mapped to live evidence */}
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Target size={14} /> Vision Pillars (computed from live evidence)</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Target size={14} /> Vision Pillars (router and store checks — coverage, not delivery)</h3>
             <div className="space-y-3">
               {pic.realisation.pillars.map(p => (
                 <Card key={p.id} className="p-5">

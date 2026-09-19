@@ -238,6 +238,18 @@ def _blueprint(vsb: dict) -> dict:
     }
 
 
+def _body_served_by(vsb):
+    """W475 (ledger v4 R2.1) — the provenance the shipped documents' gate measures against: the entity's own body
+    when it has one; 'template' when the generator composed the document from scaffold (no concept / design /
+    commercialisation, or fields still 'content pending the owned model'), so the gate records 'not assessable'
+    instead of passing README boilerplate against the generator's own headings."""
+    bp = _blueprint(vsb)       # (refutation) establishment stores the body under genesis_blueprint, never top-level
+    body = [bp.get(k) or str(vsb.get(k) or "") for k in ("concept", "design", "commercialisation")]
+    if not any(b.strip() for b in body) or any("content pending the owned model" in b for b in body):
+        return "template"
+    return (vsb.get("ai_provenance") or {}).get("served_by")
+
+
 def _refuse_pending_name(vsb: dict) -> None:
     """W450 (P1.2, refuter F2) — 'a slug never ships' was enforced only at birth: every publish endpoint
     and the Cockpit's Ship button would still print a pending working name on 15+ files. The public
@@ -352,7 +364,7 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     # required sections = content headings that genuinely appear in the repo docs (not filenames)
     qa = await assure_delivery(combined, ["Business Plan", "Organisation", "Identity", "Executive Summary"],
                                label="vsb_repo",
-                               served_by=((vsb.get("ai_provenance") or {}).get("served_by")))
+                               served_by=_body_served_by(vsb))
     # §13 (W289) — compliance/QUALITY.md is the REAL record now (the sealed verdicts of THIS
     # generation), not a pointer note to a snapshot.
     _q = (qa.get("quality") or {})
@@ -847,7 +859,7 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["webapp/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
                                label="vsb_webapp",
-                               served_by=((vsb.get("ai_provenance") or {}).get("served_by")))
+                               served_by=_body_served_by(vsb))
     root = _REPO_STORE / vsb_id
     written = []
     for path, content in files.items():
@@ -984,7 +996,7 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["mobile/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
                                label="vsb_mobile",
-                               served_by=((vsb.get("ai_provenance") or {}).get("served_by")))
+                               served_by=_body_served_by(vsb))
     root = _REPO_STORE / vsb_id
     written = []
     for path, content in files.items():
@@ -1549,8 +1561,10 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
     try:
         from agentic_core.economy.living_vsbs import register as _register_living
         _register_living(vsb_id, name, entity_type, domain, owner_id)
-        entity["living"] = {"autonomous_operation": "registered — the organism tends this VSB on the "
-                            "circadian heartbeat (paced virtual economy cycles)", "virtual": True}
+        # W475 (refutation, ledger v4 R2.0) — the shared enrichment path (SSE establishment, /vsb/spawn, the Studio)
+        # says the lever's truth too; one statement for every writer
+        from agentic_core.economy.living_vsbs import living_statement
+        entity["living"] = living_statement()
     except Exception as _exc:
         # W472 (refutation) — a refused registration is SAID on the entity, never silently dropped
         entity["living"] = {"registered": False, "reason": f"{_exc.__class__.__name__}: {str(_exc)[:160]}",

@@ -60,7 +60,7 @@ _OWNER = {
 
 # The Board roster. The Chief is the Owner's digital twin; directors own areas of direction.
 _BOARD: List[Dict[str, str]] = [
-    {"id": "chief", "title": "Chief of the Board (Owner's Digital Twin)",
+    {"id": "chief", "title": "Chief of the Board (the Owner's charter and instructions — no twin model is trained)",
      "mandate": "Represent the Owner; set direction; lead/appraise/develop the board; delegate to the AI CEO."},
     {"id": "dir_strategy", "title": "Director of Strategy & Vision",
      "mandate": "Business plan, strategy, aims, mission, objectives — coherence with the Owner's vision."},
@@ -185,7 +185,11 @@ def board_for_owner(owner_name: str, vision_summary: str = "") -> Dict[str, Any]
     return {
         "owner": owner_name,
         "chief": {
-            "title": f"Chief of the Board — Digital Twin of {owner_name}",
+            # W475 (ledger v4 R3.4) — no twin model is trained (/api/v1/twin/models holds none): the Chief is the
+            # founder's standing charter and last instructions on the owned fabric, and is titled so.
+            "title": (f"Chief of the Board — {owner_name if owner_name and owner_name != 'default' else 'the founder'}'s "
+                      "standing charter and last instructions on the owned fabric (no twin model is trained; Mode 2 "
+                      "planned, P3.4)"),
             "fidelity_charter": _OWNER["fidelity_charter"],
         },
         "directors": [d for d in _BOARD if d["id"] != "chief"],
@@ -216,7 +220,7 @@ async def board_status(scope: str = "workstation"):
             "board": f"{vsb.get('name', scope)} — Board of Directors",
             "scope": scope,
             "represents_owner": vsb.get("owner_id") or board.get("chief", {}).get("represents") or "the founder",
-            "hierarchy": ["Founder", "Chief (Founder Digital Twin)", "Board of Directors",
+            "hierarchy": ["Founder", "Chief (the founder's charter)", "Board of Directors",
                           "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
             "chief": board.get("chief"),
             "directors": board.get("directors", []),
@@ -227,7 +231,7 @@ async def board_status(scope: str = "workstation"):
         "board": "Workstation IDBO Board of Directors",
         "scope": "workstation",
         "represents_owner": _OWNER["name"],
-        "hierarchy": ["Owner", "Chief (Owner Digital Twin)", "Board of Directors",
+        "hierarchy": ["Owner", "Chief (the Owner's charter)", "Board of Directors",
                       "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
         "chief": _BOARD[0],
         "directors": [d for d in _BOARD if d["id"] != "chief"],
@@ -545,7 +549,7 @@ async def board_directive(req: BoardDirective):
         "director_inputs": director_inputs,
         "directors_engaged": [d["id"] for d in directors],
         "ai_provenance": provenance,     # §6 — apex provenance (W270)
-        "chaired_by": "Chief (Owner's Digital Twin)",
+        "chaired_by": "Chief (the Owner's charter and instructions)",
         "status": "resolved",
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

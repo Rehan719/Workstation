@@ -19,8 +19,29 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import ai_text
 from agentic_core.organism.biobus import biobus
+
+
+async def _compose(prompt: str, agent: str):
+    """W475 (ledger v4 R1.2) — a generated document is composed WITHOUT memory recall (the QMS for one organisation
+    carried another's recalled interaction as its 'salient terms') and carries its provenance; on the native floor
+    the response says the frame is not model analysis."""
+    text, prov = await ai_text(prompt, agent, augment=False)
+    prov = dict(prov or {})
+    if (prov.get("served_by") or "native") == "native":
+        prov["floor_note"] = ("structured floor — the owned fabric composed this frame from your inputs; it is not "
+                              "model analysis. Review every clause before use.")
+    # (refutation) the delivery is recorded by the living QMS like every other generated document; on the floor it is
+    # 'not assessable', never a pass
+    try:
+        from agentic_core.vbs.quality import assure_delivery
+        qa = await assure_delivery(text, None, label=agent, served_by=prov.get("served_by"))
+        prov["quality"] = (qa or {}).get("quality")
+    except Exception as exc:
+        prov["quality"] = {"qms_gate_passed": None,
+                           "qms_basis": f"no quality record was produced ({exc.__class__.__name__})"}
+    return text, prov
 
 router = APIRouter(prefix="/api/v1/mgmt", tags=["management-systems"])
 
@@ -77,10 +98,11 @@ async def generate_qms(req: QMSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.qms", f"QMS generation: {req.organisation_name}", 0.5)
-    framework = await gateway.query(prompt, agent="mgmt_qms")
+    framework, _prov = await _compose(prompt, "mgmt_qms")
     biobus.record_operation("qms_generate", "mgmt.qms", success=True, payload=f"{req.organisation_name} QMS")
 
     return {
+        "ai_provenance": _prov,
         "doc_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
         "standard": "ISO 9001:2015",
@@ -120,10 +142,11 @@ async def generate_bms(req: BMSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.bms", f"BMS generation: {req.organisation_name}", 0.5)
-    framework = await gateway.query(prompt, agent="mgmt_bms")
+    framework, _prov = await _compose(prompt, "mgmt_bms")
     biobus.record_operation("bms_generate", "mgmt.bms", success=True, payload=f"{req.organisation_name} BMS")
 
     return {
+        "ai_provenance": _prov,
         "doc_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
         "framework_type": "BMS",
@@ -161,10 +184,11 @@ async def generate_dcs(req: DCSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.dcs", f"DCS generation: {req.organisation_name}", 0.4)
-    framework = await gateway.query(prompt, agent="mgmt_dcs")
+    framework, _prov = await _compose(prompt, "mgmt_dcs")
     biobus.record_operation("dcs_generate", "mgmt.dcs", success=True, payload=f"{req.organisation_name} DCS")
 
     return {
+        "ai_provenance": _prov,
         "doc_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
         "framework_type": "DCS",
@@ -201,10 +225,11 @@ async def generate_audit_schedule(req: AuditScheduleRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.audit", f"Audit schedule: {req.organisation_name}", 0.4)
-    schedule = await gateway.query(prompt, agent="mgmt_audit")
+    schedule, _prov = await _compose(prompt, "mgmt_audit")
     biobus.record_operation("audit_schedule", "mgmt.audit", success=True)
 
     return {
+        "ai_provenance": _prov,
         "schedule_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
         "standard": req.audit_standard,
@@ -244,10 +269,11 @@ async def generate_risk_register(req: RiskRegisterRequest):
     )
 
     biobus.fire_signal("cognitive", "mgmt.risk", f"Risk register: {req.organisation_name}", 0.6)
-    register = await gateway.query(prompt, agent="mgmt_risk")
+    register, _prov = await _compose(prompt, "mgmt_risk")
     biobus.record_operation("risk_register", "mgmt.risk", success=True)
 
     return {
+        "ai_provenance": _prov,
         "register_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
         "domain": req.domain,
@@ -292,10 +318,11 @@ async def generate_ems(req: EMSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.ems", f"EMS generation: {req.organisation_name}", 0.5)
-    framework = await gateway.query(prompt, agent="mgmt_ems")
+    framework, _prov = await _compose(prompt, "mgmt_ems")
     biobus.record_operation("ems_generate", "mgmt.ems", success=True, payload=f"{req.organisation_name} EMS")
 
     return {
+        "ai_provenance": _prov,
         "doc_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
         "standard": "ISO 14001:2015",
@@ -349,9 +376,10 @@ async def record_nonconformance(req: NonConformanceRequest):
         f"4. Preventive actions (systemic changes)\n"
         f"5. Effectiveness verification method\n"
     )
-    capa = await gateway.query(prompt, agent="mgmt_capa")
+    capa, _prov = await _compose(prompt, "mgmt_capa")
 
     return {
+        "ai_provenance": _prov,
         "nc_id": uuid.uuid4().hex[:8],
         "severity": req.severity,
         "description": req.description,

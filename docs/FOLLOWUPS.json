@@ -1308,8 +1308,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1325,8 +1325,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1341,8 +1341,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1358,8 +1358,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1375,8 +1375,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1392,8 +1392,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1409,8 +1409,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1425,8 +1425,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1441,8 +1441,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1457,8 +1457,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1473,8 +1473,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1489,8 +1489,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1506,8 +1506,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     },
     {
@@ -1523,8 +1523,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W475",
       "note": ""
     }
   ],

@@ -271,6 +271,7 @@ CHART: Dict[str, str] = {
     "distribution_user_projects":    "expense",
     "distribution_charity":          "expense",
     "transfer_out":                  "expense",   # inter-VSB transfers (federation seed, W262)
+    "operating_costs":               "expense",   # W475 (ledger v4 R6.1) — a cycle's declared costs
     "retained_earnings":             "equity",
 }
 _DEBIT_NORMAL = ("asset", "expense")
@@ -279,6 +280,7 @@ _DEBIT_NORMAL = ("asset", "expense")
 _COMPAT_POSTING: Dict[str, tuple] = {
     "revenue":         ("cash", "revenue"),                        # intake: Dr Cash / Cr Revenue
     "reserves":        ("reserve_fund", "cash"),                   # homeostasis: Dr Reserve Fund / Cr Cash
+    "costs":           ("operating_costs", "cash"),                # W475: declared costs: Dr Operating Costs / Cr Cash
     "owner":           ("distribution_owner", "cash"),             # circulation: Dr Distribution / Cr Cash
     "self_investment": ("distribution_self_investment", "cash"),
     "capital_fund":    ("distribution_capital_fund", "cash"),

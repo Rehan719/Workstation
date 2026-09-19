@@ -345,6 +345,19 @@ async def living_vsbs(user: dict | None = Depends(get_current_user)):
         for count_key in ("living", "total", "count"):
             if count_key in res:
                 res[count_key] = len(rows)
+    # W475 (ledger v4 R2.0) — the listing says whether the organism tends the roster at all (the lever), so
+    # 'the established VSB enterprises the organism autonomously tends' is never read as a present-tense fact
+    # while Self-run is off.
+    try:
+        from agentic_core.organism.heartbeat import heartbeat as _hb
+        _lever, _beating = bool(getattr(_hb, "auto_economy", False)), bool(getattr(_hb, "running", False))
+        res["autonomous_cycles"] = _lever and _beating      # (refutation) a stopped heartbeat tends nothing
+        if not res["autonomous_cycles"]:
+            res["autonomous_cycles_note"] = ("OFF — " + ("the heartbeat's Self-run lever is off" if not _lever else
+                                                         "the heartbeat is stopped although Self-run is on")
+                                             + ": no roster cycle runs until both are on (the Heartbeat page)")
+    except Exception:
+        res["autonomous_cycles"] = None
     return res
 
 
@@ -1253,6 +1266,7 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
         "currency": "WST (virtual)", "generated_at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()),
         "profit_and_loss": {
             "total_revenue_wst": revenue, "total_reserves_wst": reserves,
+            "total_costs_wst": round(bal.get("costs", 0.0), 2),     # W475 (ledger v4 R6.1) — an expense of its own
             "total_distributed_wst": distributed,
             "distribution_by_stage": {s: round(bal.get(s, 0.0), 2) for s in stages},
         },

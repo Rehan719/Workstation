@@ -16,7 +16,7 @@ interface EntityType {
   distributes_profit: boolean; capital_preserved: boolean; waterfall: Record<string, number>;
 }
 interface Cycle {
-  intake_revenue: number; homeostasis_reserves: number; distributable_profit: number;
+  intake_revenue: number; homeostasis_reserves: number; operating_costs?: number; distributable_profit: number;
   circulation: Record<string, { amount_wst: number; role: string }>;
   giving_back: { grants: { cause: string; amount_wst: number; score: number }[] } | null;
   metabolic_energy: number | null; entity_name: string; capital_preserved: boolean;
@@ -480,12 +480,12 @@ export const VSBEconomy: React.FC = () => {
       {cycle && (
         <div className="space-y-6">
           <Card className="p-6">
-            <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
+            <div className="grid grid-cols-2 @[560px]:grid-cols-5 gap-3 text-center">
               <Metric label="Intake (revenue)" value={cycle.intake_revenue} />
-              {/* W377 — this figure is costs + the homeostasis reserve (backend: reserves = costs +
-                  revenue x rate), so labelling it 'Reserves' alone left a user who entered costs
-                  wondering why the number was larger than their reserve rate implied. */}
-              <Metric label="Costs + reserves" value={cycle.homeostasis_reserves} />
+              {/* W475 (ledger v4 R6.1) — costs are an expense posted on their own; the reserve is revenue x rate only
+                  (W377 labelled one figure 'Costs + reserves' when both were posted to the reserve fund). */}
+              <Metric label="Operating costs" value={cycle.operating_costs ?? 0} />
+              <Metric label="Reserve" value={cycle.homeostasis_reserves} />
               <Metric label="Distributable" value={cycle.distributable_profit} tone="good" />
               <Metric label="Metabolic Energy" value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'} tone="good" />
             </div>
@@ -645,10 +645,13 @@ export const VSBEconomy: React.FC = () => {
       {living && (living.living_vsbs?.length ?? 0) > 0 && (
         <Card className="p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><HeartPulse size={14} className="text-emerald-400" /> Living Enterprises · autonomously tended (§4)</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><HeartPulse size={14} className="text-emerald-400" /> Living Enterprises · the living roster (§4)</h3>
             <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">{living.total} living</span>
           </div>
-          <p className="text-[10px] text-slate-500 font-bold mb-4">Established VSB IDBO enterprises the organism operates continually on the circadian heartbeat — each runs paced virtual economy cycles, forever, led by its Chief.</p>
+          {/* W475 (ledger v4 R2.0) — the present tense only while the heartbeat's Self-run lever is on */}
+          {living.autonomous_cycles === false
+            ? <p className="text-[10px] text-amber-400 font-bold mb-4">{living.autonomous_cycles_note || 'Autonomous economy cycles are OFF — enable Self-run on the Heartbeat page.'} These enterprises are registered; none is being operated until the lever is on.</p>
+            : <p className="text-[10px] text-slate-500 font-bold mb-4">Established VSB IDBO enterprises the organism operates on the circadian heartbeat — each runs paced virtual economy cycles, led by its Chief.</p>}
           <div className="space-y-2">
             {(living.living_vsbs || []).slice(0, 8).map((v: any) => (
               <div key={v.vsb_id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950 border border-slate-900">
