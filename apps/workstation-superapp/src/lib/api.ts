@@ -97,8 +97,14 @@ export const provenanceMapBadge = (servedBy: Record<string, number> | null | und
   if (!keys.length || keys.every(k => k === 'native')) return provenanceBadge('native');
   const models = keys.filter(k => k !== 'native');
   const floorCalls = servedBy?.['native'] || 0;
+  const modelCalls = models.reduce((n, k) => n + (servedBy?.[k] || 0), 0);
+  // W479 (refutation 3) — the counts decide: a run the floor served mostly is not an in-house model run,
+  // and the tooltip states the split instead of assuming the model served most calls
+  if (floorCalls >= modelCalls) return { label: `mostly structured floor · ${floorCalls} of ${floorCalls + modelCalls} calls (+${models.join(' · ')})`,
+    cls: 'bg-amber-500/20 text-amber-400',
+    title: `the deterministic floor served ${floorCalls} of ${floorCalls + modelCalls} calls (structured output, not model analysis); the owned model served ${modelCalls}` };
   return { label: `in-house · ${models.join(' · ')}${floorCalls ? ` (+${floorCalls} floor)` : ''}`, cls: 'bg-emerald-500/20 text-emerald-400',
-    title: floorCalls ? 'a mix: the owned model served most calls; the deterministic floor served the rest' : undefined };
+    title: floorCalls ? `a mix: the owned model served ${modelCalls} of ${floorCalls + modelCalls} calls; the deterministic floor served the rest` : undefined };
 };
 
 // W449 (delivery-plan P1.1, ledger 1.1) — the living-QMS gate has THREE honest states: pass · fail ·

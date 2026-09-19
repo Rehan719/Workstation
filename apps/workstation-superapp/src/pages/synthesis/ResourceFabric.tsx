@@ -92,6 +92,10 @@ interface CompositionRun {
     viable?: boolean; passages?: number; cognitive_primed?: boolean; engines_used?: string[];
     scenarios_run?: number; generations_run?: number; winner?: string;
     served_by?: string; is_external?: boolean; stages_run?: number;   // §6 — owned-resource provenance
+    // W479 (FU-121 refutation) — the intelligence engines report their calls: a run whose every call failed is
+    // not 'ran', and the stage count they send is `stages`
+    stages?: number; calls?: number; failed_calls?: number; floor_calls?: number; prime_failed?: boolean; status?: string;
+    served_by_map?: Record<string, number>;   // (refutation 2) per-server counts: a mostly-floor run is not a model run
   }[];
 }
 
@@ -665,12 +669,16 @@ export const ResourceFabric: React.FC = () => {
                                 {rr.ran && <span className="text-[8px] font-mono text-slate-600">{rr.ran}</span>}
                                 {rr.error
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">error</span>
+                                  : (rr.calls && rr.failed_calls === rr.calls)
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">did not run</span>
+                                  : rr.failed_calls
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">{rr.failed_calls} of {rr.calls} calls did not run</span>
                                   : <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">ran</span>}
                                 {typeof rr.viable === 'boolean' && (
                                   <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.viable ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{rr.viable ? 'viable' : 'not viable'}{rr.passages ? ` · ${rr.passages}p` : ''}</span>
                                 )}
                                 {typeof rr.cognitive_primed === 'boolean' && (
-                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.cognitive_primed ? 'cognitive-primed' : 'context-fed'}</span>
+                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.cognitive_primed ? 'cognitive-primed' : rr.prime_failed ? 'prime did not run' : 'context-fed'}</span>
                                 )}
                                 {typeof rr.scenarios_run === 'number' && (
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.scenarios_run} scenarios</span>
@@ -678,11 +686,14 @@ export const ResourceFabric: React.FC = () => {
                                 {typeof rr.generations_run === 'number' && (
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.generations_run} generations</span>
                                 )}
+                                {typeof rr.stages === 'number' && (
+                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.stages} stages ran</span>
+                                )}
                                 {typeof rr.stages_run === 'number' && (
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.stages_run} stages</span>
                                 )}
                                 {rr.served_by && (
-                                  (() => { const b = provenanceBadge(rr.served_by, rr.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()
+                                  (() => { const b = rr.served_by_map ? provenanceMapBadge(rr.served_by_map, rr.is_external) : provenanceBadge(rr.served_by, rr.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()
                                 )}
                               </div>
                               {(rr.output || rr.error) && (

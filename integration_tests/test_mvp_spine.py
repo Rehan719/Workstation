@@ -16851,3 +16851,358 @@ def test_w478_the_schedule_is_prioritised_by_vision_value_and_completion_is_weig
     assert pr2.returncode == 1 and "cannot be read" in pr2.stdout
     ck = cli("check")                                           # the check names THIS problem, not only a stale block
     assert ck.returncode != 0 and "PROBLEM docs/PRIORITY.json cannot be read" in ck.stdout, ck.stdout
+
+
+def test_w479_intelligence_engines_say_what_served_each_stage_and_count_only_stages(client, monkeypatch):
+    """W479 — P1.18 FU-121 (sweep S4.4, S4.5, S5.4, S5.5, S5.6, S6.2, S6.3, S7.6) + FU-153 (S7.7). The four
+    intelligence pipelines and the Synthesis Nexus: every stage event says what served it (model · floor ·
+    failed), the pages count only stage results, the Nexus says whether anything chose its engine, its
+    counts are what ran, and no page claims engines that never run."""
+    import asyncio
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    import agentic_core.ai.gateway as gw
+    import agentic_core.api.intelligence as intel
+    from agentic_core.ai.native.engine import _subject
+
+    def _events(resp):
+        return [json.loads(line[6:]) for line in resp.text.splitlines() if line.startswith("data: ")]
+
+    calls = []
+    real_meta = gw.gateway.query_meta
+
+    async def _spy(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        calls.append({"agent": agent, "augment": augment})
+        return await real_meta(prompt, agent=agent, timeout=timeout, owner_id=owner_id, augment=augment)
+    monkeypatch.setattr(gw.gateway, "query_meta", _spy)
+
+    # ── S5.4 / S5.6: authorship on the floor, rigor set — 9 results keyed 1..9, the config event is not a stage ──
+    topic = "Urban tree canopy and summer heat admissions"
+    evs = _events(client.post("/api/v1/intelligence/authorship", json={"topic": topic, "rigor": "rigorous"}))
+    results = [e for e in evs if isinstance((e.get("data") or {}).get("stage_num"), int)]
+    assert [e["data"]["stage_num"] for e in results] == list(range(1, 10)), [e["stage"] for e in results]
+    assert any(e["stage"] == "config" for e in evs) and "stage_num" not in (next(e for e in evs if e["stage"] == "config").get("data") or {})
+    assert all(e["data"]["served_by"] == "native" and e["data"]["failed"] is False for e in results)
+    assert sum(topic.lower() in e["content"].lower() for e in results) == 9, "the floor dropped the user's topic"
+    done = evs[-1]
+    assert done["stage"] == "complete" and done["data"]["floor_calls"] == 9 and done["data"]["stages_completed"] == 9
+    assert "structured floor" in done["content"] and "pipeline complete" not in done["content"].lower()
+    assert calls and all(c["augment"] is False for c in calls), "a stage call injected cross-request recall"
+
+    # every engine's prompts carry the user's subject in a label the floor reads (BDP 'Business:', DDPIE 'System/Product:',
+    # APIE 'Topic/Thesis:' were not read, so the floor restated the persona instead)
+    for P, kw in ((intel._BDP_PROMPTS, dict(challenge="Hive weight monitor", domain="d", context="")),
+                  (intel._SPI_PROMPTS, dict(challenge="Hive weight monitor", domain="d", context="")),
+                  (intel._APIE_PROMPTS, dict(topic="Hive weight monitor", domain="d", genre="g", audience="a",
+                                             citation_style="APA", word_count="1", context="")),
+                  (intel._DDPIE_PROMPTS, dict(system="Hive weight monitor", domain="d", scale="s", tech_stack="t",
+                                              deployment_target="c", context=""))):
+        for k, t in P.items():
+            assert _subject(t.format(**kw)) == "Hive weight monitor", k
+
+    # ── a failed stage is failed: red, not run, not counted, and the summary says so ─────────────────────────
+    async def _fail_third(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        if agent.endswith("customer_discovery"):
+            raise RuntimeError("model timed out")
+        return {"output": f"model text for {agent}", "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _fail_third)
+    evs = _events(client.post("/api/v1/intelligence/bdp", json={"challenge": "Hive weight monitor"}))
+    res = {e["stage"]: e for e in evs if isinstance((e.get("data") or {}).get("stage_num"), int)}
+    assert len(res) == 8 and res["customer_discovery"]["data"]["failed"] is True
+    assert res["customer_discovery"]["data"]["served_by"] is None and "did not run" in res["customer_discovery"]["content"]
+    assert res["market_analysis"]["data"]["served_by"] == "ollama:test"
+    fin = evs[-1]["data"]
+    assert fin["stages_completed"] == 7 and fin["failed_calls"] == 1 and fin["model_calls"] == 7 and fin["floor_calls"] == 0
+    assert "1 did not run" in evs[-1]["content"] and "7 of 8 stages ran" in evs[-1]["content"]
+    # S6.3 — nothing is announced as primed when nothing was
+    assert not any(e["stage"] == "cognitive_prime" for e in evs)
+    assert "Cognitive engines primed." not in (root / "agentic_core/api/intelligence.py").read_text(encoding="utf-8")
+
+    # ── S4.4: the Nexus router — the floor never 'selects'; a model's one clear token does; ambiguity does not ──
+    def _router(reply, served="ollama:test"):
+        async def _q(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+            if agent == "nexus_router":
+                return {"output": reply, "served_by": served, "is_external": False}
+            return {"output": f"text for {agent}", "served_by": served, "is_external": False}
+        return _q
+    monkeypatch.setattr(gw.gateway, "query_meta", _router("Respond with ONLY one of: bdp, spi, apie, ddpie", "native"))
+    eng, dec = asyncio.run(intel._nexus_auto_select("a varroa research study", "science", ""))
+    assert eng == "bdp" and dec["decided"] is False and "no model was available" in dec["reason"]
+    monkeypatch.setattr(gw.gateway, "query_meta", _router("spi"))
+    assert asyncio.run(intel._nexus_auto_select("x", "science", ""))[0] == "spi"
+    monkeypatch.setattr(gw.gateway, "query_meta", _router("Either bdp or spi would work"))
+    eng, dec = asyncio.run(intel._nexus_auto_select("x", "science", ""))
+    assert dec["decided"] is False and "more than one" in dec["reason"]
+    monkeypatch.setattr(gw.gateway, "query_meta", _router("apied"))            # a substring is not a token
+    assert asyncio.run(intel._nexus_auto_select("x", "science", ""))[1]["decided"] is False
+
+    # the stream says it in words, on the floor
+    monkeypatch.setattr(gw.gateway, "query_meta", _spy)
+    evs = _events(client.post("/api/v1/intelligence/nexus", json={"challenge": "Design a research study on varroa", "domain": "science"}))
+    sel = next(e for e in evs if e["stage"] == "engine_selected")
+    assert sel["content"].startswith("Not selected: defaulted to BDP") and sel["data"]["decision"]["decided"] is False
+    assert not any("Autonomously selecting" in e["content"] for e in evs)
+    # an unknown engine name is not silently BDP
+    evs_u = _events(client.post("/api/v1/intelligence/nexus", json={"challenge": "x", "engines": ["foo"]}))
+    assert "'foo' is not an engine" in next(e for e in evs_u if e["stage"] == "engine_selected")["content"]
+
+    # ── S4.5: the Nexus counts what ran and names what it is — one prompt headed by six lenses ─────────────
+    cog = next(e for e in evs if e["stage"] == "cognitive_complete")
+    assert cog["data"]["calls"] == 1 and cog["data"]["lenses"] == 6 and cog["data"]["served_by"] == "native"
+    assert "Six cognitive engines activating" not in json.dumps(evs)
+    fin = next(e for e in evs if e["stage"] == "nexus_complete")["data"]
+    assert "cognitive_engines" not in fin and fin["cognitive_lenses"] == 6 and fin["engine_decided"] is False
+    assert fin["run"]["calls"] == 12 and fin["run"]["floor_calls"] == 12      # lenses, MJM, routing, 8 stages, synthesis
+
+    async def _syn_fails(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        if agent == "nexus_synthesis":
+            raise RuntimeError("down")
+        return {"output": "x", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _syn_fails)
+    evs = _events(client.post("/api/v1/intelligence/nexus", json={"challenge": "x", "activity": "authorship"}))
+    fin = next(e for e in evs if e["stage"] == "nexus_complete")["data"]
+    assert fin["layers_completed"] == 3 and fin["failed"] is True and fin["engine_decided"] is True
+
+    # the collected Nexus (the fabric) keeps its lens, MJM and synthesis layers and says what served them
+    monkeypatch.setattr(gw.gateway, "query_meta", _spy)
+    col = asyncio.run(intel.run_intelligence_collected("a study", "science", "nexus"))
+    assert "## Cognitive Lenses" in col["analysis"] and "## MJM Assessment" in col["analysis"] and "## Nexus Synthesis" in col["analysis"]
+    assert col["provenance"]["calls"] == 12 and col["stages"] == 11     # 12 calls; the routing call adds no section
+    from agentic_core.api.resource_fabric import _run_real_resource, _REGISTRY
+    fr = asyncio.run(_run_real_resource("apie", {}, "a study", "science"))
+    assert fr["served_by"] == "native" and fr["floor_calls"] == 9 and fr["stages"] == 9
+    fs = asyncio.run(_run_real_resource("cognitive_cascade", {}, "a study", "science"))
+    assert fs["served_by"] == "native" and fs["floor_calls"] == 3
+    assert next(r for r in _REGISTRY if r["id"] == "cognitive_cascade")["name"] == "Cognitive Lenses + MJM"
+    mj = client.post("/api/v1/intelligence/mjm", json={"problem": "a study"}).json()
+    assert mj["provenance"]["calls"] == 2 and mj["status"] == "complete"
+
+    # ── S5.5 / S6.2 / S6.3 / S5.6 / S7.6 / S7.7: the pages ─────────────────────────────────────────────────
+    pages = root / "apps/workstation-superapp/src"
+    so = (pages / "components/StageOutcome.tsx").read_text(encoding="utf-8")
+    assert "d?.failed ? 'failed' : (d?.served_by && d.served_by !== 'native') ? (d.is_external ? 'external' : 'model') : 'floor'" in so
+    assert "typeof (ev.data as StageData | undefined)?.stage_num === 'number'" in so
+    for rel in ("pages/IntelligenceLab.tsx", "pages/synthesis/AuthorshipEngine.tsx",
+                "pages/developers/DesignDevEngine.tsx", "pages/synthesis/SynthesisNexus.tsx"):
+        src = (pages / rel).read_text(encoding="utf-8")
+        assert "Nine Cognitive Engines" not in src and "CheckCircle2" not in src, rel
+        assert "isStageResult" in src and "<StageMark" in src and "<StageBadge" in src and "{FLOOR_STAGE_NOTE}" in src, rel
+        assert "Stage {i + 1}" not in src and "Of 8" not in src and "of 8\n" not in src, rel
+        assert "!ev.stage.endsWith('_start')" not in src, rel     # the old name filter let 'config' through
+    nx = (pages / "pages/synthesis/SynthesisNexus.tsx").read_text(encoding="utf-8")
+    assert "AI selects the optimal engine" not in nx and "cognitive_engines ?? 6" not in nx and "layers_completed ?? 4" not in nx
+    assert "decision?.decided === false" in nx
+    assert "nine engines + MJM" not in (root / "agentic_core/api/intelligence.py").read_text(encoding="utf-8")
+
+    # ── (refutation 1) a failed call is never output: never fed forward, never counted as ran, never listed ──
+    prompts: dict = {}
+
+    def _capture(fail_agents=(), returns=None):
+        async def _q(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+            prompts.setdefault(agent, []).append(prompt)
+            if agent in fail_agents:
+                raise RuntimeError("down")
+            if returns and agent in returns:
+                return returns[agent]
+            return {"output": f"ENGINEOUT {agent}", "served_by": "ollama:test", "is_external": False}
+        return _q
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=("cognitive_cascade_ai",)))
+    prompts.clear()
+    evs = _events(client.post("/api/v1/intelligence/nexus", json={"challenge": "x", "engines": ["spi"]}))
+    for ag in ("mjm_orchestrator_ai", "nexus_synthesis"):
+        assert "did not run —" not in prompts[ag][0], ag
+    assert "ENGINEOUT nexus_spi_" in prompts["nexus_synthesis"][0], "the synthesis never saw the engine it names"
+    prompts.clear()
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=("cognitive_cascade_ai",)))
+    ev_r = _events(client.post("/api/v1/intelligence/nexus", json={"challenge": "x"}))
+    assert "did not run —" not in prompts["nexus_router"][0]
+    sv = client.post("/api/v1/intelligence/solve", json={"problem": "x"}).json()
+    assert sv["status"] == "partial" and "INKASHAF" not in sv["engines_used"] and "MJM" in sv["engines_used"], sv["engines_used"]
+    assert all("did not run —" not in p for p in prompts["cognitive_solve"] + prompts["mjm_orchestrator_ai"])
+    mj = client.post("/api/v1/intelligence/mjm", json={"problem": "x"}).json()
+    assert mj["status"] == "partial" and mj["prime_failed"] is True and mj["cognitive_primed"] is False
+    assert "did not run —" not in prompts["mjm_orchestrator_ai"][-1]
+    # the text-only wrappers (Genesis) pass the failure marker; MJM still never judges it
+    asyncio.run(intel._ai_mjm_lifecycle("x", "d", "[Cognitive lenses did not run — down]"))
+    assert "did not run —" not in prompts["mjm_orchestrator_ai"][-1]
+    from agentic_core.api.resource_fabric import _run_real_resource as _rr
+    fm = asyncio.run(_rr("mjm", {}, "x", "d"))
+    assert fm["prime_failed"] is True and fm["failed_calls"] == 1 and fm["status"] == "partial"
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=tuple(f"BDP_{k}" for k, _l, _d in intel._BDP_STAGES)))
+    fb = asyncio.run(_rr("bdp", {}, "x", "d"))
+    assert fb["served_by"] is None and fb["failed_calls"] == 8 and fb["calls"] == 8 and fb["stages"] == 0
+
+    # the gateway's own fallbacks (returned, not raised) and an empty reply are failures
+    for bad in ("[native engine unavailable]", "[POLICY VIOLATION] The generated response was blocked by safety guardrails.", "  "):
+        monkeypatch.setattr(gw.gateway, "query_meta", _capture(returns={"a": {"output": bad, "served_by": "native", "is_external": False}}))
+        t, pv = asyncio.run(intel._staged_query("p", "a", "Stage"))
+        assert pv["failed"] is True and pv["served_by"] is None and "did not run" in t, bad
+
+    # external is stated per model, never over the in-house ones
+    txt = intel._run_summary_text(2, [{"served_by": "claude", "is_external": True, "failed": False},
+                                      {"served_by": "qwen", "is_external": False, "failed": False}])
+    assert "claude 1 external, opt-in" in txt and "qwen 1 in-house" in txt, txt
+    # no 'Complete' label over a run; the served status text names what these routes run
+    bdp_ev = _events(client.post("/api/v1/intelligence/bdp", json={"challenge": "x"}))
+    assert bdp_ev[-1]["label"] == "BDP finished" and not any(e["label"].endswith("Complete") for e in bdp_ev)
+    st = client.get("/api/v1/intelligence/status").json()["cognitive_stack"]
+    assert "UltimateCognitiveCascade" not in json.dumps(st) and "GaaSValidatorV4" not in json.dumps(st)
+    assert "autonomously selected" not in (intel.synthesis_nexus.__doc__ or "") and "6 engines" not in (intel.synthesis_nexus.__doc__ or "")
+
+    # the DDPIE stream itself (its own function): floor results with provenance, a truthful finish
+    monkeypatch.setattr(gw.gateway, "query_meta", _spy)
+    dd = _events(client.post("/api/v1/intelligence/design-dev", json={"system": "Hive weight monitor", "rigor": "exhaustive"}))
+    ddr = [e for e in dd if isinstance((e.get("data") or {}).get("stage_num"), int)]
+    assert [e["data"]["stage_num"] for e in ddr] == list(range(1, 10)) and all(e["data"]["served_by"] == "native" for e in ddr)
+    assert all("hive weight monitor" in e["content"].lower() for e in ddr)
+    assert dd[-1]["label"] == "DDPIE finished" and dd[-1]["data"]["floor_calls"] == 9 and "structured floor" in dd[-1]["content"]
+
+    # a floor reply that is exactly one engine token still decides nothing
+    monkeypatch.setattr(gw.gateway, "query_meta", _router("spi", "native"))
+    assert asyncio.run(intel._nexus_auto_select("x", "science", ""))[1]["decided"] is False
+    # an engine layer that failed wholly is not a layer that ran
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=tuple(f"nexus_spi_{k}" for k, _l, _d in intel._SPI_STAGES)))
+    fin = next(e for e in _events(client.post("/api/v1/intelligence/nexus", json={"challenge": "x", "engines": ["spi"]}))
+               if e["stage"] == "nexus_complete")["data"]
+    assert fin["layers_completed"] == 3, fin["layers_completed"]
+
+    # pages: counts are of stages that RAN; trackers keyed by stage number; mixed layers are not hidden
+    so = (pages / "components/StageOutcome.tsx").read_text(encoding="utf-8")
+    assert "evs.filter(ev => stageOutcome(ev.data as StageData) !== 'failed').length" in so
+    for rel in ("pages/IntelligenceLab.tsx", "pages/synthesis/AuthorshipEngine.tsx", "pages/developers/DesignDevEngine.tsx"):
+        src = (pages / rel).read_text(encoding="utf-8")
+        assert "byNum.get(i + 1)" in src and "{ranCount(stageEvents)} of {" in src and "% Complete" not in src, rel
+    nx = (pages / "pages/synthesis/SynthesisNexus.tsx").read_text(encoding="utf-8")
+    assert "if (k.some(x => x === 'failed')) return 'partial';" in nx
+    assert "Object.values(outcomes).filter(o => o !== null && o !== 'failed').length" in nx
+    rf = (pages / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    assert "(rr.calls && rr.failed_calls === rr.calls)" in rf and "rr.prime_failed ? 'prime did not run'" in rf
+    ci = (pages / "pages/CognitionIntegration.tsx").read_text(encoding="utf-8")
+    assert "Engines run:" not in ci and "solveRes.provenance?.cognitive_cascade" in ci and "<StageBadge" in ci
+
+    # ── (refutation 2) no stage, layer, collector or caller feeds a failed call forward ──────────────────
+    MARK = "did not run —"
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=("BDP_value_proposition",)))
+    prompts.clear()
+    _events(client.post("/api/v1/intelligence/bdp", json={"challenge": "x"}))
+    assert all(MARK not in p for a, ps in prompts.items() for p in ps), "a later BDP stage was fed a failed stage"
+    for path, body, bad in (("/api/v1/intelligence/authorship", {"topic": "x"}, "apie_argument_architecture"),
+                            ("/api/v1/intelligence/design-dev", {"system": "x"}, "ddpie_architecture_design")):
+        monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=(bad,)))
+        prompts.clear()
+        _events(client.post(path, json=body))
+        assert all(MARK not in p for a, ps in prompts.items() for p in ps), path
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=("cognitive_cascade_ai", "nexus_spi_literature_synthesis")))
+    prompts.clear()
+    nfin = next(e for e in _events(client.post("/api/v1/intelligence/nexus", json={"challenge": "x", "engines": ["spi"]}))
+                if e["stage"] == "nexus_complete")["data"]
+    assert all(MARK not in p for a, ps in prompts.items() for p in ps), "the Nexus fed a failed call forward"
+    assert nfin["cognitive_lenses"] == 0, "the lens count credits a lens call that failed"
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=("BDP_market_analysis",)))
+    assert MARK not in asyncio.run(intel.run_intelligence_collected("x", "d", "bdp"))["analysis"]
+
+    # Genesis calls the same helpers: the failed lens call is counted, never fed to the concept, never listed
+    from agentic_core.api import genesis as _gen
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=("cognitive_cascade_ai",)))
+    prompts.clear()
+    gj = client.post("/api/v1/genesis/journey", json={"problem": "varroa mites in my hives", "establish": False}).json()
+    assert MARK not in prompts["genesis_concept"][0]
+    assert gj["ai_provenance"]["served_by_agent"]["cognitive_cascade_ai"] == "failed"
+    assert gj["ai_provenance"]["served_by_agent"]["mjm_orchestrator_ai"] == "ollama:test"
+    assert "Inkashaf" not in gj["engines_used"] and "DDPIE" not in gj["engines_used"] and "BDP" not in gj["engines_used"]
+    assert "MJM" in gj["engines_used"]
+    assert "DDPIE (design)" not in json.dumps(client.get("/api/v1/genesis/status").json())
+
+    # the learning loop never records a failed run as a success
+    outs = []
+    import agentic_core.api.operational_excellence as _oe
+    monkeypatch.setattr(_oe, "record_outcome", lambda *a, **k: outs.append((a, k)))
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(fail_agents=("cognitive_cascade_ai", "mjm_orchestrator_ai")))
+    comp = client.post("/api/v1/resources/compose", json={"name": "w479 rig", "usage_area": "synthesis",
+                                                           "resource_ids": ["mjm"], "config": {}}).json()
+    client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": "judge x"})
+    fr_out = [k for a, k in outs if a and a[0] == "fabric_resource"]
+    assert fr_out and fr_out[-1]["success"] is False and fr_out[-1]["served_by"] == "none", fr_out
+    monkeypatch.setattr(gw.gateway, "query_meta", _capture(returns={
+        k: {"output": "x", "served_by": "native", "is_external": False} for k in [f"BDP_{s}" for s, _l, _d in intel._BDP_STAGES[:6]]}))
+    fmix = asyncio.run(_rr("bdp", {}, "x", "d"))
+    assert fmix["served_by_map"] == {"native": 6, "ollama:test": 2}, fmix["served_by_map"]
+    assert "auto-selected engine" not in json.dumps(next(r for r in __import__("agentic_core.api.resource_fabric", fromlist=["_REGISTRY"])._REGISTRY if r["id"] == "nexus"))
+
+    # pages: external is amber (never the in-house green); the engine layer is done only once the synthesis starts
+    so = (pages / "components/StageOutcome.tsx").read_text(encoding="utf-8")
+    assert "(d.is_external ? 'external' : 'model')" in so and "text-amber-400 shrink-0 ${className}`} aria-label=\"served by an external" in so
+    nx = (pages / "pages/synthesis/SynthesisNexus.tsx").read_text(encoding="utf-8")
+    assert "engine: synthesisStarted || nexusCompleteEvent ? layerOutcome(engineStageEvents) : null" in nx
+    assert "{ranCount(engineStageEvents)} of" in nx and "=== 'failed' ? [] : (cognitiveEvent.data?.engines" in nx
+    for rel in ("pages/IntelligenceLab.tsx", "pages/synthesis/AuthorshipEngine.tsx", "pages/developers/DesignDevEngine.tsx"):
+        assert "outcome === 'external'\n                    ? 'bg-amber-500/10" in (pages / rel).read_text(encoding="utf-8"), rel
+    assert "rr.served_by_map ? provenanceMapBadge(rr.served_by_map" in (pages / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+
+    # ── (refutation 3) the lens/MJM calls never lend their server to the body; nothing-served is never a success ──
+    async def _mixed(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        return {"output": f"text for {agent}", "is_external": False,
+                "served_by": "native" if agent.startswith("genesis_") else "ollama:test"}
+    monkeypatch.setattr(gw.gateway, "query_meta", _mixed)
+    gm = client.post("/api/v1/genesis/journey", json={"problem": "varroa mites in my hives", "establish": False}).json()
+    assert set(gm["ai_provenance"]["body_served_by"]) == {"native"}, gm["ai_provenance"]["body_served_by"]   # the body's servers
+    assert gm["ai_provenance"]["served_by"].get("ollama:test") == 2, gm["ai_provenance"]["served_by"]      # every call, shown
+    assert gm["ai_provenance"]["served_by_agent"]["cognitive_cascade_ai"] == "ollama:test"
+    async def _down(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        raise RuntimeError("down")
+    monkeypatch.setattr(gw.gateway, "query_meta", _down)
+    gf = asyncio.run(_rr("genesis", {}, "x", "d"))
+    assert gf["served_by"] is None and gf["calls"] and gf["failed_calls"] == gf["calls"], gf
+    assert gf["failed_calls"] > 2, "only the lens and MJM failures were counted, not the journey's own stages"
+    async def _ext(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        return {"output": f"text for {agent}", "served_by": "ext:gpt", "is_external": True}
+    monkeypatch.setattr(gw.gateway, "query_meta", _ext)
+    assert asyncio.run(_rr("genesis", {}, "x", "d"))["is_external"] is True
+    api_ts = (pages / "lib/api.ts").read_text(encoding="utf-8")
+    assert "if (floorCalls >= modelCalls) return { label: `mostly structured floor" in api_ts
+    assert "the owned model served most calls" not in api_ts
+    nx = (pages / "pages/synthesis/SynthesisNexus.tsx").read_text(encoding="utf-8")
+    assert nx.index("if (k.some(x => x === 'external')) return 'external';") < nx.index("if (k.every(x => x === 'model')) return 'model';")
+    assert "Cognitive Cascade (6 engines)" not in (pages / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+
+    # ── (refutation 4) a gate certifying text reads the servers of THAT text; the page shows every call ─────
+    async def _cand_model(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        model = agent.startswith("genesis_candidate") or agent.startswith("genesis_twin") or agent in (
+            "cognitive_cascade_ai", "mjm_orchestrator_ai")
+        return {"output": f"text for {agent}", "served_by": "ollama:test" if model else "native", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _cand_model)
+    gb = client.post("/api/v1/genesis/journey", json={"problem": "varroa mites in my hives", "establish": False}).json()
+    prov = gb["ai_provenance"]
+    assert set(prov["body_served_by"]) == {"native"}, prov["body_served_by"]      # the saved text: floor only
+    assert "ollama:test" in prov["served_by"], prov["served_by"]                   # the journey: every call shown
+    # the §10 gate judges the body's servers: floor body text is not assessable, whatever else ran
+    from agentic_core.vbs.quality import floor_served as _fs
+    assert _fs(prov["body_served_by"]) is True and _fs(prov["served_by"]) is False
+    gjs = (pages / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "body_served_by ?? result?.ai_provenance?.served_by" in gjs and "calls did not run" in gjs
+
+    # a failed body stage is recorded, is not assessable, and makes the composed run a failure
+    async def _design_down(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        if agent == "genesis_design":
+            raise RuntimeError("down")
+        return {"output": f"text for {agent}", "served_by": "ollama:test", "is_external": False}
+    monkeypatch.setattr(gw.gateway, "query_meta", _design_down)
+    gd = client.post("/api/v1/genesis/journey", json={"problem": "x", "establish": False}).json()
+    assert gd["ai_provenance"]["served_by_agent"]["genesis_design"] == "failed"
+    assert gd["stage_verifications"]["design"]["verified"] is None, gd["stage_verifications"]["design"]
+    assert "ollama:test" in gd["ai_provenance"]["body_served_by"] and gd["ai_provenance"]["failed_calls"] >= 1
+    gr = asyncio.run(_rr("genesis", {}, "x", "d"))
+    assert gr["calls"] == 5 and gr["failed_calls"] == 1 and gr["served_by"] == "ollama:test", gr
+    monkeypatch.setattr(gw.gateway, "query_meta", _down)
+    gr2 = asyncio.run(_rr("genesis", {}, "x", "d"))
+    assert gr2["calls"] == 5 and gr2["failed_calls"] == 5 and gr2["served_by"] is None, gr2
+
+    # an established entity's shipped documents are gated on ITS body's servers, not the journey's other calls
+    from agentic_core.api.vsb import _body_served_by as _vbsb
+    _ent = {"concept": "c", "design": "d", "commercialisation": "m",
+            "ai_provenance": {"served_by": {"native": 5, "ollama:test": 4},
+                              "served_by_agent": {"genesis_concept": "native", "genesis_design": "native",
+                                                  "genesis_commercial": "native", "genesis_candidate_1": "ollama:test",
+                                                  "cognitive_cascade_ai": "ollama:test"}}}
+    assert _vbsb(_ent) == {"native": 3}, _vbsb(_ent)

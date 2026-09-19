@@ -4,8 +4,11 @@ Scientific Process Intelligence Engine (SPI)
 Authorship Processes Intelligence Engine (APIE)
 Design & Development Processes Intelligence Engine (DDPIE)
 
-Four purpose-built intelligence engines using the full cognitive stack —
-nine engines + MJM + GaaS — to produce high-quality structured outputs.
+Four staged pipelines: each stage is one structured prompt through the in-house gateway, and each
+stage event says what served it (the owned model, the deterministic structured floor, or an opt-in
+external accelerant). BDP/SPI/APIE/DDPIE do NOT run the cognitive lenses or MJM; the Synthesis Nexus
+and /solve do (one gateway call for the six lenses, one for MJM). W479 (FU-121) — the old header
+claimed nine engines, MJM and GaaS for all four; there are six lenses, and none of the four ran them.
 
 BDP — Business Development Process (8 stages):
   market analysis → value proposition → go-to-market → revenue model → risk
@@ -31,6 +34,7 @@ DDPIE — Design & Development Processes Intelligence (9 stages):
 from __future__ import annotations
 
 import json
+import re
 import time
 
 from fastapi import APIRouter, HTTPException
@@ -63,7 +67,7 @@ _BDP_PROMPTS = {
     "market_analysis": (
         "You are the CMO and Chief Strategy Officer of Workstation IDBO. "
         "Deliver a rigorous, investor-grade market analysis:\n\n"
-        "Business: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
+        "Challenge: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Market Size (TAM / SAM / SOM with specific £/$ estimates and methodology)\n"
         "## Market Segmentation (3-5 distinct segments ranked by opportunity)\n"
         "## Competitive Landscape (top 5 competitors: strengths, weaknesses, market share)\n"
@@ -75,7 +79,7 @@ _BDP_PROMPTS = {
     "value_proposition": (
         "You are the Chief Product Officer of Workstation IDBO. "
         "Define a breakthrough value proposition:\n\n"
-        "Business: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
+        "Challenge: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Core Problem (the painful, expensive, urgent problem being solved)\n"
         "## Unique Solution (what is built and exactly how it solves the problem)\n"
         "## Key Differentiators (3 reasons this is genuinely better than alternatives)\n"
@@ -86,7 +90,7 @@ _BDP_PROMPTS = {
     ),
     "customer_discovery": (
         "You are the CMO leading customer discovery. Map the customer landscape:\n\n"
-        "Business: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
+        "Challenge: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Ideal Customer Profile (ICP) — firmographics, psychographics, technographics\n"
         "## Primary Persona (full profile: name, role, goals, frustrations, day-in-life)\n"
         "## Secondary Persona (second most important buyer/user)\n"
@@ -98,7 +102,7 @@ _BDP_PROMPTS = {
     ),
     "business_model": (
         "You are the CFO designing the complete business model:\n\n"
-        "Business: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
+        "Challenge: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Revenue Streams (all revenue streams with % of total revenue projection)\n"
         "## Pricing Strategy (pricing model, tiers, anchoring, freemium/trial logic)\n"
         "## Unit Economics (CAC, LTV, Payback Period, LTV:CAC ratio — with methodology)\n"
@@ -110,7 +114,7 @@ _BDP_PROMPTS = {
     ),
     "go_to_market": (
         "You are the CMO designing the go-to-market strategy:\n\n"
-        "Business: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
+        "Challenge: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## GTM Motion (PLG / SLG / Channel-led / Hybrid — justify for this market)\n"
         "## Beachhead Market (the one segment to win first and why)\n"
         "## Launch Sequence (pre-launch → launch → post-launch — week-by-week for 12 weeks)\n"
@@ -122,7 +126,7 @@ _BDP_PROMPTS = {
     ),
     "financial_model": (
         "You are the CFO building the financial model:\n\n"
-        "Business: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
+        "Challenge: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Revenue Model Architecture (how revenue scales with customers and usage)\n"
         "## Year 1 Monthly Projection (M1-M12: customers, MRR, churn, net revenue)\n"
         "## Year 2-3 Annual Projection (ARR, growth rate, gross margin, EBITDA trajectory)\n"
@@ -134,7 +138,7 @@ _BDP_PROMPTS = {
     ),
     "risk_assessment": (
         "You are the CLO and COO conducting risk assessment:\n\n"
-        "Business: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
+        "Challenge: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Top 5 Business Risks (probability × impact matrix with specific mitigations)\n"
         "## Regulatory & Compliance Risks (jurisdiction-specific legal exposure)\n"
         "## Technical & Product Risks (build risk, integration risk, scalability risk)\n"
@@ -146,7 +150,7 @@ _BDP_PROMPTS = {
     ),
     "executive_summary": (
         "You are the AI CEO synthesising a compelling investor-ready executive summary.\n\n"
-        "Business: {challenge}\nDomain: {domain}\n"
+        "Challenge: {challenge}\nDomain: {domain}\n"
         "Full analysis: {context}\n\n"
         "## The Opportunity (the problem, why it matters, why now)\n"
         "## The Solution (what it is, how it works, why it's 10x better)\n"
@@ -297,12 +301,110 @@ _COGNITIVE_LENSES = [
 ]
 
 
-async def _ai_cognitive_prime(problem: str, domain: str, engines: list | None = None) -> str:
-    """Run the cognitive engines (Inkashaf→Samajh→Soch→Aqal→Hoshiyari→Iman) as real AI analysis.
-    §7 user design control: `engines` (subset of the lens ids) reconfigures WHICH engines run; the default
-    (None/empty) runs all six (backward-compatible). Single in-house-first gateway call."""
+async def _staged_query(prompt: str, agent: str, label: str) -> tuple[str, dict]:
+    """W479 (FU-121) — ONE gateway call for one pipeline stage, returning (text, provenance).
+
+    Every stage of every engine here goes through this, so every stage event can say what served it:
+    provenance = {served_by, is_external, failed}. `served_by == 'native'` is the deterministic
+    structured floor (a scaffold composed from the request — not model analysis). augment=False: the
+    stage output ships to the user, and cross-request recall injected another request's data into it
+    (W477 found a beekeeping journey's text in an unrelated authorship run). A failed call is marked
+    failed=True with served_by None — never a green stage.
+
+    (W479 refutation) The gateway does not always raise when it fails: it RETURNS its own fallbacks
+    ('[native engine unavailable]', '[POLICY VIOLATION] …') as output. Those, and an empty reply, are
+    failures too — never a stage that 'ran', and never fed forward."""
+    try:
+        meta = await gateway.query_meta(prompt, agent=agent, augment=False)
+    except Exception as e:
+        return f"[{label} did not run — {e}]", {"served_by": None, "is_external": False, "failed": True}
+    out = meta.get("output") or ""
+    if not out.strip() or out.lstrip().startswith(_GATEWAY_FAILURES):
+        why = out.strip() or "the gateway returned nothing"
+        return f"[{label} did not run — {why}]", {"served_by": None, "is_external": False, "failed": True}
+    return out, {"served_by": meta.get("served_by") or "native",
+                 "is_external": bool(meta.get("is_external")), "failed": False}
+
+
+_GATEWAY_FAILURES = ("[native engine unavailable]", "[POLICY VIOLATION]")
+_FAILED_TEXT = re.compile(r"^\[[^\]\n]{1,80} did not run — ")   # the text _staged_query returns for a failed call
+
+
+def _usable(text: str, prov: dict) -> str:
+    """(W479 refutation) A failed call's text is never input to another prompt: '' in its place."""
+    return "" if (not prov or prov.get("failed")) else text
+
+
+def _status(provs: list[dict]) -> str:
+    """complete (every call ran) · partial (some did not) · failed (none ran)."""
+    bad = sum(1 for p in provs if p.get("failed"))
+    return "complete" if bad == 0 else ("failed" if bad == len(provs) else "partial")
+
+
+def _is_floor(prov: dict) -> bool:
+    return bool(prov) and not prov.get("failed") and prov.get("served_by") == "native"
+
+
+def _provenance_summary(provs: list[dict]) -> dict:
+    """What served a run's calls: {served_by: {name: count}, floor_calls, failed_calls, model_calls, any_external,
+    external_models} — external is recorded PER model (a mixed run is not all-external)."""
+    counts: dict = {}
+    external: set = set()
+    for p in provs:
+        if p.get("failed"):
+            continue
+        k = p.get("served_by") or "native"
+        counts[k] = counts.get(k, 0) + 1
+        if p.get("is_external"):
+            external.add(k)
+    failed = sum(1 for p in provs if p.get("failed"))
+    floor = counts.get("native", 0)
+    return {"served_by": counts, "calls": len(provs), "floor_calls": floor, "failed_calls": failed,
+            "model_calls": len(provs) - failed - floor,
+            "any_external": bool(external), "external_models": sorted(external)}
+
+
+def _stage_data(i: int, total: int, prov: dict) -> dict:
+    """The data every stage RESULT event carries: its position (the pages key cards by stage_num, never by
+    arrival order) and what served it."""
+    return {"stage_num": i + 1, "total": total, **prov}
+
+
+def _run_summary_data(total: int, provs: list[dict]) -> dict:
+    s = _provenance_summary(provs)
+    return {"stages_total": total, "stages_completed": s["calls"] - s["failed_calls"], **s}
+
+
+def _run_summary_text(total: int, provs: list[dict]) -> str:
+    """The completion line states what happened — never 'complete' over stages that failed or were floor
+    scaffolds."""
+    s = _provenance_summary(provs)
+    ran = s["calls"] - s["failed_calls"]
+    parts = [f"{ran} of {total} stages ran."]
+    if s["model_calls"]:
+        ext = set(s["external_models"])
+        models = ", ".join(f"{k} {n}" + (" external, opt-in" if k in ext else " in-house")
+                           for k, n in s["served_by"].items() if k != "native")
+        parts.append(f"{s['model_calls']} served by a model ({models}).")
+    if s["floor_calls"]:
+        parts.append(f"{s['floor_calls']} composed by the structured floor: scaffolds built from your request, "
+                     "not model analysis.")
+    if s["failed_calls"]:
+        parts.append(f"{s['failed_calls']} did not run.")
+    return " ".join(parts)
+
+
+def _selected_lenses(engines: list | None) -> list:
     wanted = {str(e).lower() for e in (engines or [])}
-    sel = [e for e in _COGNITIVE_LENSES if (not wanted or e[0] in wanted)] or _COGNITIVE_LENSES
+    return [e for e in _COGNITIVE_LENSES if (not wanted or e[0] in wanted)] or _COGNITIVE_LENSES
+
+
+async def _ai_cognitive_prime_meta(problem: str, domain: str, engines: list | None = None) -> tuple[str, dict]:
+    """The cognitive lenses (Inkashaf→Samajh→Soch→Aqal→Hoshiyari→Iman) as ONE gateway call whose prompt
+    is headed by each selected lens. §7 user design control: `engines` (subset of the lens ids) selects
+    WHICH lenses head the prompt; empty = all six. Returns (text, provenance) — W479: it is one call,
+    not six engines, and the caller must be able to say so and say what served it."""
+    sel = _selected_lenses(engines)
     lenses = "".join(f"## {name}\n{q}\n\n" for _id, name, q in sel)
     prompt = (
         f"You are the Cognitive Architecture — {len(sel)} specialised intelligence systems operating in "
@@ -311,17 +413,29 @@ async def _ai_cognitive_prime(problem: str, domain: str, engines: list | None = 
         f"{lenses}"
         "For each engine, provide 3-4 sharp, specific insights. Be concrete and analytical."
     )
-    try:
-        return await gateway.query(prompt, agent="cognitive_cascade_ai")
-    except Exception as e:
-        return f"Cognitive priming: {e}"
+    return await _staged_query(prompt, "cognitive_cascade_ai", "Cognitive lenses")
+
+
+async def _ai_cognitive_prime(problem: str, domain: str, engines: list | None = None) -> str:
+    """Text-only form of `_ai_cognitive_prime_meta` (the /mjm, /solve and Genesis callers)."""
+    return (await _ai_cognitive_prime_meta(problem, domain, engines))[0]
 
 
 async def _ai_mjm_lifecycle(problem: str, domain: str, cognitive_context: str) -> str:
+    """Text-only form of `_ai_mjm_lifecycle_meta`."""
+    return (await _ai_mjm_lifecycle_meta(problem, domain, cognitive_context))[0]
+
+
+async def _ai_mjm_lifecycle_meta(problem: str, domain: str, cognitive_context: str) -> tuple[str, dict]:
     """
-    MJM Orchestrator (Mushahida-Jaiza-Muaina) as real AI analysis.
+    MJM Orchestrator (Mushahida-Jaiza-Muaina) as ONE gateway call, returning (text, provenance).
     Takes the cognitive cascade output as input for deeper meta-assessment.
+    (W479 refutation) A failed lens call's text is never judged: the text-only callers (Genesis) pass
+    what `_ai_cognitive_prime` returned, so its failure marker is recognised here too.
     """
+    if _FAILED_TEXT.match(cognitive_context or ""):
+        cognitive_context = ""
+    cognitive_context = cognitive_context or "(none: no cognitive analysis was available for this run)"
     prompt = (
         "You are the MJM Orchestrator — the meta-judgement system operating above the cognitive engines. "
         "Process this through the three phases of Mushahida-Jaiza-Muaina:\n\n"
@@ -340,10 +454,7 @@ async def _ai_mjm_lifecycle(problem: str, domain: str, cognitive_context: str) -
         "In 2-3 sentences: the single most important insight from this full MJM lifecycle, "
         "and the overarching direction it prescribes."
     )
-    try:
-        return await gateway.query(prompt, agent="mjm_orchestrator_ai")
-    except Exception as e:
-        return f"MJM assessment: {e}"
+    return await _staged_query(prompt, "mjm_orchestrator_ai", "MJM assessment")
 
 
 async def _run_intelligence_stream(
@@ -370,12 +481,11 @@ async def _run_intelligence_stream(
 
     yield _ev("init", f"{engine_name} Initiated", f"Processing: {challenge[:120]}")
 
-    # Structural cascade prime (fast — returns stubs confirming cascade is active)
-    try:
-        await _cascade.execute_cascade({"problem": challenge, "domain": domain})
-    except Exception:
-        pass
-    yield _ev("cognitive_prime", "Cognitive Priming", cognitive_context or "Cognitive engines primed.")
+    # W479 (FU-121) — a cognitive_prime event is emitted ONLY when a caller supplied cognitive context.
+    # It used to run a stub cascade whose result was discarded and then announce the literal
+    # that the cognitive engines were primed, on every run — nothing had been primed.
+    if cognitive_context:
+        yield _ev("cognitive_prime", "Cognitive context supplied", cognitive_context)
 
     # §7 reconfiguration — rigor + focus genuinely steer every stage (woven into the shared directives).
     _RIGOR = {
@@ -398,7 +508,8 @@ async def _run_intelligence_stream(
     if mjm_context:
         enrichment += f"\n\nMJM ASSESSMENT:\n{mjm_context[:400]}"
 
-    for stage_key, stage_label, stage_desc in stages:
+    provs: list[dict] = []
+    for i, (stage_key, stage_label, stage_desc) in enumerate(stages):
         yield _ev(f"{stage_key}_start", stage_label, stage_desc)
 
         prompt_template = prompts.get(stage_key, "")
@@ -411,18 +522,14 @@ async def _run_intelligence_stream(
             context=(context_accumulator[-600:] if context_accumulator else "") + enrichment,
         )
 
-        try:
-            result = await gateway.query(prompt, agent=f"{engine_name}_{stage_key}")
-        except Exception as e:
-            result = f"[{stage_label} analysis pending — {e}]"
+        result, prov = await _staged_query(prompt, f"{engine_name}_{stage_key}", stage_label)
+        provs.append(prov)
+        if not prov["failed"]:
+            context_accumulator += f"\n\n## {stage_label}\n{result[:600]}"
+        yield _ev(stage_key, stage_label, result, _stage_data(i, len(stages), prov))
 
-        context_accumulator += f"\n\n## {stage_label}\n{result[:600]}"
-        yield _ev(stage_key, stage_label, result)
-
-    yield _ev("complete", f"{engine_name} Complete", "Full analysis pipeline complete.", {
-        "stages_completed": len(stages),
-        "engine": engine_name,
-    })
+    yield _ev("complete", f"{engine_name} finished", _run_summary_text(len(stages), provs),
+              {"engine": engine_name, **_run_summary_data(len(stages), provs)})
 
 
 class IntelligenceRequest(BaseModel):
@@ -450,14 +557,21 @@ async def mjm_assess(req: MJMRequest):
     if not req.problem.strip():
         raise HTTPException(status_code=400, detail="Provide a problem to judge.")
     ctx = req.cognitive_context.strip()
-    primed = False
+    primed = prime_failed = False
+    provs: list[dict] = []
     if not ctx and req.prime:
-        ctx = await _ai_cognitive_prime(req.problem, req.domain, req.engines)
-        primed = True
-    assessment = await _ai_mjm_lifecycle(req.problem, req.domain, ctx)
+        text, _p = await _ai_cognitive_prime_meta(req.problem, req.domain, req.engines)
+        provs.append(_p)
+        primed, prime_failed = not _p["failed"], bool(_p["failed"])
+        ctx = _usable(text, _p)          # a failed prime is never judged as if it were context
+    assessment, _p = await _ai_mjm_lifecycle_meta(req.problem, req.domain, ctx)
+    provs.append(_p)
     return {"problem": req.problem, "domain": req.domain,
             "phases": ["Mushahida (witnessed observation)", "Jaiza (deep assessment)", "Muaina (verified action)"],
-            "cognitive_primed": primed, "assessment": assessment, "status": "complete"}
+            "cognitive_primed": primed, "prime_failed": prime_failed, "assessment": assessment,
+            # W479 — complete · partial · failed, from what ran; what served each call is stated
+            "status": _status(provs),
+            "provenance": _provenance_summary(provs)}
 
 
 class SolveRequest(BaseModel):
@@ -508,15 +622,18 @@ async def solve_with_cognitive_stack(req: SolveRequest):
     Full cognitive stack synthesis. Now returns AI-powered Cognitive cascade + MJM +
     final synthesis — all three layers user-visible with structured sections.
     """
-    cognitive_analysis = await _ai_cognitive_prime(req.problem, req.domain, req.engines)
-    mjm_assessment = await _ai_mjm_lifecycle(req.problem, req.domain, cognitive_analysis)
+    cognitive_analysis, _p_cog = await _ai_cognitive_prime_meta(req.problem, req.domain, req.engines)
+    mjm_assessment, _p_mjm = await _ai_mjm_lifecycle_meta(req.problem, req.domain,
+                                                          _usable(cognitive_analysis, _p_cog))
+    _cog_in = _usable(cognitive_analysis, _p_cog) or "(none: the lens call did not run)"
+    _mjm_in = _usable(mjm_assessment, _p_mjm) or "(none: the MJM call did not run)"
 
     synthesis_prompt = (
         "You are the IDBO Synthesis Engine integrating all intelligence layers.\n\n"
         f"Problem: {req.problem}\nDomain: {req.domain}\n"
         + (f"User context: {req.context}\n" if req.context else "")
-        + f"\nCognitive Cascade Analysis (6 engines):\n{cognitive_analysis[:1200]}\n"
-        f"\nMJM Assessment (Mushahida-Jaiza-Muaina):\n{mjm_assessment[:800]}\n\n"
+        + f"\nCognitive lens analysis:\n{_cog_in[:1200]}\n"
+        f"\nMJM Assessment (Mushahida-Jaiza-Muaina):\n{_mjm_in[:800]}\n\n"
         "Deliver an integrated synthesis:\n"
         "## Core Insight (the single most important truth revealed by the analysis)\n"
         "## Root Cause Analysis (what is really happening beneath the surface)\n"
@@ -526,23 +643,23 @@ async def solve_with_cognitive_stack(req: SolveRequest):
         "## Risks & Mitigations (top 3 risks with specific countermeasures)\n"
         "## Synergistic Opportunities (what cross-domain or cross-engine insights open up)"
     )
-    try:
-        synthesis = await gateway.query(synthesis_prompt, agent="cognitive_solve")
-    except Exception as e:
-        synthesis = f"Synthesis: {e}"
+    synthesis, _p_syn = await _staged_query(synthesis_prompt, "cognitive_solve", "Synthesis")
 
-    # honest: reflect the ACTUAL cognitive engines run (the user-selected subset, or all six), + MJM.
-    _wanted = {str(e).lower() for e in (req.engines or [])}
-    _ran = [name for (eid, name, _q) in _COGNITIVE_LENSES if (not _wanted or eid in _wanted)] or \
-           [name for (_e, name, _q) in _COGNITIVE_LENSES]
+    # (W479 refutation) engines_used lists only what RAN: the selected lenses if the lens call ran, MJM if
+    # its call ran, the gateway synthesis if it ran; never a call that failed.
+    _ran = ([n.split(" (")[0] for (_e, n, _q) in _selected_lenses(req.engines)] if not _p_cog["failed"] else []) \
+        + (["MJM"] if not _p_mjm["failed"] else []) + (["AIGateway"] if not _p_syn["failed"] else [])
     return {
         "problem": req.problem,
         "domain": req.domain,
         "cognitive_cascade": cognitive_analysis,
         "mjm_assessment": mjm_assessment,
         "synthesis": synthesis,
-        "status": "complete",
-        "engines_used": [n.split(" (")[0] for n in _ran] + ["MJM", "AIGateway"],
+        "status": _status([_p_cog, _p_mjm, _p_syn]),
+        "engines_used": _ran,
+        # W479 — three gateway calls (the lenses as one prompt, MJM, the synthesis); what served each.
+        "provenance": {"cognitive_cascade": _p_cog, "mjm_assessment": _p_mjm, "synthesis": _p_syn,
+                       **_provenance_summary([_p_cog, _p_mjm, _p_syn])},
     }
 
 
@@ -557,19 +674,29 @@ _ENGINE_MAP = {
 async def _collect_stream(gen) -> dict:
     """Consume a PI-engine SSE generator to completion NON-streaming, collecting the per-stage RESULT events
     into one analysis — so a streaming engine can run its REAL staged pipeline inside a fabric composition."""
+    # W479 (FU-121) — a RESULT event is one that carries a gateway call's provenance (data.failed is
+    # present); every other event (init, config, *_start, routing, complete) is framing. The old name-based
+    # filter dropped the Nexus's lens, MJM and synthesis results (all '*_complete') and counted failed
+    # stages as run. `stages` now counts the calls that ran; the provenance says what served them.
     sections: list[str] = []
-    done = 0
+    provs: list[dict] = []
+    run_summary = None   # the Nexus's final event carries the whole run's summary (incl. the routing call)
     async for chunk in gen:
         try:
             ev = json.loads(chunk.split("data: ", 1)[1].strip())
         except (IndexError, ValueError):
             continue
-        sk = ev.get("stage", "")
-        if sk and not sk.endswith("_start") and not sk.endswith("_complete") \
-                and sk not in ("init", "cognitive_prime", "config", "complete", "routing", "engine_selected"):
-            sections.append(f"## {ev.get('label', sk)}\n{ev.get('content', '')}")
-            done += 1
-    return {"stages": done, "analysis": "\n\n".join(sections)}
+        d = ev.get("data") or {}
+        if not isinstance(d, dict) or "failed" not in d:
+            continue
+        if isinstance(d.get("run"), dict):
+            run_summary = d["run"]
+        provs.append({k: d.get(k) for k in ("served_by", "is_external", "failed")})
+        if not d.get("failed"):
+            sections.append(f"## {ev.get('label', ev.get('stage', ''))}\n{ev.get('content', '')}")
+    s = _provenance_summary(provs)
+    return {"stages": s["calls"] - s["failed_calls"], "analysis": "\n\n".join(sections),
+            "provenance": run_summary or s}
 
 
 async def run_intelligence_collected(challenge: str, domain: str, engine_id: str,
@@ -618,8 +745,17 @@ class NexusRequest(BaseModel):
     deployment_target: str = "cloud"
 
 
-async def _nexus_auto_select(challenge: str, domain: str, cognitive_result: str) -> str:
-    """Autonomously select the optimal primary engine based on input + cognitive analysis."""
+_NEXUS_ENGINES = ("bdp", "spi", "apie", "ddpie")
+
+
+async def _nexus_auto_select(challenge: str, domain: str, cognitive_result: str) -> tuple[str, dict]:
+    """Ask the gateway to pick the primary engine; return (engine, decision).
+
+    W479 (FU-121, sweep S4.4) — the old router took the first engine NAME found anywhere in the reply and
+    fell back to 'bdp'. The structured floor restates the prompt, whose engine list starts with 'bdp', so
+    every floor-served run 'autonomously selected' BDP (a varroa research study, an academic paper). Now
+    only a MODEL's reply can decide, and only when its first engine token is unambiguous; otherwise the
+    decision says, in words, that nothing decided and BDP is a default."""
     prompt = (
         "You are an intelligence router. Based on the challenge and cognitive analysis below, "
         "select the single most appropriate intelligence engine.\n\n"
@@ -632,18 +768,26 @@ async def _nexus_auto_select(challenge: str, domain: str, cognitive_result: str)
         "- ddpie: Design & Development (software, systems, architecture, engineering)\n\n"
         "Respond with ONLY one of: bdp, spi, apie, ddpie"
     )
-    try:
-        result = (await gateway.query(prompt, agent="nexus_router")).strip().lower()
-        for engine in ["bdp", "spi", "apie", "ddpie"]:
-            if engine in result:
-                return engine
-    except Exception:
-        pass
-    return "bdp"
+    reply, prov = await _staged_query(prompt, "nexus_router", "Routing")
+    decision = {"decided": False, **prov}
+    if prov["failed"]:
+        decision["reason"] = "the routing call failed"
+    elif _is_floor(prov):
+        decision["reason"] = "no model was available to decide (the structured floor served the routing call)"
+    else:
+        found = re.findall(r"\b(bdp|spi|apie|ddpie)\b", reply.strip().lower())
+        if found and len(set(found)) == 1:
+            decision.update(decided=True, reason=f"{prov.get('served_by')} chose {found[0].upper()}")
+            return found[0], decision
+        decision["reason"] = ("the model named no engine" if not found
+                              else "the model named more than one engine")
+    return "bdp", decision
 
 
 async def _run_nexus_stream(req: NexusRequest):
-    """Full autonomous synergistic nexus — cognitive → MJM → primary engine → unified synthesis."""
+    """The Nexus chain — cognitive lenses → MJM → primary engine → synthesis — each layer's calls stamped
+    with what served them. W479 (FU-121, sweep S4.5): the counts on the final event are what RAN, not
+    literals, and the lenses are described as what they are: one prompt headed by six lenses."""
 
     def _ev(stage: str, label: str, content: str, data: dict | None = None) -> str:
         payload: dict = {"stage": stage, "label": label, "content": content}
@@ -651,104 +795,94 @@ async def _run_nexus_stream(req: NexusRequest):
             payload["data"] = data
         return f"data: {json.dumps(payload)}\n\n"
 
-    yield _ev("init", "Nexus Initiated", f"Autonomous synergistic pipeline: {req.challenge[:100]}")
+    provs: list[dict] = []
+    layers_ran = 0
+    yield _ev("init", "Nexus Initiated", f"Staged pipeline: {req.challenge[:100]}")
 
-    # ── Layer 1: AI Cognitive Cascade (6 engines) ─────────────────────────────
-    yield _ev("cognitive_start", "Cognitive Cascade", "Six cognitive engines activating: Inkashaf → Samajh → Soch → Aqal → Hoshiyari → Iman")
-    cognitive_result = await _ai_cognitive_prime(req.challenge, req.domain)
-    yield _ev("cognitive_complete", "Cognitive Cascade Complete", cognitive_result, {
-        "engines": ["Inkashaf", "Samajh", "Soch", "Aqal", "Hoshiyari", "Iman"],
-        "layer": 1,
-    })
+    # ── Layer 1: the cognitive lenses (ONE gateway call headed by each lens) ────────────────────────
+    lenses = _selected_lenses(None)
+    lens_names = [name.split(" (")[0].title() for _id, name, _q in lenses]
+    yield _ev("cognitive_start", "Cognitive Lenses",
+              f"One structured prompt headed by {len(lenses)} lenses: " + " → ".join(lens_names))
+    cognitive_result, p_cog = await _ai_cognitive_prime_meta(req.challenge, req.domain)
+    provs.append(p_cog)
+    layers_ran += 0 if p_cog["failed"] else 1
+    yield _ev("cognitive_complete", "Cognitive Lenses", cognitive_result,
+              {"engines": lens_names, "lenses": len(lenses), "calls": 1, "layer": 1, **p_cog})
 
-    # ── Layer 2: MJM Meta-Assessment ──────────────────────────────────────────
-    yield _ev("mjm_start", "MJM Assessment", "Mushahida-Jaiza-Muaina meta-judgement integrating cognitive outputs")
-    mjm_result = await _ai_mjm_lifecycle(req.challenge, req.domain, cognitive_result)
-    yield _ev("mjm_complete", "MJM Complete", mjm_result, {
-        "phases": ["Mushahida", "Jaiza", "Muaina"],
-        "layer": 2,
-    })
+    # ── Layer 2: MJM (one gateway call) ─────────────────────────────────────────────────────────────
+    yield _ev("mjm_start", "MJM Assessment", "Mushahida-Jaiza-Muaina: one structured prompt over the lens output")
+    cog_in = _usable(cognitive_result, p_cog)       # (W479 refutation) a failed call never feeds a prompt
+    mjm_result, p_mjm = await _ai_mjm_lifecycle_meta(req.challenge, req.domain, cog_in)
+    provs.append(p_mjm)
+    layers_ran += 0 if p_mjm["failed"] else 1
+    yield _ev("mjm_complete", "MJM Assessment", mjm_result,
+              {"phases": ["Mushahida", "Jaiza", "Muaina"], "calls": 1, "layer": 2, **p_mjm})
 
-    # ── Engine selection ──────────────────────────────────────────────────────
-    selected_engine = req.engines[0] if req.engines else _ACTIVITY_ENGINE.get(req.activity, "auto")
-    if selected_engine == "auto":
-        yield _ev("routing", "Intelligent Routing", "Autonomously selecting optimal engine...")
-        selected_engine = await _nexus_auto_select(req.challenge, req.domain, cognitive_result)
-    yield _ev("engine_selected", "Engine Selected", f"Primary engine: {selected_engine.upper()}", {
-        "engine": selected_engine,
-        "layer": 3,
-    })
-
-    # ── Layer 3: Primary engine with cognitive + MJM enrichment ──────────────
-    if selected_engine == "apie":
-        context_accumulator = ""
-        enrichment = f"\n\nCOGNITIVE INTELLIGENCE:\n{cognitive_result[:500]}\nMJM ASSESSMENT:\n{mjm_result[:300]}"
-        for i, (stage_key, stage_label, stage_desc) in enumerate(_APIE_STAGES):
-            yield _ev(f"{stage_key}_start", stage_label, stage_desc)
-            prompt_template = _APIE_PROMPTS.get(stage_key, "")
-            if not prompt_template:
-                continue
-            prompt = prompt_template.format(
-                topic=req.challenge, domain=req.domain, genre=req.genre,
-                audience=req.audience, citation_style=req.citation_style,
-                word_count=req.word_count,
-                context=(context_accumulator[-400:] if context_accumulator else "") + enrichment,
-            )
-            try:
-                result = await gateway.query(prompt, agent=f"nexus_apie_{stage_key}")
-            except Exception as e:
-                result = f"[{stage_label} — {e}]"
-            context_accumulator += f"\n\n## {stage_label}\n{result[:500]}"
-            yield _ev(stage_key, stage_label, result, {"stage_num": i + 1, "total": len(_APIE_STAGES)})
-
-    elif selected_engine == "ddpie":
-        context_accumulator = ""
-        enrichment = f"\n\nCOGNITIVE INTELLIGENCE:\n{cognitive_result[:500]}\nMJM ASSESSMENT:\n{mjm_result[:300]}"
-        for i, (stage_key, stage_label, stage_desc) in enumerate(_DDPIE_STAGES):
-            yield _ev(f"{stage_key}_start", stage_label, stage_desc)
-            prompt_template = _DDPIE_PROMPTS.get(stage_key, "")
-            if not prompt_template:
-                continue
-            prompt = prompt_template.format(
-                system=req.challenge, domain=req.domain, tech_stack=req.tech_stack,
-                scale=req.scale, deployment_target=req.deployment_target,
-                context=(context_accumulator[-400:] if context_accumulator else "") + enrichment,
-            )
-            try:
-                result = await gateway.query(prompt, agent=f"nexus_ddpie_{stage_key}")
-            except Exception as e:
-                result = f"[{stage_label} — {e}]"
-            context_accumulator += f"\n\n## {stage_label}\n{result[:500]}"
-            yield _ev(stage_key, stage_label, result, {"stage_num": i + 1, "total": len(_DDPIE_STAGES)})
-
+    # ── Engine selection ────────────────────────────────────────────────────────────────────────────
+    asked = (req.engines[0] if req.engines else _ACTIVITY_ENGINE.get(req.activity, "auto")) or "auto"
+    asked = str(asked).lower()
+    if asked in _NEXUS_ENGINES:
+        selected_engine = asked
+        decision = {"decided": True, "by": "user", "reason": f"you chose {asked.upper()}"}
     else:
-        # BDP or SPI
-        stages, prompts = _ENGINE_MAP.get(selected_engine, (_BDP_STAGES, _BDP_PROMPTS))
-        context_accumulator = ""
-        enrichment = f"\n\nCOGNITIVE INTELLIGENCE:\n{cognitive_result[:500]}\nMJM ASSESSMENT:\n{mjm_result[:300]}"
-        for i, (stage_key, stage_label, stage_desc) in enumerate(stages):
-            yield _ev(f"{stage_key}_start", stage_label, stage_desc)
-            prompt_template = prompts.get(stage_key, "")
-            if not prompt_template:
-                continue
-            prompt = prompt_template.format(
-                challenge=req.challenge, domain=req.domain,
-                context=(context_accumulator[-400:] if context_accumulator else "") + enrichment,
-            )
-            try:
-                result = await gateway.query(prompt, agent=f"nexus_{selected_engine}_{stage_key}")
-            except Exception as e:
-                result = f"[{stage_label} — {e}]"
-            context_accumulator += f"\n\n## {stage_label}\n{result[:500]}"
-            yield _ev(stage_key, stage_label, result, {"stage_num": i + 1, "total": len(stages)})
+        yield _ev("routing", "Routing", "Asking the gateway which engine fits the challenge")
+        selected_engine, decision = await _nexus_auto_select(req.challenge, req.domain, cog_in)
+        if asked != "auto":
+            decision["reason"] = f"'{asked}' is not an engine; " + decision.get("reason", "")
+        decision["by"] = "gateway"
+        provs.append({k: decision.get(k) for k in ("served_by", "is_external", "failed")})
+    if decision.get("decided"):
+        sel_text = f"Primary engine: {selected_engine.upper()} ({decision['reason']})"
+    else:
+        sel_text = f"Not selected: defaulted to {selected_engine.upper()}, because {decision['reason']}"
+    yield _ev("engine_selected", "Engine Selected" if decision.get("decided") else "Engine not selected",
+              sel_text, {"engine": selected_engine, "layer": 3, "decision": decision})
 
-    # ── Layer 4: Nexus Synthesis (integrates all layers) ─────────────────────
-    yield _ev("synthesis_start", "Nexus Synthesis", "Integrating cognitive, MJM, and engine outputs into unified intelligence")
+    # ── Layer 3: the primary engine's stages, each enriched by layers 1 and 2 ──────────────────────
+    if selected_engine == "apie":
+        stages, prompts = _APIE_STAGES, _APIE_PROMPTS
+        fmt = dict(topic=req.challenge, domain=req.domain, genre=req.genre, audience=req.audience,
+                   citation_style=req.citation_style, word_count=req.word_count)
+    elif selected_engine == "ddpie":
+        stages, prompts = _DDPIE_STAGES, _DDPIE_PROMPTS
+        fmt = dict(system=req.challenge, domain=req.domain, tech_stack=req.tech_stack,
+                   scale=req.scale, deployment_target=req.deployment_target)
+    else:
+        stages, prompts = _ENGINE_MAP[selected_engine]
+        fmt = dict(challenge=req.challenge, domain=req.domain)
+    enrichment = ""
+    if not p_cog["failed"]:
+        enrichment += f"\n\nCOGNITIVE INTELLIGENCE:\n{cognitive_result[:500]}"
+    if not p_mjm["failed"]:
+        enrichment += f"\nMJM ASSESSMENT:\n{mjm_result[:300]}"
+    context_accumulator = ""
+    stage_provs: list[dict] = []
+    for i, (stage_key, stage_label, stage_desc) in enumerate(stages):
+        yield _ev(f"{stage_key}_start", stage_label, stage_desc)
+        prompt_template = prompts.get(stage_key, "")
+        if not prompt_template:
+            continue
+        prompt = prompt_template.format(
+            context=(context_accumulator[-400:] if context_accumulator else "") + enrichment, **fmt)
+        result, prov = await _staged_query(prompt, f"nexus_{selected_engine}_{stage_key}", stage_label)
+        stage_provs.append(prov)
+        if not prov["failed"]:
+            context_accumulator += f"\n\n## {stage_label}\n{result[:500]}"
+        yield _ev(stage_key, stage_label, result, _stage_data(i, len(stages), prov))
+    provs.extend(stage_provs)
+    layers_ran += 1 if any(not p["failed"] for p in stage_provs) else 0
+
+    # ── Layer 4: the synthesis (one gateway call over layers 1 to 3) ───────────────────────────────
+    yield _ev("synthesis_start", "Nexus Synthesis", "One structured prompt over the lens, MJM and engine outputs that ran")
+    mjm_in = _usable(mjm_result, p_mjm)
+    engine_out = context_accumulator[-1500:]      # (W479 refutation) the engine stages it synthesises
     synthesis_prompt = (
         f"You are the IDBO Synthesis Nexus — the apex intelligence layer.\n\n"
         f"Challenge: {req.challenge}\nDomain: {req.domain}\nEngine: {selected_engine.upper()}\n\n"
-        f"Cognitive Cascade (6 engines):\n{cognitive_result[:800]}\n\n"
-        f"MJM Assessment:\n{mjm_result[:600]}\n\n"
+        f"Cognitive Cascade ({len(lenses)} lenses):\n{(cog_in or '(none: the lens call did not run)')[:800]}\n\n"
+        f"MJM Assessment:\n{(mjm_in or '(none: the MJM call did not run)')[:600]}\n\n"
+        f"{selected_engine.upper()} stage outputs:\n{engine_out or '(none: no engine stage ran)'}\n\n"
         "Deliver the Nexus Synthesis:\n"
         "## Cross-Engine Synthesis (what all intelligence layers collectively reveal)\n"
         "## Highest-Leverage Insight (the one finding that changes everything)\n"
@@ -757,28 +891,35 @@ async def _run_nexus_stream(req: NexusRequest):
         "## Coherence Assessment (how well the findings align — and where tensions exist)\n"
         "## Sovereign Recommendation (the definitive direction this intelligence prescribes)"
     )
-    try:
-        synthesis = await gateway.query(synthesis_prompt, agent="nexus_synthesis")
-    except Exception as e:
-        synthesis = f"Synthesis: {e}"
+    synthesis, p_syn = await _staged_query(synthesis_prompt, "nexus_synthesis", "Synthesis")
+    provs.append(p_syn)
+    layers_ran += 0 if p_syn["failed"] else 1
 
-    yield _ev("nexus_complete", "Nexus Complete", synthesis, {
+    summary = _provenance_summary(provs)
+    yield _ev("nexus_complete", "Nexus Synthesis", synthesis, {
         "engine_used": selected_engine,
-        "layers_completed": 4,
-        "cognitive_engines": 6,
+        "engine_decided": bool(decision.get("decided")),
+        "layers_completed": layers_ran,
+        "layers_total": 4,
+        "cognitive_lenses": 0 if p_cog["failed"] else len(lenses),   # (refutation 2) lenses that ran
         "mjm_phases": 3,
+        "layer": 4,
+        **p_syn,
+        "run": summary,
     })
 
 
 @router.post("/nexus")
 async def synthesis_nexus(req: NexusRequest):
     """
-    Synthesis Nexus — fully autonomous, synergistic, multi-layer intelligence.
-    Layer 1: AI Cognitive Cascade (6 engines: Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman)
-    Layer 2: MJM Meta-Assessment (Mushahida/Jaiza/Muaina)
-    Layer 3: Intelligently selected primary engine (BDP/SPI/APIE/DDPIE) — enriched by L1+L2
-    Layer 4: Nexus Synthesis — unified integration of all intelligence layers.
-    All layers stream as SSE. The engine is autonomously selected when activity='auto'.
+    Synthesis Nexus — four layers, each passed to the next.
+    Layer 1: the cognitive lenses (ONE prompt headed by 6 lenses: Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman)
+    Layer 2: MJM (ONE prompt: Mushahida/Jaiza/Muaina) over layer 1
+    Layer 3: the primary engine (BDP/SPI/APIE/DDPIE), one prompt per stage, given layers 1 and 2
+    Layer 4: the synthesis (ONE prompt) over the layers that ran.
+    All layers stream as SSE, each stage stamped with what served it. With activity='auto' a MODEL's single
+    engine token chooses the engine; otherwise (the structured floor, no token, an ambiguous reply) BDP runs as a
+    stated default, never announced as a selection.
     """
     return StreamingResponse(
         _run_nexus_stream(req),
@@ -791,10 +932,13 @@ async def synthesis_nexus(req: NexusRequest):
 async def intelligence_status():
     return {
         "engines_available": ["BDP", "SPI", "APIE", "DDPIE", "Solve", "Nexus"],
+        # W479 (refutation) — what these routes actually run. They do not call UltimateCognitiveCascade,
+        # MJMOrchestratorV4 or a GaaS gate; the old entry advertised all three.
         "cognitive_stack": {
-            "cascade": "UltimateCognitiveCascade (6 foundational + 3 meta engines)",
-            "mjm": "MJMOrchestratorV4 (Mushahida-Jaiza-Muaina)",
-            "gaas": "GaaSValidatorV4 (constitutional gate)",
+            "lenses": f"{len(_COGNITIVE_LENSES)} cognitive lenses as ONE gateway prompt (Nexus, /solve, /mjm only)",
+            "mjm": "ONE gateway prompt (Mushahida-Jaiza-Muaina) over the lens output (Nexus, /solve, /mjm only)",
+            "pipelines": "BDP/SPI/APIE/DDPIE: one gateway prompt per stage; no lenses, MJM or GaaS gate",
+            "provenance": "every stage event carries served_by (native = the structured floor) and failed",
         },
         "bdp_stages": len(_BDP_STAGES),
         "spi_stages": len(_SPI_STAGES),
@@ -824,7 +968,7 @@ _APIE_PROMPTS = {
     "source_discovery": (
         "You are a Senior Research Librarian and academic writing coach. "
         "For the following scholarly work, map the authoritative knowledge landscape:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nGenre: {genre}\nAudience: {audience}\n\n"
+        "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\nAudience: {audience}\n\n"
         "Deliver:\n"
         "## Primary Source Categories (tier 1-3 sources by authority)\n"
         "## Key Theoretical Frameworks (foundational scholars and works)\n"
@@ -837,7 +981,7 @@ _APIE_PROMPTS = {
     ),
     "argument_architecture": (
         "You are a master of academic argument construction. Build a rigorous argument architecture for:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nGenre: {genre}\n\n"
+        "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n\n"
         "Deliver:\n"
         "## Central Thesis Statement (1-2 sentences, falsifiable and precise)\n"
         "## Core Claims Hierarchy (3-5 main claims supporting the thesis)\n"
@@ -851,7 +995,7 @@ _APIE_PROMPTS = {
     ),
     "structural_outline": (
         "You are a professional academic editor. Design the optimal structure for this work:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nGenre: {genre}\n"
+        "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Word count target: {word_count}\nCitation style: {citation_style}\n\n"
         "Deliver:\n"
         "## Full Section Hierarchy (all sections with sub-sections and estimated word counts)\n"
@@ -865,7 +1009,7 @@ _APIE_PROMPTS = {
     ),
     "draft_synthesis": (
         "You are a skilled academic writer. Draft the core sections for this work:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nGenre: {genre}\nAudience: {audience}\n"
+        "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\nAudience: {audience}\n"
         "Previous analysis: {context}\n\n"
         "Write full draft text for:\n"
         "## Introduction (complete draft — hook, context-setting, thesis statement, scope, roadmap)\n"
@@ -877,7 +1021,7 @@ _APIE_PROMPTS = {
     ),
     "evidence_weaving": (
         "You are a citation and evidence integration specialist. Build the evidence framework for:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nCitation style: {citation_style}\n"
+        "Topic: {topic}\nDomain: {domain}\nCitation style: {citation_style}\n"
         "Previous analysis: {context}\n\n"
         "Deliver:\n"
         "## In-Text Citation Examples (10 model citations in {citation_style} format)\n"
@@ -892,7 +1036,7 @@ _APIE_PROMPTS = {
     "peer_review_simulation": (
         "You are a blind peer reviewer for a prestigious {domain} journal. "
         "Conduct a rigorous review of this work:\n\n"
-        "Topic/Thesis: {topic}\nGenre: {genre}\nDomain: {domain}\n"
+        "Topic: {topic}\nGenre: {genre}\nDomain: {domain}\n"
         "Work summary: {context}\n\n"
         "Deliver a formal peer review:\n"
         "## Overall Assessment (Accept / Major Revisions / Minor Revisions / Reject — with rationale)\n"
@@ -908,7 +1052,7 @@ _APIE_PROMPTS = {
     "revision_intelligence": (
         "You are a senior academic writing coach reviewing responses to peer critique. "
         "Generate targeted revision intelligence for:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nGenre: {genre}\n"
+        "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Peer review findings: {context}\n\n"
         "Deliver:\n"
         "## Revision Priority Matrix (Must-Do / Should-Do / Can-Do categories)\n"
@@ -923,7 +1067,7 @@ _APIE_PROMPTS = {
     "integrity_audit": (
         "You are an academic quality and integrity auditor. "
         "Conduct a rigorous audit for:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nGenre: {genre}\n"
+        "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Full work summary: {context}\n\n"
         "Audit across:\n"
         "## Originality Assessment (contribution to knowledge — what is genuinely new)\n"
@@ -940,7 +1084,7 @@ _APIE_PROMPTS = {
     "publication_readiness": (
         "You are a publication specialist and academic submissions coordinator. "
         "Produce a complete publication readiness package for:\n\n"
-        "Topic/Thesis: {topic}\nDomain: {domain}\nGenre: {genre}\n"
+        "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Audience: {audience}\nCitation style: {citation_style}\n"
         "Integrity audit: {context}\n\n"
         "Deliver:\n"
@@ -992,6 +1136,7 @@ async def _run_authorship_stream(req: AuthorshipRequest):
     if directive:
         yield _ev("config", "Reconfiguration", f"rigor={req.rigor}")
 
+    provs: list[dict] = []   # W479 — what served each stage
     for i, (stage_key, stage_label, stage_desc) in enumerate(_APIE_STAGES):
         yield _ev(f"{stage_key}_start", stage_label, stage_desc)
 
@@ -1009,16 +1154,14 @@ async def _run_authorship_stream(req: AuthorshipRequest):
             context=directive + (context_accumulator[-900:] if context_accumulator else ""),
         )
 
-        try:
-            result = await gateway.query(prompt, agent=f"apie_{stage_key}")
-        except Exception as e:
-            result = f"[{stage_label} pending — {e}]"
+        result, prov = await _staged_query(prompt, f"apie_{stage_key}", stage_label)
+        provs.append(prov)
+        if not prov["failed"]:
+            context_accumulator += f"\n\n## {stage_label}\n{result[:700]}"
+        yield _ev(stage_key, stage_label, result, _stage_data(i, len(_APIE_STAGES), prov))
 
-        context_accumulator += f"\n\n## {stage_label}\n{result[:700]}"
-        yield _ev(stage_key, stage_label, result, {"stage_num": i + 1, "total": len(_APIE_STAGES)})
-
-    yield _ev("complete", "APIE Complete", "9-stage authorship pipeline complete.", {
-        "stages_completed": len(_APIE_STAGES),
+    yield _ev("complete", "APIE finished", _run_summary_text(len(_APIE_STAGES), provs), {
+        **_run_summary_data(len(_APIE_STAGES), provs),
         "engine": "APIE",
         "genre": req.genre,
         "citation_style": req.citation_style,
@@ -1060,7 +1203,7 @@ _DDPIE_PROMPTS = {
     "requirements_intelligence": (
         "You are a Senior Business Analyst and product requirements engineer. "
         "Elicit and structure requirements for the following system:\n\n"
-        "System/Product: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n\n"
+        "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n\n"
         "Deliver:\n"
         "## Product Vision Statement (1 paragraph — what it is, for whom, and why it matters)\n"
         "## Functional Requirements (12-15 as user stories: As a [user] I want [action] so that [benefit])\n"
@@ -1075,7 +1218,7 @@ _DDPIE_PROMPTS = {
     ),
     "architecture_design": (
         "You are a Principal Software Architect. Design the system architecture for:\n\n"
-        "System: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
+        "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Requirements: {context}\n\n"
         "Deliver:\n"
         "## Architecture Pattern Decision (monolith/microservices/event-driven/serverless — with rationale)\n"
@@ -1091,7 +1234,7 @@ _DDPIE_PROMPTS = {
     ),
     "domain_modelling": (
         "You are a Domain-Driven Design expert. Build the domain model for:\n\n"
-        "System: {system}\nDomain: {domain}\nScale: {scale}\n"
+        "Subject: {system}\nDomain: {domain}\nScale: {scale}\n"
         "Architecture: {context}\n\n"
         "Deliver:\n"
         "## Bounded Contexts (domain partitions — name, responsibility, team ownership)\n"
@@ -1107,7 +1250,7 @@ _DDPIE_PROMPTS = {
     ),
     "api_contract": (
         "You are an API Design Lead and OpenAPI specification expert. Design the API for:\n\n"
-        "System: {system}\nDomain: {domain}\nStack: {tech_stack}\n"
+        "Subject: {system}\nDomain: {domain}\nStack: {tech_stack}\n"
         "Domain model: {context}\n\n"
         "Deliver:\n"
         "## API Design Philosophy (REST/GraphQL/gRPC/hybrid — justify for this system)\n"
@@ -1124,7 +1267,7 @@ _DDPIE_PROMPTS = {
     ),
     "security_architecture": (
         "You are a Principal Security Architect and OWASP Top 10 expert. Design the security posture for:\n\n"
-        "System: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
+        "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "API design: {context}\n\n"
         "Deliver:\n"
         "## Threat Model (STRIDE analysis: Spoofing / Tampering / Repudiation / Info Disclosure / DoS / Elevation)\n"
@@ -1141,7 +1284,7 @@ _DDPIE_PROMPTS = {
     ),
     "implementation_blueprint": (
         "You are a Head of Engineering and technical delivery lead. Create the implementation blueprint for:\n\n"
-        "System: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
+        "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Security architecture: {context}\n\n"
         "Deliver:\n"
         "## Module Breakdown (all implementation modules: name, description, owner, dependencies, effort)\n"
@@ -1157,7 +1300,7 @@ _DDPIE_PROMPTS = {
     ),
     "test_strategy": (
         "You are a Head of Quality Engineering and TDD practitioner. Design the test strategy for:\n\n"
-        "System: {system}\nDomain: {domain}\nStack: {tech_stack}\n"
+        "Subject: {system}\nDomain: {domain}\nStack: {tech_stack}\n"
         "Implementation blueprint: {context}\n\n"
         "Deliver:\n"
         "## Test Philosophy (TDD/BDD/ATDD — justify choice for this system)\n"
@@ -1174,7 +1317,7 @@ _DDPIE_PROMPTS = {
     ),
     "devops_pipeline": (
         "You are a Principal DevOps Engineer and Site Reliability Engineering lead. Design the pipeline for:\n\n"
-        "System: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
+        "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Deployment target: {deployment_target}\nTest strategy: {context}\n\n"
         "Deliver:\n"
         "## CI/CD Pipeline Architecture (stages, triggers, quality gates per environment)\n"
@@ -1192,7 +1335,7 @@ _DDPIE_PROMPTS = {
     "technical_review": (
         "You are a Principal Engineer chairing a Technical Review Board. "
         "Conduct the final technical review for:\n\n"
-        "System: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
+        "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Full design summary: {context}\n\n"
         "Deliver:\n"
         "## Architecture Review Summary (strengths and concerns across all design layers)\n"
@@ -1233,6 +1376,7 @@ async def _run_design_dev_stream(req: DesignDevRequest):
     if directive:
         yield _ev("config", "Reconfiguration", f"rigor={req.rigor}")
 
+    provs: list[dict] = []   # W479 — what served each stage
     for i, (stage_key, stage_label, stage_desc) in enumerate(_DDPIE_STAGES):
         yield _ev(f"{stage_key}_start", stage_label, stage_desc)
 
@@ -1249,16 +1393,14 @@ async def _run_design_dev_stream(req: DesignDevRequest):
             context=directive + (context_accumulator[-900:] if context_accumulator else ""),
         )
 
-        try:
-            result = await gateway.query(prompt, agent=f"ddpie_{stage_key}")
-        except Exception as e:
-            result = f"[{stage_label} pending — {e}]"
+        result, prov = await _staged_query(prompt, f"ddpie_{stage_key}", stage_label)
+        provs.append(prov)
+        if not prov["failed"]:
+            context_accumulator += f"\n\n## {stage_label}\n{result[:700]}"
+        yield _ev(stage_key, stage_label, result, _stage_data(i, len(_DDPIE_STAGES), prov))
 
-        context_accumulator += f"\n\n## {stage_label}\n{result[:700]}"
-        yield _ev(stage_key, stage_label, result, {"stage_num": i + 1, "total": len(_DDPIE_STAGES)})
-
-    yield _ev("complete", "DDPIE Complete", "9-stage design & development pipeline complete.", {
-        "stages_completed": len(_DDPIE_STAGES),
+    yield _ev("complete", "DDPIE finished", _run_summary_text(len(_DDPIE_STAGES), provs), {
+        **_run_summary_data(len(_DDPIE_STAGES), provs),
         "engine": "DDPIE",
         "tech_stack": req.tech_stack,
         "scale": req.scale,

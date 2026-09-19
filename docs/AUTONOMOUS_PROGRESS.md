@@ -6774,3 +6774,50 @@ in the W462 guard whose edit silently stopped landing when rendered rows gained 
 Guard: test_w478_the_schedule_is_prioritised_by_vision_value_and_completion_is_weighted.
 
 Suite: 387 passed · 15 skipped · 0 failed (402 items from 363 test functions; 39-min full run on the final tree, isolated DATA_DIR).
+
+
+### W479 — P1.18: the intelligence engines say what served each stage, and count only what ran (FU-121, FU-153)
+
+**Why.** P1.18's highest-priority row (FU-121, priority 136.8, eight Tier-1 findings of the W477 sweep: S4.4, S4.5,
+S5.4, S5.5, S5.6, S6.2, S6.3, S7.6) and FU-153 (S7.7). The four intelligence pipelines (BDP, SPI, APIE, DDPIE) and the
+Synthesis Nexus streamed stages with no provenance, and the pages ticked every one green. On the floor the Nexus
+"autonomously selected" BDP for a varroa research study: a substring test found 'bdp' in the floor's restatement of
+its own prompt. Its "6 cognitive engines" were one prompt, and its "4 layers" were a literal. Three pages said
+"Powered by Nine Cognitive Engines + MJM"; there are six lenses, and the four pipelines never call them or MJM. The
+'config' event counted as a stage ("10 of 9 Stages"), and the Lab counted *_start events ("Stage 17 of 8"). BDP,
+APIE and DDPIE labelled the user's subject so the floor could not read it ('Business:', 'Topic/Thesis:',
+'System/Product:'), so the floor restated the persona instead of the topic. The calls ran with cross-request recall
+on, and W477 had found another request's beekeeping text in an authorship run.
+
+**What changed.**
+- `agentic_core/api/intelligence.py`: every stage of every pipeline, the Nexus, /solve and /mjm goes through one
+  helper, `_staged_query` (gateway.query_meta, augment=False). Each stage event carries {stage_num, total, served_by,
+  is_external, failed}. A raised call, a gateway fallback returned as output ('[native engine unavailable]',
+  '[POLICY VIOLATION]') and an empty reply are all failed, never "ran". A failed call's text never feeds another
+  prompt (`_usable`; the MJM helper also recognises the marker from text-only callers). The completion line states
+  what ran, per model and per external accelerant; the labels are "X finished", never "Complete". The Nexus router
+  decides only on a model's single engine token; otherwise it says "Not selected: defaulted to BDP, because …".
+  Its counts are what ran, and its synthesis now receives the engine stages it names. The subject labels are ones
+  the floor reads. /solve and /mjm report complete, partial or failed and list only what ran. The /status payload
+  and the /nexus description say what these routes run.
+- `agentic_core/api/genesis.py` (same helpers): the lens and MJM calls are counted in ai_provenance and never fed
+  failed into the concept. engines_used lists what ran (it listed DDPIE and BDP, which the journey never calls),
+  and the status text names the journey's own stages.
+- `agentic_core/api/resource_fabric.py`: these engines report served_by, the per-server counts, calls, floor_calls
+  and failed_calls. The learning loop records a run whose every call failed as a failure, not a 'real-engine'
+  success. The registry no longer claims "Nine Cognitive Engines" or an "auto-selected engine".
+- Pages: `components/StageOutcome.tsx` holds one rule for every stage card: failed is red, the floor is neutral,
+  an external accelerant is amber, and an in-house model is green. Unknown provenance is never green. It is used by
+  the Intelligence Lab, Authorship, Design & Dev and Synthesis Nexus pages, which count only stages that ran and key
+  cards and trackers by stage number. The Nexus marks a partly failed layer amber, finishes the engine layer only when
+  the synthesis starts, and shows the routing decision in words. ResourceFabric shows a failed run as "did not
+  run" and a mixed run with its floor count. CognitionIntegration shows what served each /solve section.
+
+**Refuted three times** in isolated worktrees (3 + 3 + 2 + 2 agents): 17 real findings, then 9, then 6, then 4 — all verified real, 6 refuted as taste; every real one fixed as a rule, not an instance. **Broken 82 ways**; every blind fails the guard.
+**Probe** 16/16 on a fresh backend (:8088, floor): the streams by fetch, and the Authorship and Nexus pages in a real
+browser against the built bundle. Guard: test_w479_intelligence_engines_say_what_served_each_stage_and_count_only_stages.
+NOT DONE here: Genesis's own status stays 'complete' when its lens call fails, and its floor-served lens and MJM
+sections are not yet shown as pending. Both are FU-098's remit and stay on that row. Genesis's export scrubbing
+(S7.8) stays on FU-128.
+
+Suite: 388 passed · 15 skipped · 0 failed (403 items from 364 test functions; 41-min full run on the final tree, isolated DATA_DIR).

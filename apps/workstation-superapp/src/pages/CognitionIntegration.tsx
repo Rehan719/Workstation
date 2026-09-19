@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Network, CheckCircle2, Circle, Loader2, Sparkles, GitBranch, Layers, Brain } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
+import { StageBadge, StageMark, type StageData } from '../components/StageOutcome';
 
 interface Tier { tier: string; endpoint: string; role: string; connected: boolean }
 interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: number; principle: string }
@@ -90,22 +91,36 @@ export const CognitionIntegration: React.FC = () => {
         </div>
         {solveRes && (
           <div className="mt-4 space-y-3">
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Engines run: <span className="text-aura">{(solveRes.engines_used || []).join(' · ')}</span></p>
+            {/* W479 (FU-121 refutation) — three gateway calls: the lenses as ONE prompt, MJM, the synthesis. The list
+                names only what ran; each section says what served it (the structured floor is never shown as analysis). */}
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+              {solveRes.status && solveRes.status !== 'complete' && <span className="text-vital mr-2">{solveRes.status}</span>}
+              Ran: <span className="text-aura">{(solveRes.engines_used || []).join(' · ') || 'nothing'}</span>
+            </p>
             {solveRes.cognitive_cascade && (
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
-                <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1">Cognitive Cascade</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1 flex items-center gap-2">
+                  <StageMark data={solveRes.provenance?.cognitive_cascade as StageData} size={10} />
+                  Cognitive lenses · one prompt <StageBadge data={solveRes.provenance?.cognitive_cascade as StageData} />
+                </p>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.cognitive_cascade}</p>
               </div>
             )}
             {solveRes.mjm_assessment && (
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
-                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-1">MJM Meta-Judgement · Mushahida → Jaiza → Muaina</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-1 flex items-center gap-2">
+                  <StageMark data={solveRes.provenance?.mjm_assessment as StageData} size={10} />
+                  MJM · Mushahida → Jaiza → Muaina <StageBadge data={solveRes.provenance?.mjm_assessment as StageData} />
+                </p>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.mjm_assessment}</p>
               </div>
             )}
             {solveRes.synthesis && (
               <div className="p-3 rounded-xl bg-slate-950 border border-highlight/20">
-                <p className="text-[9px] font-black uppercase tracking-widest text-highlight mb-1">Synthesis</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-highlight mb-1 flex items-center gap-2">
+                  <StageMark data={solveRes.provenance?.synthesis as StageData} size={10} />
+                  Synthesis <StageBadge data={solveRes.provenance?.synthesis as StageData} />
+                </p>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.synthesis}</p>
               </div>
             )}

@@ -21,7 +21,7 @@ from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import get_current_user, request_owner_id
-from agentic_core.api.intelligence import _ai_cognitive_prime, _ai_mjm_lifecycle
+from agentic_core.api.intelligence import _ai_cognitive_prime_meta, _ai_mjm_lifecycle_meta, _usable, _selected_lenses
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 from agentic_core.api.vsb import _public_prose, _gate_block_reason, _gates_blocking, _LIFECYCLE_STAGE_IDS
 from agentic_core.taxonomy import REALM_LABELS, normalise_realm, realm_directive
@@ -150,9 +150,11 @@ async def genesis_status():
         "orchestrator": "Sovereign Journey (Genesis)",
         "phases": ["Conceptualisation", "Design & Development", "Enterprise Commercialisation"],
         "composes": [
-            "CognitiveCascade(6: Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman)",
-            "MJM (Mushahida/Jaiza/Muaina)",
-            "DDPIE (design)", "BDP (commercialisation)",
+            # W479 — what the journey calls: the lenses and MJM are one gateway prompt each; its design and
+            # commercialisation are its own gateway stages (it never calls the DDPIE or BDP pipelines).
+            "cognitive lenses (one prompt headed by 6: Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman)",
+            "MJM (one prompt: Mushahida/Jaiza/Muaina)",
+            "journey stages (concept, research, candidates, design, operations, commercialisation)",
             "gaas.v5 constitutional gate", "VSB blueprint",
         ],
         "deliverable": "The user's own VSB IDBO — Concept → Commercialisation",
@@ -276,6 +278,10 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
             # which is where a machine-readable claim belongs rather than inside shipped prose.
             return _public_prose(res.get("output", ""))
         except Exception as e:
+            # W479 (refutation 3/4) — counted, and recorded per agent, so a journey whose calls failed is never
+            # recorded as served and a failed stage is never read as floor- or model-served
+            provenance["failed_calls"] = provenance.get("failed_calls", 0) + 1
+            provenance.setdefault("served_by_agent", {})[agent] = "failed"
             return f"[{agent} unavailable: {e}]"
 
     # ── Phase 1 — Conceptualisation (understand → analyse → optimal concept) ──
@@ -284,18 +290,37 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # api/intelligence.py), so they get neither the realm/problem prefix nor the scrub. They are
         # stored in phase_1_conceptualisation and therefore SHIP, so the banner reached the response
         # through them even after every _q stage was clean. Scrub at the point they are captured.
-        cognitive = _public_prose(await _ai_cognitive_prime(req.problem, req.domain))
+        # W479 (FU-121 refutation 2) — the _meta forms: both calls are COUNTED in ai_provenance like every
+        # _q stage (they were missing from it), and a failed call's text never feeds the concept prompt.
+        cognitive, _p_cog = await _ai_cognitive_prime_meta(req.problem, req.domain)
+        cognitive = _public_prose(cognitive)
     except Exception as e:
-        cognitive = f"[cognitive unavailable: {e}]"
+        cognitive, _p_cog = f"[Cognitive lenses did not run — {e}]", {"served_by": None, "is_external": False, "failed": True}
     try:
-        mjm = _public_prose(await _ai_mjm_lifecycle(req.problem, req.domain, cognitive))
+        mjm, _p_mjm = await _ai_mjm_lifecycle_meta(req.problem, req.domain, _usable(cognitive, _p_cog))
+        mjm = _public_prose(mjm)
     except Exception as e:
-        mjm = f"[mjm unavailable: {e}]"
+        mjm, _p_mjm = f"[MJM assessment did not run — {e}]", {"served_by": None, "is_external": False, "failed": True}
+    # (refutation 4 — the invariant) `served_by` counts EVERY served call (what served this journey, shown on its
+    # page); `body_served_by` (built at the end, from served_by_agent) holds only the servers of the text a gate
+    # certifies. The gates read the body map, so no call outside the body (lens, MJM, candidates, twin) can make
+    # floor-served body text assessable.
+    for _agent, _pv in (("cognitive_cascade_ai", _p_cog), ("mjm_orchestrator_ai", _p_mjm)):
+        provenance.setdefault("served_by_agent", {})[_agent] = (
+            "failed" if _pv.get("failed") else (_pv.get("served_by") or "native"))
+        provenance["any_external"] = provenance["any_external"] or bool(_pv.get("is_external"))
+        if _pv.get("failed"):
+            provenance["failed_calls"] = provenance.get("failed_calls", 0) + 1
+        else:
+            _s = _pv.get("served_by") or "native"
+            provenance["served_by"][_s] = provenance["served_by"].get(_s, 0) + 1
+    _cog_in = _usable(cognitive, _p_cog) or "(none: the lens call did not run)"
+    _mjm_in = _usable(mjm, _p_mjm) or "(none: the MJM call did not run)"
     concept = await _q(
         "You are the IDBO Conceptualisation engine. Using the analysis below, define the optimal "
         "solution concept that clears or mitigates the problem.\n\n"
         f"Problem: {req.problem}\nDomain: {req.domain}\n"
-        f"Cognitive cascade: {cognitive[:800]}\nMJM assessment: {mjm[:500]}\n\n"
+        f"Cognitive cascade: {_cog_in[:800]}\nMJM assessment: {_mjm_in[:500]}\n\n"
         "## Problem Understanding\n## Optimal Solution Concept\n## Why This Concept Wins",
         "genesis_concept",
     )
@@ -478,7 +503,8 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # W436 — a stage is assessable only if a real model served it (see _verify_stage's docstring).
     _sba = provenance.get("served_by_agent", {})
     def _floor(agent: str) -> bool:
-        return _sba.get(agent, "native") == "native"
+        # W479 — a stage whose call failed is not assessable either (its text is the failure message)
+        return _sba.get(agent, "native") in ("native", "failed")
 
     stage_verifications = {
         "concept": _verify_stage(concept, ["Problem Understanding", "Optimal Solution Concept", "Why This Concept Wins"], floor_served=_floor("genesis_concept")),
@@ -533,7 +559,7 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                                      "selection_basis": (stage_5 or {}).get("selection_basis")}
                                     if (stage_5 or {}).get("candidates") else {}),
                 stage_verifications=stage_verifications,
-                ai_provenance=provenance,    # W449 — the entity knows who served its body (F2)
+                ai_provenance={**provenance, "body_served_by": body_served_by(provenance)},    # W449 — the entity knows who served its body (F2)
                 review_gates=list(req.review_gates or [])),   # W452 — gates set at birth
                 user=user if isinstance(user, dict) else None)   # W302+W304 - the whole journey flows
         except Exception as e:
@@ -562,11 +588,11 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                         "and are not assessable — the verification proxies cannot fail on floor "
                         "output, so no verdict is claimed for them"),
         "quality_assurance": quality_assurance,
-        "ai_provenance": provenance,
-        "engines_used": [
-            "Inkashaf", "Samajh", "Soch", "Aqal", "Hoshiyari", "Iman",
-            "MJM", "DDPIE", "BDP", "gaas.v5",
-        ],
+        "ai_provenance": {**provenance, "body_served_by": body_served_by(provenance)},
+        # W479 (FU-121 refutation 2) — what RAN, never a literal: the lens names when the lens call ran,
+        # MJM when its call ran, the gaas.v5 gate (it ran above). DDPIE and BDP were listed and never called.
+        "engines_used": ([n.split(" (")[0].title() for (_e, n, _qq) in _selected_lenses(None)] if not _p_cog.get("failed") else [])
+                        + (["MJM"] if not _p_mjm.get("failed") else []) + ["gaas.v5"],
         "established_vsb": established_vsb,   # §4→§5 — the living VSB enterprise, when establish=True
         "deliverable": "The user's own VSB IDBO — Concept → Commercialisation"
                        + (" → established living enterprise" if established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")) else ""),
@@ -692,6 +718,22 @@ async def _derive_name(problem: str, domain: str, requested: str = "") -> tuple:
 # field with no provenance (the standalone /establish path) is the caller's own writing and ships
 # as given; a model-served field ships as given.
 _PENDING_BODY = ("content pending the owned model — this enterprise has not yet composed its own {what}")
+# W479 (FU-121 refutation 4) — the journey text the page saves as a deliverable (concept, research, design,
+# operations, commercialisation). A gate certifying that text reads the servers of THESE agents only.
+JOURNEY_BODY_AGENTS = ("genesis_concept", "genesis_research", "genesis_design", "genesis_operations", "genesis_commercial")
+
+
+def body_served_by(prov: dict, agents: tuple = JOURNEY_BODY_AGENTS) -> dict:
+    """{server: count} over the body agents that were served (failed and absent agents contribute nothing)."""
+    sba = (prov or {}).get("served_by_agent") or {}
+    out: dict = {}
+    for a in agents:
+        s = sba.get(a)
+        if s and s != "failed":
+            out[s] = out.get(s, 0) + 1
+    return out
+
+
 _BODY_AGENTS = (("concept", "genesis_concept", "concept"),
                 ("design", "genesis_design", "design"),
                 ("commercialisation", "genesis_commercial", "commercialisation"),

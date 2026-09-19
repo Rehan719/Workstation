@@ -247,7 +247,14 @@ def _body_served_by(vsb):
     body = [bp.get(k) or str(vsb.get(k) or "") for k in ("concept", "design", "commercialisation")]
     if not any(b.strip() for b in body) or any("content pending the owned model" in b for b in body):
         return "template"
-    return (vsb.get("ai_provenance") or {}).get("served_by")
+    # W479 (FU-121 refutation 4) — the servers of THIS body (concept, design, commercialisation) when recorded per
+    # agent; the aggregate map also counts calls outside the body (lens, MJM, candidates, twin), which must never
+    # make floor-served body text assessable. Entities from before W479 carry only the aggregate.
+    prov = vsb.get("ai_provenance") or {}
+    if prov.get("served_by_agent"):
+        from agentic_core.api.genesis import body_served_by
+        return body_served_by(prov, ("genesis_concept", "genesis_design", "genesis_commercial")) or "template"
+    return prov.get("served_by")
 
 
 def _refuse_pending_name(vsb: dict) -> None:

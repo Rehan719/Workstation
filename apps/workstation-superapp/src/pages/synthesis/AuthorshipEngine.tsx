@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
-  BookOpen, Loader2, CheckCircle2, Circle, AlertCircle,
+  BookOpen, Loader2, Circle, AlertCircle,
   ChevronDown, ChevronUp, FileText, PenLine, Search,
   Quote, Star, BookMarked, Send, Zap,
 } from 'lucide-react';
+import { StageMark, StageBadge, stageOutcome, isStageResult, ranCount, FLOOR_STAGE_NOTE, type StageData } from '../../components/StageOutcome';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -12,7 +13,7 @@ interface APEvent {
   stage: string;
   label: string;
   content: string;
-  data?: { stage_num?: number; total?: number };
+  data?: Record<string, any>;
 }
 
 // ── SSE stream helper ─────────────────────────────────────────────────────────
@@ -108,9 +109,11 @@ export const AuthorshipEngine: React.FC = () => {
     );
   };
 
-  const stageEvents = events.filter(
-    ev => !['init', 'complete'].includes(ev.stage) && !ev.stage.endsWith('_start'),
-  );
+  // W479 (FU-121) — only stage RESULT events are stages (they carry a stage number). The old filter let
+  // the 'config' event through when rigor was set: "Stage 1 of 9" was Reconfiguration and the page
+  // ended on "10 of 9". Cards and the tracker are keyed by stage_num, never by arrival order.
+  const stageEvents = events.filter(isStageResult);
+  const byNum = new Map(stageEvents.map(ev => [ev.data?.stage_num as number, ev]));
   const completeEvent = events.find(ev => ev.stage === 'complete');
   const currentStageNum = stageEvents.length;
   const progress = Math.min(100, Math.round((currentStageNum / APIE_STAGES.length) * 100));
@@ -127,7 +130,8 @@ export const AuthorshipEngine: React.FC = () => {
         </h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           9-stage Scholarship & Authorship pipeline — from source discovery through peer review simulation,
-          revision intelligence, and publication readiness. Powered by Nine Cognitive Engines + MJM.
+          revision intelligence, and publication readiness. Each stage is one structured prompt through the
+          in-house gateway, and each card says what served it. No cognitive lenses or MJM run here.
         </p>
       </header>
 
@@ -139,27 +143,34 @@ export const AuthorshipEngine: React.FC = () => {
           </h3>
           {running && (
             <span className="text-[10px] font-black text-aura uppercase tracking-widest animate-pulse">
-              {progress}% Complete
+              {progress}% returned
             </span>
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
           {APIE_STAGES.map(({ key, label, icon: Icon }, i) => {
-            const done = i < currentStageNum;
-            const active = i === currentStageNum && running;
+            const result = byNum.get(i + 1);
+            const outcome = result ? stageOutcome(result.data as StageData) : null;
+            const active = !result && i === currentStageNum && running;
             return (
               <div
                 key={key}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all ${
-                  done
-                    ? 'bg-aura/10 text-aura border-aura/20'
+                  outcome === 'model'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : outcome === 'failed'
+                    ? 'bg-vital/10 text-vital border-vital/20'
+                    : outcome === 'external'
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    : outcome === 'floor'
+                    ? 'bg-slate-800 text-slate-400 border-slate-700'
                     : active
                     ? 'bg-highlight/10 text-highlight border-highlight/30 animate-pulse'
                     : 'bg-slate-900 text-slate-600 border-slate-800'
                 }`}
               >
-                {done
-                  ? <CheckCircle2 size={10} />
+                {result
+                  ? <StageMark data={result.data as StageData} size={10} />
                   : active
                   ? <Loader2 size={10} className="animate-spin" />
                   : <Icon size={10} />}
@@ -328,7 +339,7 @@ export const AuthorshipEngine: React.FC = () => {
         <div className="space-y-3" ref={feedRef}>
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Pipeline Output — {stageEvents.length} of {APIE_STAGES.length} Stages
+              Pipeline Output — {ranCount(stageEvents)} of {APIE_STAGES.length} stages ran
             </h3>
             {stageEvents.length > 0 && (
               <button
@@ -342,10 +353,10 @@ export const AuthorshipEngine: React.FC = () => {
           </div>
 
           {stageEvents.map((ev, i) => {
-            const stageInfo = APIE_STAGES[i];
+            const stageInfo = APIE_STAGES[(ev.data?.stage_num ?? i + 1) - 1];
             const StageIcon = stageInfo?.icon ?? FileText;
             return (
-              <Card key={i} className="p-0 overflow-hidden border-slate-800/80">
+              <Card key={ev.data?.stage_num ?? i} className="p-0 overflow-hidden border-slate-800/80">
                 <button
                   type="button"
                   onClick={() => setExpanded(expanded === i ? null : i)}
@@ -357,11 +368,12 @@ export const AuthorshipEngine: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-black text-white text-sm">{ev.label}</p>
-                      <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5">
-                        Stage {i + 1} of {APIE_STAGES.length}
+                      <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5 flex items-center gap-2">
+                        Stage {ev.data?.stage_num} of {ev.data?.total ?? APIE_STAGES.length}
+                        <StageBadge data={ev.data as StageData} />
                       </p>
                     </div>
-                    <CheckCircle2 size={14} className="text-emerald-400 ml-2 shrink-0" />
+                    <StageMark data={ev.data as StageData} className="ml-2" />
                   </div>
                   {expanded === i
                     ? <ChevronUp size={14} className="text-slate-500 shrink-0" />
@@ -369,6 +381,9 @@ export const AuthorshipEngine: React.FC = () => {
                 </button>
                 {expanded === i && (
                   <div className="px-5 pb-6 border-t border-slate-800/50">
+                    {stageOutcome(ev.data as StageData) === 'floor' && (
+                      <p className="text-[10px] font-bold text-amber-400/80 mt-4">{FLOOR_STAGE_NOTE}</p>
+                    )}
                     <div className="mt-4 prose prose-invert prose-sm max-w-none">
                       <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
                         {ev.content}
@@ -386,7 +401,7 @@ export const AuthorshipEngine: React.FC = () => {
               <div className="flex items-center gap-3 mb-3">
                 <Zap size={18} className="text-aura" />
                 <h3 className="font-black text-aura uppercase tracking-widest text-sm">
-                  Authorship Pipeline Complete
+                  Authorship Pipeline Finished
                 </h3>
               </div>
               <p className="text-sm text-slate-300 leading-relaxed">

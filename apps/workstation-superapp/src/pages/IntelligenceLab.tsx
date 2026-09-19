@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { DOMAINS as CANON_DOMAINS } from '../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
 import {
-  TrendingUp, Microscope, Loader2, CheckCircle2, Circle,
+  TrendingUp, Microscope, Loader2, Circle,
   AlertCircle, Brain, Zap, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { StageMark, StageBadge, stageOutcome, isStageResult, ranCount, FLOOR_STAGE_NOTE, type StageData } from '../components/StageOutcome';
 
 // ── SSE helper ────────────────────────────────────────────────────────────────
 
@@ -12,8 +13,7 @@ interface IntelEvent {
   stage: string;
   label: string;
   content: string;
-  stage_number?: number;
-  total_stages?: number;
+  data?: Record<string, any>;
 }
 
 async function streamPost(
@@ -106,14 +106,13 @@ export const IntelligenceLab: React.FC = () => {
     );
   };
 
-  // Filter out init/prime events for the results view
-  const stageEvents = events.filter(
-    ev => !['init', 'cognitive_prime', 'cognitive_complete'].includes(ev.stage)
-      && ev.stage !== 'complete'
-  );
+  // W479 (FU-121) — only stage RESULT events count as stages (they carry a stage number); the
+  // framing events (init, config, *_start, complete) used to be counted, giving "Stage 17 of 8".
+  const stageEvents = events.filter(isStageResult);
+  const byNum = new Map(stageEvents.map(ev => [ev.data?.stage_num as number, ev]));
   const completeEvent = events.find(ev => ev.stage === 'complete');
   const currentStageNum = stageEvents.length;
-  const progress = Math.min(100, Math.round((currentStageNum / 8) * 100));
+  const progress = Math.min(100, Math.round((currentStageNum / stageNames.length) * 100));
 
   const DOMAINS = ['enterprise', ...CANON_DOMAINS];   // §17.1 (W321)
 
@@ -128,8 +127,8 @@ export const IntelligenceLab: React.FC = () => {
         </h1>
         <p className="text-slate-500 font-bold mt-2 max-w-xl leading-relaxed">
           {isBDP
-            ? 'Business Development Process: 8-stage structured methodology powered by Nine Cognitive Engines + MJM.'
-            : 'Scientific Process Intelligence: research methodology from hypothesis to dissemination.'}
+            ? 'Business Development Process: 8 stages, each one structured prompt through the in-house gateway. Each card says what served it.'
+            : 'Scientific Process Intelligence: 8 stages from problem formulation to dissemination, each one structured prompt through the in-house gateway. Each card says what served it.'}
         </p>
       </header>
 
@@ -169,26 +168,33 @@ export const IntelligenceLab: React.FC = () => {
           </h3>
           {running && (
             <span className="text-[10px] font-black text-highlight uppercase tracking-widest">
-              {progress}% Complete
+              {progress}% returned
             </span>
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
           {stageNames.map((name, i) => {
-            const done = i < currentStageNum;
-            const active = i === currentStageNum && running;
+            const result = byNum.get(i + 1);
+            const outcome = result ? stageOutcome(result.data as StageData) : null;
+            const active = !result && i === currentStageNum && running;
             return (
               <div
                 key={name}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all ${
-                  done
+                  outcome === 'model'
                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : outcome === 'failed'
+                    ? 'bg-vital/10 text-vital border-vital/20'
+                    : outcome === 'external'
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    : outcome === 'floor'
+                    ? 'bg-slate-800 text-slate-400 border-slate-700'
                     : active
                     ? 'bg-highlight/10 text-highlight border-highlight/30 animate-pulse'
                     : 'bg-slate-900 text-slate-600 border-slate-800'
                 }`}
               >
-                {done ? <CheckCircle2 size={10} /> : active ? <Loader2 size={10} className="animate-spin" /> : <Circle size={10} />}
+                {result ? <StageMark data={result.data as StageData} size={10} /> : active ? <Loader2 size={10} className="animate-spin" /> : <Circle size={10} />}
                 {name}
               </div>
             );
@@ -278,21 +284,22 @@ export const IntelligenceLab: React.FC = () => {
       {stageEvents.length > 0 && (
         <div className="space-y-3" ref={feedRef}>
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Analysis Results
+            Analysis Results — {ranCount(stageEvents)} of {stageNames.length} stages ran
           </h3>
           {stageEvents.map((ev, i) => (
-            <Card key={i} className="p-0 overflow-hidden">
+            <Card key={ev.data?.stage_num ?? i} className="p-0 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setExpanded(expanded === i ? null : i)}
                 className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-800/30 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                  <StageMark data={ev.data as StageData} />
                   <div>
                     <p className="font-black text-white text-sm">{ev.label}</p>
-                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5">
-                      Stage {i + 1} of 8
+                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5 flex items-center gap-2">
+                      Stage {ev.data?.stage_num} of {ev.data?.total ?? stageNames.length}
+                      <StageBadge data={ev.data as StageData} />
                     </p>
                   </div>
                 </div>
@@ -304,6 +311,9 @@ export const IntelligenceLab: React.FC = () => {
               </button>
               {expanded === i && (
                 <div className="px-5 pb-5 border-t border-slate-800/50">
+                  {stageOutcome(ev.data as StageData) === 'floor' && (
+                    <p className="text-[10px] font-bold text-amber-400/80 mt-4">{FLOOR_STAGE_NOTE}</p>
+                  )}
                   <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap mt-4">
                     {ev.content}
                   </p>

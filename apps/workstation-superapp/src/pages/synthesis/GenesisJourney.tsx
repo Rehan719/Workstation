@@ -252,7 +252,9 @@ export const GenesisJourney: React.FC = () => {
           domain, realm, content, vsb_id: vsb?.vsb_id ?? (result as any)?.established_vsb?.vsb_id ?? undefined,
           // W449 — the deliverable is this journey's text VERBATIM: tell the gate who served it, so
           // a floor journey saved as a report is 'not assessable', never certified 'pass'.
-          source_served_by: result?.ai_provenance?.served_by ?? null,
+          // W479 (FU-121 refutation 4) — the servers of the SAVED text only (its body stages), never the whole
+          // journey's calls: a model-served lens or candidate call must not make floor-served body text assessable
+          source_served_by: (result?.ai_provenance as any)?.body_served_by ?? result?.ai_provenance?.served_by ?? null,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -425,7 +427,8 @@ export const GenesisJourney: React.FC = () => {
       blurb: 'Understand → analyse → optimal solution concept',
       body: (
         <div className="space-y-5">
-          <Section icon={Brain} title="Cognitive Cascade (6 engines)" text={result.phase_1_conceptualisation.cognitive_cascade} />
+          {/* W479 — one gateway prompt headed by six lenses, not six engines (FU-121 / refutation 3) */}
+          <Section icon={Brain} title="Cognitive lenses (one prompt, 6 lenses)" text={result.phase_1_conceptualisation.cognitive_cascade} />
           <Section icon={Eye} title="MJM Assessment" text={result.phase_1_conceptualisation.mjm_assessment} />
           <Section icon={Lightbulb} title="Optimal Solution Concept" text={result.phase_1_conceptualisation.concept} highlight />
         </div>
@@ -624,6 +627,9 @@ export const GenesisJourney: React.FC = () => {
                 <span className="text-[9px] font-mono text-slate-400">
                   {Object.entries(result.ai_provenance.served_by).map(([k, n]) => `${k} ×${n}`).join(' · ')}
                   {result.ai_provenance.any_external ? ' · external used' : ' · no external'}
+                  {((result.ai_provenance as any).failed_calls || 0) > 0 && (
+                    <span className="text-vital"> · {(result.ai_provenance as any).failed_calls} calls did not run</span>
+                  )}
                 </span>
               </div>
               {(result.ai_provenance.served_by['native'] || 0) > 0 && (

@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
-  Sparkles, Loader2, CheckCircle2, AlertCircle,
-  ChevronDown, ChevronUp, Brain, Eye, Zap, Layers,
+  Sparkles, Loader2, AlertCircle,
+  ChevronDown, ChevronUp, Brain, Eye, Layers,
   Code2, BookOpen, FlaskConical, Briefcase, Network,
 } from 'lucide-react';
+import { StageMark, StageBadge, stageOutcome, isStageResult, ranCount, FLOOR_STAGE_NOTE, type StageData } from '../../components/StageOutcome';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,11 +18,18 @@ interface NexusEvent {
     phases?: string[];
     layer?: number;
     engine?: string;
+    lenses?: number;
     layers_completed?: number;
-    cognitive_engines?: number;
+    layers_total?: number;
+    cognitive_lenses?: number;
+    engine_decided?: boolean;
+    decision?: { decided?: boolean; by?: string; reason?: string };
     mjm_phases?: number;
     stage_num?: number;
     total?: number;
+    served_by?: string | null;
+    is_external?: boolean;
+    failed?: boolean;
   };
 }
 
@@ -67,7 +75,7 @@ async function streamPost(
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const ACTIVITY_OPTIONS = [
-  { id: 'auto',        label: 'Auto',        icon: Sparkles,    desc: 'AI selects the optimal engine' },
+  { id: 'auto',        label: 'Auto',        icon: Sparkles,    desc: 'A model picks the engine; with no model, BDP by default (the page says so)' },
   { id: 'synthesis',   label: 'Synthesis',   icon: Briefcase,   desc: 'Business Development Process' },
   { id: 'research',    label: 'Research',    icon: FlaskConical, desc: 'Scientific Process Intelligence' },
   { id: 'authorship',  label: 'Authorship',  icon: BookOpen,    desc: 'Scholarship & Authorship' },
@@ -80,10 +88,10 @@ const DOMAINS = [
 ];
 
 const NEXUS_LAYERS = [
-  { key: 'cognitive', label: 'Cognitive Cascade',  icon: Brain,       desc: '6 cognitive engines: Inkashaf → Samajh → Soch → Aqal → Hoshiyari → Iman' },
-  { key: 'mjm',       label: 'MJM Assessment',     icon: Eye,         desc: 'Mushahida → Jaiza → Muaina (Observe · Analyse · Act)' },
-  { key: 'engine',    label: 'Primary Engine',      icon: Network,     desc: 'Selected intelligence pipeline — enriched by cognitive + MJM' },
-  { key: 'synthesis', label: 'Nexus Synthesis',     icon: Layers,      desc: 'Apex integration — unified intelligence from all layers' },
+  { key: 'cognitive', label: 'Cognitive Lenses',   icon: Brain,       desc: 'One prompt headed by 6 lenses: Inkashaf → Samajh → Soch → Aqal → Hoshiyari → Iman' },
+  { key: 'mjm',       label: 'MJM Assessment',     icon: Eye,         desc: 'One prompt: Mushahida → Jaiza → Muaina, over the lens output' },
+  { key: 'engine',    label: 'Primary Engine',      icon: Network,     desc: 'The chosen pipeline, one prompt per stage, given the lens and MJM output' },
+  { key: 'synthesis', label: 'Nexus Synthesis',     icon: Layers,      desc: 'One prompt over the lens, MJM and engine outputs' },
 ];
 
 // Stage events that belong to the "primary engine" layer (not cognitive/MJM/nexus)
@@ -99,6 +107,20 @@ function layerFromStage(stage: string): 'cognitive' | 'mjm' | 'engine' | 'synthe
   if (stage === 'nexus_complete') return 'synthesis';
   if (!ENGINE_META_STAGES.has(stage) && !stage.endsWith('_start')) return 'engine';
   return null;
+}
+
+// W479 (FU-121) — a layer's outcome is what served its call(s): 'failed' when none ran, 'partial' when some
+// did not run (amber: never hidden behind a neutral or green mark), 'floor' when any ran on the structured
+// floor, 'model' only when every stage was model-served.
+function layerOutcome(evs: NexusEvent[]): 'model' | 'external' | 'floor' | 'failed' | 'partial' | null {
+  if (!evs.length) return null;
+  const k = evs.map(e => stageOutcome(e.data as StageData));
+  if (k.every(x => x === 'failed')) return 'failed';
+  if (k.some(x => x === 'failed')) return 'partial';
+  // (refutation 3) ANY external stage makes the layer amber, even beside floor stages: never hidden behind the floor mark
+  if (k.some(x => x === 'external')) return 'external';
+  if (k.every(x => x === 'model')) return 'model';
+  return 'floor';
 }
 
 function engineIcon(engineId: string) {
@@ -147,9 +169,19 @@ export const SynthesisNexus: React.FC = () => {
   const nexusCompleteEvent = events.find(e => e.stage === 'nexus_complete');
   const selectedEngine = engineSelectedEvent?.data?.engine ?? '';
 
-  const engineStageEvents = events.filter(e => layerFromStage(e.stage) === 'engine');
+  // only stage RESULT events (they carry a stage number), keyed by it
+  const engineStageEvents = events.filter(e => layerFromStage(e.stage) === 'engine' && isStageResult(e));
+  const decision = engineSelectedEvent?.data?.decision;
 
-  const layersComplete = [cognitiveEvent, mjmEvent, engineStageEvents.length > 0, nexusCompleteEvent].filter(Boolean).length;
+  const synthesisStarted = events.some(e => e.stage === 'synthesis_start');
+  const outcomes: Record<string, ReturnType<typeof layerOutcome>> = {
+    cognitive: cognitiveEvent ? layerOutcome([cognitiveEvent]) : null,
+    mjm: mjmEvent ? layerOutcome([mjmEvent]) : null,
+    engine: synthesisStarted || nexusCompleteEvent ? layerOutcome(engineStageEvents) : null,
+    synthesis: nexusCompleteEvent ? layerOutcome([nexusCompleteEvent]) : null,
+  };
+  // (W479 refutation) a layer RAN when at least one of its calls ran; a failed layer is returned, not run
+  const layersComplete = Object.values(outcomes).filter(o => o !== null && o !== 'failed').length;
 
   return (
     <div className="space-y-10 pb-24">
@@ -162,9 +194,9 @@ export const SynthesisNexus: React.FC = () => {
           Synthesis Nexus
         </h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          Four-layer autonomous intelligence. The Nexus chains all engines synergistically:
-          Cognitive Cascade → MJM Meta-Assessment → AI-selected primary engine → Apex Synthesis.
-          Every layer enriches the next.
+          Four layers, each passed to the next: the six cognitive lenses (one prompt), MJM (one prompt),
+          a primary engine (one prompt per stage) and a synthesis (one prompt). Every layer says what
+          served it, and the page says whether a model chose the engine or it was a default.
         </p>
       </header>
 
@@ -175,17 +207,14 @@ export const SynthesisNexus: React.FC = () => {
         </h3>
         <div className="grid grid-cols-2 @[640px]:grid-cols-4 gap-3">
           {NEXUS_LAYERS.map(({ key, label, icon: Icon, desc }, i) => {
-            const done =
-              (key === 'cognitive' && !!cognitiveEvent) ||
-              (key === 'mjm' && !!mjmEvent) ||
-              (key === 'engine' && engineStageEvents.length > 0) ||
-              (key === 'synthesis' && !!nexusCompleteEvent);
+            const outcome = outcomes[key];
+            const done = outcome !== null;
             const active =
               running && !done &&
               ((key === 'cognitive' && !cognitiveEvent) ||
                (key === 'mjm' && !!cognitiveEvent && !mjmEvent) ||
-               (key === 'engine' && !!mjmEvent && !nexusCompleteEvent && engineStageEvents.length === 0) ||
-               (key === 'synthesis' && !!mjmEvent && engineStageEvents.length > 0 && !nexusCompleteEvent));
+               (key === 'engine' && !!mjmEvent && !synthesisStarted && !nexusCompleteEvent) ||
+               (key === 'synthesis' && synthesisStarted && !nexusCompleteEvent));
 
             return (
               <div
@@ -203,7 +232,9 @@ export const SynthesisNexus: React.FC = () => {
                     done ? 'bg-highlight/20' : active ? 'bg-aura/20' : 'bg-slate-800'
                   }`}>
                     {done
-                      ? <CheckCircle2 size={12} className="text-highlight" />
+                      ? (outcome === 'partial'
+                        ? <AlertCircle size={12} className="text-amber-400 shrink-0" aria-label="some stages did not run" />
+                        : <StageMark data={outcome === 'model' ? { served_by: 'model' } : outcome === 'external' ? { served_by: 'external', is_external: true } : outcome === 'failed' ? { failed: true } : null} size={12} />)
                       : active
                       ? <Loader2 size={12} className="text-aura animate-spin" />
                       : <Icon size={12} className="text-slate-500" />}
@@ -232,7 +263,7 @@ export const SynthesisNexus: React.FC = () => {
               />
             </div>
             <p className="text-[9px] font-bold text-slate-500 mt-1.5 uppercase tracking-widest">
-              {layersComplete} of 4 layers complete
+              {layersComplete} of 4 layers ran
             </p>
           </div>
         )}
@@ -247,7 +278,7 @@ export const SynthesisNexus: React.FC = () => {
           <textarea
             value={challenge}
             onChange={e => setChallenge(e.target.value)}
-            placeholder="Describe what you want to synthesise, design, research, or build. The Nexus will autonomously select and chain the right engines..."
+            placeholder="Describe what you want to synthesise, design, research, or build. Pick an activity, or leave Auto: a model picks the engine when one is available, otherwise BDP runs by default and the page says so..."
             rows={4}
             className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none"
           />
@@ -341,12 +372,13 @@ export const SynthesisNexus: React.FC = () => {
                     <Brain size={14} className="text-highlight" />
                   </div>
                   <div>
-                    <p className="font-black text-white text-sm">Cognitive Cascade</p>
-                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5">
-                      Layer 1 · 6 cognitive engines
+                    <p className="font-black text-white text-sm">Cognitive Lenses</p>
+                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5 flex items-center gap-2">
+                      Layer 1 · one prompt headed by {cognitiveEvent.data?.lenses ?? cognitiveEvent.data?.engines?.length ?? 6} lenses
+                      <StageBadge data={cognitiveEvent.data as StageData} />
                     </p>
                   </div>
-                  <CheckCircle2 size={14} className="text-emerald-400 ml-2 shrink-0" />
+                  <StageMark data={cognitiveEvent.data as StageData} className="ml-2" />
                 </div>
                 {expanded === 'cognitive'
                   ? <ChevronUp size={14} className="text-slate-500 shrink-0" />
@@ -354,8 +386,11 @@ export const SynthesisNexus: React.FC = () => {
               </button>
               {expanded === 'cognitive' && (
                 <div className="px-5 pb-6 border-t border-slate-800/50">
+                  {stageOutcome(cognitiveEvent.data as StageData) === 'floor' && (
+                    <p className="text-[10px] font-bold text-amber-400/80 mt-4">{FLOOR_STAGE_NOTE}</p>
+                  )}
                   <div className="flex flex-wrap gap-1.5 my-3">
-                    {(cognitiveEvent.data?.engines ?? ['Inkashaf','Samajh','Soch','Aqal','Hoshiyari','Iman']).map(eng => (
+                    {(stageOutcome(cognitiveEvent.data as StageData) === 'failed' ? [] : (cognitiveEvent.data?.engines ?? [])).map(eng => (
                       <span key={eng} className="px-2 py-0.5 rounded-md bg-highlight/10 text-highlight text-[9px] font-black uppercase tracking-wider">
                         {eng}
                       </span>
@@ -383,11 +418,12 @@ export const SynthesisNexus: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-black text-white text-sm">MJM Meta-Assessment</p>
-                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5">
-                      Layer 2 · Mushahida · Jaiza · Muaina
+                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5 flex items-center gap-2">
+                      Layer 2 · one prompt · Mushahida · Jaiza · Muaina
+                      <StageBadge data={mjmEvent.data as StageData} />
                     </p>
                   </div>
-                  <CheckCircle2 size={14} className="text-emerald-400 ml-2 shrink-0" />
+                  <StageMark data={mjmEvent.data as StageData} className="ml-2" />
                 </div>
                 {expanded === 'mjm'
                   ? <ChevronUp size={14} className="text-slate-500 shrink-0" />
@@ -395,6 +431,9 @@ export const SynthesisNexus: React.FC = () => {
               </button>
               {expanded === 'mjm' && (
                 <div className="px-5 pb-6 border-t border-slate-800/50">
+                  {stageOutcome(mjmEvent.data as StageData) === 'floor' && (
+                    <p className="text-[10px] font-bold text-amber-400/80 mt-4">{FLOOR_STAGE_NOTE}</p>
+                  )}
                   <div className="flex flex-wrap gap-1.5 my-3">
                     {(mjmEvent.data?.phases ?? ['Mushahida','Jaiza','Muaina']).map(ph => (
                       <span key={ph} className="px-2 py-0.5 rounded-md bg-aura/10 text-aura text-[9px] font-black uppercase tracking-wider">
@@ -414,10 +453,19 @@ export const SynthesisNexus: React.FC = () => {
           {engineSelectedEvent && (
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800">
               {React.createElement(engineIcon(selectedEngine), { size: 12, className: 'text-highlight shrink-0' })}
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Routing to primary engine:
-                <span className="text-highlight ml-2">{selectedEngine.toUpperCase()}</span>
-              </p>
+              {decision?.decided === false ? (
+                <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+                  Not selected: defaulted to
+                  <span className="ml-2">{selectedEngine.toUpperCase()}</span>
+                  <span className="ml-2 normal-case tracking-normal font-bold text-slate-400">because {decision.reason}</span>
+                </p>
+              ) : (
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Primary engine:
+                  <span className="text-highlight ml-2">{selectedEngine.toUpperCase()}</span>
+                  {decision?.reason && <span className="ml-2 normal-case tracking-normal font-bold text-slate-500">({decision.reason})</span>}
+                </p>
+              )}
             </div>
           )}
 
@@ -425,11 +473,11 @@ export const SynthesisNexus: React.FC = () => {
           {engineStageEvents.length > 0 && (
             <div className="space-y-2">
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-1">
-                Layer 3 · {selectedEngine.toUpperCase()} Pipeline — {engineStageEvents.length} stage{engineStageEvents.length !== 1 ? 's' : ''} complete
+                Layer 3 · {selectedEngine.toUpperCase()} Pipeline — {ranCount(engineStageEvents)} of {engineStageEvents[0]?.data?.total ?? engineStageEvents.length} stages ran
               </p>
               {engineStageEvents.map((ev, i) => {
                 const EngIcon = engineIcon(selectedEngine);
-                const evKey = `engine-${i}`;
+                const evKey = `engine-${ev.data?.stage_num ?? i}`;
                 return (
                   <Card key={evKey} className="p-0 overflow-hidden border-slate-800/80">
                     <button
@@ -443,12 +491,13 @@ export const SynthesisNexus: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-black text-white text-sm">{ev.label}</p>
-                          <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5">
-                            Stage {i + 1}
+                          <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5 flex items-center gap-2">
+                            Stage {ev.data?.stage_num}
                             {ev.data?.total ? ` of ${ev.data.total}` : ''} · {selectedEngine.toUpperCase()}
+                            <StageBadge data={ev.data as StageData} />
                           </p>
                         </div>
-                        <CheckCircle2 size={12} className="text-emerald-400 ml-2 shrink-0" />
+                        <StageMark data={ev.data as StageData} size={12} className="ml-2" />
                       </div>
                       {expanded === evKey
                         ? <ChevronUp size={14} className="text-slate-500 shrink-0" />
@@ -456,6 +505,9 @@ export const SynthesisNexus: React.FC = () => {
                     </button>
                     {expanded === evKey && (
                       <div className="px-5 pb-5 border-t border-slate-800/50">
+                        {stageOutcome(ev.data as StageData) === 'floor' && (
+                          <p className="text-[10px] font-bold text-amber-400/80 mt-4">{FLOOR_STAGE_NOTE}</p>
+                        )}
                         <p className="mt-4 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
                           {ev.content}
                         </p>
@@ -481,13 +533,14 @@ export const SynthesisNexus: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-black text-highlight text-sm uppercase tracking-wide">Nexus Synthesis</p>
-                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5">
-                      Layer 4 · Apex integration ·{' '}
-                      {nexusCompleteEvent.data?.layers_completed ?? 4} layers ·{' '}
-                      {nexusCompleteEvent.data?.cognitive_engines ?? 6} cognitive engines
+                    <p className="text-[9px] font-bold uppercase text-slate-500 mt-0.5 flex items-center gap-2">
+                      Layer 4 · one prompt ·{' '}
+                      {nexusCompleteEvent.data?.layers_completed ?? '—'} of {nexusCompleteEvent.data?.layers_total ?? 4} layers ran ·{' '}
+                      {nexusCompleteEvent.data?.cognitive_lenses ?? '—'} lenses
+                      <StageBadge data={nexusCompleteEvent.data as StageData} />
                     </p>
                   </div>
-                  <Zap size={14} className="text-highlight ml-2 shrink-0" />
+                  <StageMark data={nexusCompleteEvent.data as StageData} className="ml-2" />
                 </div>
                 {expanded === 'nexus'
                   ? <ChevronUp size={14} className="text-slate-500 shrink-0" />
@@ -495,6 +548,9 @@ export const SynthesisNexus: React.FC = () => {
               </button>
               {expanded === 'nexus' && (
                 <div className="px-5 pb-6 border-t border-highlight/20">
+                  {stageOutcome(nexusCompleteEvent.data as StageData) === 'floor' && (
+                    <p className="text-[10px] font-bold text-amber-400/80 mt-4">{FLOOR_STAGE_NOTE}</p>
+                  )}
                   <p className="mt-4 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
                     {nexusCompleteEvent.content}
                   </p>

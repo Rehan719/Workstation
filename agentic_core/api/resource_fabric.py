@@ -87,8 +87,8 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["architecture", "api contract", "security", "test strategy", "devops"],
        {"system": "str", "tech_stack": "str", "scale": "str", "deployment_target": "str"},
        "/api/v1/intelligence/design-dev", ["design", "development", "delivery", "forge", "build_to_order"]),
-    _R("cognitive_cascade", "Nine Cognitive Engines + MJM", "process_intelligence", "engine",
-       "6 cognitive engines (Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman) + MJM meta-judgement.",
+    _R("cognitive_cascade", "Cognitive Lenses + MJM", "process_intelligence", "engine",
+       "One prompt headed by 6 cognitive lenses (Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman), then MJM, then a synthesis.",
        ["pattern discovery", "comprehension", "reasoning", "anomaly detection", "values alignment"],
        {"problem": "str", "domain": "str"}, "/api/v1/intelligence/solve",
        ["synthesis", "design", "development", "delivery", "governance"], biomimetic=True),
@@ -100,8 +100,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"problem": "str", "domain": "str", "prime": "bool (auto cognitive prime)", "engines": "list (priming engines)"},
        "/api/v1/intelligence/mjm", ["synthesis", "governance", "delivery", "design", "development"], biomimetic=True),
     _R("nexus", "Synthesis Nexus", "process_intelligence", "orchestrator",
-       "4-layer autonomous chain: cognitive cascade → MJM → auto-selected engine → apex synthesis.",
-       ["auto engine routing", "cross-engine synthesis", "synergistic chaining"],
+       "4-layer chain: the cognitive lenses (one prompt) → MJM (one prompt) → a primary engine (chosen by a "
+       "model's reply, else BDP as a stated default) → a synthesis over what ran.",
+       ["engine routing (model-decided, else a stated default)", "cross-engine synthesis", "chaining"],
        {"challenge": "str", "domain": "str", "activity": "str"}, "/api/v1/intelligence/nexus",
        ["synthesis", "design", "development", "delivery"], biomimetic=True),
     _R("genesis", "Genesis Sovereign Journey", "process_intelligence", "orchestrator",
@@ -489,6 +490,20 @@ def _csv(v) -> list:
     return [s.strip() for s in str(v or "").replace(";", ",").replace("\n", ",").split(",") if s.strip()]
 
 
+def _intel_served(prov) -> dict:
+    """W479 (FU-121) — an intelligence-engine run composed into the fabric reports what served its calls,
+    the same comma-joined form every other resource here uses ('native' = the structured floor). None
+    when no call ran (every call failed) — never a silent 'native'."""
+    if not isinstance(prov, dict):
+        return {"served_by": None, "is_external": False}
+    keys = sorted((prov.get("served_by") or {}).keys())
+    return {"served_by": ",".join(keys) or None, "is_external": bool(prov.get("any_external")),
+            # (refutation 2) the per-server COUNTS too: a mostly-floor run must not read as a model run
+            "served_by_map": dict(prov.get("served_by") or {}),
+            "calls": prov.get("calls", 0),
+            "floor_calls": prov.get("floor_calls", 0), "failed_calls": prov.get("failed_calls", 0)}
+
+
 def _cfg_num(v, default, cast=int):
     """Coerce a composed-config value to a number, tolerating the registry placeholder strings that
     compose() merges in for un-overridden params (e.g. 'int 1-3 (passages)') → fall back to default."""
@@ -521,13 +536,17 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             from agentic_core.api.intelligence import mjm_assess, MJMRequest
             r = await mjm_assess(MJMRequest(problem=objective, domain=domain, engines=_csv(cfg.get("engines"))))
             return {"resource": "mjm", "ran": "/api/v1/intelligence/mjm",
-                    "cognitive_primed": r["cognitive_primed"], "output": (r["assessment"] or "")[:600]}
+                    "cognitive_primed": r["cognitive_primed"], "prime_failed": bool(r.get("prime_failed")),
+                    "status": r.get("status"), "output": (r["assessment"] or "")[:600],
+                    **_intel_served(r.get("provenance"))}
         if rid == "cognitive_cascade":
             from agentic_core.api.intelligence import solve_with_cognitive_stack, SolveRequest
             r = await solve_with_cognitive_stack(SolveRequest(problem=objective, domain=domain,
                                                               engines=_csv(cfg.get("engines"))))
             return {"resource": "cognitive_cascade", "ran": "/api/v1/intelligence/solve",
-                    "engines_used": r.get("engines_used"), "output": (r.get("synthesis") or "")[:600]}
+                    "engines_used": r.get("engines_used"), "status": r.get("status"),
+                    "output": (r.get("synthesis") or "")[:600],
+                    **_intel_served(r.get("provenance"))}
         if rid == "experimentation":
             from agentic_core.api.products import reactor_experiment, ExperimentRequest
             scen = _csv(cfg.get("scenarios")) or [f"Pursue: {objective}", f"Defer: {objective}"]
@@ -557,15 +576,17 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
                                                  rigor=str(cfg.get("rigor") or "standard"),
                                                  focus=str(cfg.get("focus") or ""))
             return {"resource": rid, "ran": f"/api/v1/intelligence/{_ep}",
-                    "stages": r.get("stages"), "output": (r.get("analysis") or "")[:600]}
+                    "stages": r.get("stages"), "output": (r.get("analysis") or "")[:600],
+                    **_intel_served(r.get("provenance"))}
         if rid == "nexus":
-            # the §7 Synthesis Nexus orchestrator runs its REAL 4-layer chain (cognitive cascade → MJM →
-            #   auto-selected primary engine → apex synthesis), collected to completion — not a prompt.
+            # the §7 Synthesis Nexus runs its 4-layer chain (the cognitive lenses as one prompt → MJM →
+            #   the primary engine, chosen by a model or else a disclosed default → synthesis), collected.
             from agentic_core.api.intelligence import run_intelligence_collected
             r = await run_intelligence_collected(str(cfg.get("challenge") or objective), domain, "nexus",
                                                  focus=str(cfg.get("activity") or "auto"))
             return {"resource": "nexus", "ran": "/api/v1/intelligence/nexus",
-                    "stages": r.get("stages"), "output": (r.get("analysis") or "")[:600]}
+                    "stages": r.get("stages"), "output": (r.get("analysis") or "")[:600],
+                    **_intel_served(r.get("provenance"))}
         if rid == "genesis":
             # the §4 Genesis Concept→Commercialisation journey runs its REAL cascade (cognitive · MJM ·
             #   research · model/rank · design · operations · commercialisation · gaas gate), bounded:
@@ -574,10 +595,21 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             j = await genesis_journey(JourneyRequest(problem=str(cfg.get("problem") or objective), domain=domain,
                                                      realm=str(cfg.get("realm") or "enterprise"), establish=False))
             prov = j.get("ai_provenance") or {}
-            sb = ",".join(sorted((prov.get("served_by") or {}).keys())) or "native"
+            # W479 (refutation 3) — what served it, from the journey: None when nothing did (never a default
+            # 'native'); the calls, the failed ones and the external flag, so the learning loop records it truly
+            # (refutation 4) the body only — the journey text this resource outputs — for what served it AND for the
+            # success count, so the two can never disagree (a run whose body failed is never a success)
+            from agentic_core.api.genesis import JOURNEY_BODY_AGENTS, body_served_by as _bsb
+            _served = _bsb(prov)
+            _sba = prov.get("served_by_agent") or {}
+            _body_calls = [a for a in JOURNEY_BODY_AGENTS if a in _sba]
+            sb = ",".join(sorted(_served.keys())) or None
             comm = j.get("phase_3_commercialisation")
             out = comm if isinstance(comm, str) else (j.get("phase_2_design_development") if isinstance(j.get("phase_2_design_development"), str) else "")
             return {"resource": "genesis", "ran": "/api/v1/genesis/journey", "served_by": sb,
+                    "served_by_map": _served, "is_external": bool(prov.get("any_external")),
+                    "calls": len(_body_calls),
+                    "failed_calls": sum(1 for a in _body_calls if _sba.get(a) == "failed"),
                     "stages_verified": j.get("stages_verified"), "engines_used": j.get("engines_used"),
                     "status": j.get("status"), "output": (str(out) or "Concept→Commercialisation journey complete")[:600]}
         if rid == "genome":
@@ -1047,9 +1079,15 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     try:
         from agentic_core.api.operational_excellence import record_outcome as _ro
         for rr in real_runs:
+            # W479 (FU-121 refutation 2) — a run is a success only when it raised nothing and, for a resource
+            # that reports its calls, at least one call ran; what served it and whether it was external
+            # come from the run, never 'real-engine' / False by default.
+            _calls, _failed = rr.get("calls") or 0, rr.get("failed_calls") or 0
+            _ok = not rr.get("error") and not (_calls and _failed >= _calls)
             _ro("fabric_resource", f"fabric:{rr['resource']}",
-                served_by=str(rr.get("served_by") or "real-engine"), is_external=False,
-                duration_ms=rr.get("duration_ms", 0), success=True, ref=cid)
+                served_by=str(rr.get("served_by") or ("real-engine" if _ok and not _calls else "none")),
+                is_external=bool(rr.get("is_external")),
+                duration_ms=rr.get("duration_ms", 0), success=_ok, ref=cid)
     except Exception:
         pass
 
