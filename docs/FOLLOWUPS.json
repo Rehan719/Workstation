@@ -3715,9 +3715,251 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-221",
+      "title": "The cognitive engine registry is never populated, and its call contract does not match the engines",
+      "why": "CognitiveEngineRegistry._engines starts empty and nothing calls register(), so registry.get(...) raises ValueError on the first call; EngineRegistry9.get_engine_response then calls engine.process(input, context, enforcement) and reads result.payload, while the engines expose unveil_patterns / comprehend / reason / detect_anomalies / reflect / validate_values returning plain dicts. This is why agentic_core/avatars/api.py deliberately bypasses the recirculation orchestrator (its own docstring says the registry 'was never actually populated with working engines'). FIX: one binding, one call signature the engines implement.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/cognitive/registry.py",
+        "agentic_core/avatars/cognition/nine_engine_registry.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "native_ai",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-222",
+      "title": "The six cognitive engines return constants for any input",
+      "why": "inkashaf_engine.py returns {'status':'SUCCESS','insight':'revealed'}, aqal {'status':'SUCCESS','plan':'computed'}, samajh 'grasped', soch ['A','B'], hoshiyari threat_score 0.01, iman alignment 0.99 — none reads its input (only cycle metrics can deflect them). cascade_v16 chains all six and reports status 'fully_integrated'. FU-146 covers the VSB spawn surface that SHOWS these; this row is the engines themselves. FIX: each engine measures its input or returns assessable:false with the reason.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/cognitive/inkashaf_engine.py",
+        "agentic_core/cognitive/aqal_engine.py",
+        "agentic_core/cognitive/samajh_engine.py",
+        "agentic_core/cognitive/soch_engine.py",
+        "agentic_core/cognitive/hoshiyari_engine.py",
+        "agentic_core/cognitive/iman_engine.py",
+        "agentic_core/cognitive/cascade_v16.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "dropped",
+      "closed_by": null,
+      "note": "re-filed at medium: a dormant module is not current-gate work (the high rule rides the next open item)",
+      "tier": 2,
+      "area": "native_ai",
+      "reach": "secondary"
+    },
+    {
+      "id": "FU-223",
+      "title": "/api/v1/cognitive/* returns a constant payload and reports engines_run 9, status complete",
+      "why": "ledger v4 R4.3 (tier 2, API_ONLY, refutation SURVIVED): POST /api/v1/cognitive/cascade with two different problems returns identical output bar the echoed problem and elapsed_seconds; engines_run is the literal 6 or 9 and status the literal 'complete'. No frontend calls it, so it is API-only, but it is a public route of this platform. FIX: report what ran, or return 501 until the engines measure.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/cognitive.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "native_ai",
+      "reach": "secondary"
+    },
+    {
+      "id": "FU-224",
+      "title": "The consultation contract excludes the three meta engines and forces a numeric confidence",
+      "why": "ConsultationRequest.engine is a Literal of seven names (six lenses + mjm), so niyyah, tawazun and tafakkur cannot be requested through the contract the registry declares; ConsultationResponse.confidence is a required float 0..1, which is why every implementer returns a literal (0.96, 0.88). FIX: an explicit assessable state and a provenance block, and the nine names the registry declares.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/consultation/interface.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "native_ai",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-225",
+      "title": "The five-gate clearance chain cannot refuse, and writes literal strings as signatures",
+      "why": "clearance_chain.py: tawazun_res.get('balanced', True), tahqeeq_res.get('verified', True), a missing risk_score reading as 0 — an engine returning {} clears all five gates; the attestations recorded to the UEG are the literals 'SIG_MUSHAWARA_v1', 'SIG_NIYYAH_v1', 'SIG_TAWAZUN_v1', 'SIG_TAFAKKUR_v1'. Dormant today (only the bypassed recirculation orchestrator calls it), so this must be fixed BEFORE anything is wired to it. FIX: every default blocks; each verdict records its basis.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/avatars/core/clearance_chain.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.14",
+      "status": "dropped",
+      "closed_by": null,
+      "note": "re-filed at medium: dormant until P3.14 wires it",
+      "tier": 3,
+      "area": "compliance",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-226",
+      "title": "Post-quantum signatures are named in five modules and never performed",
+      "why": "Dilithium/Kyber appear as strings and descriptions in autonomy_pipelines.py, integration_surface.py, avatar_engine.py, interstellar.py and qep_flagship.py; no attestation path performs a post-quantum signature. FIX: sign a canonical payload with a named algorithm and a stated key source, verify it from a route, and use the words 'post-quantum' only when it is.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/ai/ceo/autonomy_pipelines.py",
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/avatars/core/avatar_engine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "compliance",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-227",
+      "title": "The recirculation orchestrator states stage latency targets it never measures",
+      "why": "recirculation_orchestrator.py documents 'Target p95 latency: <500ms (SENSE -> ACT)' and per-stage budgets (<100ms sense, <500ms analyse) and measures none of them. It is not on a live path (the avatar API bypasses it and says why), so this is a dormant claim. FIX: measure each stage, record the latencies with the run, and make a breach a recorded fact before the loop is wired to the heartbeat.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/avatars/core/recirculation_orchestrator.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "organism",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-228",
+      "title": "intelligence.py keeps the unused cascade and MJM singletons W479 stopped calling",
+      "why": "W479 removed the stub cascade call from the BDP/SPI stream; agentic_core/api/intelligence.py still imports UltimateCognitiveCascade and MJMOrchestratorV4 and instantiates _cascade and _mjm at import, which now nothing uses. FIX: remove them with the P3.12 engine work (they are the same objects that item rebuilds).",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/intelligence.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "tooling",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-229",
+      "title": "The six cognitive engines return constants for any input",
+      "why": "inkashaf_engine.py returns {'status':'SUCCESS','insight':'revealed'}, aqal {'status':'SUCCESS','plan':'computed'}, samajh 'grasped', soch ['A','B'], hoshiyari threat_score 0.01, iman alignment 0.99 — none reads its input (only cycle metrics can deflect them). cascade_v16 chains all six and reports status 'fully_integrated'. FU-146 covers the VSB spawn surface that SHOWS these; this row is the engines themselves. FIX: each engine measures its input or returns assessable:false with the reason.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/cognitive/inkashaf_engine.py",
+        "agentic_core/cognitive/aqal_engine.py",
+        "agentic_core/cognitive/samajh_engine.py",
+        "agentic_core/cognitive/soch_engine.py",
+        "agentic_core/cognitive/hoshiyari_engine.py",
+        "agentic_core/cognitive/iman_engine.py",
+        "agentic_core/cognitive/cascade_v16.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "native_ai",
+      "reach": "secondary"
+    },
+    {
+      "id": "FU-230",
+      "title": "The five-gate clearance chain cannot refuse, and writes literal strings as signatures",
+      "why": "clearance_chain.py: tawazun_res.get('balanced', True), tahqeeq_res.get('verified', True), a missing risk_score reading as 0 — an engine returning {} clears all five gates; the attestations recorded to the UEG are the literals 'SIG_MUSHAWARA_v1', 'SIG_NIYYAH_v1', 'SIG_TAWAZUN_v1', 'SIG_TAFAKKUR_v1'. Dormant today (only the bypassed recirculation orchestrator calls it), so this must be fixed BEFORE anything is wired to it. FIX: every default blocks; each verdict records its basis.",
+      "source": "W480 review of the 12-engine cognitive architecture proposal",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/avatars/core/clearance_chain.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.14",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "compliance",
+      "reach": "internal"
     }
   ],
   "routes": [
+    {
+      "slot": "P3.12",
+      "files": [
+        "agentic_core/cognitive/",
+        "agentic_core/consultation/",
+        "agentic_core/mjm/",
+        "agentic_core/api/cognitive.py"
+      ],
+      "words": [],
+      "note": "the cognitive engine contract and the six foundational engines (W480 review)"
+    },
+    {
+      "slot": "P3.14",
+      "files": [
+        "agentic_core/avatars/core/clearance_chain.py"
+      ],
+      "words": [],
+      "note": "the five-gate clearance chain"
+    },
+    {
+      "slot": "P3.16",
+      "files": [
+        "agentic_core/avatars/core/recirculation_orchestrator.py",
+        "agentic_core/avatars/cognition/"
+      ],
+      "words": [],
+      "note": "the recirculation loop and the auxiliary engines"
+    },
+    {
+      "slot": "P3.15",
+      "files": [],
+      "words": [
+        "attestation",
+        "post-quantum"
+      ],
+      "note": "attestations that are attestations"
+    },
     {
       "slot": "P2.6",
       "files": [
