@@ -1,5 +1,16 @@
 # Handover — W474 → W475 (Claude Fable 5.1 → Claude Opus)
 
+> **W477 shipped** (2026-09-19, Claude Opus 5): the Owner chose a ONE-TIME EXHAUSTIVE TRUTH SWEEP over repeated sampled
+> M1 audits. `docs/TRUTH_SWEEP_W477.md` (coverage fixed by `scripts/truth_sweep_inventory.py`: every page, 83 of 114
+> frontend files, 273 /api paths; 13 sweepers + 13 skeptics): 190 reproduced — **106 Tier-1**, 84 Tier-2. P1.18 now
+> carries **63 rows** (the 27 from ledger v5 + 36 sweep rows, one per emitting file, FU-121…); 63 Tier-2 rows ride the P2
+> items. **Next: P1.18**, file by file — each row's `why` lists its finding IDs; the doc names every writer and the
+> skeptic's reproduction. Suggested order: the compliance-screen class (quality.py, ethical_engine.py, compliance.py —
+> one rule), then intelligence.py (9), genesis.py (8), transformation_orchestration.py (7), resource_fabric.py (6).
+> P1.18 is too large for one round: split it into rounds by emitting file, each with its own guard, blinds and refute,
+> and close rows as they land (`followups.py close FU-… --by W4NN`); mark P1.18 done only when its last row closes, then
+> re-run M1 (fresh backend on :8088) as the check.
+
 > **W476 shipped** (2026-09-19, Claude Opus 5): the MILESTONE M1 re-run against `929508f0` (:8086; workflow
 > `w476-fidelity-audit-v5.js` in this session's workflows dir, audit JSON `C:/tmp/w476_fidelity_v5.json`) issued
 > ledger **v5**: Tier-1 **27 — M1 NOT met**. P1.18 "The third truth pass" carries them as FU-094…FU-120; PLAN NOW
@@ -130,4 +141,7 @@ Tier-1 count. If it is 0, P1 closes and P2.1 begins; if not, P1.18.
 
 ## 6. Open with the Owner
 
-FU-079 (chroma_db relocation — two populated copies; the Owner decides which is live). No other OWNER row.
+None. FU-079 (chroma_db) was ruled by the Owner on 2026-09-19 and closed W477: read at W477, the two "populated" copies
+held 0 entries (the legacy `C:\Users\rehan\data\chroma_db`) and 1 (the repo's — a 30 March test exchange); the repo
+copy is the live store (`config/paths.py` CHROMA_DB_PATH), the legacy copy is retired and left on disk untouched. The
+relocation script's file-presence test that mislabelled them is FU-220 (P2.4).

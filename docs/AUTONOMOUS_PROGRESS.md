@@ -6684,3 +6684,42 @@ overlap: a sample of sixty findings has not yet reached the bottom of the class.
 only when a re-run measures zero — and the rows name what to fix.
 
 Suite: 386 passed · 15 skipped · 0 failed (401 items, 362 functions; 40-min full run on the final tree, isolated DATA_DIR) — docs, the register and the render script changed; no runtime code.
+
+### W477 — The truth sweep: every reached surface, no cap — 106 Tier-1, 84 Tier-2
+
+**Why.** Two measured M1 audits found 14 and then 27 Tier-1 defects with almost no overlap: each audit is capped at ten
+findings per region, so it samples, and a milestone that closes only when a sample finds zero could take many rounds.
+The Owner ruled (2026-09-19): "a wider, one-time sweep for this kind of problem to get there faster".
+
+**How.** `inventory.py` fixed the coverage before any agent ran: 83 of the 114 frontend files — every page, every
+component and helper that calls the API or renders a figure, and the shell's `packages/ui` — grouped into 13 shards
+with the 273 distinct `/api` paths they call. A backend from HEAD `929508f0` served reproductions at :8087 (native
+floor). Thirteen sweepers each read their shard whole against the ten defect classes the audits had found (C1
+certifies what it could not assess · C2 keyword screen as a judgement · C3 invented readings · C4 present-tense claims
+about processes not running · C5 a second writer or the page disagrees with the API · C6 faith-content fidelity · C7
+missing provenance · C8 figures that cannot fail · C9 a decision that breaks its own rule · C10 counts that do not
+match what is served), followed every call into its handler and grepped every other writer of the same claim, with
+NO cap; a skeptic per shard reproduced each finding before it stood. 26 agents, ~3.9M subagent tokens.
+
+**Result** (`docs/TRUTH_SWEEP_W477.md`). 228 reported; **190 reproduced**, 38 rejected (each rejection's reason is in
+the doc). **Tier-1 106** · Tier-2 84. 56 overlap ledger v5 — mostly as further writers of an untruth the ledger named
+once. The emitting code spans 55 files; the heaviest are the intelligence engines (Genesis Phase 1's cascade and MJM),
+Genesis itself, the transformation run (six 'verified' stages that are presence checks, a 'digital-twin simulation'
+that is one line of arithmetic), the resource fabric, deliverables, ingestion, the swarm, and the organism readings.
+
+**Register.** One row per emitting file and tier (`sweep <file>`), each citing its finding IDs: 36 Tier-1 rows join
+P1.18 (FU-121… — P1.18 now carries 63 rows, the whole reached-surface class rather than a sample); 63 Tier-2 rows ride
+the P2 items that own their areas (P2.4 the scatter where no route owns the file). FU-121…FU-219.
+
+**The Owner's ruling on FU-079 (chroma_db), the one open Owner row.** Read at W477, the two copies registered as
+"two populated" held 0 entries (the legacy store above the repository) and 1 (the repo's — a 30 March test exchange):
+the relocation script calls a directory populated when a file exists. The Owner chose: the repo copy is the live store,
+the legacy copy is retired and left on disk untouched. FU-079 closed; the script's test is FU-220 (P2.4). No Owner row
+remains open. The sweep's 29 Tier-2 rows that no route owned were first placed on P2.4 by hand; the register's own
+guard (every open row sits where the routes send it) failed the first full run on exactly that, so P2.4's route now
+names those exact files — placement and routing agree.
+
+**What changes for the milestone.** M1 still closes only when a re-run measures zero; after P1.18 the re-run is the
+check that the sweep's class is closed, not the instrument that finds it.
+
+Suite: the full run on the pre-fix tree: 385 passed · 15 skipped · 1 failed (the register's route-agreement guard, test_w469, on the 29 hand-placed rows — fixed by routing); after the fix and the FU-079 ruling the seven register/plan guards re-ran green (7 passed). Docs, the register and one new script (the inventory); no runtime code.

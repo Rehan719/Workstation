@@ -1292,8 +1292,8 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W477",
       "note": ""
     },
     {
@@ -1951,6 +1951,1770 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-121",
+      "title": "sweep intelligence.py: 8 Tier-1 truth defects (C1,C7,C10) — 'Intelligent Routing - Autonomously selecting optimal engine...' then 'Routing to…",
+      "why": "S4.4 C1: 'Intelligent Routing - Autonomously selecting optimal engine...' then 'Routing to primary engine: BDP'. The… → On the floor the router's gateway reply is a structured scaffold. The engine is then picked by a substring test for…; S4.5 C10: 'Layer 1 · 6 cognitive engines' with a green check and six engine chips (Inkashaf...Iman); 'Six cognitive… → Layer 1 is ONE gateway.query to the deterministic floor, which echoes the six requested headings. No six engines run.…; S5.4 C7: Every stage (Source Discovery, Peer Review, Integrity Audit, Publication Readiness...) gets a green… → Every stage is the deterministic floor, and the SSE events carry no served_by, so the page cannot say so. The floor output is…; S5.5 C10: '9-stage Scholarship & Authorship pipeline ... Powered by Nine Cognitive Engines + MJM.' → _run_authorship_stream never calls a cognitive lens or MJM; it makes 9 plain gateway.query calls. The cognitive catalogue…; S5.6 C10: The header reads 'Pipeline Output — 10 of 9 Stages'. The first card is 'Reconfiguration', tagged 'Stage 1 of… → The backend emits a 'config' event (rigor=...) that the page's stageEvents filter does not exclude: it excludes only init,…; S6.2 C10: '8-Stage Pipeline' tracker with green ticks, '{progress}% Complete', and result cards each with a green… → The stream sends a *_start event before every stage result, plus a 'config' event. The page filters out only…; S6.3 C7: 'Business Development Process: 8-stage structured methodology powered by Nine Cognitive Engines + MJM.'… → MJM is never called on the BDP/SPI path: mjm_context is empty and _mjm is unused. The cognitive cascade runs 6 engines, not…; S7.6 C10: 'Pipeline Output — 10 of 9 Stages'. The first result card, labelled 'Stage 1 of 9' with the Requirements… → The stream emits a 'config' event that the page's filter (which excludes only init, complete and *_start) counts as a stage. [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/intelligence.py",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisNexus.tsx",
+        "agentic_core/api/resource_fabric.py",
+        "apps/workstation-superapp/src/pages/synthesis/AuthorshipEngine.tsx",
+        "apps/workstation-superapp/src/pages/developers/DesignDevEngine.tsx",
+        "apps/workstation-superapp/src/pages/IntelligenceLab.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-122",
+      "title": "sweep transformation_orchestration.py: 5 Tier-1 truth defects (C3,C8) — 'Cascade (8 stages · 6/6 assessable verified · validated)', with an emerald ShieldCheck…",
+      "why": "S1.0 C8: 'Cascade (8 stages · 6/6 assessable verified · validated)', with an emerald ShieldCheck on Chief, Board,… → Each 'verified' is an existence check that cannot fail on a normal entity. Stage 1 checks bool(board.chief), and board_for_owner…; S2.1 C8: '6/6 assessable · gov allowed · twin stable-and-improving' with an emerald 'VALIDATED' chip. The run also… → None of the six 'assessable' checks can fail on a fresh entity. (1) The Chief is resolved: board_for_owner always returns one.…; S2.2 C3: 'twin stable-and-improving', shown as the result of 'run a transformation simulation' over a '90 days'… → No simulation runs. projected = real × (0.5 + 0.5 × immune_health), and the verdict is 'stable-and-improving' iff projected ≥…; S6.0 C8: Green 'VALIDATED' chip plus the report line 'End-to-end transformation cascade ran From Chief To… → None of the 5 'assessable' checks looks at transformation delivery. Each one only checks that something exists: stage 1 checks a…; S6.1 C3: Twin sim: 'stable-and-improving' (and simulation.projected_realisation for a '90 days' horizon) → No simulation runs. projected = min(1, real*(0.5+0.5*health)) with health<=1, so projected can never exceed the current figure… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "agentic_core/api/vsb.py",
+        "agentic_core/gaas/v5/policy_gate.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx",
+        "apps/workstation-superapp/src/pages/TransformationDashboard.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-123",
+      "title": "sweep resource_fabric.py: 4 Tier-1 truth defects (C3,C5,C7,C10) — '10 LIVE in-house formats rendered via /export?format= (md · html · slides · txt · json…",
+      "why": "S4.3 C10: '10 LIVE in-house formats rendered via /export?format= (md · html · slides · txt · json · self-playing… → The live output-formats API lists 8 live formats: md, html, slides, txt, json, video-html, svg, png. It lists pdf, docx, pptx,…; S4.8 C5: 'C-Suite engaged (your design): CFO · CTO · COO · CLO · Forecasting · Policy — each drives a CoE' → The user set no C-Suite. The registry's example placeholder 'e.g. CSO,CFO,CTO,COO,CLO,Forecasting,Policy' is parsed as the…; S4.9 C3: truth_consensus 'ran' (emerald) with output {\"accepted\": 0, \"of\": 2, \"threshold\": 0.85}, under 'the composed… → Every configured claim is given the constant confidence=0.8 and reputation=0.8. The resource's declared…; S11.3 C7: A green 'in-house · real-engine' badge on the outcome row for fabric:mega_project, a facility whose text is… → The W439 class-kill helper colours ANY served_by other than 'native' or external as emerald 'in-house · <value>'. The backend… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "apps/workstation-superapp/src/lib/api.ts",
+        "agentic_core/api/board.py",
+        "agentic_core/api/business_plan.py",
+        "apps/workstation-superapp/src/pages/OperationalExcellence.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-124",
+      "title": "sweep api.py: 4 Tier-1 truth defects (C3,C6) — An uploaded audio file whose name contains 'recitation' is registered as INGESTED with…",
+      "why": "S4.0 C6: An uploaded audio file whose name contains 'recitation' is registered as INGESTED with extracted_text 'In… → Nothing is transcribed. TRANSCRIPTION_MOCK is a filename-pattern lookup table. Scripture-adjacent text is attached to a user's…; S4.1 C3: A PDF or DOCX is INGESTED with extracted_text 'Content extracted from rich document: <name>. Primary topics… → No extraction runs. The 'primary topics' are constants, whatever the document says. Synthesis then writes reports 'grounded in'…; S12.2 C3: The file is listed as uploaded into its slot, and Generate builds a 'tailored' CV, cover letter and other… → For .pdf/.docx, the usual CV formats, ingestion never reads the file. It stores the invented text 'Content extracted from rich…; S12.3 C6: The upload is accepted and ingested (status INGESTED). Its 'transcription' is stored as the file's content… → The 'transcription' is a hard-coded English rendering of Al-Fatiha 1:1-2 ('In the name of Allah, the Most Gracious, the Most… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ingestion/api.py",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx",
+        "agentic_core/api/career.py",
+        "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-125",
+      "title": "sweep deliverables.py: 3 Tier-1 truth defects (C5,C7,C8) — Export page one: '_report · produced on Workstation's own AI fabric (in-house ·…",
+      "why": "S6.5 C7: Export page one: '_report · produced on Workstation's own AI fabric (in-house · native)_'. SVG/PNG footer:… → The content was composed by the deterministic floor. The on-page badge (provenanceBadge) correctly says 'structured floor — not…; S6.6 C5: After refining, the detail badge turns emerald 'in-house · verbatim-ingest'. The list row reads… → The refined text came from the floor: /api/v1/refine returned served_by 'native', and its text is the original plus 'Refinement…; S7.3 C8: 'Success rate 100%', with every ranked resource's Success shown as an emerald 100%, framed as 'honest… → success is recorded as 'output non-empty' (or 'trace non-empty'). The deterministic floor always returns text, so the figure… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/deliverables.py",
+        "apps/workstation-superapp/src/pages/Deliverables.tsx",
+        "apps/workstation-superapp/src/lib/api.ts",
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/board.py",
+        "agentic_core/api/_ai_provenance.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-126",
+      "title": "sweep integration_surface.py: 3 Tier-1 truth defects (C3,C4) — The panel shows 'Specification generated. Review and proceed to Build phase.' as the…",
+      "why": "S5.0 C3: The panel shows 'Specification generated. Review and proceed to Build phase.' as the generated spec. The… → Nothing reads the user's brief. The page POSTs {message: prompt}, but the AIQuery model only has prompt/query/agent, so the…; S10.3 C3: The Constitutional Core lists 'Article 1 · CORE · The Sovereign Digital Organism — Workstation is a… → The canon was archived. agentic_core/constitution/ does not exist (the files are in _archive/agentic_core/constitution/). The…; S13.1 C4: 'The organism evolves itself — autonomously, and curated by its own Virtual Sovereign Business.' and the… → Nothing runs the cycle on its own. The only autonomous caller is heartbeat.py:353, which is gated on auto_evolve, and… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/integration_surface.py",
+        "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx",
+        "apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx",
+        "apps/workstation-superapp/src/pages/evolution/SovereignEvolution.tsx",
+        "agentic_core/api/sovereign_evolution.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-127",
+      "title": "sweep products.py: 3 Tier-1 truth defects (C3,C4,C7) — The floor-served comparison is badged in emerald 'in-house · [object Object]', the style…",
+      "why": "S4.2 C7: The floor-served comparison is badged in emerald 'in-house · [object Object]', the style reserved for a real… → All 4 calls were served by the deterministic floor (served_by {native:4}). reactor_experiment returns ai_provenance.served_by as…; S8.0 C3: 'Winner V1 · 95%', 'Winner — Variant 1 … 95%', leaderboard progress bars 95% / 90% / 85%, Strengths 'Strong… → No variant was scored. On the floor the scorer's output has no VARIANT_N|SCORE lines, so products.py falls back to hard-coded…; S8.7 C4: Toggles 'Article 1095 Logic', 'Latency Stress Test', 'Byzantine Fault Mode' and 'In-House Fabric' under… → No simulation runs, and none of the parameters is implemented anywhere. They become JSON inside a prompt. No latency stress or… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/products.py",
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "agentic_core/api/resource_fabric.py",
+        "apps/workstation-superapp/src/pages/developers/Incubator.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-128",
+      "title": "sweep genesis.py: 2 Tier-1 truth defects (C7,C10) — Chips 'Inkashaf · Samajh · Soch · Aqal · Hoshiyari · Iman · MJM · DDPIE · BDP ·…",
+      "why": "S3.7 C10: Chips 'Inkashaf · Samajh · Soch · Aqal · Hoshiyari · Iman · MJM · DDPIE · BDP · gaas.v5'. The header says… → engines_used is a constant literal list. The journey never invokes the DDPIE or BDP engines, which exist as multi-stage engines…; S7.8 C7: A downloaded '<title>.md' holding a Genesis journey's Concept, Research, Design and Commercialisation text,… → All 11 Genesis calls were floor-served. genesis.py scrubs the inline floor marker out of the prose ('provenance … reported in… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+        "apps/workstation-superapp/src/pages/MyWork.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-129",
+      "title": "sweep organism_status.py: 2 Tier-1 truth defects (C4,C10) — '4 encoded genomes'",
+      "why": "S8.2 C10: '4 encoded genomes' → Every stored genome has encoded:false. The floor cannot declare traits, and each record says 'not encoded — … this vector is NOT…; S8.6 C4: 'Homeostasis complete. 1 adjustment made. Mode: …' (outside 09:00-17:00 local time, or 2 or more when immune… → The 'defer_non_urgent' (off-peak) and 'elevated_monitoring' (HIGH/CRITICAL immune) adjustments are only appended to a list.… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/organism_status.py",
+        "apps/workstation-superapp/src/pages/organism/OrganismDashboard.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-130",
+      "title": "sweep swarm.py: 2 Tier-1 truth defects (C1,C9) — The page shows a green monospace JSON delivery for the mission. It never mentions that…",
+      "why": "S11.0 C9: The page shows a green monospace JSON delivery for the mission. It never mentions that the cascade was… → POST /api/v1/swarm/cascade refuses with 409 'review gate blocks progress … cascade refused'. The page treats any non-2xx as a…; S11.1 C1: 'gov: allowed · arms-length' in green, on a result the code calls 'arms-length constitutional governance… → The gate never sees the delivery. intercept() receives only {intent:'org_cascade', domain} and a constant sentence ('Org cascade… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx",
+        "agentic_core/api/forge.py",
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/transformation_orchestration.py",
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-131",
+      "title": "sweep api.py: 2 Tier-1 truth defects (C7,C9) — Clicking Approve on a pending stage proposal shows the toast 'Proposal approved — stage…",
+      "why": "S10.1 C9: Clicking Approve on a pending stage proposal shows the toast 'Proposal approved — stage advanced.' → The vote handler sets project.stage = proposal.to_stage without checking the project's current stage, and it swallows any…; S12.6 C7: 'AI-powered product workflows', 'generate your first AI deliverable', 'Generating…', then 'Latest output'.… → The stream is the deterministic floor echoing its own prompt ('Structured go-to-market frame for: Generate a detailed Concept… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/projects/api.py",
+        "apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx",
+        "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx",
+        "agentic_core/api/v290/ceo_generate.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-132",
+      "title": "sweep SolutionsPlatform.tsx: 2 Tier-1 truth defects (C1,C4) — '✓ Native AI fabric: reachable.' (green success) is followed by 'Readiness check…",
+      "why": "S5.1 C1: '✓ Native AI fabric: reachable.' (green success) is followed by 'Readiness check PASSED.' The Launch button… → GET /api/v1/native-ai/status returns is_real_model:false, mode:'deterministic_floor', floor_active:true and floor_note 'The…; S5.2 C4: The tiles read 'V9 Engine — Sovereign execution runtime', 'Monitoring — Real-time mission telemetry',… → None of these exists. 'V9 Engine' appears nowhere in agentic_core/ or in the rest of the frontend, and there is no telemetry,… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-133",
+      "title": "sweep CapitalDashboard.tsx: 2 Tier-1 truth defects (C4,C5) — Badge 'PHASE 3: EXTERNALLY INTEGRATED'",
+      "why": "S2.5 C5: Badge 'PHASE 3: EXTERNALLY INTEGRATED' → The badge is a literal. The same page's External Markets tab says 'No market-data provider is connected to this deployment……; S2.6 C4: A switch labelled 'Semi-Autonomous' whose aria-label/title flips to 'Semi-Autonomous mode: On' when pressed → The toggle only sets local React state (autonomousEnabled), which nothing reads. No request is sent, no lever changes and no… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-134",
+      "title": "sweep gateway.py: 1 Tier-1 truth defect (C7) — A 'Synthesis' and an 'MJM Meta-Judgement' of the user's own problem, and 'Engines run:…",
+      "why": "S7.0 C7: A 'Synthesis' and an 'MJM Meta-Judgement' of the user's own problem, and 'Engines run: AQAL · IMAN · MJM ·… → gateway.query's default augment=True puts token-overlap recall of OTHER, earlier interactions into the prompt. The deterministic… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/api/intelligence.py",
+        "apps/workstation-superapp/src/pages/CognitionIntegration.tsx",
+        "apps/workstation-superapp/src/pages/developers/DesignDevEngine.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-135",
+      "title": "sweep orchestrator.py: 1 Tier-1 truth defect (C1) — A green 'integrated' chip: the synthesis genuinely integrated the branches rather than…",
+      "why": "S7.2 C1: A green 'integrated' chip: the synthesis genuinely integrated the branches rather than near-copying one. → Every node was floor-served, and every node's output is the same template headed '## frame output'. The backend itself marks… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ai/native/orchestrator.py",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-136",
+      "title": "sweep board.py: 1 Tier-1 truth defect (C5) — 'Faithfully interpreted → board directive → delegated to the AI CEO'. The directive's…",
+      "why": "S2.3 C5: 'Faithfully interpreted → board directive → delegated to the AI CEO'. The directive's '## Owner Intent'… → board._q calls gateway.query_meta without augment=False, so cross-request memory recall is injected into the Chief's prompt.… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/board.py",
+        "agentic_core/ai/gateway.py",
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-137",
+      "title": "sweep business_plan.py: 1 Tier-1 truth defect (C5) — An empty plan: no opening, '0 objectives', 0%. The next Add Objective / +25% / Owner…",
+      "why": "S3.10 C5: An empty plan: no opening, '0 objectives', 0%. The next Add Objective / +25% / Owner edit / Board directive… → _load swallows JSONDecodeError and returns a fresh empty plan. The first write then atomically overwrites the Owner's real plan… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/business_plan.py",
+        "agentic_core/api/board.py",
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-138",
+      "title": "sweep career.py: 1 Tier-1 truth defect (C3) — '\"person_spec_w477s12.txt\" classified as Old CVs (70% confidence)', under the line…",
+      "why": "S12.1 C3: '\"person_spec_w477s12.txt\" classified as Old CVs (70% confidence)', under the line 'content is analysed and… → No classification happened. On the floor the model reply is not JSON, so the handler's except branch hard-codes… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/career.py",
+        "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-139",
+      "title": "sweep cognition.py: 1 Tier-1 truth defect (C8) — An emerald '13/13 connected · 100% coherence', with a green check per tier ('the…",
+      "why": "S7.4 C8: An emerald '13/13 connected · 100% coherence', with a green check per tier ('the knowledge system wired into… → 'connected' means only that some mounted route path starts with the tier's endpoint prefix. It cannot be false while the app… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/cognition.py",
+        "apps/workstation-superapp/src/pages/CognitionIntegration.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-140",
+      "title": "sweep compliance.py: 1 Tier-1 truth defect (C5) — A green 'compliance: pass' on the generated repository, web app and PWA, with no…",
+      "why": "S3.6 C5: A green 'compliance: pass' on the generated repository, web app and PWA, with no tooltip. QUALITY.md is… → sharia_halal and uk_legal both returned 'review — no engine covers this area' (coverage 'none'). The pass is the pass of three… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/compliance.py",
+        "agentic_core/vbs/quality.py",
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-141",
+      "title": "sweep constitutional_gaas.py: 1 Tier-1 truth defect (C8) — Green badge 'NOMINAL', 'Error Rate 0.0', 'Breaker Threshold 0.2' for the live…",
+      "why": "S10.4 C8: Green badge 'NOMINAL', 'Error Rate 0.0', 'Breaker Threshold 0.2' for the live constitutional engine… → The card reads the breaker of the /gaas router's own 'sovereign-node' interceptor, which only POST /api/v1/gaas/intercept uses.… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/constitutional_gaas.py",
+        "apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx",
+        "agentic_core/api/forge.py",
+        "agentic_core/api/economy.py",
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/genesis.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-142",
+      "title": "sweep economy.py: 1 Tier-1 truth defect (C5) — The Owner selects an established VSB, then clicks the 'Charity' form card, which is…",
+      "why": "S1.8 C5: The Owner selects an established VSB, then clicks the 'Charity' form card, which is highlighted and badged… → For a registered VSB the backend ignores the picked form and uses the registry's (waqf_ltd_hybrid). The cycle pays the Owner 20%… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/economy.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-143",
+      "title": "sweep management_systems.py: 1 Tier-1 truth defect (C5) — 'ISO 9001 · ISO 14001 · Balanced Scorecard · OKRs · Audit · Risk — AI-generated,…",
+      "why": "S2.4 C5: 'ISO 9001 · ISO 14001 · Balanced Scorecard · OKRs · Audit · Risk — AI-generated, immediately usable' → On this deployment all six generators are served by the deterministic floor. The API's own floor_note says 'it is not model… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/management_systems.py",
+        "apps/workstation-superapp/src/pages/enterprise/ManagementSystemsHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-144",
+      "title": "sweep transformation.py: 1 Tier-1 truth defect (C7) — A panel headed 'AI Assessment' with '## Faithfulness Assessment', '## Biggest Gaps', '##…",
+      "why": "S6.7 C7: A panel headed 'AI Assessment' with '## Faithfulness Assessment', '## Biggest Gaps', '## Recommended Next… → The floor served it. It restates the prompt ('Subject: Overall realisation: 89%') and gives generic frames ('Exposure on current… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/transformation.py",
+        "apps/workstation-superapp/src/pages/TransformationDashboard.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-145",
+      "title": "sweep ceo_generate.py: 1 Tier-1 truth defect (C7) — 'AI CEO is synthesising your blueprint…', then a success tick with '<intent> — Concept…",
+      "why": "S12.4 C7: 'AI CEO is synthesising your blueprint…', then a success tick with '<intent> — Concept Blueprint' and a… → The deliverable is the deterministic floor outline ('## Understanding / Key factors / Native approach / Next steps'), and the… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/v290/ceo_generate.py",
+        "apps/workstation-superapp/src/pages/create/CreatorStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-146",
+      "title": "sweep vsb.py: 1 Tier-1 truth defect (C3) — The header says 'Runs through the full intelligence pipeline: Nine Cognitive Engines →…",
+      "why": "S2.0 C3: The header says 'Runs through the full intelligence pipeline: Nine Cognitive Engines → MJM → GaaS…'. The… → The cascade runs six stub engines, not nine, and every one returns a literal. AqalEngine.reason returns… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "agentic_core/cognitive/cascade_v16.py",
+        "agentic_core/cognitive/aqal_engine.py",
+        "agentic_core/cognitive/iman_engine.py",
+        "agentic_core/cognitive/inkashaf_engine.py",
+        "agentic_core/mjm/mjm.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-147",
+      "title": "sweep bto.py: 1 Tier-1 truth defect (C1) — Each product gets a green 'BUILT' chip, the header reads 'Delivered 3 · in-house-first',…",
+      "why": "S5.8 C1: Each product gets a green 'BUILT' chip, the header reads 'Delivered 3 · in-house-first', and the tagline… → No product was built. Each 'BUILT' item is a floor-composed 6-heading report scaffold, and qms_gate_passed is null for every… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/catalog/bto.py",
+        "apps/workstation-superapp/src/pages/BTOCatalog.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-148",
+      "title": "sweep api.py: 1 Tier-1 truth defect (C1) — ' Slides · Web Player Ready' with a 'Launch Player' button",
+      "why": "S4.7 C1: ' Slides · Web Player Ready' with a 'Launch Player' button → On the streaming path the page hard-codes metadata {format:'md', title:type}, so slides_count is undefined and nothing checked… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/synthesis/api.py",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-149",
+      "title": "sweep FourthColumn.tsx: 1 Tier-1 truth defect (C5) — Collapsed-rail button tooltip 'External AI Agents'",
+      "why": "S13.3 C5: Collapsed-rail button tooltip 'External AI Agents' → The button opens NativeAgentPanel, which is the in-house assistant served by Workstation's own fabric (external is opt-in and… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/components/layout/FourthColumn.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-150",
+      "title": "sweep BTOCatalog.tsx: 1 Tier-1 truth defect (C5) — 'Blueprint Provisioned' appears above the entity. While loading: 'Provisioning Sovereign…",
+      "why": "S5.7 C5: 'Blueprint Provisioned' appears above the entity. While loading: 'Provisioning Sovereign Infrastructure' /… → The API says the opposite. It returns provisioned:false; every component is 'SPECIFIED (blueprint only)' with… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/BTOCatalog.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-151",
+      "title": "sweep KnowledgeHub.tsx: 1 Tier-1 truth defect (C3) — Each 'Centre of Excellence' card shows 'Confidence 1' and 'Outputs 0'. The Portfolio…",
+      "why": "S13.2 C3: Each 'Centre of Excellence' card shows 'Confidence 1' and 'Outputs 0'. The Portfolio card's own description… → The live /api/v1/intelligence/insights payload carries no confidence, projects_count or outputs_count. KnowledgeHub.tsx:53-54… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-152",
+      "title": "sweep CreatorStudio.tsx: 1 Tier-1 truth defect (C4) — A palette of nine components (REST API Poller, ArXiv Scraper, MQTT Subscriber, AI…",
+      "why": "S12.5 C4: A palette of nine components (REST API Poller, ArXiv Scraper, MQTT Subscriber, AI Synthesis, Sentiment… → The palette only adds label-only ReactFlow nodes, and nothing implements any of the nine. 'Run Pipeline' does not run the… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/create/CreatorStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-153",
+      "title": "sweep DesignDevEngine.tsx: 1 Tier-1 truth defect (C10) — '9-stage Design & Development pipeline … Powered by Nine Cognitive Engines + MJM.'",
+      "why": "S7.7 C10: '9-stage Design & Development pipeline … Powered by Nine Cognitive Engines + MJM.' → The DDPIE stream never calls a cognitive engine or MJM. Each stage is one gateway.query prompt. UltimateCognitiveCascade and… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/DesignDevEngine.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/AuthorshipEngine.tsx",
+        "apps/workstation-superapp/src/pages/IntelligenceLab.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-154",
+      "title": "sweep CareHub.tsx: 1 Tier-1 truth defect (C4) — Each hub header shows the badges 'GUIDED MODE' and 'ENCOURAGING TONE'. Settings says…",
+      "why": "S10.5 C4: Each hub header shows the badges 'GUIDED MODE' and 'ENCOURAGING TONE'. Settings says 'guidance and tone… → Only the badge text reads guidedMode and tone. No component changes any affordance on guidedMode, no request sends tone to a… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/EducationHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/ScienceHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/EmploymentHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-155",
+      "title": "sweep LivingMarketplace.tsx: 1 Tier-1 truth defect (C10) — 'Catalogue entries above are registered but unpriced, so they are not listed here.'",
+      "why": "S12.8 C10: 'Catalogue entries above are registered but unpriced, so they are not listed here.' → They are listed there. The grid renders every listing (listings.map), and all 4 current listings are the catalogue-derived… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-156",
+      "title": "sweep ReactorStudio.tsx: 1 Tier-1 truth defect (C3) — The header says 'Visualises the data you provide; never invents numbers.' A line such as…",
+      "why": "S5.10 C3: The header says 'Visualises the data you provide; never invents numbers.' A line such as 'Q4, n/a' (or 'Q4,'… → parseSeries coerces any unparseable value to 0 (and an empty label to '?') and sends it as data, so the page manufactures a data… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ReactorStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-157",
+      "title": "sweep change_control.py: 5 Tier-2 shortfalls (C1,C2,C7) — After Implement, the record shows status 'IMPLEMENTED' (blue Zap) and counts toward the…",
+      "why": "S1.10 C1: After Implement, the record shows status 'IMPLEMENTED' (blue Zap) and counts toward the 'Implemented' stat. → A change submitted from this page's own form never carries config_change, so /implement applies nothing (applied: null) and…; S1.11 C1: '✓ Change auto-approved (LOW tier + healthy organism)'. 'decided by: LOW-tier auto-approval (organism… → 'Healthy' is composite_health: 40% a defaulted 1.0 (no self-healing circuits tracked) and 20% simulated ATP, which only rises…; S1.12 C7: 'DECIDED BY RULE, NOT BY THE MODEL … The prose below is the model's and had NO bearing on the decision. ---… → The prose is the deterministic floor, not a model. gateway.query's text is used with no served_by, so the record labels floor…; S1.13 C1: A green 'PASS' pre-validation verdict on the approved HIGH change. → The label names a health gate, but the gate is the same composite (60% defaulted/simulated) that cannot fail. The green PASS is…; S1.18 C2: Before submitting, the form shows 'Tier: LOW' for 'Config — Minor'. After submitting, a green '✓ Change… → A substring screen on the description changes the tier: 'constitution' or 'delete all' makes it CRITICAL. A typo fix on 'the… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/change_control.py",
+        "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx",
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-158",
+      "title": "sweep genesis.py: 3 Tier-2 shortfalls (C1,C7) — Headed as the Chief's Opening, with no provenance badge (provenance.served_by null).…",
+      "why": "S1.24 C7: Headed as the Chief's Opening, with no provenance badge (provenance.served_by null). Vision: 'A self-running… → The summary and vision are code templates filled from the problem statement at establish. Neither the Chief nor a model composed…; S3.13 C7: The heading reads 'Chief's Opening — Executive Summary · Concept · Vision' with the amber badge 'structured… → Executive summary, vision, mission and strategy are code templates written by _seed_plan_from_journey. Neither the Chief nor the…; S3.19 C1: 'governance: allowed', shown even beside 'compliance: fail' on a fully vetoed journey. → The gaas.v5 gate screened only {intent:'genesis_journey', domain}, never the content. The SSE path discloses this scope ('not… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-159",
+      "title": "sweep swarm.py: 3 Tier-2 shortfalls (C10) — 'mgmt: bms·qms·ems·dcms·backbone' (integrated). The organism chip's hover says '7…",
+      "why": "S11.8 C10: 'mgmt: bms·qms·ems·dcms·backbone' (integrated). The organism chip's hover says '7 biomimetic layers ·… → 'integrated' is the static registry catalogue id list, assigned before anything computes. It lists QMS although the gate was not…; S11.9 C10: '§7 fabric facilities requisitioned & RAN (1)' lists 'metabolic /api/v1/organism/status · match ×2', and its… → The 'facility' a two-word overlap selected is a status read of the organism. Its output ({mode:'FULL_POWER',…; S11.11 C10: The run card names the engaged agents ('CFO, CTO') as chosen by the CEO router. The page asks for n_agents:3. → The router can never select: it lowercases each returned id and tests it against upper-case keys ('cfo' in _AGENTS is False), so… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx",
+        "agentic_core/vbs/quality.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-160",
+      "title": "sweep quality.py: 3 Tier-2 shortfalls (C1,C5) — Tooltip '7 biomimetic layers · self-managing · improving · healing'. Chip 'organism:…",
+      "why": "S3.8 C5: Tooltip '7 biomimetic layers · self-managing · improving · healing'. Chip 'organism: immune 100% ·… → The record itself says 1 of 7 layers contributed (layers=['Immune']; layers_note: '1 of 7 declared biomimetic layers contributed…; S3.18 C1: 'ethical: pass — human: pass; environment: pass; quality: pass; value: pass (engine-backed)', directly under… → assure_delivery threads the floor's delivery_coverage into the ethical engine even when not_assessable is true, so the ethical…; S10.7 C1: Hovering the 'QMS —' chip on a floor-served clinical care plan, safeguarding triage, handover, legal… → The gate itself records that floor output cannot be assessed ('coverage cannot fail by construction'). Even so, that same floor… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/vbs/quality.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx",
+        "agentic_core/compliance/ethical_engine.py",
+        "agentic_core/api/_ai_provenance.py",
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-161",
+      "title": "sweep DomainTool.tsx: 3 Tier-2 shortfalls (C5,C7) — The downloaded or copied file is titled with the tool name (e.g. '<h1>Comparative Fiqh…",
+      "why": "S9.2 C7: The downloaded or copied file is titled with the tool name (e.g. '<h1>Comparative Fiqh Research</h1>' or… → The export drops every disclosure the response carries. The fatwa research loses 'It is NOT a fatwa and does not constitute a…; S9.8 C5: The My Work record of a faith or employment tool output after one refine carries a 'refined ×1' chip. → run() saves text + [floor_note] + disclaimer (W456: disclosures travel with the saved text). The refine writer replaces output…; S10.10 C7: The downloaded care plan, legal document or marking feedback file. → exportText is score_summary + displayText. The disclaimer the screen shows ('must be reviewed and validated by a qualified… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-162",
+      "title": "sweep deliverables.py: 2 Tier-2 shortfalls (C7) — The export subtitle reads 'report · produced on Workstation IDBO's own AI fabric…",
+      "why": "S3.12 C7: The export subtitle reads 'report · produced on Workstation IDBO's own AI fabric (in-house ·… → All 11 producing calls were the deterministic floor (source_served_by {native:11}). The export carries no 'structured floor —…; S6.14 C7: Row subtitle 'report · v1 · native' (or '· verbatim-ingest') → The raw served_by token is printed and never goes through provenanceBadge, so a floor-served row reads 'native', which looks… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/deliverables.py",
+        "apps/workstation-superapp/src/pages/Deliverables.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-163",
+      "title": "sweep economy.py: 2 Tier-2 shortfalls (C4,C8) — A posted transfer or a recorded return will be consumed by 'the next metabolic cycle'",
+      "why": "S2.16 C4: A posted transfer or a recorded return will be consumed by 'the next metabolic cycle' → With the Self-run lever off (this deployment; the entity's living statement says 'autonomous economy cycles are OFF'), no next…; S3.14 C8: 'quality QMS not assessable · coverage 100% · 0 defects/3 gates · compliance review · served by native 22'. → On floor output coverage 1.0 'cannot fail by construction' (qms_basis), and 0 defects comes from gates that cannot fail. Both… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/economy.py",
+        "apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-164",
+      "title": "sweep products.py: 2 Tier-2 shortfalls (C7,C10) — 'AI Production Lines · Real Artefact Generation'; green 'done'; an exported…",
+      "why": "S8.11 C7: 'AI Production Lines · Real Artefact Generation'; green 'done'; an exported '<name>-<run>.md' titled with… → The done event's served_by:'native' is dropped, so there is no provenance chip, and the export's header carries no provenance.…; S13.9 C10: '2 active projects across 2 realm(s)', '1 concept-stage project(s) ready to run', '1 prototype(s) eligible… → 'active' counts every project regardless of status (live: statuses 'idle' and 'done'). 'ready to run' counts concept-stage… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/products.py",
+        "apps/workstation-superapp/src/pages/developers/Factory.tsx",
+        "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-165",
+      "title": "sweep vsb.py: 2 Tier-2 shortfalls (C4) — 'Generation 1 · 1 proposals · repo: re_shipped'",
+      "why": "S1.21 C4: 'Generation 1 · 1 proposals · repo: re_shipped' → The generation counter is incremented and saved before anything evolves. The proposals only open a MEDIUM CCA (cca-610199822a,…; S2.11 C4: The CEO + C-Suite + CoE agent hierarchy was 'configured' for this VSB → swarm_config is a constant dict of role descriptions (the domain word is interpolated). No agents are instantiated or… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-166",
+      "title": "sweep charity.py: 2 Tier-2 shortfalls (C3,C5) — 'Ranked by urgency × gravity × reach × marginal-impact × trust', with a 'score 1.0' per…",
+      "why": "S1.17 C3: 'Ranked by urgency × gravity × reach × marginal-impact × trust', with a 'score 1.0' per grant, under… → The API says the weights are editorial constants ('no needs, impact or trust data is measured or sourced'). Every grant carries…; S3.17 C5: 'Directives saved' and 'set by you · <timestamp>', with the four default priorities shown again. → set_directives replaces an empty priorities list with the 2026-06-21 defaults (`… or _PRIORITIES`), then stamps updated_at, so… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/economy/charity.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx",
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-167",
+      "title": "sweep api.py: 2 Tier-2 shortfalls (C4,C5) — A URL fetch/ingest capability. On failure: 'URL ingestion failed. Check the URL and try…",
+      "why": "S4.16 C4: A URL fetch/ingest capability. On failure: 'URL ingestion failed. Check the URL and try again.' → Nothing is fetched. Every URL except one hard-coded DeepSeek share link gives HTTP 500 (UploadFile constructed without a file),…; S12.12 C5: Clicking Remove takes the file off the slot, and the API answers {status:'DELETED'}. → Only the registry row is removed. The uploaded bytes stay in DATA_DIR/uploads, and the extracted (or fabricated) text stays in… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ingestion/api.py",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx",
+        "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-168",
+      "title": "sweep Settings.tsx: 2 Tier-2 shortfalls (C1,C4) — Emerald 'Voice dictation works in your language.' shown for every language",
+      "why": "S6.17 C1: Emerald 'Voice dictation works in your language.' shown for every language → Dictation uses the browser's Web Speech API (DictateButton rec.lang = prefs.language). Whether it works depends on the browser…; S9.10 C4: Settings says 'guidance and tone drive the affordances shown on the domain hubs'. Every hub shows '{Guided}… → No component reads guidedMode or tone except the provider that turns them into these two badge labels. No affordance changes,… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/Settings.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/components/AdaptiveUIProvider.tsx",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/EmploymentHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-169",
+      "title": "sweep VSBCockpit.tsx: 2 Tier-2 shortfalls (C5,C10) — Cockpit tile 'reserves 2,020'. Board pack 'Reserves 2,020 WST' beside 'Balance sheet…",
+      "why": "S1.19 C5: Cockpit tile 'reserves 2,020'. Board pack 'Reserves 2,020 WST' beside 'Balance sheet 2,019 WST assets'. → The live double-entry reserve fund is 2,019: a 1 WST inter-VSB transfer left it. 'balances' is a cumulative legacy view that…; S1.20 C10: 'Giving back: [object Object]' → giving_back is an object ({budget_wst, grants…}). The generic String(val) render prints '[object Object]' instead of the amount… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-170",
+      "title": "sweep ReactorStudio.tsx: 2 Tier-2 shortfalls (C2,C5) — 'Max Q1 (240)' names one leader.",
+      "why": "S5.9 C5: 'Max Q1 (240)' names one leader. → The backend was fixed (W433) to report ties: analytics.max.tied_with = ['Q3']. The page's StudioResult type and the row renderer…; S5.12 C2: The tooltip reads '§11 live compliance — sharia_halal:pass · uk_legal:review · regulatory:pass · ehs:pass ·… → The backend reasons say 'halal vocabulary present and no prohibited (haram) term — a keyword screen, not a certification',… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ReactorStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-171",
+      "title": "sweep gateway.py: 1 Tier-2 shortfall (C3) — The floor's '## Key factors' / bullet lists are presented as the subject's own factors…",
+      "why": "S4.6 C3: The floor's '## Key factors' / bullet lists are presented as the subject's own factors ('grounded in the… → gateway._augment prepends up to N unrelated prior interactions matched by token overlap, labelled 'use only if relevant'. The… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/ai/native/engine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-172",
+      "title": "sweep homeostasis.py: 1 Tier-2 shortfall (C10) — A feed of up to 25 signals, each with a coloured type chip, plus arousal 'ALERT'",
+      "why": "S8.16 C10: A feed of up to 25 signals, each with a coloured type chip, plus arousal 'ALERT' → The API returns signal_type/age_seconds but the page reads sig.type, so every type chip renders empty in the fallback grey. The… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ai/native/homeostasis.py",
+        "apps/workstation-superapp/src/pages/organism/OrganismDashboard.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-173",
+      "title": "sweep board.py: 1 Tier-2 shortfall (C7) — '1 objective(s) landed on this entity's plan · gaas: allowed', followed by the Chief's…",
+      "why": "S1.3 C7: '1 objective(s) landed on this entity's plan · gaas: allowed', followed by the Chief's directive text shown… → The directive is floor output (ai_provenance.served_by {native: 2}). It never mentions the Owner's instruction: it is n-grams of… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/board.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-174",
+      "title": "sweep business_plan.py: 1 Tier-2 shortfall (C7) — 'Chief workflow-tree · decision: — · consensus: none · 6 nodes · UEG …', then the tree's…",
+      "why": "S1.4 C7: 'Chief workflow-tree · decision: — · consensus: none · 6 nodes · UEG …', then the tree's final text shown as… → Every node was floor-served. The API response strips the tree's per-node served_by trace, so no surface can label the 'final'… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/business_plan.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-175",
+      "title": "sweep career.py: 1 Tier-2 shortfall (C7) — On screen each generated document carries the amber 'structured floor — not model…",
+      "why": "S12.11 C7: On screen each generated document carries the amber 'structured floor — not model analysis' badge, but the… → The downloaded .md holds only doc.content, whose only marker is 'owned, no external dependency', so the floor disclosure is lost… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/career.py",
+        "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-176",
+      "title": "sweep cognition.py: 1 Tier-2 shortfall (C4) — 'The organism self-aligns: … routes each gap to the tier that owns it, governed and…",
+      "why": "S7.5 C4: 'The organism self-aligns: … routes each gap to the tier that owns it, governed and continuous.' After the… → The button posts execute:false, so nothing is sent to any tier. Every gap returns executed:false with the note 'Set execute=true… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/cognition.py",
+        "apps/workstation-superapp/src/pages/CognitionIntegration.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-177",
+      "title": "sweep compliance.py: 1 Tier-2 shortfall (C1) — The headline card for the subject 'asdf qwerty' shows a green check and 'PASS'…",
+      "why": "S10.2 C1: The headline card for the subject 'asdf qwerty' shows a green check and 'PASS' (compliant:true). 'A halal… → No row read the gibberish subject. Sharia and UK-legal return 'review — no engine covers this area' (coverage none), and… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/compliance.py",
+        "agentic_core/compliance/ethical_engine.py",
+        "apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-178",
+      "title": "sweep forge.py: 1 Tier-2 shortfall (C7) — 'resources process', each stage named for a fabric engine, '· governance allowed',…",
+      "why": "S8.12 C7: 'resources process', each stage named for a fabric engine, '· governance allowed', 'Integrated Deliverable' → Every stage is a persona prompt through gateway.query_meta, not the fabric's engines. ai_provenance {native:5} is dropped by the… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/forge.py",
+        "apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-179",
+      "title": "sweep integration_surface.py: 1 Tier-2 shortfall (C10) — 'Recent Project Activity' lists commits. The Channels icon shows continuously animating…",
+      "why": "S13.12 C10: 'Recent Project Activity' lists commits. The Channels icon shows continuously animating equaliser bars on… → The list is `git log` of the server's working directory (the Workstation codebase itself), not the user's project activity. It… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/integration_surface.py",
+        "apps/workstation-superapp/src/components/layout/FourthColumn.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-180",
+      "title": "sweep intelligence.py: 1 Tier-2 shortfall (C7) — Stage analyses for the user's challenge, 'Positioning wedge from small-scale…",
+      "why": "S6.4 C7: Stage analyses for the user's challenge, 'Positioning wedge from small-scale beekeepers', 'Positioning wedge… → The gateway's default augment=True puts token-overlap recall of OTHER interactions (another run's Yorkshire beekeeper Genesis… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/intelligence.py",
+        "agentic_core/ai/gateway.py",
+        "agentic_core/api/v138/ceo.py",
+        "agentic_core/api/transformation.py",
+        "apps/workstation-superapp/src/pages/Settings.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-181",
+      "title": "sweep management_systems.py: 1 Tier-2 shortfall (C10) — Under this VSB's Living Systems tab, nine 'living management systems' are listed,…",
+      "why": "S1.16 C10: Under this VSB's Living Systems tab, nine 'living management systems' are listed, including ISO 27001:2022,… → The list is a constant catalogue the API calls 'supported management standards'. Nothing operates an ISMS, OH&S system, CMMI… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/management_systems.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-182",
+      "title": "sweep marketplace.py: 1 Tier-2 shortfall (C5) — An emerald 'pass' pill under '§11 compliance screen', followed by 'framework: status'…",
+      "why": "S12.7 C5: An emerald 'pass' pill under '§11 compliance screen', followed by 'framework: status' rows. After Save:… → The screen API (compliance.screen_compliance) returns a 'basis' ('a pass is a pass of the screen, not a certification'),… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/marketplace.py",
+        "apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx",
+        "agentic_core/compliance/ethical_engine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-183",
+      "title": "sweep native_ai.py: 1 Tier-2 shortfall (C5) — 'Serving default: llama3.2 (env default)'",
+      "why": "S7.1 C5: 'Serving default: llama3.2 (env default)' → No local model exists: discovered [], active_estate [], ollama available:false. /native-ai/status on the same page says… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/native_ai.py",
+        "agentic_core/ai/native/model_resource.py",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-184",
+      "title": "sweep qep_intelligence.py: 1 Tier-2 shortfall (C3) — ease_factor row rationale: 'Higher ease ⇒ longer interval; the learner retains this ayah…",
+      "why": "S13.8 C3: ease_factor row rationale: 'Higher ease ⇒ longer interval; the learner retains this ayah well.' → The rationale is a fixed string emitted for every ease value, including the floor 1.3 (a learner struggling with the ayah). It… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/qep_intelligence.py",
+        "apps/workstation-superapp/src/components/qep/QEPIntelligence.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-185",
+      "title": "sweep religion.py: 1 Tier-2 shortfall (C6) — Hub copy: 'Workstation's own AI researches its narration, isnad, grading and sharh' and…",
+      "why": "S9.7 C6: Hub copy: 'Workstation's own AI researches its narration, isnad, grading and sharh' and '…researches it… → On the floor these headings are followed by keyword bigrams ('- hadith number - authenticated collections') and a 'service… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/religion.py",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+        "apps/workstation-superapp/src/lib/toolRegistry.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-186",
+      "title": "sweep resource_fabric.py: 1 Tier-2 shortfall (C9) — Each real facility run a composition executed is recorded as a successful outcome…",
+      "why": "S4.19 C9: Each real facility run a composition executed is recorded as a successful outcome ('measured facility… → record_outcome(..., success=True) runs for every entry in real_runs, including entries that are {'resource', 'error'}. A failed… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-187",
+      "title": "sweep sovereign_evolution.py: 1 Tier-2 shortfall (C9) — Ticking the box and running a cycle suggests the items go to governance. Nothing is…",
+      "why": "S13.5 C9: Ticking the box and running a cycle suggests the items go to governance. Nothing is shown when nothing was… → On the floor the only directive is the defaulted P2 'maintenance' item, so the submission filter (P1 or correction) selects… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/sovereign_evolution.py",
+        "apps/workstation-superapp/src/pages/evolution/SovereignEvolution.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-188",
+      "title": "sweep transformation_orchestration.py: 1 Tier-2 shortfall (C5) — Under '## Components' the first entry is 'Chief (owner twin)'",
+      "why": "S8.9 C5: Under '## Components' the first entry is 'Chief (owner twin)' → No twin model exists. The same spec, two lines above, says 'Chief of the Board — … (no twin model is trained; Mode 2 planned,… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py",
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/DashboardNew.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx",
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-189",
+      "title": "sweep vbs_systems.py: 1 Tier-2 shortfall (C3) — The chip reads 'non-conformance 14%' with the title 'gate failures / gates run — a real…",
+      "why": "S9.4 C3: The chip reads 'non-conformance 14%' with the title 'gate failures / gates run — a real rate'. The catalogue… → The cockpit's Gate button runs the platform-wide shared QMS on a coverage number the user types (default 0.97, which passes) and… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/vbs_systems.py",
+        "apps/workstation-superapp/src/components/VBSSystemsPanel.tsx",
+        "agentic_core/vbs/qms.py",
+        "agentic_core/vbs/quality.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-190",
+      "title": "sweep app_mvp.py: 1 Tier-2 shortfall (C3) — A state label 'Work' (aria 'Mesh Work'), a green 'healthy flow' cardiovascular dot, and…",
+      "why": "S11.14 C3: A state label 'Work' (aria 'Mesh Work'), a green 'healthy flow' cardiovascular dot, and a pink 'Oxytocin… → The label is inverted. resource_flow = 100 − host CPU%, and the hook calls anything >60 'WORKING', so an idle host (low CPU, no… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/app_mvp.py",
+        "apps/workstation-superapp/src/hooks/useWorkstationBiometrics.ts",
+        "apps/workstation-superapp/src/components/BiometricStatus.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-191",
+      "title": "sweep api.py: 1 Tier-2 shortfall (C7) — The user attaches an image and asks 'Describe this image.'; a reply appears. A user with…",
+      "why": "S10.11 C7: The user attaches an image and asks 'Describe this image.'; a reply appears. A user with a non-English… → The backend returns image_understood:false and image_served_by:null, and language:null when the floor could not honour the… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/avatars/api.py",
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.3",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-192",
+      "title": "sweep living_vsbs.py: 1 Tier-2 shortfall (C10) — An emerald '1 cycles · last 2026-09-19' for vsb-7b309134bc.",
+      "why": "S1.22 C10: An emerald '1 cycles · last 2026-09-19' for vsb-7b309134bc. → The ledger holds three cycles, two of them Owner-run from this page. operating_cycles and last_operated count only roster visits… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/economy/living_vsbs.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-193",
+      "title": "sweep metabolism.py: 1 Tier-2 shortfall (C4) — 'Capital-preserving (waqf principle): the endowment base is protected.'",
+      "why": "S1.23 C4: 'Capital-preserving (waqf principle): the endowment base is protected.' → capital_preserved enforces only that the capital_fund waterfall share is > 0 (metabolism.py:67). No endowment base is recorded… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/economy/metabolism.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-194",
+      "title": "sweep ventures.py: 1 Tier-2 shortfall (C3) — Candidates are 'ranked' and the next cycle's allocation 'selects from these'. The module…",
+      "why": "S2.12 C3: Candidates are 'ranked' and the next cycle's allocation 'selects from these'. The module says selection is… → The scores are policy constants keyed on whether a board exists and whether a cycle ran, so every governed VSB gets an identical… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/economy/ventures.py",
+        "agentic_core/api/economy.py",
+        "apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-195",
+      "title": "sweep policy_gate.py: 1 Tier-2 shortfall (C2) — An emerald 'gaas: allowed' chip next to the directive, presented as the constitutional…",
+      "why": "S2.10 C2: An emerald 'gaas: allowed' chip next to the directive, presented as the constitutional gate's verdict over… → The gaas.v5 gate is a keyword screen. The pre-gate denies only if the fixed intent string ('board_chief_instruct') contains a… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/gaas/v5/policy_gate.py",
+        "agentic_core/gaas/v5/uci_v16_omega.py",
+        "agentic_core/api/board.py",
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-196",
+      "title": "sweep ueg.py: 1 Tier-2 shortfall (C5) — With valid:true: 'All N constitutional events verified against the recomputed hash…",
+      "why": "S10.13 C5: With valid:true: 'All N constitutional events verified against the recomputed hash chain' and 'Chain… → (a) verify_chain treats a missing or corrupt tail anchor as no anchor (read_anchor returns None on any error) and still returns… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/gaas/v5/ueg.py",
+        "apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx",
+        "apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-197",
+      "title": "sweep engine.py: 1 Tier-2 shortfall (C5) — Allocation result: domain 'general', share {cpu:0.1, priority:0}, status 'ACTIVE', and…",
+      "why": "S4.21 C5: Allocation result: domain 'general', share {cpu:0.1, priority:0}, status 'ACTIVE', and the top-level status… → The requested domain is dropped: RALVerifier's result has no domain, so the allocator falls back to 'general'. 'standard' is not… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/optimizer/engine.py",
+        "agentic_core/optimizer/allocator.py",
+        "agentic_core/api/optimizer.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.7",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-198",
+      "title": "sweep genome.py: 1 Tier-2 shortfall (C5) — For a mutant created seconds ago: 'encoded before provenance tracking (pre-W438) —…",
+      "why": "S8.14 C5: For a mutant created seconds ago: 'encoded before provenance tracking (pre-W438) — whether these axes were… → Mutate and crossover records carry no trait_provenance, served_by or encoding_note, so the fallback note fires for post-W438… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/organism/genome.py",
+        "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.7",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-199",
+      "title": "sweep api.py: 1 Tier-2 shortfall (C7) — 'Synthesis Complete · 1 Output Generated' with a green check under 'Multi-Modal AI…",
+      "why": "S4.12 C7: 'Synthesis Complete · 1 Output Generated' with a green check under 'Multi-Modal AI Output Generation'. No… → The /stream done frame carries served_by:'native', is_external and profile_applied (added in W451 so SSE consumers could tell… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/synthesis/api.py",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-200",
+      "title": "sweep ems.py: 1 Tier-2 shortfall (C3) — A green 'EMS +85%' efficiency gain and a CO₂ figure on this run's result.",
+      "why": "S11.7 C3: A green 'EMS +85%' efficiency gain and a CO₂ figure on this run's result. → efficiency_gain is the literal `return 0.85`, identical on every run. total_co2_kg is the process-lifetime accumulator, not this… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/vbs/ems.py",
+        "agentic_core/api/swarm.py",
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-201",
+      "title": "sweep registry.py: 1 Tier-2 shortfall (C1) — After re-verify, VBSSystemsPanel.tsx:79 shows 'closed — the corrected delivery PASSED…",
+      "why": "S9.1 C1: After re-verify, VBSSystemsPanel.tsx:79 shows 'closed — the corrected delivery PASSED the same gate,… → A cockpit-gate defect stores no section requirements. Its re-verify therefore only checks that the pasted text is at least 200… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/vbs/registry.py",
+        "apps/workstation-superapp/src/components/VBSSystemsPanel.tsx",
+        "agentic_core/api/vbs_systems.py",
+        "agentic_core/vbs/quality.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-202",
+      "title": "sweep SwarmIntelligence.tsx: 1 Tier-2 shortfall (C4) — '[--:--:--] READY: Swarm intelligence online — waiting for orchestration signal.' in a…",
+      "why": "S11.2 C4: '[--:--:--] READY: Swarm intelligence online — waiting for orchestration signal.' in a green log-styled… → Nothing streams and nothing waits: the panel is a static fallback string rendered whenever GET /api/v1/swarm/runs yields no… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-203",
+      "title": "sweep toolRegistry.ts: 1 Tier-2 shortfall (C6) — Tafsir card: 'Structured tafsir of an ayah … drawing on the classical mufassirun.'…",
+      "why": "S13.11 C6: Tafsir card: 'Structured tafsir of an ayah … drawing on the classical mufassirun.' Header: 'every one on… → Under this environment every tool is served by the deterministic floor. The tafsir route's own floor_note says the notes are 'a… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/lib/toolRegistry.ts",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+        "apps/workstation-superapp/src/pages/AIToolsCatalogue.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-204",
+      "title": "sweep Contribute.tsx: 1 Tier-2 shortfall (C4) — 'Governance is shared between the AI-led Council and the Open Source Steering…",
+      "why": "S7.9 C4: 'Governance is shared between the AI-led Council and the Open Source Steering Committee.' and 'Workstation… → Neither body exists anywhere in the codebase (no match for 'Steering Committee' or 'AI-led Council' under agentic_core/). The… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/Contribute.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-205",
+      "title": "sweep DashboardNew.tsx: 1 Tier-2 shortfall (C4) — 'One living, biomimetic organism that is simultaneously all five — generated end-to-end,…",
+      "why": "S6.18 C4: 'One living, biomimetic organism that is simultaneously all five — generated end-to-end, self-running,… → The autonomy levers are off by default: heartbeat status shows auto_evolve, auto_economy, auto_align, auto_compliance and… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/DashboardNew.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-206",
+      "title": "sweep SolutionsPlatform.tsx: 1 Tier-2 shortfall (C10) — The selector offers 'Ollama · llama3', 'Ollama · mistral', 'Ollama · deepseek-r1' and…",
+      "why": "S5.3 C10: The selector offers 'Ollama · llama3', 'Ollama · mistral', 'Ollama · deepseek-r1' and 'External ·… → The choice only goes into the prompt text, and the backend discards that text anyway (see the 'message' field mismatch). No… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-207",
+      "title": "sweep NativeAI.tsx: 1 Tier-2 shortfall (C10) — 'Ensemble · 1 owned models in parallel → consensus'",
+      "why": "S7.12 C10: 'Ensemble · 1 owned models in parallel → consensus' → Only one member ran (the native floor). synthesis is null, so no consensus exists and none is shown. The label still promises one. [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-208",
+      "title": "sweep EmploymentHub.tsx: 1 Tier-2 shortfall (C10) — A header button labelled 'Career Path'.",
+      "why": "S9.11 C10: A header button labelled 'Career Path'. → It opens the Application Studio tab and scrolls to 'input-materials-section'. It does not open the hub's own 'Career Path' tool… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/EmploymentHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-209",
+      "title": "sweep ReligionHub.tsx: 1 Tier-2 shortfall (C2) — 'Moral alignment checks run through the real §11 compliance engines (Halal/Sharia ·…",
+      "why": "S9.9 C2: 'Moral alignment checks run through the real §11 compliance engines (Halal/Sharia · Ethical).' The button… → The §11 Halal/Sharia and Ethical engines are keyword/bare-word screens (R1.0, R3.4), not moral-alignment judgement. Nothing on… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-210",
+      "title": "sweep BusinessPlan.tsx: 1 Tier-2 shortfall (C5) — The spinner stops and nothing appears. The page's own comment (W329) says 'actions never…",
+      "why": "S3.15 C5: The spinner stops and nothing appears. The page's own comment (W329) says 'actions never fail silently'. → A 409 from a pending Mode-3 review gate, or any non-ok or non-JSON answer, is swallowed. The Owner is not told the delivery was… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-211",
+      "title": "sweep ManagementSystemsHub.tsx: 1 Tier-2 shortfall (C7) — The downloaded file carries only the floor's own marker line '_[Workstation native…",
+      "why": "S2.13 C7: The downloaded file carries only the floor's own marker line '_[Workstation native structured engine —… → The floor_note shown on screen ('not model analysis. Review every clause before use.') is dropped from the export. A reader of… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/ManagementSystemsHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-212",
+      "title": "sweep SovereignEvolution.tsx: 1 Tier-2 shortfall (C5) — Page load shows 'Organism Introspection' (Projects, Immune Health, CPU, Items…",
+      "why": "S13.6 C5: Page load shows 'Organism Introspection' (Projects, Immune Health, CPU, Items Proceeding) and directives as… → GET /roadmap returns the LAST saved cycle, which can be arbitrarily old. The page shows cycle_id and duration but not… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/evolution/SovereignEvolution.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-213",
+      "title": "sweep ConstitutionalUI.tsx: 1 Tier-2 shortfall (C10) — 'UEG Audit Trail' header badge '40 events'.",
+      "why": "S10.14 C10: 'UEG Audit Trail' header badge '40 events'. → The badge counts the 40 rows fetched (limit=40). The same page shows the chain holding 177+ events. The badge reads as a total. [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-214",
+      "title": "sweep HeartbeatMonitor.tsx: 1 Tier-2 shortfall (C4) — 'Self-run: Operates each living VSB on the beat…' and 'Self-defend: Re-screens every…",
+      "why": "S9.5 C4: 'Self-run: Operates each living VSB on the beat…' and 'Self-defend: Re-screens every living VSB against §11… → Each beat operates ONE VSB (operate_one, least-recently-operated) and re-screens ONE VSB (_compliance_beat, round-robin). With N… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-215",
+      "title": "sweep OrganismAnatomy.tsx: 1 Tier-2 shortfall (C5) — Blended figure captioned 'blended (20% simulated)'; the self_healing_health term chip…",
+      "why": "S8.13 C5: Blended figure captioned 'blended (20% simulated)'; the self_healing_health term chip reads 'SIMULATED' → While no circuits are tracked, 60% of the blend is unmeasured: 40% defaulted self-healing plus 20% simulated ATP. The card's own… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-216",
+      "title": "sweep ProjectsHub.tsx: 1 Tier-2 shortfall (C5) — After a failed run the project keeps its spinning 'running' status dot, 'Run <stage>'…",
+      "why": "S12.9 C5: After a failed run the project keeps its spinning 'running' status dot, 'Run <stage>' stays disabled, and no… → The backend emits data:{error} and sets project.status='error'. The page throws inside the per-line try, and its own catch… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-217",
+      "title": "sweep BusinessModelDashboard.tsx: 1 Tier-2 shortfall (C3) — Beneath the amber note 'The model did not return a parseable simulation...', the…",
+      "why": "S5.13 C3: Beneath the amber note 'The model did not return a parseable simulation...', the dashboard still shows 'QEP… → All of these are JSX literals, rendered whatever the model returned and even when it returned nothing (generated:false). W407… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/BusinessModelDashboard.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-218",
+      "title": "sweep PresentationPlayer.tsx: 1 Tier-2 shortfall (C3) — The header reads 'Sovereign Studio v1.0 • Autonomous Narration Active', the footer reads…",
+      "why": "S5.14 C3: The header reads 'Sovereign Studio v1.0 • Autonomous Narration Active', the footer reads '{n}%… → No narration audio plays and nothing is synchronised. 'n% Synchronized' is a setInterval counter (+2 every 100 ms). When the… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/PresentationPlayer.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-219",
+      "title": "sweep ResourceFabric.tsx: 1 Tier-2 shortfall (C1) — 'Project and compare the outcomes of what-if scenarios against a subject — in-house,…",
+      "why": "S4.22 C1: 'Project and compare the outcomes of what-if scenarios against a subject — in-house, ranked, QMS-gated.' → On the floor, the 'Ranking' section is a generic scaffold ('Generate ≥3 distinct variants...') with no ranking. The QMS gate… [docs/TRUTH_SWEEP_W477.md; every writer is named there]",
+      "source": "W477 truth sweep",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-220",
+      "title": "relocate_data_store calls a directory populated because a file exists — FU-079's two 'populated' chroma_db copies held 0 and 1 entries",
+      "why": "FU-079 was registered as 'two populated copies' of chroma_db because plan() marks a directory CONFLICT when it is non-empty (any file). Read W477: the legacy copy's conversation_memory collection holds 0 embeddings; the repo copy holds 1 (a 30 March test exchange). The Owner ruled 2026-09-19: the repo copy is live, the legacy copy is retired and left on disk untouched. Fix: a directory is populated only when it holds data (for a Chroma store, count the embeddings; for a SQLite file, rows in its tables), and the report states the counts; guard with an empty-store fixture.",
+      "source": "W477 (FU-079 ruling)",
+      "found": "2026-09-19",
+      "files": [
+        "scripts/relocate_data_store.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [
@@ -2026,7 +3790,37 @@
         "agentic_core/api/tools.py",
         "agentic_core/security/",
         "agentic_core/reactor/domains/",
-        "agentic_core/biomimicry/"
+        "agentic_core/biomimicry/",
+        "agentic_core/vbs/quality.py",
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "agentic_core/api/deliverables.py",
+        "agentic_core/api/products.py",
+        "agentic_core/ingestion/api.py",
+        "apps/workstation-superapp/src/pages/synthesis/ReactorStudio.tsx",
+        "agentic_core/ai/gateway.py",
+        "agentic_core/ai/native/homeostasis.py",
+        "agentic_core/api/career.py",
+        "agentic_core/api/cognition.py",
+        "agentic_core/api/forge.py",
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/api/intelligence.py",
+        "agentic_core/api/qep_intelligence.py",
+        "agentic_core/api/sovereign_evolution.py",
+        "agentic_core/app_mvp.py",
+        "agentic_core/synthesis/api.py",
+        "agentic_core/vbs/registry.py",
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx",
+        "apps/workstation-superapp/src/pages/Contribute.tsx",
+        "apps/workstation-superapp/src/pages/DashboardNew.tsx",
+        "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx",
+        "apps/workstation-superapp/src/pages/evolution/SovereignEvolution.tsx",
+        "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx",
+        "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx",
+        "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/BusinessModelDashboard.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/PresentationPlayer.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "scripts/relocate_data_store.py"
       ],
       "words": [
         "marketplace count",
@@ -2037,7 +3831,7 @@
         "catalogue count",
         "catalogue counts"
       ],
-      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely)"
+      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories)"
     },
     {
       "slot": "P3.3",
