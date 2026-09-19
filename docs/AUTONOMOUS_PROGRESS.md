@@ -6552,3 +6552,22 @@ Guard: test_w473_canon_and_suite_hygiene_before_m1 (with the W469 and W462 regis
 Probe: scripts/_w473_probe.mjs on a fresh backend at :8082 (the served bundle carries none of the three literals).
 
 Suite: 385 passed · 15 skipped · 0 fail — 382 in the full run plus the three register-lockstep legs re-run green once the new script was git-added (the snapshot step had dropped its intent-to-add) (full run on the final tree, isolated DATA_DIR, 37 min; 400 items from 361 test functions).
+
+### W474 — MILESTONE M1: the fidelity workflow re-run, ledger v4
+
+**Why now.** The plan's verification rule V6: at each phase boundary the whole fidelity workflow re-runs and the
+ledger re-issues. Phase P1 (sixteen truth-first items) closed at W473; M1 asks one question — does any Tier-1 truth
+defect remain on a reached surface? — and answers it by measurement, not by reading the diffs that closed P1.
+
+**How.** A fresh backend from HEAD `cdd7619f` (:8083, isolated DATA_DIR, `AI_DISABLE_LOCAL=1`, the built bundle served).
+The W446 workflow, re-run with one addition: every finding carries a TIER (1 truth defect · 2 invisible shortfall · 3
+disclosed/unreached gap) and every refuter may correct the tier as well as the verdict. Six assessors, each barred from
+§16, ledger v3, the progress log and the prompt's `<ledger>`; six refuters, default refuted, reproducing every gap.
+`scripts/render_fidelity_ledger.py` renders v4 (`version=4`: the tier table, per-entry tiers, none of v3's status map);
+v3 is kept whole as `docs/VISION_FIDELITY_LEDGER_v3.md` because the prompt's `<ledger>` cites its entries.
+
+**Result.** 60 findings; 53 survived, 7 overturned by the refuters. Standing: STUB 8 · MISSING 0 · DOC_OVERCLAIM 4 · API_ONLY 0 · PARTIAL 38 · DELIVERED 10.
+Tiers (non-DELIVERED): **Tier-1 14** · Tier-2 19 · Tier-3 17. MILESTONE M1 is NOT met: the standing Tier-1 entries are registered (FU-080…FU-093) and ride the plan items that own their areas; the milestone line says so.
+Register: FU-080…FU-093.
+
+Suite: 385 passed · 15 skipped · 0 failed (400 items, 361 functions; 38-min full run on the final tree, isolated DATA_DIR)

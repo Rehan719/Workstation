@@ -1,4 +1,5 @@
-"""Render docs/VISION_FIDELITY_LEDGER.md v3 from the W446 audit workflow's final result.
+"""Render docs/VISION_FIDELITY_LEDGER.md from a fidelity-audit workflow's final result (v3 by W446; v4 by W474 with
+`version=4`, which adds the tier the refuter stands behind and renders none of v3's status map).
 
 Input: a JSON file holding the workflow's return value — a list of
   {region, findings:[...], verdicts:[...], summary}
@@ -158,9 +159,21 @@ def standing(f, v):
     return cv, "survived"
 
 
-def main(src, dst, head, date, port="8024"):
+def standing_tier(f, v):
+    """W474 (v4) — the tier the refuter stands behind: corrected_tier when given, else the assessor's tier."""
+    t = (v or {}).get("corrected_tier")
+    if t is None:
+        t = f.get("tier")
+    try:
+        return int(t)
+    except (TypeError, ValueError):
+        return None
+
+
+def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
     regions = json.load(open(src, encoding="utf-8"))
     by_key = {r["region"]: r for r in regions}
+    v4 = str(version) == "4"
     rows = []  # (region, idx, finding, verdict, standing_verdict, how)
     for k in ORDER:
         r = by_key.get(k)
@@ -170,6 +183,7 @@ def main(src, dst, head, date, port="8024"):
         for i, f in enumerate(r["findings"]):
             sv, how = standing(f, vmap.get(i))
             rows.append((k, i, f, vmap.get(i), sv, how))
+    tiers = Counter(standing_tier(f, v) for _, _, f, v, sv, _ in rows if sv != "DELIVERED")
 
     total = len(rows)
     assessed = Counter(f.get("verdict", "?").upper() for _, _, f, _, _, _ in rows)
@@ -182,28 +196,53 @@ def main(src, dst, head, date, port="8024"):
 
     out = []
     w = out.append
-    w(f"# Vision Fidelity Ledger — v3 ({date})")
-    w("")
-    w(f"**Supersedes v2 (2026-09-02, baseline `d937dd37`) in full.** v2 predated W435–W445 — eleven")
-    w("workstreams including the whole W437–W444 reach campaign — and prompt v11 said to weigh it")
-    w(f"accordingly. This edition is regenerated from a fresh six-region assessment against a backend")
-    w(f"booted from HEAD `{head}` (port :{port}, single-user mode, `AI_DISABLE_LOCAL=1`). Under that flag the")
-    w("gateway routes every model call to the deterministic native floor — the configuration CI runs and")
-    w("the one any machine without a local model gets (it is NOT the shipped default: with the flag unset")
-    w("and Ollama discoverable, the gateway serves from the local model). What IS assessable on the floor")
-    w("is whether every floor-served surface discloses it. One caveat the audit itself found (R3.0/R4.0):")
-    w("a surface that bypasses the gateway — the v138 AI-CEO chat — reached the host's Ollama directly and")
-    w("returned real llama3.2 prose during this audit, so 'the floor served every call' is true of the")
-    w("gateway path, not of every route.")
-    w("")
+    if v4:
+        w(f"# Vision Fidelity Ledger — v4 ({date}) — MILESTONE M1")
+        w("")
+        w("**Supersedes v3 (2026-09-05, baseline `06c51109`) as the current assessment.** v3 is kept whole at")
+        w("`VISION_FIDELITY_LEDGER_v3.md` because prompt v11's `<ledger>` and `<delivery_plan>` cite its entries by")
+        w("region.index and its status lines record how Phase P1 closed each one. This edition is the phase-boundary")
+        w("re-run the plan's verification rule V6 requires (MILESTONE M1: after P1.1–P1.16, 'fidelity workflow re-run →")
+        w(f"Tier-1 count 0'): a fresh six-region assessment against a backend booted from HEAD `{head}` (port :{port},")
+        w("single-user mode, `AI_DISABLE_LOCAL=1`). Under that flag the gateway routes every model call to the")
+        w("deterministic native floor — the configuration CI runs and the one any machine without a local model gets")
+        w("(it is NOT the shipped default: with the flag unset and Ollama discoverable, the gateway serves from the")
+        w("local model). What IS assessable on the floor is whether every floor-served surface discloses it.")
+        w("")
+        w("**Tiers.** Each finding carries the tier the refuter stands behind — 1: a TRUTH DEFECT (a reached surface")
+        w("tells the user something untrue, fabricates a figure, or certifies what it could not assess); 2: an")
+        w("INVISIBLE SHORTFALL (partial, and the surface does not say so); 3: a CAPABILITY GAP that is disclosed or")
+        w("not reached. DELIVERED entries carry no tier.")
+        w("")
+    else:
+        w(f"# Vision Fidelity Ledger — v3 ({date})")
+        w("")
+        w(f"**Supersedes v2 (2026-09-02, baseline `d937dd37`) in full.** v2 predated W435–W445 — eleven")
+        w("workstreams including the whole W437–W444 reach campaign — and prompt v11 said to weigh it")
+        w(f"accordingly. This edition is regenerated from a fresh six-region assessment against a backend")
+        w(f"booted from HEAD `{head}` (port :{port}, single-user mode, `AI_DISABLE_LOCAL=1`). Under that flag the")
+        w("gateway routes every model call to the deterministic native floor — the configuration CI runs and")
+        w("the one any machine without a local model gets (it is NOT the shipped default: with the flag unset")
+        w("and Ollama discoverable, the gateway serves from the local model). What IS assessable on the floor")
+        w("is whether every floor-served surface discloses it. One caveat the audit itself found (R3.0/R4.0):")
+        w("a surface that bypasses the gateway — the v138 AI-CEO chat — reached the host's Ollama directly and")
+        w("returned real llama3.2 prose during this audit, so 'the floor served every call' is true of the")
+        w("gateway path, not of every route.")
+        w("")
     w("## How this document was generated — and what that means for reading it")
     w("")
     w("Six assessors ran one vision region each against the booted HEAD, explicitly barred from three")
     w("sources: the vision's own §16, the previous edition of this ledger, and `AUTONOMOUS_PROGRESS.md`")
     w("(a record of intent, not proof). They executed routes, read handlers and components, and counted")
-    w("stores. The ASSESSMENT was capped at ten findings per region, most consequential first — and every")
-    w("region returned exactly ten, so **60 is the size of the cap, not the size of the gap**; a region's")
-    w("eleventh-worst thing is not in this ledger. **Every finding was then attacked by an independent")
+    per_region = Counter(x[0] for x in rows)
+    if v4 and any(n < 10 for n in per_region.values()):
+        w(f"stores. The ASSESSMENT was capped at ten findings per region, most consequential first; the regions returned")
+        w(f"{', '.join(f'{k} {per_region.get(k, 0)}' for k in ORDER)} — a region under the cap ran out of consequential gaps, one")
+        w("at the cap may have more. **Every finding was then attacked by an independent")
+    else:
+        w("stores. The ASSESSMENT was capped at ten findings per region, most consequential first — and every")
+        w(f"region returned exactly ten, so **{total} is the size of the cap, not the size of the gap**; a region's")
+        w("eleventh-worst thing is not in this ledger. **Every finding was then attacked by an independent")
     w("refuter instructed to default to refuted** (v2 refuted six per region), who had to reproduce the gap (execute the")
     w("route, read the code, count the store) before letting it stand, and who was told to correct the")
     w("verdict UP or DOWN when the assessor had it wrong.")
@@ -234,6 +273,17 @@ def main(src, dst, head, date, port="8024"):
         w(f"| {vname} | {stands.get(vname, 0)} | {assessed.get(vname, 0)} |")
     w(f"| **total** | **{total}** | **{total}** |")
     w("")
+    if v4:
+        w("Standing tiers (non-DELIVERED entries, the tier the refuter stands behind):")
+        w("")
+        w("| tier | count | meaning |")
+        w("|---|---|---|")
+        w(f"| **1** | **{tiers.get(1, 0)}** | truth defect on a reached surface — the M1 measure (target 0) |")
+        w(f"| 2 | {tiers.get(2, 0)} | invisible shortfall (Phase P2's tier) |")
+        w(f"| 3 | {tiers.get(3, 0)} | disclosed or unreached capability gap (Phase P3/P4) |")
+        if tiers.get(None):
+            w(f"| — | {tiers.get(None)} | no tier recorded |")
+        w("")
     w("Per region:")
     w("")
     w("| region | sections | findings | STUB | MISSING | DOC_OVERCLAIM | API_ONLY | PARTIAL | DELIVERED |")
@@ -266,6 +316,10 @@ def main(src, dst, head, date, port="8024"):
             key = f"{k}.{i}"
             av = f.get("verdict", "?").upper()
             tag = f" *(assessed {av})*" if sv != av else ""
+            if v4 and sv != "DELIVERED":
+                st = standing_tier(f, v)
+                at = f.get("tier")
+                tag += f" · tier {st if st is not None else '?'}" + (f" *(assessed tier {at})*" if v and v.get("corrected_tier") not in (None, at) else "")
             w(f"### {k}.{i} · {f.get('section', '').strip()} — **{sv}**{tag}")
             w("")
             if f.get("severity"):
@@ -289,14 +343,14 @@ def main(src, dst, head, date, port="8024"):
                 label = ("residual lead (assessor's note on a DELIVERED entry — a lead, not a defect)" if sv == "DELIVERED"
                          else "smallest honest fix (assessor's proposal — a lead, not a decision)")
                 w(f"- **{label}:** {clip(f['smallest_honest_fix'], 700)}")
-            if key in STATUS:
+            if not v4 and key in STATUS:          # the STATUS and ERRATA maps belong to v3's entries only
                 w(f"- **status now:** {STATUS[key]}")
-            if key in ERRATA:
+            if not v4 and key in ERRATA:
                 w(f"- **erratum (W448, verified against the code):** {ERRATA[key]}")
             w("")
         w("---")
     w("")
-    w("*Regenerated by W446 from the audit workflow's journal (status lines added from W449 onward). Every entry above is an observation against")
+    w(f"*Regenerated by {round_name} from the audit workflow's journal" + (" (status lines added from W449 onward)" if not v4 else "") + ". Every entry above is an observation against")
     w("the booted HEAD named in the header — routes executed, handlers and components read, stores counted —")
     w("not a claim read from another document. No browser was driven: statements about what a user SEES")
     w("(a chip's colour, a tab's default, a rendered badge) are reasoned from the component source, and the")
@@ -304,8 +358,10 @@ def main(src, dst, head, date, port="8024"):
     import os
     eol = (chr(13) + chr(10)) if (os.path.exists(dst) and (chr(13) + chr(10)).encode() in open(dst, 'rb').read(4096)) else chr(10)
     open(dst, 'wb').write((eol.join(out) + eol).encode('utf-8'))
-    print(f"wrote {dst} ({'CRLF' if len(eol) == 2 else 'LF'}): {total} findings; standing={dict(stands)}; hows={dict(hows)}; up={refuted_up} down={refuted_down}")
+    print(f"wrote {dst} ({'CRLF' if len(eol) == 2 else 'LF'}): {total} findings; standing={dict(stands)}; hows={dict(hows)}; "
+          f"up={refuted_up} down={refuted_down}; tiers={dict(tiers)}")
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:6])
+    # argv: src.json dst.md head date [port] [version 3|4] [round]  — W474 renders v4 (tiers, no v3 status map)
+    main(*sys.argv[1:8])

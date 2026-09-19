@@ -1295,6 +1295,237 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-080",
+      "title": "v4 R1.0: the halal screen fails a subject that AVOIDS a haram term (negation-blind regex) and seals the FAIL into deliverables and exports",
+      "why": "POST /api/v1/compliance/check on 'a savings app that avoids riba' answers sharia_halal fail 'Prohibited element: riba'; the deliverable is sealed compliance:fail, routed to Change Control, exported with a FAIL banner. Return 'review' with a reason that says the screen cannot tell offered from avoided; reword 'Prohibited element' to 'haram term present'.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/compliance.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-081",
+      "title": "v4 R1.1: the floor-served tafsir body repeats the sourced Arabic CUT MID-WORD under the label 'THE AUTHENTIC ARABIC TEXT'",
+      "why": "engine._subject() cuts the prompt subject at 220 chars with no marker; religion.quran_tafsir puts the sourced Arabic inside that subject, so the study-notes body (rendered, copied, exported, saved to My Work) shows a mutilated ayah labelled authentic. Keep the Arabic out of the floor-visible subject (arabic_text already carries it whole) or never cut inside Arabic.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/religion.py",
+        "agentic_core/ai/native/engine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-082",
+      "title": "v4 R1.2: the Management Systems QMS generator mixes another organisation's recalled text into the document and carries no provenance",
+      "why": "POST /api/v1/mgmt/qms/generate for 'Zed Bakery' returned 'Quality measure for beekeepers yorkshire' (native memory recall mined by the floor) under a green 'Framework Generated' with a download and no ai_provenance/floor_note/QMS record. Generate with ai_text(augment=False), return provenance and a floor note, run assure_delivery.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/management_systems.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-083",
+      "title": "v4 R2.0: establishment tells the founder the organism is tending the enterprise while the heartbeat's economy lever is OFF by default",
+      "why": "Every establish/journey answer says, in the present tense, that the living roster tends the new VSB; heartbeat.auto_economy is off unless the Owner enables Self-run, so only the birth cycle ever runs and nothing at the Genesis surface says so. Read the lever at establishment and say 'autonomous cycles OFF — enable Self-run on the Heartbeat page' (also on GET /economy/living-vsbs).",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "agentic_core/economy/living_vsbs.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-084",
+      "title": "v4 R2.1: the shipped repository's QMS gate cannot fail on the non-floor path — generator headings and README boilerplate satisfy it",
+      "why": "For an entity whose provenance is not the floor the vsb_repo gate measures the generator's own headings; an enterprise established with no concept/design/commercialisation ships a BUSINESS_PLAN.md that passes. Measure the repo/webapp/mobile gates against the entity's OWN body, or pass served_by='template' for generator-composed documents so the gate records 'not assessable'.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "agentic_core/vbs/quality.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-085",
+      "title": "v4 R3.0: the CEO chat 'meeting' path counts floor echoes as officers' stances",
+      "why": "A message containing 'meeting' runs call_meeting(): six officers are prompted on the floor, the floor echoes the instruction sentence, and the stance detector reads APPROVE/OBJECT/ABSTAIN out of that echo — a deliberation that never happened is minuted. Record no stance when served_by is native; take a stance only from the reply's last line; stamp served_by on every officer entry.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/v138/ceo.py",
+        "agentic_core/ai/ceo/memory_v01.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-086",
+      "title": "v4 R3.1: the floor's '_Acting as: <role>_' line names the PREVIOUS call's persona when the prompt was memory-augmented",
+      "why": "gateway.query_meta(augment=True) prepends recall lines holding prior prompts; engine._role() takes the FIRST 'You are the X' in the augmented text, so Board directives, cascades and CCA reviews are labelled with another tier's role. Neutralise persona tokens inside recall lines or make _role() read only the text after the final User: marker.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/ai/native/engine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-087",
+      "title": "v4 R3.4: the Board page presents the Chief as the founder's digital twin while no twin model exists (0 models) and spawned Chiefs are 'Digital Twin of default'",
+      "why": "What serves the Chief is a constant charter sentence plus the last five stored instructions on the floor; /api/v1/twin/models holds 0 models. Say so under the Board header (planned P3.4) and title per-VSB Chiefs by the real owner name or 'the founder', never 'default'.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-088",
+      "title": "v4 R4.0: three Command Center channels (avatar, predictive, spatio) still render invented readings — 'WebRTC stream synchronized · Latency 18ms', a 1.2s 'Calibrated'",
+      "why": "String constants and a setTimeout present measurements nothing takes (W473 fixed the sibling three). Replace with 'not measured — nothing streams here' copy or retire the tiles; 'Calibrate Voice' must say nothing was calibrated.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "packages/ui/src/CommandCenter.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-089",
+      "title": "v4 R4.1: the native workflow tree returns decision 'proceed' (consistency 1.0, utility 0.85) on a run whose QMS gate was not assessable",
+      "why": "POST /api/v1/native-ai/tree on the floor answers qms_passed=null with basis 'not assessable' yet feeds the un-assessable proxy into the utility and votes proceed. When qms_passed is None the decision and consensus must be 'not assessable' (or abstain) and the chips grey with the basis.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ai/native/orchestrator.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-090",
+      "title": "v4 R4.2: the Resource Fabric marks a composition 'commit-ready' when its gate could not assess (None counted as ready)",
+      "why": "compose/simulate and compositions/run compute commit_ready as 'qms_gate_passed is not False', so a template-served, not_assessable run is commit_ready:true. Make commit_ready tri-state and render null as 'gate could not assess — commit at your judgement'; keep quality_warning on floor-only runs.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-091",
+      "title": "v4 R5.0: the marketplace counts 'enterprise-file-hub' as live over a route that does not exist",
+      "why": "GET /api/v1/catalog/products counts 5 live; enterprise-file-hub→/text-index has no <Route> in App.tsx. Drop it from ROUTE_OVERRIDES (status falls to 'source') and guard that every override route matches a <Route path> in App.tsx (test_w470 checks counts, not route existence).",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/catalog/api.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-092",
+      "title": "v4 R6.0: the Transformation page reports 'Vision Realisation 1.0 — 11/11 pillars realised' from router-mount and non-None checks that cannot fail",
+      "why": "GET /api/v1/transformation/realisation scores every pillar by _has(routes, prefix) or a count/non-None test; the figure and the Heartbeat tab's % read as delivery. Rename it to what it measures (API surface coverage) or derive realisation from /api/v1/plan/state; drop the 'Organism systems healthy' check.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/transformation.py",
+        "apps/workstation-superapp/src/pages/TransformationDashboard.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-093",
+      "title": "v4 R6.1: a cycle's declared costs are posted to reserve_fund, so the CFO statements show no operating cost and an inflated reserve",
+      "why": "POST /api/v1/economy/cycle {revenue 1000, costs 200} posts Dr reserve_fund / Cr cash for the costs (metabolism.py reserves = costs + revenue×rate); the P&L shows no expense and the balance sheet a reserve that includes spent money. Post costs as Dr operating_costs / Cr cash, or label the account reserves_and_costs and subtract costs in the P&L.",
+      "source": "W474 ledger v4",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/economy/metabolism.py",
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.17",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [

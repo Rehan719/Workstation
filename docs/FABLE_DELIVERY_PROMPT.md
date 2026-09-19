@@ -41,7 +41,7 @@
 > `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task riding the plan item
 > that owns its area, or OWNER; W469 retired NEXT and generates PLAN NOW; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
 > primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
-> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W473) ·
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W474) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -109,7 +109,8 @@ B — CANONICAL REALM SET: four user-type Realms (Enterprise · Learning · Deve
 
 C — WHAT TO BUILD NEXT: the reach backlog is COMPLETE. The next work is <delivery_plan> P1, in
     order — the truth defects the audit found on reached, used surfaces. P1.1–P1.16 are ALL DONE
-    (W449–W460, W470–W473); what comes next is MILESTONE M1, then P2 — the register's rows ride the items
+    (W449–W460, W470–W473); MILESTONE M1 ran W474 (ledger v4: standing Tier-1 count 14 — NOT met) and
+    P1.17 carries the fourteen; what comes next is P1.17, then M1 again, then P2 — the register's rows ride the items
     that own their areas (W469). PLAN NOW, in WHERE THE PLAN STANDS, is generated from the plan and the
     register and says what is next. The 67-op scatter is P2.4.
 
@@ -156,8 +157,8 @@ Work in this order. It is not effort order — it is "how much a real person is 
   TIER 1 — TRUTH DEFECTS. The system tells a user something untrue, or certifies what it could
            not assess. THE AUDIT FOUND FOURTEEN, ALL ON REACHED SURFACES — they are <delivery_plan>
            P1. ALL SIXTEEN ARE CLOSED (P1.1–P1.16, W449–W460, W470–W473; P1.16 was added W469 to carry
-           the follow-up register's store and hygiene rows). MILESTONE M1 — the fidelity re-run — comes
-           before any P2–P4 item. The pattern behind most of them: a gate,
+           the follow-up register's store and hygiene rows). MILESTONE M1 — the fidelity re-run — ran W474
+           and found 14 standing (ledger v4); P1.17 carries them and comes before any P2–P4 item. The pattern behind most of them: a gate,
            badge or chip that CANNOT FAIL on the floor — the configuration CI runs and any box
            without a local model gets (NOT the shipped default: with AI_DISABLE_LOCAL unset and
            Ollama discoverable, the gateway serves from the local model), and the one that served
@@ -180,7 +181,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W473 (473 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W474 (474 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -213,7 +214,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W473: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W474: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -253,7 +254,9 @@ answered as empty and written back (W472); then P1.16 — the canon and the suit
 mandate pages that name what exists, a data store rooted in the repository, a validator and a self-healing cycle
 that ratify nothing, a Command Center that prints only what it measures, and register tooling that refuses
 to rewrite history (W473).
-All sixteen Tier-1 items of the whole-vision plan are closed by execution, not by declaration; MILESTONE M1 is next.
+All sixteen Tier-1 items of the whole-vision plan are closed by execution, not by declaration; MILESTONE M1 (W474)
+re-measured the whole product against HEAD and issued ledger v4 — 14 truth defects stand on surfaces the first pass
+never walked; they are P1.17, and M1 re-runs after it.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -630,7 +633,8 @@ WHERE THE PLAN STANDS (updated W473, 2026-09-19 — every round that closes an i
 items updates this block in the same commit. PLAN NOW, below, is generated from the plan's items and the
 register and checked by the suite (W469); the DONE lines are history, kept true by hand. Never start a line
 here with one space and an item id — that is read as a plan item and fails the suite).
-  DONE — P1.1 to P1.16, in order, W449–W460 and W470–W473 — PHASE P1 IS COMPLETE; MILESTONE M1 is next: each is
+  DONE — P1.1 to P1.16, in order, W449–W460 and W470–W473; MILESTONE M1 ran W474 and added P1.17 (the second truth
+    pass — fourteen ledger-v4 entries); P1 closes when P1.17 is done and M1 measures 0: each is
     marked below with what it DELIVERED; P1.1–P1.5, P1.7, P1.8, P1.11–P1.16 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
     leftover). Only P1.11's and P1.12's leftovers were back-filled into the register (FU-005…FU-014);
     since W462 (V6) a round registers what it leaves in the same commit.
@@ -692,12 +696,12 @@ here with one space and an item id — that is read as a plan item and fails the
 <!-- plannow:begin (generated by scripts/followups.py render - never edit by hand) -->
 PLAN NOW — generated from the delivery plan's items and docs/FOLLOWUPS.json by scripts/followups.py on
 every register change (add · close · drop · reslot · route · done · render); never edit between the markers.
-  Next: P2.1 Cascade grounding — no follow-ups ride it.
-  Then, in order (the follow-ups riding each): P2.2 0 · P2.3 0 · P2.4 6 · P2.5 0 · P2.6 9 · P2.7 1 · P2.8 3 ·
-    P2.9 19 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 · P3.6 0 · P3.7 0 · P3.8 0 · P3.9 0 ·
-    P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
-  Done: 16 of 43 items — P1 16/16 · P2 0/9 · P3 0/12 · P4 0/6.
-  Follow-ups: 39 open — 38 ride a plan item (0 high), 0 unscheduled, 1 awaiting the Owner; 40 done, 0 dropped.
+  Next: P1.17 The second truth pass — 14 follow-ups ride it.
+  Then, in order (the follow-ups riding each): P2.1 0 · P2.2 0 · P2.3 0 · P2.4 6 · P2.5 0 · P2.6 9 · P2.7 1 ·
+    P2.8 3 · P2.9 19 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 · P3.6 0 · P3.7 0 · P3.8 0 ·
+    P3.9 0 · P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
+  Done: 16 of 44 items — P1 16/17 · P2 0/9 · P3 0/12 · P4 0/6.
+  Follow-ups: 53 open — 52 ride a plan item (14 high), 0 unscheduled, 1 awaiting the Owner; 40 done, 0 dropped.
 <!-- plannow:end -->
   WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
     rulings, not register rows).
@@ -708,7 +712,22 @@ the same commit (python scripts/followups.py add routes it to the plan item that
 rides the next open item) or slotted OWNER (waits on an Owner decision; never scheduled). A round that
 finishes an item marks it with python scripts/followups.py done P1.13 --by W### — its rows move along the
 routes or are closed first; the suite fails on a row left on a finished item.
-Open 39 (38 scheduled, 0 high · 0 unscheduled · 1 awaiting the Owner) · done 40 · dropped 0.
+Open 53 (52 scheduled, 14 high · 0 unscheduled · 1 awaiting the Owner) · done 40 · dropped 0.
+  P1.17 — The second truth pass
+    FU-080 [high] v4 R1.0: the halal screen fails a subject that AVOIDS a haram term (negation-blind regex) and seals the FAIL into deliverables and exports — POST /api/v1/compliance/check on 'a savings app that avoids riba' answers sharia_halal fail 'Prohibited element: riba'; the deliverable is sealed compliance:fail, routed to Change Control, exported with a FAIL banner. Return 'review' with a reason that says the screen cannot tell offered from avoided; reword 'Prohibited element' to 'haram term present'. (found W474 ledger v4)
+    FU-081 [high] v4 R1.1: the floor-served tafsir body repeats the sourced Arabic CUT MID-WORD under the label 'THE AUTHENTIC ARABIC TEXT' — engine._subject() cuts the prompt subject at 220 chars with no marker; religion.quran_tafsir puts the sourced Arabic inside that subject, so the study-notes body (rendered, copied, exported, saved to My Work) shows a mutilated ayah labelled authentic. Keep the Arabic out of the floor-visible subject (arabic_text already carries it whole) or never cut inside Arabic. (found W474 ledger v4)
+    FU-082 [high] v4 R1.2: the Management Systems QMS generator mixes another organisation's recalled text into the document and carries no provenance — POST /api/v1/mgmt/qms/generate for 'Zed Bakery' returned 'Quality measure for beekeepers yorkshire' (native memory recall mined by the floor) under a green 'Framework Generated' with a download and no ai_provenance/floor_note/QMS record. Generate with ai_text(augment=False), return provenance and a floor note, run assure_delivery. (found W474 ledger v4)
+    FU-083 [high] v4 R2.0: establishment tells the founder the organism is tending the enterprise while the heartbeat's economy lever is OFF by default — Every establish/journey answer says, in the present tense, that the living roster tends the new VSB; heartbeat.auto_economy is off unless the Owner enables Self-run, so only the birth cycle ever runs and nothing at the Genesis surface says so. Read the lever at establishment and say 'autonomous cycles OFF — enable Self-run on the Heartbeat page' (also on GET /economy/living-vsbs). (found W474 ledger v4)
+    FU-084 [high] v4 R2.1: the shipped repository's QMS gate cannot fail on the non-floor path — generator headings and README boilerplate satisfy it — For an entity whose provenance is not the floor the vsb_repo gate measures the generator's own headings; an enterprise established with no concept/design/commercialisation ships a BUSINESS_PLAN.md that passes. Measure the repo/webapp/mobile gates against the entity's OWN body, or pass served_by='template' for generator-composed documents so the gate records 'not assessable'. (found W474 ledger v4)
+    FU-085 [high] v4 R3.0: the CEO chat 'meeting' path counts floor echoes as officers' stances — A message containing 'meeting' runs call_meeting(): six officers are prompted on the floor, the floor echoes the instruction sentence, and the stance detector reads APPROVE/OBJECT/ABSTAIN out of that echo — a deliberation that never happened is minuted. Record no stance when served_by is native; take a stance only from the reply's last line; stamp served_by on every officer entry. (found W474 ledger v4)
+    FU-086 [high] v4 R3.1: the floor's '_Acting as: <role>_' line names the PREVIOUS call's persona when the prompt was memory-augmented — gateway.query_meta(augment=True) prepends recall lines holding prior prompts; engine._role() takes the FIRST 'You are the X' in the augmented text, so Board directives, cascades and CCA reviews are labelled with another tier's role. Neutralise persona tokens inside recall lines or make _role() read only the text after the final User: marker. (found W474 ledger v4)
+    FU-087 [high] v4 R3.4: the Board page presents the Chief as the founder's digital twin while no twin model exists (0 models) and spawned Chiefs are 'Digital Twin of default' — What serves the Chief is a constant charter sentence plus the last five stored instructions on the floor; /api/v1/twin/models holds 0 models. Say so under the Board header (planned P3.4) and title per-VSB Chiefs by the real owner name or 'the founder', never 'default'. (found W474 ledger v4)
+    FU-088 [high] v4 R4.0: three Command Center channels (avatar, predictive, spatio) still render invented readings — 'WebRTC stream synchronized · Latency 18ms', a 1.2s 'Calibrated' — String constants and a setTimeout present measurements nothing takes (W473 fixed the sibling three). Replace with 'not measured — nothing streams here' copy or retire the tiles; 'Calibrate Voice' must say nothing was calibrated. (found W474 ledger v4)
+    FU-089 [high] v4 R4.1: the native workflow tree returns decision 'proceed' (consistency 1.0, utility 0.85) on a run whose QMS gate was not assessable — POST /api/v1/native-ai/tree on the floor answers qms_passed=null with basis 'not assessable' yet feeds the un-assessable proxy into the utility and votes proceed. When qms_passed is None the decision and consensus must be 'not assessable' (or abstain) and the chips grey with the basis. (found W474 ledger v4)
+    FU-090 [high] v4 R4.2: the Resource Fabric marks a composition 'commit-ready' when its gate could not assess (None counted as ready) — compose/simulate and compositions/run compute commit_ready as 'qms_gate_passed is not False', so a template-served, not_assessable run is commit_ready:true. Make commit_ready tri-state and render null as 'gate could not assess — commit at your judgement'; keep quality_warning on floor-only runs. (found W474 ledger v4)
+    FU-091 [high] v4 R5.0: the marketplace counts 'enterprise-file-hub' as live over a route that does not exist — GET /api/v1/catalog/products counts 5 live; enterprise-file-hub→/text-index has no <Route> in App.tsx. Drop it from ROUTE_OVERRIDES (status falls to 'source') and guard that every override route matches a <Route path> in App.tsx (test_w470 checks counts, not route existence). (found W474 ledger v4)
+    FU-092 [high] v4 R6.0: the Transformation page reports 'Vision Realisation 1.0 — 11/11 pillars realised' from router-mount and non-None checks that cannot fail — GET /api/v1/transformation/realisation scores every pillar by _has(routes, prefix) or a count/non-None test; the figure and the Heartbeat tab's % read as delivery. Rename it to what it measures (API surface coverage) or derive realisation from /api/v1/plan/state; drop the 'Organism systems healthy' check. (found W474 ledger v4)
+    FU-093 [high] v4 R6.1: a cycle's declared costs are posted to reserve_fund, so the CFO statements show no operating cost and an inflated reserve — POST /api/v1/economy/cycle {revenue 1000, costs 200} posts Dr reserve_fund / Cr cash for the costs (metabolism.py reserves = costs + revenue×rate); the P&L shows no expense and the balance sheet a reserve that includes spent money. Post costs as Dr operating_costs / Cr cash, or label the account reserves_and_costs and subtract costs in the P&L. (found W474 ledger v4)
   P2.4 — The scatter: 67 ops in 38 clusters, 3–4 per round, audit-before-wire, retire freely
     FU-076 [medium] pqc_hardening.py stamps a SHA3 digest with a fixed built-in key as a 'Dilithium5 signature' — relabel or retire — agentic_core/security/pqc_hardening.py is not a post-quantum scheme; gaas.py and qep_flagship.py record its output as pqc_signature, which reads as cryptographic assurance the code does not give. Retire the field or name it a content hash. (found W473 refuter)
     FU-077 [medium] The ontology engine serves empty graphs and the one real ontology (Law, under knowledge/) is unwired — agentic_core/reactor/domains/ontology_engine.py reads agentic_core/data/ontologies/ which holds nothing, reached from the domain weaver (a v138 CEO tool) — every domain query answers an empty graph; knowledge/Law/EmploymentTribunal/ontology/*.json is never loaded. Wire the Law graph or retire the engine (audit-before-wire). (found W473 refuter)
@@ -1079,7 +1098,27 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; n
       signer (FU-076), the unwired Law ontology and the ontology engine over nothing (FU-077) and the
       unwired geospheric 'LSTM' (FU-078) are named, registered and ride P2.4; the read-only tolerant
       readers (FU-075) ride P2.4 too.
- MILESTONE M1: fidelity workflow re-run → Tier-1 count 0; ledger v4.
+ P1.17 [ledger v4 · Tier-1 ×14 · R1.0 R1.1 R1.2 R2.0 R2.1 R3.0 R3.1 R3.4 R4.0 R4.1 R4.2 R5.0 R6.0 R6.1] The second truth pass.
+      MILESTONE M1 (W474) re-measured the whole product against HEAD cdd7619f and found FOURTEEN truth
+      defects standing on reached surfaces — none of them a P1.1–P1.16 regression, each a surface the
+      first pass never walked: the halal screen fails a subject that AVOIDS a haram term and seals the
+      FAIL into exports (R1.0); the floor-served tafsir body repeats the sourced Arabic cut mid-word under
+      'THE AUTHENTIC ARABIC TEXT' (R1.1); the QMS generator mixes another organisation's recalled text
+      into the document with no provenance (R1.2); establishment says the organism is tending the
+      enterprise while the economy lever is off (R2.0); the shipped repository's gate cannot fail on the
+      non-floor path (R2.1); the CEO chat's meeting path minutes floor echoes as officers' stances (R3.0);
+      the floor's 'Acting as' line names the previous call's persona (R3.1); the Board presents a digital
+      twin that has no model (R3.4); three Command Center channels still invent readings (R4.0); the
+      native tree decides 'proceed' and the fabric says 'commit-ready' on gates that could not assess
+      (R4.1, R4.2); the marketplace counts a product live over a route that does not exist (R5.0); the
+      Transformation page reports realisation 1.0 from checks that cannot fail (R6.0); a cycle's costs
+      are posted to reserves (R6.1). Every entry is a register row (FU-080…FU-093) riding here.
+      ACCEPT: each of the fourteen re-assessed by execution against its own claim (V5), guarded and broken;
+      then MILESTONE M1 re-runs and its Tier-1 count is measured again, not declared.
+ MILESTONE M1: fidelity workflow re-run → Tier-1 count 0; ledger v4. — RAN W474 against HEAD cdd7619f
+      (:8083, native floor): ledger v4 issued (60 findings, 53 survived, 7 overturned; STUB 8 · DOC_OVERCLAIM 4
+      · PARTIAL 38 · DELIVERED 10). Standing Tier-1 count = 14 — NOT MET. P1.17 carries the fourteen; M1
+      re-runs after it. Tier-2 19, Tier-3 17 (P2/P3's queue, cited by the ledger).
 
 PHASE P2 — REACH AND DISCLOSURE (Tier 2; ~9 rounds + the scatter; P2.9 added W469)
  P2.1 [2.1 · R2.7 R4.1] Cascade grounding. engine.py strips the marker line, "_Acting as:" lines and

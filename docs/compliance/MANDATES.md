@@ -9,7 +9,7 @@ deleted in W460 and never a validator; `agentic_core/crypto/pqc.py`; a 1127-arti
 rows FU-004 and FU-027 recorded the false rows. Nothing here was measured by the page that claimed it.
 
 This page now lists each former claim with the status the repository can SHOW today. The evidence base
-for every product claim is `docs/VISION_FIDELITY_LEDGER.md` (v3, 60 findings, each refuted) and the
+for every product claim is `docs/VISION_FIDELITY_LEDGER.md` (v4, W474, 60 findings, each refuted) and the
 integration suite (`integration_tests/test_mvp_spine.py`); a claim not backed by one of those is marked
 as a claim. The status words:
 

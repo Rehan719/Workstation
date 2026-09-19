@@ -1,5 +1,8 @@
 # Handover — W469 → W470 (to Claude Fable 5.1)
 
+> **2026-09-19, later:** the Fable 5.1 session's weekly allowance ran out at W474; the live handover for the next
+> session (Claude Opus) is `docs/HANDOVER_W475.md` — read it first. §3–§6 of this page still apply.
+
 > **W470 shipped** (2026-09-18, Claude Fable 5.1): P1.13 ✅ DONE — see `docs/AUTONOMOUS_PROGRESS.md` (`### W470`).
 > **W471 shipped** (2026-09-18): P1.14 ✅ DONE (`### W471` in the log). PLAN NOW now says
 > **Next: P1.15 Stores that refuse, never replace — 11 follow-ups ride it** (the W442→W468 store class; each row
@@ -21,6 +24,16 @@
 > `git add -u .` re-stages files you `git rm --cached`; snapshot with an explicit file list. A blind can look vacuous
 > when a SECOND guard (here `check()`) refuses the same mistake with the same words — assert the door's own wording.
 > `.gitignore` is CRLF. The next free probe port is :8083.
+> **W474 shipped** (2026-09-19): MILESTONE M1 — the fidelity workflow re-run against `cdd7619f` on :8083 (the W446
+> script + a tier per finding; `scripts/render_fidelity_ledger.py … 4 W474` renders v4; v3 kept as
+> `VISION_FIDELITY_LEDGER_v3.md`). 60 findings, 53 survived, 7 overturned; **standing Tier-1 count 14 — NOT MET**.
+> The fourteen are register rows FU-080…FU-093 riding the new item **P1.17 The second truth pass** (inserted before
+> the M1 line); PLAN NOW says **Next: P1.17 — 14 follow-ups ride it**. Do P1.17 entry by entry (each re-assessed by
+> execution against its own ledger claim, guarded, broken), then re-run M1 (`w474-fidelity-audit-v4` workflow script
+> in this session's workflows dir; boot a fresh backend on :8084 under an isolated DATA_DIR). The audit JSON is at
+> C:/tmp/w474_fidelity_v4.json. Lessons: a `--why` with backticks in bash is command-substituted — quote with single
+> quotes or avoid backticks; the workflow's task-output file is a JSON object, not `<result>` tags — rebuild per-region
+> data from journal.jsonl (`started` rows map key→label, `result` rows carry the value). The next free probe port is :8084.
 
 Written 2026-09-18 by the session that shipped W469 (Claude Opus 5), on the Owner's instruction: "leave a
 handover for Fable to start W470". The Owner (Rehan) is switching models for W470. Nothing in W470 has been
