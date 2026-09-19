@@ -277,18 +277,34 @@ def _open_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+def _gate_phase(open_items: List[Dict[str, Any]]) -> Optional[str]:
+    return open_items[0]["slot"].split(".")[0] if open_items else None
+
+
+def _prioritised(rows: List[Dict[str, Any]], cfg: Dict[str, Any], gate: Optional[str]) -> List[Dict[str, Any]]:
+    """W478 — each row a COPY carrying its priority (score, parts, basis); highest first, the old order breaking ties."""
+    from agentic_core import plan_priority as pp
+    out = [dict(r, priority=pp.score_row(r, cfg, gate)) for r in rows]
+    return sorted(out, key=lambda r: (-r["priority"]["score"], _SEV_RANK.get(str(r.get("severity")), 9), _num(r)))
+
+
 def schedule(register: Dict[str, Any], prompt_text: str) -> Dict[str, Any]:
+    from agentic_core import plan_priority as pp
     items = plan_items(prompt_text)
     rows = _rows(register)
     open_rows = [r for r in rows if r["status"] == "open"]
     riders = [r for r in open_rows if r["owner_gated"] is not True]
     open_items = _open_items(items)
     first_open = open_items[0]["slot"] if open_items else None
+    cfg, cfg_problems = pp.load_config(ROOT)
+    gate = _gate_phase(open_items)
     slots: List[Dict[str, Any]] = []
     for it in open_items:
-        slotted = _ordered([r for r in riders if r["slot"] == it["slot"]])
+        # W478 — inside an item the rows run highest-priority first (the plan's item order and phase gates stand)
+        slotted = _prioritised([r for r in riders if r["slot"] == it["slot"]], cfg, gate)
         if slotted:
-            slots.append({"slot": it["slot"], "title": it["title"], "items": slotted})
+            slots.append({"slot": it["slot"], "title": it["title"], "items": slotted,
+                          "open_priority": round(sum(r["priority"]["score"] for r in slotted), 1)})
     # W469 — a row that rides no open plan item (the retired NEXT, an unknown slot, a finished item) is shown, never
     # silently left out of the schedule; check() names what to do with it
     open_slots = {it["slot"] for it in open_items}
@@ -310,6 +326,15 @@ def schedule(register: Dict[str, Any], prompt_text: str) -> Dict[str, Any]:
         "unscheduled": unscheduled,
         "awaiting_owner": _ordered([r for r in open_rows if r["owner_gated"] is True]),
         "closed": closed,
+        # W478 — the priority in force: completion weighted by what the rows are worth, and the open items by total
+        # open priority for the Owner to consider beside the plan's own order (never applied automatically)
+        "priority": {
+            "gate_phase": gate,
+            "config": "docs/PRIORITY.json" if pp.config_path(ROOT).exists() else "built-in defaults (no docs/PRIORITY.json)",
+            "config_problems": cfg_problems,
+            "completion": pp.completion(rows, cfg, gate),
+            "suggested_order": [s_["slot"] for s_ in sorted(slots, key=lambda s_: -s_["open_priority"])],
+        },
     }
 
 
@@ -439,12 +464,17 @@ def plan_now(register: Any, prompt_text: str) -> Dict[str, Any]:
     open_items = [{"slot": it["slot"], "title": it["title"],
                    "followups": len(riding.get(it["slot"], [])),
                    "by_severity": {sev: sum(1 for r in riding.get(it["slot"], []) if r["severity"] == sev)
-                                   for sev in SEVERITIES}}
+                                   for sev in SEVERITIES},
+                   # W478 — the rows' total open priority, and the highest-priority rows first
+                   "open_priority": round(sum(r["priority"]["score"] for r in riding.get(it["slot"], [])), 1),
+                   "top": [{"id": r["id"], "score": r["priority"]["score"], "area": r["priority"]["area"],
+                            "tier": r["priority"]["tier"]} for r in riding.get(it["slot"], [])[:5]]}
                   for it in _open_items(items)]
     return {"readable": bool(items),
             "next": open_items[0] if open_items else None, "open_items": open_items, "phases": phases,
             "done": sum(p["done"] for p in phases), "total": sum(p["total"] for p in phases),
-            "followups": s["counts"], "unscheduled": [r["id"] for r in s["unscheduled"]]}
+            "followups": s["counts"], "unscheduled": [r["id"] for r in s["unscheduled"]],
+            "priority": s["priority"]}
 
 
 def _wrap(prefix: str, parts: List[str], indent: str = "    ", width: int = 112) -> List[str]:
@@ -479,8 +509,22 @@ def render_plan_now(register: Any, prompt_text: str) -> str:
         rest = [f"{it['slot']} {it['followups']}" for it in p["open_items"][1:]]
         if rest:
             out.extend(_wrap("  Then, in order (the follow-ups riding each): ", rest))
+    if nxt is not None and nxt["top"]:
+        # W478 — what to do first inside the next item: its highest-priority rows (python scripts/followups.py priority)
+        out.extend(_wrap(f"  Highest priority in {nxt['slot']} (score · area): ",
+                         [f"{t['id']} {t['score']} {t['area'] or 'unmapped'}" for t in nxt["top"]]))
     out.append(f"  Done: {p['done']} of {p['total']} items — "
                + " · ".join(f"{ph['phase']} {ph['done']}/{ph['total']}" for ph in p["phases"]) + ".")
+    comp = p["priority"]["completion"]
+    gate = p["priority"]["gate_phase"]
+    gp = comp["by_phase"].get(gate) if gate else None
+    if gp is not None and gp["weighted_pct"] is not None:
+        # (refutation) it measures the follow-up ROWS, not plan items — said so, beside the item count above it
+        out.append(f"  Follow-up completion weighted by priority — {gate}: {gp['weighted_pct']}% of its rows' priority "
+                   f"closed ({gp['rows_closed']} of {gp['rows_closed'] + gp['rows_open']} rows); every phase's rows: "
+                   f"{comp['overall_weighted_pct']}% (the retired pre-plan queue left out).")
+    if p["priority"]["config_problems"]:
+        out.append("  PRIORITY WEIGHTS UNREADABLE — the defaults serve: " + p["priority"]["config_problems"][0])
     out.append(f"  Follow-ups: {c['open']} open — {c['scheduled']} ride a plan item ({c['high']} high), "
                f"{c['unscheduled']} unscheduled, {c['awaiting_owner']} awaiting the Owner; {c['done']} done, "
                f"{c['dropped']} dropped.")
@@ -492,7 +536,9 @@ def render_plan_now(register: Any, prompt_text: str) -> str:
 
 # indented two spaces so no rendered line can ever match the plan's " P1.12 …" item lines
 def _row_line(r: Dict[str, Any]) -> str:
-    return f"    {r['id']} [{r['severity']}] {r['title']} — {r['why']} (found {r['source']})"
+    pr = r.get("priority")
+    p = f" [p {pr['score']}]" if isinstance(pr, dict) else ""        # W478 — the row's priority where it is scheduled
+    return f"    {r['id']} [{r['severity']}]{p} {r['title']} — {r['why']} (found {r['source']})"
 
 
 def render(register: Dict[str, Any], prompt_text: str) -> str:
@@ -751,4 +797,11 @@ def check(register: Any, prompt_text: str, living_text: Optional[str] = None,
     for begin, kind in ((BEGIN, "follow-up"), (PLAN_BEGIN, "PLAN NOW")):
         if begin in prompt_text and begin not in body:
             problems.append(f"the delivery plan's {kind} block must sit inside the <delivery_plan> section")
+    # W478 — the priority weights: a file that cannot be read or is malformed is a problem, never a silent default
+    from agentic_core import plan_priority as pp
+    cfg_, cfg_problems_ = pp.load_config(root)
+    problems += cfg_problems_
+    for i, r in enumerate(raw_items(register)):
+        if isinstance(r, dict):                  # every row: completion scores closed rows with the same fields
+            problems += [f"{r.get('id', f'row {i + 1}')}: {m}" for m in pp.row_field_problems(r, cfg_)]
     return problems

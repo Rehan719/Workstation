@@ -29,7 +29,8 @@ interface OrchestrationRun {
 }
 
 // W462 — the follow-up register (GET /api/v1/plan/followups): found-but-not-done work, scheduled in plan order
-interface FollowupRow { id: string; title: string; why: string; severity: string; slot: string; source: string }
+interface FollowupPriority { score: number; area: string | null; tier: number | null; parts: Record<string, number>; basis: Record<string, string> }
+interface FollowupRow { id: string; title: string; why: string; severity: string; slot: string; source: string; priority?: FollowupPriority }
 // W469 — the delivery plan's live state (PLAN NOW), derived on every call from the plan's items and the register
 interface PlanItemNow { slot: string; title: string; followups: number; by_severity: Record<string, number> }
 interface PlanNow {
@@ -45,6 +46,9 @@ interface Followups {
   awaiting_owner: FollowupRow[];
   plan?: PlanNow;
   integrity: { ok: boolean; problems: string[] };
+  // W478 — the priority in force: completion weighted by what the rows are worth (follow-up rows, not plan items)
+  priority?: { gate_phase: string | null; config: string; config_problems: string[]; suggested_order: string[];
+    completion: { overall_weighted_pct: number | null; by_phase: Record<string, { weighted_pct: number | null; rows_closed: number; rows_open: number }> } };
 }
 const PLAN_REFRESH_MS = 60_000;
 
@@ -318,6 +322,18 @@ export const TransformationDashboard: React.FC = () => {
                 {followups.counts.open} follow-ups open · {followups.counts.scheduled} ride a plan item ({followups.counts.high} high)
                 {followups.counts.unscheduled ? ` · ${followups.counts.unscheduled} unscheduled` : ''} · {followups.counts.awaiting_owner} awaiting the Owner · {followups.counts.done} done
               </p>
+              {(() => {
+                // W478 — the rows below run highest-priority first; say so, and what share of the gate's priority is closed
+                const pr = followups.priority;
+                const gp = pr && pr.gate_phase ? pr.completion.by_phase[pr.gate_phase] : undefined;
+                return pr ? (
+                  <p className="text-[10px] text-slate-500 mb-3" data-testid="plan-priority">
+                    Rows run highest priority first (vision area × truth tier × reach × criticality × breadth × effort; weights in {pr.config})
+                    {gp && gp.weighted_pct != null ? ` · follow-up completion weighted by priority — ${pr.gate_phase}: ${gp.weighted_pct}% of its rows' priority closed (${gp.rows_closed} of ${gp.rows_closed + gp.rows_open} rows)` : ''}
+                    {pr.config_problems.length ? ` · the weights file has a problem, defaults serve: ${pr.config_problems[0]}` : ''}
+                  </p>
+                ) : null;
+              })()}
               {!followups.integrity.ok && (
                 <p className="text-[10px] text-amber-400 font-bold mb-3" title={followups.integrity.problems.join('\n')}>
                   The register is out of step with the plan — {followups.integrity.problems.length} problem(s): {followups.integrity.problems[0]}
@@ -328,8 +344,8 @@ export const TransformationDashboard: React.FC = () => {
                   <div key={s.slot}>
                     <p className="text-[10px] font-black text-white">{s.slot} <span className="text-slate-600 font-bold">— {s.title}</span></p>
                     {s.items.map(r => (
-                      <p key={r.id} className="text-[10px] text-slate-400 mt-1 pl-3" title={`${r.why} (found ${r.source})`}>
-                        <span className={r.severity === 'high' ? 'text-amber-400 font-black' : 'text-slate-500 font-black'}>{r.id} · {r.severity}</span> {r.title}
+                      <p key={r.id} className="text-[10px] text-slate-400 mt-1 pl-3" title={`${r.why} (found ${r.source})${r.priority ? `\npriority ${r.priority.score}: ` + Object.entries(r.priority.basis).map(([k, v]) => `${k} — ${v}`).join('; ') : ''}`}>
+                        <span className={r.severity === 'high' ? 'text-amber-400 font-black' : 'text-slate-500 font-black'}>{r.id} · {r.severity}{r.priority ? ` · p ${r.priority.score}` : ''}</span> {r.title}
                       </p>
                     ))}
                   </div>

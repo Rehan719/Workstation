@@ -100,6 +100,21 @@ def _find(reg, fid):
     return matches[0]
 
 
+def _set_priority_parts(r, args):
+    """W478 — the priority parts named on the command line; an unknown area is refused, never silently unmapped."""
+    from agentic_core import plan_priority as pp
+    if args.tier is not None:
+        r["tier"] = args.tier
+    if args.area.strip():
+        cfg, _ = pp.load_config(fu.ROOT)
+        ids = [a["id"] for a in cfg["areas"]]
+        if args.area.strip() not in ids:
+            sys.exit(f"REFUSED — {args.area.strip()!r} is not a priority area; one of: {', '.join(ids)}")
+        r["area"] = args.area.strip()
+    if args.reach is not None:
+        r["reach"] = args.reach
+
+
 def _texts():
     try:
         return fu.load(), fu.read_doc(fu.PROMPT), fu.read_doc(fu.LIVING)
@@ -123,6 +138,20 @@ def main() -> int:
     a.add_argument("--files", default="")
     a.add_argument("--severity", default="medium", choices=fu.SEVERITIES)
     a.add_argument("--owner-gated", action="store_true")
+    # W478 — the priority parts a finder knows (otherwise derived: see agentic_core/plan_priority.py)
+    a.add_argument("--tier", type=int, choices=(1, 2, 3), help="1 a truth defect on a reached surface · 2 an invisible shortfall · 3 disclosed/unreached")
+    a.add_argument("--area", default="", help="a priority area id from docs/PRIORITY.json (default: derived from the files)")
+    a.add_argument("--reach", choices=("core", "secondary", "internal"), help="default: derived from the files")
+    rp = sub.add_parser("reprioritise", help="set a row's priority parts (tier / area / reach)")
+    rp.add_argument("id")
+    rp.add_argument("--tier", type=int, choices=(1, 2, 3))
+    rp.add_argument("--area", default="")
+    rp.add_argument("--reach", choices=("core", "secondary", "internal"))
+    rp.add_argument("--clear", action="append", default=[], choices=("tier", "area", "reach"),
+                    help="remove a part set on the row, so it is derived again (repeatable)")
+    pr = sub.add_parser("priority", help="the open rows ranked by priority, each score's parts shown")
+    pr.add_argument("--item", default="", help="only the rows riding this plan item")
+    pr.add_argument("--top", type=int, default=20)
     ls = sub.add_parser("list")
     ls.add_argument("--all", action="store_true")
     c = sub.add_parser("close")
@@ -157,9 +186,29 @@ def main() -> int:
     sub.add_parser("check")
     args = ap.parse_args()
 
-    if args.cmd in ("check", "list", "schedule", "routes"):
+    if args.cmd in ("check", "list", "schedule", "routes", "priority"):
         with register_lock():                      # never read the register and the docs from different moments
             reg, prompt, living = _texts()
+        if args.cmd == "priority":
+            s = fu.schedule(reg, prompt)
+            pr_ = s["priority"]
+            rows = [r for slot in s["schedule"] for r in slot["items"] if not args.item or r["slot"] == args.item]
+            rows.sort(key=lambda r: -r["priority"]["score"])
+            print(f"priority weights: {pr_['config']}; current gate: {pr_['gate_phase']}")
+            for p_ in pr_["config_problems"]:
+                print("PROBLEM", p_)
+            for r in rows[: max(1, args.top)]:
+                q = r["priority"]
+                parts = " × ".join(f"{k} {v}" for k, v in q["parts"].items())
+                print(f"{q['score']:6.1f}  {r['id']} {r['slot']:5} {r['title'][:90]}")
+                print(f"        = 100 × {parts}")
+                print("        " + " · ".join(f"{k}: {v}" for k, v in q["basis"].items()))
+            comp = pr_["completion"]
+            print("completion weighted by priority: " + " · ".join(
+                f"{ph} {d['weighted_pct']}% ({d['rows_closed']}/{d['rows_closed'] + d['rows_open']} rows)"
+                for ph, d in comp["by_phase"].items()) + f" · all {comp['overall_weighted_pct']}%")
+            print("open items by total open priority (a suggestion beside the plan's order): " + " · ".join(pr_["suggested_order"]))
+            return 1 if pr_["config_problems"] else 0
         if args.cmd == "check":
             problems = fu.check(reg, prompt, living)
             for p in problems:
@@ -224,7 +273,27 @@ def main() -> int:
                 "severity": args.severity, "owner_gated": bool(args.owner_gated),
                 "slot": slot, "status": "open", "closed_by": None, "note": "",
             })
+            _set_priority_parts(reg["items"][-1], args)
             added_id = f"FU-{n:03d}"
+        elif args.cmd == "reprioritise":
+            r = _find(reg, args.id)
+            if r.get("status") != "open":
+                sys.exit(f"REFUSED — {args.id} is {r.get('status')}; only an open row is reprioritised")
+            if args.tier is None and not args.area and args.reach is None and not args.clear:
+                sys.exit("REFUSED — name what to set: --tier, --area, --reach and/or --clear tier|area|reach")
+            given = {"tier": args.tier is not None, "area": bool(args.area.strip()), "reach": args.reach is not None}
+            both = [p_ for p_ in args.clear if given.get(p_)]
+            if both:                                  # (refutation 2) never a report of an action not taken
+                sys.exit(f"REFUSED — {', '.join(both)}: --clear and a value for the same part; pass one or the other")
+            if args.area and not args.area.strip():
+                sys.exit("REFUSED — a blank --area names no area; use --clear area to remove one")
+            cleared = [p_ for p_ in args.clear if p_ in r]
+            for p_ in cleared:                        # (refutation) a stale part can be removed, not only overwritten
+                r.pop(p_, None)
+            _set_priority_parts(r, args)
+            said.append(f"{args.id} priority parts set" + (f"; cleared {', '.join(cleared)}" if cleared else "")
+                        + (f"; not set, so nothing to clear: {', '.join(p_ for p_ in args.clear if p_ not in cleared)}"
+                           if any(p_ not in cleared for p_ in args.clear) else ""))
         elif args.cmd == "close":
             r = _find(reg, args.id)
             if r.get("status") != "open":            # W473 (FU-067) — a closed row's round is history, never rewritten

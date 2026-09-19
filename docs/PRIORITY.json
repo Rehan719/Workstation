@@ -1,0 +1,234 @@
+{
+  "_about": "W478 — the Owner's priority weights for the follow-up schedule (agentic_core/plan_priority.py). Edit a weight (0 to 1) to change what matters most; areas are matched in order, first match wins (a row's files first, then its title words). python scripts/followups.py priority shows every score's parts; check() fails on a malformed file and the defaults serve until it is repaired.",
+  "areas": [
+    {
+      "id": "faith",
+      "name": "§11 faith-content constitution + the Quran Education Platform (Appendix A)",
+      "weight": 1.0,
+      "files": [
+        "agentic_core/api/religion.py",
+        "agentic_core/religious_domain/",
+        "agentic_core/api/qep",
+        "agentic_core/reactor/religion/",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+        "apps/workstation-superapp/src/components/qep/",
+        "apps/workstation-superapp/src/pages/qep/"
+      ],
+      "words": [
+        "quran",
+        "qur'an",
+        "ayah",
+        "surah",
+        "tafsir",
+        "basmala",
+        "hifz",
+        "recitation"
+      ]
+    },
+    {
+      "id": "compliance",
+      "name": "§10 the quality bar + §11 live compliance",
+      "weight": 1.0,
+      "files": [
+        "agentic_core/api/compliance.py",
+        "agentic_core/compliance/",
+        "agentic_core/vbs/quality.py",
+        "apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx"
+      ],
+      "words": [
+        "compliance",
+        "halal",
+        "sharia",
+        "ethical",
+        "qms gate"
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "name": "§4 the end-to-end lifecycle + §13 what the output is",
+      "weight": 0.9,
+      "files": [
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/intelligence.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/api/deliverables.py",
+        "agentic_core/api/business_plan.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/Deliverables.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx"
+      ],
+      "words": [
+        "genesis",
+        "establish",
+        "deliverable",
+        "board pack",
+        "repository"
+      ]
+    },
+    {
+      "id": "native_ai",
+      "name": "§6 the native AI mandate (own models · orchestration · swarm)",
+      "weight": 0.9,
+      "files": [
+        "agentic_core/ai/",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "words": [
+        "native ai",
+        "provenance",
+        "served_by"
+      ]
+    },
+    {
+      "id": "organisation",
+      "name": "§5 the living organisation (Chief → Board → CEO → C-Suite → CoE → BTO)",
+      "weight": 0.8,
+      "files": [
+        "agentic_core/api/board.py",
+        "agentic_core/api/v138/",
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/change_control.py",
+        "agentic_core/api/transformation_orchestration.py",
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx",
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx"
+      ],
+      "words": [
+        "chief",
+        "board of directors",
+        "ceo",
+        "c-suite",
+        "org cascade",
+        "change control"
+      ]
+    },
+    {
+      "id": "economy",
+      "name": "§12 the economic organism (the VSB economy)",
+      "weight": 0.7,
+      "files": [
+        "agentic_core/economy/",
+        "agentic_core/api/economy.py",
+        "agentic_core/api/capital_fund.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx"
+      ],
+      "words": [
+        "waterfall",
+        "wst",
+        "charity",
+        "virtual ledger",
+        "economy cycle"
+      ]
+    },
+    {
+      "id": "organism",
+      "name": "§8 the biomimetic living organism",
+      "weight": 0.7,
+      "files": [
+        "agentic_core/organism/",
+        "agentic_core/api/organism_status.py",
+        "agentic_core/api/sovereign_evolution.py",
+        "agentic_core/api/transformation.py",
+        "apps/workstation-superapp/src/pages/organism/",
+        "apps/workstation-superapp/src/pages/evolution/",
+        "apps/workstation-superapp/src/pages/TransformationDashboard.tsx"
+      ],
+      "words": [
+        "heartbeat",
+        "organism",
+        "homeostasis",
+        "immune",
+        "self-healing",
+        "survival instinct"
+      ]
+    },
+    {
+      "id": "fabric",
+      "name": "§7 the reconfigurable resource fabric + the catalogue",
+      "weight": 0.7,
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/api/products.py",
+        "agentic_core/catalog/",
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "apps/workstation-superapp/src/pages/marketplace/"
+      ],
+      "words": [
+        "fabric",
+        "marketplace",
+        "catalogue",
+        "composition"
+      ]
+    },
+    {
+      "id": "domains_ux",
+      "name": "§3A the domains + §9 the user experience + §14 democratisation",
+      "weight": 0.7,
+      "files": [
+        "apps/workstation-superapp/src/pages/",
+        "apps/workstation-superapp/src/components/",
+        "packages/ui/",
+        "agentic_core/api/"
+      ],
+      "words": []
+    },
+    {
+      "id": "tooling",
+      "name": "internal tooling, tests and docs",
+      "weight": 0.3,
+      "files": [
+        "scripts/",
+        "integration_tests/",
+        "docs/",
+        "config/",
+        "agentic_core/plan_followups.py",
+        "agentic_core/plan_priority.py"
+      ],
+      "words": []
+    }
+  ],
+  "unmapped_weight": 0.5,
+  "sections": {
+    "3": "domains_ux",
+    "3A": "domains_ux",
+    "4": "lifecycle",
+    "5": "organisation",
+    "6": "native_ai",
+    "7": "fabric",
+    "8": "organism",
+    "9": "domains_ux",
+    "10": "compliance",
+    "11": "compliance",
+    "11.2": "faith",
+    "12": "economy",
+    "13": "lifecycle",
+    "14": "domains_ux",
+    "17.2": "organism",
+    "17.3": "lifecycle",
+    "17.4": "organisation",
+    "17.5": "organism"
+  },
+  "core_surfaces": [
+    "agentic_core/api/genesis.py",
+    "agentic_core/api/intelligence.py",
+    "agentic_core/api/vsb.py",
+    "agentic_core/api/deliverables.py",
+    "agentic_core/api/religion.py",
+    "agentic_core/religious_domain/",
+    "agentic_core/api/compliance.py",
+    "agentic_core/compliance/",
+    "agentic_core/vbs/quality.py",
+    "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+    "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+    "apps/workstation-superapp/src/pages/Deliverables.tsx",
+    "apps/workstation-superapp/src/pages/domains/",
+    "apps/workstation-superapp/src/components/DomainTool.tsx",
+    "apps/workstation-superapp/src/pages/DashboardNew.tsx",
+    "packages/ui/src/CommandCenter.tsx"
+  ],
+  "breadth_per_log": 0.25,
+  "effort_per_file": 0.1
+}

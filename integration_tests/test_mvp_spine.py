@@ -10631,8 +10631,11 @@ def test_w462_followup_register_is_scheduled_and_in_lockstep(tmp_path):
     block = fu.render({"items": rows}, prompt)
     good_p, good_l = fu.splice_all(prompt, {"items": rows}, prompt), fu.splice_all(living, {"items": rows}, prompt)
     assert problems(rows, good_p, good_l) == []
-    assert has(problems(rows, good_p.replace("FU-900 [medium] t", "FU-900 [low] t"), good_l), "delivery plan's follow-up block")
-    assert has(problems(rows, good_p, good_l.replace("FU-900 [medium] t", "FU-900 [low] t")), "living plan's follow-up block")
+    # (W478: a rendered row now carries its priority, 'FU-900 [medium] [p …] t' — the probe edits the severity tag itself,
+    # and asserts the edit landed, so it can never again be a no-op that the lockstep check trivially 'passes')
+    assert good_p.count("FU-900 [medium]") >= 1 and good_l.count("FU-900 [medium]") >= 1
+    assert has(problems(rows, good_p.replace("FU-900 [medium]", "FU-900 [low]"), good_l), "delivery plan's follow-up block")
+    assert has(problems(rows, good_p, good_l.replace("FU-900 [medium]", "FU-900 [low]")), "living plan's follow-up block")
     dup = good_l + "\r\n" + fu.BEGIN + "\r\nstale\r\n" + fu.END + "\r\n"
     assert has(problems(rows, good_p, dup), "exactly one follow-up marker pair")
     try:
@@ -16640,3 +16643,211 @@ def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkey
     ve2 = (root / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
     assert 'label="Costs + reserves"' not in ve2 and 'label="Operating costs"' in ve2 and 'label="Reserve"' in ve2
     assert "['Operating costs', lastCycle.operating_costs]" in (root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+
+
+def test_w478_the_schedule_is_prioritised_by_vision_value_and_completion_is_weighted(tmp_path):
+    """W478 — the Owner (2026-09-19): "a prioritisation mechanism along with a scheduling mechanism within the planning
+    system, to correlate significance to vision-delivery importance to completion of delivery". A row's priority is a
+    product of NAMED parts (vision area · truth tier · reach · criticality · breadth · effort) from the Owner's weights
+    in docs/PRIORITY.json; inside a plan item rows run highest-priority first (the plan's order and phase gates stand);
+    PLAN NOW names the highest-priority rows and the delivery completion weighted by priority."""
+    import json as _json
+    import os as _os
+    import pathlib
+    import subprocess as _sp
+    import sys as _sys
+    from agentic_core import plan_followups as fu
+    from agentic_core import plan_priority as pp
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    cfg, problems = pp.load_config(root)
+    assert problems == [] and (root / "docs/PRIORITY.json").exists(), problems
+
+    def row(**kw):
+        base = {"id": "FU-900", "title": "t", "why": "w", "source": "test", "found": "2026-09-19", "files": [],
+                "severity": "medium", "owner_gated": False, "slot": "P1.18", "status": "open", "closed_by": None, "note": ""}
+        return {**base, **kw}
+
+    # ── the score is the product of its parts, each named ──
+    faith = pp.score_row(row(title="v5 R1.2: basmala on ayah 1", files=["agentic_core/api/religion.py"]), cfg, "P1")
+    assert faith["parts"] == {"vision": 1.0, "truth": 1.0, "reach": 1.0, "criticality": 1.0, "breadth": 1.0, "effort": 1.0}
+    assert faith["score"] == 100.0 and faith["area"] == "faith" and faith["tier"] == 1, faith
+    tool = pp.score_row(row(files=["scripts/relocate_data_store.py"], severity="low"), cfg, "P1")
+    assert tool["area"] == "tooling" and tool["tier"] is None and tool["parts"]["truth"] == 0.25
+    assert tool["score"] == round(100 * 0.3 * 0.25 * 0.3, 1), tool          # tooling × low × internal
+    later = pp.score_row(row(title="v5 R1.2: x", files=["agentic_core/api/religion.py"], slot="P2.4"), cfg, "P1")
+    assert later["parts"]["criticality"] == 0.5 and later["score"] == 50.0
+    gated = pp.score_row(row(files=["agentic_core/api/religion.py"], owner_gated=True, slot="OWNER"), cfg, "P1")
+    assert gated["score"] == 0.0 and "Owner" in gated["basis"]["criticality"]
+    broad = pp.score_row(row(title="sweep x.py: 8 Tier-1 truth defects (C1) — y", files=["agentic_core/api/genesis.py"]), cfg, "P1")
+    assert broad["parts"]["breadth"] > 1.0 and broad["basis"]["breadth"] == "8 findings"
+    wide = pp.score_row(row(title="v5 R1.0: x", files=["agentic_core/api/religion.py"] + [f"agentic_core/api/f{k}.py" for k in range(5)]), cfg, "P1")
+    assert wide["parts"]["effort"] < 1.0 and wide["score"] < faith["score"]
+    explicit = pp.score_row(row(files=["scripts/x.py"], tier=1, area="faith", reach="core"), cfg, "P1")
+    assert explicit["score"] == 100.0 and explicit["basis"]["area"].endswith("(set on the row)")
+
+    # ── the Owner's weights steer the order: economy above faith, and the order flips ──
+    cfg2 = _json.loads(_json.dumps(cfg))
+    for a in cfg2["areas"]:
+        a["weight"] = {"faith": 0.2, "economy": 1.0}.get(a["id"], a["weight"])
+    econ = row(id="FU-901", title="v5 R6.1: costs posted to reserves", files=["agentic_core/economy/metabolism.py"])
+    fa = row(id="FU-902", title="v5 R1.2: basmala", files=["agentic_core/api/religion.py"])
+    assert pp.score_row(fa, cfg, "P1")["score"] > pp.score_row(econ, cfg, "P1")["score"]
+    assert pp.score_row(econ, cfg2, "P1")["score"] > pp.score_row(fa, cfg2, "P1")["score"]
+
+    # ── a malformed weights file is REPORTED and the defaults serve; nothing crashes ──
+    bad = tmp_path / "badroot"
+    (bad / "docs").mkdir(parents=True)
+    (bad / "docs" / "PRIORITY.json").write_text('{"areas": [{"id": "faith", "weight": 7, "files": ["x/"]}]}', encoding="utf-8")
+    c_bad, p_bad = pp.load_config(bad)
+    assert any("weight must be a number from 0 to 1" in p for p in p_bad) and c_bad["areas"][0]["id"] == "faith"
+    (bad / "docs" / "PRIORITY.json").write_text("{not json", encoding="utf-8")
+    assert any("cannot be read" in p for p in pp.load_config(bad)[1])
+    assert pp.row_field_problems(row(tier=4, reach="everywhere", findings=0)) == [
+        "tier must be 1, 2 or 3", "reach must be core, secondary or internal", "findings must be a whole number of at least 1"]
+
+    # ── ordering inside an item: highest priority first; ties fall back to severity, then age ──
+    prompt = fu.read_doc(fu.PROMPT)
+    items = fu.plan_items(prompt)
+    first_open = next(i["slot"] for i in items if not i["done"])
+    reg = {"items": [row(id="FU-910", slot=first_open, files=["scripts/a.py"], severity="high"),
+                     row(id="FU-911", slot=first_open, title="v5 R1.0: faith", files=["agentic_core/api/religion.py"]),
+                     row(id="FU-913", slot=first_open, files=["scripts/b.py"], severity="high"),
+                     row(id="FU-912", slot=first_open, files=["scripts/c.py"], severity="low")]}
+    s = fu.schedule(reg, prompt)
+    order = [r["id"] for r in s["schedule"][0]["items"]]
+    assert order == ["FU-911", "FU-910", "FU-913", "FU-912"], order
+    assert all("priority" not in r for r in reg["items"]), "the register's own rows were mutated"
+    assert s["schedule"][0]["open_priority"] == round(sum(r["priority"]["score"] for r in s["schedule"][0]["items"]), 1)
+
+    # ── completion is weighted by priority: closing the faith row moves it far more than closing the tooling row ──
+    done_faith = {"items": [dict(reg["items"][1], status="done", closed_by="W999"), reg["items"][0]]}
+    done_tool = {"items": [reg["items"][1], dict(reg["items"][0], status="done", closed_by="W999")]}
+    gate = first_open.split(".")[0]
+    cf = fu.schedule(done_faith, prompt)["priority"]["completion"]["by_phase"][gate]["weighted_pct"]
+    ct = fu.schedule(done_tool, prompt)["priority"]["completion"]["by_phase"][gate]["weighted_pct"]
+    assert cf > 80.0 > 20.0 > ct, (cf, ct)                     # both are '1 of 2 rows' — the weight is the difference
+
+    # ── PLAN NOW says it: the highest-priority rows of the next item and the weighted completion ──
+    text = fu.render_plan_now(reg, prompt)
+    assert f"Highest priority in {first_open} (score · area): FU-911 100.0 faith" in text, text
+    assert "Follow-up completion weighted by priority" in text and "Delivery completion" not in text
+    assert "[p 100.0]" in fu.render(reg, prompt)
+
+    # ── (refutation) the primary file decides the area and the reach — an incidental later file never lends its weight ──
+    badge = pp.score_row(row(title="sweep CareHub.tsx: 1 Tier-1 truth defect (C4) — badges", files=[
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx", "apps/workstation-superapp/src/pages/domains/LawHub.tsx",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx"]), cfg, "P1")
+    assert badge["area"] == "domains_ux" and "primary file" in badge["basis"]["area"], badge["basis"]
+    swarm = pp.score_row(row(title="sweep swarm.py: 1 Tier-1 truth defect (C1) — x",
+                             files=["agentic_core/api/swarm.py", "agentic_core/ai/gateway.py", "agentic_core/api/genesis.py"]), cfg, "P1")
+    assert swarm["area"] == "organisation" and swarm["parts"]["reach"] == 0.6, swarm["basis"]   # genesis.py 3rd: not core
+    # a row with no files uses the repository paths its own text names, and says so; with none, it says 'no files named'
+    named = pp.score_row(row(title="v5 R2.0: x", why="the handler agentic_core/api/genesis.py:394 selects a vetoed one"), cfg, "P1")
+    assert named["area"] == "lifecycle" and "named in the row" in named["basis"]["area"] and named["parts"]["reach"] == 1.0
+    # (refutation 2) the ledger rows cite SHORT names — each resolves to the one tracked file it can only mean
+    short = pp.score_row(row(title="v5 R9.1: x", why="genesis.py:394 still selects a vetoed candidate"), cfg, "P1")
+    assert short["parts"]["reach"] == 1.0 and "agentic_core/api/genesis.py" in short["basis"]["reach"], short["basis"]
+    assert pp.files_of(row(why="see api.py for the route"), cfg) == ([], False)        # several files end so: no guess
+    # the vision section a row's title CITES decides its area before any file does (the heaviest if several), across the
+    # whole title (a ledger section can hold ' — '); a sweep row's claim text is never read for sections
+    atp = pp.score_row(row(title="v5 R6.1: §8 survival instinct / §8→§12 economic survival — ATP",
+                           files=["agentic_core/ai/native/homeostasis.py", "agentic_core/economy/metabolism.py"]), cfg, "P1")
+    assert atp["area"] == "organism" and "cites §8" in atp["basis"]["area"], atp["basis"]
+    halal = pp.score_row(row(title="v5 R5.2: §3A Domain Working (Religion — Halal pre-assessment) / §11… — observed"), cfg, "P1")
+    assert halal["area"] == "compliance" and "cites §11" in halal["basis"]["area"], halal["basis"]
+    sweep_sec = pp.score_row(row(title="sweep CareHub.tsx: 1 Tier-1 truth defect (C1) — the '§10 bar' chip",
+                                 files=["apps/workstation-superapp/src/pages/domains/CareHub.tsx"]), cfg, "P1")
+    assert sweep_sec["area"] == "domains_ux", sweep_sec["basis"]
+    bad_sec = _json.loads((root / "docs/PRIORITY.json").read_text(encoding="utf-8"))
+    bad_sec["sections"]["8"] = "nowhere"
+    assert any("section §8 maps to 'nowhere'" in m for m in pp.config_problems(bad_sec))
+    # a CLOSED row's stored area is checked too: completion scores closed rows with the same fields
+    closed_bad = {"items": [row(id="FU-930", status="done", closed_by="W999", area="nowhere")]}
+    assert any("FU-930" in m and "names no area" in m for m in fu.check(closed_bad, fu.read_doc(fu.PROMPT), None))
+    bare = pp.score_row(row(title="v5 R9.9: nothing named"), cfg, "P1")
+    assert bare["basis"]["effort"] == "no files named", bare["basis"]
+    # effort counts only files beyond one per finding: an 8-finding sweep row over 6 files is not penalised
+    many = pp.score_row(row(title="sweep intelligence.py: 8 Tier-1 truth defects (C1) — x",
+                            files=["agentic_core/api/intelligence.py"] + [f"apps/workstation-superapp/src/pages/p{k}.tsx" for k in range(5)]), cfg, "P1")
+    one = pp.score_row(row(title="v5 R2.9: y", files=["agentic_core/api/intelligence.py"]), cfg, "P1")
+    assert many["parts"]["effort"] == 1.0 and many["score"] > one["score"], (many["score"], one["score"])
+    # generic title words no longer pull a row into an area; only the title (never the '— observed' prose) is read
+    ueg = pp.score_row(row(title="The constitutional ledger's chain is replaced — the ethical engine and the floor wrote it",
+                           files=["agentic_core/gaas/v5/ueg.py"]), cfg, "P1")
+    assert ueg["area"] is None, ueg["basis"]
+    # an area missing its name is a problem (the file is refused, the defaults serve) — it never crashes a render
+    noname = tmp_path / "noname"
+    (noname / "docs").mkdir(parents=True)
+    d = _json.loads((root / "docs/PRIORITY.json").read_text(encoding="utf-8"))
+    del d["areas"][0]["name"]
+    (noname / "docs" / "PRIORITY.json").write_text(_json.dumps(d), encoding="utf-8")
+    c_nn, p_nn = pp.load_config(noname)
+    assert any("name must be a non-empty string" in p for p in p_nn) and c_nn["areas"][0].get("name")
+    # a stored area that names no configured area is a problem, not a silent 'unmapped'
+    assert any("names no area in docs/PRIORITY.json" in m for m in pp.row_field_problems(row(area="quality"), cfg))
+    # completion: the retired pre-plan queue is scored like any row and kept out of the overall figure
+    retired = {"items": [row(id="FU-920", slot="NEXT", status="done", closed_by="W400", files=["agentic_core/api/religion.py"], title="v5 R1.0: x"),
+                         row(id="FU-921", slot=first_open, title="v5 R1.0: y", files=["agentic_core/api/religion.py"])]}
+    comp_r = fu.schedule(retired, prompt)["priority"]["completion"]
+    assert comp_r["by_phase"][pp.RETIRED]["closed_priority"] == 100.0 and comp_r["overall_weighted_pct"] == 0.0, comp_r
+    # the live plan card says what the order is and shows each row's priority
+    card = (root / "apps/workstation-superapp/src/pages/TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="plan-priority"' in card and "p ${r.priority.score}" in card and "follow-up completion weighted by priority" in card
+
+    # ── the real register: the check holds, and the next item's rows run highest first ──
+    real = fu.load()
+    assert fu.check(real, prompt, fu.read_doc(fu.LIVING)) == []
+    rs = fu.schedule(real, prompt)
+    top = rs["schedule"][0]["items"]
+    assert [r["priority"]["score"] for r in top] == sorted((r["priority"]["score"] for r in top), reverse=True)
+    assert rs["priority"]["config"] == "docs/PRIORITY.json" and rs["priority"]["config_problems"] == []
+    assert set(rs["priority"]["suggested_order"]) == {x["slot"] for x in rs["schedule"]}
+
+    # ── the CLI: priority shows the parts; add/reprioritise set them and refuse an unknown area (scratch copy) ──
+    scratch = tmp_path / "root"
+    (scratch / "docs").mkdir(parents=True)
+    (scratch / "agentic_core" / "api").mkdir(parents=True)
+    (scratch / "agentic_core" / "api" / "religion.py").write_bytes(b"# stand-in\n")
+    empty = {"items": []}
+    (scratch / "docs" / "FABLE_DELIVERY_PROMPT.md").write_bytes(fu.splice_all(prompt, empty, prompt).encode("utf-8"))
+    (scratch / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md").write_bytes(fu.splice_all(fu.read_doc(fu.LIVING), empty, prompt).encode("utf-8"))
+    (scratch / "docs" / "FOLLOWUPS.json").write_bytes(b'{"items": [], "routes": []}\n')
+    (scratch / "docs" / "PRIORITY.json").write_bytes((root / "docs/PRIORITY.json").read_bytes())
+    env = dict(_os.environ, WORKSTATION_FOLLOWUPS_ROOT=str(scratch), PYTHONIOENCODING="utf-8")
+    script = str(root / "scripts/followups.py")
+
+    def cli(*argv):
+        return _sp.run([_sys.executable, script, *argv], env=env, capture_output=True, text=True, encoding="utf-8")
+    r1 = cli("add", "--title", "t", "--why", "w", "--source", "test", "--files", "agentic_core/api/religion.py",
+             "--slot", first_open, "--tier", "1", "--reach", "core")
+    assert r1.returncode == 0, r1.stdout + r1.stderr
+    rows = _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    assert rows[0]["tier"] == 1 and rows[0]["reach"] == "core"
+    r2 = cli("add", "--title", "t2", "--why", "w", "--source", "test", "--slot", first_open, "--area", "nowhere")
+    assert r2.returncode != 0 and "is not a priority area" in (r2.stdout + r2.stderr)
+    pr = cli("priority", "--item", first_open)
+    assert pr.returncode == 0 and "= 100 × vision 1.0 × truth 1.0 × reach 1.0" in pr.stdout and "area: " in pr.stdout, pr.stdout
+    assert "completion weighted by priority" in pr.stdout
+    assert cli("reprioritise", "FU-001", "--area", "tooling").returncode == 0
+    assert _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"][0]["area"] == "tooling"
+    cl = cli("reprioritise", "FU-001", "--clear", "area")                       # (refutation) a stale part can be removed
+    assert cl.returncode == 0 and "cleared area" in cl.stdout
+    assert "area" not in _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"][0]
+    first_ = cli("reprioritise", "FU-001", "--clear", "reach")                  # it was set at add (--reach core)
+    assert first_.returncode == 0 and "cleared reach" in first_.stdout
+    none_ = cli("reprioritise", "FU-001", "--clear", "reach")                   # (refutation 2) never 'cleared' when unset
+    assert none_.returncode == 0 and "cleared reach" not in none_.stdout and "nothing to clear: reach" in none_.stdout
+    both = cli("reprioritise", "FU-001", "--area", "faith", "--clear", "area")
+    assert both.returncode != 0 and "--clear and a value for the same part" in (both.stdout + both.stderr)
+    blank = cli("reprioritise", "FU-001", "--area", "  ")
+    assert blank.returncode != 0 and "blank --area" in (blank.stdout + blank.stderr)
+    assert cli("reprioritise", "FU-001", "--area", "tooling").returncode == 0
+    assert cli("close", "FU-001", "--by", "W999").returncode == 0
+    r3 = cli("reprioritise", "FU-001", "--tier", "2")
+    assert r3.returncode != 0 and "only an open row is reprioritised" in (r3.stdout + r3.stderr)
+    (scratch / "docs" / "PRIORITY.json").write_text("{not json", encoding="utf-8")
+    pr2 = cli("priority")
+    assert pr2.returncode == 1 and "cannot be read" in pr2.stdout
+    ck = cli("check")                                           # the check names THIS problem, not only a stale block
+    assert ck.returncode != 0 and "PROBLEM docs/PRIORITY.json cannot be read" in ck.stdout, ck.stdout

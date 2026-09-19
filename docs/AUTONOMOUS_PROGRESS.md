@@ -6723,3 +6723,54 @@ names those exact files — placement and routing agree.
 check that the sweep's class is closed, not the instrument that finds it.
 
 Suite: the full run on the pre-fix tree: 385 passed · 15 skipped · 1 failed (the register's route-agreement guard, test_w469, on the 29 hand-placed rows — fixed by routing); after the fix and the FU-079 ruling the seven register/plan guards re-ran green (7 passed). Docs, the register and one new script (the inventory); no runtime code.
+
+### W478 — Priority: the schedule ranked by vision value, and completion weighted by it
+
+**Why.** The Owner (2026-09-19): "there needs to be a prioritisation mechanism along with a scheduling mechanism within
+the planning system, to correlate significance to vision-delivery importance to completion of delivery". Before this,
+`schedule()` ordered rows by plan position, then high/medium/low, then age: a Tier-1 untruth on the Genesis journey and a
+tidy-up in an internal script sorted alike, and PLAN NOW counted rows, not what they are worth — with 63 rows now riding
+P1.18, the order inside an item mattered and nothing said what to do first.
+
+**What changed.**
+- `agentic_core/plan_priority.py`: a row's priority = 100 × vision × truth × reach × criticality × breadth × effort, each
+  part NAMED with its basis. **Vision** — the weight of the area the row serves, decided in order: an explicit area on the
+  row; the vision section the row's title CITES (the ledgers' own classification, `§8`, `§11.2` — the heaviest if several);
+  its primary file (a row with no files uses the one tracked file each short name in its text can only mean); a title
+  word. **Truth** — the tier (1 · 2 · 3) or else the finder's severity. **Reach** — core journey surface · reached ·
+  internal. **Criticality** — the current phase gate · a later phase · Owner-gated (0). **Breadth** — untruths closed by
+  one fix. **Effort** — files beyond one per finding. Follow-up completion is weighted the same way, per phase and over
+  every phase's rows (the retired pre-plan NEXT queue shown apart).
+- `docs/PRIORITY.json`: the Owner's weights — ten areas (faith and compliance 1.0; lifecycle and native AI 0.9; the
+  organisation 0.8; economy, organism, fabric, domains/UX 0.7; tooling 0.3), the section → area map, the core surfaces.
+  Malformed → `check()` reports it and the defaults serve; nothing that renders crashes.
+- `plan_followups`: inside an item rows run highest-priority first (the plan's order and phase gates stand); each row
+  carries its priority; `suggested_order` shows the open items by total open priority, never applied; PLAN NOW names the
+  highest-priority rows of the next item and the follow-up completion weighted by priority; `check()` validates the
+  weights and every row's priority fields (a stored area that names no configured area is a problem).
+- `scripts/followups.py`: `priority` (ranked, every score's parts shown), `reprioritise --tier/--area/--reach/--clear`,
+  `add --tier/--area/--reach`.
+- The /transformation "Delivery plan — live" card shows each row's priority and the weighted completion.
+The ranking it produces for P1.18: the two broadest sweep rows first (the intelligence engines, 8 untruths; the
+transformation run, 5), then the compliance-screen and Quran-text class at 100 (the ethical engine, the Basmala on ayah 1,
+the §10 bar, the Sharia/halal screen), then the Genesis/establish untruths — the order the rounds will follow.
+
+**Refuted twice** (13 real findings, then 4 on the fixes; 0 refuted). The first pass: an area without a name crashed every
+render; a stored unknown area was silently unmapped; rows registered with no files lost core reach, so the Basmala untruth
+ranked below Command Center literals; the first matching area over ANY file let a cosmetic badge row borrow the faith
+weight from a fifth file; effort cancelled breadth (an 8-finding row counted as 1); the §11 screens were not core
+surfaces; "Delivery completion" measured only follow-up rows and halved and counted the retired queue; the card sorted by
+a priority it never showed. The second pass, on those fixes: the text-path fallback matched no real row (the ledgers cite
+short names — now resolved against the tracked files, unique suffix only); "the first file decides" had swapped one
+arbitrary rule for another (the ledger rows' files are alphabetical) — the vision section the title cites now decides
+first; closed rows had stopped being validated while completion still scores them; `--clear` could report a clear it did
+not do. Ten ledger rows had been placed by hand in the first fix; after the second the hand values were cleared and the
+mechanism places them itself.
+
+**Broken 39 ways** (each blind alone, guard run, byte-restored); every one fails. Three first-run vacuous blinds were
+made real: a check whose failure had a second cause (the weights-file leg now requires that exact problem), a words blind
+that edited the defaults while the file in force overrides them (it now edits docs/PRIORITY.json), and a tampering probe
+in the W462 guard whose edit silently stopped landing when rendered rows gained their score (it now asserts its edit lands).
+Guard: test_w478_the_schedule_is_prioritised_by_vision_value_and_completion_is_weighted.
+
+Suite: 387 passed · 15 skipped · 0 failed (402 items from 363 test functions; 39-min full run on the final tree, isolated DATA_DIR).

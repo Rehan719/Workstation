@@ -1,5 +1,12 @@
 # Handover — W474 → W475 (Claude Fable 5.1 → Claude Opus)
 
+> **W478 shipped** (2026-09-19, Claude Opus 5): on the Owner's instruction the planning system PRIORITISES — every
+> follow-up is scored by its vision value (`agentic_core/plan_priority.py`; the Owner's weights in `docs/PRIORITY.json`),
+> rows inside an item run highest-priority first, and PLAN NOW shows the top rows and the follow-up completion weighted
+> by priority. **Start each P1.18 round from `python scripts/followups.py priority --item P1.18`** — top first (today:
+> FU-121 intelligence.py, FU-122 transformation run, then the compliance/Quran-text class at 100). Register new rows
+> with the vision section in the title, or `--area/--tier/--reach`, or the primary file first.
+
 > **W477 shipped** (2026-09-19, Claude Opus 5): the Owner chose a ONE-TIME EXHAUSTIVE TRUTH SWEEP over repeated sampled
 > M1 audits. `docs/TRUTH_SWEEP_W477.md` (coverage fixed by `scripts/truth_sweep_inventory.py`: every page, 83 of 114
 > frontend files, 273 /api paths; 13 sweepers + 13 skeptics): 190 reproduced — **106 Tier-1**, 84 Tier-2. P1.18 now
