@@ -1526,6 +1526,431 @@
       "status": "done",
       "closed_by": "W475",
       "note": ""
+    },
+    {
+      "id": "FU-094",
+      "title": "v5 R1.0: §11 live compliance (ethical engine) → §10 'safe' / deliverable… — The 'ethical engine' is a bare-word regex (agentic_core/compliance/ethical_engine.py:25-27 _HARM_SEVERE =…",
+      "why": "The 'ethical engine' is a bare-word regex (agentic_core/compliance/ethical_engine.py:25-27 _HARM_SEVERE = kill|murder|...|suicide). Any subject that contains one of those words gets 'human: fail — Severe human-harm indicator', which makes the overall verdict FAIL, even when the subject is a helpful service. The FAIL is then stamped as a real safety judgement: §10 'safe' is recorded met=False, measured=True, source=gate. On material labels the delivery is routed to Change Control (Change Control Agency, CCA) as a compliance violation, and the export's page one reads 'NOT cleared for use'. FIX (the assessor's proposal, a lead): A single harm-vocabulary hit should give 'review' with the matched term named, never 'fail'. Only an ethical row whose coverage is 'engine' should set §10 'safe' as measured. Keyword-only safety evidence should be recorded as source 'screen' with met=None. [docs/VISION_FIDELITY_LEDGER.md v5 R1.0, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/compliance/ethical_engine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-095",
+      "title": "v5 R1.1: §10 bar 'compliant' + 'safe' recorded as MEASURED from keyword… — quality.py:142-146 records 'compliant' as met = (overall != 'fail') and 'safe' as met = no fail among…",
+      "why": "quality.py:142-146 records 'compliant' as met = (overall != 'fail') and 'safe' as met = no fail among ethical/ehs/sharia_halal, both with measured=True and source 'gate'. The inputs are keyword screens that describe themselves as 'not an EHS assessment' and 'not a certification'. The Sharia row passes whenever the word 'halal', 'waqf' or similar appears in the text. assure_delivery (quality.py:228) copies only overall/compliant/verdicts and drops the screen's coverage_gaps and basis. The Deliverables page therefore shows an emerald 'COMPLIANCE: PASS' chip with no 'screen' qualifier (Deliverables.tsx:254-258), and its tooltip says 'MEASURED by this gate: compliant · safe'… FIX (the assessor's proposal, a lead): Record compliant/safe as met=None (basis 'keyword screen only') unless a row with coverage 'engine' actually read the subject. Carry coverage_gaps and basis into quality['compliance'] and label the chip 'screen: pass'. The halal row should not pass on the subject's own use of the word 'halal'. [docs/VISION_FIDELITY_LEDGER.md v5 R1.1, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-096",
+      "title": "v5 R1.2: §11.2 faith-content constitution — sourced-only, exactly (QEP… — The quran-uthmani edition prepends the Basmala to ayah 1 of every surah except 1 and 9. The platform passes…",
+      "why": "The quran-uthmani edition prepends the Basmala to ayah 1 of every surah except 1 and 9. The platform passes this through unmodified (religious_domain/api.py:249-262 fetch_ayah_arabic, :318-324 get_surah, :366-373 get_ayah) and labels it 'Authentic Arabic text… not AI-generated'. As a result, 112 surahs show a first ayah that is not the text of that ayah under Hafs numbering. It also breaks written recall. Ayah 1:1 carries a leading U+FEFF (BOM) as well. FIX (the assessor's proposal, a lead): For surahs other than 1 and 9, strip the leading Basmala from ayah 1 (or request an edition that does not prepend it) and strip U+FEFF. Show the Basmala separately as a header labelled 'not part of ayah 1'. Add a test for 112:1, 2:1 and 1:1. [docs/VISION_FIDELITY_LEDGER.md v5 R1.2, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-097",
+      "title": "v5 R1.3: §10 'modelled · simulated · optimised · ranked' — Genesis stage 5… — genesis.py:394 `winner = (_eligible or candidates)[0]`: when every candidate is vetoed, a vetoed candidate…",
+      "why": "genesis.py:394 `winner = (_eligible or candidates)[0]`: when every candidate is vetoed, a vetoed candidate still wins. The journey carries it into Design and Commercialisation and reports status 'complete'. The UI puts a 'selected' chip on it (GenesisJourney.tsx:719-726) and prints '…vetoed for §11 failure: pragmatic, innovative, lean — the winner is carried into Design.' (GenesisJourney.tsx:742). The page shows no veto indicator. FIX (the assessor's proposal, a lead): When every candidate is vetoed, stop the journey after stage 5 with status 'blocked_by_screen' and name the vetoes. Never carry a vetoed candidate forward. [docs/VISION_FIDELITY_LEDGER.md v5 R1.3, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-098",
+      "title": "v5 R2.0: §4.2 Understand & Map / §4.1 (Genesis Phase 1) — POST /api/v1/genesis/journey {problem:'I keep bees in Yorkshire and varroa mites are killing a third of my…",
+      "why": "POST /api/v1/genesis/journey {problem:'I keep bees in Yorkshire and varroa mites are killing a third of my colonies…', domain:'agriculture', establish:true}. phase_1_conceptualisation.cognitive_cascade contains 0 of the 17 content words in the problem. It repeats six times the subject 'Analyse the following thro (domain: general)' with bullets 'architecture specialised · specialised intelligence · cognitive architecture…'. mjm_assessment repeats nine times 'Process this through the three phases of Mus (domain: general)' with bullets 'intermittent fasting · insulin sensitivity · sensitivity adults'. Those words come from ANOTHER interaction: memory.json holds 3 hits for 'intermittent… FIX (the assessor's proposal, a lead): Pass augment=False and route the two calls through the journey's provenance-recording _q (which carries the Problem field). When floor-served, render these two sections as 'pending the owned model' as the VSB body does, and count them in served_by. [docs/VISION_FIDELITY_LEDGER.md v5 R2.0, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/intelligence.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-099",
+      "title": "v5 R2.1: §4.5 / §4.8 / §11 as it drives the lifecycle — The same beekeeper journey: every candidate gets screen.overall=fail with ethical 'human: fail; ……",
+      "why": "The same beekeeper journey: every candidate gets screen.overall=fail with ethical 'human: fail; … (engine-backed)'. stage_5.vetoed=[pragmatic, innovative, lean]. established_vsb.birth_vitals.first_cycle.held='compliance_fail_hold'. Ship commit messages read 'compliance fail' on repo/website/webapp/mobile. /evolve proposes 'remediate the §11 screen posture (currently fail)'. The exported report is stamped 'COMPLIANCE VERDICT: FAIL — NOT cleared for use — routed to Change Control'. Control, POST /api/v1/compliance/check: {subject:'I keep bees … varroa mites are killing a third of my colonies…'} gives overall fail, but {subject:'An affordable organic varroa treatment service for small-scale… FIX (the assessor's proposal, a lead): Carry the matched term into the surfaced reason. Downgrade a lone lexicon hit to 'review — keyword match, not an assessment' unless it has a human object. Never hold distributions or veto candidates on a keyword-only severe hit. [docs/VISION_FIDELITY_LEDGER.md v5 R2.1, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/compliance.py",
+        "agentic_core/compliance/ethical_engine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-100",
+      "title": "v5 R2.2: §4.8 Establish / §4.10 Run forever (status, progress map, stage rail) — Every establish path writes status:'operational', stage:'commercialise' as literals, whatever the state. For…",
+      "why": "Every establish path writes status:'operational', stage:'commercialise' as literals, whatever the state. For vsb-24267609d1 the real state is: body 4 of 4 pending, first §11 screen FAIL, first cycle held, and living.autonomous_cycles=false (Self-run OFF). For vsb-6cbffb7c1d: research and design gates pending, yet GET /api/v1/vsb/vsb-6cbffb7c1d returns status 'operational', stage 'commercialise'. What the user sees, from source: - GenesisJourney.tsx:893 prints the literal '{vsb_id} · operational · governance allowed' and an emerald 'Living Enterprise IDBO generated'. - VSBCockpit.tsx:453 shows the status as a green Badge. - The shipped README.md says 'Status: operational'. - The progress… FIX (the assessor's proposal, a lead): Derive status from facts (e.g. 'registered — held: §11 fail', 'registered — not operating: Self-run off', 'gated'). Light 'Operate' only when autonomous_cycles is true and the last cycle ran. Light rail tiles from the payload's per-stage attestations. Render birth_vitals on the one-call path. [docs/VISION_FIDELITY_LEDGER.md v5 R2.2, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-101",
+      "title": "v5 R2.3: §13 / §17.3 Board pack (compliance certification) — GET /api/v1/vsb/vsb-24267609d1/board-pack returns narrative 'narrative pending the owned model — this board…",
+      "why": "GET /api/v1/vsb/vsb-24267609d1/board-pack returns narrative 'narrative pending the owned model — this board pack has not been composed…'. Its quality_assurance shows compliance.overall='review', compliant=True, and bar_measured.criteria.compliant={met:true, measured:true, source:'gate'}, safe={met:true, measured:true, source:'gate'}. At the same moment the entity's own §11 screen is FAIL (ship record: repo/website/webapp/mobile compliance_overall 'fail'; board_pack 'review'). The screen read only the placeholder sentence and certified the enterprise compliant and safe. The UI (GenesisJourney.tsx ~1062) shows a 'compliance: review' chip on the pack. FIX (the assessor's proposal, a lead): When the narrative is pending, report compliance as 'not assessable — nothing composed' (compliant/safe met:null). Otherwise screen the constitutional/mission layer the pack actually carries, and show the entity's latest §11 verdict on the pack. [docs/VISION_FIDELITY_LEDGER.md v5 R2.3, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-102",
+      "title": "v5 R3.0: §5 / §6 — Swarm tab of the Living Organisation hub (/ceo?tab=swarm) — The chart titled 'QMS coverage vs run duration (measured)' plots every swarm run's…",
+      "why": "The chart titled 'QMS coverage vs run duration (measured)' plots every swarm run's quality.delivery_coverage. On the floor that value is 1.0 by construction, and the same record says it is not assessable. So each floor run shows up as a top-of-chart 'measured' 100% coverage point. FIX (the assessor's proposal, a lead): Exclude runs with qms_gate_passed === null (or not_assessable) from paretoPoints. Better, have assure_delivery return delivery_coverage:null on floor-served runs so no renderer can plot it. [docs/VISION_FIDELITY_LEDGER.md v5 R3.0, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-103",
+      "title": "v5 R3.1: §5 BTO / living management systems (BMS) on the org-cascade result — The cascade result chip reads 'BMS EFFICIENT · $2e-06/insight'. Both the status and the unit cost come from…",
+      "why": "The cascade result chip reads 'BMS EFFICIENT · $2e-06/insight'. Both the status and the unit cost come from the catalogue's simulated constants (a $/Wh rate and a $0.50-per-insight value, giving roi 266666.667). insights_count 10 counts the floor's own outputs. The EMS chip beside it carries '(sim)', but the BMS chip has no such label; the caveat is only in a hover title. FIX (the assessor's proposal, a lead): Suffix the BMS chip '(sim)' like EMS, and make status 'not assessed' when every call was floor-served or the value basis is a constant. [docs/VISION_FIDELITY_LEDGER.md v5 R3.1, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-104",
+      "title": "v5 R3.2: §17.3 Living Business System — the on-demand Board Pack — The pack is honest about versioning, the review gate, the floor narrative and the concept source. But its…",
+      "why": "The pack is honest about versioning, the review gate, the floor narrative and the concept source. But its narrative claims 'the operational snapshot, constitutional layer and strategic specification below are live data', while the strategic layer is {\"ceo\": {}} (empty). The action_plan layer is the static board roster. The constitutional Mission is the string 'Deliver: <problem>' and the Vision is the problem statement verbatim; values is one constant string for every VSB. The Genesis page shows a chip listing all four layer names as present. FIX (the assessor's proposal, a lead): Emit the strategic/action_plan layers as {pending: 'no cadence generator (P3.3)'} when empty, have the narrative name only the layers that carry data, and label mission/vision 'derived from the problem statement'. [docs/VISION_FIDELITY_LEDGER.md v5 R3.2, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-105",
+      "title": "v5 R3.3: §5 org cascade → §10 quality bar (compliant / safe criteria) — The §10 bar records 'compliant' and 'safe' as MET and MEASURED by the gate whenever no §11 screen says…",
+      "why": "The §10 bar records 'compliant' and 'safe' as MET and MEASURED by the gate whenever no §11 screen says 'fail'. A run where sharia_halal, ethical and uk_legal all returned 'review' (no engine covers them) is therefore certified compliant and safe. FIX (the assessor's proposal, a lead): met = True only when every framework in scope is 'pass'; any 'review' gives met:null with basis 'review — not assessed'. [docs/VISION_FIDELITY_LEDGER.md v5 R3.3, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/vbs/quality.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-106",
+      "title": "v5 R3.4: §5 org cascade → §11 compliance chip (Sharia screen) — The Sharia screen passes text that contains the word 'halal' and no listed haram term. Interest-bearing…",
+      "why": "The Sharia screen passes text that contains the word 'halal' and no listed haram term. Interest-bearing lending described as 'halal' gets sharia_halal PASS and an overall PASS. The org cascade's emerald 'compliance: pass' chip inherits this. The cascade's quality.compliance also drops the screen's coverage_gaps/basis fields, so the chip reads pass while uk_legal is 'review — no engine covers this area'. FIX (the assessor's proposal, a lead): Add interest/usury/APR/percent-interest patterns to the haram screen, never pass sharia_halal on self-declared vocabulary alone (make it 'review'), and carry coverage_gaps into the cascade chip. [docs/VISION_FIDELITY_LEDGER.md v5 R3.4, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-107",
+      "title": "v5 R3.5: §5 Change Control (arms-length) — the review's organism-health… — With no model marker (always the case on the floor), the review decides by `composite_health >= 0.5`. That…",
+      "why": "With no model marker (always the case on the floor), the review decides by `composite_health >= 0.5`. That composite is 40% a defaulted 1.0 (no self-healing circuits tracked) and 20% simulated ATP. With immune health at 0.5 (threat ELEVATED, 5 errors) it still reads 0.77–0.95, so under current conditions the rule cannot reject anything: 0.4·imm + 0.4 + 0.2·atp ≥ 0.5 for any imm ≥ 0 while atp ≥ 0.5. MEDIUM changes are approved and become implementable. The record states the number without saying most of it is unmeasured, although /organism/status publishes composite_health_measured_only (0.5) and the basis. FIX (the assessor's proposal, a lead): Decide on composite_health_measured_only, or hold for an explicit decision when the measured share is below a threshold. Print the measured share in review_result. [docs/VISION_FIDELITY_LEDGER.md v5 R3.5, standing PARTIAL, refutation refuted]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-108",
+      "title": "v5 R3.6: §5 Chief = founder's digital twin; §17.4 Mode 2 — No twin model exists. The Board page says so ('no digital-twin model is trained yet (Mode 2 is planned,…",
+      "why": "No twin model exists. The Board page says so ('no digital-twin model is trained yet (Mode 2 is planned, P3.4)'). Two other reached surfaces still tell the user the Chief is their digital twin. The Chief acts only on a click (chief/instruct); nothing invokes it autonomously. FIX (the assessor's proposal, a lead): Replace 'your digital twin' in BusinessPlan.tsx:107 and SwarmIntelligence.tsx:299 with the Board's wording (standing charter + last instructions; twin model planned). [docs/VISION_FIDELITY_LEDGER.md v5 R3.6, standing PARTIAL, refutation refuted]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-109",
+      "title": "v5 R4.0: §7 (Petri dish, a musculoskeletal facility) + §15.6 (never fabricate) — The Petri dish's viability verdict is a substring test: viable = 'not-viable' not in tail and 'not viable'…",
+      "why": "The Petri dish's viability verdict is a substring test: viable = 'not-viable' not in tail and 'not viable' not in tail (agentic_core/api/products.py:546). The deterministic floor never writes those words, so every floor-served culture comes back viable=true. I ran POST /api/v1/petri/culture with {\"specimen\":\"sell ice to penguins at a premium, financed with riba loans\"} and got viable=True, ai_provenance.served_by={native:1} and qms_gate_passed=None. The culture text also contained 'varroa treatment', which is native-memory recall from my earlier, unrelated probe leaking into a new request. In the fabric, the adapter (agentic_core/api/resource_fabric.py:518) returns {viable, passages,… FIX (the assessor's proposal, a lead): Return viable=None ('not assessable — floor-served') whenever served_by is native, and put served_by/is_external on the fabric's petri_dish row so provenanceBadge renders. Consider making viability require an explicit 'VIABLE' line rather than the absence of 'not viable'. [docs/VISION_FIDELITY_LEDGER.md v5 R4.0, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/products.py",
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-110",
+      "title": "v5 R4.1: §8/§17.2 organism vitals (Immune, Self-healing, Metabolic) as shown… — GET /api/v1/organism/status returns composite_health=0.929, mode=FULL_POWER and health_summary 'Organism at…",
+      "why": "GET /api/v1/organism/status returns composite_health=0.929, mode=FULL_POWER and health_summary 'Organism at peak — ACTIVE_FOCUS cycle, health 93%. Full cognitive power available.' The terms are: immune 0.4×1.0 (measured), self_healing 0.4×1.0 'defaulted to 1.0, not a measurement', and metabolic 0.2×0.643 'ATPSimulator … simulated'. So 60% of the weight is not measured, and the measured-only figure is 1.0. The home page (DashboardNew.tsx:107, 257, 261) shows '<mode> · 93% health' and a 'Composite Health 93%' bar with no basis. The default /organism tab (OrganismDashboard.tsx:262-266) shows 93% big with the health_summary and a green FULL THROUGHPUT chip. On the same page, the Self-Healing… FIX (the assessor's proposal, a lead): On Home and the /organism overview, render composite_health_measured_only as the headline, with health_basis as the caption, and move the blended figure into a 'with default and simulated terms' tooltip. Label the Metabolic card 'simulated'. Have _health_summary say how much of the score is measured, and stop saying 'Full cognitive power' when native homeostasis reports 'reduced'. [docs/VISION_FIDELITY_LEDGER.md v5 R4.1, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/organism/biobus.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-111",
+      "title": "v5 R4.2: §17.2 evolution / self-improvement (the Cognition tab's 'organism… — POST /api/v1/cognition/align {execute:false} returned overall_realisation=0.97 with one gap. The checks…",
+      "why": "POST /api/v1/cognition/align {execute:false} returned overall_realisation=0.97 with one gap. The checks behind that number are route-mount and non-empty-store lambdas (agentic_core/api/transformation.py:141-157). _realise() itself names this 'API surface coverage … not delivery', but align() and /api/v240/evolution/metrics drop that 'measure' field. The metrics route adds status 'realised' 1.0 for pillars such as \"Chief = Owner's digital twin\" and \"Reconfigurable, combinable resource fabric\". CognitionIntegration.tsx:173 renders 'Overall realisation 97% · N gaps routed (evidence-based)'. :170 would render 'Fully aligned — no open vision gaps.' once one evolution cycle runs. :125 shows… FIX (the assessor's proposal, a lead): Pass _realise()['measure'] through align, knowledge and v240 metrics. Relabel the Cognition tab figure 'API surface coverage (not delivery)' and replace 'Fully aligned — no open vision gaps' with 'no coverage gaps — delivery is measured at /api/v1/plan/state'. Rename the v240 fields (vision_realisation to api_coverage, 'realised' to 'surface present'). [docs/VISION_FIDELITY_LEDGER.md v5 R4.2, standing PARTIAL, refutation corrected]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/transformation.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-112",
+      "title": "v5 R4.5: Command Center (the shell's Channels dock on every page) — Most channels are now honest (packages/ui/src/CommandCenter.tsx), but untrue statements remain on a surface…",
+      "why": "Most channels are now honest (packages/ui/src/CommandCenter.tsx), but untrue statements remain on a surface reached from every page (Shell, then FourthColumn, then <CommandCenter tiled/>). The Spatio-Temporal channel (components/organism/SpatioTemporal.tsx) renders the literals 'Sovereign Consensus Status: CROSS-PLANETARY SYNC ACTIVE' and 'Mars Relative: T + 842s' under an 'illustrative' header. After 'Apply REST Mode', the Predictive channel says 'Rest Mode applied. Cognitive durability optimization in progress.' (CommandCenter.tsx:425), but the handler only sets a UI mode flag. The heading still reads 'RL-Powered Suggestions' although no RL exists. Every channel has a 'Query <channel>… FIX (the assessor's proposal, a lead): Delete the SYNC ACTIVE and Mars literals. Change the REST text to 'REST mode set — this only changes the interface'. Drop 'RL-Powered' and the Live dot. Either remove the query box or label it 'nothing answers here yet'. [docs/VISION_FIDELITY_LEDGER.md v5 R4.5, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "apps/workstation-superapp/src/components/organism/SpatioTemporal.tsx",
+        "packages/ui/src/CommandCenter.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-113",
+      "title": "v5 R5.0: §3A Domain Working (Care) / §15 P6 — The falls-risk scorer tells the user 'no falls history' when falls history was never recorded, and shows a…",
+      "why": "The falls-risk scorer tells the user 'no falls history' when falls history was never recorded, and shows a GREEN chip. POST /api/v1/care/risk-assess {tool:falls_risk, patient_data:<the CareHub default NEWS2 keys>} and {tool:falls_risk, patient_data:{'fallen twice this year':'yes'}} both return total 0, band 'no trigger recorded', response 'no falls history and fewer than two factors recorded — reassess on change', factors_present [], missing = all 11 factors INCLUDING falls_history, warnings []. The unrecognised key is dropped without a warning. CareHub renders the band chip with a regex colour fallthrough (high→red, medium|at risk|warranted→amber, else EMERALD), so 'no trigger recorded'… FIX (the assessor's proposal, a lead): When falls_history is in missing, return band null and a response like 'falls history not recorded — cannot say whether assessment is warranted'. Colour only an explicit low band emerald; any other band goes neutral. Put a warning on every key the scorer does not recognise. [docs/VISION_FIDELITY_LEDGER.md v5 R5.0, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/care/scoring.py",
+        "apps/workstation-superapp/src/pages/domains/CareHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-114",
+      "title": "v5 R5.1: §3 / §14 marketplace (Living Marketplace catalogue) — GET /api/v1/catalog/products returns counts {registered 20, live 4, source 10, legacy 6}. The counts and the…",
+      "why": "GET /api/v1/catalog/products returns counts {registered 20, live 4, source 10, legacy 6}. The counts and the status labels are honest. The four LIVE cards still list features that nothing serves. capital_fund (live, /capital) lists 'Autonomous Rebalancing', 'On-Chain Gateway' and 'Constitutional Evolution Voting'; the only matches for rebalanc / evolution-vot in agentic_core are the catalogue literal itself. The capital fund's own page says the opposite: CapitalDashboard.tsx:253-256 reads 'No on-chain integration exists' (the crypto_gateway/mainnet_settlement code under products/capital_fund/ is imported by nothing). qep-sdk (live, /qep-religion) lists 'Arabic Morphology Analysis', 'AI… FIX (the assessor's proposal, a lead): Replace each live product's features with the capabilities its route actually serves, e.g. capital fund: 'virtual WST allocation · portfolio · AI report'. Drop On-Chain Gateway, Rebalancing, Morphology, Quiz, Trust Scoring and Quad-Engine, or move them under a labelled 'not built' line. [docs/VISION_FIDELITY_LEDGER.md v5 R5.1, standing PARTIAL, refutation corrected]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/catalog/api.py",
+        "apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-115",
+      "title": "v5 R5.2: §3A Domain Working (Religion — Halal pre-assessment) / §11… — POST /api/v1/religion/halal-review {product_name:'Choco bar', ingredients:['sugar','cocoa…",
+      "why": "POST /api/v1/religion/halal-review {product_name:'Choco bar', ingredients:['sugar','cocoa butter','gelatin','E471']}. The floor-served 'assessment' repeats the heading '## Halal Status Assessment (COMPLIANT /' five times: it is the prompt's '(COMPLIANT / REQUIRES REVIEW / NON-COMPLIANT)' enum cut short, so it reads as a COMPLIANT verdict. The '## Flagged Ingredients' section lists 'milk chocolate, chocolate bar, bar choco, choco bar, bar sugar' as though they were flagged, and never names gelatin or E471 (the two ingredients of real halal concern). The response has no floor_note and no sections_withheld. The sibling Tafsir tool on the same hub does withhold (sections_withheld… FIX (the assessor's proposal, a lead): Apply the tafsir pattern: when served_by is native, withhold 'Halal Status Assessment' and 'Flagged Ingredients' and add a floor_note. Or strip the verdict enum from the floor-facing prompt so no verdict token can be echoed. [docs/VISION_FIDELITY_LEDGER.md v5 R5.2, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/religion.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-116",
+      "title": "v5 R6.0: §8 homeostasis / composite health (and §17.5 twin pre-validation,… — The headline organism health reports NOMINAL/FULL_POWER with a percentage mostly made of unmeasured values,…",
+      "why": "The headline organism health reports NOMINAL/FULL_POWER with a percentage mostly made of unmeasured values, even while the only measured term reads zero and CRITICAL. Live at 13:09Z: GET /api/v1/organism/status returned composite_health 0.6, mode NOMINAL, health_summary 'Organism nominal — ACTIVE_FOCUS cycle, health 60%. Standard operations active.' In the same response systems.immune was health 0.0, threat_level CRITICAL, errors_in_window 11, with a playbook saying 'engage immune_quarantine'. /health-summary: composite_health_measured_only 0.0. The terms: self_healing value 1.0 is measured:false ('defaulted to 1.0') and GET /organism/self-healing/status says overall_health null, 0… FIX (the assessor's proposal, a lead): Compute mode and health_summary from composite_health_measured_only, or make an unmeasured term count as unknown rather than 1.0. Put health_basis beside every rendered composite. Make the twin fallback read immune health or measured_only instead of the composite. [docs/VISION_FIDELITY_LEDGER.md v5 R6.0, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/change_control.py",
+        "agentic_core/organism/biobus.py",
+        "apps/workstation-superapp/src/pages/DashboardNew.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-117",
+      "title": "v5 R6.1: §8 survival instinct / §8→§12 economic survival instinct / metabolic… — The ATP 'metabolic energy' behind every survival-instinct lever can only go up. ATPSimulator starts at ratio…",
+      "why": "The ATP 'metabolic energy' behind every survival-instinct lever can only go up. ATPSimulator starts at ratio 5.0 (0.333 normalised). Each update adds production 0.5*efficiency (0.4–0.5) and subtracts consumption 0.1*load (at most 0.1). Every organism_context() read advances it, at most once a second, with load 0.2–1.0. Live, it rose with page polls: 0.396 → 0.456 → 0.831 → 1.0 within about 10 minutes of boot, and stayed at 1.0. So the following can never fire: the economy's reserve raise at atp < 0.3 (metabolism.py:158-163), the heartbeat's self_recovery at < 0.3 (heartbeat.py:194-203), native homeostasis 'protected' at < 0.3, and metabolic_throttle at < 0.2 (heartbeat.py:327). The number… FIX (the assessor's proposal, a lead): Either drive ATP from a real load signal that can fall (request rate, model-call latency or failures), or relabel metabolic energy as a simulation on every surface. Also state that the survival-instinct levers are inert until then. [docs/VISION_FIDELITY_LEDGER.md v5 R6.1, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/ai/native/homeostasis.py",
+        "agentic_core/economy/metabolism.py",
+        "agentic_core/molecular/atp_simulator.py",
+        "agentic_core/organism/biobus.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-118",
+      "title": "v5 R6.2: §12 charity: the Owner's directives (inclusions and exclusions… — An unreadable Owner charity-directives store is quietly replaced by defaults, and money then goes to causes…",
+      "why": "An unreadable Owner charity-directives store is quietly replaced by defaults, and money then goes to causes the Owner excluded. I wrote a malformed C:/tmp/w476b/economy_charity_directives.json. It was a truncated object with exclusions ['dawah','conflict_relief'] and priorities ['clean_water']. Results: GET /api/v1/economy/charity/directives returned 200 with exclusions [] and source 'defaults (2026-06-21 Owner directive)'. POST /api/v1/economy/cycle {vsb_id:'w476-r6-e', revenue:100} then granted to conflict_relief, a cause the Owner had excluded, with no error. The cause is get_directives(), which uses load_json_tolerant(..., {}): a store that cannot be parsed reads as never set.… FIX (the assessor's proposal, a lead): Read the directives, signals and revenue stores strictly (read_json_strict / StoreUnavailable). A cycle should refuse to allocate charity, or hold it, while the directives cannot be read, and the directives route should return 503. [docs/VISION_FIDELITY_LEDGER.md v5 R6.2, standing PARTIAL, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/config.py",
+        "agentic_core/economy/charity.py",
+        "agentic_core/economy/revenue.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-119",
+      "title": "v5 R6.3: §12 Sovereign Capital Fund (the capital_fund waterfall stage… — The fund's baseline is an unfunded 10M WST constant presented as 'the real capital fund', and an unreadable…",
+      "why": "The fund's baseline is an unfunded 10M WST constant presented as 'the real capital fund', and an unreadable fund is silently reset to that constant. (a) When the store is absent, _load_fund() seeds total_capital and available at 10,000,000 WST. The live fund was created by my first cycle at 13:01:40 and reads total_capital 10,000,156 = 10,000,000 seed + 140 + 16 in cycle contributions. No cycle, owner or ledger funded the 10M. CapitalDashboard.tsx:170-194 shows it with the caption 'Figures are the real capital fund … in virtual WST'. Wallet.tsx:76 shows 'Total Pool 10M WST' and 'Fund Health HEALTHY'. /fund/status has no basis field. (b) I wrote a malformed capital_fund.json. GET… FIX (the assessor's proposal, a lead): Start the fund at 0 plus real cycle contributions, or disclose the seed as an Owner-set virtual endowment with its own basis field. Read the store strictly and return 503 when unreadable, never a fresh pool. [docs/VISION_FIDELITY_LEDGER.md v5 R6.3, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/capital_fund.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-120",
+      "title": "v5 R6.4: §8 self-curation: Sovereign Evolution Office (introspect → AI CEO →… — The cycle's C-Suite verdict is a code default, but the page shows it as the C-Suite's decision. Under the…",
+      "why": "The cycle's C-Suite verdict is a code default, but the page shows it as the C-Suite's decision. Under the native floor, POST /api/v1/sovereign-evolution/cycle {focus:'audit', submit_to_change_control:false} returned 200. The introspection showed immune health 0.0, CRITICAL. The only CEO directive was the code default 'Routine organism health review' (P2, COO), with rationale 'No parseable CEO directives; defaulting to a maintenance sweep.' Its verdict 'proceed' and effort 'M' are also code defaults (sovereign_evolution.py:243-245 fills 'proceed' when no C-Suite line matched). The response still says curated_by ['AI CEO','C-Suite','CoE','BTO'] and items_proceeding 1. bto_roadmap is the… FIX (the assessor's proposal, a lead): Mark defaulted directives and verdicts with a source field (for example verdict_source 'default: no C-Suite verdict parsed'). Render it as 'no verdict'. Drop curated_by tiers that returned nothing parseable. [docs/VISION_FIDELITY_LEDGER.md v5 R6.4, standing STUB, refutation survived]",
+      "source": "W476 ledger v5",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/api/sovereign_evolution.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [

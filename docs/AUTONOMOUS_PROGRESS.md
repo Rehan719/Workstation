@@ -6655,3 +6655,32 @@ Guard: test_w475_second_truth_pass_ledger_v4_tier1_entries — one leg per entry
 Probe: scripts/_w475_probe.mjs 12/12 on a fresh backend at :8084 (ten API halves, the served bundle's texts).
 
 Suite: 386 passed · 15 skipped · 0 fail (full run on the final tree, isolated DATA_DIR, 39 min; 401 items from 362 test functions).
+
+### W476 — MILESTONE M1 re-run: ledger v5, twenty-seven truth defects stand, P1.18
+
+**Why now.** P1.17 closed the fourteen Tier-1 entries of ledger v4 (W475). The M1 line says the milestone re-runs
+after its item and the Tier-1 count is measured again, never declared.
+
+**How.** A fresh backend from HEAD `929508f0` (:8086, isolated DATA_DIR, `AI_DISABLE_LOCAL=1`, the built bundle served).
+The W474 workflow re-run with the assessors barred from ledgers v3 AND v4 (and §16, the progress log, the prompt's
+`<ledger>`): six assessors, six refuters (default refuted, reproducing every gap, correcting verdict and tier).
+`scripts/render_fidelity_ledger.py` renders v5 (a tiered edition superseding v4, which is kept whole as
+`VISION_FIDELITY_LEDGER_v4.md`; the v4 render was re-run and is byte-identical).
+
+**Result.** 60 findings; 53 survived, 7 overturned. Standing: STUB 12 · MISSING 1 · DOC_OVERCLAIM 2 · API_ONLY 2 ·
+PARTIAL 36 · DELIVERED 7. **Tier-1 27** · Tier-2 17 · Tier-3 9. **M1 is NOT met.** None of the twenty-seven is a
+P1.17 entry re-reported: each audit is capped at ten findings per region, so it samples, and this one walked surfaces
+the first did not — above all the compliance screen certifying what it cannot know (the ethical keyword engine FAILS
+a suicide-prevention helpline on one word and seals it as a safety verdict; §10's 'compliant' and 'safe' are recorded
+MEASURED from screens that say they certify nothing, and the Sharia row passes on the subject's own word 'halal'),
+faith content (the sourced text prepends the Basmala to ayah 1 of 112 surahs, and 1:1 carries a byte-order mark —
+labelled exact; the recall comparison is broken by it), a Genesis candidate the screen vetoed still selected, and
+organism/economy readings that cannot fail. Three touch areas W475 changed (the Command Center's other channels, the
+marketplace, the Chief) and are checked first in P1.18.
+Register: FU-094…FU-120 (27 rows, high), riding the new item P1.18 The third truth pass. PLAN NOW: Next P1.18.
+
+**What this says about the milestone.** Two measured audits have now found 14 and then 27 Tier-1 entries with almost no
+overlap: a sample of sixty findings has not yet reached the bottom of the class. The plan keeps the rule — P1 closes
+only when a re-run measures zero — and the rows name what to fix.
+
+Suite: 386 passed · 15 skipped · 0 failed (401 items, 362 functions; 40-min full run on the final tree, isolated DATA_DIR) — docs, the register and the render script changed; no runtime code.

@@ -1,5 +1,14 @@
 # Handover — W474 → W475 (Claude Fable 5.1 → Claude Opus)
 
+> **W476 shipped** (2026-09-19, Claude Opus 5): the MILESTONE M1 re-run against `929508f0` (:8086; workflow
+> `w476-fidelity-audit-v5.js` in this session's workflows dir, audit JSON `C:/tmp/w476_fidelity_v5.json`) issued
+> ledger **v5**: Tier-1 **27 — M1 NOT met**. P1.18 "The third truth pass" carries them as FU-094…FU-120; PLAN NOW
+> says **Next: P1.18**. v4 is kept as `VISION_FIDELITY_LEDGER_v4.md`. Start P1.18 with the three entries in areas W475
+> changed (R4.5 Command Center's other channels, R5.1 marketplace, R3.6 the Chief) and the compliance-screen class
+> (R1.0, R1.1, R3.3, R3.4, R2.1, R2.3 — one rule: a keyword screen never records §10 'compliant'/'safe' as measured,
+> and one harm word is 'review', never 'fail'). The next free port is **:8087**. Two audits found 14 then 27 with almost
+> no overlap: the sample has not reached the bottom of the class — worth raising with the Owner.
+
 > **W475 shipped** (2026-09-19, Claude Fable 5.1 → Claude Opus 5): P1.17 ✅ DONE — the fourteen ledger-v4 Tier-1
 > entries closed by execution; FU-080…FU-093 closed. §2 and §3 below are history. Refuted twice (25 real findings, 0
 > refuted — one class: a fix that changed the API or one writer while a second writer, the reached page or a guard

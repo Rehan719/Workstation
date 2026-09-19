@@ -173,7 +173,8 @@ def standing_tier(f, v):
 def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
     regions = json.load(open(src, encoding="utf-8"))
     by_key = {r["region"]: r for r in regions}
-    v4 = str(version) == "4"
+    ver = int(version)
+    v4 = ver >= 4                     # a tiered edition (v4 at M1, W474; v5 at the M1 re-run, W476; …)
     rows = []  # (region, idx, finding, verdict, standing_verdict, how)
     for k in ORDER:
         r = by_key.get(k)
@@ -196,7 +197,15 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
 
     out = []
     w = out.append
-    if v4:
+    if ver >= 5:
+        w(f"# Vision Fidelity Ledger — v{ver} ({date}) — MILESTONE M1 re-run")
+        w("")
+        w(f"**Supersedes v{ver - 1} as the current assessment.** v{ver - 1} is kept whole at "
+          f"`VISION_FIDELITY_LEDGER_v{ver - 1}.md` (its")
+        w("Tier-1 entries are the ones P1.17 closed and the register rows cite), as v3 is at `VISION_FIDELITY_LEDGER_v3.md`.")
+        w("This edition re-measures the product after P1.17, the second truth pass, as the M1 line requires — the Tier-1")
+        w(f"count is measured again, never declared: a fresh six-region assessment against HEAD `{head}` (port :{port},")
+    if v4 and ver < 5:
         w(f"# Vision Fidelity Ledger — v4 ({date}) — MILESTONE M1")
         w("")
         w("**Supersedes v3 (2026-09-05, baseline `06c51109`) as the current assessment.** v3 is kept whole at")
@@ -204,6 +213,7 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
         w("region.index and its status lines record how Phase P1 closed each one. This edition is the phase-boundary")
         w("re-run the plan's verification rule V6 requires (MILESTONE M1: after P1.1–P1.16, 'fidelity workflow re-run →")
         w(f"Tier-1 count 0'): a fresh six-region assessment against a backend booted from HEAD `{head}` (port :{port},")
+    if v4:
         w("single-user mode, `AI_DISABLE_LOCAL=1`). Under that flag the gateway routes every model call to the")
         w("deterministic native floor — the configuration CI runs and the one any machine without a local model gets")
         w("(it is NOT the shipped default: with the flag unset and Ollama discoverable, the gateway serves from the")

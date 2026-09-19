@@ -11,7 +11,7 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W475).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W476).
   2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
@@ -580,17 +580,18 @@ than trusted once this date is old; a long-running dev process serves the code i
   `VSB_ECONOMIC_LEGAL_MODEL.md` and `KNOWLEDGE_OPERATING_PROCESS.md` are companions that reconcile TO
   it; where they disagree with it, they are stale, not it. Its §1–§15 are the Owner's words and are
   not an agent's to rewrite — recorded directives are ADDED at their claim sites, attributed and dated.
-- `docs/VISION_FIDELITY_LEDGER.md` — **the fidelity verdict, section by section** (v4, 2026-09-19, MILESTONE M1;
-  60 findings, all individually refuted, each with the tier the refuter stands behind — Tier-1 14, Tier-2 19,
-  Tier-3 17; baseline `cdd7619f`). v3 (2026-09-05, `06c51109`, 60 findings) is kept at
-  `docs/VISION_FIDELITY_LEDGER_v3.md` because the prompt's ledger cites its entries. A verdict is dated the day it
+- `docs/VISION_FIDELITY_LEDGER.md` — **the fidelity verdict, section by section** (v5, 2026-09-19, the MILESTONE M1
+  re-run after P1.17; 60 findings, all individually refuted, each with the tier the refuter stands behind — Tier-1
+  27, Tier-2 17, Tier-3 9; baseline `929508f0`). v4 (W474, `cdd7619f`, Tier-1 14 — closed by P1.17) is kept at
+  `docs/VISION_FIDELITY_LEDGER_v4.md`, and v3 (2026-09-05, `06c51109`) at `docs/VISION_FIDELITY_LEDGER_v3.md`
+  because the prompt's ledger cites its entries. A verdict is dated the day it
   ran: it is re-issued at every delivery-plan milestone, never carried forward by reading.
 - `docs/FABLE_DELIVERY_PROMPT.md` — **the working ledger and THE DELIVERY PLAN (v11 rev 2,
   2026-09-05)**: what remains open, tiered by how much a real person is misled or blocked, and the
   ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
   workstream, the six-step verification each must pass, milestones that are measurements, and the
   definition of complete.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W475). A record of intent
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W476). A record of intent
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
