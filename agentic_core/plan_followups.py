@@ -73,7 +73,10 @@ _SEV_RANK = {s: i for i, s in enumerate(SEVERITIES)}
 _ID = re.compile(r"^FU-(\d{3,})$")
 _ROUND = re.compile(r"^W\d+$")
 _DONE = re.compile(r"^\s*✅ DONE (W\d+)\b")
-_DONE_MENTION = re.compile(r"✅|\bdone\b(?!\s+when\b)", re.I)
+# W473 (FU-069) — a done marker in another form is read only where the marker belongs: right after the id (a check
+# mark anywhere still counts, since nothing else on an item line uses one); the word 'done' inside the prose of an
+# item ('counted as done only when verified') is prose
+_DONE_MENTION = re.compile(r"^\s*[\[(\-–—\s]*(?:✅|\bdone\b(?!\s+when\b))|✅|\bDONE\s+W\d+\b", re.I)
 REQUIRED = ("id", "title", "why", "source", "found", "files", "severity", "owner_gated", "slot", "status")
 TEXT_FIELDS = ("id", "title", "why", "source", "found", "slot")
 
@@ -167,6 +170,22 @@ def delivery_plan_body(prompt_text: str) -> Optional[str]:
 def _without_blocks(text: str) -> str:
     text = re.sub(re.escape(BEGIN) + r".*?" + re.escape(END), "", text, flags=re.S)
     return re.sub(re.escape(PLAN_BEGIN) + r".*?" + re.escape(PLAN_END), "", text, flags=re.S)
+
+
+def _item_blocks(body: str) -> Dict[str, str]:
+    """Each delivery-plan item's whole text (its id line and the indented lines under it), keyed by slot."""
+    blocks: Dict[str, str] = {}
+    cur = None
+    for line in _without_blocks(body).splitlines():
+        m = re.match(r"^ (P\d+\.\d+)\b", line)
+        if m:
+            cur = m.group(1)
+            blocks[cur] = line
+        elif cur and (line.startswith("      ") or not line.strip()):
+            blocks[cur] += "\n" + line
+        else:
+            cur = None
+    return blocks
 
 
 def plan_items(prompt_text: str) -> List[Dict[str, Any]]:
@@ -322,16 +341,25 @@ def _route_shape_problems(rt: Any, idx: int) -> List[str]:
             p.append(f"{name} ({slot}): title words are matched in lower case — write them in lower case")
     if "note" in rt and not isinstance(rt["note"], str):
         p.append(f"{name}: note must be a string")
+    if "handed_from" in rt:
+        hf = rt["handed_from"]
+        if not (isinstance(hf, str) and _ITEM_SLOT.match(hf)):
+            p.append(f"{name} ({slot}): handed_from must name a plan item (P#.#)")
+        elif hf == slot:
+            p.append(f"{name} ({slot}): handed_from names the route's own item")
     return p
 
 
 def merge_routes(register: Dict[str, Any], from_slot: str, to_slot: str) -> int:
-    """W469 (refutation) — hand an item's area to another: every route to `from_slot` is merged into the route to
-    `to_slot` (files and words joined, order kept, no duplicates), so an item never has two routes and nothing a
-    route matched is lost. The merged route sits at the EARLIEST position of the routes merged (refutation 2: merged
-    into a later route, the handed area lost to every route between them — 7 of P1.15's 11 rows went elsewhere).
-    A malformed route is never merged (its string would be read letter by letter): ValueError, repair it first.
-    Returns how many routes were merged (0: nothing to hand)."""
+    """W469 (refutation) — hand an item's area to another. W473 (register FU-073): the handed route KEEPS ITS PLACE
+    and only its slot changes — it becomes a second route to `to_slot` marked `handed_from`, so the handed area keeps
+    exactly the precedence it had and the taker's own matchers stay where they were (the W469 merge moved the taker's
+    broad prefixes to the handed route's position: done P1.13 --hand-to P1.16 lifted docs/ and integration_tests/ to
+    the first route). (Refutation) EVERY moving route is handed in its own place — nothing is ever joined; a route
+    handed on again keeps `handed_from` = the item it first belonged to and its note says `via`. A malformed route is
+    never merged (its string would be read letter by letter), and a route that was itself handed from `to_slot` is
+    never handed back to it (it would name its own item): ValueError, repair it first. Returns how many routes were
+    handed (0: nothing to hand)."""
     routes = register.setdefault("routes", [])
     if not isinstance(routes, list):
         raise ValueError("the register's routes are not a list — repair it by hand first")
@@ -339,28 +367,19 @@ def merge_routes(register: Dict[str, Any], from_slot: str, to_slot: str) -> int:
     handed = len(moving)
     if not moving:
         return 0
-    target = next((rt for rt in routes if isinstance(rt, dict) and rt.get("slot") == to_slot), None)
-    for rt in moving + ([target] if target is not None else []):
+    for rt in moving:
         shape = _route_shape_problems(rt, routes.index(rt))
         if shape:
             raise ValueError(f"{shape[0]} — repair that route before handing its area on")
-    if target is None:
-        target = moving[0]
-        target["slot"] = to_slot
-        moving = moving[1:]
-    earliest = min(routes.index(rt) for rt in moving + [target])
-    for rt in moving:
-        for key in ("files", "words"):
-            have = target.setdefault(key, [])
-            for v in rt.get(key, []) or []:
-                if v not in have:
-                    have.append(v)
-        notes = [n for n in (target.get("note"), rt.get("note")) if n]
-        if notes:
-            target["note"] = "; ".join(dict.fromkeys(notes))
-        routes.remove(rt)
-    routes.remove(target)
-    routes.insert(min(earliest, len(routes)), target)
+        if rt.get("handed_from") == to_slot:
+            raise ValueError(f"the route to {from_slot} was handed from {to_slot}; it cannot go back to it — remove it "
+                             f"(python scripts/followups.py route --slot {from_slot} --remove --handed) or hand it elsewhere")
+    for rt in moving:                                  # (refutation) each route keeps its own place and its origin
+        rt["slot"] = to_slot
+        origin = rt.get("handed_from") or from_slot    # a route handed on again keeps the item it first belonged to
+        rt["handed_from"] = origin
+        rt["note"] = "; ".join(dict.fromkeys(n for n in (f"handed from {origin} via {from_slot}" if origin != from_slot
+                                                        else f"handed from {from_slot}", rt.get("note")) if n))
     return handed
 
 
@@ -677,20 +696,42 @@ def check(register: Any, prompt_text: str, living_text: Optional[str] = None,
         if shape:
             problems += shape
             continue
-        route_slots[rt["slot"]] = route_slots.get(rt["slot"], 0) + 1
+        hf = rt.get("handed_from")
+        if hf:
+            origin = by_slot.get(hf)
+            if origin is None:
+                problems.append(f"the route to {rt['slot']} says it was handed from {hf}, which is not a delivery-plan item")
+            elif not origin["done"]:
+                problems.append(f"the route to {rt['slot']} says it was handed from {hf}, which is still open — an open "
+                                "item does not hand its area away")
+        else:                                          # W473 — a handed route is a second route by design
+            route_slots[rt["slot"]] = route_slots.get(rt["slot"], 0) + 1
         target = by_slot.get(rt["slot"])
         if target is None:
             problems.append(f"the route to {rt['slot']} names no delivery-plan item")
         elif target["done"]:
             problems.append(f"the route to {rt['slot']} sends new rows to an item already DONE {target['done_by']} — "
                             f"hand its area on: python scripts/followups.py route --from {rt['slot']} --slot <open item> "
-                            "(its matchers join that item's route)")
+                            "(its routes become handed routes of that item, each in its own place)")
         for prefix in rt.get("files", []):
             if not prefix.endswith("/") and (root / prefix).is_dir():
                 problems.append(f"the route to {rt['slot']} names the directory {prefix} without a trailing '/' — "
                                 "as written it matches only a file of that exact name")
-    problems += [f"{n} routes send rows to {s} — an item has one route: remove them (python scripts/followups.py "
-                 f"route --slot {s} --remove) and add it back whole" for s, n in route_slots.items() if n > 1]
+    problems += [f"{n} routes send rows to {s} — an item has one route of its own (a handed one carries handed_from): "
+                 f"remove them (python scripts/followups.py route --slot {s} --remove) and add it back whole"
+                 for s, n in route_slots.items() if n > 1]
+    # W473 (register FU-070) — an item's text that lists rows drifts from the register: every FU id an OPEN item's
+    # text names must be a row that rides that item (or a closed one); PLAN NOW is where riders are listed
+    open_by_slot = {it["slot"]: it for it in items if not it["done"]}
+    row_slot = {r["id"]: (r["slot"], r["status"]) for r in rows}
+    for slot, text in _item_blocks(body).items():
+        if slot not in open_by_slot:
+            continue
+        for fid in sorted(set(re.findall(r"\bFU-\d{3}\b", text))):
+            where = row_slot.get(fid)
+            if where and where[1] == "open" and where[0] not in (slot, "OWNER"):   # a gated row rides no item
+                problems.append(f"{slot}'s text names {fid}, which rides {where[0]} — an item's text does not list its "
+                                "rows (PLAN NOW does); say the area, not the id")
     if "routes" in register and not isinstance(register["routes"], list):
         problems.append("the register's routes must be a list")
 

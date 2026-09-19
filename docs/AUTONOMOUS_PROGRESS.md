@@ -6484,3 +6484,71 @@ interceptor, the lock, the revenue door, the repair path; the page needles.
 Probe: scripts/_w472_probe.mjs on a fresh backend at :8081.
 
 Suite: 384 passed · 15 skipped · 0 fail (full run on the final tree, isolated DATA_DIR, 42 min; 399 items from 360 test functions).
+
+### W473 — P1.16 Canon and suite hygiene before the milestone: Phase P1 complete
+
+**What was wrong** (register FU-003, FU-004, FU-011, FU-025, FU-026, FU-027, FU-028, FU-066, FU-067, FU-068,
+FU-069, FU-070, FU-073). The two compliance mandate pages certified as VERIFIED and ENFORCED a validator deleted in
+W460, a `crypto/pqc.py` that never existed, a 1127-article genome, six ontologies, a Windows setup document, and the
+cross-domain QEP tab W470 retired. `config/paths.py` put the data root ONE LEVEL ABOVE the repository, so the live AI
+memory (1.98 MB) and the interactions store (68 MB, 19,036 rows) lived outside the repo, outside test isolation, and
+the ten data files inside the repo were tracked in git. The genome validator read a working-directory genome and the
+self-healing cycle would have ratified a fixed template as a constitutional amendment. The Command Center printed a
+session length, a holographic engine loading and a libp2p stream that nothing measured. Two tests passed only in suite
+order and one left a half-written ledger behind. The register's tooling rewrote closed rows, ignored `--slot` beside
+`--gate`, read prose 'done' as a marker, listed riders by hand, and a hand-off merge lifted the taker's broad prefixes
+to the first route's position.
+
+**What changed.**
+- `docs/compliance/MANDATES.md` and `MANDATES_FINAL.md` rewritten as honest inventories: VERIFIED names a test;
+  PRESENT, UNVERIFIED names a path; NOT PRESENT, RETIRED, UNWIRED, PARTLY PRESENT, OWNER-GATED say the rest. The
+  'PQC' signer (`agentic_core/security/pqc_hardening.py`: a SHA3-512 digest over the message and a fixed string,
+  stamped as `pqc_signature` by GaaS and the QEP flagship) is named as a simulation (FU-076); the ontology engine as a
+  reader over an empty directory with the one real ontology (Law, under `knowledge/`) unwired (FU-077); the geospheric
+  'LSTM' as unwired (FU-078).
+- `config/paths.py`: `BASE_DIR` is the repository; `legacy_store_warning()` names a legacy store that HOLDS more
+  (entries, not bytes); `ensure_dirs()` makes only the data root at import. `scripts/relocate_data_store.py`: copy,
+  verify by hash, merge disjoint maps, skip empties, CONFLICT for two non-empty lists or a populated directory, never
+  delete. Applied to the Owner's store: memory.json and interactions.db copied and verified, l7_registry merged,
+  chroma_db left for him (FU-079). The ten tracked data files are untracked (`git rm --cached`); genome/, models/
+  are ignored.
+- The validator resolves `GENOME_DIR / constitution.work`; `run_self_healing_cycle` returns False with the reason on
+  `last_error` — a fixed template is not a model output and a constitutional change goes through Change Control.
+- The Command Center's three literals replaced by what is true: nothing measures the session, the 3D view is not
+  built, no stream is connected.
+- The suite: `test_fabric_organism_systems_run_real` asserts the health basis, not an order-dependent number;
+  `test_v191` asserts the CCA id equality; the W463 leg unlinks the ledger it plants; the W462/W469 legs read the
+  handed_from rule.
+- The register's tooling: close / drop / reslot refuse a row that is not open; `--gate` refuses `--slot`; a marker in
+  any form after the id (`[x] DONE W470`, `[DONE W470]`, `— ✅ W470`) is reported while prose 'done' is prose; an open
+  item's text may not list a row that rides another item; `merge_routes` hands EVERY moving route in its own place
+  with `handed_from` (a chained hand-off keeps its first owner and says `via`); `handed_from` is validated (a DONE
+  plan item, never the route's own); `route` adds, replaces and removes the item's OWN route (a handed route stays
+  unless `--handed`) and refuses `--from` an open item.
+
+**Refuted (own diff), two passes in three isolated worktrees each — 18 real verdicts in pass one, 10 real in pass two on the fixes; all fixed and guarded.** The first pass found: the first hand-off cut
+joined every moving route into the first one (a taker's own route could be folded away on a chained hand-off);
+`route --slot` replaced and `--remove` removed handed routes; `handed_from` was never validated; `reslot` still
+rewrote closed rows; the marker regex missed `DONE W470` after a tag; the mandate pages still cited
+`data/meeting_log.json` (not in git), a PQC 'NOT PRESENT' that was present as a simulation, ontology rows that missed
+the engine and the unwired Law graph, a Tool Creation Wizard that was the Forge pipeline, a semantic memory citing the
+JSON store, an LSTM that exists unwired, science.py/education.py rows citing files that do not exist; the relocation
+called a two-entry list a stub; the legacy warning compared bytes; and importing `config.paths` created genome/,
+models/, logs/ inside the repository. The second pass, on those fixes: `route` silently ignored flags its branch did
+not read (the FU-068 class the same diff had just closed for `reslot`); every hand-off message and the merge_routes
+docstring still said the routes were JOINED; a route handed FROM the taker could be handed back to it and name its
+own item; the legacy warning compared a byte count with an entry count and a corrupt store here could mask a live
+legacy list; `ensure_dirs` no longer made models/ but the one writer there had no mkdir and reported TRAINING_COMPLETE
+for a file that was not written; four mandate rows still misnamed what the code shows (the meeting log is an
+in-process list — `MEETING_LOG_FILE` is read by nothing; MemoryV01's callers are the avatars and ingestion APIs, not
+the CEO; the introspection page reads `/api/v1/biometrics/status`; the weaver is reachable from no live route); and the
+mandate guard skipped every mixed 'NOT PRESENT … PRESENT elsewhere' row, so it was green for the wrong reason. All
+fixed and guarded above (every cited path in every row is checked; a path that follows 'no' must be absent).
+**Process.** The W473 scratch directory (harness, docs patch) was lost between the refutation and the fixes; both were
+rebuilt from the W472 templates. `.gitignore` is CRLF — the appended lines were made CRLF by hand.
+
+**Broken 32 ways** (each blind alone, guards run, byte-restored); every one fails, none stays green.
+Guard: test_w473_canon_and_suite_hygiene_before_m1 (with the W469 and W462 register legs).
+Probe: scripts/_w473_probe.mjs on a fresh backend at :8082 (the served bundle carries none of the three literals).
+
+Suite: 385 passed · 15 skipped · 0 fail — 382 in the full run plus the three register-lockstep legs re-run green once the new script was git-added (the snapshot step had dropped its intent-to-add) (full run on the final tree, isolated DATA_DIR, 37 min; 400 items from 361 test functions).

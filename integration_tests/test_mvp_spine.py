@@ -3803,7 +3803,9 @@ def test_v191_evolution_approvals_route_through_change_control(client):
     st = {p["id"]: p["status"] for p in client.get("/api/v191/evolution/proposals?status=all").json()}
     assert st[hi] == "approved"                                  # mirrors the CCA's governed outcome
     again = client.post(f"/api/v191/evolution/proposals/{lo}/approve").json()
-    assert "no duplicate" in (again.get("note") or "").lower()   # idempotent — no duplicate CCA
+    # W473 (register FU-025) — LOW auto-approves only when the organism is healthy; an earlier test can leave it
+    # less healthy, in which case the proposal is honestly still with the CCA. Either way: the SAME CCA, no duplicate.
+    assert again.get("cca_id") == a1["cca_id"] and "already" in (again.get("note") or "").lower()
 
 
 def test_cca_twin_prevalidation_gates_major_changes(client):
@@ -4636,9 +4638,14 @@ def test_fabric_organism_systems_run_real(client):
         assert sysid in rr, f"{sysid} did not run as a real organism engine"
         assert not rr[sysid].get("error"), f"{sysid}: {rr[sysid].get('error')}"
         assert rr[sysid].get("output"), f"{sysid} produced no reading"
-    # real organism readings (not fabricated): immune health, self-healing health, gaas governance verdict
+    # real organism readings (not fabricated): immune health, self-healing health, gaas governance verdict.
+    # W473 (register FU-003) — self-healing health is 1 − open/measured over circuits that CARRIED calls; alone in
+    # a fresh process nothing has, so the honest reading is None with its basis, never a number (this used to pass
+    # only after earlier tests had exercised circuits)
     assert rr["immune"].get("health") is not None
-    assert rr["self_healing"].get("overall_health") is not None
+    sh = rr["self_healing"]
+    assert "overall_health" in sh and sh.get("health_basis")
+    assert (sh["overall_health"] is None) == ("nothing measured" in sh["health_basis"])
     assert rr["gaas_v5"].get("ran") == "/api/v1/gaas/intercept"
     assert rr["metabolic"].get("mode")        # FULL_POWER / NOMINAL / DEGRADED / EMERGENCY
     assert rr["nervous_system"].get("signal_fired") is True
@@ -10574,7 +10581,7 @@ def test_w462_followup_register_is_scheduled_and_in_lockstep(tmp_path):
 
     # ordering: plan order; severity before age inside a slot (ids as numbers); owner rows never scheduled; a row on
     # the retired NEXT is reported (check) and listed unscheduled, never silently dropped (W469)
-    later = next(i["slot"] for i in items if not i["done"] and i["slot"].startswith("P2."))
+    later = next(i["slot"] for i in items if not i["done"] and i["slot"] != first_open)   # (W473: P1 is complete; the next open item after the first)
     mixed = {"items": [row(id="FU-901", slot=later), row(id="FU-1000", slot=first_open, severity="low"),
                        row(id="FU-999", slot=first_open, severity="low"),
                        row(id="FU-903", slot=first_open, severity="high"), row(id="FU-904", slot="NEXT"),
@@ -10998,8 +11005,11 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
     broken = uid("broken")
     from agentic_core.economy.ledger import VirtualLedger
     VirtualLedger(broken).path.write_text("{ half-written", encoding="utf-8")
-    with _pytest.raises(Exception):
-        tr.debit_posted(broken, "xfer-anything")
+    try:
+        with _pytest.raises(Exception):
+            tr.debit_posted(broken, "xfer-anything")
+    finally:
+        VirtualLedger(broken).path.unlink(missing_ok=True)   # W473 (FU-066) — never left for every later reconcile pass
     assert tr.debit_posted(uid("nobooks"), "xfer-anything") is False
 
     # ── the approval names its counterparty: consent for a→b does not release a→c ──
@@ -14963,9 +14973,10 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     open_slots = {i["slot"] for i in items if not i["done"]}
     routes = fu.raw_routes(reg)
     assert routes and all(rt["slot"] in open_slots for rt in routes)
-    assert {"P1.16", "P2.9"} <= {rt["slot"] for rt in routes}    # (W472: P1.15 is done; its words ride P1.16's route)
-    assert "unreadable" in next(rt for rt in routes if rt["slot"] == "P1.16")["words"]
-    assert len({rt["slot"] for rt in routes}) == len(routes)                                  # one route per item
+    assert {"P2.4", "P2.9"} <= {rt["slot"] for rt in routes}    # (W473: P1.16 is done; its route is handed to P2.4)
+    assert "unreadable" in next(rt for rt in routes if rt.get("handed_from") == "P1.16")["words"]   # rides P2.4 now
+    own = [rt for rt in routes if not rt.get("handed_from")]
+    assert len({rt["slot"] for rt in own}) == len(own)                                        # one OWN route per item
     # the routes agree with the plan as filed: every open, non-gated row is where route_row would send it today
     # (the refutation found FU-045/FU-063 routed to P2.7 by a broad word while they were economy rows of P2.9)
     disagree = [(r["id"], r["slot"], fu.route_row(reg, prompt, r["title"], r["files"], r["severity"])["slot"])
@@ -15024,20 +15035,24 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
                f"2 routes send rows to {first_open}")
     assert has(problems({"items": [], "routes": [{"slot": first_open, "files": ["docs"]}]}), "without a trailing '/'")
     assert problems({"items": [], "routes": [{"slot": first_open, "files": ["docs/"]}]}) == []
-    # merge: a finished item's matchers join the taker's route (one route per item, nothing lost, precedence kept)
+    # hand-off (W473, FU-073): the finished item's route keeps its PLACE and becomes a second, `handed_from` route of
+    # the taker; the taker's own route is untouched (the W469 merge moved the taker's broad prefixes to the handed place)
     mreg = {"routes": [{"slot": done_slot, "files": ["a/"], "words": ["w1"], "note": "old"},
                        {"slot": second_open, "files": ["b/"], "words": ["w1", "w2"], "note": "new"}]}
     assert fu.merge_routes(mreg, done_slot, second_open) == 1
-    assert mreg["routes"] == [{"slot": second_open, "files": ["b/", "a/"], "words": ["w1", "w2"], "note": "new; old"}]
+    assert mreg["routes"] == [{"slot": second_open, "files": ["a/"], "words": ["w1"], "note": f"handed from {done_slot}; old",
+                               "handed_from": done_slot},
+                              {"slot": second_open, "files": ["b/"], "words": ["w1", "w2"], "note": "new"}]
     assert fu.merge_routes(mreg, done_slot, second_open) == 0
     mreg2 = {"routes": [{"slot": "P0.1", "words": ["z"]}, {"slot": done_slot, "words": ["w"]}]}
-    assert fu.merge_routes(mreg2, done_slot, first_open) == 1 and mreg2["routes"][1] == {"slot": first_open, "words": ["w"]}
+    assert fu.merge_routes(mreg2, done_slot, first_open) == 1
+    assert mreg2["routes"][1] == {"slot": first_open, "words": ["w"], "handed_from": done_slot, "note": f"handed from {done_slot}"}
     # (refutation 2) the merged route takes the EARLIEST place: handed to a later route, the area lost to every
     # route between them (7 of P1.15's 11 rows went elsewhere)
     mreg3 = {"routes": [{"slot": done_slot, "words": ["unreadable"]}, {"slot": "P0.1", "files": ["x/"]},
                         {"slot": second_open, "files": ["docs/"]}]}
     assert fu.merge_routes(mreg3, done_slot, second_open) == 1
-    assert [rt["slot"] for rt in mreg3["routes"]] == [second_open, "P0.1"]
+    assert [rt["slot"] for rt in mreg3["routes"]] == [second_open, "P0.1", second_open]   # handed first, own last
     assert fu.route_row({"routes": [dict(rt, slot=first_open if rt["slot"] == "P0.1" else rt["slot"])
                                     for rt in mreg3["routes"]]}, prompt, "x unreadable", ["x/a.py"], "low")["slot"] == second_open
     # a malformed route is never merged (a string would be read letter by letter)
@@ -15048,12 +15063,12 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     except ValueError as exc:
         assert "repair that route" in str(exc)
     # the real routes: each earlier item owns its own surfaces before a later item's broad prefix can take them
-    real_order = [rt["slot"] for rt in routes]
-    # (W471) P1.14 is done too; the board pack and the plan's layers pass to P3.3 (§17.3 cadence), before P1.16
-    assert real_order.index("P3.3") < real_order.index("P1.16")
-    # (W470) P1.13 is done; its catalogue area passed to the scatter item P2.4, whose route sits before the broad
-    # hygiene prefixes of P1.16 — the LAST route, always (a done --hand-to merge once lifted it to first)
-    assert real_order[-1] == "P1.16" and real_order.index("P2.4") < real_order.index("P1.16")
+    real_order = [(rt["slot"], rt.get("handed_from")) for rt in routes]
+    # (W471) P1.14 is done too; the board pack and the plan's layers pass to P3.3 (§17.3 cadence), before the broad
+    # hygiene prefixes; (W473) P1.16 is done and its route is HANDED to P2.4 in the same, LAST place (a done --hand-to
+    # merge once lifted those broad prefixes to first; W470's catalogue area is P2.4's own route, earlier)
+    assert real_order[-1] == ("P2.4", "P1.16") and real_order.index(("P3.3", None)) < len(real_order) - 1
+    assert real_order.index(("P2.4", None)) < len(real_order) - 1
     assert fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")["slot"] == "P2.4"
     assert fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.9"
     assert fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py"], "medium")["slot"] == "P2.3"
@@ -15195,13 +15210,23 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     again = cli("done", first_open, "--by", "W999")
     assert again.returncode != 0 and "already DONE" in out(again) and "nothing left to do" in out(again)
     assert cli("check").returncode == 0
-    # route --from: one item's area handed to another, matchers joined into one route
+    # route --from: a FINISHED item's area handed to another (an open item never hands its area away — W473 refutation)
     third_open = [i["slot"] for i in items if not i["done"]][2]
     assert cli("route", "--slot", third_open, "--words", "third area").returncode == 0
-    merged = cli("route", "--from", third_open, "--slot", second_open)
+    refused = cli("route", "--from", third_open, "--slot", second_open)
+    assert refused.returncode != 0 and "an area is handed on when its item is done" in out(refused)   # the door, not check()
+    assert any("third area" in rt.get("words", []) for rt in scratch_reg()["routes"] if rt["slot"] == third_open)
+    stale = scratch_reg()                                     # a route left behind on the DONE item (a stale register)
+    stale["routes"].append({"slot": first_open, "words": ["stale area"]})
+    (scratch / "docs" / "FOLLOWUPS.json").write_text(_json.dumps(stale), encoding="utf-8")
+    assert cli("check").returncode != 0
+    merged = cli("route", "--from", first_open, "--slot", second_open)
     assert merged.returncode == 0, out(merged)
-    assert [rt for rt in scratch_reg()["routes"] if rt["slot"] == third_open] == []
-    assert "third area" in next(rt for rt in scratch_reg()["routes"] if rt["slot"] == second_open)["words"]
+    assert [rt for rt in scratch_reg()["routes"] if rt["slot"] == first_open] == []
+    # (W473) the handed matchers ride a second, `handed_from` route of the taker, in the handed route's place
+    assert any("stale area" in rt.get("words", []) and rt.get("handed_from") == first_open
+               for rt in scratch_reg()["routes"] if rt["slot"] == second_open)
+    assert cli("check").returncode == 0
     # a plan it cannot read: every mutation is refused and nothing is written
     pfile = scratch / "docs" / "FABLE_DELIVERY_PROMPT.md"
     keep = pfile.read_bytes()
@@ -15971,3 +15996,294 @@ def test_w472_stores_refuse_never_replace_the_class(client, monkeypatch, tmp_pat
     assert '_persistence["proposed_catalogue"] = {"persisted": True}' in swarm_src and '"persistence": _persistence' in swarm_src
     assert "load_json_tolerant(_cat_store" not in swarm_src and "load_json_tolerant(_runs_store" not in swarm_src
     lv.deregister(vid)
+
+
+def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
+    """W473 — P1.16 Canon and suite hygiene before the milestone (register FU-003, FU-004, FU-011, FU-025, FU-026,
+    FU-027, FU-028, FU-066, FU-067, FU-068, FU-069, FU-070, FU-073).
+
+    The compliance mandate pages certified files that do not exist and a feature W470 retired; config/paths.py put
+    the live AI memory one level above the repository; the validator read a working-directory genome at import
+    and the self-healing cycle would have ratified a fixed template; the Command Center printed readings nothing
+    measured; two tests passed only in suite order and one left a half-written ledger behind; the register's
+    tooling rewrote closed rows, ignored --slot beside --gate, read prose 'done' as a marker, listed riders by
+    hand, and a hand-off merge lifted the taker's broad prefixes to the first route."""
+    import pathlib
+    import re
+    import subprocess
+    import sys
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── FU-004 / FU-027: every VERIFIED / ENFORCED / PRESENT row names paths that exist; the retired claim is gone ──
+    for rel in ("docs/compliance/MANDATES.md", "docs/compliance/MANDATES_FINAL.md"):
+        text = (root / rel).read_text(encoding="utf-8")
+        assert "CIVILIZATION SECURED" not in text, rel
+        for line in text.splitlines():
+            if not line.startswith("|") or "Former" in line or "---" in line:
+                continue
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) < 3:
+                continue
+            status = cells[1]
+            if any(w in status for w in ("VERIFIED", "ENFORCED", "PRESENT")) and "NOT PRESENT" not in status:
+                assert "all 6 domains" not in line, (rel, "the retired cross-domain QEP claim returned as a live row")
+            # (refutation 2) EVERY row's evidence cell: a cited repository path exists unless the words before it
+            # say it is absent ("no `x/`", "No `x/` exists") — a mixed 'NOT PRESENT … PRESENT elsewhere' row cites real files
+            for m in re.finditer(r"`([A-Za-z0-9_./-]+)`", cells[2]):
+                path = m.group(1)
+                if "/" in path and not path.startswith("/") and not path.endswith("_*"):
+                    absent = re.search(r"\b[Nn]o\s*$", cells[2][max(0, m.start() - 6):m.start()]) is not None
+                    assert (root / path).exists() == (not absent), (rel, status, path, "absent" if absent else "cited")
+        assert "NOT PRESENT" in text                                       # the false rows are said as what they are
+    assert "RETIRED" in (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
+    assert "test_w473_" in (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
+
+    # ── FU-026: the data root is the repository; a larger legacy store is named, never switched away from silently ──
+    from config import paths
+    assert paths.BASE_DIR == root and paths.LOG_DIR == root / "logs" and paths.GENOME_DIR == root / "genome"
+    assert paths.legacy_store_warning() is None                               # tests run under WORKSTATION_DATA_DIR
+    monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
+    monkeypatch.setattr(paths, "_LEGACY_BASE", tmp_path)
+    monkeypatch.setattr(paths, "MEMORY_FILE", tmp_path / "repo" / "data" / "memory.json")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "memory.json").write_bytes(b"[" + b'{"text": "x"},' * 50 + b'{"text": "y"}]')
+    warn = paths.legacy_store_warning()
+    assert warn and "relocate_data_store.py" in warn and "holds 51 entries against 0" in warn
+    # (refutation) the switch is said by what the store HOLDS, not by bytes: a richer legacy list in fewer bytes
+    (tmp_path / "repo" / "data").mkdir(parents=True)
+    (tmp_path / "repo" / "data" / "memory.json").write_bytes(b'[{"text": "' + b"y" * 4000 + b'"}]')
+    assert "holds 51 entries against 1" in (paths.legacy_store_warning() or "")
+    (tmp_path / "repo" / "data" / "memory.json").write_bytes(b"[" + b'{"t": 1},' * 60 + b'{"t": 2}]')
+    assert paths.legacy_store_warning() is None                               # fewer entries here: nothing to say
+    monkeypatch.undo()
+    reloc = root / "scripts/relocate_data_store.py"
+    assert reloc.exists() and "never deleted" in reloc.read_text(encoding="utf-8")
+    dry = subprocess.run([sys.executable, str(reloc)], capture_output=True, text=True, encoding="utf-8", errors="replace",
+                         env={**__import__("os").environ, "PYTHONIOENCODING": "utf-8"})
+    assert dry.returncode == 0 and ("dry run" in dry.stdout or "nothing to relocate" in dry.stdout), dry.stdout[-300:]
+
+    # ── FU-028: the validator resolves its genome under the repository; self-healing never ratifies a template ──
+    from agentic_core.layers.l1_identity import validator as vmod
+    v = vmod.ConstitutionalValidatorL1()
+    assert pathlib.Path(v.constitution_path).is_absolute() and pathlib.Path(v.constitution_path).parent == root / "genome"
+    from agentic_core.layers.l1_identity.genome_engine import GenomeMutationWorkflow
+    wf = GenomeMutationWorkflow()
+    before = wf.load_genome() if hasattr(wf, "load_genome") else None
+    assert wf.run_self_healing_cycle("cpu at 99%") is False
+    assert "fixed template" in (wf.last_error or "") and "Change Control" in wf.last_error
+    if before is not None:
+        assert wf.load_genome() == before
+
+    # ── FU-011: the Command Center prints nothing it does not measure ──
+    cc = (root / "packages/ui/src/CommandCenter.tsx").read_text(encoding="utf-8")
+    for literal in ("in WORK mode for 4 hours", "Holographic Engine — Loading", "initializing via libp2p"):
+        assert literal not in cc, literal
+    assert "Nothing measures your session length" in cc and "not built; nothing is loading" in cc
+
+    # ── FU-003 / FU-025 / FU-066: the tests hold no order-dependent number and clean up after themselves ──
+    src = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+
+    def body(test_name):                       # the named test's own body — never this guard's needles
+        start = src.index(f"def {test_name}(")
+        nxt = src.find("\ndef test_", start + 1)
+        return src[start:nxt if nxt > 0 else None]
+    assert '(sh["overall_health"] is None) == ("nothing measured" in sh["health_basis"])' in body("test_fabric_organism_systems_run_real")
+    assert 'again.get("cca_id") == a1["cca_id"] and "already" in' in body("test_v191_evolution_approvals_route_through_change_control")
+    assert "VirtualLedger(broken).path.unlink(missing_ok=True)" in body("test_w463_hold_lifecycle_reviews_races_and_replays_both_ways") \
+        or "VirtualLedger(broken).path.unlink(missing_ok=True)" in body("test_w463_economy_approvals_release_only_what_they_were_filed_for")
+    rf = (root / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8")
+    assert '"health_basis": st.get("health_basis")' in rf
+
+    # ── FU-069: prose 'done' is prose; a marker in another form right after the id is still reported ──
+    from agentic_core import plan_followups as fu
+    prompt = fu.read_doc(fu.PROMPT)
+    first_open = next(i["slot"] for i in fu.plan_items(prompt) if not i["done"])
+    prose = prompt.replace(f"\n {first_open} [", f"\n {first_open} [prose: counted as done only when verified; not done by the floor] [", 1)
+    it = next(i for i in fu.plan_items(prose) if i["slot"] == first_open)
+    assert it["done"] is False and it["malformed_done"] is False
+    other_form = prompt.replace(f"\n {first_open} [", f"\n {first_open} DONE W999 [", 1)
+    assert next(i for i in fu.plan_items(other_form) if i["slot"] == first_open)["malformed_done"] is True
+
+    # ── FU-070: an open item's text may not list a row that rides another item ──
+    reg = fu.load()
+    assert fu.check(reg, prompt, fu.read_doc(fu.LIVING)) == []
+    victim = next(r for r in reg["items"] if r["status"] == "open" and r["slot"] != first_open)
+    blocks = fu._item_blocks(fu.delivery_plan_body(prompt))
+    assert first_open in blocks and blocks[first_open].startswith(f" {first_open}")
+    drifted = prompt.replace(f"\n {first_open} [", f"\n {first_open} [rows {victim['id']} ride here] [", 1)
+    probs = fu.check(reg, fu.splice_all(drifted, reg, drifted), None)
+    assert any(f"{first_open}'s text names {victim['id']}, which rides {victim['slot']}" in p for p in probs), probs
+
+    # ── FU-073: a hand-off keeps the handed route's place; the taker's own route stays where it was ──
+    done_slot = next(i["slot"] for i in fu.plan_items(prompt) if i["done"])
+    second_open = [i["slot"] for i in fu.plan_items(prompt) if not i["done"]][1]
+    hreg = {"routes": [{"slot": done_slot, "files": ["a/"], "words": ["w1"], "note": "old"},
+                       {"slot": "P0.9", "files": ["x/"]},
+                       {"slot": second_open, "files": ["docs/"], "note": "taker"}]}
+    assert fu.merge_routes(hreg, done_slot, second_open) == 1
+    assert [rt["slot"] for rt in hreg["routes"]] == [second_open, "P0.9", second_open]
+    assert hreg["routes"][0]["handed_from"] == done_slot and hreg["routes"][0]["files"] == ["a/"]
+    assert hreg["routes"][2] == {"slot": second_open, "files": ["docs/"], "note": "taker"}   # untouched, in place
+    probs = fu.check({"items": [], "routes": [dict(rt, slot=(first_open if rt["slot"] == "P0.9" else rt["slot"]))
+                                              for rt in hreg["routes"]]}, prompt, None)
+    assert not any("routes send rows to" in p for p in probs), probs                # one own route + one handed: allowed
+    assert fu.route_row({"routes": [dict(rt, slot=(first_open if rt["slot"] == "P0.9" else rt["slot"]))
+                                    for rt in hreg["routes"]]}, prompt, "x", ["a/f.py"], "low")["slot"] == second_open
+
+    # ── FU-067 / FU-068: the CLI refuses to rewrite a closed row or to take --slot beside --gate (scratch copy) ──
+    import json as _json
+    scratch = tmp_path / "root"
+    (scratch / "docs").mkdir(parents=True)
+    (scratch / "agentic_core").mkdir()
+    (scratch / "agentic_core" / "x.py").write_bytes(b"# stand-in\n")
+    empty = {"items": [], "routes": []}
+    (scratch / "docs" / "FABLE_DELIVERY_PROMPT.md").write_bytes(fu.splice_all(prompt, empty, prompt).encode("utf-8"))
+    (scratch / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md").write_bytes(fu.splice_all(fu.read_doc(fu.LIVING), empty, prompt).encode("utf-8"))
+    (scratch / "docs" / "FOLLOWUPS.json").write_bytes(b'{"items": [], "routes": []}\n')
+    env = dict(__import__("os").environ, WORKSTATION_FOLLOWUPS_ROOT=str(scratch), PYTHONIOENCODING="utf-8")
+    script = str(root / "scripts/followups.py")
+
+    def cli(*argv):
+        return subprocess.run([sys.executable, script, *argv], env=env, capture_output=True, text=True, encoding="utf-8")
+    assert cli("add", "--title", "t", "--why", "w", "--source", "test", "--files", "agentic_core/x.py", "--slot", first_open).returncode == 0
+    assert cli("close", "FU-001", "--by", "W998").returncode == 0
+    reg_after = (scratch / "docs" / "FOLLOWUPS.json").read_bytes()
+    r2 = cli("close", "FU-001", "--by", "W999")
+    assert r2.returncode != 0 and "only an open row closes" in (r2.stdout + r2.stderr)
+    r3 = cli("drop", "FU-001", "--note", "n")
+    assert r3.returncode != 0 and "only an open row is dropped" in (r3.stdout + r3.stderr)
+    assert (scratch / "docs" / "FOLLOWUPS.json").read_bytes() == reg_after                 # nothing rewritten
+    assert cli("add", "--title", "t2", "--why", "w", "--source", "test", "--files", "agentic_core/x.py", "--slot", first_open).returncode == 0
+    r4 = cli("reslot", "FU-002", "--gate", "--slot", second_open)
+    assert r4.returncode != 0 and "do not pass --slot with it" in (r4.stdout + r4.stderr)
+    assert _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"][1]["slot"] == first_open
+    r5 = cli("close", "FU-002", "--by", "W998")
+    assert r5.returncode == 0
+    r6 = cli("reslot", "FU-002", "--slot", second_open)                       # (refutation) a closed row is not re-slotted
+    assert r6.returncode != 0 and "only an open row is re-slotted" in (r6.stdout + r6.stderr)
+    assert _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["items"][1]["slot"] == first_open
+
+    # ── (refutation) hand-offs: every moving route is handed IN ITS PLACE; a chained hand-off keeps its origin ──
+    hreg2 = {"routes": [{"slot": done_slot, "files": ["a/"]}, {"slot": second_open, "files": ["docs/"], "note": "taker"},
+                        {"slot": done_slot, "words": ["late"]}]}
+    assert fu.merge_routes(hreg2, done_slot, second_open) == 2
+    assert [rt["slot"] for rt in hreg2["routes"]] == [second_open, second_open, second_open]
+    assert hreg2["routes"][1] == {"slot": second_open, "files": ["docs/"], "note": "taker"}       # never joined into
+    assert hreg2["routes"][2]["words"] == ["late"] and hreg2["routes"][2]["handed_from"] == done_slot
+    assert fu.merge_routes(hreg2, second_open, first_open) == 3                                  # handed on again
+    assert all(rt["slot"] == first_open for rt in hreg2["routes"])
+    assert hreg2["routes"][0]["handed_from"] == done_slot and f"via {second_open}" in hreg2["routes"][0]["note"]
+    assert hreg2["routes"][1]["handed_from"] == second_open                                       # the taker's own
+    # a handed_from is validated: it names a DONE plan item, never the route's own item, never an open one
+    probs = fu.check({"items": [], "routes": [{"slot": first_open, "files": ["a/"], "handed_from": first_open}]}, prompt, None)
+    assert any("names the route's own item" in p for p in probs), probs
+    probs = fu.check({"items": [], "routes": [{"slot": first_open, "files": ["a/"], "handed_from": second_open}]}, prompt, None)
+    assert any("still open" in p for p in probs), probs
+    probs = fu.check({"items": [], "routes": [{"slot": first_open, "files": ["a/"], "handed_from": "P9.9"}]}, prompt, None)
+    assert any("not a delivery-plan item" in p for p in probs), probs
+    probs = fu.check({"items": [], "routes": [{"slot": first_open, "files": ["a/"], "handed_from": 3}]}, prompt, None)
+    assert any("must name a plan item" in p for p in probs), probs
+    probs = fu.check({"items": [], "routes": [{"slot": first_open, "files": ["a/"], "handed_from": done_slot}]}, prompt, None)
+    assert not any("handed" in p or "route" in p for p in probs), probs               # a valid hand-off: nothing said
+    # the CLI's `route` acts on the item's OWN route: a handed route is neither replaced nor removed without --handed
+    sreg = _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))
+    sreg["routes"] = [{"slot": first_open, "files": ["agentic_core/"], "handed_from": done_slot, "note": "handed"}]
+    (scratch / "docs" / "FOLLOWUPS.json").write_text(_json.dumps(sreg), encoding="utf-8")
+    assert cli("route", "--slot", first_open, "--files", "docs/").returncode == 0
+    routes_now = _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["routes"]
+    assert [rt.get("handed_from") for rt in routes_now] == [done_slot, None] and routes_now[0]["files"] == ["agentic_core/"]
+    assert cli("route", "--slot", first_open, "--remove").returncode == 0
+    routes_now = _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["routes"]
+    assert [rt.get("handed_from") for rt in routes_now] == [done_slot]
+    r7 = cli("route", "--slot", first_open, "--remove")
+    assert r7.returncode != 0 and "pass --handed" in (r7.stdout + r7.stderr)
+    assert cli("route", "--slot", first_open, "--remove", "--handed").returncode == 0
+    assert _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["routes"] == []
+
+    # ── (refutation) a marker after a tag or in brackets is reported; prose stays prose ──
+    for form in (f"\n {first_open} [x] DONE W470 [", f"\n {first_open} [DONE W470] [", f"\n {first_open} — ✅ W470 ["):
+        assert next(i for i in fu.plan_items(prompt.replace(f"\n {first_open} [", form, 1))
+                    if i["slot"] == first_open)["malformed_done"] is True, form
+    assert next(i for i in fu.plan_items(prompt.replace(f"\n {first_open} [", f"\n {first_open} [work done when verified] [", 1))
+                if i["slot"] == first_open)["malformed_done"] is False
+
+    # ── (refutation) relocation: a non-empty list is never a stub; two non-empty lists are equal or a CONFLICT ──
+    import importlib.util as _ilu
+    spec = _ilu.spec_from_file_location("relocate_data_store", root / "scripts/relocate_data_store.py")
+    rds = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(rds)
+    legacy, new = tmp_path / "legacy", tmp_path / "new"
+    (legacy / "data").mkdir(parents=True), (new / "data").mkdir(parents=True)
+    monkeypatch.setattr(rds, "LEGACY", legacy / "data")
+    monkeypatch.setattr(rds, "NEW", new / "data")
+    (legacy / "data" / "memory.json").write_text('[{"t": 1}, {"t": 2}, {"t": 3}]', encoding="utf-8")
+    (new / "data" / "memory.json").write_text('[{"t": 9}]', encoding="utf-8")
+    assert not rds._is_stub(new / "data" / "memory.json")
+    assert next(r for r in rds.plan() if r["item"] == "memory.json")["action"].startswith("CONFLICT")
+    (new / "data" / "memory.json").write_text("[]", encoding="utf-8")
+    assert next(r for r in rds.plan() if r["item"] == "memory.json")["action"] == "copy"
+    (new / "data" / "memory.json").write_text('[{"t": 1}, {"t": 2}, {"t": 3}]', encoding="utf-8")
+    assert next(r for r in rds.plan() if r["item"] == "memory.json")["action"] == "same"
+
+    # ── (refutation) importing config.paths makes only the data root; a reader never creates the directory it reads ──
+    for name in ("DATA_DIR", "LOG_DIR", "GENOME_DIR", "MODELS_DIR", "L7_DIR"):
+        monkeypatch.setattr(paths, name, tmp_path / "dirs" / name.lower())
+    paths.ensure_dirs()
+    assert (tmp_path / "dirs" / "data_dir").is_dir() and sorted(p.name for p in (tmp_path / "dirs").iterdir()) == ["data_dir"]
+    from agentic_core.reactor.domains.ontology_engine import OntologyEngine
+    assert OntologyEngine(str(tmp_path / "ont")).get_ontology("law") == {"nodes": [], "links": []}
+    assert not (tmp_path / "ont").exists()
+    gi = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "genome/" in gi and "models/" in gi and "logs/" in gi
+
+    # ── (refutation 2) `route` refuses a flag its branch would not read; hand-offs are said as hand-offs ──
+    assert cli("route", "--slot", first_open, "--files", "docs/").returncode == 0
+    for argv in (("route", "--slot", first_open, "--remove", "--from", done_slot),
+                 ("route", "--slot", first_open, "--words", "w", "--handed"),
+                 ("route", "--from", done_slot, "--slot", first_open, "--files", "x/"),
+                 ("route", "--from", done_slot, "--slot", first_open, "--position", "1")):
+        rr = cli(*argv)
+        assert rr.returncode != 0 and "means nothing with" in (rr.stdout + rr.stderr), argv
+    assert _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))["routes"] == \
+        [{"slot": first_open, "files": ["docs/"], "words": []}]                                 # nothing moved
+    sreg = _json.loads((scratch / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))
+    sreg["routes"].insert(0, {"slot": done_slot, "words": ["stale area"]})
+    (scratch / "docs" / "FOLLOWUPS.json").write_text(_json.dumps(sreg), encoding="utf-8")
+    handed = cli("route", "--from", done_slot, "--slot", first_open)
+    assert handed.returncode == 0 and "handed to" in handed.stdout and "merged" not in handed.stdout, handed.stdout
+    src_cli = (root / "scripts/followups.py").read_text(encoding="utf-8")
+    assert "matchers join" not in src_cli and "merged into the route" not in src_cli
+    assert "matchers join" not in (root / "agentic_core/plan_followups.py").read_text(encoding="utf-8")
+    # a route handed FROM the taker never goes back to it
+    back = {"routes": [{"slot": first_open, "files": ["a/"], "handed_from": second_open}]}
+    try:
+        fu.merge_routes(back, first_open, second_open)
+        assert False, "a route handed from the taker went back to it"
+    except ValueError as exc:
+        assert "cannot go back" in str(exc)
+    assert back["routes"] == [{"slot": first_open, "files": ["a/"], "handed_from": second_open}]   # untouched
+
+    # ── (refutation 2) the legacy warning never compares entries with bytes ──
+    monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
+    monkeypatch.setattr(paths, "_LEGACY_BASE", tmp_path / "u")
+    monkeypatch.setattr(paths, "MEMORY_FILE", tmp_path / "u" / "repo" / "data" / "memory.json")
+    (tmp_path / "u" / "data").mkdir(parents=True), (tmp_path / "u" / "repo" / "data").mkdir(parents=True)
+    (tmp_path / "u" / "data" / "memory.json").write_bytes(b"garbage" * 700)                 # 4,900 bytes, not JSON
+    (tmp_path / "u" / "repo" / "data" / "memory.json").write_bytes(b'[{"t": 1}, {"t": 2}, {"t": 3}]')
+    w = paths.legacy_store_warning()
+    assert w and "cannot be compared" in w and "4,900 bytes" in w and "3 entries" in w and "entries against" not in w, w
+    (tmp_path / "u" / "data" / "memory.json").write_bytes(b'[{"t": 1}, {"t": 2}, {"t": 3}]')
+    (tmp_path / "u" / "repo" / "data" / "memory.json").write_bytes(b"garbage" * 700)
+    w = paths.legacy_store_warning()
+    assert w and "cannot be compared" in w and "3 entries" in w, w                          # an unreadable store here never masks the legacy one
+    monkeypatch.undo()
+
+    # ── (refutation 2) the one writer under models/ makes its directory and never reports a file that is not there ──
+    from agentic_core.biomimicry.geospheric.resilience import ResilienceManager
+    rm = ResilienceManager(model_path=str(tmp_path / "models" / "deep" / "resilience_lstm.json"))
+    assert rm._save_model() is True and (tmp_path / "models" / "deep" / "resilience_lstm.json").exists()
+    rm2 = ResilienceManager(model_path=str(tmp_path / "models" / "deep" / "resilience_lstm.json" / "x.json"))   # a file in the way
+    rm2.metric_history = [[0.1, 0.01, 0.2, 0.0, 1.0, 0.1]] * 12
+    out = rm2.train_model()
+    assert out["status"] == "TRAINED_NOT_SAVED" and out["model_path"] is None and out["saved"] is False, out

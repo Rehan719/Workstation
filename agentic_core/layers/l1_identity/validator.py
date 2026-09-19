@@ -9,11 +9,19 @@ class ConstitutionalValidatorL1:
     LAYER 1: IDENTITY - Immutable Genome Core.
     Enforces Floor 22 with LIVE service checks.
     """
-    def __init__(self, constitution_path: str = "genome/constitution.work"):
+    def __init__(self, constitution_path: str | None = None):
+        # W473 (register FU-028) — the path resolves through config.paths (the repository's genome directory),
+        # never the working directory; a backend started elsewhere used to read nothing and fall to the default
+        if constitution_path is None:
+            from config.paths import GENOME_DIR
+            constitution_path = str(GENOME_DIR / "constitution.work")
+        self.constitution_path = constitution_path
+        self.genome_loaded = False
         try:
-            with open(constitution_path, "r") as f:
+            with open(constitution_path, "r", encoding="utf-8") as f:
                 self.genome = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
+            self.genome_loaded = True
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
             self.genome = {"identity": {"merkle_root": "0xgenesis_v3"}}
 
         self.merkle_root = self.genome.get('identity', {}).get('merkle_root', '0xcivilizational_epoch_v3')

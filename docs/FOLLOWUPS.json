@@ -46,8 +46,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -63,8 +63,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -176,8 +176,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -403,8 +403,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -419,8 +419,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -435,8 +435,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -451,8 +451,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -1081,8 +1081,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -1097,8 +1097,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -1113,8 +1113,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -1129,8 +1129,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -1145,8 +1145,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -1193,8 +1193,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P1.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W473",
       "note": ""
     },
     {
@@ -1224,7 +1224,74 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P1.16",
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-076",
+      "title": "pqc_hardening.py stamps a SHA3 digest with a fixed built-in key as a 'Dilithium5 signature' — relabel or retire",
+      "why": "agentic_core/security/pqc_hardening.py is not a post-quantum scheme; gaas.py and qep_flagship.py record its output as pqc_signature, which reads as cryptographic assurance the code does not give. Retire the field or name it a content hash.",
+      "source": "W473 refuter",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/security/pqc_hardening.py",
+        "agentic_core/governance/gaas/gaas.py",
+        "agentic_core/reactor/religion/qep_flagship.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-077",
+      "title": "The ontology engine serves empty graphs and the one real ontology (Law, under knowledge/) is unwired",
+      "why": "agentic_core/reactor/domains/ontology_engine.py reads agentic_core/data/ontologies/ which holds nothing, reached from the domain weaver (a v138 CEO tool) — every domain query answers an empty graph; knowledge/Law/EmploymentTribunal/ontology/*.json is never loaded. Wire the Law graph or retire the engine (audit-before-wire).",
+      "source": "W473 refuter",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/reactor/domains/ontology_engine.py",
+        "agentic_core/reactor/domains/weaver.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-078",
+      "title": "geospheric/resilience.py ('LSTM' self-healing) is unwired dead code",
+      "why": "agentic_core/biomimicry/geospheric/resilience.py holds a hand-rolled 'LSTM' over a JSON model file; nothing imports it. The organism's real self-healing is agentic_core/organism/self_healing.py. Retire it or wire it honestly (audit-before-wire).",
+      "source": "W473 refuter",
+      "found": "2026-09-19",
+      "files": [
+        "agentic_core/biomimicry/geospheric/resilience.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-079",
+      "title": "chroma_db: the legacy vector store above the repository was not relocated (both copies populated)",
+      "why": "scripts/relocate_data_store.py refuses to merge two populated directories; the Owner's <repo-parent>/data/chroma_db and the repo's data/chroma_db both hold data. The Owner decides which is live; the script copies nothing until then.",
+      "source": "W473",
+      "found": "2026-09-19",
+      "files": [
+        "scripts/relocate_data_store.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -1300,7 +1367,10 @@
         "apps/workstation-superapp/src/pages/domains/",
         "apps/workstation-superapp/src/pages/AIToolsCatalogue.tsx",
         "apps/workstation-superapp/src/pages/marketplace/",
-        "agentic_core/api/tools.py"
+        "agentic_core/api/tools.py",
+        "agentic_core/security/",
+        "agentic_core/reactor/domains/",
+        "agentic_core/biomimicry/"
       ],
       "words": [
         "marketplace count",
@@ -1311,7 +1381,7 @@
         "catalogue count",
         "catalogue counts"
       ],
-      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470)"
+      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely)"
     },
     {
       "slot": "P3.3",
@@ -1327,7 +1397,7 @@
       "note": "§17.3 cadence owns the board pack and the plan's layers after P1.14 (W471)"
     },
     {
-      "slot": "P1.16",
+      "slot": "P2.4",
       "files": [
         "integration_tests/",
         "docs/",
@@ -1348,7 +1418,8 @@
         "ueg path",
         "ueg write"
       ],
-      "note": "canon and suite hygiene before M1, the register's own tooling, and the store class after P1.15 (W472; the broad prefixes: last)"
+      "note": "handed from P1.16; canon and suite hygiene before M1, the register's own tooling, and the store class after P1.15 (W472; the broad prefixes: last)",
+      "handed_from": "P1.16"
     }
   ]
 }

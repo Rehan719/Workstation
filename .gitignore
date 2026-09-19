@@ -78,3 +78,5 @@ meta/ueg_graph.json
 docs/FOLLOWUPS.json.lock
 docs/*.tmp
 *.anchor
+genome/
+models/

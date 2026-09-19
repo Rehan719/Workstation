@@ -636,6 +636,7 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             st = self_healer.status()
             return {"resource": "self_healing", "ran": "/api/v1/organism/self-healing/status",
                     "overall_health": st.get("overall_health"), "open_circuits": st.get("open_circuits"),
+                    "health_basis": st.get("health_basis"),     # W473 — None health is 'nothing measured', said
                     "output": json.dumps({k: st.get(k) for k in ("overall_health", "open_circuits", "thresholds")}, default=str)[:400]}
         if rid == "metabolic":
             from agentic_core.organism.biobus import biobus

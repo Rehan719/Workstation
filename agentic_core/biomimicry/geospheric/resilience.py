@@ -64,15 +64,20 @@ class ResilienceManager:
             except Exception as e:
                 logger.error(f"Resilience: Error loading model: {e}")
 
-    def _save_model(self):
+    def _save_model(self) -> bool:
+        """Writes the model; True only when the file is on disk (W473: the directory is made here, on demand —
+        config.paths no longer creates models/ at import)."""
         try:
+            os.makedirs(os.path.dirname(os.path.abspath(self.model_path)) or ".", exist_ok=True)
             with open(self.model_path, "w") as f:
                 json.dump({
                     "weights": self.model.weights.tolist(),
                     "bias": self.model.bias.tolist()
                 }, f)
+            return True
         except Exception as e:
             logger.error(f"Resilience: Error saving model: {e}")
+            return False
 
     def _bootstrap_data(self):
         """v1.0: Seed the model with initial production-grade failure scenarios."""
@@ -125,12 +130,13 @@ class ResilienceManager:
         labels = [1.0 if x[1] > 0.05 or x[0] > 0.5 else 0.0 for x in self.metric_history]
 
         self.model.train(self.metric_history, labels, epochs=100)
-        self._save_model()
+        saved = self._save_model()
 
         return {
-            "status": "TRAINING_COMPLETE",
+            "status": "TRAINING_COMPLETE" if saved else "TRAINED_NOT_SAVED",   # W473: never a path that is not there
             "samples": len(self.metric_history),
-            "model_path": self.model_path
+            "model_path": self.model_path if saved else None,
+            "saved": saved,
         }
 
 resilience_manager = ResilienceManager()

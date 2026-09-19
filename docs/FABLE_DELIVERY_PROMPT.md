@@ -41,7 +41,7 @@
 > `scripts/followups.py` (W462 — the follow-up register: every found-but-not-done task riding the plan item
 > that owns its area, or OWNER; W469 retired NEXT and generates PLAN NOW; read it before choosing work) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10
 > primitives FIXED + WIRED, W437; four LATENT entries open — the two W438 Change Control latents CLOSED
-> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W472) ·
+> W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W473) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -108,8 +108,8 @@ B — CANONICAL REALM SET: four user-type Realms (Enterprise · Learning · Deve
     DOMAINS as realms into the projects API (ledger R5.5) — same plan item.
 
 C — WHAT TO BUILD NEXT: the reach backlog is COMPLETE. The next work is <delivery_plan> P1, in
-    order — the truth defects the audit found on reached, used surfaces. P1.1–P1.15 are DONE
-    (W449–W460, W470–W472); what comes next is P1.16 — the register's rows ride the items
+    order — the truth defects the audit found on reached, used surfaces. P1.1–P1.16 are ALL DONE
+    (W449–W460, W470–W473); what comes next is MILESTONE M1, then P2 — the register's rows ride the items
     that own their areas (W469). PLAN NOW, in WHERE THE PLAN STANDS, is generated from the plan and the
     register and says what is next. The 67-op scatter is P2.4.
 
@@ -155,9 +155,9 @@ Work in this order. It is not effort order — it is "how much a real person is 
 
   TIER 1 — TRUTH DEFECTS. The system tells a user something untrue, or certifies what it could
            not assess. THE AUDIT FOUND FOURTEEN, ALL ON REACHED SURFACES — they are <delivery_plan>
-           P1. FIFTEEN ARE CLOSED (P1.1–P1.15, W449–W460, W470–W472); P1.16 remains,
-           added W469 to carry the follow-up register's store and hygiene rows, and all four come before any
-           P2–P4 item. The pattern behind most of them: a gate,
+           P1. ALL SIXTEEN ARE CLOSED (P1.1–P1.16, W449–W460, W470–W473; P1.16 was added W469 to carry
+           the follow-up register's store and hygiene rows). MILESTONE M1 — the fidelity re-run — comes
+           before any P2–P4 item. The pattern behind most of them: a gate,
            badge or chip that CANNOT FAIL on the floor — the configuration CI runs and any box
            without a local model gets (NOT the shipped default: with AI_DISABLE_LOCAL unset and
            Ollama discoverable, the gateway serves from the local model), and the one that served
@@ -180,7 +180,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W472 (472 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W473 (473 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 402 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -213,7 +213,7 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W472: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W473: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
@@ -249,8 +249,11 @@ hubs mount from and both front doors count from, the dead flagship tab gone from
 marketplace counting only what a route serves (W470); then P1.14 — the board pack measured on its narrative,
 refused over an empty blueprint, versioned by what it carries, and the Chief's Opening that writes nothing from
 the floor and is the owner's to edit (W471); then P1.15 — one strict read for every writer, so no store is ever
-answered as empty and written back (W472).
-The first fifteen Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
+answered as empty and written back (W472); then P1.16 — the canon and the suite made honest before the milestone:
+mandate pages that name what exists, a data store rooted in the repository, a validator and a self-healing cycle
+that ratify nothing, a Command Center that prints only what it measures, and register tooling that refuses
+to rewrite history (W473).
+All sixteen Tier-1 items of the whole-vision plan are closed by execution, not by declaration; MILESTONE M1 is next.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -623,12 +626,12 @@ half of P2 depend on; 1.3 and 1.5 are where users land. P2 follows (P2.1 unblock
 content that P3 builds on). P3 items marked OWNER RULING are put to the Owner with evidence at
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
-WHERE THE PLAN STANDS (updated W472, 2026-09-18 — every round that closes an item or runs between
+WHERE THE PLAN STANDS (updated W473, 2026-09-19 — every round that closes an item or runs between
 items updates this block in the same commit. PLAN NOW, below, is generated from the plan's items and the
 register and checked by the suite (W469); the DONE lines are history, kept true by hand. Never start a line
 here with one space and an item id — that is read as a plan item and fails the suite).
-  DONE — P1.1 to P1.15, in order, W449–W460 and W470–W472: each is marked below with what it DELIVERED; P1.1–P1.5,
-    P1.7, P1.8, P1.11–P1.15 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
+  DONE — P1.1 to P1.16, in order, W449–W460 and W470–W473 — PHASE P1 IS COMPLETE; MILESTONE M1 is next: each is
+    marked below with what it DELIVERED; P1.1–P1.5, P1.7, P1.8, P1.11–P1.16 also say what they did NOT close (P1.6, P1.9 and P1.10 name no
     leftover). Only P1.11's and P1.12's leftovers were back-filled into the register (FU-005…FU-014);
     since W462 (V6) a round registers what it leaves in the same commit.
   DONE BETWEEN ITEMS — rounds the plan did not list, recorded here so the plan reads whole:
@@ -689,12 +692,12 @@ here with one space and an item id — that is read as a plan item and fails the
 <!-- plannow:begin (generated by scripts/followups.py render - never edit by hand) -->
 PLAN NOW — generated from the delivery plan's items and docs/FOLLOWUPS.json by scripts/followups.py on
 every register change (add · close · drop · reslot · route · done · render); never edit between the markers.
-  Next: P1.16 Canon and suite hygiene before the milestone — 14 follow-ups ride it.
-  Then, in order (the follow-ups riding each): P2.1 0 · P2.2 0 · P2.3 0 · P2.4 2 · P2.5 0 · P2.6 9 · P2.7 1 ·
-    P2.8 3 · P2.9 19 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 · P3.6 0 · P3.7 0 · P3.8 0 ·
-    P3.9 0 · P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
-  Done: 15 of 43 items — P1 15/16 · P2 0/9 · P3 0/12 · P4 0/6.
-  Follow-ups: 48 open — 48 ride a plan item (0 high), 0 unscheduled, 0 awaiting the Owner; 27 done, 0 dropped.
+  Next: P2.1 Cascade grounding — no follow-ups ride it.
+  Then, in order (the follow-ups riding each): P2.2 0 · P2.3 0 · P2.4 6 · P2.5 0 · P2.6 9 · P2.7 1 · P2.8 3 ·
+    P2.9 19 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 · P3.6 0 · P3.7 0 · P3.8 0 · P3.9 0 ·
+    P3.10 0 · P3.11 0 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
+  Done: 16 of 43 items — P1 16/16 · P2 0/9 · P3 0/12 · P4 0/6.
+  Follow-ups: 39 open — 38 ride a plan item (0 high), 0 unscheduled, 1 awaiting the Owner; 40 done, 0 dropped.
 <!-- plannow:end -->
   WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
     rulings, not register rows).
@@ -705,25 +708,14 @@ the same commit (python scripts/followups.py add routes it to the plan item that
 rides the next open item) or slotted OWNER (waits on an Owner decision; never scheduled). A round that
 finishes an item marks it with python scripts/followups.py done P1.13 --by W### — its rows move along the
 routes or are closed first; the suite fails on a row left on a finished item.
-Open 48 (48 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 27 · dropped 0.
-  P1.16 — Canon and suite hygiene before the milestone
-    FU-003 [medium] test_fabric_organism_systems_run_real is order-dependent — it fails when run alone (also at 1bde2eb0) and passes inside the full suite — it leans on state an earlier test leaves behind, so a green suite says nothing about it (found W459 (found in passing))
-    FU-004 [medium] The compliance mandates docs claim ENFORCED on a file W460 deleted — docs/compliance/MANDATES.md and MANDATES_FINAL.md list 'GaaS-Validated Mutations — ENFORCED' in packages/shared/gaas.ts, which never validated anything and no longer exists; the other ENFORCED rows need the same reading (found W460 refutation (ruled out of that round's scope))
-    FU-025 [medium] test_v191_evolution_approvals_route_through_change_control is order-dependent — it passes alone and in the full suite order but fails after the organism-status tests (the same -k selection fails at b97e38e7): its LOW proposal is only auto-approved when composite health is at least 0.6, and an earlier test leaves the organism less healthy, so the approval stays under_change_control and the re-approve answer is 'Already with the Change Control Agency.' — the same class as FU-003 (found W464 (found in passing, reproduced at HEAD))
-    FU-026 [medium] config/paths.py resolves BASE_DIR one level above the repository — BASE_DIR = Path(__file__).resolve().parent.parent.parent is the repo's parent (C:/Users/rehan), so without WORKSTATION_DATA_DIR the live MEMORY_FILE, INTERACTIONS_DB, L7 registry, meeting log and chroma store live in <repo-parent>/data and ensure_dirs() creates logs/genome/models directories there at import (ai/memory.py, ai/logger.py, v138 ceo, synthesis, ingestion, qep_flagship import it). Fixing the path relocates the live AI memory store: migrate it deliberately (copy, verify, switch), never move it silently (found W464 genome_engine audit (read; paths confirmed))
-    FU-073 [medium] A done --hand-to merge lifts the taker's own broad matchers to the handed route's position — merge_routes (W469 refutation 2) places the merged route at the EARLIEST position of the routes merged so the handed area keeps its precedence — but the taker's original matchers move with it: done P1.13 --hand-to P1.16 put P1.16's broad prefixes (integration_tests/, docs/, …) at position 1, ahead of every specific route, so a docs+economy row would have gone to hygiene instead of P2.9. W470 re-added P1.16 last by hand and gave P1.13's area to P2.4. Fix: keep the taker's route where it was and carry only the handed matchers forward — either a second route for the same item marked handed_from, or a per-matcher position; and check() should refuse a merge that would move a route holding a directory prefix broader than the handed one ahead of any other route. (found W470 (found by running done P1.13 --hand-to P1.16))
-    FU-011 [low] Command Center still carries hard-coded status text — 'in WORK mode for 4 hours', '3D Holographic Engine — Loading...' and 'Real-time stream initializing via libp2p...' are literals nothing measures (not compliance claims, so outside P1.12); no plan item covers packages/ui literals (P2.4's scatter is unreached backend operations) (found W460 audit (P1.12))
-    FU-027 [low] MANDATES.md certifies a 1127-article genome that does not exist — docs/compliance/MANDATES.md and MANDATES_FINAL.md mark '1127-Article Genome' VERIFIED, 'seeded in genome/constitution.work and Merkle-DAG'; no such file exists and the genome engine's seed holds 3 articles — a false VERIFIED claim beside FU-004's false ENFORCED rows (found W464 genome_engine audit (read))
-    FU-028 [low] genome_engine's self-healing cycle would ratify a fixed template, and its validator reads a CWD-relative file at import — GenomeMutationWorkflow.run_self_healing_cycle applies ConstitutionalAI.generate_amendment's fixed template with authorized=True (unreachable today only because the validator's PQC rule refuses its context), and validator.py builds validator_l1 at import from the CWD-relative genome/constitution.work, which the engine no longer writes; both stay unwired (the Owner kept the module unwired, W464) (found W464 genome_engine audit (read))
-    FU-066 [low] A W463 test leaves a half-written ledger in the shared test store — test_w463 (around line 10975) writes a '{ half-written' ledger under uid 'broken' and never removes it, so every later reconcile pass in the same store counts one unreadable ledger. Fix: remove it in the test's cleanup. (found W468 first refutation (reproduced))
-    FU-067 [low] close and drop rewrite a row that is already closed — followups.py close sets status done and closed_by on any row, and drop sets dropped and its note, without checking the row is open: closing FU-001 again with --by W470 silently rewrites the round that closed it, and drop turns a done row dropped. Fix: refuse unless the row is open (a reopen command if one is ever needed). (found W469 own review)
-    FU-068 [low] reslot --gate silently ignores --slot — reslot FU-007 --gate --slot P2.1 slots the row OWNER and drops the --slot without a word. Fix: refuse --slot with --gate, or say it was ignored. (found W469 own review)
-    FU-069 [low] A plain done word in a plan item's first line reads as a malformed done marker — plan_items flags malformed_done when _DONE_MENTION (a check mark, or the word done not followed by when) appears anywhere in the rest of an item's first line, so a new item whose text says, for example, 'counted as done only when verified' or 'not done by the floor' fails check as if its marker were malformed, and mark_done refuses it. Fix: look for a done marker only right after the id and the bracket, not in the prose. (found W469 own review)
-    FU-070 [low] Plan item texts keep hand-written rider lists that drift from the register — P2.6's text says register rows FU-005, FU-006 and FU-007 ride it; since W469 nine do. Other items name their riders by hand too. Fix: item texts point at PLAN NOW and the rendered schedule instead of listing rows, or check() compares any FU ids an item names with the rows riding it. (found W469 second refutation (refuted as a W469 defect, real as drift))
-    FU-075 [low] Read-only readers still use load_json_tolerant; retire the tolerant loader once every writer is strict — W472 made every WRITER read strictly (config.read_json_strict). The read-only readers that summarise or list — revenue._load (pending_summary), ueg._read (recent), agent_hub listing reads, integration_surface listings, resource_fabric composition/swarm listings, swarm proposed_catalogue/org_cascade_runs listings, business_plan._load — still use load_json_tolerant or a bare json.loads with a fallback: honest as readers (they never write back) but a listing over an unreadable store shows fewer rows without saying so. Fix: give each listing an 'unavailable' answer via read_json_strict and delete load_json_tolerant when no caller remains. (found W472)
+Open 39 (38 scheduled, 0 high · 0 unscheduled · 1 awaiting the Owner) · done 40 · dropped 0.
   P2.4 — The scatter: 67 ops in 38 clusters, 3–4 per round, audit-before-wire, retire freely
+    FU-076 [medium] pqc_hardening.py stamps a SHA3 digest with a fixed built-in key as a 'Dilithium5 signature' — relabel or retire — agentic_core/security/pqc_hardening.py is not a post-quantum scheme; gaas.py and qep_flagship.py record its output as pqc_signature, which reads as cryptographic assurance the code does not give. Retire the field or name it a content hash. (found W473 refuter)
+    FU-077 [medium] The ontology engine serves empty graphs and the one real ontology (Law, under knowledge/) is unwired — agentic_core/reactor/domains/ontology_engine.py reads agentic_core/data/ontologies/ which holds nothing, reached from the domain weaver (a v138 CEO tool) — every domain query answers an empty graph; knowledge/Law/EmploymentTribunal/ontology/*.json is never loaded. Wire the Law graph or retire the engine (audit-before-wire). (found W473 refuter)
     FU-071 [low] Nine source-pointer product directories are still listed as products of a kind — The catalogue now marks them status source ('a pointer, nothing served yet') and no consumer builds from them, but products/ still holds nine metadata.json directories (business_incubator, cognitive_scraper, gse, molecular_sdk, nanophotonic_navigation, scraping_suite, uviap, mjm-intelligence-engine, signature-product-suite) whose only substance is a pointer at SDK source. Fix: for each, either serve it (a route and a real page) or retire the directory; the scatter item decides which, per the reach audit. (found W470)
     FU-072 [low] The six legacy signature-product directories still sit in products/ with self-declaring manifests — products/Care … products/Science each carry a manifest.json self-declaring PRODUCTION_READY, WCAG 2.2 AAA and nine injection formats that nothing serves; W470 lists them as legacy archives and routes nothing to them, but the directories remain where a reader takes them for products. Fix: move them to _archive/products/ (LEGACY_ARCHIVES then empties) and keep one line in the catalogue saying they were archived. (found W470)
+    FU-075 [low] Read-only readers still use load_json_tolerant; retire the tolerant loader once every writer is strict — W472 made every WRITER read strictly (config.read_json_strict). The read-only readers that summarise or list — revenue._load (pending_summary), ueg._read (recent), agent_hub listing reads, integration_surface listings, resource_fabric composition/swarm listings, swarm proposed_catalogue/org_cascade_runs listings, business_plan._load — still use load_json_tolerant or a bare json.loads with a fallback: honest as readers (they never write back) but a listing over an unreadable store shows fewer rows without saying so. Fix: give each listing an 'unavailable' answer via read_json_strict and delete load_json_tolerant when no caller remains. (found W472)
+    FU-078 [low] geospheric/resilience.py ('LSTM' self-healing) is unwired dead code — agentic_core/biomimicry/geospheric/resilience.py holds a hand-rolled 'LSTM' over a JSON model file; nothing imports it. The organism's real self-healing is agentic_core/organism/self_healing.py. Retire it or wire it honestly (audit-before-wire). (found W473 refuter)
   P2.6 — The perimeter and the gate
     FU-005 [medium] The /api/v1/swarm router carries no auth dependency — agentic_core/api/swarm.py has zero Depends — the org cascade (POST /cascade), CEO delegation (POST /delegate), proposed-catalogue curation and the run histories are callable by anyone when AUTH_ENABLED is on; P2.6 names 'swarm' among its routers, this row pins the routes (found W460 audit (P1.12))
     FU-006 [medium] The org cascade's governance verdict gates a constant string, not the delivery — swarm.py's _attest returns a fixed attestation sentence, so 'gov: allowed' can never reflect the delivered content; W460 relabelled the chip 'intent only' — the real fix is gating the delivery itself (found W460 audit (P1.12))
@@ -760,6 +752,8 @@ Open 48 (48 scheduled, 0 high · 0 unscheduled · 0 awaiting the Owner) · done 
     FU-064 [low] The roster's ledger-hold text reads every held entity's whole ledger on each call — list_living describes a ledger_unavailable hold from a live strict read of that entity's ledger; the heartbeat and pages call it often, and with large ledgers this is seconds per call (4 s for 60 held rows of 4 MB, measured). Negligible at today's sizes. Fix: cache by the file's size and mtime. (found W468 second refutation (reproduced))
     FU-065 [low] A ledger that keeps reserves only in the legacy balances refuses every transfer — A ledger written before W256 holds entries and balances but no accounts: validate_transfer reads reserve_fund from accounts (0.0) and refuses any transfer as insufficient funds, although the legacy view shows reserves. Fix: say the ledger predates double entry, or migrate it once. (found W468 second refutation (reproduced))
     FU-074 [low] The Cockpit's plan tab has no owner-edit surface and no owner-edited marks — W471 wired the owner-edit form (POST /business-plan/set with clear) and the owner-edited marks into BusinessPlan.tsx only; VSBCockpit's plan tab shows the Chief's Opening with its provenance badge and pending list but the founder cannot set or clear a field there and set fields are not marked. Fix: mount the same edit form and marks on the Cockpit's plan tab (one component shared by both pages). (found W471)
+  AWAITING THE OWNER — recorded, never scheduled into a round without the Owner's instruction:
+    FU-079 [medium] chroma_db: the legacy vector store above the repository was not relocated (both copies populated) — scripts/relocate_data_store.py refuses to merge two populated directories; the Owner's <repo-parent>/data/chroma_db and the repo's data/chroma_db both hold data. The Owner decides which is live; the script copies nothing until then. (found W473)
 <!-- followups:end -->
 
 PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; no P2–P4 item ships until these do)
@@ -1054,13 +1048,37 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; n
       NOT DONE, and why: the read-only readers that still use load_json_tolerant (summaries, listings)
       are honest as readers and untouched; FU-075 (P1.16) lists them so the tolerant loader can be
       retired once every writer is strict.
- P1.16 [register · hygiene before M1] Canon and suite hygiene before the milestone. The compliance mandates
+ P1.16 ✅ DONE W473 [register · hygiene before M1] Canon and suite hygiene before the milestone. The compliance mandates
       docs certify a deleted validator and a genome that does not exist (FU-004, FU-027); two tests pass
       only in suite order (FU-003, FU-025) and one leaves a half-written ledger behind (FU-066);
       config/paths.py resolves the data directory above the repository (FU-026 — relocate the live AI
       memory store by copy, verify, switch, never silently); Command Center's hard-coded status text
       (FU-011); the genome validator's CWD-relative read (FU-028). ACCEPT: each test passes alone and in
       suite order; the M1 fidelity re-run finds no DOC_OVERCLAIM from these docs.
+      DELIVERED W473 (Claude Fable 5.1): the two mandate pages rewritten as honest inventories (every
+      VERIFIED / PRESENT row names paths that exist, the false rows say NOT PRESENT, the retired
+      cross-domain claim says RETIRED; the 'PQC' signer named as a SHA3 digest with a fixed key, the
+      ontology engine as a reader over an empty directory, the LSTM as unwired); config/paths.py roots
+      the data store in the repository (BASE_DIR = the repo; a legacy store above it is named by what it
+      HOLDS, never switched away from silently; scripts/relocate_data_store.py copies, verifies, merges
+      disjoint maps, never deletes, and calls two non-empty lists a CONFLICT — the Owner's memory.json
+      1,977,250 B and interactions.db 19,036 rows were copied and verified; chroma_db is his to move,
+      FU-079); the genome validator resolves its constitution under the repository and the self-healing
+      cycle refuses to ratify its fixed template (Change Control); the Command Center prints nothing it
+      does not measure; importing config.paths makes only the data root, and no reader creates the
+      directory it reads (genome/, models/ ignored); the ten live data files that were tracked in git are
+      untracked; and the register's tooling: close / drop / reslot refuse a closed row, --gate refuses
+      --slot, a marker in any form after the id is reported and prose 'done' is prose, an open item's text
+      may not list a row that rides another item, a hand-off keeps EVERY handed route in its own place
+      with its origin (chained hand-offs keep the first owner), handed_from is validated, `route` acts on
+      the item's own route (a handed route stays unless --handed) and refuses to hand an open item's area
+      away. ACCEPT: each test passes alone and in suite order (the three order-dependent legs fixed);
+      the mandate guard fails on a cited path that does not exist. Refuted twice (18 real verdicts in pass one, 10 real in pass two on the fixes; all fixed and guarded);
+      broken 32 ways, each blind failing alone. Phase P1 complete → MILESTONE M1 next.
+      NOT DONE, and why: chroma_db stays where the Owner's copy is (FU-079, OWNER); the simulated PQC
+      signer (FU-076), the unwired Law ontology and the ontology engine over nothing (FU-077) and the
+      unwired geospheric 'LSTM' (FU-078) are named, registered and ride P2.4; the read-only tolerant
+      readers (FU-075) ride P2.4 too.
  MILESTONE M1: fidelity workflow re-run → Tier-1 count 0; ledger v4.
 
 PHASE P2 — REACH AND DISCLOSURE (Tier 2; ~9 rounds + the scatter; P2.9 added W469)
@@ -1195,7 +1213,7 @@ PHASE P4 — THE OWNER'S HAND (Tier 4; pre-flights built by us, switches flipped
 
 EFFORT, HONESTLY: ~33 rounds at the current cadence before P4 — P1 alone is the campaign's
 largest single phase and it is the one that matters most, because it is the one users meet.
-Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), P1.13 one (W470), P1.14 one (W471) and P1.15 one (W472), plus four rounds between items — W461
+Measured so far: P1.1–P1.12 took twelve rounds (W449–W460), P1.13 one (W470), P1.14 one (W471), P1.15 one (W472) and P1.16 one (W473), plus four rounds between items — W461
 and W463 each worked a task an earlier round found and deferred, W462 built the register after the
 Owner asked (2026-09-13) that suggested tasks be scheduled into the plan, and W464 delivered the Owner's
 rulings on the register's four OWNER rows, and W465 worked three of its NEXT rows (FU-015, FU-016, FU-024) and
@@ -1319,7 +1337,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 399 tests; 73 session guards W419–W472, each broken and
+- integration_tests/test_mvp_spine.py — 400 tests; 74 session guards W419–W473, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).

@@ -191,17 +191,15 @@ class GenomeMutationWorkflow:
 
     # ── mutations ─────────────────────────────────────────────────────────────
     def run_self_healing_cycle(self, issue_report: str) -> bool:
-        """Article 1118: autonomous self-healing triggered by a system report. The validator requires PQC
-        (Article 1107), which this context does not assert, so today this applies nothing and returns False."""
+        """Article 1118: autonomous self-healing triggered by a system report. W473 (register FU-028) — refused by
+        rule, not by accident: generate_amendment is a FIXED TEMPLATE, not a model output, and ratifying it with
+        authorized=True would write a constitutional article nothing reasoned about. It used to be unreachable only
+        because the validator's PQC rule refused the context. The module stays unwired (the Owner's ruling, W464);
+        the cycle now says why it applies nothing."""
         amendment = self.ai.generate_amendment(issue_report)
-        if amendment["impact_level"] != "LOW":
-            return False
-        context = {"self_healing_trigger": True, "impact": "LOW"}
-        verdict = validator_l1.validate_action("amend_constitution", context)
-        if not verdict["valid"]:
-            self.last_error = verdict.get("reason")
-            return False
-        return self.apply_mutation(f"healing-{time.time_ns()}", amendment, authorized=True)   # id None: a new article
+        self.last_error = ("self-healing amendment not applied: the amendment is a fixed template, not a model "
+                           f"output ({amendment.get('title')!r}); a constitutional change goes through Change Control")
+        return False
 
     def apply_mutation(self, proposal_id: str, patch: Dict[str, Any], authorized: bool) -> bool:
         """Apply a constitutional mutation, re-hash, and persist it with its checkpoint. A patch with an integer id

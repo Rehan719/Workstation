@@ -431,7 +431,7 @@ const ChannelContent = ({ id }: { id: string }) => {
                     <p className="text-xs text-slate-400 font-bold leading-relaxed italic">
                        {restApplied
                          ? 'Rest Mode applied. Cognitive durability optimization in progress.'
-                         : "You've been in WORK mode for 4 hours. Suggesting a transition to REST to optimize cognitive durability."}
+                         : "Nothing measures your session length here — this suggestion is illustrative, not a reading: a REST transition after a long WORK stretch aids cognitive durability."}
                     </p>
                     <div className="flex gap-3">
                        <Button className="flex-1 text-[9px] py-2" onClick={handleApplyRest} disabled={restApplied}>
@@ -457,7 +457,7 @@ const ChannelContent = ({ id }: { id: string }) => {
       holo: (
          <div className="p-8 text-center space-y-4">
             <Sparkles size={32} className="text-highlight mx-auto opacity-50" />
-            <p className="text-xs font-black text-slate-500 uppercase tracking-widest">3D Holographic Engine — Loading...</p>
+            <p className="text-xs font-black text-slate-500 uppercase tracking-widest">3D holographic view — not built; nothing is loading</p>
          </div>
       ),
       dashboard: (
@@ -492,7 +492,7 @@ const ChannelContent = ({ id }: { id: string }) => {
             <Radio size={32} />
          </div>
          <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">
-            Real-time stream initializing via libp2p...
+            No real-time stream is connected — nothing is initializing
          </p>
       </div>
    );

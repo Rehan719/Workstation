@@ -1,41 +1,23 @@
-# WORKSTATION MANDATES FINAL INVENTORY (v0.4)
+# Workstation mandates — the v0.4 inventory, superseded (rewritten W473, 2026-09-19)
 
-This document provides the definitive, audited inventory of all explicit mandates in the Workstation v0.3 production baseline.
+This page was the "Mandates Final Inventory (v0.4)", a second copy of the table now kept honestly in
+`MANDATES.md`. It carried the same false rows (FU-004, FU-027): **ENFORCED** against
+`packages/shared/gaas.ts` (deleted W460, never a validator) and `agentic_core/crypto/pqc.py` (does not
+exist); **VERIFIED** against a 1127-article genome in `genome/constitution.work` and six ontologies under
+`agentic_core/data/ontologies/` (neither exists).
 
----
+`MANDATES.md` is the one inventory. The rows this page added beyond it, with the status the repository can
+show today:
 
-## 1. Governance & Compliance Mandates
+| Former claim | Status now | Evidence |
+|---|---|---|
+| Tool Creation Wizard (formerly cited under an apps/web tree that does not exist) | **NOT PRESENT** | No wizard exists. `apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx` is the Forge pipeline, a different feature. |
+| Inter-agent meetings (`agentic_core/api/v138/ceo.py`) | **PRESENT in memory only, UNVERIFIED** | The routes exist (`/meeting/log`, `/meeting/minutes`); the log they serve is `MeetingLog` in `agentic_core/ai/ceo/memory_v01.py` — an in-process list of at most 500 entries that is lost on restart. `MEETING_LOG_FILE` in `config/paths.py` is seeded empty by `scripts/init_data.py` and read by nothing. |
+| Real arXiv integration (`agentic_core/reactor/science.py`) | **NOT PRESENT at that path** | No `science.py` module exists. The arXiv client is `agentic_core/reactor/api_client.py`; no test holds a live arXiv call (the suite runs on the native floor). |
+| Adaptive learning (`agentic_core/reactor/education.py`) | **NOT PRESENT** | No `education.py` module exists; no test holds the claim. |
+| LSTM resilience (`agentic_core/layers/l5_resilience/resilience.py`) | **NOT PRESENT at that path; UNWIRED elsewhere** | No such module exists. `agentic_core/biomimicry/geospheric/resilience.py` holds a hand-rolled "LSTM" over a JSON file and nothing imports it (FU-078). The organism's self-healing is `agentic_core/organism/self_healing.py` (`test_fabric_organism_systems_run_real`), and it is not an LSTM. |
+| Mainnet WST token (planned v1.0) | **OWNER-GATED, NOT PLANNED HERE** | Money is virtual WST throughout; real-money rails stay gated on the Owner (`docs/VSB_ECONOMIC_LEGAL_MODEL.md`). |
+| Bio-Compute CL1 (planned v1.0) | **NOT PLANNED** | No hardware integration exists or is scheduled in the delivery plan. |
 
-| Mandate | Status | Implementation Point | Article Reference |
-|---------|--------|----------------------|-------------------|
-| Zero-Placeholder | **VERIFIED** | Entire `agentic_core` codebase. | Article 1 |
-| GaaS-Validated Mutations | **ENFORCED** | `packages/shared/gaas.ts` | Article 42 |
-| 10m Veto Window | **MANDATORY**| `agentic_core/layers/l1_identity/validator.py` | Article 1101 |
-| PQC Mandatory Security | **ENFORCED** | `agentic_core/crypto/pqc.py` | Article 1107 |
-| 1127-Article Genome | **VERIFIED** | `genome/constitution.work` | Article 1127 |
-| Domain Hub Parity | **VERIFIED** | `agentic_core/data/ontologies/` | Article 1105 |
-
----
-
-## 2. Advanced v0.3 Enhancements
-
-| Mandate | Status | Implementation Point |
-|---------|--------|----------------------|
-| Tool Creation Wizard | **ACTIVE** | `apps/web/src/pages/developers/Forge.tsx` |
-| Inter-Agent Meetings | **ACTIVE** | `agentic_core/api/v138/ceo.py` |
-| Real arXiv Integration | **ACTIVE** | `agentic_core/reactor/science.py` |
-| Adaptive Learning | **ACTIVE** | `agentic_core/reactor/education.py` |
-| LSTM Resilience | **ACTIVE** | `agentic_core/layers/l5_resilience/resilience.py` |
-
----
-
-## 3. Road to v1.0 (Planned)
-
-| Mandate | Rationale | Planned Implementation |
-|---------|-----------|-------------------------|
-| Mainnet WST Token | Requires legal finality. | v1.0 (Q3 2026). |
-| Bio-Compute CL1 | Hardware integration pending. | v1.0 (Q4 2026). |
-
----
-
-*Generated via Workstation v0.4 Mandate Audit. CIVILIZATION SECURED.*
+The status words are those of `MANDATES.md`. `test_w473_*` fails when either page marks VERIFIED or
+ENFORCED a path that does not exist.

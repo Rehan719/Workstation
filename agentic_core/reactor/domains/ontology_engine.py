@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 class OntologyEngine:
     """ARTICLE 60: Domain Truth Validation & Ontology Querying."""
     def __init__(self, data_path: str = "agentic_core/data/ontologies"):
-        if not os.path.exists(data_path):
-             os.makedirs(data_path, exist_ok=True)
+        # W473 (refutation) — a reader: importing it no longer creates the directory it reads (an empty directory
+        # under the repository said "ontologies" where there are none; nothing here ever writes one)
         self.data_path = data_path
         self.cache: Dict[str, Any] = {}
 

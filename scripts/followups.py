@@ -10,7 +10,7 @@
   python scripts/followups.py routes          # which plan item owns which area (in precedence order)
   python scripts/followups.py route --slot P2.9 [--files a/,b.py] [--words "cannot be read,ueg"] [--note N] [--position 1]
   python scripts/followups.py route --slot P2.9 --remove
-  python scripts/followups.py route --from P2.8 --slot P2.7       # hand an item's area on: its matchers join P2.7's route
+  python scripts/followups.py route --from P2.8 --slot P2.7       # hand a DONE item's area on: its routes become handed routes of P2.7
   python scripts/followups.py done P1.13 --by W470 [--reroute] [--hand-to P1.14]
                                               # mark an item ✅ DONE; move its open rows along the routes; hand its routes on
   python scripts/followups.py schedule        # PLAN NOW and the ordered schedule, as the plan will show them
@@ -145,7 +145,8 @@ def main() -> int:
     ro.add_argument("--note", default="")
     ro.add_argument("--position", type=int, default=0, help="1-based precedence for a new route (default: last)")
     ro.add_argument("--remove", action="store_true")
-    ro.add_argument("--from", dest="from_slot", default="", help="merge every route to this item into --slot's route")
+    ro.add_argument("--handed", action="store_true", help="with --remove: also remove the routes handed to this item")
+    ro.add_argument("--from", dest="from_slot", default="", help="hand every route of this DONE item to --slot (each becomes a handed route of it, in its own place)")
     dn = sub.add_parser("done")
     dn.add_argument("slot")
     dn.add_argument("--by", required=True)
@@ -226,13 +227,21 @@ def main() -> int:
             added_id = f"FU-{n:03d}"
         elif args.cmd == "close":
             r = _find(reg, args.id)
+            if r.get("status") != "open":            # W473 (FU-067) — a closed row's round is history, never rewritten
+                sys.exit(f"REFUSED — {args.id} is {r.get('status')} (closed by {r.get('closed_by') or 'a note'}); only an open row closes")
             r["status"], r["closed_by"] = "done", args.by.strip()
         elif args.cmd == "drop":
             r = _find(reg, args.id)
+            if r.get("status") != "open":            # W473 (FU-067)
+                sys.exit(f"REFUSED — {args.id} is {r.get('status')}; only an open row is dropped")
             r["status"], r["note"] = "dropped", _one_line(args.note)
         elif args.cmd == "reslot":
             r = _find(reg, args.id)
+            if r.get("status") != "open":            # W473 (FU-067, refutation) — the same rule as close and drop
+                sys.exit(f"REFUSED — {args.id} is {r.get('status')}; only an open row is re-slotted")
             if args.gate:
+                if args.slot:                        # W473 (FU-068) — never silently ignored
+                    sys.exit("REFUSED — --gate slots the row OWNER; do not pass --slot with it")
                 r["owner_gated"], r["slot"] = True, "OWNER"
             else:
                 if not args.slot:
@@ -258,32 +267,52 @@ def main() -> int:
                 sys.exit("REFUSED — the register's routes are not a list; repair it by hand first")
             target = args.slot.strip()
             open_items = {i["slot"] for i in fu.plan_items(prompt) if not i["done"]}
+            # (refutation 2) a flag this branch would not read is refused, never ignored — the FU-068 class
+            given = {k for k, v in (("--files", args.files.strip()), ("--words", args.words.strip()),
+                                    ("--note", args.note.strip()), ("--position", args.position),
+                                    ("--from", args.from_slot.strip()), ("--handed", args.handed),
+                                    ("--remove", args.remove)) if v}
+            branch = "remove" if args.remove else ("from" if args.from_slot.strip() else "add")
+            reads = {"remove": {"--remove", "--handed"}, "from": {"--from"},
+                     "add": {"--files", "--words", "--note", "--position"}}[branch]
+            stray = sorted(given - reads)
+            if stray:
+                sys.exit(f"REFUSED — {', '.join(stray)} means nothing with "
+                         + {"remove": "--remove", "from": "--from", "add": "a route's matchers"}[branch]
+                         + " (--handed goes with --remove; --from hands a DONE item's routes on and takes no matchers)")
             if args.remove:
-                kept = [rt for rt in routes if not (isinstance(rt, dict) and rt.get("slot") == target)]
+                # (refutation) the item's OWN route goes; a route handed to it stays unless --handed says so
+                kept = [rt for rt in routes if not (isinstance(rt, dict) and rt.get("slot") == target
+                                                    and (args.handed or not rt.get("handed_from")))]
                 if len(kept) == len(routes):
-                    sys.exit(f"REFUSED — no route sends rows to {target}")
+                    sys.exit(f"REFUSED — no route of {target}'s own sends rows to it"
+                             + (" (routes handed to it exist: pass --handed to remove those too)"
+                                if any(isinstance(rt, dict) and rt.get("slot") == target for rt in routes) else ""))
                 routes[:] = kept
-                said.append(f"removed the route(s) to {target}")
+                said.append(f"removed the route(s) to {target}" + (" including the handed ones" if args.handed else ""))
             elif target not in open_items:
                 sys.exit(f"REFUSED — {target} is not an open delivery-plan item; a route sends new rows only to one")
             elif args.from_slot.strip():
                 src = args.from_slot.strip()
                 if src == target:
                     sys.exit("REFUSED — --from and --slot name the same item")
+                if src in open_items:                    # (refutation) an open item does not hand its area away
+                    sys.exit(f"REFUSED — {src} is still open; an area is handed on when its item is done")
                 try:
                     n = fu.merge_routes(reg, src, target)
                 except ValueError as exc:
                     sys.exit(f"REFUSED — {exc}")
                 if not n:
                     sys.exit(f"REFUSED — no route sends rows to {src}")
-                said.append(f"{n} route(s) to {src} merged into the route to {target}")
+                said.append(f"{n} route(s) to {src} handed to {target} (each in its own place, marked handed_from)")
             else:
                 new_route = {"slot": args.slot.strip(),
                              "files": [fu.normalise_path(f) for f in args.files.split(",") if f.strip()],
                              "words": [" ".join(w.split()).lower() for w in args.words.split(",") if w.strip()]}
                 if args.note.strip():
                     new_route["note"] = _one_line(args.note)
-                same = [i for i, rt in enumerate(routes) if isinstance(rt, dict) and rt.get("slot") == new_route["slot"]]
+                same = [i for i, rt in enumerate(routes) if isinstance(rt, dict) and rt.get("slot") == new_route["slot"]
+                        and not rt.get("handed_from")]        # (refutation) only the item's OWN route is replaced
                 if same:
                     routes[same[0]] = new_route
                     said.append(f"route {same[0] + 1} to {new_route['slot']} replaced")
@@ -314,7 +343,7 @@ def main() -> int:
             to_finished = [rt for rt in routes if isinstance(rt, dict) and rt.get("slot") == slot]
             if to_finished and not hand:
                 sys.exit(f"REFUSED — {len(to_finished)} route(s) still send new rows to {slot}: pass --hand-to "
-                         "<the open item that owns that area now> (its matchers join that item's route)")
+                         "<the open item that owns that area now> (its routes become handed routes of that item)")
             if same and not to_finished and not riders:
                 sys.exit(f"REFUSED — {slot} is already DONE {by}, with no rows riding it and no route to it: nothing left to do")
             if hand:

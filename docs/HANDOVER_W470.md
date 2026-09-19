@@ -12,6 +12,15 @@
 > ride it**. Lesson: a blind that re-creates a hang needs a guard leg that bounds itself (a worker thread + timeout)
 > and a harness with a per-blind timeout — B07 spun for an hour before the still output file gave it away.
 > The next free probe port is :8082.
+> **W473 shipped** (2026-09-19): P1.16 ✅ DONE — PHASE P1 COMPLETE. The mandate pages are honest inventories, the data
+> store is rooted in the repository (`scripts/relocate_data_store.py`; the Owner's memory and interactions stores were
+> copied and verified; chroma_db is his to move, FU-079), the validator and self-healing ratify nothing, the Command
+> Center prints only what it measures, the ten tracked data files are untracked, and the register's tooling refuses to
+> rewrite history (hand-offs keep every handed route in place with `handed_from`). PLAN NOW now says **Next:
+> MILESTONE M1** — the fidelity workflow re-run (Tier-1 count 0; ledger v4), then P2.1. Lessons: a snapshot made with
+> `git add -u .` re-stages files you `git rm --cached`; snapshot with an explicit file list. A blind can look vacuous
+> when a SECOND guard (here `check()`) refuses the same mistake with the same words — assert the door's own wording.
+> `.gitignore` is CRLF. The next free probe port is :8083.
 
 Written 2026-09-18 by the session that shipped W469 (Claude Opus 5), on the Owner's instruction: "leave a
 handover for Fable to start W470". The Owner (Rehan) is switching models for W470. Nothing in W470 has been
