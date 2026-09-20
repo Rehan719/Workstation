@@ -88,15 +88,54 @@ export const complianceCls = (overall: string | null | undefined) =>
 // read a bare "COMPLIANCE: PASS" in emerald with a tooltip listing framework statuses, on a verdict
 // whose frameworks had mostly assessed nothing. A pass is now only ever shown as the pass of what
 // actually assessed the subject, and the areas nothing assessed are named in the chip itself.
+// W485 (sweep S7.8) — ONE provenance line for text that LEAVES the platform. A download or a copy
+// carries no DOM, so a badge rendered beside the text is not a label on the text: a whole Genesis
+// journey, every call floor-served, left as a .md saying nothing about what composed it. Every export
+// surface prepends this. `servedBy` accepts the orchestrator's string or a provenance count map.
+const NO_SERVED_CALL_LINE = '> Provenance: no call is recorded as having served this output.\n\n';
+export const provenanceLine = (
+  servedBy: string | Record<string, number> | null | undefined,
+  isExternal?: boolean,
+  savedAt?: number,
+): string => {
+  if (servedBy === undefined || servedBy === null) return '> Provenance: not recorded for this output.\n\n';
+  // W485 (refutation) — an empty map means no call served this output; saying 'floor' about it is
+  // a positive claim about a run that produced nothing.
+  if (typeof servedBy === 'object' && !Object.entries(servedBy).some(([, n]) => (n || 0) > 0)) {
+    return NO_SERVED_CALL_LINE;
+  }
+  const map = typeof servedBy === 'object';
+  const b = map ? provenanceMapBadge(servedBy as Record<string, number>, isExternal)
+                : provenanceBadge(servedBy as string, isExternal);
+  // W485 (refutation) — `.every` on an EMPTY map is vacuously true, so a provenance map with no
+  // served calls was labelled 'composed by the deterministic native structured engine' — a positive
+  // claim about a run that served nothing. And the backend's non-model set is {native, template},
+  // not {native}: a template-served output was being labelled as though a model had composed it.
+  const NON_MODEL = ['native', 'template'];
+  const served = map
+    ? Object.entries(servedBy as Record<string, number>).filter(([, n]) => (n || 0) > 0)
+    : [];
+  const floor = map
+    ? served.length > 0 && served.every(([k]) => NON_MODEL.includes(k))
+    : NON_MODEL.includes(String(servedBy));
+  return `> Provenance: ${b.label}${floor
+    ? ' — composed by the deterministic native structured engine, not by a model. It arranges the'
+      + ' headings it was asked for; it does not supply analysis.'
+    : ''}\n> ${savedAt ? 'Saved' : 'Exported'} ${new Date(savedAt ?? Date.now()).toISOString()} from Workstation.\n\n`;
+};
 export type ComplianceVerdictRow = { framework?: string; status?: string; coverage?: string; escalate?: string[] };
 export type ComplianceRecord = {
   overall?: string | null; verdicts?: ComplianceVerdictRow[] | null;
   coverage_gaps?: string[] | null; assessed_by?: string[] | null; basis?: string | null;
   // tri-state: false = a row refused it · true = every area assessed and passed · null = not established
   compliant?: boolean | null;
+  // W485 — false when the screen could not assess the subject (a pending board pack).
+  assessable?: boolean;
 };
 export const complianceChip = (c: ComplianceRecord | null | undefined) => {
-  const overall = c?.overall ?? null;
+  // W485 — a record that says it could not be assessed is never rendered as a verdict, whatever
+  // else it carries.
+  const overall = c?.assessable === false ? null : (c?.overall ?? null);
   const rows = c?.verdicts ?? [];
   // W483 (refutation) — a record written BEFORE this round carries no coverage fields at all, and
   // deriving from their absence asserted "nothing assessed this" about a verdict that predates the

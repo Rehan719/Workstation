@@ -23,7 +23,9 @@ interface JourneyResult {
   stage_3_innovate_research?: string;   // §4.3 — best/latest approaches + innovative options
   // §4.5 — candidate solutions modelled + evidence-ranked → best selected.
   stage_5_model_simulate_rank?: {
-    method: string; selected: string; selection_basis: string;
+    // W485 — `selected` is null when every candidate was vetoed; nothing is carried forward then.
+    method: string; selected: string | null; selection_basis: string;
+    vetoed?: string[]; blocked_by_screen?: boolean; blocked_reason?: string | null;
     candidates: { id: string; framing: string; rank: number; score: number; coverage: number;
       specificity: number; structure: number; approach: string }[];
     // W434/W436 — whether the "alternatives" genuinely differ. When they do not, ranking them is a
@@ -90,8 +92,15 @@ interface BoardPack {
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
   version?: number; unchanged?: boolean; unchanged_since?: string; generated_at?: string;
   concept_source?: string; concept_note?: string;
+  // W485 — the ENTITY's latest §11 verdict, a different question from the pack's own.
+  entity_compliance?: { verdict?: string | null; basis?: string;
+    // W485 — `known` false means the question could not be answered, which is not 'never screened'.
+    known?: boolean; never_screened?: boolean } | null;
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
-    compliance?: { overall?: string; compliant?: boolean } } };
+    // W485 — `screened_subject` says WHOSE text the §11 verdict is about; on a pending narrative it is
+    // the placeholder sentence, and `assessable` is false.
+    compliance?: { overall?: string; compliant?: boolean | null; screened_subject?: string;
+      assessable?: boolean } } };
 }
 interface ReviewGates {
   mode: string; stages: string[];
@@ -730,6 +739,11 @@ export const GenesisJourney: React.FC = () => {
                           <span className={`text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center ${isWin ? 'bg-aura text-sovereign' : 'bg-slate-800 text-slate-400'}`}>{c.rank}</span>
                           <span className="text-[11px] font-black text-white uppercase tracking-wide truncate">{c.id}</span>
                           {isWin && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/20 text-aura shrink-0">selected</span>}
+                          {/* W485 — a vetoed candidate is SHOWN as vetoed. The page used to print the veto
+                              sentence while chipping the same candidate 'selected' and carrying it into Design. */}
+                          {(result.stage_5_model_simulate_rank!.vetoed || []).includes(c.id) &&
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/20 text-vital shrink-0"
+                              title="§11 screen FAIL — this candidate cannot be selected">vetoed</span>}
                         </div>
                         <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>
                           score {c.score}
@@ -745,7 +759,23 @@ export const GenesisJourney: React.FC = () => {
                 })}
               </div>
               )}
-              <p className="text-[9px] text-slate-600 mt-2">{result.stage_5_model_simulate_rank.selection_basis} — the winner is carried into Design.</p>
+              <p className="text-[9px] text-slate-600 mt-2">
+                {result.stage_5_model_simulate_rank.selection_basis}
+                {result.stage_5_model_simulate_rank.blocked_by_screen
+                  ? " — nothing is carried into Design: the journey stops here."
+                  : " — the winner is carried into Design."}
+              </p>
+              {/* W485 (ledger v5 R1.3) — every candidate vetoed means the journey STOPPED. Said where the
+                  reader is, not only in the payload. */}
+              {result.stage_5_model_simulate_rank.blocked_by_screen && (
+                <div role="status" className="mt-2 p-3 rounded-xl border border-vital/40 bg-vital/5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-vital mb-1">Blocked by the §11 screen</p>
+                  <p className="text-[10px] font-bold text-slate-300 leading-relaxed">
+                    {result.stage_5_model_simulate_rank.blocked_reason
+                      || 'Every candidate was vetoed, so no approach was selected.'}
+                  </p>
+                </div>
+              )}
               {/* W436 (v10 item 1b) — what this ranking measured and what it honestly could not,
                   rendered beside the scores rather than left in the payload. */}
               {result.stage_5_model_simulate_rank.honesty && (
@@ -850,10 +880,27 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                       <p className="text-[9px] text-slate-600 mt-1">{entityTypes.find(t => t.id === entityType)?.description}</p>
                     </div>
                   )}
-                  <Button onClick={establish} disabled={establishing} className="flex items-center gap-2 bg-highlight text-sovereign">
+                  {/* W485 (refutation) — THE ONE CONTROL THAT CREATES THE ENTERPRISE honours the veto.
+                      The page showed the veto and the payload said blocked, while this button still
+                      POSTed the vetoed candidate and a living VSB was born from it. The server refuses
+                      it too (409); this says so before the click rather than after. */}
+                  <Button onClick={establish}
+                    disabled={establishing || result.status === 'blocked_by_screen'}
+                    title={result.status === 'blocked_by_screen'
+                      ? 'Blocked by the §11 screen — every candidate was vetoed, so there is no approach to establish'
+                      : undefined}
+                    className="flex items-center gap-2 bg-highlight text-sovereign">
                     {establishing ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
-                    {establishing ? 'Establishing VSB…' : 'Establish VSB IDBO Entity'}
+                    {result.status === 'blocked_by_screen'
+                      ? 'Blocked — nothing to establish'
+                      : establishing ? 'Establishing VSB…' : 'Establish VSB IDBO Entity'}
                   </Button>
+                  {result.status === 'blocked_by_screen' && (
+                    <p className="text-[9px] text-vital mt-1 font-bold" data-testid="establish-blocked">
+                      Every candidate was vetoed by the §11 screen, so no approach was selected and no
+                      enterprise can be established from this journey.
+                    </p>
+                  )}
                   {birthStages.length > 0 && (
                     <div className="mt-3 p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
                       <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">The VSB being born — live</p>
@@ -1076,6 +1123,28 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                   </span>); })()
                               )}
                             </div>
+                            {/* W485 (ledger v5 R2.3) — the pack's §11 verdict and the ENTITY's are different
+                                questions, and were being read as one: a pack screened green off a pending-state
+                                sentence while its enterprise stood at FAIL. Both are shown, each labelled. */}
+                            {pack.entity_compliance && (
+                              <p className="text-[9px] text-slate-500" data-testid="pack-entity-compliance">
+                                {/* W485 (refutation) — THREE states. Rendering `verdict ?? 'not screened'`
+                                    collapsed "we could not ask" back into "never screened", the exact
+                                    conflation the backend had just separated, and contradicted the basis
+                                    printed beside it. */}
+                                Entity §11: <span className="font-black text-slate-300">
+                                  {pack.entity_compliance.known === false
+                                    ? 'not known'
+                                    : (pack.entity_compliance.verdict ?? 'never screened')}
+                                </span>
+                                {' — '}{pack.entity_compliance.basis}
+                              </p>
+                            )}
+                            {pack.quality_assurance?.quality?.compliance?.screened_subject && (
+                              <p className="text-[9px] text-slate-600" data-testid="pack-screened-subject">
+                                The pack's §11 verdict read {pack.quality_assurance.quality.compliance.screened_subject}.
+                              </p>
+                            )}
                             {pack.concept_note && <p className="text-[9px] text-amber-400/80" data-testid="pack-concept-note">{pack.concept_note}</p>}
                             <pre className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">{pack.narrative.slice(0, 1200)}</pre>
                           </div>

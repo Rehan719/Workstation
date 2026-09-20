@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -428,6 +428,12 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         c["rank"] = i
     _eligible = [c for c in candidates if not c["screen"].get("disqualified", False)]
     _vetoed = [c["id"] for c in candidates if c["screen"].get("disqualified", False)]
+    # §4.5 (W485, ledger v5 R1.3) — `(_eligible or candidates)[0]` meant that when EVERY candidate was
+    # vetoed, a vetoed one still won: the journey carried it into Design and Commercialisation, reported
+    # status 'complete', and the page put a 'selected' chip on it beside the sentence naming all three as
+    # vetoed. A veto that the next stage ignores is not a veto. When nothing is eligible the journey
+    # STOPS here: no body is composed, nothing is established, and the status says why.
+    _blocked = not _eligible
     winner = (_eligible or candidates)[0]
 
     # Ties are DETECTED and DISCLOSED. Previously an exact tie was resolved silently by list
@@ -453,8 +459,14 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                             if any(c["screen"].get("compliance") is not None for c in candidates)
                             else {"form": 1.0, "compliance": None, "safety": None}),
         "candidates": candidates,
-        "selected": winner["id"],
+        # W485 — nothing is 'selected' when every candidate was vetoed.
+        "selected": (None if _blocked else winner["id"]),
         "vetoed": _vetoed,
+        "blocked_by_screen": _blocked,
+        "blocked_reason": ("every candidate was vetoed by the §11 screen ("
+                           + ", ".join(_vetoed) + "), so no approach was selected and the journey "
+                           "stops here. Nothing was designed, commercialised or established."
+                           if _blocked else None),
         "tie": {"detected": _tied, "tied_candidates": _top,
                 "resolved_by": "list order — NOT evidence" if _tied else None},
         # §4.5 (W434) — the candidates must actually BE alternatives before a ranking of them means
@@ -479,12 +491,21 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "selection_basis": (
             (f"TIE at {winner['score']} across {len(_top)} candidates ({', '.join(_top)}) — resolved "
              f"by list order, NOT by evidence. ") if _tied else "") + (
+            ("NOTHING SELECTED — every candidate was vetoed for §11 failure: "
+             + ", ".join(_vetoed)) if _blocked else
             f"selected {winner['id']} on {winner['score_basis']}"
             + (f"; vetoed for §11 failure: {', '.join(_vetoed)}" if _vetoed else "")),
     }
 
+    # W485 (ledger v5 R1.3) — THE VETO STOPS THE JOURNEY. With no eligible candidate there is nothing
+    # to design, nothing to commercialise and nothing to establish; composing a body from a vetoed
+    # approach and reporting 'complete' is the claim this round removes. Each body field says why it is
+    # empty, so a reader is never left to infer it from an absence.
+    _blocked_body = ("not composed — every candidate was vetoed by the §11 screen ("
+                     + ", ".join(_vetoed) + "), so no approach was selected to design from")
+
     # ── Phase 2 — Design & Development (the SELECTED best candidate → buildable solution) ──
-    design = await _q(
+    design = _blocked_body if _blocked else await _q(
         "You are the IDBO Design & Development engine. Turn the SELECTED best approach into a buildable design.\n\n"
         f"Concept: {concept[:600]}\nSelected approach ({winner['id']} — {winner['framing']}): {winner['approach'][:700]}\n"
         f"Domain: {req.domain}\n\n"
@@ -495,7 +516,7 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # ── Stage 7 — Enhance via Operational Intelligence (§4.7): make the designed solution not just
     #    innovative but DELIVERABLE, COMPLIANT and OPERABLE — operations delivery + compliance
     #    (legal · regulatory · EHS · Sharia/halal · ethical) + operational excellence. ──
-    operations = await _q(
+    operations = _blocked_body if _blocked else await _q(
         "You are the IDBO Operational Intelligence engine. Make the designed solution not just innovative but "
         "DELIVERABLE, COMPLIANT and OPERABLE.\n\n"
         f"Design: {design[:800]}\nDomain: {req.domain}\n\n"
@@ -506,7 +527,7 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     )
 
     # ── Phase 3 — Enterprise Commercialisation (+ the user's VSB blueprint) ──
-    commercial = await _q(
+    commercial = _blocked_body if _blocked else await _q(
         "You are the IDBO Commercialisation engine. Define how to take this to market and the living "
         "VSB (Virtual Sovereign Business) — a specialised IDBO — that will run it.\n\n"
         f"Concept: {concept[:500]}\nDesign: {design[:500]}\nOperational intelligence: {operations[:500]}\n"
@@ -529,12 +550,19 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # W479 — a stage whose call failed is not assessable either (its text is the failure message)
         return _sba.get(agent, "native") in ("native", "failed")
 
+    # W485 (refutation) — A STAGE THAT WAS NEVER CALLED IS NOT "SERVED BY THE FLOOR". On a blocked
+    # journey design/operations/commercialisation hold a sentence saying why they are empty; running the
+    # verification proxies over that sentence and reporting it as floor-served with proxy scores is the
+    # platform describing work it did not do. They are reported as not run.
+    _NOT_RUN = {"verified": None, "checks": "none", "ran": False,
+                "basis": ("not run — the journey was blocked by the §11 screen before this stage, so "
+                          "there is nothing to verify")}
     stage_verifications = {
         "concept": _verify_stage(concept, ["Problem Understanding", "Optimal Solution Concept", "Why This Concept Wins"], floor_served=_floor("genesis_concept")),
         "research": _verify_stage(research, ["Best & Latest Approaches", "Innovative Options", "Recommended Direction"], floor_served=_floor("genesis_research")),
-        "design": _verify_stage(design, ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope"], floor_served=_floor("genesis_design")),
-        "operations": _verify_stage(operations, ["Operations Delivery", "Compliance", "Operational Excellence"], floor_served=_floor("genesis_operations")),
-        "commercialisation": _verify_stage(commercial, ["Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"], floor_served=_floor("genesis_commercial")),
+        "design": (dict(_NOT_RUN) if _blocked else _verify_stage(design, ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope"], floor_served=_floor("genesis_design"))),
+        "operations": (dict(_NOT_RUN) if _blocked else _verify_stage(operations, ["Operations Delivery", "Compliance", "Operational Excellence"], floor_served=_floor("genesis_operations"))),
+        "commercialisation": (dict(_NOT_RUN) if _blocked else _verify_stage(commercial, ["Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"], floor_served=_floor("genesis_commercial"))),
     }
     stages_verified = sum(1 for v in stage_verifications.values() if v["verified"])
     stages_assessable = sum(1 for v in stage_verifications.values() if v["verified"] is not None)
@@ -552,8 +580,21 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # these as ATTESTED rather than measured, and they must at minimum be true of THIS run.
     # W449 (ledger 3.11) — attestations derived from the run, and the ones the run DECLINES with reasons
     # (a tie, identical candidates, identical twin outputs) — extracted so both directions are testable.
-    _bar_evidence, _bar_withheld = _bar_attestations(candidates, stage_5, winner, req.realm, req.domain,
-                                                     stage_verifications, stages_verified)
+    # W485 (refutation) — NOTHING IS ATTESTED ABOUT A JOURNEY THAT DID NOT RUN. `_bar_attestations`
+    # takes `winner`, which on a blocked run is still the top-scoring VETOED candidate, and wrote
+    # "optimised: selected c1 at 0.71 over …" and a `ranked` basis into the DCMS-sealed quality record
+    # — on the same run whose `selected` is None and whose basis reads "NOTHING SELECTED". A criterion
+    # recorded met whose own basis says nothing was selected is the defect class this round removes.
+    if _blocked:
+        _bar_evidence, _bar_withheld = {}, {
+            k: ("the journey was blocked by the §11 screen — every candidate was vetoed, so nothing "
+                "was selected, designed or commercialised and no criterion is attested")
+            for k in ("specifically designed", "modelled", "simulated", "optimised", "categorised",
+                      "ranked", "innovative", "effective", "efficient", "commercially viable",
+                      "verified", "tested", "validated", "best-in-class")}
+    else:
+        _bar_evidence, _bar_withheld = _bar_attestations(candidates, stage_5, winner, req.realm, req.domain,
+                                                         stage_verifications, stages_verified)
     # W449 (ledger 1.1) — the gate learns who served the design + commercialisation it measures.
     _gate_servers = [s for s in (_sba.get("genesis_design"), _sba.get("genesis_commercial")) if s]
     quality_assurance = await assure_delivery(
@@ -561,13 +602,22 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope",
          "Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"],
         label="genesis", evidence=_bar_evidence, withheld=_bar_withheld,
-        served_by=_gate_servers or None)
+        # W485 (refutation) — the QMS gate measured the two "not composed" sentences and FAILED them,
+        # recording a real quality defect against a journey that correctly produced nothing. A gate
+        # has nothing to measure on a blocked run, and is told so through the served_by seam.
+        served_by=("native" if _blocked else (_gate_servers or None)))
 
     # ── §4→§5 SEAM — optionally culminate the journey by ESTABLISHING the living VSB IDBO enterprise, so a
     #    plainly-described challenge flows in ONE continuous workflow all the way to a living enterprise that
     #    then operates/improves/evolves autonomously (led by the Chief). Additive + best-effort.
     established_vsb = None
-    if req.establish:
+    # W485 — a blocked journey establishes NOTHING. A living enterprise built from an approach the
+    # §11 screen vetoed is the veto being ignored one surface further on.
+    if req.establish and _blocked:
+        established_vsb = {"error": "not established — every candidate was vetoed by the §11 screen ("
+                                    + ", ".join(_vetoed) + "); no approach was selected to establish",
+                           "blocked_by_screen": True}
+    elif req.establish:
         try:
             established_vsb = await genesis_establish(EstablishRequest(
                 problem=req.problem, domain=req.domain, realm=req.realm, name=req.name,
@@ -617,9 +667,20 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "engines_used": ([n.split(" (")[0].title() for (_e, n, _qq) in _selected_lenses(None)] if not _p_cog.get("failed") else [])
                         + (["MJM"] if not _p_mjm.get("failed") else []) + ["gaas.v5"],
         "established_vsb": established_vsb,   # §4→§5 — the living VSB enterprise, when establish=True
-        "deliverable": "The user's own VSB IDBO — Concept → Commercialisation"
-                       + (" → established living enterprise" if established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")) else ""),
-        "status": "complete",
+        # W485 (refutation) — a blocked journey has no deliverable, and saying it delivered
+        # "Concept → Commercialisation" is the completion claim in its plainest form.
+        "deliverable": ("No deliverable — the §11 screen vetoed every candidate, so the journey "
+                        "stopped after Stage 5 and nothing was designed or commercialised" if _blocked else
+                        "The user's own VSB IDBO — Concept → Commercialisation"
+                        + (" → established living enterprise" if established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")) else "")),
+        # W485 — a journey whose every candidate was vetoed did not complete.
+        "status": ("blocked_by_screen" if _blocked else "complete"),
+        **({"blocked_by_screen": {
+            "vetoed": _vetoed,
+            "note": ("every candidate was vetoed by the §11 screen, so no approach was selected. "
+                     "Nothing was designed, commercialised or established, and no body text below "
+                     "is a solution — each says why it is empty."),
+        }} if _blocked else {}),
     }
 
 
@@ -856,6 +917,34 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
         pass
 
 
+def _refuse_vetoed_candidate(req: "EstablishRequest") -> None:
+    """W485 (refutation) — THE VETO MUST HOLD AT THE WRITER THAT CREATES THE ENTERPRISE.
+
+    The round stopped the one-call journey (`journey(establish=True)`), and left the two-step path
+    untouched: the page POSTs /genesis/establish (or its /stream twin) with
+    `selected_candidate = candidates[0]`, and when EVERY candidate is vetoed that IS the vetoed one
+    (the sort puts disqualified last, so with all disqualified the first is simply top-scoring). A
+    living VSB was created from it, registered on the roster, shipped, and its EVIDENCE.md presented
+    the vetoed approach as "Selected Candidate (§4.5 evidence-ranked)". The page showed the veto, the
+    payload said blocked, and the one control that creates the enterprise ignored both.
+
+    A screen whose refusal the next writer ignores is not a screen. Both paths refuse here.
+    """
+    cand = req.selected_candidate or {}
+    if not isinstance(cand, dict):
+        return
+    screen = cand.get("screen") if isinstance(cand.get("screen"), dict) else {}
+    if screen.get("disqualified") or cand.get("blocked_by_screen"):
+        raise HTTPException(status_code=409, detail={
+            "error": "blocked_by_screen",
+            "candidate": cand.get("id"),
+            "note": ("the selected approach was VETOED by the §11 screen, so no enterprise is "
+                     "established from it. Re-run the journey with a subject the screen does not "
+                     "refuse, or select an eligible candidate."),
+            "verdicts": {k: v for k, v in (screen.get("verdicts") or {}).items()},
+        })
+
+
 @router.post("/establish")
 async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(get_current_user)):
     """
@@ -867,6 +956,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     # §17.5 user isolation — with auth enabled, the established VSB's owner is ALWAYS the
     # authenticated user (server-side stamp). Single-user mode unchanged.
     req.owner_id = request_owner_id(user, req.owner_id)
+    _refuse_vetoed_candidate(req)      # W485 — a vetoed approach establishes nothing
     import uuid as _uuid
     import time as _time
     from agentic_core.api import vsb as vsb_mod
@@ -1061,6 +1151,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
     import time as _time
 
     req.owner_id = request_owner_id(user, req.owner_id)   # §17.5 — server-side owner stamp
+    _refuse_vetoed_candidate(req)      # W485 — a vetoed approach establishes nothing (both paths)
     # W452 (refuter F1) — a bad gate id must be a REAL 400: raised inside the generator it arrived
     # after the 200 headers as an empty stream the page read as success.
     birth_gates = _birth_gates(req)

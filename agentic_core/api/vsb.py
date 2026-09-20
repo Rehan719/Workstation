@@ -1185,6 +1185,49 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     qa = await assure_delivery(narrative, ["Executive Summary", "Strategic Position", "Action Priorities",
                                            "Recommendation"], label="board_pack",
                                served_by=prov["served_by"])
+    # W485 (ledger v5 R2.3) — WHAT THE §11 SCREEN ACTUALLY READ. When the narrative is pending, the
+    # screen read the pending-state SENTENCE, not the enterprise: a pack whose narrative had not been
+    # composed came back compliance 'review' with compliant true, while the entity's own latest screen
+    # was FAIL. The verdict now says whose text it is, a pending pack reports the pack's compliance as
+    # not assessable, and the ENTITY's latest §11 verdict travels on the pack beside it.
+    _pending_narrative = (sb == "native")
+    _comp = ((qa.get("quality") or {}).get("compliance") or {})
+    if _comp:
+        _comp["screened_subject"] = ("the pending-state sentence — the narrative has not been composed, "
+                                     "so this verdict is about a placeholder and says nothing about the "
+                                     "enterprise" if _pending_narrative else
+                                     "the board pack's composed narrative")
+        if _pending_narrative:
+            # W485 (refutation) — `assessable: False` beside an untouched `overall` had NO READER: the
+            # chip, the DCS-sealed record and every consumer still read 'review' as the PACK's verdict.
+            # The field they read is the one that has to tell the truth, so the pack's overall is None
+            # and the screen's verdict about the placeholder is kept, named as what it is.
+            _comp["assessable"] = False
+            _comp["overall_of_screened_text"] = _comp.get("overall")
+            _comp["overall"] = None
+            _comp["compliant"] = None
+            _comp["sealed_note"] = ("the QMS record sealed below covers the pending-state sentence, "
+                                    "which is what was delivered when it was sealed")
+    # W485 (refutation) — THREE STATES, never two. "We could not ask" was being reported as the
+    # positive claim "this entity has never been screened": an unreadable history, and any exception
+    # in the lookup itself, both fell into the same None as a genuinely unscreened entity. `known`
+    # separates them — False means the question could not be answered, and the reader is told which.
+    _entity_screen, _lookup_failed, HISTORY_UNREADABLE = None, None, "unreadable"
+    try:
+        from agentic_core.economy.living_vsbs import _latest_screen, HISTORY_UNREADABLE
+        _entity_screen = _latest_screen(vsb_id)
+    except Exception as _exc:
+        _lookup_failed = str(_exc)[:160] or _exc.__class__.__name__
+    _unreadable = (_entity_screen == HISTORY_UNREADABLE)
+    _entity_compliance = {
+        "verdict": (None if (_unreadable or _lookup_failed) else _entity_screen),
+        "known": not (_unreadable or _lookup_failed),
+        "never_screened": bool(not _unreadable and not _lookup_failed and _entity_screen is None),
+        "basis": ("the compliance history could not be read" if _unreadable else
+                  f"the compliance history could not be consulted: {_lookup_failed}" if _lookup_failed else
+                  "this entity has never been screened" if _entity_screen is None else
+                  "the entity's latest §11 screen, from the per-VSB compliance history"),
+    }
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     layers = {
         "constitutional": constitutional,                                  # genome-locked
@@ -1193,7 +1236,12 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         "operational": operational,                                         # live snapshot
     }
     economy = vsb.get("economy") or {}
-    content_hash = _pack_content_hash(layers, economy, narrative, str(name or ""))
+    # W485 (refutation) — the entity verdict is ON the pack, so it is part of what the pack SAYS:
+    # excluded from the hash, a pack whose entity verdict had flipped to FAIL still reported itself
+    # "unchanged since" the version that said review.
+    _entity_stamp = ("§11-entity:" + str(_entity_compliance.get("verdict"))
+                     + "/" + str(_entity_compliance.get("known")))
+    content_hash = _pack_content_hash(layers, economy, narrative + _entity_stamp, str(name or ""))
     version, unchanged_since, unchanged = _pack_version(vsb_id, content_hash, ts)
     pack = {
         "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
@@ -1202,6 +1250,9 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         "narrative": narrative,
         "ai_provenance": prov,
         "quality_assurance": qa,
+        # W485 — the ENTITY's own latest §11 verdict, beside the pack's. They are different questions
+        # and were being read as one: a pack screened green while its enterprise stood at FAIL.
+        "entity_compliance": _entity_compliance,
         # W471 — what the pack carries, versioned: the same content is the same version, said as unchanged since
         "content_hash": content_hash,
         "concept_source": concept_source,        # blueprint | challenge — what grounded the pack, said plainly

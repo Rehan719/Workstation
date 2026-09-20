@@ -7,7 +7,7 @@ import {
   syncWorkspaceFromServer, lastSyncError, type OutputRecord,
 } from '../lib/outputHistory';
 import { getToken } from '../lib/auth';
-import { provenanceBadge, provenanceMapBadge } from '../lib/api';
+import { provenanceBadge, provenanceMapBadge, provenanceLine } from '../lib/api';
 
 // §9 — "My Work": revisit the outputs you've generated (domain tools + journeys).
 //
@@ -55,12 +55,22 @@ export const MyWork: React.FC = () => {
     refresh();
   };
 
+  // W485 (sweep S7.8) — THE LABEL LEAVES WITH THE TEXT. The provenance was rendered as a DOM badge
+  // only, so a downloaded or copied .md — a whole Genesis journey, every call floor-served — left the
+  // platform with nothing saying what composed it. The same fact the badge shows is prepended to the
+  // exported text, because outside this page nobody can see the badge.
+  const provenanceHeader = (rec: OutputRecord): string => provenanceLine(
+    rec.provenance?.served_by as any,
+    (rec.provenance as any)?.any_external ?? rec.provenance?.is_external,
+    rec.ts,
+  );
+
   const copy = async (rec: OutputRecord) => {
-    try { await navigator.clipboard.writeText(rec.output); setCopiedId(rec.id); setTimeout(() => setCopiedId(null), 1500); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(provenanceHeader(rec) + rec.output); setCopiedId(rec.id); setTimeout(() => setCopiedId(null), 1500); } catch { /* ignore */ }
   };
   const download = (rec: OutputRecord) => {
     const slug = rec.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'output';
-    const blob = new Blob([rec.output], { type: 'text/markdown' });
+    const blob = new Blob([provenanceHeader(rec) + rec.output], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `${slug}.md`;
@@ -169,8 +179,10 @@ export const MyWork: React.FC = () => {
                                   className="text-[9px] font-black uppercase text-slate-400 hover:text-aura">
                                   v{rec.versions!.length - 1 - i} · {new Date(v.refinedAt).toLocaleString()}
                                 </button>
+                                {/* W485 (refutation) — the THIRD copy path: a prior version leaves the
+                                    platform exactly as the latest one does, so it carries the same label. */}
                                 <button type="button" aria-label="Copy this version"
-                                  onClick={() => { try { navigator.clipboard.writeText(v.output); } catch { /* clipboard unavailable */ } }}
+                                  onClick={() => { try { navigator.clipboard.writeText(provenanceHeader(rec) + v.output); } catch { /* clipboard unavailable */ } }}
                                   className="text-[8px] font-black uppercase text-slate-500 hover:text-aura">Copy</button>
                               </div>
                               {vopen && (

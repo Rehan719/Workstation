@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { provenanceBadge, qmsChip } from '../lib/api';
+import { provenanceBadge, qmsChip, provenanceLine } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
@@ -162,17 +162,22 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
     setRefining(false);
   };
 
+  // W485 (sweep S7.8, the class) — text that LEAVES the platform carries its provenance. The badge
+  // beside the result is not a label on a copied or downloaded file; only the json export carried it.
+  const provHeader = () => provenanceLine(
+    (effectiveProv as any)?.served_by, (effectiveProv as any)?.is_external);
+
   const copyResult = async () => {
-    try { await navigator.clipboard.writeText(exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(provHeader() + exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
   };
   // E4 — output-format selection (§4.9): export the result in any real, in-house-producible text format.
   const downloadAs = (fmt: 'md' | 'txt' | 'html' | 'json') => {
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'result';
-    let content = exportText, mime = 'text/plain';
+    let content = provHeader() + exportText, mime = 'text/plain';
     if (fmt === 'md') { mime = 'text/markdown'; }
     else if (fmt === 'html') {
       mime = 'text/html';
-      const esc = exportText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const esc = (provHeader() + exportText).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       content = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem;color:#0f172a}h1{font-size:1.4rem}pre{white-space:pre-wrap;word-wrap:break-word;font-family:inherit}</style></head><body><h1>${title}</h1><pre>${esc}</pre></body></html>`;
     } else if (fmt === 'json') {
       mime = 'application/json';
