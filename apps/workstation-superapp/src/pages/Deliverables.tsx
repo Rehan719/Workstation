@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage, provenanceBadge, qmsChip, complianceCls } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge, qmsChip, complianceChip } from '../lib/api';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -251,10 +251,10 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                     </span>
                   )}
                   {selected.quality_assurance.quality?.compliance && (
-                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(selected.quality_assurance.quality.compliance.overall)}`}
-                      title={`§11 live compliance — ${(selected.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
-                      compliance: {selected.quality_assurance.quality.compliance.overall}
-                    </span>
+                    (() => { const _c = complianceChip(selected.quality_assurance.quality.compliance); return (
+                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                        {_c.label}
+                      </span>); })()
                   )}
                   {selected.homeostasis?.posture && (
                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"

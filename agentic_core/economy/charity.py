@@ -158,8 +158,10 @@ class CharityIntelligence:
             try:
                 from agentic_core.api.compliance import screen_compliance
                 screen = screen_compliance(f"charitable grant to: {w['cause']} ({w['region']})")
-                statuses = [v.get("status") for v in (screen.get("verdicts") or [])]
-                verdict = "fail" if "fail" in statuses else ("review" if "review" in statuses else "pass")
+                # W483 — this recomputed the overall from the raw statuses, so it read a row that had
+                # assessed nothing as a 'pass'. The screen states its own overall under one rule
+                # (a screen can refuse, not clear); this reads it rather than deriving a second one.
+                verdict = screen.get("overall") or "review"
             except Exception:
                 verdict = "unscreened (engine unavailable)"
             if verdict == "fail":

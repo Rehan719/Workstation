@@ -10,6 +10,7 @@ Religion Domain API — Islamic jurisprudence, interfaith dialogue, and scholarl
 """
 from __future__ import annotations
 
+import re
 import time
 import uuid
 
@@ -313,6 +314,85 @@ def _withhold_sections(text: str, headings: tuple) -> tuple:
     return out.strip(), removed
 
 
+# W483 (R5.2) — a deterministic ingredient screen. Each entry is a term and WHY it is listed; the
+# screen returns matches and says plainly what it is. It cannot clear an ingredient (the W483 rule:
+# a word list may flag, never clear), so an unmatched list is reported as "nothing matched", never
+# as "no concerns". Sources for the concern statements: the E-number's own definition (E471 is
+# mono- and diglycerides of fatty acids, which may be animal- or plant-derived) and the standard
+# categories of the certifying bodies this tool already names (ESMA/GSO 2055, JAKIM, HFA).
+_INGREDIENT_CONCERNS: tuple[tuple[str, str], ...] = (
+    ("gelatin", "may be porcine or non-zabiha bovine; the source animal and slaughter method decide"),
+    ("gelatine", "may be porcine or non-zabiha bovine; the source animal and slaughter method decide"),
+    ("e471", "mono- and diglycerides of fatty acids — may be animal- or plant-derived"),
+    ("e472", "esters of mono- and diglycerides — may be animal- or plant-derived"),
+    ("e441", "gelatine by another name"),
+    ("e542", "edible bone phosphate — animal-derived"),
+    ("e631", "disodium inosinate — may be meat- or fish-derived"),
+    ("e627", "disodium guanylate — may be meat- or fish-derived"),
+    ("e120", "cochineal / carmine — insect-derived"),
+    ("e904", "shellac — insect-derived"),
+    ("e920", "l-cysteine — may be derived from hair or feathers"),
+    ("lard", "porcine fat"),
+    ("pork", "porcine"),
+    ("bacon", "porcine"),
+    ("rennet", "may be animal rennet from a non-zabiha source"),
+    ("pepsin", "usually porcine-derived"),
+    ("lipase", "may be animal-derived"),
+    ("whey", "may be produced with animal rennet"),
+    ("glycerin", "may be animal- or plant-derived"),
+    ("glycerol", "may be animal- or plant-derived"),
+    ("mono- and diglycerides", "may be animal- or plant-derived"),
+    ("stearate", "stearic acid may be animal- or plant-derived"),
+    ("stearic acid", "may be animal- or plant-derived"),
+    ("alcohol", "ethanol as an ingredient or carrier; treatment differs between standards"),
+    ("ethanol", "treatment as an ingredient or carrier differs between standards"),
+    ("wine", "alcoholic"),
+    ("rum", "alcoholic"),
+    ("brandy", "alcoholic"),
+    ("vanilla extract", "commonly carried in ethanol"),
+    ("enzyme", "the source organism decides; microbial is generally accepted"),
+    ("emulsifier", "the source of the emulsifier decides"),
+    ("collagen", "animal-derived"),
+    ("keratin", "animal-derived"),
+    ("carmine", "insect-derived"),
+)
+
+
+def _screen_ingredients(ingredients: list[str]) -> dict:
+    """Match a declared ingredient list against the terms known to require verification.
+
+    This is a WORD LIST, and the response says so. It flags; it never clears. An ingredient that
+    matches nothing is not reported as acceptable — it is reported as not matched, which is a
+    different statement and the only one this screen can make.
+    """
+    items = [str(i) for i in (ingredients or [])]
+    flagged = []
+    for raw in items:
+        # W483 (refutation) — match the forms ingredients are actually DECLARED in. The strict
+        # boundary missed every real label: "E-471", "E 471", "INS 471", and the sub-classes
+        # "E472a".."E472f" (which is where most of the animal-derived emulsifiers live). E-numbers
+        # are normalised before matching, and an E-term may be followed by a sub-class letter.
+        low = re.sub(r"\b(?:e|ins)[\s\-]?(\d{3})", r"e\1", raw.lower())
+        hits = sorted({term for term, _why in _INGREDIENT_CONCERNS
+                       if re.search((rf"(?<![a-z0-9])e{term[1:]}[a-f]?(?![0-9])"
+                                     if re.fullmatch(r"e\d{3}", term) else
+                                     rf"(?<![a-z0-9]){re.escape(term)}(?![a-z0-9])"), low)})
+        if hits:
+            why = {t: w for t, w in _INGREDIENT_CONCERNS if t in hits}
+            flagged.append({"ingredient": raw, "matched": hits,
+                            "why": "; ".join(f"{t}: {why[t]}" for t in hits)})
+    return {
+        "declared": len(items),
+        "flagged": flagged,
+        "unmatched": [i for i in items if not any(f["ingredient"] == i for f in flagged)],
+        "verdict": None,
+        "basis": (f"a deterministic screen of {len(_INGREDIENT_CONCERNS)} terms that commonly require "
+                  "verification. It flags ingredients to check with a certifying body; it does not "
+                  "assess them, and an ingredient it did not match is NOT thereby acceptable — the "
+                  "screen has no view on it. No halal status is produced here."),
+    }
+
+
 class HalalReviewRequest(BaseModel):
     product_name: str
     product_description: str
@@ -329,6 +409,7 @@ async def halal_pre_assessment(req: HalalReviewRequest):
     """
     ingredients_text = "\n".join(f"  - {i}" for i in req.ingredients) if req.ingredients else "Not specified"
     markets_text = ", ".join(req.target_markets) if req.target_markets else "Not specified"
+    _model_expected = _model_available()
 
     prompt = (
         f"You are a halal certification consultant with expertise in Islamic dietary law (fiqh al-at'ima) "
@@ -339,25 +420,62 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         + (f"Manufacturing process: {req.manufacturing_process}\n" if req.manufacturing_process else "")
         + f"Target markets: {markets_text}\n\n"
         "Conduct a pre-assessment and provide:\n"
-        "## Halal Status Assessment (COMPLIANT / REQUIRES REVIEW / NON-COMPLIANT)\n"
-        "## Critical Issues (ingredients or processes requiring resolution)\n"
-        "## Flagged Ingredients (E-numbers, derivatives, ambiguous items to verify)\n"
-        "## Cross-Contamination Risks\n"
+        # W483 (ledger v5 R5.2) — the enum used to live IN the heading. The deterministic floor
+        # composes its reply out of the requested headings, so it emitted "## Halal Status Assessment
+        # (COMPLIANT /" five times — the enum cut short, reading as a COMPLIANT verdict on a product
+        # containing gelatin. The heading carries no verdict tokens now, and on the floor the three
+        # judging sections are not asked for at all (the W456 tafsir rule: a prompt that asks the
+        # floor for a judgement leaves its scaffold in the interaction log even if the reply is cut).
+        + (("## Halal Status Assessment\n"
+            "## Critical Issues (ingredients or processes requiring resolution)\n"
+            "## Flagged Ingredients (E-numbers, derivatives, ambiguous items to verify)\n")
+           if _model_expected else "")
+        + "## Cross-Contamination Risks\n"
         "## Manufacturing Considerations\n"
         "## Recommended Certifying Bodies (by target market)\n"
         "## Steps to Achieve Certification\n"
         "## Market-Specific Requirements\n\n"
         "Be specific about which standards apply. Flag anything ambiguous — err on the side of caution.\n"
-        "Note: This is a pre-assessment tool only; formal certification requires an accredited certifying body."
+        + ("State the halal status in the first line of the Assessment section as exactly one of: "
+           "COMPLIANT, REQUIRES REVIEW, NON-COMPLIANT.\n" if _model_expected else "")
+        + "Note: This is a pre-assessment tool only; formal certification requires an accredited certifying body."
     )
 
     assessment, provenance = await ai_text(prompt, "religion_halal")
+
+    _judging = ("Halal Status Assessment", "Critical Issues", "Flagged Ingredients")
+    sections_withheld: list[str] = []
+    floor_note = None
+    if (provenance or {}).get("served_by") == "native":
+        if _model_expected:
+            # A model was available and the floor still answered: the judging sections were in the
+            # prompt, so their scaffold is already logged. Refuse rather than cut and ship, exactly
+            # as the tafsir route does.
+            from fastapi import HTTPException
+            raise HTTPException(status_code=503, detail=(
+                "a model resource was available but the deterministic native floor served this halal "
+                "pre-assessment — a halal status is not composed from prompt headings; retry"))
+        assessment, _cut = _withhold_sections(assessment, _judging)
+        sections_withheld = list(_judging)
+        floor_note = (
+            "served by the deterministic native floor — no halal status, critical issues or flagged "
+            "ingredients are offered. The floor composes the headings it is given and cannot read an "
+            "ingredient list, so a status from it would be the shape of a verdict with nothing behind "
+            "it. The ingredient screen below is a deterministic word list, and the notes that remain "
+            "are a structured frame. A halal status comes from an accredited certifying body.")
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
         "product_name": req.product_name,
         "target_markets": req.target_markets,
         "assessment": assessment,
+        # W483 — a real, deterministic contribution in place of the withheld prose: the ingredients
+        # this repository's list knows require verification, each with the reason. Named a screen,
+        # never a status (the naming invariant: a quantity carries a method's name only when that
+        # method computed it).
+        "ingredient_screen": _screen_ingredients(req.ingredients),
+        "sections_withheld": sections_withheld,
+        **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (

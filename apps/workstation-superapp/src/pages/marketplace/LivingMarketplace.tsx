@@ -7,7 +7,7 @@ import {
 import { Card, Badge } from '@workstation/ui';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { apiJson, errorMessage, provenanceBadge } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, complianceChip } from '../../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 //
@@ -504,11 +504,15 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
             {detail.compliance?.overall && (
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">§11 compliance screen</p>
+                {/* W483 — this had its own colour ternary and showed a bare 'pass'. One rule for
+                    every §11 chip (lib/api.complianceChip), and each row says what it could read. */}
                 <p className="text-[10px] font-bold mb-1">
-                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${detail.compliance.overall === 'pass' ? 'bg-emerald-500/15 text-emerald-400' : detail.compliance.overall === 'fail' ? 'bg-vital/15 text-vital' : 'bg-amber-500/20 text-amber-400'}`}>{detail.compliance.overall}</span>
+                  {(() => { const _c = complianceChip(detail.compliance); return (
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${_c.cls}`} title={_c.title}>{_c.label}</span>); })()}
                 </p>
                 {(detail.compliance.verdicts || []).map((v: any, i: number) => (
-                  <p key={i} className="text-[9px] text-slate-500">{v.framework}: <span className="text-slate-300">{v.status}</span></p>
+                  <p key={i} className="text-[9px] text-slate-500">{v.framework}: <span className="text-slate-300">{v.status}</span>
+                    {v.coverage && <span className="text-slate-600"> [{v.coverage === 'engine' ? 'assessed' : v.coverage === 'vocabulary' ? 'term matched' : v.coverage === 'screen' ? 'screen found nothing' : 'not covered'}]</span>}</p>
                 ))}
               </div>
             )}

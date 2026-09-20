@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { qmsChip, provenanceMapBadge, complianceCls } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -264,10 +264,10 @@ const SwarmIntelligence: React.FC = () => {
                 </span>
               )}
               {cascade.quality?.compliance && (
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(cascade.quality.compliance.overall)}`}
-                  title={`§11 live compliance — ${(cascade.quality.compliance.verdicts || []).map((v: any) => `${v.framework}:${v.status}`).join(' · ')}`}>
-                  compliance: {cascade.quality.compliance.overall}
-                </span>
+                (() => { const _c = complianceChip(cascade.quality.compliance); return (
+                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                    {_c.label}
+                  </span>); })()
               )}
               {cascade.ueg_hash && <span className="text-[8px] font-mono text-white/30" title={cascade.ueg_hash}>UEG {String(cascade.ueg_hash).slice(0, 12)}…</span>}
               {/* W278/W284 — the organism's posture BEHAVIORALLY shaped this run */}

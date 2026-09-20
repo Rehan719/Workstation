@@ -8,6 +8,7 @@ import {
 import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
+import { complianceChip } from '../../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -685,11 +686,15 @@ export const VSBEconomy: React.FC = () => {
                         not screened
                       </span>
                     ) : (
-                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${v.compliance?.verdict === 'fail' ? 'bg-vital/15 text-vital' : v.compliance?.verdict === 'review' ? 'bg-amber-500/15 text-amber-400' : v.compliance?.verdict === 'pass' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}
-                        title={`§11 — ${(v.compliance?.verdicts || []).map((x: any) => `${x.framework}:${x.status}`).join(' · ') || 'no framework detail recorded'}${v.compliance?.screened_at ? `
+                      (() => {
+                        // W483 — one rule for every §11 chip: the roster record's `verdict` IS the
+                        // screen's overall, and complianceChip says what actually assessed it.
+                        const _c = complianceChip({ ...(v.compliance || {}), overall: v.compliance?.verdict }); return (
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`}
+                          title={`${_c.title}${v.compliance?.screened_at ? `
 screened ${v.compliance.screened_at}` : ''}`}>
-                        §11 {v.compliance?.verdict}
-                      </span>
+                          §11 {_c.label.replace('compliance: ', '')}
+                        </span>); })()
                     )}
                   </div>
                 </div>

@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
+import { complianceChip } from '../../lib/api';
 import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Scale, MinusCircle } from 'lucide-react';
 
-interface Verdict { framework: string; status: string; reason: string; coverage?: string }
-interface Result { subject: string; jurisdiction: string; overall: string; compliant: boolean; verdicts: Verdict[] }
+interface Verdict { framework: string; status: string; reason: string; coverage?: string; escalate?: string[] }
+// W483 — `compliant` is tri-state (null = not established by a screen that cannot clear), and the
+// screen states which areas it could and could not assess.
+interface Result {
+  subject: string; jurisdiction: string; overall: string;
+  compliant: boolean | null; verdicts: Verdict[];
+  coverage_gaps?: string[]; assessed_by?: string[]; basis?: string;
+}
 
 // W455 — two more honest states: not_checked (this row cannot read this kind of subject) and error
 // (an engine raised — recorded, never a pass)
@@ -68,13 +75,30 @@ export const ComplianceChecker: React.FC = () => {
 
       {result && (
         <div className="space-y-3">
-          <Card className={`p-5 border ${result.overall === 'fail' ? 'border-vital/40 bg-vital/5' : result.overall === 'review' ? 'border-amber-400/40 bg-amber-400/5' : result.overall === 'pass' ? 'border-emerald-400/40 bg-emerald-400/5' : 'border-slate-700'}`}>
-            <div className="flex items-center gap-3">
-              {result.overall === 'fail' ? <XCircle size={20} className="text-vital" /> : result.overall === 'review' ? <AlertTriangle size={20} className="text-amber-400" /> : result.overall === 'pass' ? <CheckCircle2 size={20} className="text-emerald-400" /> : <MinusCircle size={20} className="text-slate-500" />}
-              <p className="font-black text-white text-lg uppercase">{result.overall}</p>
-              <span className="text-[10px] font-mono text-slate-500 ml-auto">{result.jurisdiction}</span>
-            </div>
-          </Card>
+          {/* W483 — one rule for every §11 verdict (lib/api.complianceChip). This page kept its own
+              colour ternary, so a 'pass' that no framework had assessed rendered full emerald. The
+              chip qualifies such a pass and the line below names what could NOT be assessed. */}
+          {(() => {
+            const _c = complianceChip(result);
+            const _assessed = (result.assessed_by ?? []).length > 0;
+            return (
+              <Card className={`p-5 border ${result.overall === 'fail' ? 'border-vital/40 bg-vital/5' : result.overall === 'review' ? 'border-amber-400/40 bg-amber-400/5' : (result.overall === 'pass' && _assessed) ? 'border-emerald-400/40 bg-emerald-400/5' : 'border-slate-700'}`}>
+                <div className="flex items-center gap-3">
+                  {result.overall === 'fail' ? <XCircle size={20} className="text-vital" /> : result.overall === 'review' ? <AlertTriangle size={20} className="text-amber-400" /> : (result.overall === 'pass' && _assessed) ? <CheckCircle2 size={20} className="text-emerald-400" /> : <MinusCircle size={20} className="text-slate-500" />}
+                  <p className="font-black text-white text-lg uppercase">{result.overall}</p>
+                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>{_c.label}</span>
+                  <span className="text-[10px] font-mono text-slate-500 ml-auto">{result.jurisdiction}</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                  {_assessed
+                    ? `Assessed by: ${(result.assessed_by ?? []).join(' · ')}.`
+                    : 'NOTHING here assessed this subject. A keyword screen can refuse a subject; it cannot clear one.'}
+                  {(result.coverage_gaps ?? []).length > 0 &&
+                    ` Not assessed: ${(result.coverage_gaps ?? []).join(' · ')}.`}
+                </p>
+              </Card>
+            );
+          })()}
           {result.verdicts.map((v, i) => {
             const Icon = STATUS_ICON[v.status] ?? MinusCircle;   // W460 — an unknown status is never a green check
             return (

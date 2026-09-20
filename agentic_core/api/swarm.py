@@ -256,9 +256,20 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
         raise HTTPException(status_code=404, detail=f"No proposed catalogue for run {run_id}.")
     from agentic_core.api.compliance import screen_compliance
     screen = screen_compliance(f"{req.item}. {req.description}")
-    if screen["overall"] == "fail":
+    # W483 — an ESCALATION blocks curation exactly as the FAIL it replaced did. Curation publishes to
+    # the marketplace, and a severe-harm or extractive term the lexicon cannot interpret is precisely
+    # the case for a person to decide. The refusal says which it is, so the curator is not told a
+    # keyword match is a violation.
+    _esc = sorted({f"{v['framework']}:{d}" for v in (screen.get("verdicts") or [])
+                   for d in (v.get("escalate") or [])})
+    if screen["overall"] == "fail" or _esc:
         raise HTTPException(status_code=409, detail={
-            "error": "curation_blocked_by_compliance",
+            "error": ("curation_blocked_by_compliance" if screen["overall"] == "fail"
+                      else "curation_held_for_human_review"),
+            "escalations": _esc,
+            "note": (None if screen["overall"] == "fail" else
+                     "a §11 word list matched a severe-harm or extractive term; it cannot read the "
+                     "term's object, so this is held for a person to judge, not refused as a violation"),
             "verdicts": screen["verdicts"]})
     from agentic_core.api.marketplace import CreateListingRequest, create_listing
     listing = await create_listing(CreateListingRequest(

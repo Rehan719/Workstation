@@ -319,8 +319,16 @@ def _screen_listing(name: str, description: str, tags: list) -> dict:
     try:
         from agentic_core.api.compliance import screen_compliance
         s = screen_compliance(f"{name}\n{description}\n{' '.join(tags or [])}")
+        # W483 — an ESCALATION (a severe-harm or extractive term the lexicon cannot judge) used to be
+        # a FAIL and held the listing. It must still hold it: the marketplace is a public surface, and
+        # "hold for a person to read" is the right answer to a term nothing here can interpret.
+        _esc = sorted({f"{v['framework']}:{d}" for v in (s.get("verdicts") or [])
+                       for d in (v.get("escalate") or [])})
         return {"overall": s.get("overall"), "compliant": s.get("compliant"),
-                "verdicts": s.get("verdicts")}
+                "verdicts": s.get("verdicts"),
+                "coverage_gaps": s.get("coverage_gaps") or [],
+                "escalations": _esc,
+                "hold": bool(_esc) or s.get("overall") == "fail"}
     except Exception as exc:   # a screen fault never silently passes NOR blocks — recorded honestly
         return {"overall": "error", "error": str(exc)[:160]}
 
@@ -346,7 +354,8 @@ async def create_listing(req: CreateListingRequest,
         creator_id=request_owner_id(user, req.creator_id),
         vsb_id=req.vsb_id,
         certified=False,
-        status="held" if _screen.get("overall") == "fail" else "active",   # §11 (W322)
+        # W483 — held by the screen's own `hold`: a FAIL, or an escalation a person must read.
+        status="held" if _screen.get("hold") else "active",   # §11 (W322/W483)
         compliance=_screen,
         created_at=time.time(),
         updated_at=time.time(),
@@ -407,7 +416,7 @@ async def update_listing(listing_id: str, patch: dict,
     # and a failing edit puts an active listing on hold (status/compliance are never patchable).
     if any(k in patch for k in ("name", "description", "tags")) or listing.status == "held":
         listing.compliance = _screen_listing(listing.name, listing.description, listing.tags)
-        listing.status = ("held" if listing.compliance.get("overall") == "fail"
+        listing.status = ("held" if listing.compliance.get("hold")
                           else ("active" if listing.status == "held" else listing.status))
     return _save(listing).model_dump()
 

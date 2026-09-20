@@ -88,19 +88,23 @@ _EHS = re.compile(r"\b(toxic|hazardous|pollut|unsafe|emission|waste|carcinogen|f
 # employment-law terms and a three-word substring loop as engine-grade coverage.
 _FRAMEWORKS = [
     {"id": "sharia_halal", "name": "Sharia / Halal",
-     "engine": "haram-term screen (riba, alcohol, gambling, pork, …) + a three-term officer check; "
-               "a subject with halal vocabulary and no haram term passes the screen — not a certification"},
+     "engine": "haram-term screen (riba, alcohol, gambling, pork, …) + a three-term officer check; a "
+               "matched term refuses the subject, and a subject that merely calls itself halal is "
+               "reviewed, never passed — not a certification; a halal verdict comes from a "
+               "certifying body, not from here"},
     {"id": "uk_legal", "name": "UK Legal (London)",
      "engine": "keyword screen (fraud, laundering, bribery, …) fails; employment-statute vocabulary "
                "(Equality Act 2010 / ERA 1996 / ACAS Code) flags for review; SHA3-512 audit over the subject — not legal advice"},
     {"id": "regulatory", "name": "Regulatory",
      "engine": "keyword screen for regulated-activity triggers (financial advice, medical, personal data, "
-               "weapons, …) — flags for review; not a regulatory assessment"},
+               "weapons, …) — flags for review; matching nothing is 'not assessed', never a clearance"},
     {"id": "ehs", "name": "Environment / Health / Safety",
-     "engine": "keyword screen for hazard terms (toxic, emission, waste, …) — flags for review; not an EHS assessment"},
+     "engine": "keyword screen for hazard terms (toxic, emission, waste, …) — flags for review; matching "
+               "nothing is 'not assessed', never a clearance"},
     {"id": "ethical", "name": "Ethical (beneficence, honesty, no-harm)",
-     "engine": "four explainable dimensions (human · environment · quality · value) over the text and the "
-               "delivery's own QMS figures; a dimension it cannot assess says so"},
+     "engine": "four dimensions (human · environment · quality · value); three are word-list indicators "
+               "that escalate for a human and never clear a subject, and quality is measured from the "
+               "delivery's own QMS figures when they are supplied"},
     {"id": "constitutional", "name": "Constitutional (gaas.v5)",
      "engine": "an ACTION gate over nine prohibited agent intents (delete_all, wire_funds, …) plus an output "
                "screen for unsafe shell / SQL / private-key patterns; it does not read content for policy — "
@@ -147,10 +151,53 @@ class ComplianceCheck(BaseModel):
     kind: str = "content"   # content | intent | entity | distribution
 
 
+# W483 — WHAT EACH COVERAGE IS ALLOWED TO SAY. The asymmetry is deliberate and is the whole rule:
+# flagging is safe, clearing is the claim that has to be earned. A word list may refuse (a term
+# naming a prohibited thing is present) and may escalate (a term whose meaning depends on its object
+# is present), but it may never CLEAR — so only an 'engine' row can carry a pass, and only rows that
+# genuinely read the subject colour the overall.
+#   'engine'      an engine or a measured figure produced the verdict. May be pass, review or fail.
+#   'vocabulary'  a term matched in the text. A fact about the text, not about the venture.
+#   'screen'      the screen ran and matched nothing. Establishes nothing; status 'not_assessed'.
+#   'none'        nothing here reads this area at all.
+ASSESSING_COVERAGE = frozenset({"engine"})
+COLOURING_COVERAGE = frozenset({"engine", "vocabulary"})
+
+
+def assessed(verdict: Dict[str, Any]) -> bool:
+    """True when this row could actually assess the subject — the only rows a caller may treat as a
+    clearance. A pass with any other coverage is a pass OF A WORD LIST, and means nothing."""
+    return (verdict.get("coverage") in ASSESSING_COVERAGE
+            and verdict.get("status") not in ("not_assessed", "not_checked", "error"))
+
+
 def _verdict(framework: str, status: str, reason: str, coverage: str = "vocabulary") -> Dict[str, str]:
-    """coverage: 'vocabulary' (a keyword screen matched or a positive vocabulary was present) ·
-    'engine' (an engine produced the verdict) · 'none' (nothing here reads this subject — review)."""
+    """See ASSESSING_COVERAGE above for what each coverage value is allowed to say."""
     return {"framework": framework, "status": status, "reason": reason, "coverage": coverage}
+
+
+def _coverage_report(verdicts: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """The same coverage statement on every response, so no consumer has to derive it (and no two
+    consumers derive it differently — the W475 second-writer lesson)."""
+    gaps = [v["framework"] for v in verdicts if v.get("coverage") in ("none", "screen")
+            or v.get("status") in ("not_assessed", "not_checked")]
+    can = [v["framework"] for v in verdicts if assessed(v)]
+    overall = _overall(verdicts)
+    return {
+        "coverage_gaps": sorted(set(gaps)),
+        "assessed_by": sorted(set(can)),
+        # W483 — `compliant` was `overall != 'fail'`, so a subject nothing had assessed was reported
+        # compliant. Three states: False (a row refused it), True (every area was assessed and
+        # passed), None (not established — the ordinary case while the screens are word lists).
+        "compliant": (False if overall == "fail" else
+                      True if (overall == "pass" and not gaps and can) else None),
+        "basis": ("keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and "
+                  "can escalate; it cannot clear — so only a row with coverage 'engine' can carry a "
+                  "pass, and `coverage_gaps` names every area nothing here assessed"
+                  + (f" (assessed here: {', '.join(sorted(set(can)))})" if can else
+                     " — NOTHING here assessed this subject, so the overall is 'review' and no part of "
+                     "it may be reported as compliant")),
+    }
 
 
 def screen_compliance(text: str, jurisdiction: str = "UK / London",
@@ -185,8 +232,13 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
                                                 f"phrase ('{_phrase}'); the screen cannot tell offered from avoided — "
                                                 "review, not a certification")
     elif _HALAL_VOCAB.search(text):
-        halal_status, halal_reason = "pass", ("halal vocabulary present and no prohibited (haram) term — "
-                                              "a keyword screen, not a certification")
+        # W483 (R1.1) — this was a PASS, and §10 then recorded 'compliant' and 'safe' as MEASURED
+        # from it. The only thing established is that the subject calls itself halal. A subject's own
+        # vocabulary about itself is not a finding, and certainly not a certification.
+        halal_status, halal_reason = "review", (
+            f"the subject describes itself with halal vocabulary ('{_HALAL_VOCAB.search(text).group(0)}') "
+            "and no prohibited (haram) term matched — that is the subject's own claim, not a "
+            "certification and not an assessment; a halal verdict comes from a certifying body")
     else:
         halal_status, halal_reason, halal_cov = "review", (f"{NO_COVERAGE} — the haram-term screen matched "
                                                            "nothing and no halal vocabulary is present; not a certification"), "none"
@@ -248,50 +300,87 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
         legal_reason += f" (built-in rules · audit {_audit[:16]}… over the subject)"
     verdicts.append(_verdict("uk_legal", legal_status, legal_reason, legal_cov))
 
-    reg_status, reg_reason = "pass", "keyword screen found no regulated-activity trigger — not a regulatory assessment"
+    # W483 (R1.1 / R3.3) — a keyword screen that matches NOTHING used to return 'pass', and the §10
+    # bar then recorded 'compliant' and 'safe' as measured. The absence of a word is not a clearance:
+    # these rows now say 'not_assessed' and carry no weight in the overall.
+    reg_status, reg_reason, reg_cov = "not_assessed", (
+        "keyword screen found no regulated-activity trigger — the absence of a trigger word is not a "
+        "regulatory clearance; nothing here assessed this subject"), "screen"
     if _REGULATED.search(text):
-        reg_status, reg_reason = "review", f"Regulated activity — review required: '{_REGULATED.search(text).group(0)}'"
-    verdicts.append(_verdict("regulatory", reg_status, reg_reason, "screen"))
+        reg_status, reg_reason, reg_cov = "review", (
+            f"Regulated activity — review required: '{_REGULATED.search(text).group(0)}'"), "vocabulary"
+    verdicts.append(_verdict("regulatory", reg_status, reg_reason, reg_cov))
 
-    ehs_status, ehs_reason = "pass", "keyword screen found no hazard term — not an EHS assessment"
+    ehs_status, ehs_reason, ehs_cov = "not_assessed", (
+        "keyword screen found no hazard term — the absence of a hazard word is not an EHS clearance; "
+        "nothing here assessed this subject"), "screen"
     if _EHS.search(text):
-        ehs_status, ehs_reason = "review", f"Potential EHS concern: '{_EHS.search(text).group(0)}'"
-    verdicts.append(_verdict("ehs", ehs_status, ehs_reason, "screen"))
+        ehs_status, ehs_reason, ehs_cov = "review", (
+            f"Potential EHS concern: '{_EHS.search(text).group(0)}'"), "vocabulary"
+    verdicts.append(_verdict("ehs", ehs_status, ehs_reason, ehs_cov))
 
     # W286 — the Ethical engine is REAL now (the old line hardcoded 'pass — no violations
     # detected' without checking anything — a standing fabrication). Four explainable
     # sub-verdicts; un-assessable dimensions say so honestly; `delivery_metrics` threads the
     # caller's PRECOMPUTED QMS figures in (never a call back into the quality gate).
+    # W483 (R1.0 / R2.1) — the row reports the engine's OWN overall. It used to map 'not_assessed'
+    # to 'pass', so a subject nothing had assessed came back green; and the engine's lexicon 'fail'
+    # (a bare 'kill'/'abuse' match) failed the whole screen. Neither happens now: the engine
+    # escalates instead of convicting, and the row's coverage is 'engine' only where a dimension
+    # genuinely measured something — otherwise the row cannot colour the overall.
+    # W483 (refutation) — the ethical row used to take coverage 'engine' whenever the engine reported
+    # `assessed`, and `assessed` was true whenever the QMS supplied delivery figures. But the
+    # dimension those figures measure is `quality` — section coverage and a stub regex over the
+    # delivered text. Document coverage is not an ethical assessment, and on a clean delivery it was
+    # carrying the ENTIRE §11 overall to 'pass' with human, environment and value all not_assessed.
+    # The naming invariant: a quantity may carry the name of a thing only when it measured that
+    # thing. So the ethical row is never 'engine'; the measured quality figure travels beside it.
     try:
         from agentic_core.compliance.ethical_engine import evaluate_ethics
         _eth = evaluate_ethics(text, delivery_metrics)
-        _eth_status = "pass" if _eth["overall"] in ("pass", "not_assessed") else _eth["overall"]
-        verdicts.append(_verdict("ethical", _eth_status, f"{_eth['reason']} (engine-backed)", "engine"))
+        _eth_cov = "vocabulary" if _eth["overall"] == "review" else "none"
+        _eth_reason = f"{_eth['reason']} (engine-backed)"
+        _row = _verdict("ethical", _eth["overall"], _eth_reason, _eth_cov)
+        if _eth.get("escalate"):
+            # A severe-harm or extractive term. The flag travels as DATA so a caller can act on it
+            # without parsing prose — it is the whole point of downgrading the old 'fail'.
+            # W483 (probe) — and the MATCHED TERM travels with it. FU-099 asked for exactly this:
+            # the row's reason is a per-dimension summary, so without the term the person the
+            # escalation is addressed to cannot see what triggered it.
+            _row["escalate"] = list(_eth["escalate"])
+            _terms = [t for d in _eth["dimensions"] if d.get("escalate")
+                      for t in re.findall(r"'([^']+)'", d.get("reason") or "")]
+            _row["escalated_terms"] = _terms
+            _row["reason"] += (f" — escalated for a human to assess: {', '.join(_eth['escalate'])}"
+                               + (f" (matched: {', '.join(_terms)})" if _terms else ""))
+        verdicts.append(_row)
     except Exception:
         verdicts.append(_verdict("ethical", "review",
                                  "Ethical engine unavailable — review required (never a silent pass).", "none"))
 
     overall = _overall(verdicts)
-    return {"overall": overall, "compliant": overall != "fail", "verdicts": verdicts,
-            "coverage_gaps": [v["framework"] for v in verdicts if v.get("coverage") == "none"],
-            "basis": ("keyword and vocabulary screens plus the ethical dimensions; the overall is the verdict "
-                      "of the rows that could read the subject and `coverage_gaps` names the rows that could "
-                      "not ('review — no engine covers this area'); a pass is a pass of the screen, not a certification")}
+    return {"overall": overall, "verdicts": verdicts, **_coverage_report(verdicts)}
 
 
 def _overall(verdicts: List[Dict[str, str]]) -> str:
     """fail if any row fails; else review if any row that READ the subject is review, or an engine
-    ERROR; else pass — of the rows that could read the subject (the gaps are listed beside it).
-    A row with coverage 'none' or status 'not_checked' cannot colour the overall; if NO row could
-    read the subject the overall is review."""
+    ERROR; else pass — but ONLY off rows that could assess (coverage 'engine').
+
+    W483: the last clause used to read "pass — of the rows that could read the subject", and a row
+    whose keyword screen matched nothing counted as having read it. Three such rows returning 'pass'
+    made the overall 'pass', which §10 recorded as MEASURED and the Deliverables page rendered as an
+    emerald COMPLIANCE: PASS. A row with coverage 'screen' or 'none', or status 'not_assessed' /
+    'not_checked', now colours nothing; with no assessing row left, the overall is 'review'.
+    """
     if any(v["status"] == "fail" for v in verdicts):
         return "fail"
     if any(v["status"] == "error" for v in verdicts):
         return "review"
-    read = [v for v in verdicts if v.get("coverage", "vocabulary") != "none" and v["status"] != "not_checked"]
-    if not read:
-        return "review"
+    read = [v for v in verdicts if v.get("coverage", "vocabulary") in COLOURING_COVERAGE
+            and v["status"] not in ("not_checked", "not_assessed")]
     if any(v["status"] == "review" for v in read):
+        return "review"
+    if not [v for v in read if assessed(v)]:
         return "review"
     return "pass"
 
@@ -309,7 +398,14 @@ async def check(req: ComplianceCheck):
     # (the only gaas.v5 method that reads text) runs, and the row is 'not_checked' unless it finds
     # an unsafe pattern; an action kind → the action gate on that kind; an engine raise → 'error',
     # never a pass.
-    const_cov = "engine"
+    # W483 (refutation) — THE ROUND'S OWN RULE, APPLIED TO THE ROW IT MISSED. This row carried
+    # coverage 'engine', and gaas.v5's action gate is a nine-intent SUBSTRING test
+    # (gaas/v5/policy_gate.py: `if prohibited in intent`) — a word list. Because 'engine' is the one
+    # coverage that can clear, a benign action kind returned 'pass' and, being the only assessing
+    # row, carried the whole screen to 'pass' with every other area in coverage_gaps. A match is
+    # 'vocabulary' (a fact about the text); matching nothing is 'not_assessed'; only a raise is an
+    # engine event. This row can now refuse, and can never clear.
+    const_cov = "vocabulary"
     try:
         from agentic_core.gaas.v5 import ConstitutionalPolicyGate
         _gate = ConstitutionalPolicyGate(domain=req.domain)
@@ -329,8 +425,10 @@ async def check(req: ComplianceCheck):
             if not pre["allowed"]:
                 const_status, const_reason = "fail", pre["reason"]
             else:
-                const_status, const_reason = "pass", (f"gaas.v5 action gate: neither the '{req.kind}' kind nor the subject "
-                                                      "names a prohibited intent (nine-intent substring gate — not a policy reading)")
+                const_status, const_reason, const_cov = "not_assessed", (
+                    f"gaas.v5 action gate: neither the '{req.kind}' kind nor the subject names one of "
+                    "its nine prohibited intents. That is a substring test over a word list, so it "
+                    "establishes nothing about this subject — it can refuse, it cannot clear"), "screen"
     except Exception as exc:
         const_status, const_reason, const_cov = "error", f"constitutional engine raised: {str(exc)[:120]} — recorded, never a pass", "none"
     verdicts.append(_verdict("constitutional", const_status, const_reason, const_cov))
@@ -340,11 +438,10 @@ async def check(req: ComplianceCheck):
         "subject": req.subject[:120],
         "jurisdiction": req.jurisdiction,
         "overall": overall,
-        "compliant": overall != "fail",
         "verdicts": verdicts,
-        "coverage_gaps": [v["framework"] for v in verdicts if v.get("coverage") == "none"],
-        "basis": screen.get("basis"),
+        **_coverage_report(verdicts),
         "note": ("Federated compliance screen: Sharia/Halal · UK Legal · Regulatory · EHS · Ethical · Constitutional — "
-                 "keyword and vocabulary screens plus engines where one exists; 'review — no engine covers this "
-                 "area' means nothing here read the subject; a pass is a pass of the screen, not a certification."),
+                 "keyword and vocabulary screens plus engines where one exists. A screen can refuse a subject and "
+                 "can escalate one for a human; it cannot clear one, so an area nothing assessed is named in "
+                 "coverage_gaps and is never reported as compliant."),
     }

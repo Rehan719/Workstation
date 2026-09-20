@@ -56,8 +56,9 @@ _CAND_UNMEASURED = {
     "commercial viability": "no in-house instrument",
 }
 _VERDICT_SCORE = {"pass": 1.0, "review": 0.5, "fail": 0.0}
-# Reused verbatim from agentic_core.vbs.quality._measure_bar so §10 and §4.5 cannot drift apart.
-_SAFETY_FRAMEWORKS = ("ethical", "ehs", "sharia_halal")
+# IMPORTED from agentic_core.vbs.quality so §10 and §4.5 cannot drift apart — it had been the same
+# tuple written twice in two files, which is how two surfaces come to disagree (W475).
+from agentic_core.vbs.quality import SAFETY_FRAMEWORKS as _SAFETY_FRAMEWORKS
 
 
 def _screen_candidate(text: str) -> Dict[str, Any]:
@@ -75,7 +76,11 @@ def _screen_candidate(text: str) -> Dict[str, Any]:
     # W455 — a row that says 'review — no engine covers this area' (coverage 'none') is not a finding
     # against the candidate; it is the screen saying it could not read this subject. It neither
     # scores nor penalises. A review WITH coverage (a matched trigger) still counts.
-    _covered = {v.get("framework") for v in (s.get("verdicts") or []) if v.get("coverage", "vocabulary") != "none"}
+    # W483 — 'covered' is the screen's OWN rule (coverage 'engine' and a status that can carry a
+    # verdict). It used to be "coverage != 'none'", which counted a keyword screen that matched
+    # nothing as having read the subject and scored it 1.0.
+    from agentic_core.api.compliance import assessed as _assessed
+    _covered = {v.get("framework") for v in (s.get("verdicts") or []) if _assessed(v)}
     comp = [_VERDICT_SCORE.get(v, 0.5) for f, v in verdicts.items() if f not in _SAFETY_FRAMEWORKS and f in _covered]
     safe = [_VERDICT_SCORE.get(verdicts[f], 0.5) for f in _SAFETY_FRAMEWORKS if f in verdicts and f in _covered]
     return {
@@ -399,12 +404,19 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # stable sort handed the win to whichever _cand_specs named first — always "pragmatic".
         c.update({"screen": _screen_candidate(c["approach"])})
 
-    _screened = [c for c in candidates if c["screen"].get("compliance") is not None]
     for c in candidates:
         s = c["screen"]
-        if s.get("compliance") is None:          # screen unavailable — rank on form, and SAY so
+        if s.get("compliance") is None:
+            # W483 (refutation) — rank on form, and say WHICH of the two reasons applies. The old
+            # text said "the §11 screen did not run", which became false the moment a screen that
+            # RAN but could not assess became the ordinary case: every framework here is a keyword
+            # screen, and a keyword screen cannot clear a subject, so it contributes no score.
             c["score"] = c["form_score"]
-            c["score_basis"] = "form only — the §11 screen did not run for this candidate"
+            c["score_basis"] = ("form only — the §11 screen could not run for this candidate: "
+                                + str(s["screen_error"])[:120]) if s.get("screen_error") else (
+                "form only — the §11 screen ran and could assess nothing: every framework it has is "
+                "a keyword screen, and a keyword screen can refuse a subject but cannot clear one, "
+                "so neither compliance nor safety contributes a score")
         else:
             c["score"] = round(0.40 * c["form_score"] + 0.35 * s["compliance"] + 0.25 * s["safety"], 3)
             c["score_basis"] = (f"0.40 form {c['form_score']} · 0.35 compliance {s['compliance']} "
@@ -424,11 +436,22 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     _tied = len(_top) > 1
 
     stage_5 = {
-        "method": "candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, "
-                  "then screened by the deterministic §11 compliance/safety screen. Declared "
-                  "weights: 0.40 FORM (coverage · specificity · structure, over candidate + twin) "
-                  "· 0.35 compliance · 0.25 safety. A candidate the screen FAILS is vetoed and "
-                  "cannot be selected. Real measured proxies, never fabricated.",
+        # W483 (refutation) — the method now declares the weights that were APPLIED, not the ones
+        # the design hoped for. Declaring "0.35 compliance · 0.25 safety" while every candidate
+        # scored on form alone is the defect this round exists to remove.
+        "method": ("candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, "
+                   "then screened by the deterministic §11 screen. Weights APPLIED to this run: "
+                   + ("0.40 form · 0.35 compliance · 0.25 safety"
+                      if any(c["screen"].get("compliance") is not None for c in candidates)
+                      else "1.00 form — compliance and safety contributed NOTHING because no §11 "
+                           "framework could assess these candidates (they are keyword screens, and a "
+                           "keyword screen can refuse but not clear). Form saturates, so a tie here "
+                           "is expected and is disclosed below rather than resolved silently")
+                   + ". A candidate the screen FAILS is vetoed and cannot be selected. Real measured "
+                     "proxies, never fabricated."),
+        "weights_applied": ({"form": 0.40, "compliance": 0.35, "safety": 0.25}
+                            if any(c["screen"].get("compliance") is not None for c in candidates)
+                            else {"form": 1.0, "compliance": None, "safety": None}),
         "candidates": candidates,
         "selected": winner["id"],
         "vetoed": _vetoed,

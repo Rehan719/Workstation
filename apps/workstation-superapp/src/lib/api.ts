@@ -84,6 +84,51 @@ export const provenanceBadge = (servedBy: string | null | undefined, isExternal?
 export const complianceCls = (overall: string | null | undefined) =>
   overall === 'fail' ? 'bg-vital/15 text-vital' : overall === 'review' ? 'bg-amber-500/15 text-amber-400'
     : overall === 'pass' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500';
+// W483 (ledger v5 R1.1 / sweep S3.6) — ONE rule for every §11 chip on every page. The chip used to
+// read a bare "COMPLIANCE: PASS" in emerald with a tooltip listing framework statuses, on a verdict
+// whose frameworks had mostly assessed nothing. A pass is now only ever shown as the pass of what
+// actually assessed the subject, and the areas nothing assessed are named in the chip itself.
+export type ComplianceVerdictRow = { framework?: string; status?: string; coverage?: string; escalate?: string[] };
+export type ComplianceRecord = {
+  overall?: string | null; verdicts?: ComplianceVerdictRow[] | null;
+  coverage_gaps?: string[] | null; assessed_by?: string[] | null; basis?: string | null;
+  // tri-state: false = a row refused it · true = every area assessed and passed · null = not established
+  compliant?: boolean | null;
+};
+export const complianceChip = (c: ComplianceRecord | null | undefined) => {
+  const overall = c?.overall ?? null;
+  const rows = c?.verdicts ?? [];
+  // W483 (refutation) — a record written BEFORE this round carries no coverage fields at all, and
+  // deriving from their absence asserted "nothing assessed this" about a verdict that predates the
+  // question. `legacy` is that case: the chip says the record is older than the rule instead of
+  // making a claim about it. A record with rows that DO carry coverage is read normally.
+  const hasCoverage = c?.coverage_gaps !== undefined || c?.assessed_by !== undefined
+    || rows.some(v => v?.coverage !== undefined);
+  const legacy = !!overall && !hasCoverage;
+  const gaps = c?.coverage_gaps ?? rows.filter(v => v?.coverage === 'none' || v?.coverage === 'screen'
+    || v?.status === 'not_assessed' || v?.status === 'not_checked').map(v => v?.framework || '?');
+  const assessedBy = c?.assessed_by ?? rows.filter(v => v?.coverage === 'engine'
+    && v?.status && !['not_assessed', 'not_checked', 'error'].includes(v.status)).map(v => v?.framework || '?');
+  const escalated = rows.flatMap(v => (v?.escalate ?? []).map(d => `${v?.framework}:${d}`));
+  const qualifier = legacy ? ' (recorded before W483)'
+    : overall === 'pass' && !assessedBy.length ? ' (screen only)'
+    : overall === 'pass' && gaps.length ? ` (${assessedBy.join(' · ')} only)` : '';
+  // A pass nothing assessed is never emerald — nor is a pass we cannot interrogate.
+  const cls = (overall === 'pass' && (legacy || !assessedBy.length))
+    ? 'bg-slate-800 text-slate-400' : complianceCls(overall);
+  const detail = rows.map(v => `${v?.framework}:${v?.status}${v?.coverage ? ` [${v.coverage}]` : ''}`).join(' · ');
+  return {
+    cls,
+    label: `compliance: ${overall ?? 'not screened'}${qualifier}`,
+    title: `§11 live compliance — ${detail || 'no framework detail recorded'}`
+      + (legacy
+        ? '\nThis verdict was recorded before the rule that a screen can refuse but never clear, so what it assessed was not recorded.'
+        : (assessedBy.length ? `\nASSESSED by: ${assessedBy.join(' · ')}` : '\nNOTHING here assessed this subject')
+          + (gaps.length ? `\nNOT assessed: ${gaps.join(' · ')} — a keyword screen can refuse a subject, not clear one` : ''))
+      + (escalated.length ? `\nESCALATED for a human: ${escalated.join(' · ')}` : '')
+      + (c?.compliant === null || c?.compliant === undefined ? '' : `\ncompliant: ${c.compliant}`),
+  };
+};
 export const provenanceMapFromTrace = (steps: Array<{ served_by?: string | null }> | null | undefined): Record<string, number> => {
   const m: Record<string, number> = {};
   for (const s of steps ?? []) { const k = s?.served_by || 'native'; m[k] = (m[k] || 0) + 1; }

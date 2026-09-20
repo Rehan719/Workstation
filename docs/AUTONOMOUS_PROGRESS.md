@@ -6862,3 +6862,49 @@ test_w481_the_transformation_cascade_verifies_delivery_or_says_it_did_not. Two e
 certification and were retargeted; one now proves the write-back rule BOTH ways.
 
 Suite: 389 passed · 15 skipped · 0 failed (404 items from 365 test functions; 44-min full run on the final tree, isolated DATA_DIR).
+
+### W483 — P1.18: a keyword screen flags and never clears (FU-094, 095, 096, 099, 105, 115, 140)
+
+**Why.** Seven P1.18 rows at the top of the priority list, and one defect underneath all of them: a word
+list was being recorded as a verdict. It CONVICTED — the ethical engine's severe-harm lexicon matched
+"varroa mites are KILLING a third of my colonies" and recorded `human: fail`, which failed the whole §11
+screen, vetoed every candidate in the journey, held the new entity's first economic cycle as
+`compliance_fail_hold`, wrote "compliance fail" into four ship commit messages and stamped the export NOT
+CLEARED FOR USE. It CLEARED — three frameworks returned `pass` because their keyword screens matched
+NOTHING, and the §10 bar recorded `compliant` and `safe` as met=True, measured=True, source=gate, which the
+Deliverables page rendered as an emerald COMPLIANCE: PASS. And it took the SUBJECT'S WORD for it — a text
+containing 'halal' passed the Sharia row. The faith surfaces had the same shape: the halal pre-assessment
+put the verdict enum in a HEADING, so the floor (which composes the headings it is given) emitted
+"## Halal Status Assessment (COMPLIANT /" over a product containing gelatin and E471 without naming either;
+and the quran-uthmani edition prepends the Basmala to ayah 1 of 112 surahs, passed through under a label
+reading "authentic … not AI-generated" — the label was true, the boundary was not.
+
+**The rule.** A screen may REFUSE a subject and may ESCALATE one for a human. It may never CLEAR one.
+Flagging is safe; clearing is the claim that has to be earned. Every row now carries a coverage
+(engine · vocabulary · screen · none), only 'engine' can carry a pass, `_overall` passes only off a row
+that assessed, `compliant` is tri-state, and one `_coverage_report` writes coverage_gaps, assessed_by and
+the basis onto every response. The §10 bar records 'compliant'/'safe' as met only where every row in scope
+passed AND could assess, with a separate screen-only bucket in the counts. One `complianceChip` decides
+every §11 chip — twelve sites across nine pages. The halal enum left the heading, the floor's three judging
+sections are not asked for and are cut if they appear, and a deterministic ingredient screen names gelatin
+and E471 with reasons and carries no verdict. `normalise_ayah_text` separates the prepended Basmala off ayah
+1 (not surah 1, not surah 9) on all three read paths, cutting on a character boundary; the prefix is never
+written into this repository — the reference text IS ayah 1:1, fetched from the same source.
+
+**And the escalation reaches a human.** Downgrading the lexicon 'fail' removed three things it used to do:
+an immune record, a route to arms-length Change Control, and a hold on the marketplace and the curation
+gate. All three are restored under the new words — what changed is what we CALL it, not whether anyone is
+told. One consequence is recorded rather than hidden: NOTHING in the screen can currently earn 'engine', so
+`assessed_by` is always empty, `compliant` is never True, and §4.5 candidate ranking is form-only. Those are
+FU-239 and FU-240 on P2.8 — a capability gap, stated.
+
+**Refuted** once in isolated worktrees (6 lenses + 24 adversarial verifiers): 24 findings, **15 real**, 9
+refuted. The round's own defect class had been re-committed twice inside the fix — the constitutional row
+kept coverage 'engine' for a nine-intent substring gate, and the ethical row was cleared by a
+document-coverage number — and a third miss left the escalation reaching nothing but a tooltip. All fixed,
+each with a guard leg. **Broken 67 ways**; every blind fails the guard, none vacuous (sixteen were vacuous
+on a first sweep and were made real). **Probe 19/19** on a fresh backend (:8091; next :8092) including the
+Compliance page in a real browser. Ten older tests asserted the behaviour this round changed and were
+retargeted, each with its reason recorded in the test.
+
+Suite: 390 passed · 15 skipped · 0 failed (40-min run on the final tree, isolated DATA_DIR).

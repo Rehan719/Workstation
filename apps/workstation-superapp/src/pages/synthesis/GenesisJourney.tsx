@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { qmsChip, provenanceMapBadge, complianceCls } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip } from '../../lib/api';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -818,10 +818,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                   </span>
                 )}
                 {result.quality_assurance.quality?.compliance && (
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${complianceCls(result.quality_assurance.quality.compliance.overall)}`}
-                    title={`§11 live compliance — ${(result.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
-                    compliance: {result.quality_assurance.quality.compliance.overall}
-                  </span>
+                  (() => { const _c = complianceChip(result.quality_assurance.quality.compliance); return (
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                      {_c.label}
+                    </span>); })()
                 )}
                 {/* W460 — a screen that raised (or never ran) used to render nothing at all */}
                 {result.quality_assurance.quality && !result.quality_assurance.quality.compliance && (
@@ -945,9 +945,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                           ); })()}
                           {repo.quality_assurance?.quality?.compliance && (
-                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(repo.quality_assurance.quality.compliance.overall)}`}>
-                              compliance: {repo.quality_assurance.quality.compliance.overall}
-                            </span>
+                            (() => { const _c = complianceChip(repo.quality_assurance.quality.compliance); return (
+                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                                {_c.label}
+                              </span>); })()
                           )}
                         </div>
                         <p className="text-[9px] font-mono text-slate-400 leading-relaxed">{repo.tree.join('  ·  ')}</p>
@@ -970,9 +971,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                             ); })()}
                             {site.quality_assurance?.quality?.compliance && (
-                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(site.quality_assurance.quality.compliance.overall)}`}>
-                                compliance: {site.quality_assurance.quality.compliance.overall}
-                              </span>
+                              (() => { const _c = complianceChip(site.quality_assurance.quality.compliance); return (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                                  {_c.label}
+                                </span>); })()
                             )}
                           </div>
                           <p className="text-[9px] text-slate-500">Pages: {site.nav.map(n => n.label).join(' · ')}</p>
@@ -998,9 +1000,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
                               {webapp.quality_assurance?.quality?.compliance && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(webapp.quality_assurance.quality.compliance.overall)}`}>
-                                  compliance: {webapp.quality_assurance.quality.compliance.overall}
-                                </span>
+                                (() => { const _c = complianceChip(webapp.quality_assurance.quality.compliance); return (
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                                    {_c.label}
+                                  </span>); })()
                               )}
                             </div>
                             <p className="text-[9px] text-slate-500">{webapp.features.join(' · ')}</p>
@@ -1028,9 +1031,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
                               {pwa.quality_assurance?.quality?.compliance && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(pwa.quality_assurance.quality.compliance.overall)}`}>
-                                  compliance: {pwa.quality_assurance.quality.compliance.overall}
-                                </span>
+                                (() => { const _c = complianceChip(pwa.quality_assurance.quality.compliance); return (
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                                    {_c.label}
+                                  </span>); })()
                               )}
                             </div>
                             <p className="text-[9px] text-slate-500">{pwa.features.join(' · ')}</p>
@@ -1066,9 +1070,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
                               {pack.quality_assurance?.quality?.compliance && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(pack.quality_assurance.quality.compliance.overall)}`}>
-                                  compliance: {pack.quality_assurance.quality.compliance.overall}
-                                </span>
+                                (() => { const _c = complianceChip(pack.quality_assurance.quality.compliance); return (
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>
+                                    {_c.label}
+                                  </span>); })()
                               )}
                             </div>
                             {pack.concept_note && <p className="text-[9px] text-amber-400/80" data-testid="pack-concept-note">{pack.concept_note}</p>}

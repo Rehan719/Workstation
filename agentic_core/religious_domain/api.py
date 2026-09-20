@@ -243,6 +243,104 @@ def _award(uid: str, achievement: str, xp: int, source: str) -> dict:
     return _gami_state(g)
 
 
+# ── Sourced-text normalisation (W483, ledger v5 R1.2) ────────────────────────
+# The quran-uthmani edition PREPENDS the Basmala to ayah 1 of every surah except 1 and 9, and puts a
+# U+FEFF at the head of 1:1. Passed through unchanged, 112 surahs showed a first ayah that is not the
+# text of that ayah under Hafs numbering — under a label reading "authentic … not AI-generated". The
+# label was true; the boundary was not.
+#
+# The prefix is never written here. Scripture is never typed into this repository (§11.2): the
+# reference text for the prefix IS ayah 1:1, fetched from the same authoritative source and compared
+# skeleton-to-skeleton (diacritics, tatweel and whitespace removed — a mechanical Unicode operation,
+# not a reading). When 1:1 cannot be sourced, NOTHING is stripped and the response says so: a
+# boundary this code cannot verify is never asserted.
+_BOM = "﻿"
+_TASHKEEL = re.compile(r"[ؐ-ًؚ-ٰٟۖ-ۭ࣓-ࣿـ]")
+
+
+def _skeleton(text: str) -> str:
+    """The consonantal skeleton: no BOM, no diacritics/tatweel, no whitespace. Comparison only."""
+    return re.sub(r"\s+", "", _TASHKEEL.sub("", (text or "").replace(_BOM, "")))
+
+
+async def _basmala_prefix(edition: str = "quran-uthmani") -> str | None:
+    """The Basmala as the SOURCE gives it — ayah 1:1 in this edition. Cache-first; never generated,
+    never typed. Returns None when the source is unreachable and nothing is cached."""
+    key = f"ayah_{edition}_1_1_basmala_ref"
+    cached = _cache_read(key)
+    if cached:
+        return ((cached.get("data") or {}).get("data") or {}).get("text")
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{_QURAN_API}/ayah/1:1/{edition}")
+            resp.raise_for_status()
+            data = resp.json()
+    except Exception:
+        return None
+    _cache_write(key, data)
+    return (data.get("data") or {}).get("text")
+
+
+def basmala_is_prepended(surah: int, ayah: int) -> bool:
+    """Where the edition prepends the Basmala: ayah 1 of every surah but al-Fatiha (it IS 1:1 there)
+    and at-Tawba (which has none)."""
+    return ayah == 1 and surah not in (1, 9)
+
+
+async def normalise_ayah_text(text: str, surah: int, ayah: int,
+                              edition: str = "quran-uthmani") -> tuple[str, dict]:
+    """Return (text of THIS ayah, a note saying what was done and on what evidence).
+
+    The note is part of the answer, not decoration: `basmala_separated` is True only when the prefix
+    was sourced AND matched, False when it was sourced and did not match, and None when the prefix
+    could not be sourced at all — in which case the text is returned untouched apart from the BOM and
+    the note says the boundary was not checked.
+    """
+    out = (text or "").replace(_BOM, "").strip()
+    if not basmala_is_prepended(surah, ayah):
+        return out, {"basmala_separated": False,
+                     "basmala_basis": ("this ayah carries no prepended Basmala in this edition "
+                                       + ("(surah 1: the Basmala is ayah 1 itself)" if surah == 1 else
+                                          "(surah 9 has no Basmala)" if surah == 9 else
+                                          "(the edition prepends it to ayah 1 only)"))}
+    prefix = await _basmala_prefix(edition)
+    if not prefix:
+        return out, {"basmala_separated": None, "basmala": None,
+                     "basmala_basis": ("not checked — the reference text for the prefix (ayah 1:1) could "
+                                       "not be sourced, so no boundary is asserted and nothing was removed")}
+    skel_p = _skeleton(prefix)
+    if skel_p and _skeleton(out).startswith(skel_p):
+        # Cut at the character that completes the prefix's skeleton — the cut is located by counting
+        # skeleton characters, never by matching a literal.
+        # W483 (refutation) — the cut must land on a CHARACTER boundary, not a skeleton boundary. It
+        # used to stop at `i + 1`, immediately after the base letter that completed the prefix, which
+        # left that letter's own vowel marks at the head of the ayah: the Basmala lost its final
+        # vowel and the ayah began with an orphaned diacritic. Both halves would then be wrong, in
+        # sacred text. The cut is advanced past every combining mark and any tatweel that belongs to
+        # the completing letter, so the prefix keeps its marks and the ayah starts at a real letter.
+        seen, cut = 0, len(out)
+        for i, ch in enumerate(out):
+            if _skeleton(ch):
+                seen += 1
+                if seen == len(skel_p):
+                    cut = i + 1
+                    while cut < len(out) and not _skeleton(out[cut]) and not out[cut].isspace():
+                        cut += 1          # carry the completing letter's diacritics with the prefix
+                    break
+        head, body = out[:cut].strip(), out[cut:].strip()
+        if body:
+            return body, {"basmala_separated": True, "basmala": head,
+                          "basmala_basis": ("the edition prepends the Basmala to ayah 1; it is shown "
+                                            "separately and is not part of ayah 1 under Hafs numbering. "
+                                            "Matched against the sourced text of ayah 1:1.")}
+        return out, {"basmala_separated": False, "basmala": None,
+                     "basmala_basis": ("the prefix matched the whole of this ayah's text, which cannot be "
+                                       "right — nothing was removed")}
+    return out, {"basmala_separated": False, "basmala": None,
+                 "basmala_basis": ("the sourced text of ayah 1:1 is not a prefix of this ayah in this "
+                                   "edition — nothing was removed")}
+
+
 async def fetch_ayah_arabic(surah: int, ayah: int) -> str | None:
     """Sourced Arabic text of one ayah (cache-first) — for callers that must inject AUTHENTIC text
     into prompts instead of letting a model generate Quranic Arabic (the constitutional rule).
@@ -252,16 +350,23 @@ async def fetch_ayah_arabic(surah: int, ayah: int) -> str | None:
     key = f"ayah_{surah}_{ayah}_quran-uthmani"
     cached = _cache_read(key)
     if cached:
-        return (cached["data"].get("data") or {}).get("text")
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(f"{_QURAN_API}/ayah/{surah}:{ayah}/quran-uthmani")
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception:
-        return None
-    _cache_write(key, data)
-    return (data.get("data") or {}).get("text")
+        raw = (cached["data"].get("data") or {}).get("text")
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"{_QURAN_API}/ayah/{surah}:{ayah}/quran-uthmani")
+                resp.raise_for_status()
+                data = resp.json()
+        except Exception:
+            return None
+        _cache_write(key, data)
+        raw = (data.get("data") or {}).get("text")
+    if not raw:
+        return raw
+    # W483 (R1.2) — the text injected into a prompt must be the text of THIS ayah: the edition's
+    # prepended Basmala is separated off (and the BOM removed) before the text travels anywhere.
+    text, _note = await normalise_ayah_text(raw, surah, ayah)
+    return text
 
 
 # ── Quran Text (alquran.cloud) ────────────────────────────────────────────────
@@ -321,14 +426,20 @@ async def get_surah(number: int, edition: str = "quran-uthmani"):
         fetched_at = None
 
     surah_data = data.get("data", {})
-    ayaat = [
-        {
-            "number_in_surah": a["numberInSurah"],
-            "text_arabic": a["text"],
-        }
-        for a in surah_data.get("ayahs", [])
-    ]
+    # W483 (R1.2) — ayah 1 carries the edition's prepended Basmala; it is separated off so the ayah
+    # shown is the ayah, with the Basmala returned beside it and labelled.
+    ayaat = []
+    basmala = None
+    basmala_basis = None
+    for a in surah_data.get("ayahs", []):
+        _t, _n = await normalise_ayah_text(a["text"], number, a["numberInSurah"], edition)
+        if a["numberInSurah"] == 1:
+            basmala, basmala_basis = _n.get("basmala"), _n.get("basmala_basis")
+        ayaat.append({"number_in_surah": a["numberInSurah"], "text_arabic": _t})
     return {
+        "basmala": basmala,
+        "basmala_note": ("shown separately — the edition prepends it to ayah 1; it is not part of "
+                         "ayah 1 under Hafs numbering" if basmala else basmala_basis),
         "surah_number": number,
         "name_arabic": surah_data.get("name", ""),
         "name_english": surah_data.get("englishNameTranslation", ""),
@@ -369,9 +480,14 @@ async def get_ayah(surah_number: int, ayah_number: int, edition: str = "quran-ut
         _cache_write(f"ayah_full_{surah_number}_{ayah_number}_{edition}", data)
 
     ayah = data.get("data", {})
+    # W483 (R1.2) — see normalise_ayah_text: the prepended Basmala is not part of this ayah.
+    _text, _note = await normalise_ayah_text(ayah.get("text", ""), surah_number, ayah_number, edition)
     return {
         "ref": ref,
-        "text_arabic": ayah.get("text", ""),
+        "text_arabic": _text,
+        **({"basmala": _note["basmala"]} if _note.get("basmala") else {}),
+        "basmala_separated": _note.get("basmala_separated"),
+        "basmala_basis": _note.get("basmala_basis"),
         "surah_name": ayah.get("surah", {}).get("name", ""),
         "juz": ayah.get("juz", 0),
         "page": ayah.get("page", 0),

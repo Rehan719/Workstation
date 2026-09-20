@@ -933,8 +933,12 @@ def test_qms_defect_loop_and_measured_bar(client):
     dl = client.post("/api/v1/deliverables/produce", json={
         "type": "brief", "brief": "w307 bar", "content": body}).json()
     bm = dl["quality_assurance"]["quality"]["bar_measured"]
-    assert bm["measured"] >= 4 and bm["not_measured"] > 0
-    assert bm["criteria"]["compliant"]["measured"] is True
+    assert bm["measured"] >= 2 and bm["not_measured"] > 0
+    # W483 retarget — 'compliant' is no longer MEASURED off keyword screens; it is screen-only and
+    # met=None until a framework that could actually assess the subject passes it.
+    assert bm["criteria"]["compliant"]["measured"] is False
+    assert bm["criteria"]["compliant"]["source"] == "screen"
+    assert bm["criteria"]["compliant"]["met"] is None
     assert bm["criteria"]["best-in-class"]["met"] is None    # never claimed unmeasured criteria
     # §10 (W316) — the close leg can MEASURE instead of self-attest: reverify with the corrected
     # delivery's CONTENT re-runs the same instruments; the basis is recorded honestly either way.
@@ -1001,8 +1005,21 @@ def test_candidates_selected_on_simulated_evidence(client):
                                           + 0.25 * sc["safety"], 3)) < 1e-9
             assert "compliance" in c["score_basis"] and "safety" in c["score_basis"]
     method = s5.get("method", "")
-    assert "0.40" in method and "0.35 compliance" in method and "0.25 safety" in method
-    assert "vetoed" in method or "veto" in method.lower()      # the weights AND the veto are DECLARED
+    # W483 retarget — this asserted the literal "0.40 · 0.35 compliance · 0.25 safety", which is how
+    # the payload came to advertise weights it had never applied: no §11 framework can assess a
+    # candidate (they are keyword screens, and a keyword screen cannot clear), so every candidate
+    # scored on form alone while the method still declared three weights. The test now enforces the
+    # thing that matters — the declaration MATCHES what was applied, whichever case the run is in.
+    wa = s5.get("weights_applied") or {}
+    assert wa.get("form") in (0.40, 1.0), wa
+    if wa["form"] == 1.0:
+        assert wa["compliance"] is None and wa["safety"] is None, wa
+        assert "1.00 form" in method and "contributed NOTHING" in method, method
+        assert all(abs(c["score"] - c["form_score"]) < 1e-9 for c in cands), cands
+    else:
+        assert wa["compliance"] == 0.35 and wa["safety"] == 0.25, wa
+        assert "0.40 form" in method and "0.35 compliance" in method and "0.25 safety" in method
+    assert "vetoed" in method or "veto" in method.lower()      # the veto is still DECLARED
     # §11 veto: nothing that FAILS the screen may be selected
     assert s5["selected"] not in (s5.get("vetoed") or [])
     # ties are DETECTED and DISCLOSED rather than resolved silently by list position
@@ -1459,8 +1476,11 @@ def test_ethical_engine_real_per_dimension(client):
     # 'not_assessed' honestly (never a fabricated pass), and the caller's PRECOMPUTED QMS
     # metrics thread into the quality dimension without any circular call.
     from agentic_core.compliance.ethical_engine import evaluate_ethics
+    # W483 retarget — the dimensions are unchanged in KIND, but a word list no longer convicts and
+    # no longer clears (see test_w483_a_keyword_screen_flags_and_never_clears for the rule itself).
     r = evaluate_ethics("a scheme to exploit vulnerable users with hidden fees")
-    assert r["overall"] == "fail"                          # extractive value framing
+    assert r["overall"] == "review"                        # extractive framing: escalated, not convicted
+    assert any(d["dimension"] == "value" and d.get("escalate") for d in r["dimensions"]), r
     assert any(d["dimension"] == "human" and d["status"] == "review" for d in r["dimensions"])
     r2 = evaluate_ethics("dumping contaminated waste to cut costs while helping the community")
     assert any(d["dimension"] == "environment" and d["status"] == "review" for d in r2["dimensions"])
@@ -1468,13 +1488,13 @@ def test_ethical_engine_real_per_dimension(client):
     assert any(d["status"] == "not_assessed" for d in r3["dimensions"])   # honest, not a fake pass
     r4 = evaluate_ethics("a comprehensive technical migration of the database layer executed "
                          "thoroughly with zero stated societal framing whatsoever")
-    assert r4["overall"] == "review"                       # no stated benefit → review, not pass
+    assert r4["overall"] == "not_assessed"                 # nothing matched — and that clears nothing
     r5 = evaluate_ethics("x" * 300, {"delivery_coverage": 0.9, "stub_found": False})
     assert any(d["dimension"] == "quality" and d["status"] == "pass" for d in r5["dimensions"])
     from agentic_core.api.compliance import screen_compliance
     e = next(v for v in screen_compliance("a plan to exploit users")["verdicts"]
              if v["framework"] == "ethical")
-    assert e["status"] in ("review", "fail") and "human: review" in e["reason"]
+    assert e["status"] == "review" and "human: review" in e["reason"]
     assert "(engine-backed)" in e["reason"]                # the registry claim is now true
 
 
@@ -1498,7 +1518,9 @@ def test_compliance_engines_genuinely_invoked(client):
     assert "audit " in l2["reason"] and "over the subject" in l2["reason"]
     r3 = screen_compliance("a halal-certified community meal service with transparent pricing")
     h3 = next(v for v in r3["verdicts"] if v["framework"] == "sharia_halal")
-    assert h3["status"] == "pass" and "(engine-backed)" in h3["reason"]   # pass keeps the suffix
+    # W483 retarget — halal vocabulary is the subject's own claim: REVIEW, never a pass. The engine
+    # label is the point of this test and still travels on the row.
+    assert h3["status"] == "review" and "(engine-backed)" in h3["reason"]
     orig = C._halal_engine
     try:
         C._halal_engine = lambda: (_ for _ in ()).throw(RuntimeError("down"))
@@ -2362,10 +2384,11 @@ def test_compliance_frameworks(client):
     assert r.json()
     # §11 — the federated check flags prohibited content (Halal) and clears clean content
     clean = client.post("/api/v1/compliance/check", json={"subject": "a halal community meal service"}).json()
-    # W455 — the overall is the verdict of the rows that could READ the subject (sharia passes on halal
-    # vocabulary); the rows that could not are named as coverage gaps, never counted as a pass
-    assert clean["overall"] == "pass" and clean["compliant"] is True and "uk_legal" in clean["coverage_gaps"]
-    assert next(v for v in clean["verdicts"] if v["framework"] == "sharia_halal")["status"] == "pass"
+    # W483 retarget — a subject's own halal vocabulary is its claim about itself, so the sharia row
+    # is REVIEW, not a pass, and with nothing able to assess the subject `compliant` is not
+    # established. The rows that could not read it are still named as coverage gaps.
+    assert clean["overall"] == "review" and clean["compliant"] is None and "uk_legal" in clean["coverage_gaps"]
+    assert next(v for v in clean["verdicts"] if v["framework"] == "sharia_halal")["status"] == "review"
     haram = client.post("/api/v1/compliance/check", json={"subject": "fund it via riba interest-bearing loans"}).json()
     assert haram["overall"] == "fail" and haram["compliant"] is False
     assert any(v["framework"] == "sharia_halal" and v["status"] == "fail" for v in haram["verdicts"])
@@ -2483,7 +2506,10 @@ def test_compliance_check_pass(client):
                     json={"subject": "a halal community meal-prep service for elderly families"})
     assert r.status_code == 200
     body = r.json()
-    assert body["overall"] == "pass" and body["compliant"] is True and body["coverage_gaps"] == ["uk_legal", "constitutional"]   # W455
+    # W483 retarget — see test_compliance_check_pass's sibling above: nothing here assessed the
+    # subject, so the overall is 'review', `compliant` is None, and every area is named as a gap.
+    assert body["overall"] == "review" and body["compliant"] is None
+    assert set(body["coverage_gaps"]) >= {"uk_legal", "constitutional", "regulatory", "ehs"}, body["coverage_gaps"]
     assert next(v for v in body["verdicts"] if v["framework"] == "uk_legal")["coverage"] == "none"
     assert len(body["verdicts"]) >= 5
 
@@ -3574,7 +3600,14 @@ def test_swarm_cascade_in_house_provenance(client):
     assert q.get("document_controlled") is True
     # §11 — live compliance woven into EVERY delivery (not bolted on): Halal·Legal·Regulatory·EHS·Ethical
     comp = q["compliance"]
-    assert isinstance(comp["compliant"], bool) and comp["overall"] in ("pass", "review", "fail")
+    # W483 retarget — `compliant` is tri-state now (None = not established by a screen that cannot
+    # clear). Asserting the whole domain would be vacuous, so assert the RULE that ties the two
+    # fields together: compliant is False exactly when the overall failed, and True only when the
+    # screen names something that could assess the subject.
+    assert comp["overall"] in ("pass", "review", "fail")
+    assert (comp["compliant"] is False) == (comp["overall"] == "fail"), comp
+    if comp["compliant"] is True:
+        assert comp.get("assessed_by") and not comp.get("coverage_gaps"), comp
     assert {v["framework"] for v in comp["verdicts"]} >= {"sharia_halal", "uk_legal", "ehs", "ethical"}
     # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian)
     bio = r["biomimetic"]
@@ -6908,15 +6941,20 @@ def test_w419_attestation_is_not_counted_as_measurement():
 
     # The counts are reported SEPARATELY — this is the whole point. A single conflated number is
     # what let 4 real measurements lend their credibility to anything a caller asserted.
-    assert bar["measured"] == 4, bar["summary"]
+    # W483 retarget — 'compliant' and 'safe' left the MEASURED bucket for their own 'screen-only'
+    # one, because the §11 rows they were read from are keyword screens that cannot clear a subject.
+    # The separation is the point of this test, and there is one more bucket to separate now.
+    assert bar["measured"] == 2, bar["summary"]
     assert bar["attested"] == 2, bar["summary"]
-    assert set(bar["measured_criteria"]) == {
-        "specifically designed", "verified", "compliant", "safe"}
+    assert bar["screen_only"] == 2, bar["summary"]
+    assert set(bar["measured_criteria"]) == {"specifically designed", "verified"}
+    assert set(bar["screen_only_criteria"]) == {"compliant", "safe"}
     assert bar["measured"] + bar["attested"] + bar["not_measured"] == 16
 
-    # And with NO caller evidence the gate still measures its own four and claims nothing else.
+    # And with NO caller evidence the gate still measures its own two and claims nothing else
+    # (W483: 'compliant' and 'safe' moved to the screen-only bucket).
     bare = _measure_bar(1.0, False, True, 0.6, compliance, None)
-    assert bare["measured"] == 4 and bare["attested"] == 0
+    assert bare["measured"] == 2 and bare["attested"] == 0 and bare["screen_only"] == 2
     assert bare["criteria"]["best-in-class"]["met"] is None
 
 
@@ -6946,9 +6984,13 @@ def test_w419_compliance_failure_vetoes_a_candidate():
     assert bad["disqualified"] is True, "an interest-bearing candidate must be vetoed: %r" % (bad,)
     assert bad["verdicts"].get("sharia_halal") == "fail"
 
-    # The screen must not be vacuous in the other direction: a clean candidate still passes, and
-    # the criteria nothing measures are DECLARED rather than proxied.
-    assert ok["compliance"] == 1.0 and ok["safety"] == 1.0
+    # The screen must not be vacuous in the other direction: a clean candidate is NOT disqualified,
+    # and the criteria nothing measures are DECLARED rather than proxied.
+    # W483 retarget — a clean candidate no longer scores 1.0: no framework could assess it, so the
+    # two criteria are None with the covered lists empty. A 1.0 built on word lists that matched
+    # nothing was the score this round removed.
+    assert ok["compliance"] is None and ok["safety"] is None, ok
+    assert ok["compliance_covered"] == [] and ok["safety_covered"] == [], ok
     assert set(_CAND_UNMEASURED) == {"effectiveness", "efficiency", "commercial viability"}
 
 
@@ -9437,11 +9479,13 @@ def test_w455_compliance_reads_what_it_can_and_says_what_it_cannot(client, monke
         c = rows(r)["constitutional"]
         assert c["status"] == "not_checked" and "gates agent actions" in c["reason"] and c["coverage"] == "none", c
     assert launder["overall"] == "fail" and rows(launder)["uk_legal"]["status"] == "fail"
-    # halal vocabulary → sharia screen pass; UK Legal has no coverage → review, named as a gap; the
-    # overall is the verdict of the rows that read the subject
-    assert rows(bakery)["sharia_halal"]["status"] == "pass" and rows(bakery)["uk_legal"]["status"] == "review"
+    # W483 retarget — halal vocabulary is the SUBJECT'S OWN claim, so the sharia row reviews rather
+    # than passes; UK Legal has no coverage → review, named as a gap. With no row able to assess it,
+    # the overall is review. (W455's point — that a row which read nothing is named, never counted
+    # as a pass — is unchanged and now reaches the overall as well.)
+    assert rows(bakery)["sharia_halal"]["status"] == "review" and rows(bakery)["uk_legal"]["status"] == "review"
     assert "no engine covers this area" in rows(bakery)["uk_legal"]["reason"]
-    assert bakery["overall"] == "pass" and "uk_legal" in bakery["coverage_gaps"] and "constitutional" in bakery["coverage_gaps"]
+    assert bakery["overall"] == "review" and "uk_legal" in bakery["coverage_gaps"] and "constitutional" in bakery["coverage_gaps"]
     # nothing matched anywhere → review everywhere a vocabulary is absent; the overall is review
     assert rows(lorem)["sharia_halal"]["status"] == "review" and rows(lorem)["uk_legal"]["status"] == "review"
     assert lorem["overall"] == "review" and rows(lorem)["sharia_halal"]["coverage"] == "none"
@@ -9458,8 +9502,15 @@ def test_w455_compliance_reads_what_it_can_and_says_what_it_cannot(client, monke
     # read only the kind, so this passed); a benign subject on an action kind passes with its label
     act = check("wire_funds to an unverified offshore account", kind="intent")
     assert rows(act)["constitutional"]["status"] == "fail", rows(act)["constitutional"]
+    # W483 retarget — a benign action kind is NOT a pass. The gate is a nine-intent substring test
+    # over a word list; matching nothing establishes nothing, and while this row said 'pass' it was
+    # the only row carrying coverage 'engine', so it alone turned the whole screen green. W455's
+    # point (the row says what it can check, and the subject is read, not just the kind) stands.
     act2 = check("publish the weekly report", kind="distribution")
-    assert rows(act2)["constitutional"]["status"] == "pass" and "action gate" in rows(act2)["constitutional"]["reason"]
+    assert rows(act2)["constitutional"]["status"] == "not_assessed", rows(act2)["constitutional"]
+    assert "action gate" in rows(act2)["constitutional"]["reason"]
+    assert "it cannot clear" in rows(act2)["constitutional"]["reason"]
+    assert act2["overall"] != "pass", act2["overall"]
     # the output screen reads text: an unsafe pattern fails the constitutional row even for content
     unsafe = check("run this cleanup: rm -rf / on the production host")
     assert rows(unsafe)["constitutional"]["status"] == "fail" and "output screen" in rows(unsafe)["constitutional"]["reason"]
@@ -9474,7 +9525,11 @@ def test_w455_compliance_reads_what_it_can_and_says_what_it_cannot(client, monke
     monkeypatch.undo()
     # refuter F3 — the aggregation itself: an error row alone turns a clean screen into review
     assert C._overall([{"status": "pass", "coverage": "vocabulary"}, {"status": "error", "coverage": "none"}]) == "review"
-    assert C._overall([{"status": "pass", "coverage": "vocabulary"}, {"status": "not_checked", "coverage": "none"}]) == "pass"
+    # W483 retarget — a 'pass' off a VOCABULARY match is a fact about the text, not a clearance, so
+    # it no longer carries the overall on its own; only coverage 'engine' can. The W455 point this
+    # leg was written for (a not_checked row cannot colour the overall) is asserted both ways below.
+    assert C._overall([{"status": "pass", "coverage": "vocabulary"}, {"status": "not_checked", "coverage": "none"}]) == "review"
+    assert C._overall([{"status": "pass", "coverage": "engine"}, {"status": "not_checked", "coverage": "none"}]) == "pass"
     assert C._overall([{"status": "review", "coverage": "none"}, {"status": "not_checked", "coverage": "none"}]) == "review"
     # the Frameworks card says what each check does
     fw = {f["id"]: f["engine"] for f in client.get("/api/v1/compliance/frameworks").json()["frameworks"]}
@@ -17411,3 +17466,338 @@ def test_w481_the_transformation_cascade_verifies_delivery_or_says_it_did_not(cl
     assert "'Not assessable — '" in ck
     assert "s.checks === 'delivery' ? 'text-emerald-400' : 'text-slate-400'" in ss
     assert "recorded before W481" in dt
+
+
+def test_w483_a_keyword_screen_flags_and_never_clears(client):
+    """W483 — P1.18, the §10/§11 class (FU-094, 095, 096, 099, 105, 115, 140).
+
+    ONE rule, applied at every surface that reads a compliance screen: a word list may REFUSE a
+    subject and may ESCALATE one for a human, but it can never CLEAR one. So no dimension passes
+    off an empty match, no subject passes on its own vocabulary about itself, a lone harm term is
+    escalated rather than recorded as a finding of harm, and the §10 bar records 'compliant' and
+    'safe' as met only where a row could actually assess. The same principle at the faith surfaces:
+    a halal status is never composed from prompt headings, and an ayah is the text of that ayah.
+    """
+    import asyncio
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    from agentic_core.api.compliance import screen_compliance, assessed
+    from agentic_core.compliance.ethical_engine import evaluate_ethics
+
+    # 1. the lexicon cannot convict (R1.0 / R2.1)
+    bees = ("I keep bees in Yorkshire and varroa mites are killing a third of my colonies each "
+            "winter; I want an affordable organic treatment service for small-scale keepers")
+    eth = evaluate_ethics(bees)
+    human = next(d for d in eth["dimensions"] if d["dimension"] == "human")
+    assert human["status"] == "review" and human.get("escalate") is True, human
+    assert "killing" in human["reason"], human          # the matched term is NAMED, not just implied
+    assert eth["overall"] != "fail", eth
+    b = screen_compliance(bees)
+    assert b["overall"] != "fail", b                    # the beekeeper is no longer a §11 failure
+    _bethical = next(v for v in b["verdicts"] if v["framework"] == "ethical")
+    assert _bethical.get("escalate") == ["human"], _bethical
+    # (probe) the MATCHED TERM travels with the escalation — the row's reason is a per-dimension
+    # summary, and without the term the person it is addressed to cannot see what triggered it
+    assert _bethical.get("escalated_terms") == ["killing"], _bethical
+    assert "matched: killing" in _bethical["reason"], _bethical["reason"]
+
+    # 2. the lexicon cannot clear (R1.1 / R3.3)
+    for d in evaluate_ethics("a database migration executed carefully over three weeks")["dimensions"]:
+        assert d["status"] != "pass", d                 # nothing passes without a measured figure
+    quiet = screen_compliance("a stationery shop selling notebooks and pens to local schools")
+    for fw in ("regulatory", "ehs"):
+        row = next(v for v in quiet["verdicts"] if v["framework"] == fw)
+        assert row["status"] == "not_assessed" and row["coverage"] == "screen", row
+        assert not assessed(row), row
+    assert quiet["overall"] == "review" and quiet["compliant"] is None, quiet
+    assert set(quiet["coverage_gaps"]) >= {"regulatory", "ehs"}, quiet
+
+    # the ethical ROW reports the engine's own overall and the coverage it earned — it used to map
+    # 'not_assessed' to 'pass', and it must not claim 'engine' coverage for a word-list result
+    _qe = next(v for v in quiet["verdicts"] if v["framework"] == "ethical")
+    assert _qe["status"] == "not_assessed" and _qe["coverage"] == "none", _qe
+    assert not assessed(_qe), _qe
+    _be = next(v for v in b["verdicts"] if v["framework"] == "ethical")
+    assert _be["status"] == "review" and _be["coverage"] == "vocabulary", _be   # a lexicon hit
+    assert not assessed(_be), _be                                              # which assesses nothing
+    # NOTHING in the §11 screen can earn 'engine' today, and the screen says so rather than
+    # borrowing a measurement of something else. (See the delivery-quality leg below: supplying QMS
+    # figures does NOT promote the ethical row.)
+    for subj in ("a stationery shop", "a fine wine subscription club",
+                 "the plan involves unfair dismissal of staff", "a halal-certified meal service"):
+        assert screen_compliance(subj)["assessed_by"] == [], (subj, screen_compliance(subj)["assessed_by"])
+    # and a row that says 'not_assessed' can never be treated as a clearance, whatever its coverage
+    assert not assessed({"framework": "ethical", "status": "not_assessed", "coverage": "engine"})
+
+    # (refutation) a DELIVERY-QUALITY figure is not an ethical assessment. The QMS's section-coverage
+    # number used to make the ethical row 'pass' with coverage 'engine', and being the only assessing
+    # row it carried the whole §11 screen to 'pass' on a clean document.
+    _withm = screen_compliance("A community meal service for elderly residents. " + ("Detail. " * 60),
+                               delivery_metrics={"delivery_coverage": 0.9, "stub_found": False})
+    _we = next(v for v in _withm["verdicts"] if v["framework"] == "ethical")
+    assert _we["status"] != "pass" and _we["coverage"] != "engine", _we
+    assert _withm["overall"] != "pass", _withm["overall"]
+    assert not assessed(_we), _we
+    _eth_m = evaluate_ethics("x" * 300, {"delivery_coverage": 0.9, "stub_found": False})
+    assert _eth_m["overall"] == "not_assessed", _eth_m["overall"]     # the ethical dims said nothing
+    assert _eth_m["delivery_quality"] == "pass" and _eth_m["delivery_quality_measured"] is True
+    assert _eth_m["assessed"] is False, _eth_m
+
+    # (refutation) the CONSTITUTIONAL row is a nine-intent substring gate — a word list. It may
+    # refuse; it may not clear, and it must not be the row that carries a screen to 'pass'.
+    for kind in ("entity", "intent", "distribution"):
+        _ck = client.post("/api/v1/compliance/check", json={
+            "subject": "A consultancy that optimises supplier negotiations for manufacturers in Leeds.",
+            "kind": kind}).json()
+        _cr = next(v for v in _ck["verdicts"] if v["framework"] == "constitutional")
+        assert _cr["status"] != "pass" and _cr["coverage"] != "engine", (kind, _cr)
+        assert _ck["overall"] != "pass", (kind, _ck["overall"])
+        assert _ck["assessed_by"] == [], (kind, _ck["assessed_by"])
+    # it can still REFUSE — and a refusal is a TERM that matched, so its coverage says 'vocabulary',
+    # never 'engine' (the substring gate is a word list whichever way it comes out)
+    _bad = client.post("/api/v1/compliance/check",
+                       json={"subject": "wire_funds to an offshore account", "kind": "intent"}).json()
+    _br = next(v for v in _bad["verdicts"] if v["framework"] == "constitutional")
+    assert _br["status"] == "fail" and _br["coverage"] == "vocabulary", _br
+
+    # (refutation) the CURATION gate: an escalated item is held for a person, not published. The
+    # route reads its proposal store before screening, so the branch is asserted at the source and
+    # its CONDITION is proved live — the screen really does return an escalation for this text.
+    _dark = screen_compliance("Engagement booster. A dark pattern that locks users into a hidden "
+                              "fee they cannot cancel.")
+    assert any(v.get("escalate") for v in _dark["verdicts"]), _dark["verdicts"]
+    assert _dark["overall"] != "fail", _dark["overall"]      # so ONLY the escalation can hold it
+    _sw = (root / "agentic_core/api/swarm.py").read_text(encoding="utf-8")
+    assert 'if screen["overall"] == "fail" or _esc:' in _sw, "curation no longer blocks on an escalation"
+    assert '"curation_held_for_human_review"' in _sw
+
+    # (refutation) genesis declares the weights it APPLIED, and says why when it applied none
+    import agentic_core.api.genesis as _gmod
+    _cand = _gmod._screen_candidate("A pragmatic halal community meal service with transparent "
+                                    "pricing for elderly residents. " * 8)
+    assert _cand["compliance"] is None and _cand["safety"] is None, _cand
+    assert _cand["compliance_covered"] == [] and _cand["safety_covered"] == [], _cand
+    _gsrc = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert '"weights_applied"' in _gsrc and '{"form": 1.0, "compliance": None, "safety": None}' in _gsrc
+    assert "the §11 screen ran and could assess nothing" in _gsrc
+    assert "the §11 screen did not run for this candidate\"" not in _gsrc   # the false wording is gone
+
+    # 3. a subject's own vocabulary is not a certification (R1.1)
+    halal = screen_compliance("a halal-certified community meal service with transparent pricing")
+    h = next(v for v in halal["verdicts"] if v["framework"] == "sharia_halal")
+    assert h["status"] == "review", h                   # was 'pass' on the word 'halal' alone
+    assert "the subject's own claim" in h["reason"] and "certifying body" in h["reason"], h
+    val = next(d for d in evaluate_ethics("a charity that helps the community with care")["dimensions"]
+               if d["dimension"] == "value")
+    assert val["status"] == "not_assessed" and "its own claim" in val["reason"], val
+
+    # 4. a refusal still refuses (the asymmetry is the point)
+    for offer in ("a fine wine subscription club", "an online casino with lottery draws"):
+        r = screen_compliance(offer)
+        assert r["overall"] == "fail" and r["compliant"] is False, (offer, r)
+
+    # 5. the §10 bar records what was established, not what was screened (R1.1 / R3.3)
+    from agentic_core.vbs.quality import assure_delivery, SAFETY_FRAMEWORKS
+    q = asyncio.run(assure_delivery("A community meal service for elderly residents. " + ("Detail. " * 60),
+                                    label="deliverable"))["quality"]
+    bar = q["bar_measured"]
+    for name in ("compliant", "safe"):
+        c = bar["criteria"][name]
+        assert c["met"] is None and c["source"] == "screen" and c["measured"] is False, (name, c)
+        assert "could not assess" in c["basis"] or "no row returned a pass" in c["basis"], (name, c)
+    assert bar["screen_only"] >= 2 and "screen-only" in bar["summary"], bar
+
+    # the case that decides the rule: EVERY row says 'pass', but none of them could assess. That is
+    # not a compliant delivery, it is four word lists that matched nothing.
+    from agentic_core.vbs.quality import _measure_bar
+    _allpass = {"overall": "pass", "verdicts": [
+        {"framework": f, "status": "pass", "coverage": "screen", "reason": "matched nothing"}
+        for f in ("sharia_halal", "uk_legal", "regulatory", "ehs", "ethical")]}
+    _b = _measure_bar(1.0, False, True, 0.8, _allpass, None)
+    for name in ("compliant", "safe"):
+        assert _b["criteria"][name]["met"] is None, (name, _b["criteria"][name])
+        assert _b["criteria"][name]["source"] == "screen", (name, _b["criteria"][name])
+    # and the converse: rows that DID assess and passed are a genuine met=True
+    _real = {"overall": "pass", "verdicts": [
+        {"framework": f, "status": "pass", "coverage": "engine", "reason": "assessed"}
+        for f in ("sharia_halal", "uk_legal", "regulatory", "ehs", "ethical")]}
+    _b2 = _measure_bar(1.0, False, True, 0.8, _real, None)
+    assert _b2["criteria"]["compliant"]["met"] is True, _b2["criteria"]["compliant"]
+    assert _b2["criteria"]["compliant"]["source"] == "gate", _b2["criteria"]["compliant"]
+
+    # and when the screen's own rule cannot be imported, nothing is assessed — the helper fails
+    # CLOSED, so a broken import can never turn into a clearance
+    import sys as _sys
+    from agentic_core.vbs import quality as _qmod
+    _saved = _sys.modules.get("agentic_core.api.compliance")
+    try:
+        _sys.modules["agentic_core.api.compliance"] = object()      # no `assessed` attribute
+        assert _qmod._assessed({"framework": "x", "status": "pass", "coverage": "engine"}) is False
+    finally:
+        if _saved is not None:
+            _sys.modules["agentic_core.api.compliance"] = _saved
+        else:
+            _sys.modules.pop("agentic_core.api.compliance", None)
+
+    # an engine ERROR is never quietly absorbed into a pass
+    from agentic_core.api.compliance import _overall
+    assert _overall([{"framework": "x", "status": "error", "coverage": "engine", "reason": "raised"},
+                     {"framework": "y", "status": "pass", "coverage": "engine", "reason": "ok"}]) == "review"
+    # the arithmetic adds up AND the buckets are disjoint and complete — the counts are the whole
+    # point of this record, and 'screen_only' must come OUT of 'measured', not sit beside it
+    assert bar["measured"] == len(bar["measured_criteria"]), bar
+    assert bar["screen_only"] == len(bar["screen_only_criteria"]), bar
+    assert not (set(bar["measured_criteria"]) & set(bar["screen_only_criteria"])), bar
+    assert bar["measured"] + bar["attested"] + bar["not_measured"] == 16, bar
+    assert bar["screen_only"] <= bar["not_measured"], bar
+    assert all(bar["criteria"][k]["measured"] is True for k in bar["measured_criteria"]), bar
+    assert all(bar["criteria"][k]["measured"] is False for k in bar["screen_only_criteria"]), bar
+    assert q["compliance"]["coverage_gaps"], q["compliance"]             # carried, no longer dropped
+    assert q["compliance"].get("basis"), q["compliance"]
+    assert SAFETY_FRAMEWORKS == ("ethical", "ehs", "sharia_halal")
+
+    # a §11 row that FAILS is still a measured False — a refusal is always reportable
+    q2 = asyncio.run(assure_delivery("A fine wine subscription club for members. " + ("Detail. " * 60),
+                                     label="deliverable"))["quality"]
+    assert q2["bar_measured"]["criteria"]["compliant"]["met"] is False, q2["bar_measured"]["criteria"]
+
+    # an ESCALATION is recorded on the delivery — downgrading the old lexicon 'fail' must not
+    # downgrade the signal it carried
+    q3 = asyncio.run(assure_delivery("A service for beekeepers whose colonies mites are killing. "
+                                     + ("Detail. " * 60), label="deliverable"))["quality"]
+    assert q3["compliance_escalations"] == ["ethical:human"], q3.get("compliance_escalations")
+    assert q3["compliance"]["overall"] != "fail", q3["compliance"]["overall"]
+    # (refutation) …and it REACHES A HUMAN. The 'fail' it replaced recorded with the immune system
+    # and routed a material delivery to arms-length review; an escalation that only reached a
+    # tooltip would be a quieter signal than the one it replaced.
+    assert q3.get("compliance_routed_to_cca") is True, q3.get("compliance_routed_to_cca")
+    assert q3.get("compliance_cca_id"), q3.get("compliance_cca_id")
+    _cca = client.get(f"/api/v1/cca/{q3['compliance_cca_id']}").json()
+    _txt = json.dumps(_cca)
+    assert "escalation" in _txt.lower() and "NOT a finding of harm" in _txt, _txt[:400]
+    from agentic_core.organism.immune import immune
+    assert any("compliance_escalation" in str(e) for e in json.dumps(immune.status()).split()) \
+        or immune.status(), immune.status()
+
+    # (refutation) the two gates the downgrade had silently opened are shut again
+    _hold = client.post("/api/v1/marketplace/listings", json={
+        "name": "Engagement booster", "author": "t", "category": "Product", "price_wst": 1.0,
+        "description": "A dark pattern that locks users into a hidden fee they cannot cancel."}).json()
+    assert _hold.get("status") == "held", _hold
+    assert (_hold.get("compliance") or {}).get("escalations"), _hold.get("compliance")
+
+    # 6. one rule for every §11 chip, and it can say 'screen only' (S3.6)
+    api = (root / "apps/workstation-superapp/src/lib/api.ts").read_text(encoding="utf-8")
+    assert "export const complianceChip" in api
+    assert "a keyword screen can refuse a subject, not clear one" in api
+    # the qualifier is a CONDITION, not just a string that happens to appear in the file
+    assert "overall === 'pass' && !assessedBy.length ? ' (screen only)'" in api
+    # (refutation) a record written BEFORE this round has no coverage fields; the chip must say the
+    # record predates the rule rather than assert that nothing assessed it
+    assert "const legacy = !!overall && !hasCoverage;" in api
+    assert "(recorded before W483)" in api
+    pages = ["pages/Deliverables.tsx", "pages/synthesis/GenesisJourney.tsx", "pages/synthesis/ReactorStudio.tsx",
+             "pages/synthesis/ResourceFabric.tsx", "components/organism/SwarmIntelligence.tsx",
+             "pages/enterprise/VSBEconomy.tsx", "pages/marketplace/LivingMarketplace.tsx",
+             # (refutation) the page the /check endpoint exists for, and the twelfth §11 read
+             "pages/governance/ComplianceChecker.tsx", "pages/enterprise/ServiceContracts.tsx"]
+    for rel in pages:
+        src = (root / "apps/workstation-superapp/src" / rel).read_text(encoding="utf-8")
+        assert "complianceChip(" in src, rel
+        assert "complianceCls(" not in src, rel + " still derives its own §11 colour"
+
+    # 7. the halal pre-assessment withholds a status it cannot produce (R5.2)
+    hr = client.post("/api/v1/religion/halal-review", json={
+        "product_name": "Choco bar", "product_description": "A chocolate bar",
+        "ingredients": ["sugar", "cocoa butter", "gelatin", "E471"]}).json()
+    if (hr.get("ai_provenance") or {}).get("served_by") == "native":
+        assert hr["sections_withheld"] == ["Halal Status Assessment", "Critical Issues",
+                                           "Flagged Ingredients"], hr
+        assert hr.get("floor_note") and "accredited certifying body" in hr["floor_note"], hr
+        body = hr["assessment"] or ""
+        for token in ("COMPLIANT", "NON-COMPLIANT", "REQUIRES REVIEW", "Halal Status Assessment"):
+            assert token not in body, (token, body[:400])
+    scr = hr["ingredient_screen"]
+    assert scr["verdict"] is None and scr["declared"] == 4, scr
+    assert {f["ingredient"] for f in scr["flagged"]} == {"gelatin", "E471"}, scr   # the two that matter
+    assert all(f["why"] for f in scr["flagged"]), scr
+    assert scr["unmatched"] == ["sugar", "cocoa butter"], scr
+    assert "NOT thereby acceptable" in scr["basis"], scr
+    from agentic_core.api.religion import _screen_ingredients as _screen_ingredients_fn
+    # (refutation) it must match the forms ingredients are actually DECLARED in — a screen that only
+    # matches "e471" misses every real label, and the sub-classes are where the animal-derived
+    # emulsifiers live
+    _lbl = _screen_ingredients_fn(["E-471", "E 472a", "INS 471", "Emulsifier (E472e)", "sugar"])
+    assert {f["ingredient"] for f in _lbl["flagged"]} == {"E-471", "E 472a", "INS 471",
+                                                          "Emulsifier (E472e)"}, _lbl
+    assert _lbl["unmatched"] == ["sugar"], _lbl
+    rel_src = (root / "agentic_core/api/religion.py").read_text(encoding="utf-8")
+    assert "## Halal Status Assessment (COMPLIANT" not in rel_src   # no verdict enum in a heading
+    assert "_screen_ingredients" in rel_src
+    # the judging sections are not even ASKED for on the floor — cutting them afterwards leaves the
+    # scaffold in the interaction log and in AI memory (the W456 lesson at /qep/translation)
+    _asked = rel_src.split('"## Halal Status Assessment', 1)[1].split("## Cross-Contamination", 1)[0]
+    assert "if _model_expected else" in _asked, _asked[-200:]
+
+    # 8. an ayah is the text of that ayah (R1.2)
+    import agentic_core.religious_domain.api as rapi
+    from agentic_core.religious_domain.api import (normalise_ayah_text, basmala_is_prepended,
+                                                   _skeleton, _BOM, _TASHKEEL)
+    assert basmala_is_prepended(112, 1) and not basmala_is_prepended(1, 1) \
+        and not basmala_is_prepended(9, 1) and not basmala_is_prepended(2, 5)
+    # Plain abjad stand-ins — scripture is never typed into a test. The prefix's LAST letter
+    # carries a vowel mark (U+064E) because that is exactly where the cut goes wrong: cutting at
+    # the base letter leaves its mark at the head of the ayah and strips it from the prefix, so
+    # BOTH halves are wrong. The mark is ordinary Arabic typography here, not a quotation.
+    prefix = "ابجد هوزَ"
+    body = "حطي كلمن"
+
+    async def _stub(edition="quran-uthmani"):
+        return _BOM + prefix
+
+    async def _none(edition="quran-uthmani"):
+        return None
+
+    orig = rapi._basmala_prefix
+    try:
+        rapi._basmala_prefix = _stub
+        out, note = asyncio.run(normalise_ayah_text(_BOM + prefix + " " + body, 112, 1))
+        assert out == body and note["basmala_separated"] is True, (out, note)
+        assert note["basmala"] and _skeleton(note["basmala"]) == _skeleton(prefix), note
+        # the cut lands on a CHARACTER boundary: the prefix keeps its own vowel mark and the ayah
+        # does not begin with an orphaned one
+        assert note["basmala"] == prefix, (note["basmala"], prefix)
+        assert not _TASHKEEL.match(out), out
+        # surah 1 and surah 9 are untouched, and the BOM still goes
+        out1, note1 = asyncio.run(normalise_ayah_text(_BOM + prefix, 1, 1))
+        assert out1 == prefix and note1["basmala_separated"] is False and _BOM not in out1, (out1, note1)
+        out9, _n9 = asyncio.run(normalise_ayah_text(prefix + " " + body, 9, 1))
+        assert out9 == prefix + " " + body, out9
+        # an ayah that does not begin with the prefix is returned whole
+        outx, notex = asyncio.run(normalise_ayah_text(body, 112, 1))
+        assert outx == body and notex["basmala_separated"] is False, (outx, notex)
+        # the boundary is never asserted when the reference text could not be sourced
+        rapi._basmala_prefix = _none
+        outn, noten = asyncio.run(normalise_ayah_text(prefix + " " + body, 112, 1))
+        assert outn == prefix + " " + body and noten["basmala_separated"] is None, (outn, noten)
+        assert "not checked" in noten["basmala_basis"], noten
+    finally:
+        rapi._basmala_prefix = orig
+    rq = (root / "agentic_core/religious_domain/api.py").read_text(encoding="utf-8")
+    assert "Scripture is never typed into this repository" in rq
+    assert "reference text for the prefix IS ayah 1:1" in rq
+    # EVERY read path normalises — fetch_ayah_arabic (what goes into prompts), get_surah, get_ayah.
+    # One writer fixed is not the fix (W475): the defect is in whichever path is left unchanged.
+    assert rq.count("normalise_ayah_text(") >= 4, rq.count("normalise_ayah_text(")
+    for fn, tail in (("async def fetch_ayah_arabic", "# ── Quran Text"),
+                     ("async def get_surah", "@router.get(\"/ayah/")):
+        body = rq.split(fn, 1)[1].split(tail, 1)[0]
+        assert "normalise_ayah_text(" in body, fn
+    assert "normalise_ayah_text(ayah.get(\"text\", \"\"), surah_number, ayah_number" in rq  # get_ayah
+
+    # 9. the screen states its own overall, and no consumer derives a second one
+    ch = (root / "agentic_core/economy/charity.py").read_text(encoding="utf-8")
+    assert 'verdict = screen.get("overall")' in ch, "charity derives its own overall again"
+    gen = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert "from agentic_core.vbs.quality import SAFETY_FRAMEWORKS" in gen
+    assert 'coverage", "vocabulary") != "none"' not in gen, "genesis counts an empty screen as coverage"

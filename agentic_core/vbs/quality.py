@@ -45,6 +45,20 @@ NOT_ASSESSABLE_BASIS = ("not assessable — floor-served: the deterministic floo
 # declared origin is judged as the caller's own writing (the old gate); a caller that knows the
 # producer passes it as source_served_by and the gate judges by THAT (a floor journey → None).
 
+# §11 — the frameworks the §10 'safe' criterion is drawn from. Named here and imported by genesis.py
+# so §10 and §4.5 cannot drift apart (they had been the same tuple written out in two files).
+SAFETY_FRAMEWORKS = ("ethical", "ehs", "sharia_halal")
+
+
+def _assessed(verdict: Dict[str, Any]) -> bool:
+    """Could this §11 row actually assess the subject? Delegates to the screen's own rule so the two
+    modules cannot disagree about what a clearance is."""
+    try:
+        from agentic_core.api.compliance import assessed
+        return assessed(verdict)
+    except Exception:
+        return False        # a screen that cannot be imported has assessed nothing — fail closed
+
 
 def floor_served(served_by: Any) -> bool:
     """True when EVERY call that produced the content was served by a non-assessable server.
@@ -112,7 +126,6 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
     ``source: none`` with ``basis: "not attested: …"`` instead of silently counting as attested.
     """
     ev = evidence or {}
-    verdicts = {v.get("framework"): v.get("status") for v in (compliance.get("verdicts") or [])}
     crit: Dict[str, Dict[str, Any]] = {}
 
     def measured(name: str, met: bool, basis: str) -> None:
@@ -138,14 +151,38 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
             measured("verified", bool(qms_passed), "QMS gate on real coverage/stub metrics")
         else:
             unmeasured("verified")
-    if verdicts:
-        measured("compliant", compliance.get("overall") != "fail", f"§11 screen verdicts: {verdicts}")
-        _safety = [f for f in ("ethical", "ehs", "sharia_halal") if f in verdicts]
-        if _safety:
-            measured("safe", all(verdicts[f] != "fail" for f in _safety),
-                     f"§11 safety-bearing frameworks: {({f: verdicts[f] for f in _safety})}")
+    # §10 (W483, ledger v5 R1.1 / R3.3) — 'compliant' and 'safe' were recorded met=True, measured=True,
+    # source=gate whenever no §11 row said 'fail'. The inputs are keyword screens that describe
+    # themselves as "not an EHS assessment" and "not a certification", and a run where every framework
+    # returned 'review' was certified compliant AND safe. A screen can refuse; it cannot clear. So:
+    #   met=False  a row that could assess FAILED (a refusal is always reportable)
+    #   met=True   every row in scope PASSED and each of them could actually assess (coverage 'engine')
+    #   met=None   otherwise — recorded source 'screen', naming the rows that could not assess
+    _rows = list(compliance.get("verdicts") or [])
+
+    def _bar_from_rows(name: str, rows: List[Dict[str, Any]], label: str) -> None:
+        if not rows:
+            unmeasured(name)
+            return
+        _st = {r.get("framework"): r.get("status") for r in rows}
+        _gaps = sorted(r.get("framework") for r in rows if not _assessed(r))
+        if any(r.get("status") == "fail" for r in rows):
+            crit[name] = {"met": False, "basis": f"{label}: {_st} — a §11 row failed", "measured": True,
+                          "attested": False, "source": "gate"}
+        elif not _gaps and all(r.get("status") == "pass" for r in rows):
+            crit[name] = {"met": True, "basis": f"{label}: {_st} — every row passed and could assess",
+                          "measured": True, "attested": False, "source": "gate"}
         else:
-            unmeasured("safe")
+            crit[name] = {"met": None, "measured": False, "attested": False, "source": "screen",
+                          "basis": (f"{label}: {_st} — not established: "
+                                    + (f"{', '.join(_gaps)} could not assess this subject (a keyword "
+                                       f"screen can refuse, not clear)" if _gaps else
+                                       "no row returned a pass"))}
+
+    if _rows:
+        _bar_from_rows("compliant", _rows, "§11 screen verdicts")
+        _bar_from_rows("safe", [r for r in _rows if r.get("framework") in SAFETY_FRAMEWORKS],
+                       "§11 safety-bearing frameworks")
     else:
         unmeasured("compliant")
         unmeasured("safe")
@@ -167,11 +204,18 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
             unmeasured(name)
     _m = [c for c in crit.values() if c["source"] == "gate"]
     _a = [c for c in crit.values() if c["source"] == "caller"]
+    _s = [c for c in crit.values() if c["source"] == "screen"]
     _n = [c for c in crit.values() if c["source"] == "none"]
     return {"criteria": crit,
             "measured": len(_m), "met": sum(1 for c in _m if c["met"]),
-            "attested": len(_a), "not_measured": len(_n),
-            "summary": f"{len(_m)} measured · {len(_a)} attested · {len(_n)} not measured",
+            "attested": len(_a), "not_measured": len(_n) + len(_s),
+            # W483 — the screen-only criteria are counted OUT of 'measured' and named in their own
+            # bucket, so a reader is never shown a §11 keyword screen as a measurement.
+            "screen_only": len(_s),
+            "screen_only_criteria": sorted(k for k, c in crit.items() if c["source"] == "screen"),
+            "summary": (f"{len(_m)} measured · {len(_a)} attested · "
+                        + (f"{len(_s)} screen-only · " if _s else "")
+                        + f"{len(_n) + len(_s)} not measured"),
             "measured_criteria": sorted(k for k, c in crit.items() if c["source"] == "gate"),
             "attested_criteria": sorted(k for k, c in crit.items() if c["source"] == "caller")}
 
@@ -225,8 +269,14 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         from agentic_core.api.compliance import screen_compliance
         screen = screen_compliance(content or "", delivery_metrics={
             "delivery_coverage": coverage, "stub_found": stub})
+        # W483 (R1.1) — coverage_gaps and basis were dropped here, so every downstream reader (the
+        # Deliverables chip, the board pack, the sealed record) saw an overall with no way to know
+        # which frameworks had actually read the subject. They travel with the verdict now.
         quality["compliance"] = {"overall": screen["overall"], "compliant": screen["compliant"],
-                                 "verdicts": screen["verdicts"]}
+                                 "verdicts": screen["verdicts"],
+                                 "coverage_gaps": screen.get("coverage_gaps") or [],
+                                 "assessed_by": screen.get("assessed_by") or [],
+                                 "basis": screen.get("basis")}
     except Exception as exc:
         quality["compliance_error"] = str(exc)
     _comp = quality.get("compliance") or {}
@@ -274,7 +324,9 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
              "qms_basis": quality["qms_basis"],
              "bar_measured": quality["bar_measured"],
              "compliance": {"overall": _comp.get("overall"),
-                            "verdicts": _comp.get("verdicts")}},
+                            "verdicts": _comp.get("verdicts"),
+                            "coverage_gaps": _comp.get("coverage_gaps") or [],
+                            "assessed_by": _comp.get("assessed_by") or []}},
             actor="QMS")
         quality["document_controlled"] = True
     except Exception as exc:  # never break a delivery on a QMS hiccup
@@ -283,17 +335,36 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     # §11×§6 (W287) — every screen SEALS to the tamper-evident UEG ledger (there were ZERO
     # compliance UEG events repo-wide), and a FAIL registers with the living organism's immune
     # system — compliance is a sensed condition, not just a response field.
+    # W483 — an ESCALATION (a severe-harm or extractive term matched, whose object the lexicon cannot
+    # read) is what replaced the old lexicon 'fail'. It must not be quieter than what it replaced: it
+    # is recorded on the delivery and sealed to the UEG, so downgrading the verdict does not
+    # downgrade the signal.
+    _escalations = sorted({f"{v['framework']}:{d}" for v in (_comp.get("verdicts") or [])
+                           for d in (v.get("escalate") or [])})
+    if _escalations:
+        quality["compliance_escalations"] = _escalations
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "compliance.screen", "label": label,
                          "overall": _comp.get("overall"),
+                         "coverage_gaps": _comp.get("coverage_gaps") or [],
+                         "escalations": _escalations,
                          "verdicts": {v["framework"]: v["status"] for v in (_comp.get("verdicts") or [])}})
     except Exception:
         pass
-    if _comp.get("overall") == "fail":
+    # W483 (refutation) — AN ESCALATION MUST REACH A HUMAN. The severe-harm and extractive lexicon
+    # hits used to produce a 'fail', and a fail did three things: it recorded with the immune system,
+    # it routed a material delivery to the arms-length Change Control Agency, and it was visible as a
+    # red verdict. Downgrading it to 'review' was right — the lexicon cannot see the object of
+    # "killing" — but it took all three away and left a tooltip. An escalation now travels the same
+    # road as the fail it replaced; what changed is the WORDS (a flag for a human, not a finding of
+    # harm), not whether anyone is told.
+    _escalated = bool(_escalations)
+    if _comp.get("overall") == "fail" or _escalated:
         try:
             from agentic_core.organism.immune import immune
-            immune.record(f"compliance:{label}", "compliance_fail")
+            immune.record(f"compliance:{label}",
+                          "compliance_fail" if _comp.get("overall") == "fail" else "compliance_escalation")
         except Exception:
             pass
         # §11 (W287) — a genuine VIOLATION on a MATERIAL delivery routes to the arms-length Change
@@ -308,14 +379,26 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         if label in _MATERIAL or label.startswith("economy"):
             try:
                 from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+                _failed = _comp.get("overall") == "fail"
                 _fails = "; ".join(f"{v['framework']}: {v['reason'][:120]}"
                                    for v in (_comp.get("verdicts") or []) if v["status"] == "fail")
                 _cca = await submit_change(SubmitChangeRequest(
-                    title=f"Compliance FAIL on {label} delivery",
+                    title=(f"Compliance FAIL on {label} delivery" if _failed else
+                           f"Compliance escalation on {label} delivery — a human must read it"),
                     change_type="config_major",   # MEDIUM tier — never auto-approved
                     description=(f"§11 screen failed on a material '{label}' delivery "
-                                 f"(content sha3 {_ref['content_sha3']}). {_fails}"),
-                    rationale="Automatic routing of a compliance violation to arms-length review (W287).",
+                                 f"(content sha3 {_ref['content_sha3']}). {_fails}") if _failed else
+                                (f"A §11 screen matched a severe-harm or extractive term on a material "
+                                 f"'{label}' delivery (content sha3 {_ref['content_sha3']}): "
+                                 f"{', '.join(_escalations)}. The lexicon cannot read the term's object, "
+                                 f"so this is NOT a finding of harm — it is a flag that a person must "
+                                 f"judge. Reasons: "
+                                 + "; ".join(f"{v['framework']}: {v['reason'][:160]}"
+                                             for v in (_comp.get("verdicts") or []) if v.get("escalate"))),
+                    rationale=("Automatic routing of a compliance violation to arms-length review (W287)."
+                               if _failed else
+                               "W483 — a lexicon hit is escalated to a human instead of being reported as "
+                               "a violation; routing it keeps the signal the old FAIL carried."),
                     affected_systems=["compliance", label], submitted_by="compliance_screen"))
                 quality["compliance_routed_to_cca"] = True
                 # W455 (R1.3) — the review's id travels with the artifact (it was discarded here)

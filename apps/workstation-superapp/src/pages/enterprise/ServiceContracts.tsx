@@ -24,7 +24,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Handshake, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
-import { apiJson, errorMessage, qmsChip, type QmsQuality } from '../../lib/api';
+import { apiJson, errorMessage, qmsChip, complianceChip, type QmsQuality } from '../../lib/api';
 
 interface Entity { vsb_id: string; name?: string }
 
@@ -114,7 +114,9 @@ function qualityText(q: unknown): string | null {
   }
   if (o.stub_found === true) parts.push('STUB DETECTED');
   const comp = o.compliance as Record<string, any> | undefined;
-  if (comp && typeof comp.overall === 'string') parts.push(`compliance ${comp.overall}`);
+  // W483 - one rule for every section-11 read: a bare 'compliance pass' is the claim this
+  // round removed everywhere else. complianceChip qualifies a pass nothing assessed.
+  if (comp && typeof comp.overall === 'string') parts.push(complianceChip(comp).label);
 
   return parts.length ? parts.join(' · ') : null;
 }

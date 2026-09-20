@@ -1539,8 +1539,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W483",
       "note": ""
     },
     {
@@ -1553,8 +1553,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W483",
       "note": ""
     },
     {
@@ -1567,8 +1567,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W483",
       "note": ""
     },
     {
@@ -1615,8 +1615,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W483",
       "note": ""
     },
     {
@@ -1703,8 +1703,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W483",
       "note": ""
     },
     {
@@ -1861,8 +1861,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W483",
       "note": ""
     },
     {
@@ -2327,8 +2327,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W483",
       "note": ""
     },
     {
@@ -4078,6 +4078,63 @@
       "tier": 3,
       "area": "domains_ux",
       "reach": "internal"
+    },
+    {
+      "id": "FU-239",
+      "title": "No §11 framework can assess a subject, so the screen can only ever refuse or review",
+      "why": "W483 made the rule explicit — only coverage 'engine' may carry a pass — and then showed that NOTHING in the screen currently earns it: sharia_halal and uk_legal are keyword/vocabulary screens, regulatory and ehs are keyword screens, the constitutional row is a nine-intent substring gate, and the ethical engine's three ethical dimensions are word lists (its fourth dimension measures delivery coverage, which is not ethics). So `assessed_by` is always empty and `compliant` is never True. That is now stated honestly rather than hidden, but the CAPABILITY gap is real: the platform has no instrument that can clear a subject in any of the six areas. FIX: give at least one framework a real assessor (the Halal officer engine is the nearest candidate — it already runs and returns structured violations), or state in the vision that §11 is a flagging layer only and nothing downstream may treat it as clearance.",
+      "source": "W483 (the §11 screen round) — found while applying the rule, not delivered",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/compliance.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "native_ai",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-240",
+      "title": "§4.5 candidate ranking is form-only again, and form saturates so candidates tie",
+      "why": "With no §11 framework able to assess a candidate (see the row above), _screen_candidate returns compliance=None and safety=None for every candidate, so stage 5 ranks on form alone. W419 existed because form SATURATES — specificity is min(1, len/2800), so any candidate past ~2800 characters scores exactly 1.000 and all three tie, with the stable sort handing the win to whichever was named first. W483 makes the payload say so (weights_applied {form: 1.0}, the tie is detected and disclosed) instead of advertising weights it never applied, but the RANKING is back to where W419 found it. FIX: an instrument that can separate candidates — or select by an explicit rule and say that is what happened.",
+      "source": "W483 (the §11 screen round) — found while applying the rule, not delivered",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/genesis.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "native_ai",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-241",
+      "title": "Stale refuter worktrees left on disk under .claude/worktrees",
+      "why": ".claude/worktrees/wf_4aea45e9-bf8-{1,2,3} are full repository copies left by an earlier workflow refutation run. They consume disk and, more practically, they break every repo-wide `find`/`grep` that does not exclude them — each search during the W483/W484 reviews returned four copies of every hit. FIX: clean them up (the host offers clean_up_worktrees) and have scripts/recovery_audit.py exclude .claude/ so its counts are of the repository, not of its copies.",
+      "source": "W483 (the §11 screen round) — found while applying the rule, not delivered",
+      "found": "2026-09-20",
+      "files": [
+        "scripts/recovery_audit.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "tooling",
+      "reach": "internal"
     }
   ],
   "routes": [
@@ -4168,9 +4225,11 @@
         "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
       ],
       "words": [
-        "delivery check"
+        "delivery check",
+        "assess a subject",
+        "form-only"
       ],
-      "note": "bespoke swarms; W482 — and the cascade's missing delivery measurement (P2.8 owns the realisation engine measuring delivery)"
+      "note": "bespoke swarms; W482 — the cascade's missing delivery measurement; W483 — and what the §11 screen can actually assess (the capability, not the honesty)"
     },
     {
       "slot": "P2.9",
@@ -4244,7 +4303,8 @@
         "apps/workstation-superapp/src/pages/synthesis/BusinessModelDashboard.tsx",
         "apps/workstation-superapp/src/pages/synthesis/PresentationPlayer.tsx",
         "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
-        "scripts/relocate_data_store.py"
+        "scripts/relocate_data_store.py",
+        "scripts/recovery_audit.py"
       ],
       "words": [
         "marketplace count",
@@ -4255,7 +4315,7 @@
         "catalogue count",
         "catalogue counts"
       ],
-      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories)"
+      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories); W483 — and scripts/recovery_audit.py, the archive-first audit"
     },
     {
       "slot": "P3.3",
