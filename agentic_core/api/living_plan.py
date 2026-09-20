@@ -215,8 +215,13 @@ def get_followups():
         except Exception as _fe:
             _forecast = {"assessable": False,
                          "not_assessable_because": f"the forecast raised {type(_fe).__name__}"}
+        # W487 — the batch: which ROUND to run next, grouped by the class one mechanism can close.
+        try:
+            _batches = fu.batches(reg, prompt)
+        except Exception as _be:
+            _batches = {"batches": [], "basis": f"the batch grouping raised {type(_be).__name__}"}
         return {**base, "available": True, **fu.schedule(reg, prompt), "plan": fu.plan_now(reg, prompt),
-                "forecast": _forecast,
+                "forecast": _forecast, "batches": _batches,
                 "routes": fu._routes(reg), "integrity": {"ok": not problems, "problems": problems}}
     except Exception as exc:   # a defect in the checker itself is still reported, never a 500
         return {**base, "available": False,

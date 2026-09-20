@@ -18090,3 +18090,105 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     assert 'data-testid="plan-pace-not-assessable"' in td
     assert "not a date and not a promise" in td
     assert "One-time intake excluded:" in td
+
+
+def test_w487_the_plan_proposes_the_round_not_just_the_row(client):
+    """W487 — the third planning leg: PRIORITY says which row, PACE says how fast, BATCH says what a
+    ROUND should take.
+
+    The register's rows are one per emitting FILE; the sweep's classes run ACROSS files. That mismatch
+    is why a round that picks the next row closes two or three while a round that builds one mechanism
+    and sweeps every consumer closed seven. The batch is proposed from the evidence the rows already
+    cite — and it never counts a row it cannot close.
+    """
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    from agentic_core import plan_followups as fu
+
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    b = fu.batches(reg, prompt)
+
+    # 1. it is grouped from the rows' OWN evidence, and says so
+    assert "the sweep class each row's own evidence cites" in b["basis"], b["basis"]
+    assert set(fu.SWEEP_CLASSES) == {f"C{i}" for i in range(1, 11)}, sorted(fu.SWEEP_CLASSES)
+    assert all(x["class"] in fu.SWEEP_CLASSES and x["what"] == fu.SWEEP_CLASSES[x["class"]]
+               for x in b["batches"]), [x["class"] for x in b["batches"]]
+
+    # 2. CLOSES means closes: every row counted cites this class and NO other
+    raw = {r["id"]: r for r in fu.raw_items(reg) if isinstance(r, dict)}
+    for x in b["batches"]:
+        for rid in x["closes"]:
+            assert fu.row_classes(raw[rid]) == [x["class"]], (rid, fu.row_classes(raw[rid]), x["class"])
+        for rid in x["partial"]:
+            cs = fu.row_classes(raw[rid])
+            assert x["class"] in cs and len(cs) > 1, (rid, cs)
+        assert not (set(x["closes"]) & set(x["partial"])), x["class"]
+        assert x["closes_count"] == len(x["closes"]) and x["partial_count"] == len(x["partial"])
+
+    # 3. a row is never counted as closable by two batches at once
+    everywhere = [rid for x in b["batches"] for rid in x["closes"]]
+    assert len(everywhere) == len(set(everywhere)), "a row is counted closable by more than one batch"
+
+    # 4. rows citing NO class are listed, never guessed at or silently dropped
+    open_ids = {r["id"] for r in fu.raw_items(reg) if isinstance(r, dict) and r.get("status") == "open"}
+    counted = set(everywhere) | {rid for x in b["batches"] for rid in x["partial"]} | set(b["unclassed"])
+    assert counted == open_ids, sorted(open_ids ^ counted)[:6]
+    assert all(fu.row_classes(raw[rid]) == [] for rid in b["unclassed"])
+
+    # 5. it is a SUGGESTION, and scoping to an item really scopes it
+    p118 = fu.batches(reg, prompt, "P1.18")
+    assert all(s == "P1.18" for x in p118["batches"] for s in x["slots"]), p118["batches"]
+    assert p118["rows"] <= b["rows"]
+    assert sum(x["closes_count"] for x in p118["batches"]) <= sum(x["closes_count"] for x in b["batches"])
+
+    # 6. the largest batch is named beside the PACE projection — a projection with no lever is no use
+    rendered = fu.render_forecast(reg, prompt)
+    if b["batches"]:
+        top = b["batches"][0]
+        assert "BIGGEST BATCH:" in rendered, rendered
+        assert top["class"] in rendered and str(top["closes_count"]) in rendered
+        # …and it really is the largest
+        assert top["closes_count"] == max(x["closes_count"] for x in b["batches"])
+    for doc in ("docs/FABLE_DELIVERY_PROMPT.md", "docs/WORKSTATION_IDBO_LIVING_PLAN.md"):
+        assert fu._block((root / doc).read_text(encoding="utf-8"), fu.PACE_BEGIN, fu.PACE_END) == rendered, doc
+
+    # 7. an empty register proposes nothing rather than an empty promise
+    empty = fu.batches({"items": []}, prompt)
+    assert empty["batches"] == [] and empty["rows"] == 0
+    assert "No row in scope cites a sweep class" in fu.render_batches({"items": []}, prompt)
+
+    # 8. a class the sweep never defined is never invented from a stray "C11" in prose
+    fake = {"items": [{"id": "FU-9", "status": "open", "slot": "P1.18", "severity": "low", "files": [],
+                       "title": "a C11 and C99 finding", "why": "cites C11, C99 and C5", "source": "W999"}]}
+    assert fu.row_classes(fake["items"][0]) == ["C5"], fu.row_classes(fake["items"][0])
+
+    # 9. it is served — and a grouping that RAISED is never served as a grouping
+    body = client.get("/api/v1/plan/followups").json()
+    assert body.get("available") is True, body.get("reason")
+    served = body["batches"]
+    assert [x["class"] for x in served["batches"]] == [x["class"] for x in b["batches"]]
+    import agentic_core.plan_followups as _pf
+    _orig = _pf.batches
+    try:
+        def _boom(*_a, **_k):
+            raise RuntimeError("grouping failed")
+        _pf.batches = _boom
+        broke = client.get("/api/v1/plan/followups").json()["batches"]
+        assert broke["batches"] == [], broke
+        assert "raised" in broke["basis"], broke["basis"]
+    finally:
+        _pf.batches = _orig
+
+    # 10. the CLI exposes it (a mechanism nobody can run is not a mechanism)
+    cli = (root / "scripts/followups.py").read_text(encoding="utf-8")
+    assert 'sub.add_parser("batches"' in cli
+    assert 'if args.cmd == "batches":' in cli and "render_batches(reg, prompt, args.item" in cli
+
+    # 11. the plan RECORDS the measured round shape, so it is not re-argued each round
+    fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert "B1 TAKE A BATCH, NOT A ROW." in fp
+    assert "The full suite is 46 minutes over 392 tests" in fp      # the measurement, not an impression
+    assert "Never two pytest runs at once" in fp                    # the corruption rule, kept
+    assert "B3 OVERLAP WHAT DOES NOT SHARE STATE." in fp

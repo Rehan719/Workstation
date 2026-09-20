@@ -185,10 +185,13 @@ def main() -> int:
     sub.add_parser("render")
     sub.add_parser("check")
     fc = sub.add_parser("forecast", help="the pace the plan is moving at, and what it projects")
+    bt = sub.add_parser("batches", help="which ROUND to run: the class one mechanism can close")
+    bt.add_argument("--item", default=None, help="only rows riding this plan item")
+    bt.add_argument("--top", type=int, default=5)
     fc.add_argument("--window", type=int, default=6, help="build rounds to measure the rate over")
     args = ap.parse_args()
 
-    if args.cmd in ("check", "list", "schedule", "routes", "priority", "forecast"):
+    if args.cmd in ("check", "list", "schedule", "routes", "priority", "forecast", "batches"):
         with register_lock():                      # never read the register and the docs from different moments
             reg, prompt, living = _texts()
         if args.cmd == "priority":
@@ -211,6 +214,9 @@ def main() -> int:
                 for ph, d in comp["by_phase"].items()) + f" · all {comp['overall_weighted_pct']}%")
             print("open items by total open priority (a suggestion beside the plan's order): " + " · ".join(pr_["suggested_order"]))
             return 1 if pr_["config_problems"] else 0
+        if args.cmd == "batches":
+            print(fu.render_batches(reg, prompt, args.item, args.top))
+            return 0
         if args.cmd == "forecast":
             print(fu.render_forecast(reg, prompt))
             # The register cannot know how long a round TAKES — git can, so the wall-clock is

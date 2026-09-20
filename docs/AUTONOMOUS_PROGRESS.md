@@ -6962,3 +6962,38 @@ to the same lockstep as PLAN NOW (a stale copy is a reported problem, not silent
 going" panel on the /transformation live card, refreshing every minute. **24 blinds, all failing on the first
 sweep** — including the three that matter: too little evidence, a growing backlog, and a one-time intake
 averaged in.
+
+### W487 — the plan proposes the ROUND, not just the row (the third planning leg)
+
+**Why.** The Owner asked whether the rationalisation I had just done by hand could become a mechanism.
+It should not depend on anyone remembering to do it.
+
+**What the measurement found.** The register's 176 open rows sit across **111 distinct files** — which is
+why a round that takes "the next row" closes two or three. But the truth sweep (W477) recorded every
+finding under one of ten CLASSES, and those run ACROSS files: C5 alone covers 16 closable rows, C7 and C3
+twelve each. That mismatch — rows per file, defects per class — is the whole story of the long timeline.
+W483 closed seven rows precisely because it built ONE rule and swept every file consuming it; W485 closed
+three because it took three unrelated shapes.
+
+**The mechanism.** `plan_followups.batches()` groups the open rows by the class their own evidence cites
+and proposes the largest CLOSABLE batch. A row citing one class is counted as closable; a row citing
+several is **advanced, not closed**, and counted separately; a row citing none is listed, never guessed
+at. `python scripts/followups.py batches --item P1.18`, served on `/api/v1/plan/followups`, and named
+beside the projection in the PACE block — a projection with no lever is no use to a reader.
+
+**The other half, measured rather than assumed.** A round's cost is dominated by re-runs, not by thinking.
+The suite is 46 min over 392 tests, and I checked whether a few pathological tests were to blame: they are
+not (top forty = 69%, slowest 134s, mean 7.1s), so there is no cheap win to go hunting for. The win is in
+running the machinery ONCE PER TREE instead of once per fix: W485 spent ~4h of machine time on three
+suites and four blind sweeps for evidence that once-per-tree produces in ~1h10. Recorded in the plan as
+**B1 (take a batch, not a row) · B2 (run the machinery once per tree) · B3 (overlap what does not share
+state)**, each with its measurement attached so it is not re-argued every round. Measured effect:
+per-row 32 rounds → class batches ≈23; combined with B2/B3, roughly 160h → ~58h.
+
+**Not taken blind:** FU-249 registers pytest-xdist as the one remaining large lever (46 min → perhaps 12),
+with the reason it needs a deliberate round: this repo has already produced ~40 false failures from two
+suites sharing stores, so it needs per-worker DATA_DIR isolation and a serial-vs-parallel pass-set
+comparison before it can be trusted.
+
+**Broken 18 ways**; all 18 fail, none vacuous (six were vacuous on the first sweep — the guard had not
+covered the CLI, the API's failure path, or the plan's own recorded rules). Suite 393/15/0.

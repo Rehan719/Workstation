@@ -634,8 +634,122 @@ def render_forecast(register: Any, prompt_text: str) -> str:
         out.append(f"  ALL OPEN ROWS: {f['open_rows']} \u2248 {f['all_rows_rounds_projected']} round(s) at the same rate.")
         rest = [x for x in f["by_item"] if x["open_rows"] > 0][:8]
         out.append("  BY ITEM: " + " \u00b7 ".join(f"{x['slot']} {x['open_rows']}r\u2248{x['rounds_projected']}" for x in rest))
+    # W487 — the pace says how fast; the batch says what to run next to make it faster. A reader who
+    # sees only the projection has no lever; naming the largest closable batch beside it gives one.
+    try:
+        _b = batches(register, prompt_text)["batches"]
+    except Exception:
+        _b = []
+    if _b:
+        _t = _b[0]
+        out.append(f"  BIGGEST BATCH: {_t['class']} ({_t['what']}) — one mechanism closes "
+                   f"{_t['closes_count']} row(s) across {_t['files_count']} file(s)"
+                   + (f", advancing {_t['partial_count']} more" if _t["partial_count"] else "")
+                   + f". Items: {', '.join(_t['slots'])}.")
     out.append("  This is arithmetic over an observed mean, in rounds. It is not a date and not a promise;")
     out.append("  it moves every time a round closes or registers a row.")
+    return "\n".join(out)
+
+
+# ── W487: which ROUND to run — the batch, not the row ────────────────────────
+# The truth sweep (W477) recorded every finding under one of ten CLASSES, and the register's rows cite
+# them. A row is one emitting FILE; a class runs ACROSS files. That mismatch is why rounds that pick
+# the next row close two or three, and the round that built one rule and swept every consumer closed
+# seven. This proposes the batch: the class whose rows one mechanism can close, largest first.
+#
+# It is a SUGGESTION beside the plan's order, exactly as `suggested_order` is — the gate still decides
+# which item is open, and a row's own priority still decides within a batch. And it never claims a
+# batch will close a row it cannot: a row citing more than one class is listed as PARTIAL, because
+# fixing one of its classes leaves it open, and the count says so.
+SWEEP_CLASSES = {
+    "C1": "certifies what it could not assess",
+    "C2": "keyword screen presented as a judgement",
+    "C3": "invented or constant readings",
+    "C4": "present-tense claims about processes not running",
+    "C5": "a second writer or the reached page disagrees with the API",
+    "C6": "faith-content fidelity",
+    "C7": "missing provenance",
+    "C8": "figures that cannot fail",
+    "C9": "a decision that breaks its own rule",
+    "C10": "counts or lists that do not match what is served",
+}
+_CLASS_RE = re.compile(r"\bC(\d{1,2})\b")
+
+
+def row_classes(row: Dict[str, Any]) -> List[str]:
+    """The sweep classes a row's own evidence cites. Empty when it cites none — an older row, or one
+    from a ledger pass rather than the sweep; those are never guessed at."""
+    text = f"{row.get('title') or ''} {row.get('why') or ''}"
+    found = {f"C{m}" for m in _CLASS_RE.findall(text) if f"C{m}" in SWEEP_CLASSES}
+    return sorted(found, key=lambda c: int(c[1:]))
+
+
+def batches(register: Any, prompt_text: str, slot: Optional[str] = None) -> Dict[str, Any]:
+    """Group the open rows into rounds one mechanism could serve, largest closable first."""
+    s = schedule(register if isinstance(register, dict) else {"items": []}, prompt_text)
+    rows = [r for x in s["schedule"] for r in x["items"] if not slot or r["slot"] == slot]
+    by_id = {r["id"]: r for r in rows}
+    raw = {r.get("id"): r for r in raw_items(register) if isinstance(r, dict)}
+
+    groups: Dict[str, Dict[str, Any]] = {}
+    unclassed: List[str] = []
+    for r in rows:
+        cs = row_classes(raw.get(r["id"], {}))
+        if not cs:
+            unclassed.append(r["id"])
+            continue
+        for c in cs:
+            g = groups.setdefault(c, {"class": c, "what": SWEEP_CLASSES[c],
+                                      "closes": [], "partial": [], "files": set(), "slots": set()})
+            (g["closes"] if len(cs) == 1 else g["partial"]).append(r["id"])
+            g["files"].update(normalise_path(f) for f in (raw.get(r["id"], {}).get("files") or []))
+            g["slots"].add(r["slot"])
+
+    out = []
+    for g in groups.values():
+        closes, partial = g["closes"], g["partial"]
+        files = sorted(g["files"])
+        score = round(sum(by_id[i]["priority"]["score"] for i in closes), 1)
+        out.append({
+            "class": g["class"], "what": g["what"],
+            # rows this batch CLOSES: their evidence cites this class and nothing else
+            "closes": sorted(closes), "closes_count": len(closes),
+            # rows it advances but cannot close: they cite other classes too, and say so
+            "partial": sorted(partial), "partial_count": len(partial),
+            "files": files, "files_count": len(files),
+            "slots": sorted(g["slots"]),
+            "priority_closed": score,
+            # the whole point: rows closed per file the round has to touch
+            "rows_per_file": round(len(closes) / len(files), 2) if files else 0.0,
+        })
+    out.sort(key=lambda b: (-b["closes_count"], -b["priority_closed"]))
+    return {
+        "batches": out,
+        "unclassed": sorted(unclassed),
+        "unclassed_count": len(unclassed),
+        "rows": len(rows),
+        "basis": ("grouped by the sweep class each row's own evidence cites (W477's ten). `closes` are "
+                  "rows citing ONLY this class \u2014 one mechanism can finish them; `partial` cite others too, "
+                  "so this batch advances them without closing them, and they are counted separately. "
+                  "Rows citing no class are listed, never guessed at. A suggestion beside the plan's "
+                  "order, not a replacement for it: the gate still decides which item is open."),
+    }
+
+
+def render_batches(register: Any, prompt_text: str, slot: Optional[str] = None, top: int = 5) -> str:
+    b = batches(register, prompt_text, slot)
+    head = f"NEXT ROUNDS BY BATCH (generated \u2014 {b['rows']} open row(s)"
+    head += f" on {slot}" if slot else ""
+    out = [head + f"; {b['unclassed_count']} cite no sweep class)"]
+    if not b["batches"]:
+        out.append("  No row in scope cites a sweep class, so no batch can be proposed from the evidence.")
+    for x in b["batches"][:top]:
+        out.append(f"  {x['class']} \u2014 {x['what']}: closes {x['closes_count']} row(s) across "
+                   f"{x['files_count']} file(s) ({x['rows_per_file']} per file)"
+                   + (f", advances {x['partial_count']} more" if x["partial_count"] else "")
+                   + f" \u00b7 {', '.join(x['slots'])}")
+    out.append("  A batch is one mechanism swept across every file that consumes it. Rows citing more")
+    out.append("  than one class are advanced, not closed \u2014 counted separately, never as progress.")
     return "\n".join(out)
 
 def _wrap(prefix: str, parts: List[str], indent: str = "    ", width: int = 112) -> List[str]:
