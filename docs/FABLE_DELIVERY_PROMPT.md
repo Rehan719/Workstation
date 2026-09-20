@@ -44,7 +44,9 @@
 > W459) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W483) ·
 > `COGNITIVE_ENGINE_ARCHITECTURE.md` (W480/W482 — the cognitive layer that already exists in this repo, what two
 > outside proposals got right and wrong about it, and the invariants P3.12–P3.17 build under) ·
-> `AUTONOMOUS_SUPPORT_REVIEW.md` (W482 — the support proposal interrogated; P3.18) · `scripts/recovery_audit.py`
+> `AUTONOMOUS_SUPPORT_REVIEW.md` (W482 — the support proposal interrogated; P3.18) ·
+> `BIOGEOCHEMICAL_AND_COMMS_REVIEW.md` (W484 — three more proposals: the six cycles, the SWF and the
+> comms fabric; P3.19) · `scripts/recovery_audit.py`
 > (W482 — run it BEFORE building: the cleanups MOVED work into `_archive/`, so a delete-only search misses it) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
@@ -711,15 +713,15 @@ here with one space and an item id — that is read as a plan item and fails the
 PLAN NOW — generated from the delivery plan's items and docs/FOLLOWUPS.json by scripts/followups.py on
 every register change (add · close · drop · reslot · route · done · render); never edit between the markers.
   Next: P1.18 The third truth pass — 53 follow-ups ride it.
-  Then, in order (the follow-ups riding each): P2.1 0 · P2.2 0 · P2.3 1 · P2.4 42 · P2.5 0 · P2.6 15 · P2.7 3 ·
+  Then, in order (the follow-ups riding each): P2.1 0 · P2.2 0 · P2.3 1 · P2.4 43 · P2.5 0 · P2.6 15 · P2.7 3 ·
     P2.8 12 · P2.9 34 · P3.0 0 · P3.1 0 · P3.2 0 · P3.3 0 · P3.4 0 · P3.5 0 · P3.6 0 · P3.7 0 · P3.8 0 ·
-    P3.9 0 · P3.10 0 · P3.11 0 · P3.12 4 · P3.13 0 · P3.14 1 · P3.15 1 · P3.16 1 · P3.17 5 · P3.18 1 · P4.1 0 ·
-    P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
+    P3.9 0 · P3.10 0 · P3.11 0 · P3.12 4 · P3.13 0 · P3.14 1 · P3.15 2 · P3.16 1 · P3.17 5 · P3.18 1 ·
+    P3.19 2 · P4.1 0 · P4.2 0 · P4.3 0 · P4.4 0 · P4.5 0 · P4.6 0
   Highest priority in P1.18 (score · area): FU-128 96.0 lifecycle · FU-097 90.9 compliance ·
     FU-101 90.0 lifecycle · FU-125 88.2 lifecycle · FU-098 81.8 lifecycle
-  Done: 17 of 52 items — P1 17/18 · P2 0/9 · P3 0/19 · P4 0/6.
-  Follow-up completion weighted by priority — P1: 43.2% of its rows' priority closed (49 of 102 rows); every phase's rows: 29.6% (the retired pre-plan queue left out).
-  Follow-ups: 173 open — 173 ride a plan item (53 high), 0 unscheduled, 0 awaiting the Owner; 66 done, 2 dropped.
+  Done: 17 of 53 items — P1 17/18 · P2 0/9 · P3 0/20 · P4 0/6.
+  Follow-up completion weighted by priority — P1: 43.2% of its rows' priority closed (49 of 102 rows); every phase's rows: 29.5% (the retired pre-plan queue left out).
+  Follow-ups: 177 open — 177 ride a plan item (53 high), 0 unscheduled, 0 awaiting the Owner; 66 done, 3 dropped.
 <!-- plannow:end -->
   WAITING ON THE OWNER — no register row (the ones above STILL WITH THE OWNER in the answers are plan
     rulings, not register rows).
@@ -730,7 +732,7 @@ the same commit (python scripts/followups.py add routes it to the plan item that
 rides the next open item) or slotted OWNER (waits on an Owner decision; never scheduled). A round that
 finishes an item marks it with python scripts/followups.py done P1.13 --by W### — its rows move along the
 routes or are closed first; the suite fails on a row left on a finished item.
-Open 173 (173 scheduled, 53 high · 0 unscheduled · 0 awaiting the Owner) · done 66 · dropped 2.
+Open 177 (177 scheduled, 53 high · 0 unscheduled · 0 awaiting the Owner) · done 66 · dropped 3.
   P1.18 — The third truth pass
     FU-128 [high] [p 96.0] sweep genesis.py: 2 Tier-1 truth defects (C7,C10) — Chips 'Inkashaf · Samajh · Soch · Aqal · Hoshiyari · Iman · MJM · DDPIE · BDP ·… — S3.7 C10: Chips 'Inkashaf · Samajh · Soch · Aqal · Hoshiyari · Iman · MJM · DDPIE · BDP · gaas.v5'. The header says… → engines_used is a constant literal list. The journey never invokes the DDPIE or BDP engines, which exist as multi-stage engines…; S7.8 C7: A downloaded '<title>.md' holding a Genesis journey's Concept, Research, Design and Commercialisation text,… → All 11 Genesis calls were floor-served. genesis.py scrubs the inline floor marker out of the prose ('provenance … reported in… [docs/TRUTH_SWEEP_W477.md; every writer is named there] (found W477 truth sweep)
     FU-097 [high] [p 90.9] v5 R1.3: §10 'modelled · simulated · optimised · ranked' — Genesis stage 5… — genesis.py:394 `winner = (_eligible or candidates)[0]`: when every candidate is vetoed, a vetoed candidate… — genesis.py:394 `winner = (_eligible or candidates)[0]`: when every candidate is vetoed, a vetoed candidate still wins. The journey carries it into Design and Commercialisation and reports status 'complete'. The UI puts a 'selected' chip on it (GenesisJourney.tsx:719-726) and prints '…vetoed for §11 failure: pragmatic, innovative, lean — the winner is carried into Design.' (GenesisJourney.tsx:742). The page shows no veto indicator. FIX (the assessor's proposal, a lead): When every candidate is vetoed, stop the journey after stage 5 with status 'blocked_by_screen' and name the vetoes. Never carry a vetoed candidate forward. [docs/VISION_FIDELITY_LEDGER.md v5 R1.3, standing PARTIAL, refutation survived] (found W476 ledger v5)
@@ -828,6 +830,7 @@ Open 173 (173 scheduled, 53 high · 0 unscheduled · 0 awaiting the Owner) · do
     FU-078 [low] [p 2.6] geospheric/resilience.py ('LSTM' self-healing) is unwired dead code — agentic_core/biomimicry/geospheric/resilience.py holds a hand-rolled 'LSTM' over a JSON model file; nothing imports it. The organism's real self-healing is agentic_core/organism/self_healing.py. Retire it or wire it honestly (audit-before-wire). (found W473 refuter)
     FU-220 [medium] [p 2.2] relocate_data_store calls a directory populated because a file exists — FU-079's two 'populated' chroma_db copies held 0 and 1 entries — FU-079 was registered as 'two populated copies' of chroma_db because plan() marks a directory CONFLICT when it is non-empty (any file). Read W477: the legacy copy's conversation_memory collection holds 0 embeddings; the repo copy holds 1 (a 30 March test exchange). The Owner ruled 2026-09-19: the repo copy is live, the legacy copy is retired and left on disk untouched. Fix: a directory is populated only when it holds data (for a Chroma store, count the embeddings; for a SQLite file, rows in its tables), and the report states the counts; guard with an empty-store fixture. (found W477 (FU-079 ruling))
     FU-241 [low] [p 2.2] Stale refuter worktrees left on disk under .claude/worktrees — .claude/worktrees/wf_4aea45e9-bf8-{1,2,3} are full repository copies left by an earlier workflow refutation run. They consume disk and, more practically, they break every repo-wide `find`/`grep` that does not exclude them — each search during the W483/W484 reviews returned four copies of every hit. FIX: clean them up (the host offers clean_up_worktrees) and have scripts/recovery_audit.py exclude .claude/ so its counts are of the repository, not of its copies. (found W483 (the §11 screen round) — found while applying the rule, not delivered)
+    FU-244 [low] [p 2.2] recovery_audit.py counts the .claude worktree copies as part of the repository — scripts/recovery_audit.py (and every repo-wide find/grep) walks .claude/worktrees/wf_*/, which hold complete copies of the tree left by earlier workflow refutation runs. Every search during the W483 and W484 reviews returned four copies of each hit, and the audit's orphan/deleted counts include them. FIX: exclude .claude/ in the audit's walk, and clean up the stale worktrees (the host offers clean_up_worktrees). (found W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit))
     FU-075 [low] [p 1.9] Read-only readers still use load_json_tolerant; retire the tolerant loader once every writer is strict — W472 made every WRITER read strictly (config.read_json_strict). The read-only readers that summarise or list — revenue._load (pending_summary), ueg._read (recent), agent_hub listing reads, integration_surface listings, resource_fabric composition/swarm listings, swarm proposed_catalogue/org_cascade_runs listings, business_plan._load — still use load_json_tolerant or a bare json.loads with a fallback: honest as readers (they never write back) but a listing over an unreadable store shows fewer rows without saying so. Fix: give each listing an 'unavailable' answer via read_json_strict and delete load_json_tolerant when no caller remains. (found W472)
     FU-228 [low] [p 0.9] intelligence.py keeps the unused cascade and MJM singletons W479 stopped calling — W479 removed the stub cascade call from the BDP/SPI stream; agentic_core/api/intelligence.py still imports UltimateCognitiveCascade and MJMOrchestratorV4 and instantiates _cascade and _mjm at import, which now nothing uses. FIX: remove them with the P3.12 engine work (they are the same objects that item rebuilds). (found W480 review of the 12-engine cognitive architecture proposal)
   P2.6 — The perimeter and the gate
@@ -907,6 +910,7 @@ Open 173 (173 scheduled, 53 high · 0 unscheduled · 0 awaiting the Owner) · do
     FU-230 [medium] [p 3.0] The five-gate clearance chain cannot refuse, and writes literal strings as signatures — clearance_chain.py: tawazun_res.get('balanced', True), tahqeeq_res.get('verified', True), a missing risk_score reading as 0 — an engine returning {} clears all five gates; the attestations recorded to the UEG are the literals 'SIG_MUSHAWARA_v1', 'SIG_NIYYAH_v1', 'SIG_TAWAZUN_v1', 'SIG_TAFAKKUR_v1'. Dormant today (only the bypassed recirculation orchestrator calls it), so this must be fixed BEFORE anything is wired to it. FIX: every default blocks; each verdict records its basis. (found W480 review of the 12-engine cognitive architecture proposal)
   P3.15 — Attestations that are attestations
     FU-226 [medium] [p 6.2] Post-quantum signatures are named in five modules and never performed — Dilithium/Kyber appear as strings and descriptions in autonomy_pipelines.py, integration_surface.py, avatar_engine.py, interstellar.py and qep_flagship.py; no attestation path performs a post-quantum signature. FIX: sign a canonical payload with a named algorithm and a stated key source, verify it from a route, and use the words 'post-quantum' only when it is. (found W480 review of the 12-engine cognitive architecture proposal)
+    FU-246 [low] [p 2.7] Three outside proposals now require a Halo2 attestation and an OAM-QKD figure this repo cannot produce — The biogeochemical, SWF and communication specifications each require require_halo2_proof=True on every ledger write, and the communication one adds a 'Classical OAM-QKD surrogate' with QBER <5 percent and a key rate >5.5 bits/photon. W482 established that a Halo2 proof here is a SHA string named after one, and FU-226 records the same for Dilithium/Kyber. Registered so P3.15 carries the WORDS as well as the mechanism: a surrogate is never named as the thing it stands in for, and no ledger write claims a proof it did not compute. (found W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit))
   P3.16 — The auxiliary engines and the recirculation loop
     FU-227 [low] [p 2.1] The recirculation orchestrator states stage latency targets it never measures — recirculation_orchestrator.py documents 'Target p95 latency: <500ms (SENSE -> ACT)' and per-stage budgets (<100ms sense, <500ms analyse) and measures none of them. It is not on a live path (the avatar API bypasses it and says why), so this is a dormant claim. FIX: measure each stage, record the latencies with the run, and make a breach a recorded fact before the loop is wired to the heartbeat. (found W480 review of the 12-engine cognitive architecture proposal)
   P3.17 — The Biomimetic Minimisation Engine,
@@ -917,6 +921,9 @@ Open 173 (173 scheduled, 53 high · 0 unscheduled · 0 awaiting the Owner) · do
     FU-237 [low] [p 0.9] 524 orphan .pyc files sit beside sources that were archived or deleted — scripts/recovery_audit.py (W482) finds 524 compiled files under agentic_core/ and core/ whose source is gone: 516 of those sources were MOVED into _archive/ by the W78/W159/W382 sweeps and 3 were deleted outright. The stale artefacts make a package look populated (minimisation/core still shows omega_functional, schrodinger_bridge and diffusion_engine) and can be imported by a stale interpreter. FIX: remove the orphans once P3.17 has recovered what it needs, and keep the audit green. (found W482 interrogation of the BME and support proposals (recovery audit))
   P3.18 — Autonomous technical support, told truthfully
     FU-238 [medium] [p 2.1] The archived support agent is a simulation under a test whose assertions cannot fail — _archive/agentic_core/support/autonomous_support_agent.py sleeps a tier-shaped latency, returns 'Simulated resolution for query: {query}' with confidence 0.96 and success=True unconditionally; _archive/tests-jules/integration/support/test_autonomous_support_sla.py then asserts resolution_rate >= 0.95 and zero_human_intervention is True. Nothing live imports either. Recorded so that P3.18 recovers the SHAPE and not the simulation, and so no future round inherits those assertions or the '96.7% autonomous resolution' figure they appear to support. (found W482 interrogation of the BME and support proposals (recovery audit))
+  P3.19 — The six cycles as a control surface
+    FU-242 [medium] [p 2.1] The geospheric regulators are unwired, so no cycle setpoint is enforced anywhere — agentic_core/biomimicry/geospheric/ holds five real modules (regulator.py, homeostatic_regulator.py, balance_regulator.py, drad.py, resilience.py) including a genuine PID regulator, and no live route or heartbeat beat calls any of them (resilience.py is already registered dead as FU-078). Three outside proposals now assume these are the running control layer for six biogeochemical cycles with +/-5 percent tolerance. They are not running at all. FIX with P3.19: bind the regulators to figures the platform already measures (reserve fund, self-investment returns, heartbeat work, the section 4 waterfall, immune records) and have an unbound cycle report assessable:false rather than a setpoint nobody enforces. (found W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit))
+    FU-243 [low] [p 2.1] Six biomimetic layer modules sit in the archive while the live tree keeps their .pyc — _archive/jules-unwired/agentic_core/biomimicry/ holds ant_colony.py (96 lines: a real stigmergic scheduler with a pheromone table, a decay rate and NATS behind a declared mock), communication.py, homeostasis.py, economy.py, immune.py, federation.py and emergence.py. The live agentic_core/biomimicry/ keeps an orphan .pyc for each (part of the 524 in FU-237), which makes the package look populated. The inter-agent communication proposal asks for exactly this layer as new work. FIX with P3.19: read each, recover what computes, delete the orphan .pyc for what does not, and record which was which. (found W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit))
 <!-- followups:end -->
 
 PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds, plus P1.15 and P1.16 added W469; no P2–P4 item ships until these do)
@@ -1528,6 +1535,27 @@ PHASE P3 — CAPABILITY (Tier 3; ~11 rounds; OWNER RULINGS put with evidence at 
       Control Agency — not a second governance path.
       NOT BEFORE P3.12–P3.15 (its answers depend on the engine contract and on attestations that are attestations).
       ACCEPT: no reported rate that a simulation could satisfy; every answer says what served it; escalation stated;
+      guard + blinds + a fresh-backend probe.
+ P3.19 [biogeochemical cycles · docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md] The six cycles as a control surface
+      over flows this platform already measures. Three more outside specifications (a Biomimetic
+      Biogeochemical Cycle System, a Sovereign Wealth Fund, and an inter-agent communication fabric) propose
+      the same six cycles — Water/liquidity, Carbon/growth, Nitrogen/risk, Oxygen/metabolism,
+      Phosphorus/allocation, Sulfur/resilience — with PID setpoints. The MAPPING is a good idea and is
+      adopted; almost nothing else in them survived interrogation. Of 28 paths they present as "confirmed
+      existing", 3 exist; the `archive/products/swf/` they tell an agent to copy from has never existed, and
+      the SWF core that git history does hold is THIRTY LINES whose only verdict is the literal string
+      "Articles 1-1342 active". The three documents also give DIFFERENT "immutable" PID gains for the same
+      six cycles. This item binds each cycle to a figure the repository already measures — the reserve fund,
+      self-investment returns, the §8→§12 survival instinct, the heartbeat, the §4 six-stage waterfall, the
+      immune system — through the geospheric regulators that already exist in
+      agentic_core/biomimicry/geospheric/, and recovers the ant-colony scheduler and the rest of the
+      biomimetic layer from _archive/jules-unwired/agentic_core/biomimicry/ (real work, unlike the SWF stub).
+      A PID gain is a DEFAULT until tuned and the record says so; a setpoint is an aspiration until something
+      measures the variable, and deviation from an aspiration is never reported as performance.
+      NOT BEFORE P3.12–P3.15. NOT IN SCOPE, and owner-gated at P4.5/P4.6: AUM, MiFID II / ISO 20022, Stripe
+      tiers, Cloud Run deployment and any real-money rail. Money here is virtual WST.
+      ACCEPT: every cycle reports a measured figure or says it cannot; no second store of numbers; no
+      fidelity percentage that nothing measured; one governance path (the existing Change Control Agency);
       guard + blinds + a fresh-backend probe.
  MILESTONE M3: fidelity workflow re-run → zero STUB/MISSING/DOC_OVERCLAIM; every PARTIAL
    disclosed; ledger v6 = the ratified boundaries only.

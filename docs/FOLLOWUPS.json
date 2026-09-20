@@ -4135,6 +4135,101 @@
       "tier": 2,
       "area": "tooling",
       "reach": "internal"
+    },
+    {
+      "id": "FU-242",
+      "title": "The geospheric regulators are unwired, so no cycle setpoint is enforced anywhere",
+      "why": "agentic_core/biomimicry/geospheric/ holds five real modules (regulator.py, homeostatic_regulator.py, balance_regulator.py, drad.py, resilience.py) including a genuine PID regulator, and no live route or heartbeat beat calls any of them (resilience.py is already registered dead as FU-078). Three outside proposals now assume these are the running control layer for six biogeochemical cycles with +/-5 percent tolerance. They are not running at all. FIX with P3.19: bind the regulators to figures the platform already measures (reserve fund, self-investment returns, heartbeat work, the section 4 waterfall, immune records) and have an unbound cycle report assessable:false rather than a setpoint nobody enforces.",
+      "source": "W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/biomimicry/geospheric/regulator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "organism",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-243",
+      "title": "Six biomimetic layer modules sit in the archive while the live tree keeps their .pyc",
+      "why": "_archive/jules-unwired/agentic_core/biomimicry/ holds ant_colony.py (96 lines: a real stigmergic scheduler with a pheromone table, a decay rate and NATS behind a declared mock), communication.py, homeostasis.py, economy.py, immune.py, federation.py and emergence.py. The live agentic_core/biomimicry/ keeps an orphan .pyc for each (part of the 524 in FU-237), which makes the package look populated. The inter-agent communication proposal asks for exactly this layer as new work. FIX with P3.19: read each, recover what computes, delete the orphan .pyc for what does not, and record which was which.",
+      "source": "W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/simverse/causal_simulator.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "organism",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-244",
+      "title": "recovery_audit.py counts the .claude worktree copies as part of the repository",
+      "why": "scripts/recovery_audit.py (and every repo-wide find/grep) walks .claude/worktrees/wf_*/, which hold complete copies of the tree left by earlier workflow refutation runs. Every search during the W483 and W484 reviews returned four copies of each hit, and the audit's orphan/deleted counts include them. FIX: exclude .claude/ in the audit's walk, and clean up the stale worktrees (the host offers clean_up_worktrees).",
+      "source": "W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit)",
+      "found": "2026-09-20",
+      "files": [
+        "scripts/recovery_audit.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "tooling",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-245",
+      "title": "Three outside proposals now cite a 'Halo2 proof' and an 'OAM-QKD' figure this repo cannot produce",
+      "why": "The biogeochemical, SWF and communication specifications each require require_halo2_proof=True on every ledger write, and the communication one adds a 'Classical OAM-QKD surrogate' with QBER <5 percent and a key rate >5.5 bits/photon. W482 established that a Halo2 proof here is a SHA string named after one, and FU-226 records the same for Dilithium/Kyber. Registered so P3.15 (attestations that are attestations) carries the WORDS as well as the mechanism: a surrogate is never named as the thing it stands in for, and no ledger write claims a proof it did not compute.",
+      "source": "W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit)",
+      "found": "2026-09-20",
+      "files": [
+        "core/transcendent_subsystems/tfel.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.15",
+      "status": "dropped",
+      "closed_by": null,
+      "note": "re-filed as FU-246 with a title the P3.15 attestation route reaches (W484)",
+      "tier": 3,
+      "area": "native_ai",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-246",
+      "title": "Three outside proposals now require a Halo2 attestation and an OAM-QKD figure this repo cannot produce",
+      "why": "The biogeochemical, SWF and communication specifications each require require_halo2_proof=True on every ledger write, and the communication one adds a 'Classical OAM-QKD surrogate' with QBER <5 percent and a key rate >5.5 bits/photon. W482 established that a Halo2 proof here is a SHA string named after one, and FU-226 records the same for Dilithium/Kyber. Registered so P3.15 carries the WORDS as well as the mechanism: a surrogate is never named as the thing it stands in for, and no ledger write claims a proof it did not compute.",
+      "source": "W484 interrogation of the biogeochemical / SWF / comms proposals (archive-first audit)",
+      "found": "2026-09-20",
+      "files": [
+        "core/transcendent_subsystems/tfel.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "native_ai",
+      "reach": "internal"
     }
   ],
   "routes": [
@@ -4196,6 +4291,21 @@
         "support logic"
       ],
       "note": "W482 — autonomous technical support (the archived simulation is not inherited)"
+    },
+    {
+      "slot": "P3.19",
+      "files": [
+        "agentic_core/biomimicry/geospheric/regulator.py",
+        "agentic_core/biomimicry/geospheric/homeostatic_regulator.py",
+        "agentic_core/biomimicry/geospheric/balance_regulator.py",
+        "agentic_core/simverse/"
+      ],
+      "words": [
+        "biogeochemical",
+        "cycle setpoint",
+        "sovereign wealth"
+      ],
+      "note": "W484 — the six cycles bound to measured flows (the geospheric regulators and the causal simulator)"
     },
     {
       "slot": "P2.6",

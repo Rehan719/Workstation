@@ -378,6 +378,40 @@ The reasoning, with the evidence, is `docs/COGNITIVE_ENGINE_ARCHITECTURE.md` and
 BEFORE any new module: this repository's cleanups moved 516 sources into `_archive/` (a git rename), so a
 deletion-only search misses exactly the work most worth recovering.
 
+
+**Recorded W484 — the six biogeochemical cycles, the Sovereign Wealth Fund and the inter-agent
+communication fabric (three more outside proposals, interrogated before acceptance).** The mapping they
+share is adopted into this vision: six named operational functions, each with a natural analogue — Water
+(liquidity), Carbon (growth and compounding), Nitrogen (risk transformation), Oxygen (metabolism),
+Phosphorus (allocation), Sulfur (resilience and error signalling) — with a coupling matrix between them.
+Its honest form here is **a control surface over flows this platform already measures**, not a seventh
+store of numbers: the reserve fund, self-investment returns, the §8→§12 survival instinct, the heartbeat,
+the §4 six-stage profit waterfall and the immune system, driven by the geospheric regulators that already
+exist in `agentic_core/biomimicry/geospheric/` and are currently wired to nothing.
+
+What the interrogation established, and what the vision therefore refuses to inherit:
+- **Of 28 paths the three documents present as "confirmed existing", three exist.** That is the third
+  consecutive proposal whose recovery table was never checked. `archive/products/swf/` has never existed;
+  the SWF core that git history does hold is THIRTY LINES whose only verdict is the literal string
+  "Articles 1-1342 active" and whose `rebalance()` rebalances nothing. The mapping is recoverable; the
+  implementation is not, because there has never been one.
+- **The three documents give different "immutable" PID gains for the same six cycles.** Nothing here
+  tuned either set, and an untuned gain is a decoration. A gain is a DEFAULT until tuned and the record
+  says which it is; a setpoint is an aspiration until something measures the variable, and deviation from
+  an aspiration is never reported as performance.
+- **A fidelity percentage nothing measured is not a fidelity.** "≥ 92.4% biomimetic fidelity" is a weighted
+  mean of three self-chosen sub-scores — the naming invariant again.
+- **A surrogate is never named as the thing it stands in for.** A "Halo2 proof" here is a SHA string; a
+  "classical OAM-QKD surrogate" is not quantum key distribution.
+- **Money stays virtual.** AUM, MiFID II, ISO 20022, Stripe tiers and Cloud Run deployment are the Owner's
+  switches at P4.5/P4.6, not part of this work.
+- **One governance path** — the existing Change Control Agency, never a second council.
+
+The archive-first rule paid again: `_archive/jules-unwired/agentic_core/biomimicry/` holds a REAL stigmergic
+scheduler (a pheromone table with decay) and six sibling layers that the communication proposal asks to
+build from scratch. The reasoning, with the evidence, is `docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md`; the
+work is plan item **P3.19**.
+
 ## 9. The User Experience — multimodal, enterprise-aware, reconfigurable
 
 - **Enterprise-aware avatar** integrated across the platform: **multimodal communication / interaction**
