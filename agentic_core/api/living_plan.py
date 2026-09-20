@@ -207,7 +207,16 @@ def get_followups():
                                   f"read ({exc.strerror or type(exc).__name__}) — the next read tries again"}
             problems = fu.check(reg, prompt, living)
         # W469 — the delivery plan's live state, derived on every call from the plan's items and the register
+        # W486 — the PACE, derived on every call from the register's own record of which round closed
+        # each row and which round found it. The Owner asked to be able to see where this is going
+        # without asking; a forecast that cannot be justified reports itself not assessable and says why.
+        try:
+            _forecast = fu.forecast(reg, prompt)
+        except Exception as _fe:
+            _forecast = {"assessable": False,
+                         "not_assessable_because": f"the forecast raised {type(_fe).__name__}"}
         return {**base, "available": True, **fu.schedule(reg, prompt), "plan": fu.plan_now(reg, prompt),
+                "forecast": _forecast,
                 "routes": fu._routes(reg), "integrity": {"ok": not problems, "problems": problems}}
     except Exception as exc:   # a defect in the checker itself is still reported, never a 500
         return {**base, "available": False,
@@ -221,7 +230,16 @@ def _followup_summary() -> Dict[str, Any]:
         reg, prompt = fu.load(fu.REGISTER), fu.read_doc(fu.PROMPT)
         s = fu.schedule(reg, prompt)
         p = fu.plan_now(reg, prompt)
+        try:
+            f = fu.forecast(reg, prompt)
+            _pace = {"rows_per_round": f["rate_used"]["closed_per_round"],
+                     "rounds_projected_all": f["all_rows_rounds_projected"],
+                     "rounds_projected_next": (f["next_item"] or {}).get("rounds_projected"),
+                     "assessable": f["assessable"]}
+        except Exception:
+            _pace = {"assessable": False}
         return {**s["counts"], "next_plan_item": s["next_plan_item"],
-                "plan_items_done": p["done"], "plan_items_total": p["total"], "api": "/api/v1/plan/followups"}
+                "plan_items_done": p["done"], "plan_items_total": p["total"],
+                "pace": _pace, "api": "/api/v1/plan/followups"}
     except Exception as exc:
         return {"available": False, "reason": type(exc).__name__, "api": "/api/v1/plan/followups"}

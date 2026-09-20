@@ -1581,8 +1581,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W485",
       "note": ""
     },
     {
@@ -1645,8 +1645,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W485",
       "note": ""
     },
     {
@@ -2110,8 +2110,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W485",
       "note": ""
     },
     {
@@ -4230,6 +4230,44 @@
       "tier": 3,
       "area": "native_ai",
       "reach": "internal"
+    },
+    {
+      "id": "FU-247",
+      "title": "The server-side export prints the opposite provenance label: floor-served content ships as produced on the AI fabric",
+      "why": "W485 gave every BROWSER export a provenance line (lib/api.ts provenanceLine, used by My Work and DomainTool). agentic_core/api/deliverables.py still stamps its own page one with wording that credits Workstation's AI fabric for content the deterministic floor composed, so the server-produced artefact says the opposite of what the browser-produced one now says about the same text. FIX: one statement for both — the export names what served it, and a floor-served export says the floor composed the headings and supplied no analysis.",
+      "source": "W485 refuters (verified real) — found while applying the rule, not delivered",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/deliverables.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "domains_ux",
+      "reach": "core"
+    },
+    {
+      "id": "FU-248",
+      "title": "Four more export surfaces send text out with no provenance line",
+      "why": "W485 fixed the two surfaces the sweep named (My Work, DomainTool) and left the class open elsewhere: Generator.tsx exports result.output raw, CreatorStudio.tsx, ApplicationStudio.tsx and DigitalReactor.tsx each build a Blob from their own text. Several already hold the provenance they would need. FIX: prepend provenanceLine() at each, the same call the two fixed surfaces use, so no export leaves unlabelled.",
+      "source": "W485 refuters (verified real) — found while applying the rule, not delivered",
+      "found": "2026-09-20",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/Generator.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "area": "domains_ux",
+      "reach": "internal"
     }
   ],
   "routes": [
@@ -4414,7 +4452,8 @@
         "apps/workstation-superapp/src/pages/synthesis/PresentationPlayer.tsx",
         "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
         "scripts/relocate_data_store.py",
-        "scripts/recovery_audit.py"
+        "scripts/recovery_audit.py",
+        "apps/workstation-superapp/src/pages/developers/"
       ],
       "words": [
         "marketplace count",
@@ -4425,7 +4464,7 @@
         "catalogue count",
         "catalogue counts"
       ],
-      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories); W483 — and scripts/recovery_audit.py, the archive-first audit"
+      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories); W483 — and scripts/recovery_audit.py, the archive-first audit; W485 — and the developer pages' own export surfaces"
     },
     {
       "slot": "P3.3",

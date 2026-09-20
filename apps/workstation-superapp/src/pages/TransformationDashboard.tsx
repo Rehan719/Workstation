@@ -41,8 +41,21 @@ interface PlanNow {
   next: PlanItemNow | null; open_items: PlanItemNow[]; phases: { phase: string; done: number; total: number }[];
   done: number; total: number; unscheduled: string[]; readable?: boolean;
 }
+// W486 — the PACE the plan is moving at, derived on every call from the register's own record of
+// which round closed each row and which round found it. `assessable` false means no projection can
+// be justified, and `not_assessable_because` says why — it is never replaced by a guess.
+interface Forecast {
+  assessable: boolean; not_assessable_because?: string | null;
+  window: { rounds: string[]; count: number; closed_per_round: number; found_per_round: number; net_per_round: number };
+  steady?: { rounds: string[]; count: number; excluded: string[]; closed_per_round: number; found_per_round: number; net_per_round: number };
+  rate_used?: { closed_per_round: number; net_per_round: number; rounds: number; source: string };
+  open_rows: number;
+  next_item: { slot: string; title: string; open_rows: number; rounds_projected: number | null } | null;
+  all_rows_rounds_projected: number | null;
+}
 interface Followups {
   available: boolean; reason?: string;
+  forecast?: Forecast;
   counts: { open: number; scheduled: number; high: number; awaiting_owner: number; done: number; dropped: number; unscheduled?: number };
   next_plan_item: string | null;
   schedule: { slot: string; title: string; items: FollowupRow[] }[];
@@ -303,6 +316,36 @@ export const TransformationDashboard: React.FC = () => {
             <p className="text-[11px] text-slate-500">{followups.reason ?? 'The follow-up register is not readable here.'}</p>
           ) : (
             <>
+              {/* W486 — where this is going, from the plan's own record. Never a date: rounds, the rate
+                  they were measured from, and a plain refusal when no projection can be justified. */}
+              {followups.forecast && (
+                <div className="mb-3 p-3 rounded-xl bg-slate-950 border border-slate-800" data-testid="plan-pace">
+                  <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1">Where this is going</p>
+                  {followups.forecast.assessable && followups.forecast.rate_used ? (
+                    <>
+                      <p className="text-[11px] font-black text-white">
+                        {followups.forecast.next_item?.rounds_projected != null && (
+                          <>~{followups.forecast.next_item.rounds_projected} round{followups.forecast.next_item.rounds_projected === 1 ? '' : 's'} to finish {followups.forecast.next_item.slot}
+                            <span className="text-slate-500 font-bold"> ({followups.forecast.next_item.open_rows} open rows)</span> · </>
+                        )}
+                        ~{followups.forecast.all_rows_rounds_projected} round{followups.forecast.all_rows_rounds_projected === 1 ? '' : 's'} for all {followups.forecast.open_rows} open rows
+                      </p>
+                      <p className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+                        At {followups.forecast.rate_used.closed_per_round} rows closed per round, measured over{' '}
+                        {followups.forecast.rate_used.rounds} round{followups.forecast.rate_used.rounds === 1 ? '' : 's'} ({followups.forecast.rate_used.source}),
+                        net {followups.forecast.rate_used.net_per_round} per round after new findings.
+                        {(followups.forecast.steady?.excluded?.length ?? 0) > 0 &&
+                          ` One-time intake excluded: ${followups.forecast.steady!.excluded.join(', ')}.`}
+                        {' '}Arithmetic over an observed mean, in rounds — not a date and not a promise.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] font-bold text-amber-400" data-testid="plan-pace-not-assessable">
+                      No projection: {followups.forecast.not_assessable_because || 'the pace is not assessable yet'}.
+                    </p>
+                  )}
+                </div>
+              )}
               {followups.plan && (
                 <div className="mb-3" data-testid="plan-now">
                   <p className="text-[10px] text-slate-400" hidden={followups.plan.readable === false || followups.plan.total === 0}>

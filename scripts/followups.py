@@ -184,9 +184,11 @@ def main() -> int:
     sub.add_parser("schedule")
     sub.add_parser("render")
     sub.add_parser("check")
+    fc = sub.add_parser("forecast", help="the pace the plan is moving at, and what it projects")
+    fc.add_argument("--window", type=int, default=6, help="build rounds to measure the rate over")
     args = ap.parse_args()
 
-    if args.cmd in ("check", "list", "schedule", "routes", "priority"):
+    if args.cmd in ("check", "list", "schedule", "routes", "priority", "forecast"):
         with register_lock():                      # never read the register and the docs from different moments
             reg, prompt, living = _texts()
         if args.cmd == "priority":
@@ -209,6 +211,29 @@ def main() -> int:
                 for ph, d in comp["by_phase"].items()) + f" · all {comp['overall_weighted_pct']}%")
             print("open items by total open priority (a suggestion beside the plan's order): " + " · ".join(pr_["suggested_order"]))
             return 1 if pr_["config_problems"] else 0
+        if args.cmd == "forecast":
+            print(fu.render_forecast(reg, prompt))
+            # The register cannot know how long a round TAKES — git can, so the wall-clock is
+            # measured separately and labelled as a different measurement, never blended in.
+            import subprocess as _sp, datetime as _dt, re as _re
+            try:
+                _log = _sp.run(["git", "log", "--format=%ct %s", "-40"], capture_output=True,
+                               text=True, encoding="utf-8", errors="replace").stdout.splitlines()
+                _pts = [(int(l.split(" ", 1)[0]), _re.search(r"\(W(\d{3})\)", l))
+                        for l in _log if l.strip() and l.split(" ", 1)[0].isdigit()]
+                _b = [(t, "W" + m.group(1)) for t, m in _pts if m]
+                _gaps = [round((_b[i - 1][0] - _b[i][0]) / 3600.0, 1) for i in range(1, len(_b))]
+                _gaps = [g for g in _gaps if 0.2 <= g <= 48]
+                if len(_gaps) >= 3:
+                    _gaps_sorted = sorted(_gaps)
+                    _med = _gaps_sorted[len(_gaps_sorted) // 2]
+                    print(f"  WALL CLOCK (git, a separate measurement): {len(_gaps)} commit-to-commit gaps, "
+                          f"median {_med} h per round, range {min(_gaps)}–{max(_gaps)} h.")
+                else:
+                    print("  WALL CLOCK: not assessable — too few round commits on record.")
+            except Exception as _e:
+                print(f"  WALL CLOCK: not assessable — git could not be read ({str(_e)[:80]}).")
+            return 0
         if args.cmd == "check":
             problems = fu.check(reg, prompt, living)
             for p in problems:

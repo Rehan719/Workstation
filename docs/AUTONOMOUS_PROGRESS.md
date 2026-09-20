@@ -6908,3 +6908,57 @@ Compliance page in a real browser. Ten older tests asserted the behaviour this r
 retargeted, each with its reason recorded in the test.
 
 Suite: 390 passed · 15 skipped · 0 failed (40-min run on the final tree, isolated DATA_DIR).
+
+### W485 — P1.18: a veto stops the journey · a pack says whose text it screened · exported text carries its provenance (FU-097, FU-101, FU-128)
+
+**Why.** Three surfaces, one shape: a verdict the next step ignores. `winner = (_eligible or candidates)[0]`
+meant that when the §11 screen vetoed EVERY candidate, a vetoed one still won — carried into Design,
+Operations and Commercialisation, status 'complete', a 'selected' chip on the same candidate the page had
+just named as vetoed. The board pack's §11 screen ran over its narrative, and when that narrative was the
+"narrative pending the owned model…" placeholder it screened THAT: a pack whose narrative had not been
+composed came back compliant while its enterprise stood at FAIL. And a Genesis journey downloaded from My
+Work left as a .md with nothing saying what composed it — all eleven calls floor-served, the provenance a
+DOM badge only, and a badge beside the text is not a label on the text.
+
+**What changed.** `_blocked = not _eligible`: nothing selected, no body composed (each field says why it is
+empty), the three uncalled stages reported NOT RUN rather than "served by the deterministic floor" with
+proxy scores, nothing attested, the QMS gate told it has nothing to measure, no deliverable claimed, and
+status 'blocked_by_screen'. The pack carries `screened_subject`; a pending pack's own verdict is null at the
+field consumers read; the entity's latest §11 verdict travels beside it in THREE states — screened, never
+screened, could-not-ask — and is inside the content hash, so a pack whose entity verdict flipped is not
+"unchanged since". One `provenanceLine()` labels every browser export: My Work (copy, download, prior
+versions) and DomainTool (copy, md/txt, html), with an empty provenance map reported as "no call served
+this" rather than as the floor.
+
+**The refutation earned its keep.** 27 findings, **22 real**. The round had stopped only the one-call path:
+the page's two-step Establish button POSTed `candidates[0]` — which, when all are disqualified, IS the
+vetoed one — and both `/genesis/establish` and its `/stream` twin built a living VSB from it, registered it,
+shipped it, and wrote "Selected Candidate (§4.5 evidence-ranked)" into its EVIDENCE.md. Both refuse with 409
+now, and the button is disabled before the click. Three more were the round's own class re-committed inside
+its fix. **44 blinds**, all failing, none vacuous (ten were vacuous across two sweeps and were made real).
+**Probe 19/19** on a fresh backend (:8092; next :8093). Suite 392/15/0. One older test retargeted
+(test_vsb_board_pack asserted the pack verdict this round changed). A guard leg also caught a
+decorator-insertion slip of mine — a helper placed between `@router.post` and its handler silently rebound
+the route and `/establish` returned null until it was moved.
+
+### W486 — the plan says where it is going, or says it cannot
+
+**Why.** The Owner asked to be able to track progress without asking, and for that to live in the plan
+rather than in a chat message.
+
+**What it is.** `plan_followups.forecast()` measures the pace from the register's OWN record — which round
+closed each row (`closed_by`), which round found it (the `W###` in its source) — and projects in ROUNDS,
+because a round is the unit the register can count. It does not know how long a round takes; the CLI adds
+that from git as a separate, separately-labelled measurement (median 2.2 h per commit gap, range 0.2–22 h).
+The rules that stop it becoming a promise: a one-time INTAKE — an audit, a sweep, an interrogation — is
+NAMED and excluded rather than averaged into an ongoing rate (W477 alone registered 100 rows, which would
+otherwise say the backlog grows forever); a rate over fewer than three build rounds is not assessable; a
+backlog that is not shrinking projects NOTHING, with both numbers shown; and no date is ever produced.
+Today it reads: 7.6 rows closed per round (net +5.8), ~7 rounds for P1.18's 53 rows, ~24 for all 177.
+
+**Where it shows.** `scripts/followups.py forecast`; `GET /api/v1/plan/followups` → `forecast` and
+`GET /api/v1/plan` → `followups.pace`; a generated **WHERE THIS IS GOING** block in both plan documents held
+to the same lockstep as PLAN NOW (a stale copy is a reported problem, not silent drift); and a "Where this is
+going" panel on the /transformation live card, refreshing every minute. **24 blinds, all failing on the first
+sweep** — including the three that matter: too little evidence, a growing backlog, and a one-time intake
+averaged in.

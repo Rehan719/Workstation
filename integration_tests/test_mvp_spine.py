@@ -2932,7 +2932,21 @@ def test_vsb_board_pack(client):
     assert m["narrative"]
     assert m["dcs_registered"] is True and isinstance(m["dcs_hash"], str) and len(m["dcs_hash"]) == 128
     q = m["quality_assurance"]["quality"]
-    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and q["compliance"]["overall"] in ("pass", "review", "fail")   # W449: the floor narrative is not assessable
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"]   # W449: the floor narrative is not assessable
+    # W485 retarget (ledger v5 R2.3) — the pack's §11 verdict used to be a verdict whatever it read.
+    # On a PENDING narrative the screen read the pending-state sentence, so the pack's own overall is
+    # None, the screen's verdict about the placeholder is kept under its own name, and the row says
+    # whose text it was. A composed narrative still carries a real verdict.
+    _c = q["compliance"]
+    if str(m["narrative"]).startswith("narrative pending"):
+        assert _c["overall"] is None and _c["compliant"] is None, _c
+        assert _c["assessable"] is False and _c["overall_of_screened_text"] in ("pass", "review", "fail"), _c
+        assert "placeholder" in _c["screened_subject"], _c["screened_subject"]
+    else:
+        assert _c["overall"] in ("pass", "review", "fail"), _c
+        assert "composed narrative" in _c["screened_subject"], _c["screened_subject"]
+    # the ENTITY's own latest §11 verdict travels beside the pack's, as its own question
+    assert isinstance(m["entity_compliance"], dict) and m["entity_compliance"].get("basis"), m.get("entity_compliance")
     assert m["ai_provenance"]["any_external"] is False
     # GET latest + history; unknown VSB is a 404
     assert client.get(f"/api/v1/vsb/{vid}/board-pack").json()["dcs_hash"] == m["dcs_hash"]
@@ -17801,3 +17815,278 @@ def test_w483_a_keyword_screen_flags_and_never_clears(client):
     gen = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
     assert "from agentic_core.vbs.quality import SAFETY_FRAMEWORKS" in gen
     assert 'coverage", "vocabulary") != "none"' not in gen, "genesis counts an empty screen as coverage"
+
+
+def test_w485_a_veto_stops_the_journey_and_a_pack_says_whose_text_it_screened(client):
+    """W485 — P1.18: FU-097, FU-101 and FU-128's remaining half.
+
+    Three surfaces, one shape: a verdict that the next step ignores. A candidate the §11 screen
+    VETOED still won and was carried into Design; a board pack whose narrative had not been composed
+    was screened anyway and the verdict read as the enterprise's; and a Genesis journey left the
+    platform as a .md with nothing saying what composed it.
+    """
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── 1. a veto STOPS the journey (FU-097, ledger v5 R1.3) ────────────────────────────────────
+    r = client.post("/api/v1/genesis/journey", json={
+        "problem": "A fine wine subscription club with casino nights for members",
+        "domain": "commerce"}).json()
+    s5 = r["stage_5_model_simulate_rank"]
+    assert s5["vetoed"], s5                               # the screen did veto
+    assert s5["selected"] is None, s5["selected"]         # …so nothing was selected
+    assert s5["blocked_by_screen"] is True, s5
+    assert "no approach was selected" in (s5["blocked_reason"] or ""), s5["blocked_reason"]
+    assert r["status"] == "blocked_by_screen", r["status"]
+    assert "NOTHING SELECTED" in s5["selection_basis"], s5["selection_basis"]
+    # nothing was composed FROM the vetoed approach, and each body field says why it is empty
+    for key in ("phase_2_design_development", "stage_7_operational_intelligence",
+                "phase_3_commercialisation"):
+        assert "every candidate was vetoed" in (r[key] or ""), (key, (r[key] or "")[:120])
+    assert r["established_vsb"] is None or (r["established_vsb"] or {}).get("blocked_by_screen") is True
+    # …and a journey that ASKED to establish still establishes nothing — a living enterprise built
+    # from a vetoed approach is the veto ignored one surface further on
+    rb = client.post("/api/v1/genesis/journey", json={
+        "problem": "An online casino with lottery draws and a wine club for members",
+        "domain": "commerce", "establish": True, "name": "W485 Blocked"}).json()
+    assert rb["status"] == "blocked_by_screen", rb["status"]
+    assert (rb["established_vsb"] or {}).get("blocked_by_screen") is True, rb["established_vsb"]
+    assert not (rb["established_vsb"] or {}).get("vsb_id"), rb["established_vsb"]
+
+    # an ELIGIBLE journey is unaffected — the veto path must not have broken the ordinary one
+    ok = client.post("/api/v1/genesis/journey", json={
+        "problem": "Elderly residents in Bradford struggle to repair small household appliances",
+        "domain": "community"}).json()
+    ok5 = ok["stage_5_model_simulate_rank"]
+    assert ok5["blocked_by_screen"] is False and ok5["selected"], ok5
+    assert ok["status"] == "complete", ok["status"]
+    assert "every candidate was vetoed" not in (ok["phase_2_design_development"] or "")
+
+    # (refutation) THE VETO HOLDS AT THE WRITER THAT CREATES THE ENTERPRISE. The page's two-step
+    # Establish path bypassed it entirely: a living VSB was born from the vetoed candidate and its
+    # EVIDENCE.md called it the evidence-ranked selection.
+    vet = client.post("/api/v1/genesis/establish", json={
+        "problem": "x", "domain": "commerce",
+        "selected_candidate": {"id": "c1", "screen": {"disqualified": True, "verdicts": {"sharia_halal": "fail"}}}})
+    assert vet.status_code == 409, (vet.status_code, vet.text[:200])
+    assert vet.json()["detail"]["error"] == "blocked_by_screen", vet.json()
+    vets = client.post("/api/v1/genesis/establish/stream", json={
+        "problem": "x", "domain": "commerce",
+        "selected_candidate": {"id": "c1", "screen": {"disqualified": True}}})
+    assert vets.status_code == 409, (vets.status_code, vets.text[:200])
+    assert vets.json()["detail"]["error"] == "blocked_by_screen", vets.json()
+    # BOTH establish writers carry the refusal — one guarded and one bare is the same defect
+    gen_src = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert gen_src.count("_refuse_vetoed_candidate(req)") == 2, gen_src.count("_refuse_vetoed_candidate(req)")
+    # an ELIGIBLE candidate is not refused
+    okest = client.post("/api/v1/genesis/establish", json={
+        "problem": "A community appliance repair service", "domain": "community", "name": "W485 OK",
+        "selected_candidate": {"id": "c1", "screen": {"disqualified": False}}})
+    assert okest.status_code == 200, okest.text[:200]
+
+    # (refutation) a blocked journey ATTESTS nothing and REPORTS no work it did not do
+    bq = (r.get("quality_assurance") or {}).get("quality") or {}
+    bar = bq.get("bar_measured") or {}
+    for name in ("optimised", "ranked", "modelled", "simulated"):
+        c = bar["criteria"][name]
+        assert c["attested"] is False, (name, c)
+        assert c["met"] is not True, (name, c)
+        assert "blocked by the §11 screen" in (c.get("basis") or ""), (name, c)
+    assert bq.get("qms_gate_passed") is None, bq.get("qms_gate_passed")   # nothing to measure
+    for stage in ("design", "operations", "commercialisation"):
+        sv = r["stage_verifications"][stage]
+        assert sv.get("ran") is False and sv["verified"] is None, (stage, sv)
+        assert "not run" in sv["basis"], (stage, sv)
+    assert "No deliverable" in r["deliverable"], r["deliverable"]
+    gj_src = (root / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "disabled={establishing || result.status === 'blocked_by_screen'}" in gj_src
+    assert 'data-testid="establish-blocked"' in gj_src
+
+    # ── 2. the board pack says WHOSE text it screened (FU-101, ledger v5 R2.3) ───────────────────
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "A community appliance repair service for elderly residents",
+        "domain": "community", "name": "W485 Repair Circle"}).json()
+    vid = est.get("vsb_id") or (est.get("entity") or {}).get("vsb_id")
+    assert vid, est
+    bp = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+    comp = ((bp.get("quality_assurance") or {}).get("quality") or {}).get("compliance") or {}
+    if str(bp.get("narrative", "")).startswith("narrative pending"):
+        assert comp.get("assessable") is False, comp
+        assert "placeholder" in (comp.get("screened_subject") or ""), comp.get("screened_subject")
+        assert "says nothing about the" in (comp.get("screened_subject") or ""), comp
+    else:
+        assert "composed narrative" in (comp.get("screened_subject") or ""), comp
+    # the §10 bar never certifies the pack compliant off that screen (the W483 rule, here)
+    bar = ((bp.get("quality_assurance") or {}).get("quality") or {}).get("bar_measured") or {}
+    for name in ("compliant", "safe"):
+        assert bar["criteria"][name]["met"] is not True, (name, bar["criteria"][name])
+    # and the ENTITY's own latest §11 verdict travels on the pack, as its own question
+    ec = bp.get("entity_compliance")
+    assert isinstance(ec, dict) and "verdict" in ec and ec.get("basis"), ec
+    assert ec["verdict"] in (None, "pass", "review", "fail"), ec
+    # an UNREADABLE compliance history is not a verdict — it is a statement about the store
+    import agentic_core.economy.living_vsbs as _lv
+    _orig = _lv._latest_screen
+    try:
+        _lv._latest_screen = lambda _vid: _lv.HISTORY_UNREADABLE
+        bp2 = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+        ec2 = bp2["entity_compliance"]
+        assert ec2["verdict"] is None, ec2
+        assert "could not be read" in ec2["basis"], ec2
+        assert ec2["known"] is False, ec2
+        assert ec2.get("never_screened") is False, ec2      # "could not ask" is not "never screened"
+    finally:
+        _lv._latest_screen = _orig
+    # (refutation) the entity verdict is ON the pack, so it is part of what the pack SAYS: a pack
+    # whose entity verdict flipped must not still call itself "unchanged since" the older version
+    _h0 = bp.get("content_hash")
+    try:
+        _lv._latest_screen = lambda _vid: "fail"
+        bp3 = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+        assert bp3["entity_compliance"]["verdict"] == "fail", bp3["entity_compliance"]
+        assert bp3.get("content_hash") != _h0, (bp3.get("content_hash"), _h0)
+    finally:
+        _lv._latest_screen = _orig
+    # (refutation) the page renders THREE entity states, never two
+    assert "pack.entity_compliance.known === false" in gj_src, "the page collapses 'not known'"
+    assert "'never screened'" in gj_src, gj_src.count("'never screened'")
+
+    # a pending pack's OWN verdict is null at the field every consumer reads — `assessable: false`
+    # beside an untouched 'review' had no reader at all
+    if str(bp.get("narrative", "")).startswith("narrative pending"):
+        assert comp.get("overall") is None and comp.get("compliant") is None, comp
+        assert comp.get("overall_of_screened_text"), comp
+        assert comp.get("sealed_note"), comp
+
+    # ── 3. exported text carries its provenance (FU-128 / sweep S7.8) ───────────────────────────
+    api = (root / "apps/workstation-superapp/src/lib/api.ts").read_text(encoding="utf-8")
+    assert "export const provenanceLine" in api
+    assert "composed by the deterministic native structured engine" in api
+    # (refutation) an EMPTY provenance map served nothing — calling that 'floor-composed' is a
+    # positive claim about a run that produced nothing; and the non-model set is {native, template}
+    assert "no call is recorded as having served this output" in api
+    assert "const NON_MODEL = ['native', 'template'];" in api
+    assert "served.length > 0 && served.every(" in api
+    # the floor SENTENCE itself is what the reader gets — assert it, not a paraphrase
+    assert ("composed by the deterministic native structured engine, not by a model. It arranges the"
+            in api), "the exported line no longer names the floor"
+    assert "return NO_SERVED_CALL_LINE;" in api, "the empty-map guard is gone"
+    # (refutation) the third copy path in My Work carries the label too
+    mw = (root / "apps/workstation-superapp/src/pages/MyWork.tsx").read_text(encoding="utf-8")
+    assert "provenanceHeader(rec) + v.output" in mw
+    # BOTH the copy and the download carry it — one without the other is the same defect
+    assert mw.count("provenanceHeader(rec) + rec.output") == 2, mw.count("provenanceHeader(rec) + rec.output")
+    assert "provenanceLine(" in mw
+    dt = (root / "apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
+    # EVERY export path, counted — one path left bare is the same defect as all of them
+    assert "await navigator.clipboard.writeText(provHeader() + exportText)" in dt, "the copy is bare"
+    assert "let content = provHeader() + exportText," in dt, "the md/txt export is bare"
+    assert "const esc = (provHeader() + exportText).replace(" in dt, "the html export is bare"
+    assert dt.count("provHeader()") >= 3, dt.count("provHeader()")   # its definition + copy + exports
+    assert "provenanceLine(" in dt
+
+    # ── 4. the pages show it (a payload nobody reads is not a fix) ──────────────────────────────
+    gj = (root / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert ">Blocked by the §11 screen</p>" in gj, "the blocked panel heading is gone"
+    assert "nothing is carried into Design: the journey stops here." in gj
+    assert ">vetoed</span>" in gj
+    assert "data-testid=\"pack-entity-compliance\"" in gj
+    assert "data-testid=\"pack-screened-subject\"" in gj
+
+    # ── 5. the module states the rule it now applies ────────────────────────────────────────────
+    gen = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert "A veto that the next stage ignores is not a veto." in gen
+    vsb = (root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert "WHAT THE §11 SCREEN ACTUALLY READ" in vsb
+
+
+def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
+    """W486 — the Owner asked to be able to track progress without asking.
+
+    The pace is MEASURED from the register's own record (which round closed each row, which round
+    found it) and projected in ROUNDS — the unit the register can count. The rules that keep it from
+    becoming a promise: a rate over too few rounds is not assessable; a backlog that is not shrinking
+    projects nothing; a one-time intake (an audit or a sweep) is named and excluded rather than
+    averaged into an ongoing rate; and no date is ever produced.
+    """
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    from agentic_core import plan_followups as fu
+
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    f = fu.forecast(reg, prompt)
+
+    # 1. it is derived, and it says from what
+    assert "measured from the register" in f["basis"] and "not a date" in f["basis"], f["basis"]
+    assert f["window"]["count"] >= 1 and f["window"]["rounds"], f["window"]
+    assert f["open_rows"] == sum(1 for r in fu.raw_items(reg)
+                                 if isinstance(r, dict) and r.get("status") == "open")
+
+    # 2. a one-time intake is NAMED and kept out of the ongoing rate, never silently averaged in
+    st = f["steady"]
+    assert set(st["rounds"]) | set(st["excluded"]) == set(f["window"]["rounds"]), (st, f["window"])
+    if st["excluded"]:
+        assert f["rate_used"]["source"].startswith("steady"), f["rate_used"]
+        assert st["closed_per_round"] >= f["window"]["closed_per_round"], (st, f["window"])
+
+    # 3. a projection is arithmetic over the rate it names — checkable, not asserted
+    import math
+    if f["assessable"]:
+        rate = f["rate_used"]["closed_per_round"]
+        assert rate > 0 and f["rate_used"]["net_per_round"] > 0, f["rate_used"]
+        assert f["all_rows_rounds_projected"] == math.ceil(f["open_rows"] / rate), f
+        nx = f["next_item"]
+        if nx and nx["open_rows"]:
+            assert nx["rounds_projected"] == math.ceil(nx["open_rows"] / rate), nx
+    else:
+        assert f["not_assessable_because"], f
+        assert f["all_rows_rounds_projected"] is None, f
+
+    # 4. THE REFUSALS. A rate with too little evidence, and a backlog that is not shrinking, both
+    #    project NOTHING — these are the legs that stop this becoming a guess.
+    thin = {"items": [{"id": "FU-1", "status": "done", "closed_by": "W001", "slot": "P1.1",
+                       "title": "t", "why": "w", "source": "W001", "severity": "low", "files": []}]}
+    assert fu.forecast(thin, prompt)["assessable"] is False
+    assert "at least" in (fu.forecast(thin, prompt)["not_assessable_because"] or "")
+
+    growing = {"items": []}
+    for i in range(6):                       # six rounds, each closing 1 and finding 5
+        rnd = f"W{900 + i}"
+        growing["items"].append({"id": f"FU-c{i}", "status": "done", "closed_by": rnd, "slot": "P1.1",
+                                 "title": "t", "why": "w", "source": rnd, "severity": "low", "files": []})
+        for j in range(5):
+            growing["items"].append({"id": f"FU-o{i}-{j}", "status": "open", "slot": "P1.1",
+                                     "title": "t", "why": "w", "source": rnd, "severity": "low", "files": []})
+    g = fu.forecast(growing, prompt)
+    assert g["assessable"] is False, g["rate_used"]
+    assert "not shrinking" in (g["not_assessable_because"] or ""), g["not_assessable_because"]
+    assert g["all_rows_rounds_projected"] is None, g
+
+    # 5. it is rendered into BOTH plan docs, in lockstep, and the check enforces that
+    rendered = fu.render_forecast(reg, prompt)
+    for doc in ("docs/FABLE_DELIVERY_PROMPT.md", "docs/WORKSTATION_IDBO_LIVING_PLAN.md"):
+        text = (root / doc).read_text(encoding="utf-8")
+        assert fu.PACE_BEGIN in text and fu.PACE_END in text, doc
+        assert fu._block(text, fu.PACE_BEGIN, fu.PACE_END) == rendered, doc
+    assert fu.LOCKSTEP_PACE_PROMPT in fu.LOCKSTEP and fu.LOCKSTEP_PACE_LIVING in fu.LOCKSTEP
+    # the lockstep is ENFORCED: a stale block is a reported problem, not a silent drift
+    stale = fu.splice(prompt, "WHERE THIS IS GOING (stale)", fu.PACE_BEGIN, fu.PACE_END)
+    assert fu.LOCKSTEP_PACE_PROMPT in fu.check(reg, stale, None), "a stale PACE block is not caught"
+
+    # 6. it is SERVED, so the page can show it without anyone running a script
+    body = client.get("/api/v1/plan/followups").json()
+    assert body.get("available") is True, body.get("reason")
+    sf = body["forecast"]
+    assert sf["assessable"] == f["assessable"]
+    assert sf["open_rows"] == f["open_rows"]
+    summary = (client.get("/api/v1/plan").json().get("followups") or {}).get("pace") or {}
+    assert "assessable" in summary, summary
+
+    # 7. the page renders it, and renders the REFUSAL when there is no projection
+    td = (root / "apps/workstation-superapp/src/pages/TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="plan-pace"' in td
+    assert 'data-testid="plan-pace-not-assessable"' in td
+    assert "not a date and not a promise" in td
+    assert "One-time intake excluded:" in td
