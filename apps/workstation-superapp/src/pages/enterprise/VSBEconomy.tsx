@@ -30,6 +30,9 @@ interface Cycle {
 interface WaterfallState {
   waterfall: Record<string, number>; source: string; template_default: Record<string, number>;
   stages: string[]; constraints: { distributes_profit: boolean; capital_preserved: boolean };
+  // W488 — the API says which form it USED, where that came from, and whether this page's pick was ignored
+  entity_type?: string; entity_type_source?: string; claimed_entity_type?: string | null;
+  claim_ignored?: boolean; form_note?: string;
 }
 
 const STAGE_ICON: Record<string, React.ComponentType<any>> = {
@@ -171,6 +174,11 @@ export const VSBEconomy: React.FC = () => {
     return () => { live = false; };
   }, [entity, vsbId]);
 
+  // W488 (refutation) — the form ACTUALLY in force, from the API's own disclosure. `inForce` is null
+  // until an answer lands, so the picker never claims a binding before the API has stated one.
+  const inForce = wf?.entity_type ?? null;
+  const formIgnored = Boolean(wf?.claim_ignored);
+
   const wfDraftSum = Object.values(wfDraft).reduce((a, b) => a + (Number(b) || 0), 0);
 
   const saveWaterfall = async () => {
@@ -290,13 +298,36 @@ export const VSBEconomy: React.FC = () => {
       </Card>
 
       {/* Entity-type selection */}
+      {/* W488 (refutation) — THE PAGE THAT CAUSED THE ROW SAYS WHICH FORM WAS USED.
+          FU-142 added the disclosure to the API and this picker rendered none of it: clicking 'Charity ·
+          capital preserved · non-profit' highlighted that card while every figure below was computed
+          under the registered waqf_ltd_hybrid — including the Owner's 20%. The registry binding stays
+          (W313); what changes is that the page now marks the form actually in force and says the pick
+          was not used. */}
       <Card className="p-6">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2"><Building2 size={14} /> Legal / Economic Form</h3>
+        {formIgnored && (
+          <div className="mb-4 p-3 rounded-xl border border-vital/40 bg-vital/5" data-testid="form-claim-ignored">
+            <p className="text-[10px] font-black uppercase tracking-wide text-vital">Your selection is not the form in force</p>
+            <p className="text-[11px] text-slate-300 font-bold mt-1 leading-relaxed">{wf?.form_note}</p>
+            <p className="text-[10px] text-slate-500 font-bold mt-1">
+              Every figure below — the waterfall, the cycle splits and the Owner&apos;s share — is computed under
+              <span className="text-highlight"> {inForce}</span> ({wf?.entity_type_source}), not under your pick. The form is
+              fixed at registration; change it by re-registering the entity.
+            </p>
+          </div>
+        )}
+        {!formIgnored && inForce && (
+          <p className="text-[10px] text-slate-500 font-bold mb-4" data-testid="form-in-force">In force: <span className="text-highlight">{inForce}</span> — {wf?.form_note}</p>
+        )}
         <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3">
           {types.map(t => (
             <button key={t.id} type="button" onClick={() => setEntity(t.id)}
-              className={`text-left p-4 rounded-2xl border transition-all ${entity === t.id ? 'bg-highlight/10 border-highlight/50' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}>
+              data-testid={`form-card-${t.id}`}
+              className={`text-left p-4 rounded-2xl border transition-all ${(inForce || entity) === t.id ? 'bg-highlight/10 border-highlight/50' : (formIgnored && entity === t.id ? 'bg-slate-900 border-vital/40 opacity-60' : 'bg-slate-900 border-slate-800 hover:border-slate-700')}`}>
               <p className="font-black text-white text-sm">{t.name}</p>
+              {inForce === t.id && formIgnored && <p className="text-[9px] font-black uppercase text-highlight mt-1">in force — fixed at registration</p>}
+              {formIgnored && entity === t.id && <p className="text-[9px] font-black uppercase text-vital mt-1">your pick — NOT used</p>}
               <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{t.description}</p>
               <div className="flex gap-1.5 mt-2">
                 {t.capital_preserved && <span className="px-2 py-0.5 rounded-md bg-aura/10 text-aura text-[8px] font-black uppercase">capital preserved</span>}

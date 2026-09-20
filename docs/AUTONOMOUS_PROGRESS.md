@@ -6997,3 +6997,49 @@ comparison before it can be trusted.
 
 **Broken 18 ways**; all 18 fail, none vacuous (six were vacuous on the first sweep — the guard had not
 covered the CLI, the API's failure path, or the plan's own recorded rules). Suite 393/15/0.
+
+### W488 — the page and the API say the same thing (P1.18, the C5 batch — and its refutation)
+
+**The first round the batch mechanism chose.** W487's `followups.py batches --item P1.18` answered C5 —
+*a second writer or the reached page disagrees with the API* — with six rows: FU-136 (the Board's apex
+prompt), FU-137 (the Owner's plan), FU-142 (a substituted legal form), FU-143 (the management floor's
+promise), FU-149 (a rail tooltip), FU-150 (the BTO page's provisioning claim). One class, six surfaces,
+one question in each: does what the reader is told match what the system did?
+
+**First cut.** The business plan's `_load` became a strict read (`read_json_strict` → `StoreUnavailable`)
+and all eight scoped routes answer 503 naming the file and promising the plan is never replaced. The
+Board's apex `_q` passes `augment=False`. A `_form_disclosure` was attached to six economy surfaces. Four
+page/docstring claims were corrected. 20 blinds, 20 caught, none vacuous; suite 394/15/0.
+
+**Then the refutation, and this is the part worth recording.** Five adversarial lenses over the round's
+own diff, every finding verified in its own worktree: **29 findings, 25 verified real** — and not a
+scatter. Every one was *this round's class re-committed inside this round's fix*:
+
+- **The disclosure invented the thing it disclosed.** `_form_disclosure` read the FastAPI/pydantic DEFAULT
+  as a caller's claim, so a request stating no form at all was told "the requested waqf_ltd_hybrid was NOT
+  used". The claim is now `str | None` at all seven surfaces; `None` means the caller stated nothing.
+- **The refusal reached a page that crashed instead of repeating it.** `BusinessPlan.tsx` called `r.json()`
+  with no `r.ok` check, stored the 503 body as the plan, and threw on `plan.objectives.length` — the Owner
+  saw "Render Error — Cannot read properties of undefined" where the system knew the filename and that
+  nothing had been written. `VSBCockpit.tsx` rendered a blank tab. A page that turns a precise refusal into
+  a crash is the same defect as inventing an answer.
+- **The fixed writer had siblings.** The same Chief-of-the-Board twin twenty lines below the strict read
+  still ran with recall and PERSISTED its output into the Owner's plan; so did the org cascade's apex. A
+  repo-wide audit found eleven such callers — all closed, with the avatar conversation the one deliberate
+  exception, saying why in place. The comment claiming "every other generation surface already does this"
+  was a claim the repo did not back; it now records what was true.
+- **A route that was not a route.** `/business-plan/list` kept its own tolerant read, so a present-but-corrupt
+  plan vanished from `plans` AND from `total`. It now lists the row marked unreadable and says its counts
+  are partial.
+- **W313's binding had already evaporated.** `_resolve_entity_type`'s vsb-store leg read a top-level key
+  **no writer sets** (the writer records `economy.entity_type`), so for any VSB known to the vsb store but
+  not the living roster the caller's claim silently became the binding — and the new disclosure reported
+  that as "nothing was ignored". A stored entity with no recorded form is now refused, never bound to a claim.
+- **The page that caused the row rendered none of it**; **three more provisioning claims** and **six
+  finished-document promises** survived on pages the round had already edited, one beside the new
+  "nothing is provisioned yet" line; and **a guard leg asserted source text** where this suite already
+  had a behavioural spy — it now watches the call and asserts the repo-wide audit as a property.
+
+**The lesson, in one line:** a round's own fix is the likeliest place to find the defect the round is about.
+
+**Broken 36 ways** (R01–R36) on top of the first cut's 20.

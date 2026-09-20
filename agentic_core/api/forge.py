@@ -142,7 +142,7 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
 
     async def _q(prompt: str, agent: str) -> str:
         try:
-            res = await gateway.query_meta(prompt, agent=agent)
+            res = await gateway.query_meta(prompt, agent=agent, augment=False)
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))

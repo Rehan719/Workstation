@@ -244,7 +244,7 @@ async def run_lab_cascade(challenge: str, realm: str = "enterprise", domain: str
         prompt = _STAGE_PROMPTS[stage_key].format(
             challenge=challenge, domain=domain, realm=realm, solution_name=solution_name,
             solution=results.get("solution_concept", "")[:200])
-        meta = await gateway.query_meta(prompt, agent=f"studio_{stage_key}")
+        meta = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False)
         results[stage_key] = meta.get("output", "") or ""
         sb = meta.get("served_by", "native")
         served[sb] = served.get(sb, 0) + 1

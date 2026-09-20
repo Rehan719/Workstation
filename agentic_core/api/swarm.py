@@ -111,7 +111,7 @@ async def delegate_task(req: DelegateRequest):
 
     async def _dq(prompt: str, agent: str) -> str:
         _t0 = time.time()
-        res = await gateway.query_meta(prompt, agent=agent)
+        res = await gateway.query_meta(prompt, agent=agent, augment=False)
         sb = res.get("served_by", "native")
         provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
         provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
@@ -401,7 +401,7 @@ async def cascade_orchestration(req: CascadeRequest):
 
     async def _q(prompt: str, agent: str) -> str:
         _qt0 = time.time()
-        res = await gateway.query_meta(prompt, agent=agent)
+        res = await gateway.query_meta(prompt, agent=agent, augment=False)
         sb = res.get("served_by", "native")
         provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
         provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))

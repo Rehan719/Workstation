@@ -62,6 +62,11 @@ export const VSBCockpit: React.FC = () => {
   const [ledger, setLedger] = useState<Dict | null>(null);
   // W468 — a ledger that could not be loaded used to read "No ledger yet — run an economic cycle to seed it"
   const [ledgerErr, setLedgerErr] = useState('');
+  // W488 (refutation) — the plan's 503 (FU-137: read whole or refused, never replaced) used to be
+  // swallowed by `.catch(() => null)`, and `{tab === 'plan' && plan && (` then rendered a COMPLETELY
+  // BLANK tab: the Owner saw nothing where the system knew the file existed and could not be read.
+  // The same serverDetail helper the ledger already uses (W468) carries the reason here.
+  const [planErr, setPlanErr] = useState('');
   const serverDetail = (e: any, fallback: string): string => {
     const d = e?.response?.data?.detail;
     if (typeof d === 'string') return d;
@@ -117,16 +122,17 @@ export const VSBCockpit: React.FC = () => {
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setActErr('');
+    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setActErr(''); setPlanErr('');
     const issuedFor = selected;
     Promise.all([
       axios.get(`/api/v1/vsb/${selected}`).then(r => r.data).catch(() => null),
-      axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => r.data).catch(() => null),
+      axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => ({ data: r.data, err: '' }))
+        .catch(e => ({ data: null, err: serverDetail(e, 'Could not load the business plan') })),
       axios.get(`/api/v1/economy/ledger/${selected}`).then(r => ({ data: r.data, err: '' }))
         .catch(e => ({ data: null, err: serverDetail(e, 'Could not load the ledger') })),
     ]).then(([d, p, l]) => {
       if (issuedFor !== selectedRef.current) return;
-      setDetail(d); setPlan(p); setLedger(l.data); setLedgerErr(l.err); setLoading(false);
+      setDetail(d); setPlan(p.data); setPlanErr(p.err); setLedger(l.data); setLedgerErr(l.err); setLoading(false);
     });
     loadDeliverables(selected);
     loadShipState(selected);
@@ -521,6 +527,14 @@ export const VSBCockpit: React.FC = () => {
           )}
 
           {/* Business Plan */}
+          {/* W488 — a plan that could not be read says so here, instead of an empty tab */}
+          {tab === 'plan' && !plan && planErr && (
+            <Card className="p-6 border-vital/50 bg-vital/5" data-testid="cockpit-plan-unreadable">
+              <h3 className="text-sm font-black text-vital uppercase tracking-wide">The plan was not read — and not replaced</h3>
+              <p className="text-xs text-slate-300 font-bold mt-2 leading-relaxed">{planErr}</p>
+              <p className="text-[11px] text-slate-500 font-bold mt-2">Nothing was overwritten. Fix or restore the file and reselect this VSB.</p>
+            </Card>
+          )}
           {tab === 'plan' && plan && (
             <div className="space-y-4">
               {/* Chief's Opening (W91/W93) — Executive Summary · Concept · Vision, seeded from the Genesis journey */}

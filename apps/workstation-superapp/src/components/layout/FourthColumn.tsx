@@ -83,11 +83,14 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
         </button>
 
         {/* Agents */}
+        {/* W488 (sweep S13.3, C5) — the tooltip said "External AI Agents"; the button opens
+            NativeAgentPanel, the IN-HOUSE assistant served by Workstation's own fabric (external is
+            opt-in and off by default). The aria-label was already right; the tooltip contradicted it. */}
         <button
           type="button"
           onClick={() => { setActiveTab('agents'); onToggle(); }}
           aria-label="In-house assistant"
-          title="External AI Agents"
+          title="In-house assistant — served by Workstation's own fabric"
           className="p-2 rounded-lg text-slate-500 hover:text-aura transition-colors"
         >
           <Bot size={14} />

@@ -31,7 +31,28 @@ export const BusinessPlan: React.FC = () => {
   const [sp] = useSearchParams();
   const scope = sp.get('scope') || 'workstation';   // workstation IDBO, or a generated VSB (vsb-xxxx)
 
-  const load = () => fetch(`/api/v1/business-plan?scope=${encodeURIComponent(scope)}`).then(r => r.json()).then(setPlan).catch(() => {});
+  // W488 (refutation) — THE REFUSAL REACHES THE OWNER. The API now answers 503 with the filename and
+  // "nothing was written" when the plan cannot be read whole (FU-137) — but this loader called
+  // `r.json()` with no `r.ok` check, so the refusal body was stored AS the plan and the very next line
+  // of render (`plan.objectives.length`) threw: the Owner got "Render Error — Cannot read properties of
+  // undefined" where the system knew, and could say, exactly what was wrong. A page that turns a
+  // precise refusal into a crash is the same defect as inventing an answer.
+  const [planErr, setPlanErr] = useState('');
+  const load = async () => {
+    try {
+      const r = await fetch(`/api/v1/business-plan?scope=${encodeURIComponent(scope)}`);
+      const data = await r.json().catch(() => null);
+      if (!r.ok) {
+        setPlan(null);
+        setPlanErr(String(data?.detail || `the plan could not be read (HTTP ${r.status})`));
+        return;
+      }
+      setPlanErr(''); setPlan(data);
+    } catch (e: any) {
+      setPlan(null);
+      setPlanErr(`the plan could not be fetched (${e?.message || 'network error'}) — nothing was changed`);
+    }
+  };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [scope]);
 
   const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
@@ -95,11 +116,29 @@ export const BusinessPlan: React.FC = () => {
     setOrchestrating('');
   };
 
-  const overall = plan && plan.objectives.length ? Math.round(plan.objectives.reduce((s, o) => s + o.progress_pct, 0) / plan.objectives.length) : 0;
+  const objectives = plan?.objectives || [];      // W488 — never index into a body the API refused to give
+  const overall = objectives.length ? Math.round(objectives.reduce((s, o) => s + o.progress_pct, 0) / objectives.length) : 0;
 
   return (
     <div className="space-y-10 pb-24">
       {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
+      {/* W488 — the plan could not be read: say which file and that nothing was written, never a blank page */}
+      {planErr && (
+        <Card className="p-6 border-vital/50 bg-vital/5" data-testid="plan-unreadable">
+          <div className="flex items-start gap-3">
+            <AlertCircle size={18} className="text-vital mt-0.5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-black text-vital uppercase tracking-wide">The plan was not read — and not replaced</h3>
+              <p className="text-xs text-slate-300 font-bold mt-2 leading-relaxed">{planErr}</p>
+              <p className="text-[11px] text-slate-500 font-bold mt-2">
+                Nothing on this plan was overwritten. Fix or restore the file, then reload — the system will not serve
+                an empty plan as yours.
+              </p>
+              <Button onClick={load} className="mt-4 text-xs">Try reading it again</Button>
+            </div>
+          </div>
+        </Card>
+      )}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">{scope === 'workstation' ? 'Workstation IDBO' : `VSB · ${scope}`} · Living Business Plan</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Business Plan</h1>

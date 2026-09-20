@@ -469,7 +469,7 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
             f"You are the §7 Reactor's Experimentation engine. Subject: {req.subject} (domain: {req.domain}).\n"
             f"WHAT-IF scenario: {sc}\n\nProject the outcome under this scenario:\n"
             "## Projected Outcome\n## Key Risks\n## Opportunities\n## Net Assessment (one line)",
-            agent="reactor-experiment")
+            agent="reactor-experiment", augment=False)
         outcomes.append(ScenarioOutcome(scenario=sc, outcome=(meta.get("output", "") or "")[:1200],
                                         served_by=_record(meta)))
 
@@ -477,7 +477,7 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
         f"Compare these what-if scenario outcomes for «{req.subject}». Rank them best→worst against: "
         f"{req.fitness_criteria}. Provide:\n## Ranking\n## Key Differences\n## Recommendation\n\n"
         + "\n\n".join(f"SCENARIO: {o.scenario}\n{o.outcome[:500]}" for o in outcomes),
-        agent="reactor-experiment")
+        agent="reactor-experiment", augment=False)
     comparison = comp_meta.get("output", "") or ""
     _record(comp_meta)
 
@@ -538,7 +538,7 @@ async def petri_culture(req: PetriRequest) -> PetriResult:
             "Grow it — what it develops into under these conditions:\n"
             "## Growth (how it develops)\n## Nutrients Required (what it needs to thrive)\n"
             "## Contamination Risks (what could spoil it)\n## Viability (VIABLE or NOT-VIABLE — one line, justified)",
-            agent="petri-culture")
+            agent="petri-culture", augment=False)
         culture = (meta.get("output", "") or "").strip() or culture
         _record(meta)
 
@@ -628,7 +628,7 @@ async def reactor_studio(req: StudioRequest) -> StudioResult:
             + "; ".join(f"{p.label}={p.value}" + (f"/z{p.z}" if p.z is not None else "") for p in pts)
             + f"\nStats: total {total}, mean {mean}, {_max_stat}, {_min_stat}.\n\n"
             "## Insight (3-4 sentences)\n## Notable Pattern\n## Recommended Action",
-            agent="reactor-studio")
+            agent="reactor-studio", augment=False)
         insight = meta.get("output", "") or ""
         sb = meta.get("served_by", "native")
         prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1

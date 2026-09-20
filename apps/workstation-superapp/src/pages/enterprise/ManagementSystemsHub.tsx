@@ -137,7 +137,7 @@ function QMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Generate an ISO 9001:2015-aligned Quality Management System with policies, objectives, process maps, audit programme, and certification checklist.</p>
+      <p className="text-sm text-white/50">Draft an ISO 9001:2015-aligned Quality Management System frame: policy and objective headings, process-map and audit-programme outlines, and a certification checklist to work through. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="Acme Ltd" /></Field>
         <Field label="Domain"><Select value={domain} onChange={setDomain} options={DOMAIN_OPTIONS} /></Field>
@@ -172,7 +172,7 @@ function BMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Generate a Balanced Scorecard and OKR framework with strategic map, performance review cadence, and decision rights matrix.</p>
+      <p className="text-sm text-white/50">Draft a Balanced Scorecard and OKR frame: strategic-map headings, a review cadence and a decision-rights matrix to fill in. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="Acme Ltd" /></Field>
         <Field label="Mission Statement"><Input value={mission} onChange={setMission} placeholder="To transform X by Y..." /></Field>
@@ -206,7 +206,7 @@ function DCSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Generate a Document Control System with taxonomy, naming conventions, version control protocol, approval workflow, and retention schedule.</p>
+      <p className="text-sm text-white/50">Draft a Document Control System frame: taxonomy and naming conventions, a version-control and approval outline, and a retention schedule to set. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="Acme Ltd" /></Field>
         <Field label="Domain"><Select value={domain} onChange={setDomain} options={DOMAIN_OPTIONS} /></Field>
@@ -239,7 +239,7 @@ function EMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Generate an ISO 14001:2015-aligned Environmental Management System with aspects register, legal register, objectives, energy plan, and carbon methodology.</p>
+      <p className="text-sm text-white/50">Draft an ISO 14001:2015-aligned Environmental Management System frame: aspects- and legal-register skeletons, objectives, and an energy/carbon outline to complete with your own figures. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="GreenTech Ltd" /></Field>
         <Field label="Domain"><Select value={domain} onChange={setDomain} options={DOMAIN_OPTIONS} /></Field>
@@ -272,7 +272,7 @@ function AuditPanel({ onResult }: { onResult: (r: string, prov?: any) => void })
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Generate a risk-based internal audit programme with risk assessment matrix, annual schedule, audit methodology, and NC tracking process.</p>
+      <p className="text-sm text-white/50">Draft a risk-based internal audit programme frame: a risk-assessment matrix, an annual schedule outline, methodology headings and an NC-tracking process to adopt. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="Acme Ltd" /></Field>
         <Field label="Standard"><Select value={standard} onChange={setStandard} options={[{value:'ISO 9001',label:'ISO 9001'},{value:'ISO 14001',label:'ISO 14001'},{value:'ISO 27001',label:'ISO 27001'},{value:'ISO 45001',label:'ISO 45001'}]} /></Field>
@@ -306,7 +306,7 @@ function RiskPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) 
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Generate a comprehensive risk register covering strategic, operational, financial, legal, reputational, technology, people, and environmental risks.</p>
+      <p className="text-sm text-white/50">Draft a risk-register frame across the strategic, operational, financial, legal, reputational, technology, people and environmental categories — prompts and headings, not your organisation&apos;s assessed risks. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="Acme Ltd" /></Field>
         <Field label="Domain"><Select value={domain} onChange={setDomain} options={DOMAIN_OPTIONS} /></Field>
@@ -350,7 +350,16 @@ export const ManagementSystemsHub: React.FC = () => {
           <Shield size={22} className="text-blue-400" />
           Management Systems Hub
         </h1>
-        <p className="text-sm text-white/40 mt-1">ISO 9001 · ISO 14001 · Balanced Scorecard · OKRs · Audit · Risk — AI-generated, immediately usable</p>
+        {/* W488 (sweep S2.4, C5) — the standing label called these documents finished and ready to use
+            without qualification, while every
+            generator on this deployment is floor-served and the API's own floor_note says "it is not model
+            analysis. Review every clause before use." The page contradicted the response it renders. The
+            subtitle now states the floor's terms up front, and names the server once a result carries one. */}
+        <p className="text-sm text-white/40 mt-1">
+          ISO 9001 · ISO 14001 · Balanced Scorecard · OKRs · Audit · Risk — drafted by the owned fabric.
+          On the structured floor these are frames to complete, not finished documents: review every clause
+          before use.
+        </p>
       </div>
 
       {/* Standards chips */}

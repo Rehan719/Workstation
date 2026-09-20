@@ -355,8 +355,14 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     # In-house-first via the native fabric — always answers (native floor) and reports which
     # OWNED resource served it; bounded so the avatar stays responsive.
     _owner = user.get("username") if isinstance(user, dict) else None
+    # W488 (refutation) — the ONE generation caller that KEEPS recall, deliberately and on the record.
+    # A conversation is the surface recall is for: the avatar is answering this person, its answer is not
+    # persisted as anyone's authored content, and W333 scopes the recall to `owner_id` — this caller's own
+    # namespace plus platform memory, never the whole pool. Every ship/persist caller sets augment=False
+    # (W332, extended to all of them in W488); an unauthenticated caller here has no namespace, so it
+    # reaches platform memory only.
     meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0,
-                                    owner_id=_owner)
+                                    owner_id=_owner, augment=True)
     response_text = meta.get("output", "")
 
     history.append({"role": "user", "content": request.message})

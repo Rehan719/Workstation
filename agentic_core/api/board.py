@@ -99,7 +99,16 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) 
     AI-driven governance tier without served_by/any_external)."""
     _t0 = time.time()
     try:
-        res = await gateway.query_meta(prompt, agent=agent)
+        # W488 (sweep S2.3, C5) — augment=False. Without it the gateway injects cross-request memory
+        # recall into the prompt, so the Chief's directive — presented as 'Faithfully interpreted →
+        # board directive' — could carry another request's content as the Owner's intent. The apex tier
+        # reads the Owner's words and nothing else.
+        #   The first cut of this comment ended "every other generation surface already does this" — a
+        # claim the repo did not back: a refutation found eleven callers still on recall, including the
+        # SAME Chief twin in business_plan.py and the org cascade's apex in swarm.py, both of which
+        # PERSIST their output. W488 closed all of them; the one deliberate exception is the avatar
+        # conversation (avatars/api.py), which keeps tenant-scoped recall and says why in place.
+        res = await gateway.query_meta(prompt, agent=agent, augment=False)
         if provenance is not None:
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
@@ -381,7 +390,16 @@ async def chief_instruct(req: ChiefInstruction):
     # model yields no machine-readable lines (e.g. the deterministic native floor), the Owner's
     # instruction itself becomes ONE objective — the apex direction never again evaporates into prose.
     objectives_added = 0
+    # W488 (refutation) — WHEN THE DIRECTIVE DOES NOT LAND, THE ANSWER SAYS SO.
+    # `except Exception: objectives_added = 0` reported a bare 0 for every failure and sealed that 0
+    # into the UEG ledger — and the same round made `bp_mod._load` RAISE on an unreadable plan, so the
+    # commonest failure became the silent one: the Owner's apex instruction evaporated behind a count
+    # that reads exactly like 'the model produced no objectives'. The direction still never fails on
+    # plan I/O (a 500 would lose the directive record), but the reason is now part of the record and of
+    # the response, and a caller can tell 'nothing to add' from 'could not be added'.
+    objectives_not_added_reason: str | None = None
     if req.cascade_to_ceo:
+        from agentic_core.config import StoreUnavailable
         try:
             from agentic_core.api import business_plan as bp_mod
             new_objs = bp_mod.parse_objective_lines(action_plan, extra={"directive_id": directive_id})
@@ -393,8 +411,17 @@ async def chief_instruct(req: ChiefInstruction):
             plan.setdefault("objectives", []).extend(new_objs)
             bp_mod._save(plan)
             objectives_added = len(new_objs)
-        except Exception:
-            objectives_added = 0   # board direction must never fail on plan I/O
+        except StoreUnavailable as e:
+            objectives_added = 0
+            objectives_not_added_reason = (
+                f"the '{req.scope}' business plan could not be read whole ({e}), so the directive's objectives "
+                f"were NOT added and the plan was not written — the directive itself is recorded. Fix or restore "
+                f"the plan file and re-issue the instruction.")
+        except Exception as e:
+            objectives_added = 0
+            objectives_not_added_reason = (
+                f"the directive's objectives were NOT added to the '{req.scope}' business plan "
+                f"({type(e).__name__}: {e}); the directive itself is recorded.")
 
     record = {
         "directive_id": directive_id,
@@ -404,6 +431,7 @@ async def chief_instruct(req: ChiefInstruction):
         "ceo_action_plan": action_plan,
         "business_plan_scope": req.scope,
         "objectives_added": objectives_added,
+        "objectives_not_added_reason": objectives_not_added_reason,   # W488 — a 0 that says why, or None
         "ai_provenance": provenance,     # §6 — which OWNED resource served the apex (W270)
         "governance": governance,        # §11 — the gaas.v5 gate verdict over the apex direction
         "delegation_chain": ["Chief", "Board", "AI CEO", "C-Suite", "CoE", "BTO"],
@@ -419,6 +447,7 @@ async def chief_instruct(req: ChiefInstruction):
         UEGLogger().log({"type": "board.chief_instruct", "directive_id": directive_id,
                          "owner": req.owner, "scope": req.scope,
                          "objectives_added": objectives_added,
+                         "objectives_not_added_reason": objectives_not_added_reason,
                          "served_by": provenance["served_by"],
                          "any_external": provenance["any_external"],
                          "governance": governance.get("status")})

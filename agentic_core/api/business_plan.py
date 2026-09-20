@@ -35,7 +35,13 @@ _STORE = data_path("business_plans")
 
 
 def _key(scope: str) -> str:
-    return scope.replace(":", "_").replace("/", "_") or "workstation"
+    """W488 (refutation) — the scope is a FILENAME, so it is reduced to one, not merely de-slashed.
+
+    The old form replaced ':' and '/' and stopped there, which on Windows left a backslash live: a scope
+    of '..\\..\\config' resolved outside business_plans/ entirely, so a read could serve another store's
+    JSON as the Owner's plan and a write could overwrite it. Only letters, digits, '-' and '_' survive."""
+    safe = "".join(c if (c.isalnum() or c in "-_") else "_" for c in str(scope or "")).strip("_")
+    return safe[:120] or "workstation"
 
 
 def _path(scope: str) -> Path:
@@ -44,12 +50,32 @@ def _path(scope: str) -> Path:
 
 
 def _load(scope: str) -> Dict[str, Any]:
-    p = _path(scope)
-    if p.exists():
-        try:
-            return json.loads(p.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            pass
+    """W488 (sweep S3.10, C5) — THE OWNER'S PLAN IS READ WHOLE OR REFUSED, NEVER REPLACED.
+
+    `_load` used to swallow JSONDecodeError and OSError and hand back a FRESH EMPTY plan. The page then
+    showed no opening, '0 objectives' and 0%, and the very next write — an Add Objective, a +25%, an
+    Owner edit, a Board directive — atomically overwrote the Owner's real plan with that empty one. A
+    read that cannot be trusted must stop the write, not seed it. This is the same one strict read every
+    other store in this repository uses since W472 (config.read_json_strict → StoreUnavailable), and the
+    routes below answer 503 rather than serving or overwriting an emptiness they invented.
+    """
+    from agentic_core.config import read_json_strict
+    return read_json_strict(_path(scope), lambda: _fresh(scope), expect=dict)
+
+
+def _load_or_503(scope: str) -> Dict[str, Any]:
+    """Every ROUTE reads through this: an unreadable plan is a 503 naming the file, never an empty plan
+    served as the Owner's and never a write that replaces it."""
+    from agentic_core.config import StoreUnavailable
+    try:
+        return _load(scope)
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"{e} — the business plan was NOT read and nothing was written. Fix or restore the file; "
+            f"it is never replaced with an empty plan."))
+
+
+def _fresh(scope: str) -> Dict[str, Any]:
     return {"scope": scope, "owner": "Rehan",
             # Chief-owned opening sections (the founder's idea, framed by the digital-twin Chief)
             "executive_summary": "", "concept": "", "vision": "",
@@ -169,7 +195,7 @@ def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
 
 @router.get("")
 async def get_plan(scope: str = "workstation"):
-    plan = _load(scope)
+    plan = _load_or_503(scope)
     plan["roadmap"] = _roadmap(plan)   # living, derived — integrated into the plan, not persisted
     return plan
 
@@ -177,21 +203,36 @@ async def get_plan(scope: str = "workstation"):
 @router.get("/roadmap")
 async def get_roadmap(scope: str = "workstation"):
     """The Chief's living delivery roadmap for this scope (time-phased objectives + trajectory)."""
-    return _roadmap(_load(scope))
+    return _roadmap(_load_or_503(scope))
 
 
 @router.get("/list")
 async def list_plans():
     _STORE.mkdir(parents=True, exist_ok=True)
-    plans = []
+    # W488 (refutation) — A PLAN THAT CANNOT BE READ IS LISTED AS UNREADABLE, NEVER DROPPED.
+    # The refusal added above covers every scoped route; this one still did its own tolerant read inside
+    # `except Exception: pass`, so a present-but-corrupt plan vanished from `plans` AND from `total` —
+    # indistinguishable from never having existed, one function below a docstring promising otherwise.
+    # A listing is a read-only surface, so it answers 200 with the row marked, and says how many rows
+    # it could not read; the counts it reports are only over the plans it actually read.
+    plans: List[Dict[str, Any]] = []
+    unreadable: List[Dict[str, Any]] = []
     for p in sorted(_STORE.glob("*.json")):
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
+            if not isinstance(d, dict):
+                raise ValueError(f"expected an object, got {type(d).__name__}")
             plans.append({"scope": d.get("scope"), "objectives": len(d.get("objectives", [])),
-                          "updated_at": d.get("updated_at")})
-        except Exception:
-            pass
-    return {"plans": plans, "total": len(plans)}
+                          "updated_at": d.get("updated_at"), "readable": True})
+        except Exception as e:
+            row = {"scope": p.stem, "objectives": None, "updated_at": None, "readable": False,
+                   "unreadable_reason": f"{type(e).__name__}: {e}",
+                   "note": "this plan exists and could not be read whole; nothing was overwritten"}
+            plans.append(row)
+            unreadable.append(row)
+    return {"plans": plans, "total": len(plans), "readable_total": len(plans) - len(unreadable),
+            "unreadable_total": len(unreadable),
+            "counts_cover": "the plans listed as readable only" if unreadable else "every plan listed"}
 
 
 _OPENING_FIELDS = ("executive_summary", "concept", "vision", "mission", "strategy")
@@ -228,7 +269,7 @@ class SetPlanRequest(BaseModel):
 async def set_plan(req: SetPlanRequest):
     """Chief/Board set the plan's constitutional + strategic layers — the owner-edit surface (W471: wired
     from BusinessPlan.tsx; an owner's edit is recorded per field and lifts the field out of 'pending')."""
-    plan = _load(req.scope)
+    plan = _load_or_503(req.scope)
     plan.update({"owner": req.owner or plan.get("owner", "Rehan")})
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     edits = plan.setdefault("owner_edits", {})
@@ -262,7 +303,7 @@ class ObjectiveRequest(BaseModel):
 
 @router.post("/objective")
 async def add_objective(req: ObjectiveRequest):
-    plan = _load(req.scope)
+    plan = _load_or_503(req.scope)
     obj = {
         "id": f"obj-{uuid.uuid4().hex[:8]}",
         "title": req.title, "kpi": req.kpi, "timeline": req.timeline,
@@ -283,7 +324,7 @@ class ReviewRequest(BaseModel):
 
 @router.post("/objective/{oid}/review")
 async def review_objective(oid: str, req: ReviewRequest):
-    plan = _load(req.scope)
+    plan = _load_or_503(req.scope)
     for obj in plan["objectives"]:
         if obj["id"] == oid:
             obj["progress_pct"] = max(0, min(100, req.progress_pct))
@@ -305,7 +346,7 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
     """The Chief delivers an objective via the autonomous in-house workflow TREE — grounded in the VSB +
     plan, governed (VBS QMS/DCMS · validation · minimax · swarm consensus · biomimetic signal) and sealed
     into the UEG provenance chain. The run is recorded as an auditable review on the objective."""
-    plan = _load(req.scope)
+    plan = _load_or_503(req.scope)
     obj = next((o for o in plan["objectives"] if o["id"] == oid), None)
     if not obj:
         raise HTTPException(status_code=404, detail=f"Objective {oid} not found in {req.scope}.")
@@ -396,7 +437,7 @@ class GenerateRequest(BaseModel):
 @router.post("/generate")
 async def generate_plan(req: GenerateRequest):
     """Chief-mediated AI generation/refresh of the living business plan from org state + vision."""
-    plan = _load(req.scope)
+    plan = _load_or_503(req.scope)
     # Ground in the live vision realisation where available.
     realisation = None
     try:
@@ -422,8 +463,13 @@ async def generate_plan(req: GenerateRequest):
     # is written to the plan from it: the floor's output is kept as chief_draft with its marker, the fields
     # stay pending the owned model, and the answer says so. A model-served draft fills EMPTY fields only —
     # never an owner's words on a refresh — and its preamble is kept as provenance, not dropped.
+    # W488 (refutation) — augment=False here too. This is the SAME Chief-of-the-Board twin the round
+    # fixed in board.py, twenty lines below the strict read it added — and this one PERSISTS its output
+    # into the Owner's living plan (fields + objectives). With recall injected, another request's
+    # content could be written into the plan as the founder's own words. The apex reads the Owner's
+    # words and nothing else, on every path that speaks for the Chief.
     try:
-        meta = await gateway.query_meta(prompt, agent="business_plan_chief")
+        meta = await gateway.query_meta(prompt, agent="business_plan_chief", augment=False)
     except Exception as e:
         meta = {"output": f"[business_plan_chief unavailable: {e}]", "served_by": "unavailable", "is_external": False}
     draft = str(meta.get("output") or "")
@@ -479,7 +525,7 @@ async def generate_plan(req: GenerateRequest):
 
 @router.get("/progress")
 async def progress(scope: str = "workstation"):
-    plan = _load(scope)
+    plan = _load_or_503(scope)
     objs = plan["objectives"]
     if not objs:
         return {"scope": scope, "objectives": 0, "overall_progress": 0, "by_status": {}}

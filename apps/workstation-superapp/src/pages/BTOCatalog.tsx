@@ -130,7 +130,7 @@ export const BTOCatalog: React.FC = () => {
           Build-to-<span className="text-aura">Order</span>
         </h1>
         <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">
-          Sovereign Entity Configurator · Select components · Provision your blueprint
+          Sovereign Entity Configurator · Select components · Compose your blueprint (specification only — nothing is provisioned)
         </p>
         <div className="mt-3"><FabricLink /></div>
       </header>
@@ -158,9 +158,12 @@ export const BTOCatalog: React.FC = () => {
               <div className="w-20 h-20 rounded-full border-2 border-aura animate-spin border-t-transparent" />
             </div>
             <div>
-              <p className="text-aura font-black uppercase tracking-[0.3em] text-xs">Provisioning Sovereign Infrastructure</p>
+              {/* W488 (sweep S5.7, C5) — this spinner claimed the infrastructure was being provisioned
+                  and the L1–L12 fabric bootstrapped, over an API that returns provisioned:false with every
+                  component marked specified-only. Nothing is provisioned: a blueprint is being composed. */}
+              <p className="text-aura font-black uppercase tracking-[0.3em] text-xs">Composing the blueprint</p>
               <p className="text-slate-500 text-[10px] mt-1 font-bold uppercase tracking-widest italic animate-pulse">
-                Bootstrapping L1–L12 fabric...
+                Specifying the L1–L12 components — nothing is provisioned yet
               </p>
             </div>
           </div>
@@ -174,7 +177,9 @@ export const BTOCatalog: React.FC = () => {
                 <Cpu size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Blueprint Provisioned</p>
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                  Blueprint specified{blueprint.provisioned === false ? " — not provisioned" : ""}
+                </p>
                 <h3 className="text-xl font-black text-white uppercase tracking-tight">{blueprint.entity_name}</h3>
                 <p className="text-[9px] text-aura font-mono mt-0.5">{blueprint.blueprint_id}</p>
               </div>
@@ -395,7 +400,7 @@ export const BTOCatalog: React.FC = () => {
           >
             {building ? <Loader2 size={14} className="animate-spin" /> : <Settings2 size={14} />}
             {building
-              ? 'Provisioning...'
+              ? 'Composing the blueprint...'
               : `Build Entity${selectedComponents.length > 0 ? ` (${selectedComponents.length})` : ''}`
             }
           </button>
@@ -404,7 +409,7 @@ export const BTOCatalog: React.FC = () => {
 
       {/* Info strip */}
       <div className="flex flex-wrap gap-4 text-[9px] font-black text-slate-700 uppercase tracking-widest">
-        <span className="flex items-center gap-1.5"><Sparkles size={10} className="text-aura" /> AI-Mediated Provisioning</span>
+        <span className="flex items-center gap-1.5"><Sparkles size={10} className="text-aura" /> AI-Mediated Specification</span>
         <span className="flex items-center gap-1.5"><Cpu size={10} className="text-aura" /> L1–L12 Sovereign Fabric</span>
         <span className="flex items-center gap-1.5"><Settings2 size={10} className="text-aura" /> {BTO_COMPONENTS.length} Infrastructure Modules</span>
       </div>

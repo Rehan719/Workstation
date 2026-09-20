@@ -2253,8 +2253,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W488",
       "note": ""
     },
     {
@@ -2274,8 +2274,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W488",
       "note": ""
     },
     {
@@ -2365,8 +2365,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W488",
       "note": ""
     },
     {
@@ -2382,8 +2382,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W488",
       "note": ""
     },
     {
@@ -2487,8 +2487,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W488",
       "note": ""
     },
     {
@@ -2503,8 +2503,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W488",
       "note": ""
     },
     {
@@ -4287,6 +4287,114 @@
       "tier": 2,
       "area": "tooling",
       "reach": "internal"
+    },
+    {
+      "id": "FU-250",
+      "title": "A stored VSB with no recorded legal form now refuses its economy (422) — nothing migrates the ones already stored",
+      "why": "W488 closed a real hole: _resolve_entity_type's vsb-store leg read a top-level 'entity_type' key NO WRITER SETS (the writer records economy.entity_type), so for any VSB known to the vsb store but not the living roster the caller's CLAIM silently became the binding and W313 evaporated. The fix reads the real key and refuses (422) when a stored entity records no form at all — correct, because a claim must not become the binding. But that refusal is now REACHABLE by any VSB stored before the economy block existed: its owner gets a 422 on /economy/status, /waterfall, /cycle, /close-period and /board-pack with no way forward from the page. Needed: a one-pass audit of the stored VSBs for a missing form, a backfill from the living roster where one exists, and a page route that lets the Owner register the form for the rest (the 422 names the entity-types list but no UI reaches it).",
+      "source": "W488 refutation (form-disclosure lens)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-251",
+      "title": "The avatar is the one caller that keeps cross-request recall — its tenant scoping is asserted in a comment, not by an executing leg",
+      "why": "W488 set augment=False on every generation-class query_meta caller in the repo and left exactly one deliberate exception: the avatar conversation (agentic_core/avatars/api.py), where recall is the point and W333 scopes it to owner_id. The exception is documented in place and a guard leg asserts the comment and the augment=True is there — but NOTHING executes the claim the comment makes: that an authenticated caller reaches only their own namespace plus platform memory, and an UNAUTHENTICATED caller (owner_id None) reaches platform memory only, never another tenant's. That is the one place in the repo where a cross-tenant leak would now be invisible, so it is the one place that needs a behavioural leg: seed two tenants' memories, ask the avatar as each, and prove neither sees the other's.",
+      "source": "W488 refutation (board-recall lens, follow-on)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/avatars/api.py",
+        "agentic_core/ai/gateway.py",
+        "agentic_core/ai/memory.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.3",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-252",
+      "title": "A round runs the full suite twice when once would do — the pre-refutation run is wasted whenever the refutation finds anything",
+      "why": "W488 measured a round's wall clock: the full suite is 41 min on an idle machine (258 tests in 26.0 min = 9.9/min), 91.5 min when overlapped with the refutation's 34 agents; the blind sweep is 22.5 min (37.5s per blind, mostly app boot); the refutation workflow is 84.7 min. B2 permits the suite 'twice at most per round' and W488 used both: once before the refutation and once on its fixes. The first run is dead weight whenever the refutation finds real work — W488's found 25 verified findings, so every line of that 41 min was spent on a tree that was about to change. FIX: run the AFFECTED SLICE (-k) during iteration and the full suite ONCE, on the tree that follows the refutation fixes. Keep the second run only when the refutation returns nothing. Worth 41 min per round at no cost and no new machinery; amend B2 in the delivery prompt when done.",
+      "source": "W488 measurement of where a round's wall clock goes",
+      "found": "2026-09-20",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-253",
+      "title": "The blind sweep is serial only because blinds mutate one tree — one worktree per blind would cut it from 22.5 min to about 7",
+      "why": "W488 measured 36 blinds in 22.5 min (37.5s each), and most of each blind is app boot, not the assertion. Blinds cannot run in parallel IN ONE TREE because each mutates the repo and byte-restores it; they can run one-per-git-worktree, which is the pattern the refutation workflow already uses safely here (isolation: 'worktree', its own DATA_DIR per worker). FIX: extend the mk_break harness so the blind list is sharded across N worktrees (N = cpu_count - 2, measured 8 CPUs so 6), each with DATA_DIR/WORKSTATION_DATA_DIR/WORKSTATION_UEG_PATH/PROJECTS_DIR of its own, results merged, and the SAME preflight (every anchor matches exactly once) run in each shard before any mutation. Keep the contamination check: the harness must still verify the WATCHed docs are byte-identical after every blind. Expect 3-4x not 6x (8 CPUs, pytest is CPU-bound) — about 15 min per round. Verify by running the same blind set serially and sharded and comparing the caught/vacuous sets exactly, the same discipline FU-249 requires of xdist.",
+      "source": "W488 measurement of where a round's wall clock goes",
+      "found": "2026-09-20",
+      "files": [
+        "scripts/followups.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-254",
+      "title": "Batches are scoped to the gate item, which throws away two thirds of each round's reach — the same mechanism closes three times as many rows swept repo-wide",
+      "why": "The batch mechanism (W487) is being called as 'batches --item P1.18', and that scoping is costing rows for nothing. The generated figures for the SAME class, the SAME mechanism and the SAME files: C3 (invented or constant readings) closes 4 rows inside P1.18, and 12 rows across all items (47 files, advancing 5 more, spanning P1.18, P2.4, P2.8 and P2.9). A class is one rule swept across every file that consumes it; stopping the sweep at the gate item's file list leaves the other consumers emitting the defect the round just proved wrong, and guarantees a later round re-reads the same mechanism. FIX: take the class repo-wide by default and report the closure per item, so the gate's rows still close on schedule while the rest close for free; keep the item filter for the case where a class genuinely spans two unrelated mechanisms. Measured effect on the whole backlog: 173 open rows at 4.0/round is about 44 rounds; at C3's cross-item spread it is roughly half that. Note the optimistic end honestly — C3 is the LARGEST batch, and C7/C1 are smaller.",
+      "source": "W488 forecast/batches reading while reporting the timeline",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/plan_followups.py",
+        "scripts/followups.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "dropped",
+      "closed_by": null,
+      "note": "Re-registered as FU-255 at its true severity. Marked high for emphasis, which routed it onto P1.18 — 'high severity rides the next open plan item' — and P1.18 is the reached-surface TRUTH gate. A planning-efficiency change costs rounds; it does not make the system say anything untrue, so it does not belong on that gate and must not inflate its count.",
+      "tier": 2
+    },
+    {
+      "id": "FU-255",
+      "title": "Batches are scoped to the gate item, which throws away two thirds of each round's reach — the same mechanism closes three times as many rows swept repo-wide",
+      "why": "The batch mechanism (W487) is being called as 'batches --item P1.18', and that scoping costs rows for nothing. The generated figures for the SAME class, the SAME mechanism and the SAME files: C3 (invented or constant readings) closes 4 rows inside P1.18, and 12 rows across all items (47 files, advancing 5 more, spanning P1.18, P2.4, P2.8 and P2.9). A class is one rule swept across every file that consumes it; stopping the sweep at the gate item's file list leaves the other consumers emitting the defect the round just proved wrong, and guarantees a later round re-reads the same mechanism. FIX: take the class repo-wide by default and report the closure per item, so the gate's rows still close on schedule while the rest close for free; keep the item filter for the case where a class genuinely spans two unrelated mechanisms. Measured effect on the whole backlog: 173 open rows at 4.0/round is about 44 rounds; at C3's cross-item spread roughly half that. State the optimistic end honestly — C3 is the LARGEST batch; C7 and C1 are smaller. (Re-registered from FU-254, which was marked high for emphasis and routed onto the P1.18 truth gate where a planning-efficiency row does not belong.)",
+      "source": "W488 forecast/batches reading while reporting the timeline",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/plan_followups.py",
+        "scripts/followups.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
     }
   ],
   "routes": [

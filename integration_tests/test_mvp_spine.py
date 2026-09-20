@@ -15094,7 +15094,12 @@ def test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced(client, monkeyp
         assert "Array.isArray(d.loc) && d.loc.length ? `${d.loc[d.loc.length - 1]}: `" in page or \
             "Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: `" in page
     assert "reasons ? `No cycle ran — ${reasons}.` : ''" in econ
-    assert "if (issuedFor !== selectedRef.current) return;\n      setDetail(d); setPlan(p); setLedger(l.data); setLedgerErr(l.err); setLoading(false);" in cockpit
+    # W488 — the plan gained the same {data, err} shape the ledger has had since W468 (its 503 used to be
+    # swallowed into a blank tab), so this anchor now covers both. What it guards is unchanged: a late
+    # answer for a VSB the Owner has switched away from is DROPPED, and each store's own error travels
+    # with its data rather than being flattened into "no data".
+    assert ("if (issuedFor !== selectedRef.current) return;\n      setDetail(d); setPlan(p.data); "
+            "setPlanErr(p.err); setLedger(l.data); setLedgerErr(l.err); setLoading(false);") in cockpit
     assert "if (issuedFor === selectedRef.current) {\n        setLastCycle(r.data.cycle || null);\n        setLedger(l.data); setLedgerErr(l.err);" in cockpit
     assert "setActErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));" in cockpit
     assert "setLastCycle(null); setLedgerErr(''); setActErr('');" in cockpit and "setCycling(true); setActErr('');" in cockpit
@@ -18192,3 +18197,251 @@ def test_w487_the_plan_proposes_the_round_not_just_the_row(client):
     assert "The full suite is 46 minutes over 392 tests" in fp      # the measurement, not an impression
     assert "Never two pytest runs at once" in fp                    # the corruption rule, kept
     assert "B3 OVERLAP WHAT DOES NOT SHARE STATE." in fp
+
+
+def test_w488_the_page_and_the_api_say_the_same_thing(client):
+    """W488 — P1.18, the C5 batch: FU-136, FU-137, FU-142, FU-143, FU-149, FU-150.
+
+    The first round chosen by the new batch mechanism (W487): six rows, one class — a second writer or
+    the reached page disagrees with the API. Six different surfaces, one question in each: does what the
+    reader is told match what the system did?
+    """
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── FU-136 (S2.3): the apex tier reads the Owner's words and nothing else ───────────────────
+    # A refuter's fair catch: the first cut of this leg asserted SOURCE TEXT for a behaviour this suite
+    # already knows how to spy on (the authorship stages do it). It now watches the actual call.
+    import agentic_core.ai.gateway as _gwmod
+    _seen: list = []
+    _real_meta = _gwmod.gateway.query_meta
+
+    async def _augment_spy(prompt, agent="assistant", timeout=90.0, owner_id=None, augment=True):
+        _seen.append({"agent": agent, "augment": augment})
+        return await _real_meta(prompt, agent=agent, timeout=timeout, owner_id=owner_id, augment=augment)
+
+    _gwmod.gateway.query_meta = _augment_spy
+    try:
+        bi = client.post("/api/v1/board/chief/instruct", json={
+            "owner": "Rehan", "instruction": "w488 apex leg", "scope": "w488apex", "cascade_to_ceo": True})
+        assert bi.status_code == 200, bi.text[:200]
+        assert _seen, "the apex tier made no model call at all — the spy proves nothing"
+        assert all(c["augment"] is False for c in _seen), \
+            f"the Board's prompt carried cross-request recall as the Owner's intent: {_seen}"
+        # …and the SAME Chief twin on the plan's own generate path (the refuter's second writer)
+        _seen.clear()
+        gp = client.post("/api/v1/business-plan/generate", json={"scope": "w488apex"})
+        assert gp.status_code in (200, 503), gp.text[:200]
+        if gp.status_code == 200:
+            assert _seen and all(c["augment"] is False for c in _seen), \
+                f"the plan's Chief twin carried recall into text it PERSISTS: {_seen}"
+    finally:
+        _gwmod.gateway.query_meta = _real_meta
+
+    # every generation-class caller in the repo, not just the two this round touched (W332's own rule).
+    # The avatar conversation is the single deliberate exception and says so in place.
+    import re as _re
+    _missing = []
+    for _p in sorted((root / "agentic_core").rglob("*.py")):
+        _s = _p.read_text(encoding="utf-8")
+        for _m in _re.finditer(r"query_meta\(", _s):
+            _i, _d = _m.end(), 1
+            while _d and _i < len(_s):
+                _d += 1 if _s[_i] == "(" else (-1 if _s[_i] == ")" else 0)
+                _i += 1
+            if "augment" not in _s[_m.start():_i]:
+                _missing.append(f"{_p.name}:{_s[:_m.start()].count(chr(10)) + 1}")
+    assert not _missing, f"generation-class callers still inject cross-request recall: {_missing}"
+    _av = (root / "agentic_core/avatars/api.py").read_text(encoding="utf-8")
+    assert "augment=True" in _av and "the ONE generation caller that KEEPS recall" in _av
+
+    # ── FU-137 (S3.10): the Owner's plan is read whole or refused, NEVER replaced ───────────────
+    import agentic_core.api.business_plan as bp
+    from agentic_core.config import StoreUnavailable
+    assert client.get("/api/v1/business-plan?scope=workstation").status_code == 200
+    p = bp._path("workstation")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text('{"scope": "workstation", "objectives": [', encoding="utf-8")   # truncated
+    try:
+        r = client.get("/api/v1/business-plan?scope=workstation")
+        assert r.status_code == 503, (r.status_code, r.text[:160])
+        assert "could not be read whole" in str(r.json()["detail"]), r.json()
+        assert "never replaced" in str(r.json()["detail"]), r.json()
+        # …and a WRITE against the unreadable plan neither succeeds nor overwrites it
+        w = client.post("/api/v1/business-plan/objective", json={
+            "scope": "workstation", "title": "w488", "kpi": "k", "timeline": "t", "owner_role": "CEO"})
+        assert w.status_code == 503, (w.status_code, w.text[:160])
+        assert p.read_text(encoding="utf-8") == '{"scope": "workstation", "objectives": [', "the plan was overwritten"
+        # the loader itself refuses rather than returning a fresh plan
+        try:
+            bp._load("workstation")
+            raise AssertionError("_load returned a plan for an unreadable file")
+        except StoreUnavailable:
+            pass
+    finally:
+        p.unlink(missing_ok=True)
+
+    # ── FU-142 (S1.8): a form the caller claimed but the registry overrode is SAID, not swallowed ──
+    from agentic_core.economy import living_vsbs as lv
+    lv.register("vsb-w488guard", "W488 Guard", entity_type="waqf_ltd_hybrid", owner="Rehan")
+    wf = client.get("/api/v1/economy/waterfall?vsb_id=vsb-w488guard&entity_type=charity").json()
+    assert wf["entity_type"] == "waqf_ltd_hybrid", wf            # the W313 binding still holds
+    assert wf["claim_ignored"] is True and wf["claimed_entity_type"] == "charity", wf
+    assert "fixed at registration" in wf["form_note"], wf["form_note"]
+    cyc = client.post("/api/v1/economy/cycle", json={
+        "vsb_id": "vsb-w488guard", "entity_type": "charity", "revenue": 100}).json()
+    att = cyc["attribution"]
+    assert att["claim_ignored"] is True and att["claimed_entity_type"] == "charity", att
+    assert "was NOT used" in att["basis"], att["basis"]
+    st = client.get("/api/v1/economy/status?vsb_id=vsb-w488guard&entity_type=charity").json()
+    assert st["attribution"]["claim_ignored"] is True, st["attribution"]
+    # a claim that MATCHES the registry is not reported as ignored — the disclosure is not noise
+    ok = client.get("/api/v1/economy/waterfall?vsb_id=vsb-w488guard&entity_type=waqf_ltd_hybrid").json()
+    assert ok["claim_ignored"] is False and ok["claimed_entity_type"] is None, ok
+
+    # ── FU-143 (S2.4): the page does not promise what the floor cannot give ─────────────────────
+    ms = (root / "apps/workstation-superapp/src/pages/enterprise/ManagementSystemsHub.tsx").read_text(encoding="utf-8")
+    assert "AI-generated, immediately usable" not in ms
+    assert "frames to complete, not finished documents" in ms and "review every clause" in ms
+    ms_api = (root / "agentic_core/api/management_systems.py").read_text(encoding="utf-8")
+    assert "Provides AI-generated management system documentation" not in ms_api
+
+    # ── FU-149 (S13.3): the tooltip names what the button opens ─────────────────────────────────
+    fc = (root / "apps/workstation-superapp/src/components/layout/FourthColumn.tsx").read_text(encoding="utf-8")
+    assert 'title="External AI Agents"' not in fc
+    assert 'title="In-house assistant' in fc
+
+    # ── FU-150 (S5.7): the page does not claim provisioning the API denies ──────────────────────
+    bto_api = (root / "agentic_core/catalog/bto.py").read_text(encoding="utf-8")
+    assert '"provisioned": False' in bto_api          # the API's own answer, unchanged
+    bto = (root / "apps/workstation-superapp/src/pages/BTOCatalog.tsx").read_text(encoding="utf-8")
+    assert "Provisioning Sovereign Infrastructure" not in bto
+    assert "Bootstrapping L1–L12 fabric" not in bto
+    assert "Blueprint Provisioned" not in bto
+    assert "Composing the blueprint" in bto and "nothing is provisioned yet" in bto
+    assert "blueprint.provisioned === false" in bto   # it reads the API rather than asserting
+
+    # ══ W488 REFUTATION LEGS — 25 verified findings against this round's own diff ════════════════
+    # Five adversarial lenses over the diff, each finding independently verified in its own worktree.
+    # What they found was not a set of unrelated slips: every one was THIS round's class re-committed
+    # inside the round's own fix. The disclosure invented a claim; the refusal reached a page that
+    # crashed instead of repeating it; the fixed writer had siblings. One leg each.
+
+    # ── the refusal REACHES the Owner: the page says which file and that nothing was written ────
+    bpx = (root / "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx").read_text(encoding="utf-8")
+    # A vacuous blind found this leg's first anchor useless: the bare string `if (!r.ok)` also appears in
+    # three UNRELATED handlers in this same file, so breaking the LOADER's check left the guard green.
+    # The anchor is now the loader's own branch, body and all.
+    assert ("      if (!r.ok) {\n        setPlan(null);\n        setPlanErr(" in bpx
+            and 'data-testid="plan-unreadable"' in bpx), \
+        "the page turns the plan's 503 into a render crash instead of the refusal's own words"
+    assert "plan?.objectives || []" in bpx, "the render still indexes into a body the API refused to give"
+    ckp = (root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="cockpit-plan-unreadable"' in ckp and "setPlanErr(p.err)" in ckp, \
+        "the cockpit's plan tab renders blank where the API refused and said why"
+
+    # ── /list is a route too: an unreadable plan is LISTED as unreadable, never dropped ─────────
+    p2 = bp._path("w488list")
+    p2.write_text('{"scope": "w488list", "objectives": [', encoding="utf-8")   # truncated
+    try:
+        lst = client.get("/api/v1/business-plan/list")
+        assert lst.status_code == 200, lst.text[:160]
+        body = lst.json()
+        row = next((r for r in body["plans"] if r.get("scope") == "w488list"), None)
+        assert row is not None, "a present-but-unreadable plan vanished from the listing"
+        assert row["readable"] is False and row["objectives"] is None, row
+        assert "could not be read whole" in row["note"], row
+        assert body["unreadable_total"] >= 1 and body["counts_cover"].startswith("the plans listed as readable"), body
+    finally:
+        p2.unlink(missing_ok=True)
+
+    # ── the scope is reduced to a FILENAME (a backslash must not escape the store) ──────────────
+    assert bp._key(r"..\..\config") == "config", bp._key(r"..\..\config")
+    assert bp._path(r"..\..\x").parent == bp._STORE, bp._path(r"..\..\x")
+
+    # ── a directive that could NOT land says why, instead of a bare objectives_added: 0 ─────────
+    pv = bp._path("w488veto")
+    pv.write_text('{"scope": "w488veto", "objectives": [', encoding="utf-8")
+    try:
+        bi2 = client.post("/api/v1/board/chief/instruct", json={
+            "owner": "Rehan", "instruction": "w488 unreadable-plan directive", "scope": "w488veto",
+            "cascade_to_ceo": True})
+        assert bi2.status_code == 200, bi2.text[:200]
+        rec = bi2.json()
+        assert rec["objectives_added"] == 0, rec["objectives_added"]
+        why = str(rec.get("objectives_not_added_reason") or "")
+        assert "could not be read whole" in why and "were NOT added" in why, rec
+        assert pv.read_text(encoding="utf-8") == '{"scope": "w488veto", "objectives": [', "the plan was overwritten"
+    finally:
+        pv.unlink(missing_ok=True)
+
+    # ── the disclosure NEVER invents a claim: no entity_type sent → no claim reported ───────────
+    # Three vacuous blinds found the first cut of these legs blind: they used a VSB registered as the
+    # PLATFORM DEFAULT, so "the caller stated nothing" and "the default was read as the caller's claim"
+    # produce identical output. A non-default registration separates them.
+    from agentic_core.economy.entities import DEFAULT_ENTITY as _DEF
+    assert _DEF != "charity", "this leg needs a registered form the platform default is not"
+    lv.register("vsb-w488nodefault", "W488 Non-default", entity_type="charity", owner="Rehan")
+    nd = client.get("/api/v1/economy/waterfall?vsb_id=vsb-w488nodefault").json()
+    assert nd["entity_type"] == "charity" and nd["claim_ignored"] is False, nd
+    assert nd["claimed_entity_type"] is None and "no form was requested" in nd["form_note"], nd
+    ndc = client.post("/api/v1/economy/cycle", json={"vsb_id": "vsb-w488nodefault", "revenue": 10}).json()
+    assert ndc["attribution"]["claim_ignored"] is False, ndc["attribution"]
+    assert ndc["attribution"]["claimed_entity_type"] is None, ndc["attribution"]
+    assert "was NOT used" not in ndc["attribution"]["basis"], ndc["attribution"]["basis"]
+    # A cycle for an entity NOT on the living roster takes the other branch of the same disclosure: with
+    # no form stated, the source is the PLATFORM's default, never "caller_claimed" — a form attributed to
+    # a caller who stated none. (A vacuous blind found no leg read this field at all.)
+    offc = client.post("/api/v1/economy/cycle", json={"vsb_id": "vsb-w488-offroster", "revenue": 10}).json()
+    assert offc["attribution"]["entity_type_source"] == "platform_default", offc["attribution"]
+    assert offc["attribution"]["claim_ignored"] is False, offc["attribution"]
+    offc2 = client.post("/api/v1/economy/cycle", json={
+        "vsb_id": "vsb-w488-offroster", "entity_type": "sole", "revenue": 10}).json()
+    assert offc2["attribution"]["entity_type_source"] == "caller_claimed", offc2["attribution"]
+    # …and an entity unknown to BOTH stores, with no claim, gets the platform default SAID to be the
+    # platform's — not a caller's claim of nothing (the last-resort branch no leg reached).
+    from agentic_core.api.economy import _resolve_entity_type as _rt0
+    assert _rt0("vsb-w488-unknown-entity", None) == (_DEF, "platform_default"), \
+        _rt0("vsb-w488-unknown-entity", None)
+    assert _rt0("vsb-w488-unknown-entity", "sole") == ("sole", "caller_claimed")
+    st2 = client.get("/api/v1/economy/status?vsb_id=vsb-w488guard").json()
+    a2 = st2["attribution"]
+    assert a2["claim_ignored"] is False and a2["claimed_entity_type"] is None, a2
+    assert "no form was requested" in a2["form_note"], a2["form_note"]
+    cyc2 = client.post("/api/v1/economy/cycle", json={"vsb_id": "vsb-w488guard", "revenue": 10}).json()
+    assert cyc2["attribution"]["claim_ignored"] is False, cyc2["attribution"]
+    assert "was NOT used" not in cyc2["attribution"]["basis"], cyc2["attribution"]["basis"]
+
+    # ── W313's binding holds for a VSB known ONLY to the vsb store (the key a writer actually sets) ──
+    import agentic_core.api.vsb as vsb_mod
+    from agentic_core.api.economy import _resolve_entity_type
+    vsb_mod._save_vsb({"vsb_id": "vsb-w488store", "name": "W488 Store",
+                       "economy": {"entity_type": "charity_cio"}})
+    form, src = _resolve_entity_type("vsb-w488store", "sole_trader")
+    assert (form, src) == ("charity_cio", "vsb_store"), (form, src)
+    # …and a stored entity with NO recorded form is refused, never bound to the caller's claim
+    vsb_mod._save_vsb({"vsb_id": "vsb-w488noform", "name": "W488 No Form"})
+    import fastapi
+    try:
+        _resolve_entity_type("vsb-w488noform", "sole_trader")
+        raise AssertionError("a claim became the binding for a stored entity with no recorded form")
+    except fastapi.HTTPException as e:
+        assert e.status_code == 422 and "records no legal/economic form" in str(e.detail), e.detail
+
+    # ── the page that caused the FU-142 row renders the disclosure ──────────────────────────────
+    econ = (root / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="form-claim-ignored"' in econ and 'data-testid="form-in-force"' in econ, \
+        "the picker still shows the Owner's pick as the form in force"
+    assert "const inForce = wf?.entity_type ?? null" in econ and "wf?.claim_ignored" in econ
+    assert "(inForce || entity) === t.id" in econ, "the highlighted card is still the claim, not the binding"
+
+    # ── the remaining provisioning claims on the BTO page and the finished-document promises ────
+    assert "Provision your blueprint" not in bto and "'Provisioning...'" not in bto
+    assert "AI-Mediated Provisioning" not in bto
+    assert "Composing the blueprint..." in bto and "AI-Mediated Specification" in bto
+    assert ms.count("A draft frame to complete and review — not a certifiable document.") == 6, \
+        "a management-system panel still promises a finished document"
+    for _promise in ("Generate an ISO 9001:2015-aligned Quality Management System with policies",
+                     "Generate a comprehensive risk register covering"):
+        assert _promise not in ms, _promise

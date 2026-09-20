@@ -71,13 +71,14 @@ async def entity_types():
 
 
 @router.get("/status")
-async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY,
+async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str | None = None,
                          user: dict | None = Depends(get_current_user)):
     """W442 — this surface re-committed the defects /cycle already fixed: it reported owner
     "Rehan" for EVERY tenant's VSB (the constructor default) and took entity_type from the
     caller's claim, so a stored nonprofit could be reported with a profit-distributing template's
     waterfall and capital rules. Now resolved from the stores, with the basis disclosed."""
     _require_economy_access(vsb_id, user)
+    _claimed_type = entity_type
     entity_type, et_source = _resolve_entity_type(vsb_id, entity_type)
     owner, owner_source = "Rehan", "platform_default"
     try:
@@ -89,13 +90,15 @@ async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str = DE
         if e.__class__.__name__ == "StoreUnavailable":
             owner_source = "living_registry_unavailable"
     out = EconomicMetabolism(vsb_id, entity_type, owner).status()
-    out["attribution"] = {"entity_type_source": et_source, "owner_source": owner_source}
+    out["attribution"] = {"entity_type_source": et_source, "owner_source": owner_source,
+                          **_form_disclosure(_claimed_type, entity_type, et_source)}
     return out
 
 
 class CycleRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
-    entity_type: str = DEFAULT_ENTITY
+    # W488 (refutation) — OPTIONAL: None means the caller stated no form, so no claim is reported
+    entity_type: str | None = None
     # W414 — this defaulted to 10000.0, and the UI posts only {vsb_id}. So every "Run Metabolic
     # Cycle" click processed ten thousand WST of revenue that nobody earned or supplied, and the
     # resulting distributions, reserves and charity allocations were written to the real ledger as
@@ -133,7 +136,10 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
     # (owner + entity type) is authoritative — the request's defaults ("Rehan" + the default
     # template) previously mis-attributed every user's VSB cycles. Request values remain the
     # fallback for ad-hoc/simulation ids; an override mismatch is reported, never silent.
-    owner, entity_type, attribution = req.owner, req.entity_type, "request_values"
+    # W488 (refutation) — a caller who states no form gets the PLATFORM default, said to be the
+    # platform's; only a stated form is ever reported as the caller's claim (or as ignored).
+    owner, entity_type = req.owner, (req.entity_type or DEFAULT_ENTITY)
+    attribution = "request_values" if req.entity_type else "platform_default_form"
     try:
         from agentic_core.economy.living_vsbs import list_living
         _living = list_living() or {}
@@ -149,6 +155,12 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
             attribution = "living_registration"
             if req.owner != "Rehan" and req.owner != owner:
                 attribution = f"living_registration (request owner '{req.owner}' overridden)"
+            # W488 (sweep S1.8, C5) — the OWNER override was disclosed and the FORM override was not.
+            # The page highlighted a 'Charity · non-profit' card, sent entity_type='charity', and this
+            # cycle ran as the registered waqf_ltd_hybrid and paid the Owner 20% — saying nothing.
+            if req.entity_type and req.entity_type != entity_type:
+                attribution += (f"; the requested form '{req.entity_type}' was NOT used — the form is "
+                                f"fixed at registration as '{entity_type}'")
     except HTTPException:
         raise
     except Exception:
@@ -173,7 +185,11 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
                         "checking first." if written else "No cycle ran and nothing was posted.")
             + _intake_not_back(e))) from None
     if isinstance(result, dict):
-        result["attribution"] = {"owner": owner, "entity_type": entity_type, "basis": attribution}
+        result["attribution"] = {"owner": owner, "entity_type": entity_type, "basis": attribution,
+                                 **_form_disclosure(req.entity_type, entity_type,
+                                                    "living_registry" if attribution.startswith("living_registration")
+                                                    else ("caller_claimed" if req.entity_type
+                                                          else "platform_default"))}
         # §13 (W338) — USER-driven cycles drift the living record too: a cycle that genuinely
         # moved the ledger marks the shipped repo stale (the audit found only AUTONOMOUS cycles
         # marked drift — an owner-run cycle silently outdated the shipped body).
@@ -187,16 +203,17 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
 
 
 @router.get("/waterfall")
-async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY,
+async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str | None = None,
                         user: dict | None = Depends(get_current_user)):
     """The current effective profit-distribution waterfall for a VSB (Owner override if set, else the entity
     template default) + the template's binding constraints the Owner must respect."""
     _require_economy_access(vsb_id, user)
+    _claimed_type = entity_type
     entity_type, et_source = _resolve_entity_type(vsb_id, entity_type)
     m = EconomicMetabolism(vsb_id, entity_type)
     t = m.template
     return {
-        "vsb_id": vsb_id, "entity_type": entity_type, "entity_type_source": et_source,
+        "vsb_id": vsb_id, **_form_disclosure(_claimed_type, entity_type, et_source),
         "entity_name": t["name"],
         "waterfall": m.waterfall, "source": m.waterfall_source,
         "template_default": t["waterfall"], "stages": _WATERFALL_STAGES,
@@ -208,14 +225,24 @@ async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str = DEF
 
 class WaterfallRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
-    entity_type: str = DEFAULT_ENTITY
+    entity_type: str | None = None
     proportions: Dict[str, float]
 
 
-def _resolve_entity_type(vsb_id: str, claimed: str) -> tuple:
+def _resolve_entity_type(vsb_id: str, claimed: str | None) -> tuple:
     """§4 (W313) — the template bounds bind to the VSB's REAL stored entity type, never the caller's
     claim: previously a nonprofit VSB could pay an Owner profit share by claiming entity_type='sole'
-    at set time. Falls back to the claim only when the entity is unknown to both stores."""
+    at set time. Falls back to the claim only when the entity is unknown to both stores.
+
+    W488 (refutation, sweep S1.8) — the vsb-store leg read a key NO WRITER SETS. `/vsb` records the
+    form at `economy.entity_type` (vsb.py: the generated entity's economy block); the top-level
+    `entity_type` this function looked for is never written, so for every VSB that exists in the vsb
+    store but not on the living roster the W313 binding silently evaporated and the caller's claim
+    became the form — and the new disclosure then reported that as 'nothing was ignored'. It now reads
+    the key the writer actually sets, and a KNOWN entity whose form is not recorded anywhere is
+    REFUSED rather than bound to a claim (the same rule as the unreadable-roster leg above: when the
+    form cannot be known, nothing is computed under a guess). `claimed=None` means the caller stated
+    no form at all — the platform default is then used and SAID to be the platform's, not theirs."""
     try:
         from agentic_core.economy.living_vsbs import _load as _lv_load
         rec = _lv_load().get(vsb_id)
@@ -229,12 +256,51 @@ def _resolve_entity_type(vsb_id: str, claimed: str) -> tuple:
         pass
     try:
         from agentic_core.api.vsb import _load_vsb
-        v = _load_vsb(vsb_id)
-        if v and v.get("entity_type"):
-            return str(v["entity_type"]), "vsb_store"
+        v = _load_vsb(vsb_id) or {}
+        stored = v.get("entity_type") or (v.get("economy") or {}).get("entity_type")
+        if stored:
+            return str(stored), "vsb_store"
+        if v:
+            # the entity IS known here and records no form: a claim must not become the binding
+            raise HTTPException(status_code=422, detail=(
+                f"VSB '{vsb_id}' is stored but records no legal/economic form, so the waterfall bounds "
+                f"cannot be known; nothing was computed under the requested form. Register the entity "
+                f"(POST /api/v1/economy/entity-types is the list of forms) before running its economy."))
+    except HTTPException:
+        raise
     except Exception:
         pass
+    if not claimed:
+        return DEFAULT_ENTITY, "platform_default"
     return claimed, "caller_claimed"
+
+
+def _form_disclosure(claimed: str | None, resolved: str, source: str) -> Dict[str, Any]:
+    """W488 (sweep S1.8, C5) — SAY WHEN THE CALLER'S FORM WAS NOT THE ONE USED.
+
+    Binding the waterfall to the REGISTERED form is deliberate and stays (W313: a nonprofit could
+    otherwise pay an Owner profit share by claiming entity_type='sole'). What was wrong is that the
+    substitution was SILENT: the page highlighted a 'Charity · capital preserved · non-profit' card, the
+    API quietly used the registry's waqf_ltd_hybrid, and the cycle paid the Owner 20% under that
+    highlighted card. Every response that resolves a form now says which form was used, where it came
+    from, and — when they differ — that the claim was ignored.
+
+    W488 (refutation) — the first cut of this function read the FastAPI/pydantic DEFAULT as a claim: a
+    request that stated no form at all was told 'the requested waqf_ltd_hybrid was NOT used', which is
+    a claim the caller never made. A disclosure that invents the thing it discloses is the very defect
+    this round exists to kill. The claim is now OPTIONAL at every surface (`entity_type: str | None =
+    None`), so `claimed is None` means 'the caller stated nothing' and no claim is reported."""
+    ignored = bool(claimed) and str(claimed) != str(resolved) and source != "caller_claimed"
+    return {
+        "entity_type": resolved,
+        "entity_type_source": source,
+        "claimed_entity_type": (str(claimed) if ignored else None),
+        "claim_ignored": ignored,
+        "form_note": (f"the form is fixed at registration: this entity is registered as '{resolved}' "
+                      f"({source}), so the requested '{claimed}' was NOT used" if ignored else
+                      (f"form '{resolved}' from {source} — no form was requested"
+                       if not claimed else f"form '{resolved}' from {source}")),
+    }
 
 
 @router.post("/waterfall")
@@ -276,7 +342,7 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
     except Exception:
         pass
     return {
-        "vsb_id": req.vsb_id, "entity_type": entity_type, "entity_type_source": et_source,
+        "vsb_id": req.vsb_id, **_form_disclosure(req.entity_type, entity_type, et_source),
         "waterfall": waterfall,
         "source": "owner_override", "applied": True,
         "note": "Owner-set proportions persisted (virtual). Effective next cycle; logged to the UEG. "
@@ -1161,7 +1227,7 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
 
 class ClosePeriodRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
-    entity_type: str = DEFAULT_ENTITY
+    entity_type: str | None = None
     owner: str = "Rehan"
 
 
@@ -1201,12 +1267,12 @@ async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_
         ueg_logged = True
     except Exception:
         pass
-    return {"vsb_id": req.vsb_id, "entity_type": entity_type,
-            "entity_type_source": et_source, "ueg_logged": ueg_logged, **result}
+    return {"vsb_id": req.vsb_id, **_form_disclosure(req.entity_type, entity_type, et_source),
+            "ueg_logged": ueg_logged, **result}
 
 
 @router.get("/board-pack")
-async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY,
+async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None = None,
                      user: dict | None = Depends(get_current_user)):
     """§7 Financial Board Pack — the live owner-facing financial statement, assembled on demand: the P&L
     summary, the effective distribution waterfall, the Owner's accrued payments, the venture portfolio, charity
@@ -1220,6 +1286,7 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
     # W442 refuter catch: the owner-facing financial pack still took entity_type from the caller's
     # query and owner from the constructor default ("Rehan") — the claim-echo class W442 fixed on
     # /status and /close-period, left live on the surface the UI actually renders.
+    _claimed_type = entity_type
     entity_type, _et_source = _resolve_entity_type(vsb_id, entity_type)
     _owner, _owner_source = "Rehan", "platform_default"
     try:
@@ -1262,7 +1329,11 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
 
     return {
         "vsb_id": vsb_id, "entity_type": entity_type, "entity_name": m.template["name"],
-        "attribution": {"entity_type_source": _et_source, "owner_source": _owner_source},
+        # W488 (S1.8) — THE CYCLE THAT PAID THE OWNER UNDER A HIGHLIGHTED 'non-profit' CARD. The page
+        # sent entity_type='charity'; the registry's waqf_ltd_hybrid was used and 20% went to the Owner,
+        # and nothing in the response said the claim had been ignored. Now it does.
+        "attribution": {"entity_type_source": _et_source, "owner_source": _owner_source,
+                        **_form_disclosure(_claimed_type, entity_type, _et_source)},
         "currency": "WST (virtual)", "generated_at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()),
         "profit_and_loss": {
             "total_revenue_wst": revenue, "total_reserves_wst": reserves,

@@ -1,8 +1,11 @@
 """
 Management Systems API — QMS, BMS, DCS, EMS for VSB entities.
 
-Provides AI-generated management system documentation and governance tools
-that can be attached to any VSB entity or project.
+Drafts management-system documentation and governance tools that can be attached to any VSB entity
+or project. W488 (sweep S2.4, C5) — this said "AI-generated", and on a deployment where the
+deterministic floor serves every generator that is not what comes back: the floor composes the
+requested headings and the response's own floor_note says "it is not model analysis. Review every
+clause before use." What a caller gets is named by that response, never by this docstring.
 
   POST /api/v1/mgmt/qms/generate     — generate QMS framework (ISO 9001-aligned)
   POST /api/v1/mgmt/bms/generate     — generate BMS with OKRs and Balanced Scorecard
