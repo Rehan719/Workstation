@@ -13,17 +13,20 @@ VSB delivery organisation, end to end, as one verified living workflow:
                 + Build-to-Order · Products Catalogue
                 + Biomimetic systems + Digital resources
                   (Engines · Reactors · Incubators · Laboratories · Factories · Generators · Simulators)
-              → Chief + VSB digital-twin model generation & simulation
+              → Chief + VSB structural twin template + one projection (not a simulation)
 
 Every stage federates a REAL existing module (no duplication), fires a biomimetic
 nervous signal (responsive), and is constitutionally governed (gaas.v5 → UEG).
 The cascade is DETERMINISTIC-first (fast, always works without an AI key). Each stage reports
 `verified` in THREE states with a `basis` sentence (W461): true — a real check ran and passed;
-false — a real check ran and failed; null — NOT ASSESSABLE, nothing real was checked (the static
-C-Suite and BTO delegation maps; a task list derived from the request alone; a swarm stage the
-deterministic floor served). The run is `validated` only when every ASSESSABLE stage verified and the
-constitutional gate returned 'allowed' — a halted, partial, blocked or ungoverned run never
-validates, and only a validated plan-driven run writes onto the Owner's living plan. `deep=true`
+false — a real check ran and failed; null — NOT ASSESSABLE, nothing real was checked. W481 adds what
+KIND of check ran (`checks`): presence (something the platform always creates exists — CANNOT fail, so
+never 'verified'), decision (an arms-length verdict came back), artifact (a write that could fail),
+provenance (who served a call), delivery (a DELIVERED outcome was measured), none (nothing checked).
+The run is `validated` only when a DELIVERY check verified, no checked stage failed and the gate
+returned 'allowed'; with no delivery check it is NOT ASSESSABLE (null), which is what every run
+returns today — no stage measures delivery yet. Only a run that verified delivery writes onto the
+Owner's living plan. `deep=true`
 additionally runs the Chief's cognition on the owned native swarm.
 
     POST /api/v1/transformation/orchestrate
@@ -64,6 +67,64 @@ def _save_run(run: Dict[str, Any]) -> None:
     (_RUNS / f"{run['transformation_id']}.json").write_text(json.dumps(run, indent=2), encoding="utf-8")
 
 
+def summarise_validation(cascade: List[Dict[str, Any]], governance: Dict[str, Any], signals: int,
+                         native_cognition: Any = None) -> Dict[str, Any]:
+    """W481 (FU-122) — the run's verdict, as its own function so the rule can be exercised directly:
+    a presence check never counts as verified, and only a DELIVERY check can make a run validated."""
+    # W481 (FU-122, sweep S1.0 · S2.1 · S6.0) — 'validated' used to follow from presence checks that
+    # cannot fail: a Chief the Board always resolves, seven constant directors, three seeded objectives,
+    # a health reading that is never None, a filed change request, a written file. The run was certified
+    # end-to-end "From Chief To Build-to-Order" while the stages that would show delivery (Action
+    # Planning, C-Suite, BTO) were all not assessable. A run is validated only when a DELIVERY check
+    # verified something; until one exists the honest answer is 'not assessable', and a run that
+    # verified no delivery never writes onto the Owner's living plan.
+    assessable_stages = sum(1 for s in cascade if s["verified"] is not None)
+    verified_stages = sum(1 for s in cascade if s["verified"] is True)
+    failed_stages = sum(1 for s in cascade if s["verified"] is False)
+    not_assessable = len(cascade) - assessable_stages
+    presence_stages = sum(1 for s in cascade if s.get("checks") == "presence")
+    delivery_verified = [s["step"] for s in cascade if s.get("checks") == "delivery" and s["verified"] is True]
+    end_to_end = (cascade[0]["tier"].startswith("Chief") and
+                  any("Build-to-Order" in (s.get("delegates_to") or "") or
+                      s["tier"].startswith("Business Transformation") for s in cascade))
+    if failed_stages:
+        validated, why = False, f"{failed_stages} stage(s) were checked and did not verify"
+    elif governance.get("status") != "allowed":
+        validated, why = False, f"governance: {governance.get('status')}"
+    elif not delivery_verified:
+        validated, why = None, ("no stage checks a DELIVERED outcome — this run verified only presence, a "
+                                "governance decision and a written artifact")
+    else:
+        validated, why = True, f"delivery verified at stage(s) {delivery_verified}, governance allowed"
+    _verified_words = "; ".join(f"{s['tier']}: {s['basis']}" for s in cascade if s["verified"] is True) or "nothing"
+    validation = {
+        "stages": len(cascade), "assessable_stages": assessable_stages,
+        "verified_stages": verified_stages, "failed_stages": failed_stages,
+        "not_assessable_stages": not_assessable, "presence_stages": presence_stages,
+        "delivery_verified_stages": delivery_verified,
+        "end_to_end_chief_to_bto": bool(end_to_end),
+        "biomimetic_signals_fired": signals,
+        "governed": governance.get("status") not in (None, "ungoverned"),
+        "validated": validated,                                   # True · False · None (not assessable)
+        "validated_basis": why,
+        "validated_rule": ("validated only when a DELIVERY check verified a delivered outcome, no checked stage "
+                           "failed and governance 'allowed'; presence checks (something the platform always "
+                           "creates exists) never count, and a run with no delivery check is NOT ASSESSABLE"),
+        "ai_in_house": bool(native_cognition and "error" not in native_cognition
+                            and not native_cognition.get("any_external", False)),
+        "report": (f"The cascade ran {len(cascade)} stages of the delegation chain. Verified: {_verified_words}. "
+                   f"{not_assessable} stage(s) were not assessable — {presence_stages} of them presence checks that "
+                   f"cannot fail, {not_assessable - presence_stages} that checked nothing. "
+                   + ("Not validated: " + why + "." if validated is not True else "Validated: " + why + ".")
+                   + f" {signals} biomimetic signals fired; governance: {governance.get('status')}."),
+    }
+    return validation
+
+
+class _NotAssessable(Exception):
+    """W481 — raised to skip the outcome record for a run whose verdict is 'not assessable'."""
+
+
 # ── Request ───────────────────────────────────────────────────────────────────
 class OrchestrateRequest(BaseModel):
     objective: str = ""                 # the transformation objective (defaults to the live vision gap)
@@ -80,17 +141,28 @@ async def orchestrate(req: OrchestrateRequest):
     signals = 0
     cascade: List[Dict[str, Any]] = []
 
-    def stage(step, tier, delegates_to, action, output, verified, signal_type="motor", basis=None):
+    def stage(step, tier, delegates_to, action, output, verified, signal_type="motor", basis=None,
+              checks="presence"):
         """W461 — `verified` is THREE-state: True (a real check ran and passed), False (a real check ran
         and failed), None (NOT ASSESSABLE — nothing real was checked). It used to be coerced with
         bool(), so a stage that checks nothing could only be reported as verified. `basis` says, in
-        words, what the verdict rests on."""
+        words, what the verdict rests on.
+
+        W481 (FU-122, sweep S1.0/S2.1/S6.0) — `checks` says what KIND of check it was, because "verified"
+        was being reported for checks that cannot fail on a normal entity: a Chief the Board always
+        resolves, seven constant directors, three seeded objectives, a health reading that is never None.
+        presence  — something the platform always creates exists (CANNOT fail: never 'verified')
+        decision  — an arms-length decision came back (approved / held / rejected)
+        artifact  — a write happened and could have failed
+        delivery  — a DELIVERED outcome of this transformation was measured
+        Only a delivery check can make a run 'validated'."""
         nonlocal signals
         if _fire(signal_type, f"transform.{tier}", action[:80], 0.6):
             signals += 1
         cascade.append({"step": step, "tier": tier, "delegates_to": delegates_to,
                         "action": action, "output": output,
                         "verified": None if verified is None else bool(verified),
+                        "checks": checks,          # W481 — presence · decision · artifact · delivery · none
                         "basis": basis, "signal": signal_type})
 
     # ── live state (drives DYNAMIC behaviour) ──
@@ -126,8 +198,9 @@ async def orchestrate(req: OrchestrateRequest):
            "mission": plan.get("mission", ""), "vision": plan.get("vision", ""),
            "aims": plan.get("aims", []), "objective": objective,
            "realisation": realisation.get("overall_realisation")},
-          verified=bool(board.get("chief")), signal_type="cognitive",
-          basis=("the Chief was resolved from the Owner's Board" if board.get("chief") else
+          verified=(None if board.get("chief") else False), signal_type="cognitive", checks="presence",
+          basis=("presence only: the Owner's Board always resolves a Chief, so this check cannot fail "
+                 "— nothing about the mandate is verified" if board.get("chief") else
                  "no Chief could be resolved — the Board lookup returned none (the title shown is a placeholder)"))
 
     # ── 2 · Strategy → Board of specialist Directors ──
@@ -139,8 +212,9 @@ async def orchestrate(req: OrchestrateRequest):
           f"Deliver strategy via {len(directors)} specialist directors",
           {"directors": director_themes,
            "governance": board.get("governance", "arms-length: Board directs the AI CEO")},
-          verified=len(directors) > 0,
-          basis=(f"{len(directors)} specialist director(s) on the Board" if directors else
+          verified=(None if directors else False), checks="presence",
+          basis=(f"presence only: {len(directors)} specialist director(s) exist on the Board (a constant roster) "
+                 "— no strategy delivery is verified" if directors else
                  "the Board has no specialist directors"))
 
     # ── 3 · Action planning — timelined, resourced tasks (ADAPTIVE: gap→tier) ──
@@ -163,8 +237,9 @@ async def orchestrate(req: OrchestrateRequest):
     stage(3, "Action Planning Office", "AI CEO",
           "Resourced action plan with timelines, routed gap→owning-tier (adaptive)",
           {"tasks": action_items},
-          verified=(True if objectives else None),
-          basis=(f"{len(action_items)} task(s) resourced from the living plan's objectives" if objectives else
+          verified=None, checks=("presence" if objectives else "none"),
+          basis=(f"presence only: {len(action_items)} task(s) were composed from the plan's objectives, which every "
+                 "entity is seeded with — no resourcing or progress is verified" if objectives else
                  "not assessable — one task derived from the request; there are no plan objectives to resource"))
 
     # ── 4 · AI CEO → integrate the living management systems (BMS·QMS·DCS·EMS) ──
@@ -186,8 +261,10 @@ async def orchestrate(req: OrchestrateRequest):
           {"living_systems": living_systems,
            "organism_health": organism.get("immune", {}).get("health"),
            "arousal": organism.get("nervous", {}).get("arousal_state")},
-          verified=(organism.get("immune", {}) or {}).get("health") is not None,
-          basis=("organism telemetry read (immune health, nervous arousal); the BMS·QMS·DCS·EMS list is a static label"
+          verified=(None if (organism.get("immune", {}) or {}).get("health") is not None else False),
+          checks="presence",
+          basis=("presence only: organism telemetry was read (immune health, nervous arousal); the BMS·QMS·DCS·EMS "
+                 "list is a static label and no integration is checked"
                  if (organism.get("immune", {}) or {}).get("health") is not None else
                  "no organism telemetry could be read"))
 
@@ -200,7 +277,7 @@ async def orchestrate(req: OrchestrateRequest):
     stage(5, "C-Suite", "Centres of Excellence",
           "Delegate to specialist C-Suite, each driving their CoE",
           {"delegation": csuite_to_coe},
-          verified=None, basis="not assessable — static delegation map — nothing is checked")
+          verified=None, checks="none", basis="not assessable — static delegation map — nothing is checked")
 
     # ── 6 · BTO + Build-to-Order + Products + Digital Resources + Biomimetics ──
     # Operational delivery resources = the digital resources the Build-to-Order engine assembles.
@@ -223,7 +300,7 @@ async def orchestrate(req: OrchestrateRequest):
            "biomimetic_systems": biomimetic,
            "products_services_catalogue": [p["name"] for p in products_services_catalogue],
            "build_to_order": "/api/v1/bto/configure", "products": "/api/v1/catalog/products"},
-          verified=None,
+          verified=None, checks="none",
           basis=("not assessable — static delegation map — nothing is checked (the resource and catalogue "
                  "lists are read, but no delivery through Build-to-Order is verified)"))
 
@@ -247,18 +324,27 @@ async def orchestrate(req: OrchestrateRequest):
           # returns cca_id / impact_tier / status), so stage 7 reported nulls while claiming verified
           {"change_id": cca.get("cca_id"), "tier": cca.get("impact_tier"),
            "status": cca.get("status")},
-          verified=bool(cca.get("cca_id")),
-          basis=(f"change request {cca.get('cca_id')} filed ({cca.get('status')})" if cca.get("cca_id") else
+          # W481 — filing is not a verdict: an approved decision verifies, a held or rejected one FAILS,
+          # and a request still awaiting a decision is not assessable.
+          verified=(None if not cca.get("cca_id") or str(cca.get("status") or "").lower() in ("submitted", "pending", "")
+                    else str(cca.get("status")).lower() in ("approved", "auto_approved", "implemented")) if cca.get("cca_id") else False,
+          checks="decision",
+          basis=((f"change request {cca.get('cca_id')} was {cca.get('status')}"
+                  if str(cca.get("status") or "").lower() not in ("submitted", "pending", "")
+                  else f"change request {cca.get('cca_id')} filed and awaiting a decision — not assessable")
+                 if cca.get("cca_id") else
                  f"no change request was filed ({cca.get('error') or 'no id returned'})"))
 
     # ── 8 · Chief + VSB digital-twin model generation & simulation ──
     twin = _generate_vsb_twin(req, chief, director_themes, action_items, organism, realisation)
     stage(8, "Digital Twin Studio", "Validation",
-          "Generate the VSB digital-twin model and run a transformation simulation",
+          "Generate the VSB structural twin model and compute a projection from live state (not a simulation)",
           {"model_id": twin["model_id"], "components": twin["components"],
-           "simulation": twin["simulation"]},
-          verified=bool(twin.get("persisted")), signal_type="cognitive",
-          basis=(f"twin model {twin['model_id']} persisted to the digital-twin store" if twin.get("persisted") else
+           "projection": twin["projection"]},
+          verified=bool(twin.get("persisted")), signal_type="cognitive", checks="artifact",
+          basis=(f"artifact only: twin model {twin['model_id']} was written to the digital-twin store as a structural "
+                 "template — nothing about the transformation is verified by the write"
+                 if twin.get("persisted") else
                  f"the twin model was generated but NOT persisted ({twin.get('persist_error') or 'unknown error'})"))
 
     # ── 9 · (deep) the Chief's cognition runs on Workstation's OWN native AI swarm ──
@@ -299,7 +385,7 @@ async def orchestrate(req: OrchestrateRequest):
                   "Run the Chief's cognition on Workstation's OWN native swarm (in-house-first)",
                   {"served_by": _served, "any_external": native_cognition["any_external"],
                    "synthesis": native_cognition["synthesis"][:200]},
-                  verified=_v9, signal_type="cognitive", basis=_b9)
+                  verified=_v9, signal_type="cognitive", basis=_b9, checks="provenance")
         except Exception as e:
             native_cognition = {"error": str(e)[:120]}
 
@@ -317,30 +403,7 @@ async def orchestrate(req: OrchestrateRequest):
     # validated only when every assessable stage verified AND the gate ALLOWED it. The old rule counted
     # constant True stages and accepted any governance status except None/ungoverned/blocked — so a
     # 'halted' or 'partial' run validated, and a validated run writes onto the Owner's living plan.
-    assessable_stages = sum(1 for s in cascade if s["verified"] is not None)
-    verified_stages = sum(1 for s in cascade if s["verified"] is True)
-    not_assessable = len(cascade) - assessable_stages
-    end_to_end = (cascade[0]["tier"].startswith("Chief") and
-                  any("Build-to-Order" in (s.get("delegates_to") or "") or
-                      s["tier"].startswith("Business Transformation") for s in cascade))
-    validated = (assessable_stages > 0 and verified_stages == assessable_stages
-                 and governance.get("status") == "allowed")
-    validation = {
-        "stages": len(cascade), "assessable_stages": assessable_stages,
-        "verified_stages": verified_stages, "not_assessable_stages": not_assessable,
-        "end_to_end_chief_to_bto": bool(end_to_end),
-        "biomimetic_signals_fired": signals,
-        "governed": governance.get("status") not in (None, "ungoverned"),
-        "validated": bool(validated),
-        "validated_rule": ("every ASSESSABLE stage verified and governance 'allowed' — a not-assessable stage never "
-                           "counts as verified, and a halted, partial, blocked or ungoverned run never validates"),
-        "ai_in_house": bool(native_cognition and "error" not in native_cognition
-                            and not native_cognition.get("any_external", False)),
-        "report": ("End-to-end transformation cascade ran From Chief To Build-to-Order, "
-                   f"{verified_stages}/{assessable_stages} assessable stages verified "
-                   f"({not_assessable} not assessable), "
-                   f"{signals} biomimetic signals fired, governance: {governance.get('status')}."),
-    }
+    validation = summarise_validation(cascade, governance, signals, native_cognition)
 
     run = {
         "transformation_id": f"tx-{uuid.uuid4().hex[:10]}",
@@ -365,7 +428,7 @@ async def orchestrate(req: OrchestrateRequest):
     # An ad-hoc req.objective must NOT touch the plan; never auto-'done' (completion stays the
     # Owner's decision). Best-effort — the transformation never fails on plan I/O.
     try:
-        if validation.get("validated") and objectives:
+        if validation.get("validated") is True and validation.get("delivery_verified_stages") and objectives:
             driving = None
             if not req.objective:
                 driving = objectives[0]                      # the mandate was taken from the plan
@@ -381,10 +444,10 @@ async def orchestrate(req: OrchestrateRequest):
                         "progress_pct": tgt.get("progress_pct", 0),
                         "status": "in_progress" if tgt.get("status") == "planned" else tgt.get("status"),
                         "note": (f"Transformation delivery {run['transformation_id']} — "
-                                 f"{verified_stages}/{assessable_stages} assessable stages verified, "
-                                 f"governance {governance.get('status')}"),
+                                 f"{validation.get('verified_stages')}/{validation.get('assessable_stages')} "
+                                 f"assessable stages verified, governance {governance.get('status')}"),
                         "transformation": {"transformation_id": run["transformation_id"],
-                                           "validated": True,
+                                           "validated": validation.get("validated"),
                                            "twin_model_id": (twin or {}).get("model_id"),
                                            "governance": governance.get("status")},
                     })
@@ -392,28 +455,43 @@ async def orchestrate(req: OrchestrateRequest):
                         tgt["status"] = "in_progress"
                     _bp_save(fresh)
                     run["plan_objective_advanced"] = tgt.get("id")
-    except Exception:
-        pass
+    except Exception as e:
+        # W481 — a swallowed write-back hid a NameError for a whole round: the run says it could not write
+        run["plan_write_back_error"] = str(e)[:160]
     try:
+        if validation.get("validated") is None:
+            run["outcome_not_recorded"] = ("not assessable: no delivery check ran, so neither a success "
+                                            "nor a failure is filed against this resource")
+            raise _NotAssessable()
         from agentic_core.api.operational_excellence import record_outcome
         nc = native_cognition or {}
         record_outcome("transformation", "transformation_orchestrate",
                        served_by=(nc.get("served_by") or ["native"])[0],
                        is_external=bool(nc.get("any_external")),
                        duration_ms=int((time.time() - _t0) * 1000),
+                       # W481 (refutation) — `validated` is three-state: a NOT ASSESSABLE run is not a failure.
+                       # Only a run with a verdict is filed; otherwise nothing is claimed either way.
                        success=bool(validation.get("validated")),
                        ref=run["transformation_id"],
                        vsb_id=req.scope if req.scope != "workstation" else None)
+    except _NotAssessable:
+        pass
     except Exception:
         pass
     return run
 
 
 def _generate_vsb_twin(req, chief, directors, action_items, organism, realisation) -> Dict[str, Any]:
-    """Build a STRUCTURAL digital-twin model of the VSB (deterministic, real) and a
-    simulation projected from live organism + realisation state — then persist it via
-    the digital_twin store so it appears in /api/v1/twin/models."""
-    components = ["Chief (owner twin)", "Board of Directors", "AI CEO", "C-Suite", "CoE",
+    """Build a STRUCTURAL template of the VSB delegation chain (deterministic) and compute one
+    PROJECTION from live state, then persist it via the digital_twin store.
+
+    W481 (FU-122, sweep S1.1 · S2.2 · S6.1 · S8.1) — this is not a simulation and nothing is trained.
+    The old code persisted the arithmetic as a `simulation` with the verdict 'stable-and-improving',
+    which is impossible: projected = coverage × (0.5 + 0.5 × health) with health ≤ 1, so the projection
+    can never exceed the current figure. It also listed 'Chief (owner twin)' as a component and wrote
+    the API-surface-coverage proxy into the model as `vision_realisation`, while the Board page states
+    that no twin model is trained."""
+    components = ["Chief (the Owner's charter — not a trained twin)", "Board of Directors", "AI CEO", "C-Suite", "CoE",
                   "Business Transformation Office", "Build-to-Order", "Living systems (BMS·QMS·DCS·EMS)",
                   "Change Control", "Biomimetic organism", "Digital resources"]
     health = (organism.get("immune", {}) or {}).get("health", 0.9)
@@ -428,7 +506,8 @@ def _generate_vsb_twin(req, chief, directors, action_items, organism, realisatio
         "- Biomimetic homeostasis (immune·nervous·metabolic) — stabilising feedback.\n"
         "- Transformation tick (realisation→alignment) — error-correcting loop.\n\n"
         "## State Variables\n"
-        f"- vision_realisation = {real}\n- organism_health = {health}\n"
+        f"- api_surface_coverage = {real} (what /transformation/realisation measures: routes mounted and "
+        "stores non-empty \u2014 NOT delivery)\n- organism_health = {health}\n".format(real=real, health=health) +
         f"- open_objectives = {sum(1 for a in action_items if a.get('status') != 'done')}\n\n"
         "## Governing Dynamics\nDelivery rate ∝ organism_health × delegation_depth; "
         "governance refuses changes that reduce realisation or breach the constitution.\n"
@@ -436,21 +515,28 @@ def _generate_vsb_twin(req, chief, directors, action_items, organism, realisatio
     model_id = f"twin-{uuid.uuid4().hex[:10]}"
     model = {
         "model_id": model_id, "system_name": f"VSB {req.scope}",
-        "system_description": "Living VSB delivery organisation digital twin",
-        "domain": req.domain, "model_type": "organisational", "complexity": "complex",
-        "model_spec": model_spec, "simulations": [],
+        "system_description": "Structural template of the VSB delivery organisation (not a trained twin)",
+        "domain": req.domain, "model_type": "organisational_template", "trained": False,
+        "template_note": "a structural template written by the transformation cascade \u2014 no model is trained "
+                         "and nothing is simulated",
+        "complexity": "complex",
+        "model_spec": model_spec, "projections": [],
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    # projected simulation (deterministic, from real state)
+    # One deterministic PROJECTION. It is arithmetic over two live readings, stated as such.
     projected = round(min(1.0, real * (0.5 + 0.5 * health)), 3)
-    simulation = {
-        "scenario": "Run the transformation cascade for one delivery cycle",
-        "time_horizon": "90 days",
-        "projected_realisation": projected,
-        "projected_health": round(health, 3),
-        "verdict": "stable-and-improving" if projected >= real else "needs-intervention",
+    projection = {
+        "of": "api_surface_coverage",
+        "formula": "coverage x (0.5 + 0.5 x immune_health), capped at 1.0",
+        "inputs": {"api_surface_coverage": real, "immune_health": round(health, 3)},
+        "projected": projected,
+        "current": real,
+        "compared_with_current": ("equal to the current figure" if projected >= real else
+                                  "below the current figure"),
+        "note": ("a projection, not a simulation: nothing is modelled over time, and because immune health "
+                 "cannot exceed 1.0 this figure can never be above the current one"),
     }
-    model["simulations"].append(simulation)
+    model["projections"].append(projection)
     # W461 — a persistence failure used to be swallowed while stage 8 reported the twin verified
     persisted, persist_error = False, None
     try:
@@ -459,7 +545,7 @@ def _generate_vsb_twin(req, chief, directors, action_items, organism, realisatio
         persisted = True
     except Exception as e:
         persist_error = str(e)[:160]
-    return {"model_id": model_id, "components": components, "model_spec": model_spec, "simulation": simulation,
+    return {"model_id": model_id, "components": components, "model_spec": model_spec, "projection": projection,
             "persisted": persisted, "persist_error": persist_error}
 
 

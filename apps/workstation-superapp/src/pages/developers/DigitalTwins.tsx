@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '@workstation/ui';
 import { Boxes, Loader2, Activity, ChevronRight } from 'lucide-react';
 
+// W481 (FU-122, sweep S8.1) — the transformation cascade writes a PROJECTION (arithmetic over two live
+// readings), never a simulation; records written before W481 carry the old `simulations` shape and its
+// 'stable-and-improving' verdict, which was impossible by construction. Both are rendered as projections.
+interface Projection { of?: string; formula?: string; projected?: number; current?: number; note?: string;
+  compared_with_current?: string }
 interface Simulation { scenario?: string; verdict?: string; projected_realisation?: number; time_horizon?: string }
 interface TwinModel {
   model_id: string;
@@ -11,7 +16,10 @@ interface TwinModel {
   model_type?: string;
   complexity?: string;
   model_spec?: string;
-  simulations?: Simulation[];
+  simulations?: Simulation[];          // legacy records only
+  projections?: Projection[];
+  trained?: boolean;
+  template_note?: string;
   created_at?: string;
 }
 
@@ -47,7 +55,8 @@ export const DigitalTwins: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           Living digital-twin models generated across the organism — including the VSB organisational
           twins produced by each transformation orchestration. Select a model to inspect its structure
-          and simulations.
+          and projections. Nothing here is a trained model, and the transformation cascade's figure is a
+          projection (arithmetic over live readings), not a simulation.
         </p>
       </header>
 
@@ -91,19 +100,37 @@ export const DigitalTwins: React.FC = () => {
                 <h3 className="text-sm font-black text-white">{selected.system_name}</h3>
                 {loadingDetail && <Loader2 size={13} className="animate-spin text-highlight" />}
               </div>
+              {selected.trained === false && selected.template_note ? (
+                <p className="text-[10px] text-amber-400/90 font-semibold mb-3 leading-relaxed">{selected.template_note}</p>
+              ) : selected.trained === undefined && (selected.simulations?.length || /vision_realisation|owner twin/i.test(selected.model_spec || '')) ? (
+                /* W481 — records written before this round claim an owner twin and a 'vision_realisation' state
+                   variable; nothing here is trained, and that is said on the record itself */
+                <p className="text-[10px] text-amber-400/90 font-semibold mb-3 leading-relaxed">
+                  recorded before W481: a structural template, not a trained model. Its components name an
+                  "owner twin" and its state variable is called vision_realisation — that figure is API-surface
+                  coverage, not delivery, and no twin was trained.
+                </p>
+              ) : null}
+              {selected.projections && selected.projections.length > 0 && (
+                <div className="mb-4 space-y-2">
+                  {selected.projections.map((p, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                      <p className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5"><Activity size={11} className="text-slate-400" /> Projection of {p.of ?? 'a live reading'}</p>
+                      <p className="text-[9px] text-slate-600">{String(p.projected ?? '—')} from {String(p.current ?? '—')} · {p.formula} · {p.compared_with_current}</p>
+                      {p.note && <p className="text-[9px] text-amber-400/80 mt-1 leading-relaxed">{p.note}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
               {selected.simulations && selected.simulations.length > 0 && (
                 <div className="mb-4 space-y-2">
                   {selected.simulations.map((s, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-slate-950 border border-slate-900 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5"><Activity size={11} className="text-emerald-400" /> {s.scenario ?? 'Simulation'}</p>
-                        {s.projected_realisation != null && (
-                          <p className="text-[9px] text-slate-600">projected realisation {Math.round((s.projected_realisation || 0) * 100)}% · {s.time_horizon}</p>
-                        )}
-                      </div>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${/improving/i.test(s.verdict || '') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                        {s.verdict}
-                      </span>
+                    <div key={i} className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                      <p className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5"><Activity size={11} className="text-slate-400" /> {s.scenario ?? 'Recorded before W481'}</p>
+                      {s.projected_realisation != null && (
+                        <p className="text-[9px] text-slate-600">projected {Math.round((s.projected_realisation || 0) * 100)}% · horizon {s.time_horizon}</p>
+                      )}
+                      <p className="text-[9px] text-amber-400/80 mt-1 leading-relaxed">a pre-W481 record: this figure is arithmetic over two live readings (coverage × health), not a simulation{/improving/i.test(s.verdict || '') ? `, and its stored verdict (${s.verdict}) was reached whenever immune health was 1.0 — the projection could never exceed the current figure` : s.verdict ? `, and its stored verdict was ${s.verdict}` : ''}</p>
                     </div>
                   ))}
                 </div>

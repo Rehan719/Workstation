@@ -827,7 +827,11 @@ export const VSBCockpit: React.FC = () => {
               {tx && (
                 <>
                   <Card className="p-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Cascade ({(tx.cascade || []).length} stages · {tx.validation?.verified_stages ?? 0}/{tx.validation?.assessable_stages ?? '—'} assessable verified · {tx.validation?.validated ? 'validated' : 'not validated'})</h4>
+                    {/* W481 (FU-122) — 'validated' is three-state and a presence check is never a verification */}
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Cascade ({(tx.cascade || []).length} stages · {tx.validation?.verified_stages ?? 0}/{tx.validation?.assessable_stages ?? '—'} assessable verified · {tx.validation?.validated === true ? 'validated' : tx.validation?.validated === false ? 'not validated' : 'not assessable'})</h4>
+                    {tx.validation?.validated_basis && (
+                      <p className="text-[10px] text-amber-400/90 font-semibold mb-3 leading-relaxed">{tx.validation.validated === true ? 'Validated — ' : tx.validation.validated === false ? 'Not validated — ' : 'Not assessable — '}{tx.validation.validated_basis}</p>
+                    )}
                     <div className="space-y-2">
                       {(tx.cascade || []).map((s: Dict, i: number) => (
                         <div key={i} title={s.basis ?? ''} className="flex items-start gap-3 text-[11px]">
@@ -836,9 +840,12 @@ export const VSBCockpit: React.FC = () => {
                             <span className="text-white font-black uppercase tracking-wide">{s.tier}</span>
                             {s.delegates_to && <span className="text-slate-600"> → {s.delegates_to}</span>}
                             <p className="text-slate-500">{s.action}</p>
+                            {s.basis && <p className="text-slate-600 text-[10px] leading-relaxed">{s.checks === 'presence' ? 'presence check: ' : ''}{s.basis}</p>}
                           </div>
                           {/* W461 — three states: verified · not assessable (nothing is checked) · checked and failed */}
-                          {s.verified === true ? <ShieldCheck size={12} className="text-emerald-400 ml-auto shrink-0 mt-0.5" />
+                          {s.verified === true ? (s.checks === 'delivery'
+                              ? <ShieldCheck size={12} className="text-emerald-400 ml-auto shrink-0 mt-0.5" />
+                              : <ShieldCheck size={12} className="text-slate-400 ml-auto shrink-0 mt-0.5" aria-label={`${s.checks} check only`} />)
                             : s.verified === null ? <span className="text-slate-500 ml-auto shrink-0 font-black" aria-label="not assessable">—</span>
                             : <span className="text-amber-400 ml-auto shrink-0 font-black" aria-label="checked and not verified">○</span>}
                         </div>
@@ -855,10 +862,11 @@ export const VSBCockpit: React.FC = () => {
                       <ul className="text-[11px] text-slate-300 space-y-1">{(tx.products_services_catalogue || []).slice(0, 10).map((p: Dict, i: number) => <li key={i}>· {p.name}</li>)}</ul>
                     </Card>
                   </div>
-                  {tx.digital_twin?.simulation && (
+                  {tx.digital_twin?.projection && (
                     <Card className="p-6">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Digital-twin simulation</h4>
-                      <p className="text-[11px] text-slate-400">Projected realisation: <span className="text-highlight font-black">{String(tx.digital_twin.simulation.projected_realisation ?? '—')}</span> · governance: {tx.governance?.status}</p>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Structural twin · projection (not a simulation)</h4>
+                      <p className="text-[11px] text-slate-400">API-surface coverage projected: <span className="text-highlight font-black">{String(tx.digital_twin.projection.projected ?? '—')}</span> (current {String(tx.digital_twin.projection.current ?? '—')}, {tx.digital_twin.projection.formula}) · governance: {tx.governance?.status}</p>
+                      <p className="text-[10px] text-amber-400/90 font-semibold mt-1.5 leading-relaxed">{tx.digital_twin.projection.note}</p>
                     </Card>
                   )}
                 </>

@@ -6821,3 +6821,44 @@ sections are not yet shown as pending. Both are FU-098's remit and stay on that 
 (S7.8) stays on FU-128.
 
 Suite: 388 passed · 15 skipped · 0 failed (403 items from 364 test functions; 41-min full run on the final tree, isolated DATA_DIR).
+
+
+### W481 — P1.18: the transformation cascade verifies delivery, or says it did not (FU-122, FU-231)
+
+**Why.** P1.18's next row by priority (FU-122, 102.0: sweep findings S1.0, S2.1, S2.2, S6.0, S6.1) and two Tier-1
+findings of the same file that W477's registration pass created no row for (S1.1, S8.1 — registered here as FU-231).
+The cascade reported "6/6 assessable stages verified · validated" and "End-to-end transformation cascade ran From
+Chief To Build-to-Order", and on that verdict it wrote onto the Owner's living plan. Every one of those checks was
+the presence of something the platform always creates: a Chief the Board always resolves, seven constant directors,
+three seeded objectives, an immune-health reading that is never None, a filed change request (whatever its
+decision), a written file. The stages that would show delivery — Action Planning, C-Suite, Build-to-Order — were all
+not assessable. Beside it, a "Digital-twin simulation" reported "stable-and-improving": arithmetic,
+`coverage × (0.5 + 0.5 × immune_health)`, which cannot exceed the current figure, so "improving" was impossible. Each
+run persisted that into the twin store as a `simulation` with a component "Chief (owner twin)", while the Board page
+says no twin model is trained.
+
+**What changed.**
+- `agentic_core/api/transformation_orchestration.py`: every stage now declares what KIND of check it ran —
+  presence · decision · artifact · delivery · none — and a presence check is never "verified". Stage 7 reports the
+  change-control DECISION (approved verifies; held or rejected fail; undecided is not assessable), stage 8 is an
+  artifact write and says so. The verdict moved into `summarise_validation()`: validated only when a DELIVERY check
+  verified, False when a checked stage failed or governance is not "allowed", and NOT ASSESSABLE otherwise — which
+  is what every run returns today, because no stage checks delivery yet. The report sentence is written from what
+  actually verified. A run that verified no delivery never writes onto the plan, and a write-back that fails is
+  reported (`plan_write_back_error`) instead of being swallowed — a bare except had hidden a NameError this round.
+- The twin: a PROJECTION with its formula, its inputs and a note that nothing is modelled over time; no verdict; the
+  stored model is `organisational_template` with `trained: false` and `projections`, its components no longer claim
+  an owner twin, and its state variable is named `api_surface_coverage`, which is what the figure measures.
+- Pages: the VSB Cockpit, Transformation Dashboard, VSB Spawn Studio and Digital Twins render three states
+  (validated · not validated · NOT ASSESSABLE), show each stage's basis with its presence label, and show the
+  projection instead of a simulation verdict. Records written before this round are rendered with what they really
+  were.
+
+**Refuted** in isolated worktrees (3 agents + 3 verifiers): 21 real findings, 1 refuted as taste — every real one fixed as a rule, including the previous round's guard that this round superseded. **Broken 26 ways**; every blind fails the guard (three first-run
+vacuous blinds made real: the seeded-objectives leg needed a scope that HAS objectives, a page leg asserted an
+identifier rather than the render, and the swallowed write-back had no leg at all). **Probe 11/11** on a fresh
+backend (:8089) including the /transformation page in a real browser. Guard:
+test_w481_the_transformation_cascade_verifies_delivery_or_says_it_did_not. Two existing tests asserted the old
+certification and were retargeted; one now proves the write-back rule BOTH ways.
+
+Suite: 389 passed · 15 skipped · 0 failed (404 items from 365 test functions; 44-min full run on the final tree, isolated DATA_DIR).

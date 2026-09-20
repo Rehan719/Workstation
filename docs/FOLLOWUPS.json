@@ -1990,8 +1990,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W481",
       "note": ""
     },
     {
@@ -3920,6 +3920,46 @@
       "tier": 3,
       "area": "compliance",
       "reach": "internal"
+    },
+    {
+      "id": "FU-231",
+      "title": "sweep transformation_orchestration.py: 2 Tier-1 truth defects W477 registered NO row for (S1.1, S8.1) — the twin 'simulation' and its impossible verdict",
+      "why": "W481 audit: docs/TRUTH_SWEEP_W477.md lists S1.1 (C3, VSB Cockpit 'Digital-twin simulation' card and 'simulated on a digital twin') and S8.1 (C8, /digital-twins simulation row) under this file, and the registration pass created no row for either (grep of docs/FOLLOWUPS.json for S1.1/S8.1: none). Both are the same writer as FU-122: projected = coverage x (0.5 + 0.5 x immune_health) is arithmetic, never a simulation, and its verdict 'stable-and-improving' is impossible because the projection can never exceed the current figure. The run also persisted these as twin models with a component 'Chief (owner twin)' while the Board page says no twin is trained. FIX: as FU-122 — a projection with its formula stated, no verdict, a template tagged trained:false, and the pages reading it that way.",
+      "source": "W481 audit of FU-122 (the sweep's own registration gap)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py",
+        "apps/workstation-superapp/src/pages/developers/DigitalTwins.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "done",
+      "closed_by": "W481",
+      "note": "",
+      "tier": 1,
+      "area": "organisation",
+      "reach": "core"
+    },
+    {
+      "id": "FU-232",
+      "title": "The transformation cascade has no DELIVERY check, so a run can never be validated and the plan write-back is unreachable",
+      "why": "W481 made the verdict honest: 'validated' requires a stage whose check measures a delivered outcome, and no stage has one (stages 1-4 presence, 5-6 nothing, 7 a governance decision, 8 an artifact write, 9 provenance). Every run returns validated=null and the §5 loop closure that moves a living-plan objective planned->in_progress never fires in production (both ways are covered by tests through the summarise_validation seam). FIX: give the cascade one real delivery check — a Build-to-Order order created, or a plan objective's measured progress moving — declared checks='delivery'. Until then the honest state is 'not assessable'.",
+      "source": "W481 refuters (verified real)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "organisation",
+      "reach": "core"
     }
   ],
   "routes": [
@@ -3987,8 +4027,10 @@
         "agentic_core/api/swarm.py",
         "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
       ],
-      "words": [],
-      "note": "bespoke swarms"
+      "words": [
+        "delivery check"
+      ],
+      "note": "bespoke swarms; W482 — and the cascade's missing delivery measurement (P2.8 owns the realisation engine measuring delivery)"
     },
     {
       "slot": "P2.9",
