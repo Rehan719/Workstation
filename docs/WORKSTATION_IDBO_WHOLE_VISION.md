@@ -346,6 +346,38 @@ the Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order �
 (`POST /api/v1/transformation/orchestrate`). The organism delivers its own transformation through its own
 org: dogfood is the design, not an afterthought.
 
+
+**Recorded W482 — the cognitive engine fabric, the minimisation engine and autonomous support (three outside
+proposals, interrogated before acceptance).** The biomimetic nature above is served by a cognitive layer that
+largely EXISTS in this repository and is dormant: six named engines plus a registry that declares nine
+(`agentic_core/cognitive/`), a consultation contract, a Mushāwara deliberation bridge, a five-gate constitutional
+clearance chain (Mushāwara → Niyyah → Tawazun → Tafakkur → Tahqeeq) and a six-stage recirculation loop
+(Sense · Intend · Analyse · Act · Learn · Reflect) under `agentic_core/avatars/core/`. None of it runs today: no
+module registers an engine, so the registry raises on first use, and the avatar API deliberately bypasses the loop
+and says so. Nature's minimisation principles are also already here — a Sinkhorn optimal-transport router, and an
+Ω-functional `J(π) = α·F + β·W_ε + γ·KL + δ·S_export + ζ·M` with a Schrödinger bridge and a diffusion engine that
+the W382 sweep MOVED to `_archive/jules-unwired/…/biomimicry/minimisation/core/`; the Landauer meter exists as
+`core/transcendent_subsystems/tfel.py`. An autonomous support agent exists in `_archive/agentic_core/support/`.
+
+What the vision therefore asks for is **recovery, honesty and wiring, not a second implementation**:
+- **One registry, one contract.** The archived `cognitive/bootstrap.py` registers all nine engines and
+  `base_engine.py` defines the `process(input, context, enforcement)` contract the live callers already use.
+- **An engine computes or says it cannot.** Every engine here returns a constant today (`{"discovery": "Pattern
+  revealed", "vector": [1]*10000}`, `alignment 0.99`, `drift = 0.003`), and so did all three proposals' sample code.
+  The rule is `assessable: false` with a reason, never an invented number.
+- **A quantity may carry the name of a law only when computed by that law** (the naming invariant): API-surface
+  coverage is not vision realisation; payload size over a thousand is not bits erased; a SHA is not a Halo2 proof.
+- **A gate's default is refusal.** The clearance chain, the enforcement pattern (twenty-one named validators, none
+  registered) and the VRPR confidence ladder (0.90 plus 0.05 per iteration) must all be able to fail before anything
+  is built on them.
+- **Support is measured, not asserted.** "Resolved" is recorded from the user's confirmation or a measured outcome;
+  a resolution rate a simulation could satisfy is not a rate.
+
+The reasoning, with the evidence, is `docs/COGNITIVE_ENGINE_ARCHITECTURE.md` and
+`docs/AUTONOMOUS_SUPPORT_REVIEW.md`; the work is plan items **P3.12–P3.18**. `scripts/recovery_audit.py` is run
+BEFORE any new module: this repository's cleanups moved 516 sources into `_archive/` (a git rename), so a
+deletion-only search misses exactly the work most worth recovering.
+
 ## 9. The User Experience — multimodal, enterprise-aware, reconfigurable
 
 - **Enterprise-aware avatar** integrated across the platform: **multimodal communication / interaction**

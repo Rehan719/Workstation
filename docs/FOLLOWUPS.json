@@ -3960,6 +3960,124 @@
       "tier": 3,
       "area": "organisation",
       "reach": "core"
+    },
+    {
+      "id": "FU-233",
+      "title": "The VRPR pipeline invents its confidence and renames strings 'Certified'",
+      "why": "agentic_core/quality/vrpr_pipeline.py: process() starts at a hard-coded conf = 0.90 and adds 0.05 per iteration, never reading the content; it exits successfully when enforcement.validate() passes (it always does — see the enforcement row) and conf >= 0.95; _polish replaces 'Action result' with 'Certified Sovereign Action Outcome'; a pass returns constitutional_articles=[18,19,20] as a literal. Used by the dormant recirculation orchestrator and mode_controller. Anything gated on 'VRPR confidence >= 0.95' is gated on a manufactured number. FIX: compute the confidence from the content or return assessable:false; the articles come from what was checked.",
+      "source": "W482 interrogation of the BME and support proposals (recovery audit)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/quality/vrpr_pipeline.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "native_ai",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-234",
+      "title": "The thermodynamic ledger is fed invented bit counts, so its joules are invented",
+      "why": "core/transcendent_subsystems/tfel.py computes E = k_B x T x ln2 x bits correctly, but every caller passes a constant: tool_registry meters bits=2e5 per effector call ('standard bit cost'), recirculation_orchestrator meters bits=1e4 for its sense stage, causal_simulator uses len(task_batch)*1.5e6. export_cycle_ledger also returns 'compliance': True as a literal. All callers are dormant today. FIX: the bit count comes from an instrumented operation, or the figure is named a proxy (estimated_bits_from_payload_size) and is not reported as energy.",
+      "source": "W482 interrogation of the BME and support proposals (recovery audit)",
+      "found": "2026-09-20",
+      "files": [
+        "core/transcendent_subsystems/tfel.py",
+        "agentic_core/avatars/tools/tool_registry.py",
+        "agentic_core/simverse/causal_simulator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "organism",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-235",
+      "title": "The constitutional enforcement engine has no validators, so validate() always passes",
+      "why": "OmniEnforcementPatternSupreme names twenty-one validators across five phases, but UniversalEnforcementPattern.validators starts empty and register_validator is never called anywhere in the repository. All three constructors (clearance_chain, recirculation_orchestrator, mushawara_bridge_2) pass fail_on_missing_validator: False, so every phase is skipped and validate() returns passed. This is the engine two outside proposals wanted to use as the compliance backbone. FIX: register the validators, or report which phases could not run and refuse rather than pass.",
+      "source": "W482 interrogation of the BME and support proposals (recovery audit)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+        "agentic_core/validation/enforcement_pattern.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "native_ai",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-236",
+      "title": "The optimal-transport router cannot solve: POT is not installed, and its adapter is on no route",
+      "why": "agentic_core/biomimicry/minimisation/core/optimal_transport.py imports POT ('import ot') behind a try/except; POT is not installed and is not in requirements.txt, so OptimalTransportRouter silently has no solver. Its only consumer, EntropyRegularisedGaaS, is imported by governance/gaas/__init__ and mounted on no route (its own comment says so). FIX with P3.17: add POT or implement Sinkhorn over numpy, and have the router report itself unavailable instead of degrading silently.",
+      "source": "W482 interrogation of the BME and support proposals (recovery audit)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/biomimicry/minimisation/core/optimal_transport.py",
+        "agentic_core/governance/gaas/adapters/entropy_regularised_gaas.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "fabric",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-237",
+      "title": "524 orphan .pyc files sit beside sources that were archived or deleted",
+      "why": "scripts/recovery_audit.py (W482) finds 524 compiled files under agentic_core/ and core/ whose source is gone: 516 of those sources were MOVED into _archive/ by the W78/W159/W382 sweeps and 3 were deleted outright. The stale artefacts make a package look populated (minimisation/core still shows omega_functional, schrodinger_bridge and diffusion_engine) and can be imported by a stale interpreter. FIX: remove the orphans once P3.17 has recovered what it needs, and keep the audit green.",
+      "source": "W482 interrogation of the BME and support proposals (recovery audit)",
+      "found": "2026-09-20",
+      "files": [
+        "agentic_core/biomimicry/minimisation/core/optimal_transport.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "tooling",
+      "reach": "internal"
+    },
+    {
+      "id": "FU-238",
+      "title": "The archived support agent is a simulation under a test whose assertions cannot fail",
+      "why": "_archive/agentic_core/support/autonomous_support_agent.py sleeps a tier-shaped latency, returns 'Simulated resolution for query: {query}' with confidence 0.96 and success=True unconditionally; _archive/tests-jules/integration/support/test_autonomous_support_sla.py then asserts resolution_rate >= 0.95 and zero_human_intervention is True. Nothing live imports either. Recorded so that P3.18 recovers the SHAPE and not the simulation, and so no future round inherits those assertions or the '96.7% autonomous resolution' figure they appear to support.",
+      "source": "W482 interrogation of the BME and support proposals (recovery audit)",
+      "found": "2026-09-20",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "area": "domains_ux",
+      "reach": "internal"
     }
   ],
   "routes": [
@@ -3999,6 +4117,28 @@
         "post-quantum"
       ],
       "note": "attestations that are attestations"
+    },
+    {
+      "slot": "P3.17",
+      "files": [
+        "agentic_core/biomimicry/minimisation/",
+        "core/transcendent_subsystems/",
+        "agentic_core/quality/vrpr_pipeline.py",
+        "agentic_core/validation/"
+      ],
+      "words": [],
+      "note": "W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)"
+    },
+    {
+      "slot": "P3.18",
+      "files": [
+        "agentic_core/support/"
+      ],
+      "words": [
+        "support agent",
+        "support logic"
+      ],
+      "note": "W482 — autonomous technical support (the archived simulation is not inherited)"
     },
     {
       "slot": "P2.6",
