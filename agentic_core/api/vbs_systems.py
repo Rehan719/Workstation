@@ -43,10 +43,16 @@ async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
     a platform-level defect THEY COULD NEVER SEE — while the summary counted it. The defect now
     belongs to the tenant that ran the gate."""
     _u = user if isinstance(user, dict) else None
+    # W489 (sweep S9.4, C3) — this gate runs on metrics the CALLER TYPES (the panel defaults to 0.97,
+    # which passes), so it is a what-if, not a delivery. It used to count into the platform-wide
+    # non-conformance rate that the cockpit then labelled "a real rate".
     passed = await qms.run_quality_gates(
         {"coverage": req.coverage, "stubs_found": req.stubs_found},
-        label="cockpit-gate", owner_id=(_u or {}).get("username"))
+        label="cockpit-what-if", owner_id=(_u or {}).get("username"), count_in_rate=False)
     return {"passed": passed, "min_coverage": qms.min_coverage,
+            "counted_in_rate": False,
+            "basis": ("a what-if gate over the coverage and stub figures you supplied — it is recorded "
+                      "separately and does not move the platform non-conformance rate"),
             "non_conformance_rate": qms.get_non_conformance_rate(), "real": True}
 
 

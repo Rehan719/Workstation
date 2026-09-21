@@ -110,7 +110,9 @@ function qualityText(q: unknown): string | null {
   if (d && typeof d.defects_total === 'number' && typeof d.gates_run === 'number') {
     parts.push(`${d.defects_total} defect${d.defects_total === 1 ? '' : 's'}/${d.gates_run} gates`);
   } else if (typeof o.qms_non_conformance_rate === 'number') {
-    parts.push(`non-conformance ${(o.qms_non_conformance_rate * 100).toFixed(1)}%`);
+    // W489 (refutation) — a per-deliverable row showing the PLATFORM-WIDE rate read as this
+    // deliverable's. One QMS store serves every entity and tenant; the label now says so.
+    parts.push(`non-conformance ${(o.qms_non_conformance_rate * 100).toFixed(1)}% (platform-wide)`);
   }
   if (o.stub_found === true) parts.push('STUB DETECTED');
   const comp = o.compliance as Record<string, any> | undefined;

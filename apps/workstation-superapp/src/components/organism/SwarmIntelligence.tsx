@@ -289,9 +289,16 @@ const SwarmIntelligence: React.FC = () => {
                   BMS {cascade.management_systems.bms.status} · ${cascade.management_systems.bms.cost_per_insight_usd}/insight
                 </span>
               )}
+              {/* W489 (sweep S11.7, C3) — this chip was emerald and showed a fixed 0.85 as a percentage
+                  presented as this run's efficiency gain, beside the PROCESS-LIFETIME CO₂ total shown as
+                  this run's. The run's own estimate and the process total are now separate numbers, and
+                  the constant is labelled a constant in a neutral chip like the BMS one above. */}
               {cascade.management_systems?.ems && (
-                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={cascade.management_systems.ems.caveat}>
-                  EMS +{Math.round((cascade.management_systems.ems.efficiency_gain ?? 0) * 100)}% · {cascade.management_systems.ems.total_co2_kg}kg CO₂ (sim)
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-700/40 text-slate-300" title={cascade.management_systems.ems.caveat} data-testid="ems-chip">
+                  EMS · CO₂ this run {cascade.management_systems.ems.co2_kg_this_run}kg (est.)
+                  {cascade.management_systems.ems.process_total_co2_kg != null
+                    ? ` · process total ${cascade.management_systems.ems.process_total_co2_kg}kg` : ''}
+                  {' · efficiency '}{cascade.management_systems.ems.efficiency_gain_constant} (constant, not measured)
                 </span>
               )}
             </div>

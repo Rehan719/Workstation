@@ -28,7 +28,12 @@ interface GeneratedDoc {
 interface ClassificationNotice {
   filename: string;
   label: string;
-  confidence: number;
+  // W489 (sweep S12.1, C3) — NULLABLE, because 'nobody classified this' has to be sayable. The old
+  // non-null number could not represent absence, so the page rendered the API's fallback 0.7 as
+  // '(70% confidence)' for a file no classifier had read.
+  confidence: number | null;
+  reasoning?: string;
+  category?: string;   // W489 (refutation) — the CATEGORY decides what was classified, not the confidence
 }
 
 // W454 — an ILLUSTRATIVE example listing: no url, no posting date (they were invented), a salary estimate
@@ -134,7 +139,9 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
         notices.push({
           filename: resp.data.filename,
           label,
-          confidence: resp.data.classification.confidence,
+          confidence: resp.data.classification.confidence ?? null,
+          reasoning: resp.data.classification.reasoning,
+          category,
         });
       }
       setClassificationNotices(notices);
@@ -319,13 +326,25 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
                 />
               </div>
               <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
-                Drop uncategorised material here — content is analysed and automatically filed into the matching category above.
+                Drop uncategorised material here. Each file is read and filed into the matching category above when it can be
+                classified; when it cannot, it is listed as unresolved rather than filed under a guess.
               </p>
               {classificationNotices.length > 0 && (
                 <ul className="space-y-1.5">
                   {classificationNotices.map((n, i) => (
                     <li key={`${n.filename}-${i}`} className="text-[10px] text-aura font-bold">
-                      "{n.filename}" classified as <span className="text-white">{n.label}</span> ({Math.round(n.confidence * 100)}% confidence)
+                      {/* (refutation) This branched on CONFIDENCE, so a file the classifier really did
+                          categorise — but gave no confidence for — was reported as not classified, while
+                          the Unresolved list below (which keys on the category) correctly left it out.
+                          The two halves of one screen contradicted each other. The category decides. */}
+                      {n.category !== 'uncategorized' ? (
+                        <>"{n.filename}" classified as <span className="text-white">{n.label}</span>
+                          {n.confidence != null
+                            ? <> ({Math.round(n.confidence * 100)}% confidence)</>
+                            : <span className="text-slate-500"> (no confidence was returned)</span>}</>
+                      ) : (
+                        <span className="text-amber-400">"{n.filename}" was NOT classified — {n.reasoning || 'nothing was read from it'}</span>
+                      )}
                     </li>
                   ))}
                 </ul>

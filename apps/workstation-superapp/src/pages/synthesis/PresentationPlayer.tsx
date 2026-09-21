@@ -59,7 +59,10 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
             </div>
             <div>
                <h2 className="text-xl font-black text-white uppercase tracking-tighter">AI CEO Presentation</h2>
-               <p className="text-[10px] text-aura font-black uppercase tracking-widest">Sovereign Studio v1.0 • Autonomous Narration Active</p>
+               {/* W489 (sweep S5.14, C3) — the header claimed an active autonomous narration that does not exist:
+    nothing in this player or anything it imports plays sound at all — the guard checks that by
+    name. The narration is a SCRIPT, shown as text, and the header now says only that. */}
+               <p className="text-[10px] text-aura font-black uppercase tracking-widest">Sovereign Studio v1.0 • Narration script shown as text</p>
             </div>
          </div>
          <button type="button" onClick={onClose} aria-label="Close presentation" className="p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all">
@@ -143,7 +146,9 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
          <div className="flex-1 space-y-3">
             <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 tracking-widest">
                <span>Slide {currentIdx + 1} of {slides.length}</span>
-               <span>{progress.toFixed(0)}% Synchronized</span>
+               {/* W489 — this reported a synchronisation percentage. Nothing is synchronised: it is a
+                   slide timer, +2 every 100ms. */}
+               <span>{progress.toFixed(0)}% of slide time</span>
             </div>
             <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
                <motion.div

@@ -6,7 +6,8 @@ description and spawns a complete Virtual Sovereign Business entity through
 the full intelligence pipeline:
 
   Challenge
-    → Nine Cognitive Engines (understand the problem deeply)
+    → Six Cognitive Engines (a fixed-response frame today, not analysis; three further meta engines
+      are PLANNED under the delivery plan's P3.13 and do not run)
     → MJM Orchestrator (meta-judgement: assess, validate, specify)
     → GaaS Constitutional Gate (alignment check)
     → Genomic Registry (encode VSB DNA into epigenetic memory)
@@ -384,7 +385,10 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         f"- QMS gate: {gate_word(_q.get('qms_gate_passed')).upper()}\n"
         f"- Basis: {_q.get('qms_basis')}\n"
         f"- Delivery coverage: {_q.get('delivery_coverage')}\n"
-        f"- Non-conformance rate (stateful): {_q.get('qms_non_conformance_rate')}\n"
+        # W489 (refutation) — this line is SEALED as §10 evidence for THIS generation, so it must not
+        # read as this entity's record: one QMS store serves every entity and tenant on the install.
+        f"- Non-conformance rate (platform-wide, all entities and tenants — NOT this VSB's own record): "
+        f"{_q.get('qms_non_conformance_rate')}\n"
         f"- Document-control seal: {_q.get('quality_record_hash')}\n\n"
         f"## §11 Compliance ({_comp.get('overall', 'unscreened')})\n"
         + "".join(f"- {v['framework']}: {v['status']} — {v['reason'][:160]}\n"
@@ -1690,7 +1694,14 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         yield _event("init", "VSB Spawn Initiated", f"Spawning VSB for challenge: {req.challenge[:120]}", {"vsb_id": vsb_id})
 
         # ── Stage 1: Cognitive Cascade ────────────────────────────────────────
-        yield _event("cognitive", "Nine Cognitive Engines", "Running UltimateCognitiveCascade...")
+        # W489 (sweep S2.0, C3) — the feed claimed a nine-engine cascade and reported its
+        # literal "computed"/"fully_integrated" as a result. Six engines exist and run; the three meta
+        # engines are PLANNED (P3.13) and have no module. None of the six reads its input — each
+        # returns a fixed marker — so the feed names the frame rather than implying an analysis.
+        yield _event("cognitive", "Six Cognitive Engines (fixed responses)",
+                     "Running the cascade: inkashaf, samajh, soch, aqal, hoshiyari, iman. Each returns a "
+                     "fixed marker rather than reading the challenge; three further meta engines are "
+                     "planned (P3.13) and do not run.")
         try:
             cascade_result = await _cascade.execute_cascade({
                 "problem": req.challenge,
@@ -1698,21 +1709,48 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
                 "scope": req.scope,
             })
             cascade_summary = str(cascade_result.get("plan", cascade_result))[:400]
+            _cascade_ran = True
         except Exception as e:
             cascade_result = {"error": str(e)}
             cascade_summary = f"Cascade encountered: {e}"
-        biobus.fire_signal("cognitive", "vsb.cascade", f"Nine engines complete: {vsb_id}", 0.7)
-        yield _event("cognitive_complete", "Cascade Complete", cascade_summary, {"status": cascade_result.get("status", "done")})
+            _cascade_ran = False
+        # W489 (refutation) — engines_run NAMES THE ENGINES THAT RAN, so on the failure path it is 0.
+        # The first cut emitted a hard-coded 6 and "the six engines returned their fixed markers"
+        # unconditionally: on an exception the feed reported six engines and a status of "done" for a
+        # cascade that raised before any of them. That is this round's own defect class — a constant
+        # presented as a count of what happened — committed inside the fix for it.
+        biobus.fire_signal("cognitive", "vsb.cascade",
+                           (f"Six engines complete: {vsb_id}" if _cascade_ran
+                            else f"Cascade FAILED, no engines ran: {vsb_id}"), 0.7)
+        yield _event("cognitive_complete",
+                     "Cascade Complete (fixed markers)" if _cascade_ran else "Cascade FAILED — no engines ran",
+                     (f"The six engines returned their fixed markers: {cascade_summary}" if _cascade_ran
+                      else f"The cascade raised before any engine ran, so nothing was analysed: {cascade_summary}"),
+                     {"status": cascade_result.get("status", "failed" if not _cascade_ran else "done"),
+                      "ran": _cascade_ran,
+                      "engines_run": 6 if _cascade_ran else 0, "engines_computed": False,
+                      "basis": ("each engine returns a literal; nothing here was derived from the challenge"
+                                if _cascade_ran else "the cascade raised; no engine was reached")})
 
         # ── Stage 2: MJM Evaluation ───────────────────────────────────────────
         yield _event("mjm", "MJM Orchestrator", "Mushahida-Jaiza-Muaina evaluation...")
         try:
             mjm_result = await _mjm.run_lifecycle({"challenge": req.challenge, "cascade": cascade_result})
             mjm_summary = str(mjm_result.get("result", mjm_result))[:300]
+            _mjm_ran = True
         except Exception as e:
             mjm_result = {"error": str(e)}
             mjm_summary = f"MJM note: {e}"
-        yield _event("mjm_complete", "MJM Evaluation Complete", mjm_summary)
+            _mjm_ran = False
+        # W489 — MJM re-runs the SAME six engines and returns literals ("optimised", compliance 1.0);
+        # it is not a second, independent judgement of the challenge. (refutation) And when it raises,
+        # the row says it did not run rather than describing markers nobody produced.
+        yield _event("mjm_complete",
+                     "MJM Evaluation Complete (fixed markers)" if _mjm_ran else "MJM FAILED — it did not run",
+                     mjm_summary,
+                     {"computed": False, "ran": _mjm_ran,
+                      "basis": ("MJM re-runs the same six fixed-response engines; its result is a literal"
+                                if _mjm_ran else "MJM raised; no evaluation was produced")})
 
         # ── Stage 3: GaaS Constitutional Gate ────────────────────────────────
         yield _event("gaas", "Constitutional Gate", "GaaS validation — purpose and ethics alignment...")

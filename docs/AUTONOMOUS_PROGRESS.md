@@ -7043,3 +7043,64 @@ scatter. Every one was *this round's class re-committed inside this round's fix*
 **The lesson, in one line:** a round's own fix is the likeliest place to find the defect the round is about.
 
 **Broken 36 ways** (R01–R36) on top of the first cut's 20.
+
+### W489 — a reading is measured, or it is not presented as a reading (the C3 batch, taken REPO-WIDE)
+
+**The first round to take a class across every item that carries it.** W488 closed C5 scoped to the
+gate item; the forecast then showed the same mechanism closing 4 rows inside P1.18 and **12 across all
+items**, so the `--item` filter was costing two thirds of each round's reach for nothing. This round
+took C3 — *invented or constant readings* — repo-wide: twelve rows spanning P1.18, P2.4, P2.8 and P2.9.
+
+**The rule.** A number or label is presented as a reading only when it was computed from the thing it
+names. Otherwise it is absent, or labelled as what it actually is — a constant, a default, a different
+quantity, or work that is planned and has not run.
+
+**The four shapes, and what each was.**
+
+*A constant shown as a measurement.* `ems.py` returned the literal `0.85` and the swarm page rendered
+it as a green "EMS +85%" beside "this run's result"; the CO₂ figure next to it was a process-lifetime
+accumulator, not the run's. The per-call emission was computed and thrown away — it is now returned,
+so a run's own figure and the process total are separate numbers and the constant is named a constant.
+The QEP scheduler emitted one fixed rationale per feature whatever the inputs: at the SM-2 floor of
+1.3 — a learner who keeps failing this recall — it still read that they "retain this ayah well", about
+an ayah the endpoint is never told the identity of. Each rationale is now a function of its own value
+and says only what the engine's own branches say. `KnowledgeHub.tsx` computed "Outputs 0" and
+"Confidence 1" from three fields the API has never sent; the 1 came from a `Math.max` floor applied to
+a zero. `ventures.py` scored candidates from policy constants keyed on two booleans, so every governed
+once-cycled VSB scored exactly 0.6925, and the method string claimed a product where the code sums.
+
+*A default shown as a result.* `career.py` hard-coded a category and 0.7 confidence in an `except`
+branch, so a document nobody had read was filed — really filed — as "Old CVs (70% confidence)" beneath
+a line promising the content was analysed. `ReactorStudio.tsx` coerced any unparseable value to 0 and
+plotted it, under a header promising the page never invents numbers; the rejected lines are now named
+back by line number and nothing is sent.
+
+*A different quantity relabelled.* `resource_flow` is 100 − host CPU%, and the shell derived "Work"
+from `flow > 60` — so an **idle** host displayed as working, and the cardiovascular dot went green
+("healthy flow") precisely when least was happening. The state is now derived from the platform's own
+running projects and open channels; every reading says which machine it is of. A platform-wide QMS
+non-conformance rate, fed by a coverage number the user types, was titled "a real rate": what-if gates
+are now counted apart from it and the rate says what population it covers.
+
+*A claim about a pipeline that does not run that way.* "Nine Cognitive Engines" over a cascade that
+runs six stubs, with `engines_run` hard-coded to 9 and MJM re-running the same six. **The three meta
+engines are planned work, not a withdrawn claim** — the Owner confirmed this mid-round — so they are
+marked `status: "planned"` naming P3.12, the item that builds them, and a request for one is answered
+"planned, nothing ran" instead of a bare 404.
+
+**And a correction to W488's own claim.** W488 said the cross-request recall class was closed
+repo-wide. Its audit grepped `query_meta(` only: `gateway.query()`, `stream()` and `stream_meta()` all
+still defaulted to `augment=True`, so **29 generation callers** — including the live nine-stage
+synthesis cascade, the CEO blueprint and the digital-twin modeller — still had another request's
+content prepended and presented as analysis of their own subject. Fixing callers one at a time is what
+produced that gap twice; the DEFAULT is what needed to change. All four entry points now default off,
+and the two conversational callers opt in by name.
+
+**A defect in the planning mechanism itself.** `row_classes` matched any `C3` in a row's prose, so the
+register row that *discusses* the batch mechanism was counted into three batches it had no defect in —
+a batch count that includes rows by accident is the same defect the batch is for. Narrowed to the three
+citation forms the sweep actually writes, read off the rows that exist rather than guessed.
+
+**Broken 51 ways**, all 51 caught; the four that were vacuous each marked a real gap in the guard (an
+anchor inside the branch it guarded, a "grew" assertion true of both numbers, a key-presence check that
+ignored the value, and a source check that passed while one branch still coerced).

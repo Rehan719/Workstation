@@ -35,6 +35,20 @@ class _RateLimiter:
                 self._tokens -= 1
 
 
+# W489 (sweep S4.6, C3) — RECALL IS OPTED INTO, NEVER INHERITED.
+# Cross-request recall used to be the DEFAULT on all four entry points, so a caller closed the leak
+# only by remembering to say so. W332 set augment=False on the callers it knew about and W488 swept
+# every `query_meta` call — but the audit grepped one method name, and `query`, `stream` and
+# `stream_meta` were left inheriting True: 29 generation-class callers, including the live nine-stage
+# synthesis cascade, the CEO blueprint and the digital-twin modeller, still had another request's
+# content prepended to the prompt and presented as analysis of the caller's own subject. Fixing the
+# callers one by one is what produced that gap twice; the DEFAULT is what needed to change.
+# The two callers that genuinely want recall are conversations, and both already opt in by name:
+# the avatar (avatars/api.py) and the AI-CEO chat (api/v138/ceo.py). Recall stays tenant-scoped by
+# owner_id either way (W333).
+_RECALL_OFF = False
+
+
 class ModelGateway:
     """
     Priority order:
@@ -114,7 +128,7 @@ class ModelGateway:
 
     async def query(self, prompt: str, agent: str = "assistant",
                     timeout: float | None = 90.0,
-                    owner_id: str | None = None, augment: bool = True) -> str:
+                    owner_id: str | None = None, augment: bool = _RECALL_OFF) -> str:
         """Run one completion through the provider cascade.
 
         `timeout` is an OVERALL bound (seconds) on the whole cascade so an AI call
@@ -129,7 +143,7 @@ class ModelGateway:
 
     async def query_meta(self, prompt: str, agent: str = "assistant",
                          timeout: float | None = 90.0,
-                         owner_id: str | None = None, augment: bool = True) -> dict:
+                         owner_id: str | None = None, augment: bool = _RECALL_OFF) -> dict:
         """Like `query()` but returns PROVENANCE — {output, served_by, is_external} — so callers
         can surface which OWNED resource served the completion (Genesis/Forge/Transformation use
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
@@ -297,7 +311,7 @@ class ModelGateway:
                             continue
 
     async def stream_meta(self, prompt: str, agent: str = "assistant",
-                          owner_id: str | None = None, augment: bool = True) -> AsyncIterator[dict]:
+                          owner_id: str | None = None, augment: bool = _RECALL_OFF) -> AsyncIterator[dict]:
         """Yield {"token": …} events then ONE terminal {"done": True, "served_by", "is_external",
         "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), mirroring
         query_meta's contract:
@@ -440,7 +454,7 @@ class ModelGateway:
         yield _fin
 
     async def stream(self, prompt: str, agent: str = "assistant",
-                     owner_id: str | None = None, augment: bool = True) -> AsyncIterator[str]:
+                     owner_id: str | None = None, augment: bool = _RECALL_OFF) -> AsyncIterator[str]:
         """Token-only view of `stream_meta` (the three older SSE consumers keep their shape)."""
         async for ev in self.stream_meta(prompt, agent=agent, owner_id=owner_id, augment=augment):
             if "token" in ev:

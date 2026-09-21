@@ -675,8 +675,12 @@ def test_all_four_management_systems_compute(client):
     assert isinstance(bms["cost_per_insight_usd"], (int, float)) and bms["insights_count"] >= 4
     assert bms["status"] in ("EFFICIENT", "REVISE") and "estimate" in bms["caveat"]
     ems = ms["ems"]
-    assert isinstance(ems["total_co2_kg"], (int, float)) and ems["total_co2_kg"] > 0
-    assert ems["efficiency_gain"] > 0 and "simulated" in ems["caveat"]
+    # W489 — this run's emissions and the process-lifetime total are different numbers, and the
+    # efficiency figure is a constant that is named one rather than reported as a measured gain.
+    assert isinstance(ems["co2_kg_this_run"], (int, float)) and ems["co2_kg_this_run"] > 0
+    assert ems["process_total_co2_kg"] >= ems["co2_kg_this_run"]
+    assert ems["efficiency_gain_constant"] == 0.85 and ems["efficiency_measured"] is False
+    assert "not measured" in ems["caveat"] and "since this server started" in ems["caveat"]
 
 
 def test_cascade_bto_requisitions_real_fabric(client):
@@ -903,9 +907,17 @@ def test_qms_defect_loop_and_measured_bar(client):
     assert client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.99, "stubs_found": False}).json()["passed"] is True
     d = client.get("/api/v1/vbs/qms/defects", params={"status": "open"}).json()
     s = d["summary"]
-    assert s["gates_run"] == base["gates_run"] + 2 and s["defects_total"] == base["defects_total"] + 1
+    # W489 — the cockpit gate runs on metrics the caller TYPES, so it is a what-if: it still opens a
+    # traceable defect (the loop below depends on that), and it no longer moves the delivery rate.
+    assert s["gates_run"] == base["gates_run"], (base, s)
+    assert s["what_if_gates"] == base.get("what_if_gates", 0) + 2, (base, s)
+    assert s["what_if_failures"] == base.get("what_if_failures", 0) + 1, (base, s)
+    assert s["defects_total"] == base["defects_total"] + 1
     # W316 — the rate is FAILURES over gates run (a failed re-verify counts as a failure)
-    assert s["gates_run"] > 0 and abs(s["non_conformance_rate"] - round(s["gate_failures"] / s["gates_run"], 4)) < 1e-9
+    # W489 — and it is 0.0 with no DELIVERY gates at all, rather than borrowing the what-if figures
+    _expected = round(s["gate_failures"] / s["gates_run"], 4) if s["gates_run"] else 0.0
+    assert abs(s["non_conformance_rate"] - _expected) < 1e-9, s
+    _rate_before_loop = s["non_conformance_rate"]
     new = [x for x in d["defects"] if x["id"].startswith("DEF-")]
     assert new and new[0]["label"] and new[0]["status"] == "open"
     did = new[0]["id"]
@@ -920,12 +932,20 @@ def test_qms_defect_loop_and_measured_bar(client):
     client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/correct", json={"correction": "attempt"})
     rev2 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"coverage": 0.3, "stubs_found": False}).json()
     assert rev2["passed"] is False and rev2["defect"]["status"] == "open"
-    # §10 (W316) — the failed re-verification RAISED the failure count (since `s`: the 0.1 gate
-    # fail + this failed re-verify = exactly 2). Previously it only inflated the denominator,
-    # so WORSE corrections produced a BETTER reported rate.
+    # §10 (W316) — a failed re-verification RAISES the failure count, so a correction that does not
+    # hold can never improve the reported figure (previously it inflated the denominator only).
+    # W489 — these are WHAT-IF gates (typed metrics), so they raise the what-if failures and leave
+    # the DELIVERY rate exactly where it was. The W316 rule is unchanged; it now applies to the
+    # population each run actually belongs to.
     s2 = client.get("/api/v1/vbs/qms/defects").json()["summary"]
-    assert s2["gate_failures"] == s["gate_failures"] + 2
-    assert abs(s2["non_conformance_rate"] - round(s2["gate_failures"] / s2["gates_run"], 4)) < 1e-9
+    assert s2["what_if_failures"] == s["what_if_failures"] + 2, (s, s2)
+    assert s2["gate_failures"] == s["gate_failures"], (s, s2)
+    assert s2["non_conformance_rate"] == _rate_before_loop, (s, s2)
+    _expected2 = round(s2["gate_failures"] / s2["gates_run"], 4) if s2["gates_run"] else 0.0
+    assert abs(s2["non_conformance_rate"] - _expected2) < 1e-9, s2
+    # the defects the what-if opened say so on their own rows
+    _rows = client.get("/api/v1/vbs/qms/defects").json()["defects"]
+    assert any(r.get("what_if") is True for r in _rows), _rows[:2]
     # the bar is measured per-criterion, honest about what was NOT measured
     body = ("# W307\n\n## Objective\nSubstantive content long enough to clear the stub floor — the "
             "living QMS measures what it can and declares the rest unmeasured, never implied.\n\n"
@@ -2106,7 +2126,8 @@ def test_cognitive_cascade(client):
     assert "cascade" in body
     assert "status" in body
     assert body["status"] == "complete"
-    assert body["engines_run"] == 9
+    # W489 — six engines exist and run; MJM re-runs the SAME six, so include_mjm does not make nine.
+    assert body["engines_run"] == 6 and body["engines_compute"] is False
 
 
 def test_cognitive_single_engine(client):
@@ -18164,10 +18185,20 @@ def test_w487_the_plan_proposes_the_round_not_just_the_row(client):
     assert empty["batches"] == [] and empty["rows"] == 0
     assert "No row in scope cites a sweep class" in fu.render_batches({"items": []}, prompt)
 
-    # 8. a class the sweep never defined is never invented from a stray "C11" in prose
+    # 8. a class is counted where the row CITES it, never where it merely appears in prose.
+    #    W487 asserted the opposite half of this: that a bare "C5" anywhere in the text counted. W489
+    #    found what that cost — a register row DISCUSSING the batch mechanism ("C3 closes 4 rows; C7
+    #    and C1 are smaller") was counted into three batches it had no defect in, so the batch sizes
+    #    the plan proposes included rows by accident. The undefined-class half of the rule is
+    #    unchanged and still asserted below.
     fake = {"items": [{"id": "FU-9", "status": "open", "slot": "P1.18", "severity": "low", "files": [],
                        "title": "a C11 and C99 finding", "why": "cites C11, C99 and C5", "source": "W999"}]}
-    assert fu.row_classes(fake["items"][0]) == ["C5"], fu.row_classes(fake["items"][0])
+    assert fu.row_classes(fake["items"][0]) == [], fu.row_classes(fake["items"][0])
+    #    …and the three forms the sweep actually writes ARE read, including alongside an undefined one
+    cited = {"id": "FU-9b", "status": "open", "slot": "P1.18", "severity": "low", "files": [],
+             "title": "sweep x.py: 2 Tier-1 truth defects (C5,C11) — something",
+             "why": "S1.2 C3: the page shows; lists S8.1 (C8, a cockpit card)", "source": "W999"}
+    assert fu.row_classes(cited) == ["C3", "C5", "C8"], fu.row_classes(cited)
 
     # 9. it is served — and a grouping that RAISED is never served as a grouping
     body = client.get("/api/v1/plan/followups").json()
@@ -18193,7 +18224,11 @@ def test_w487_the_plan_proposes_the_round_not_just_the_row(client):
 
     # 11. the plan RECORDS the measured round shape, so it is not re-argued each round
     fp = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
-    assert "B1 TAKE A BATCH, NOT A ROW." in fp
+    # W489 — B1 gained its second half: the batch is taken REPO-WIDE, not scoped to the gate item
+    # (the same class closed 4 rows inside P1.18 and 12 across all items).
+    assert "B1 TAKE A BATCH, NOT A ROW — AND TAKE IT REPO-WIDE, NOT GATE-SCOPED." in fp
+    assert "--item filter costs rows for nothing" in fp, "the plan still tells the round to scope the batch"
+    assert "batches --item <the open item>" not in fp
     assert "The full suite is 46 minutes over 392 tests" in fp      # the measurement, not an impression
     assert "Never two pytest runs at once" in fp                    # the corruption rule, kept
     assert "B3 OVERLAP WHAT DOES NOT SHARE STATE." in fp
@@ -18445,3 +18480,369 @@ def test_w488_the_page_and_the_api_say_the_same_thing(client):
     for _promise in ("Generate an ISO 9001:2015-aligned Quality Management System with policies",
                      "Generate a comprehensive risk register covering"):
         assert _promise not in ms, _promise
+
+
+def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
+    """W489 — P1.18 + P2.4 + P2.8 + P2.9, the C3 batch taken REPO-WIDE (the first round to do so).
+
+    Twelve rows, one rule: A NUMBER OR LABEL IS PRESENTED AS A READING ONLY WHEN IT WAS COMPUTED FROM
+    THE THING IT NAMES. Otherwise it is absent, or labelled as what it actually is — a constant, a
+    default, a different quantity, or work that is planned and has not run.
+
+    The four shapes the sweep found: a hard-coded constant shown as a measurement (EMS +85%, a fixed
+    XAI rationale, JSX literals, 'Confidence 1'); a fallback shown as a result (a classification
+    nobody made at 70% confidence, an unparseable value plotted as zero); a different quantity
+    relabelled (process-lifetime CO2 as this run's, host CPU idleness as 'Work', a platform-wide rate
+    as this entity's); and a claim about a pipeline that does not run that way (nine engines that are
+    six, MJM re-running the same six, term frequencies called 'Key factors').
+    """
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── FU-138 (S12.1): a document nobody classified is not filed as if somebody had ────────────
+    import agentic_core.api.career as career_mod
+    src = (root / "agentic_core/api/career.py").read_text(encoding="utf-8")
+    assert 'category = "cv_history"\n        confidence = 0.7' not in src, \
+        "the except branch still hard-codes a category and a 70% confidence"
+    assert 'confidence = 0.7' not in src and 'data.get("confidence", 0.85)' not in src
+    assert '"uncategorized"' in src and "isinstance(conf_raw, (int, float))" in src
+    # …and the branches behave, not merely read well. A vacuous blind showed the source check above
+    # passes while an individual branch still coerces to a real category, so each is exercised.
+    import agentic_core.api.career as _career
+    _real_ai_text = _career.ai_text
+
+    async def _reply(payload):
+        async def _f(prompt, agent, **kw):
+            return payload, {"served_by": "native", "is_external": False}
+        return _f
+
+    import asyncio as _aio
+    for _payload, _why in (
+            ('{"category": "astrology_charts", "confidence": 0.99, "reasoning": "sure"}', "unknown category"),
+            ('{"category": "cv_history", "confidence": 0.93, "reasoning": "read it"}', "a real confidence"),
+            ('{"category": "cv_history", "reasoning": "no confidence given"}', "no confidence"),
+            ('not json at all', "unparseable reply")):
+        _career.ai_text = _aio.get_event_loop_policy().new_event_loop().run_until_complete(_reply(_payload))
+        try:
+            up = client.post("/api/v1/career/uploads/auto",
+                             files={"file": ("w489.txt", b"a plain document", "text/plain")})
+            assert up.status_code == 200, (up.status_code, up.text[:160])
+            cl = up.json()["classification"]
+            if _why == "a real confidence":
+                # the third state: a number the model actually returned is reported, not discarded
+                assert cl["category"] == "cv_history", (cl, _why)
+                assert cl["confidence"] == 0.93, (cl, _why)
+            elif _why == "no confidence":
+                # a real category the model DID name is kept; the absent confidence is absent, not 0.85
+                assert cl["category"] == "cv_history", (cl, _why)
+                assert cl["confidence"] is None, (cl, _why)
+            else:
+                assert cl["category"] == "uncategorized", (cl, _why)
+                assert cl["confidence"] is None, (cl, _why)
+        finally:
+            _career.ai_text = _real_ai_text
+    app_studio = (root / "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx").read_text(encoding="utf-8")
+    assert "confidence: number | null;" in app_studio, "the page cannot represent 'not classified'"
+    # (refutation) the branch must key on the CATEGORY: a file the classifier really did categorise
+    # but gave no confidence for was being reported as "NOT classified", contradicting the same
+    # screen's Unresolved list, which keys on the category.
+    assert "n.category !== 'uncategorized' ?" in app_studio, (
+        "the page decides 'classified' from the confidence rather than the category")
+    assert "was NOT classified" in app_studio and "(no confidence was returned)" in app_studio
+    assert "content is analysed and automatically filed into the matching category above." not in app_studio
+
+    # ── FU-156 (S5.10): an unreadable value is refused, never charted as zero ───────────────────
+    studio = (root / "apps/workstation-superapp/src/pages/synthesis/ReactorStudio.tsx").read_text(encoding="utf-8")
+    assert "isNaN(value) ? 0 : value" not in studio, "the page still manufactures a zero"
+    assert "parts[0] || '?'" not in studio
+    assert "rejected.push({ line: i + 1, text: line })" in studio
+    assert "no zero was supplied on your behalf" in studio
+    assert "if (rejected.length) {" in studio, "the rejected lines are collected and never surfaced"
+    # (refutation) `setResult(null);` and "never invents numbers" were BOTH present before this
+    # change, so asserting them proved nothing. The reject branch's own body is the anchor.
+    assert "Not charted — ${rejected.length} line" in studio
+    assert "rejected.map(r => `line ${r.line}" in studio
+    assert "never invents numbers" in studio          # the promise stays, and is now true
+
+    # ── FU-217 / FU-218 (S5.13, S5.14): no literals under a 'nothing was returned' note ─────────
+    bmd = (root / "apps/workstation-superapp/src/pages/synthesis/BusinessModelDashboard.tsx").read_text(encoding="utf-8")
+    for literal in ("15% Market Share", "28% Gain", "2.4x Multiplier", "30% reduction in attrition",
+                    "Adoption Velocity", "QEP Simulation Parameters"):
+        assert literal not in bmd, f"a hard-coded simulation figure survives: {literal}"
+    assert 'data-testid="no-sim-parameters"' in bmd and 'data-testid="no-market-strategy"' in bmd
+    player = (root / "apps/workstation-superapp/src/pages/synthesis/PresentationPlayer.tsx").read_text(encoding="utf-8")
+    assert "Autonomous Narration Active" not in player, "the player claims narration it cannot play"
+    assert "% Synchronized" not in player and "% of slide time" in player
+    # and the claim is false for a reason the guard can check: nothing here plays audio
+    # (refutation) the first cut asserted two strings that had NEVER been in this file, and the
+    # comment beside it claimed the guard checked the imports too. It does now: every module this
+    # player imports is read, and none of them may reach an audio API either.
+    _player_imports = re.findall(r"from '([^']+)'", player)
+    _audio_re = re.compile(r"speechSynthesis|new Audio\(|<audio|SpeechSynthesisUtterance")
+    assert not _audio_re.search(player), "the player itself reaches an audio API"
+    _local = [i for i in _player_imports if i.startswith(".")]
+    _checked = 0
+    for _imp in _local:
+        _p = (root / "apps/workstation-superapp/src/pages/synthesis" / _imp).resolve()
+        for _cand in (_p.with_suffix(".tsx"), _p.with_suffix(".ts")):
+            if _cand.exists():
+                assert not _audio_re.search(_cand.read_text(encoding="utf-8")), _cand.name
+                _checked += 1
+    assert _checked == len(_local), (f"{len(_local) - _checked} local import(s) of the player were "
+                                     f"not read, so the no-audio claim is not checked")
+
+    # ── FU-146 (S2.0): six engines run; three are PLANNED (P3.13) and never counted as run ──────
+    cog = (root / "agentic_core/cognitive")
+    assert not list((cog / "meta").glob("*_engine.py")), "a meta engine exists — update this guard"
+    built = sorted(p.stem for p in cog.glob("*_engine.py"))
+    assert built == ["aqal_engine", "hoshiyari_engine", "iman_engine", "inkashaf_engine",
+                     "samajh_engine", "soch_engine"], built
+    r = client.post("/api/v1/cognitive/cascade", json={"problem": "w489 guard", "include_mjm": True})
+    assert r.status_code == 200, r.text[:200]
+    body = r.json()
+    assert body["engines_run"] == 6, body["engines_run"]          # MJM re-runs the same six
+    assert body["engines_compute"] is False, body
+    assert "does not add engines" in body["engines_run_basis"], body["engines_run_basis"]
+    eng = client.get("/api/v1/cognitive/engines").json()
+    assert eng["total"] == 9 and eng["implemented_total"] == 6, eng
+    assert eng["layers_implemented"] == {"foundational": 6, "meta": 0}, eng
+    planned = [e for e in eng["engines"] if not e["implemented"]]
+    assert sorted(e["engine_id"] for e in planned) == ["niyyah", "tafakkur", "tawazun"], planned
+    # PLANNED, not disowned: each names the plan item that builds it (the Owner's own framing)
+    assert all(e["status"] == "planned" and "P3.13" in e["note"] for e in planned), planned
+    one = client.post("/api/v1/cognitive/engine", json={"engine_id": "niyyah", "input": "w489"}).json()
+    assert one.get("ran") is False and one.get("status") == "planned", one
+    assert "P3.13" in one.get("note", ""), one
+    vsb_src = (root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert "Nine Cognitive Engines" not in vsb_src and "Nine engines complete" not in vsb_src
+    assert "Six Cognitive Engines (fixed responses)" in vsb_src
+    spawn = (root / "apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx").read_text(encoding="utf-8")
+    assert "Nine Cognitive Engines" not in spawn
+    assert 'data-testid="spawn-pipeline-basis"' in spawn and "planned and do not run yet" in spawn
+    assert "cognitive_complete: { icon: CheckCircle2" not in spawn, "a literal still earns a green tick"
+
+    # ── FU-171 (S4.6): recall is opted into, and the floor's term list is named a term list ─────
+    from agentic_core.ai.gateway import ModelGateway
+    import inspect
+    for meth in ("query", "query_meta", "stream", "stream_meta"):
+        sig = inspect.signature(getattr(ModelGateway, meth))
+        assert sig.parameters["augment"].default is False, \
+            f"gateway.{meth} still defaults to injecting cross-request recall"
+    # the two conversational callers opt IN by name — the exception is explicit, not inherited
+    for p, why in ((root / "agentic_core/avatars/api.py", "avatar"),
+                   (root / "agentic_core/api/v138/ceo.py", "CEO chat")):
+        assert "augment=True" in p.read_text(encoding="utf-8"), f"the {why} lost its explicit opt-in"
+    floor = (root / "agentic_core/ai/native/engine.py").read_text(encoding="utf-8")
+    assert "## Key factors" not in floor, "the floor still calls a word count 'Key factors'"
+    assert "## Terms most frequent in your request" in floor
+    assert "not an analysis of the subject" in floor
+    assert "grounded in the input above" not in floor and "grounded in the input's salient terms" not in floor
+
+    # ── FU-151 (S13.2): a card shows the number the API computes, not two it never sends ────────
+    hub = (root / "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx").read_text(encoding="utf-8")
+    assert "insight.projects_count ?? 0" not in hub and "insight.confidence ?? 0) * 20" not in hub
+    assert "Math.max(1," not in hub, "a floored zero still reads as a measurement of 1"
+    assert 'data-testid="coe-score"' in hub and 'data-testid="coe-no-score"' in hub
+    ins = client.get("/api/v1/intelligence/insights").json()
+    for row in ins.get("insights", []):
+        assert "confidence" not in row and "outputs_count" not in row, row   # the page must not invent them
+
+    # ── FU-190 (S11.14): the state label is derived from the PLATFORM's work, not host idleness ──
+    bio = client.get("/api/v1/biometrics/status").json()
+    assert "workload" in bio and "platform_busy" in bio["workload"], bio.keys()
+    assert bio["cardiovascular"]["resource_flow_basis"].startswith("host CPU headroom"), bio["cardiovascular"]
+    assert "host_cpu_percent" in bio["cardiovascular"], bio["cardiovascular"]
+    hook = (root / "apps/workstation-superapp/src/hooks/useWorkstationBiometrics.ts").read_text(encoding="utf-8")
+    assert "b.cardiovascular.resource_flow > 60" not in hook, "an idle host still reads as WORKING"
+    assert "b.workload?.platform_busy" in hook
+    status_c = (root / "apps/workstation-superapp/src/components/BiometricStatus.tsx").read_text(encoding="utf-8")
+    assert "healthy flow (>80%)" not in status_c and "host has spare capacity" in status_c
+    assert "connection / urgency" not in status_c
+    intro = (root / "apps/workstation-superapp/src/pages/cognitive/Introspection.tsx").read_text(encoding="utf-8")
+    assert "Cardiovascular (Flow)" not in intro and "Host CPU headroom" in intro
+
+    # ── FU-184 (S13.8): a rationale is about the value it sits beside ───────────────────────────
+    struggling = client.get("/api/v1/qep/xai/explanations"
+                            "?ease_factor=1.3&interval_days=0&repetition=0&last_quality=1").json()
+    doing_well = client.get("/api/v1/qep/xai/explanations"
+                            "?ease_factor=2.9&interval_days=12&repetition=5&last_quality=5").json()
+    s_by = {c["feature"]: c["rationale"] for c in struggling["explanations"]}
+    w_by = {c["feature"]: c["rationale"] for c in doing_well["explanations"]}
+    assert s_by != w_by, "the rationales are identical for opposite inputs — they are fixed strings"
+    for f in ("ease_factor", "repetition", "last_quality"):
+        assert s_by[f] != w_by[f], f
+    assert "retains this ayah well" not in " ".join(s_by.values()), s_by["ease_factor"]
+    assert "floor" in s_by["ease_factor"], s_by["ease_factor"]        # 1.3 is the SM-2 floor
+    assert "RESETS" in s_by["last_quality"] and "ADVANCES" in w_by["last_quality"]
+    assert "no compounding" in s_by["repetition"], s_by["repetition"]
+
+    # ── FU-200 (S11.7): this run's emissions and the process total are different numbers ────────
+    from agentic_core.vbs.registry import ems as _ems
+    before = _ems.total_co2_kg
+    m1 = __import__("asyncio").get_event_loop_policy().new_event_loop().run_until_complete(_ems.measure(10.0))
+    m2 = __import__("asyncio").get_event_loop_policy().new_event_loop().run_until_complete(_ems.measure(10.0))
+    assert m1["co2_kg_this_run"] > 0, m1
+    assert m2["co2_kg_this_run"] == m1["co2_kg_this_run"], (
+        "the run figure grows with the process total — it IS the process total", m1, m2)
+    assert m2["process_total_co2_kg"] > m1["process_total_co2_kg"], (m1, m2)
+    assert m1["process_total_co2_kg"] >= before + m1["co2_kg_this_run"] - 1e-9
+    assert m1["efficiency_measured"] is False and m1["efficiency_gain_constant"] == 0.85
+    assert "not measured" in m1["basis"] and "since this server started" in m1["basis"]
+    swarm_src = (root / "agentic_core/api/swarm.py").read_text(encoding="utf-8")
+    assert '"efficiency_gain": float(_eff)' not in swarm_src
+    assert '"co2_kg_this_run"' in swarm_src and '"process_total_co2_kg"' in swarm_src
+    si = (root / "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    assert "EMS +" not in si, "the chip still presents a constant as this run's gain"
+    assert "constant, not measured" in si
+    # the chip is no longer emerald: a constant does not get the colour reserved for good news
+    assert "bg-emerald-500/15 text-emerald-400' title={cascade.management_systems.ems" not in si
+    assert 'data-testid="ems-chip"' in si and "bg-slate-700/40" in si
+
+    # ── FU-194 (S2.12): a policy score is called a policy score, and ties are said ──────────────
+    cands = client.get("/api/v1/economy/ventures/candidates?top=8").json()
+    assert "policy score" in cands["method"], cands["method"]
+    assert "×" not in cands["method"], "the method still claims a product of measurements"
+    assert "nothing here is measured" in cands["method_basis"], cands["method_basis"]
+    for c in cands["candidates"]:
+        assert "not a measurement" in c["score_basis"], c
+        assert "tied_with" in c, c
+    from agentic_core.economy.ventures import VentureIntelligence as _VI
+    _same = [{"id": f"v{i}", "name": f"V{i}", "outcome": 0.7, "value": 0.7, "benefit": 0.7,
+              "feasibility": 0.7, "strategic_fit": 0.7} for i in range(3)]
+    _ranked = _VI(_same).ranked(3)
+    assert len({r["score"] for r in _ranked}) == 1, _ranked      # identical inputs, identical score
+    assert all(r["tied_with"] == 2 for r in _ranked), (
+        "three candidates share a score and the rows do not say so", _ranked)
+    ops = (root / "apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
+    assert "Investment candidates — ranked;" not in ops and "by eligibility score" in ops
+    assert "policy score {c.score}" in ops
+
+    # ── FU-189 (S9.4): a what-if gate on typed numbers does not move the rate ───────────────────
+    from agentic_core.vbs.registry import qms as _qms
+    s0 = _qms.defect_summary()
+    g = client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.10, "stubs_found": True})
+    assert g.status_code == 200, g.text[:160]
+    assert g.json()["passed"] is False and g.json()["counted_in_rate"] is False, g.json()
+    s1 = _qms.defect_summary()
+    assert s1["gates_run"] == s0["gates_run"], "a typed what-if still counts as a delivery gate"
+    assert s1["gate_failures"] == s0["gate_failures"], "a typed what-if still counts as a failure"
+    assert s1["what_if_gates"] == s0["what_if_gates"] + 1, (s0, s1)
+    assert "platform" in s1["rate_basis"] and "not one entity" in s1["rate_basis"], s1["rate_basis"]
+    panel = (root / "apps/workstation-superapp/src/components/VBSSystemsPanel.tsx").read_text(encoding="utf-8")
+    assert "a real rate, 0.0 with no history" not in panel, "the chip still calls it a real rate"
+    assert "(platform-wide)" in panel and "run a what-if gate:" in panel
+    assert "(stateful, all-time):" not in swarm_src
+    assert "NOT this run" in swarm_src
+
+    # ══ W489 REFUTATION LEGS — 19 verified findings against this round's own diff ═══════════════
+    # Five lenses, each finding verified in its own worktree. The round broke four pre-existing tests
+    # by renaming fields without grepping consumers, named the wrong plan item in eleven places, and
+    # — twice — re-committed its own class inside its own fix. Fourteen of the fixes were then found
+    # UNGUARDED by blinds. One leg each.
+
+    # ── a payload never carries BOTH the old names and the new ones ─────────────────────────────
+    assert '"efficiency_gain":' not in swarm_src or '"efficiency_gain_constant"' in swarm_src
+    assert '"total_co2_kg": _ems' not in swarm_src, \
+        "the cascade block still emits the old lifetime-total key as this run's"
+    assert '"efficiency_gain": 0.85' not in swarm_src and '"efficiency_gain": float(_eff)' not in swarm_src
+
+    # ── a cascade that RAISED reports zero engines, not six ─────────────────────────────────────
+    import agentic_core.api.vsb as _vsb_mod
+
+    class _Boom:
+        async def execute_cascade(self, *a, **k):
+            raise RuntimeError("w489 induced cascade failure")
+
+    _real_cascade = _vsb_mod._cascade
+    _vsb_mod._cascade = _Boom()
+    try:
+        _sp = client.post("/api/v1/vsb/spawn", json={"challenge": "w489 failure path"})
+        assert _sp.status_code == 200, _sp.text[:160]
+        _evs = [json.loads(l[6:]) for l in _sp.text.splitlines() if l.startswith("data: ")]
+        _cc = next((e for e in _evs if e.get("stage") == "cognitive_complete"), None)
+        assert _cc is not None, [e.get("stage") for e in _evs]
+        _d = _cc.get("data") or {}
+        assert _d.get("engines_run") == 0, ("a cascade that raised reported engines as run", _cc)
+        assert _d.get("ran") is False and "FAILED" in _cc.get("label", ""), _cc
+        assert "no engine was reached" in str(_d.get("basis")), _d
+    finally:
+        _vsb_mod._cascade = _real_cascade
+
+    class _MjmBoom:
+        async def run_lifecycle(self, *a, **k):
+            raise RuntimeError("w489 induced mjm failure")
+
+    _real_mjm = _vsb_mod._mjm
+    _vsb_mod._mjm = _MjmBoom()
+    try:
+        _sp2 = client.post("/api/v1/vsb/spawn", json={"challenge": "w489 mjm failure"})
+        _evs2 = [json.loads(l[6:]) for l in _sp2.text.splitlines() if l.startswith("data: ")]
+        _mc = next((e for e in _evs2 if e.get("stage") == "mjm_complete"), None)
+        assert _mc is not None and "FAILED" in _mc.get("label", ""), _mc
+        assert (_mc.get("data") or {}).get("ran") is False, _mc
+    finally:
+        _vsb_mod._mjm = _real_mjm
+
+    # ── the dashboard reads fields writers actually emit ────────────────────────────────────────
+    assert "data?.market_strategy" not in bmd, "the page reads a field no writer in the repo emits"
+    assert "sim_results?.parameters" not in bmd and "sim_results.parameters" not in bmd
+    assert "data?.market_summary || data?.roi_analysis" in bmd
+    assert "const SIM_KEYS" in bmd and "drad_resilience" in bmd
+    _api_src = (root / "agentic_core/synthesis/api.py").read_text(encoding="utf-8")
+    for _k in ("market_summary", "roi_analysis", "ese_adoption", "aro_efficiency",
+               "bto_roadmap", "drad_resilience"):
+        assert _k in _api_src, (f"the dashboard reads {_k}, which the API no longer specifies", _k)
+
+    # ── the rationale follows the branch the engine ACTUALLY took ───────────────────────────────
+    # a failing recall with many repetitions: the engine resets to 1 day, so nothing may claim
+    # compounding — the first cut branched on repetition alone and contradicted its own sibling row
+    _reset = client.get("/api/v1/qep/xai/explanations"
+                        "?ease_factor=2.5&interval_days=10&repetition=5&last_quality=1").json()
+    _r_by = {c["feature"]: c["rationale"] for c in _reset["explanations"]}
+    assert _reset["next_interval_days"] == 1, _reset["next_interval_days"]
+    assert "compounds" not in _r_by["repetition"], _r_by["repetition"]
+    assert "discarded" in _r_by["repetition"], _r_by["repetition"]
+    assert "reset" in _r_by["ease_factor"], _r_by["ease_factor"]
+    # …and at repetition 0/1 the engine returns a FLAT interval, so ease does not lengthen anything
+    _flat = client.get("/api/v1/qep/xai/explanations"
+                       "?ease_factor=2.9&interval_days=10&repetition=1&last_quality=5").json()
+    _f_by = {c["feature"]: c["rationale"] for c in _flat["explanations"]}
+    assert _flat["next_interval_days"] == 6, _flat["next_interval_days"]
+    assert "does not affect this interval" in _f_by["ease_factor"], _f_by["ease_factor"]
+    # …and at the floor, WITH compounding, the interval still grows — it does not "add no growth"
+    _floor_c = client.get("/api/v1/qep/xai/explanations"
+                          "?ease_factor=1.3&interval_days=6&repetition=5&last_quality=4").json()
+    _fc = {c["feature"]: c["rationale"] for c in _floor_c["explanations"]}
+    assert _floor_c["next_interval_days"] > 6, _floor_c["next_interval_days"]
+    assert "still grows" in _fc["ease_factor"], _fc["ease_factor"]
+    assert "adds no growth" not in _fc["ease_factor"], _fc["ease_factor"]
+
+    # ── a salience weight is named one, at the API and on the card ──────────────────────────────
+    _ins = client.get("/api/v1/intelligence/insights").json()
+    assert "salience" in str(_ins.get("score_meaning", "")).lower(), _ins.get("score_meaning")
+    for _row in _ins.get("insights", []):
+        assert "salience weight" in str(_row.get("score_basis", "")), _row
+    assert "Salience weight" in hub and "Insight score" not in hub
+    assert "not a measurement" in hub
+
+    # ── the panel says what a what-if did, and promises only what it can do ─────────────────────
+    assert "failed gates open them automatically" not in panel
+    assert "including a failed what-if" in panel
+    assert "gateRes.counted_in_rate === false" in panel and "not counted in the rate" in panel
+
+    # ── EVERY writer of the platform-wide rate says so, not just the one the round edited ───────
+    for _p, _need in ((root / "agentic_core/api/vsb.py", "platform-wide, all entities and tenants"),
+                      (root / "apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx",
+                       "(platform-wide)")):
+        assert _need in _p.read_text(encoding="utf-8"), f"{_p.name} still presents the rate as its own"
+    assert "Non-conformance rate (stateful):" not in (root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+
+    # ── the planning mechanism this round used: a class is counted where it is CITED ────────────
+    import agentic_core.plan_followups as fu
+    assert fu.row_classes({"title": "sweep x.py: 2 Tier-1 truth defects (C3,C5) — …", "why": ""}) == ["C3", "C5"]
+    assert fu.row_classes({"title": "", "why": "S12.1 C3: the page shows…"}) == ["C3"]
+    assert fu.row_classes({"title": "", "why": "lists S1.1 (C3, the cockpit card) and S8.1 (C8, …)"}) == ["C3", "C8"]
+    # …and NOT where a row merely discusses one (this row's own prose swelled three batches)
+    assert fu.row_classes({"title": "Batches are scoped to the gate item",
+                           "why": "C3 (invented or constant readings) closes 4 rows; C7 and C1 are smaller"}) == []

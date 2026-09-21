@@ -54,20 +54,37 @@ async def auto_classify_upload(file: UploadFile = File(...)):
 
     result, provenance = await ai_text(prompt, "career_classifier")
 
-    # Parse AI response
+    # W489 (sweep S12.1, C3) — A DOCUMENT NOBODY CLASSIFIED IS NOT FILED AS IF SOMEBODY HAD.
+    # This block invented three readings. On the native floor the reply is not JSON, so the `except`
+    # branch hard-coded category="cv_history" and confidence=0.7 — and the page then told the user
+    # '"person_spec.txt" classified as Old CVs (70% confidence)' beneath a line promising the content
+    # had been analysed. Nothing had been read: the 70% was a literal, and the file was really filed
+    # under CV history, so the invented label went on to shape every later /career/generate prompt.
+    # A missing or unknown category was coerced to cv_history the same way, and a reply carrying no
+    # confidence at all was given 0.85. Now: no classification means 'uncategorized' (a category the
+    # page already handles, listing those files as Unresolved) and a confidence of None — absent,
+    # because absent is what it is. A number is only reported when the model actually returned one.
     try:
         # Strip markdown fences if present
         clean = result.strip().strip("```json").strip("```").strip()
         data = json.loads(clean)
-        category = data.get("category", "cv_history")
+        category = data.get("category") or "uncategorized"
         if category not in _CATEGORIES:
-            category = "cv_history"
-        confidence = float(data.get("confidence", 0.85))
-        reasoning = data.get("reasoning", "Document classified by content analysis.")
+            category = "uncategorized"
+        conf_raw = data.get("confidence")
+        confidence = (float(conf_raw) if isinstance(conf_raw, (int, float))
+                      and not isinstance(conf_raw, bool) else None)
+        reasoning = data.get("reasoning") or (
+            "The classifier returned a category with no reasoning." if confidence is not None else
+            "The classifier named a category but gave no confidence, so none is reported.")
+        if category == "uncategorized":
+            confidence = None
+            reasoning = "No category was returned that matches the filing categories — nothing was classified."
     except Exception:
-        category = "cv_history"
-        confidence = 0.7
-        reasoning = "Could not parse AI classification — defaulted to CV history."
+        category = "uncategorized"
+        confidence = None
+        reasoning = ("The classifier's reply could not be read as a classification, so nothing was "
+                     "classified — this file is filed as uncategorized, not under a guessed category.")
 
     # Store the file via ingestion manager
     from agentic_core.ingestion.api import ingestion_manager

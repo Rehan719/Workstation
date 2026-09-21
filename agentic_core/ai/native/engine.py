@@ -155,9 +155,18 @@ class NativeReasoningEngine:
         else:
             body = (
                 f"{lead}## Understanding\nThe request concerns: {subject} (domain: {domain}).\n\n"
-                f"## Key factors\n{self._bullets(terms, 6)}\n\n"
+                # W489 (sweep S4.6, C3) — "Key factors" named an analysis nobody performed. The bullets
+                # are the most frequent non-stopword words and adjacent bigrams in the request text; a
+                # term appearing often is not a factor in the subject. The heading now says what the list
+                # actually is, so a reader cannot mistake a word count for a judgement — and "grounded in
+                # the input" is gone, which read as "grounded in YOUR subject" when the input could carry
+                # another request's recalled text (closed at the gateway in the same round).
+                f"## Terms most frequent in your request\n"
+                f"_Extracted by counting words and adjacent pairs — not an analysis of the subject._\n"
+                f"{self._bullets(terms, 6)}\n\n"
                 f"## Native approach\nWorkstation composes a structured response from its own "
-                f"process-intelligence and knowledge for the agent '{agent}', grounded in the input above.\n\n"
+                f"process-intelligence and knowledge for the agent '{agent}', framing the request above "
+                f"rather than analysing it.\n\n"
                 f"## Next steps\n{self._plan(domain)}"
             )
         return f"{_MARKER}\n\n{body}"
@@ -246,9 +255,11 @@ class NativeReasoningEngine:
         if has("summary", "assessment", "faithful", "understanding", "concept", "boundary",
                "synthesis", "deliverable", "integrated"):
             return (f"Subject: {subject} (domain: {domain}).\n"
-                    f"Native structured synthesis grounded in the input's salient terms:\n{self._bullets(terms, 6)}")
-        # generic, still grounded
-        return (f"Native structured content for '{title}', grounded in: {subject} (domain: {domain}).\n"
+                    f"Structured frame over the terms most frequent in the request (a term count, not an "
+                    f"analysis):\n{self._bullets(terms, 6)}")
+        # generic — a frame over the request's own words, which is all the floor has
+        return (f"Native structured frame for '{title}' over: {subject} (domain: {domain}). The list below "
+                f"is the request's most frequent terms, not findings about them.\n"
                 f"{self._bullets(terms, 5)}")
 
     # ── small builders ───────────────────────────────────────────────────────────

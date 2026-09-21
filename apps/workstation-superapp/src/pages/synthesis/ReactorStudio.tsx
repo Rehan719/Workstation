@@ -17,13 +17,25 @@ interface StudioResult {
 }
 
 // Parse "label, value[, z]" per line into points (real user data — never invented).
-function parseSeries(text: string): StudioPoint[] {
-  return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+// W489 (sweep S5.10, C3) — A LINE THAT IS NOT A NUMBER IS REFUSED, NOT PLOTTED AS ZERO.
+// This coerced any unparseable value to 0 and any empty label to '?', so 'Q4, n/a' (or 'Q4,', or a
+// bare 'Q4') became a real plotted bar at zero — directly under a header promising the page never
+// invents numbers — and the backend then computed min/mean/range and wrote an insight narrative over
+// that manufactured zero. Rejected lines are now named back to the reader by line number and nothing
+// is sent for them. Zero is a value someone can mean; it is never something the page supplies.
+function parseSeries(text: string): { points: StudioPoint[]; rejected: { line: number; text: string }[] } {
+  const points: StudioPoint[] = [];
+  const rejected: { line: number; text: string }[] = [];
+  text.split('\n').forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
     const parts = line.split(/[,|]/).map(p => p.trim());
     const value = parseFloat(parts[1]);
+    if (!parts[0] || !Number.isFinite(value)) { rejected.push({ line: i + 1, text: line }); return; }
     const z = parts[2] !== undefined && parts[2] !== '' ? parseFloat(parts[2]) : null;
-    return { label: parts[0] || '?', value: isNaN(value) ? 0 : value, z: z != null && !isNaN(z) ? z : null };
-  }).filter(p => p.label);
+    points.push({ label: parts[0], value, z: z != null && Number.isFinite(z) ? z : null });
+  });
+  return { points, rejected };
 }
 
 const CHARTS = [
@@ -90,7 +102,15 @@ export const ReactorStudio: React.FC = () => {
   const [error, setError] = useState('');
 
   const render = async () => {
-    const series = parseSeries(seriesText);
+    const { points: series, rejected } = parseSeries(seriesText);
+    if (rejected.length) {
+      // W489 — the reader is told WHICH lines carried no number, instead of seeing them charted as zero
+      setError(`Not charted — ${rejected.length} line${rejected.length > 1 ? 's' : ''} had no readable number: `
+        + rejected.map(r => `line ${r.line} ("${r.text}")`).join(', ')
+        + '. Fix or remove them; nothing was sent, and no zero was supplied on your behalf.');
+      setResult(null);
+      return;
+    }
     if (!series.length) { setError('Add at least one data point (label, value).'); return; }
     setRunning(true); setError(''); setResult(null);
     try {

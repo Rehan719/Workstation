@@ -113,7 +113,17 @@ def real_candidates(exclude_vsb: str = "", cap: int = 40,
 
 
 class VentureIntelligence:
-    """Scores, ranks, and allocates the user-project investment budget for maximal outcome/value/benefit."""
+    """Scores and allocates the user-project investment budget from POLICY CONSTANTS, not measurements.
+
+    W489 (sweep S2.12, C3) — this said "scores, ranks … for maximal outcome/value/benefit", and the
+    surfaces called the result a ranking. The five inputs are eligibility constants keyed on a
+    handful of booleans — whether a board exists, whether a cycle has run, which domain bucket the
+    entity is in — so every governed, once-cycled VSB in the same bucket scores IDENTICALLY (0.6925),
+    and the only continuous term moves the total by 0.0025 per operating cycle, capped at 0.0375.
+    A figure that cannot distinguish two entities is not a ranking of them. The scoring is unchanged
+    (it is a reasonable eligibility policy); what changes is that it is named for what it is, ties are
+    reported rather than hidden by a stable sort, and the method string no longer says "×" for what
+    is a weighted SUM."""
 
     def __init__(self, candidates: Optional[List[Dict[str, Any]]] = None):
         # accept real user projects; fall back to the curated demo set (honest: sample candidates)
@@ -133,8 +143,16 @@ class VentureIntelligence:
                      + self._g(v, "strategic_fit") * 0.10, 4)
 
     def ranked(self, top: int = 5) -> List[Dict[str, Any]]:
+        """Candidates by POLICY SCORE, descending. Each row says how many others share its score, so a
+        reader can see that an order between equals is arbitrary (a stable sort keeps harvest order)."""
         scored = [{**v, "score": self.score(v)} for v in self.candidates]
         scored.sort(key=lambda x: x["score"], reverse=True)
+        counts: Dict[float, int] = {}
+        for s in scored:
+            counts[s["score"]] = counts.get(s["score"], 0) + 1
+        for s in scored:
+            s["score_basis"] = "policy constants (stage/operating/governance/domain) — not a measurement"
+            s["tied_with"] = counts[s["score"]] - 1
         return scored[:top]
 
     def allocate(self, budget: float, top: int = 5) -> Dict[str, Any]:
@@ -148,7 +166,13 @@ class VentureIntelligence:
                               "score": w["score"], "amount_wst": amount})
         return {
             "budget_wst": round(max(0.0, budget), 2),
-            "method": "outcome × value × benefit × feasibility × strategic-fit",
+            # W489 — it is a weighted SUM of policy constants, and it was described as a product of
+            # measurements. Both halves of that were wrong.
+            "method": ("policy score: weighted sum of eligibility constants "
+                       "(outcome .30 + value .25 + benefit .20 + feasibility .15 + strategic_fit .10)"),
+            "method_basis": ("the five inputs are constants keyed on stage, whether a cycle has run, "
+                             "whether the entity is governed, and its domain bucket — nothing is measured; "
+                             "entities in the same bucket tie, and tied positions split the budget evenly"),
             "using_demo_candidates": self.using_demo,
             "positions": positions,
             "disclaimer": "Virtual/simulated investment — no real funds moved.",

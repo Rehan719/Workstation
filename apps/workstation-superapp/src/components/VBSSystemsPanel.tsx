@@ -11,7 +11,8 @@ import { apiJson, errorMessage } from '../lib/api';
 
 interface SystemRow { id: string; name: string; owned: boolean; real: string[]; simulated: string[]; owns?: string[]; owned_by?: string }
 interface DefectRow { id: string; label: string; status: string; opened_at: string; correction?: string | null; meta?: { coverage?: number; stubs_found?: boolean }; reverify_basis?: string }
-interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number }
+// W489 — rate_basis says WHAT the rate is over; what-if gates are counted apart from it
+interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number; rate_basis?: string; what_if_gates?: number; what_if_failures?: number }
 
 function Chip({ tone, children, title }: { tone: 'ok' | 'warn' | 'dim'; children: React.ReactNode; title?: string }) {
   const cls = tone === 'ok' ? 'bg-emerald-500/15 text-emerald-400' : tone === 'warn' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400';
@@ -45,7 +46,10 @@ export const VBSSystemsPanel: React.FC = () => {
   // ── QMS gate runner ──
   const [gateCov, setGateCov] = useState(0.97);
   const [gateStubs, setGateStubs] = useState(false);
-  const [gateRes, setGateRes] = useState<{ passed: boolean; min_coverage: number; non_conformance_rate: number } | null>(null);
+  // W489 (refutation) — the API's counted_in_rate/basis were dropped by this type, so the panel
+  // showed FAILED with no hint that the run was a what-if excluded from the rate above it.
+  const [gateRes, setGateRes] = useState<{ passed: boolean; min_coverage: number; non_conformance_rate: number;
+    counted_in_rate?: boolean; basis?: string } | null>(null);
   const runGate = async () => {
     setBusy('gate'); setErr('');
     try {
@@ -154,15 +158,25 @@ export const VBSSystemsPanel: React.FC = () => {
             <div className="flex items-center gap-1.5 flex-wrap mb-3">
               <Chip tone="dim">{defects.summary.gates_run} gates run</Chip>
               <Chip tone={defects.summary.gate_failures > 0 ? 'warn' : 'ok'}>{defects.summary.gate_failures} failures</Chip>
-              <Chip tone="dim" title="gate failures / gates run — a real rate, 0.0 with no history">
-                non-conformance {Math.round(defects.summary.non_conformance_rate * 100)}%
+              {/* W489 (sweep S9.4, C3) — the title said "a real rate" of what the reader takes to be
+                  this entity's deliveries. One QMS store serves the whole platform, and the Gate button
+                  below fed it a coverage number the user types. The rate now says what it is over, and
+                  what-if gates are counted apart from it. */}
+              <Chip tone="dim" title={defects.summary.rate_basis
+                || 'gate failures / gates run across all deliveries on this platform, 0.0 with no history'}>
+                non-conformance {Math.round(defects.summary.non_conformance_rate * 100)}% (platform-wide)
               </Chip>
+              {(defects.summary.what_if_gates ?? 0) > 0 && (
+                <Chip tone="dim" title="gates run on typed metrics — excluded from the rate">
+                  {defects.summary.what_if_gates} what-if
+                </Chip>
+              )}
               <Chip tone={(defects.summary.open ?? 0) > 0 ? 'warn' : 'ok'}>{defects.summary.open ?? 0} open</Chip>
               <Chip tone="dim">{defects.summary.closed ?? 0} closed</Chip>
             </div>
           )}
           <div className="flex items-center gap-2 flex-wrap mb-3">
-            <span className="text-[9px] font-black uppercase text-slate-500">run a gate:</span>
+            <span className="text-[9px] font-black uppercase text-slate-500" title="a what-if over figures you type — recorded separately, it does not move the rate above">run a what-if gate:</span>
             <input type="number" step="0.01" min={0} max={1} value={gateCov} onChange={e => setGateCov(Number(e.target.value))}
               className="w-20 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-slate-300" aria-label="coverage" />
             <label className="text-[9px] text-slate-500 flex items-center gap-1">
@@ -171,7 +185,10 @@ export const VBSSystemsPanel: React.FC = () => {
             <Button onClick={runGate} disabled={!!busy} className="flex items-center gap-1.5 bg-aura text-sovereign text-[10px]">
               {busy === 'gate' ? <Loader2 size={11} className="animate-spin" /> : <Play size={11} />} Gate
             </Button>
-            {gateRes && <Chip tone={gateRes.passed ? 'ok' : 'warn'}>{gateRes.passed ? 'PASSED' : `FAILED (min ${gateRes.min_coverage})`}</Chip>}
+            {gateRes && <Chip tone={gateRes.passed ? 'ok' : 'warn'} title={gateRes.basis}>{gateRes.passed ? 'PASSED' : `FAILED (min ${gateRes.min_coverage})`}</Chip>}
+            {gateRes && gateRes.counted_in_rate === false && (
+              <Chip tone="dim" title={gateRes.basis}>what-if — not counted in the rate</Chip>
+            )}
           </div>
           <div className="max-h-40 overflow-y-auto space-y-1 mb-2">
             {(defects?.defects ?? []).map(d => (
@@ -181,7 +198,7 @@ export const VBSSystemsPanel: React.FC = () => {
                 <span className={d.status === 'open' ? 'text-amber-400' : d.status === 'closed' ? 'text-emerald-400' : 'text-sky-300'}>{d.status}</span>
               </button>
             ))}
-            {defects && defects.defects.length === 0 && <p className="text-[10px] text-slate-600 italic">no defects recorded — failed gates open them automatically</p>}
+            {defects && defects.defects.length === 0 && <p className="text-[10px] text-slate-600 italic">no defects recorded — a failed gate opens one, including a failed what-if</p>}
           </div>
           {selRow && (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 space-y-2">

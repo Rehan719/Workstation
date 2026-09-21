@@ -673,15 +673,31 @@ SWEEP_CLASSES = {
     "C9": "a decision that breaks its own rule",
     "C10": "counts or lists that do not match what is served",
 }
-_CLASS_RE = re.compile(r"\bC(\d{1,2})\b")
+# W489 — a class is counted only where the row CITES it in the sweep's own evidence form, never
+# wherever the two characters happen to appear in prose. The first form read `\bC(\d{1,2})\b` across
+# the whole of title+why, so a row that merely DISCUSSED a class — "C3 (invented or constant
+# readings) closes 4 rows inside P1.18 and 12 across all items" — was counted into C1, C3 and C7 and
+# swelled three batches it had no defect in. A batch count that includes rows by accident is the same
+# defect the batch is for: a figure presented as a measurement of something it did not measure.
+#   The two forms the sweep actually writes:
+#     title — "sweep products.py: 3 Tier-1 truth defects (C3,C4,C7) — …"   a parenthesised class list
+#     why   — "S12.1 C3: …"                                                a sweep id, then the class
+#     why   — "lists S1.1 (C3, VSB Cockpit …) and S8.1 (C8, …)"            a sweep id, then (class, prose)
+# The three forms were read off the rows that exist, not guessed: narrowing to the first two alone
+# silently dropped FU-231's two real citations, which is the same defect in the other direction.
+_CLASS_LIST_RE = re.compile(r"\(\s*C\d{1,2}(?:\s*,\s*C\d{1,2})*\s*\)")
+_CLASS_IN_LIST_RE = re.compile(r"C(\d{1,2})")
+_CLASS_CITE_RE = re.compile(r"\bS\d{1,3}(?:\.\d{1,3})?\s*\(?\s*C(\d{1,2})\b")
 
 
 def row_classes(row: Dict[str, Any]) -> List[str]:
-    """The sweep classes a row's own evidence cites. Empty when it cites none — an older row, or one
-    from a ledger pass rather than the sweep; those are never guessed at."""
+    """The sweep classes a row's own evidence CITES, in the sweep's own citation form. Empty when it
+    cites none — an older row, or one from a ledger pass rather than the sweep; never guessed at, and
+    never inferred from a class name merely mentioned in the row's prose (W489)."""
     text = f"{row.get('title') or ''} {row.get('why') or ''}"
-    found = {f"C{m}" for m in _CLASS_RE.findall(text) if f"C{m}" in SWEEP_CLASSES}
-    return sorted(found, key=lambda c: int(c[1:]))
+    found = {f"C{m}" for lst in _CLASS_LIST_RE.findall(text) for m in _CLASS_IN_LIST_RE.findall(lst)}
+    found |= {f"C{m}" for m in _CLASS_CITE_RE.findall(text)}
+    return sorted((c for c in found if c in SWEEP_CLASSES), key=lambda c: int(c[1:]))
 
 
 def batches(register: Any, prompt_text: str, slot: Optional[str] = None) -> Dict[str, Any]:

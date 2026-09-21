@@ -726,7 +726,10 @@ async def cascade_orchestration(req: CascadeRequest):
         "Measured outcomes for THIS run (judge against these — do not merely restate the text):\n"
         f"- QMS gate: {gate_word(quality.get('qms_gate_passed'))}\n"
         f"- Delivery coverage: {quality.get('delivery_coverage')}\n"
-        f"- QMS non-conformance rate (stateful, all-time): {quality.get('qms_non_conformance_rate')}\n"
+        # W489 (sweep S9.4, C3) — this line sits under "Measured outcomes for THIS run" and is neither
+        # this run's nor this entity's: one QMS store serves every entity and tenant on the platform.
+        f"- QMS non-conformance rate (NOT this run — platform-wide, all-time, every entity): "
+        f"{quality.get('qms_non_conformance_rate')}\n"
         f"- Stub/placeholder content detected: {quality.get('stub_found')}\n"
         f"- Served in-house: {not provenance['any_external']} (by: {provenance['served_by']})\n"
         + (f"- Recent cascade-tier call success rate: {_ops_stats.get('success_rate')} "
@@ -825,11 +828,16 @@ async def cascade_orchestration(req: CascadeRequest):
             "insights_count": _insights, "energy_wh_estimate": _energy_wh,
             "caveat": "energy is a duration-derived estimate; $/Wh is the catalogue's simulated constant",
         }
-        _eff = await ems.monitor_efficiency(_energy_wh)
+        # W489 (sweep S11.7, C3) — this block sat under "Measured outcomes for THIS run" and reported
+        # a fixed 0.85 as an efficiency GAIN and the process-lifetime CO2 accumulator as the run's own.
+        _ems = await ems.measure(_energy_wh)
         management_systems["ems"] = {
-            "efficiency_gain": float(_eff), "total_co2_kg": round(float(ems.total_co2_kg), 6),
+            "co2_kg_this_run": _ems["co2_kg_this_run"],
+            "process_total_co2_kg": _ems["process_total_co2_kg"],
+            "efficiency_gain_constant": _ems["efficiency_gain_constant"],
+            "efficiency_measured": False,
             "energy_wh_estimate": _energy_wh,
-            "caveat": "kgCO2/Wh + efficiency are the catalogue's simulated constants over measured duration",
+            "caveat": _ems["basis"],
         }
     except Exception:
         pass

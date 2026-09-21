@@ -2291,8 +2291,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -2437,8 +2437,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -2519,8 +2519,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -2606,8 +2606,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -2873,8 +2873,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -3100,8 +3100,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -3193,8 +3193,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -3211,8 +3211,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -3280,8 +3280,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -3387,8 +3387,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -3664,8 +3664,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -3680,8 +3680,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W489",
       "note": ""
     },
     {
@@ -4391,6 +4391,44 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-256",
+      "title": "The 29 generation callers that carried cross-request recall were never probed for what the recall was doing to their output",
+      "why": "W489 flipped the gateway's augment default to False after finding that query/stream/stream_meta still inherited True — 29 generation-class callers, including the live nine-stage synthesis cascade, the CEO blueprint and the digital-twin modeller, had another request's content prepended and presented as analysis of their own subject. The flip stops it happening again, but nothing establishes what it was doing while it happened: no stored output is marked as possibly contaminated, and the memory pool those calls WROTE (gateway logs every interaction) still holds the blended text, so a future recall-enabled caller can retrieve it. FIX: (a) sample the persisted outputs of those 29 surfaces for text that plainly came from another request (the native floor's tell is a Domain: or Problem: label whose value belongs to a different subject) and count how many are affected; (b) decide with the Owner whether contaminated stored outputs are relabelled, regenerated or left with a disclosure; (c) check whether memory rows written from augmented prompts should be marked so recall never re-serves a blend as one tenant's own.",
+      "source": "W489 refutation (recall-default lens, follow-on)",
+      "found": "2026-09-21",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/ai/memory.py",
+        "agentic_core/api/synthesis_studio.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-257",
+      "title": "The six cognitive engines still return fixed markers — W489 made the surfaces honest about it, the engines themselves are P3.12's work",
+      "why": "W489 corrected every surface that claimed nine engines or presented their literals as analysis: the cascade now reports six, says they do not compute, and marks the three meta engines as PLANNED under P3.13. That closes the TRUTH row (FU-146). It does not make the engines work: inkashaf still returns {'status':'SUCCESS','insight':'revealed'}, aqal 'computed', iman alignment 0.99, and MJM re-runs the same six and returns 'optimised' with compliance 1.0 — all persisted into the VSB entity and its genome on every spawn. FU-229 (P3.12) already carries the engines themselves; this row records what W489 learned that the P3.12 work must also handle: the spawn path PERSISTS cascade_analysis and mjm_result into the entity and the genome, so making the engines real means deciding what happens to the entities already carrying the markers, and the spawn feed's new engines_run/ran/basis fields are the contract P3.12 must keep populating truthfully.",
+      "source": "W489 (the C3 batch — found while making the surfaces honest)",
+      "found": "2026-09-21",
+      "files": [
+        "agentic_core/cognitive/cascade_v16.py",
+        "agentic_core/mjm/mjm.py",
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.12",
       "status": "open",
       "closed_by": null,
       "note": "",

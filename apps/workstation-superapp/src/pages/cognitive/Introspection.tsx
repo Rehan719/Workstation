@@ -102,7 +102,9 @@ export const Introspection: React.FC = () => {
           </h3>
           <div className="space-y-6">
              <LoadVisual label={`Metabolic (ATP ${(bio.metabolic.atp_ratio * 100).toFixed(0)}%)`} value={Math.round(bio.metabolic.efficiency * 100)} color="bg-aura" />
-             <LoadVisual label={`Cardiovascular (Flow)`} value={Math.round(bio.cardiovascular.resource_flow)} color="bg-highlight" />
+             {/* W489 (sweep S11.14, C3) — this bar is 100 − host CPU%: a full bar means the HOST IS
+                 IDLE, which read as a healthy platform. Labelled for what it measures. */}
+             <LoadVisual label={`Host CPU headroom`} value={Math.round(bio.cardiovascular.resource_flow)} color="bg-highlight" />
              <LoadVisual label={`Immune Health`} value={Math.round(bio.immune.health * 100)} color="bg-vital" />
           </div>
           <div className="grid grid-cols-2 gap-3 mt-4">

@@ -684,6 +684,8 @@ async def intelligence_insights() -> dict:
                 "title": f"{len(projects)} active projects across {len(by_realm)} realm(s)",
                 "detail": f"{_realm_phrase}. {total_outputs} deliverables generated.",
                 "score": min(1.0, 0.5 + len(projects) * 0.05),
+                "score_basis": ("salience weight: 0.5 rising 0.05 per active project (capped at 1.0) "
+                                "— it scales with portfolio size, it does not measure the portfolio"),
             })
         if by_stage["concept"] > 0:
             insights.append({
@@ -692,6 +694,7 @@ async def intelligence_insights() -> dict:
                 "title": f"{by_stage['concept']} concept-stage project(s) ready to run",
                 "detail": "Run the AI workflow to generate a Concept Document and advance to prototype.",
                 "score": 0.82,
+                "score_basis": "salience weight: a fixed constant for this insight type, not a measurement",
             })
         if by_stage["prototype"] > 0:
             insights.append({
@@ -700,6 +703,7 @@ async def intelligence_insights() -> dict:
                 "title": f"{by_stage['prototype']} prototype(s) eligible for commercialisation proposal",
                 "detail": "Propose advancement via GovernanceHub to unlock the Commercialise stage.",
                 "score": 0.91,
+                "score_basis": "salience weight: a fixed constant for this insight type, not a measurement",
             })
         if not insights:
             insights.append({
@@ -708,8 +712,13 @@ async def intelligence_insights() -> dict:
                 "title": "No projects yet — create your first project to unlock insights",
                 "detail": "Navigate to Projects and create an Enterprise project to begin.",
                 "score": 0.5,
+                "score_basis": "salience weight: a fixed constant for this insight type, not a measurement",
             })
-        return {"insights": insights, "computed_at": time.time(), "total_projects": len(projects)}
+        return {"insights": insights, "computed_at": time.time(), "total_projects": len(projects),
+                "score_meaning": ("every insight's `score` is a SALIENCE WEIGHT used to order the list; "
+                                  "three of the four are fixed constants per insight type and the fourth "
+                                  "scales with the project count. None of them measures the subject the "
+                                  "insight names.")}
     except Exception as exc:
         return {"insights": [], "error": str(exc), "computed_at": time.time()}
 

@@ -120,14 +120,19 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
       {cands && (cands.candidates?.length ?? 0) > 0 && (
         <div className="mt-4 pt-3 border-t border-slate-900">
           <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">
-            Investment candidates — ranked; the next cycle's user-projects allocation selects from these
+            Investment candidates — by eligibility score; the next cycle's user-projects allocation draws on these
             {cands.using_demo_candidates && <span className="text-amber-400"> · DEMO SET (platform has no real candidates yet)</span>}
           </p>
           <div className="space-y-1">
             {cands.candidates.map((c: any) => (
               <div key={c.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-900 text-[10px]">
                 <span className="text-slate-300 font-bold truncate">{c.name || c.id}<span className="text-slate-600 font-mono"> · {c.domain || '—'}</span></span>
-                <span className="font-mono text-slate-400 shrink-0">score {c.score}</span>
+                {/* W489 (sweep S2.12, C3) — "score" read as a measurement of the venture. It is a
+                    weighted sum of policy constants, so equal buckets tie exactly and the allocation
+                    splits evenly between them; the row now says so where the tie exists. */}
+                <span className="font-mono text-slate-400 shrink-0" title={c.score_basis || 'policy constants'}>
+                  policy score {c.score}{c.tied_with > 0 ? ` · tied with ${c.tied_with}` : ''}
+                </span>
               </div>
             ))}
           </div>

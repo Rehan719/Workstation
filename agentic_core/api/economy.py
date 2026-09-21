@@ -1514,8 +1514,10 @@ async def ingest_charity_signals(req: CharitySignalsRequest,
 @router.get("/ventures/candidates")
 async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo",
                              user: dict | None = Depends(get_current_user)):
-    """§6 — ranked candidate ventures for investment, harvested from the platform's REAL projects and
-    living VSB offspring (metrics derived deterministically from live stage/status/governance); the
+    """§6 — candidate ventures by POLICY SCORE, harvested from the platform's REAL projects and living
+    VSB offspring. W489: the candidates are real and the harvest is real, but the score is a weighted
+    sum of eligibility CONSTANTS (stage, whether a cycle has run, governance, domain bucket) — entities
+    in the same bucket tie exactly, so this is an eligibility ordering, not a measured ranking. The
     curated demo set only when the platform is empty (honestly flagged). Virtual/simulated."""
     _require_economy_access(vsb_id, user)
     from agentic_core.economy.ventures import VentureIntelligence, real_candidates
@@ -1523,7 +1525,11 @@ async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo",
     # scoped to what THIS user can access (the internal cycle path keeps the federation view).
     vi = VentureIntelligence(real_candidates(exclude_vsb=vsb_id, user=user) or None)
     return {"candidates": vi.ranked(top),
-            "method": "outcome × value × benefit × feasibility × strategic-fit",
+            "method": ("policy score: weighted sum of eligibility constants "
+                       "(outcome .30 + value .25 + benefit .20 + feasibility .15 + strategic_fit .10)"),
+            "method_basis": ("nothing here is measured: the five inputs are constants keyed on stage, "
+                             "operating history, governance and domain, so candidates in the same bucket "
+                             "share a score and their order between each other is arbitrary"),
             "using_demo_candidates": vi.using_demo,
             "disclaimer": ("Virtual/simulated WST. Candidates are the platform's REAL projects/VSBs with "
                            "deterministically-derived metrics — the demo set only when the platform is empty.")}

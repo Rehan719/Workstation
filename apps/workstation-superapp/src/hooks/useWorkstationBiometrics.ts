@@ -16,8 +16,20 @@ export interface WorkstationBiometrics {
     cycle: CircadianCycle;
   };
   cardiovascular: {
+    // W489 — host CPU HEADROOM (100 − cpu%), i.e. the host's spare capacity. High means the host is
+    // IDLE. It is not a measure of the platform's workload and must not be used to label one.
     resource_flow: number;    // 0–100
-    peristaltic_delay: number; // ms, healthy ≤ 5
+    peristaltic_delay: number; // host memory percent ÷ 20 — a load index, not milliseconds
+    host_cpu_percent?: number;
+    resource_flow_basis?: string;
+    peristaltic_delay_basis?: string;
+  };
+  // W489 — the platform's OWN work, which is what a 'working' label is derived from
+  workload?: {
+    platform_busy: boolean;
+    active_projects: number;
+    open_channels: number;
+    basis?: string;
   };
   cognition: {
     state: CognitionState;
@@ -35,7 +47,7 @@ export interface WorkstationBiometrics {
 
 const DEFAULT: WorkstationBiometrics = {
   circadian:      { cycle: 'ACTIVE_FOCUS' },
-  cardiovascular: { resource_flow: 100, peristaltic_delay: 5 },
+  cardiovascular: { resource_flow: 100, peristaltic_delay: 5 },   // never shown as live (live:false)
   cognition:      { state: 'STABLE', primary_drive: 'ACHIEVEMENT' },
   communication:  { active_channels: [], neurotransmitter: 'Serotonin', is_active: false },
   systemState:    'IDLE',
@@ -48,7 +60,12 @@ function deriveSystemState(b: Omit<WorkstationBiometrics, 'systemState' | 'loade
   if (b.circadian.cycle === 'MAINTENANCE_FOCUS' ||
       b.circadian.cycle === 'MAINTENANCE_REST')                           return 'MAINTENANCE';
   if (b.circadian.cycle === 'ACTIVE_REST')                               return 'RESTING';
-  if (b.cardiovascular.resource_flow > 60)                               return 'WORKING';
+  // W489 (sweep S11.14, C3) — THE LABEL WAS INVERTED. This read `resource_flow > 60`, and
+  // resource_flow is 100 − host CPU%: the condition was true exactly when the host was IDLE, so a
+  // machine doing nothing displayed 'Work' (and 'Mesh Work' to a screen reader). Working is now
+  // derived from the platform's own running projects and open channels. When the backend does not
+  // report that (an older payload), no work is claimed — IDLE is the honest default.
+  if (b.workload?.platform_busy)                                         return 'WORKING';
   return 'IDLE';
 }
 
@@ -72,7 +89,17 @@ export function useWorkstationBiometrics(pollIntervalMs = 6000): WorkstationBiom
         cardiovascular: {
           resource_flow:    r.cardiovascular?.resource_flow    ?? 100,
           peristaltic_delay: r.cardiovascular?.peristaltic_delay ?? 5,
+          host_cpu_percent: r.cardiovascular?.host_cpu_percent,
+          resource_flow_basis: r.cardiovascular?.resource_flow_basis,
+          peristaltic_delay_basis: r.cardiovascular?.peristaltic_delay_basis,
         },
+        // W489 — carried through, because the state label is derived from it
+        workload: r.workload ? {
+          platform_busy: Boolean(r.workload.platform_busy),
+          active_projects: Number(r.workload.active_projects ?? 0),
+          open_channels: Number(r.workload.open_channels ?? 0),
+          basis: r.workload.basis,
+        } : undefined,
         cognition: {
           state:         r.cognition?.state         ?? 'STABLE',
           primary_drive: r.cognition?.primary_drive ?? 'ACHIEVEMENT',

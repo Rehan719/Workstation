@@ -117,19 +117,70 @@ async def xai_explanations(ease_factor: float = Query(default=2.5, ge=1.3, le=3.
         quality=last_quality, repetitions=repetition,
         previous_interval=interval_days, previous_efactor=ease_factor)
     decision = "advance" if last_quality >= 3 else "reset"
+    # W489 (sweep S13.8, C3) — A RATIONALE IS ABOUT THE VALUE IT SITS BESIDE, OR IT IS NOT A RATIONALE.
+    # Every rationale here was a FIXED STRING emitted whatever the inputs were. The ease_factor row was
+    # not merely generic but false at the boundary the engine cares about: at the SM-2 floor of 1.3 —
+    # a learner who keeps failing this recall — the row still read "the learner retains this ayah well".
+    # It also asserted something about a specific ayah this endpoint is never told the identity of, and
+    # about retention it never measures. The repetition row claimed compounding at repetition 0, where
+    # the engine returns a flat interval of 1. Each rationale is now a function of its own value, and
+    # says only what the engine's own branches say.
+    # (refutation) The first cut branched on each feature ALONE, which contradicted the engine in two
+    # places. (a) quality < 3 forces `repetitions = 0; interval = 1` BEFORE the repetition branch is
+    # reached, so a failing recall was told "the engine schedules a flat 6 days" beside a body whose
+    # next_interval_days was 1. (b) The ease text claimed the floor "adds no growth": the compounding
+    # branch is `ceil(previous_interval * new_efactor)` with new_efactor >= 1.3, so the floor still
+    # grows the interval by at least 30% — and at repetitions 0 or 1 the ease does not touch it at all.
+    # A rationale must describe the branch the engine ACTUALLY took for these inputs.
+    _floor = 1.3            # MemorizationEngine.min_efactor — the SM-2 floor
+    _reset = last_quality < 3          # the engine's first branch: it overrides everything below
+    _compounds = (not _reset) and repetition >= 2
+    if _reset:
+        _ease_why = (f"this recall failed (quality {last_quality} < 3), so the engine reset the schedule "
+                     f"to 1 day and the ease factor did not affect the interval at all. Ease moved to "
+                     f"{round(real_efactor, 3)}"
+                     + (f" — it is at the SM-2 floor ({_floor}) and cannot fall further." if real_efactor <= _floor
+                        else " for the next review."))
+    elif not _compounds:
+        _ease_why = (f"at {repetition} prior repetition(s) the engine schedules a flat "
+                     f"{1 if repetition == 0 else 6} days, so ease does not affect this interval. "
+                     f"It moved to {round(real_efactor, 3)} and will apply once compounding starts.")
+    elif ease_factor <= _floor:
+        _ease_why = (f"ease is at the SM-2 floor ({_floor}); it cannot fall further, and the interval "
+                     f"still grows by that factor (the engine multiplies the previous interval by it). "
+                     f"It stays at {round(real_efactor, 3)}. Nothing here measures retention of any "
+                     f"particular ayah.")
+    elif ease_factor < 2.5:
+        _ease_why = (f"ease is below the 2.5 starting value, so the interval grows more slowly than for "
+                     f"a new item. The engine moved it to {round(real_efactor, 3)}.")
+    else:
+        _ease_why = (f"ease is at or above the 2.5 starting value, so the interval grows faster. The "
+                     f"engine moved it to {round(real_efactor, 3)}.")
+    if _reset:
+        _rep_why = (f"the {repetition} prior repetition(s) were discarded: a quality below 3 resets the "
+                    f"count to zero, so no compounding applies.")
+    elif repetition <= 0:
+        _rep_why = "no repetition recorded yet: the engine schedules a flat 1 day, with no compounding."
+    elif repetition == 1:
+        _rep_why = "one repetition: the engine schedules a flat 6 days; compounding starts after this."
+    else:
+        _rep_why = f"from the second repetition the interval compounds by ease ({repetition} recorded)."
     contributions = [
         {"feature": "ease_factor", "value": ease_factor,
          "contribution": round(model["ease_weight"] * (ease_factor / 2.5), 3),
-         "rationale": "Higher ease ⇒ longer interval; the learner retains this ayah well."},
+         "rationale": _ease_why},
         {"feature": "interval_days", "value": interval_days,
          "contribution": round(model["interval_weight"] * (interval_days / 6), 3),
-         "rationale": "Prior interval anchors the next spacing step."},
+         "rationale": ("no prior interval to anchor the next step." if interval_days <= 0 else
+                       f"the prior interval of {interval_days} day(s) anchors the next spacing step.")},
         {"feature": "repetition", "value": repetition,
          "contribution": round(0.1 * repetition, 3),
-         "rationale": "Each successful repetition compounds the interval growth."},
+         "rationale": _rep_why},
         {"feature": "last_quality", "value": last_quality,
          "contribution": round(model["quality_weight"] * (last_quality / 5), 3),
-         "rationale": "Recall quality <3 resets the schedule; ≥3 advances it."},
+         "rationale": (f"recall quality {last_quality} is below 3, so the engine RESETS the schedule."
+                       if last_quality < 3 else
+                       f"recall quality {last_quality} is 3 or above, so the engine ADVANCES the schedule.")},
     ]
     return {
         "decision": decision,

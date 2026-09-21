@@ -100,9 +100,10 @@ interface OrchRun {
 const STAGE_META: Record<string, { icon: React.FC<any>; color: string }> = {
   init:               { icon: Sparkles,    color: 'text-aura' },
   cognitive:          { icon: Brain,       color: 'text-violet-400' },
-  cognitive_complete: { icon: CheckCircle2,color: 'text-emerald-400' },
+  // W489 — not a tick: the cascade returns literals, so a green check would report a pass nothing earned
+  cognitive_complete: { icon: ListTree,    color: 'text-slate-400' },
   mjm:                { icon: ListTree,    color: 'text-highlight' },
-  mjm_complete:       { icon: CheckCircle2,color: 'text-emerald-400' },
+  mjm_complete:       { icon: ListTree,    color: 'text-slate-400' },
   gaas:               { icon: ShieldCheck, color: 'text-sky-400' },
   gaas_complete:      { icon: CheckCircle2,color: 'text-emerald-400' },
   ceo_strategy:       { icon: Bot,         color: 'text-aura' },
@@ -199,8 +200,16 @@ export const VSBSpawnStudio: React.FC = () => {
           VSB Spawn Studio
         </h1>
         <p className="text-slate-500 font-bold mt-2 max-w-xl leading-relaxed">
-          Spawn a Virtual Sovereign Business from a challenge. Runs through the full
-          intelligence pipeline: Nine Cognitive Engines → MJM → GaaS → CEO Strategy → Genome.
+          Spawn a Virtual Sovereign Business from a challenge. Runs the pipeline:
+          Six Cognitive Engines → MJM → GaaS → CEO Strategy → Genome.
+        </p>
+        {/* W489 (sweep S2.0, C3) — the header claimed nine cognitive engines over a cascade that runs
+            six, each returning a fixed marker, with MJM re-running the same six. The three meta engines
+            are planned work (P3.12), not a claim withdrawn — so the page names what runs today and what
+            is still to come, and the two cascade rows no longer carry a green tick for a literal. */}
+        <p className="text-[11px] text-slate-600 font-bold mt-2 max-w-xl leading-relaxed" data-testid="spawn-pipeline-basis">
+          The six engines return fixed markers rather than reading your challenge, and MJM re-runs the same six.
+          Three further meta engines (Niyyah, Tafakkur, Tawazun) are planned and do not run yet.
         </p>
       </header>
 

@@ -5,7 +5,9 @@
  * naturally-derived colour and pulse frequency:
  *
  *   Dot 1 — Cardiovascular  (heartbeat, 60–90 BPM ≈ 0.7–1.0 s per cycle)
- *            green  = healthy flow (>80%), teal = working (40–80%), red = stressed (<40%)
+ *            W489: the reading is HOST CPU HEADROOM (100 − cpu%), so high means the host is idle.
+ *            green = host has spare capacity (>80%), teal = host busy (40–80%), red = host saturated
+ *            (<40%). It says nothing about whether the platform is doing any work.
  *
  *   Dot 2 — Cognition       (brainwave rhythm, spaced 300 ms after heartbeat)
  *            violet = FLOURISHING, blue = STABLE, amber = STRESSED
@@ -13,7 +15,8 @@
  *   Dot 3 — Communication   (neurotransmitter signal, spaced 600 ms after heartbeat)
  *            cyan  = Dopamine (novelty / reward)
  *            green = Serotonin (stability / focus)
- *            pink  = Oxytocin  (connection / urgency)
+ *            pink  = Oxytocin  (W489: the backend's NOTHING-IS-HAPPENING branch — no open channel
+ *                               and no running project. It is not connection, and not urgency.)
  *
  *   ECG icon — Activity (lucide) whose pulse speed mirrors the circadian phase:
  *            ACTIVE_FOCUS 0.8 s | ACTIVE_REST 2.5 s
@@ -55,9 +58,11 @@ function ecgDuration(cycle: CircadianCycle): string {
 // W329 — honest: without LIVE readings the dot is grey 'offline', never fabricated green health.
 function cardioClass(flow: number, live: boolean = true): string {
   if (!live) return 'bg-slate-600';          // backend unreachable — unknown, not healthy
-  if (flow > 80) return 'bg-emerald-500';   // healthy — green
-  if (flow > 40) return 'bg-aura';           // working — teal
-  return 'bg-vital';                          // stressed — red
+  // W489 — the labels named the wrong thing: 'healthy' was the host being IDLE and 'working' was the
+  // host being busy. The colours are unchanged; what they mean is now stated correctly.
+  if (flow > 80) return 'bg-emerald-500';   // host has spare capacity — green
+  if (flow > 40) return 'bg-aura';           // host busy — teal
+  return 'bg-vital';                          // host saturated — red
 }
 
 // Cardiovascular flow → heartbeat pulse speed (high flow = faster pump)
@@ -90,14 +95,16 @@ function commClass(nt: NeurotransmitterState): string {
   switch (nt) {
     case 'Dopamine':  return 'bg-cyan-400';   // novelty / reward
     case 'Serotonin': return 'bg-green-400';  // stability / focus
-    case 'Oxytocin':  return 'bg-pink-400';   // connection / urgency
+    // W489 — Oxytocin is the backend's NOTHING-IS-HAPPENING branch (no open channel, no running
+    // project), so calling it 'urgency' inverted it exactly as the state label did.
+    case 'Oxytocin':  return 'bg-pink-400';   // no channel and no running project
   }
 }
 
 // Communication activity → signal pulse speed
 function commDuration(isActive: boolean, nt: NeurotransmitterState): string {
   if (!isActive) return '[animation-duration:4s]';              // idle — very slow
-  if (nt === 'Oxytocin') return '[animation-duration:0.4s]';   // urgent — rapid
+  if (nt === 'Oxytocin') return '[animation-duration:0.4s]';   // (unreachable: Oxytocin means inactive)
   if (nt === 'Dopamine') return '[animation-duration:0.6s]';   // active — fast
   return '[animation-duration:1.2s]';                           // Serotonin — steady
 }

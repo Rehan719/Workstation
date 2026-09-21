@@ -468,7 +468,21 @@ async def biometrics_status():
 
     return {
         "circadian":      {"cycle": _circadian_cycle()},
-        "cardiovascular": {"resource_flow": round(resource_flow, 1), "peristaltic_delay": peristaltic_delay},
+        # W489 (sweep S11.14, C3) — SAY WHICH MACHINE EACH READING IS OF.
+        # `resource_flow` is 100 − host CPU%, i.e. the HOST'S SPARE CAPACITY, and the shell derived the
+        # state label "Work" from flow > 60 — so an IDLE host read as working, and the cardiovascular
+        # dot went green ("healthy flow") precisely when the least was happening. The number stays (five
+        # readers), but it now travels with what it measures and with a reading of the PLATFORM'S own
+        # work, which is what a "working" label should be derived from. `peristaltic_delay` is host RAM
+        # percent over 20 — not a delay in milliseconds — and says so too.
+        "cardiovascular": {"resource_flow": round(resource_flow, 1), "peristaltic_delay": peristaltic_delay,
+                           "host_cpu_percent": round(cpu, 1),
+                           "resource_flow_basis": "host CPU headroom (100 − cpu%) — spare capacity, not workload",
+                           "peristaltic_delay_basis": "host memory percent ÷ 20 — a load index, not milliseconds"},
+        # the platform's OWN activity: running projects and open websocket channels, nothing about the host
+        "workload": {"platform_busy": bool(active > 0 or ws > 0), "active_projects": active,
+                     "open_channels": ws,
+                     "basis": "the platform's own running projects and open channels"},
         "cognition":      {"state": cognition_state, "primary_drive": primary_drive},
         "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0},
         "immune":         imm,

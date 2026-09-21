@@ -55,7 +55,8 @@ class QualityManagementSystem:
 
     async def run_quality_gates(self, metadata: Dict[str, Any], label: str = "delivery",
                                 owner_id: str | None = None,
-                                delivery_ref: Dict[str, Any] | None = None) -> bool:
+                                delivery_ref: Dict[str, Any] | None = None,
+                                count_in_rate: bool = True) -> bool:
         """
         Enforces >95% test coverage and zero-stub policy. A failure opens a persistent,
         traceable defect (unique id, the label of the delivery surface, the real metrics,
@@ -66,19 +67,43 @@ class QualityManagementSystem:
         passed = (coverage >= self.min_coverage) and not stubs_found
 
         st = self._load_state()
-        st["gates_run"] = int(st.get("gates_run", 0)) + 1
+        # W489 (sweep S9.4, C3) — A GATE RUN ON TYPED NUMBERS IS NOT A DELIVERY.
+        # The cockpit's Gate button posts a coverage figure the USER TYPES (default 0.97, which passes)
+        # and it counted into the same gates_run/gate_failures as every real delivery — on a single
+        # platform-wide store shared by every entity and tenant. The chip then called the quotient
+        # 'a real rate'. What-if runs are now counted separately and excluded from the rate, so the
+        # rate stays what it claims to be: failures over gates run on actual deliveries.
+        #   (refutation) The first cut of this RETURNED EARLY for a what-if, which silently stopped it
+        # opening a defect at all — so a user who ran a failing gate got no traceable record, and the
+        # §10 defect→correction→re-verify loop lost its only user-reachable entry point. Excluding a
+        # run from the RATE and refusing to RECORD it are different things. A what-if now does
+        # everything a delivery gate does except move the rate: the defect is opened, traceable and
+        # correctable, and carries what_if so nothing downstream mistakes it for a delivery failure.
+        if count_in_rate:
+            st["gates_run"] = int(st.get("gates_run", 0)) + 1
+        else:
+            st["what_if_gates"] = int(st.get("what_if_gates", 0)) + 1
         if not passed:
+            # read the prior count BEFORE defects_total moves: on a pre-W316 store the fallback IS
+            # defects_total, so reading it after the increment would double-count this failure
+            _prior_failures = self._gate_failures(st)
             st["defects_total"] = int(st.get("defects_total", 0)) + 1
             # §10 (W316) — gate FAILURES are counted separately from distinct defects: a failed
             # re-verification must also count as a failure (previously it inflated the
             # denominator only, so WORSE corrections produced a BETTER reported rate).
-            st["gate_failures"] = int(st.get("gate_failures", st.get("defects_total", 0) - 1)) + 1
+            if count_in_rate:
+                st["gate_failures"] = _prior_failures + 1
+            else:
+                st["what_if_failures"] = int(st.get("what_if_failures", 0)) + 1
             st["defects"].append({
                 "id": f"DEF-{uuid.uuid4().hex[:8]}",
                 "label": label,
                 "owner_id": owner_id,   # §14 (W320) — None = platform-level (admin-only under auth)
                 "delivery_ref": delivery_ref,   # §10 (W316) — the REAL delivery this defect traces to
                 "meta": {"coverage": coverage, "stubs_found": stubs_found},
+                # W489 — a defect opened by a what-if is a real record of a real run, and is NOT a
+                # delivery failure; it is excluded from the rate and says so on its own row.
+                "what_if": not count_in_rate,
                 "status": "open",
                 "opened_at": _now(),
                 "correction": None,
@@ -91,13 +116,30 @@ class QualityManagementSystem:
         return passed
 
     def get_non_conformance_rate(self) -> float:
-        """REAL rate: gate FAILURES over gates run (0.0 with no history — never fabricated).
+        """Gate FAILURES over gates run (0.0 with no history — never fabricated).
+
+        W489: this is a PLATFORM-WIDE figure. One QMS singleton serves every entity and tenant, so the
+        rate is over all deliveries on this installation, not one entity's record — `rate_basis` in
+        defect_summary() says so, and the surfaces that render it say so too. What-if gates run on
+        typed metrics are excluded from both terms.
         §10 (W316): failures include failed re-verifications; the historical fallback for stores
         written before gate_failures existed is defects_total (the best available true count)."""
         st = self._load_state()
         gates = int(st.get("gates_run", 0))
-        failures = int(st.get("gate_failures", st.get("defects_total", 0)))
-        return round(failures / gates, 4) if gates > 0 else 0.0
+        return round(self._gate_failures(st) / gates, 4) if gates > 0 else 0.0
+
+    @staticmethod
+    def _gate_failures(st: Dict[str, Any]) -> int:
+        """Delivery-gate failures. W489 (refutation) — the historical fallback to `defects_total` (for
+        stores written before gate_failures existed) was counting WHAT-IF failures as delivery ones:
+        a what-if raises defects_total and never gate_failures, so on any store that has only ever
+        seen what-ifs the fallback reported them as delivery failures — the exact confusion this round
+        separated. The fallback now applies only to a store that predates BOTH keys."""
+        if "gate_failures" in st:
+            return int(st["gate_failures"])
+        if "what_if_gates" in st or "what_if_failures" in st:
+            return 0                      # a modern store that has recorded only what-ifs
+        return int(st.get("defects_total", 0))      # genuinely pre-W316 store
 
     # ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──
     def correct_defect(self, defect_id: str, correction: str, actor: str = "owner") -> Optional[Dict[str, Any]]:
@@ -123,12 +165,21 @@ class QualityManagementSystem:
                 coverage = float(metadata.get("coverage", 0.0))
                 stubs_found = bool(metadata.get("stubs_found", False))
                 passed = (coverage >= self.min_coverage) and not stubs_found
-                st["gates_run"] = int(st.get("gates_run", 0)) + 1
+                # W489 (refutation) — a re-verification is counted the way its DEFECT was. Re-verifying
+                # a what-if defect used to move the delivery rate, which made the new rate_basis false
+                # the moment a user corrected the defect their own typed gate had opened.
+                _what_if = bool(d.get("what_if"))
+                if _what_if:
+                    st["what_if_gates"] = int(st.get("what_if_gates", 0)) + 1
+                else:
+                    st["gates_run"] = int(st.get("gates_run", 0)) + 1
                 if not passed:
                     # §10 (W316) — a FAILED re-verification RAISES the non-conformance rate
                     # (previously it only inflated the denominator, rewarding bad corrections)
-                    st["gate_failures"] = int(st.get("gate_failures",
-                                                     st.get("defects_total", 0))) + 1
+                    if _what_if:
+                        st["what_if_failures"] = int(st.get("what_if_failures", 0)) + 1
+                    else:
+                        st["gate_failures"] = self._gate_failures(st) + 1
                 d["reverified"] = passed
                 d["reverify_meta"] = {"coverage": coverage, "stubs_found": stubs_found}
                 d["reverify_basis"] = str(metadata.get("basis", "caller_attested"))
@@ -145,8 +196,17 @@ class QualityManagementSystem:
             by[d.get("status", "open")] = by.get(d.get("status", "open"), 0) + 1
         return {"gates_run": int(st.get("gates_run", 0)),
                 "defects_total": int(st.get("defects_total", 0)),
-                "gate_failures": int(st.get("gate_failures", st.get("defects_total", 0))), **by,
-                "non_conformance_rate": self.get_non_conformance_rate()}
+                "gate_failures": self._gate_failures(st), **by,
+                "non_conformance_rate": self.get_non_conformance_rate(),
+                # W489 — what the rate is OVER, and what it deliberately leaves out
+                "what_if_gates": int(st.get("what_if_gates", 0)),
+                "what_if_failures": int(st.get("what_if_failures", 0)),
+                "rate_basis": ("gate failures / gates run across ALL deliveries on this platform (every "
+                               "entity and tenant share one QMS store) — not one entity's record. "
+                               "What-if gates run on typed metrics, and re-verifications of the defects "
+                               "they open, are counted separately and excluded. A re-verification of a "
+                               "DELIVERY defect does count, including one attested by its caller "
+                               "(W316: a correction that does not hold must raise the rate).")}
 
     async def control_document(self, doc_id: str, content: Dict[str, Any], actor: str) -> str:
         """Place a document under QMS document control — versioned + SHA3-512 sealed via the OWNED DCMS.

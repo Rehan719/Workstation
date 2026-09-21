@@ -14,6 +14,7 @@ interface InsightItem {
   type?: string;
   detail?: string;
   score?: number;
+  score_basis?: string;   // W489 — the API says what the score IS (a salience weight)
   summary?: string;
   domain?: string;
   confidence?: number;
@@ -50,8 +51,18 @@ function coeFromInsight(insight: InsightItem, idx: number) {
     description: insight.summary ?? insight.detail ?? '',
     icon: meta.icon,
     color: meta.color,
-    articles: (insight.projects_count ?? 0) + (insight.outputs_count ?? 0),
-    scholars: Math.max(1, Math.round((insight.confidence ?? 0) * 20)),
+    // W489 (sweep S13.2, C3) — `articles` and `scholars` were computed from THREE FIELDS THE API
+    // NEVER SENDS. /api/v1/intelligence/insights emits exactly id, type, title, detail and score;
+    // projects_count, outputs_count and confidence do not exist on it. So every card showed the same
+    // two numbers — a zero output count, and a confidence of 1 that came only from a floor applied to
+    // a zero, which reads like a measurement. The one real per-insight number is `score`,
+    // which was rendered nowhere.
+    //   (refutation) But `score` is not a measurement either: three of the four insights carry a
+    // fixed constant and the fourth scales with the project count, so rendering it as "Insight
+    // score" would have been the same defect in a new name. It is shown as the SALIENCE WEIGHT it
+    // is, with the API's own basis on hover.
+    score: typeof insight.score === 'number' ? insight.score : null,
+    scoreBasis: insight.score_basis ?? null,
     domain: label,
   };
 }
@@ -71,10 +82,12 @@ export const KnowledgeHub: React.FC = () => {
   const coes = data?.insights?.length
     ? data.insights.map(coeFromInsight)
     : [
-        { name: 'AI Ethics', description: 'Alignment and constitutional safety protocols.', icon: Brain, color: 'text-aura', articles: 0, scholars: 0, domain: 'ai' },
-        { name: 'Data Science', description: 'Neural synthesis and graph analytics.', icon: Activity, color: 'text-blue-400', articles: 0, scholars: 0, domain: 'science' },
-        { name: 'Security', description: 'Post-quantum cryptography and node defense.', icon: Shield, color: 'text-red-400', articles: 0, scholars: 0, domain: 'security' },
-        { name: 'Global Affairs', description: 'Cross-domain synthesis and interfaith dialogue.', icon: Globe, color: 'text-yellow-400', articles: 0, scholars: 0, domain: 'global' },
+        // W489 — the standing centres, shown when no insight has been computed yet. They carry NO
+        // score, because none has been computed for them; the card says so rather than showing a 0.
+        { name: 'AI Ethics', description: 'Alignment and constitutional safety protocols.', icon: Brain, color: 'text-aura', score: null, scoreBasis: null, domain: 'ai' },
+        { name: 'Data Science', description: 'Neural synthesis and graph analytics.', icon: Activity, color: 'text-blue-400', score: null, scoreBasis: null, domain: 'science' },
+        { name: 'Security', description: 'Post-quantum cryptography and node defense.', icon: Shield, color: 'text-red-400', score: null, scoreBasis: null, domain: 'security' },
+        { name: 'Global Affairs', description: 'Cross-domain synthesis and interfaith dialogue.', icon: Globe, color: 'text-yellow-400', score: null, scoreBasis: null, domain: 'global' },
       ];
 
   const filtered = coes.filter(c => (c.name ?? '').toLowerCase().includes(search.toLowerCase()));
@@ -127,14 +140,18 @@ export const KnowledgeHub: React.FC = () => {
               <h3 className="text-xl font-black mb-2 tracking-tight">{coe.name}</h3>
               <p className="text-sm text-slate-500 mb-6 font-bold leading-relaxed">{coe.description}</p>
               <div className="flex items-center gap-4 border-t border-white/5 pt-6">
-                <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase">Outputs</p>
-                  <p className="text-lg font-black text-aura">{coe.articles}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase">Confidence</p>
-                  <p className="text-lg font-black text-white">{coe.scholars}</p>
-                </div>
+                {/* W489 — one number, the one the API actually computes, under its own name */}
+                {coe.score != null ? (
+                  <div data-testid="coe-score" title={coe.scoreBasis || 'a salience weight, not a measurement'}>
+                    <p className="text-[10px] font-black text-slate-500 uppercase">Salience weight</p>
+                    <p className="text-lg font-black text-aura">{coe.score.toFixed(2)}</p>
+                    <p className="text-[8px] font-bold text-slate-600 uppercase">not a measurement</p>
+                  </div>
+                ) : (
+                  <p className="text-[10px] font-bold text-slate-600" data-testid="coe-no-score">
+                    No score was returned for this centre.
+                  </p>
+                )}
               </div>
             </motion.div>
           ))}
