@@ -171,9 +171,12 @@ class BlueprintResponse(BaseModel):
     stage: str
     realm: str
     domain: str
-    deliverable: str          # Full AI-generated document
+    deliverable: str          # the produced document — see ai_provenance for WHAT composed it
     nodes: list[dict]         # Structured pipeline nodes for canvas
     generated_at: float
+    # W490 (sweep S12.4, C7) — what served this blueprint. Without it the page showed a success tick
+    # over the deterministic floor's own outline and called it a Concept Blueprint.
+    ai_provenance: dict | None = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -211,7 +214,11 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
         "Produce the blueprint document now. Be detailed, specific, and commercially complete."
     )
 
-    deliverable = await gateway.query(prompt, agent="ceo_blueprint")
+    # W490 (sweep S12.4, C7) — the page showed a success tick over a "Concept Blueprint" that was the
+    # floor's own outline, and `gateway.query` had discarded the one field that could say so.
+    _meta = await gateway.query_meta(prompt, agent="ceo_blueprint", augment=False)
+    deliverable = _meta.get("output", "")
+    _prov = {"served_by": _meta.get("served_by", "native"), "is_external": bool(_meta.get("is_external"))}
 
     # Optionally persist as a project deliverable
     if req.project_id:
@@ -235,6 +242,7 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
         deliverable=deliverable,
         nodes=nodes,
         generated_at=time.time(),
+        ai_provenance=_prov,
     )
 
 

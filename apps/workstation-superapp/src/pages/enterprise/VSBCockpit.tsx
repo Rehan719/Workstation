@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { provenanceBadge, provenanceMapBadge } from '../../lib/api';
+import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
 import axios from 'axios';
@@ -26,7 +26,11 @@ const TABS = [
   ['chat', 'Converse', MessageCircle],
 ] as const;
 
-interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_external?: boolean; attached?: boolean; image_understood?: boolean; image_served_by?: string | null; image_is_external?: boolean }
+interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_external?: boolean; attached?: boolean; image_understood?: boolean; image_served_by?: string | null; image_is_external?: boolean;
+  // W490 (refutation) — the cockpit is the SECOND reader of these avatar fields and had neither of
+  // the notes the conversation panel got; its vision badge showed 'via openai' for a call that
+  // FAILED, which reads as a served analysis.
+  image_status?: string; attached_requested?: boolean; language_requested?: string | null; language_honoured?: string | null }
 
 export const VSBCockpit: React.FC = () => {
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
@@ -244,7 +248,9 @@ export const VSBCockpit: React.FC = () => {
       const r = await axios.post('/api/v1/avatar/chat', body);
       const reply = r.data.response || '(no response)';
       setMessages(m => [...m, { role: 'vsb', text: reply, served_by: r.data.served_by, is_external: r.data.is_external,
-                               image_understood: r.data.image_understood, image_served_by: r.data.image_served_by, image_is_external: r.data.image_is_external }]);
+                               image_understood: r.data.image_understood, image_served_by: r.data.image_served_by, image_is_external: r.data.image_is_external,
+                               image_status: r.data.image_status, attached_requested: Boolean(pendingImage),
+                               language_requested: r.data.language ?? null, language_honoured: r.data.language ?? null }]);
       speak(reply);
     } catch {
       setMessages(m => [...m, { role: 'vsb', text: 'The enterprise avatar is unavailable right now.', is_external: false }]);
@@ -497,7 +503,19 @@ export const VSBCockpit: React.FC = () => {
                   <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
                     {chiefResult.error ? <p className="text-vital">{String(chiefResult.error)}</p> : (
                       <>
-                        <p className="text-slate-300 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · gaas: <span className={chiefResult.governance?.status === 'allowed' ? 'text-emerald-400' : chiefResult.governance?.status ? 'text-amber-400' : 'text-slate-500'}>{chiefResult.governance?.status ?? '—'}</span></p>
+                        {/* W490 (sweep S1.3, C7) — the directive below is often the floor's own framing of the
+                    prompt and never mentions the Owner's instruction; the response already carried
+                    ai_provenance {'{'}served_by: {'{'}native: 2{'}'}{'}'} and the panel rendered none of it. */}
+                {(() => { const b = provenanceMapBadge(chiefResult.ai_provenance?.served_by, chiefResult.ai_provenance?.any_external);
+                  return <span data-testid="chief-directive-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+                <p className="text-slate-300 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · gaas: <span className={chiefResult.governance?.status === 'allowed' ? 'text-emerald-400' : chiefResult.governance?.status ? 'text-amber-400' : 'text-slate-500'}>{chiefResult.governance?.status ?? '—'}</span></p>
+                {/* W490 — W488 gave the API a reason when the directive's objectives could NOT be
+                    added (an unreadable plan); the reached page showed only the bare 0. */}
+                {chiefResult.objectives_not_added_reason && (
+                  <p data-testid="objectives-not-added" className="text-[10px] font-bold text-amber-400">
+                    {chiefResult.objectives_not_added_reason}
+                  </p>
+                )}
                         <p className="whitespace-pre-wrap line-clamp-6">{chiefResult.chief_directive}</p>
                       </>
                     )}
@@ -623,6 +641,11 @@ export const VSBCockpit: React.FC = () => {
                         <div className="mt-2 p-2 rounded-lg bg-aura/5 border border-aura/20">
                           <div className="flex items-center flex-wrap gap-1.5">
                             <span className="text-[8px] font-black uppercase tracking-widest text-aura">Chief workflow-tree</span>
+                            {/* W490 (sweep S1.4, C7) — what served each node of the tree whose `final`
+                                text is shown below as the delivered decision. */}
+                            {(() => { const t = objOrchResult[o.id];
+                              const b = provenanceMapBadge(provenanceMapFromTrace(t.nodes), t.any_external);
+                              return <span data-testid="tree-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                             <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-highlight/15 text-highlight">decision: {objOrchResult[o.id].decision?.recommendation ?? '—'}</span>
                             <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${objOrchResult[o.id].consensus?.choice === 'proceed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>consensus: {objOrchResult[o.id].consensus?.choice ?? 'none'}</span>
                             <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{objOrchResult[o.id].node_count} nodes</span>
@@ -653,7 +676,8 @@ export const VSBCockpit: React.FC = () => {
                     {delivProducing ? <Loader2 size={14} className="animate-spin" /> : <ScrollText size={14} />} Produce
                   </Button>
                 </div>
-                <p className="text-[9px] text-slate-600">Produced on Workstation’s own native AI fabric (honest in-house provenance) and filed under this VSB.</p>
+                <p className="text-[9px] text-slate-600">Filed under this VSB. Each row says what composed it — the
+                  deterministic floor arranges headings and supplies no analysis.</p>
               </Card>
               <Card className="p-6">
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
@@ -667,7 +691,14 @@ export const VSBCockpit: React.FC = () => {
                     <div key={d.id} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-900 border border-slate-800">
                       <div className="min-w-0">
                         <p className="text-sm font-black text-white truncate">{d.title}</p>
-                        <p className="text-[9px] text-slate-500 uppercase tracking-widest">{d.type} · {d.versions} version{d.versions === 1 ? '' : 's'} · {d.served_by || 'native'}</p>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
+                          <span>{d.type} · {d.versions} version{d.versions === 1 ? '' : 's'}</span>
+                          {/* W490 (refutation) — the SECOND deliverables list. It printed the raw
+                              served_by token with a 'native' DEFAULT (so a record with none claimed the
+                              floor), under a caption crediting the AI fabric. */}
+                          {(() => { const b = provenanceBadge(d.served_by, d.is_external);
+                            return <span className={`px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+                        </p>
                       </div>
                       {/* W338 — bearer-carrying export (a raw anchor 401s under auth) */}
                       <button type="button" onClick={async () => {
@@ -937,8 +968,21 @@ export const VSBCockpit: React.FC = () => {
                         {m.role === 'vsb' && m.served_by && (
                           (() => { const b = provenanceBadge(m.served_by, m.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()
                         )}
-                        {m.role === 'vsb' && m.image_served_by && (
+                        {/* W490 (refutation) — a badge naming the provider is only true when it READ the
+                            image. On the failure path image_served_by is set (transmission was attempted)
+                            while image_understood stays false, so the badge said 'vision · via openai'
+                            about an analysis that never happened. */}
+                        {m.role === 'vsb' && m.image_served_by && m.image_understood && (
                           (() => { const b = provenanceBadge(m.image_served_by, m.image_is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>vision · {b.label}</span>; })()
+                        )}
+                        {m.role === 'vsb' && m.attached_requested && m.image_understood === false && (
+                          <span data-testid="cockpit-image-not-read" className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                            {m.image_status === 'failed_external'
+                              ? 'image SENT externally and not read'
+                              : m.image_status === 'blocked_by_policy'
+                              ? 'image not sent, not read'
+                              : 'image not read'}
+                          </span>
                         )}
                       </div>
                     </div>

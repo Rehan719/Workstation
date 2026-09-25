@@ -5,7 +5,8 @@
 criteria reached any prompt, and there was no field to enter them.
 
 This is deliberately NOT the recall path. `gateway._augment` retrieves prior interactions by token
-overlap, and every generation-class caller passes `augment=False` under W332 because "recall was the
+overlap; since W489 the gateway DEFAULTS it off on all four entry points (W332 had asked each caller
+to pass `augment=False`, and two rounds of that still left twenty-nine inheriting it) because "recall was the
 leak vector" — content the SYSTEM chose, drawn from other requests. What this module supplies is the
 opposite: a short profile the USER wrote, can read back, and can delete. One is inference over other
 people's traffic; the other is the person telling you about themselves.

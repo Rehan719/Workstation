@@ -4,7 +4,7 @@ import {
   Target, Activity, GitBranch, CheckCircle2, Circle, Loader2,
   Sparkles, HeartPulse, AlertCircle, Eye, Map, Workflow, ShieldCheck, ListChecks,
 } from 'lucide-react';
-import { apiJson, errorMessage } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -120,11 +120,16 @@ export const TransformationDashboard: React.FC = () => {
     try { await apiJson('/api/v1/transformation/tick', { method: 'POST' }); await load(); } catch (e) { setError(errorMessage(e)); }   // cluster 2: 4xx/5xx surfaces too
     setTicking(false);
   };
+  // W490 (sweep S6.7, C7) — a panel headed 'AI Assessment' over text the deterministic floor
+  // composed from the prompt's own headings, with nothing saying so. The API now carries what
+  // served it; this holds it so the panel can.
+  const [assessProv, setAssessProv] = useState<{ served_by?: string | null; is_external?: boolean } | null>(null);
   const assess = async () => {
-    setAssessing(true); setAssessment('');
+    setAssessing(true); setAssessment(''); setAssessProv(null);
     try {
       const d = await apiJson('/api/v1/transformation/assess', { method: 'POST' });
       setAssessment(d.assessment ?? '');
+      setAssessProv(d.ai_provenance ?? null);
       if (!d.assessment) setError('Assessment returned no content.');
     } catch (e) { setError(errorMessage(e)); }
     setAssessing(false);
@@ -170,7 +175,7 @@ export const TransformationDashboard: React.FC = () => {
                   {ticking ? <Loader2 size={14} className="animate-spin" /> : <HeartPulse size={14} />} Tick
                 </Button>
                 <Button onClick={assess} disabled={assessing} className="flex items-center gap-2 bg-highlight text-sovereign text-xs">
-                  {assessing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Assess
+                  {assessing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Assess
                 </Button>
               </div>
             </div>
@@ -184,7 +189,13 @@ export const TransformationDashboard: React.FC = () => {
             </div>
             {assessment && (
               <div className="mt-5 p-4 rounded-2xl bg-slate-950 border border-highlight/20">
-                <p className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">AI Assessment</p>
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-highlight">Assessment</p>
+                  {/* W490 — what composed it. On the floor this is a scaffold of the headings the
+                      prompt asked for, not an assessment of anything. */}
+                  {(() => { const b = provenanceBadge(assessProv?.served_by, assessProv?.is_external);
+                    return <span data-testid="assessment-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+                </div>
                 <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{assessment}</p>
               </div>
             )}

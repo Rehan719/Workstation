@@ -31,6 +31,12 @@ class SynthesisOutput(BaseModel):
     content: str
     metadata: Dict[str, Any]
     timestamp: str
+    # W490 (refutation) — the /stream done frame has carried provenance since W451; this
+    # non-streaming twin recorded NONE, and the page's fallback path then badged its output
+    # "structured floor" whatever had served it. The model strips extras, so the field has to
+    # exist here for the truth to reach the reader at all.
+    served_by: Optional[str] = None
+    is_external: bool = False
 
 
 class SynthesisManager:
@@ -38,6 +44,9 @@ class SynthesisManager:
         self.output_dir = DATA_DIR / "synthesis_outputs"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.history: List[Dict[str, Any]] = []
+        # W490 — None until a call actually serves something; never defaulted to a floor claim
+        self._last_served_by: Optional[str] = None
+        self._last_is_external: bool = False
 
     # ── Context resolution ──────────────────────────────────────────────────────
 
@@ -63,8 +72,44 @@ class SynthesisManager:
 
     # ── AI helpers ──────────────────────────────────────────────────────────────
 
+    def _provenance_note(self) -> str:
+        """One sentence naming what served this output — or saying nothing is recorded."""
+        sb = getattr(self, "_last_served_by", None)
+        if not sb:
+            return "no call is recorded as having composed this output"
+        if getattr(self, "_last_is_external", False):
+            return f"served by an external accelerant (via {sb}) — opt-in"
+        if sb in ("native", "template"):
+            return ("structured floor — not model analysis: composed by the deterministic native "
+                    "structured engine, which arranges the headings it was asked for and does not "
+                    "supply analysis")
+        return f"composed in-house by {sb}"
+
+    def _with_provenance(self, content: str, ext: str) -> str:
+        note = self._provenance_note()
+        if ext == "json":
+            try:
+                obj = json.loads(content)
+                if isinstance(obj, dict):
+                    obj["provenance"] = note
+                    return json.dumps(obj, indent=2)
+            except Exception:
+                pass
+            return content
+        if ext in ("md", "markdown", "txt"):
+            return f"> Provenance: {note}\n\n{content}"
+        if ext in ("html", "htm"):
+            return f"<!-- Provenance: {note} -->\n{content}"
+        return content
+
     async def _query(self, prompt: str, tag: str) -> str:
-        return await gateway.query(prompt, agent=f"synthesis:{tag}")
+        """W490 (refutation) — `gateway.query` discards served_by, so every output this manager
+        produced was unlabelled at the source. The last call's provenance is recorded for the
+        response; a composition of several calls reports the last one that served it."""
+        meta = await gateway.query_meta(prompt, agent=f"synthesis:{tag}", augment=False)
+        self._last_served_by = meta.get("served_by", "native")
+        self._last_is_external = bool(meta.get("is_external"))
+        return meta.get("output", "")
 
     @staticmethod
     def _extract_json_array(text: str) -> Optional[list]:
@@ -298,8 +343,11 @@ class SynthesisManager:
         # ── Persist to disk ──────────────────────────────────────────────────────
         ext = metadata.get("format", "json")
         output_path = self.output_dir / f"{output_id}.{ext}"
+        # W490 (refutation) — the DOWNLOADED file is served straight off disk, so a provenance line
+        # rendered in the browser never reaches it. The file now carries what composed it, in the same
+        # words as everywhere else; a JSON output carries it as a field rather than a comment.
         with open(output_path, "w", encoding="utf-8") as fh:
-            fh.write(content)
+            fh.write(self._with_provenance(content, ext))
 
         result: Dict[str, Any] = {
             "output_id": output_id,
@@ -307,6 +355,9 @@ class SynthesisManager:
             "content": content,
             "metadata": metadata,
             "timestamp": timestamp,
+            # W490 — None when no call served this output; the page renders that as "not recorded"
+            "served_by": getattr(self, "_last_served_by", None),
+            "is_external": bool(getattr(self, "_last_is_external", False)),
         }
         self.history.append(result)
         logger.info("Synthesis complete: type=%s id=%s", otype, output_id)
@@ -389,7 +440,11 @@ async def stream_synthesis(request: SynthesisRequest):
         content = "".join(collected) if fin.get("guardrail_passed") is not False else (fin.get("output") or "")
         ext = "html" if otype == "website" else ("json" if otype in ("presentation", "video", "audiobook", "business_model", "simulation") else "md")
         output_path = synthesis_manager.output_dir / f"{output_id}.{ext}"
-        output_path.write_text(content, encoding="utf-8")
+        # W490 (refutation) — the STREAM path persists its own file too; it carries the provenance the
+        # done frame already reports, so the downloaded copy says what the screen said.
+        synthesis_manager._last_served_by = fin.get("served_by") or None
+        synthesis_manager._last_is_external = bool(fin.get("is_external"))
+        output_path.write_text(synthesis_manager._with_provenance(content, ext), encoding="utf-8")
         synthesis_manager.history.append({
             "output_id": output_id,
             "output_url": f"/api/v1/synthesis/download/{output_id}",

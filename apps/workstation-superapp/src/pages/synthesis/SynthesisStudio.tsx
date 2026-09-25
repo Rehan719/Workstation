@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FabricLink } from '../../components/FabricLink';
 import { downloadExport } from '../../lib/download';
+import { provenanceBadge, provenanceMapBadge } from '../../lib/api';
 import {
   Sparkles, FileText, Presentation, Globe, Layers, Download, Play, Loader2,
   CheckCircle2, Upload, BarChart3, BookOpen, Archive, Video, Headphones,
@@ -56,6 +57,12 @@ interface SynthesisResult {
   metadata: Record<string, any>;
   timestamp: string;
   outputType: OutputTypeId;
+  // W490 (sweep S4.12, C7) — the /stream done frame has carried served_by / is_external /
+  // profile_applied since W451 and this page parsed them into `ev` and threw them away, so an
+  // emerald 'Synthesis Complete' tick looked identical whether a model or the floor produced it.
+  served_by?: string | null;
+  is_external?: boolean;
+  profile_applied?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -248,6 +255,7 @@ export const SynthesisStudio: React.FC = () => {
                   metadata: { type, format: 'md', title: type },
                   timestamp: ev.timestamp,
                   outputType: type,
+                  served_by: ev.served_by, is_external: ev.is_external, profile_applied: ev.profile_applied,
                 };
               }
             } catch { /* malformed line */ }
@@ -423,6 +431,13 @@ export const SynthesisStudio: React.FC = () => {
                 <h3 className="text-xl font-black text-white uppercase tracking-tight">
                   {results.length} Output{results.length > 1 ? 's' : ''} Generated
                 </h3>
+                {/* W490 — a green tick over floor-composed output said nothing about what composed
+                    it. The aggregate badge reports the run; each result carries its own below
+                    (refutation: the first cut promised that per-result badge and never rendered it). */}
+                {(() => { const m: Record<string, number> = {};
+                  results.forEach(r => { const k = r.served_by ?? 'native'; m[k] = (m[k] || 0) + 1; });
+                  const b = provenanceMapBadge(m, results.some(r => r.is_external));
+                  return <span data-testid="synthesis-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded mt-1 inline-block ${b.cls}`} title={b.title}>{b.label}</span>; })()}
               </div>
             </div>
 
@@ -449,8 +464,16 @@ export const SynthesisStudio: React.FC = () => {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[9px] font-black text-aura uppercase tracking-widest">
+                        <p className="text-[9px] font-black text-aura uppercase tracking-widest flex items-center gap-2 flex-wrap">
                           {typeInfo?.label || result.outputType}
+                          {/* W490 (refutation) — the per-result badge the aggregate comment promised */}
+                          {(() => { const b = provenanceBadge(result.served_by, result.is_external);
+                            return <span data-testid="synthesis-result-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+                          {/* and the profile flag the API has sent since W451 and nothing ever showed */}
+                          {result.profile_applied && (
+                            <span data-testid="synthesis-profile-applied" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                              title="your saved profile was prepended to the prompt for this output">profile applied</span>
+                          )}
                         </p>
                         <p className="text-sm font-black text-white truncate">
                           {result.metadata?.title || `${typeInfo?.label} Output`}

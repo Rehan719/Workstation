@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, provenanceLine } from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, FileText, Leaf, Calendar, AlertTriangle,
@@ -59,7 +59,14 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
 
 function ResultPanel({ result, prov, expanded, onToggle }: { result: string; prov?: any; expanded: boolean; onToggle: () => void }) {
   const download = () => {
-    const blob = new Blob([result], { type: 'text/plain' });
+    // W490 (sweep S2.13, C7) — the floor_note shown on screen ('not model analysis. Review every
+    // clause before use.') was dropped from the downloaded file, so the copy a reader keeps — and
+    // may act on as a management system — said nothing about what composed it.
+    const blob = new Blob([
+      provenanceLine(prov?.served_by, prov?.is_external)
+      + (prov?.floor_note ? `> ${prov.floor_note}\n\n` : '')
+      + result,
+    ], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

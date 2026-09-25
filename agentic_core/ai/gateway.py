@@ -157,11 +157,13 @@ class ModelGateway:
         fabric — see agentic_core/ai/native/.)"""
         self._sync_reconfig()
         await self._rate_limiter.acquire()
-        # W332 — generation-class callers whose output SHIPS or PERSISTS pass augment=False: copy
-        # generation has no legitimate use for cross-request recall, and recall was the leak vector.
+        # W332 — generation-class callers whose output SHIPS or PERSISTS must not carry cross-request
+        # recall: recall was the leak vector. W489 made that the DEFAULT (see _RECALL_OFF above)
+        # rather than a convention each caller had to remember, because two rounds of fixing callers
+        # one at a time still left twenty-nine of them inheriting it.
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
         # §4.2 (W428) — the person's OWN explicit profile, applied INDEPENDENTLY of `augment`.
-        # That independence is the point: every generation-class caller sets augment=False (W332,
+        # That independence is the point: no generation-class caller receives recall (W332 by
         # recall was the leak vector), and those are exactly the surfaces where "understand the
         # person" was missing. Recall is inference over other requests; this is the user's own
         # words, which they wrote, can read back, and can delete. Different trust, different switch.
@@ -323,7 +325,8 @@ class ModelGateway:
         W451 (P1.3) — the stream path used to swallow WHO served it (recorded into the learning
         loop, never surfaced), so no SSE consumer could tell a user the floor answered; and it
         applied neither the §4.2 profile preamble nor the guardrail that query_meta applies.
-        W332/W333 — tenant-scoped recall (augment=False for ship/persist callers) + tenant-stamped
+        W332/W333 — tenant-scoped recall (off by default since W489; two conversational callers opt
+        back in by name) + tenant-stamped
         writes, matching query_meta."""
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt

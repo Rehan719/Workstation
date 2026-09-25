@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
-import { provenanceMapBadge } from '../../lib/api';
+import { provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
 
 interface Objective {
   id: string; title: string; kpi: string; timeline: string; owner_role: string;
@@ -288,6 +288,12 @@ export const BusinessPlan: React.FC = () => {
                         <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-highlight/15 text-highlight">decision: {orchResult[o.id].decision?.recommendation ?? '—'}</span>
                         <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${orchResult[o.id].consensus?.choice === 'proceed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>consensus: {orchResult[o.id].consensus?.choice ?? 'none'}</span>
                         <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{orchResult[o.id].node_count} nodes</span>
+                        {/* W490 (refutation) — the SAME tree the cockpit badges. business_plan.py now
+                            sends the per-node served_by trace; this page renders `final` as a delivered
+                            decision and said nothing about what composed the nodes. */}
+                        {(() => { const tr = orchResult[o.id];
+                          const b = provenanceMapBadge(provenanceMapFromTrace(tr.nodes), tr.any_external);
+                          return <span data-testid="plan-tree-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                         {orchResult[o.id].ueg_hash && <span className="text-[8px] font-mono text-slate-600" title={orchResult[o.id].ueg_hash}>UEG {orchResult[o.id].ueg_hash.slice(0, 12)}…</span>}
                       </div>
                       <p className="text-[10px] text-slate-400 whitespace-pre-wrap line-clamp-4">{orchResult[o.id].final}</p>

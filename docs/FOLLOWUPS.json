@@ -2218,8 +2218,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -2399,8 +2399,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -2416,8 +2416,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -2714,8 +2714,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -2907,8 +2907,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -2924,8 +2924,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -2941,8 +2941,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -2993,8 +2993,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -3030,8 +3030,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -3228,8 +3228,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -3369,8 +3369,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -3568,8 +3568,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W490",
       "note": ""
     },
     {
@@ -4429,6 +4429,42 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-258",
+      "title": "Most AI calls do not thread the account id, so their prompts and answers land in the SHARED memory namespace that the two recall surfaces read for every user",
+      "why": "W490 set out to correct a false privacy line and found the claim under it is false too. memory.add_memory stamps owner_id or PLATFORM_NS (agentic_core/ai/memory.py:86) and gateway.query_meta/stream_meta write EVERY completion into it (gateway.py ~195 and ~340). Only a handful of the ~57 gateway call sites in agentic_core pass owner_id at all: board directives, VSB board packs, business-plan text, capital-fund analysis, forge stages, studio stages and the QEP surfaces all omit it, so their prompts AND answers land in the shared platform namespace. query_memory's allow-set is {owner_id or PLATFORM, PLATFORM} (memory.py:112), so the two surfaces that still use recall — the avatar and the AI-CEO chat — can retrieve platform-namespace content that belonged to a DIFFERENT user. W489 removed recall from generation, which closes the biggest consumer, but the WRITES continue and the two conversational readers remain. The Settings page now warns the user plainly rather than claiming their interactions are stored under their account. FIX: thread the authenticated owner_id through every gateway call that has one (a request-scoped default would be better than 57 edits — the same lesson as W489's augment default), and make a write with NO id an explicit decision rather than a fallback; then the warning can come down. Note for whoever takes it: decide with the Owner what happens to the rows already written to the shared namespace.",
+      "source": "W490 refutation (avatar-and-claims lens)",
+      "found": "2026-09-21",
+      "files": [
+        "agentic_core/ai/memory.py",
+        "agentic_core/ai/gateway.py",
+        "apps/workstation-superapp/src/pages/Settings.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 1
+    },
+    {
+      "id": "FU-259",
+      "title": "A refutation round can exhaust the disk and lose most of its agents silently — 27 of 45 died creating worktrees, and the run still reported a result",
+      "why": "W490's refutation raised 40 findings and verified only 13: the other 27 agents failed with 'No space left on device' while creating their git worktrees, and the workflow still returned a normal-looking {confirmed: [...]} result. Free space had fallen to about 9 MB. The cause is accumulated worktrees: 56 existed, one per refuter agent across every round since W479, each a full checkout of this repo, and nothing removed them when a round finished. Removing all 55 secondary worktrees recovered 9.6 GB. Two things to fix, neither of them large: (a) the round rhythm must CHECK free space before launching a refutation and REMOVE the round's worktrees after it (git worktree list --porcelain | git worktree remove --force), so the cost does not accumulate; (b) a refutation whose agents died must not read as a completed refutation — the count of agents that errored is in the tool result and should be checked against the count launched before any finding list is trusted. Until (b) exists, read the agent error count by hand every time. Worth considering: the verify agents are read-only (they read code and run pytest against an isolated DATA_DIR) and may not need a worktree at all, which would cut the disk cost by roughly the number of findings.",
+      "source": "W490 refutation (the run itself failed part-way)",
+      "found": "2026-09-21",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
       "status": "open",
       "closed_by": null,
       "note": "",

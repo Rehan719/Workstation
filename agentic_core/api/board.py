@@ -106,8 +106,9 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) 
         #   The first cut of this comment ended "every other generation surface already does this" — a
         # claim the repo did not back: a refutation found eleven callers still on recall, including the
         # SAME Chief twin in business_plan.py and the org cascade's apex in swarm.py, both of which
-        # PERSIST their output. W488 closed all of them; the one deliberate exception is the avatar
-        # conversation (avatars/api.py), which keeps tenant-scoped recall and says why in place.
+        # PERSIST their output. W488 closed all of them; the deliberate exceptions are the avatar
+        # conversation (avatars/api.py) and the AI-CEO chat (api/v138/ceo.py) — both conversations,
+        # both keeping tenant-scoped recall, both saying why in place.
         res = await gateway.query_meta(prompt, agent=agent, augment=False)
         if provenance is not None:
             sb = res.get("served_by", "native")

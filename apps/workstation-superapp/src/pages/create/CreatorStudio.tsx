@@ -16,6 +16,7 @@ import {
   Wand2, Database, Plus, Save, Play, Sparkles,
   Download, X, ChevronRight, Loader2, CheckCircle2
 } from 'lucide-react';
+import { provenanceBadge, provenanceLine } from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import componentRegistry from '@workstation/shared/data/component_registry.json';
 
@@ -31,6 +32,9 @@ interface BlueprintResponse {
   deliverable: string;
   nodes: Array<{ id: string; label: string; position: { x: number; y: number } }>;
   generated_at: number;
+  // W490 (sweep S12.4, C7) — what composed the deliverable. A success tick over the deterministic
+  // floor's own outline told the user the AI CEO had synthesised a blueprint for them.
+  ai_provenance?: { served_by?: string | null; is_external?: boolean };
 }
 
 // §17.1 (W321) — canonical realms (previously a mixed realm/domain list)
@@ -126,7 +130,13 @@ export const CreatorStudio: React.FC = () => {
       ``,
       blueprint.deliverable,
     ].join('\n');
-    const blob = new Blob([content], { type: 'text/markdown' });
+    // W490 (sweep S12.4, C7) — the file that leaves says what COMPOSED it, not only when it was made.
+    // The deliverable is often the deterministic floor's own outline, and the export asserted a
+    // Stage/Realm/Generated header over it with nothing to distinguish that from model analysis.
+    const exported = provenanceLine(blueprint.ai_provenance?.served_by,
+                                    blueprint.ai_provenance?.is_external,
+                                    blueprint.generated_at * 1000) + content;
+    const blob = new Blob([exported], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -288,7 +298,9 @@ export const CreatorStudio: React.FC = () => {
             {isGenerating && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 pointer-events-none">
                 <Loader2 size={28} className="text-aura animate-spin mb-3" />
-                <p className="text-xs text-aura font-black uppercase tracking-widest">AI CEO is synthesising your blueprint…</p>
+                {/* W490 — the spinner promised model synthesis before anything was known about what
+                    would serve it; on the floor nothing synthesises. The badge below says what did. */}
+                <p className="text-xs text-aura font-black uppercase tracking-widest">Composing your blueprint…</p>
               </div>
             )}
 
@@ -318,6 +330,9 @@ export const CreatorStudio: React.FC = () => {
               <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 shrink-0">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-aura">Blueprint Deliverable</p>
+                  {/* W490 (sweep S12.4, C7) — what composed this document */}
+                  {(() => { const b = provenanceBadge(blueprint.ai_provenance?.served_by, blueprint.ai_provenance?.is_external);
+                    return <span data-testid="blueprint-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                   <p className="text-[8px] text-slate-500 mt-0.5 capitalize">{blueprint.stage} · {blueprint.realm}</p>
                 </div>
                 <div className="flex gap-2">

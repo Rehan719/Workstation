@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Network, CheckCircle2, Circle, Loader2, Sparkles, GitBranch, Layers, Brain } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
-import { StageBadge, StageMark, type StageData } from '../components/StageOutcome';
+import { StageBadge, StageMark, FLOOR_STAGE_NOTE, stageOutcome, type StageData } from '../components/StageOutcome';
 
 interface Tier { tier: string; endpoint: string; role: string; connected: boolean }
 interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: number; principle: string }
@@ -95,8 +95,23 @@ export const CognitionIntegration: React.FC = () => {
                 names only what ran; each section says what served it (the structured floor is never shown as analysis). */}
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
               {solveRes.status && solveRes.status !== 'complete' && <span className="text-vital mr-2">{solveRes.status}</span>}
-              Ran: <span className="text-aura">{(solveRes.engines_used || []).join(' · ') || 'nothing'}</span>
+              Lenses selected: <span className="text-aura">{(solveRes.engines_used || []).join(' · ') || 'none'}</span>
             </p>
+            {/* W490 (refutation) — the round gave /solve engines_used_basis, calls_made and
+                run_summary precisely because "Ran: INKASHAF · SAMAJH · … · MJM · AIGateway" named eight
+                analysers over THREE gateway calls, and a floor-served call has failed=False — so a run
+                where nothing analysed anything still listed eight engines. It changed the API and not
+                this page, which is the one the reader sees. */}
+            {solveRes.engines_used_basis && (
+              <p className="text-[9px] font-bold text-slate-600" data-testid="solve-engines-basis">
+                {solveRes.engines_used_basis}
+              </p>
+            )}
+            {solveRes.run_summary && (
+              <p className="text-[10px] font-bold text-amber-400/90" data-testid="solve-run-summary">
+                {solveRes.run_summary}
+              </p>
+            )}
             {solveRes.cognitive_cascade && (
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1 flex items-center gap-2">
@@ -104,6 +119,9 @@ export const CognitionIntegration: React.FC = () => {
                   Cognitive lenses · one prompt <StageBadge data={solveRes.provenance?.cognitive_cascade as StageData} />
                 </p>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.cognitive_cascade}</p>
+                {stageOutcome(solveRes.provenance?.cognitive_cascade as StageData) === 'floor' && (
+                  <p className="text-[10px] font-bold text-amber-400/80 mt-2" data-testid="solve-floor-note-cognitive_cascade">{FLOOR_STAGE_NOTE}</p>
+                )}
               </div>
             )}
             {solveRes.mjm_assessment && (
@@ -113,6 +131,9 @@ export const CognitionIntegration: React.FC = () => {
                   MJM · Mushahida → Jaiza → Muaina <StageBadge data={solveRes.provenance?.mjm_assessment as StageData} />
                 </p>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.mjm_assessment}</p>
+                {stageOutcome(solveRes.provenance?.mjm_assessment as StageData) === 'floor' && (
+                  <p className="text-[10px] font-bold text-amber-400/80 mt-2" data-testid="solve-floor-note-mjm_assessment">{FLOOR_STAGE_NOTE}</p>
+                )}
               </div>
             )}
             {solveRes.synthesis && (
@@ -122,6 +143,9 @@ export const CognitionIntegration: React.FC = () => {
                   Synthesis <StageBadge data={solveRes.provenance?.synthesis as StageData} />
                 </p>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.synthesis}</p>
+                {stageOutcome(solveRes.provenance?.synthesis as StageData) === 'floor' && (
+                  <p className="text-[10px] font-bold text-amber-400/80 mt-2" data-testid="solve-floor-note-synthesis">{FLOOR_STAGE_NOTE}</p>
+                )}
               </div>
             )}
           </div>

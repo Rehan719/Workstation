@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Hammer, Loader2, AlertCircle, Check, ChevronDown, ChevronUp, Rocket, FlaskConical } from 'lucide-react';
 import { FabricLink } from '../../components/FabricLink';
+import { provenanceMapBadge } from '../../lib/api';
 
 interface Resource { id: string; name: string; role: string; biomimetic: string }
 interface StageOutput { resource: string; name: string; biomimetic: string; output: string }
-interface RunResult { run_id: string; pipeline: string[]; ceo_framing: string; stage_outputs: StageOutput[]; integrated_deliverable: string; governance: string }
+// W490 (sweep S8.12, C7) — the run's ai_provenance was returned and never rendered: each stage card is
+// named for a fabric engine (Petri Dish / Laboratory / Factory) with a biomimetic subtitle, and every
+// one is in fact a persona prompt through the gateway. On the floor all five calls compose scaffolds.
+interface RunResult { run_id: string; pipeline: string[]; ceo_framing: string; stage_outputs: StageOutput[]; integrated_deliverable: string; governance: string;
+  ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean } }
 
 export const ForgePipeline: React.FC = () => {
   const [resources, setResources] = useState<Resource[]>([]);
@@ -77,18 +82,33 @@ export const ForgePipeline: React.FC = () => {
 
       {result && (
         <div className="space-y-3">
-          <div className="text-[9px] font-mono text-slate-500">{result.run_id} · {result.pipeline.join(' → ')} · governance {result.governance}</div>
+          <div className="text-[9px] font-mono text-slate-500 flex items-center gap-2 flex-wrap">
+            <span>{result.run_id} · {result.pipeline.join(' → ')} · governance {result.governance}</span>
+            {(() => { const b = provenanceMapBadge(result.ai_provenance?.served_by, result.ai_provenance?.any_external);
+              return <span data-testid="forge-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+          </div>
           {result.stage_outputs.map((s, i) => (
             <Card key={i} className="p-0 overflow-hidden border-slate-800/80">
               <button type="button" onClick={() => setOpen(open === s.resource ? '' : s.resource)} className={`w-full flex items-center justify-between p-4 text-left ${open === s.resource ? 'bg-slate-800/30' : ''}`}>
                 <div className="flex items-center gap-3"><FlaskConical size={13} className="text-highlight" /><p className="font-black text-white text-sm">{s.name}</p><span className="text-[9px] text-slate-600 italic">{s.biomimetic}</span></div>
                 {open === s.resource ? <ChevronUp size={13} className="text-slate-500" /> : <ChevronDown size={13} className="text-slate-500" />}
               </button>
-              {open === s.resource && <div className="px-4 pb-5 border-t border-slate-800/50 pt-3"><p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{s.output}</p></div>}
+              {open === s.resource && <div className="px-4 pb-5 border-t border-slate-800/50 pt-3">
+                {/* W490 (refutation) — each stage is a persona prompt through the gateway, and the
+                    API records provenance only for the RUN, not per stage. Saying which is honest;
+                    saying nothing let the engine-named card read as a fabric engine's own output. */}
+                <p className="text-[9px] font-bold text-slate-600 mb-2" data-testid="forge-stage-scope">
+                  Composed by a persona prompt through the gateway. Provenance is recorded for the run,
+                  not per stage — see the run badge above.
+                </p>
+                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{s.output}</p></div>}
             </Card>
           ))}
           <Card className="p-6 border-highlight/30 bg-highlight/5">
-            <div className="flex items-center gap-2 mb-3"><Rocket size={16} className="text-highlight" /><h3 className="font-black text-highlight uppercase tracking-widest text-sm">Integrated Deliverable</h3></div>
+            <div className="flex items-center gap-2 mb-3"><Rocket size={16} className="text-highlight" /><h3 className="font-black text-highlight uppercase tracking-widest text-sm">Integrated Deliverable</h3>
+              {(() => { const b = provenanceMapBadge(result.ai_provenance?.served_by, result.ai_provenance?.any_external);
+                return <span data-testid="forge-deliverable-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`}
+                  title={`${b.title ?? ''} — this covers every call in the run; the API records no per-stage provenance`}>whole run: {b.label}</span>; })()}</div>
             <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{result.integrated_deliverable}</p>
             <p className="text-[10px] text-slate-500 mt-3">Next: establish this as a living VSB IDBO entity via Genesis.</p>
           </Card>

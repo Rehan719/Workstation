@@ -21,8 +21,10 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     how often, how fast, in-house vs external — not just swarm runs.
 
     W332/W333 — Offering-1 output is a deliverable that the user SEES and SAVES, so recall injection
-    (the cross-tenant leak) is defaulted OFF here (`augment=False`); when a caller opts into recall it
-    is tenant-scoped by `owner_id`. Domain routers thread the authenticated user's id."""
+    (the cross-tenant leak) is off here (`augment=False`). Since W489 that is also the GATEWAY's
+    default on all four entry points, so this is belt-and-braces rather than the only thing stopping
+    it; when a caller opts into recall it is tenant-scoped by `owner_id`. Domain routers thread the
+    authenticated user's id."""
     t0 = time.monotonic()
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
                                    owner_id=owner_id, augment=augment)

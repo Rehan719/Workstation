@@ -172,10 +172,32 @@ export const Settings: React.FC = () => {
       <Card className="p-8 space-y-4">
         <div>
           <h3 className="text-sm font-black text-white uppercase tracking-wide">About you</h3>
+          {/* W490 (sweep S6.4, C7) — THE PRIVACY CLAIM MUST BE TRUE OF THE WHOLE PLATFORM, not just
+              of this card. "Nothing is inferred from your activity" was written about the profile and
+              read as a statement about everything: two surfaces DO use recall of your prior
+              interactions — the AI-CEO chat and the avatar — and every interaction is written to a
+              tenant-scoped memory store this page's delete button does not clear. Generation itself
+              stopped using recall in W489; saying so is only honest if the exceptions are named. */}
           <p className="text-[11px] text-slate-500 leading-relaxed mt-1 max-w-3xl">
-            Used to shape what the platform generates for you. Only what you type here is used —
-            nothing is inferred from your activity, and it is never drawn from anyone else's.
-            You can see exactly what it sends below, and delete it at any time.
+            Used to shape what the platform generates for you. This profile is only what you type here,
+            it is never drawn from anyone else's, and you can see exactly what it sends below and
+            delete it at any time.
+          </p>
+          {/* (refutation) The first cut of this replaced one false claim with another: it said every
+              interaction is "stored under your account", but a call only lands in your namespace when
+              it threads your id, and most do not — they land in the SHARED platform namespace, which
+              recall reads for every tenant. Saying less, and saying it truly. */}
+          <p className="text-[11px] text-slate-500 leading-relaxed mt-1 max-w-3xl" data-testid="recall-disclosure">
+            What the platform generates for you — documents, plans, blueprints, deliverables — does not
+            draw on earlier conversations. Two conversational surfaces do: the
+            <span className="text-slate-400"> AI CEO chat</span> and the
+            <span className="text-slate-400"> avatar</span> recall earlier interactions to keep a thread.
+          </p>
+          <p className="text-[11px] text-amber-400/80 leading-relaxed mt-1 max-w-3xl" data-testid="recall-scope-caveat">
+            Be aware: interactions are written to a memory store, and a call that does not carry an
+            account id is written to a SHARED space that those two surfaces can read for any user. Treat
+            anything you type as potentially visible to other users of this installation until that is
+            fixed. Deleting this profile does not clear that store.
           </p>
         </div>
         {PROFILE_FIELDS.map(f => (

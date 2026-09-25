@@ -649,6 +649,7 @@ async def solve_with_cognitive_stack(req: SolveRequest):
     # its call ran, the gateway synthesis if it ran; never a call that failed.
     _ran = ([n.split(" (")[0] for (_e, n, _q) in _selected_lenses(req.engines)] if not _p_cog["failed"] else []) \
         + (["MJM"] if not _p_mjm["failed"] else []) + (["AIGateway"] if not _p_syn["failed"] else [])
+    _failed = sum(1 for p in (_p_cog, _p_mjm, _p_syn) if p["failed"])   # W490 (refutation) — counted
     return {
         "problem": req.problem,
         "domain": req.domain,
@@ -657,6 +658,22 @@ async def solve_with_cognitive_stack(req: SolveRequest):
         "synthesis": synthesis,
         "status": _status([_p_cog, _p_mjm, _p_syn]),
         "engines_used": _ran,
+        # W490 (sweep S7.0, C7) — `engines_used` is the LENS SELECTION re-printed, not a record of
+        # analysers: the six lens names go into ONE prompt as headings, MJM is a second call and the
+        # synthesis a third, and a floor-served call has failed=False — so a run where nothing
+        # analysed anything printed eight named engines. The list stays (it says which lenses were
+        # asked for) and now travels with what it actually is, plus the honest run sentence this
+        # module already writes for the SSE engines and never sent here.
+        # (refutation) The first cut asserted "three gateway calls ran in total" as a CONSTANT sentence,
+        # which run_summary in the same response contradicts the moment one of them fails. Three are
+        # attempted; how many ran is counted from what served them.
+        "engines_used_basis": (
+            "the lenses you selected, named in the prompt as headings — this run attempts THREE gateway "
+            "calls (the lenses as one prompt, MJM, the synthesis), not one call per engine; "
+            + (f"{3 - _failed} of the 3 ran" if _failed else "all 3 ran")),
+        "calls_attempted": 3,
+        "calls_made": 3 - _failed,
+        "run_summary": _run_summary_text(3, [_p_cog, _p_mjm, _p_syn]),
         # W479 — three gateway calls (the lenses as one prompt, MJM, the synthesis); what served each.
         "provenance": {"cognitive_cascade": _p_cog, "mjm_assessment": _p_mjm, "synthesis": _p_syn,
                        **_provenance_summary([_p_cog, _p_mjm, _p_syn])},

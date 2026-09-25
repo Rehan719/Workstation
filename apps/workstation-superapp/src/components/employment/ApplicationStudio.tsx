@@ -7,7 +7,7 @@ import {
   Search, Briefcase, MapPin, CircleCheck, ScrollText
 } from 'lucide-react';
 import { Card, Button } from '@workstation/ui';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, provenanceLine } from '../../lib/api';
 
 interface IngestedFile {
   file_id: string;
@@ -196,7 +196,14 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   };
 
   const handleDownload = (doc: GeneratedDoc) => {
-    const blob = new Blob([doc.content], { type: 'text/markdown' });
+    // W490 (sweep S12.11, C7) — the amber 'structured floor — not model analysis' badge sits beside
+    // this document on screen, and the .md the user actually keeps carried only the floor's own
+    // marker ('owned, no external dependency'), which reads as an owned AI engine having written it.
+    // A badge in the DOM is not a label on the text: the text leaves without it. Same one line every
+    // other export surface uses since W485.
+    const blob = new Blob([
+      provenanceLine(doc.ai_provenance?.served_by, doc.ai_provenance?.is_external) + doc.content,
+    ], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

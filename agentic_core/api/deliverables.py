@@ -318,6 +318,9 @@ async def list_deliverables(vsb_id: Optional[str] = None,
         rows = [d for d in rows if d.get("vsb_id") == vsb_id]
     summaries = [{"id": d["id"], "type": d["type"], "title": d["title"], "vsb_id": d.get("vsb_id"),
                   "versions": len(d.get("versions", [])), "served_by": d.get("ai_provenance", {}).get("served_by"),
+                  # W490 (refutation) — without this the ROW badge dropped an opt-in external serve to
+                  # emerald "in-house" while the DETAIL pane one level down showed amber "via <token>"
+                  "is_external": (d.get("ai_provenance") or {}).get("is_external"),
                   "qms_gate_passed": d.get("quality_assurance", {}).get("quality", {}).get("qms_gate_passed"),
                   # W455 — a FAIL is visible on the list row, not only in the detail pane
                   "compliance_overall": ((d.get("quality_assurance") or {}).get("quality") or {}).get("compliance", {}).get("overall"),
@@ -334,15 +337,97 @@ async def get_deliverable(deliverable_id: str, user: dict | None = Depends(get_c
     raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} not found.")
 
 
+_NON_MODEL = ("native", "template")
+def _provenance_footer(d: Dict[str, Any]) -> str:
+    """(refutation) The SVG and PNG cards derived their OWN footer from raw ai_provenance, so a
+    floor-served card exported one image carrying two contradictory statements: the new subtitle
+    saying "structured floor — not model analysis", and a few lines below it the exact in-house
+    phrasing W439 killed. Both footers now come from the same resolution as the subtitle. This is the
+    short form that fits on a card."""
+    phrase = _provenance_phrase(d)
+    for head, short in (
+            ("structured floor", "structured floor — not model analysis"),
+            ("mostly structured floor", "mostly structured floor — see the subtitle"),
+            ("supplied verbatim", "supplied verbatim by the caller"),
+            ("no call is recorded", "provenance not recorded"),
+    ):
+        if phrase.startswith(head):
+            return f"Workstation IDBO · {short}"
+    return f"Workstation IDBO · {phrase}"
+
+
+_FLOOR_PHRASE = ("structured floor — not model analysis: composed by the deterministic native "
+                 "structured engine ({names}), which arranges the headings it was asked for and "
+                 "does not supply analysis")
+
+
+def _provenance_phrase(d: Dict[str, Any]) -> str:
+    """W490 (sweep S3.12, C7) — WHAT COMPOSED THIS FILE, in the words the browser exports already use.
+
+    Every server-rendered export credited the platform's own AI fabric, naming the served_by token in
+    brackets — over content whose eleven producing calls were the deterministic floor. The floor
+    arranges the headings it was asked for and supplies no analysis, so crediting a fabric for it is
+    the one reading of that sentence nobody would expect. This mirrors lib/api.ts `provenanceLine` so the
+    file a reader keeps says the same thing the screen did, and it resolves provenance the way the
+    §10 gate already does (`_gate_served_by`): a verbatim ingest is judged by the origin it declared,
+    not by the word "verbatim-ingest".
+    """
+    prov = d.get("ai_provenance") or {}
+    resolved = _gate_served_by(d)
+    external = bool(prov.get("is_external")) or bool(prov.get("any_external"))
+    # An EMPTY map, or nothing recorded at all, is not the floor — it is the absence of any record,
+    # and calling it "the floor composed this" is a positive claim about a run that served nothing.
+    # (`_gate_served_by` treats {} as "no source declared" and falls through, which is right for the
+    # §10 gate and wrong here; W485 fixed exactly this shape in the browser's provenanceLine.)
+    if isinstance(prov.get("source_served_by"), dict) and not any(
+            (n or 0) > 0 for n in prov["source_served_by"].values()):
+        if not prov.get("served_by"):
+            return "no call is recorded as having composed this output"
+    if not resolved and not prov:
+        return "no call is recorded as having composed this output"
+    if isinstance(resolved, dict):
+        served = [(k, n) for k, n in resolved.items() if (n or 0) > 0]
+        if not served:
+            return "no call is recorded as having composed this output"
+        names = " · ".join(f"{k}×{n}" for k, n in served)
+        floor_calls = sum(n for k, n in served if k in _NON_MODEL)
+        model_calls = sum(n for k, n in served if k not in _NON_MODEL)
+        if external:
+            return f"served by an external accelerant ({names}) — opt-in"
+        if not model_calls:
+            return _FLOOR_PHRASE.format(names=names)
+        # (refutation) THE COUNT RULE, which the first cut dropped. `all(k in _NON_MODEL)` sent any map
+        # with a single model call to the in-house wording — so a journey the floor composed three
+        # quarters of exported as "composed in-house by native×3 · ollama×1", a STRONGER claim than the
+        # screen it came from. The browser's provenanceMapBadge has compared the counts since W479's
+        # third refutation; this is the half that did not, in the one place the round rewrote.
+        if floor_calls >= model_calls:
+            return (f"mostly structured floor — {floor_calls} of {floor_calls + model_calls} calls were "
+                    f"composed by the deterministic native structured engine, which supplies no "
+                    f"analysis; the rest by {' · '.join(f'{k}×{n}' for k, n in served if k not in _NON_MODEL)}")
+        return f"composed in-house by {names}"
+    token = str(resolved or "native")
+    if external:
+        return f"served by an external accelerant (via {token}) — opt-in"
+    # (refutation) `verbatim-ingest` means the CALLER supplied this text and declared no origin for it.
+    # The platform composed nothing, so neither "in-house" nor "the floor" is true of it; the first cut
+    # exported it as "composed in-house by verbatim-ingest", a composition claim over someone else's
+    # words. (When an ingest DOES declare its origin, `_gate_served_by` has already resolved to that
+    # origin above and this branch is not reached.)
+    if token == "verbatim-ingest":
+        return ("supplied verbatim by the caller — the platform did not compose this text and records "
+                "no origin for it")
+    if token in _NON_MODEL:
+        return _FLOOR_PHRASE.format(names=token)
+    return f"composed in-house by {token}"
+
+
 def _to_markdown(d: Dict[str, Any]) -> str:
-    prov = d.get("ai_provenance", {})
-    served = prov.get("served_by", "native")
-    in_house = "in-house" if not prov.get("is_external") else f"via {served}"
     stamp = _compliance_stamp(d)
     return (
         f"# {d.get('title', 'Deliverable')}\n\n"
         + (f"> **{stamp}**\n\n" if stamp else "")
-        + f"_{d.get('type', 'deliverable')} · produced on Workstation's own AI fabric ({in_house} · {served})_\n\n"
+        + f"_{d.get('type', 'deliverable')} · {_provenance_phrase(d)}_\n\n"
         f"> **Brief:** {d.get('brief', '')}\n\n"
         f"{d.get('content', '')}\n\n"
         "---\n"
@@ -431,10 +516,10 @@ def _compliance_stamp(d: Dict[str, Any]) -> Optional[str]:
 
 
 def _doc_subtitle(d: Dict[str, Any]) -> str:
-    prov = d.get("ai_provenance", {})
-    served = prov.get("served_by", "native")
-    mode = "in-house" if not prov.get("is_external") else f"via {served}"
-    base = f"{d.get('type', 'deliverable')} · produced on Workstation IDBO's own AI fabric ({mode} · {served})"
+    """The subtitle every binary/visual export carries (html · slides · pdf · docx · pptx · xlsx ·
+    svg · png). W490 — one phrase, shared with the markdown twin, so all eleven formats say the same
+    thing about what composed the content."""
+    base = f"{d.get('type', 'deliverable')} · {_provenance_phrase(d)}"
     stamp = _compliance_stamp(d)
     return f"{stamp} · {base}" if stamp else base
 
@@ -810,7 +895,7 @@ def _svg_doc(d: Dict[str, Any]) -> str:
         f'fill="#94a3b8">{sub}</text>'
         + "".join(rows) +
         f'<text x="90" y="{_CARD_H - 60}" font-family="Segoe UI, Helvetica, Arial, sans-serif" '
-        f'font-size="22" fill="#64ffda">Workstation IDBO \u00b7 {posture} \u00b7 {served}</text>'
+        f'font-size="22" fill="#64ffda">{_h.escape(_provenance_footer(d))}</text>'
         f'</svg>'
     )
 
@@ -848,8 +933,7 @@ def _png_bytes(d: Dict[str, Any]) -> bytes:
         y += 44
     prov = d.get("ai_provenance") or {}
     posture = "external" if prov.get("is_external") else "in-house"
-    dr.text((90, _CARD_H - 78), f"Workstation IDBO \u00b7 {posture} \u00b7 {prov.get('served_by') or 'in-house'}",
-            font=_font(22), fill=(100, 255, 218))
+    dr.text((90, _CARD_H - 78), _provenance_footer(d), font=_font(22), fill=(100, 255, 218))
     import io as _io
     buf = _io.BytesIO()
     img.save(buf, format="PNG")

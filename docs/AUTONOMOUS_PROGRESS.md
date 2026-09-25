@@ -7104,3 +7104,89 @@ citation forms the sweep actually writes, read off the rows that exist rather th
 **Broken 51 ways**, all 51 caught; the four that were vacuous each marked a real gap in the guard (an
 anchor inside the branch it guarded, a "grew" assertion true of both numbers, a key-presence check that
 ignored the value, and a source check that passed while one branch still coerced).
+
+### W490 — floor-served output says so wherever it goes (the C7 batch, repo-wide)
+
+**Twelve rows, one rule.** Output the deterministic native floor composed says so — on the screen, in
+the file that leaves, and in the API that feeds both. The floor arranges the headings it was asked for
+and performs no analysis; a surface presenting its output as AI work is making a claim the run cannot
+back. The mechanism already existed (`provenanceBadge` W439, `provenanceMapBadge` W453, `provenanceLine`
+W485); this round applied it everywhere and made the APIs carry what the surfaces need.
+
+**Three shapes.**
+
+*The API carried it and the surface dropped it.* The cockpit showed the Chief's directive — floor
+output that never mentions the Owner's instruction — beside a green "gaas: allowed", with
+`ai_provenance {native: 2}` sitting unread in the same response. The Forge showed stage cards named
+for fabric engines and an "Integrated Deliverable" over five floor calls. The Synthesis Studio put an
+emerald tick on "1 Output Generated" while parsing the done frame's `served_by` and throwing it away.
+The deliverables row printed the raw token, so a floor-served row read `native` like a brand name.
+
+*The screen showed it and the export lost it.* A badge in the DOM is not a label on the text: the text
+leaves without it. The career documents and the management frameworks both carried the amber "not model
+analysis" badge on screen and downloaded as files whose only marker was the floor's own "owned, no
+external dependency" — which reads as an owned AI engine having written them.
+
+*The API discarded it before any surface could speak.* `gateway.query` returns only the output string,
+so a panel headed **AI Assessment** and a **Concept Blueprint** deliverable — both the floor's own
+outline — had no provenance to render even if the page had wanted to. Both now use `query_meta`.
+
+**Two claims that were simply false.** `/solve` printed "Ran: INKASHAF · SAMAJH · SOCH · AQAL ·
+HOSHIYARI · IMAN · MJM · AIGateway" — eight named analysers over **three** gateway calls, and a
+floor-served call has `failed=False`, so a run where nothing analysed anything named eight engines. It
+now carries what that list actually is, the real call count, and the honest run sentence this module
+already wrote for its SSE engines and never sent here. And **Settings told every user "nothing is
+inferred from your activity"** while the AI-CEO chat and the avatar both recall prior interactions, and
+every interaction is written to a store that page's delete button does not clear. Narrowed to the
+profile, with both exceptions named.
+
+**A capability reported and never read.** The avatar backend says `image_understood: false` when no
+vision model read the attachment, and `language: null` when the floor could not answer in the language
+asked for. The hook dropped all four fields, so a user saw a fluent reply beside their image and
+concluded it had been read.
+
+**Eleven export formats.** One new `_provenance_phrase` mirrors the browser's `provenanceLine`
+server-side and feeds md · txt · json · html · slides · pdf · docx · pptx · xlsx · svg · png. It
+resolves a verbatim ingest by the origin it declared rather than its label — the same resolution the
+§10 gate already uses — and an empty provenance map claims nothing at all rather than claiming the
+floor, which is the shape W485 fixed in the browser and this round re-committed until a guard leg
+caught it.
+
+**The refutation, and a failure of the instrument itself.** Five lenses over this round's diff raised
+40 findings — and **27 of the 45 agents died creating their git worktrees on a full disk**, while the
+workflow still returned a normal-looking result. 56 worktrees had accumulated, one per refuter agent
+across every round since W479, each a full checkout of this repo; free space had fallen to about 9 MB.
+Removing them recovered 9.6 GB, and the run was resumed to verify what had been lost. **18 findings
+verified real.** A round's evidence is only as good as the agents that survived it: the tool result
+carries `agents_error`, and it now gets read before any finding list is trusted (registered, and in
+memory).
+
+**What the 18 were.** Almost all were one of two shapes. *A NEW claim the round could not back:* the
+badge said "structured floor — not model analysis" for a transformation assessment whose call had
+RAISED and for the synthesis fallback endpoint that records no provenance at all — `provenanceBadge`
+coalesced `servedBy ?? 'native'`, so "nothing served this" became a positive claim about the floor,
+while `provenanceLine` had had a third state since W485. The server export phrase dropped the browser's
+count rule, so a journey the floor composed three quarters of exported as "composed in-house by
+native×3 · ollama×1" — a **stronger** claim than the screen it came from. A verbatim ingest, which means
+the caller supplied the text, exported as "composed in-house by verbatim-ingest". And my corrected
+Settings copy replaced one false claim with another: it said interactions are "stored under your
+account", but only a handful of ~57 gateway call sites thread the account id, so most land in a SHARED
+namespace the avatar and CEO chat recall for every user — now warned plainly on the page, with the
+isolation defect registered on the gate.
+
+*A second reader left disagreeing with the first:* the SVG and PNG cards kept deriving their own footer,
+so a floor-served card exported one image saying "structured floor — not model analysis" in its subtitle
+and "in-house · native" eight lines below. The Business Plan page renders the same Chief workflow-tree
+the cockpit now badges and said nothing. A second deliverables list in the cockpit still printed the raw
+token under a caption crediting the AI fabric. And FU-134 changed the API and **not the page** that
+prints the engine list — the one thing a reader sees.
+
+**And two of my own guards broken.** W453 (a badge must carry its class, or the amber warning renders
+grey — and my own new leg demanded a shape that guard forbids, so the two were mutually unsatisfiable)
+and W488 (every `query_meta` must state its recall posture, never inherit it).
+
+**Broken 41 ways**, all 41 caught. Four were vacuous on the first sweep and every one was the same
+trap the previous round's refuters named: an anchor string that also occurs elsewhere in the file —
+a field name that is a substring of its renamed self, a note that appears in the render as well as the
+download, a field declared in an interface as well as assigned, and a helper called twice where only
+one call was checked.

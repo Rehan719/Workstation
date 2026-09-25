@@ -157,7 +157,8 @@ async def clear_workspace(owner_id: str = "default", user: dict | None = Depends
 # any prompt, and there was no field to enter them. This is the field.
 #
 # It is NOT the recall path. gateway._augment retrieves prior interactions by token overlap and every
-# generation-class caller disables it (W332: "recall was the leak vector"). This is the opposite —
+# generation call receives it — off by default at the gateway since W489 (W332: "recall was the leak
+# vector"). This is the opposite —
 # the person's own words, which they can read back and delete. See agentic_core/ai/user_context.py.
 
 

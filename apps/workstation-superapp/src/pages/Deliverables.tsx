@@ -8,6 +8,7 @@ interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
   id: string; type: string; title: string; vsb_id?: string;
   versions: number; served_by?: string; updated_at?: string; qms_gate_passed?: boolean | null;
+  is_external?: boolean;   // W490 (refutation) — without it the ROW badge greened an external serve
   compliance_overall?: string | null;   // W455 — a FAIL is visible on the row
 }
 interface QualityAssurance {
@@ -184,7 +185,14 @@ export const Deliverables: React.FC = () => {
                 className={`w-full text-left p-3 rounded-xl border ${selected?.id === d.id ? 'border-aura/50 bg-aura/5' : 'border-slate-900 bg-slate-950'}`}>
                 <p className="text-xs font-black text-white truncate">{d.title}</p>
                 <p className="text-[9px] font-bold uppercase text-slate-600 mt-0.5 flex items-center gap-1.5">
-                  {d.type} · v{d.versions} · {d.served_by}
+                  {d.type} · v{d.versions} ·
+                  {/* W490 (sweep S6.14, C7) — the raw token read as a product name. (refutation) The
+                      first cut took .label and .title and DROPPED .cls, which is the exact shape W453's
+                      class-kill guard forbids: without the class the floor chip inherits the row's grey
+                      and the amber warning disappears, while the detail pane shows the same fact in
+                      amber. One call, all three fields. */}
+                  {(() => { const b = provenanceBadge(d.served_by, d.is_external);
+                    return <span className={`px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                   {(() => { const c = qmsChip({ qms_gate_passed: d.qms_gate_passed }); return c && (
                     <span className={c.verdict === 'pass' ? 'text-emerald-400' : c.verdict === 'fail' ? 'text-vital' : 'text-slate-500'} title={`Living-QMS gate: ${c.verdict}`}>● QMS</span>
                   ); })()}

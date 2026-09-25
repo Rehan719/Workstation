@@ -16,6 +16,17 @@ export interface AvatarMessage {
   servedBy?: string;     // which OWNED resource answered (in-house provenance)
   isExternal?: boolean;
   suggestedAreas?: AvatarSuggestedArea[];  // §5/§9 guided navigation — "Take me there"
+  // W490 (sweep S10.11, C7) — the backend ALREADY says when it could not honour the request:
+  // image_understood=false when no vision model read the attachment, and language=null when the
+  // deterministic floor could not answer in the language asked for. The hook dropped all of it, so a
+  // user saw a fluent reply beside their image and concluded it had been read.
+  imageRequested?: boolean;
+  imageUnderstood?: boolean;
+  imageServedBy?: string | null;
+  imageIsExternal?: boolean;
+  imageStatus?: string;   // W490 (refutation) — WHICH not-read state it was
+  languageRequested?: string | null;
+  languageHonoured?: string | null;
 }
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
@@ -235,6 +246,14 @@ export function useAvatarSession() {
         role: 'assistant', content: replyText,
         servedBy: resp.data.served_by, isExternal: resp.data.is_external,
         suggestedAreas: resp.data.suggested_areas || [],
+        // W490 — carried, because a reply that did not read the image must not look like one that did
+        imageRequested: Boolean(imageBase64),
+        imageUnderstood: Boolean(resp.data.image_understood),
+        imageServedBy: resp.data.image_served_by ?? null,
+        imageIsExternal: Boolean(resp.data.image_is_external),
+        imageStatus: resp.data.image_status ?? undefined,
+        languageRequested: prefLanguageName() || null,
+        languageHonoured: resp.data.language ?? null,
       }]);
       if (speakReplies) speakText(replyText);
       setAiStatus('online');

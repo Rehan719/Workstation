@@ -63,11 +63,25 @@ export function errorMessage(e: unknown): string {
 // output from the REQUEST (not model inference), and eight separate renderers were labelling it
 // "in-house · native" in green. One helper, every badge; the class dies here.
 export const provenanceBadge = (servedBy: string | null | undefined, isExternal?: boolean) => {
-  const sb = servedBy ?? 'native';
+  // W490 (refutation) — THE THIRD STATE. `servedBy ?? 'native'` turned "no call is recorded as having
+  // served this" into the positive claim "structured floor — not model analysis". Two surfaces this
+  // round added hit exactly that: a transformation assessment whose call RAISED (served_by: null), and
+  // the synthesis fallback endpoint, which records no provenance at all. `provenanceLine` has said
+  // "not recorded for this output" since W485; the badge was the half that still guessed.
+  if (servedBy === null || servedBy === undefined || servedBy === '') {
+    return { label: 'provenance not recorded', cls: 'bg-slate-800 text-slate-400',
+      title: 'no call is recorded as having served this output — neither a model nor the floor is claimed' };
+  }
+  const sb = servedBy;
   if (isExternal) return { label: `via ${sb}`, cls: 'bg-amber-500/20 text-amber-400',
     title: 'served by an external accelerant (opt-in)' };
-  if (sb === 'native') return { label: 'structured floor — not model analysis', cls: 'bg-amber-500/20 text-amber-400',
+  if (sb === 'native' || sb === 'template') return { label: 'structured floor — not model analysis', cls: 'bg-amber-500/20 text-amber-400',
     title: 'the deterministic native floor composes structured output from the request — it is not model inference' };
+  // W490 (refutation) — `verbatim-ingest` means the CALLER supplied this text and declared no origin.
+  // The platform composed nothing, so the emerald "in-house · verbatim-ingest" was a composition claim
+  // over someone else's words — and it contradicted the exported file, which now says so correctly.
+  if (sb === 'verbatim-ingest') return { label: 'supplied verbatim by the caller', cls: 'bg-slate-800 text-slate-400',
+    title: 'the platform did not compose this text and records no origin for it' };
   return { label: `in-house · ${sb}`, cls: 'bg-emerald-500/20 text-emerald-400', title: undefined };
 };
 
@@ -178,7 +192,10 @@ export const provenanceMapBadge = (servedBy: Record<string, number> | null | und
   // refuter F4 — an external run still lists the owned model in its map; 'via' names only the accelerant
   if (anyExternal) return { label: `via ${keys.filter(k => k !== 'native' && !k.startsWith('ollama:')).join(' · ') || 'external'}`, cls: 'bg-amber-500/20 text-amber-400',
     title: 'served by an external accelerant (opt-in)' };
-  if (!keys.length || keys.every(k => k === 'native')) return provenanceBadge('native');
+  // W490 (refutation) — an EMPTY map is not the floor: it is the absence of any record, and this
+  // returned the floor's positive claim for it (the same shape W485 fixed in provenanceLine).
+  if (!keys.length) return provenanceBadge(null);
+  if (keys.every(k => k === 'native')) return provenanceBadge('native');
   const models = keys.filter(k => k !== 'native');
   const floorCalls = servedBy?.['native'] || 0;
   const modelCalls = models.reduce((n, k) => n + (servedBy?.[k] || 0), 0);

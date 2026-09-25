@@ -94,6 +94,31 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
               {m.role === 'assistant' && m.servedBy && (
                 (() => { const b = provenanceBadge(m.servedBy, m.isExternal); return <span className={`text-[8px] font-black uppercase tracking-widest px-1 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()
               )}
+              {/* W490 (sweep S10.11, C7) — the backend reports when it could NOT honour part of the
+                  request; the reply used to look identical either way. An image that no vision model
+                  read, and a language the deterministic floor could not answer in, are said here. */}
+              {/* (refutation) The first cut said "no vision model was available" for EVERY not-read
+                  state — false when one was available, the image was transmitted to it and the call
+                  failed, and it suppressed the one fact that path most owes the user: their image
+                  left the platform. Each state now says what actually happened. */}
+              {m.role === 'assistant' && m.imageRequested && !m.imageUnderstood && (
+                <p data-testid="image-not-read" className="text-[9px] font-bold text-amber-400 px-1">
+                  {m.imageStatus === 'failed_external'
+                    ? <>Your image WAS sent to an external vision provider and the call failed, so it was
+                        not read — this reply is not based on what is in it.</>
+                    : m.imageStatus === 'blocked_by_policy'
+                    ? <>The image was received and NOT sent anywhere: an external vision provider is
+                        configured but external use is switched off, so it was not read.</>
+                    : <>The image was received but not read — no vision model was available, so this
+                        reply is not based on what is in it.</>}
+                </p>
+              )}
+              {m.role === 'assistant' && m.languageRequested && !m.languageHonoured && (
+                <p data-testid="language-not-honoured" className="text-[9px] font-bold text-amber-400 px-1">
+                  Answered in English: the structured floor cannot translate, so your {m.languageRequested}
+                  {' '}request was not honoured.
+                </p>
+              )}
               {m.role === 'assistant' && (m.suggestedAreas?.length ?? 0) > 0 && (
                 // §5/§9 guided navigation — whitelisted platform areas only, honest match reason on hover
                 <div className="flex flex-wrap gap-1.5 px-1 pt-0.5">

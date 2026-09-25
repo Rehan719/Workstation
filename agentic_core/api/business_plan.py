@@ -423,10 +423,19 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
 
     return {"objective_id": oid, "goal": goal, "grounded_in": req.scope,
             "status": obj.get("status"), "status_advanced": status_advanced,
+            # W490 (sweep S1.4, C7) — this whitelist STRIPPED the per-node served_by trace the
+            # orchestrator builds, so no surface could say that every node of the "Chief workflow-tree"
+            # was composed by the deterministic floor: the page showed `final` as a delivered decision
+            # with nothing to distinguish it from model reasoning. The trace travels now (without each
+            # node's output, which would bloat the payload), and so does any_external.
             "tree": {"node_count": tree.get("node_count"), "decision": tree.get("decision"),
                      "consensus": tree.get("consensus"), "governance": tree.get("governance"),
                      "validation": tree.get("validation"), "signal_response": tree.get("signal_response"),
-                     "ueg_hash": tree.get("ueg_hash"), "final": tree.get("final")}}
+                     "ueg_hash": tree.get("ueg_hash"), "final": tree.get("final"),
+                     "nodes": [{"id": n.get("id"), "role": n.get("role"),
+                                "served_by": n.get("served_by"), "is_external": n.get("is_external")}
+                               for n in (tree.get("nodes") or [])],
+                     "any_external": tree.get("any_external")}}
 
 
 class GenerateRequest(BaseModel):

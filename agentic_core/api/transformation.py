@@ -203,11 +203,21 @@ async def assess():
         f"Overall realisation: {int(r['overall_realisation']*100)}%\n{summary}\n\n"
         "## Faithfulness Assessment\n## Biggest Gaps\n## Recommended Next Transformation Steps\n## Risks"
     )
+    # W490 (sweep S6.7, C7) — `gateway.query` throws away served_by/is_external, so a panel headed
+    # 'AI Assessment' could not say that the deterministic floor composed it from the prompt's own
+    # headings. query_meta carries what the page needs; the assessment text is unchanged.
+    _prov = {"served_by": None, "is_external": False}
     try:
-        narrative = await gateway.query(prompt, agent="transformation_assess", timeout=20)
+        _meta = await gateway.query_meta(prompt, agent="transformation_assess", timeout=20,
+                                         augment=False)   # stated, never inherited (W488's rule)
+        narrative = _meta.get("output", "")
+        _prov = {"served_by": _meta.get("served_by", "native"),
+                 "is_external": bool(_meta.get("is_external"))}
     except Exception as e:
         narrative = f"[assessment unavailable: {e}]"
-    return {"overall_realisation": r["overall_realisation"], "assessment": narrative}
+        _prov = {"served_by": None, "is_external": False, "failed": str(e)}
+    return {"overall_realisation": r["overall_realisation"], "assessment": narrative,
+            "ai_provenance": _prov}
 
 
 @router.post("/tick")

@@ -3394,7 +3394,11 @@ def test_deliverables_living_lifecycle(client):
     exp = client.get(f"/api/v1/deliverables/{did}/export")
     assert exp.status_code == 200 and exp.headers["content-type"].startswith("text/markdown")
     assert "attachment" in exp.headers.get("content-disposition", "")
-    assert exp.text.startswith("# ") and "own AI fabric" in exp.text
+    # W490 (sweep S3.12, C7) — this asserted the export credited the platform's AI fabric. On the
+    # deterministic runtime the floor composed the content, so that credit was the defect; the export
+    # now names what actually served it.
+    assert exp.text.startswith("# ") and "own AI fabric" not in exp.text
+    assert "not model analysis" in exp.text or "composed in-house by" in exp.text, exp.text[:200]
     assert client.get("/api/v1/deliverables/nope/export").status_code == 404
     # §4.9 — selectable IN-HOUSE export formats are real renders (not faked), bad formats rejected
     fmt_ct = {"html": "text/html", "slides": "text/html", "txt": "text/plain", "json": "application/json"}
@@ -18289,7 +18293,10 @@ def test_w488_the_page_and_the_api_say_the_same_thing(client):
                 _missing.append(f"{_p.name}:{_s[:_m.start()].count(chr(10)) + 1}")
     assert not _missing, f"generation-class callers still inject cross-request recall: {_missing}"
     _av = (root / "agentic_core/avatars/api.py").read_text(encoding="utf-8")
-    assert "augment=True" in _av and "the ONE generation caller that KEEPS recall" in _av
+    # W490 (refutation) — this pinned the WRONG half of a contradiction: the comment said "the ONE
+    # generation caller" four lines above its own text naming two, and the suite asserted both.
+    assert "augment=True" in _av and "one of the TWO callers that keep recall" in _av
+    assert "the ONE generation caller" not in _av
 
     # ── FU-137 (S3.10): the Owner's plan is read whole or refused, NEVER replaced ───────────────
     import agentic_core.api.business_plan as bp
@@ -18846,3 +18853,308 @@ def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
     # …and NOT where a row merely discusses one (this row's own prose swelled three batches)
     assert fu.row_classes({"title": "Batches are scoped to the gate item",
                            "why": "C3 (invented or constant readings) closes 4 rows; C7 and C1 are smaller"}) == []
+
+
+def test_w490_floor_served_output_says_so_wherever_it_goes(client):
+    """W490 — P1.18 + P2.3 + P2.4 + P2.6 + P2.9, the C7 batch taken repo-wide.
+
+    Twelve rows, one rule: OUTPUT THE DETERMINISTIC FLOOR COMPOSED SAYS SO, WHEREVER IT GOES —
+    on the screen, in the file that leaves, and in the API that feeds both. The floor arranges the
+    headings it was asked for; it supplies no analysis, and every surface that presents its output as
+    AI work is making a claim the run cannot back.
+
+    Three shapes: the API carried the provenance and the surface dropped it (FU-162, FU-173, FU-174,
+    FU-178, FU-199); the screen showed it and the export lost it (FU-175, FU-211, FU-145); and the
+    API discarded it before any surface could speak (FU-144, FU-145), or reported a capability it had
+    NOT honoured and nothing read that either (FU-191). Plus the two claims that were simply false:
+    an engine list naming eight analysers over three calls (FU-134) and a privacy line saying nothing
+    is inferred from your activity while two surfaces recall it (FU-180).
+    """
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── the shared mechanism this round sweeps (it must keep saying what the floor is) ──────────
+    api_ts = (app / "lib/api.ts").read_text(encoding="utf-8")
+    assert "structured floor — not model analysis" in api_ts
+    assert "composed by the deterministic native structured engine, not by a model" in api_ts
+
+    # ── FU-144 (S6.7): the API stops discarding what served the assessment ──────────────────────
+    tr = (root / "agentic_core/api/transformation.py").read_text(encoding="utf-8")
+    assert 'gateway.query(prompt, agent="transformation_assess"' not in tr, \
+        "gateway.query throws away served_by, so no surface can label the assessment"
+    assert "query_meta(prompt, agent=\"transformation_assess\"" in tr and '"ai_provenance": _prov' in tr
+    r = client.post("/api/v1/transformation/assess")
+    assert r.status_code == 200, r.text[:160]
+    body = r.json()
+    assert "ai_provenance" in body and "served_by" in body["ai_provenance"], body.keys()
+    td = (app / "pages/TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="assessment-provenance"' in td, "the panel prints the text with no provenance"
+    assert "setAssessProv(d.ai_provenance ?? null)" in td, (
+        "the badge renders but nothing feeds it the API's provenance")
+    assert "provenanceBadge(assessProv?.served_by" in td
+    assert ">AI Assessment<" not in td, "a floor scaffold is still headed 'AI Assessment'"
+
+    # ── FU-145 (S12.4): the blueprint says what composed it, on screen AND in the export ─────────
+    cg = (root / "agentic_core/api/v290/ceo_generate.py").read_text(encoding="utf-8")
+    assert 'gateway.query(prompt, agent="ceo_blueprint")' not in cg
+    # a vacuous blind: "ai_provenance: dict | None = None" is a SUBSTRING of "_ai_provenance: ...",
+    # so renaming the field left the leg green. Anchored with its indentation, and checked live.
+    assert "\n    ai_provenance: dict | None = None" in cg and "ai_provenance=_prov" in cg
+    bp_r = client.post("/api/v290/ceo/generate-blueprint",
+                       json={"intent": "w490 guard", "realm": "enterprise", "stage": "concept",
+                             "domain": "enterprise"})
+    assert bp_r.status_code == 200, bp_r.text[:160]
+    assert (bp_r.json().get("ai_provenance") or {}).get("served_by"), bp_r.json().keys()
+    cs = (app / "pages/create/CreatorStudio.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="blueprint-provenance"' in cs
+    assert "provenanceBadge(blueprint.ai_provenance?.served_by" in cs, (
+        "the blueprint badge is not fed the API's provenance")
+    assert "provenanceLine(blueprint.ai_provenance?.served_by" in cs, "the exported .md carries no provenance"
+    assert "AI CEO is synthesising your blueprint" not in cs, "the spinner promises synthesis before it is known"
+
+    # ── FU-175 / FU-211 (S12.11, S2.13): the file that LEAVES carries the line the screen showed ──
+    aps = (app / "components/employment/ApplicationStudio.tsx").read_text(encoding="utf-8")
+    assert "provenanceLine(doc.ai_provenance?.served_by" in aps, "the downloaded .md loses the floor badge"
+    msh = (app / "pages/enterprise/ManagementSystemsHub.tsx").read_text(encoding="utf-8")
+    assert "provenanceLine(prov?.served_by" in msh
+    # a vacuous blind found `prov?.floor_note` useless as an anchor: it also appears in the RENDER,
+    # so dropping it from the DOWNLOAD left the leg green. The download's own expression is the anchor.
+    assert "+ (prov?.floor_note ? `> ${prov.floor_note}" in msh, \
+        "the downloaded framework loses the floor_note shown on screen"
+
+    # ── FU-191 (S10.11): a capability the backend did NOT honour reaches the reader ──────────────
+    hook = (app / "hooks/useAvatarSession.ts").read_text(encoding="utf-8")
+    # a vacuous blind: the bare field names are in the INTERFACE too, so removing an ASSIGNMENT left
+    # the leg green. The assignments are what carry the backend's answer to the reader.
+    for f in ("imageRequested: Boolean(imageBase64)",
+              "imageUnderstood: Boolean(resp.data.image_understood)",
+              "languageHonoured: resp.data.language"):
+        assert f in hook, f"the hook declares the field and never assigns it: {f}"
+    cp = (app / "components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="image-not-read"' in cp and 'data-testid="language-not-honoured"' in cp
+    # the NEGATION is the leg: without it every reply claims the image was not read
+    assert "m.imageRequested && !m.imageUnderstood" in cp
+    assert "m.languageRequested && !m.languageHonoured" in cp
+    # …and the backend really does report those states (the page is labelling something real)
+    av = (root / "agentic_core/avatars/api.py").read_text(encoding="utf-8")
+    assert "image_understood=image_understood" in av and "image_served_by=image_served_by" in av
+
+    # ── FU-162 (S3.12, S6.14): every server-rendered export, and the row, say what composed it ──
+    dl = (root / "agentic_core/api/deliverables.py").read_text(encoding="utf-8")
+    assert "produced on Workstation IDBO's own AI fabric" not in dl, \
+        "a binary export still claims the AI fabric produced floor output"
+    assert "produced on Workstation's own AI fabric" not in dl, "the markdown export still claims it"
+    assert "def _provenance_phrase" in dl
+    import agentic_core.api.deliverables as dlm
+    floor_doc = {"type": "report", "ai_provenance": {"served_by": "native", "is_external": False}}
+    model_doc = {"type": "report", "ai_provenance": {"served_by": "ollama:llama3", "is_external": False}}
+    ext_doc = {"type": "report", "ai_provenance": {"served_by": "claude", "is_external": True}}
+    ingest = {"type": "report", "ai_provenance": {"served_by": "verbatim-ingest",
+                                                  "source_served_by": {"native": 11}}}
+    assert "not model analysis" in dlm._provenance_phrase(floor_doc)
+    assert "composed in-house by ollama:llama3" in dlm._provenance_phrase(model_doc)
+    assert "external accelerant" in dlm._provenance_phrase(ext_doc)
+    # the verbatim ingest is judged by the ORIGIN it declared, the way the §10 gate already judges it
+    assert "not model analysis" in dlm._provenance_phrase(ingest), dlm._provenance_phrase(ingest)
+    assert "native×11" in dlm._provenance_phrase(ingest), dlm._provenance_phrase(ingest)
+    # an empty map claims nothing at all
+    assert "no call is recorded" in dlm._provenance_phrase({"ai_provenance": {"source_served_by": {}}})
+    dsx = (app / "pages/Deliverables.tsx").read_text(encoding="utf-8")
+    assert "· {d.served_by}" not in dsx, "the row still prints the raw token, which reads as a brand"
+    # (refutation) the first cut called the badge with ONE argument, so an opt-in external serve went
+    # emerald "in-house" on the row while the detail pane below it showed amber "via <token>".
+    # (refutation) The first cut of this leg demanded TWO calls — a shape satisfiable only by taking
+    # .label and .title separately, which is exactly what W453's class-kill guard forbids (it drops
+    # .cls, so the floor chip loses its amber). The two guards were mutually unsatisfiable. One call,
+    # destructured, all three fields used.
+    assert "const b = provenanceBadge(d.served_by, d.is_external);" in dsx
+    assert "${b.cls}" in dsx and "title={b.title}" in dsx and "{b.label}" in dsx
+    assert "provenanceBadge(d.served_by)." not in dsx
+    assert '"is_external": (d.get("ai_provenance") or {}).get("is_external")' in dl, (
+        "the list summary does not send is_external, so the row cannot match the detail pane")
+
+    # ── FU-173 / FU-174 (S1.3, S1.4): the cockpit labels the Chief's directive and the tree ─────
+    ck = (app / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="chief-directive-provenance"' in ck
+    assert "provenanceMapBadge(chiefResult.ai_provenance?.served_by" in ck
+    # provenanceMapFromTrace is on the import line too; the call that feeds the badge is the anchor
+    assert 'data-testid="tree-provenance"' in ck
+    assert "provenanceMapBadge(provenanceMapFromTrace(t.nodes), t.any_external)" in ck
+    # …and W488's reason for a directive that could not land now reaches the page too
+    assert 'data-testid="objectives-not-added"' in ck
+    bp_src = (root / "agentic_core/api/business_plan.py").read_text(encoding="utf-8")
+    assert '"nodes": [{"id": n.get("id")' in bp_src, "the per-node served_by trace is still stripped"
+    assert '"any_external": tree.get("any_external")' in bp_src
+
+    # ── FU-178 (S8.12): the forge run says what served its five calls ───────────────────────────
+    fp = (app / "pages/developers/ForgePipeline.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="forge-provenance"' in fp and 'data-testid="forge-deliverable-provenance"' in fp
+    # the helper NAME is on the import line, so it is not a usage anchor — the read is
+    assert fp.count("provenanceMapBadge(result.ai_provenance?.served_by") == 2, (
+        fp.count("provenanceMapBadge(result.ai_provenance?.served_by"))
+
+    # ── FU-199 (S4.12): the green tick carries what served the run ──────────────────────────────
+    ss = (app / "pages/synthesis/SynthesisStudio.tsx").read_text(encoding="utf-8")
+    assert "served_by: ev.served_by" in ss, "the done frame's provenance is parsed and thrown away"
+    assert 'data-testid="synthesis-provenance"' in ss
+    # (refutation) the aggregate comment promised a per-result badge that did not exist, and
+    # profile_applied was typed, assigned and read nowhere — the narrower form of the same defect.
+    assert 'data-testid="synthesis-result-provenance"' in ss
+    assert 'data-testid="synthesis-profile-applied"' in ss
+    assert "result.profile_applied" in ss
+
+    # ── FU-134 (S7.0): an engine list is what it is — a selection, not a record of analysers ────
+    sv = client.post("/api/v1/intelligence/solve", json={"problem": "w490 guard", "domain": "general"})
+    assert sv.status_code == 200, sv.text[:160]
+    sb = sv.json()
+    assert sb["calls_made"] == 3, sb.get("calls_made")
+    assert "not one call per engine" in sb["engines_used_basis"], sb.get("engines_used_basis")
+    assert sb.get("run_summary"), sb.keys()
+    # on the deterministic test runtime every call is the floor, and the summary must say so
+    assert "structured floor" in sb["run_summary"], sb["run_summary"]
+    assert sb["provenance"]["floor_calls"] == 3, sb["provenance"]
+
+    # ══ W490 REFUTATION LEGS — 18 verified findings against this round's own diff ════════════════
+    # Five lenses, twice (the first run lost 27 of 45 agents to a full disk — see the register row on
+    # cleaning up worktrees). Two shapes dominated: a NEW claim the repo cannot back, and a second
+    # reader of the same field left disagreeing with the first.
+
+    # ── the server phrase obeys the same COUNT RULE as the browser it claims to mirror ───────────
+    import agentic_core.api.deliverables as dlm
+    def _phr(prov):
+        return dlm._provenance_phrase({"type": "report", "ai_provenance": prov})
+    # a floor-MAJORITY map is not "composed in-house": provenanceMapBadge has compared counts since W479
+    mixed = _phr({"source_served_by": {"native": 3, "ollama:llama3.2": 1}})
+    assert mixed.startswith("mostly structured floor"), mixed
+    assert "3 of 4 calls" in mixed, mixed
+    assert "composed in-house" not in mixed, mixed
+    # a model-majority map still reads in-house, and an all-floor map is the floor
+    assert _phr({"source_served_by": {"native": 1, "ollama:x": 3}}).startswith("composed in-house by")
+    assert _phr({"source_served_by": {"native": 11}}).startswith("structured floor")
+    # a verbatim ingest with NO declared origin is not a composition claim at all
+    ing = _phr({"served_by": "verbatim-ingest"})
+    assert ing.startswith("supplied verbatim by the caller"), ing
+    assert "in-house" not in ing and "structured floor" not in ing, ing
+    # …and one whose declared origin is EXTERNAL is never "in-house"
+    ext_ing = _phr({"served_by": "verbatim-ingest", "source_served_by": "claude", "is_external": True})
+    assert "external accelerant" in ext_ing, ext_ing
+
+    # ── the SVG and PNG cards cannot contradict their own subtitle ───────────────────────────────
+    assert "def _provenance_footer" in dl, "the cards derive their own footer again"
+    assert "Workstation IDBO · {posture} · {served}" not in dl
+    import re as _re
+    _svg = dlm._svg_doc({"type": "report", "title": "t",
+                         "ai_provenance": {"served_by": "native", "is_external": False}})
+    _foot = _re.findall(r">([^<]*Workstation IDBO[^<]*)<", _svg)
+    assert _foot and "structured floor" in _foot[0], _foot
+    assert "in-house" not in _foot[0], _foot
+    # a vacuous blind: a byte count says nothing about what was DRAWN on the card. The PNG footer
+    # is read by spying on the text calls, so it cannot drift from the subtitle unnoticed.
+    try:
+        from PIL import ImageDraw as _ID
+        _drawn: list = []
+        _real_text = _ID.ImageDraw.text
+        def _spy(self, xy, text, *a, **k):
+            _drawn.append(str(text))
+            return _real_text(self, xy, text, *a, **k)
+        _ID.ImageDraw.text = _spy
+        try:
+            _png = dlm._png_bytes({"type": "report", "title": "t",
+                                   "ai_provenance": {"served_by": "native"}})
+        finally:
+            _ID.ImageDraw.text = _real_text
+        assert len(_png) > 0
+        _pfoot = [s for s in _drawn if "Workstation IDBO" in s]
+        assert _pfoot, _drawn[:4]
+        assert "structured floor" in _pfoot[0] and "in-house" not in _pfoot[0], _pfoot
+    except ImportError:
+        pass      # Pillow absent: the SVG leg above still covers the shared footer
+
+    # ── the PAGE badge and the exported file agree about a verbatim ingest ───────────────────────
+    assert "sb === 'verbatim-ingest'" in api_ts, "the row still badges an ingest emerald in-house"
+    assert "supplied verbatim by the caller" in api_ts
+    assert "sb === 'native' || sb === 'template'" in api_ts, "a template-served output badges as a model"
+
+    # ── FU-134's fix reaches THE PAGE, not just the API ──────────────────────────────────────────
+    ci = (app / "pages/CognitionIntegration.tsx").read_text(encoding="utf-8")
+    assert "Ran: <span" not in ci, "the page still prints an engine list as a record of analysers"
+    assert 'data-testid="solve-engines-basis"' in ci and 'data-testid="solve-run-summary"' in ci
+    assert "solveRes.engines_used_basis" in ci and "solveRes.run_summary" in ci
+    # and its floor-served sections carry the note the sibling pages have had since W479
+    assert "FLOOR_STAGE_NOTE" in ci and ci.count('data-testid="solve-floor-note-') == 3
+
+    # ── the call count is counted, not asserted ─────────────────────────────────────────────────
+    assert sb["calls_attempted"] == 3, sb_
+    assert sb["calls_made"] == 3 - sb["provenance"]["failed_calls"], sb
+    # a vacuous blind: with nothing failing, a counted 3 and a constant 3 are the same number. One
+    # call is made to fail so the count has to be real.
+    import agentic_core.ai.gateway as _gwm
+    _real_qm = _gwm.gateway.query_meta
+    async def _one_fails(prompt, agent="assistant", **kw):
+        if agent == "cognitive_solve":
+            raise RuntimeError("w490 induced stage failure")
+        return await _real_qm(prompt, agent=agent, **kw)
+    _gwm.gateway.query_meta = _one_fails
+    try:
+        _f = client.post("/api/v1/intelligence/solve",
+                         json={"problem": "w490 failure leg", "domain": "general"}).json()
+    finally:
+        _gwm.gateway.query_meta = _real_qm
+    assert _f["provenance"]["failed_calls"] >= 1, _f["provenance"]
+    assert _f["calls_attempted"] == 3, _f
+    assert _f["calls_made"] == 3 - _f["provenance"]["failed_calls"], _f
+    assert _f["calls_made"] < 3, _f["calls_made"]
+    assert "of the 3 ran" in _f["engines_used_basis"], _f["engines_used_basis"]
+    assert "all 3 ran" not in _f["engines_used_basis"], _f["engines_used_basis"]
+    assert "attempts THREE gateway calls" in sb["engines_used_basis"], sb["engines_used_basis"]
+    assert "three gateway calls ran in total" not in sb["engines_used_basis"]
+
+    # ── the SAME tree, badged on BOTH pages that render it ───────────────────────────────────────
+    bpx2 = (app / "pages/enterprise/BusinessPlan.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="plan-tree-provenance"' in bpx2, \
+        "the Business Plan page renders the tree the cockpit badges, and says nothing about it"
+    assert "provenanceMapFromTrace" in bpx2
+
+    # ── the SECOND deliverables list in the cockpit, and its caption ─────────────────────────────
+    assert "own native AI fabric (honest in-house provenance)" not in ck, \
+        "the caption still credits the fabric for whatever composed these"
+    assert "{d.served_by || 'native'}" not in ck, "a record with no provenance still claims the floor"
+    assert ck.count("provenanceBadge(d.served_by, d.is_external)") >= 1
+
+    # ── the Forge badge names the scope it actually has ──────────────────────────────────────────
+    assert "whole run: {b.label}" in fp, "a run-wide aggregate is stamped as if it described one text"
+    assert 'data-testid="forge-stage-scope"' in fp
+
+    # ── the file that LEAVES SynthesisStudio carries its provenance (it is served off disk) ──────
+    syn_api = (root / "agentic_core/synthesis/api.py").read_text(encoding="utf-8")
+    assert "def _with_provenance" in syn_api and "_provenance_note" in syn_api
+    assert "self._with_provenance(content, ext)" in syn_api
+    assert "synthesis_manager._with_provenance(content, ext)" in syn_api, \
+        "the STREAM path persists its own file and does not carry provenance"
+    from agentic_core.synthesis.api import synthesis_manager as _sm
+    _sm._last_served_by, _sm._last_is_external = None, False
+    assert "no call is recorded" in _sm._with_provenance("# T\nbody", "md")
+    _sm._last_served_by = "native"
+    assert _sm._with_provenance("# T\nbody", "md").startswith("> Provenance: structured floor")
+    _sm._last_served_by = "ollama:x"
+    assert '"provenance": "composed in-house by ollama:x"' in _sm._with_provenance('{"a": 1}', "json")
+
+    # ── FU-180 (S6.4): the privacy claim is true of the WHOLE platform, exceptions named ────────
+    st = (app / "pages/Settings.tsx").read_text(encoding="utf-8")
+    assert "nothing is inferred from your activity" not in st, \
+        "the page still claims platform-wide what is only true of the profile"
+    assert 'data-testid="recall-disclosure"' in st
+    assert "AI CEO chat" in st and "avatar" in st, "the two recall surfaces are not named"
+    # …and the two named surfaces really are the only ones that opt in
+    import re as _re
+    optin = []
+    for p in sorted((root / "agentic_core").rglob("*.py")):
+        if "augment=True" in p.read_text(encoding="utf-8"):
+            optin.append(p.name)
+    assert sorted(optin) == ["api.py", "ceo.py"], optin      # avatars/api.py and v138/ceo.py
+    # …and no docstring still describes recall as the ambient default each caller must switch off
+    for p, stale in ((root / "agentic_core/ai/user_context.py", "every generation-class caller passes"),
+                     (root / "agentic_core/avatars/api.py", "Every ship/persist caller sets augment=False"),
+                     (root / "agentic_core/api/user_workspace.py", "generation-class caller disables it")):
+        assert stale not in p.read_text(encoding="utf-8"), (p.name, stale)

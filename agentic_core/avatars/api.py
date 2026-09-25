@@ -79,6 +79,12 @@ class ChatResponse(BaseModel):
     image_understood: bool = False
     image_served_by: Optional[str] = None  # which resource analysed the image: "ollama" (in-house) | "openai" | None
     image_is_external: bool = False        # honest: was the image sent to an external provider?
+    # W490 (refutation) — WHICH not-read state it was. The reached page said "no vision model was
+    # available" for all of them, which is false when one WAS available and the image was
+    # transmitted to it and the call failed — and that wording suppressed the one fact the user
+    # most needs on that path: their image left the platform.
+    #   read | failed_external | blocked_by_policy | no_vision_model | none (no image sent)
+    image_status: str = "none"
     context: str
     served_by: str = "native"          # which OWNED resource answered the TEXT (in-house-first provenance)
     is_external: bool = False
@@ -296,11 +302,13 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     if request.image_base64:
         # IN-HOUSE-FIRST vision: try a LOCAL Ollama vision model first (owned, no external dependency).
         vision_out = await _ollama_vision(request.image_base64, request.message)
+        image_status = "no_vision_model"
         if vision_out:
             image_note = vision_out
             image_understood = True
             image_served_by = "ollama"
             image_is_external = False
+            image_status = "read"
         else:
             # §6 (W335) — the external accelerant requires the EXPLICIT platform opt-in, never key
             # presence alone: previously a configured key shipped the user's image to OpenAI with
@@ -327,10 +335,13 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
                     image_note = vision_resp.choices[0].message.content or ""
                     image_understood = True
                     image_served_by = "openai"
+                    image_status = "read"
                 except Exception as e:
                     image_served_by = "openai"
+                    image_status = "failed_external"   # it LEFT the platform and the call failed
                     image_note = f"(Image attached but could not be analysed: vision backend unavailable — {str(e)[:150]})"
             elif openai_key and not external_allowed():
+                image_status = "blocked_by_policy"
                 image_note = ("(Image attached and received. An external vision key is configured but "
                               "AI_ALLOW_EXTERNAL is off, so the image was NOT sent externally and was "
                               "not analysed — set OLLAMA_VISION_MODEL for in-house vision.)")
@@ -355,10 +366,13 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     # In-house-first via the native fabric — always answers (native floor) and reports which
     # OWNED resource served it; bounded so the avatar stays responsive.
     _owner = user.get("username") if isinstance(user, dict) else None
-    # W488 (refutation) — the ONE generation caller that KEEPS recall, deliberately and on the record.
+    # W488 (refutation) — one of the TWO callers that keep recall, deliberately and on the record
+    # (the other is the AI-CEO chat, api/v138/ceo.py). W490 corrected this comment: it said "the ONE
+    # generation caller" four lines above text naming two, and a guard pinned the wrong half.
     # A conversation is the surface recall is for: the avatar is answering this person, its answer is not
     # persisted as anyone's authored content, and W333 scopes the recall to `owner_id` — this caller's own
-    # namespace plus platform memory, never the whole pool. Every ship/persist caller sets augment=False
+    # namespace plus platform memory, never the whole pool. Recall is OFF by default at the gateway
+    # since W489; this caller and the AI-CEO chat are the two that opt back in, by name
     # (W332, extended to all of them in W488); an unauthenticated caller here has no namespace, so it
     # reaches platform memory only.
     meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0,
@@ -376,6 +390,7 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
         image_understood=image_understood,
         image_served_by=image_served_by,
         image_is_external=image_is_external,
+        image_status=image_status if request.image_base64 else "none",
         context=request.context,
         served_by=meta.get("served_by", "native"),
         is_external=bool(meta.get("is_external")),
