@@ -693,8 +693,39 @@ def test_cascade_bto_requisitions_real_fabric(client):
                    "for the halal delivery platform", "domain": "enterprise"}).json()
     fr = r["fabric_requisitions"]
     assert fr, "no fabric facility was requisitioned for a mission that plainly matches two"
+    # W491 (FU-159) — `ran` read as proof a facility executed for this mission; most eligible resources
+    # only read state that was already there. A requisition now carries the kind, and no surface may
+    # infer a run from a resource merely having matched.
+    # W491 refutation — the counters used to be asserted against the identical sum over the same returned
+    # list, which restates the server's own line and cannot fail. The expected value is derived here from
+    # the classification CONSTANTS and each resource's id, independently of what the response says it is.
+    from agentic_core.api.resource_fabric import (_resource_kind as _rk, _resource_outcome as _ro,
+                                                  _OUTCOME_FOR_KIND as _OFK)
     for f in fr:
-        assert f["ran"].startswith("/api/") and f["match_hits"] >= 2 and f["output"]
+        assert "ran" not in f, f
+        assert f["kind"] in ("status_read", "query", "blueprint", "facility_run"), f
+        assert f["invocation"] == "in_process" and f["kind_phrase"], f
+        assert f["kind"] == _rk(f["resource"]), f           # the kind is the resource's, not the run's
+        if not f.get("error"):
+            assert f["outcome"] == _OFK[_rk(f["resource"])], f
+            assert f["endpoint"].startswith(("/api/", "organism.")) and f["output"], f
+        else:
+            assert f["outcome"] in ("raised", "no_calls_ran"), f
+        assert f["match_hits"] >= 2, f
+    _sm = r["fabric_requisitions_summary"]
+    _exp_ran = sum(1 for f in fr if not f.get("error") and _rk(f["resource"]) == "facility_run")
+    _exp_read = sum(1 for f in fr if not f.get("error") and _rk(f["resource"]) in ("status_read", "query"))
+    _exp_spec = sum(1 for f in fr if not f.get("error") and _rk(f["resource"]) == "blueprint")
+    assert _sm["requisitioned"] == len(fr)
+    assert _sm["facilities_ran"] == _exp_ran, (_sm, _exp_ran)
+    assert _sm["state_read"] == _exp_read, (_sm, _exp_read)
+    assert _sm["blueprints_drafted"] == _exp_spec, (_sm, _exp_spec)
+    assert (_sm["facilities_ran"] + _sm["state_read"] + _sm["blueprints_drafted"]
+            + _sm["failed"] + _sm["outcome_not_recorded"]) == _sm["requisitioned"], _sm
+    # an attempt that raised is neither a run nor a read — checked on the function, so the branch executes
+    assert _ro("compliance", {"error": "boom"}) == "raised"
+    assert _ro("compliance", {"calls": 2, "failed_calls": 2}) == "no_calls_ran"
+    assert _ro("metabolic", {}) == "read" and _ro("build_to_order", {}) == "specified"
     rids = {f["resource"] for f in fr}
     assert rids & {"compliance", "resource_optimizer"}   # the deterministic match is stable
     top = client.get("/api/v1/swarm/cascade/runs").json()["runs"][0]
@@ -3610,7 +3641,22 @@ def test_swarm_cascade_in_house_provenance(client):
     assert "Action Plan" in r["level_0b_board_resolution"]
     # §5 — the AI CEO INTEGRATES the living management systems (real DCMS document-control of decisions)
     ms = r["management_systems"]
-    assert {"bms", "qms", "ems", "dcms"} <= set(ms["integrated"])
+    # W491 (sweep S11.8, C10) — this asserted the CATALOGUE, which is why the defect survived: the old
+    # `integrated` was a comprehension over a static constant, so the four names were always present
+    # whether or not anything ran. The list now records what produced a value.
+    assert "integrated" not in ms, "the catalogue is being reported as a record of operation again"
+    assert {"dcms", "bms", "ems"} <= set(ms["operated_this_run"]), ms["operated_this_run"]
+    assert "backbone" not in ms["operated_this_run"], "a system this cascade never touches is listed"
+    # qms appears ONLY when its gate returned a verdict — on floor-served content it does not run
+    # W491 refutation - this probe read a key the cascade never sends ("quality_assurance"), so it was
+    # always None and the assertion silently required that qms NEVER appear. The response key is "quality".
+    assert "quality" in r and "quality_assurance" not in r, sorted(r.keys())
+    # subscripted, not .get() - a probe that reads a key the cascade does not send must RAISE, never
+    # yield None and silently turn this into "qms is never operated"
+    _qms_ran = r["quality"]["qms_gate_passed"] is not None
+    assert ("qms" in ms["operated_this_run"]) == _qms_ran, (ms["operated_this_run"], _qms_ran)
+    assert set(ms["catalogue"]) >= {"bms", "qms", "ems", "dcms", "backbone"}, ms["catalogue"]
+    assert "gate returned a verdict" in ms["operated_basis"]
     assert all(len(h) == 128 for h in ms["document_control"].values())   # real SHA3-512 versioned artifacts
     assert {"ceo_directive", "board_action_plan", "bto_programme", "build_to_order"} <= set(ms["document_control"])
     # §5 — arms-length Change-Control / constitutional governance over the whole delivery
@@ -3884,7 +3930,9 @@ def test_tree_autonomously_draws_fabric_resources(client):
     assert "compliance" in (t.get("fabric_resources_drawn") or [])
     drew = [n for n in t.get("nodes", []) if n.get("fabric")]
     assert len(drew) == 1                                          # once per run, not per node
-    assert drew[0]["fabric"]["ran"] == "/api/v1/compliance/check"  # the REAL engine ran
+    assert drew[0]["fabric"]["endpoint"] == "/api/v1/compliance/check"     # the route serving the logic
+    assert drew[0]["fabric"]["kind"] == "facility_run"             # W491 — compliance genuinely runs
+    assert "ran" not in drew[0]["fabric"]                          # the key that claimed a run is gone
     assert drew[0]["fabric"]["match_hits"] >= 2                    # honest deterministic match score
     assert "[fabric:compliance" in drew[0]["output"]               # the genuine result folded in
     t2 = client.post("/api/v1/native-ai/tree",
@@ -4660,9 +4708,9 @@ def test_fabric_nexus_and_genesis_run_real(client):
     rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
     assert "nexus" in rr and "genesis" in rr
     assert (rr["nexus"].get("stages") or 0) >= 2 and rr["nexus"].get("output")        # the 4-layer chain ran
-    assert rr["nexus"].get("ran") == "/api/v1/intelligence/nexus"
+    assert rr["nexus"].get("endpoint") == "/api/v1/intelligence/nexus"   # W491 - endpoint, not "ran"
     assert rr["genesis"].get("status") == "complete" and rr["genesis"].get("output")  # the journey ran
-    assert rr["genesis"].get("ran") == "/api/v1/genesis/journey"
+    assert rr["genesis"].get("endpoint") == "/api/v1/genesis/journey"
 
 
 def test_fabric_genome_runs_real(client):
@@ -4729,8 +4777,8 @@ def test_fabric_musculoskeletal_facilities_run_real(client):
     # Reactor + Factory + Simulator are now driven by the native swarm (in-house provenance)
     assert rr["reactor"].get("served_by") and rr["factory"].get("served_by")
     assert rr["digital_twin"].get("served_by")
-    assert rr["reactor"].get("ran") == "/api/v1/reactor/composite"   # the composite Reactor (vision definition)
-    assert rr["factory"].get("ran") == "/api/v1/factory/produce"
+    assert rr["reactor"].get("endpoint") == "/api/v1/reactor/composite"   # the composite Reactor (vision definition)
+    assert rr["factory"].get("endpoint") == "/api/v1/factory/produce"
 
 
 def test_fabric_reactor_is_composite(client):
@@ -4744,7 +4792,7 @@ def test_fabric_reactor_is_composite(client):
                       json={"objective": "optimise a desert farm"}).json()
     r = next((x for x in (run.get("real_resource_runs") or []) if x["resource"] == "reactor"), None)
     assert r is not None and not r.get("error")
-    assert r.get("ran") == "/api/v1/reactor/composite"
+    assert r.get("endpoint") == "/api/v1/reactor/composite" and r.get("kind") == "facility_run"
     assert r.get("sub_facilities") == ["incubator", "experimentation", "studio"]   # the three sub-engines
     assert (r.get("generations_run") or 0) >= 1      # Incubator evolution ran
     assert (r.get("scenarios_run") or 0) >= 2        # Experimentation what-ifs ran
@@ -4812,7 +4860,7 @@ def test_fabric_organism_systems_run_real(client):
     sh = rr["self_healing"]
     assert "overall_health" in sh and sh.get("health_basis")
     assert (sh["overall_health"] is None) == ("nothing measured" in sh["health_basis"])
-    assert rr["gaas_v5"].get("ran") == "/api/v1/gaas/intercept"
+    assert rr["gaas_v5"].get("endpoint") == "/api/v1/gaas/intercept"
     assert rr["metabolic"].get("mode")        # FULL_POWER / NOMINAL / DEGRADED / EMERGENCY
     assert rr["nervous_system"].get("signal_fired") is True
 
@@ -5321,7 +5369,12 @@ def test_avatar_grounding_live_and_honest(client):
     assert r.get("grounded_in") == vid
     from agentic_core.avatars.api import _vsb_grounding
     g = _vsb_grounding(vid)
-    assert "operating cycles" in g and "compliance screen" in g   # LIVE, not just headers
+    # LIVE, not just headers. W491 (FU-192) — this pinned the literal "operating cycles"; the roster's
+    # tally is not the entity's cycle count, so the line now names which population it covers. The
+    # grounding check is the live FIGURE and the live screen, not the old wording.
+    assert "cycles run by the " in g and "not in this tally" in g
+    assert "compliance screen" in g
+    assert "operating cycles" not in g, "the avatar states the roster tally as the entity's cycle count"
     r2 = client.post("/api/v1/avatar/chat", json={
         "session_id": None, "message": "hello", "context": "ceo",
         "vsb_id": "vsb-does-not-exist"}).json()
@@ -19158,3 +19211,358 @@ def test_w490_floor_served_output_says_so_wherever_it_goes(client):
                      (root / "agentic_core/avatars/api.py", "Every ship/persist caller sets augment=False"),
                      (root / "agentic_core/api/user_workspace.py", "generation-class caller disables it")):
         assert stale not in p.read_text(encoding="utf-8"), (p.name, stale)
+def test_w491_a_count_says_what_population_it_covers(client):
+    """W491 — P1.18 + P2.4 + P2.6 + P2.8 + P2.9, the C10 batch taken repo-wide.
+
+    Ten rows, one rule: A COUNT OR A LIST SAYS WHAT POPULATION IT COVERS AND WHAT ACTUALLY HAPPENED
+    IN IT. A fetch limit is not a total. A catalogue of things the platform supports is not a record
+    of having operated them. A resource having matched is not a facility having run. And a control's
+    label names what the control does, not an activity nobody measured.
+
+    Four shapes appeared: a page-sized slice presented as the whole (FU-213 UEG trail, FU-172 signal
+    feed); a static catalogue presented as a record of operation (FU-159 management systems, FU-181
+    standards, FU-207 ensemble members, FU-206 model selector); a tally whose population is narrower
+    than the thing it is labelled as (FU-192 roster cycles vs the books, FU-159 fabric requisitions,
+    FU-155 marketplace listings); and a label naming something the control does not do (FU-208 the
+    Career Path button, FU-179 "Recent Project Activity" = the server's own git log).
+    """
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── FU-159 (S2.4): a requisition says what it DID, and the counters cover one population ──────
+    casc = client.post("/api/v1/swarm/cascade", json={
+        "mission": "verify regulatory compliance and optimise compute resource allocation",
+        "domain": "enterprise"}).json()
+    fr = casc["fabric_requisitions"]
+    assert fr, "a mission that plainly matches two resources requisitioned none"
+    from agentic_core.api.resource_fabric import (_resource_kind, _resource_outcome,
+                                                  _STATUS_READ_RESOURCES, _QUERY_RESOURCES,
+                                                  _BLUEPRINT_RESOURCES, _OUTCOME_FOR_KIND,
+                                                  _READ_SIDE_EFFECTS)
+    for f in fr:
+        # the key that asserted a run is gone; what happened is stamped by the fabric choke point
+        assert "ran" not in f, f
+        assert f["kind"] in ("status_read", "query", "blueprint", "facility_run"), f
+        assert f["invocation"] == "in_process", f       # no HTTP call is made, and the payload says so
+        assert f["kind_phrase"], f
+        # kind is WHAT IT IS (derived here from the constants), outcome is WHAT HAPPENED
+        assert f["kind"] == _resource_kind(f["resource"]), f
+        if f.get("error"):
+            assert f["outcome"] in ("raised", "no_calls_ran"), f
+        else:
+            assert f["outcome"] == _OUTCOME_FOR_KIND[f["kind"]] and f["endpoint"], f
+    sm = casc["fabric_requisitions_summary"]
+    # derived from the ids and the constants, NOT re-summed from the response's own kind field
+    assert sm["requisitioned"] == len(fr)
+    assert sm["facilities_ran"] == sum(
+        1 for f in fr if not f.get("error") and _resource_kind(f["resource"]) == "facility_run"), (sm, fr)
+    assert sm["failed"] == sum(1 for f in fr if f.get("error")), (sm, fr)
+    assert (sm["facilities_ran"] + sm["state_read"] + sm["blueprints_drafted"]
+            + sm["failed"] + sm["outcome_not_recorded"]) == sm["requisitioned"], sm
+    assert "an attempt that raised is neither a run nor a read" in sm["basis"]
+    assert "no HTTP call is made" in sm["basis"]
+
+    # the classification is decided from what a handler DOES, and the OUTCOME from what happened. These
+    # run the functions, so the branches execute; the round's first version only restated the constants.
+    assert _resource_kind("metabolic") == "status_read"        # biobus.organism_context() — a reading
+    assert _resource_kind("products_catalogue") == "query"     # scores existing records, makes nothing
+    assert _resource_kind("compliance") == "facility_run"      # genuinely runs the compliance engine
+    # build_to_order landed in facility_run because facility_run is the DEFAULT; its handler provisions
+    # nothing, and a default is not a reading
+    assert _resource_kind("build_to_order") == "blueprint"
+    assert _resource_kind("a-resource-that-does-not-exist") == "facility_run"   # the fall-through
+    assert not (_STATUS_READ_RESOURCES & _QUERY_RESOURCES) and not (_QUERY_RESOURCES & _BLUEPRINT_RESOURCES)
+    # an attempt that raised is neither a run nor a read, and a run whose every call failed is not a run
+    assert _resource_outcome("compliance", {}) == "produced"
+    assert _resource_outcome("compliance", {"error": "boom"}) == "raised"
+    assert _resource_outcome("compliance", {"calls": 3, "failed_calls": 3}) == "no_calls_ran"
+    assert _resource_outcome("metabolic", {"error": "boom"}) == "raised"
+    assert _resource_outcome("metabolic", {}) == "read"
+    # a read that is not free says so: organism_context() advances the ATP simulator
+    assert "metabolic" in _READ_SIDE_EFFECTS and "ATP" in _READ_SIDE_EFFECTS["metabolic"]
+
+    # the tree node that draws a resource folds in WHAT IT WAS, not "ran <endpoint>"
+    orc = (root / "agentic_core/ai/native/orchestrator.py").read_text(encoding="utf-8")
+    # W491 refutation — this was a disjunction whose second arm ("kind_phrase" anywhere in the file) is
+    # satisfied by the dict assignment alone, so the node-output format was unguarded. One arm now.
+    assert "[fabric:{rid} — {fr.get('kind_phrase')}] " in orc
+    assert "· ran {fr.get(" not in orc
+    assert '"kind": fr.get("kind")' in orc and '"ran": fr.get(' not in orc
+
+    # the composition surface: the same distinction reaches the page that lists a run's resources
+    rf_ui = (app / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    # (the round's first heading said "N of M ran an engine, THE REST READ existing state"; its own
+    #  refutation showed that counts an attempt that raised as a read — see the outcome legs below)
+    assert "real-runs-heading" in rf_ui and "composed resource(s) invoked in-process" in rf_ui
+    assert "§7 real engines ran" not in rf_ui
+    # the chip reports the OUTCOME (the round's first version branched on `kind`, which cannot say
+    # whether the attempt succeeded)
+    assert "run-kind-${rr.resource}" in rf_ui
+    assert rf_ui.count(": rr.outcome === 'read' || rr.outcome === 'assessed'") == 2   # live chip AND history chip
+    assert "rr.outcome === 'raised'" in rf_ui and "rr.kind !== 'facility_run'" not in rf_ui
+    assert "rr.endpoint &&" in rf_ui and "rr.ran &&" not in rf_ui
+
+    # a persisted VSB repo summary carries the kind too, or a list of ids implies they ran
+    vs = (root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert '"kind": f.get("kind")' in vs
+
+    # the BTO prompt no longer tells the model a status reading is a genuine facility result
+    sw = (root / "agentic_core/api/swarm.py").read_text(encoding="utf-8")
+    assert "assemble your plan FROM these genuine results" not in sw
+    assert "Platform state READ" in sw and "NOT as work performed for it" in sw
+    # a failed requisition is named to the model as failed, and explicitly not cited as an output
+    assert "Requisitioned and FAILED" in sw and "do not cite them" in sw
+    assert 'f.get("outcome") in ("raised", "no_calls_ran") or f.get("error")' in sw
+    assert "requisitioned these Resource-Fabric facilities and they RAN" not in sw
+
+    # ── FU-159 (S2.4): the management-systems list records what OPERATED, and the page reads it ───
+    ms = casc["management_systems"]
+    assert "integrated" not in ms, "the catalogue is being reported as a record of operation again"
+    assert set(ms["catalogue"]) >= {"bms", "qms", "ems", "dcms", "backbone"}
+    assert "backbone" not in ms["operated_this_run"], "a system this cascade never touches is listed"
+    assert set(ms["operated_this_run"]) <= set(ms["catalogue"])
+    swarm_ui = (app / "components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    # the reader must read the field the API sends — reading the removed one dropped the chip silently
+    assert "management_systems?.operated_this_run" in swarm_ui
+    assert "management_systems?.integrated" not in swarm_ui
+    assert "operated_basis" in swarm_ui
+    # and a requisition row on the page distinguishes a run from a read
+    assert "fabric-requisitions-heading" in swarm_ui and "read only" in swarm_ui
+    # the ROW's own distinction, not just the heading's word (the heading alone left this unguarded)
+    assert "f.kind === 'facility_run' ? `ran ${f.endpoint ?? ''}`" in swarm_ui
+    assert "(f.kind_phrase ?? f.kind ?? 'kind not recorded')" in swarm_ui
+    assert "fabric-kind-${f.resource}" in swarm_ui
+    assert "requisitioned &amp; RAN" not in swarm_ui and "requisitioned & RAN" not in swarm_ui
+
+    # ── FU-179 (S2.9): whose git history this is, and an unreadable log is not an empty one ───────
+    gh = client.get("/api/v1/workstation/git-history", params={"limit": 3}).json()
+    assert gh["subject"] == "workstation_platform_source"
+    assert gh["is_user_project_activity"] is False
+    assert gh["readable"] in (True, False)
+    assert "a user's own project activity is not tracked here" in gh["basis"]
+    # W491 refutation — `readable is (unreadable_reason is None)` restated the server's own line and was
+    # true for every possible response. These are falsifiable properties of the payload instead: a page
+    # is not a total, and the repository's own count is either absent or at least as large as the page.
+    assert "total" not in gh, gh.keys()          # the field that named a fetch limit a total is gone
+    assert gh["limit"] == 3 and gh["returned"] <= gh["limit"], gh
+    assert gh["repository_commits_total"] is None or gh["repository_commits_total"] >= gh["returned"], gh
+    if gh["readable"]:
+        # this repository has a real history, so the two numbers must genuinely differ here
+        assert gh["repository_commits_total"] and gh["repository_commits_total"] > gh["returned"], gh
+    assert "never the same number by construction" in gh["counts_basis"]
+    isrc = (root / "agentic_core/api/integration_surface.py").read_text(encoding="utf-8")
+    # readable is MEASURED (the repo is probed, the exit status is checked), never asserted
+    assert '"--show-toplevel"' in isrc and "out.returncode != 0" in isrc
+    fourth = (app / "components/layout/FourthColumn.tsx").read_text(encoding="utf-8")
+    assert "Recent Project Activity" not in fourth, "the platform's own log is labelled as the user's"
+    assert "git-history-caption" in fourth and "not activity in your projects" in fourth
+    assert "git-history-unreadable" in fourth       # unreadable is a state, not an empty list
+    # and it is its OWN statement, not nested inside the empty-list case
+    assert "{gitMeta && gitMeta.readable === false && (" in fourth
+    assert "typeof g.data.readable === 'boolean' ? g.data.readable : null" in fourth
+    # a Channels control does not report traffic nobody measured: the glyph is static
+    assert "animate-eq-bar" not in fourth
+    cc = (root / "packages/ui/src/CommandCenter.tsx").read_text(encoding="utf-8")
+    assert "animate-eq-bar" not in cc
+    assert "Live voice/sound-style equalizer" not in cc
+    # the one place bars still animate is labelled Idle and greyed, and says why that is honest
+    vv = (app / "components/avatar/VoiceVisualizer.tsx").read_text(encoding="utf-8")
+    assert "text-slate-700 animate-eq-bar" in vv and "statusLabel" in vv
+    assert "same honest\n// pattern as the Channels equalizer icon" not in vv
+
+    # ── FU-192 (S2.8): the roster's tally is not the entity's cycle count, and both are named ─────
+    from agentic_core.economy import ledger as _ledger_mod
+    from agentic_core.economy.ledger import VirtualLedger
+    # a repeatable probe: these books are built here, so start from none rather than from a prior run's
+    for _stale in (_ledger_mod._STORE / "w491-cycles_ledger.json",):
+        _stale.unlink(missing_ok=True)
+    led = VirtualLedger("w491-cycles")
+    st = led.statement()
+    assert "cycles_posted" in st and "cycles_posted_basis" in st
+    assert st["cycles_posted"] == 0
+    led.record("revenue", 100.0, memo="cycle intake (revenue)", ref="cyc-a")
+    led.record("revenue", 50.0, memo="cycle intake (revenue)", ref="cyc-a")   # same cycle, two postings
+    led.record("revenue", 25.0, memo="cycle intake (revenue)", ref="cyc-b")
+    led.record("owner", 10.0, memo="owner draw")                              # not a cycle intake
+    st2 = VirtualLedger("w491-cycles").statement()
+    assert st2["cycles_posted"] == 2, st2["cycles_posted"]       # cycles, not postings and not entries
+    assert st2["entry_count"] > st2["cycles_posted"]
+    assert "one intake entry per metabolic cycle" in st2["cycles_posted_basis"]
+    lv = (root / "agentic_core/economy/living_vsbs.py").read_text(encoding="utf-8")
+    assert "cycles this autonomous roster ran and booked" in lv
+    assert 'r["ledger_cycles"] = _st.get("cycles_posted")' in lv     # the books' count reaches the row
+    assert lv.count('r["ledger_cycles_unavailable"]') == 2   # BOTH legs: a load error and a raise
+    assert lv.count('r["ledger_cycles"] = None') == 2       # neither leg reports unreadable as zero
+    econ_ui = (app / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert "roster cycles" in econ_ui and "on the books" in econ_ui
+    assert "operating_cycles_basis" in econ_ui and "ledger_cycles" in econ_ui
+    av = (root / "agentic_core/avatars/api.py").read_text(encoding="utf-8")
+    assert "cycles run by the " in av and "operating cycles\"" not in av
+
+    # ── the six single-surface rows: each count/label now names its own population ────────────────
+    mkt = (app / "pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
+    assert "listings-caption" in mkt
+
+    sol = (app / "pages/SolutionsPlatform.tsx").read_text(encoding="utf-8")
+    assert 'block mb-1.5">AI model note</label>' in sol      # the visible label
+    assert 'aria-label="AI model note"' in sol               # and the accessible name
+    assert "AI Model\"" not in sol and ">AI Model</label>" not in sol
+    assert "'/api/v1/ai/query', { query: prompt }" in sol        # the field the route actually takes
+
+    nai = (app / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    assert "ensemble-label" in nai
+
+    emp = (app / "pages/domains/EmploymentHub.tsx").read_text(encoding="utf-8")
+    assert "setActiveTab('path')" in emp        # the Career Path button goes to the Career Path tab
+
+    cui = (app / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
+    assert "ueg-trail-count" in cui and "uegTotal" in cui        # a page of events is not the total
+
+    org = (app / "pages/organism/OrganismDashboard.tsx").read_text(encoding="utf-8")
+    assert "composite-health-basis" in org
+    # the feed must READ the names the API sends, not only declare them
+    assert "{sig.signal_type}" in org and "sig.age_seconds" in org
+    assert "sig.ts" not in org and "{sig.type}" not in org
+
+    # W491 refutation — the round tried to pin its own probe by searching this file for the probe's text.
+    # An assertion cannot search for a literal it itself contains: it matches itself and can never fail.
+    # The contract is asserted against the live response instead, where it is falsifiable.
+    assert "quality" in casc and "quality_assurance" not in casc, sorted(casc.keys())
+    assert "qms_gate_passed" in casc["quality"], sorted(casc["quality"].keys())
+
+    # ── the refutation's own fixes, each with a leg that fails when it is undone ──────────────────
+    # a failure is a field, not a string dressed as content
+    _q = client.post("/api/v1/ai/query", json={"query": "w491 probe"}).json()
+    assert set(("answer", "ok", "error")) <= set(_q), sorted(_q)
+    assert _q["ok"] is (_q["error"] is None)
+    assert _q["answer"] is None or not str(_q["answer"]).startswith("[unavailable:")
+    assert "resp.data?.ok === false" in sol and "unavailable:" in sol   # the page branches on it
+
+    # the delegate card reports what RAN, against what was asked for and the cap
+    _dl = client.post("/api/v1/swarm/delegate", json={
+        "task": "w491: report what ran", "domain": "enterprise",
+        "agent_ids": ["CFO", "CTO", "CMO", "COO", "CLO", "CSO"]}).json()
+    from agentic_core.api.swarm import _MAX_AGENTS_PER_RUN as _CAP
+    assert len(_dl["agents_requested"]) == 6
+    assert len(_dl["agents_engaged"]) <= _CAP and set(_dl["agents_engaged"]) <= set(_dl["agents_requested"])
+    assert len(_dl["agents_engaged"]) == len(_dl["agent_responses"])
+    assert set(_dl["agents_not_run"]) == set(_dl["agents_requested"]) - set(_dl["agents_engaged"])
+    assert _dl["agents_not_run"], "a request for six agents under a cap of four ran them all?"
+    assert str(_CAP) in _dl["agents_engaged_basis"]
+    # and the comment that justified the router fix no longer overclaims: five keys ARE lower-case
+    from agentic_core.api.swarm import _AGENTS as _AG
+    assert [k for k in _AG if k == k.lower()], "the premise of the router fix has changed"
+    assert "the fallback ran EVERY time" not in sw
+    assert "eleven of the sixteen are capitalised" in sw
+
+    # a resource that raised is persisted as having raised, with its error kept
+    rf_src = (root / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8")
+    assert rf_src.count('"outcome": x.get("outcome") or _resource_outcome(x["resource"], x)') == 2
+    assert '"error": x.get("error"),' in rf_src
+    # the org-cascade summary sends lists, not the cascade dict's internal keys
+    assert '"management_systems": list((casc.get("management_systems") or {}).keys())' not in rf_src
+    assert '"management_systems_operated"' in rf_src and '"management_systems_catalogue"' in rf_src
+    assert "management_systems_operated" in rf_ui and "org-mgmt-catalogue" in rf_ui
+    # the run heading counts outcomes, and the history chips show them
+    assert "ran an engine, the rest read existing state" not in rf_ui
+    assert "history-outcome-${rr.resource}" in rf_ui
+    assert "rr.outcome === 'produced'" in rf_ui
+    assert "String(r.outcome)" in rf_ui      # the heading counts outcomes, not kinds
+
+    # the plan page shows what the composed resources DID, not a bare id list
+    bpx = (app / "pages/enterprise/BusinessPlan.tsx").read_text(encoding="utf-8")
+    assert "review-composition-${rv.composition_run!.run_id}" in bpx
+    assert "ran an engine" in bpx and "real_resources?: { resource: string; outcome?: string }[]" in bpx
+
+    # the caveat on a part-simulated figure is driven by what is MEASURED, not by an equality that
+    # disappears when the simulated term saturates — and the landing page carries it too
+    assert "measured === false" in org
+    assert "composite_health_measured_only !== status.composite_health" not in org
+    home = (app / "pages/DashboardNew.tsx").read_text(encoding="utf-8")
+    assert "home-composite-health-basis" in home and "is not measured" in home
+    nai_src = (app / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    assert "homeo-composite-chip" in nai_src and "part simulated" in nai_src
+    # the signal feed says which page of the trail it is
+    assert "signal-feed-scope" in org and "not the whole trail" in org
+    # the ensemble label counts producers, not members
+    assert "m => !m.error" in nai_src and "produced output" in nai_src
+    # an unreadable constitutional ledger is not "no events logged"
+    assert "ueg-unreadable" in cui and "not the same as no events having been logged" in cui
+    assert "{uegUnreadable ? (" in cui      # the branch, not only the testid
+    # the marketplace states each reason over the population it covers
+    assert "listings-unpriced-count" in mkt and "priced but held" in mkt
+    # a control that sends nothing does not say it sent something
+    assert "channel-note-keep" in cc and "nothing is sent and nothing answers" in cc
+    assert "You asked" not in cc and "Send query" not in cc
+
+    # ── the FAILURE PATH, actually exercised. The blind sweep found twelve guards vacuous for one
+    #    reason: nothing fails a handler in this environment, so every counter that distinguishes a
+    #    failed attempt from a read agreed with the broken version. These force the failure. ─────────
+    import asyncio as _aio491, types as _types491, unittest.mock as _mock491
+    from agentic_core.api import resource_fabric as _rf491
+
+    async def _forced_raise(rid, config, objective, domain):
+        return {"resource": rid, "error": "forced by the w491 guard"}
+
+    with _mock491.patch.object(_rf491, "_run_real_resource_handler", _forced_raise):
+        _fail = _aio491.run(_rf491._run_real_resource("compliance", {}, "w491 probe", "general"))
+    # kind is still what the resource IS; outcome says what happened, and the phrase describes no output
+    assert _fail["kind"] == "facility_run" and _fail["outcome"] == "raised", _fail
+    assert "neither ran nor read" in _fail["outcome_phrase"], _fail
+    assert _fail["kind_phrase"] == _fail["outcome_phrase"], _fail
+    with _mock491.patch.object(_rf491, "_run_real_resource_handler", _forced_raise):
+        _fail_read = _aio491.run(_rf491._run_real_resource("metabolic", {}, "w491 probe", "general"))
+    assert _fail_read["kind"] == "status_read" and _fail_read["outcome"] == "raised", _fail_read
+
+    # a run whose every call failed is not a run either
+    async def _all_calls_failed(rid, config, objective, domain):
+        return {"resource": rid, "ran": "/api/v1/x", "calls": 3, "failed_calls": 3, "output": ""}
+
+    with _mock491.patch.object(_rf491, "_run_real_resource_handler", _all_calls_failed):
+        _nc = _aio491.run(_rf491._run_real_resource("compliance", {}, "w491 probe", "general"))
+    assert _nc["outcome"] == "no_calls_ran" and "produced nothing" in _nc["outcome_phrase"], _nc
+
+    # the cascade RECORDS a failed requisition instead of dropping it, counts it as failed, and counts
+    # nothing as run or read
+    with _mock491.patch.object(_rf491, "_run_real_resource_handler", _forced_raise):
+        _fc = client.post("/api/v1/swarm/cascade", json={
+            "mission": "verify regulatory compliance and optimise compute resource allocation",
+            "domain": "enterprise"}).json()
+    _ffr = _fc["fabric_requisitions"]
+    assert _ffr, "a requisition whose handler raised was dropped instead of recorded"
+    assert all(f["outcome"] == "raised" and f["error"] for f in _ffr), _ffr
+    _fsm = _fc["fabric_requisitions_summary"]
+    assert _fsm["requisitioned"] == len(_ffr), _fsm
+    assert _fsm["failed"] == len(_ffr), _fsm
+    assert _fsm["facilities_ran"] == 0 and _fsm["state_read"] == 0, _fsm
+    # and the tiers are told what happened, not that nothing matched
+    assert "none matched the mission" not in str(_fc.get("measured_outcomes", "")), _fc.get("measured_outcomes")
+
+    # `readable` is MEASURED: with git unable to answer, the endpoint says so and claims no counts
+    from agentic_core.api import integration_surface as _is491
+
+    class _FakeProc:
+        def __init__(self, rc, out="", err=""):
+            self.returncode, self.stdout, self.stderr = rc, out, err
+
+    _fake_sp = _types491.SimpleNamespace(
+        run=lambda *a, **k: _FakeProc(1, "", "fatal: not a git repository"))
+    with _mock491.patch.object(_is491, "subprocess", _fake_sp):
+        _gh_bad = _aio491.run(_is491.git_history(limit=5))
+    assert _gh_bad["readable"] is False and _gh_bad["unreadable_reason"], _gh_bad
+    assert _gh_bad["repository_commits_total"] is None, _gh_bad
+    assert _gh_bad["returned"] == 0 and _gh_bad["repository"] is None, _gh_bad
+    assert _gh_bad["is_user_project_activity"] is False, _gh_bad
+    # a log that fails PARTWAY still reports unreadable, and does not pass its partial page off as whole
+    _part = iter([_FakeProc(0, "C:/repo\n", ""), _FakeProc(128, "abc|me|1 day ago|partial\n", "fatal: bad object")])
+    _fake_sp2 = _types491.SimpleNamespace(run=lambda *a, **k: next(_part))
+    with _mock491.patch.object(_is491, "subprocess", _fake_sp2):
+        _gh_part = _aio491.run(_is491.git_history(limit=5))
+    assert _gh_part["readable"] is False and _gh_part["returned"] == 1, _gh_part
+    assert _gh_part["repository_commits_total"] is None, _gh_part
+
+    cockpit = (app / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert "standards-catalogue-basis" in cockpit
+    assert "Standards the generators can draft against" in cockpit
+    assert "Living management systems (BMS" not in cockpit

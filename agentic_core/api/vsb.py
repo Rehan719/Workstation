@@ -2063,7 +2063,9 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
         "stored_config_applied": {"csuite_roles": _csuite, "coe_specialisms": _coe,
                                   "note": "empty = balanced default (no stored swarm design)"},
         "quality": run.get("quality"), "plan_binding": run.get("plan_binding"),
-        "fabric_requisitions": [f.get("resource") for f in (run.get("fabric_requisitions") or [])],
+        # W491 (FU-159) - a persisted list of ids cannot say whether those resources ran; carry the kind
+        "fabric_requisitions": [{"resource": f.get("resource"), "kind": f.get("kind")}
+                                for f in (run.get("fabric_requisitions") or [])],
         "served_by": (run.get("ai_provenance") or {}).get("served_by"),
         "ran_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

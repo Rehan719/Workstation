@@ -66,7 +66,10 @@ export const DashboardNew: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [vitals, setVitals] = useState<Vitals | null>(null);
-  const [health, setHealth] = useState<{ composite: number; mode: string } | null>(null);
+  const [health, setHealth] = useState<{
+    composite: number; mode: string;
+    measuredOnly: number | null; unmeasuredShare: number; unmeasuredTerms: string[];
+  } | null>(null);
 
   // E5 — personalisation: greet by the stored name and surface recent work from My Work history.
   const prefs = getPrefs();
@@ -104,7 +107,19 @@ export const DashboardNew: React.FC = () => {
     }).catch(() => {});
 
     axios.get('/api/v1/organism/status').then(({ data }) => {
-      setHealth({ composite: data.composite_health ?? 0, mode: String(data.mode ?? '').replace(/_/g, ' ') });
+      // W491 (refutation) - this page reads the SAME endpoint as the organism hub and discarded the two
+      // fields that say the figure is part simulated, so the first page a user sees printed the blend as
+      // a measured percentage. FU-172 fixed the hub; this is the more reachable surface.
+      const terms = (data.composite_health_terms || {}) as Record<string, { weight?: number; measured?: boolean }>;
+      const unmeasured = Object.entries(terms).filter(([, t]) => t && t.measured === false);
+      setHealth({
+        composite: data.composite_health ?? 0,
+        mode: String(data.mode ?? '').replace(/_/g, ' '),
+        measuredOnly: typeof data.composite_health_measured_only === 'number'
+          ? data.composite_health_measured_only : null,
+        unmeasuredShare: unmeasured.reduce((a, [, t]) => a + (Number(t.weight) || 0), 0),
+        unmeasuredTerms: unmeasured.map(([k]) => k.replace(/_/g, ' ')),
+      });
     }).catch(() => {});
   }, []);
 
@@ -259,6 +274,13 @@ export const DashboardNew: React.FC = () => {
               </div>
               <div className="space-y-6 pt-6 border-t border-aura/10">
                 <Vital label="Composite Health" value={health ? `${Math.round(health.composite * 100)}%` : '—'} pct={health ? health.composite * 100 : 0} tone="aura" />
+                {health && health.unmeasuredShare > 0 && (
+                  <p className="text-[10px] text-amber-400/80 font-bold -mt-4" data-testid="home-composite-health-basis">
+                    {Math.round(health.unmeasuredShare * 100)}% of that figure is not measured
+                    ({health.unmeasuredTerms.join(', ')})
+                    {health.measuredOnly !== null ? ` — measured terms alone give ${Math.round(health.measuredOnly * 100)}%.` : '.'}
+                  </p>
+                )}
                 <Vital label="CPU" value={vitals ? `${vitals.cpu.toFixed(1)}%` : '—'} pct={vitals?.cpu ?? 0} tone="highlight" />
                 <Vital label="Memory" value={vitals ? `${vitals.memory.toFixed(1)}%` : '—'} pct={vitals?.memory ?? 0} tone="highlight" />
                 <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest">

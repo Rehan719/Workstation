@@ -529,6 +529,32 @@ class VirtualLedger:
                                        ("owner", "self_investment", "capital_fund",
                                         "user_projects", "charity")), 2),
             "entry_count": len(self._data["entries"]),
+            # W491 (FU-192) — the BOOKS' own count of metabolic cycles. The living roster's
+            # `operating_cycles` counts only the cycles that roster itself ran, so an entity cycled
+            # through any other path showed a smaller number beside a fuller ledger. Counted here from
+            # what a cycle actually writes: one intake entry per cycle, carrying its cycle token.
+            **self._cycles_posted(),
             "recent": self._data["entries"][-10:],
             "disclaimer": "Virtual/simulated WST units — not real money.",
+        }
+
+    def _cycles_posted(self) -> Dict[str, Any]:
+        """Cycles as the LEDGER records them: distinct cycle tokens on the intake entries a cycle writes,
+        plus the untokened intake entries (a cycle whose governance produced no token still posts intake).
+        Not a count of roster visits, and not a count of postings."""
+        tokens, untokened = set(), 0
+        for e in (self._data.get("entries") or []):
+            if not isinstance(e, dict) or not str(e.get("memo", "")).startswith("cycle intake"):
+                continue
+            ref = e.get("ref")
+            if ref:
+                tokens.add(str(ref))
+            else:
+                untokened += 1
+        return {
+            "cycles_posted": len(tokens) + untokened,
+            "cycles_posted_basis": ("counted on these books: one intake entry per metabolic cycle "
+                                    f"({len(tokens)} carrying a distinct cycle token, {untokened} without one). "
+                                    "Cycles run before intake entries carried a token are not distinguishable "
+                                    "and are counted once each."),
         }

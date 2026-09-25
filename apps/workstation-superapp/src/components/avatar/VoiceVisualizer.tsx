@@ -7,9 +7,11 @@ interface VoiceVisualizerProps {
   avatar: UseAvatarSessionReturn;
 }
 
-// Five literal idle-state bar classes (decorative "ready" pulse, same honest
-// pattern as the Channels equalizer icon — clearly idle, never pretending to
-// be live audio when there's nothing to measure).
+// Five literal idle-state bar classes. These DO animate, and that is honest only because of what
+// surrounds them: they render greyed (text-slate-700) beside a literal "Idle" status label, and the
+// moment there is a real level to show the live branch below replaces them with bars driven by the
+// measured amplitude. W491 (FU-179): this comment used to cite the Channels equalizer icon as the same
+// pattern - it was not (bright, unlabelled, always moving), and that icon is now static.
 const IDLE_BAR_CLASSES = [
   'h-[20%] [animation-delay:0ms] [animation-duration:1.1s]',
   'h-[30%] [animation-delay:120ms] [animation-duration:0.9s]',

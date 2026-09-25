@@ -11,6 +11,11 @@ export const ConstitutionalUI: React.FC = () => {
   const [articles, setArticles] = useState<any[]>([]);
   const [gaas, setGaas] = useState<any>(null);
   const [ueg, setUeg] = useState<any[]>([]);
+  // W491 — the chain's real size, so the badge can say what its 40 rows are 40 *of*
+  const [uegTotal, setUegTotal] = useState<number | null>(null);
+  // W491 (refutation) - the chain's own "I could not be read whole" signal was fetched and thrown away,
+  // so an unreadable ledger rendered as "No constitutional events logged yet" - the opposite claim.
+  const [uegUnreadable, setUegUnreadable] = useState<string | null>(null);
   const [integrity, setIntegrity] = useState<{ valid: boolean; events: number; root_hash: string } | null>(null);
 
   useEffect(() => {
@@ -26,8 +31,15 @@ export const ConstitutionalUI: React.FC = () => {
   const refreshGaas = () => {
     // W460 — a failing poll clears the verdict (a stale green NOMINAL used to outlive the backend)
     fetch('/api/v1/gaas/status').then(r => (r.ok ? r.json() : null)).then(setGaas).catch(() => setGaas(null));
+    // W491 (sweep S10.14, C10) — the badge counted these 40 fetched rows and read as the trail's
+    // total, freezing at 40 however large the chain grew (the same page showed 177+ elsewhere). The
+    // response already carries summary.total_events and this threw it away.
     fetch('/api/v1/gaas/ueg/events?limit=40').then(r => r.json())
-      .then(d => setUeg(Array.isArray(d?.events) ? [...d.events].reverse() : [])).catch(() => {});
+      .then(d => {
+        setUeg(Array.isArray(d?.events) ? [...d.events].reverse() : []);
+        setUegTotal(typeof d?.summary?.total_events === 'number' ? d.summary.total_events : null);
+        setUegUnreadable(d?.summary?.unreadable ? String(d.summary.unreadable) : null);
+      }).catch(() => {});
   };
   useEffect(() => {
     refreshGaas();
@@ -210,9 +222,15 @@ export const ConstitutionalUI: React.FC = () => {
                              <History size={24} className="text-aura" />
                              UEG Audit Trail
                           </h3>
-                          <Badge color="aura">{ueg.length} events</Badge>
+                          {/* W491 — says what it covers; an unreadable chain shows —, never 0 */}
+                          <Badge color="aura"><span data-testid="ueg-trail-count">latest {ueg.length} of {uegTotal ?? '—'} events</span></Badge>
                        </div>
-                       {ueg.length === 0 ? (
+                       {uegUnreadable ? (
+                          <p className="text-sm text-amber-400 font-bold" data-testid="ueg-unreadable">
+                             The constitutional ledger could not be read whole ({uegUnreadable}), so no events are
+                             shown and no count is claimed. This is not the same as no events having been logged.
+                          </p>
+                       ) : ueg.length === 0 ? (
                           <p className="text-sm text-slate-500 font-bold">No constitutional events logged yet. Actions routed through the engine appear here.</p>
                        ) : (
                           <div className="space-y-3">

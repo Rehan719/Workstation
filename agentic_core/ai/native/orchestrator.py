@@ -561,9 +561,10 @@ class NativeOrchestrator:
                 f"Your task: {n['task']}\n\n## {nid} output"
             )
             res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external)
-            # §6↔§7 — when a fabric resource genuinely matches this node's task, ALSO run its REAL
-            # handler and fold the genuine result into the node (honest provenance: resource id +
-            # endpoint + the word-overlap score). Fail-soft: a fabric error never breaks the node.
+            # §6↔§7 — when a fabric resource genuinely matches this node's task, ALSO invoke its REAL
+            # handler in-process and fold the genuine result into the node (honest provenance: resource
+            # id + the kind the handler is + the endpoint serving the same logic + the word-overlap
+            # score). Fail-soft: a fabric error never breaks the node.
             match = self._match_fabric_resource(f"{n['task']} {goal}")
             if match and match[0] not in fabric_drawn:
                 rid, hits = match
@@ -572,9 +573,14 @@ class NativeOrchestrator:
                     from agentic_core.api.resource_fabric import _run_real_resource
                     fr = await _run_real_resource(rid, {}, goal, "general")
                     if fr and not fr.get("error"):
-                        res["fabric"] = {"resource": rid, "ran": fr.get("ran"), "match_hits": hits}
+                        # W491 (FU-159) — the node says which KIND of resource it drew: most of the
+                        # tree-eligible ones only read state that was already there, and appending
+                        # "ran <endpoint>" to the node output claimed a facility run for each of them.
+                        res["fabric"] = {"resource": rid, "kind": fr.get("kind"),
+                                         "kind_phrase": fr.get("kind_phrase"),
+                                         "endpoint": fr.get("endpoint"), "match_hits": hits}
                         res["output"] = (res.get("output", "") +
-                                         f"\n\n[fabric:{rid} · ran {fr.get('ran')}] " +
+                                         f"\n\n[fabric:{rid} — {fr.get('kind_phrase')}] " +
                                          str(fr.get("output", ""))[:400])
                         _fire("motor", "native.tree", f"node {nid} drew fabric resource {rid}", 0.5)
                 except Exception:

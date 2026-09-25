@@ -23,9 +23,11 @@ export const EmploymentHub: React.FC = () => {
     });
   };
 
+  // W491 (sweep S9.11, C10) — a control's label names what the control does. This one was called
+  // "Career Path" and opened the Application Studio's input-materials block, while the hub's OWN
+  // Career Path tool (tab 'path', /api/v1/employment/career-path) sat one tab away. It opens that.
   const handleCareerPath = () => {
-    setActiveTab('studio');
-    scrollToSection('input-materials-section');
+    setActiveTab('path');
   };
 
   const handleNewOpportunity = () => {

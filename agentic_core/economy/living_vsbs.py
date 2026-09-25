@@ -186,7 +186,28 @@ def list_living() -> Dict[str, Any]:
             # in front of
             "standing_decision": r.get("decision_hold"),
         }
+        # W491 (FU-192) — `operating_cycles` counts the cycles THIS roster ran, which is not the number of
+        # metabolic cycles the entity has: one run through any other path posts to the books and never
+        # touches this counter, so a row read "1 cycles" beside a ledger holding three. The row now names
+        # the population its own counter covers and carries the books' own count beside it.
+        r["operating_cycles_basis"] = ("cycles this autonomous roster ran and booked; a cycle run through any "
+                                       "other path is posted to the books but not counted here")
+        try:
+            from agentic_core.economy.metabolism import EconomicMetabolism
+            _m = EconomicMetabolism(r.get("vsb_id"))
+            if _m.ledger.load_error:
+                r["ledger_cycles"] = None
+                r["ledger_cycles_unavailable"] = str(_m.ledger.load_error)[:160]
+            else:
+                _st = _m.ledger.statement()
+                r["ledger_cycles"] = _st.get("cycles_posted")
+                r["ledger_cycles_basis"] = _st.get("cycles_posted_basis")
+        except Exception as _le:
+            r["ledger_cycles"] = None
+            r["ledger_cycles_unavailable"] = f"{type(_le).__name__}: {str(_le)[:140]}"
     return {"living_vsbs": rows, "total": len(rows), "history_unavailable": hist_error,
+            "cycle_counts_basis": ("`operating_cycles` is this roster's own tally; `ledger_cycles` is what the "
+                                   "entity's books record. They differ whenever a cycle ran outside the roster."),
             "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy "
                     "cycles on the circadian heartbeat). Virtual/simulated — no real funds."}
 

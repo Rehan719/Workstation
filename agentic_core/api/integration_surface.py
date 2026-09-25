@@ -82,13 +82,27 @@ async def ai_completion(req: AIQuery):
 @router.post("/api/v1/ai/query")
 async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
     prompt = req.query or req.prompt
+    # W491 (refutation) — a failure was returned as the ANSWER ("[unavailable: …]"), a non-empty string
+    # that every caller then rendered as the model's output. A caller cannot tell success from failure by
+    # looking at a string, so the outcome is a field: `ok` plus `error`, and `answer` is null when nothing
+    # was produced rather than carrying an error message dressed as content.
+    _err = None
+    out = None
+    _served, _external = None, None
     try:
         # §17.5 invariant 1 (W343) — identity reaches the memory layer
         _owner = user.get("username") if isinstance(user, dict) else None
-        out = await gateway.query(prompt, agent="solutions", timeout=30, owner_id=_owner)
+        _meta = await gateway.query_meta(prompt, agent="solutions", timeout=30, owner_id=_owner,
+                                         augment=False)
+        out = _meta.get("output") or None
+        _served, _external = _meta.get("served_by"), bool(_meta.get("is_external"))
+        if out is None:
+            _err = "the call returned no output"
     except Exception as e:
-        out = f"[unavailable: {e}]"
-    return {"answer": out, "query": prompt[:120]}
+        _err = f"{type(e).__name__}: {str(e)[:160]}"
+    return {"answer": out, "ok": _err is None, "error": _err,
+            "served_by": _served, "is_external": _external,
+            "query": prompt[:120]}
 
 
 # ── v154 status / security / constitution ────────────────────────────────────
@@ -156,17 +170,57 @@ async def evidence_graph():
 # ── Workstation git history (real) ────────────────────────────────────────────
 @router.get("/api/v1/workstation/git-history")
 async def git_history(limit: int = 20):
+    """The commit log of the repository the SERVER process is running out of - Workstation's own source.
+    W491 (FU-179): this was surfaced to users as "Recent Project Activity", which reads as activity in
+    THEIR projects; it is not, and it never was. The payload now says whose history this is, and an
+    unreadable log is reported as unreadable instead of collapsing to an empty list that reads as "no
+    activity". Nothing about a user's projects can be derived from this endpoint."""
     commits: List[Dict[str, str]] = []
+    unreadable_reason = None
+    repository = None
     try:
-        out = subprocess.run(["git", "log", f"-{limit}", "--pretty=format:%h|%an|%ar|%s"],
-                             capture_output=True, text=True, timeout=8, cwd=".")
-        for line in out.stdout.splitlines():
-            parts = line.split("|", 3)
-            if len(parts) == 4:
-                commits.append({"hash": parts[0], "author": parts[1], "when": parts[2], "message": parts[3]})
-    except Exception:
-        pass
-    return {"commits": commits, "total": len(commits)}
+        _top = subprocess.run(["git", "rev-parse", "--show-toplevel"],
+                              capture_output=True, text=True, timeout=8, cwd=".")
+        repository = (_top.stdout or "").strip() or None
+        if repository is None:
+            unreadable_reason = ((_top.stderr or "").strip()[:160]
+                                 or "the directory the server runs in is not a git repository")
+        else:
+            out = subprocess.run(["git", "log", f"-{limit}", "--pretty=format:%h|%an|%ar|%s"],
+                                 capture_output=True, text=True, timeout=8, cwd=".")
+            if out.returncode != 0:
+                unreadable_reason = (out.stderr or "").strip()[:160] or f"git log exited {out.returncode}"
+            for line in out.stdout.splitlines():
+                parts = line.split("|", 3)
+                if len(parts) == 4:
+                    commits.append({"hash": parts[0], "author": parts[1], "when": parts[2], "message": parts[3]})
+    except Exception as e:
+        unreadable_reason = f"{e.__class__.__name__}: {str(e)[:140]}"
+    # W491 (refutation) — `total` was len(commits), i.e. the size of the page just fetched: ?limit=3 on a
+    # repository of ~1500 commits returned total 3. That is the exact defect this round's rule names ("a
+    # fetch limit is not a total") left standing in the endpoint the round rewrote for it. The page size
+    # and the repository's real count are now two different fields, and the real one is counted or null.
+    repo_total = None
+    if repository and unreadable_reason is None:
+        try:
+            _cnt = subprocess.run(["git", "rev-list", "--count", "HEAD"],
+                                  capture_output=True, text=True, timeout=8, cwd=".")
+            repo_total = int((_cnt.stdout or "").strip()) if _cnt.returncode == 0 else None
+        except Exception:
+            repo_total = None
+    return {"commits": commits, "returned": len(commits), "limit": limit,
+            "repository_commits_total": repo_total,
+            "counts_basis": ("`returned` is how many this call fetched (bounded by `limit`); "
+                             "`repository_commits_total` is the repository's own count, or null when it "
+                             "could not be read — the two are never the same number by construction"),
+            # whose history this is - so no surface can label it as the reader's own project activity
+            "subject": "workstation_platform_source",
+            "is_user_project_activity": False,
+            "repository": (repository.rsplit("/", 1)[-1] if repository else None),
+            "readable": unreadable_reason is None,
+            "unreadable_reason": unreadable_reason,
+            "basis": ("git log of the working directory the server process was started in; a user's own "
+                      "project activity is not tracked here")}
 
 
 # ── v260 personalization ──────────────────────────────────────────────────────

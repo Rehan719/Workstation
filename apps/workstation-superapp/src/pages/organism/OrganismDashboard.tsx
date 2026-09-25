@@ -16,6 +16,11 @@ interface OrganismStatus {
   version: string;
   timestamp: string;
   composite_health: number;
+  // W491 (sweep S8.16, C10) — the API added these two BECAUSE the headline blend is not fully
+  // measured (its metabolic term is simulated). This dashboard was the only consumer ignoring them,
+  // so it showed the blend as a straight health percentage.
+  composite_health_measured_only?: number;
+  composite_health_terms?: Record<string, unknown>;
   mode: 'FULL_POWER' | 'NOMINAL' | 'DEGRADED' | 'EMERGENCY';
   health_summary: string;
   systems: {
@@ -36,12 +41,17 @@ interface OrganismStatus {
   recommended: { temperature: string; should_throttle: boolean; max_parallel_agents: number; priority: string };
 }
 
+// W491 (sweep S8.16, C10) — this declared `type` and `ts`; the API sends `signal_type` and
+// `age_seconds` (organism/nervous.py recent_signals). So SIGNAL_COLOR[undefined] fell through to the
+// grey fallback on EVERY chip and the chip text rendered empty — a feed of 25 signals whose types the
+// reader could not see, with the ages the API does send never displayed at all. The sibling page
+// OrganismAnatomy.tsx has read these names correctly all along.
 interface Signal {
-  type: string;
+  signal_type: string;
   source: string;
   payload: string;
   intensity: number;
-  ts: number;
+  age_seconds: number;
 }
 
 interface SignalFeed {
@@ -263,6 +273,26 @@ export const OrganismDashboard: React.FC = () => {
           </span>
         </div>
         <HealthBar value={status.composite_health} />
+        {/* W491 (refutation) - this rendered only while the two numbers DIFFERED. The metabolic term is
+            an ATP simulator that climbs monotonically to its cap, so on any server polled for ~20s the
+            blend equals the measured-only value and the caveat vanished at exactly 100% - the case where
+            the simulated term is doing the most work. Driven by which terms are MEASURED instead. */}
+        {(() => {
+          const terms = (status.composite_health_terms || {}) as Record<string, { weight?: number; measured?: boolean; basis?: string }>;
+          const unmeasured = Object.entries(terms).filter(([, t]) => t && t.measured === false);
+          if (!unmeasured.length) return null;
+          const share = unmeasured.reduce((a, [, t]) => a + (Number(t.weight) || 0), 0);
+          return (
+            <p className="text-[10px] text-amber-400/80 font-bold mt-1" data-testid="composite-health-basis"
+               title={unmeasured.map(([k, t]) => `${k}: ${t.basis || 'not measured'}`).join(' | ')}>
+              A blend: {Math.round(share * 100)}% of this figure is not measured
+              ({unmeasured.map(([k]) => k.replace(/_/g, ' ')).join(', ')})
+              {typeof status.composite_health_measured_only === 'number'
+                ? ` - measured terms alone give ${Math.round(status.composite_health_measured_only * 100)}%.`
+                : '.'}
+            </p>
+          );
+        })()}
         <p className="text-xs text-white/40 mt-2 font-mono">{status.health_summary}</p>
 
         {/* Recommended behaviour chips */}
@@ -517,7 +547,16 @@ export const OrganismDashboard: React.FC = () => {
               {signals.arousal_state} &middot; {signals.signal_rate_per_second.toFixed(2)} sig/s
             </span>
           </div>
+          {/* W491 (refutation) - this feed is a page, not the trail: it fetches 30 and shows 25, and the
+              nervous system's own lifetime total is already on the status payload this page reads. */}
+          <p className="text-[10px] text-white/35 font-bold mb-2" data-testid="signal-feed-scope">
+            latest {Math.min(25, signals.signals.length)} of {signals.signals.length} fetched
+            {systems?.nervous?.total_signals
+              ? ` · ${Object.values(systems.nervous.total_signals).reduce((a, b) => a + (Number(b) || 0), 0)} signals since start`
+              : ''} · not the whole trail
+          </p>
           <div className="bg-white/3 border border-white/8 rounded-xl p-3 max-h-52 overflow-y-auto space-y-1">
+            {/* W491 (refutation) - the feed fetches 30 and renders 25; the caption below says so */}
             {signals.signals.slice(0, 25).map((sig, i) => (
               <motion.div
                 key={i}
@@ -526,9 +565,10 @@ export const OrganismDashboard: React.FC = () => {
                 transition={{ delay: i * 0.02 }}
                 className="flex items-center gap-2 text-xs font-mono"
               >
-                <span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase ${SIGNAL_COLOR[sig.type] ?? 'bg-white/5 text-white/40 border-white/10'}`}>
-                  {sig.type}
+                <span className={`px-1.5 py-0.5 rounded border text-[10px] uppercase ${SIGNAL_COLOR[sig.signal_type] ?? 'bg-white/5 text-white/40 border-white/10'}`}>
+                  {sig.signal_type}
                 </span>
+                <span className="text-white/30 text-[10px] flex-shrink-0">{sig.age_seconds}s ago</span>
                 <span className="text-white/30 flex-shrink-0 w-32 truncate">{sig.source}</span>
                 <span className="text-white/50 flex-1 truncate">{sig.payload}</span>
                 <span className="text-white/20 flex-shrink-0">

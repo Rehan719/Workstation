@@ -692,7 +692,18 @@ export const VSBEconomy: React.FC = () => {
                   <p className="text-[9px] font-mono text-slate-600">{v.vsb_id} · {v.entity_type} · {v.domain}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-black text-emerald-400">{v.operating_cycles} <span className="text-[9px] text-slate-500">cycles</span></p>
+                  {/* W491 (FU-192) - an emerald "N cycles" was this roster's own tally presented as the
+                      entity's cycle count; the books' count sits beside it and disagrees whenever a cycle
+                      ran outside the roster. Both are shown, each saying which it is. */}
+                  <p className="text-sm font-black text-emerald-400" title={v.operating_cycles_basis}
+                     data-testid={`roster-cycles-${v.vsb_id}`}>
+                    {v.operating_cycles} <span className="text-[9px] text-slate-500">roster cycles</span></p>
+                  <p className="text-[8px] text-slate-500 font-bold"
+                     title={v.ledger_cycles_basis || v.ledger_cycles_unavailable}
+                     data-testid={`ledger-cycles-${v.vsb_id}`}>
+                    {v.ledger_cycles === null || v.ledger_cycles === undefined
+                      ? 'books not readable - no cycle count'
+                      : `${v.ledger_cycles} on the books`}</p>
                   <p className="text-[8px] text-slate-600">{v.last_operated ? `last ${v.last_operated.slice(0, 10)}` : 'awaiting first tick'}</p>
                   {/* §11 × §13 (W421) — the compliance verdict and the economic consequence it causes,
                       where the entity's OWNER can see them. Both existed only as side effects: the

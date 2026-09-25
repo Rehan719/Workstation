@@ -513,7 +513,7 @@ def _cfg_num(v, default, cast=int):
         return default
 
 
-async def _run_real_resource(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
+async def _run_real_resource_handler(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
     """§7 deep integration — invoke a composed resource's REAL endpoint logic (not a prompt approximation),
     built from the user's reconfigured params, so a committed composition runs the ACTUAL engines/resources.
     Returns a compact result dict, or None when the resource has no inline real handler. Best-effort +
@@ -942,6 +942,99 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
     return None
 
 
+# W491 (FU-159) — a requisition must say WHAT HAPPENED, not merely which route shares the logic. Two facts
+# hold for every handler above: it is called IN-PROCESS (no HTTP request is made), and eight of the twelve
+# tree-eligible ones only READ platform state already there — they execute no facility for the mission.
+# Classified from what each handler does when read (a read returns existing state; a query scores existing
+# records against the objective; a run executes an engine and yields a new output), never from its name.
+_STATUS_READ_RESOURCES = frozenset({
+    "immune", "self_healing", "metabolic", "circadian", "sovereign_evolution",
+    "capital_fund", "federation_mesh", "omnimedia",
+})
+_QUERY_RESOURCES = frozenset({"products_catalogue", "change_control"})
+# W491 (refutation) — build_to_order was classified facility_run because facility_run is the DEFAULT, and a
+# default is not a reading. Its handler calls configure_bto, whose own note says it "provisions, activates
+# and integrates" nothing: it composes a DESIGN BLUEPRINT from the catalogue. That is a fourth thing.
+_BLUEPRINT_RESOURCES = frozenset({"build_to_order"})
+# Reads that are not free: biobus.organism_context() calls _update_atp(), so reading the organism context
+# ADVANCES the ATP simulator. The reading is still a reading, and the cost is said rather than hidden.
+_READ_SIDE_EFFECTS = {
+    "metabolic": "reading the organism context advances the ATP simulator (the read is not free)",
+    "circadian": "reading the organism context advances the ATP simulator (the read is not free)",
+}
+
+_KIND_PHRASE = {
+    "status_read": "read platform state that was already there — no facility ran for this mission",
+    "query": "assessed against records and live state already there — nothing was produced or persisted",
+    "blueprint": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
+    "facility_run": "ran its engine and produced this output",
+}
+
+
+def _resource_kind(rid: str) -> str:
+    """status_read | query | blueprint | facility_run. Decided from what each handler DOES when read, and
+    never from its name. facility_run is the fall-through, so a resource landing there by default rather
+    than by reading is a defect — see _BLUEPRINT_RESOURCES for the one that did."""
+    if rid in _STATUS_READ_RESOURCES:
+        return "status_read"
+    if rid in _QUERY_RESOURCES:
+        return "query"
+    if rid in _BLUEPRINT_RESOURCES:
+        return "blueprint"
+    return "facility_run"
+
+
+_OUTCOME_PHRASE = {
+    "produced": "ran its engine and produced this output",
+    "read": "read platform state that was already there — no facility ran for this mission",
+    "assessed": "assessed against records and live state already there — nothing was produced or persisted",
+    "raised": "attempted, then raised before producing anything — it neither ran nor read",
+    "no_calls_ran": "attempted, and every call it makes failed — it produced nothing",
+    "specified": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
+}
+_OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified",
+                     "facility_run": "produced"}
+
+
+def _resource_outcome(rid: str, r: Dict[str, Any]) -> str:
+    """W491 (refutation) — `kind` says what a resource IS; it cannot say what HAPPENED. Every counter
+    built on `kind` alone therefore reported a resource that RAISED as a read or as a run: the handler
+    swallows exceptions into {"error": ...}, and a resource whose every call failed carries no error key
+    at all. The outcome is decided here, from this run, and it is what the counters count.
+    produced | read | assessed | raised | no_calls_ran."""
+    if r.get("error"):
+        return "raised"
+    calls, failed = r.get("calls") or 0, r.get("failed_calls") or 0
+    if calls and failed >= calls:
+        return "no_calls_ran"
+    return _OUTCOME_FOR_KIND.get(_resource_kind(rid), "produced")
+
+
+async def _run_real_resource(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
+    """The one choke point a REAL resource run passes through. Delegates to the handler, then stamps both
+    halves of the truth: `kind` + `kind_phrase` (what this resource IS), `outcome` + `outcome_phrase`
+    (what happened THIS run — an attempt that raised is neither a run nor a read), `endpoint` (the route
+    serving the same logic — a reference, since the handler is called in-process, never evidence of a
+    call) and `invocation`. The old `ran` key is not re-emitted: it read as proof of a facility run that
+    no surface could back for a status read."""
+    r = await _run_real_resource_handler(rid, config, objective, domain)
+    if not isinstance(r, dict):
+        return r
+    kind = _resource_kind(rid)
+    outcome = _resource_outcome(rid, r)
+    r["kind"] = kind
+    r["outcome"] = outcome
+    r["outcome_phrase"] = _OUTCOME_PHRASE[outcome]
+    # kind_phrase describes the resource; on a failed attempt it must not describe an output
+    r["kind_phrase"] = _OUTCOME_PHRASE[outcome] if outcome in ("raised", "no_calls_ran") else _KIND_PHRASE[kind]
+    r["invocation"] = "in_process"
+    if rid in _READ_SIDE_EFFECTS:
+        r["side_effect"] = _READ_SIDE_EFFECTS[rid]
+    if "ran" in r:
+        r["endpoint"] = r.pop("ran")
+    return r
+
+
 @router.post("/compositions/{cid}/run")
 async def run_composition(cid: str, req: RunCompositionRequest,
                           user: dict | None = Depends(get_current_user)):
@@ -1046,7 +1139,13 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 "run_id": casc.get("run_id"),
                 "org_hierarchy": casc.get("org_hierarchy"),
                 "csuite_engaged": (casc.get("csuite_roster") or {}).get("engaged"),
-                "management_systems": list((casc.get("management_systems") or {}).keys()),
+                # W491 (refutation) — this sent the cascade dict's internal KEYS, which a page renders as
+                # chips: after this round's rename that printed a chip reading "operated_basis" (a prose
+                # sentence) as a management system. Send the two real lists instead.
+                "management_systems_operated": list(((casc.get("management_systems") or {})
+                                                     .get("operated_this_run")) or []),
+                "management_systems_catalogue": list(((casc.get("management_systems") or {})
+                                                      .get("catalogue")) or []),
                 "appraisals": list((casc.get("appraisals") or {}).keys()),
                 "quality": casc.get("quality"),
                 "biomimetic": casc.get("biomimetic"),
@@ -1113,8 +1212,13 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                     "status": "in_progress" if tgt.get("status") == "planned" else tgt.get("status"),
                     "note": (f"§7 composition run {run_id} ('{comp['name']}') delivered against this "
                              f"objective — QMS gate passed."),
+                    # W491 (refutation) — a bare id list read as "these delivered the objective"; the
+                    # note now records what each one actually did, on the record the plan page renders.
                     "composition_run": {"run_id": run_id, "composition_id": cid,
-                                        "real_resources": [x["resource"] for x in real_runs]},
+                                        "real_resources": [
+                                            {"resource": x["resource"],
+                                             "outcome": x.get("outcome") or _resource_outcome(x["resource"], x)}
+                                            for x in real_runs]},
                 })
                 if tgt.get("status") == "planned":
                     tgt["status"] = "in_progress"
@@ -1139,7 +1243,14 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             "version": comp.get("version", 1), "objective": objective[:200],
             "commit_ready": commit_ready, "usage_area_supported": _area_ok,
             "run_params_applied": sorted((req.params or {}).keys()),
-            "real_resources": [{"resource": x["resource"], "ran": x.get("ran"),
+            # W491 (refutation) — this filed a resource whose handler RAISED as kind "facility_run" and
+            # dropped the error, so the history read it as a facility that ran. The outcome and the error
+            # are what happened; the kind stays as what the resource is.
+            "real_resources": [{"resource": x["resource"], "endpoint": x.get("endpoint"),
+                                "kind": x.get("kind") or _resource_kind(x["resource"]),
+                                "outcome": x.get("outcome") or _resource_outcome(x["resource"], x),
+                                "outcome_phrase": x.get("outcome_phrase"),
+                                "error": x.get("error"),
                                 "duration_ms": x.get("duration_ms")} for x in real_runs],
             "org_cascade_run_id": (org_cascade or {}).get("run_id"),
             "served_by": _served, "any_external": bool(res.get("any_external")),

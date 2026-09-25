@@ -48,7 +48,12 @@ interface MissionLog {
 
 // W314 — honest §6 posture: the platform's OWN fabric first; external providers are Owner-gated
 // options, never advertised as the source of the platform's intelligence.
-const AI_MODELS = ['Native · workstation fabric (in-house)', 'Ollama · llama3', 'Ollama · mistral', 'Ollama · deepseek-r1', 'External · Owner-gated (disabled)'];
+// W491 (sweep S5.3, C10) — this offered four named models as though picking one routed the request.
+// It never did: the value is written into the prompt TEXT and nothing reads it as a routing
+// instruction. The real routing surface is /api/v1/native-ai/complete, which this page does not call.
+// A list of options a control cannot act on is the same defect as a count that covers nothing, so the
+// named models are gone and what remains says what it is.
+const AI_MODELS = ['Recorded in the spec text — the platform routes in-house first'];
 const DOMAINS = ['Religion', 'Science', 'Law', 'Care', 'Education', 'Employment', 'Finance', 'Engineering', 'Health', 'Governance'];
 const REGIONS = ['EU-West', 'US-East', 'US-West', 'APAC', 'MEA', 'LATAM', 'On-Prem', 'Edge-Local'];
 const FACILITY_TYPES = ['Data Centre', 'Industrial Plant', 'Smart Grid', 'Research Lab', 'Command Hub', 'Distributed Edge'];
@@ -134,8 +139,25 @@ AI Model: ${spec.ai_model}
 
 Respond with a structured spec covering: overview, architecture layers, AI integration points, deployment requirements, and success metrics. Be concise and actionable.`;
 
-      const resp = await axios.post('/api/v1/ai/query', { message: prompt });
-      const generatedSpec = resp.data?.response || resp.data?.message || resp.data?.content || 'Specification generated. Review and proceed to Build phase.';
+      // W491 (sweep S5.3, C10) — this posted `message`, a field /api/v1/ai/query does not have, so the
+      // whole prompt was discarded and the model answered an empty string; and it then read three keys
+      // the route never returns, so the pane always rendered the constant below. The spec a user saw
+      // was neither generated from their inputs nor, in most runs, generated at all.
+      const resp = await axios.post('/api/v1/ai/query', { query: prompt });
+      const generatedSpec = resp.data?.answer || '';
+      // W491 (refutation) - the empty-answer check alone was not enough: the route used to return its
+      // failure AS the answer ("[unavailable: ...]"), a non-empty string, so a failed call was rendered
+      // under "Generated Specification" with Proceed to Build enabled. The route now reports `ok`/`error`,
+      // and the sentinel is still caught here for any answer that reaches this page carrying one.
+      const failed = resp.data?.ok === false || /^\[unavailable:/.test(generatedSpec.trim());
+      if (failed || !generatedSpec.trim()) {
+        setSpec(s => ({ ...s, generated_spec: '' }));
+        setDesignErr(failed
+          ? `No specification was generated: ${resp.data?.error || generatedSpec.trim() || 'the call did not complete'}.`
+          : 'The model returned nothing for this specification, so none is shown.');
+        setStatus(s => ({ ...s, design: 'idle' }));
+        return;
+      }
       setSpec(s => ({ ...s, generated_spec: generatedSpec }));
       setStatus(s => ({ ...s, design: 'done' }));
     } catch (e: any) {
@@ -306,11 +328,13 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                   </div>
 
                   <div>
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">AI Model</label>
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">AI model note</label>
                     <select
                       value={spec.ai_model}
                       onChange={e => setSpec(s => ({ ...s, ai_model: e.target.value }))}
-                      title="AI Model"
+                      title="A note recorded on the spec - this control does not choose which model serves the build"
+                      aria-label="AI model note"
+                      data-testid="ai-model-note"
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 transition-colors"
                     >
                       {AI_MODELS.map(m => <option key={m} value={m}>{m}</option>)}

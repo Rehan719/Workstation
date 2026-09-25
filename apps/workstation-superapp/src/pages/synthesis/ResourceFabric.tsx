@@ -48,7 +48,12 @@ interface Composition {
 interface HistoryRun {
   run_id: string; composition_id: string; name: string; version?: number; objective: string;
   qms_gate_passed?: boolean | null; any_external?: boolean;
-  real_resources?: { resource: string; ran?: string; duration_ms?: number }[];
+  // W491 (refutation) — this declared `ran`, which the API stopped sending, and omitted `outcome`,
+  // which it now does: every past run rendered one identical aura chip, so a status read, a facility
+  // run and an attempt that raised looked the same on the only surface that reads the persisted record.
+  real_resources?: { resource: string; endpoint?: string; kind?: string;
+                     outcome?: string; outcome_phrase?: string; error?: string | null;
+                     duration_ms?: number }[];
   plan_binding?: { result?: string; advanced?: boolean; objective_id?: string } | null;
   created_at: string;
 }
@@ -83,12 +88,22 @@ interface CompositionRun {
     compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } } };
   // §7→§5→§6→§8 — when the config includes the org resource, the real Chief→Build-to-Order cascade also runs.
   org_cascade?: {
-    ran?: string; csuite_engaged?: string[]; management_systems?: string[]; appraisals?: string[];
+    ran?: string; csuite_engaged?: string[]; appraisals?: string[];
+    // W491 (refutation) — `management_systems` was the cascade dict's KEY list, so this round's rename
+    // made the page print a chip reading "operated_basis" (a prose sentence) as a management system.
+    management_systems_operated?: string[]; management_systems_catalogue?: string[];
     homeostasis?: { posture?: string }; governance?: string; ueg_hash?: string;
   } | null;
   // §7 deep integration — resources with a real endpoint also execute their genuine engine logic.
   real_resource_runs?: {
-    resource: string; ran?: string; output?: string; error?: string;
+    resource: string; output?: string; error?: string;
+    // W491 (FU-159) — `ran` was an endpoint label, not evidence a facility ran: eight of these handlers
+    // only read state that was already there. The choke point now stamps what actually happened.
+    kind?: 'status_read' | 'query' | 'blueprint' | 'facility_run'; kind_phrase?: string;
+    endpoint?: string; invocation?: string; side_effect?: string;
+    // W491 (refutation) — `kind` is what the resource IS; `outcome` is what happened on THIS run
+    outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'raised' | 'no_calls_ran';
+    outcome_phrase?: string;
     viable?: boolean; passages?: number; cognitive_primed?: boolean; engines_used?: string[];
     scenarios_run?: number; generations_run?: number; winner?: string;
     served_by?: string; is_external?: boolean; stages_run?: number;   // §6 — owned-resource provenance
@@ -539,7 +554,19 @@ export const ResourceFabric: React.FC = () => {
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                   ); })()}
                   {(h.real_resources ?? []).map(rr => (
-                    <span key={rr.resource} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/10 text-aura">{rr.resource}</span>
+                    <span key={rr.resource}
+                          title={rr.outcome_phrase || rr.error || (rr.outcome ? `outcome: ${rr.outcome}` : 'what this resource did was not recorded on this run')}
+                          data-testid={`history-outcome-${rr.resource}`}
+                          className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                            rr.outcome === 'produced' ? 'bg-aura/10 text-aura'
+                            : rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? 'bg-vital/15 text-vital'
+                            : rr.outcome ? 'bg-slate-800 text-slate-400'
+                            : 'bg-slate-900 text-slate-500'}`}>
+                      {rr.resource}{rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? ' (failed)'
+                        : rr.outcome === 'read' || rr.outcome === 'assessed' ? ' (read)'
+                        : rr.outcome === 'specified' ? ' (blueprint)'
+                        : rr.outcome ? '' : ' (?)'}
+                    </span>
                   ))}
                   {h.plan_binding?.result && (
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${h.plan_binding.advanced ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>plan: {h.plan_binding.result}</span>
@@ -641,9 +668,18 @@ export const ResourceFabric: React.FC = () => {
                             <p className="text-[9px] text-slate-400">C-Suite engaged (your design): <span className="text-white">{runResult.org_cascade.csuite_engaged.join(' · ')}</span> — each drives a CoE</p>
                           )}
                           <div className="flex flex-wrap items-center gap-1.5">
-                            {(runResult.org_cascade.management_systems || []).map(m => (
-                              <span key={m} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{m}</span>
+                            {(runResult.org_cascade.management_systems_operated || []).map(m => (
+                              <span key={m} data-testid={`org-mgmt-operated-${m}`}
+                                    title="a management system that produced a value on this cascade run"
+                                    className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{m}</span>
                             ))}
+                            {(runResult.org_cascade.management_systems_catalogue || []).length > 0 && (
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-950 text-slate-600"
+                                    data-testid="org-mgmt-catalogue"
+                                    title={`the catalogue lists ${(runResult.org_cascade.management_systems_catalogue || []).join(', ')} — operating one is a separate fact`}>
+                                {(runResult.org_cascade.management_systems_operated || []).length} of {(runResult.org_cascade.management_systems_catalogue || []).length} operated
+                              </span>
+                            )}
                             {runResult.org_cascade.homeostasis?.posture && (
                               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300">§8 {runResult.org_cascade.homeostasis.posture}</span>
                             )}
@@ -661,19 +697,51 @@ export const ResourceFabric: React.FC = () => {
                       )}
                       {(runResult.real_resource_runs || []).length > 0 && (
                         <div className="border border-aura/30 bg-aura/5 rounded-lg p-2.5 space-y-2">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-aura">§7 real engines ran · the composed resources executed their genuine logic</p>
+                          {/* W491 (refutation) — this said "N of M ran an engine, THE REST READ existing
+                              state", so a resource whose handler raised was counted as having read
+                              something, and a facility whose every call failed was counted as having run
+                              (its only failure test was `!r.error`, and a failed-call run carries no
+                              error key). Counted from `outcome`, which is what happened this run. */}
+                          {(() => {
+                            const rs = runResult.real_resource_runs || [];
+                            const n = (...k: string[]) => rs.filter(r => k.includes(String(r.outcome))).length;
+                            const unknown = rs.filter(r => !r.outcome).length;
+                            return (
+                              <p className="text-[9px] font-black uppercase tracking-widest text-aura" data-testid="real-runs-heading">
+                                §7 {rs.length} composed resource(s) invoked in-process ·{' '}
+                                {n('produced')} ran an engine · {n('read', 'assessed')} read existing state ·{' '}
+                                {n('specified')} drafted a blueprint · {n('raised', 'no_calls_ran')} failed
+                                {unknown > 0 ? ` · ${unknown} not recorded` : ''}
+                              </p>
+                            );
+                          })()}
                           {(runResult.real_resource_runs || []).map((rr, i) => (
                             <div key={i} className="border-t border-aura/10 first:border-t-0 pt-1.5 first:pt-0">
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="text-[9px] font-black uppercase text-white">{rr.resource}</span>
-                                {rr.ran && <span className="text-[8px] font-mono text-slate-600">{rr.ran}</span>}
+                                {rr.endpoint && <span className="text-[8px] font-mono text-slate-600">{rr.endpoint}</span>}
                                 {rr.error
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">error</span>
                                   : (rr.calls && rr.failed_calls === rr.calls)
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">did not run</span>
                                   : rr.failed_calls
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">{rr.failed_calls} of {rr.calls} calls did not run</span>
-                                  : <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">ran</span>}
+                                  /* W491 — the chip reports the OUTCOME: a status read never earns the
+                                     green "ran" chip, and neither does an attempt that raised. */
+                                  : rr.outcome === 'read' || rr.outcome === 'assessed'
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                                          title={rr.outcome_phrase || rr.kind_phrase} data-testid={`run-kind-${rr.resource}`}>read only</span>
+                                  : rr.outcome === 'specified'
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
+                                          title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>blueprint</span>
+                                  : rr.outcome === 'raised' || rr.outcome === 'no_calls_ran'
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital"
+                                          title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>did not run</span>
+                                  : !rr.outcome
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                                          title="what this resource did was not recorded on this run">not recorded</span>
+                                  : <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400"
+                                          title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>ran</span>}
                                 {typeof rr.viable === 'boolean' && (
                                   <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.viable ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{rr.viable ? 'viable' : 'not viable'}{rr.passages ? ` · ${rr.passages}p` : ''}</span>
                                 )}

@@ -46,6 +46,10 @@ def _save_run(run: dict) -> None:
     _RUNS_STORE.write_text(json.dumps(runs[-50:], indent=2))
 
 
+# W491 (refutation) — the per-run agent bound, named once so the run card reports it instead of
+# silently truncating the caller's list.
+_MAX_AGENTS_PER_RUN = 4
+
 _AGENTS: dict[str, dict] = {
     "CEO":      {"role": "Chief Executive Officer",   "expertise": "Strategic vision, decision-making, stakeholder alignment, final synthesis"},
     "CFO":      {"role": "Chief Financial Officer",   "expertise": "Financial modelling, budgeting, funding strategy, unit economics, risk"},
@@ -134,6 +138,7 @@ async def delegate_task(req: DelegateRequest):
 
     # Step 1: CEO decides which agents to engage (if not specified)
     agent_ids = req.agent_ids
+    routing_source = "caller" if agent_ids else "router"   # W491 — who chose these agents
     if not agent_ids:
         routing_prompt = (
             f"You are the AI CEO. A task has been received:\n\"{req.task}\"\n"
@@ -143,13 +148,23 @@ async def delegate_task(req: DelegateRequest):
             "Output ONLY a comma-separated list of agent IDs from the available list. No other text."
         )
         routing = await _dq(routing_prompt, "ceo_router")
-        agent_ids = [a.strip().lower() for a in routing.split(",") if a.strip().lower() in _AGENTS]
+        # W491 (sweep S11.11, C10) — THE ROUTER COULD NOT SELECT A C-SUITE ROLE. This lowercased each
+        # returned id and tested it against the _AGENTS keys; eleven of the sixteen are capitalised
+        # ('CEO'…'CIO', 'Forecasting', 'Policy'), so a router correctly answering "CFO, CTO" matched
+        # nothing and the hard-coded fallback ran — while the run card named those two as the CEO's
+        # choice. (Measured, not assumed: the five lower-case domain keys — science, care, education,
+        # law, religion — DID match, so a domain answer routed correctly. The round's first version of
+        # this comment claimed the fallback ran on EVERY run; its own refutation disproved that.)
+        # Folded lookup, and the selection's source is recorded so the card can say who chose.
+        _fold = {k.lower(): k for k in _AGENTS}
+        agent_ids = [_fold[a] for a in (x.strip().lower() for x in routing.split(",")) if a in _fold]
+        routing_source = "router" if agent_ids else "fallback"
         if not agent_ids:
-            agent_ids = ["CFO", "CTO"]  # safe fallback
+            agent_ids = ["CFO", "CTO"]  # the default set, when the router names nothing usable
 
-    # Step 2: Each agent processes the task
+    # Step 2: Each agent processes the task (bounded — the bound is reported, never silent)
     agent_responses: dict[str, str] = {}
-    for aid in agent_ids[:4]:  # max 4 agents per run
+    for aid in agent_ids[:_MAX_AGENTS_PER_RUN]:   # the cap is named, and reported on the run card
         agent_info = _AGENTS.get(aid, _AGENTS.get(aid.upper(), {"role": aid, "expertise": "general expertise"}))
         agent_prompt = (
             f"You are the {agent_info['role']} of a Virtual Sovereign Business.\n"
@@ -197,7 +212,17 @@ async def delegate_task(req: DelegateRequest):
         "task": req.task,
         "domain": req.domain,
         "realm": req.realm,
-        "agents_engaged": agent_ids,
+        # W491 (refutation) — `agents_engaged: agent_ids` reported the caller's WHOLE list while the loop
+        # above runs `agent_ids[:4]`: a caller passing twelve got a card naming twelve engaged agents when
+        # four ran. What ran is what the responses were collected from.
+        "agents_engaged": list(agent_responses.keys()),
+        "agents_requested": list(agent_ids),
+        "agents_not_run": [a for a in agent_ids if a not in agent_responses],
+        "agents_engaged_basis": (f"{len(agent_responses)} of {len(agent_ids)} requested agent(s) ran; this "
+                                 f"endpoint runs at most {_MAX_AGENTS_PER_RUN} per run"),
+        # W491 (sweep S11.11, C10) — caller | router | fallback. The card named the default set as the
+        # CEO's choice for every run whose router answered with a C-Suite role.
+        "routing_source": routing_source,
         "agent_responses": agent_responses,
         "ceo_synthesis": synthesis,
         # §5×§6 (W282) — delegate now proves it runs on the owned fabric like the cascade.
@@ -572,13 +597,18 @@ async def cascade_orchestration(req: CascadeRequest):
 
     # ── §5×§7 (W272) — the BTO REQUISITIONS the Resource Fabric for real: the deterministic W263
     # word-overlap matcher (no AI, no guessing — the match reason IS the overlap) over the mission +
-    # the BTO's own programme selects up to TWO light, bounded, side-effect-free facilities, and their
-    # REAL handlers RUN as part of this cascade. Build-to-Order then assembles from GENUINE facility
-    # outputs, not prose about facilities. Fail-soft: a facility error never breaks the cascade.
+    # the BTO's own programme selects up to TWO light, bounded, side-effect-free resources, and their REAL
+    # handlers are invoked in-process as part of this cascade. W491 (FU-159): what comes back is NOT all of
+    # one kind — eight of the twelve eligible resources only read platform state that was already there, so
+    # each requisition carries the `kind` the fabric choke point stamped, and the reads are handed to
+    # Build-to-Order as conditions to plan around, never as work done for this mission. Fail-soft: a
+    # resource error never breaks the cascade.
     fabric_requisitions: list = []
     try:
         import re as _re2
-        from agentic_core.api.resource_fabric import _BY_ID as _FABRIC_BY_ID, _run_real_resource
+        from agentic_core.api.resource_fabric import (_BY_ID as _FABRIC_BY_ID, _run_real_resource,
+                                                      _OUTCOME_PHRASE as _FAB_OUTCOME_PHRASE)
+        _OUTCOME_RAISED = _FAB_OUTCOME_PHRASE["raised"]
         from agentic_core.ai.native.orchestrator import NativeOrchestrator as _NO
         _low = f" {req.mission.lower()} {bto_programme.lower()[:2000]} "
         _scored = []
@@ -593,25 +623,52 @@ async def cascade_orchestration(req: CascadeRequest):
             _hits = sum(1 for _w in _words if _w in _low)
             if _hits >= 2:
                 _scored.append((_hits, _rid))
+        # W491 (refutation) — a requisition whose handler RAISED used to be dropped here entirely, so the
+        # summary's "requisitioned" count covered only the survivors while its basis claimed to cover the
+        # resources this cascade requisitioned, and a cascade where both selected resources raised told the
+        # managing tiers "none matched" — positively false, and fed into the appraisal chain. Every selected
+        # resource is now recorded with the outcome it had.
         for _hits, _rid in sorted(_scored, reverse=True)[:2]:
             try:
                 _fr = await _run_real_resource(_rid, {}, req.mission, req.domain)
-                if _fr and not _fr.get("error"):
-                    fabric_requisitions.append({
-                        "resource": _rid, "ran": _fr.get("ran"), "match_hits": _hits,
-                        "output": str(_fr.get("output", ""))[:400],
-                    })
-            except Exception:
-                pass
+            except Exception as _fe:
+                _fr = {"resource": _rid, "error": f"{type(_fe).__name__}: {str(_fe)[:140]}",
+                       "outcome": "raised", "outcome_phrase": _OUTCOME_RAISED, "kind": None}
+            if not _fr:
+                _fr = {"resource": _rid, "error": "the handler returned nothing",
+                       "outcome": "raised", "outcome_phrase": _OUTCOME_RAISED, "kind": None}
+            fabric_requisitions.append({
+                "resource": _rid, "kind": _fr.get("kind"), "kind_phrase": _fr.get("kind_phrase"),
+                "outcome": _fr.get("outcome"), "outcome_phrase": _fr.get("outcome_phrase"),
+                "error": _fr.get("error"), "side_effect": _fr.get("side_effect"),
+                "endpoint": _fr.get("endpoint"), "invocation": _fr.get("invocation"),
+                "match_hits": _hits, "output": str(_fr.get("output", ""))[:400],
+            })
     except Exception:
         pass
     _fabric_ctx = ""
     if fabric_requisitions:
-        _fabric_ctx = (
-            "\nREAL facility outputs — you requisitioned these Resource-Fabric facilities and they RAN "
-            "for this mission; assemble your plan FROM these genuine results (cite them):\n" +
-            "\n".join(f"- [fabric:{f['resource']} · ran {f['ran']}] {f['output'][:280]}"
-                      for f in fabric_requisitions) + "\n")
+        # W491 (refutation) — these split on `kind` (what a resource IS), so a requisition that RAISED
+        # was handed to Build-to-Order as a read. They split on `outcome` (what happened).
+        _ran = [f for f in fabric_requisitions if f.get("outcome") == "produced"]
+        _read = [f for f in fabric_requisitions
+                 if f.get("outcome") in ("read", "assessed", "specified")]
+        _failed = [f for f in fabric_requisitions
+                   if f.get("outcome") in ("raised", "no_calls_ran") or f.get("error")]
+        _lines: list = []
+        if _ran:
+            _lines.append("Facilities that RAN for this mission — real outputs, assemble your plan FROM "
+                          "them and cite them:")
+            _lines += [f"- [fabric:{f['resource']} · {f['endpoint']}] {f['output'][:280]}" for f in _ran]
+        if _read:
+            _lines.append("Platform state READ — already there before this mission; treat as conditions "
+                          "to plan around, NOT as work performed for it:")
+            _lines += [f"- [fabric:{f['resource']} · {f['kind_phrase']}] {f['output'][:280]}" for f in _read]
+        if _failed:
+            _lines.append("Requisitioned and FAILED — no output exists for these; do not cite them "
+                          "and do not assume the capability was exercised:")
+            _lines += [f"- [fabric:{f['resource']} — {f.get('outcome_phrase') or 'failed'}]" for f in _failed]
+        _fabric_ctx = "\nResource-Fabric requisitions:\n" + "\n".join(_lines) + "\n"
 
     # Tier 5: Build-to-Order — operational delivery: assemble delivery resources + a work breakdown
     build_prompt = (
@@ -735,10 +792,11 @@ async def cascade_orchestration(req: CascadeRequest):
         + (f"- Recent cascade-tier call success rate: {_ops_stats.get('success_rate')} "
            f"over {_ops_stats.get('recent_tier_calls')} calls\n" if _ops_stats.get("recent_tier_calls") else "")
         # §5×§7 (W272) — the managing tiers see the LIVE fabric, not prose about it: what the BTO
-        # actually requisitioned and ran this run, against the real catalogue size.
-        + (f"- Fabric facilities requisitioned AND run this cascade: "
-           f"{[f['resource'] for f in fabric_requisitions]}\n" if fabric_requisitions else
-           "- Fabric facilities requisitioned this cascade: none matched\n")
+        # actually requisitioned this run, split by what each one did (W491), against the real catalogue size.
+        + (f"- Fabric resources requisitioned this cascade: "
+           f"{[f['resource'] + ' (' + str(f.get('outcome') or 'outcome not recorded') + ')' for f in fabric_requisitions]}\n"
+           if fabric_requisitions else
+           "- Fabric resources requisitioned this cascade: none matched the mission\n")
         + (f"- Resource-Fabric catalogue size: {_fabric_catalogue_n}\n" if _fabric_catalogue_n else "")
     )
 
@@ -799,11 +857,16 @@ async def cascade_orchestration(req: CascadeRequest):
     # (above, before the appraisals); BMS computes unit economics and EMS carbon over the run's OWN
     # measured telemetry (tier artifacts produced × a duration-derived energy ESTIMATE — the $/Wh and
     # kgCO2/Wh rates are the registry catalogue's declared simulated constants, honestly labelled).
-    management_systems: dict = {"integrated": [], "document_control": {}, "catalogue": []}
+    # W491 (sweep S11.8, C10) — `integrated` WAS the registry catalogue: a comprehension over a static
+    # constant, assigned before anything computed. It listed all five ids every run — including qms on a
+    # floor-served delivery where the gate deliberately does not run (quality.py: gate_passed is None),
+    # and backbone, which the cascade never touches at all — and the chip read "mgmt: bms·qms·ems·dcms·
+    # backbone (integrated)". A catalogue of what exists is not a record of what operated. The list is
+    # now built from what actually produced a value, at the end of this block.
+    management_systems: dict = {"operated_this_run": [], "document_control": {}, "catalogue": []}
     try:
         from agentic_core.vbs.registry import dcms, CATALOGUE as _VBS_CAT
-        management_systems["catalogue"] = _VBS_CAT
-        management_systems["integrated"] = [s["id"] for s in _VBS_CAT]
+        management_systems["catalogue"] = [s["id"] for s in _VBS_CAT]
         for aid, content in (
             ("ceo_directive", {"tier": "AI CEO", "text": ceo_directive[:4000]}),
             ("board_action_plan", {"tier": "Board of Directors", "text": board_resolution[:4000]}),
@@ -841,6 +904,23 @@ async def cascade_orchestration(req: CascadeRequest):
         }
     except Exception:
         pass
+    # W491 — what actually produced a value for THIS run, in the order the reader meets it. `qms` is
+    # listed only when the gate returned a verdict: on floor-served content it returns None, and a gate
+    # that could not run is not an operated system.
+    _operated = []
+    if management_systems.get("document_control"):
+        _operated.append("dcms")
+    if management_systems.get("bms"):
+        _operated.append("bms")
+    if management_systems.get("ems"):
+        _operated.append("ems")
+    if (quality or {}).get("qms_gate_passed") is not None:
+        _operated.append("qms")
+    management_systems["operated_this_run"] = _operated
+    management_systems["operated_basis"] = (
+        "systems that produced a value for this run; the catalogue lists what exists. qms appears only "
+        "when its gate returned a verdict (it does not run on floor-served content), and backbone is "
+        "never exercised by this cascade.")
 
     # ── §5: Change Control — arms-length constitutional governance over the WHOLE delivery (gaas.v5).
     governance: dict = {"status": "ungoverned", "arms_length": True}
@@ -961,7 +1041,9 @@ async def cascade_orchestration(req: CascadeRequest):
                         "compliance_overall": (quality.get("compliance") or {}).get("overall")},
             "governance": governance.get("status"), "ueg_hash": ueg_hash,
             "served_by": provenance["served_by"], "any_external": provenance["any_external"],
-            "fabric_requisitions": [{"resource": f["resource"], "ran": f["ran"],
+            "fabric_requisitions": [{"resource": f["resource"], "kind": f.get("kind"),
+                                     "outcome": f.get("outcome"), "error": f.get("error"),
+                                     "endpoint": f.get("endpoint"),
                                      "match_hits": f["match_hits"]} for f in fabric_requisitions],
             "plan_binding": plan_binding, "business_plan_scope": req.scope,
             "duration_ms": duration_ms,
@@ -1015,9 +1097,27 @@ async def cascade_orchestration(req: CascadeRequest):
         # granted parallelism, and whether the C-Suite actually ran concurrently.
         "homeostasis_adaptation": homeostasis_adaptation,
         "level_4_business_transformation_office": bto_programme,
-        # §5×§7 (W272) — the fabric facilities the BTO requisitioned AND ran this cascade (real
-        # handler outputs, deterministic word-overlap match — empty when nothing genuinely matched).
+        # §5×§7 (W272) — the fabric resources the BTO requisitioned this cascade (real in-process handler
+        # outputs, deterministic word-overlap match — empty when nothing genuinely matched). W491: each
+        # carries the `kind` that says what it did, and the counters below cover the same population, so
+        # no surface has to infer a facility run from a resource merely having been requisitioned.
         "fabric_requisitions": fabric_requisitions,
+        # W491 (refutation) — these counted by `kind`, which is what a resource IS, so a requisition that
+        # RAISED was counted as a read or a run. They count by `outcome` now, over every resource this
+        # cascade selected and invoked, failures included.
+        "fabric_requisitions_summary": {
+            "requisitioned": len(fabric_requisitions),
+            "facilities_ran": sum(1 for f in fabric_requisitions if f.get("outcome") == "produced"),
+            "state_read": sum(1 for f in fabric_requisitions
+                              if f.get("outcome") in ("read", "assessed")),
+            "blueprints_drafted": sum(1 for f in fabric_requisitions if f.get("outcome") == "specified"),
+            "failed": sum(1 for f in fabric_requisitions
+                          if f.get("outcome") in ("raised", "no_calls_ran")),
+            "outcome_not_recorded": sum(1 for f in fabric_requisitions if not f.get("outcome")),
+            "basis": ("counted by what each resource DID on this run, over every resource this cascade "
+                      "selected and invoked — an attempt that raised is neither a run nor a read. Every "
+                      "handler is invoked in-process; no HTTP call is made"),
+        },
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,
         # §5 (W282) — the parsed, persisted PROPOSED offerings (empty when honestly unparseable).

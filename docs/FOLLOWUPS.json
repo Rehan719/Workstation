@@ -2590,8 +2590,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -2660,8 +2660,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -2890,8 +2890,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -3010,8 +3010,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -3047,8 +3047,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -3245,8 +3245,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -3488,8 +3488,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -3504,8 +3504,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -3520,8 +3520,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -3600,8 +3600,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W491",
       "note": ""
     },
     {
@@ -4469,6 +4469,41 @@
       "closed_by": null,
       "note": "",
       "tier": 2
+    },
+    {
+      "id": "FU-260",
+      "title": "Channels drawer collects notes but reaches no channel backend",
+      "why": "packages/ui/src/CommandCenter.tsx handleSendQuery appends the text to local state and makes no request; W491 relabelled the control honestly (it now says the note is kept on screen and nothing answers) but the Channels feature itself is unwired. Either wire each channel to its backend or retire the input.",
+      "source": "W491 refuter (reach lens)",
+      "found": "2026-09-25",
+      "files": [
+        "packages/ui/src/CommandCenter.tsx",
+        "apps/workstation-superapp/src/components/layout/FourthColumn.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-261",
+      "title": "packages/ui tsconfig cannot be typechecked on its own",
+      "why": "npx tsc --noEmit in packages/ui exits with TS5103 Invalid value for --ignoreDeprecations (tsconfig.json line 9), so that package is only ever typechecked transitively through the superapp build. A shared package that cannot be checked alone will drift. Pre-existing, noticed while verifying the W491 CommandCenter edits.",
+      "source": "W491",
+      "found": "2026-09-25",
+      "files": [
+        "packages/ui/tsconfig.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3
     }
   ],
   "routes": [

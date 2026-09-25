@@ -7190,3 +7190,96 @@ trap the previous round's refuters named: an anchor string that also occurs else
 a field name that is a substring of its renamed self, a note that appears in the render as well as the
 download, a field declared in an interface as well as assigned, and a helper called twice where only
 one call was checked.
+
+### W491 — a count says what population it covers (the C10 batch, repo-wide)
+
+**Ten rows, one rule.** A count or a list says what population it covers and what actually happened in
+it. A fetch limit is not a total. A catalogue of things the platform supports is not a record of having
+operated them. A resource having matched is not a facility having run. And a control's label names what
+the control does, not an activity nobody measured.
+
+**Four shapes.**
+
+*A page-sized slice presented as the whole.* The UEG Audit Trail badge counted the events the page had
+fetched and printed them as the trail. The organism signal feed declared `type` and `ts` while the API
+sends `signal_type` and `age_seconds`, so every row rendered blank — a feed of up to 25 signals showing
+none of them.
+
+*A static catalogue presented as a record of operation.* The cascade's `management_systems.integrated`
+was a comprehension over a constant: four names, always present, whether or not anything ran. The
+cockpit headed nine supported management standards — ISO 27001, ISO 45001, CMMI, Cyber Essentials Plus,
+identical for every entity, none operated or certified for this VSB — in the present tense, and named a
+fourth system that is not in that list at all. The Native-AI ensemble label counted models it could
+offer, not members that answered.
+
+*A tally whose population is narrower than the label on it.* `fabric_requisitions` emitted
+`"ran": "/api/v1/organism/status"` for the metabolic resource — whose handler is an in-process
+`biobus.organism_context()` read that executes no facility — and the BTO prompt then told the model
+*"you requisitioned these facilities and they RAN for this mission; assemble your plan FROM these
+genuine results"*. Eight of the twelve tree-eligible resources only read state that was already there.
+The living roster's `operating_cycles` counts the cycles **that roster** ran, so an entity cycled through
+any other path showed an emerald "1 cycles" beside a ledger holding three.
+
+*A label naming something the control does not do.* A header button labelled **Career Path** switched to
+a different tab. **Recent Project Activity** in the fourth column was `git log` of the directory the
+server process happens to run in — the Workstation codebase itself, not the user's projects — and an
+unreadable log collapsed to an empty list that reads as "you have no activity". The Channels control
+carried a three-bar equaliser animating continuously on a button that measures no channel traffic; a
+comment in the voice visualiser even cited it as the honest pattern it was following, which it was not.
+
+**The fix went to the choke point.** Every real resource run passes through one function, so that is
+where the classification is stamped: `kind` (status_read | query | blueprint | facility_run, decided from
+what each handler *does* when read, never from its name), `endpoint` (the route serving the same logic —
+a reference, since the handler is called in-process) and `invocation`. The key `ran` is not re-emitted.
+The books grew their own cycle count (`cycles_posted`, from the intake entry a cycle actually writes) so
+the roster's tally and the ledger's sit side by side, each saying which it is.
+
+**The guard caught three survivors before any refuter ran:** a select whose visible label had changed to
+"AI model note" while its `title` still said "AI Model" (the accessible name is a label too); a chip
+reading `management_systems.integrated` after the API stopped sending it, so `Array.isArray(undefined)`
+dropped the honest list silently; and an assertion of mine probing `r["quality_assurance"]` — a key the
+cascade never sends — which silently required that the QMS gate *never* appear as operated.
+
+**The refutation: 65 findings, 47 confirmed.** Six lenses over this round's own diff. The reconciliation
+mattered as much as the findings: three agents **refused worktree isolation** (correctly — they declined
+rather than run against the real checkout) and my own `slice(0, 12)` cap dropped three more **without
+logging it**, so six findings had no verdict. Four were duplicates another lens had adjudicated; two were
+real and verified by hand — including the sharpest finding of the round: **`total` on the git-history
+endpoint was the page size.** This repository has 1519 commits; `?limit=3` returned `"total": 3`. The
+round's own rule — *a fetch limit is not a total* — left standing in the endpoint the round rewrote for it.
+
+**One mistake caused most of the 47.** I built a field to answer *what is this resource?* and then let
+five counters use it to answer *what happened?*. Failures are represented two different ways — an
+`error` key from a swallowed exception, or `failed_calls >= calls` with no error key at all — so every
+counter reported a failed attempt as a run or a read: the run heading said "N of M ran an engine, **the
+rest read existing state**"; the persisted record filed a raised attempt as `kind: "facility_run"` and
+dropped its error; and the cascade discarded failed requisitions entirely, so the summary undercounted
+and the managing tiers were told **"none matched"** when two matched and both raised. `kind` and
+`outcome` are now two fields, and every counter counts by `outcome`.
+
+**Three live breaks, two of them this round's own.** The rename made the org-cascade panel print a chip
+labelled **`operated_basis`** — a prose sentence — as a management system, because the API sent the
+cascade dict's internal keys. `agents_engaged` reported the caller's whole list while `agent_ids[:4]`
+ran: six requested, four ran, six reported. And a failed AI call rendered as the **Generated
+Specification** with *Proceed to Build* enabled, because the route returned its failure *as* the answer
+(`"[unavailable: …]"` — non-empty, so the new empty-answer guard never fired). A failure is a field now.
+
+**Two classification facts read wrong.** `organism_context()` calls `_update_atp()`, so the metabolic and
+circadian reads are **not free** — they carry a `side_effect` saying so. And `build_to_order` landed in
+`facility_run` only because that is the *fall-through*: its own note says it provisions, activates and
+integrates nothing, so it is a fourth kind, `blueprint`. A default is not a reading.
+
+**One reachability miss.** The Channels equaliser fix landed in the non-tiled branch; the only mount is
+`<CommandCenter tiled />`, so it reached no reader. The branch that *is* reached held a worse defect: a
+control labelled "Send query" that makes no request at all, echoing the text back under "You asked".
+
+**Broken 79 ways, all 79 caught.** Seventeen were vacuous across the two sweeps, and every one was closed
+by adding a leg. Twelve of them shared a single cause worth recording: **nothing fails a handler in the
+test environment**, so every counter that distinguishes a failed attempt from a read agreed with the
+broken version. The guard now forces the failure — a handler patched to raise, a run with
+`failed_calls == calls`, and a git binary that cannot answer — so those branches actually execute. The
+rest were the familiar trap of an anchor that occurs twice (the read arm appears in both the live chip
+and the history chip; two writers both say "books unreadable"), and twice the same structural error:
+**an assertion that searches its own file for a literal it contains matches itself and can never fail** —
+once forbidding a string, once requiring one. To pin an instrument, assert its contract against a live
+response, not its source text.

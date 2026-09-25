@@ -39,9 +39,11 @@ interface CatalogProduct {
 }
 
 // W392 — the TRADEABLE layer. The catalogue above says what exists; a listing says what someone has
-// priced for virtual-WST trade. The two are deliberately not merged: a catalogue-derived listing is
-// unpriced (origin 'catalog', price_wst 0) and would only duplicate the grid above, so this section
-// shows what is genuinely purchasable and says so plainly when nothing is.
+// priced for virtual-WST trade.
+// W491 (sweep S12.8, C10) — this comment, and the caption below it, described a filtering that does
+// not happen: W444 stopped hiding unpriced listings (hiding them made the grid look empty), so EVERY
+// listing renders and the catalogue-derived ones are badged 'unpriced — not for sale'. The empty state
+// three hundred lines down already said so correctly, and contradicted this.
 interface Listing {
   id: string;
   name: string;
@@ -335,9 +337,10 @@ export const LivingMarketplace: React.FC = () => {
         <h2 className="text-lg font-black uppercase tracking-tight text-white italic">
           Listings <span className="text-aura">· virtual WST</span>
         </h2>
-        <p className="text-slate-500 text-xs font-semibold mt-2 max-w-2xl leading-relaxed">
+        <p className="text-slate-500 text-xs font-semibold mt-2 max-w-2xl leading-relaxed" data-testid="listings-caption">
           Priced for trade in virtual WST. Money here is simulated — no real-money rail is involved.
-          Catalogue entries above are registered but unpriced, so they are not listed here.
+          Catalogue entries appear below as unpriced listings, badged <span className="text-slate-400">unpriced — not
+          for sale</span>; only a listing with a WST price can be bought.
         </p>
 
         {listingsError && (
@@ -363,12 +366,21 @@ export const LivingMarketplace: React.FC = () => {
           <p className="text-xs text-slate-500 italic py-8">No listings are registered.</p>
         ) : (
           <>
-            {tradeable.length === 0 && (
-              <p className="text-xs text-slate-500 italic py-3">
-                Nothing is priced for trade yet — {listings.length} catalogue {listings.length === 1 ? 'entry is' : 'entries are'} registered
-                but unpriced — nobody has set a WST price, so none is offered for sale yet.
-              </p>
-            )}
+            {/* W491 (refutation) - `tradeable` excludes BOTH unpriced and held listings, so this sentence
+                described every registered listing as an unpriced catalogue entry; with a priced-but-held
+                listing present the grid two lines below showed a WST price the sentence denied. Each
+                reason is now counted separately, over the population it actually covers. */}
+            {tradeable.length === 0 && (() => {
+              const unpriced = listings.filter(l => !(l.price_wst > 0)).length;
+              const held = listings.filter(l => l.price_wst > 0 && l.status === 'held').length;
+              return (
+                <p className="text-xs text-slate-500 italic py-3" data-testid="listings-unpriced-count">
+                  Nothing is offered for sale yet, of {listings.length} registered {listings.length === 1 ? 'listing' : 'listings'}:
+                  {' '}{unpriced} {unpriced === 1 ? 'has' : 'have'} no WST price
+                  {held > 0 ? `, and ${held} ${held === 1 ? 'is priced but held' : 'are priced but held'}` : ''}.
+                </p>
+              );
+            })()}
             <div className="grid grid-cols-1 @[700px]:grid-cols-2 @[1100px]:grid-cols-3 gap-4 mt-5">
               {listings.map(l => (
                 <Card key={l.id} className="p-4 flex flex-col gap-2 border-slate-800 cursor-pointer hover:border-slate-700 transition-colors"

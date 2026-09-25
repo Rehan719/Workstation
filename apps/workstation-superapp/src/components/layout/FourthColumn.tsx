@@ -19,6 +19,12 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
   // Default to 'projects' so the panel opens on history when first expanded
   const [activeTab, setActiveTab] = useState<DockTab>('projects');
   const [commits, setCommits] = useState<CommitEntry[]>([]);
+  // W491 (FU-179) - the log is the PLATFORM's own source history, and an unreadable log is not an
+  // empty one; both facts have to reach the panel or it reads as the user's project activity.
+  const [gitMeta, setGitMeta] = useState<{
+    repository?: string | null; readable?: boolean | null; unreadable_reason?: string | null;
+    repository_commits_total?: number | null;
+  } | null>(null);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -32,6 +38,13 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
       axios.get('/api/v1/avatar/sessions'),
     ]).then(([g, s]) => {
       setCommits(g.data.commits || []);
+      // W491 (refutation) - `readable: g.data.readable !== false` turned a MISSING field into true; an
+      // absent answer is not a positive one, so it stays null and the panel says nothing either way.
+      setGitMeta({ repository: g.data.repository ?? null,
+                   readable: typeof g.data.readable === 'boolean' ? g.data.readable : null,
+                   unreadable_reason: g.data.unreadable_reason ?? null,
+                   repository_commits_total: typeof g.data.repository_commits_total === 'number'
+                     ? g.data.repository_commits_total : null });
       setSessions(s.data || []);
       setDataLoaded(true);
     }).catch(() => setDataError('Could not load data — backend unreachable.'))
@@ -65,9 +78,9 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
           className="p-2 rounded-lg text-slate-500 hover:text-aura transition-colors"
         >
           <div className="flex items-end gap-0.5 h-[14px] w-[14px]" aria-hidden="true">
-            <span className="w-1 origin-bottom rounded-full bg-current animate-eq-bar h-[40%] [animation-delay:0ms] [animation-duration:0.8s]" />
-            <span className="w-1 origin-bottom rounded-full bg-current animate-eq-bar h-[70%] [animation-delay:180ms] [animation-duration:0.65s]" />
-            <span className="w-1 origin-bottom rounded-full bg-current animate-eq-bar h-[55%] [animation-delay:90ms] [animation-duration:0.9s]" />
+            <span className="w-1 origin-bottom rounded-full bg-current h-[40%]" />
+            <span className="w-1 origin-bottom rounded-full bg-current h-[70%]" />
+            <span className="w-1 origin-bottom rounded-full bg-current h-[55%]" />
           </div>
         </button>
 
@@ -121,9 +134,9 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
               label: 'Channels',
               icon: (
                 <div className="flex items-end gap-0.5 h-[12px] w-[12px] shrink-0" aria-hidden="true">
-                  <span className="w-0.5 origin-bottom rounded-full bg-current animate-eq-bar h-[40%] [animation-delay:0ms] [animation-duration:0.8s]" />
-                  <span className="w-0.5 origin-bottom rounded-full bg-current animate-eq-bar h-[70%] [animation-delay:180ms] [animation-duration:0.65s]" />
-                  <span className="w-0.5 origin-bottom rounded-full bg-current animate-eq-bar h-[55%] [animation-delay:90ms] [animation-duration:0.9s]" />
+                  <span className="w-0.5 origin-bottom rounded-full bg-current h-[40%]" />
+                  <span className="w-0.5 origin-bottom rounded-full bg-current h-[70%]" />
+                  <span className="w-0.5 origin-bottom rounded-full bg-current h-[55%]" />
                 </div>
               ),
             },
@@ -177,9 +190,32 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
                   }
                 </div>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-2">Recent Project Activity</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1"
+                     data-testid="git-history-heading">Workstation platform commits</p>
+                  <p className="text-[9px] text-slate-500 font-bold leading-relaxed mb-2" data-testid="git-history-caption">
+                    The source history of the Workstation install itself{gitMeta?.repository ? ` (${gitMeta.repository})` : ''} &mdash; not activity in your projects.
+                  </p>
+                  {/* W491 (refutation) - the unreadable notice used to be nested inside the empty case, so a
+                      log that failed PARTWAY (the parse loop runs whatever git printed before the failure)
+                      rendered its partial commits with no indication at all. It is its own statement now. */}
+                  {gitMeta && gitMeta.readable === false && (
+                    <p className="text-[10px] text-amber-400 font-bold leading-relaxed mb-2" data-testid="git-history-unreadable">
+                      The platform commit log could not be read whole{gitMeta.unreadable_reason ? `: ${gitMeta.unreadable_reason}` : ''}
+                      {commits.length > 0 ? ` - the ${commits.length} below are what was readable, not the whole history.` : '.'}
+                    </p>
+                  )}
+                  {commits.length > 0 && (
+                    <p className="text-[9px] text-slate-600 font-bold mb-2" data-testid="git-history-count">
+                      showing {commits.length}
+                      {typeof gitMeta?.repository_commits_total === 'number'
+                        ? ` of ${gitMeta.repository_commits_total} commits in the repository`
+                        : ' commits (the repository total could not be read)'}
+                    </p>
+                  )}
                   {commits.length === 0
-                    ? <p className="text-[10px] text-slate-500 font-bold">No commit history available.</p>
+                    ? (gitMeta && gitMeta.readable === false
+                        ? null
+                        : <p className="text-[10px] text-slate-500 font-bold">No platform commits to show.</p>)
                     : commits.map(c => (
                       <div key={c.hash} className="rounded-xl border border-slate-800/60 bg-slate-950/60 p-2.5 mb-2">
                         <div className="flex items-center gap-1.5 min-w-0">

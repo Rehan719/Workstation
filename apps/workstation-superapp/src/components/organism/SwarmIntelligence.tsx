@@ -8,6 +8,7 @@ interface SwarmRun {
   task: string;
   agents_engaged?: string[];
   agent_ids?: string[];           // fallback
+  routing_source?: string;        // W491 — caller | router | fallback
   ceo_synthesis?: string;
   result?: string;                // fallback
   duration_ms?: number;
@@ -40,7 +41,12 @@ function RunCard({ run }: { run: SwarmRun }) {
         <div>
           <div className="text-xs font-bold text-white truncate max-w-[200px]">{run.task.slice(0, 50)}{run.task.length > 50 ? '…' : ''}</div>
           <div className="text-[10px] text-[#666] mt-0.5">
-            {agents.length > 0 ? `${agents.join(', ')}` : 'Swarm'} · {run.run_id.slice(-8)}
+            {agents.length > 0 ? `${agents.join(', ')}` : 'Swarm'}
+    {/* W491 — whether the CEO router chose these, or the default set ran because it could not */}
+    {run.routing_source === 'fallback' && (
+      <span className="text-amber-400/80" data-testid="routing-fallback"> (default set — the router named nothing usable)</span>
+    )}
+    {' · '}{run.run_id.slice(-8)}
           </div>
         </div>
         <div className="text-right shrink-0 ml-2">
@@ -144,7 +150,10 @@ const SwarmIntelligence: React.FC = () => {
       if (response.ok) {
         setCascade(await response.json());
       } else {
-        const res = await axios.post('/api/v1/swarm/delegate', { task, n_agents: 3 });
+        // W491 (sweep S11.11, C10) — `n_agents` is not a field of DelegateRequest, so pydantic dropped
+        // it silently and the 3 this asked for never had any effect. Asking for something the API
+        // cannot honour is the same defect as a count that covers nothing.
+        const res = await axios.post('/api/v1/swarm/delegate', { task });
         setStreamOutput(JSON.stringify(res.data, null, 2));
       }
       setStreaming(false);
@@ -249,8 +258,13 @@ const SwarmIntelligence: React.FC = () => {
               <span className="text-[8px] font-black uppercase tracking-widest text-fuchsia-400">Living-Organisation delivery</span>
               {(() => { const b = provenanceMapBadge(cascade.ai_provenance?.served_by, cascade.ai_provenance?.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
               {cascade.governance && <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.governance.status === 'allowed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>gov: {cascade.governance.status}{cascade.governance.arms_length ? ' · arms-length' : ''}</span>}
-              {Array.isArray(cascade.management_systems?.integrated) && cascade.management_systems.integrated.length > 0 && (
-                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">mgmt: {cascade.management_systems.integrated.join('·')}</span>
+              {/* W491 (FU-159) - the API stopped sending `integrated` (a static catalogue reported as a
+                  record of operation) and sends `operated_this_run` instead. Reading the removed field made
+                  this chip vanish silently, so the honest list never reached the page. */}
+              {Array.isArray(cascade.management_systems?.operated_this_run) && cascade.management_systems.operated_this_run.length > 0 && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300"
+                      title={cascade.management_systems.operated_basis}
+                      data-testid="mgmt-operated-chip">mgmt operated: {cascade.management_systems.operated_this_run.join('·')}</span>
               )}
               {(() => { const c = qmsChip(cascade.quality, 'QMS gate:'); return c && (
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`}
@@ -350,16 +364,30 @@ const SwarmIntelligence: React.FC = () => {
                 </div>
               </details>
             )}
-            {/* W272/W284 — the fabric facilities the BTO requisitioned AND ran inside this cascade */}
+            {/* W272/W284 — the fabric resources the BTO requisitioned inside this cascade. W491 (FU-159):
+                the count covered a mixed population and the heading claimed all of it RAN, while most of
+                the eligible resources only read state that was already there. The heading now counts only
+                the facilities that ran, and each row says which kind it was. */}
             {Array.isArray(cascade.fabric_requisitions) && cascade.fabric_requisitions.length > 0 && (
               <details className="bg-black/40 rounded-lg border border-white/5">
-                <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
-                  §7 fabric facilities requisitioned &amp; RAN ({cascade.fabric_requisitions.length})
+                <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer"
+                         data-testid="fabric-requisitions-heading">
+                  §7 fabric requisitioned ({cascade.fabric_requisitions.length}) —{' '}
+                  {cascade.fabric_requisitions_summary?.facilities_ran
+                    ?? cascade.fabric_requisitions.filter((f: any) => f.kind === 'facility_run').length} ran,{' '}
+                  {(cascade.fabric_requisitions_summary?.state_read
+                    ?? cascade.fabric_requisitions.filter((f: any) => f.kind === 'status_read').length)
+                   + (cascade.fabric_requisitions_summary?.records_queried
+                    ?? cascade.fabric_requisitions.filter((f: any) => f.kind === 'query').length)} read only
                 </summary>
                 <div className="px-3 pb-3 space-y-2">
                   {cascade.fabric_requisitions.map((f: any) => (
                     <div key={f.resource} className="border-t border-white/5 pt-2">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-aura">{f.resource} <span className="font-mono normal-case text-white/40">{f.ran}</span> · match ×{f.match_hits}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-aura">{f.resource}{' '}
+                        <span className={`font-mono normal-case ${f.kind === 'facility_run' ? 'text-emerald-300/70' : 'text-slate-400'}`}
+                              data-testid={`fabric-kind-${f.resource}`}>
+                          {f.kind === 'facility_run' ? `ran ${f.endpoint ?? ''}` : (f.kind_phrase ?? f.kind ?? 'kind not recorded')}
+                        </span> · match ×{f.match_hits}</p>
                       {f.output && <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto">{String(f.output).slice(0, 400)}</pre>}
                     </div>
                   ))}
@@ -410,8 +438,16 @@ const SwarmIntelligence: React.FC = () => {
                       <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                     ); })()}
                     {cr.appraisals && <span className="text-[8px] text-amber-300/60">{Object.keys(cr.appraisals).length} appraisals</span>}
+                    {/* W491 — a chip on a past run says whether that resource ran or was only read */}
                     {(cr.fabric_requisitions ?? []).map((f: any) => (
-                      <span key={f.resource} className="text-[8px] font-black uppercase px-1 py-0.5 rounded bg-aura/10 text-aura">{f.resource}</span>
+                      <span key={f.resource}
+                            title={f.kind === 'facility_run' ? `ran ${f.endpoint ?? ''}`
+                                   : f.kind ? 'read only — no facility ran for this mission'
+                                   : 'what this resource did was not recorded on this run'}
+                            className={`text-[8px] font-black uppercase px-1 py-0.5 rounded ${
+                              f.kind === 'facility_run' ? 'bg-aura/10 text-aura' : 'bg-slate-800 text-slate-400'}`}>
+                        {f.resource}{f.kind && f.kind !== 'facility_run' ? ' (read)' : ''}
+                      </span>
                     ))}
                     {cr.plan_binding?.result && <span className="text-[8px] text-emerald-400/70">plan: {cr.plan_binding.result}</span>}
                   </div>

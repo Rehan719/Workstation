@@ -96,6 +96,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // W491 (refutation) - this makes NO request: it appends the text to local state and clears the input.
+  // Both branches labelled the control as sending a query and captioned the echo as a question asked, so
+  // a user typing into a channel was told it had been sent and nothing ever answered. The labels now say what
+  // the control does. Wiring it to a channel backend is separate work, not a label change.
   const handleSendQuery = () => {
     const text = queryInput.trim();
     if (!text) return;
@@ -161,7 +165,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
                     <div className="space-y-2 pt-4 border-t border-white/5">
                       {queryLog.map((q, i) => (
                         <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-                          <span className="text-aura font-black uppercase text-[9px] tracking-widest block mb-1">You asked</span>
+                          <span className="text-slate-500 font-black uppercase text-[9px] tracking-widest block mb-1" data-testid="channel-note-label">Your note · not sent anywhere</span>
                           {q}
                         </div>
                       ))}
@@ -173,10 +177,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
                     value={queryInput}
                     onChange={(e) => setQueryInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSendQuery(); }}
-                    placeholder={`Query ${activeChannel} channel...`}
+                    placeholder={`Note to self about the ${activeChannel} channel...`}
                     className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 text-xs text-white focus:outline-none focus:border-aura/30"
                   />
-                  <button type="button" onClick={handleSendQuery} disabled={!queryInput.trim()} aria-label="Send query" title="Send query" className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all disabled:opacity-30 disabled:hover:scale-100">
+                  <button type="button" onClick={handleSendQuery} disabled={!queryInput.trim()} data-testid="channel-note-keep" aria-label="Keep this note on screen" title="Keeps the note on this screen — nothing is sent and nothing answers" className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all disabled:opacity-30 disabled:hover:scale-100">
                     <MessageCircle size={20} />
                   </button>
                 </div>
@@ -203,11 +207,13 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
         title="Channels"
         className={`p-3 rounded-xl transition-all flex items-center gap-1 ${open ? 'bg-aura text-sovereign' : 'bg-slate-800 text-aura hover:scale-105'} ${currentMode === 'REST' ? 'grayscale-[50%] opacity-80' : ''}`}
       >
-        {/* Live voice/sound-style equalizer in place of a static icon */}
+        {/* A STATIC three-bar glyph. W491 (FU-179): these bars used to animate continuously, which on a
+            Channels control reads as live channel traffic - nothing here measures any. A control's icon
+            names what the control does; it does not report activity it cannot see. */}
         <div className="flex items-end gap-0.5 h-5 w-5" aria-hidden="true">
-          <span className="w-1 origin-bottom rounded-full bg-current animate-eq-bar h-[40%] [animation-delay:0ms] [animation-duration:0.8s]" />
-          <span className="w-1 origin-bottom rounded-full bg-current animate-eq-bar h-[70%] [animation-delay:180ms] [animation-duration:0.65s]" />
-          <span className="w-1 origin-bottom rounded-full bg-current animate-eq-bar h-[55%] [animation-delay:90ms] [animation-duration:0.9s]" />
+          <span className="w-1 origin-bottom rounded-full bg-current h-[40%]" />
+          <span className="w-1 origin-bottom rounded-full bg-current h-[70%]" />
+          <span className="w-1 origin-bottom rounded-full bg-current h-[55%]" />
         </div>
         <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -291,7 +297,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
                     <div className="space-y-2 pt-4 border-t border-white/5">
                        {queryLog.map((q, i) => (
                          <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-                            <span className="text-aura font-black uppercase text-[9px] tracking-widest block mb-1">You asked</span>
+                            <span className="text-slate-500 font-black uppercase text-[9px] tracking-widest block mb-1" data-testid="channel-note-label">Your note · not sent anywhere</span>
                             {q}
                          </div>
                        ))}
@@ -304,15 +310,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
                     value={queryInput}
                     onChange={(e) => setQueryInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSendQuery(); }}
-                    placeholder={`Query ${activeChannel} channel...`}
+                    placeholder={`Note to self about the ${activeChannel} channel...`}
                     className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 text-xs text-white focus:outline-none focus:border-aura/30"
                   />
                   <button
                     type="button"
                     onClick={handleSendQuery}
                     disabled={!queryInput.trim()}
-                    aria-label="Send query"
-                    title="Send query"
+                    data-testid="channel-note-keep"
+                    aria-label="Keep this note on screen"
+                    title="Keeps the note on this screen — nothing is sent and nothing answers"
                     className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all disabled:opacity-30 disabled:hover:scale-100"
                   >
                      <MessageCircle size={20} />

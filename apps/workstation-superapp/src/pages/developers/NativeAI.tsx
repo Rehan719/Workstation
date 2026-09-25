@@ -596,7 +596,11 @@ export const NativeAI: React.FC = () => {
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">circadian: {homeo.organism.circadian}{homeo.organism.is_peak_focus ? ' · peak' : ''}</span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">ATP: {Math.round((homeo.organism.atp_ratio ?? 0) * 100)}%</span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">immune: {homeo.organism.immune_threat}</span>
-                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">composite: {Math.round((homeo.organism.composite_health ?? 0) * 100)}%</span>
+                {/* W491 (refutation) - the same part-simulated blend, named as such */}
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400"
+                      data-testid="homeo-composite-chip"
+                      title="a blend of immune and self-healing readings with a SIMULATED metabolic term - not wholly measured">
+                  composite (part simulated): {Math.round((homeo.organism.composite_health ?? 0) * 100)}%</span>
               </div>
             </Card>
           )}
@@ -696,7 +700,27 @@ export const NativeAI: React.FC = () => {
             </div>
             {ensRes && (
               <div className="p-3 rounded-xl bg-slate-950 border border-aura/20 mb-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-2">Ensemble · {ensRes.members.length} owned models in parallel → consensus</p>
+                {/* W491 (sweep S7.12, C10) — this read "Ensemble · 1 owned models in parallel →
+                    consensus" for a single member with synthesis null: no parallelism and no consensus.
+                    `synthesis` is the field that tells the truth — null means none was computed, not
+                    merely that none is shown. The label now reports both from the data. */}
+                {/* W491 (refutation) - `members` INCLUDES members that raised (orchestrator.py appends
+                    {model, error} for each one), so "N owned models ran" counted failures as runs. The
+                    honest number is on the same object and is already used below to badge them red. */}
+                {(() => {
+                  const ran = ensRes.members.filter(m => !m.error).length;
+                  const failed = ensRes.members.length - ran;
+                  return (
+                    <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-2" data-testid="ensemble-label">
+                      Ensemble · {ran} of {ensRes.members.length} owned model{ensRes.members.length === 1 ? '' : 's'} produced output
+                      {failed > 0 ? ` · ${failed} failed` : ''}
+                      {ran > 1 ? ' · run in parallel' : ''}
+                      {ensRes.synthesis?.output
+                        ? ' → consensus synthesised'
+                        : ' · no consensus synthesised (it needs two or more members that produced output)'}
+                    </p>
+                  );
+                })()}
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {ensRes.members.map((m, i) => (
                     <span key={i} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${m.error ? 'bg-vital/15 text-vital' : 'bg-slate-900 text-slate-400'}`} title={m.output ? m.output.slice(0, 200) : m.error}>

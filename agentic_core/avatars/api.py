@@ -172,7 +172,9 @@ def _vsb_grounding(vsb_id: str) -> str:
             from agentic_core.economy.living_vsbs import _load as _lv_load
             reg = _lv_load().get(vsb_id) or {}
             if reg:
-                live.append(f"- Economy (virtual WST): {reg.get('operating_cycles', 0)} operating cycles"
+                # W491 (FU-192) - the roster's tally is not the entity's cycle count; the avatar says which
+                live.append(f"- Economy (virtual WST): {reg.get('operating_cycles', 0)} cycles run by the "
+                            f"autonomous roster (cycles run by other paths are on the books, not in this tally)"
                             + (f", last distributable {reg.get('last_distributable')} WST"
                                if reg.get("last_distributable") is not None else "")
                             + (f" — HELD ({reg.get('last_hold')})" if reg.get("last_hold") else ""))

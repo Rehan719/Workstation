@@ -718,7 +718,17 @@ export const VSBCockpit: React.FC = () => {
           {tab === 'systems' && (
             <div className="space-y-4">
               <Card className="p-6">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2"><ShieldCheck size={14} /> Living management systems (BMS · QMS · DCS · EMS …)</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2"><ShieldCheck size={14} /> Standards the generators can draft against</h4>
+                {/* W491 (sweep S1.16, C10) — this heading used to name four management systems in the
+                    present tense over a CONSTANT catalogue the API itself calls "supported management
+                    standards" — nine rows including ISO 27001, ISO 45001, CMMI and Cyber Essentials
+                    Plus, identical for every entity, none of them operated or certified for this VSB.
+                    One of the four it named is not in that list at all. The systems that genuinely
+                    operate are in the panel below. */}
+                <p className="text-[10px] text-slate-600 mb-3" data-testid="standards-catalogue-basis">
+                  A catalogue of standards the document generators can draft against. None of these is
+                  operated or certified for this entity — the systems that actually run are below.
+                </p>
                 <div className="grid grid-cols-1 @[560px]:grid-cols-2 @[900px]:grid-cols-3 gap-3">
                   {standards.map((s, i) => (
                     <div key={s.id || i} className="p-4 rounded-xl bg-slate-900 border border-slate-800">

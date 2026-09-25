@@ -11,7 +11,10 @@ interface Objective {
   directive_id?: string;
   // W266/W274/W280/W284 — the delivery reviews written back by governed runs
   reviews?: { at: string; status?: string; note?: string;
-    org_cascade_run?: { run_id: string }; composition_run?: { run_id: string };
+    org_cascade_run?: { run_id: string };
+    // W491 (refutation) - the review records WHAT each composed resource did; a bare id list read as
+    // "these delivered the objective" when most of them only read state that was already there.
+    composition_run?: { run_id: string; real_resources?: { resource: string; outcome?: string }[] };
     transformation?: { transformation_id: string } }[];
 }
 interface RoadmapPhase { timeline: string; progress_pct: number; complete: boolean; count: number; objectives: { title: string }[] }
@@ -273,7 +276,20 @@ export const BusinessPlan: React.FC = () => {
                           <div key={i} className="flex flex-wrap items-center gap-1.5 border-t border-slate-900 first:border-t-0 pt-1.5 first:pt-0">
                             <span className="text-[8px] text-slate-600">{rv.at}</span>
                             {rv.org_cascade_run && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">§5 cascade {rv.org_cascade_run.run_id}</span>}
-                            {rv.composition_run && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">§7 composition {rv.composition_run.run_id}</span>}
+                            {rv.composition_run && (() => {
+                              const rs = rv.composition_run!.real_resources || [];
+                              const ran = rs.filter(x => x.outcome === 'produced').length;
+                              return (
+                                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura"
+                                      data-testid={`review-composition-${rv.composition_run!.run_id}`}
+                                      title={rs.length
+                                        ? rs.map(x => `${x.resource}: ${x.outcome || 'outcome not recorded'}`).join(' | ')
+                                        : 'this review records no resource outcomes'}>
+                                  §7 composition {rv.composition_run!.run_id}
+                                  {rs.length ? ` · ${ran} of ${rs.length} ran an engine` : ''}
+                                </span>
+                              );
+                            })()}
                             {rv.transformation && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">transformation {rv.transformation.transformation_id}</span>}
                             {rv.note && <span className="text-[9px] text-slate-400">{rv.note.slice(0, 120)}</span>}
                           </div>
