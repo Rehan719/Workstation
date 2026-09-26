@@ -7283,3 +7283,83 @@ and the history chip; two writers both say "books unreadable"), and twice the sa
 **an assertion that searches its own file for a literal it contains matches itself and can never fail** —
 once forbidding a string, once requiring one. To pin an instrument, assert its contract against a live
 response, not its source text.
+
+### W492 — the page says what the engine said (the C5 batch, repo-wide)
+
+**Ten rows, one rule.** Nothing that qualifies a claim may be dropped between the engine that produced
+it and the surface that shows it — and no surface may present as current, verified or successful what the
+API reported as stale, unchecked or failed.
+
+**Four shapes.**
+
+*A second writer strips the qualifier.* The marketplace's `_screen_listing` kept `overall` and `verdicts`
+and dropped the screen's own `basis` — "a screen can refuse and can escalate; it cannot clear" — so the
+drawer showed an emerald **pass** pill with nothing qualifying it, over rows whose per-verdict reasons the
+page also dropped. The anatomy card printed "blended (20% simulated)" as a hard-coded constant while its
+own `health_basis` line said **40% measured**: with no circuits tracked, 60% of that blend is unmeasured,
+and it labelled a *defaulted* self-healing term SIMULATED, which is a different thing.
+
+*The API says failure and the page says otherwise.* A 409 from a pending review gate was swallowed on a
+page whose own comment reads "actions never fail silently". The projects stream's error frame was
+re-raised **inside** the page's own `catch { /* malformed event — skip */ }`, so the optimistic
+`status: 'running'` was never corrected: the spinner turned and the Run button stayed disabled while the
+API had already persisted `error`. And the Sovereign-Evolution card showed the **last saved cycle's** CPU
+and immune readings as the organism's current state, with the immune tile amber for every real reading
+because it tested two threat levels `immune.status()` never emits.
+
+*A value is fabricated or dropped inside the pipeline.* `/lifecycle` published `llama3.2` as the serving
+default with an **empty** model estate, so the page said "Serving default: llama3.2" beside its own
+"Deterministic floor active". The RAL verifier *requires* `domain`, validates it, then dropped it from its
+result, so every allocation silently became `general`. And `standard` — the API's own declared default —
+was absent from its quota table, so it drew the **free** share with **paid** immediate execution.
+
+*A self-contradicting literal.* Six writers called the Chief the Owner's trained digital twin while the
+same documents say no twin model is trained (Mode 2, P3.4).
+
+**The fixes went to the mechanism.** `effective_default_local()` returns None when nothing is installed,
+and `configured_default_local()` names what would be *tried* — because what a call attempts is not what a
+surface may report as serving. Each optimiser tier now declares **both** its share and whether it queues,
+so the two stages cannot infer them separately. `anchor_state()` distinguishes an absent anchor from a
+corrupt one, which `read_anchor()` had conflated into a single `None`, and `verify_chain` reports whether
+truncation was actually ruled out.
+
+**The refutation: 51 confirmed, and the first was a live break of my own making.** I inserted the new
+provenance helper between `@router.post("/genome/crossover")` and its handler. The decorator bound to the
+**helper**; `crossover_genomes` was registered nowhere; the route 422'd for every caller — and the module
+still imported and the app still booted. That is verbatim a lesson already in memory. Worse, **three
+guards stayed green**: one imported the helper and called it in-process, one counted its occurrences in
+the source, and a pre-existing "unknown method → 422" assertion passed for the wrong reason because
+*everything* returned 422. A guard that reads source text, or calls a function directly, cannot see that
+the function stopped being reachable. The guard now calls the route and asserts the decorator binding.
+
+**My own fixes created three further defects.** Making a failed screen HOLD the listing made my own
+"screen could not run" notice **unreachable**, because `held` was tested first — so the owner saw a blank
+notice where the reason belonged. The `!== null` test I added missed `undefined`, because the
+hash-mismatch outcome omitted `events` entirely; every outcome now returns the same key set. And two stat
+cards I never touched still printed `String(null)` as a root hash.
+
+**And three times I fixed one of several.** `effective_default_local()` presence-checked only the *env*
+branch, so a **promoted** model that had been uninstalled still reported as serving while `/lifecycle`
+asserted it "is installed and serves local calls". SolutionsPlatform was a **third** reader of the chain
+verifier and called an unreadable ledger "CHAIN INVALID" and a hash-only pass "chain VALID". And the
+**sibling** verifier in `ueg/logger.py` still used `read_anchor()`, so a corrupt anchor removed truncation
+detection there exactly as it had in the gaas.v5 ledger.
+
+**Two claims of mine were themselves false.** I cut the W460 colour pin to a single arm and called it
+"strictly stronger" — it was weaker, because the unloaded and broken legs stopped being pinned at all. And
+my CI fix was **vacuous on the very environment it was written for**: `total == total` is `1 == 1` on a
+shallow clone, so it would have passed even if the total echoed the page. It pins the mechanism
+(`git rev-list --count HEAD`) now, because the environment cannot produce the discriminating case.
+
+**Broken 47 ways, all 47 caught.** Ten were vacuous on the first sweep and they split three ways, which is
+worth separating. Six were legs asserting a *message* while the blind removed its *branch* — the message
+survives, the condition is gone. Two needed the failure path forced: the tail anchor always exists here,
+so every leg distinguishing a full verification from a hash-only one agreed with the broken version. And
+**two were blinds I wrote badly** — one edited a comment, and one replaced the tier lookup with an
+expression that is behaviourally identical today. A blind that changes no behaviour proves nothing;
+reading which of the two you have, rather than reflexively strengthening the guard, is the difference
+between closing a gap and adding noise.
+
+**One rule earned.** Deciding coverage by *counting* occurrences of a string is how surfaces get missed:
+my guard required a marker three times, five existed, and the threshold was met by one card alone while
+two others still printed figures for a ledger that was never read. Every surface is named individually now.

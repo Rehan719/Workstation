@@ -110,9 +110,16 @@ const AuditTab: React.FC = () => {
   // tamper-evident UEG hash chain (GET /api/v1/gaas/ueg/verify) and the log lists ACTUAL
   // constitutional events. The old tab fabricated PASSED commit rows with Math.random() hashes
   // and hardcoded inventory stats — deleted.
-  const [verify, setVerify] = useState<{ valid: boolean; events: number; root_hash: string } | null>(null);
+  // W492 (FU-196) - `valid` alone cannot carry three different outcomes: an unreadable ledger, a hash
+  // mismatch, and a clean recomputation whose tail anchor could not be checked.
+  const [verify, setVerify] = useState<{
+    valid: boolean; events: number | null; root_hash: string | null;
+    outcome?: 'verified' | 'unreadable' | 'hash_mismatch' | 'anchor_mismatch' | 'node_count_below_anchor';
+    reason?: string | null; anchor_checked?: boolean; anchor_state?: string; verified_basis?: string;
+  } | null>(null);
   const [events, setEvents] = useState<any[]>([]);
-  const [auditRuns, setAuditRuns] = useState<{ at: string; valid: boolean; events: number; root: string }[]>([]);
+  const [auditRuns, setAuditRuns] = useState<{ at: string; valid: boolean; events: number | null;
+    root: string | null; outcome?: string; anchorChecked?: boolean }[]>([]);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'FLAGGED'>('ALL');
   const [auditing, setAuditing] = useState(false);
   const [loadErr, setLoadErr] = useState('');
@@ -149,8 +156,13 @@ const AuditTab: React.FC = () => {
     try {
       const v = await apiJson('/api/v1/gaas/ueg/verify');   // REAL: recomputes the full chain
       setVerify(v);
-      setAuditRuns(prev => [{ at: new Date().toLocaleString(), valid: v.valid, events: v.events,
-                              root: String(v.root_hash).slice(0, 12) }, ...prev]);
+      // W492 - an unreadable verify has no root_hash, and String(undefined).slice(0,12) logged the
+      // literal "undefined" as one
+      // a hash mismatch omits `events` entirely, so normalise absent to null rather than storing undefined
+      setAuditRuns(prev => [{ at: new Date().toLocaleString(), valid: v.valid,
+                              events: typeof v.events === 'number' ? v.events : null,
+                              root: v.root_hash ? String(v.root_hash).slice(0, 12) : null,
+                              outcome: v.outcome, anchorChecked: v.anchor_checked }, ...prev]);
       await load();
     } catch (e) { setLoadErr(errorMessage(e)); }
     setAuditing(false);
@@ -174,10 +186,26 @@ const AuditTab: React.FC = () => {
       {loadErr && <p className="text-vital text-xs font-bold">{loadErr}</p>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <AuditStatCard label="UEG Events" value={verify ? verify.events : '—'} icon={CheckCircle2} color="text-aura" />
-        <AuditStatCard label="Chain Integrity" value={verify ? (verify.valid ? 'VALID' : 'BROKEN') : '—'} icon={ShieldCheck} color={!verify ? 'text-slate-500' : verify.valid ? 'text-emerald-500' : 'text-vital'} />
+        {/* W492 (refutation) - an unreadable ledger returns events:null and root_hash:null, and a hash
+            mismatch omits both keys entirely, so these cards printed "null..." and a bare null. No figure
+            is shown for a ledger that was not read whole. */}
+        <AuditStatCard label="UEG Events"
+          value={typeof verify?.events === 'number' ? verify.events : '—'}
+          icon={CheckCircle2} color="text-aura" />
+        <AuditStatCard label="Chain Integrity"
+          value={!verify ? '—'
+            : verify.outcome === 'unreadable' ? 'UNREADABLE'
+            : verify.valid ? (verify.anchor_checked ? 'VALID' : 'HASHES OK')
+            : 'BROKEN'}
+          icon={ShieldCheck}
+          color={!verify ? 'text-slate-500'
+            : verify.outcome === 'unreadable' ? 'text-amber-400'
+            : verify.valid ? (verify.anchor_checked ? 'text-emerald-500' : 'text-amber-400')
+            : 'text-vital'} />
         <AuditStatCard label="Flagged (last loaded)" value={events.filter(e => flagLevel(e) === 'flagged').length} icon={XCircle} color="text-vital" />
-        <AuditStatCard label="Root Hash" value={verify ? `${String(verify.root_hash).slice(0, 10)}…` : '—'} icon={AlertCircle} color="text-highlight" />
+        <AuditStatCard label="Root Hash"
+          value={verify?.root_hash ? `${String(verify.root_hash).slice(0, 10)}…` : '—'}
+          icon={AlertCircle} color="text-highlight" />
       </div>
 
       <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-8">
@@ -204,9 +232,17 @@ const AuditTab: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Audit runs (this session — each recomputed the full chain)</p>
                 {auditRuns.map((r, i) => (
-                  <div key={i} className={`p-3 rounded-xl border flex items-center justify-between text-[10px] font-black uppercase ${r.valid ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' : 'bg-vital/5 border-vital/20 text-vital'}`}>
+                  <div key={i} className={`p-3 rounded-xl border flex items-center justify-between text-[10px] font-black uppercase ${
+                    r.outcome === 'unreadable' ? 'bg-amber-500/5 border-amber-500/20 text-amber-400'
+                    : r.valid ? (r.anchorChecked ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400'
+                                                 : 'bg-amber-500/5 border-amber-500/20 text-amber-400')
+                    : 'bg-vital/5 border-vital/20 text-vital'}`}>
                     <span>{r.at}</span>
-                    <span>{r.valid ? 'CHAIN VALID' : 'CHAIN BROKEN'} · {r.events} events · root {r.root}…</span>
+                    <span>{r.outcome === 'unreadable' ? 'NOT ASSESSED — LEDGER UNREADABLE'
+                      : r.valid ? (r.anchorChecked ? 'CHAIN VALID' : 'HASHES OK · ANCHOR NOT CHECKED')
+                      : 'CHAIN BROKEN'}
+                      {typeof r.events === 'number' ? ` · ${r.events} events` : ''}
+                      {r.root ? ` · root ${r.root}…` : ''}</span>
                   </div>
                 ))}
               </div>
@@ -248,18 +284,37 @@ const AuditTab: React.FC = () => {
           <Card className="p-8 bg-aura/5 border-aura/20">
             <h4 className="text-base font-black text-white mb-4 uppercase tracking-tight">Audit Intelligence</h4>
             <p className="text-sm text-slate-400 font-bold leading-relaxed mb-6">
+              {/* W492 (FU-196) - verify.valid alone drove all three claims on this page. An
+                  UNREADABLE ledger returns valid:false with only a reason, and this said the hashes did
+                  not match - tampering that was never found. And a missing or corrupt tail anchor still
+                  returns valid:true, so truncation and rollback detection vanished while the page said
+                  every event was verified. The outcome and the anchor state are separate facts. */}
               {verify
-                ? (verify.valid
-                    ? `All ${verify.events} constitutional events verified against the recomputed hash chain.`
-                    : 'CHAIN VERIFICATION FAILED — the ledger does not match its recomputed hashes. Investigate immediately.')
+                ? (verify.outcome === 'unreadable'
+                    ? `The constitutional ledger could not be read whole (${verify.reason ?? 'no reason given'}), so nothing was verified. This is not evidence of tampering.`
+                    : verify.valid
+                    ? (verify.anchor_checked
+                        ? `All ${verify.events} constitutional events verified against the recomputed hash chain, and the chain head matches the tail anchor.`
+                        : `All ${verify.events} constitutional events verified against the recomputed hash chain — but truncation and rollback are NOT ruled out: the tail anchor is ${verify.anchor_state ?? 'unavailable'}.`)
+                    : `CHAIN VERIFICATION FAILED — ${verify.reason ?? 'the ledger does not match its recomputed hashes'}. Investigate immediately.`)
                 : loadErr || 'Verifying the constitutional ledger…'}
             </p>
             <div className="space-y-3">
               <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
-                <span>Chain verified</span><span className="text-white">{verify ? (verify.valid ? '100%' : 'FAILED') : '—'}</span>
+                <span>Chain verified</span>
+                <span className="text-white" data-testid="chain-verified-figure"
+                      title={verify?.verified_basis}>
+                  {!verify ? '—'
+                    : verify.outcome === 'unreadable' ? 'NOT ASSESSED'
+                    : verify.valid ? (verify.anchor_checked ? '100%' : 'hashes only')
+                    : 'FAILED'}
+                </span>
               </div>
               <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                <div className={`h-full ${verify && !verify.valid ? 'bg-vital w-1/4' : verify ? 'bg-aura w-full' : 'bg-slate-700 w-0'}`} />
+                <div className={`h-full ${!verify ? 'bg-slate-700 w-0'
+                  : verify.outcome === 'unreadable' ? 'bg-amber-500 w-0'
+                  : !verify.valid ? 'bg-vital w-1/4'
+                  : verify.anchor_checked ? 'bg-aura w-full' : 'bg-amber-500 w-3/4'}`} />
               </div>
             </div>
           </Card>

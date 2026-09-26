@@ -474,7 +474,8 @@ async def cascade_orchestration(req: CascadeRequest):
     except Exception:
         _founder_ctx = ""
     chief_prompt = (
-        f"You are the Chief of the Board of Directors — the founder's own digital twin and the apex of "
+        f"You are the Chief of the Board of Directors — the founder's standing charter (no trained "
+        f"model of them exists) and the apex of "
         f"this VSB's governance. A mission has been raised:\n\"{req.mission}\"\n"
         f"Domain: {req.domain}\nRealm: {req.realm}\n{_founder_ctx}{_plan_ctx}\n"
         "You own the living Business Plan and deliver it via Strategy and a living Roadmap. Set the "
@@ -491,7 +492,8 @@ async def cascade_orchestration(req: CascadeRequest):
 
     # Tier 0b: Board of Directors — governance resolution on the Chief's mandate
     board_prompt = (
-        "You are the Board of Directors of this VSB. The Chief of the Board (founder's digital twin) "
+        "You are the Board of Directors of this VSB. The Chief of the Board (the founder's standing "
+        "charter, not a trained twin) "
         f"has issued this Founding Mandate:\n\n{chief_mandate[:600]}\n\n"
         f"Mission: {req.mission}\nDomain: {req.domain}\n\n"
         "Receive the Chief's strategy and deliver it through Action Planning with timelines, resourced "

@@ -451,7 +451,15 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
     try {
       const d = await apiJson<any>(`/api/v1/marketplace/listings/${id}`, { method: 'PATCH', body: edit });
       setDetail(d); setHeld(d.status === 'held');
-      setNotice(d.status === 'held' ? '' : 'Saved — the public text was re-screened (§11) and stays live.');
+      // W492 (FU-182) - this said "re-screened and stays live" for ANY non-held result, including one
+      // where the screen RAISED and nothing was screened at all.
+      // W492 (refutation) - and the error branch was then UNREACHABLE, because this round also made a
+      // failed screen HOLD the listing, so `status === 'held'` matched first and the notice was blank.
+      // The reason a listing is held is the thing the owner most needs; it is reported first.
+      setNotice(d.compliance?.overall === 'error'
+        ? 'Saved — but the §11 screen could not run, so the public text was NOT re-screened and the listing is held until a screen completes.'
+        : d.status === 'held' ? ''
+        : 'Saved — the public text was re-screened (§11) and stays live.');
     } catch (e) { setDErr(errorMessage(e)); }
     setBusy('');
   };
@@ -498,7 +506,13 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
         )}
         {held && (
           <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2">
-            <p className="text-[10px] font-bold text-amber-400 leading-relaxed">§11 screen FAIL — this edit put the listing on hold, off the marketplace, until a clean re-screen.</p>
+            {/* W492 (refutation) - a listing held because the screen RAISED did not FAIL a screen; no
+                screen completed. The two reasons are different and the owner acts on them differently. */}
+            <p className="text-[10px] font-bold text-amber-400 leading-relaxed" data-testid="held-reason">
+              {detail?.compliance?.overall === 'error'
+                ? '§11 screen COULD NOT RUN — nothing about this listing was assessed, so it is held off the marketplace until a screen completes.'
+                : '§11 screen FAIL — this edit put the listing on hold, off the marketplace, until a clean re-screen.'}
+            </p>
           </div>
         )}
         {notice && <p role="status" className="text-[10px] font-bold text-aura">{notice}</p>}
@@ -515,7 +529,12 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
                 pill — implying a screen ran. Only a screen that produced an overall verdict renders. */}
             {detail.compliance?.overall && (
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">§11 compliance screen</p>
+                {/* W492 (FU-182) - the block was headed "§11 compliance screen" over an emerald pass pill
+                    and `framework: status` rows, dropping the screen's own basis ("a screen can refuse
+                    and can escalate; it cannot clear") and every per-row reason. All of it renders. */}
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5" data-testid="screen-heading">
+                  §11 keyword screen — not a certification
+                </p>
                 {/* W483 — this had its own colour ternary and showed a bare 'pass'. One rule for
                     every §11 chip (lib/api.complianceChip), and each row says what it could read. */}
                 <p className="text-[10px] font-bold mb-1">
@@ -523,9 +542,23 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
                     <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${_c.cls}`} title={_c.title}>{_c.label}</span>); })()}
                 </p>
                 {(detail.compliance.verdicts || []).map((v: any, i: number) => (
-                  <p key={i} className="text-[9px] text-slate-500">{v.framework}: <span className="text-slate-300">{v.status}</span>
-                    {v.coverage && <span className="text-slate-600"> [{v.coverage === 'engine' ? 'assessed' : v.coverage === 'vocabulary' ? 'term matched' : v.coverage === 'screen' ? 'screen found nothing' : 'not covered'}]</span>}</p>
+                  <p key={i} className="text-[9px] text-slate-500" data-testid={`screen-row-${v.framework}`}>{v.framework}: <span className="text-slate-300">{v.status}</span>
+                    {v.coverage && <span className="text-slate-600"> [{v.coverage === 'engine' ? 'assessed' : v.coverage === 'vocabulary' ? 'term matched' : v.coverage === 'screen' ? 'screen found nothing' : 'not covered'}]</span>}
+                    {v.reason && <span className="block text-slate-600 leading-relaxed">{v.reason}</span>}</p>
                 ))}
+                {(detail.compliance.coverage_gaps || []).length > 0 && (
+                  <p className="text-[9px] text-amber-400/80 font-bold mt-1.5" data-testid="screen-coverage-gaps">
+                    Nothing here assessed: {(detail.compliance.coverage_gaps || []).join(', ')}.
+                  </p>
+                )}
+                {detail.compliance.basis && (
+                  <p className="text-[9px] text-slate-600 leading-relaxed mt-1.5" data-testid="screen-basis">{detail.compliance.basis}</p>
+                )}
+                {detail.compliance.overall === 'error' && (
+                  <p className="text-[9px] text-vital font-bold mt-1.5" data-testid="screen-error">
+                    The screen could not run{detail.compliance.error ? `: ${detail.compliance.error}` : ''} — nothing about this listing was assessed, and it is held.
+                  </p>
+                )}
               </div>
             )}
             <div className="space-y-2">

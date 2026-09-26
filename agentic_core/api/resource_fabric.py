@@ -865,8 +865,32 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                 req_map = {"CPU": 4, "RAM": 1024}
             r = await allocate(AllocateRequest(domain=domain, requirements=req_map,
                                                tier=str(cfg.get("tier") or "standard")))
+            # W492 (FU-183/S4.21) — the allocation's own qualifiers reach the composition surface: which
+            # domain it actually applied to, whether the tier was a declared one, and that the share is
+            # computed rather than held. They used to survive only inside the truncated `output` blob.
+            _alloc = r.get("allocation") or {}
+            # W492 (refutation) - a QUEUED result has NO allocation at all, and this handler returned
+            # normally, so the W491 outcome layer stamped it "produced ... ran its engine and produced
+            # this output". A request that was not executed produced nothing: it is reported as an error
+            # outcome so every counter and every surface says so.
+            if not _alloc:
+                return {"resource": "resource_optimizer", "ran": "/api/v1/optimizer/allocate",
+                        "error": (f"not executed: {r.get('status')}"
+                                  + (f" - {r.get('queue_basis') or r.get('reason') or ''}" if
+                                     (r.get('queue_basis') or r.get('reason')) else "")),
+                        "posture": r.get("posture"),
+                        "tier_requested": r.get("tier_requested"), "tier_applied": r.get("tier_applied"),
+                        "tier_recognised": r.get("tier_recognised"),
+                        "allocation_status": r.get("status"),
+                        "output": (json.dumps({k: v for k, v in r.items() if k not in ("note",)})[:600])}
             return {"resource": "resource_optimizer", "ran": "/api/v1/optimizer/allocate",
                     "posture": r.get("posture"), "simulated_capacity": r.get("simulated_capacity"),
+                    "allocated_domain": _alloc.get("domain"),
+                    "tier_requested": _alloc.get("tier_requested") or r.get("tier_requested"),
+                    "tier_applied": _alloc.get("tier_applied") or r.get("tier_applied"),
+                    "tier_recognised": (_alloc.get("tier_recognised") if _alloc
+                                        else r.get("tier_recognised")),
+                    "allocation_status": _alloc.get("status") or r.get("status"),
                     "output": (json.dumps({k: v for k, v in r.items() if k not in ("note",)})[:600])}
         if rid == "digital_twin":
             # the §7 Simulator: forward-simulate a system under a scenario on the native swarm — genuine

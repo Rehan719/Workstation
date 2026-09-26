@@ -317,7 +317,8 @@ const SwarmIntelligence: React.FC = () => {
               )}
             </div>
             {([
-              ['Chief of the Board (founder digital twin)', cascade.level_0_chief_of_board],
+              // W492 (FU-188) - this label named the Chief as a trained twin model, which does not exist
+              ['Chief of the Board (the founder\'s standing charter — no twin model is trained)', cascade.level_0_chief_of_board],
               ['Board of Directors — action plan', cascade.level_0b_board_resolution],
               ['AI CEO — directive', cascade.level_1_ceo_directive],
               ['Business Transformation Office', cascade.level_4_business_transformation_office],

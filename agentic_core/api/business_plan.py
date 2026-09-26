@@ -1,7 +1,8 @@
 """
 Living Business-Plan management — for Workstation IDBO and every generated VSB.
 
-The Chief (the Owner's digital twin) and the Board own a LIVING business plan:
+The Chief (the Owner's digital twin as a ROLE — a standing charter, not a trained model) and the
+Board own a LIVING business plan:
 mission · vision · strategy · aims · objectives (each with KPI, timeline, owner-role,
 progress, reviews). It is set, reviewed, and AI-generated (Chief-mediated), with the
 Owner retaining control/governance/oversight. Scoped to "workstation" (the top-level
@@ -455,7 +456,9 @@ async def generate_plan(req: GenerateRequest):
     except Exception:
         pass
     prompt = (
-        "You are the Chief of the Board (the Owner's digital twin) drafting/refreshing the LIVING "
+        # W492 (refutation) - telling the model it IS a trained twin shapes text a user then reads
+        "You are the Chief of the Board (the Owner's standing charter — you hold no trained model of "
+        "them; represent only what the Owner has actually stated) drafting/refreshing the LIVING "
         f"business plan for scope '{req.scope}'.\n\n"
         f"Owner vision: AI-mediate working for any user — Concept→Design→Delivery — generating living VSB IDBO "
         f"entities; one self-running living organism.\n"

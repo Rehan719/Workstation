@@ -1642,7 +1642,7 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
             plan["vision"] = f"A self-running {entity_type} VSB IDBO that commercialises this solution beneficently."
             plan["mission"] = f"Deliver: {problem[:160]}"
             plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
-                                "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
+                                "(Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.")
             plan.setdefault("objectives", [])
             if not plan["objectives"]:
                 for _title in ("Validate the concept", "Deliver the design", "Launch to market"):
@@ -1887,7 +1887,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "elapsed_seconds": round(time.time() - started, 2),
         }
-        # §3.3 invariant — every generated VSB carries its own Board + Chief (owner's digital twin),
+        # §3.3 invariant — every generated VSB carries its own Board + Chief (the Owner's standing
+        # charter, not a trained twin — W492/FU-188),
         # a living economy in its selected legal form, living-entity registration, and a seeded plan.
         enrich_vsb_entity(vsb_entity, owner_id=req.owner_id, problem=req.challenge,
                           domain=req.domain, entity_type=req.entity_type)

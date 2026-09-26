@@ -110,12 +110,26 @@ export const BusinessPlan: React.FC = () => {
   };
   const orchestrate = async (oid: string) => {
     setOrchestrating(oid);
+    setActErr('');
+    // W492 (FU-210) - a 409 from a pending Mode-3 review gate (and any non-ok or non-JSON answer) was
+    // swallowed: the spinner stopped, nothing appeared, and the Owner was never told the delivery had
+    // been REFUSED - on a page whose own comment says "actions never fail silently".
     try {
       const r = await fetch(`/api/v1/business-plan/objective/${oid}/orchestrate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) });
-      const data = await r.json();
-      if (r.ok && data?.tree) setOrchResult(m => ({ ...m, [oid]: data.tree }));
+      const data = await r.json().catch(() => null);
+      if (!r.ok) {
+        const d = data?.detail;
+        const why = typeof d === 'string' ? d : (d?.error || d?.reason || data?.error);
+        setActErr(why ? `Delivery refused: ${why}` : `Delivery refused (HTTP ${r.status})`);
+      } else if (!data?.tree) {
+        setActErr('The orchestrator returned no workflow tree, so nothing is shown for this objective.');
+      } else {
+        setOrchResult(m => ({ ...m, [oid]: data.tree }));
+      }
       await load();
-    } catch { /* leave result unset; the run is best-effort */ }
+    } catch (e) {
+      setActErr(`Delivery could not be attempted: ${e instanceof Error ? e.message : 'the backend was unreachable'} - nothing changed`);
+    }
     setOrchestrating('');
   };
 
@@ -146,7 +160,8 @@ export const BusinessPlan: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">{scope === 'workstation' ? 'Workstation IDBO' : `VSB · ${scope}`} · Living Business Plan</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Business Plan</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          The living plan owned by your <span className="text-highlight">Chief</span> (your digital twin) and the Board —
+          {/* W492 (FU-188) - no twin model is trained; the Chief is the Owner's standing charter */}
+          The living plan owned by your <span className="text-highlight">Chief</span> (your standing charter — no twin model is trained) and the Board —
           opening with <span className="text-highlight">Executive Summary · Concept · Vision</span>, then mission, strategy,
           and timelined objectives with KPIs, reviewed for progress. You set direction; the org delivers.
         </p>

@@ -495,7 +495,8 @@ const VSBDetailPanel: React.FC<{
     <div className="ml-4 mb-2 p-4 rounded-xl bg-slate-950 border border-aura/15 space-y-4">
       <div>
         <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1.5">Board of Directors (arms-length)</p>
-        <p className="text-xs font-bold text-white">{d.board?.chief?.title ?? 'Chief — Owner digital twin'}</p>
+        {/* W492 (refutation) - this fallback asserted a trained twin when the board sent no title */}
+        <p className="text-xs font-bold text-white">{d.board?.chief?.title ?? "Chief — the Owner's standing charter (no twin model trained)"}</p>
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           {directors.map((dir, i) => (
             <span key={i} className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-900 text-slate-400">{dir.title ?? dir.name ?? dir.id}</span>

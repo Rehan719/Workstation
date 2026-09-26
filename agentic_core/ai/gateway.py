@@ -76,8 +76,12 @@ class ModelGateway:
         # W276 — the serving local model honours the PROMOTED lifecycle default (persisted),
         # not just the env captured at init.
         try:
-            from agentic_core.ai.native.model_resource import effective_default_local
-            return effective_default_local()
+            # W492 (FU-183) — effective_default_local() now answers the REPORTING question (what
+            # actually serves) and is None when no local model is installed. An attempt is not a
+            # claim: this path still tries the configured name, and the surfaces say the floor served.
+            from agentic_core.ai.native.model_resource import (effective_default_local,
+                                                              configured_default_local)
+            return effective_default_local() or configured_default_local() or self.ollama_model
         except Exception:
             return self.ollama_model
 

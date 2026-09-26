@@ -16,7 +16,10 @@ export const ConstitutionalUI: React.FC = () => {
   // W491 (refutation) - the chain's own "I could not be read whole" signal was fetched and thrown away,
   // so an unreadable ledger rendered as "No constitutional events logged yet" - the opposite claim.
   const [uegUnreadable, setUegUnreadable] = useState<string | null>(null);
-  const [integrity, setIntegrity] = useState<{ valid: boolean; events: number; root_hash: string } | null>(null);
+  const [integrity, setIntegrity] = useState<{
+    valid: boolean; events: number | null; root_hash: string | null;
+    outcome?: string; reason?: string | null; anchor_checked?: boolean; verified_basis?: string;
+  } | null>(null);
 
   useEffect(() => {
     // v0.2: Constitution Explorer - Fetch all 1127 articles
@@ -97,13 +100,34 @@ export const ConstitutionalUI: React.FC = () => {
                       hash chain — so it is shown instead: verified or not, over a real event count. */}
                   <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
                      <span>Ledger integrity</span>
-                     <span className={integrity?.valid ? "text-aura" : "text-vital"}>
-                        {integrity === null ? "—" : integrity.valid ? "VERIFIED" : "TAMPER DETECTED"}
+                     <span className={!integrity ? "text-slate-500"
+                       : integrity.outcome === 'unreadable' ? "text-amber-400"
+                       : integrity.valid ? (integrity.anchor_checked ? "text-aura" : "text-amber-400")
+                       : "text-vital"}>
+                        {/* W492 (FU-196) - "TAMPER DETECTED" was shown for an UNREADABLE ledger,
+                             where nothing was checked at all, and "VERIFIED" was shown when the tail
+                             anchor was missing or corrupt, so truncation was never ruled out. */}
+                        <span data-testid="ledger-integrity-verdict" title={integrity?.verified_basis}>
+                        {integrity === null ? "—"
+                          : integrity.outcome === 'unreadable' ? "NOT ASSESSED — LEDGER UNREADABLE"
+                          : integrity.valid ? (integrity.anchor_checked ? "VERIFIED"
+                                               : "HASHES VERIFIED — TRUNCATION NOT RULED OUT")
+                          : "TAMPER DETECTED"}
+                        </span>
                      </span>
                   </div>
+                  {/* W492 (FU-196) - for an unreadable ledger there is no count and no root hash; this
+                      printed String(undefined) as one. No figure is claimed for books not read. */}
                   {integrity && (
-                     <p className="text-[9px] font-bold text-slate-600">
-                        {integrity.events.toLocaleString()} events · root {String(integrity.root_hash).slice(0, 12)}…
+                     <p className="text-[9px] font-bold text-slate-600" data-testid="ledger-integrity-figures">
+                        {/* W492 (refutation) - "the ledger was not read" was shown for a hash mismatch
+                            too, where the ledger WAS read and a stored hash disagreed. Only the
+                            unreadable outcome means it could not be read. */}
+                        {typeof integrity.events === 'number' && integrity.root_hash
+                          ? `${integrity.events.toLocaleString()} events · root ${String(integrity.root_hash).slice(0, 12)}…`
+                          : integrity.outcome === 'unreadable'
+                          ? 'no event count or root hash — the ledger was not read'
+                          : 'no event count or root hash was reported for this outcome'}
                      </p>
                   )}
                </div>

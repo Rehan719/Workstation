@@ -717,7 +717,10 @@ def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
     the blocking /establish and the SSE /establish/stream. Best-effort (never blocks establishment)."""
     try:
         from agentic_core.api import resource_fabric as rf
-        org_tiers = ["Chief (owner twin)", "AI CEO", "C-Suite", "Centre of Excellence", "Build-to-Order"]
+        # W492 (FU-188) - this tier list named the Chief as a trained twin model, which does not
+        # exist; the Board's own wording is used everywhere now.
+        org_tiers = ["Chief (the Owner's standing charter; no twin model is trained)", "AI CEO", "C-Suite", "Centre of Excellence",
+                     "Build-to-Order"]
         cascade = rf.register_swarm(
             name=f"{name} — delivery swarm",
             context=(f"VSB: {name}\nMission: {problem}\nDomain: {domain}\n"
@@ -883,7 +886,7 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
         plan["vision"] = f"A self-running {req.entity_type} VSB IDBO that commercialises this solution beneficently."
         plan["mission"] = f"Deliver: {req.problem[:160]}"
         plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
-                            "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
+                            "(Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.")
         # W450 (P1.2) — who wrote the opening, and which fields are still pending the owned model
         plan["provenance"] = {
             "served_by": (entity.get("ai_provenance") or {}).get("served_by") or None,
@@ -1224,7 +1227,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         _seed_plan_from_journey(vsb_id, name, req, entity)
         if entity.get("board"):
             yield _event("board", "Board + Chief Seated",
-                         "Board of Directors chaired by the owner's digital-twin Chief (arms-length).",
+                         "Board of Directors chaired by the Chief — the Owner's standing charter, "
+                         "arms-length; no twin model is trained.",
                          {"directors": len((entity["board"] or {}).get("directors", []) or [])})
         if entity.get("economy"):
             yield _event("economy", "Living Economy Initialised",

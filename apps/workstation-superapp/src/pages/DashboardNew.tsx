@@ -34,7 +34,8 @@ const JOURNEYS = [
     id: 'genesis', icon: Rocket, route: '/genesis', k: 'home.journey2',
     eyebrow: 'Offering 2 · Build an enterprise',
     title: 'Concept → Commercialisation',
-    desc: 'Take any challenge through the full end-to-end lifecycle into a living VSB IDBO enterprise — bespoke, autonomous and self-running, led by your Chief (your digital twin).',
+    // W492 (FU-188) - this described the Chief as a trained twin model, which does not exist
+    desc: 'Take any challenge through the full end-to-end lifecycle into a living VSB IDBO enterprise — bespoke, autonomous and self-running, led by your Chief (your standing charter — no twin model is trained).',
     cta: 'Start a Genesis',
   },
 ] as const;

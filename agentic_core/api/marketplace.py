@@ -324,13 +324,25 @@ def _screen_listing(name: str, description: str, tags: list) -> dict:
         # "hold for a person to read" is the right answer to a term nothing here can interpret.
         _esc = sorted({f"{v['framework']}:{d}" for v in (s.get("verdicts") or [])
                        for d in (v.get("escalate") or [])})
+        # W492 (FU-182) — this second writer dropped the screen's own `basis` ("a screen can refuse and
+        # can escalate; it cannot clear — only a row with coverage 'engine' may carry a pass"), so the
+        # drawer's emerald "pass" pill had nothing qualifying it. Carried through now, with the assessed
+        # areas, so no surface can present a keyword screen as a certification.
         return {"overall": s.get("overall"), "compliant": s.get("compliant"),
                 "verdicts": s.get("verdicts"),
                 "coverage_gaps": s.get("coverage_gaps") or [],
+                "assessed_by": s.get("assessed_by") or [],
+                "basis": s.get("basis"),
                 "escalations": _esc,
                 "hold": bool(_esc) or s.get("overall") == "fail"}
     except Exception as exc:   # a screen fault never silently passes NOR blocks — recorded honestly
-        return {"overall": "error", "error": str(exc)[:160]}
+        # W492 (FU-182) — an error result carried no `hold`, so a listing whose screen RAISED went live
+        # and was purchasable with nothing known about it. A screen that could not run is not a pass:
+        # the listing is held, exactly as an escalation is held, until a screen actually completes.
+        return {"overall": "error", "error": str(exc)[:160], "hold": True,
+                "verdicts": [], "coverage_gaps": [], "assessed_by": [],
+                "basis": ("the compliance screen could not run for this listing, so nothing about it was "
+                          "assessed; it is held until a screen completes")}
 
 
 @router.post("/api/v1/marketplace/listings")
@@ -366,7 +378,12 @@ async def create_listing(req: CreateListingRequest,
             from agentic_core.gaas.v5 import UEGLogger
             UEGLogger().log({"type": "marketplace.listing_held", "listing_id": lid,
                              "overall": _screen.get("overall"),
-                             "note": "§11 screen FAIL — held off the marketplace until re-screened clean"})
+                             # W492 (refutation) - a listing held because the screen RAISED did not FAIL
+                             # a screen; nothing was assessed. The constitutional record says which.
+                             "note": ("§11 screen COULD NOT RUN — nothing was assessed; held off the "
+                                      "marketplace until a screen completes"
+                                      if _screen.get("overall") == "error" else
+                                      "§11 screen FAIL — held off the marketplace until re-screened clean")})
         except Exception:
             pass
     return listing.model_dump()

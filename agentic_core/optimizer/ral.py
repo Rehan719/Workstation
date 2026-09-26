@@ -69,5 +69,9 @@ class RALVerifier:
         return {
             "status": "VERIFIED",
             "request_id": request["id"],
+            # W492 (FU-183/S4.21) - `domain` is REQUIRED above and was then dropped from the result, so
+            # every caller downstream fell back to "general" and the requested domain never reached the
+            # allocation. A value a schema validates is a value the result must carry.
+            "domain": request["domain"],
             "translated_requirements": translated_reqs
         }

@@ -282,7 +282,14 @@ class UEGLogger:
         """Recompute every hash and confirm the chain has not been tampered with."""
         bad = self.unreadable()
         if bad:
-            return {"valid": False, "reason": f"unreadable: {bad}"}
+            # W492 (FU-196) - an unreadable ledger is NOT a hash mismatch, and the pages read this
+            # result as tampering because nothing distinguished them. `outcome` says which it is, and
+            # no count or root hash is claimed for books that could not be read.
+            return {"valid": False, "outcome": "unreadable", "reason": f"unreadable: {bad}",
+                    "events": None, "root_hash": None, "anchor_checked": False,
+                    "anchor_state": "not_reached",
+                    "verified_basis": ("the ledger could not be read whole, so nothing was verified and "
+                                       "nothing is claimed about it - this is not evidence of tampering")}
         graph = self._read()
         prev: Optional[str] = None
         for node in graph["nodes"]:
@@ -293,25 +300,56 @@ class UEGLogger:
                 "previous_hash": prev,
             }
             if self._hash(base) != node.get("hash"):
-                return {"valid": False, "broken_at": node["id"]}
+                # W492 (refutation) - this omitted `events`, `root_hash`, `anchor_checked` and
+                # `anchor_state` entirely, so every reader that tested `!== null` or indexed the key got
+                # undefined and printed it. A mismatch reports the same key set as every other outcome:
+                # the count it got to, and the anchor it never reached.
+                return {"valid": False, "outcome": "hash_mismatch", "broken_at": node["id"],
+                        "events": len(graph["nodes"]), "root_hash": graph.get("root_hash"),
+                        "anchor_checked": False, "anchor_state": "not_reached",
+                        "reason": f"the recomputed hash does not match the stored one at {node['id']}",
+                        "verified_basis": ("a stored hash disagrees with its recomputation, so the chain "
+                                           "was not verified and the tail anchor was not reached")}
             prev = node["hash"]
         # §13 (W327) — the tail anchor catches truncation/rollback (both graph AND its internal
         # root_hash can be rewritten consistently; the sibling anchor cannot be forgotten silently).
+        # W492 (FU-196) - `anchor` was None for an ABSENT anchor and for a CORRUPT one alike, and both
+        # fell through to a clean valid:true. A damaged anchor therefore removed truncation and rollback
+        # detection while the page said "100% verified". The state is now reported either way.
+        _astate, _areason = "unknown", None
         try:
-            from agentic_core.integrity import read_anchor
-            anchor = read_anchor(self.storage_path + ".anchor")
+            from agentic_core.integrity import anchor_state as _anchor_state
+            _as = _anchor_state(self.storage_path + ".anchor")
+            _astate, _areason, anchor = _as["state"], _as.get("reason"), _as.get("anchor")
             if anchor and anchor.get("head") != prev:
-                return {"valid": False, "reason": "tail_anchor_mismatch (truncation/rollback suspected)",
-                        "events": len(graph["nodes"]), "anchored_head": anchor.get("head")}
+                return {"valid": False, "outcome": "anchor_mismatch",
+                        "reason": "tail_anchor_mismatch (truncation/rollback suspected)",
+                        "events": len(graph["nodes"]), "root_hash": graph.get("root_hash"),
+                        "anchored_head": anchor.get("head"),
+                        "anchor_checked": True, "anchor_state": _astate,
+                        "verified_basis": "the chain head does not match the anchored head"}
             # W351 — MONOTONICITY: a clobbered graph with fewer nodes than the anchor ever
             # recorded is a silent wipe, not a valid chain (the audit saw 196 lost events
             # 'verify' as valid because the survivors chained cleanly).
             if anchor and int(anchor.get("count") or 0) > len(graph["nodes"]):
-                return {"valid": False,
+                return {"valid": False, "outcome": "node_count_below_anchor",
                         "reason": (f"node_count_below_anchor (anchor recorded "
                                    f"{anchor.get('count')}, graph holds {len(graph['nodes'])} — "
                                    "silent loss detected)"),
-                        "events": len(graph["nodes"])}
-        except Exception:
-            pass
-        return {"valid": True, "events": len(graph["nodes"]), "root_hash": graph.get("root_hash")}
+                        "events": len(graph["nodes"]), "root_hash": graph.get("root_hash"),
+                        "anchor_checked": True, "anchor_state": _astate,
+                        "verified_basis": "fewer nodes than the anchor ever recorded"}
+        except Exception as _ae:
+            _astate, _areason = "unreadable", f"{type(_ae).__name__}: {str(_ae)[:120]}"
+        # Every stored hash recomputed. Whether TRUNCATION was also ruled out depends on the anchor,
+        # so the answer says so rather than letting a surface read this as a complete verification.
+        _anchored = _astate == "present"
+        return {"valid": True, "outcome": "verified",
+                "events": len(graph["nodes"]), "root_hash": graph.get("root_hash"),
+                "anchor_checked": _anchored, "anchor_state": _astate,
+                "anchor_reason": _areason,
+                "verified_basis": ("every stored hash recomputed, and the chain head matches the tail "
+                                   "anchor, so truncation and rollback are ruled out" if _anchored else
+                                   "every stored hash recomputed; truncation and rollback are NOT ruled "
+                                   f"out because the tail anchor is {_astate}"
+                                   + (f" ({_areason})" if _areason else ""))}

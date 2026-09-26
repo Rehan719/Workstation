@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 _OLLAMA_CACHE = {"at": 0.0, "up": False}
 _OLLAMA_TTL = 30.0
@@ -104,14 +104,33 @@ def save_lifecycle(st: Dict) -> None:
     atomic_write_json(_lifecycle_path(), st)
 
 
-def effective_default_local() -> str:
-    """The local model the 'ollama' resource serves with: the PROMOTED default when set (and not
-    retired), else the OLLAMA_MODEL env default."""
+def effective_default_local() -> Optional[str]:
+    """The local model the 'ollama' resource would serve with: the PROMOTED default when set (and not
+    retired), else the OLLAMA_MODEL env name IF that model is actually present.
+
+    W492 (FU-183) — this returned the env fallback string unconditionally, so with no model installed
+    at all it answered 'llama3.2' and /lifecycle published that as `effective_default`. The Native-AI
+    page then said "Serving default: llama3.2 (env default)" beside its own "Deterministic floor
+    active" — a name for something serving nothing. A default that is not present is not a default:
+    None means the floor serves, and the caller must say so. `configured_default_local()` below still
+    exposes the env NAME for surfaces that want to show what is configured but absent."""
+    # W492 (refutation) - the round's first fix presence-checked only the ENV branch, so a PROMOTED
+    # model that had since been uninstalled was still returned as what serves, and /lifecycle asserted
+    # "<model> is installed and serves local calls" about a model that is gone. Presence is the same
+    # requirement for both branches.
     st = lifecycle_state()
+    _present = set(active_local_models())
     promoted = st.get("default_local")
-    if promoted and promoted not in set(st.get("retired") or []):
+    if promoted and promoted not in set(st.get("retired") or []) and promoted in _present:
         return promoted
-    return os.getenv("OLLAMA_MODEL", "llama3.2")
+    env_name = configured_default_local()
+    return env_name if env_name and env_name in _present else None
+
+
+def configured_default_local() -> Optional[str]:
+    """The model NAME configured by OLLAMA_MODEL, whether or not it is installed. Naming what is
+    configured is honest; presenting it as what serves is not."""
+    return os.getenv("OLLAMA_MODEL", "llama3.2") or None
 
 
 def active_local_models() -> List[str]:
@@ -132,7 +151,11 @@ class ModelResourceRegistry:
             {"name": "native", "kind": "native", "available": True, "is_external": False,
              "note": "Workstation's own structured engine — always available, owned."},
             {"name": "ollama", "kind": "local", "available": ollama_up(), "is_external": False,
-             "model": effective_default_local(), "local_models": discovered,
+             # W492 (FU-183) — `model` is what SERVES (null when nothing is installed);
+             # `configured_model` is the name that would be tried. Reporting the second as the first
+             # named a model that served nothing while the floor answered every call.
+             "model": effective_default_local(), "configured_model": configured_default_local(),
+             "local_models": discovered,
              "promoted_default": st.get("default_local"), "retired": st.get("retired") or [],
              "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one "
                      "with model='ollama:<name>'."},

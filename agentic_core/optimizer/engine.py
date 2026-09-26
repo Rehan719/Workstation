@@ -35,22 +35,32 @@ class AdaptiveResourceOptimizer:
         if verification["status"] != "VERIFIED":
             return verification
 
-        # 2. Schedule (Cost-aware)
+        # 2. Schedule (Cost-aware) - on the RESOLVED tier, so the scheduler and the quota cannot read
+        #    the same unknown tier differently (W492/FU-183: "standard" got a free share and paid
+        #    scheduling).
+        resolved = self.allocator.resolve_tier(tier)
         task = {"id": verification["request_id"], "user_id": user_id}
-        schedule_status = await self.scheduler.schedule_task(task, tier)
+        schedule_status = await self.scheduler.schedule_task(
+            task, resolved["tier_applied"],
+            queued=bool(self.allocator.QUOTAS[resolved["tier_applied"]]["queued"]))
         if schedule_status["status"] in ["REJECTED", "QUEUED"]:
-            return schedule_status
+            return {**schedule_status, **resolved}
 
         # 3. Assemble (DRAD)
         pool_id = self.fabric.assemble_pool(verification["translated_requirements"])
 
-        # 4. Allocate (Tiered Fairness)
-        domain = verification.get("domain", "general")
-        allocation = self.allocator.allocate(user_id, tier, domain)
+        # 4. Allocate (Tiered Fairness) - on the domain the request actually asked for; the verifier
+        #    now returns it, so this no longer silently becomes "general".
+        domain = verification.get("domain")
+        allocation = self.allocator.allocate(user_id, tier, domain or "general")
+        allocation["domain_basis"] = ("the domain this request asked for" if domain else
+                                      "the request carried no domain, so the general pool applies")
 
         return {
             "status": "SUCCESS",
             "pool_id": pool_id,
+            "pool_basis": ("assembled on this per-request optimiser instance and discarded when the "
+                           "response returns - not a held reservation"),
             "allocation": allocation,
             "verification": verification
         }

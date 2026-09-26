@@ -103,11 +103,15 @@ check('the agents that did not run are named',
   && /runs at most/.test(String(dl.body?.agents_engaged_basis)));
 
 // a page of commits is not a total
+// the repository count is invariant under `limit` (it is counted from the repository, not the page);
+// asserting the two numbers DIFFER would only hold on a full clone
+const gh1 = await get('/api/v1/workstation/git-history?limit=1');
 check('the commit log separates the page it fetched from the repository count',
   !Object.prototype.hasOwnProperty.call(gh.body || {}, 'total')
   && gh.body?.returned <= gh.body?.limit
   && (gh.body?.repository_commits_total === null
-      || gh.body.repository_commits_total > gh.body.returned));
+      || gh.body.repository_commits_total >= gh.body.returned)
+  && gh1.body?.repository_commits_total === gh.body?.repository_commits_total);
 
 // ── the pages ──────────────────────────────────────────────────────────────────────────────────
 const browser = await chromium.launch();

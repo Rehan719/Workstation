@@ -376,7 +376,11 @@ export const NativeAI: React.FC = () => {
 
   // W276/W284 — the owned-model estate's LIFECYCLE (evaluate · promote · retire · reinstate)
   const [lifecycle, setLifecycle] = useState<{
-    promoted_default?: string | null; effective_default?: string; retired?: string[];
+    promoted_default?: string | null; effective_default?: string | null; retired?: string[];
+    // W492 (FU-183) - `effective_default` used to be the OLLAMA_MODEL fallback NAME even with an
+    // empty estate, so this card said "Serving default: llama3.2" beside the page's own
+    // "Deterministic floor active". What serves and what is configured are two fields now.
+    configured_default?: string | null; serves?: string; serving_basis?: string;
     discovered?: string[]; active_estate?: string[];
     evaluations?: { model: string; can_serve: boolean; score: number | null; at: string }[];
   } | null>(null);
@@ -752,8 +756,18 @@ export const NativeAI: React.FC = () => {
             <Card className="p-6 border-sky-500/30">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-sky-300 mb-1">Owned-model lifecycle (§6 — the estate is managed, not enumerated)</h3>
               <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
-                Serving default: <span className="text-white font-black">{lifecycle.effective_default ?? '—'}</span>
-                {lifecycle.promoted_default ? <span className="text-sky-300"> (promoted)</span> : <span> (env default)</span>}
+                {lifecycle.effective_default ? (
+                  <>
+                    Serving: <span className="text-white font-black" data-testid="serving-default">{lifecycle.effective_default}</span>
+                    {lifecycle.promoted_default ? <span className="text-sky-300"> (promoted)</span> : <span> (env default, installed)</span>}
+                  </>
+                ) : (
+                  <span data-testid="serving-default" title={lifecycle.serving_basis}>
+                    Serving: <span className="text-white font-black">the native floor</span>
+                    <span className="text-amber-400/80"> — no local model is installed
+                      {lifecycle.configured_default ? ` (${lifecycle.configured_default} is configured but absent)` : ''}</span>
+                  </span>
+                )}
                 {(lifecycle.retired ?? []).length > 0 && <span> · retired: {lifecycle.retired!.join(', ')}</span>}
               </p>
               {(lifecycle.discovered ?? []).length === 0 && (

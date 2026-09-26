@@ -93,7 +93,11 @@ _PILLARS: List[Dict[str, Any]] = [
         ("Org swarm cascade live", lambda r, d: _has(r, "/api/v1/swarm")),
         ("Sovereign Evolution Office live", lambda r, d: _has(r, "/api/v1/sovereign-evolution")),
     ]},
-    {"id": "chief_twin", "pillar": "Chief = Owner's digital twin (apex, arms-length)", "evidence": [
+    # W492 (refutation) - the pillar is the ROLE; the evidence below checks the Board is live, which is
+    # not evidence of a trained twin model, so the pillar says which of the two it claims.
+    {"id": "chief_twin",
+     "pillar": ("Chief = the Owner's digital twin as a ROLE (apex, arms-length) — no twin model is "
+                "trained"), "evidence": [
         ("Board / Chief live", lambda r, d: _has(r, "/api/v1/board")),
     ]},
     {"id": "resource_fabric", "pillar": "Reconfigurable, combinable resource fabric", "evidence": [

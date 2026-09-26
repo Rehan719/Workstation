@@ -99,7 +99,20 @@ def _organism_posture() -> dict:
     Sovereign Capital Fund reflects (and is governed by) the living system's state, not a detached ledger."""
     try:
         ctx = biobus.organism_context()
+        # W492 (refutation) - composite_health is a BLEND with a simulated ATP term and, while no circuits
+        # are tracked, a defaulted self-healing term. biobus already reports the measured-only figure and
+        # per-term basis; dropping them here meant the fund page printed the blend as a measurement.
+        _terms = ctx.get("composite_health_terms") or {}
+        _unmeasured = {k: (t or {}).get("basis") for k, t in _terms.items()
+                       if isinstance(t, dict) and t.get("measured") is False}
+        _unmeasured_weight = sum(float((_terms.get(k) or {}).get("weight") or 0) for k in _unmeasured)
         return {"mode": ctx.get("mode"), "composite_health": ctx.get("composite_health"),
+                "composite_health_measured_only": ctx.get("composite_health_measured_only"),
+                "composite_health_unmeasured_weight": round(_unmeasured_weight, 3),
+                "composite_health_basis": (
+                    f"a blend; {round(_unmeasured_weight * 100)}% of it is not measured "
+                    f"({', '.join(sorted(_unmeasured))})" if _unmeasured else
+                    "every term in this figure is measured"),
                 "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
     except Exception:
         return {}

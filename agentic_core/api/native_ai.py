@@ -137,17 +137,46 @@ def _ueg_lifecycle(action: str, model: str, extra: Dict[str, Any] | None = None)
         pass
 
 
+def _serving_basis(effective, promoted, configured, estate) -> str:
+    """W492 - what serves, and why, from the two names and the estate that were actually read."""
+    if effective:
+        return (f"{effective} is installed and serves local calls"
+                + (" (promoted)" if effective == promoted else " (from OLLAMA_MODEL)"))
+    absent = [n for n in (promoted, configured) if n and n not in set(estate or [])]
+    if not estate:
+        return ("no local model is installed, so the deterministic native floor serves"
+                + (f"; {', '.join(absent)} configured but absent" if absent else
+                   "; none is configured either"))
+    return ("the native floor serves: "
+            + (f"{', '.join(absent)} is named but not in the installed estate "
+               f"({', '.join(estate)})" if absent else
+               f"no default is named, though {', '.join(estate)} is installed"))
+
+
 @router.get("/lifecycle")
 async def model_lifecycle():
     """§6 (W276) — the owned-model estate's lifecycle state: the promoted serving default, retired
     models, the active estate default orchestration draws on, and recent evaluations."""
     from agentic_core.ai.native.model_resource import (lifecycle_state, effective_default_local,
+                                                       configured_default_local,
                                                        active_local_models, local_models)
     st = lifecycle_state()
+    _eff = effective_default_local()
+    _estate = active_local_models()
+    # W492 (FU-183) — /models already guarded this ("default_local" only when something is discovered);
+    # /lifecycle did not, so it published the OLLAMA_MODEL fallback NAME as the serving default with an
+    # empty estate. What is configured and what serves are two facts, and the answer says which is which.
     return {"promoted_default": st.get("default_local"),
-            "effective_default": effective_default_local(),
+            "effective_default": _eff,
+            "configured_default": configured_default_local(),
+            "serves": ("local_model" if _eff else "native_floor"),
+            # W492 (refutation) - this asserted "<model> is installed and serves" for a PROMOTED model
+            # that had been uninstalled, and said "no local model is installed" when the estate was
+            # non-empty but neither the promoted nor the configured name was in it. Both facts are read.
+            "serving_basis": _serving_basis(_eff, st.get("default_local"),
+                                            configured_default_local(), _estate),
             "retired": st.get("retired") or [],
-            "discovered": local_models(), "active_estate": active_local_models(),
+            "discovered": local_models(), "active_estate": _estate,
             "evaluations": (st.get("evaluations") or [])[-10:]}
 
 

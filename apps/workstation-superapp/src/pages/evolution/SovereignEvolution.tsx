@@ -142,14 +142,31 @@ export const SovereignEvolution: React.FC = () => {
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-4">
               <Activity size={16} className="text-highlight" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Organism Introspection</h3>
-              <span className="text-[9px] font-mono text-slate-600 ml-auto">cycle {roadmap.cycle_id} · {roadmap.duration_ms}ms</span>
+              {/* W492 (FU-212) - /roadmap returns the LAST SAVED cycle, which can be arbitrarily old.
+                  The card showed cycle_id and duration but never created_at, so a stale snapshot (its
+                  CPU %, its immune reading) read as the organism's current state. */}
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Organism Introspection — as of the last cycle</h3>
+              <span className="text-[9px] font-mono text-slate-600 ml-auto" data-testid="introspection-as-of">
+                cycle {roadmap.cycle_id} · {roadmap.duration_ms}ms · {roadmap.created_at ? `run ${roadmap.created_at}` : 'run time not recorded'}
+              </span>
             </div>
+            <p className="text-[9px] text-slate-600 font-bold mb-3" data-testid="introspection-staleness">
+              These are the readings that cycle took, not live values. Run a cycle to refresh them.
+            </p>
             <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
               <Metric label="Projects" value={roadmap.introspection?.projects?.total ?? 0} />
-              <Metric label="Immune Health" value={imm?.health ?? '—'} tone={imm?.threat_level === 'NONE' || imm?.threat_level === 'LOW' ? 'good' : 'warn'} />
+              {/* W492 (FU-212) - this tested two threat levels immune.status() never emits (its levels
+                  are NOMINAL, ELEVATED, HIGH, CRITICAL), so the tile was amber for every real reading. */}
+              <Metric label="Immune Health" value={imm?.health ?? '—'}
+                      title={imm?.threat_level ? `threat level ${imm.threat_level} at that cycle` : 'no threat level recorded'}
+                      tone={imm?.threat_level === 'NOMINAL' ? 'good'
+                        : imm?.threat_level === 'ELEVATED' ? 'warn'
+                        : imm?.threat_level === 'HIGH' || imm?.threat_level === 'CRITICAL' ? 'bad'
+                        : undefined} />
               <Metric label="CPU" value={res ? `${res.cpu_percent}%` : '—'} />
-              <Metric label="Items Proceeding" value={roadmap.items_proceeding} tone="good" />
+              {/* W492 - a count of zero is not a good outcome; the tone follows the figure */}
+              <Metric label="Items Proceeding" value={roadmap.items_proceeding}
+                      tone={roadmap.items_proceeding > 0 ? 'good' : undefined} />
             </div>
           </Card>
 
@@ -218,9 +235,11 @@ export const SovereignEvolution: React.FC = () => {
   );
 };
 
-const Metric: React.FC<{ label: string; value: any; tone?: 'good' | 'warn' }> = ({ label, value, tone }) => (
-  <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
-    <p className={`text-xl font-black ${tone === 'good' ? 'text-emerald-400' : tone === 'warn' ? 'text-amber-400' : 'text-white'}`}>{value}</p>
+// W492 (FU-212) - `bad` added: the immune tile could only be good or warn, so HIGH and CRITICAL read
+// the same as ELEVATED.
+const Metric: React.FC<{ label: string; value: any; tone?: 'good' | 'warn' | 'bad'; title?: string }> = ({ label, value, tone, title }) => (
+  <div className="p-3 rounded-xl bg-slate-950 border border-slate-900" title={title}>
+    <p className={`text-xl font-black ${tone === 'good' ? 'text-emerald-400' : tone === 'warn' ? 'text-amber-400' : tone === 'bad' ? 'text-vital' : 'text-white'}`}>{value}</p>
     <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mt-1">{label}</p>
   </div>
 );

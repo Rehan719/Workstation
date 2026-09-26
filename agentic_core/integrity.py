@@ -36,7 +36,8 @@ def verify_chain_entries(entries: List[Any], *,
                          stored_hash: Callable[[Any], Optional[str]],
                          parent_hash: Callable[[Any], Optional[str]],
                          first_parent: Optional[str],
-                         anchor: Optional[str] = None) -> Dict[str, Any]:
+                         anchor: Optional[str] = None,
+                         anchor_state_hint: Optional[str] = None) -> Dict[str, Any]:
     """The full recompute-and-verify walk. Returns
     {valid, entries, head, [broken_at, reason], [tail_anchored]} — real per-entry verdicts,
     never a constant."""
@@ -50,11 +51,19 @@ def verify_chain_entries(entries: List[Any], *,
                     "reason": "content_hash_mismatch (payload tampered)"}
         prev = stored_hash(e)
     out: Dict[str, Any] = {"valid": True, "entries": len(entries), "head": prev}
+    # W492 (refutation) - `anchor=None` meant BOTH "no anchor was supplied" and "the anchor could not be
+    # read", and the result said nothing either way: a caller could not tell a full verification from one
+    # where truncation was never ruled out. `anchor_checked` says which, for every caller of this helper.
+    out["anchor_checked"] = anchor is not None
+    out["anchor_state"] = anchor_state_hint or ("present" if anchor is not None else "absent_or_unreadable")
     if anchor is not None:
         out["tail_anchored"] = (anchor == prev)
         if anchor != prev:
             out["valid"] = False
             out["reason"] = "tail_anchor_mismatch (truncation/rollback suspected)"
+    else:
+        out["verified_basis"] = ("every entry hash recomputed; truncation and rollback are NOT ruled out "
+                                 "because no readable tail anchor was supplied")
     return out
 
 
@@ -76,3 +85,23 @@ def read_anchor(anchor_path: str) -> Optional[Dict[str, Any]]:
             return json.load(f)
     except Exception:
         return None
+
+
+def anchor_state(anchor_path: str) -> Dict[str, Any]:
+    """W492 (FU-196) - read_anchor() answers None for an absent anchor AND for a corrupt one, so a
+    caller could not tell "there is no anchor to check" from "the anchor could not be read". A verifier
+    that cannot distinguish them reports the same clean result for both, and the truncation/rollback
+    protection disappears silently. Returns state: present | absent | unreadable (+ reason)."""
+    if not os.path.exists(anchor_path):
+        return {"state": "absent", "anchor": None,
+                "reason": "no anchor file has been written beside this ledger yet"}
+    try:
+        with open(anchor_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict) or "head" not in data:
+            return {"state": "unreadable", "anchor": None,
+                    "reason": "the anchor file does not hold an anchor record"}
+        return {"state": "present", "anchor": data, "reason": None}
+    except Exception as e:
+        return {"state": "unreadable", "anchor": None,
+                "reason": f"{type(e).__name__}: {str(e)[:120]}"}

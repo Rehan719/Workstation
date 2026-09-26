@@ -224,6 +224,35 @@ class CrossoverRequest(BaseModel):
     crossover_method: str = "uniform"  # uniform | single_point | adaptive
 
 
+def _derived_trait_provenance(parents: list, derivation: str) -> dict:
+    """W492 (FU-198) — mutate and crossover wrote no trait_provenance and no encoding_note, so the
+    Genome-lab page fell back to "encoded before provenance tracking (pre-W438) — whether these axes
+    were analysed or defaulted is unknown" for a genome created seconds ago, and drew its bars in the
+    'analysed' colour. A derived genome's axes are exactly as analysed as its parents' were: when no
+    parent was encoded, every axis is arithmetic on the neutral 0.5 default, which is noise, not
+    analysis. Recorded here so the page never has to guess."""
+    any_encoded = any(bool(p.get("encoded")) for p in parents)
+    parsed, defaulted = [], []
+    for axis in _TRAIT_AXES:
+        # an axis is 'parsed' in the child only if some parent genuinely parsed it
+        if any(axis in ((p.get("trait_provenance") or {}).get("parsed") or []) for p in parents):
+            parsed.append(axis)
+        else:
+            defaulted.append(axis)
+    note = None
+    if not any_encoded:
+        note = (f"{derivation} of a genome that was never encoded — every axis is arithmetic on the "
+                "neutral 0.5 default, so these values are variation on a default, NOT an analysis of "
+                "the entity")
+    elif defaulted:
+        note = (f"{derivation}: {len(parsed)} of {len(_TRAIT_AXES)} axes descend from parsed parent "
+                f"values; the rest descend from neutral defaults")
+    return {"trait_provenance": {"parsed": parsed, "defaulted": defaulted,
+                                 "derived_from": [p.get("genome_id") for p in parents],
+                                 "derivation": derivation},
+            **({"encoding_note": note} if note else {})}
+
+
 @router.post("/genome/crossover")
 async def crossover_genomes(req: CrossoverRequest):
     """Combine two parent genomes into an offspring — real trait recombination, honest fitness.
@@ -294,6 +323,7 @@ async def crossover_genomes(req: CrossoverRequest):
         "generation": max(ga.get("generation", 0), gb.get("generation", 0)) + 1,
         "parent_genomes": [req.genome_a_id, req.genome_b_id],
         "crossover_method": req.crossover_method,
+        **_derived_trait_provenance([ga, gb], "crossover"),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     _save_genome(child_genome)
@@ -351,6 +381,7 @@ async def mutate_genome(req: MutateRequest):
         "mutations": mutations_applied,
         "mutation_rate": rate,
         "mutation_strength": strength,
+        **_derived_trait_provenance([parent], "mutation"),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     _save_genome(mutant)

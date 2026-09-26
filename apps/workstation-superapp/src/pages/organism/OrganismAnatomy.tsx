@@ -229,16 +229,32 @@ export const OrganismAnatomy: React.FC = () => {
             <div className="flex items-baseline gap-4 mb-2">
               <div><p className="text-3xl font-black text-white">{pct(health.composite_health_measured_only)}</p>
                 <p className="text-[8px] font-black uppercase text-emerald-400">measured only</p></div>
+              {/* W492 (FU-215) - "20% simulated" was a hard-coded constant while this card's own
+                  health_basis line said "40% measured": with no circuits tracked, 60% of the blend is
+                  unmeasured (40% DEFAULTED self-healing + 20% simulated ATP). Computed from the terms. */}
               <div><p className="text-xl font-black text-slate-400">{pct(health.composite_health)}</p>
-                <p className="text-[8px] font-black uppercase text-slate-600">blended (20% simulated)</p></div>
+                <p className="text-[8px] font-black uppercase text-slate-600" data-testid="blend-caption">
+                  {(() => {
+                    const terms = Object.values(health.composite_health_terms || {});
+                    if (!terms.length) return 'blended (composition not reported)';
+                    const un = terms.filter(t => !t.measured).reduce((a, t) => a + (Number(t.weight) || 0), 0);
+                    return un > 0 ? `blended (${Math.round(un * 100)}% not measured)` : 'measured throughout';
+                  })()}
+                </p></div>
               <Chip tone="dim">{health.mode}</Chip>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed mb-2">{health.health_basis}</p>
             {health.composite_health_terms && (
               <div className="flex flex-wrap gap-1.5">
                 {Object.entries(health.composite_health_terms).map(([k, t]) => (
-                  <Chip key={k} tone={t.measured ? 'ok' : 'warn'} title={t.basis || (t.measured ? 'measured' : 'simulated')}>
-                    {k} {pct(t.value)} · w{t.weight} · {t.measured ? 'measured' : 'SIMULATED'}
+                  /* W492 (FU-215) - every unmeasured term printed SIMULATED, but a defaulted
+                     self-healing reading is a DEFAULT, not a simulation. The word comes from the
+                     term's own basis. */
+                  <Chip key={k} tone={t.measured ? 'ok' : 'warn'} title={t.basis || (t.measured ? 'measured' : 'not measured')}>
+                    {k} {pct(t.value)} · w{t.weight} · {t.measured ? 'measured'
+                      : /default/i.test(String(t.basis || '')) ? 'DEFAULTED'
+                      : /simulat/i.test(String(t.basis || '')) ? 'SIMULATED'
+                      : 'NOT MEASURED'}
                   </Chip>
                 ))}
               </div>
@@ -384,10 +400,15 @@ export const OrganismAnatomy: React.FC = () => {
                 {selGenome.crossover_method && <Chip tone="dim">{selGenome.crossover_method} crossover</Chip>}
               </div>
               {selGenome.encoding_note && <p className="text-[9px] text-amber-200/70 italic mb-2">{selGenome.encoding_note}</p>}
+              {/* W492 (FU-198) - mutate and crossover wrote no trait_provenance, so this pre-W438
+                  fallback fired for genomes created seconds ago and the bars were drawn in the
+                  'analysed' colour. They carry their lineage now; this note is for genuinely old
+                  records, and it says which case it is. */}
               {!selGenome.trait_provenance && (
-                <p className="text-[9px] text-amber-200/70 italic mb-2">
-                  encoded before provenance tracking (pre-W438) — whether these axes were analysed
-                  or defaulted is unknown; a flat all-0.5 vector here is almost certainly unencoded
+                <p className="text-[9px] text-amber-200/70 italic mb-2" data-testid="genome-provenance-unknown">
+                  {selGenome.parent_genomes?.length
+                    ? 'derived from a parent record that carries no provenance — whether these axes descend from analysed or defaulted values is unknown'
+                    : 'encoded before provenance tracking (pre-W438) — whether these axes were analysed or defaulted is unknown; a flat all-0.5 vector here is almost certainly unencoded'}
                 </p>
               )}
               <div className="space-y-0.5 mb-2">

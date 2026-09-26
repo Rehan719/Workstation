@@ -3,7 +3,9 @@ Board of Directors — the apex governance tier of the Workstation IDBO / VSB.
 
 Sits ABOVE the AI CEO (honouring the Arms-Length Agency invariant: the AI CEO
 cannot instruct the board — direction flows down, not up). The board is led by
-the **Chief** — a digital twin of the Owner — who represents the Owner faithfully
+the **Chief** — the Owner's digital twin AS A ROLE (W492: no twin MODEL is trained; Mode 2
+is planned, P3.4 — the Chief is a standing charter plus the Owner's recorded instructions,
+and it represents only what the Owner has actually stated) — who represents the Owner faithfully
 in their presence and absence, with diligence, honesty, loyalty, determination
 and perfectionism. The Chief leads/appraises/develops a swarm of specialist
 Directors who together own the Business plan, strategy, aims, mission and
@@ -11,7 +13,7 @@ objectives, and delegate a timelined/resourced/scheduled living action plan to
 the AI CEO (→ C-Suite → CoE → BTO → operational delivery).
 
 Every VSB IDBO entity generated for a user receives its own Board + a Chief that
-is the digital twin of *that* VSB's owner.
+holds the standing charter of *that* VSB's owner (again: a role, not a trained model).
 
   GET  /api/v1/board/status           — board composition, hierarchy, owner it represents
   GET  /api/v1/board/charter          — the board charter + arms-length governance model
@@ -336,8 +338,11 @@ async def chief_instruct(req: ChiefInstruction):
     # 1. The Chief (Owner's digital twin) interprets and represents the Owner faithfully — grounded
     #    in LIVE intelligence (plan progress · operations · prior directives), not just the charter.
     chief_prompt = (
-        f"You are the Chief of the Board — the digital twin of {req.owner}, the Owner/Founder of the "
-        f"Workstation IDBO. {_OWNER['fidelity_charter']}\n\n"
+        # W492 (refutation) - no twin model is trained; represent only what the Owner has stated
+        f"You are the Chief of the Board — the standing charter of {req.owner}, the Owner/Founder of "
+        f"the Workstation IDBO. You hold NO trained model of them: represent only what they have "
+        f"actually stated, and say so when a question goes beyond it. "
+        f"{_OWNER['fidelity_charter']}\n\n"
         f"The Owner's vision: {_OWNER['vision_summary']}"
         f"{founder_profile()}"
         f"{_live_intelligence(req.scope)}\n\n"
@@ -563,7 +568,8 @@ async def board_directive(req: BoardDirective):
     inputs_block = "\n\n".join(f"[{v['title']}] (live: {v['live_grounding']})\n{v['input'][:400]}"
                                for v in director_inputs.values())
     resolution = await _q(
-        "You are the Chief (the Owner's digital twin), chairing the Workstation IDBO Board. "
+        "You are the Chief (the Owner's standing charter — no trained model of them exists; represent "
+        "only what the Owner has stated), chairing the Workstation IDBO Board. "
         f"Topic: {req.topic}\nDomain: {req.domain}\n\n"
         f"The directors have ACTUALLY deliberated — their real inputs:\n{inputs_block}\n\n"
         "Synthesise and resolve (do not invent inputs beyond those above):\n"

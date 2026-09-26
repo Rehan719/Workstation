@@ -51,7 +51,9 @@ _PILLARS: List[Dict[str, str]] = [
     {"pillar": "VSB org (Board→AI CEO→C-Suite→CoE→BTO) curates work", "status": "partial"},
     # W446 — ◐ (R3.4/R3.8): founder_profile is a constant values string + the last five
     # instructions; /api/v1/twin/models holds 0 models; nothing invokes the Chief unprompted.
-    {"pillar": "Chief = Owner's digital twin (apex, arms-length)", "status": "partial"},
+    {"pillar": ("Chief = the Owner's digital twin as a ROLE (apex, arms-length) — a standing charter "
+                "plus the last instructions; no twin MODEL is trained (Mode 2 planned, P3.4)"),
+     "status": "partial"},
     {"pillar": "Reconfigurable, combinable resource fabric — compositions run their REAL engines", "status": "strong"},
     # W446 — ◐ (R6.7/R4.6/R6.1/R6.5): autonomy flags default OFF and persist OFF; reflex arcs 0;
     # immune-reconfigure has no caller; the survival instinct keys off a non-depleting simulator.
@@ -73,7 +75,9 @@ _PHASES: Dict[str, List[str]] = {
         "Genesis journey + /establish living VSB (done)",
         "Sovereign Evolution Office (done)",
         "Resource Fabric (done)",
-        "Board of Directors — Chief = Owner digital twin (done)",
+        # W492 (refutation) - "(done)" was claimed for a twin that is not trained; the BOARD is done,
+        # the twin model is not.
+        "Board of Directors — Chief as the Owner's standing charter (done; no twin model trained)",
         "Living Plan + Plan API (done)",
     ],
     "short": [

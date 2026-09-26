@@ -250,21 +250,47 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
+          // W492 (FU-216) — the error frame used to be re-raised INSIDE this try, so the page's
+          // own "malformed event — skip" catch swallowed the backend's error frame: the optimistic
+          // status 'running' was never corrected, the spinner kept turning and the Run button stayed
+          // disabled while the API had already persisted status 'error'. Only the PARSE is tolerated
+          // here; a well-formed error frame is handled outside it.
+          let payload: any = null;
           try {
-            const payload = JSON.parse(line.slice(6));
-            if (payload.token !== undefined) {
-              setStreamText(prev => prev + payload.token.replace(/\\n/g, '\n'));
-            } else if (payload.done) {
-              // Reload full project to get outputs list updated
-              const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);
-              onUpdate(updated.data);
-              setStreaming(false);
-              return;
-            } else if (payload.error) {
-              throw new Error(payload.error);
-            }
-          } catch { /* malformed event — skip */ }
+            payload = JSON.parse(line.slice(6));
+          } catch { continue; }          // genuinely malformed event — skip
+          if (payload.error) {
+            setError(String(payload.error));
+            onUpdate({ ...project, status: 'error' });
+            setStreaming(false);
+            return;
+          }
+          if (payload.token !== undefined) {
+            setStreamText(prev => prev + String(payload.token).replace(/\\n/g, '\n'));
+          } else if (payload.done) {
+            // Reload full project to get outputs list updated
+            const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);
+            onUpdate(updated.data);
+            setStreaming(false);
+            return;
+          }
         }
+      }
+      // W492 (FU-216) — the reader can finish without a `done` frame ever arriving (a dropped or
+      // truncated stream). The optimistic status 'running' then stood forever, so re-read the
+      // project and report whatever the API actually holds rather than leaving a spinner turning.
+      const after = await axios.get<Project>(`/api/v1/projects/${project.id}`).catch(() => null);
+      if (after) {
+        onUpdate(after.data);
+        // W492 (refutation) - 'idle' is the status the backend actually writes when a run is reset or
+        // goes stale (projects/api.py:273, :399, :438); it was the one outcome this said nothing about,
+        // so a run that ended without completing looked like a run that had simply finished.
+        const st = after.data.status;
+        if (st === 'error') setError('The run ended in an error (the stream closed without completing).');
+        else if (st === 'running') setError('The stream closed before the run reported completion — the project is still marked running.');
+        else if (st === 'idle') setError('The stream closed without completing and the run was reset — nothing was produced for this stage.');
+      } else {
+        setError('The stream closed before completing, and the project could not be re-read.');
       }
     } catch (err: any) {
       setError(err?.message ?? 'Stream failed');

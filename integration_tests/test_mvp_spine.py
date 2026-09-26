@@ -10557,7 +10557,14 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
         "pages/governance/ComplianceChecker.tsx": "STATUS_ICON[v.status] ?? MinusCircle",
         "pages/synthesis/GenesisJourney.tsx": "m > 0 && n === m ? 'text-emerald-400' : m === 0 ? 'text-slate-500' : 'text-amber-400'",
         "components/layout/Header.tsx": "text-slate-300 hover:text-white hover:scale-105 transition-all gaas-audit-btn",
-        "pages/governance/GovernanceHub.tsx": "color={!verify ? 'text-slate-500' : verify.valid ? 'text-emerald-500' : 'text-vital'}",
+        # W492 (FU-196) - this pinned a two-state colour ternary; the page now has four states. The
+        # round's first edit cut the needle to ONE arm and claimed it was "strictly stronger" - it was
+        # weaker: the unloaded (!verify) and broken legs stopped being pinned at all, so an unevaluated
+        # verify rendering emerald would have passed. The WHOLE expression is pinned.
+        "pages/governance/GovernanceHub.tsx": ("color={!verify ? 'text-slate-500'\n"
+                                               "            : verify.outcome === 'unreadable' ? 'text-amber-400'\n"
+                                               "            : verify.valid ? (verify.anchor_checked ? 'text-emerald-500' : 'text-amber-400')\n"
+                                               "            : 'text-vital'}"),
         "pages/governance/ConstitutionalUI.tsx": ".catch(() => setGaas(null))",
         "pages/enterprise/VSBSpawnStudio.tsx": "ev.data?.passed === true ? STAGE_META.gaas_complete",
     }
@@ -10571,7 +10578,15 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
     cui = (S / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
     assert "'UNAVAILABLE'" in cui and "gaas.circuit_breaker.tripped ? 'BREAKER OPEN' : 'NOMINAL'" in cui
     gh = (S / "pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
-    assert "e?.flag?.level" in gh and "verify.valid ? 'VALID' : 'BROKEN'" in gh
+    assert "e?.flag?.level" in gh
+    # W492 (FU-196) - the chain card had two states; it now has four, because an unreadable ledger is not
+    # a broken chain and a recomputation whose tail anchor could not be checked is not a full pass. The
+    # W460 intent holds: nothing unevaluated or partial reads as VALID.
+    # the whole four-state value, not one arm: the BROKEN leg must stay pinned too
+    assert ("value={!verify ? '\u2014'\n"
+            "            : verify.outcome === 'unreadable' ? 'UNREADABLE'\n"
+            "            : verify.valid ? (verify.anchor_checked ? 'VALID' : 'HASHES OK')\n"
+            "            : 'BROKEN'}") in gh
     assert "d.decision === 'deny'" not in gh
 
     # BEHAVIOUR — the flag is what the event IS
@@ -19347,9 +19362,23 @@ def test_w491_a_count_says_what_population_it_covers(client):
     assert "total" not in gh, gh.keys()          # the field that named a fetch limit a total is gone
     assert gh["limit"] == 3 and gh["returned"] <= gh["limit"], gh
     assert gh["repository_commits_total"] is None or gh["repository_commits_total"] >= gh["returned"], gh
+    # W492 — the round's first version asserted the two numbers must DIFFER, which is true of a full
+    # clone and false on CI's shallow one (1 commit: returned 1, total 1, limit 3 is an accurate
+    # report). The property that does not depend on the checkout: the repository count is invariant
+    # under `limit`, because it is counted from the repository and not from the page.
+    _gh1 = client.get("/api/v1/workstation/git-history", params={"limit": 1}).json()
+    assert _gh1["returned"] <= 1 and _gh1["limit"] == 1, _gh1
+    assert _gh1["repository_commits_total"] == gh["repository_commits_total"], (_gh1, gh)
+    # W492 refutation — on a shallow clone (CI: actions/checkout depth 1) both numbers are 1, so the
+    # invariant above is 1 == 1 and would pass even if the total echoed the page. The environment
+    # cannot produce the discriminating case, so the MECHANISM is pinned: the total comes from the
+    # repository, counted by git, and never from len(commits).
+    _isrc2 = (root / "agentic_core/api/integration_surface.py").read_text(encoding="utf-8")
+    assert '["git", "rev-list", "--count", "HEAD"]' in _isrc2
+    assert 'repo_total = int((_cnt.stdout or "").strip()) if _cnt.returncode == 0 else None' in _isrc2
+    assert "repo_total = len(commits)" not in _isrc2
     if gh["readable"]:
-        # this repository has a real history, so the two numbers must genuinely differ here
-        assert gh["repository_commits_total"] and gh["repository_commits_total"] > gh["returned"], gh
+        assert isinstance(gh["repository_commits_total"], int), gh
     assert "never the same number by construction" in gh["counts_basis"]
     isrc = (root / "agentic_core/api/integration_surface.py").read_text(encoding="utf-8")
     # readable is MEASURED (the repo is probed, the exit status is checked), never asserted
@@ -19566,3 +19595,266 @@ def test_w491_a_count_says_what_population_it_covers(client):
     assert "standards-catalogue-basis" in cockpit
     assert "Standards the generators can draft against" in cockpit
     assert "Living management systems (BMS" not in cockpit
+def test_w492_the_page_says_what_the_engine_said(client):
+    """W492 — P1.18 + P2.4 + P2.6 + P2.7 + P2.8 + P2.9, the C5 batch taken repo-wide.
+
+    Ten rows, one rule: NOTHING THAT QUALIFIES A CLAIM MAY BE DROPPED BETWEEN THE ENGINE THAT
+    PRODUCED IT AND THE SURFACE THAT SHOWS IT — and no surface may present as current, verified or
+    successful what the API reported as stale, unchecked or failed.
+
+    Four shapes. A second writer strips the qualifier (FU-182 the marketplace screen drops its own
+    `basis`; FU-215 a hard-coded '20% simulated' over a card whose own line says 40% measured; FU-196
+    a missing tail anchor still answering 'verified'). The API says failure and the page says otherwise
+    (FU-210 a swallowed 409; FU-216 an error frame caught by 'malformed event — skip'; FU-212 a stale
+    cycle shown as current). A value is fabricated or dropped inside the pipeline (FU-183 a model name
+    returned with an empty estate; FU-197 the requested domain dropped and an unknown tier given free
+    quota with paid scheduling; FU-198 derived genomes carrying no provenance). And a self-contradicting
+    literal (FU-188 'Chief (owner twin)' in six writers while the same documents say none is trained).
+    """
+    import asyncio as _aio492
+    import pathlib
+    import types as _types492
+    import unittest.mock as _mock492
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── FU-183 (S7.1): a model that is not installed is not the serving default ───────────────────
+    from agentic_core.ai.native import model_resource as _mr
+    lc = client.get("/api/v1/native-ai/lifecycle").json()
+    assert set(("effective_default", "configured_default", "serves", "serving_basis")) <= set(lc), lc
+    assert lc["serves"] in ("local_model", "native_floor")
+    # W492 refutation — `(serves == "local_model") is bool(effective_default)` restates the line that
+    # computes it and can never fail. The falsifiable property: what SERVES must be something the
+    # estate actually holds, and the floor is claimed only when the estate holds no named default.
+    if lc["effective_default"]:
+        assert lc["effective_default"] in (lc.get("active_estate") or []), lc
+    else:
+        assert lc["serves"] == "native_floor", lc
+        for _named in (lc.get("promoted_default"), lc.get("configured_default")):
+            assert not _named or _named not in (lc.get("active_estate") or []), (lc, _named)
+    # forced: with nothing installed, the answer is the floor — not the env fallback name
+    with _mock492.patch.object(_mr, "active_local_models", lambda: []):
+        assert _mr.effective_default_local() is None
+        assert _mr.configured_default_local()          # the configured NAME is still nameable
+    # W492 refutation — the first fix presence-checked only the ENV branch, so a PROMOTED model that
+    # had been uninstalled was still returned as what serves. Both branches, forced.
+    with _mock492.patch.object(_mr, "lifecycle_state", lambda: {"default_local": "ghost-model"}):
+        with _mock492.patch.object(_mr, "active_local_models", lambda: []):
+            assert _mr.effective_default_local() is None, "a promoted model that is gone still serves"
+        with _mock492.patch.object(_mr, "active_local_models", lambda: ["ghost-model"]):
+            assert _mr.effective_default_local() == "ghost-model"
+    # and the basis never asserts a model is installed when the estate does not hold it
+    from agentic_core.api.native_ai import _serving_basis as _sb492
+    assert "is installed and serves" not in _sb492(None, "ghost", "ghost", [])
+    assert "not in the installed estate" in _sb492(None, "ghost", "ghost", ["other"])
+    assert "is installed and serves" in _sb492("real", None, "real", ["real"])
+    # an ATTEMPT may still use the configured name; only the REPORT must say the floor
+    from agentic_core.ai.gateway import gateway as _gw
+    with _mock492.patch.object(_mr, "active_local_models", lambda: []):
+        assert _gw._effective_ollama_model, "the attempt path lost its model name"
+    nai = (app / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    assert nai.count('data-testid="serving-default"') == 2   # BOTH branches: installed, and the floor
+    assert '<span data-testid="serving-default" title={lifecycle.serving_basis}>' in nai
+    assert "no local model is installed" in nai
+    assert "is configured but absent" in nai
+
+    # ── FU-197 (S4.21): the domain survives, and one tier resolution governs share AND scheduling ──
+    from agentic_core.optimizer.allocator import AllocationEngine as _AE
+    assert "standard" in _AE.QUOTAS, "the platform's own default tier is absent from its quota table"
+    for _t, _q in _AE.QUOTAS.items():
+        assert "queued" in _q, (_t, _q)          # each tier declares its scheduling, not just its share
+    assert _AE.resolve_tier("made-up")["tier_recognised"] is False
+    assert _AE.resolve_tier("made-up")["tier_applied"] == _AE.DEFAULT_TIER
+    assert _AE.QUOTAS[_AE.DEFAULT_TIER]["queued"] is True, "an unrecognised tier must not get paid scheduling"
+    # the engine hands the declaration to the scheduler; letting the scheduler re-decide from the tier
+    # NAME is how the two diverged in the first place
+    _esrc = (root / "agentic_core/optimizer/engine.py").read_text(encoding="utf-8")
+    assert 'queued=bool(self.allocator.QUOTAS[resolved["tier_applied"]]["queued"])' in _esrc
+    al = client.post("/api/v1/optimizer/allocate",
+                     json={"domain": "science", "requirements": {"CPU": 2, "RAM": 512},
+                           "tier": "standard"}).json()
+    assert al["status"] == "SUCCESS", al
+    _a = al["allocation"]
+    assert _a["domain"] == "science", "the requested domain was dropped again"
+    assert _a["tier_recognised"] is True and _a["tier_applied"] == "standard"
+    assert _a["status"] == "COMPUTED" and "no capacity is reserved" in _a["status_basis"]
+    # the verifier returns the domain it insists on
+    from agentic_core.optimizer.ral import RALVerifier
+    import json as _json492
+    _v = RALVerifier().verify_request(_json492.dumps(
+        {"id": "w492", "domain": "law", "requirements": {"compute": 1}}))
+    assert _v["domain"] == "law", _v
+    # an unrecognised tier is queued AND flagged, not silently given the free share with paid scheduling
+    al2 = client.post("/api/v1/optimizer/allocate",
+                      json={"domain": "science", "requirements": {"CPU": 2, "RAM": 512},
+                            "tier": "a-tier-that-does-not-exist"}).json()
+    assert al2.get("tier_recognised") is False, al2
+    assert al2["status"] in ("QUEUED", "REJECTED"), al2
+
+    # ── FU-196 (S10.13): a missing anchor is not a verification, and unreadable is not tampering ───
+    from agentic_core.integrity import anchor_state as _anchor_state
+    import tempfile as _tf492, os as _os492
+    _d = _tf492.mkdtemp()
+    assert _anchor_state(_os492.path.join(_d, "nope.anchor"))["state"] == "absent"
+    _bad = _os492.path.join(_d, "bad.anchor")
+    with open(_bad, "w", encoding="utf-8") as _f:
+        _f.write("{not json")
+    assert _anchor_state(_bad)["state"] == "unreadable"
+    ver = client.get("/api/v1/gaas/ueg/verify").json()
+    assert ver["outcome"] in ("verified", "unreadable", "hash_mismatch",
+                              "anchor_mismatch", "node_count_below_anchor"), ver
+    assert "anchor_checked" in ver and "verified_basis" in ver
+    if ver["outcome"] == "verified":
+        # a clean recomputation says whether truncation was ALSO ruled out
+        assert ("truncation and rollback are ruled out" in ver["verified_basis"]) is bool(ver["anchor_checked"])
+    # W492 - the anchor is always present here, so every leg that distinguishes a FULL verification
+    # from a hash-only one agreed with the broken version. Forced: verify a ledger whose anchor is
+    # absent, and one whose anchor is corrupt.
+    from agentic_core.gaas.v5.ueg import UEGLogger as _UEG492
+    _u = _UEG492(storage_path=str(pathlib.Path(_d) / "w492_ueg.json"))
+    _u.log({"type": "w492", "action": "a"})
+    _anch = _u.storage_path + ".anchor"
+    _os492.remove(_anch)
+    _noanchor = _u.verify_chain()
+    assert _noanchor["valid"] is True and _noanchor["outcome"] == "verified", _noanchor
+    assert _noanchor["anchor_checked"] is False and _noanchor["anchor_state"] == "absent", _noanchor
+    assert "are NOT ruled out" in _noanchor["verified_basis"], _noanchor
+    with open(_anch, "w", encoding="utf-8") as _f:
+        _f.write("{not json")
+    _badanchor = _u.verify_chain()
+    assert _badanchor["anchor_checked"] is False and _badanchor["anchor_state"] == "unreadable", _badanchor
+    assert "are NOT ruled out" in _badanchor["verified_basis"], _badanchor
+    # and an UNREADABLE ledger is reported as unreadable, claiming no count and no root hash
+    with open(_u.storage_path, "w", encoding="utf-8") as _f:
+        _f.write("{corrupt")
+    _unread = _u.verify_chain()
+    assert _unread["valid"] is False and _unread["outcome"] == "unreadable", _unread
+    assert _unread["events"] is None and _unread["root_hash"] is None, _unread
+    assert "this is not evidence of tampering" in _unread["verified_basis"], _unread
+
+    gh_ui = (app / "pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    cu_ui = (app / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
+    # W492 refutation — this decided coverage by COUNTING one string, and the count was satisfied by
+    # the Chain Integrity card alone while the Root Hash and UEG Events cards still printed figures
+    # for a ledger that was never read. Every surface is named.
+    assert "? (verify.outcome === 'unreadable'" in gh_ui          # the narrative
+    assert "verify.outcome === 'unreadable' ? 'UNREADABLE'" in gh_ui   # the Chain Integrity card
+    assert "verify.outcome === 'unreadable' ? 'NOT ASSESSED'" in gh_ui  # the chain-verified figure
+    assert "verify?.root_hash ? `${String(verify.root_hash).slice(0, 10)}" in gh_ui   # Root Hash card
+    assert "typeof verify?.events === 'number' ? verify.events" in gh_ui             # UEG Events card
+    assert "typeof r.events === 'number'" in gh_ui                # the audit-run row
+    assert "String(verify.root_hash)" not in gh_ui.replace("verify?.root_hash ? `${String(verify.root_hash)", "")
+    assert "not evidence of tampering" in gh_ui
+    assert "verify.anchor_checked" in gh_ui and "chain-verified-figure" in gh_ui
+    assert "ledger-integrity-verdict" in cu_ui and "TRUNCATION NOT RULED OUT" in cu_ui
+    assert "integrity.valid ? (integrity.anchor_checked ? \"VERIFIED\"" in cu_ui
+    assert "the ledger was not read" in cu_ui        # no count or root for books not read
+    assert "{typeof integrity.events === 'number' && integrity.root_hash" in cu_ui
+
+    # ── FU-182 (S12.7): the screen's own basis reaches the drawer, and a screen fault holds ────────
+    from agentic_core.api import marketplace as _mk
+    _scr = _mk._screen_listing("W492 probe", "A maths tutoring listing", [])
+    assert _scr.get("basis"), "the screen's basis is dropped by the second writer again"
+    assert "it cannot clear" in _scr["basis"]
+    assert "coverage_gaps" in _scr and "assessed_by" in _scr
+    # a screen that RAISED is not a pass: the listing is held
+    def _boom(*a, **k):
+        raise RuntimeError("forced by the w492 guard")
+    with _mock492.patch("agentic_core.api.compliance.screen_compliance", _boom):
+        _err = _mk._screen_listing("W492 probe", "text", [])
+    assert _err["overall"] == "error" and _err["hold"] is True, _err
+    assert "held until a screen completes" in _err["basis"]
+    mkt = (app / "pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
+    assert "not a certification" in mkt and "screen-basis" in mkt
+    assert "screen-coverage-gaps" in mkt and "v.reason" in mkt
+    assert "the §11 screen could not run, so the public text was NOT re-screened" in mkt
+    # W492 refutation — this round's own hold fix made the error arm unreachable (held matched first),
+    # so the branch is now tested BEFORE held, and the held banner says which reason applies.
+    assert "setNotice(d.compliance?.overall === 'error'" in mkt
+    assert "held-reason" in mkt and "screen COULD NOT RUN" in mkt
+
+    # ── FU-188 (S8.9): no surface calls the Chief a trained twin ───────────────────────────────────
+    for _p, _lit in (
+        ("agentic_core/api/genesis.py", "Chief (owner twin)"),
+        ("agentic_core/api/genesis.py", "Chief = owner's digital twin"),
+        ("agentic_core/api/vsb.py", "Chief = owner's digital twin"),
+        ("apps/workstation-superapp/src/pages/DashboardNew.tsx", "led by your Chief (your digital twin)"),
+        ("apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx", "Chief</span> (your digital twin)"),
+        ("apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx",
+         "'Chief of the Board (founder digital twin)'"),
+    ):
+        assert _lit not in (root / _p).read_text(encoding="utf-8"), (_p, _lit)
+    gen = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    assert "no twin model is trained" in gen
+    # any wording that presents the Chief AS a twin, not one exact literal
+    swi = (app / "components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    assert "digital twin)'" not in swi, swi[swi.find("Chief of the Board") - 40:][:200]
+    assert "standing charter" in swi
+
+    # ── FU-198 (S8.14): a derived genome carries its lineage, so no page has to guess ──────────────
+    from agentic_core.organism.genome import _derived_trait_provenance as _dtp
+    _unenc = _dtp([{"genome_id": "g1", "encoded": False,
+                    "trait_provenance": {"parsed": [], "defaulted": ["innovation"]}}], "mutation")
+    assert _unenc["trait_provenance"]["parsed"] == []
+    assert "NOT an analysis of the entity" in _unenc["encoding_note"]
+    _part = _dtp([{"genome_id": "g2", "encoded": True,
+                   "trait_provenance": {"parsed": ["innovation"], "defaulted": []}}], "crossover")
+    assert "descend from parsed parent values" in _part["encoding_note"]
+    gsrc = (root / "agentic_core/organism/genome.py").read_text(encoding="utf-8")
+    assert gsrc.count('_derived_trait_provenance(') == 3   # the helper plus BOTH derived writers
+    # W492 refutation — the helper was first inserted BETWEEN @router.post("/genome/crossover") and its
+    # handler, so the decorator bound to the HELPER and the route 422'd for every real caller while the
+    # module still imported and the app still booted. A route is verified by CALLING it.
+    import ast as _ast492
+    _decorated = {n.name: [_ast492.unparse(d) for d in n.decorator_list]
+                  for n in _ast492.walk(_ast492.parse(gsrc))
+                  if isinstance(n, (_ast492.FunctionDef, _ast492.AsyncFunctionDef))}
+    assert _decorated["crossover_genomes"] == ["router.post('/genome/crossover')"], _decorated["crossover_genomes"]
+    assert _decorated["_derived_trait_provenance"] == [], _decorated["_derived_trait_provenance"]
+    _ga = client.post("/api/v1/organism/genome/encode",
+                      json={"entity_name": "w492 A", "domain": "general", "description": "a"}).json()
+    _gb = client.post("/api/v1/organism/genome/encode",
+                      json={"entity_name": "w492 B", "domain": "general", "description": "b"}).json()
+    _cx = client.post("/api/v1/organism/genome/crossover",
+                      json={"genome_a_id": _ga["genome_id"], "genome_b_id": _gb["genome_id"]})
+    assert _cx.status_code == 200, _cx.text
+    _cxj = _cx.json()
+    assert "fitness_score" in _cxj and _cxj["trait_provenance"]["derivation"] == "crossover", _cxj
+    _mu = client.post("/api/v1/organism/genome/mutate", json={"genome_id": _ga["genome_id"]})
+    assert _mu.status_code == 200 and _mu.json()["trait_provenance"]["derivation"] == "mutation", _mu.text
+    anat = (app / "pages/organism/OrganismAnatomy.tsx").read_text(encoding="utf-8")
+    assert "genome-provenance-unknown" in anat and "derived from a parent record" in anat
+
+    # ── FU-215 (S8.13): the blend caption is computed, and a default is not a simulation ───────────
+    assert "blend-caption" in anat and "not measured)" in anat
+    assert "blended (20% simulated)" not in anat
+    assert "'DEFAULTED'" in anat and "/default/i.test" in anat
+    hs = client.get("/api/v1/organism/health-summary").json()
+    _terms = hs.get("composite_health_terms") or {}
+    assert _terms, hs
+    _un = [k for k, t in _terms.items() if not t.get("measured")]
+    # every unmeasured term says HOW it is unmeasured, so the page never has to guess the word
+    for k in _un:
+        assert _terms[k].get("basis"), (k, _terms[k])
+
+    # ── FU-210 (S3.15): a refused delivery is said ─────────────────────────────────────────────────
+    bpx = (app / "pages/enterprise/BusinessPlan.tsx").read_text(encoding="utf-8")
+    assert "Delivery refused" in bpx and "data?.detail" in bpx
+    assert "the run is best-effort" not in bpx        # the empty catch is gone
+    assert "returned no workflow tree" in bpx
+
+    # ── FU-216 (S12.9): the error frame is not swallowed by the parse catch ────────────────────────
+    ph = (app / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8")
+    assert "throw new Error(payload.error)" not in ph
+    assert "} catch { continue; }" in ph             # only the PARSE is tolerated
+    assert "if (payload.error) {" in ph and "status: 'error'" in ph
+    assert "The stream closed before the run reported completion" in ph
+
+    # ── FU-212 (S13.6): a saved cycle is dated, and the tile tones from levels that exist ──────────
+    se = (app / "pages/evolution/SovereignEvolution.tsx").read_text(encoding="utf-8")
+    assert "introspection-as-of" in se and "not live values" in se
+    assert "roadmap.created_at" in se
+    assert "'NONE'" not in se and "'LOW'" not in se   # levels immune.status() never emits
+    assert "=== 'NOMINAL' ? 'good'" in se and "'CRITICAL' ? 'bad'" in se
+    from agentic_core.organism.immune import immune as _immune
+    assert _immune.status().get("threat_level") in ("NOMINAL", "ELEVATED", "HIGH", "CRITICAL")

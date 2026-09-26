@@ -315,8 +315,12 @@ class NativeOrchestrator:
             # "ollama" → the default model; "ollama:<name>" → that specific owned local model.
             # W276 — the default local model honours the PROMOTED lifecycle default (persisted),
             # falling back to the OLLAMA_MODEL env; explicit ollama:<name> stays the user's choice.
-            from agentic_core.ai.native.model_resource import effective_default_local
-            model = name.split(":", 1)[1] if ":" in name else effective_default_local()
+            # W492 (FU-183) — an ATTEMPT may use the configured name even when nothing is installed
+            # (the call simply fails); only a surface reporting what SERVES must say the floor.
+            from agentic_core.ai.native.model_resource import (effective_default_local,
+                                                              configured_default_local)
+            model = (name.split(":", 1)[1] if ":" in name
+                     else (effective_default_local() or configured_default_local()))
             url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
             # §6 (W323) — the owned model can actually SERVE: the old read=25.0 hard cap was a
             # self-inflicted ceiling (real warm node generation measured ~72s), so the owned model

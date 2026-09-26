@@ -225,11 +225,23 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
       appendLog(`Native AI fabric: reachable${models ? ` \u00b7 ${models} owned model(s)` : ''}.`, 'success');
     } catch (e) { ready = false; appendLog(`Native AI fabric: ${errorMessage(e)}`, 'warn'); }
     try {
+      // W492 (refutation) \u2014 this is the THIRD reader of /gaas/ueg/verify and the round updated only the
+      // other two: it called an UNREADABLE ledger "CHAIN INVALID" (nothing was checked, so that is not a
+      // verdict on the chain) and a hash-only pass "chain VALID" (truncation was never ruled out). And
+      // ${ueg.events} printed undefined for the outcomes that carry no count.
       const ueg = await apiJson('/api/v1/gaas/ueg/verify');
-      appendLog(ueg.valid
-        ? `Constitutional ledger: chain VALID (${ueg.events} events).`
-        : 'Constitutional ledger: CHAIN INVALID \u2014 resolve before establishing anything.', ueg.valid ? 'success' : 'warn');
-      if (!ueg.valid) ready = false;
+      const uegN = typeof ueg.events === 'number' ? ` (${ueg.events} events)` : '';
+      if (ueg.outcome === 'unreadable') {
+        appendLog(`Constitutional ledger: NOT ASSESSED \u2014 it could not be read whole${ueg.reason ? ` (${ueg.reason})` : ''}. This is not a verdict on the chain.`, 'warn');
+        ready = false;
+      } else if (!ueg.valid) {
+        appendLog(`Constitutional ledger: CHAIN INVALID${uegN} \u2014 ${ueg.reason ?? 'the chain did not verify'}. Resolve before establishing anything.`, 'warn');
+        ready = false;
+      } else if (ueg.anchor_checked === false) {
+        appendLog(`Constitutional ledger: hashes verified${uegN}, but truncation and rollback are NOT ruled out (the tail anchor is ${ueg.anchor_state ?? 'unavailable'}).`, 'warn');
+      } else {
+        appendLog(`Constitutional ledger: chain VALID${uegN}, tail anchor matched.`, 'success');
+      }
     } catch (e) { ready = false; appendLog(`Constitutional ledger: ${errorMessage(e)}`, 'warn'); }
 
     appendLog(`Deployment plan: ${buildConfig.nodes} node(s) \u00b7 ${buildConfig.regions.join(', ') || 'no region selected'} \u00b7 ${buildConfig.scale_tier}.`, 'info');

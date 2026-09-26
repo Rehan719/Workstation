@@ -103,11 +103,27 @@ class VSBUEGLogger:
                     if line.strip():
                         entries.append(json.loads(line))
         except FileNotFoundError:
-            return {"valid": True, "entries": 0, "head": None,
-                    "note": "no ledger yet — vacuously valid"}
+            # W492 (refutation) — this returned a different key set again, so a reader indexing
+            # anchor_checked or entries got undefined. Same shape, and "vacuously" is said in the basis.
+            return {"valid": True, "outcome": "empty", "entries": 0, "head": None, "root_hash": None,
+                    "anchor_checked": False, "anchor_state": "not_reached",
+                    "note": "no ledger yet — vacuously valid",
+                    "verified_basis": ("no ledger file exists yet, so there is nothing to verify — this is "
+                                       "not a verified chain")}
         except Exception as exc:
-            return {"valid": False, "reason": f"ledger unreadable: {exc}"}
-        anchor = read_anchor(self.log_path + ".anchor")
+            # W492 (refutation) — an unreadable ledger returned only a reason, so readers could not tell
+            # it from a hash mismatch. Same key set as every other outcome, and no figure is claimed.
+            return {"valid": False, "outcome": "unreadable", "entries": None, "head": None,
+                    "anchor_checked": False, "anchor_state": "not_reached",
+                    "reason": f"ledger unreadable: {exc}",
+                    "verified_basis": ("the ledger could not be read whole, so nothing was verified — "
+                                       "this is not evidence of tampering")}
+        # W492 (refutation) — this sibling verifier still used read_anchor(), which answers None for an
+        # absent anchor AND for a corrupt one, so a damaged anchor silently removed truncation detection
+        # here exactly as it did in the gaas.v5 ledger. The state is read and passed through.
+        from agentic_core.integrity import anchor_state as _anchor_state
+        _as = _anchor_state(self.log_path + ".anchor")
+        anchor = _as.get("anchor")
         return verify_chain_entries(
             entries,
             recompute=lambda e: hashlib.sha3_512(
@@ -116,6 +132,7 @@ class VSBUEGLogger:
             parent_hash=lambda e: e["payload"].get("parent_hash"),
             first_parent="0" * 128,
             anchor=(anchor or {}).get("head") if anchor else None,
+            anchor_state_hint=_as.get("state"),
         )
 
     async def log_minimisation_event(self, event_type: str, metrics: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> str:
