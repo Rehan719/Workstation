@@ -35,7 +35,9 @@ const JOURNEYS = [
     eyebrow: 'Offering 2 · Build an enterprise',
     title: 'Concept → Commercialisation',
     // W492 (FU-188) - this described the Chief as a trained twin model, which does not exist
-    desc: 'Take any challenge through the full end-to-end lifecycle into a living VSB IDBO enterprise — bespoke, autonomous and self-running, led by your Chief (your standing charter — no twin model is trained).',
+    // W493 (refutation) - 'self-running' survived here and below, on the same screen that now says
+    // none of the levers is on
+    desc: 'Take any challenge through the full end-to-end lifecycle into a living VSB IDBO enterprise — bespoke and autonomous in design, run by the heartbeat levers you turn on, led by your Chief (your standing charter — no twin model is trained).',
     cta: 'Start a Genesis',
   },
 ] as const;
@@ -44,7 +46,7 @@ const JOURNEYS = [
 // Each identity links to where it's realised in the product.
 const IDENTITIES = [
   { n: '1', what: 'A service', desc: 'End-to-end AI-mediated Concept → Commercialisation for anybody’s challenge.', route: '/genesis' },
-  { n: '2', what: 'A factory of living enterprises', desc: 'Each output is itself a living, self-running VSB IDBO entity.', route: '/projects' },
+  { n: '2', what: 'A factory of living enterprises', desc: 'Each output is itself a living VSB IDBO entity, run on the heartbeat levers you enable.', route: '/projects' },
   { n: '3', what: 'A living organisation', desc: 'Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order.', route: '/ceo' },
   { n: '4', what: 'A reconfigurable resource fabric', desc: 'Engines · reactors · labs · factories + its own AI swarm/models/orchestration.', route: '/resource-fabric' },
   { n: '5', what: 'An economic organism', desc: 'A hybrid Waqf/Trust/Multinational entity (virtual WST; autonomous cycles are opt-in); the living-entities list shows §11 screen status, including never screened.', route: '/economy' },
@@ -67,6 +69,7 @@ export const DashboardNew: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [vitals, setVitals] = useState<Vitals | null>(null);
+  const [levers, setLevers] = useState<{ on: string[]; total: number; beating: boolean | null } | null>(null);
   const [health, setHealth] = useState<{
     composite: number; mode: string;
     measuredOnly: number | null; unmeasuredShare: number; unmeasuredTerms: string[];
@@ -106,6 +109,18 @@ export const DashboardNew: React.FC = () => {
     axios.get('/api/v1/projects/stats/summary').then(({ data }) => {
       setVitals({ cpu: data.cpu_percent ?? 0, memory: data.memory_percent ?? 0, totalProjects: data.total_projects ?? 0 });
     }).catch(() => {});
+
+    // W493 (FU-205) - the autonomy levers the identity copy claims, read rather than assumed
+    axios.get('/api/v1/heartbeat/status').then(({ data }) => {
+      // W493 (refutation) - a lever set to true does nothing while the heartbeat is STOPPED, so
+      // reading the levers alone can report 'self-running' for an organism that is not beating.
+      const keys = ['auto_evolve', 'auto_economy', 'auto_align', 'auto_compliance', 'auto_ship'];
+      const present = keys.filter(k => typeof data?.[k] === 'boolean');
+      if (!present.length) { setLevers(null); return; }
+      setLevers({ on: present.filter(k => data[k]).map(k => k.replace('auto_', '')),
+                  total: present.length,
+                  beating: typeof data?.running === 'boolean' ? data.running : null });
+    }).catch(() => setLevers(null));
 
     axios.get('/api/v1/organism/status').then(({ data }) => {
       // W491 (refutation) - this page reads the SAME endpoint as the organism hub and discarded the two
@@ -184,7 +199,22 @@ export const DashboardNew: React.FC = () => {
         {/* §3 — what Workstation IDBO IS: one living organism, five things at once */}
         <section>
           <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-1">{t('home.whatItIs', 'What Workstation IDBO is')}</h3>
-          <p className="text-[11px] text-slate-500 mb-4 max-w-2xl">One living, biomimetic organism that is <span className="text-aura">simultaneously</span> all five — generated end-to-end, self-running, in-house.</p>
+          {/* W493 (FU-205, sweep S6.18, C4) - "self-running" described levers that are all OFF by
+              default (auto_evolve, auto_economy, auto_align, auto_compliance, auto_ship) and this page
+              read none of them. It reads them now and says which are on. */}
+          <p className="text-[11px] text-slate-500 mb-4 max-w-2xl">One living, biomimetic organism that is <span className="text-aura">simultaneously</span> all five — generated end-to-end, in-house.</p>
+          <p className="text-[10px] text-slate-600 mb-4 max-w-2xl" data-testid="autonomy-levers">
+            {levers === null
+              ? 'Self-running is a set of heartbeat levers; their state could not be read.'
+              : levers.on.length === 0
+              ? `Self-running is a set of ${levers.total} heartbeat levers and none is on: the organism runs
+                 when you turn them on (Organism → Heartbeat).`
+              : levers.beating === false
+              ? `${levers.on.length} of ${levers.total} heartbeat levers are set (${levers.on.join(', ')}), but the
+                 heartbeat is STOPPED, so none of them is running.`
+              : `Self-running levers on: ${levers.on.join(', ')} — ${levers.on.length} of ${levers.total}`
+                + (levers.beating === null ? ' (whether the heartbeat is beating could not be read).' : ', and the heartbeat is beating.')}
+          </p>
           <div className="grid grid-cols-1 @[560px]:grid-cols-2 @[900px]:grid-cols-5 gap-3">
             {IDENTITIES.map(it => (
               <button key={it.n} type="button" onClick={() => navigate(it.route)}

@@ -14,6 +14,11 @@ export const CognitionIntegration: React.FC = () => {
   const [knowledge, setKnowledge] = useState<any>(null);
   const [align, setAlign] = useState<Align | null>(null);
   const [alignErr, setAlignErr] = useState('');   // W329 — actions never fail silently
+  // W493 (FU-176) - the page claimed CONTINUOUS alignment; that is the heartbeat's auto_align lever,
+  // so the lever is read and its real state is stated. null means it could not be read.
+  const [autoAlign, setAutoAlign] = useState<boolean | null>(null);
+  // W493 (refutation) - a lever set to true does nothing while the heartbeat is STOPPED
+  const [beating, setBeating] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   // §7 — run the Cognitive Cascade with a user-selected subset of engines (reconfigurable resource)
   const [engineCat, setEngineCat] = useState<{ id: string; name: string }[]>([]);
@@ -42,6 +47,15 @@ export const CognitionIntegration: React.FC = () => {
     setSolving(false);
   };
 
+  useEffect(() => {
+    apiJson<{ auto_align?: boolean; running?: boolean }>('/api/v1/heartbeat/status')
+      .then(d => {
+        setAutoAlign(typeof d?.auto_align === 'boolean' ? d.auto_align : null);
+        setBeating(typeof d?.running === 'boolean' ? d.running : null);
+      })
+      .catch(() => { setAutoAlign(null); setBeating(null); });
+  }, []);
+
   const runAlign = async () => {
     setBusy(true);
     try { setAlign(await apiJson('/api/v1/cognition/align', { method: 'POST', body: { execute: false } })); }
@@ -57,8 +71,21 @@ export const CognitionIntegration: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Cognition &amp; Alignment</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The knowledge system wired into every living tier — Chief · Board · AI CEO · C-Suite · CoE · BTO · swarm ·
-          arms-length Change Control · heartbeat · evolution. The organism <span className="text-highlight">self-aligns</span>:
-          measures vision realisation, routes each gap to the tier that owns it, governed and continuous.
+          arms-length Change Control · heartbeat · evolution. It measures vision realisation and
+          <span className="text-highlight"> names the tier that owns each gap</span>.
+          {/* W493 (FU-176, sweep S7.5, C4) - this said the organism "self-aligns ... governed and
+              continuous". The button posts execute:false, so nothing is sent to any tier, and the
+              heartbeat's auto_align lever is off, so nothing does it on a beat either. */}
+          <span className="block mt-1 text-slate-600">
+            Mapping only: naming an owner is not acting on it. Nothing is sent to any tier from this page,
+            and continuous alignment runs only when the heartbeat&apos;s Self-align lever is on AND the
+            heartbeat is actually beating
+            {autoAlign === null ? ' (lever state unread)'
+              : !autoAlign ? ' — the lever is OFF'
+              : beating === false ? ' — the lever is on but the heartbeat is STOPPED, so it is not running'
+              : beating === null ? ' — the lever is ON (whether the heartbeat beats could not be read)'
+              : ' — the lever is ON and the heartbeat is beating'}.
+          </span>
         </p>
       </header>
 
@@ -209,7 +236,13 @@ export const CognitionIntegration: React.FC = () => {
             ? <p className="text-sm text-emerald-400 font-bold">Fully aligned — no open vision gaps.</p>
             : (
               <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase text-slate-500">Overall realisation {Math.round(align.overall_realisation * 100)}% · {align.gaps_routed.length} gaps routed (evidence-based)</p>
+                {/* W493 (FU-176) - "routed" reads as sent; every gap comes back executed:false */}
+                <p className="text-[10px] font-black uppercase text-slate-500" data-testid="align-result">
+                  Overall realisation {Math.round(align.overall_realisation * 100)}% ·{' '}
+                  {align.gaps_routed.length} gap(s) mapped to an owning tier ·{' '}
+                  {(align.executed || []).length} acted on
+                  {(align.executed || []).length === 0 ? ' (plan only — nothing was sent)' : ''}
+                </p>
                 {align.gaps_routed.map((g, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900">
                     <div className="min-w-0">

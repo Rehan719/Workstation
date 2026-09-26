@@ -127,7 +127,8 @@ export const Settings: React.FC = () => {
         </div>
 
         {/* §9 (W357) — REAL adaptive-UI controls: these genuinely change the interface (font
-            scale enlarges rendering; guided mode + tone drive the affordances the hubs show). */}
+            scale enlarges rendering; guided mode + tone are SAVED and displayed but drive nothing yet
+            — W493/FU-154). */}
         <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-4 pt-2 border-t border-slate-800/60">
           <div>
             <label htmlFor="pref-font" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Text size</label>
@@ -154,7 +155,9 @@ export const Settings: React.FC = () => {
             </select>
           </div>
         </div>
-        <p className="text-[10px] text-slate-600">On save, text size takes effect across the whole app; guidance and tone drive the affordances shown on the domain hubs.</p>
+        {/* W493 (FU-154, sweep S10.5, C4) - "drive the affordances shown on the domain hubs" was not
+            true: only the hub badges read guidance and tone. Text size genuinely applies app-wide. */}
+        <p className="text-[10px] text-slate-600" data-testid="prefs-effect-basis">On save, text size takes effect across the whole app. Guidance and tone are saved and shown on the domain hubs, but nothing yet changes with them — no affordance is gated on guidance and no request carries the tone.</p>
 
         <div className="flex items-center gap-3 flex-wrap">
           <Button type="button" onClick={save} className="bg-aura text-sovereign flex items-center gap-2 text-xs">

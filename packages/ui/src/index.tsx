@@ -71,7 +71,10 @@ export const Card = ({ children, className = '', ...props }: any) => (
   </div>
 );
 
-export const Badge = ({ children, color = 'aura', className = '' }: any) => {
+// W493 (refutation) - Badge accepted only children/color/className, so a `title` passed for
+// disclosure (six domain hubs did) was silently DROPPED and never reached the DOM. A component
+// that swallows a prop makes every caller's disclosure invisible.
+export const Badge = ({ children, color = 'aura', className = '', title, ...rest }: any) => {
   const colors = {
     aura: 'bg-aura/10 text-aura border-aura/20',
     highlight: 'bg-highlight/10 text-highlight border-highlight/20',
@@ -83,7 +86,8 @@ export const Badge = ({ children, color = 'aura', className = '' }: any) => {
   };
 
   return (
-    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${colors[color as keyof typeof colors] || colors.aura} ${className}`}>
+    <span title={title} {...rest}
+          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${colors[color as keyof typeof colors] || colors.aura} ${className}`}>
       {children}
     </span>
   );

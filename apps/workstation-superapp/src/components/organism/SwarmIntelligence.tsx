@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { qmsChip, provenanceMapBadge, complianceChip } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, errorMessage } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -69,6 +69,10 @@ const CSUITE_POOL = ['CSO', 'CFO', 'CTO', 'CPO', 'COO', 'CIO', 'CLO', 'Forecasti
 
 const SwarmIntelligence: React.FC = () => {
   const [runs, setRuns] = useState<SwarmRun[]>([]);
+  // W493 (FU-202) - a read that FAILED is not an empty store; the panel must say which it has
+  const [runsErr, setRunsErr] = useState('');
+  // W493 (refutation) - the cascade list needs the same state: the fix reached one read of two
+  const [cascadeErr, setCascadeErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [task, setTask] = useState('');
   const [delegating, setDelegating] = useState(false);
@@ -90,18 +94,25 @@ const SwarmIntelligence: React.FC = () => {
   const [cascadeRuns, setCascadeRuns] = useState<any[]>([]);
 
   const loadRuns = async () => {
+    // W493 (FU-202, sweep S11.2, C4) - this swallowed the error, so an UNREACHABLE backend produced the
+    // same empty list as a genuinely empty store, and the panel then declared the swarm "online -
+    // waiting for orchestration signal". A failed read is its own state.
     try {
       const res = await axios.get('/api/v1/swarm/runs');
       setRuns(res.data.runs ?? []);
-    } catch { /* empty state */ }
+      setRunsErr('');
+    } catch (e) { setRunsErr(errorMessage(e)); }
     finally { setLoading(false); }
   };
 
   const loadCascadeRuns = async () => {
     try {
+      // W493 (refutation) - the FU-202 fix reached loadRuns and left this identical swallow one
+      // function below it, so the Org Cascade panel reported an unreadable list as "no cascades".
       const res = await axios.get('/api/v1/swarm/cascade/runs');
       setCascadeRuns(res.data.runs ?? []);
-    } catch { /* empty state */ }
+      setCascadeErr('');
+    } catch (e) { setCascadeErr(errorMessage(e)); }
   };
 
   useEffect(() => {
@@ -412,8 +423,14 @@ const SwarmIntelligence: React.FC = () => {
             <div className="flex items-center gap-2 text-white/30 text-xs">
               <Loader2 size={12} className="animate-spin" /> Loading…
             </div>
+          ) : runsErr ? (
+            /* W493 (refutation) - the page's PRIMARY run list still said "no swarm runs yet" when the
+               read had FAILED; the FU-202 fix only reached the feed panel below it. */
+            <p className="text-[10px] text-amber-400" data-testid="swarm-runs-panel-unreadable">
+              The run list could not be read ({runsErr}) — whether any run exists is unknown.
+            </p>
           ) : runs.length === 0 ? (
-            <p className="text-[10px] text-[#444]">No swarm runs yet. Delegate a mission above.</p>
+            <p className="text-[10px] text-[#444]" data-testid="swarm-runs-panel-empty">No delegate run is recorded yet. Delegate a mission above.</p>
           ) : (
             <div className="max-h-60 overflow-y-auto">
               {runs.slice(0, 8).map(r => <RunCard key={r.run_id} run={r} />)}
@@ -426,8 +443,13 @@ const SwarmIntelligence: React.FC = () => {
           <h3 className="text-xs text-[#666] mb-4 uppercase tracking-widest flex items-center gap-1.5">
             <Zap size={10} /> Org Cascade History (persisted)
           </h3>
-          {cascadeRuns.length === 0 ? (
-            <p className="text-[10px] text-[#444]">No persisted cascade runs yet.</p>
+          {/* W493 (refutation) - an unreadable cascade list is not an empty one either */}
+          {cascadeErr ? (
+            <p className="text-[10px] text-amber-400" data-testid="cascade-runs-unreadable">
+              The cascade history could not be read ({cascadeErr}) — whether any cascade ran is unknown.
+            </p>
+          ) : cascadeRuns.length === 0 ? (
+            <p className="text-[10px] text-[#444]" data-testid="cascade-runs-empty">No persisted cascade runs yet.</p>
           ) : (
             <div className="max-h-60 overflow-y-auto space-y-2">
               {cascadeRuns.slice(0, 8).map((cr: any) => (
@@ -498,7 +520,8 @@ const SwarmIntelligence: React.FC = () => {
 
       {/* Emergence Feed */}
       <div className="mt-5 bg-[#0a0a0a] p-4 rounded-xl border border-[#111]">
-        <h3 className="text-xs text-[#666] mb-2.5 uppercase tracking-widest">Emergence Event Stream</h3>
+        {/* W493 (FU-202) - nothing streams: this renders the last completed delegate runs */}
+        <h3 className="text-xs text-[#666] mb-2.5 uppercase tracking-widest" data-testid="emergence-heading">Completed delegate runs (most recent first)</h3>
         <div className="font-mono text-[10px] text-green-400 space-y-1">
           {runs.length > 0 ? (
             runs.slice(0, 5).map(r => (
@@ -506,11 +529,21 @@ const SwarmIntelligence: React.FC = () => {
                 [{r.created_at ? new Date(r.created_at).toLocaleTimeString() : '--:--:--'}] SWARM_COMPLETE: {r.task.slice(0, 55)} · {(r.agents_engaged ?? r.agent_ids ?? []).length} agents
               </div>
             ))
+          ) : loading ? (
+            /* W493 (refutation) - the feed asserted emptiness before the first read had returned */
+            <div className="text-[#666]" data-testid="emergence-loading">[--:--:--] READING: loading the run list…</div>
+          ) : runsErr ? (
+            /* W493 (FU-202) - the run list could not be READ; nothing is known about the swarm */
+            <div className="text-amber-400" data-testid="swarm-runs-unreadable">
+              [--:--:--] UNREADABLE: the swarm run list could not be read ({runsErr}) — whether any run
+              exists is unknown.
+            </div>
           ) : (
-            <>
-              <div>[--:--:--] IDLE: No active swarm runs. Delegate a mission to see emergence events.</div>
-              <div>[--:--:--] READY: Swarm intelligence online — waiting for orchestration signal.</div>
-            </>
+            <div className="text-[#666]" data-testid="swarm-runs-empty">
+              [--:--:--] EMPTY: no delegate run is recorded. This panel lists completed runs of
+              POST /swarm/delegate; it is not a live stream, and an org cascade is recorded separately
+              under Org Cascade History.
+            </div>
           )}
         </div>
       </div>

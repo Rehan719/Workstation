@@ -722,9 +722,10 @@ export const VSBEconomy: React.FC = () => {
                         last visit failed
                       </span>
                     )}
+                    {/* W493 (refutation) - FU-214's second surface: each beat re-screens ONE entity */}
                     {v.compliance?.never_screened ? (
                       <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-500"
-                        title="§11 has not screened this entity yet. Switch on Self-defend (auto_compliance) on the Heartbeat surface to re-screen every entity each beat. Not screened is NOT the same as clean.">
+                        title="§11 has not screened this entity yet. Switch on Self-defend (auto_compliance) on the Heartbeat surface: each beat re-screens ONE entity in round-robin, so with N entities this one is reached about every N beats. Not screened is NOT the same as clean.">
                         not screened
                       </span>
                     ) : (

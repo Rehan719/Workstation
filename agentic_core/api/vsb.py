@@ -1243,8 +1243,16 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # W485 (refutation) — the entity verdict is ON the pack, so it is part of what the pack SAYS:
     # excluded from the hash, a pack whose entity verdict had flipped to FAIL still reported itself
     # "unchanged since" the version that said review.
+    # W493 (refutation) - the pack's hash covered the entity's `generation`, which a FILING cycle no
+    # longer advances, so an evolve stopped producing a new pack version. What genuinely changed is
+    # material for a board: a cycle ran and proposals are awaiting the Owner's approval. The stamp
+    # carries that, so the pack versions on the fact that actually moved.
+    _evo_stamp = ("§8-evolution:cycles=" + str(int(vsb.get("evolution_cycles_run", 0)))
+                  + "/gen=" + str(int(vsb.get("generation", 0)))
+                  + "/pending=" + str(vsb.get("evolution_pending_cca") or "none")
+                  + "/proposals=" + str(len(vsb.get("evolution_proposals") or [])))
     _entity_stamp = ("§11-entity:" + str(_entity_compliance.get("verdict"))
-                     + "/" + str(_entity_compliance.get("known")))
+                     + "/" + str(_entity_compliance.get("known")) + _evo_stamp)
     content_hash = _pack_content_hash(layers, economy, narrative + _entity_stamp, str(name or ""))
     version, unchanged_since, unchanged = _pack_version(vsb_id, content_hash, ts)
     pack = {
@@ -2126,7 +2134,11 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
         "Output ONLY the EVOLVE lines."
     )
 
-    biobus.fire_signal("cognitive", "vsb.evolve", f"Evolution cycle: {vsb_id} gen {vsb.get('generation',0)+1}", 0.7)
+    # W493 (refutation) - this announced "gen N+1" at the START of a cycle that only FILES proposals;
+    # the generation advances on apply. The signal names the cycle, not a generation.
+    biobus.fire_signal("cognitive", "vsb.evolve",
+                       f"Evolution cycle {int(vsb.get('evolution_cycles_run', 0)) + 1} for {vsb_id} "
+                       f"(generation stays {int(vsb.get('generation', 0))} until an apply lands)", 0.7)
     raw = await gateway.query(prompt, agent=f"vsb_evolution_{vsb_id}", augment=False)   # W332 — drives persisted mutations
     proposals = []
     for line in raw.splitlines():
@@ -2171,9 +2183,18 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
         except Exception:
             pass
 
-    vsb["generation"] = vsb.get("generation", 0) + 1
-    vsb["last_evolved"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    # W493 (FU-165, sweep S1.21, C4) - `generation` was incremented HERE, when proposals are merely
+    # FILED. The genome mutates only in apply_approved_evolution(), after the Owner approves the CCA,
+    # so an entity read "Generation 1" with nothing evolved and nothing applied. The generation now
+    # advances on APPLY; this path counts the cycles it actually ran, which is a different fact.
+    vsb["evolution_cycles_run"] = int(vsb.get("evolution_cycles_run", 0)) + 1
+    vsb["last_evolution_cycle"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     vsb["evolution_proposals"] = proposals
+    # W493 (refutation) - the pending pointer was only ever written INSIDE `if proposals:`, so a later
+    # cycle that produced nothing left an EARLIER cycle's CCA in place and then reported it as its own
+    # filing ("N proposal(s) filed as cca-...", outcome proposals_filed_pending_approval) - and
+    # `no_proposals` was unreachable. The pointer this cycle inherited is recorded separately.
+    _inherited_cca = vsb.get("evolution_pending_cca") if not proposals else None
 
     # §8 (W310) — evolution proposals are CONSEQUENTIAL: they route to the arms-length Change
     # Control Agency (vsb_evolution → MEDIUM tier, never auto-approved — the Owner keeps the gate)
@@ -2182,7 +2203,9 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
         try:
             from agentic_core.api.change_control import SubmitChangeRequest, submit_change
             _sub = await submit_change(SubmitChangeRequest(
-                title=f"Evolution proposals for {vsb['name']} (gen {vsb['generation']})",
+                title=(f"Evolution proposals for {vsb['name']} "
+                       f"(cycle {vsb['evolution_cycles_run']}; would become generation "
+                       f"{int(vsb.get('generation', 0)) + 1} if approved)"),
                 change_type="vsb_evolution",
                 description="; ".join(f"{p['trait']}: {p['proposed_change'][:120]}" for p in proposals),
                 rationale=f"Evolution cycle trigger: {req.trigger}. Mutations apply ONLY on approval.",
@@ -2210,18 +2233,46 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
             try:
                 _ship = json.loads(_ship_p.read_text(encoding="utf-8"))
                 _ship["stale"] = True
-                _ship["stale_since"] = vsb["last_evolved"]
-                _ship["stale_reason"] = f"evolution generation {vsb['generation']} (refresh_repo=false)"
+                # W493 (FU-165) - the repo went stale because a CYCLE ran, not because a generation
+                # was applied; `last_evolved` now means "last APPLIED", and reading it here raised.
+                _ship["stale_since"] = vsb["last_evolution_cycle"]
+                _ship["stale_reason"] = (f"evolution cycle {vsb['evolution_cycles_run']} filed proposals "
+                                         f"(refresh_repo=false; generation stays "
+                                         f"{int(vsb.get('generation', 0))} until an apply lands)")
                 _ship_p.write_text(json.dumps(_ship, indent=2), encoding="utf-8")
                 repo_refresh = {"action": "marked_stale"}
             except Exception as exc:
                 repo_refresh = {"action": "stale_mark_failed", "error": str(exc)[:160]}
 
+    # W493 (FU-165) - the response said "generation N" for a cycle that applied nothing. It reports the
+    # generation the entity IS at, the cycle this run was, and what is still required for a generation.
+    _pending = vsb.get("evolution_pending_cca")
     return {
         "vsb_id": vsb_id,
-        "generation": vsb["generation"],
+        "generation": int(vsb.get("generation", 0)),
+        "generation_basis": ("the number of evolutions APPLIED to this entity's traits; a filed cycle "
+                             "does not advance it"),
+        "evolution_cycles_run": vsb["evolution_cycles_run"],
+        "applied": False,
         "proposals": proposals,
-        "evolution_pending_cca": vsb.get("evolution_pending_cca"),   # §8 (W310) — awaiting review
+        "evolution_pending_cca": _pending,   # §8 (W310) — awaiting review
+        # W493 (refutation) — `outcome` keyed off `_pending`, which a cycle can INHERIT from an
+        # earlier one, so a cycle that proposed nothing reported "filed as cca-..." and
+        # `no_proposals` could never be reached. It keys off what THIS cycle produced.
+        "pending_cca_is_from_an_earlier_cycle": bool(_inherited_cca),
+        "outcome": ("proposals_filed_pending_approval" if (proposals and _pending) else
+                    "proposals_not_filed" if proposals else
+                    "no_proposals_pending_earlier_cycle" if _inherited_cca else
+                    "no_proposals"),
+        "outcome_basis": (f"{len(proposals)} proposal(s) filed as {_pending}; the genome mutates only on "
+                          f"POST /api/v1/vsb/{vsb_id}/evolution/apply after the Owner approves"
+                          if (proposals and _pending) else
+                          "proposals were produced but could not be filed for review, so none can be applied"
+                          if proposals else
+                          f"this cycle proposed nothing; {_inherited_cca} is still pending from an "
+                          f"EARLIER cycle and is not this cycle's filing"
+                          if _inherited_cca else
+                          "this cycle found nothing to propose, so nothing was filed and nothing changed"),
         "trigger": req.trigger,
         "repo_refresh": repo_refresh,
     }
@@ -2233,21 +2284,27 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     the entity's epigenetic traits as traceable applied mutations, refresh the genome registry
     pattern, mark the CCA implemented, and mark the shipped repo stale (drift honesty). Honest
     no-ops: nothing pending / not yet approved / already applied."""
+    # W493 (self-check lead) - every no-op return carries the same keys, so a caller indexing cca_id or
+    # generation never gets undefined from one branch and a value from another.
     vsb = _load_vsb(vsb_id)
     if not vsb:
-        return {"applied": False, "reason": "vsb_not_found"}
+        return {"applied": False, "reason": "vsb_not_found", "cca_id": None, "generation": None}
     # W452 (refuter F2) — the heartbeat's evolution_auto_apply lever reaches this function directly,
     # so the Mode 3 hold lives HERE, not only on the HTTP wrapper: a gated genome does not mutate.
     _gate_hold = _gate_block_reason(vsb)
     if _gate_hold:
-        return {"applied": False, "reason": "review_gate_blocks", "detail": _gate_hold}
+        return {"applied": False, "reason": "review_gate_blocks", "detail": _gate_hold,
+                "cca_id": vsb.get("evolution_pending_cca"),
+                "generation": int(vsb.get("generation", 0))}
     cca_id = vsb.get("evolution_pending_cca")
     if not cca_id:
-        return {"applied": False, "reason": "no_pending_evolution"}
+        return {"applied": False, "reason": "no_pending_evolution", "cca_id": None,
+                "generation": int(vsb.get("generation", 0))}
     from agentic_core.api.change_control import _load_change, _update_change
     change = _load_change(cca_id)
     if not change:
-        return {"applied": False, "reason": "cca_not_found", "cca_id": cca_id}
+        return {"applied": False, "reason": "cca_not_found", "cca_id": cca_id,
+                "generation": int(vsb.get("generation", 0))}
     def _stranded(rec: dict) -> Dict[str, Any] | None:
         """The apply claimed this approval (record implemented BY the apply) but no applied mutation
         carries its id: an earlier apply failed after claiming it. Named, never reported as done."""
@@ -2258,12 +2315,14 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
             return {"applied": False, "reason": "claim_stranded", "cca_id": cca_id,
                     "note": ("the change record says this evolution was applied, but no applied mutation "
                              "carries its id — an earlier apply failed after claiming it; an admin must "
-                             "re-approve or re-apply")}
+                             "re-approve or re-apply"),
+                                     "generation": int(vsb.get("generation", 0))}
         return None
 
     if change.get("status") != "approved":
         return _stranded(change) or {"applied": False, "reason": f"cca_status_{change.get('status')}",
-                                     "cca_id": cca_id}
+                                     "cca_id": cca_id,
+                                     "generation": int(vsb.get("generation", 0))}
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     proposals = vsb.get("evolution_proposals") or []
     planned = sum(1 for p in proposals if str(p.get("trait") or "").strip())
@@ -2294,10 +2353,12 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
         _update_change(cca_id, _claim)
     except HTTPException as e:   # busy or vanished — nothing has been mutated; the next beat retries
         return {"applied": False, "reason": ("cca_busy" if e.status_code == 503 else "cca_not_found"),
-                "cca_id": cca_id, "detail": e.detail}
+                "cca_id": cca_id, "detail": e.detail,
+                        "generation": int(vsb.get("generation", 0))}
     if not claim["won"]:
         return (_stranded(claim["record"] or {}) or
-                {"applied": False, "reason": f"cca_status_{claim['status']}", "cca_id": cca_id})
+                {"applied": False, "reason": f"cca_status_{claim['status']}", "cca_id": cca_id,
+                 "generation": int(vsb.get("generation", 0))})
     applied = []
     traits = vsb.get("epigenetic_traits") or {}
     for p in proposals:
@@ -2311,6 +2372,14 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     vsb["epigenetic_traits"] = traits
     vsb["applied_mutations"] = (vsb.get("applied_mutations") or []) + applied
     vsb["evolution_pending_cca"] = None
+    # W493 (FU-165) — a generation happens where the traits change. W493 (refutation): this advanced
+    # it UNCONDITIONALLY once the CCA claim was won, and claimed "the traits actually changed" even
+    # when `applied` was empty — reachable whenever a later cycle proposes nothing and leaves an
+    # earlier cycle's CCA pending, which is then approved. That is this round's own rule broken: a
+    # counter advanced before the thing happened. It advances only when a mutation actually landed.
+    if applied:
+        vsb["generation"] = int(vsb.get("generation", 0)) + 1
+        vsb["last_evolved"] = now
     try:
         _save_vsb(vsb)
     except Exception:
@@ -2353,7 +2422,17 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
                            f"{vsb.get('name')}: {len(applied)} approved mutations applied", 0.7)
     except Exception:
         pass
+    # W493 (FU-165) — the apply is where a generation happens, so it reports the one it produced.
+    # W493 (refutation) — and when zero mutations landed it says so rather than claiming a change.
+    # (The self-check also flagged this return for omitting `reason`; that is a false positive — a
+    #  reason belongs to a no-op, not to a success.)
     return {"applied": True, "vsb_id": vsb_id, "cca_id": cca_id,
+            "generation": int(vsb.get("generation", 0)),
+            "generation_advanced": bool(applied),
+            "generation_basis": ("advanced by this apply, because the traits actually changed"
+                                 if applied else
+                                 "NOT advanced: the approval was consumed but no mutation was "
+                                 "applicable, so the traits are unchanged"),
             "mutations_applied": len(applied), "applied_mutations": applied}
 
 

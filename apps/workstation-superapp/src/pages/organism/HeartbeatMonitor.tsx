@@ -23,12 +23,15 @@ interface Status {
 const AUTONOMY: { key: keyof Status; label: string; does: string }[] = [
   { key: 'auto_evolve', label: 'Self-improve',
     does: 'Runs an AI evolution cycle on maintenance-phase beats, paced — proposals go to governance, never straight to production.' },
+  // W493 (FU-214, sweep S9.5, C4) - these said "each"/"every living VSB ... each beat". Each beat
+  // tends exactly ONE: operate_one() takes the least-recently-operated entity, and _compliance_beat
+  // re-screens one in round-robin. With N entities each is tended roughly once every N beats.
   { key: 'auto_economy', label: 'Self-run',
-    does: 'Operates each living VSB on the beat: metabolic cycle, profit waterfall, virtual WST only.' },
+    does: 'Operates ONE living VSB per beat — the least recently operated — so with N entities each is run about once every N beats: metabolic cycle, profit waterfall, virtual WST only.' },
   { key: 'auto_compliance', label: 'Self-defend',
-    does: 'Re-screens every living VSB against §11 compliance each beat, so a verdict is not frozen at establishment.' },
+    does: 'Re-screens ONE living VSB per beat in round-robin against the §11 keyword screen, so a verdict is not frozen at establishment — but a given entity is re-screened only about once every N beats.' },
   { key: 'auto_align', label: 'Self-align',
-    does: 'Routes vision gaps to delivery tiers each beat. Plan-only and cheap — it writes no code.' },
+    does: 'Names the owning tier for each vision gap on the beat. Plan-only: nothing is sent to any tier and no code is written.' },
   { key: 'auto_ship', label: 'Self-ship',
     does: 'Re-ships ONE stale repo per beat, oldest first.' },
 ];

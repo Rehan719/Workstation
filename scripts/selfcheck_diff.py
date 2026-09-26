@@ -8,7 +8,7 @@ spends its budget on judgement rather than on bookkeeping I can do exactly.
 
 It reports; it never edits. Every finding names a file:line and what to look at.
 
-    python scripts/selfcheck_diff.py                 # the working-tree diff vs HEAD
+    python scripts/selfcheck_diff.py                 # staged AND unstaged, vs HEAD
     python scripts/selfcheck_diff.py --rev HEAD~1    # a committed round
     python scripts/selfcheck_diff.py --check keys    # one check only
 
@@ -20,6 +20,15 @@ Checks
   selfmatch  a test assertion searching its own file for a literal it contains
   banned     a changed source comment quoting a literal some guard forbids
   order      a branch inserted ahead of an existing one in the same chain
+
+What it CANNOT see (W493, stated so no one trusts it further than it goes)
+  A key whose MEANING changed while its NAME stayed. The W493 break was exactly this: `last_evolved`
+  kept its name but came to mean "last APPLIED" instead of "last cycle", and two readers went on using
+  it with the old meaning - one of them silently starving a round-robin. `renames` compares key NAMES,
+  so it reports ok, correctly and uselessly. A semantic change needs the refuters, or a reader-by-reader
+  read by hand. Do not read a clean `renames` as "no reader was left behind".
+
+  It also cannot judge whether a new claim is TRUE - the largest group in the labelled set (30 of 98).
 """
 from __future__ import annotations
 
@@ -48,12 +57,16 @@ def sh(*args: str) -> str:
 
 
 def changed_files(rev: str) -> list[str]:
-    out = sh("git", "diff", "--name-only", rev) if rev else sh("git", "diff", "--name-only")
+    """W493 (refutation) - this ran bare `git diff`, which shows UNSTAGED changes only, while the
+    docstring advertised "the working-tree diff vs HEAD". A pre-flight runs immediately before a
+    commit, i.e. after `git add`, so on the normal path it saw nothing and reported clean on exactly
+    the diff being committed. Defaulting to HEAD covers staged and unstaged together."""
+    out = sh("git", "diff", "--name-only", rev or "HEAD")
     return [f.strip() for f in out.splitlines() if f.strip()]
 
 
 def diff_text(rev: str, path: str) -> str:
-    return sh("git", "diff", "-U0", rev, "--", path) if rev else sh("git", "diff", "-U0", "--", path)
+    return sh("git", "diff", "-U0", rev or "HEAD", "--", path)
 
 
 def added_removed(rev: str, path: str) -> tuple[list[tuple[int, str]], list[str]]:
@@ -116,6 +129,15 @@ def grep_repo(needle: str) -> list[str]:
 
 # ── keys / renames ─────────────────────────────────────────────────────────────────────────────────
 KEY_RE = re.compile(r'"([a-z_][a-z0-9_]{2,})"\s*:')
+# W493 — a key is also introduced and removed by SUBSCRIPT ASSIGNMENT (`vsb["last_evolved"] = now`),
+# which the first version did not match at all. A real break slipped through that gap in this round:
+# renaming such a key left two readers, one of which would have starved a round-robin.
+ASSIGN_KEY_RE = re.compile(r'\[\s*"([a-z_][a-z0-9_]{2,})"\s*\]\s*=')
+
+
+def keys_in(line: str) -> set[str]:
+    """Every dict key this line introduces, as a literal pair OR a subscript assignment."""
+    return set(KEY_RE.findall(line)) | set(ASSIGN_KEY_RE.findall(line))
 
 
 def check_keys(rev: str, files: list[str]) -> list[str]:
@@ -123,23 +145,35 @@ def check_keys(rev: str, files: list[str]) -> list[str]:
     qualifier that reaches no surface — 13 of the 98 labelled defects were exactly this."""
     out = []
     for f in files:
-        if not f.endswith(".py"):
+        # W493 - a TEST file's dict literals are request bodies and expectations, not produced fields;
+        # scanning them produced only noise on the first real round.
+        if not f.endswith(".py") or "test_" in Path(f).name:
             continue
         added, removed = added_removed(rev, f)
-        removed_keys = {k for line in removed for k in KEY_RE.findall(line)}
+        removed_keys = {k for line in removed for k in keys_in(line)}
         for ln, line in added:
             if line.lstrip().startswith("#"):
                 continue
-            for key in KEY_RE.findall(line):
+            for key in keys_in(line):
                 if key in BORING_KEYS or key in removed_keys:
                     continue
                 hits = (grep_repo(f'"{key}"') + grep_repo("'" + key + "'") + grep_repo("." + key))
                 others = {h.split(":", 1)[0] for h in hits} - {f}
+                # W493 (refutation) - this was narrowed to "skip if ANY other file mentions it", which
+                # made the printed label ("read by no surface") false: docs/ and integration_tests are
+                # searched, and this process REQUIRES a register row and habitually writes a
+                # source-substring guard in the same commit, so almost every new key was exempt. A
+                # SURFACE is a page; a guard asserting a literal and a register row are not surfaces.
                 surfaces = {o for o in others
-                            if o.endswith((".tsx", ".ts", ".mjs")) or "integration_tests" in o}
-                if not surfaces:
-                    out.append(f"{f}:{ln}  key '{key}' is produced here and read by no page or test "
-                               f"({len(others)} other file(s) mention it) — does any surface show it?")
+                            if o.endswith((".tsx", ".mjs")) or (o.endswith(".ts") and not o.endswith(".d.ts"))}
+                if surfaces:
+                    continue
+                internal = {o for o in others if o.endswith(".py") and "test_" not in Path(o).name}
+                where = (f"only {len(internal)} backend module(s) read it"
+                         if internal else "nothing outside this file reads it")
+                out.append(f"{f}:{ln}  key '{key}' is produced here and NO page reads it — {where}"
+                           f"{' (a guard or a register row is not a surface)' if others and not internal else ''}"
+                           f". If it qualifies a claim, which surface shows it?")
     return out
 
 
@@ -150,17 +184,30 @@ def check_renames(rev: str, files: list[str]) -> list[str]:
         if not f.endswith(".py"):
             continue
         added, removed = added_removed(rev, f)
-        added_keys = {k for _, line in added for k in KEY_RE.findall(line)}
-        gone = {k for line in removed for k in KEY_RE.findall(line)} - added_keys - BORING_KEYS
+        added_keys = {k for _, line in added for k in keys_in(line)}
+        gone = {k for line in removed for k in keys_in(line)} - added_keys - BORING_KEYS
         for key in sorted(gone):
             readers = [h for h in (grep_repo(f'"{key}"') + grep_repo("'" + key + "'")
                                    + grep_repo("." + key))
                        if not h.startswith(f + ":")]
-            live = sorted({h.split(":", 1)[0] for h in readers} - set(files))
+            # W493 (refutation) - this subtracted EVERY file in the diff, assuming a touched file had
+            # been updated for THIS key. Nothing checked that. On the round that added this comment,
+            # all three surviving readers of the renamed key were in the diff, so the check printed
+            # "ok" for the very break it was written to catch - one of which starved a round-robin.
+            # A reader is live if the key is STILL in that file's current content, touched or not.
+            live = []
+            for other in sorted({h.split(":", 1)[0] for h in readers}):
+                try:
+                    body = (ROOT / other).read_text(encoding="utf-8", errors="replace")
+                except Exception:
+                    continue
+                if key in body:
+                    live.append(other + (" (also in this diff)" if other in files else ""))
             if live:
-                out.append(f"{f}  key '{key}' was removed here; still referenced in "
-                           f"{len(live)} file(s) NOT in this diff: {', '.join(live[:6])}"
-                           + (" …" if len(live) > 6 else ""))
+                out.append(f"{f}  key '{key}' was removed here and is STILL referenced in "
+                           f"{len(live)} file(s): {', '.join(live[:6])}"
+                           + (" …" if len(live) > 6 else "")
+                           + " — confirm each one was updated for this rename")
     return out
 
 
@@ -190,6 +237,39 @@ def check_routes(rev: str, files: list[str]) -> list[str]:
 
 
 # ── returns ────────────────────────────────────────────────────────────────────────────────────────
+def _returned_dicts(node: ast.AST) -> list[ast.Dict]:
+    """The dict literals a `return <expr>` can actually evaluate TO - not every dict inside it.
+
+    W493 (refutation): walking the whole expression counted a nested sub-object as a sibling return.
+    Only the value itself and the operands of a top-level or/and/conditional are alternatives."""
+    if isinstance(node, ast.Dict):
+        return [node]
+    if isinstance(node, ast.BoolOp):
+        return [d for v in node.values for d in _returned_dicts(v)]
+    if isinstance(node, ast.IfExp):
+        return _returned_dicts(node.body) + _returned_dicts(node.orelse)
+    return []
+
+
+def _own_returns(fn: ast.AST) -> list[ast.Return]:
+    """The Return nodes belonging to THIS function - not those of functions nested inside it.
+
+    W493: ast.walk() crosses into nested `def`/`lambda` bodies, so an inner helper's returns were
+    reported as siblings of the enclosing function's, which is a different contract entirely."""
+    out: list[ast.Return] = []
+
+    def walk(node: ast.AST) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)):
+                continue                      # its own scope, its own return contract
+            if isinstance(child, ast.Return):
+                out.append(child)
+            walk(child)
+
+    walk(fn)
+    return out
+
+
 def check_returns(rev: str, files: list[str]) -> list[str]:
     """One function whose dict-literal returns carry different key sets. A reader indexing a key that
     only some branch sets gets undefined — and prints it."""
@@ -210,12 +290,27 @@ def check_returns(rev: str, files: list[str]) -> list[str]:
             if not any(node.lineno <= ln <= end for ln in lines):
                 continue
             sets: list[tuple[int, set[str]]] = []
-            for sub in ast.walk(node):
-                if isinstance(sub, ast.Return) and isinstance(sub.value, ast.Dict):
-                    keys = {k.value for k in sub.value.keys
+            # W493 (the round's own second pre-flight pass) - ast.walk descends into NESTED function
+            # bodies, so a helper defined inside a function had its returns counted as siblings of the
+            # outer function's. That accused three correct returns in this round's own planner change:
+            # an inner _item_rate() returning {rate, assessable} is not a sibling of the outer
+            # forecast()'s {assessable, window, ...}. A nested def has its own return contract and is
+            # visited as its own node by the enclosing walk.
+            for sub in _own_returns(node):
+                if sub.value is None:
+                    continue
+                # W493 — the first version required Return.value to BE a dict, so it missed the very
+                # common `return helper(x) or {...}` and `return a if c else {...}` shapes.
+                # W493 (refutation) — but walking the WHOLE expression then counted dicts NESTED inside
+                # a returned dict as extra "sibling returns", diluting the threshold below and falsely
+                # accusing a return whose sub-object happens to carry different keys. Only the dicts a
+                # return can actually evaluate TO are siblings: the value itself, or the operands of a
+                # top-level `or`/`and`/conditional.
+                for inner in _returned_dicts(sub.value):
+                    keys = {k.value for k in inner.keys
                             if isinstance(k, ast.Constant) and isinstance(k.value, str)}
                     if keys:
-                        sets.append((sub.lineno, keys))
+                        sets.append((getattr(inner, "lineno", sub.lineno), keys))
             if len(sets) < 2:
                 continue
             union = set().union(*(s for _, s in sets))
@@ -336,20 +431,29 @@ def main() -> int:
     args = ap.parse_args()
 
     files = changed_files(args.rev)
-    if not files:
-        print("no changed files — nothing to check")
-        return 0
+    # W493 (refutation) — the banner used to print only AFTER this early exit, so on a clean tree the
+    # tool printed "no changed files" and nothing else. A guard asserting the banner therefore passed
+    # only while the author's copy was dirty, and failed in CI the moment the round was committed. The
+    # banner always prints, and says plainly when there was nothing to compare.
     print(f"SELF-CHECK over {len(files)} changed file(s)"
-          f"{' vs ' + args.rev if args.rev else ' (working tree)'}\n")
+          f"{' vs ' + args.rev if args.rev else ' (working tree)'}"
+          f"{' — nothing to compare, so no check ran' if not files else ''}\n")
+    if not files:
+        return 0
 
     selected = args.check or list(CHECKS)
     findings: dict[str, list[str]] = {}
+    # W493 (refutation) - main() returned 0 on every path, including when a check RAISED, so a guard
+    # asserting the exit code could not fail even with the tool broken. A check that cannot run is a
+    # failure of the tool and now exits non-zero; FINDINGS still exit 0, because they are leads.
+    errored: list[str] = []
     for key in selected:
         label, fn = CHECKS[key]
         try:
             findings[key] = fn(args.rev, files)
         except Exception as e:  # a check that breaks must say so, never pass silently
             findings[key] = [f"CHECK ERROR in '{key}': {type(e).__name__}: {e}"]
+            errored.append(key)
 
     total = 0
     for key in selected:
@@ -365,6 +469,10 @@ def main() -> int:
             print(f"         - {r}")
     print(f"\n{total} thing(s) to look at. These are LEADS, not verdicts: each one is a place the last "
           f"two rounds' refutations found real defects.")
+    if errored:
+        print(f"\n{len(errored)} CHECK(S) COULD NOT RUN: {', '.join(errored)} - the tool is broken, "
+              f"so a clean report above means nothing for those checks.")
+        return 2
     return 0
 
 

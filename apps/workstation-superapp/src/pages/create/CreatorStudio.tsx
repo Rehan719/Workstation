@@ -291,7 +291,12 @@ export const CreatorStudio: React.FC = () => {
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <Wand2 size={32} className="text-slate-700 mb-3" />
                 <p className="text-xs text-slate-600 font-bold">Type an intent above and click AI Generate</p>
-                <p className="text-[9px] text-slate-700 mt-1">or drag components from the left palette</p>
+                {/* W493 (FU-152) - the palette adds label-only nodes; none of the nine components is
+                    implemented, and no runner executes a canvas. */}
+                <p className="text-[9px] text-slate-700 mt-1" data-testid="palette-caption">
+                  or sketch with the left palette — the components are labels for planning only; none is
+                  executable and the canvas is never run
+                </p>
               </div>
             )}
 
@@ -305,14 +310,24 @@ export const CreatorStudio: React.FC = () => {
             )}
 
             <div className="absolute bottom-4 right-4">
+              {/* W493 (FU-152, sweep S12.5, C4) - this button claimed to run the pipeline and was wired to
+                  handleAIGenerate, which never reads `nodes`/`edges`: it re-requests a blueprint from
+                  the intent text and then REPLACES the canvas with the returned template. The graph the
+                  user built is discarded, not executed. No backend route takes a canvas graph. */}
               <button
                 type="button"
-                onClick={handleAIGenerate}
+                onClick={() => {
+                  if (nodes.length > 0 &&
+                      !window.confirm('Regenerate from the intent text? This REPLACES the nodes and edges on the canvas — the graph you built is not executed and will be discarded.')) return;
+                  void handleAIGenerate();
+                }}
                 disabled={isGenerating || !intent.trim()}
+                title="Regenerates a blueprint from the intent text and replaces the canvas. It does not execute the graph — no pipeline runner exists yet."
+                data-testid="regenerate-blueprint"
                 className="flex items-center gap-2 px-5 py-2.5 bg-vital text-white font-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-[9px] uppercase tracking-widest shadow-lg shadow-vital/20"
               >
                 <Play size={12} fill="currentColor" />
-                Run Pipeline
+                Regenerate blueprint
               </button>
             </div>
           </div>

@@ -2535,8 +2535,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -2574,8 +2574,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -2767,8 +2767,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -2958,8 +2958,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -3262,8 +3262,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -3422,8 +3422,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -3456,8 +3456,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -3472,8 +3472,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -3616,8 +3616,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W493",
       "note": ""
     },
     {
@@ -4518,6 +4518,44 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-263",
+      "title": "No surface calls the evolution apply endpoint, so an approved evolution can only be applied by API",
+      "why": "W493's self-check found generation_advanced produced by apply_approved_evolution and read by nothing. The cause is that no page calls POST /api/v1/vsb/{id}/evolution/apply at all: the cockpit files proposals (Evolve) and the Owner approves the change record in Change Control, but nothing in the UI then applies it, so the genome mutation depends on an API call the Owner cannot make from the product. Either add an Apply control where the approval is visible (Change Control or the cockpit), or have the approval path itself trigger the apply and report generation_advanced.",
+      "source": "W493 self-check + refuter",
+      "found": "2026-09-26",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-264",
+      "title": "An entity's evolution lifecycle reaches no surface: the cycle stamp, the applied stamp and the apply's own outcome are produced and rendered nowhere",
+      "why": "W493's pre-flight keys check names three fields that no page reads. agentic_core/api/vsb.py writes last_evolution_cycle (when a cycle RAN) and last_evolved (when a mutation actually LANDED); no frontend file mentions either, so a user who files ten cycles sees no record that anything happened, and an entity that has never applied a mutation shows nothing distinguishing it from one evolving every day. apply_approved_evolution returns generation_advanced and generation_basis, and no frontend file calls POST /{vsb_id}/evolution/apply at all - the apply is reachable only from the heartbeat (gated on evolution_auto_apply) or a direct API call, so its honest reply about whether the traits changed has no reader. The heartbeat's per-beat record last_vsb_evolved (now carrying the cycle count, the outcome and generation_advanced: False) is published on /api/v1/heartbeat/status and read by no page either. FIX: show the entity's evolution timeline on the cockpit's Organisation or Economy tab - cycles run, last cycle, last APPLIED generation with its date, and whether a review is pending - and give the apply a surface that states generation_basis when an approval is consumed with no applicable mutation. Until then the facts are true and invisible, which is the shape this batch exists to remove.",
+      "source": "W493 refutation (the round's own mechanical pre-flight, keys check)",
+      "found": "2026-09-26",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "agentic_core/organism/heartbeat.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
       "status": "open",
       "closed_by": null,
       "note": "",

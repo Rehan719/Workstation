@@ -36,8 +36,14 @@ export const ReligionHub: React.FC = () => {
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter break-words">Spire of Inquiry</h1>
           <div className="flex items-center gap-4">
              <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Spiritual Inquiry • Ethical Guidance Channel • Religion Hub</p>
-             <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>
-             <Badge color="aura" className="text-[8px]">{emotionalAdjustment} TONE</Badge>
+             {/* W493 (FU-154, sweep S10.5, C4) - these read "GUIDED MODE" / "ENCOURAGING TONE" as
+                 though the hub adapted to them. Nothing does: only this badge reads the values.
+                 No affordance is gated on the mode and no request carries the tone. They are
+                 saved preferences, and the badges now say so. */}
+             <Badge color="highlight" className="text-[8px]"
+                    title="a saved preference - no affordance on this hub is gated on it yet">{layout} MODE (saved pref.)</Badge>
+             <Badge color="aura" className="text-[8px]"
+                    title="a saved preference - no request from this hub carries it yet">{emotionalAdjustment} TONE (saved pref.)</Badge>
           </div>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">

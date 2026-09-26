@@ -756,7 +756,17 @@ export const VSBCockpit: React.FC = () => {
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Coins size={14} /> Economic model — {economy.entity_name || economy.entity_type || 'entity'}</h4>
                   <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-amber-500/15 text-amber-400">{economy.currency || 'WST (virtual)'}</span>
                 </div>
-                {economy.capital_preserved && <p className="text-[10px] text-emerald-400 font-bold">Capital-preserving (waqf principle): the endowment base is protected.</p>}
+                {/* W493 (FU-193, sweep S1.23, C4) - this said the endowment base "is protected". The
+                    only thing capital_preserved enforces is that the waterfall's capital_fund share is
+                    greater than zero (metabolism.py): no endowment base is recorded, and nothing guards
+                    one. The rule that exists is stated, and the one that does not is named. */}
+                {economy.capital_preserved && (
+                  <p className="text-[10px] text-emerald-400 font-bold" data-testid="capital-preserved-basis">
+                    Capital-preserving (waqf principle): this entity form requires a non-zero capital_fund
+                    share in its waterfall, and that is the whole of what is enforced — no endowment base
+                    is recorded or guarded yet.
+                  </p>
+                )}
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Profit waterfall</p>
                   <div className="space-y-1.5">
@@ -863,7 +873,38 @@ export const VSBCockpit: React.FC = () => {
                     ) : growthResult.kind === 'cascade' ? (
                       <p>Cascade run {growthResult.repo_run?.run_id} · plan: {growthResult.repo_run?.plan_binding?.result ?? '—'} · committed {growthResult.version_control?.commit}</p>
                     ) : (
-                      <p>Generation {growthResult.generation} · {(growthResult.proposals || []).length} proposals · repo: {growthResult.repo_refresh?.action ?? 'no repo yet'}</p>
+                      /* W493 (FU-165, C4) - this read "Generation 1 · 1 proposals" for a cycle that
+                         applied nothing: the counter advanced on FILING, while the genome mutates only
+                         after the Owner approves the change record. Both facts are shown. */
+                      <>
+                        <p data-testid="evolve-outcome">
+                          {growthResult.applied
+                            ? `Generation ${growthResult.generation} applied`
+                            : `Still generation ${growthResult.generation} — nothing applied yet`}
+                          {' · '}cycle {growthResult.evolution_cycles_run ?? '—'}
+                          {' · '}{(growthResult.proposals || []).length} proposal(s)
+                          {' · '}repo: {growthResult.repo_refresh?.action ?? 'no repo yet'}
+                        </p>
+                        {growthResult.outcome_basis && (
+                          <p className="text-[9px] text-slate-500 leading-relaxed" data-testid="evolve-outcome-basis">
+                            {growthResult.outcome_basis}
+                          </p>
+                        )}
+                        {/* the API also says what the generation counter MEANS; the self-check found this
+                            field was produced and rendered nowhere */}
+                        {growthResult.generation_basis && (
+                          <p className="text-[9px] text-slate-600 leading-relaxed" data-testid="evolve-generation-basis">
+                            {growthResult.generation_basis}
+                          </p>
+                        )}
+                        {/* W493 (self-check) - both of these were produced by the API and reached no
+                            page until the corrected `keys` check named them. */}
+                        {growthResult.pending_cca_is_from_an_earlier_cycle && (
+                          <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="evolve-inherited-cca">
+                            This cycle proposed nothing — the pending review is from an EARLIER cycle, not this one.
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -872,7 +913,9 @@ export const VSBCockpit: React.FC = () => {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
                     <h4 className="text-sm font-black text-white uppercase tracking-wide">End-to-end Transformation</h4>
-                    <p className="text-[11px] text-slate-500 mt-1">Run the whole org cascade for this VSB: Chief of the Board → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order, governed arms-length and simulated on a digital twin — in-house.</p>
+                    {/* W493 (refutation) - "simulated on a digital twin" names a twin model that does
+                        not exist; the cascade runs as staged prompts on the in-house fabric. */}
+                    <p className="text-[11px] text-slate-500 mt-1">Run the whole org cascade for this VSB: Chief of the Board → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order, governed arms-length and run as staged prompts on the in-house fabric — no twin model is simulated.</p>
                   </div>
                   <Button type="button" onClick={runTransformation} disabled={txRunning} className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                     {txRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Run transformation

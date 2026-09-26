@@ -42,8 +42,13 @@ export const EmploymentHub: React.FC = () => {
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Nexus of Talent</h1>
           <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
              <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Workforce Orchestration • Skill Mesh • Employment Hub</p>
-             <Badge color="highlight" className="text-[8px] shrink-0">{layout} MODE</Badge>
-             <Badge color="aura" className="text-[8px] shrink-0">{emotionalAdjustment} TONE</Badge>
+             {/* W493 (FU-154, sweep S10.5, C4) - saved preferences, not adaptations: only these
+                 badges read the values; no affordance is gated on the mode and no request carries
+                 the tone. */}
+             <Badge color="highlight" className="text-[8px] shrink-0"
+                    title="a saved preference - no affordance on this hub is gated on it yet">{layout} MODE (saved pref.)</Badge>
+             <Badge color="aura" className="text-[8px] shrink-0"
+                    title="a saved preference - no request from this hub carries it yet">{emotionalAdjustment} TONE (saved pref.)</Badge>
           </div>
         </div>
         <div className="flex flex-wrap gap-4 shrink-0">

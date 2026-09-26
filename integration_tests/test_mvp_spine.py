@@ -18134,10 +18134,31 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     if f["assessable"]:
         rate = f["rate_used"]["closed_per_round"]
         assert rate > 0 and f["rate_used"]["net_per_round"] > 0, f["rate_used"]
+        # ALL OPEN ROWS is the one figure this rate covers: the same population it was measured over
         assert f["all_rows_rounds_projected"] == math.ceil(f["open_rows"] / rate), f
+        assert "ACROSS EVERY ITEM" in f["basis"], f["basis"]
+        # W493 - this leg asserted the NEXT item's projection was its own rows over the OVERALL rate,
+        # which IS the defect: a class-wide batch closes rows on five or six items at once, so the gate
+        # read "35 open rows ~ 4 rounds" while the five rounds on record closed 4, 3, 1, 0 and 2 of its
+        # rows - 2.0 per round, about eighteen. An item is projected at ITS OWN measured rate, or it
+        # carries no number at all. A borrowed rate is a figure about a population its label denies.
+        _full = f["window"]["closed_per_round"]
         nx = f["next_item"]
         if nx and nx["open_rows"]:
-            assert nx["rounds_projected"] == math.ceil(nx["open_rows"] / rate), nx
+            assert nx.get("basis"), nx
+            if nx["rounds_projected"] is None:
+                assert "not projected" in nx["basis"], nx
+            else:
+                assert nx["rate_used"] > 0, nx
+                assert nx["rounds_projected"] == math.ceil(nx["open_rows"] / nx["rate_used"]), nx
+                assert "OWN rate" in nx["basis"], nx
+                # one item can never close faster than every item together, over the same rounds
+                assert nx["rate_used"] <= _full + 1e-9, (nx, _full)
+        for x in f["by_item"]:
+            assert x.get("basis"), x
+            if x["open_rows"] and x["rounds_projected"] is not None:
+                assert x["rounds_projected"] == math.ceil(x["open_rows"] / x["rate_used"]), x
+                assert x["rate_used"] <= _full + 1e-9, (x, _full)
     else:
         assert f["not_assessable_because"], f
         assert f["all_rows_rounds_projected"] is None, f
@@ -18157,6 +18178,43 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
         for j in range(5):
             growing["items"].append({"id": f"FU-o{i}-{j}", "status": "open", "slot": "P1.1",
                                      "title": "t", "why": "w", "source": rnd, "severity": "low", "files": []})
+    # 3b. THE DISCRIMINATING CASE, because the real register cannot produce it on demand. Six build
+    #     rounds; P1.18 closes one row every round, P2.4 closes one in two rounds only. The overall rate
+    #     is 8/6 = 1.33/round. P1.18 must be projected at its own 1.0 - nine rounds, not the seven the
+    #     overall rate would give - and P2.4 must carry NO number, because two rounds cannot measure a
+    #     rate. Borrowing 1.33 would put its ten open rows at eight rounds on a record that supports
+    #     no figure at all.
+    mixed = {"items": []}
+    for i in range(6):
+        rnd = f"W{800 + i}"
+        mixed["items"].append({"id": f"FU-a{i}", "status": "done", "closed_by": rnd, "slot": "P1.18",
+                               "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
+                               "found": "2026-01-01", "owner_gated": False})
+        if i < 2:
+            mixed["items"].append({"id": f"FU-b{i}", "status": "done", "closed_by": rnd, "slot": "P2.4",
+                                   "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
+                                   "found": "2026-01-01", "owner_gated": False})
+    for j in range(9):
+        mixed["items"].append({"id": f"FU-p{j}", "status": "open", "slot": "P1.18", "item": "P1.18",
+                               "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
+                               "found": "2026-01-01", "owner_gated": False})
+    for j in range(10):
+        mixed["items"].append({"id": f"FU-q{j}", "status": "open", "slot": "P2.4", "item": "P2.4",
+                               "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
+                               "found": "2026-01-01", "owner_gated": False})
+    m = fu.forecast(mixed, prompt)
+    assert m["assessable"] is True, m["not_assessable_because"]
+    assert m["rate_used"]["closed_per_round"] == 1.33, m["rate_used"]     # 8 closed over 6 rounds
+    _mi = {x["slot"]: x for x in m["by_item"]}
+    assert _mi["P1.18"]["rate_used"] == 1.0, _mi["P1.18"]
+    assert _mi["P1.18"]["rounds_projected"] == 9, _mi["P1.18"]            # 9 rows at 1.0, not 6 at 1.5
+    assert _mi["P2.4"]["rounds_projected"] is None, _mi["P2.4"]           # 2 of 6 rounds cannot measure
+    assert "not projected" in _mi["P2.4"]["basis"], _mi["P2.4"]
+    # and the rendered block carries the refusal rather than a borrowed figure
+    _mr = fu.render_forecast(mixed, prompt)
+    assert "each at its OWN measured rate" in _mr, _mr
+    assert "P2.4 10r\u2014" in _mr, _mr
+
     g = fu.forecast(growing, prompt)
     assert g["assessable"] is False, g["rate_used"]
     assert "not shrinking" in (g["not_assessable_because"] or ""), g["not_assessable_because"]
@@ -19858,3 +19916,284 @@ def test_w492_the_page_says_what_the_engine_said(client):
     assert "=== 'NOMINAL' ? 'good'" in se and "'CRITICAL' ? 'bad'" in se
     from agentic_core.organism.immune import immune as _immune
     assert _immune.status().get("threat_level") in ("NOMINAL", "ELEVATED", "HIGH", "CRITICAL")
+def test_w493_a_present_tense_claim_needs_the_process_running(client):
+    """W493 — P1.18 + P2.4 + P2.9, the C4 batch taken repo-wide.
+
+    Nine rows, one rule: A PRESENT-TENSE CLAIM ABOUT A PROCESS MUST BE BACKED BY THAT PROCESS
+    ACTUALLY RUNNING — and a control's label names what the control does, not what a future version
+    would do.
+
+    Three shapes. A counter or state advanced before the thing happened (FU-165 generation incremented
+    on FILING while the genome mutates only on approval). A capability described in the present tense
+    while its lever is off or its scope is narrower than stated (FU-176 "self-aligns … continuous" with
+    execute=false and auto_align off; FU-214 "every living VSB each beat" when one is tended per beat;
+    FU-205 "self-running" with all five levers off; FU-193 an endowment base "protected" by a share > 0).
+    And a control or panel naming something that does not exist (FU-152 "Run Pipeline" that discards the
+    canvas; FU-202 a static "Event Stream" shown even when the read failed; FU-154 badges nothing reads;
+    FU-204 governance bodies absent from the codebase).
+    """
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── FU-165 (S1.21): a generation happens on APPLY, not on filing ───────────────────────────────
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "w493 evolve probe venture", "ship_output": False,
+                            "name": "W493 Evolve Co"}).json()
+    vid = est["vsb_id"]
+    before = client.get(f"/api/v1/vsb/{vid}").json().get("generation", 0)
+    ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w493"}).json()
+    assert ev["applied"] is False, ev
+    assert ev["generation"] == before, (ev, before)          # filing advances nothing
+    assert ev["evolution_cycles_run"] >= 1, ev               # the cycle it DID run is counted
+    assert "a filed cycle" in ev["generation_basis"], ev
+    assert ev["outcome"] in ("proposals_filed_pending_approval", "no_proposals",
+                             "proposals_not_filed"), ev
+    assert ev["outcome_basis"], ev
+    if ev["outcome"] == "proposals_filed_pending_approval":
+        assert ev["evolution_pending_cca"], ev
+        assert "only on" in ev["outcome_basis"] and "approves" in ev["outcome_basis"], ev
+    # the entity itself did not move
+    assert client.get(f"/api/v1/vsb/{vid}").json().get("generation", 0) == before
+    # and every no-op return from the apply carries the same keys, so no reader gets undefined
+    ap = client.post(f"/api/v1/vsb/{vid}/evolution/apply").json()
+    assert set(("applied", "cca_id", "generation")) <= set(ap), sorted(ap)
+    vsrc = (root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert 'vsb["generation"] = int(vsb.get("generation", 0)) + 1' in vsrc     # advanced on apply
+    assert 'vsb["evolution_cycles_run"] = int(vsb.get("evolution_cycles_run", 0)) + 1' in vsrc
+    ck = (app / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="evolve-outcome"' in ck and "nothing applied yet" in ck
+    assert "evolve-generation-basis" in ck        # the qualifier reaches the page, not just the API
+    # W493 refutation - the APPLY path advanced the generation on every call, so an approval consumed
+    # with zero applicable mutations still minted a new generation: the same defect the filing path was
+    # fixed for, re-committed one function along. It is conditional now, and the reply says which.
+    assert 'if applied:\n        vsb["generation"] = int(vsb.get("generation", 0)) + 1' in vsrc
+    assert '"generation_advanced": bool(applied)' in vsrc
+    assert '"generation_basis": ("advanced by this apply, because the traits actually changed"' in vsrc
+    assert "if applied else" in vsrc and "no mutation was " in vsrc
+    # and a cycle that files nothing no longer reports an EARLIER cycle's CCA as its own filing
+    assert ev["pending_cca_is_from_an_earlier_cycle"] is False, ev
+    assert '"outcome": ("proposals_filed_pending_approval" if (proposals and _pending) else' in vsrc
+    # the signal names the cycle that ran, not a generation that has not happened
+    assert "Evolution cycle {int(vsb.get('evolution_cycles_run', 0)) + 1} for {vsb_id} " in vsrc
+    # the board pack versions on the evolution state that actually moved (a filing changes no generation)
+    assert '"/gen=" + str(int(vsb.get("generation", 0)))' in vsrc and "_evo_stamp" in vsrc
+
+    # ── FU-176 (S7.5): mapping is not acting, and continuous means the lever is on ─────────────────
+    al = client.post("/api/v1/cognition/align", json={"execute": False}).json()
+    # W493 refutation - `or []` made both legs vacuously true whenever the gap list came back empty,
+    # which is one data state away (a store at full realisation returns none). The shape is asserted.
+    assert isinstance(al.get("gaps_routed"), list), al
+    assert isinstance(al.get("executed"), list), al
+    assert all(g.get("executed") is False for g in al["gaps_routed"]), al
+    assert al["executed"] == [], al
+    ci = (app / "pages/CognitionIntegration.tsx").read_text(encoding="utf-8")
+    assert "self-aligns</span>:" not in ci                   # the present-tense claim is gone
+    assert "Mapping only: naming an owner is not acting on it" in ci
+    assert "names the tier that owns each gap" in ci
+    assert "gaps routed (evidence-based)" not in ci
+    assert "mapped to an owning tier" in ci and "plan only" in ci
+    # the lever is READ (the fetch itself), not merely referenced
+    assert "apiJson<{ auto_align?: boolean; running?: boolean }>('/api/v1/heartbeat/status')" in ci
+    # a lever set to true does nothing while the heartbeat is stopped, so the page reads both
+    assert "setBeating" in ci and "the heartbeat is STOPPED, so it is not running" in ci
+    assert "setBeating(typeof d?.running === 'boolean' ? d.running : null)" in ci   # read, not declared
+    assert "setAutoAlign" in ci
+    hb = client.get("/api/v1/heartbeat/status").json()
+    assert "auto_align" in hb, sorted(hb)
+
+    # ── FU-205 (S6.18): "self-running" names levers, and the page reads them ───────────────────────
+    home = (app / "pages/DashboardNew.tsx").read_text(encoding="utf-8")
+    assert "generated end-to-end, self-running, in-house" not in home
+    assert "autonomy-levers" in home and "/api/v1/heartbeat/status" in home
+    assert "none is on" in home
+    # W493 refutation - the page read the five levers but not whether the heartbeat BEATS, so with every
+    # lever set and the process stopped it still said "self-running levers on". It reads `running` too.
+    assert "beating: typeof data?.running === 'boolean' ? data.running : null" in home
+    assert "levers.beating === false" in home
+    assert "heartbeat is STOPPED, so none of them is running" in home
+    assert "running" in hb, sorted(hb)
+    for _k in ("auto_evolve", "auto_economy", "auto_align", "auto_compliance", "auto_ship"):
+        assert _k in hb, (_k, sorted(hb))
+
+    # ── FU-214 (S9.5): one VSB per beat, not every VSB each beat ───────────────────────────────────
+    hm = (app / "pages/organism/HeartbeatMonitor.tsx").read_text(encoding="utf-8")
+    assert "Operates each living VSB on the beat" not in hm
+    assert "Re-screens every living VSB" not in hm
+    assert "ONE living VSB per beat" in hm and "least recently operated" in hm
+    assert "round-robin" in hm
+    assert "Routes vision gaps to delivery tiers each beat" not in hm
+    # the code this describes: one entity per beat
+    lv = (root / "agentic_core/economy/living_vsbs.py").read_text(encoding="utf-8")
+    # W493 refutation - the literal occurs only in prose (a module docstring and a comment); the
+    # BEHAVIOUR is the sort that takes a single entity.
+    assert "least-recently-operated" in lv
+    assert "sorted(entries, key=lambda v: (str(v.get(\"last_operated\") or \"\")," in lv
+    assert "def operate_one(" in lv
+    # the autonomous evolution picker must sort by the CYCLE stamp: sorting by the APPLIED stamp lets an
+    # entity that files every beat sort first forever and starves every other entity, with no error
+    hbsrc = (root / "agentic_core/organism/heartbeat.py").read_text(encoding="utf-8")
+    assert 'return str(_rec.get("last_evolution_cycle") or _rec.get("last_evolved") or "")' in hbsrc
+    assert '.get("last_evolved") or ""))[0]' not in hbsrc
+    # W493 refutation (the pre-flight's own lead) - the heartbeat published `last_vsb_evolved` as a bare
+    # generation for a cycle that only FILED, and recorded the action "evolution_applied" whenever the
+    # apply merely RAN - including consuming an approval with no applicable mutation. Both name what
+    # happened now. `/heartbeat/status` is a surface even with no page on it.
+    assert '"generation_advanced": False,' in hbsrc
+    assert '"evolution_cycles_run": _evd.get("evolution_cycles_run"),' in hbsrc
+    assert "no generation advanced here" in hbsrc
+    assert 'if _ap.get("generation_advanced") or int(_ap.get("mutations_applied") or 0) > 0:' in hbsrc
+    assert "evolution_approval_consumed_no_mutation_applicable" in hbsrc
+    # W493 refutation - the same claim had a SECOND surface, which still said every entity each beat
+    ec = (app / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert "each beat re-screens ONE entity in round-robin" in ec
+    assert "Not screened is NOT the same as clean." in ec
+
+    # ── FU-193 (S1.23): the rule that exists is stated; the one that does not is named ─────────────
+    assert "the endowment base is protected" not in ck
+    assert "requires a non-zero capital_fund" in ck and "no endowment base" in ck
+    mb = (root / "agentic_core/economy/metabolism.py").read_text(encoding="utf-8")
+    assert 'template.get("capital_preserved", False) and w["capital_fund"] <= 0' in mb   # the whole rule
+    # W493 refutation - the cascade control said the run was simulated on a twin; no twin model exists,
+    # the cascade runs as staged prompts on the in-house fabric.
+    assert "no twin model is simulated" in ck
+
+    # ── FU-202 (S11.2): an unreadable run list is not an idle swarm ────────────────────────────────
+    swi = (app / "components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    assert "Swarm intelligence online" not in swi
+    assert "Emergence Event Stream" not in swi
+    assert "swarm-runs-unreadable" in swi and "swarm-runs-empty" in swi
+    assert "setRunsErr(errorMessage(e))" in swi              # the failure is captured, not swallowed
+    assert "it is not a live stream" in swi
+    # W493 refutation - this was scoped by split() to the text BEFORE loadCascadeRuns, so the second,
+    # identical swallow in the same file was excluded from the assertion it was written for.
+    assert "catch { /* empty state */ }" not in swi
+    assert "setCascadeErr(errorMessage(e))" in swi          # the second read reports its failure too
+    assert "cascade-runs-unreadable" in swi and "swarm-runs-panel-unreadable" in swi
+    assert "emergence-loading" in swi                       # and nothing is claimed before the first read
+    # W493 refutation - several of this round's disclosures were carried as Badge `title` tooltips, and
+    # the shared Badge dropped every prop it was not written for, so they never reached the DOM at all.
+    ui = (root / "packages/ui/src/index.tsx").read_text(encoding="utf-8")
+    assert "<span title={title} {...rest}" in ui
+
+    # ── FU-152 (S12.5): the button names what it does, and does not silently discard work ──────────
+    cs = (app / "pages/create/CreatorStudio.tsx").read_text(encoding="utf-8")
+    assert "Run Pipeline" not in cs
+    assert "Regenerate blueprint" in cs and "regenerate-blueprint" in cs
+    assert "window.confirm" in cs and "will be discarded" in cs
+    assert "if (nodes.length > 0 &&" in cs      # the confirm actually fires when there IS a graph
+    assert "palette-caption" in cs and "none is" in cs and "executable" in cs
+    assert "or drag components from the left palette" not in cs
+
+    # ── FU-154 (S10.5): a badge for a preference nothing acts on says so ───────────────────────────
+    for _hub in ("CareHub", "EducationHub", "EmploymentHub", "LawHub", "ReligionHub", "ScienceHub"):
+        _src = (app / f"pages/domains/{_hub}.tsx").read_text(encoding="utf-8")
+        assert "MODE (saved pref.)" in _src, _hub
+        assert "TONE (saved pref.)" in _src, _hub
+        assert "no affordance on this hub is gated on it yet" in _src, _hub
+    st = (app / "pages/Settings.tsx").read_text(encoding="utf-8")
+    assert "guidance and tone drive the affordances shown on the domain hubs" not in st
+    assert "prefs-effect-basis" in st and "nothing yet changes with them" in st
+
+    # ── FU-204 (S7.9): a body that does not exist is not named as governing ────────────────────────
+    cb = (app / "pages/Contribute.tsx").read_text(encoding="utf-8")
+    assert "Steering Committee" not in cb and "AI-led Council" not in cb
+    assert "Sovereign v3.0" not in cb
+    assert "Board of Directors" in cb and "Change Control" in cb
+    assert "those bodies do not exist" in cb
+    assert "governed by the Board and Change Control" in cb   # the header names the bodies that DO exist
+    # and the claim is true: neither name exists in the backend
+    import subprocess as _sp
+    _hit = _sp.run(["git", "grep", "-l", "-E", "Steering Committee|AI-led Council", "--", "agentic_core"],
+                   cwd=root, capture_output=True, text=True)
+    assert not _hit.stdout.strip(), _hit.stdout
+
+    # ── the round's own pre-flight: it must DETECT, not merely run ────────────────────────
+    # W493 refutation - the first version asserted only exit code 0 and a banner line, so breaking the
+    # checker's coverage left this green. Both shapes it MISSED this round are now asserted on the tool's
+    # own behaviour: a subscript-assignment rename, and a dict inside a returned expression.
+    import importlib.util as _ilu493
+    sc = (root / "scripts/selfcheck_diff.py")
+    assert sc.exists()
+    _spec = _ilu493.spec_from_file_location("w493sc", sc)
+    _mod = _ilu493.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    # a key written by SUBSCRIPT ASSIGNMENT counts as a key - the shape that hid a starved round-robin
+    assert _mod.keys_in('    vsb["last_evolved"] = now') == {"last_evolved"}
+    assert "some_key" in _mod.keys_in('    return {"some_key": 1}')
+    # W493 refutation - this parsed a string and walked it with the TEST's own ast code, so it proved a
+    # property of the stdlib and would pass with the tool's walk reverted. It calls the TOOL now.
+    import ast as _ast493
+    _expr = _ast493.parse('g(x) or {"one": 1}', mode="eval").body
+    assert len(_mod._returned_dicts(_expr)) == 1, "a dict inside `helper(x) or {...}` is not reached"
+    _plain = _ast493.parse('{"one": 1}', mode="eval").body
+    assert len(_mod._returned_dicts(_plain)) == 1
+    # and a NESTED dict is not counted as a sibling return (that diluted the threshold)
+    _nested = _ast493.parse('{"a": 1, "sub": {"b": 2}}', mode="eval").body
+    assert len(_mod._returned_dicts(_nested)) == 1, "a nested sub-object is being counted as a sibling"
+    _scsrc = sc.read_text(encoding="utf-8")
+    # the walk goes through the tool's own alternatives helper (asserted on behaviour above)
+    assert "for inner in _returned_dicts(sub.value):" in _scsrc
+    assert "def _returned_dicts(" in _scsrc
+    assert "ASSIGN_KEY_RE.findall(line)" in _scsrc
+    # and the scope the tool documents is the scope it reads: staged changes included
+    assert 'sh("git", "diff", "--name-only", rev or "HEAD")' in _scsrc
+    # a reader is live if the key is still in its content - not merely absent from the diff
+    assert "if key in body:" in _scsrc
+    # W493 (the round's SECOND pre-flight pass, over the finished diff) - ast.walk crosses into nested
+    # function bodies, so an inner helper's returns were reported as siblings of the enclosing
+    # function's and three correct returns in this round's own planner change were accused. A nested
+    # def has its own return contract.
+    _nest = _ast493.parse('''def outer():
+    def inner():
+        return {"a": 1}
+    return {"b": 2, "c": 3}
+''').body[0]
+    _own = _mod._own_returns(_nest)
+    assert len(_own) == 1, "a nested function's return is counted as the outer function's"
+    assert {k.value for k in _own[0].value.keys} == {"b", "c"}
+    assert "for sub in _own_returns(node):" in _scsrc
+    # W493 refutation - the banner assert passed only while the author's tree was dirty (on a clean
+    # checkout the tool printed "no changed files" and no banner), so it would have broken CI the moment
+    # the round was committed. The banner always prints now, and the exit code discriminates because a
+    # check that RAISES exits 2 rather than 0.
+    _r = _sp.run([__import__("sys").executable, str(sc), "--rev", "HEAD"],
+                 cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert _r.returncode == 0, ("a check could not run:\n" + _r.stdout[-900:] + _r.stderr[-400:])
+    assert "SELF-CHECK over" in _r.stdout, _r.stdout[-400:]
+    assert "CHECK(S) COULD NOT RUN" not in _r.stdout, _r.stdout[-600:]
+    # W493 refutation - both asserts above run against the AUTHOR's tree, so neither can see the defect
+    # they were written for: the banner used to sit BEHIND the empty-diff early return, which is exactly
+    # the state CI runs in, and main() returned 0 on every path including a check that RAISED. Both are
+    # driven directly here, so the two asserts above discriminate instead of being true either way.
+    import contextlib as _ctx493, io as _io493, sys as _sys493
+
+    def _run_tool493(argv, files):
+        _ocf, _oargv = _mod.changed_files, _sys493.argv
+        _mod.changed_files = lambda rev: list(files)
+        _sys493.argv = ["selfcheck_diff.py"] + argv
+        _buf = _io493.StringIO()
+        try:
+            with _ctx493.redirect_stdout(_buf):
+                _rc = _mod.main()
+        finally:
+            _mod.changed_files, _sys493.argv = _ocf, _oargv
+        return _rc, _buf.getvalue()
+
+    _rc0, _out0 = _run_tool493(["--rev", "HEAD"], [])
+    assert _rc0 == 0, (_rc0, _out0)
+    assert "SELF-CHECK over 0 changed file(s)" in _out0, _out0   # not behind the early return
+    assert "nothing to compare" in _out0, _out0
+    _keep493 = _mod.CHECKS["keys"]
+
+    def _raises493(rev, files):
+        raise RuntimeError("w493 deliberate")
+
+    _mod.CHECKS["keys"] = (_keep493[0], _raises493)
+    try:
+        _rc2, _out2 = _run_tool493(["--rev", "HEAD", "--check", "keys"], ["agentic_core/api/vsb.py"])
+    finally:
+        _mod.CHECKS["keys"] = _keep493
+    assert _rc2 == 2, (_rc2, _out2)          # a check that cannot run is a failure OF THE TOOL
+    assert "CHECK(S) COULD NOT RUN" in _out2, _out2
+    assert "w493 deliberate" in _out2, _out2

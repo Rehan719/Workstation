@@ -7363,3 +7363,148 @@ between closing a gap and adding noise.
 **One rule earned.** Deciding coverage by *counting* occurrences of a string is how surfaces get missed:
 my guard required a marker three times, five existed, and the threshold was met by one card alone while
 two others still printed figures for a ledger that was never read. Every surface is named individually now.
+
+### W493 — a present-tense claim needs the process running (the C4 batch, repo-wide)
+
+**Nine rows, one rule.** A present-tense claim about a process must be backed by that process actually
+running — and a control's label names what the control does, not what a future version would do.
+
+**Three shapes.**
+
+*A counter advanced before the thing happened.* `POST /vsb/{id}/evolve` incremented `generation` when
+proposals were **filed**. The genome mutates only in `apply_approved_evolution`, after the Owner approves
+the change record, so an entity read "Generation 1 · 1 proposals" with nothing evolved and nothing
+applied. The generation now advances where the traits actually change; the filing path counts
+`evolution_cycles_run`, which is a different fact, and the response says which is which.
+
+*A capability described in the present tense while its lever is off or its scope is narrower than
+stated.* The Cognition page said the organism "self-aligns … governed and continuous": the button posts
+`execute: false`, every gap comes back `executed: false`, and the heartbeat's `auto_align` lever is off —
+so nothing is sent to any tier and nothing does it on a beat either. The page now reads that lever and
+states its real value. The Heartbeat toggles said "Operates **each** living VSB on the beat" and
+"Re-screens **every** living VSB each beat"; each beat tends exactly **one**, round-robin, so with N
+entities each is tended about once every N beats. The landing page called the organism "self-running"
+while all five autonomy levers are off by default and the page read none of them — it reads them now. And
+the cockpit said a waqf entity's "endowment base is protected" when the only thing `capital_preserved`
+enforces is that the waterfall's `capital_fund` share is greater than zero: no endowment base is recorded
+or guarded.
+
+*A control or panel naming something that does not exist.* "Run Pipeline" never read the canvas — it
+re-requested a blueprint from the intent text and **replaced** the user's nodes and edges, discarding the
+graph rather than executing it, and no backend route takes a canvas graph at all. The swarm panel's
+"Emergence Event Stream — Swarm intelligence online, waiting for orchestration signal" was a static
+string rendered whenever the run list was empty, **including when the read failed**, so "online" appeared
+when the backend was unreachable. Six domain hubs badged GUIDED MODE and ENCOURAGING TONE, and Settings
+said they "drive the affordances shown on the domain hubs" — nothing but the badge reads either value.
+And the contributor page attributed governance to an "AI-led Council" and an "Open Source Steering
+Committee", neither of which appears anywhere under `agentic_core/`.
+
+**This round ran a new mechanical pre-flight before the refuter fleet.** `scripts/selfcheck_diff.py`,
+built from the 98 defects the W491 and W492 refutations confirmed, checks the shapes that are
+deterministic rather than judgement. On its first real round it found two of this round's defects before
+any agent ran: `generation_basis` produced and rendered nowhere (the "field no consumer reads" shape, 13
+of the 98), and three no-op returns omitting `cca_id` that their siblings carried.
+
+**It also missed one, and that was the more useful result.** Renaming `last_evolved` on the filing path
+left two readers: the stale-repo stamp (a `KeyError`, reported as `stale_mark_failed`) and — worse — the
+heartbeat's autonomous-evolution picker, which sorts entities by that stamp. With the filing path no
+longer setting it, an entity that files every beat would have sorted first forever and **starved the
+round-robin**, silently, with no error anywhere. The checker walked past it because its key regex matched
+`"key":` literal pairs and not `obj["key"] = …` subscript assignments — so the check that exists to find
+surviving readers missed a rename with two of them. Both forms count now. A second gap closed the same
+way: `returns` only inspected `Return.value` when it *was* a dict, so `return helper(x) or {…}` was
+invisible, and a real inconsistent-key-set defect slipped through to the guard test.
+
+**And I tripped my own guard rail.** The blind sweep aborted at blind 3 with `CONTAMINATED` because I
+closed the register rows while it was running, and the harness watches `FOLLOWUPS.json` and both plan
+docs. The tree restored byte-for-byte and the first three blinds had already caught; the sweep was re-run
+with nothing else touching the repo. The rule is in my notes and I broke it anyway, because the register
+work felt unrelated to the sweep. It is not: the harness's guarantee is that the only edits during a
+sweep are its own.
+
+
+**The refutation found 63 confirmed defects, and the composition is the finding.** Forty-five refuters
+ran in isolated worktrees across the usual lenses, each finding adversarially verified. Findings about the
+nine row fixes fell 27% against the previous round — 51 to 37 — which is the mechanical pre-flight and the
+sharper blind harness doing their job. The other 26 were about the two things this round *added*: eleven
+in the pre-flight tool itself and fifteen in my own guard legs. So the total went **up**, 51 to 63, while
+the code got better. I held a new artefact to a lower standard than the code it checks, and five of its
+seven checks had defects.
+
+*The round's own class, re-committed inside its own fix.* FU-165 is "a generation must not advance until
+the traits change". The filing path was fixed. One function along, `apply_approved_evolution` advanced
+`generation` on **every** call — so an approval consumed with zero applicable mutations still minted a new
+generation, which is the same untrue claim in the same entity. It advances only when a mutation actually
+landed now, and the reply carries `generation_advanced` and a basis that says which of the two happened.
+
+*A fix that moved the defect rather than removing it.* `evolution_pending_cca` was only ever written
+inside `if proposals:`. A later cycle that produced nothing therefore left an **earlier** cycle's change
+record in place and then reported it as its own filing — "N proposal(s) filed as cca-…" — while the
+`no_proposals` branch was unreachable. The outcome keys off what this cycle produced, and an inherited
+pointer is reported as inherited.
+
+*Guards that could not fail.* The new tool's guard asserted a banner line and exit code 0; the banner
+printed only *after* the empty-diff early return, so the assert passed solely because my working tree was
+dirty and would have broken CI on the first clean checkout — and `main()` returned 0 on every path,
+including a check that **raised**, so the exit-code assert was true either way. Both are now driven
+directly: the empty diff and a deliberately broken check are exercised in-process. A third leg parsed a
+string and walked it with the *test's own* `ast` code, proving a property of the standard library that
+would hold with the tool reverted; it calls the tool now. A fourth was scoped by `split()` to the text
+before the second read in the same file, which excluded the identical swallow it was written for — that
+swallow was real. Two more were `or []`, vacuously true whenever the list came back empty.
+
+*A disclosure that never reached the DOM.* Three of this round's qualifiers were carried as `title`
+tooltips on the shared `Badge`, which dropped every prop it was not written for. The text existed in the
+source, the guard asserting it passed, and the user could never see it. `Badge` forwards `title` and the
+rest of its props now, and the probe asserts a disclosure tooltip is present in the rendered DOM rather
+than in the file.
+
+*A lever is not a running process.* Three surfaces read the five autonomy levers and concluded
+"self-running" without reading whether the heartbeat **beats**. A lever set to true does nothing while the
+process is stopped. The landing page, the cognition page and the economy surface read `running` too, and
+say "the heartbeat is STOPPED, so none of them is running" when that is the state.
+
+*The pre-flight's own five.* It read only **unstaged** changes, while a pre-flight runs immediately before
+a commit — that is, after `git add` — so on the normal path it saw nothing and reported clean on exactly
+the diff being committed. `check_renames` subtracted every file in the diff from its reader set, assuming
+a touched file had been updated for that key; nothing checked that, and all three surviving readers of the
+renamed `last_evolved` were in the diff, so the check printed "ok" for the very break it exists to catch.
+`check_keys` had been narrowed until any mention anywhere exempted a key, which made its printed label
+false. `check_returns` counted dicts **nested inside** a returned dict as sibling returns, diluting its
+own threshold. And `main()` returned 0 unconditionally.
+
+The blind harness grew from 31 blinds to 51 — one for each refutation fix, so undoing any of them fails a
+guard. Every blind was caught.
+
+
+**And the pre-flight caught a fix I had recorded as done but never applied.** Run over the finished diff,
+its `keys` check flagged `generation_advanced` as produced and read by nothing. Following that lead into the
+heartbeat showed two live defects. `last_vsb_evolved` — published on `/api/v1/heartbeat/status` — carried a
+bare `generation` for a cycle that only **filed** proposals, so a caller read "last VSB evolved · generation
+3" for a beat where nothing was applied; my own notes said that payload had been corrected, and the tree
+said otherwise. And the autonomous apply recorded the action `"evolution_applied"` whenever
+`apply_approved_evolution` merely **ran** — `applied: True` means the function completed, which includes
+consuming an approval with no applicable mutation. That is this round's own rule broken in the heartbeat:
+an action named for something that did not happen. Both now say what happened, and the beat that consumes
+an approval without changing a trait is recorded as exactly that.
+
+Three of the pre-flight's remaining leads are one thing, and it is registered rather than quietly
+rationalised (FU-264): an entity's evolution lifecycle reaches **no** surface. `last_evolution_cycle` (a
+cycle ran), `last_evolved` (a mutation landed) and the apply's own `generation_basis` are all true and all
+invisible — no page mentions any of them, and no frontend file calls the apply route at all. Removing a
+false claim is half the job; this batch is about the other half, and it is not done for this entity yet.
+One lead is a false positive and says so in the code: a success return omits the `reason` its no-op
+siblings carry, because a reason belongs to a no-op.
+
+
+**Verification.** Fifty-one blinds, every one caught, none vacuous — twenty more than the round started
+with, one for each refutation fix, so undoing any of them fails a guard rather than passing quietly. The
+browser probe runs thirty-four checks against a fresh backend and a fresh bundle, and the state the whole
+round is about is **driven rather than skipped**: the probe sets `auto_align`, stops the heartbeat, and
+asserts the landing page says "the heartbeat is STOPPED, so none of them is running" and the cognition page
+says "the lever is on but the heartbeat is STOPPED". A default backend beats with every lever off, so that
+state does not occur by itself; a check that would have been reported NOT ASSESSABLE is now a check that
+passes. Two probe checks failed on the first run and both were faults in the probe, not the code: the
+board-pack GET 404s until a POST assembles one, and the cockpit opens on the Organisation tab while the two
+claims under test live on the Economy and Transformation tabs. A probe that looks at the wrong tab reports
+a true claim as false, which is the same error in the other direction.

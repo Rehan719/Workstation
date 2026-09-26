@@ -344,8 +344,14 @@ class OrganismHeartbeat:
                 from agentic_core.economy.living_vsbs import list_living as _ll
                 for _v in ((_ll() or {}).get("living_vsbs") or [])[:10]:
                     _ap = apply_approved_evolution(_v.get("vsb_id"))
-                    if _ap.get("applied"):
+                    # W493 (refutation) - `applied` is True whenever the apply RAN to completion, which
+                    # includes consuming an approval with no applicable mutation. Recording
+                    # "evolution_applied" for that beat is the round's own defect: an action named for
+                    # something that did not happen. The two outcomes are now named separately.
+                    if _ap.get("generation_advanced") or int(_ap.get("mutations_applied") or 0) > 0:
                         actions.append("evolution_applied")
+                    elif _ap.get("applied"):
+                        actions.append("evolution_approval_consumed_no_mutation_applicable")
         except Exception:
             pass
 
@@ -377,13 +383,31 @@ class OrganismHeartbeat:
                     actions.append(f"evolve_vsb_held_by_review_gate:{_h}")
                 _live = [v for v in _live if v.get("vsb_id") not in _held]
                 if _live:
-                    _t = sorted(_live, key=lambda v: ((_load_vsb(v.get("vsb_id")) or {})
-                                                      .get("last_evolved") or ""))[0]
+                    # W493 (FU-165) - this picked the least-recently-EVOLVED entity, but `last_evolved`
+                    # now means "last APPLIED" and this loop runs evolution CYCLES. Sorting by the applied
+                    # stamp would let an entity that files every beat keep sorting first forever, starving
+                    # the round-robin; it sorts by the cycle stamp, falling back for older records.
+                    def _last_cycle(v: dict) -> str:
+                        _rec = _load_vsb(v.get("vsb_id")) or {}
+                        return str(_rec.get("last_evolution_cycle") or _rec.get("last_evolved") or "")
+                    _t = sorted(_live, key=_last_cycle)[0]
                     _ev = await evolve_vsb(_t.get("vsb_id"),
                                            EvolveRequest(trigger="autonomous heartbeat"), user=None)
+                    # W493 (refutation, via the pre-flight's `keys` lead) - this published
+                    # `generation` alone for a cycle that only FILED proposals. The number is real but
+                    # it did not move, so a caller reading the status saw "last VSB evolved - generation
+                    # 3" for a beat where nothing was applied. It records what the cycle DID: the cycle
+                    # count, the outcome, and that no generation advanced - an autonomous cycle never
+                    # applies, because the apply is a separate step gated on the Owner's approval.
+                    _evd = _ev if isinstance(_ev, dict) else {}
                     self.last_vsb_evolved = {"vsb_id": _t.get("vsb_id"),
-                                             "generation": (_ev or {}).get("generation")
-                                             if isinstance(_ev, dict) else None}
+                                             "generation": _evd.get("generation"),
+                                             "generation_advanced": False,
+                                             "evolution_cycles_run": _evd.get("evolution_cycles_run"),
+                                             "outcome": _evd.get("outcome"),
+                                             "basis": "a cycle ran and filed proposals; the genome "
+                                                      "mutates only after the Owner approves the "
+                                                      "change record, so no generation advanced here"}
                     actions.append("evolve_vsb")
                     # §12 (W330) — the entity's OWN self_investment funds its evolution
                     try:

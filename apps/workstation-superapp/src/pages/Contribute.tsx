@@ -12,7 +12,9 @@ export const Contribute: React.FC = () => {
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter break-words">Contributor Portal</h1>
-          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Open Source Leadership • community governance</p>
+          {/* W493 (refutation) - the header still asserted community governance on the same page that
+              now states no such bodies exist and no contribution process is wired. */}
+          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Built in the open • governed by the Board and Change Control</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
            <Button onClick={() => openExternal(REPO)} variant="outline"><Github size={18} /> View Source</Button>
@@ -31,7 +33,11 @@ export const Contribute: React.FC = () => {
                <div className="space-y-4 relative z-10">
                   <h3 className="text-3xl font-black text-white uppercase tracking-tight">Build the Digital Civilisation</h3>
                   <p className="text-lg text-slate-400 font-bold leading-relaxed max-w-2xl">
-                     Workstation Sovereign v3.0 is a community-driven ecosystem. Help us evolve the genomic core, expand the audience realms, or refine the multi-modal fabric.
+                     {/* W493 (FU-204, sweep S7.9, C4) - "v3.0" is a stale identity string and
+                         "community-driven ecosystem" described a community that does not exist: this
+                         same page states no contribution registry and no RFC feed is connected. */}
+                     Workstation IDBO is built in the open by its Owner. Nothing here is wired to a
+                     public contribution process yet — the registry and RFC feed below are not connected.
                   </p>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
@@ -98,7 +104,10 @@ export const Contribute: React.FC = () => {
                <div className="flex items-center gap-4 text-slate-500">
                   <Info size={24} />
                   <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">
-                     Governance is shared between the AI-led Council and the Open Source Steering Committee.
+                     {/* W493 (FU-204) - neither body exists: no match for either name anywhere under
+                         agentic_core/. Governance that DOES exist is the Board and Change Control. */}
+                     Governance runs through the Board of Directors and the arms-length Change Control
+                     Agency. There is no council or steering committee — those bodies do not exist.
                   </p>
                </div>
             </Card>

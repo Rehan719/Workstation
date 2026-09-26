@@ -522,6 +522,35 @@ def _round_activity(register: Any) -> Dict[str, Dict[str, int]]:
     return act
 
 
+def _item_activity(register: Any) -> Dict[str, Dict[str, int]]:
+    """{slot: {round_id: rows closed}} - the closure record PER PLAN ITEM.
+
+    W493 (the C4/C10 rule turned on the planner itself): the projection for a single item divided THAT
+    item's open rows by the rate measured over the WHOLE register, so the figure was arithmetic over a
+    population the label did not name. The gate P1.18 read "35 open rows ~ 4 rounds" while the same
+    six-round window this rate uses closed 16 of its rows - 2.67 per round, about fourteen rounds. A
+    class-wide batch closes rows across five or six items at once, so the overall rate is three to five
+    times any single item's. An item is projected at ITS OWN rate or it is not projected.
+
+    Both numbers are measured over the SAME window as the overall rate, so the two are comparable; a
+    figure quoted over a different span of rounds would repeat the defect in the fix's own notes."""
+    import re as _re
+    per: Dict[str, Dict[str, int]] = {}
+    for r in raw_items(register):
+        if not isinstance(r, dict):
+            continue
+        by = str(r.get("closed_by") or "").strip()
+        if not (by and _re.fullmatch(r"W\d{3}", by)):
+            continue
+        # a closed row keeps the item it rode in `slot`; `item` is cleared when it closes
+        slot = str(r.get("slot") or r.get("item") or "").strip()
+        if not slot:
+            continue
+        per.setdefault(slot, {})
+        per[slot][by] = per[slot].get(by, 0) + 1
+    return per
+
+
 def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> Dict[str, Any]:
     """What the plan's own record says about its pace, and what that projects — or why it cannot."""
     items = plan_items(prompt_text)
@@ -567,6 +596,38 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
         import math as _math
         return int(_math.ceil(rows / _rate))
 
+    # W493 - an ITEM is projected at the rate measured on ITS OWN rows, over the same window of rounds
+    # that closed anything. Dividing one item's backlog by the whole register's rate is a projection
+    # about a population the label does not name: it made the current gate read four rounds when its
+    # own record says eighteen. Too little history on an item means NO number, never a borrowed one.
+    _per_item = _item_activity(register)
+
+    def _item_rate(slot: str) -> Dict[str, Any]:
+        rec = _per_item.get(slot) or {}
+        mine = [rec.get(r, 0) for r in recent]          # the same rounds the overall rate uses
+        rounds_closing = [r for r in recent if rec.get(r, 0) > 0]
+        n_mine = len(rounds_closing)
+        rate = round(sum(mine) / len(recent), 2) if recent else 0.0
+        return {"rate": rate, "rounds_closing": rounds_closing, "closed_in_window": sum(mine),
+                "assessable": bool(n_mine >= MIN_OBSERVED and rate > 0)}
+
+    def _item_projection(slot: str, rows: int) -> Dict[str, Any]:
+        ir = _item_rate(slot)
+        if rows <= 0:
+            return {"rounds_projected": 0, "rate_used": ir["rate"],
+                    "basis": "no open row rides this item"}
+        if not ir["assessable"]:
+            return {"rounds_projected": None, "rate_used": ir["rate"],
+                    "basis": (f"not projected: only {len(ir['rounds_closing'])} of the last "
+                              f"{len(recent)} build round(s) closed a row on {slot} "
+                              f"(a rate needs {MIN_OBSERVED}); the overall rate is measured over "
+                              f"every item's rows and is not this item's")}
+        import math as _math
+        return {"rounds_projected": int(_math.ceil(rows / ir["rate"])),
+                "rate_used": ir["rate"],
+                "basis": (f"at {slot}'s OWN rate: {ir['closed_in_window']} row(s) over the last "
+                          f"{len(recent)} build round(s) = {ir['rate']}/round")}
+
     assessable = _rn >= MIN_OBSERVED and _rate > 0
     if not assessable:
         why = (f"only {n} build round(s) on record — a rate needs at least {MIN_OBSERVED}"
@@ -592,17 +653,21 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
                       "source": ("steady (one-time intakes excluded)" if sn >= MIN_OBSERVED
                                  else "the whole window")},
         "open_rows": len(open_rows),
-        "next_item": (None if not nxt else {
-            "slot": nxt["slot"], "title": nxt["title"], "open_rows": next_open,
-            "rounds_projected": _rounds_for(next_open)}),
-        "by_item": [{"slot": it["slot"], "open_rows": len(riding.get(it["slot"], [])),
-                     "rounds_projected": _rounds_for(len(riding.get(it["slot"], [])))}
+        "next_item": (None if not nxt else dict(
+            {"slot": nxt["slot"], "title": nxt["title"], "open_rows": next_open},
+            **_item_projection(nxt["slot"], next_open))),
+        "by_item": [dict({"slot": it["slot"], "open_rows": len(riding.get(it["slot"], []))},
+                         **_item_projection(it["slot"], len(riding.get(it["slot"], []))))
                     for it in open_items],
         "items": {"done": sum(1 for i in items if i["done"]), "total": len(items),
                   "open": len(open_items)},
         "all_rows_rounds_projected": _rounds_for(len(open_rows)),
         "basis": ("measured from the register: which round closed each row and which round found it. "
-                  f"The rate is the mean over the last {n} round(s) that closed anything. A projection "
+                  f"The rate is the mean over the last {n} round(s) that closed anything, ACROSS EVERY "
+                  "ITEM - a class-wide batch closes rows on five or six items at once, so no single "
+                  "item moves at this rate. ALL OPEN ROWS uses it because it covers the same "
+                  "population; each ITEM is projected at the rate measured on its own rows, or not "
+                  "projected at all. A projection "
                   "is arithmetic over that mean, in ROUNDS — the register does not record how long a "
                   "round takes, and this is not a date, a deadline or a promise. Rounds that only "
                   "registered findings are counted as finding work, never as burning it."),
@@ -629,11 +694,19 @@ def render_forecast(register: Any, prompt_text: str) -> str:
     else:
         nx = f["next_item"]
         if nx:
-            out.append(f"  NEXT — {nx['slot']}: {nx['open_rows']} open rows \u2248 {nx['rounds_projected']} round(s) "
-                       f"at the observed rate.")
-        out.append(f"  ALL OPEN ROWS: {f['open_rows']} \u2248 {f['all_rows_rounds_projected']} round(s) at the same rate.")
+            # W493 — this said "at the observed rate", meaning the whole register's; the gate's own
+            # record is three to five times slower because a class-wide batch spreads across items.
+            out.append(f"  NEXT — {nx['slot']}: {nx['open_rows']} open rows "
+                       + (f"\u2248 {nx['rounds_projected']} round(s) \u2014 {nx['basis']}."
+                          if nx["rounds_projected"] is not None else f"\u2014 {nx['basis']}."))
+        out.append(f"  ALL OPEN ROWS: {f['open_rows']} \u2248 {f['all_rows_rounds_projected']} round(s) at the "
+                   f"overall rate, which covers every item's rows.")
         rest = [x for x in f["by_item"] if x["open_rows"] > 0][:8]
-        out.append("  BY ITEM: " + " \u00b7 ".join(f"{x['slot']} {x['open_rows']}r\u2248{x['rounds_projected']}" for x in rest))
+        out.append("  BY ITEM (each at its OWN measured rate; \u2014 = too few rounds have closed one of its "
+                   "rows to measure): "
+                   + " \u00b7 ".join(f"{x['slot']} {x['open_rows']}r"
+                                 + (f"\u2248{x['rounds_projected']}" if x["rounds_projected"] is not None else "\u2014")
+                                 for x in rest))
     # W487 — the pace says how fast; the batch says what to run next to make it faster. A reader who
     # sees only the projection has no lever; naming the largest closable batch beside it gives one.
     try:
