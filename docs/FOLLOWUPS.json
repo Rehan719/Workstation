@@ -4504,6 +4504,24 @@
       "closed_by": null,
       "note": "",
       "tier": 3
+    },
+    {
+      "id": "FU-262",
+      "title": "Extend the pre-flight self-check to the claims group, and wire it into the round rhythm",
+      "why": "scripts/selfcheck_diff.py (added W493) mechanically checks the four defect shapes that are deterministic: a key no consumer reads, a key removed while readers survive, a route decorator bound to a private helper, and sibling returns with different key sets, plus two guard shapes (an assertion matching its own text, a comment quoting a forbidden literal). Validated against ground truth: four known W492 defects re-introduced in an isolated worktree, 4 of 4 caught. NOT yet covered: the largest group in the labelled set, 30 of 98 'a new claim the code cannot back' (a basis string that asserts rather than reports). Also wire the script into the per-round sequence in docs/FABLE_DELIVERY_PROMPT.md so it runs before the refuter fleet, not beside it.",
+      "source": "W493",
+      "found": "2026-09-26",
+      "files": [
+        "scripts/selfcheck_diff.py",
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
     }
   ],
   "routes": [
