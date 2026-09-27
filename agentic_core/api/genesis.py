@@ -1007,7 +1007,9 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "realm": req.realm,
         "scope": "commercialise",
         "owner_id": req.owner_id,
-        "status": "operational",
+        # §4.8 (W496, FU-100) - derived below from the gates, the body-pending map and whether
+        # anything actually tends the entity; a literal here was a claim about a state nobody checked
+        "status": "pending derivation",
         "stage": "commercialise",
         "genome_spec": genome_spec,
         "epigenetic_traits": {"domain": req.domain, "origin": "genesis"},
@@ -1080,6 +1082,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     # W315 — the ONE shared plan-seeding core (both establish paths call it)
     _seed_plan_from_journey(vsb_id, name, req, entity)
     _attach_delivery_swarm(entity, vsb_id, name, req.problem, req.domain, req.concept)
+    # §4.8 (W496, FU-100) - the status is decided from the facts, after the facets attach
+    _st, _st_basis = vsb_mod._derived_status(entity)
+    entity["status"] = _st
+    entity["status_basis"] = _st_basis
     vsb_mod._save_vsb(entity)
 
     try:
@@ -1143,7 +1149,9 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "name": name,
         "name_source": name_source, "name_pending": name_source == "slug",   # W450
         "body_pending": body_pending,                                          # W450
-        "status": "operational",
+        # §4.8 (W496, FU-100) - the entity's own derived status and the facts behind it, not a literal
+        "status": entity.get("status"),
+        "status_basis": entity.get("status_basis"),
         "dashboard": f"/api/v1/vsb/{vsb_id}",
         "governance": entity["governance"],
         "initial_ship": initial_ship,   # §4 (W302) — the body shipped at birth (or honestly not)
@@ -1214,7 +1222,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         entity = {
             "vsb_id": vsb_id, "name": name, "challenge": req.problem, "domain": req.domain,
             "realm": req.realm, "scope": "commercialise", "owner_id": req.owner_id,
-            "status": "operational", "stage": "commercialise", "genome_spec": genome_spec,
+            # §4.8 (W496, FU-100) - derived after the facets attach (see below)
+            "status": "pending derivation", "stage": "commercialise", "genome_spec": genome_spec,
             "epigenetic_traits": {"domain": req.domain, "origin": "genesis"}, "generation": 0,
             "ceo_specification": (req.commercialisation or req.concept)[:2000],
             "genesis_blueprint": {"concept": req.concept, "design": req.design,
@@ -1259,7 +1268,10 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                          "Chief → AI CEO → C-Suite → CoE → Build-to-Order, runnable on the owned fabric.",
                          {"cascade_id": entity["native_swarm"].get("cascade_id")})
 
-        # 6 — persist + operational
+        # 6 — persist, with the status derived from the facts (W496, FU-100)
+        _st, _st_basis = vsb_mod._derived_status(entity)
+        entity["status"] = _st
+        entity["status_basis"] = _st_basis
         vsb_mod._save_vsb(entity)
         try:
             from agentic_core.organism.biobus import biobus
@@ -1318,8 +1330,14 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                 initial_ship = {"shipped": False, "error": str(exc)[:160]}
                 yield _event("ship", "Ship Deferred", f"body not shipped: {str(exc)[:80]}")
 
-        yield _event("complete", "Operational", f"{name} is alive.", {
-            "vsb_id": vsb_id, "name": name, "status": "operational",
+        # §4.8 (W496, FU-100) - the label and the status both come from the entity's derived state:
+        # "Operational ... is alive" was printed over entities with four body sections pending, a
+        # failed first compliance screen and Self-run off.
+        yield _event("complete", ("Operating" if entity.get("status") == "operating"
+                                  else f"Established - {entity.get('status')}"),
+                     f"{name} is registered. {entity.get('status_basis') or ''}".strip(), {
+            "vsb_id": vsb_id, "name": name, "status": entity.get("status"),
+            "status_basis": entity.get("status_basis"),
             "name_source": name_source, "name_pending": name_source == "slug",   # W450
             "body_pending": body_pending,
             "dashboard": f"/api/v1/vsb/{vsb_id}",

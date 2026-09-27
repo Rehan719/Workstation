@@ -220,8 +220,11 @@ async def assess():
     except Exception as e:
         narrative = f"[assessment unavailable: {e}]"
         _prov = {"served_by": None, "is_external": False, "failed": str(e)}
-    return {"overall_realisation": r["overall_realisation"], "assessment": narrative,
-            "ai_provenance": _prov}
+    # §17 (W496, FU-111) - `_realise()` names this figure "API surface coverage ... not delivery",
+    # and every consumer dropped that field, so the number shipped as a realisation percentage. A
+    # qualifier that does not travel with the figure is not a qualifier.
+    return {"overall_realisation": r["overall_realisation"], "measure": r["measure"],
+            "assessment": narrative, "ai_provenance": _prov}
 
 
 @router.post("/tick")
@@ -238,6 +241,7 @@ async def tick():
     next_gap = plan["immediate_gaps"][0]["pillar"] if plan["immediate_gaps"] else None
     return {
         "overall_realisation": r["overall_realisation"],
+        "measure": r["measure"],           # W496 (FU-111) - the figure never ships without it
         "next_gap": next_gap,
         "open_immediate_gaps": len(plan["immediate_gaps"]),
         "ticked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

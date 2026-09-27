@@ -186,6 +186,9 @@ async def align(req: AlignRequest):
 
     return {
         "overall_realisation": r["overall_realisation"],
+        # §17 (W496, FU-111) - the page rendered "Overall realisation 97% ... (evidence-based)" from
+        # this figure while the producer describes it as route-mount and non-empty-store coverage.
+        "measure": r["measure"],
         "gaps_routed": routed,
         "executed": executed,
         "aligned_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

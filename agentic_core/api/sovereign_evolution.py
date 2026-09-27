@@ -204,10 +204,17 @@ async def run_cycle(req: CycleRequest):
     ceo_raw = await _q(ceo_prompt, "sovereign_evo_ceo")
     directives = _parse_directives(ceo_raw)
     if not directives:
+        # §8 (W496, FU-120) - the rationale said so honestly and nothing else did: the response still
+        # reported curated_by ["AI CEO", "C-Suite", "CoE", "BTO"] and items_proceeding 1, and the page
+        # rendered it as the CEO's directive. A directive nobody issued is marked AS a default, and
+        # every count and label downstream reads that mark.
         directives = [{
             "id": f"dir-{uuid.uuid4().hex[:8]}", "function": "maintenance", "owner": "COO",
             "priority": "P2", "title": "Routine organism health review",
             "rationale": "No parseable CEO directives; defaulting to a maintenance sweep.",
+            "source": "default",
+            "source_basis": ("NOT ISSUED BY THE AI CEO - the CEO call returned no line this parser "
+                             "could read, so this is the platform's maintenance default"),
         }]
 
     # 3. C-Suite delegation — assigned executives evaluate their directives
@@ -240,15 +247,27 @@ async def run_cycle(req: CycleRequest):
                 if k[:12] and k[:12] in d["title"].lower():
                     v = vv
                     break
-        d["verdict"] = (v or {}).get("verdict", "proceed")
-        d["effort"] = (v or {}).get("effort", "M")
-        d["execution_note"] = (v or {}).get("note", "")
+        # §8 (W496, FU-120) - `.get("verdict", "proceed")` made "no C-Suite line matched this
+        # directive" indistinguishable from "the C-Suite said proceed", and the count of items
+        # proceeding was then a count of directives nobody had evaluated. A missing verdict is
+        # None with its basis, and it does not vote.
+        d["verdict"] = (v or {}).get("verdict") if v else None
+        d["verdict_source"] = "csuite" if v else "default: no C-Suite verdict was parsed for this directive"
+        d["effort"] = (v or {}).get("effort") if v else None
+        d["execution_note"] = (v or {}).get("note", "") if v else ""
 
     # 4. CoE quality gate + BTO sequencing into a transformation roadmap
-    proceed = [d for d in directives if d.get("verdict") != "reject"]
+    # §8 (W496, FU-120) - "not reject" counted every directive with no verdict at all as proceeding.
+    # The three states are counted apart: a directive the C-Suite passed, one it rejected, and one it
+    # never evaluated. Only an EVALUATED proceed is sequenced as a decision; an unevaluated directive
+    # is still passed to the BTO (the work may be real) but is named as unevaluated.
+    proceed = [d for d in directives if d.get("verdict") == "proceed"]
+    rejected = [d for d in directives if d.get("verdict") == "reject"]
+    unevaluated = [d for d in directives if d.get("verdict") is None]
     bto_input = "\n".join(
-        f"- [{d['owner']} | {d['function']} | {d['priority']} | effort {d['effort']}] {d['title']}"
-        for d in proceed
+        f"- [{d['owner']} | {d['function']} | {d['priority']} | effort {d['effort'] or 'not sized'}] "
+        f"{d['title']}" + ("" if d.get("verdict") else "  (NO C-SUITE VERDICT - not evaluated)")
+        for d in (proceed + unevaluated)
     )
     bto_prompt = (
         "You are the Centres of Excellence (quality/standards) and the Business Transformation "
@@ -269,8 +288,26 @@ async def run_cycle(req: CycleRequest):
         "introspection": state,
         "ceo_directives": directives,
         "bto_roadmap": bto_roadmap,
-        "curated_by": ["AI CEO", "C-Suite", "CoE", "BTO"],
+        # §8 (W496, FU-120) - the four curators were a literal on every cycle, including the cycles
+        # where the CEO issued nothing this parser could read and no C-Suite verdict was returned. The
+        # list now names only the tiers that produced something, and the basis says what the others did.
+        "curated_by": (["AI CEO"] if any(d.get("source") != "default" for d in directives) else [])
+                      + (["C-Suite"] if any(d.get("verdict") is not None for d in directives) else [])
+                      + ["CoE", "BTO"],
+        "curated_by_basis": (
+            ("the CEO call returned directives this parser could read; "
+             if any(d.get("source") != "default" for d in directives) else
+             "the CEO call returned no directive this parser could read, so the maintenance default "
+             "stood in; ")
+            + (f"{sum(1 for d in directives if d.get('verdict') is not None)} of {len(directives)} "
+               f"directive(s) carry a parsed C-Suite verdict; ")
+            + "the CoE and BTO sections are the text those two prompts returned"),
         "items_proceeding": len(proceed),
+        "items_rejected": len(rejected),
+        "items_unevaluated": len(unevaluated),
+        "items_basis": (f"{len(proceed)} directive(s) carry a parsed 'proceed', {len(rejected)} a "
+                        f"'reject', and {len(unevaluated)} were never evaluated - an unevaluated "
+                        f"directive is not a decision to proceed"),
     }
 
     # 5. Optional governance hand-off to the Change Control Agency (real integration)

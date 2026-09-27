@@ -32,6 +32,21 @@ _HARAM = re.compile(
     r"brewer|distiller|gambling|gambl\w*|casino|lottery|lotteries|betting|wager|"
     r"pork|lard|bacon|haram|pornograph|exploitat)\w*",
     re.IGNORECASE)
+# §11 (W496, FU-106) — RIBA IS RARELY SPELLED "riba". `interest[- ]bearing` was the only interest
+# pattern, so "a loan at 12% APR, compounding monthly, with a 5 percent interest charge" matched
+# NOTHING and the screen reported "no prohibited (haram) term matched" over a text describing interest
+# three ways. Two signals are required together — a lending context AND a rate/interest token — so a
+# 5% discount or "in the interest of the public" does not fire, and the verdict remains REVIEW either
+# way: this screen may raise a concern, never certify its absence.
+_LENDING_CONTEXT = re.compile(
+    r"\b(loan|loans|lend\w*|borrow\w*|financ\w*|credit|debt|mortgage|overdraft|repay\w*|"
+    r"instal(?:l)?ment)\w*", re.IGNORECASE)
+_RIBA_SIGNAL = re.compile(
+    r"\b(apr|aer|interest[- ](?:bearing|charge|charges|rate|rates|payment|payments|accru\w*)|"
+    r"(?:charg\w+|pay\w*|accru\w*|earn\w*)\s+interest|compound(?:ing|ed)?\s+(?:interest|monthly|annually)|"
+    r"\d+(?:\.\d+)?\s*(?:%|per\s?cent)\s*(?:apr|aer|interest|per\s+annum|pa\b)|"
+    r"\d+(?:\.\d+)?\s*(?:%|per\s?cent)\s+interest)", re.IGNORECASE)
+
 # W475 (ledger v4 R1.0) — a haram term inside a NEGATING phrase ('avoids riba', 'no alcohol', 'free of interest')
 # is not an offer of it. The screen cannot tell offered from avoided, so such a subject is REVIEW with the phrase
 # quoted — never FAIL, and never 'Prohibited element' (a fact the screen cannot know).
@@ -231,6 +246,17 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
         halal_status, halal_reason = "review", (f"haram-vocabulary term '{_m.group(0)}' appears only in a negating "
                                                 f"phrase ('{_phrase}'); the screen cannot tell offered from avoided — "
                                                 "review, not a certification")
+    elif (_LENDING_CONTEXT.search(text) and _RIBA_SIGNAL.search(text)
+          and not _negated(text, _RIBA_SIGNAL.search(text))):
+        # §11 (W496, FU-106) — the lending context and the rate token are both present, so the text
+        # describes a charge on money lent. That is the definition of the thing this screen exists to
+        # raise, and the previous vocabulary did not contain any of the words it was written in.
+        _sig = _RIBA_SIGNAL.search(text).group(0)
+        halal_status, halal_reason, halal_cov = "review", (
+            f"a lending context and an interest/rate token both appear ('{_sig}'), which is the riba "
+            f"concern this screen exists to raise - the earlier vocabulary matched none of the ways "
+            f"interest is normally written (APR, a percentage rate, 'interest charge'). REVIEW, not a "
+            f"fail: whether a charge is riba is a ruling for a qualified scholar, not a regex"), "vocabulary"
     elif _HALAL_VOCAB.search(text):
         # W483 (R1.1) — this was a PASS, and §10 then recorded 'compliant' and 'safe' as MEASURED
         # from it. The only thing established is that the subject calls itself halal. A subject's own

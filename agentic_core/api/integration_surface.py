@@ -342,15 +342,18 @@ async def evo_metrics():
     imm = _immune()
     real = None
     pillars: List[Dict[str, Any]] = []
+    measure = None
     try:
         from agentic_core.api.transformation import _realise
         r = _realise()
         real = r.get("overall_realisation")
+        measure = r.get("measure")          # W496 (FU-111) - travels with the figure
         pillars = [{"pillar": p["pillar"], "realisation": p["realisation"], "status": p["status"]}
                    for p in r.get("pillars", [])]
     except Exception:
         pass
-    return {"vision_realisation": real, "organism_health": imm.get("health"),
+    return {"vision_realisation": real, "vision_realisation_measure": measure,
+            "organism_health": imm.get("health"),
             "threat_level": imm.get("threat_level"),
             "pillar_breakdown": pillars,
             "dimensions_realised": sum(1 for p in pillars if p["status"] == "realised"),

@@ -1158,8 +1158,17 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     concept_source = _concept_source(vsb, bp)
     concept_label = "Concept" if concept_source == "blueprint" else "Founder's problem statement (no concept recorded yet)"
 
+    # §17.3 (W496, FU-104) - THE CONSTITUTIONAL LAYER IS DERIVED, NOT AUTHORED. The mission was the
+    # founder's problem with "Deliver: " in front of it, the vision was the problem verbatim, and the
+    # values line is one constant string shared by every VSB this platform has ever made. The narrative
+    # then called all four layers "live data". Each field now says where it came from, so a reader can
+    # tell a derived line from something the founder or the Board actually wrote.
     constitutional = {"mission": f"Deliver: {challenge}"[:280], "vision": challenge,
                       "values": "Integrity · Compassion · Excellence · Halal/Sharia · Beneficence · Stewardship",
+                      "mission_source": "derived from the founder's problem statement - not authored",
+                      "vision_source": "the founder's problem statement, verbatim - not authored",
+                      "values_source": ("the platform's standing values line, identical for every VSB - "
+                                        "this entity has not declared its own"),
                       "genome_present": bool(vsb.get("genome_spec")), "entity": vsb_id}
     operational = {"stage": vsb.get("stage"), "status": vsb.get("status"),
                    "generation": vsb.get("generation", 0), "domain": vsb.get("domain"),
@@ -1179,8 +1188,15 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # W450 (P1.2) — on the floor the "narrative" was the engine's marker, role line and headings
     # frame, stored raw as the Board's reading. A floor-served narrative is an honest pending
     # state; a model-served one is scrubbed of any provenance marker before it is filed.
-    narrative = (("narrative pending the owned model — this board pack has not been composed; the "
-                  "operational snapshot, constitutional layer and strategic specification below are live data")
+    # §17.3 (W496, FU-104) - this said the constitutional layer and the strategic specification "are
+    # live data". The constitutional layer is DERIVED from the founder's problem plus a constant values
+    # line, and the strategic layer is empty whenever no CEO specification was composed - which is the
+    # same condition that makes this narrative pending in the first place.
+    narrative = (("narrative pending the owned model — this board pack has not been composed. The "
+                  "operational snapshot below is live; the constitutional layer is DERIVED from the "
+                  "founder's problem statement and the platform's standing values line; the strategic "
+                  "and action layers are present only if this entity carries a CEO specification and a "
+                  "board (each says which below)")
                  if sb == "native" else _public_prose(meta.get("output", "") or "").strip())
 
     from agentic_core.vbs.quality import assure_delivery
@@ -1233,12 +1249,28 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
                   "the entity's latest §11 screen, from the per-VSB compliance history"),
     }
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    # §17.3 (W496, FU-104) - the strategic layer was `{"ceo": {}}` on every entity whose CEO
+    # specification had not been composed, and the action layer is the standing board roster rather
+    # than a plan. The page showed a chip listing all four layer names as PRESENT. Each layer now
+    # carries whether it holds anything and what it is.
+    _ceo_spec = vsb.get("ceo_specification") or {}
+    _board = vsb.get("board") or {}
     layers = {
-        "constitutional": constitutional,                                  # genome-locked
-        "strategic": {"ceo": vsb.get("ceo_specification") or {}},           # AI CEO
-        "action_plan": {"board": vsb.get("board") or {}},                   # BTO / board
+        "constitutional": constitutional,                                  # derived (see the sources above)
+        "strategic": {"ceo": _ceo_spec,
+                      "present": bool(_ceo_spec),
+                      "basis": ("the AI CEO specification recorded on this entity" if _ceo_spec else
+                                "EMPTY - no CEO specification was composed for this entity, so there is "
+                                "no strategic layer to read")},
+        "action_plan": {"board": _board,
+                        "present": bool(_board),
+                        "basis": ("the entity's standing board roster - a roster, not a plan of action; "
+                                  "no action items are recorded here" if _board else
+                                  "EMPTY - no board is attached to this entity")},
         "operational": operational,                                         # live snapshot
     }
+    layers_present = sorted(k for k, v in layers.items()
+                            if k in ("constitutional", "operational") or v.get("present"))
     economy = vsb.get("economy") or {}
     # W485 (refutation) — the entity verdict is ON the pack, so it is part of what the pack SAYS:
     # excluded from the hash, a pack whose entity verdict had flipped to FAIL still reported itself
@@ -1258,6 +1290,8 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     pack = {
         "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
         "layers": layers,
+        # W496 (FU-104) - the page chipped all four names as present; this is the measured list
+        "layers_present": layers_present,
         "economy": economy,
         "narrative": narrative,
         "ai_provenance": prov,
@@ -1367,6 +1401,42 @@ def _gate_block_reason(vsb: dict) -> str | None:
     if not blk:
         return None
     return "review gate blocks progress (Mode 3): " + ", ".join(f"{b['stage']} {b['status']}" for b in blk)
+
+
+def _derived_status(vsb: dict) -> tuple:
+    """§3.3 (W496, FU-100) — THE STATUS IS DERIVED FROM FACTS, NEVER WRITTEN AS A LITERAL.
+
+    Every establish path stored `status: "operational"` and `stage: <the requested scope>` whatever the
+    entity's real state, so an entity with four body sections pending, a FAILED first compliance screen,
+    a held first cycle and Self-run off was served, badged and shipped as "operational · governance
+    allowed". The facts that decide it already existed and were read by nobody: the review gates
+    (`_gates_blocking`), the body's pending sections (`body_pending`), and whether the heartbeat is
+    actually tending the entity (the living roster's `autonomous_cycles`).
+
+    Returns (status, basis). The status is one of: `held` (a review gate blocks progress), `body pending`
+    (a section still awaits the owned model), `registered — not operating` (nothing tends it), or
+    `operating`.
+    """
+    blk = _gates_blocking(vsb)
+    if blk:
+        return ("held", "a review gate blocks progress (Mode 3): "
+                + ", ".join(f"{b['stage']} {b['status']}" for b in blk))
+    pend = [k for k, v in (vsb.get("body_pending") or {}).items() if v]
+    if pend:
+        return ("body pending", f"{len(pend)} body section(s) still await the owned model: "
+                                + ", ".join(sorted(pend)))
+    try:
+        from agentic_core.economy.living_vsbs import living_statement
+        _live = living_statement()
+        if not _live.get("autonomous_cycles"):
+            return ("registered - not operating", str(_live.get("autonomous_operation")
+                                                     or "autonomous economy cycles are off"))
+    except Exception as e:
+        return ("registered - operation unknown",
+                f"the living roster could not be read, so whether anything tends this entity is not "
+                f"known ({type(e).__name__})")
+    return ("operating", "review gates clear, no body section pending, and the heartbeat is tending "
+                         "this entity on the circadian beat")
 
 
 def _refuse_gated(vsb: dict, mover: str) -> None:
@@ -1883,7 +1953,10 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "realm": req.realm,
             "scope": req.scope,
             "owner_id": req.owner_id,
-            "status": "operational",
+            # §3.3 (W496, FU-100) - a literal here is a claim about a state nobody checked. The
+            # record keeps the field (every reader depends on it) and it is DERIVED below, after the
+            # gates and the body-pending map are known, by _apply_derived_status().
+            "status": "pending derivation",
             "stage": req.scope,
             "genome_spec": genome_spec,
             "epigenetic_traits": {"domain": req.domain, "constitutional_alignment": gaas_passed},
@@ -1905,6 +1978,12 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
                      "registered as a living entity; business plan seeded.",
                      {"has_board": "board" in vsb_entity, "entity_type": req.entity_type,
                       "living": "living" in vsb_entity})
+        # §3.3 (W496, FU-100) - the status is decided here, after the gates, the body-pending map and
+        # the living registration exist, and it carries the facts it was decided on.
+        _st, _st_basis = _derived_status(vsb_entity)
+        vsb_entity["status"] = _st
+        vsb_entity["status_basis"] = _st_basis
+        vsb_entity["status_derived_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         _save_vsb(vsb_entity)
         biobus.record_operation("vsb_spawn", "vsb.spawn", success=True, payload=f"{vsb_id} [{req.domain}]")
         biobus.fire_signal("motor", "vsb.launch", f"VSB launched: {vsb_id} — {req.challenge[:60]}", 0.9)

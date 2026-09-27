@@ -462,7 +462,15 @@ export const VSBCockpit: React.FC = () => {
                   <h3 className="text-lg font-black text-white">{detail.name}{detail.name_pending && <span className="ml-2 align-middle text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400" title="a working slug from the founder's words — name it on the Genesis page">working name — pending the founder's</span>}</h3>
                   <div className="flex gap-2">
                     {detail.domain && <Badge color="highlight">{detail.domain}</Badge>}
-                    {detail.status && <Badge color="emerald-500">{detail.status}</Badge>}
+                    {/* W496 (FU-100) - an emerald badge asserted a healthy state for every status the
+                        entity could carry, including "held" and "body pending". */}
+                    {detail.status && (
+                      <Badge color={detail.status === 'operating' ? 'emerald-500'
+                                    : detail.status === 'held' ? 'vital' : 'slate-500'}>{detail.status}</Badge>
+                    )}
+                    {(detail as any).status_basis && (
+                      <span className="text-[9px] text-slate-500" data-testid="cockpit-status-basis">{(detail as any).status_basis}</span>
+                    )}
                     {detail.stage && <Badge color="aura">{detail.stage}</Badge>}
                   </div>
                 </div>

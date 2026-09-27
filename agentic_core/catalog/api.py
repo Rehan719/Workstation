@@ -43,7 +43,17 @@ CATALOG_OVERRIDES: Dict[str, Dict[str, Any]] = {
         "name": "Sovereign Capital Fund",
         "tier": "Enterprise",
         "category": "Platform",
-        "features": ["Autonomous Rebalancing", "On-Chain Gateway", "Constitutional Evolution Voting"],
+        # §14 (W496, FU-114) - the three features listed here were served by nothing: a repo-wide grep
+        # for `rebalanc` and `evolution.{0,12}vot` hit only this file, and `on.chain|onchain` hit
+        # nothing at all, while the fund's own page says "No on-chain integration exists". A LIVE card
+        # lists what the product serves; anything else is named as declared-and-not-built.
+        "features": ["Virtual WST pool with cycle contributions", "Allocation to projects and VSB entities",
+                     "Owner-set virtual endowment, disclosed as a seed"],
+        "features_declared_not_built": ["Autonomous Rebalancing", "On-Chain Gateway",
+                                        "Constitutional Evolution Voting"],
+        "features_basis": ("the three declared features are served by nothing in this repository - a "
+                           "grep for each hits only this catalogue entry, and the fund's own dashboard "
+                           "states that no on-chain integration exists. Virtual WST only."),
     },
     "enterprise-file-hub": {
         "name": "Enterprise File Hub",
@@ -64,10 +74,20 @@ CATALOG_OVERRIDES: Dict[str, Dict[str, Any]] = {
         "features": ["Constitutional Compliance Checking", "C-Suite Coordination", "Quad-Engine Bridge"],
     },
     "qep-sdk": {
+        # §14 (W496, FU-114) - the Quran Education Platform is a VISION DOCUMENT
+        # (docs/QURAN_EDUCATION_PLATFORM_VISION.md), not a built product: there is no hifz, tafsir or
+        # recitation module in the live tree. Two of the three features named here are reachable only
+        # through qep_analytics; scholarly trust scoring is not this product's.
         "name": "QEP-as-a-Service SDK",
         "tier": "Standard/Pro/Enterprise",
         "category": "Domain (Quran Education Platform)",
-        "features": ["Arabic Morphology Analysis", "AI Quiz Generation", "Scholarly Annotation Trust Scoring"],
+        "features": ["Quranic-studies analytics endpoints (qep_analytics)",
+                     "Quiz generation via the education surface"],
+        "features_declared_not_built": ["Scholarly Annotation Trust Scoring"],
+        "features_basis": ("the platform's Quran surfaces are analytics endpoints; the Quran Education "
+                           "Platform itself is a vision document with no hifz, tafsir or recitation "
+                           "module in the live tree, and Quranic text is only ever RETRIEVED from an "
+                           "authorised source, never generated"),
     },
     "signature-product-suite": {
         "name": "Signature Product Suite",
@@ -129,6 +149,10 @@ def _load_product(slug: str, path: Path) -> Dict[str, Any]:
             "tier": data.get("tier", "Standard"),
             "category": "SDK",
             "features": data.get("features", []),
+            # W496 (FU-114) - a declared-but-unbuilt feature travels to the card as what it is, rather
+            # than being listed beside the served ones or dropped so the card looks complete
+            "features_declared_not_built": data.get("features_declared_not_built", []),
+            "features_basis": data.get("features_basis", ""),
             "source": data.get("source"),
             "route": route,
             "status": _status(slug, route),
@@ -143,6 +167,8 @@ def _load_product(slug: str, path: Path) -> Dict[str, Any]:
         "tier": override.get("tier", "Standard"),
         "category": override.get("category", "Platform"),   # the six legacy overrides say "Legacy archive"
         "features": override.get("features", []),
+        "features_declared_not_built": override.get("features_declared_not_built", []),
+        "features_basis": override.get("features_basis", ""),
         "source": None,
         "route": route,
         "status": _status(slug, route),

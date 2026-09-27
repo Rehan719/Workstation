@@ -1598,9 +1598,9 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W496",
+      "note": "W496 measured it live before building: already delivered by earlier rounds. The recall leak is gone (_staged_query passes augment=False, W479) - a beekeeping journey now contains 8 of its 10 content words and none from any other interaction - and the floor discloses itself: 'The list below is the request's most frequent terms, not findings about them', with the MJM section carrying its own 'a term count, not an analysis'. Nothing was built for this row."
     },
     {
       "id": "FU-099",
@@ -1629,8 +1629,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1687,8 +1687,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1717,8 +1717,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1745,9 +1745,9 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W496",
+      "note": "W496 measured it live before building: already delivered. The two surfaces the row names (BusinessPlan.tsx, SwarmIntelligence.tsx) carry no 'digital twin' claim at all now, and the Board page states 'no digital-twin model is trained yet (Mode 2 is planned, P3.4)'. The only remaining mentions are a file comment and a W493 corrective comment. Nothing was built."
     },
     {
       "id": "FU-109",
@@ -1794,8 +1794,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1811,8 +1811,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1828,8 +1828,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1845,8 +1845,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1916,8 +1916,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1932,8 +1932,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {
@@ -1948,8 +1948,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W496",
       "note": ""
     },
     {

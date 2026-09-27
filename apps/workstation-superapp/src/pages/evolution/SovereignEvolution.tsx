@@ -9,12 +9,16 @@ import {
 
 interface Directive {
   id: string; function: string; owner: string; priority: string;
-  title: string; rationale: string; verdict?: string; effort?: string; execution_note?: string;
+  title: string; rationale: string; verdict?: string | null; effort?: string | null; execution_note?: string;
+  // W496 (FU-120) — a directive nobody issued and a verdict nobody gave each say so
+  source?: string; source_basis?: string; verdict_source?: string;
 }
 interface Roadmap {
   cycle_id: string; created_at: string; duration_ms: number;
   introspection: any; ceo_directives: Directive[]; bto_roadmap: string;
   curated_by: string[]; items_proceeding: number; change_control_submissions: any[];
+  // W496 (FU-120) — the three verdict states, and what each count covers
+  curated_by_basis?: string; items_rejected?: number; items_unevaluated?: number; items_basis?: string;
 }
 
 const FN_ICON: Record<string, React.ComponentType<any>> = {
@@ -192,8 +196,15 @@ export const SovereignEvolution: React.FC = () => {
                         : undefined} />
               <Metric label="CPU" value={res ? `${res.cpu_percent}%` : '—'} />
               {/* W492 - a count of zero is not a good outcome; the tone follows the figure */}
+              {/* W496 (FU-120) - "not rejected" counted a directive the C-Suite never evaluated as
+                  proceeding. The counts are shown apart and the tooltip carries the basis. */}
               <Metric label="Items Proceeding" value={roadmap.items_proceeding}
+                      title={roadmap.items_basis}
                       tone={roadmap.items_proceeding > 0 ? 'good' : undefined} />
+              {typeof roadmap.items_unevaluated === 'number' && roadmap.items_unevaluated > 0 && (
+                <Metric label="Not evaluated" value={roadmap.items_unevaluated}
+                        title={roadmap.items_basis} tone="warn" />
+              )}
             </div>
           </Card>
 
@@ -201,8 +212,11 @@ export const SovereignEvolution: React.FC = () => {
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-5">
               <Crown size={16} className="text-highlight" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">CEO Directives · Curated by C-Suite</h3>
-              <span className="text-[9px] font-mono text-slate-600 ml-auto">{roadmap.curated_by?.join(' → ')}</span>
+              {/* W496 (FU-120) — the heading asserted the curation; curated_by now lists only the
+                  tiers that produced something, and the basis says what the others did. */}
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">CEO Directives</h3>
+              <span className="text-[9px] font-mono text-slate-600 ml-auto" title={roadmap.curated_by_basis}
+                    data-testid="evolution-curated-by">{roadmap.curated_by?.join(' → ') || 'no tier produced a directive or a verdict'}</span>
             </div>
             <div className="space-y-3">
               {roadmap.ceo_directives.map(d => {
@@ -215,13 +229,23 @@ export const SovereignEvolution: React.FC = () => {
                         <div className="min-w-0">
                           <p className="font-black text-white text-sm">{d.title}</p>
                           <p className="text-[10px] text-slate-500 font-bold mt-0.5">{d.rationale}</p>
+                          {d.source === 'default' && (
+                            <p className="text-[9px] text-amber-400/80 mt-1" data-testid="directive-defaulted"
+                               title={d.source_basis}>{d.source_basis || 'not issued by the AI CEO — the platform default'}</p>
+                          )}
                           {d.execution_note && <p className="text-[10px] text-slate-400 italic mt-1">↳ {d.execution_note}</p>}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <span className="text-[9px] font-black uppercase tracking-wider text-highlight">{d.owner}</span>
                         <span className="text-[8px] font-black uppercase text-slate-600">{FN_LABEL[d.function] ?? d.function} · {d.priority}</span>
-                        <span className={`text-[9px] font-black uppercase ${verdictTone(d.verdict)}`}>{d.verdict ?? 'proceed'} · {d.effort ?? 'M'}</span>
+                        {/* W496 (FU-120) — this printed "proceed · M" for a directive the C-Suite
+                            never evaluated: the backend's own default, repeated on the page. */}
+                        {d.verdict
+                          ? <span className={`text-[9px] font-black uppercase ${verdictTone(d.verdict)}`}>{d.verdict} · {d.effort ?? 'not sized'}</span>
+                          : <span className="text-[9px] font-black uppercase text-slate-500"
+                                  data-testid="directive-no-verdict"
+                                  title={d.verdict_source || 'no C-Suite verdict was parsed for this directive'}>no C-Suite verdict</span>}
                       </div>
                     </div>
                   </div>

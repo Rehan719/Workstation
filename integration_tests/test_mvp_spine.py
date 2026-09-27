@@ -3902,7 +3902,14 @@ def test_genesis_establish_stream_births_a_real_vsb(client):
     ent = client.get(f"/api/v1/vsb/{vid}").json()
     # every event reflected a real attachment — the persisted entity proves it
     assert ent.get("board") and ent.get("economy") and ent.get("living") and ent.get("business_plan_scope")
-    assert ent.get("name") == "StreamBirthCo" and ent.get("status") == "operational"
+    # W496 (FU-100) — "operational" was a LITERAL every establish path wrote whatever the state; the
+    # status is derived now, and this asserts the DERIVATION rather than the old claim.
+    assert ent.get("name") == "StreamBirthCo"
+    assert ent.get("status") in ("operating", "body pending", "held", "registered - not operating",
+                                "registered - operation unknown"), ent.get("status")
+    assert ent.get("status_basis"), ent
+    if ent.get("body_pending") and any(ent["body_pending"].values()):
+        assert ent["status"] == "body pending", (ent["status"], ent["body_pending"])
 
 
 def test_streaming_surfaces_in_house_first(client, monkeypatch):
@@ -6136,7 +6143,10 @@ def test_genesis_journey_establish_seam(client):
     assert r.status_code == 200, r.text
     ev = r.json().get("established_vsb") or {}
     assert ev.get("vsb_id", "").startswith("vsb-")
-    assert ev.get("status") == "operational"
+    # W496 (FU-100) — the derived status, with the facts behind it
+    assert ev.get("status") in ("operating", "body pending", "held", "registered - not operating",
+                               "registered - operation unknown"), ev.get("status")
+    assert ev.get("status_basis"), ev
     assert "established living enterprise" in r.json().get("deliverable", "")
 
 

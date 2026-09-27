@@ -3,8 +3,13 @@
     "source": "agentic_core/simulation/engine.py",
     "tier": "Standard/Pro/Enterprise",
     "features": [
+        "Domain pipeline narratives on the owned fabric",
+        "Variant generation, ranked only when a scorer returns scores"
+    ],
+    "features_declared_not_built": [
         "High-Fidelity Twinning",
         "ABM/Physics Simulation",
         "Synthetic Data Generation"
-    ]
+    ],
+    "features_basis": "W496 (FU-114): a repo-wide grep for synthetic data generation finds nothing, and the reactor writes a narrative of how a pipeline would behave rather than executing a simulation - its own page states that nothing is executed. The three declared features are kept here, named as not built, rather than deleted or presented as served."
 }

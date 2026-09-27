@@ -60,15 +60,40 @@ _CANDIDATES: List[Dict[str, Any]] = [
 _PRIORITIES = ["clean_water", "orphan_sponsorship", "conflict_relief", "dawah"]
 
 
-def get_directives() -> Dict[str, Any]:
+def get_directives(strict: bool = False) -> Dict[str, Any]:
     """The Owner's persisted charity directives (priorities · exclusions · 100%-donation rule),
-    falling back to the 2026-06-21 defaults when never set."""
-    d = load_json_tolerant(_DIRECTIVES_STORE, {}) or {}
+    falling back to the 2026-06-21 defaults when never set.
+
+    §12 (W496, FU-118) — A STORE THAT CANNOT BE READ IS NOT A STORE THAT WAS NEVER SET. This used
+    `load_json_tolerant(..., {})`, so a truncated or unparseable directives file read as `{}` — the
+    same answer as "the Owner has never set any". The consequence was not cosmetic: W476 wrote a
+    malformed store holding `exclusions: ['dawah', 'conflict_relief']`, this returned `exclusions: []`
+    with `source: 'defaults'`, and the next metabolic cycle granted to conflict_relief — a cause the
+    Owner had EXCLUDED — with no error anywhere. An allocator therefore asks strictly and refuses;
+    a reader may see the defaults as long as it is told the store could not be read.
+    """
+    _unreadable = None
+    if _DIRECTIVES_STORE.exists():
+        try:
+            from agentic_core.config import read_json_strict
+            d = read_json_strict(_DIRECTIVES_STORE, {}, expect=dict) or {}
+        except Exception as e:                      # StoreUnavailable and anything the read raises
+            if strict:
+                raise
+            _unreadable = f"{type(e).__name__}: {e}"
+            d = {}
+    else:
+        d = {}
     return {
         "priorities": list(d.get("priorities") or _PRIORITIES),
         "exclusions": list(d.get("exclusions") or []),
         "require_100pct": bool(d.get("require_100pct", True)),
-        "source": "owner_set" if d else "defaults (2026-06-21 Owner directive)",
+        "source": ("UNREADABLE — the directives store exists and could not be read whole, so the "
+                   "Owner's priorities and EXCLUSIONS are not known from it; the figures below are "
+                   f"this platform's defaults, not the Owner's instruction ({_unreadable})"
+                   if _unreadable else
+                   "owner_set" if d else "defaults (2026-06-21 Owner directive)"),
+        "directives_readable": _unreadable is None,
         "updated_at": d.get("updated_at"),
     }
 
@@ -101,7 +126,12 @@ class CharityIntelligence:
                  priorities: Optional[List[str]] = None, require_100pct: Optional[bool] = None):
         # No explicit args → the Owner's PERSISTED directives are the defaults, so every call site
         # (the metabolic cycle, the API) honours them with zero call-site changes.
-        directives = get_directives()
+        # §12 (W496, FU-118) — an ALLOCATOR asks strictly: it is about to hand money to a cause, and
+        # the exclusions it must honour live in that store. A tolerant read made an unreadable store
+        # indistinguishable from an empty one, and a cycle then granted to an EXCLUDED cause. The
+        # refusal propagates to the caller (the cycle answers 503 and allocates nothing) rather than
+        # allocating against this platform's defaults in the Owner's name.
+        directives = get_directives(strict=True)
         self.exclusions = set(exclusions if exclusions is not None else directives["exclusions"])
         self.priorities = set(priorities if priorities is not None else directives["priorities"])
         self.require_100pct = bool(directives["require_100pct"] if require_100pct is None else require_100pct)

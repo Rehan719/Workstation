@@ -32,6 +32,10 @@ interface CatalogProduct {
   tier: string;
   category: string;
   features: string[];
+  // W496 (FU-114) — a LIVE card listed features nothing serves; the declared-and-not-built ones are
+  // named as that, with the basis in the tooltip
+  features_declared_not_built?: string[];
+  features_basis?: string;
   source: string | null;
   route: string | null;
   status?: 'live' | 'source' | 'legacy';   // W470 — live: a served surface; source: a pointer, nothing served; legacy: an archived directory
@@ -298,6 +302,15 @@ export const LivingMarketplace: React.FC = () => {
                               <div key={f} className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
                                 <span className="w-1 h-1 rounded-full bg-aura shrink-0" />
                                 {f}
+                              </div>
+                            ))}
+                            {(product.features_declared_not_built || []).map(f => (
+                              <div key={f} className="flex items-center gap-2 text-[10px] font-bold text-slate-600"
+                                   data-testid="catalog-not-built"
+                                   title={product.features_basis || 'declared for this product and not built in this repository'}>
+                                <span className="w-1 h-1 rounded-full bg-slate-700 shrink-0" />
+                                <span className="line-through">{f}</span>
+                                <span className="text-[8px] uppercase tracking-wider text-slate-500">not built</span>
                               </div>
                             ))}
                           </div>

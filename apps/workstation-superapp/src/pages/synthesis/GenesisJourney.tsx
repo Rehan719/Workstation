@@ -89,7 +89,9 @@ interface PwaManifest {
 }
 interface BoardPack {
   vsb_id: string; name: string; kind: string; narrative: string; dcs_registered: boolean; dcs_hash?: string;
-  layers: Record<string, unknown>;
+  layers: Record<string, any>;
+  // W496 (FU-104) — the measured list of layers that hold anything
+  layers_present?: string[];
   // W471 — who composed the narrative, and whether this assembly changed anything
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
   version?: number; unchanged?: boolean; unchanged_since?: string; generated_at?: string;
@@ -159,7 +161,9 @@ export const GenesisJourney: React.FC = () => {
   // §5 — the live birth log: each entry is a REAL completed establishment step from the SSE stream
   const [birthStages, setBirthStages] = useState<{ stage: string; label: string; content: string }[]>([]);
   const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any;
-    name_pending?: boolean; name_source?: string; body_pending?: Record<string, boolean>; initial_ship?: any } | null>(null);
+    name_pending?: boolean; name_source?: string; body_pending?: Record<string, boolean>; initial_ship?: any;
+    // W496 (FU-100) — the entity's DERIVED status and the facts it was derived from
+    status?: string; status_basis?: string } | null>(null);
   // W450 (P1.2) — the founder names the enterprise: optionally before the journey, or on the newborn card
   const [enterpriseName, setEnterpriseName] = useState('');
   const [naming, setNaming] = useState(false);
@@ -950,11 +954,19 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                       Pending the owned model: {Object.entries(vsb.body_pending).filter(([, v]) => v).map(([k]) => k).join(' · ')} — the body ships the founder's words plus an honest pending state, never floor scaffold.
                     </p>
                   )}
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    {vsb.vsb_id} · operational · governance {vsb.governance?.status ?? 'not reported'}
+                  {/* W496 (FU-100) - "operational" was a LITERAL here, printed over entities with four
+                      body sections pending, a failed first compliance screen and Self-run off. The
+                      backend now derives the status from those facts and sends its basis. */}
+                  <p className="text-[10px] text-slate-500 font-mono" data-testid="genesis-vsb-status"
+                     title={vsb.status_basis || 'the response did not say what this status was derived from'}>
+                    {vsb.vsb_id} · {vsb.status ?? 'status not reported'} · governance {vsb.governance?.status ?? 'not reported'}
                   </p>
-                  <p className="text-[10px] text-emerald-400 font-bold mt-1">
-                    Living Enterprise IDBO generated — dashboard {vsb.dashboard}
+                  {vsb.status_basis && (
+                    <p className="text-[9px] text-slate-500 mt-1" data-testid="genesis-vsb-status-basis">{vsb.status_basis}</p>
+                  )}
+                  {/* W496 (FU-100) - emerald asserted a healthy outcome; the colour follows the state */}
+                  <p className={`text-[10px] font-bold mt-1 ${vsb.status === 'operating' ? 'text-emerald-400' : 'text-slate-400'}`}>
+                    Living Enterprise IDBO registered — dashboard {vsb.dashboard}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     <button type="button" onClick={() => navigate(`/business-plan?scope=${encodeURIComponent(vsb.vsb_id)}`)}
@@ -1110,7 +1122,20 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                           <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Board Pack</span>
-                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{Object.keys(pack.layers).join(' · ')}</span>
+                              {/* W496 (FU-104) - this chipped the KEY NAMES of the layers dict, so all four
+                                  always appeared: an empty strategic layer ({"ceo": {}}) read as present. */}
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300"
+                                    data-testid="pack-layers-present"
+                                    title="a layer counts as present only if it holds something; the pack says which">
+                                {(pack.layers_present ?? Object.keys(pack.layers)).join(' · ')}
+                              </span>
+                              {(pack.layers_present ?? []).length < Object.keys(pack.layers).length && (
+                                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-500"
+                                      data-testid="pack-layers-empty"
+                                      title={Object.entries(pack.layers).filter(([k, v]) => !(pack.layers_present ?? []).includes(k)).map(([k, v]) => `${k}: ${(v as any)?.basis ?? 'empty'}`).join(' | ')}>
+                                  {Object.keys(pack.layers).length - (pack.layers_present ?? []).length} empty
+                                </span>
+                              )}
                               {pack.dcs_registered && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={pack.dcs_hash}>DCS-registered</span>}
                               {pack.ai_provenance?.served_by && (() => { const b = provenanceMapBadge(pack.ai_provenance.served_by, pack.ai_provenance.any_external); return (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title} data-testid="pack-provenance">{b.label}</span>

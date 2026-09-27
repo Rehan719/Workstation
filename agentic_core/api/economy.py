@@ -169,6 +169,14 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
     try:
         result = await governed_cycle(req.vsb_id, entity_type, owner,
                                       req.revenue, req.costs, req.reserve_rate, source="api")
+    except StoreUnavailable as e:
+        # §12 (W496, FU-118) — the Owner's charity directives (the priorities AND the EXCLUSIONS a
+        # grant must honour) could not be read whole, so no cycle ran and nothing was allocated. The
+        # old tolerant read answered this case with the platform's defaults and granted to a cause the
+        # Owner had excluded.
+        raise HTTPException(status_code=503, detail=(
+            f"{e}. No cycle ran and nothing was allocated: a charity grant must honour the Owner's "
+            f"recorded exclusions, and they cannot be read from that store.")) from None
     except LedgerUnavailable as e:
         # W468 (register FU-041) — this used to post onto empty books and answer 200, replacing the real ones
         written = bool(getattr(e, "ledger_written", False))
@@ -1390,7 +1398,15 @@ async def repair_ledger(vsb_id: str, user: dict | None = Depends(get_current_use
 async def charity_candidates(top: int = 8, user: dict | None = Depends(get_current_user)):
     """§5 — the ranked charitable-cause pool the directives act on. Weights are CURATED editorial
     values (or Owner-gated ingested signals) — nothing is measured; every row says which."""
-    ranked = CharityIntelligence().ranked(top)
+    # W496 (FU-118) — the pool is EXCLUSION-filtered, so an unreadable directives store cannot be
+    # answered with the platform's defaults here either: this route would present a ranked pool as the
+    # one the Owner's directives act on.
+    try:
+        ranked = CharityIntelligence().ranked(top)
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"{e}. The ranked pool is filtered by the Owner's exclusions, which cannot be read from "
+            f"that store, so no pool is shown rather than one filtered by this platform's defaults.")) from None
     # W442 — the disclaimer was STATIC ("sources curated") and became false the moment ingested
     # signals joined the pool; it is now computed from what the pool actually contains.
     n_signal = sum(1 for c in ranked if str(c.get("weights_source", "")).startswith("owner_signal"))

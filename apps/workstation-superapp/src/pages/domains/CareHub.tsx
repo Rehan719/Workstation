@@ -83,7 +83,7 @@ export const CareHub: React.FC = () => {
                       <p className="text-[10px] text-amber-400 font-bold">{r.score.note}</p>
                     ) : (
                       <>
-                        <p className="text-sm font-black text-white">{String(r.score.tool).toUpperCase().replace('_', ' ')} {r.score.tool === 'falls_risk' ? 'factor count ' : r.score.complete === false && r.score.total != null ? '≥ ' : ''}{r.score.total ?? '—'}{r.score.band ? <span className={`ml-2 text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded ${/high|very high|emergency/i.test(r.score.band) ? 'bg-vital/15 text-vital' : /medium|at risk|warranted/i.test(r.score.band) ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>{r.score.band}</span> : null}</p>
+                        <p className="text-sm font-black text-white">{String(r.score.tool).toUpperCase().replace('_', ' ')} {r.score.tool === 'falls_risk' ? 'factor count ' : r.score.complete === false && r.score.total != null ? '≥ ' : ''}{r.score.total ?? '—'}{r.score.band ? <span className={`ml-2 text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded ${/high|very high|emergency/i.test(r.score.band) ? 'bg-vital/15 text-vital' : /medium|at risk|warranted/i.test(r.score.band) ? 'bg-amber-500/15 text-amber-400' : /not assessed|no trigger recorded|no band/i.test(r.score.band) ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/15 text-emerald-400'}`}>{r.score.band}</span> : null}</p>
                         {r.score.response && <p className="text-[11px] text-slate-300">{r.score.response}</p>}
                         <p className="text-[9px] text-slate-500">{r.score.table} · {r.score.basis}</p>
                         <div className="flex flex-wrap gap-1.5">
@@ -91,6 +91,19 @@ export const CareHub: React.FC = () => {
                             <span key={k} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-400" title={v.note || ''}>{k.replace(/_/g, ' ')}: {String(v.value)} → <b className="text-white">{v.points}</b></span>
                           ))}
                         </div>
+                        {/* W496 (FU-113) - a green chip for "no trigger recorded" read as a clean
+                            result, and a key the instrument did not understand was dropped in silence. */}
+                        {r.score.assessed === false && (
+                          <p className="text-[10px] text-slate-400 font-bold" data-testid="care-not-assessed">
+                            Not assessed — none of this instrument's factors was recorded, so nothing here is a finding about the patient.
+                          </p>
+                        )}
+                        {(r.score.keys_not_read || []).length > 0 && (
+                          <p className="text-[10px] text-amber-400 font-bold" data-testid="care-keys-not-read"
+                             title={(r.score.warnings || []).join(' | ')}>
+                            Not read: {r.score.keys_not_read.join(' · ')} — these are not part of this instrument, so they did not affect the result.
+                          </p>
+                        )}
                         {(r.score.missing || []).length > 0 && <p className="text-[10px] text-amber-400 font-bold">Incomplete — missing: {r.score.missing.join(' · ')}. The total is a lower bound{r.score.band ? '' : ' — no band until the missing observations are recorded'}.</p>}
                         {(r.score.warnings || []).length > 0 && <p className="text-[10px] text-amber-300">{r.score.warnings.join(' · ')}</p>}
                         {r.score.note && (r.score.missing || []).length === 0 && <p className="text-[10px] text-slate-500">{r.score.note}</p>}

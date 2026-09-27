@@ -348,12 +348,34 @@ def score_falls(obs: Dict[str, Any]) -> Dict[str, Any]:
         v = _yes(raw)
         (present if v else absent if v is False else missing).append(f)
     count = len(present)
+    _triggered = ("falls_history" in present or count >= 2)
+    # §3A (W496, FU-113) - AN UNRECOGNISED KEY WAS DROPPED IN SILENCE. A caller who sent
+    # {"fallen twice this year": "yes"} got every factor listed as MISSING, a count of 0, and the
+    # sentence "no falls history and fewer than two factors recorded" - which reads as a finding about
+    # the patient when the truth is that nothing the caller sent was understood. Keys this instrument
+    # does not know are now named back, and the response says whether anything was read at all.
+    _known = set(_FALLS_FACTORS) | {"age", "age_years"}
+    _unread = sorted(str(k) for k in (obs or {}) if str(k).strip().lower().replace(" ", "_") not in _known
+                     and str(k) not in _known)
+    _w = ([f"not part of this instrument, so not read: {', '.join(_unread)} - NICE CG161's factors are "
+           + ", ".join(_FALLS_FACTORS)] if _unread else [])
+    _nothing_read = not present and not absent
+    _response = ("offer a multifactorial falls risk assessment (NICE CG161 1.1.2) — this count is not a score"
+                 if _triggered else
+                 "NOTHING WAS READ - none of NICE CG161's factors was recorded, so this is not a finding "
+                 "about the patient: no assessment has been made. Record the factors to assess."
+                 if _nothing_read else
+                 "no falls history and fewer than two factors recorded — reassess on change")
     return {"tool": "falls_risk", "table": "NICE CG161 multifactorial falls risk — factor COUNT, not a validated score",
             "components": {f: {"value": "present", "points": 1, "note": ""} for f in present},
-            "total": count, "band": ("multifactorial assessment warranted" if ("falls_history" in present or count >= 2) else "no trigger recorded"),
-            "response": ("offer a multifactorial falls risk assessment (NICE CG161 1.1.2) — this count is not a score"
-                         if ("falls_history" in present or count >= 2) else "no falls history and fewer than two factors recorded — reassess on change"),
-            "factors_present": present, "factors_absent": absent, "complete": not missing, "missing": missing, "warnings": [],
+            "total": count,
+            # a band is a reading; with nothing recorded there is nothing to read
+            "band": ("multifactorial assessment warranted" if _triggered else
+                     "not assessed - no factor recorded" if _nothing_read else "no trigger recorded"),
+            "assessed": not _nothing_read,
+            "response": _response,
+            "factors_present": present, "factors_absent": absent, "complete": not missing, "missing": missing, "warnings": _w,
+            "keys_not_read": _unread,
             "note": "NICE CG161 defines no numeric falls score — this is a count of factors, not a score; a prompt for the multifactorial assessment, never a substitute",
             "basis": DISCLAIMER}
 

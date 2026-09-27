@@ -9,7 +9,8 @@ interface Tier { tier: string; endpoint: string; role: string; connected: boolea
 interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: number; principle: string;
   routes_mounted?: number; coherence_measured?: boolean; coherence_basis?: string }
 interface Gap { gap: string; realisation: number; routed_to: string; endpoint: string; action: string; missing: string[] }
-interface Align { overall_realisation: number; gaps_routed: Gap[]; executed: any[] }
+// W496 (FU-111) — `measure` is the producer's own statement of what this figure counts
+interface Align { overall_realisation: number; measure?: string; gaps_routed: Gap[]; executed: any[] }
 
 export const CognitionIntegration: React.FC = () => {
   const [wiring, setWiring] = useState<Wiring | null>(null);
@@ -252,8 +253,12 @@ export const CognitionIntegration: React.FC = () => {
             : (
               <div className="space-y-2">
                 {/* W493 (FU-176) - "routed" reads as sent; every gap comes back executed:false */}
-                <p className="text-[10px] font-black uppercase text-slate-500" data-testid="align-result">
-                  Overall realisation {Math.round(align.overall_realisation * 100)}% ·{' '}
+                {/* W496 (FU-111) - "Overall realisation 97% (evidence-based)" printed a number the
+                    producer itself calls API SURFACE COVERAGE, not delivery: the checks behind it are
+                    route-mount and non-empty-store lambdas. The figure now says what it counts. */}
+                <p className="text-[10px] font-black uppercase text-slate-500" data-testid="align-result"
+                   title={align.measure || 'the response did not say what this figure measures'}>
+                  API surface coverage {Math.round(align.overall_realisation * 100)}% (routers mounted and stores non-empty — not delivery) ·{' '}
                   {align.gaps_routed.length} gap(s) mapped to an owning tier ·{' '}
                   {(align.executed || []).length} acted on
                   {(align.executed || []).length === 0 ? ' (plan only — nothing was sent)' : ''}

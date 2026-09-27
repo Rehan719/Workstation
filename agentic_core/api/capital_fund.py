@@ -34,26 +34,47 @@ router = APIRouter(prefix="/api/v1", tags=["capital-fund"])
 _FUND_STORE = data_path("capital_fund.json")
 
 
-def _load_fund() -> dict:
+def _load_fund(strict: bool = False) -> dict:
     # W444 (comment corrected by the refuter round: load_json_tolerant recovers a truncated
     # tail but does NOT quarantine) — on unrecoverable corruption the corrupt file is now
     # RENAMED ASIDE (.corrupt-<id>) before the fresh pool takes over, so the shared WST
     # endowment can never be silently reset with the evidence destroyed.
+    # §12 (W496, FU-119b) - a store that EXISTS and cannot be read is not a store that was never
+    # set. Renaming the corrupt file aside preserved the evidence but the caller still received a
+    # FRESH 10,000,000 WST pool, so a shared endowment could be reset to its seed and reported
+    # HEALTHY with a utilisation of 0% - a silent reset presented as a healthy fund. A reader that
+    # only reports (fund_status) may see the seeded pool as long as it says the store was quarantined;
+    # a WRITER asks strictly and refuses, because writing back over a quarantined store is how the
+    # reset becomes permanent.
     from agentic_core.config import load_json_tolerant
     d = load_json_tolerant(_FUND_STORE, None) if _FUND_STORE.exists() else None
     if isinstance(d, dict):
         return d
+    _quarantined = None
     if _FUND_STORE.exists():
         try:
-            _FUND_STORE.rename(_FUND_STORE.with_suffix(f".corrupt-{uuid.uuid4().hex[:8]}"))
+            _quarantined = _FUND_STORE.with_suffix(f".corrupt-{uuid.uuid4().hex[:8]}")
+            _FUND_STORE.rename(_quarantined)
         except OSError:
-            pass
+            _quarantined = _FUND_STORE
+        if strict:
+            from agentic_core.config import StoreUnavailable
+            raise StoreUnavailable(_FUND_STORE, (
+                f"quarantined at {getattr(_quarantined, 'name', _quarantined)}; no balance was reset "
+                f"to the seed - restore the store or have the Owner re-seed it deliberately"))
     return {
-        "total_capital": 10_000_000,  # £10M sovereign capital pool (virtual)
+        "total_capital": 10_000_000,  # the Owner-set VIRTUAL endowment (no cycle or deposit funded it)
         "currency": "WST",            # Workstation Token
         "allocated": 0,
         "available": 10_000_000,
         "allocations": [],
+        # W496 (FU-119a) - the seed is recorded AS a seed, so every reader can separate the Owner's
+        # virtual endowment from what cycles actually contributed instead of presenting the sum as
+        # "the real capital fund"
+        "seed_capital_wst": 10_000_000,
+        "seed_basis": ("an Owner-set virtual endowment recorded when the store was first created - no "
+                       "cycle contribution, owner deposit or ledger entry funded it"),
+        "seeded_store_quarantined": (str(getattr(_quarantined, "name", "")) or None),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -73,7 +94,8 @@ def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
     from agentic_core.config import store_lock
     amt = round(float(amount_wst), 2)
     with store_lock(_FUND_STORE):
-        fund = _load_fund()
+        # W496 (FU-119b) - a writer refuses rather than writing back over a quarantined store
+        fund = _load_fund(strict=True)
         fund["total_capital"] = round(float(fund.get("total_capital", 0)) + amt, 2)
         fund["available"] = round(float(fund.get("available", 0)) + amt, 2)
         entry = {"vsb_id": vsb_id, "amount_wst": amt,
@@ -133,7 +155,21 @@ async def fund_status():
     fund = _load_fund()
     allocation_count = len(fund.get("allocations", []))
     utilisation = round(fund["allocated"] / fund["total_capital"] * 100, 1) if fund["total_capital"] else 0
-
+    # §12 (W496, FU-119a) - the page captioned this "the real capital fund", and 10,000,000 of it is a
+    # constant the loader seeds when no store exists. The seed and the contributions are reported
+    # apart, so nothing has to be taken on the caption's word. A store written before W496 carries no
+    # seed marker: the seed is then UNRECORDED rather than assumed to be zero or to be the whole pool.
+    _seed = fund.get("seed_capital_wst")
+    _contrib = round(float(fund.get("cycle_contributions_total_wst", 0) or 0), 2)
+    _total = float(fund.get("total_capital") or 0)
+    if _seed is None:
+        _basis = (f"NOT RECORDED - this store predates the seed marker, so how much of the "
+                  f"{_total:,.0f} WST pool was seeded rather than contributed is not known from it. "
+                  f"{_contrib:,.2f} WST is recorded as cycle contributions.")
+    else:
+        _basis = (f"{float(_seed):,.0f} of {_total:,.0f} WST is an Owner-set VIRTUAL endowment that no "
+                  f"cycle, deposit or ledger entry funded; {_contrib:,.2f} WST came from recorded cycle "
+                  f"contributions. Virtual WST throughout - no real-money rail is enabled.")
     return {
         "total_capital": fund["total_capital"],
         "currency": fund["currency"],
@@ -141,7 +177,18 @@ async def fund_status():
         "available": fund["available"],
         "utilisation_pct": utilisation,
         "allocation_count": allocation_count,
+        "seed_capital_wst": _seed,
+        "contributed_wst": _contrib,
+        "capital_basis": _basis,
         "fund_health": "HEALTHY" if utilisation < 80 else "CONSTRAINED" if utilisation < 95 else "DEPLETED",
+        # the health is a ratio of allocations to the POOL, and the pool is mostly the seed - so on a
+        # freshly seeded store it cannot come out anything but HEALTHY
+        "fund_health_basis": (
+            f"allocations are {utilisation}% of the pool"
+            + ("" if not _seed or _total <= 0 else
+               f", and {round(float(_seed) / _total * 100)}% of that pool is the unfunded seed, so this "
+               f"reading is mostly a ratio against a constant")),
+        "store_quarantined": fund.get("seeded_store_quarantined"),
         "organism": _organism_posture(),
     }
 
@@ -162,13 +209,19 @@ async def allocate_capital(req: AllocateRequest):
     W444 refuter catch (reproduced): only contribute_from_cycle held the store lock — this
     read-modify-write raced it unlocked and erased contributions (total, row and running total
     all reverted). Both writers now serialise on the same lock."""
-    from agentic_core.config import store_lock as _sl
+    from agentic_core.config import StoreUnavailable, store_lock as _sl
     with _sl(_FUND_STORE):
-        return _allocate_locked(req)
+        try:
+            return _allocate_locked(req)
+        except StoreUnavailable as e:
+            # W496 (FU-119b) - the fund could not be read whole, so nothing was allocated and no
+            # balance was reset to the seed. A 500 would have read as a bug; this says what happened.
+            raise HTTPException(status_code=503, detail=f"{e}")
 
 
 def _allocate_locked(req: "AllocateRequest"):
-    fund = _load_fund()
+    # W496 (FU-119b) - a writer refuses rather than writing back over a quarantined store
+    fund = _load_fund(strict=True)
 
     if req.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive.")
