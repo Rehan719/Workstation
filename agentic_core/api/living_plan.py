@@ -224,8 +224,16 @@ def get_followups():
             _batches = fu.batches(reg, prompt)
         except Exception as _be:
             _batches = {"batches": [], "basis": f"the batch grouping raised {type(_be).__name__}"}
+        # W501 (P2.17a) — the BUNDLE beside it: one file-connected subsystem cut by item, which is what
+        # a round actually costs. A batch is one mechanism across its consumers; they answer different
+        # questions and both are served, so a reader is not shown one and told it is the choice.
+        try:
+            _bundles = fu.bundles(reg, prompt)
+        except Exception as _ue:
+            _bundles = {"bundles": [], "ceiling": {},
+                        "basis": f"the bundle grouping raised {type(_ue).__name__}"}
         return {**base, "available": True, **fu.schedule(reg, prompt), "plan": fu.plan_now(reg, prompt),
-                "forecast": _forecast, "batches": _batches,
+                "forecast": _forecast, "batches": _batches, "bundles": _bundles,
                 "routes": fu._routes(reg), "integrity": {"ok": not problems, "problems": problems}}
     except Exception as exc:   # a defect in the checker itself is still reported, never a 500
         return {**base, "available": False,

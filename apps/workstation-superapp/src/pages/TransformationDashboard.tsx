@@ -72,9 +72,22 @@ interface Forecast {
   items_sized_build: number;
   items_with_no_row: string[];
 }
+// W501 (P2.17a) — the round a generator proposes: one FILE-CONNECTED subsystem cut by item. A batch is
+// one mechanism across its consumers; a bundle is one subsystem's worth of reading, which is what a
+// round costs. `above_measured_ceiling` means larger than any round has yet closed — a flag, not a bar.
+interface Bundle {
+  slot: string; size: number; files_count: number; component_size: number;
+  also_touching: string[]; priority: number; above_measured_ceiling: boolean;
+  possibly_under_connected: boolean;
+}
+interface Bundles {
+  bundles: Bundle[]; components?: number; basis?: string;
+  ceiling?: { rows: number | null; rounds: string[]; median?: number | null; basis?: string };
+}
 interface Followups {
   available: boolean; reason?: string;
   forecast?: Forecast;
+  bundles?: Bundles;
   counts: { open: number; scheduled: number; high: number; awaiting_owner: number; done: number; dropped: number; unscheduled?: number };
   next_plan_item: string | null;
   schedule: { slot: string; title: string; items: FollowupRow[]; delivered_by?: string | null }[];
@@ -380,6 +393,22 @@ export const TransformationDashboard: React.FC = () => {
                           <span className="text-slate-500 font-bold"> · {followups.forecast.items_open_owner_switch} the Owner flips ({followups.forecast.items_owner_switch_slots.join(', ')}) — not projected</span>
                         )}
                       </p>
+                      {/* W501 — the bundle a round would take, with what it costs and what it is not */}
+                      {followups.bundles?.bundles?.length ? (() => {
+                        const bn = followups.bundles!.bundles[0];
+                        const cl = followups.bundles!.ceiling;
+                        return (
+                          <p className="text-[10px] font-bold text-sky-300 mt-2" data-testid="next-bundle">
+                            NEXT BUNDLE: {bn.slot} — one subsystem, {bn.size} row{bn.size === 1 ? '' : 's'} across {bn.files_count} file{bn.files_count === 1 ? '' : 's'}
+                            {bn.component_size > bn.size && <span className="text-slate-500"> · cut from a {bn.component_size}-row component</span>}
+                            {bn.also_touching.length > 0 && <span className="text-slate-500"> · advances {bn.also_touching.join(', ')} (advances — their own ACCEPT criteria close them)</span>}
+                            {bn.above_measured_ceiling && cl?.rows != null && (
+                              <span className="text-amber-400"> · LARGER THAN ANY ROUND YET ({cl.rows} is the most closed{cl.rounds?.length ? `, ${cl.rounds.join(', ')}` : ''})</span>
+                            )}
+                            {bn.possibly_under_connected && <span className="text-slate-500"> · single row: possibly under-connected, not isolated</span>}
+                          </p>
+                        );
+                      })() : null}
                       <p className="text-[9px] text-slate-500 mt-1 leading-relaxed" data-testid="plan-completion-basis">
                         At {followups.forecast.item_build_rate_per_round} plan items per round — a rate measured
                         entirely on {followups.forecast.item_rate_phases.join(', ') || 'no completed phase'}, so it is the rate

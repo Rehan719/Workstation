@@ -882,6 +882,26 @@ def render_forecast(register: Any, prompt_text: str) -> str:
                    f"{_t['closes_count']} row(s) across {_t['files_count']} file(s)"
                    + (f", advancing {_t['partial_count']} more" if _t["partial_count"] else "")
                    + f". Items: {', '.join(_t['slots'])}.")
+    # W501 (P2.17a) — the BUNDLE beside the BATCH. A batch is one mechanism across its consumers;
+    # a bundle is one subsystem's worth of reading, which is what a round actually costs. Only the
+    # batch reached this page, so the round that measured components was still being offered two
+    # rows across nine files.
+    try:
+        _u = bundles(register, prompt_text)
+    except Exception:
+        _u = {"bundles": [], "ceiling": {}}
+    if _u["bundles"]:
+        _v = _u["bundles"][0]
+        _ceil = _u["ceiling"].get("rows")
+        out.append(f"  BIGGEST BUNDLE: {_v['slot']} — one subsystem, {_v['size']} row(s) across "
+                   f"{_v['files_count']} file(s)"
+                   + (f", cut from a {_v['component_size']}-row component"
+                      if _v["component_size"] > _v["size"] else "")
+                   + (f", advancing {', '.join(_v['also_touching'])}" if _v["also_touching"] else "")
+                   + (f" — LARGER THAN ANY ROUND YET ({_ceil} is the most closed, "
+                      f"{', '.join(_u['ceiling'].get('rounds') or [])})"
+                      if _v["above_measured_ceiling"] else "")
+                   + ". It advances those items; only their own ACCEPT criteria close them.")
     out.append("  This is arithmetic over an observed mean, in rounds. It is not a date and not a promise;")
     out.append("  it moves every time a round closes or registers a row.")
     return "\n".join(out)
@@ -995,6 +1015,164 @@ def batches(register: Any, prompt_text: str, slot: Optional[str] = None) -> Dict
                   "Rows citing no class are listed, never guessed at. A suggestion beside the plan's "
                   "order, not a replacement for it: the gate still decides which item is open."),
     }
+
+
+def row_components(register: Any) -> List[Dict[str, Any]]:
+    """The open rows grouped by TRANSITIVE FILE SHARING — the bundle a round can hold at once.
+
+    §planner (W501, P2.17a) — `batches` groups by sweep class: one mechanism swept across its
+    consumers, which is the right unit for a mechanism and the wrong one for a round's COST. The
+    expensive part of a round is reading a subsystem well enough to measure it, and rows touching the
+    same files share the measurement, the guard, the blinds and the refutation. So "row cites file" is
+    an edge and a connected component is the natural group. P2.17(a) first said to bundle items with
+    DISJOINT file sets; that avoids conflict and throws the leverage away, and was corrected in W500
+    before any of it was built.
+
+    A row citing NO file is its own component. That is a fact about the row's RECORD, not about the
+    work, so it is flagged rather than reported as isolated: the graph can only be as good as the
+    `files` lists a finder wrote.
+    """
+    rows = [r for r in _rows(register) if r["status"] == "open"]
+    raw = {r.get("id"): r for r in raw_items(register) if isinstance(r, dict)}
+    return _components_of([{"id": r["id"], "slot": r["slot"],
+                            "files": (raw.get(r["id"], {}).get("files") or [])} for r in rows])
+
+
+def _components_of(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The graph itself, over plain {id, slot, files} dicts.
+
+    Separate from `row_components` so the algorithm can be DRIVEN with synthetic rows: a real register
+    goes through `_rows`, which drops malformed rows, and a two-key test row is malformed. One
+    algorithm, two entry shapes - not two implementations.
+    """
+    adj: Dict[Any, Set[Any]] = {}
+    for r in items:
+        node = ("row", r["id"])
+        adj.setdefault(node, set())
+        for f in (r.get("files") or []):
+            fn = ("file", normalise_path(f))
+            adj[node].add(fn)
+            adj.setdefault(fn, set()).add(node)
+    seen: Set[Any] = set()
+    out: List[Dict[str, Any]] = []
+    for n in list(adj):
+        if n in seen:
+            continue
+        stack, comp = [n], set()
+        while stack:
+            x = stack.pop()
+            if x in seen:
+                continue
+            seen.add(x)
+            comp.add(x)
+            stack.extend(adj.get(x, set()) - seen)
+        ids = sorted(i for kind, i in comp if kind == "row")
+        files = sorted(f for kind, f in comp if kind == "file")
+        by_slot: Dict[str, List[str]] = {}
+        for i in ids:
+            by_slot.setdefault(str(next(r["slot"] for r in items if r["id"] == i)), []).append(i)
+        out.append({"rows": ids, "size": len(ids), "files": files,
+                    "items_advanced": sorted(by_slot), "rows_by_item": {k: sorted(v) for k, v in by_slot.items()},
+                    "possibly_under_connected": len(ids) == 1})
+    out.sort(key=lambda c: (-c["size"], c["items_advanced"]))
+    return out
+
+
+def largest_round_closed(register: Any) -> Dict[str, Any]:
+    """The most rows any single round has ever closed, and which rounds did it — the CEILING this
+    programme has actually reached, computed from the register rather than chosen."""
+    per: Dict[str, int] = {}
+    for r in raw_items(register):
+        if not isinstance(r, dict) or r.get("status") != "done":
+            continue
+        cb = str(r.get("closed_by") or "").strip()
+        if is_round_id(cb):
+            per[cb] = per.get(cb, 0) + 1
+    if not per:
+        # every key present in BOTH returns: the round's own pre-flight caught this shape split,
+        # and a caller indexing "median" on a register that has closed nothing would have raised
+        return {"rows": None, "rounds": [], "median": None, "rounds_measured": 0,
+                "basis": "no round has closed a row, so there is no ceiling."}
+    top = max(per.values())
+    who = sorted(k for k, v in per.items() if v == top)
+    vals = sorted(per.values(), reverse=True)
+    med = vals[len(vals) // 2]
+    return {"rows": top, "rounds": who, "median": med, "rounds_measured": len(per),
+            "basis": (f"the most rows any one round has closed is {top} ({', '.join(who)}), over "
+                      f"{len(per)} round(s) that closed anything; the median round closed {med}. This "
+                      f"is a CEILING REACHED, not a limit imposed - a bundle above it is still proposed, "
+                      f"flagged as larger than anything yet done.")}
+
+
+def bundles(register: Any, prompt_text: str) -> Dict[str, Any]:
+    """Rounds proposed as COMPONENT x ITEM, largest first.
+
+    The cut is by ITEM, measured: cutting the largest component by item is clean (one item held 23 of
+    its 32 rows) where cutting by file area is not (the areas interleave), and an item is a coherent
+    area that already carries its own ACCEPT criteria - so `component ∩ item` gives a round ONE guard
+    subject instead of five.
+    """
+    s = schedule(register if isinstance(register, dict) else {"items": []}, prompt_text)
+    by_id = {r["id"]: r for r in (r for x in s["schedule"] for r in x["items"])}
+    comps = row_components(register)
+    ceiling = largest_round_closed(register)
+    out = []
+    for c in comps:
+        for slot, ids in sorted(c["rows_by_item"].items(), key=lambda kv: (-len(kv[1]), kv[0])):
+            # a row awaiting an Owner decision never rides a schedule item, so it is not proposable
+            rideable = [i for i in ids if i in by_id]
+            if not rideable:
+                continue
+            prio = sorted(rideable, key=lambda i: -by_id[i]["priority"]["score"])
+            files = sorted({normalise_path(f) for i in rideable
+                            for f in (by_id[i].get("files") or [])})
+            others = [x for x in c["items_advanced"] if x != slot]
+            out.append({
+                "slot": slot, "rows": prio, "size": len(prio), "files": files,
+                "files_count": len(files),
+                "component_size": c["size"],
+                # the round touches files other items' rows also touch: it ADVANCES them, never closes
+                "also_touching": others,
+                "priority": round(sum(by_id[i]["priority"]["score"] for i in prio), 1),
+                "above_measured_ceiling": bool(ceiling["rows"] and len(prio) > ceiling["rows"]),
+                "possibly_under_connected": c["possibly_under_connected"],
+            })
+    out.sort(key=lambda b: (-b["size"], -b["priority"]))
+    return {
+        "bundles": out, "components": len(comps), "ceiling": ceiling,
+        "rows": sum(b["size"] for b in out),
+        "basis": ("a bundle is a FILE-CONNECTED COMPONENT cut by ITEM. Components come from each row's "
+                  "DECLARED files, so an under-declared row under-connects and its bundle is flagged. "
+                  "The cut is by item because that is the clean one (measured) and because an item "
+                  "already carries its own ACCEPT criteria, so the round has one guard subject. A "
+                  "bundle ADVANCES the other items whose rows touch the same files; it never closes "
+                  "them - only an item's own ACCEPT criteria do that."),
+    }
+
+
+def render_bundles(register: Any, prompt_text: str, top: int = 6) -> str:
+    b = bundles(register, prompt_text)
+    c = b["ceiling"]
+    out = [f"NEXT ROUNDS BY BUNDLE (generated \u2014 {b['rows']} row(s) in "
+           f"{b['components']} file-connected component(s))"]
+    if not b["bundles"]:
+        out.append("  No open row rides a plan item, so no bundle can be proposed.")
+    for x in b["bundles"][:top]:
+        line = (f"  {x['slot']}: {x['size']} row(s) across {x['files_count']} file(s)"
+                f" \u00b7 p {x['priority']}")
+        if x["component_size"] > x["size"]:
+            line += f" \u00b7 cut from a {x['component_size']}-row component"
+        if x["also_touching"]:
+            line += f" \u00b7 advances {', '.join(x['also_touching'])}"
+        if x["above_measured_ceiling"]:
+            line += f" \u00b7 LARGER THAN ANY ROUND YET ({c['rows']} is the most, {', '.join(c['rounds'])})"
+        if x["possibly_under_connected"]:
+            line += " \u00b7 single row: possibly under-connected, not isolated"
+        out.append(line)
+    out.append("  " + c["basis"])
+    out.append("  A bundle is one subsystem's worth of reading. It ADVANCES the items it touches;")
+    out.append("  only an item's own ACCEPT criteria close it.")
+    return "\n".join(out)
 
 
 def render_batches(register: Any, prompt_text: str, slot: Optional[str] = None, top: int = 5) -> str:

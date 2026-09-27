@@ -22028,3 +22028,123 @@ def test_w500b_the_bundle_a_round_can_hold_is_a_file_connected_component(client)
     assert "scripts/row_components.py" in _plan
     assert "THE BUNDLE IS A FILE-CONNECTED COMPONENT" in _plan
     assert "WRONG in its central idea" in _plan        # the correction stays on the record
+
+
+def test_w501_a_round_is_proposed_as_a_subsystem_cut_by_item(client):
+    """W501 — P2.17(a) built: the round a generator proposes is a FILE-CONNECTED COMPONENT cut by ITEM.
+
+    `batches` groups by sweep class — one mechanism across its consumers — which is right for a
+    mechanism and wrong for a round's COST, because the expensive part is reading a subsystem well
+    enough to measure it. Measured in W500: 42 components over the open rows, one of them 32 rows over
+    34 files spanning five items, while `batches` was offering two rows across nine files. Only the
+    batch reached the plan's own page, which is why nothing proposed the bundle.
+
+    The CEILING is measured, not chosen: the most rows any one round has ever closed. It FLAGS a larger
+    bundle rather than forbidding it, or the programme could never beat its own record.
+
+    Rides P2.17.
+    """
+    import io as _io501
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    import sys
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from agentic_core import plan_followups as fu
+
+    _reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _txt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+
+    # ── the ceiling is COMPUTED: driven with a synthetic register so a hardcoded number cannot pass ──
+    _synth = {"items": [
+        {"id": f"FU-{900 + i}", "status": "done", "closed_by": "W999", "slot": "P2.4", "files": [],
+         "title": "t", "why": "w", "source": "s", "severity": "low", "owner_gated": False,
+         "found": "2026-01-01", "note": ""} for i in range(21)]}
+    _c = fu.largest_round_closed(_synth)
+    assert _c["rows"] == 21 and _c["rounds"] == ["W999"], _c
+    assert "21" in _c["basis"] and "W999" in _c["basis"], _c["basis"]
+    # a register nothing has closed has NO ceiling, and says so rather than defaulting to a number
+    _empty = fu.largest_round_closed({"items": []})
+    assert _empty["rows"] is None and "no ceiling" in _empty["basis"], _empty
+
+    # ── over the real register: the ceiling matches an independent recount ───────────────────────────
+    _per = {}
+    for r in _reg["items"]:
+        if r.get("status") == "done" and fu.is_round_id(str(r.get("closed_by") or "").strip()):
+            _k = str(r["closed_by"]).strip()
+            _per[_k] = _per.get(_k, 0) + 1
+    _real = fu.largest_round_closed(_reg)
+    assert _real["rows"] == max(_per.values()), (_real["rows"], max(_per.values()))
+    assert sorted(_real["rounds"]) == sorted(k for k, v in _per.items() if v == _real["rows"])
+
+    # ── every bundle is COMPONENT ∩ ITEM: one slot, and its rows really ride it ──────────────────────
+    _b = fu.bundles(_reg, _txt)
+    assert _b["bundles"], _b["basis"]
+    _comps = {tuple(c["rows"]): c for c in fu.row_components(_reg)}
+    _slot_of = {r["id"]: r["slot"] for r in _reg["items"] if r.get("status") == "open"}
+    for x in _b["bundles"]:
+        assert x["size"] == len(x["rows"]) >= 1, x
+        assert all(_slot_of[i] == x["slot"] for i in x["rows"]), x      # ONE item per bundle
+        # the bundle is a subset of a real component, and the component is at least as big
+        _parent = [c for c in _comps.values() if set(x["rows"]) <= set(c["rows"])]
+        assert _parent, (x["slot"], "a bundle that is not inside any component")
+        assert x["component_size"] == _parent[0]["size"], x
+        # the other items it touches are the component's, minus its own — it ADVANCES them
+        assert x["also_touching"] == [s for s in _parent[0]["items_advanced"] if s != x["slot"]], x
+        # the ceiling flag is the comparison, not a label
+        assert x["above_measured_ceiling"] == (x["size"] > _real["rows"]), x
+
+    # ── largest first, so "the biggest bundle" means it ──────────────────────────────────────────────
+    assert [x["size"] for x in _b["bundles"]] == sorted((x["size"] for x in _b["bundles"]), reverse=True)
+
+    # ── the bundles PARTITION the rows that ride an item: none invented, none counted twice ──────────
+    _ids = [i for x in _b["bundles"] for i in x["rows"]]
+    assert len(_ids) == len(set(_ids)), "a row is in two bundles"
+    _rideable = {r["id"] for x in fu.schedule(_reg, _txt)["schedule"] for r in x["items"]}
+    assert set(_ids) == _rideable, (len(_ids), len(_rideable))
+
+    # ── and it reaches the plan's own page, beside the batch, saying advances and not closes ─────────
+    _line = fu.render_bundles(_reg, _txt)
+    assert "BUNDLE" in _line and "one subsystem" in _line
+    assert "only an item's own ACCEPT criteria close it" in _line
+    _fc = fu.render_forecast(_reg, _txt)
+    assert "BIGGEST BUNDLE:" in _fc and "BIGGEST BATCH:" in _fc, _fc[-400:]
+    assert "only their own ACCEPT criteria close them" in _fc
+    for doc in ("docs/FABLE_DELIVERY_PROMPT.md", "docs/WORKSTATION_IDBO_LIVING_PLAN.md"):
+        _d = (root / doc).read_text(encoding="utf-8")
+        assert "BIGGEST BUNDLE:" in _d, doc
+
+    # ── ONE algorithm: the script is an adapter, and gives the same components for the same rows ─────
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location("_rc501", root / "scripts/row_components.py")
+    _rc = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_rc)
+    _via_script = _rc.components(_rc.open_rows(_reg))
+    _via_module = fu.row_components(_reg)
+    assert [c["rows"] for c in _via_script] == [c["rows"] for c in _via_module], "two implementations"
+    # the delegation is asserted BEHAVIOURALLY: a word in the script's source would not stop a
+    # second implementation appearing beside it
+    import inspect
+    _body = inspect.getsource(_rc.components)
+    assert "_components_of" in _body, "the script does not call the module's implementation"
+
+    # ── it is SERVED, and the page shows it: a proposal nobody can see is not a proposal ─────────────
+    _served = client.get("/api/v1/plan/followups").json()
+    assert _served.get("available") is True, _served.get("reason")
+    assert _served["bundles"]["bundles"], _served["bundles"].get("basis")
+    assert _served["bundles"]["bundles"][0]["slot"] == _b["bundles"][0]["slot"], "served a different order"
+    assert _served["bundles"]["ceiling"]["rows"] == _real["rows"], _served["bundles"]["ceiling"]
+    _dash = (root / "apps/workstation-superapp/src/pages/TransformationDashboard.tsx").read_text(
+        encoding="utf-8")
+    assert 'data-testid="next-bundle"' in _dash and "NEXT BUNDLE:" in _dash
+    # the page says ADVANCES, and names whose criteria close an item
+    assert "their own ACCEPT criteria close them" in _dash
+    # the ceiling warning is BOUND to the flag, not printed as decoration
+    assert "bn.above_measured_ceiling && cl?.rows != null" in _dash
+    assert "LARGER THAN ANY ROUND YET" in _dash
+    # and the under-connected caveat travels with the row it is about
+    assert "bn.possibly_under_connected &&" in _dash
+    assert _rc.fu._components_of is fu._components_of, "the script bound a different module"
+    # and the empty-register shape carries every key the populated one does
+    assert set(fu.largest_round_closed({"items": []})) == set(_real), "two return shapes"

@@ -8341,3 +8341,59 @@ prints, which slept four hours; a leak assertion over a surface designed not to 
 testing; and a sweep reporting off an absent test. All three are the shape this campaign exists to
 remove - a check that cannot fail - committed in the tools used to find it. The rule earned:
 **a new instrument must be made to fail once before its green is worth anything.**
+
+## W501 — P2.17(a) built: a round is proposed as a subsystem, not a mechanism
+
+`batches` groups the open rows by SWEEP CLASS — one mechanism swept across its consumers. Right for a
+mechanism, wrong for a round's COST, because the expensive part of a round is reading a subsystem well
+enough to measure it, and rows on the same files share the measurement, the guard, the blinds and the
+refutation. W500 measured the consequence: 42 file-connected components, one of them 32 rows over 34
+files spanning five items, while `batches` was offering "C2 — 2 rows across 9 files". Only the batch
+reached the plan's own page, which is why nothing ever proposed the bundle.
+
+- **`bundles()`** proposes `component ∩ item`, largest first. The cut is by item because that is the
+  clean one (measured: the 32-row component holds 23 rows of one item, where a file-area cut interleaves
+  api/frontend/economy/cognitive) and because an item already carries its own ACCEPT criteria, so the
+  round has ONE guard subject instead of five.
+- **The ceiling is measured, and it is a FLAG not a bar.** `largest_round_closed()` computes the most
+  rows any single round has ever closed — **14 (W475, W494, W496), over 27 rounds that closed anything,
+  median 5, never exceeded**. A bundle above it is still proposed, marked `LARGER THAN ANY ROUND YET`
+  with the rounds that set the record. A hard cap at the historical maximum would mean this programme
+  could never beat its own record; a flag lets the next round decide with the evidence in front of it.
+  That also corrected my own prep note, which had proposed a 23-row round as though it were routine.
+- **One algorithm.** The graph moved into `plan_followups._components_of()` over plain
+  `{id, slot, files}` dicts, and `scripts/row_components.py` became an adapter. The split exists for a
+  reason: a real register goes through `_rows`, which drops malformed rows, and a two-key synthetic test
+  row IS malformed — so driving the algorithm needs the permissive entry. The guard asserts both paths
+  return identical components AND that the script is bound to this module's function object, so a second
+  implementation cannot grow beside it.
+- **Served and shown.** `/api/v1/plan/followups` carries `bundles` (failing soft like its neighbours)
+  and the dashboard prints `NEXT BUNDLE` with the component it was cut from, the items it advances, and
+  the ceiling warning — bound to the flag, not printed unconditionally.
+
+### What the round's own pre-flight found in it
+
+Twenty-one leads, worked down to ten. Two were real:
+
+- **`largest_round_closed` returned two different shapes.** The empty case omitted `median` and
+  `rounds_measured`, so a caller indexing them on a register that has closed nothing would have raised
+  `KeyError`. Both returns now carry every key, and the guard asserts the key sets are equal.
+- **`component` — the component's index — was read by nothing at all**: not the page, not the renderer,
+  not the guard. A key no reader wants is a claim nobody sees, so it is gone rather than explained.
+  `component_size` stays, because the page shows "cut from a 32-row component" and that is the fact.
+
+Sixteen `[keys]` leads said the bundle fields reached no page, and checking, the dashboard showed
+NEITHER batch nor bundle — so the proposal a round should act on was invisible on the one screen that
+shows the plan's pace. That is the same gap W499 fixed for plan completion, and it is now closed the
+same way.
+
+**The ten leads left are a judgement, recorded rather than dropped:** three are false positives from the
+delegation refactor (the script no longer DEFINES those keys because it delegates, and the checker
+cannot see through that), one is the pre-existing `available`/`reason` shape where `reason` only makes
+sense on failure, and six are internal plumbing whose substance reaches the reader inside the `basis`
+sentences that are shown.
+
+**15 blinds, each alone, each caught, none vacuous.** Pre-flight also caught two stale anchors in the
+harness itself — one carrying `\u2014` as six literal characters where the file holds an em dash, and
+one written before this round's own fix to the empty return. Four escape or anchor mistakes tonight,
+every one caught by the count assertion rather than shipping as a silent no-op.
