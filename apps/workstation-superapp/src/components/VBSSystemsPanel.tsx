@@ -9,7 +9,8 @@ import { apiJson, errorMessage } from '../lib/api';
 // constant inside "ROI", a "latency_p95" that is neither a p95 nor measured, and in-memory accruals
 // with no scope — all fixed. This panel renders the real/simulated split as first-class content.
 
-interface SystemRow { id: string; name: string; owned: boolean; real: string[]; simulated: string[]; owns?: string[]; owned_by?: string }
+interface SystemRow { id: string; name: string; owned: boolean; real: string[]; simulated: string[];
+  limits?: string[]; owns?: string[]; owned_by?: string }
 interface DefectRow { id: string; label: string; status: string; opened_at: string; correction?: string | null; meta?: { coverage?: number; stubs_found?: boolean }; reverify_basis?: string }
 // W489 — rate_basis says WHAT the rate is over; what-if gates are counted apart from it
 interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number; rate_basis?: string; what_if_gates?: number; what_if_failures?: number }
@@ -78,9 +79,22 @@ export const VBSSystemsPanel: React.FC = () => {
     if (!selDefect) return;
     setBusy('reverify'); setErr(''); setLoopResult('');
     try {
-      const d = await apiJson(`/api/v1/vbs/qms/defects/${selDefect}/reverify`, { method: 'POST', body: { content: reverifyContent } });
+      const d = await apiJson<{ passed?: boolean; defect?: any; reverify_basis?: string }>(
+        `/api/v1/vbs/qms/defects/${selDefect}/reverify`, { method: 'POST', body: { content: reverifyContent } });
+      // W497 (FU-201, class C1) — this asserted that the correction had passed the original gate and
+      // been measured from its own content, whatever the API reported (the old wording is not quoted
+      // here: a guard forbids it in this file). It was untrue for exactly the defects this panel's gate creates: they
+      // store no section requirements, so the coverage instrument degenerated to a length check and 220
+      // characters of filler closed a defect whose correction said nothing had been corrected. The API
+      // now REFUSES that case (409) and returns a basis when it does close; the sentence prints it.
+      const _basis = d.reverify_basis ?? d.defect?.reverify_basis ?? '';
       setLoopResult(d.passed
-        ? 'closed — the corrected delivery PASSED the same gate, measured from the content itself'
+        ? `closed — re-verified via ${_basis || 'an unstated basis'}`
+          + (_basis === 'measured_from_content'
+              ? ': the corrected delivery was measured against the sections the original gate stored'
+              : _basis.startsWith('caller_attested')
+                ? ': the figures were SUPPLIED by the caller, not measured here'
+                : '')
         : 'REOPENED — the correction did not hold (the failed re-verification also raises the non-conformance rate)');
       loadAll();
     } catch (e) { setErr(errorMessage(e)); }
@@ -144,7 +158,11 @@ export const VBSSystemsPanel: React.FC = () => {
               <p className="text-[11px] font-black text-white mb-1">{s.name} {s.owned_by && <span className="text-slate-600">(owned by {s.owned_by.toUpperCase()})</span>}</p>
               {s.real.map((r, i) => <p key={i} className="text-[9px] text-emerald-400/80">✓ {r}</p>)}
               {s.simulated.map((r, i) => <p key={i} className="text-[9px] text-amber-400/80">≈ simulated: {r}</p>)}
-              {s.simulated.length === 0 && <p className="text-[9px] text-slate-600 italic">nothing simulated</p>}
+              {/* W497 (FU-201) - a system with nothing simulated can still have a LIMIT on what its
+                  instruments can measure, and "nothing simulated" was read as "nothing to qualify". */}
+              {(s.limits ?? []).map((r, i) => <p key={i} className="text-[9px] text-amber-400/80" data-testid={`vbs-limit-${s.id}`}>⚠ limit: {r}</p>)}
+              {s.simulated.length === 0 && (s.limits ?? []).length === 0 && <p className="text-[9px] text-slate-600 italic">nothing simulated</p>}
+              {s.simulated.length === 0 && (s.limits ?? []).length > 0 && <p className="text-[9px] text-slate-600 italic">nothing simulated — see the limit above</p>}
             </div>
           ))}
         </div>
@@ -221,7 +239,7 @@ export const VBSSystemsPanel: React.FC = () => {
                     className="w-full text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-300 mb-1.5"
                     placeholder="paste the CORRECTED delivery — the platform measures it (section requirements when the defect stores them; length + stub instruments otherwise — the basis says which)" />
                   <Button onClick={reverifyDefect} disabled={!!busy || !reverifyContent.trim()} className="flex items-center gap-1.5 bg-aura text-sovereign text-[10px]">
-                    {busy === 'reverify' ? <Loader2 size={11} className="animate-spin" /> : <RotateCcw size={11} />} Re-verify (measured)
+                    {busy === 'reverify' ? <Loader2 size={11} className="animate-spin" /> : <RotateCcw size={11} />} Re-verify
                   </Button>
                 </div>
               )}

@@ -165,7 +165,13 @@ const RUN_CONFIGS: Record<string, React.ComponentProps<typeof DomainTool>> = {
   },
   experimentation: {
     title: 'Reactor · Experimentation (what-if)',
-    description: <>Project and compare the outcomes of what-if scenarios against a subject — in-house, ranked, QMS-gated.</>,
+    // W497 (FU-219, class C1) — "ranked, QMS-gated" asserted two things the run did not do on the
+    // floor: the Ranking section came back as a generic scaffold, and the QMS gate returned
+    // not-assessable. The gate's real verdict is now shown as a chip (W495), and the ranking is
+    // reported by the response rather than promised by this description.
+    description: <>Project and compare the outcomes of what-if scenarios against a subject, on the owned
+      fabric. The run reports whether the comparison actually ranked them, and carries the QMS gate's
+      verdict — including when the gate could not assess it.</>,
     endpoint: '/api/v1/reactor/experiment',
     resultKey: 'comparison',
     submitLabel: 'Run experiment',

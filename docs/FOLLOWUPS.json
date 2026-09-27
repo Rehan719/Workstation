@@ -2976,9 +2976,9 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W497",
+      "note": "W497 measured it live before building: already delivered by W483 and a later page round. POST /api/v1/compliance/check {subject:'asdf qwerty'} returns overall 'review', compliant None, the regulatory and EHS screens 'not_assessed' with coverage 'screen', the ethical row 'not_assessed', and coverage_gaps listing all six frameworks; the page prints 'NOTHING here assessed this subject. A keyword screen can refuse a subject; it cannot clear one.' and paints emerald only when a row could assess. Nothing was built - but the property was UNGUARDED, so W497 added the guard, including the discovery that it is held TWICE (the not_assessed status AND the colouring-coverage filter) and a blind must break both legs."
     },
     {
       "id": "FU-178",
@@ -3406,9 +3406,9 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W497",
+      "note": "W497 fixed the class, not the symptom. _delivery_coverage(content, None) returned 1.0 on length alone, so 'delivery coverage 1.0 against the declared structure' was reported for deliveries that declared none: it returns None now, with _substantive() named for the length check that remains, a delivery_coverage_basis saying which instrument ran, a gate that is NOT ASSESSABLE when there is nothing to compare, and a bar criterion that is three-state rather than a measured failure. The re-verify then REFUSES (409) for a defect that stores no section requirements - 240 characters of filler used to close one whose correction said nothing had been corrected - and the caller-attested leg still closes it, recorded as that. The panel prints the basis the API returns instead of asserting the gate passed, and the QMS catalogue declares the limit beside 'nothing simulated'."
     },
     {
       "id": "FU-202",
@@ -3696,9 +3696,9 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W497",
+      "note": "W497: the panel promised 'in-house, ranked, QMS-gated'. The experiment now computes whether the comparison actually ORDERED the scenarios (it names them, which is checkable) and returns ranked + ranking_basis; on the deterministic floor the answer is 'NOT RANKED - the comparison names 1 of 3 scenario(s)'. The description says what the run does and that it carries the gate's verdict including when the gate could not assess it (W495 made that chip appear). The guard asserts the CLAIM against the EVIDENCE, recomputed from the response."
     },
     {
       "id": "FU-220",

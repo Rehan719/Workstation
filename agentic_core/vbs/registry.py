@@ -34,10 +34,16 @@ CATALOGUE: List[Dict[str, Any]] = [
      "simulated": ["energy $/Wh rate constant", "insight $0.50 value constant (inside ROI)",
                    "viral k-factor formula"]},
     {"id": "qms", "name": "Quality Management System", "owned": True, "owns": ["dcms"],
-     "real": ["ISO-9001-aligned quality gates (coverage + zero-stub)",
+     # §10 (W497, FU-201, class C1) — the catalogue said "nothing simulated" while the correct→re-verify
+     # loop closed a defect on a length check reported as a coverage of 1.0. The instruments are now named
+     # for what each measures, and the limit is declared instead of read as an absence.
+     "real": ["ISO-9001-aligned quality gates: coverage against DECLARED sections, plus a zero-stub screen",
               "persistent traceable defects + the §8.7/§10.2 correct→re-verify loop (W307)",
               "non-conformance rate (gate failures / gates run)",
               "owns document control (ISO 9001 §7.5) — quality records placed under DCMS control"],
+     "limits": ["a delivery that declares NO required sections has no coverage to measure: the gate "
+                "returns not-assessable and a defect opened that way cannot be re-verified from "
+                "content (W497) — only a caller-attested figure closes it, recorded as that"],
      "simulated": []},
     {"id": "ems", "name": "Environmental Management System", "owned": True,
      "real": ["CO2 accumulation (kgCO2 per Wh)"],

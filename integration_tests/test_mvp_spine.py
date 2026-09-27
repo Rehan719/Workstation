@@ -1002,11 +1002,21 @@ def test_qms_defect_loop_and_measured_bar(client):
     # §10 (W316) — the close leg can MEASURE instead of self-attest: reverify with the corrected
     # delivery's CONTENT re-runs the same instruments; the basis is recorded honestly either way.
     client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/correct", json={"correction": "second attempt"})
-    rev3 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"content": body}).json()
-    # W440 refuter catch: this defect is gate-created (no delivery_ref → no stored section
-    # requirements), so the measured basis must NAME its degenerate instruments, not overclaim
-    assert rev3["defect"]["reverify_basis"] == (
-        "measured_from_content (no stored section requirements — length + stub instruments only)")
+    # W440 made the degenerate basis honest; W497 (FU-201) went further and REFUSED the close. This
+    # defect is gate-created, so it stores no section requirements: the coverage instrument has nothing
+    # to measure against, and a length check is not the gate that opened it. The content leg answers 409
+    # and the defect stays open — a basis that names its own weakness is still a closure on a figure
+    # the gate never asked for.
+    _rev3 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"content": body})
+    assert _rev3.status_code == 409, (_rev3.status_code, _rev3.text[:200])
+    assert "records no required sections" in _rev3.text, _rev3.text[:250]
+    assert client.get("/api/v1/vbs/qms/defects").json()
+    _still = next(x for x in client.get("/api/v1/vbs/qms/defects").json()["defects"]
+                  if x["id"] == d2["id"])
+    assert _still["status"] != "closed", _still
+    # the caller-attested leg still closes it, recorded as exactly that
+    rev3 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"coverage": 1.0}).json()
+    assert rev3["defect"]["reverify_basis"] == "caller_attested"
     assert rev3["passed"] is True and rev3["defect"]["status"] == "closed"
     assert rev2["defect"]["reverify_basis"] == "caller_attested"   # the legacy leg says what it is
     # and a fresh assure_delivery failure carries the REAL delivery reference for that measured leg
@@ -8697,16 +8707,16 @@ def test_w440_refuter_pass_findings_stay_fixed(client):
     assert not any("failover" in r for r in bb["real"]), (
         "unreached §4.5-archetype failover is back in the 'real' list")
 
-    # 5. a measured reverify on a defect with NO stored section requirements names its weaker
-    #    instruments (the cockpit gate runner creates exactly such defects)
+    # 5. a defect with NO stored section requirements cannot be re-verified from content at all
+    #    (W440 disclosed the weaker instruments; W497/FU-201 refuses the close they produced)
     client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.1})   # opens an ownerless defect
     defs = client.get("/api/v1/vbs/qms/defects").json()["defects"]
     target = next(d for d in defs if d["status"] == "open")
     client.post(f"/api/v1/vbs/qms/defects/{target['id']}/correct", json={"correction": "rewrote"})
     rv = client.post(f"/api/v1/vbs/qms/defects/{target['id']}/reverify",
-                     json={"content": "A substantive corrected delivery. " * 40}).json()
-    assert "length + stub instruments only" in rv["defect"]["reverify_basis"], (
-        "the degenerate-instruments basis went undisclosed again")
+                     json={"content": "A substantive corrected delivery. " * 40})
+    assert rv.status_code == 409, (rv.status_code, rv.text[:200])
+    assert "a length check is not that gate" in rv.text, rv.text[:250]
 
 
 def test_w442_economy_cluster_integrity_holds(client, monkeypatch):
@@ -21366,3 +21376,132 @@ def test_w496_a_default_is_not_a_decision(client, monkeypatch, tmp_path):
     _set = (app / "pages/Settings.tsx").read_text(encoding="utf-8")
     assert "nothing unattributed is ever recalled" in _set
     assert "potentially visible to other users" not in _set   # the caveat that is no longer true
+def test_w497_a_screen_that_matched_nothing_is_not_a_pass(client, monkeypatch):
+    """W497 — the C1 batch: a screen that matched nothing, and a figure with nothing to measure, are
+    not a pass.
+
+    Three rows, one rule. (1) An instrument that had nothing to measure returns NOT MEASURED, and every
+    consumer — the gate, the bar criterion, the page — carries that rather than a 1.0. (2) "Re-run the
+    same gate" cannot be done when the gate's own criteria were never stored, so it refuses instead of
+    closing on a length check. (3) A surface claims a ranking only when the output actually ordered
+    something.
+
+    Rows: FU-177 FU-201 FU-219.
+    """
+    import asyncio
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── FU-177: a compliance headline over a subject nothing read ───────────────────────────────────
+    _r = client.post("/api/v1/compliance/check", json={"subject": "asdf qwerty"})
+    assert _r.status_code == 200, _r.text
+    _b = _r.json()
+    assert _b["overall"] == "review", _b["overall"]        # never a pass off no-hit screens
+    assert _b["compliant"] is None, _b["compliant"]
+    _by_fw = {v["framework"]: v for v in _b["verdicts"]}
+    # a screen that matched nothing says so, and the ethical row is NOT mapped to a pass
+    assert _by_fw["regulatory"]["status"] == "not_assessed", _by_fw["regulatory"]
+    assert _by_fw["ehs"]["status"] == "not_assessed", _by_fw["ehs"]
+    assert _by_fw["ethical"]["status"] in ("not_assessed", "review"), _by_fw["ethical"]
+    assert set(_b["coverage_gaps"]) >= {"regulatory", "ehs", "ethical"}, _b["coverage_gaps"]
+    # and a subject a screen CAN catch still escalates
+    _r2 = client.post("/api/v1/compliance/check",
+                      json={"subject": "We will dump chemical waste in the river to save costs"})
+    _fw2 = {v["framework"]: v for v in _r2.json()["verdicts"]}
+    assert _fw2["ehs"]["status"] == "review" and _fw2["ethical"]["status"] == "review", _fw2
+    # THE PROPERTY IS HELD TWICE, deliberately: a no-hit screen carries status `not_assessed`, AND the
+    # overall only counts rows whose coverage can colour. Either alone keeps a gibberish subject off a
+    # pass, so the guard asserts both legs rather than the outcome only - an outcome test cannot tell
+    # which leg is doing the work, and a single-leg regression would pass it.
+    from agentic_core.api.compliance import COLOURING_COVERAGE, _overall
+    assert "screen" not in COLOURING_COVERAGE and "none" not in COLOURING_COVERAGE, COLOURING_COVERAGE
+    _synthetic = [{"framework": "regulatory", "status": "pass", "coverage": "screen"},
+                  {"framework": "ehs", "status": "pass", "coverage": "screen"}]
+    assert _overall(_synthetic) == "review", "two no-hit screens reporting pass made the overall a pass"
+    _cc = (app / "pages/governance/ComplianceChecker.tsx").read_text(encoding="utf-8")
+    assert "NOTHING here assessed this subject" in _cc
+    # emerald needs an assessing row in BOTH places it is decided - the card border and the icon. One
+    # occurrence left the other free to paint green on a subject nothing read.
+    assert _cc.count("(result.overall === 'pass' && _assessed)") == 2, _cc.count(
+        "(result.overall === 'pass' && _assessed)")
+
+    # ── FU-201: an instrument with nothing to measure returns NOT MEASURED ──────────────────────────
+    from agentic_core.vbs.quality import _delivery_coverage, _substantive, assure_delivery
+    assert _delivery_coverage("x" * 500, None) is None, "a length check is not a coverage figure"
+    assert _delivery_coverage("x" * 500, []) is None
+    assert _substantive("x" * 500) is True and _substantive("x") is False
+    assert _delivery_coverage("## Alpha\n## Beta", ["Alpha", "Beta"]) == 1.0
+    assert _delivery_coverage("## Alpha", ["Alpha", "Beta"]) == 0.5
+    # the gate cannot pass on a coverage that does not exist
+    _qa = asyncio.get_event_loop().run_until_complete(
+        assure_delivery("y " * 200, None, label="w497-guard", served_by="ollama:probe"))
+    _q = _qa["quality"]
+    assert _q["delivery_coverage"] is None, _q
+    assert "NOT MEASURED" in _q["delivery_coverage_basis"], _q["delivery_coverage_basis"]
+    assert _q["substantive_length"] is True, _q
+    assert _q["qms_gate_passed"] is None, "a gate with nothing to compare is not a pass"
+    assert "declared no required sections" in _q["qms_basis"], _q["qms_basis"]
+    # the bar criterion computed from it is NOT MEASURED, never a measured failure
+    _crit = ((_q.get("bar_measured") or {}).get("criteria") or {}).get("specifically designed") or {}
+    assert _crit.get("met") is None and _crit.get("measured") is False, _crit
+    assert "NOT MEASURED" in _crit.get("basis", ""), _crit
+    assert _crit.get("source") == "none", _crit
+    # a delivery that DOES declare structure still measures
+    _qa2 = asyncio.get_event_loop().run_until_complete(
+        assure_delivery("## Alpha\n" + "y " * 200, ["Alpha"], label="w497-guard-2", served_by="ollama:probe"))
+    assert _qa2["quality"]["delivery_coverage"] == 1.0, _qa2["quality"]
+
+    # ── FU-201: the re-verify refuses when the gate's own criteria were never stored ────────────────
+    from agentic_core.vbs.registry import qms
+    _ok = asyncio.get_event_loop().run_until_complete(
+        qms.run_quality_gates({"coverage": 0.5, "stubs_found": False}, label="w497-guard-defect",
+                              delivery_ref={"content_sha3": "dead", "required_sections": [],
+                                            "label": "w497-guard-defect"}))
+    assert _ok is False, "the gate should have failed at coverage 0.5"
+    _d = [x for x in qms.defects if x.get("label") == "w497-guard-defect"]
+    assert _d, "no defect was opened"
+    _did = _d[-1]["id"]
+    assert client.post(f"/api/v1/vbs/qms/defects/{_did}/correct",
+                       json={"correction": "nothing was actually corrected"}).status_code == 200
+    _rv = client.post(f"/api/v1/vbs/qms/defects/{_did}/reverify", json={"content": "x " * 150})
+    assert _rv.status_code == 409, (_rv.status_code, _rv.text[:200])
+    assert "records no required sections" in _rv.text, _rv.text[:250]
+    assert "a length check is not that gate" in _rv.text, _rv.text[:250]
+    # the caller-attested route still works, and is recorded as that
+    _rv2 = client.post(f"/api/v1/vbs/qms/defects/{_did}/reverify", json={"coverage": 1.0})
+    assert _rv2.status_code == 200, _rv2.text
+    _body = _rv2.json()
+    assert (_body.get("defect") or _body).get("reverify_basis") == "caller_attested", _body
+    # the panel prints the basis rather than a fixed claim, and the catalogue declares the limit
+    _vp = (app / "components/VBSSystemsPanel.tsx").read_text(encoding="utf-8")
+    assert "PASSED the same gate, measured from the content itself" not in _vp
+    assert "re-verified via ${_basis" in _vp
+    assert "Re-verify (measured)" not in _vp
+    assert "vbs-limit-" in _vp
+    _sys = client.get("/api/v1/vbs/systems")
+    _qrow = next(x for x in _sys.json()["systems"] if x["id"] == "qms")
+    assert _qrow.get("limits"), "the QMS declares no limit"
+    assert "no coverage to measure" in " ".join(_qrow["limits"])
+
+    # ── FU-219: a ranking is claimed only when something was ordered ────────────────────────────────
+    _ex = client.post("/api/v1/reactor/experiment", json={
+        "subject": "our pricing model", "domain": "general",
+        "scenarios": ["Raise 10%", "Hold prices", "Add a budget tier"]})
+    assert _ex.status_code == 200, _ex.text
+    _e = _ex.json()
+    assert isinstance(_e["ranked"], bool) and _e["ranking_basis"], _e
+    # the CLAIM against the EVIDENCE, recomputed here: `ranked` may be true only if the comparison
+    # actually names at least two of the scenarios. Asserting the basis's wording instead let the flag
+    # be flipped to true while the basis - computed from the same flag - happily agreed with it.
+    _cmp = (_e.get("comparison") or "").lower()
+    _named_here = [o["scenario"] for o in _e["outcomes"]
+                   if o["scenario"] and o["scenario"][:40].lower() in _cmp]
+    assert _e["ranked"] == (len(_named_here) >= 2), (
+        "the ranked flag disagrees with the comparison", _e["ranked"], _named_here)
+    if not _e["ranked"]:
+        assert "NOT RANKED" in _e["ranking_basis"], _e["ranking_basis"]
+        assert str(len(_named_here)) in _e["ranking_basis"], _e["ranking_basis"]
+    _fab = (app / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    assert "in-house, ranked, QMS-gated" not in _fab
+    assert "reports whether the comparison actually ranked them" in _fab

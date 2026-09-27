@@ -119,6 +119,16 @@ async def qms_reverify_defect(defect_id: str, req: DefectReverify,
             raise HTTPException(status_code=404, detail=f"No defect '{defect_id}'.")
         from agentic_core.vbs.quality import _delivery_coverage, _STUB_RE, _MIN_SUBSTANTIVE
         secs = ((target.get("delivery_ref") or {}).get("required_sections")) or None
+        if not secs:
+            # §10 (W497, FU-201, class C1) — "RE-RUN THE SAME GATE" CANNOT BE DONE when the gate's own
+            # criteria were never stored. This path used to close the defect on a coverage of 1.0 that
+            # the length check produced, so 220 characters of "x x x" closed a defect whose correction
+            # said "nothing was actually corrected" — and the panel reported it as a measured gate pass.
+            raise HTTPException(status_code=409, detail=(
+                f"'{defect_id}' records no required sections, so the gate that opened it cannot be "
+                f"re-run on content: there is nothing to measure coverage against, and a length check "
+                f"is not that gate. Re-verify with explicit `coverage` (recorded as caller_attested), "
+                f"or open the defect through a gate that stores the delivery's structure."))
         cov = _delivery_coverage(req.content, secs)
         stub = (bool(_STUB_RE.search(req.content or ""))
                 or len((req.content or "").strip()) < _MIN_SUBSTANTIVE)

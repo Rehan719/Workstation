@@ -525,6 +525,9 @@ class ExperimentResult(BaseModel):
     scenarios_run: int
     outcomes: list[ScenarioOutcome]
     comparison: str
+    # §7 (W497, FU-219) — whether the comparison actually ordered the scenarios, and how that was decided
+    ranked: bool = False
+    ranking_basis: str = ""
     ai_provenance: dict
     quality_assurance: dict
     completed_at: float
@@ -564,6 +567,18 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
         agent="reactor-experiment", augment=False)
     comparison = comp_meta.get("output", "") or ""
     _record(comp_meta)
+    # §7 (W497, FU-219, class C1) — the fabric panel called this run "ranked". The prompt ASKS for a
+    # ranking; on the deterministic floor the "## Ranking" section comes back as the floor's own
+    # scaffold ("Generate >=3 distinct variants of the approach."), so nothing was ranked and the panel
+    # claimed it had been. A ranking exists when the comparison names the scenarios in an order; that is
+    # checkable, so it is checked rather than assumed from the heading being present.
+    _named = [o.scenario for o in outcomes if o.scenario and o.scenario[:40].lower() in comparison.lower()]
+    _ranked = len(_named) >= 2
+    _rank_basis = (f"the comparison names {len(_named)} of {len(outcomes)} scenario(s), so they are put "
+                   f"in an order" if _ranked else
+                   f"NOT RANKED — the comparison names {len(_named)} of {len(outcomes)} scenario(s), so "
+                   f"nothing here orders them. The section heading was requested in the prompt; on the "
+                   f"deterministic floor it comes back as a generic frame, not a ranking.")
 
     combined = comparison + "\n" + "\n".join(o.outcome for o in outcomes)
     qa = await assure_delivery(combined, [o.scenario for o in outcomes], label="experiment",
@@ -572,6 +587,7 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
     return ExperimentResult(
         experiment_id=eid, subject=req.subject, domain=req.domain, scenarios_run=len(scenarios),
         outcomes=outcomes, comparison=comparison, ai_provenance=prov, quality_assurance=qa,
+        ranked=_ranked, ranking_basis=_rank_basis,
         completed_at=time.time(),
     )
 

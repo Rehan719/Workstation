@@ -7851,3 +7851,51 @@ is intercepted and replaced by a retrieval call, recorded, with the surface sayi
 Five rows registered: FU-271 (the hardware decision), FU-272 (may the platform index the live matter's
 documents, and on what terms), FU-273 (confirm the predictor refusal or name a data source), FU-274 (the
 archived bootstrap must not be recovered as-is) and FU-275 (the measurement behind P3.12).
+### W497 — a screen that matched nothing, and a figure with nothing to measure, are not a pass (the C1 batch)
+
+**Three rows, one rule.** An instrument that had nothing to measure returns NOT MEASURED, and every
+consumer — the gate, the bar criterion, the page, the catalogue — carries that rather than a 1.0.
+"Re-run the same gate" cannot be done when the gate's own criteria were never stored. And a surface
+claims a ranking only when the output actually ordered something.
+
+**One of the three was already delivered, and measuring it first was the point.** FU-177 — a compliance
+headline showing a green PASS for the subject `asdf qwerty` — was fixed by W483 and a later page round:
+the overall is `review`, `compliant` is `None`, the no-hit screens report `not_assessed`, and the page
+says *"NOTHING here assessed this subject. A keyword screen can refuse a subject; it cannot clear one."*
+Nothing needed building. But the property was **unguarded**, and writing the guard found something worth
+knowing: it is held **twice** — a no-hit screen carries `not_assessed`, *and* the overall only counts
+coverage that can colour. Either leg alone keeps a gibberish subject off a pass, so a blind on one leg
+proves nothing; the guard asserts both, and the blind breaks both at once.
+
+**A length check is not a coverage figure.** `_delivery_coverage(content, None)` returned **1.0** whenever
+the text was long enough, so `delivery_coverage: 1.0` was reported — under the label "against the declared
+structure" — for deliveries that declared no structure at all. It returns `None` now; the length check
+that remains is a separate `_substantive()`, named for what it is; the figure travels with a
+`delivery_coverage_basis` saying which instrument ran; the QMS gate is **NOT ASSESSABLE** when it has
+nothing to compare rather than passing; and `_measure_bar`'s criterion became three-state, because
+`bool(met)` had turned "the instrument could not produce a figure" into "measured and FAILED" — a
+different claim.
+
+**The re-verify loop that closed on filler.** A defect opened by the cockpit gate stores no section
+requirements, so its "re-run the same gate" degenerated to the length check above: **240 characters of
+`x x x` closed a defect whose correction said "nothing was actually corrected"**, with coverage 1.0, and
+the panel reported *"PASSED the same gate, measured from the content itself"*. W440 had made the basis
+disclose its weak instruments; that was honest about the instrument and still wrong about the outcome.
+The content leg now **refuses with 409** — *"records no required sections … a length check is not that
+gate"* — the defect stays open, and the caller-attested leg still closes it, recorded as
+`caller_attested`. The panel prints the basis the API returns; the QMS catalogue declares the limit beside
+its "nothing simulated", and the panel renders a declared limit for any system that has one.
+
+**A ranking claimed by a description.** The fabric's Experimentation panel promised "in-house, ranked,
+QMS-gated". The prompt asks for a ranking; on the floor the `## Ranking` section comes back as a generic
+frame, so nothing was ordered. The run now computes whether the comparison actually **names** the
+scenarios — checkable — and returns `ranked` with a `ranking_basis`; on the floor it reads *"NOT RANKED —
+the comparison names 1 of 3 scenario(s)"*. The guard asserts the claim against that evidence, recomputed
+from the response, after the first version of it was caught being satisfied by a basis computed from the
+same flag it was checking.
+
+**Verified.** 14 blinds, each undoing one fix with an asserted byte restore: 11 caught first time, 3 not —
+one guard reading a redundant string, one asserting a basis rather than the evidence, and one *blind*
+that was simply badly chosen (it removed one of two independent safeguards, which is a property worth
+knowing rather than a hole). All 14 catch now. Two older guards pinned the behaviour this round refuses
+and were updated to assert the refusal. Full suite green on the final tree.

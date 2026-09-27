@@ -128,9 +128,17 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
     ev = evidence or {}
     crit: Dict[str, Dict[str, Any]] = {}
 
-    def measured(name: str, met: bool, basis: str) -> None:
-        crit[name] = {"met": bool(met), "basis": basis, "measured": True, "attested": False,
-                      "source": "gate"}
+    def measured(name: str, met, basis: str) -> None:
+        # §10 (W497, FU-201) - THREE-STATE. `bool(met)` turned "the instrument could not produce a
+        # figure" into "measured and FAILED", which is a different claim: a delivery that declared no
+        # structure has no coverage, so the criterion computed from it is not measured either way.
+        crit[name] = {"met": None if met is None else bool(met),
+                      "basis": (basis if met is not None else
+                                "NOT MEASURED - this criterion is computed from the delivery's coverage "
+                                "against its declared sections, and this delivery declared none, so "
+                                "there was nothing to compute it from"),
+                      "measured": met is not None, "attested": False,
+                      "source": "gate" if met is not None else "none"}
 
     def unmeasured(name: str) -> None:
         crit[name] = {"met": None, "basis": "not measured by this gate", "measured": False,
@@ -144,7 +152,8 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
         not_assessable("specifically designed")
         not_assessable("verified")
     else:
-        measured("specifically designed", coverage >= min_coverage and not stub,
+        measured("specifically designed",
+                 None if coverage is None else (coverage >= min_coverage and not stub),
                  f"delivery coverage {coverage} against the declared structure (min {min_coverage}), "
                  f"stub_found={stub}")
         if qms_passed is not None:
@@ -220,14 +229,27 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
             "attested_criteria": sorted(k for k, c in crit.items() if c["source"] == "caller")}
 
 
-def _delivery_coverage(content: str, required_sections: Optional[List[str]]) -> float:
+def _delivery_coverage(content: str, required_sections: Optional[List[str]]) -> Optional[float]:
     """Fraction of the required sections that actually appear in the delivered content (case-insensitive).
-    With no declared structure, coverage is binary on whether there is substantive content."""
+
+    §10 (W497, FU-201, class C1) — WITH NO DECLARED STRUCTURE THERE IS NO COVERAGE TO MEASURE. This
+    returned 1.0 for any content past a length threshold, so "delivery coverage 1.0 against the declared
+    structure" was reported for deliveries that declared none, and a QMS defect opened by the cockpit
+    gate (which stores no sections) closed on 220 characters of "x x x" with coverage 1.0 — the page
+    then said the correction "PASSED the same gate, measured from the content itself". A length check is
+    a length check. It returns None, and every caller must say so rather than reading it as a full pass.
+    """
     text = (content or "").lower()
     if not required_sections:
-        return 1.0 if len(text.strip()) >= _MIN_SUBSTANTIVE else 0.0
+        return None
     present = sum(1 for s in required_sections if str(s).lower() in text)
     return round(present / len(required_sections), 3)
+
+
+def _substantive(content: str) -> bool:
+    """The length instrument, named for what it is: content past the substantive threshold. It is what
+    remains when no structure was declared, and it is never reported as coverage."""
+    return len((content or "").strip()) >= _MIN_SUBSTANTIVE
 
 
 async def assure_delivery(content: str, required_sections: Optional[List[str]] = None,
@@ -251,11 +273,19 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     """
     coverage = _delivery_coverage(content, required_sections)
     stub = bool(_STUB_RE.search(content or "")) or len((content or "").strip()) < _MIN_SUBSTANTIVE
+    # §10 (W497, FU-201) — the figure says what instrument produced it. A delivery that declared no
+    # structure has NO coverage: what ran was the length and stub screen, and the basis says that.
+    _cov_basis = (f"{len(required_sections)} declared section(s) checked against the delivered content"
+                  if required_sections else
+                  "NOT MEASURED — this delivery declared no required sections, so there is no coverage "
+                  "to compute; what ran was the length and stub screen, which cannot stand in for it")
     _floor = floor_served(served_by)
     _served_label = describe_served(served_by)
     quality: Dict[str, Any] = {
         "bar": list(SOLUTION_QUALITY_BAR),
         "delivery_coverage": coverage,
+        "delivery_coverage_basis": _cov_basis,
+        "substantive_length": _substantive(content),
         "stub_found": stub,
         "served_by": _served_label,
         "not_assessable": _floor,
@@ -296,6 +326,16 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             # own stage checks since W436; the SHARED gate every other surface uses said "pass".
             quality["qms_gate_passed"] = None
             quality["qms_basis"] = NOT_ASSESSABLE_BASIS
+        elif coverage is None:
+            # §10 (W497, FU-201) — the gate compares coverage against a minimum. With no declared
+            # structure there is no coverage, so the comparison cannot be made: it is NOT ASSESSABLE,
+            # never a pass on a length check dressed as coverage.
+            quality["qms_gate_passed"] = None
+            quality["qms_basis"] = (
+                "not assessable — this delivery declared no required sections, so the gate's coverage "
+                "comparison has nothing to compare; the length and stub screen ran and "
+                + ("found a stub or too little content" if stub else "found substantive content")
+                + f", which is not a gate pass (served_by={_served_label})")
         else:
             quality["qms_gate_passed"] = bool(await qms.run_quality_gates(
                 {"coverage": coverage, "stubs_found": stub}, label=label, owner_id=owner_id,
