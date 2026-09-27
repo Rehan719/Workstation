@@ -429,9 +429,10 @@ const ChannelContent = ({ id }: { id: string }) => {
                  </div>
                  <div className="p-6 rounded-3xl bg-aura/5 border border-aura/10 border-dashed space-y-4">
                     <p className="text-xs text-slate-400 font-bold leading-relaxed italic">
-                       {/* W496 (FU-112) — "Cognitive durability optimization in progress" described a
-                           process: the click sets a UI mode flag whose only effect is to grey this
-                           dock's launcher button. Nothing is optimised, scheduled or sent. */}
+                       {/* W496 (FU-112) — the previous sentence described an optimisation as being in
+                           progress. The click sets a UI mode flag whose only effect is to grey this
+                           dock's launcher button: nothing is optimised, scheduled or sent. The old
+                           wording is not quoted here — a guard forbids it in this file. */}
                        {restApplied
                          ? 'REST is now this view’s mode. That is all the click did — it greys this dock’s launcher and changes nothing else; no work is paused, rescheduled or sent anywhere.'
                          : "Nothing measures your session length here — this suggestion is illustrative, not a reading: a REST transition after a long WORK stretch aids cognitive durability."}

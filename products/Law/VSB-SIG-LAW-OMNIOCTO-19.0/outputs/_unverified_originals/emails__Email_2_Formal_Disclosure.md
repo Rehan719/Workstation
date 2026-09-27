@@ -1,27 +1,3 @@
-<!-- W496-REDACTED -->
-> # ⚠️ TEMPLATE — the facts were removed because they could not be verified.
->
-> **2026-09-27 (W496).** This document was produced by the archived Law pipeline, whose extraction stage
-> read **no source document**: it wrote 342 rows of `"Simulated content for <filename>"`, each stamped
-> `status: "EXTRACTED"` with a `sha256` over the placeholder. The Owner has confirmed the particulars
-> cannot be verified, so every specific that could not have come from a document has been **replaced with
-> a marked blank** rather than left in a sendable letter:
->
-> - an exhibit reference · a punctuality figure · a monitoring period · an Occupational Health date
-> - **a cited authority, removed outright** — an unverified citation before a tribunal is the single
->   most damaging item on this list.
->
-> The original text is preserved unchanged at `outputs/_unverified_originals/` for reference. It must not
-> be sent.
->
-> **What is still worth having here** is the structure: the Rule 31 disclosure mechanics, the
-> ss.15/20/21 Equality Act 2010 framing, the sequencing of a request and the escalation to an Unless
-> Order. Fill each `[[VERIFY-…]]` blank from your own papers — and if a blank cannot be filled, the
-> sentence around it should go. Nothing here is legal advice.
->
-> Registered as **FU-277**.
-<!-- /W496-REDACTED -->
-
 # 📧 EMAIL 2: FORMAL RULE 31 DISCLOSURE REQUEST
 
 **TO:** matthewgrant@draperlang.co.uk
@@ -37,7 +13,7 @@ Further to the Respondent's ET3 response, and in accordance with the overriding 
 To ensure the Tribunal has a complete evidentiary basis to determine my claims of disability discrimination (ss.15, 20/21 Equality Act 2010) and victimisation (s.27 EqA 2010), please provide the following by [Date + 14 days]:
 
 **1. Comparator Data:** Anonymized attendance and disciplinary records for employees in my department over the 24 months preceding my dismissal, specifically identifying where disability-adjusted performance metrics were applied.
-**2. Occupational Health Records:** The full, unredacted report from my Occupational Health assessment of [[VERIFY-DATE: the Occupational Health date from the report itself]], and all internal communications regarding the implementation of the recommended adjustments.
+**2. Occupational Health Records:** The full, unredacted report from my Occupational Health assessment of 14 November 2025, and all internal communications regarding the implementation of the recommended adjustments.
 **3. Protected Disclosures:** All minutes and internal correspondence relating to the patient safety disclosures I made in October 2025 (engaging s.103A Employment Rights Act 1996).
 **4. Decision-Making Process:** Comprehensive notes from the dismissal meeting on 21 January 2026 and all emails between HR and the deciding manager concerning the final termination decision.
 

@@ -384,11 +384,18 @@ def score_row(row: Dict[str, Any], cfg: Dict[str, Any], gate_phase: Optional[str
     # so charging each file cancelled its breadth — an 8-finding row scored like a 1-finding row)
     extra = max(0, nfiles - max(1, n))
     effort = 1.0 / (1.0 + float(cfg.get("effort_per_file", 0.1)) * extra)
+    # §planner (W496) — A ROW THAT NAMES NO FILE scored effort 1.0, the BEST possible value, so an
+    # under-specified row ranked as though it were the cheapest work on the list. The arithmetic is
+    # unchanged (effort <= 1.0, so the score is an UPPER BOUND) and the score now says so, which is the
+    # same rule the organism's health composite follows: an unmeasured term is unknown, never 1.0.
+    effort_measured = nfiles > 0
     score = round(100.0 * vision * truth * REACH_WEIGHT[reach] * CRITICALITY[crit_key] * breadth * effort, 1)
     return {
         "score": score,
         "parts": {"vision": round(vision, 3), "truth": truth, "reach": REACH_WEIGHT[reach],
-                  "criticality": CRITICALITY[crit_key], "breadth": round(breadth, 3), "effort": round(effort, 3)},
+                  "criticality": CRITICALITY[crit_key], "breadth": round(breadth, 3),
+                  "effort": round(effort, 3), "effort_measured": effort_measured},
+        "score_is_upper_bound": not effort_measured,
         "area": area["id"] if area else None,
         "tier": tier,
         "basis": {"area": (str(area.get("name") or area["id"]) if area else "unmapped") + f" ({area_basis})",

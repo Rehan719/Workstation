@@ -196,11 +196,18 @@ export const Settings: React.FC = () => {
             <span className="text-slate-400"> AI CEO chat</span> and the
             <span className="text-slate-400"> avatar</span> recall earlier interactions to keep a thread.
           </p>
-          <p className="text-[11px] text-amber-400/80 leading-relaxed mt-1 max-w-3xl" data-testid="recall-scope-caveat">
-            Be aware: interactions are written to a memory store, and a call that does not carry an
-            account id is written to a SHARED space that those two surfaces can read for any user. Treat
-            anything you type as potentially visible to other users of this installation until that is
-            fixed. Deleting this profile does not clear that store.
+          {/* W496 (FU-258) — the leak this caveat warned about is closed at the mechanism: a completion
+              written with no account id now lands in an UNATTRIBUTED namespace that recall never reads,
+              for any account, so a call site that forgets to thread an id cannot leak. Most call sites
+              still do not thread one, which is why the recall those two surfaces get is thinner than it
+              could be — an enhancement, not a leak. The caveat says what is now true. */}
+          <p className="text-[11px] text-slate-500 leading-relaxed mt-1 max-w-3xl" data-testid="recall-scope-caveat">
+            Interactions are written to a memory store. A call that carries your account id is stored
+            under your account and only you can recall it; a call that carries none is stored
+            unattributed, and <span className="text-slate-400">nothing unattributed is ever recalled</span> —
+            not by you, not by anyone else on this installation. Most internal calls carry no id, so the
+            two surfaces above recall less than everything you have typed. Deleting this profile does not
+            clear that store.
           </p>
         </div>
         {PROFILE_FIELDS.map(f => (

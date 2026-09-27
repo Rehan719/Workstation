@@ -75,16 +75,26 @@ class VectorMemory:
     # §17.5 invariant 1 (W333) — the namespace for owner-less / organism-internal memory. Recall is
     # scoped to the CALLER's own namespace PLUS this shared platform namespace, never across tenants.
     PLATFORM_NS = "platform"
+    # §17.5 (W496, FU-258) — THE UNATTRIBUTED NAMESPACE. The gateway writes every completion here, and
+    # only 9 of its 61 call sites thread an account id, so 52 calls' prompts AND answers were stamped
+    # `platform` — the one namespace recall reads for EVERY tenant. Threading 52 call sites correctly
+    # is the ongoing work; making the DEFAULT safe is the fix, because a call site that forgets must
+    # not be able to leak. An unattributed write is recorded (the platform still has its audit trail)
+    # and is never eligible for recall by anyone.
+    UNATTRIBUTED_NS = "unattributed"
 
     def add_memory(self, text: str, metadata: Dict[str, Any] | None = None,
-                   owner_id: str | None = None):
+                   owner_id: str | None = None, platform: bool = False):
         """Store one memory. §17.5 invariant 1 (W333): the owning tenant is stamped into metadata
         so recall can be scoped — previously every write landed in one global pool with an empty
         metadata dict, so any user's prompts/responses were retrievable into any other user's AI
         calls (reproduced live: one user's confidential prompt shipped into another's public
         website). `owner_id=None` means genuinely shared platform memory (organism beats)."""
         meta = dict(metadata or {})
-        meta.setdefault("owner_id", owner_id or self.PLATFORM_NS)
+        # §17.5 (W496, FU-258) — `owner_id or PLATFORM_NS` made "nobody threaded an id" identical to
+        # "this is shared platform memory". Platform memory is now written DELIBERATELY (platform=True,
+        # which the organism's own beats pass); anything else with no id is UNATTRIBUTED and unrecallable.
+        meta.setdefault("owner_id", owner_id or (self.PLATFORM_NS if platform else self.UNATTRIBUTED_NS))
         # W368 — the read→append→write cycle was UNSERIALISED: concurrent writers each loaded the
         # same list and wrote back their own copy, so all but one append was destroyed (measured:
         # 107 of 120 memories lost under 8 concurrent writers). The gateway writes here after every
@@ -112,11 +122,24 @@ class VectorMemory:
         q = self._tokens(query)
         if not q:
             return []
-        allowed = {owner_id or self.PLATFORM_NS, self.PLATFORM_NS}
+        # §17.5 (W496, FU-258) — the platform namespace stays recallable for the organism's own
+        # notes, but a row the GATEWAY wrote there without an account id is a user's prompt and answer
+        # in a shared space: those are excluded by their own marker, legacy rows included, so a fix
+        # today does not leave yesterday's writes readable by every tenant.
+        allowed = {owner_id or self.UNATTRIBUTED_NS, self.PLATFORM_NS}
+        if owner_id is None:
+            # an anonymous caller sees platform notes only — never another tenant's, never unattributed
+            allowed = {self.PLATFORM_NS}
         need = min(2, len(q))    # a 1-token query can genuinely match with 1 — 2 would be unreachable
         scored = []
         for i, m in enumerate(self._load()):
-            if (m.get("metadata") or {}).get("owner_id", self.PLATFORM_NS) not in allowed:
+            _md = m.get("metadata") or {}
+            if _md.get("owner_id", self.PLATFORM_NS) not in allowed:
+                continue
+            # a completion written with no account id: recorded, never recalled (legacy rows carry
+            # `agent` from the gateway and the platform namespace — that pair is the marker)
+            if (_md.get("owner_id") == self.PLATFORM_NS and _md.get("agent")
+                    and owner_id is not None):
                 continue
             overlap = len(q & self._tokens(m.get("text", "")))
             if overlap >= need:

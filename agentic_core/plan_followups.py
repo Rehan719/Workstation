@@ -246,6 +246,21 @@ def _row_shape_problems(r: Any, idx: int) -> List[str]:
     return p
 
 
+import re as _re_round
+
+# §planner (W496) — THE ROUND ID, DEFINED ONCE. Two analysers matched `W\d{3}` independently, which
+# stops matching at W1000: from that round on every closure would be invisible to the pace mechanism and
+# every projection would silently read "not projected". It also dropped any id that was not exactly three
+# digits, so a `--by W496a` sub-round would have been recorded and then ignored. The CLI refuses an id
+# this pattern cannot read, so the register can never hold a closure the planner does not count.
+ROUND_ID = _re_round.compile(r"W\d{3,}[a-z]?")
+
+
+def is_round_id(value: Any) -> bool:
+    """True when `value` is a round id the pace mechanism can attribute a closure to."""
+    return bool(value and ROUND_ID.fullmatch(str(value).strip()))
+
+
 def raw_items(register: Any) -> List[Any]:
     items = register.get("items") if isinstance(register, dict) else None
     return items if isinstance(items, list) else []
@@ -514,7 +529,7 @@ def _round_activity(register: Any) -> Dict[str, Dict[str, int]]:
         if not isinstance(r, dict):
             continue
         by = str(r.get("closed_by") or "").strip()
-        if by and _re.fullmatch(r"W\d{3}", by):
+        if by and is_round_id(by):
             _slot(by)["closed"] += 1
         m = _re.search(r"\bW(\d{3})\b", f"{r.get('source') or ''} {r.get('found') or ''}")
         if m:
@@ -540,7 +555,7 @@ def _item_activity(register: Any) -> Dict[str, Dict[str, int]]:
         if not isinstance(r, dict):
             continue
         by = str(r.get("closed_by") or "").strip()
-        if not (by and _re.fullmatch(r"W\d{3}", by)):
+        if not is_round_id(by):
             continue
         # a closed row keeps the item it rode in `slot`; `item` is cleared when it closes
         slot = str(r.get("slot") or r.get("item") or "").strip()
@@ -593,6 +608,33 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
     _unscheduled = [r for r in _all_open if r["id"] not in _sched_ids]
     open_rows = _all_open
     open_items = _open_items(items)
+
+    # §planner (W496) — THE PROJECTION COVERED THE DEFECT BACKLOG AND WAS READ AS PLAN COMPLETION.
+    # Rows are found defects; ITEMS are planned work, and the two populations are not the same: with
+    # P1.18 closed, 27 of the 47 open items carry NO row at all (their work is their own ACCEPT
+    # criteria), so "110 open rows ≈ 11 rounds" says nothing about them. The plan's own DONE markers
+    # carry the round that closed each item, so item completion is measurable over the same window and
+    # is reported as its own figure with its own basis.
+    _item_done_by: Dict[str, int] = {}
+    for _it in items:
+        if _it.get("done") and is_round_id(_it.get("done_by")):
+            _b = str(_it["done_by"]).strip()
+            _item_done_by[_b] = _item_done_by.get(_b, 0) + 1
+    _items_in_window = [r for r in recent if _item_done_by.get(r, 0) > 0]
+    _items_closed_in_window = sum(_item_done_by.get(r, 0) for r in recent)
+    # AN ITEM TAKES MANY ROUNDS, so the six-round window that measures ROW closure cannot measure item
+    # completion: over that window the answer is almost always "too few to project". The item rate is
+    # measured over the FULL SPAN of recorded item completions - first marked round to the latest - and
+    # the short window is reported beside it as what it is.
+    _done_rounds = sorted(int(str(r)[1:].rstrip("abcdefghijklmnopqrstuvwxyz"))
+                          for r in _item_done_by)
+    _span = (_done_rounds[-1] - _done_rounds[0] + 1) if _done_rounds else 0
+    _items_done_total = sum(_item_done_by.values())
+    _item_rate_span = round(_items_done_total / _span, 3) if _span else 0.0
+    _rows_by_slot: Dict[str, int] = {}
+    for _r in _all_open:
+        _rows_by_slot[_r["slot"]] = _rows_by_slot.get(_r["slot"], 0) + 1
+    _items_no_rows = [i["slot"] for i in open_items if not _rows_by_slot.get(i["slot"])]
     nxt = open_items[0] if open_items else None
     next_open = len(riding.get(nxt["slot"], [])) if nxt else 0
 
@@ -665,6 +707,31 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
         "open_rows": len(open_rows),
         # the population the build rate covers, and the one it does not
         "open_rows_scheduled": len(_scheduled),
+        # PLAN COMPLETION — a different population from the rows, measured and labelled as such
+        "items_open": len(open_items),
+        "items_with_no_row": _items_no_rows,
+        "item_rate_per_round": _item_rate_span,
+        "item_span_rounds": _span,
+        "items_done_total": _items_done_total,
+        "item_rounds_in_window": _items_in_window,
+        "items_closed_in_window": _items_closed_in_window,
+        "items_rounds_projected": (
+            None if _items_done_total < MIN_OBSERVED or _item_rate_span <= 0
+            else int(__import__("math").ceil(len(open_items) / _item_rate_span))),
+        "items_basis": (
+            (f"{_items_done_total} of {len(items)} plan item(s) carry a DONE marker, across a span of "
+             f"{_span} round(s) (W{_done_rounds[0]} to W{_done_rounds[-1]}) - a rate of "
+             f"{_item_rate_span} item(s) per round, which is the rate an ITEM is completed at and not "
+             f"the row rate. Over the last {len(recent)} build round(s) {_items_closed_in_window} "
+             f"item(s) closed ({', '.join(_items_in_window) or 'none'}); a six-round window cannot "
+             f"measure something that takes many rounds, which is why the span is used. "
+             if _done_rounds else
+             "No plan item carries a readable DONE marker, so no item rate exists. ")
+            + (f"{len(open_items)} item(s) remain open, of which {len(_items_no_rows)} carry NO "
+               f"registered row - their work is their own ACCEPT criteria and no row count covers it."
+               if _items_no_rows else f"{len(open_items)} item(s) remain open.")
+            + (f" Too few items have ever been marked done to project from ({_items_done_total}; a rate "
+               f"needs {MIN_OBSERVED})." if _items_done_total < MIN_OBSERVED else "")),
         "open_rows_awaiting_owner": len(_unscheduled),
         "awaiting_owner_ids": sorted(r["id"] for r in _unscheduled),
         "next_item": (None if not nxt else dict(
@@ -713,14 +780,28 @@ def render_forecast(register: Any, prompt_text: str) -> str:
         if nx:
             # W493 — this said "at the observed rate", meaning the whole register's; the gate's own
             # record is three to five times slower because a class-wide batch spreads across items.
-            out.append(f"  NEXT — {nx['slot']}: {nx['open_rows']} open rows "
-                       + (f"\u2248 {nx['rounds_projected']} round(s) \u2014 {nx['basis']}."
-                          if nx["rounds_projected"] is not None else f"\u2014 {nx['basis']}."))
+            # §planner (W496) — an item with NO registered row is not an item with no work: its
+            # work is its own ACCEPT criteria. "0 open rows / 0 round(s)" read as "nothing to do
+            # here", and with the gate closed the NEXT pointer landed on exactly such an item.
+            out.append(f"  NEXT — {nx['slot']}: "
+                       + (f"no registered row rides it \u2014 its work is the item's own ACCEPT "
+                          f"criteria in the plan, which no row count measures."
+                          if not nx["open_rows"] else
+                          f"{nx['open_rows']} open rows "
+                          + (f"\u2248 {nx['rounds_projected']} round(s) \u2014 {nx['basis']}."
+                             if nx["rounds_projected"] is not None else f"\u2014 {nx['basis']}.")))
         out.append(f"  ALL OPEN ROWS: {f['open_rows']} — of which {f['open_rows_scheduled']} ride a plan "
                    f"item \u2248 {f['all_rows_rounds_projected']} round(s) at the overall rate"
                    + (f", and {f['open_rows_awaiting_owner']} await an OWNER decision "
                       f"({', '.join(f['awaiting_owner_ids'])}) and are not projected."
                       if f["open_rows_awaiting_owner"] else ", and none awaits an Owner decision."))
+        # §planner (W496) - the row projection is the DEFECT BACKLOG; plan completion is its own figure
+        out.append(f"  PLAN COMPLETION (a different population from the rows): "
+                   + (f"{f['items_open']} open item(s) \u2248 {f['items_rounds_projected']} round(s) at "
+                      f"{f['item_rate_per_round']} item(s)/round."
+                      if f["items_rounds_projected"] is not None else
+                      f"{f['items_open']} open item(s) \u2014 NOT PROJECTED.")
+                   + f" {f['items_basis']}")
         rest = [x for x in f["by_item"] if x["open_rows"] > 0][:8]
         out.append("  BY ITEM (each at its OWN measured rate; \u2014 = too few rounds have closed one of its "
                    "rows to measure): "

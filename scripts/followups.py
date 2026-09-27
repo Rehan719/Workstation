@@ -326,6 +326,15 @@ def main() -> int:
                         + (f"; not set, so nothing to clear: {', '.join(p_ for p_ in args.clear if p_ not in cleared)}"
                            if any(p_ not in cleared for p_ in args.clear) else ""))
         elif args.cmd == "close":
+            # §planner (W496) - a `--by` the pace mechanism cannot attribute is refused at the door. The
+            # register used to accept any string: a closure recorded as `W496a` or `round-496` was
+            # written and then silently ignored by every rate, projection and batch figure, so the plan
+            # would have under-reported its own progress with nothing saying so.
+            from agentic_core.plan_followups import is_round_id as _is_round
+            if not _is_round(args.by):
+                sys.exit(f"REFUSED - --by {args.by!r} is not a round id the planner can read (W### or "
+                         f"W###a). A closure recorded under it would be invisible to every rate, "
+                         f"projection and batch figure.")
             r = _find(reg, args.id)
             if r.get("status") != "open":            # W473 (FU-067) — a closed row's round is history, never rewritten
                 sys.exit(f"REFUSED — {args.id} is {r.get('status')} (closed by {r.get('closed_by') or 'a note'}); only an open row closes")

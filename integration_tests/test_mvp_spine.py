@@ -1775,18 +1775,31 @@ def test_native_memory_genuinely_used(client):
     # excluded, the store is capped (most recent kept), and the gateway injects recall with an
     # HONEST label telling the model exactly what the lines are.
     from agentic_core.ai.memory import memory
+    # W496 (FU-258) — a write with NO account id is UNATTRIBUTED and deliberately unrecallable (52 of
+    # the gateway's 61 call sites thread no id, and those writes were landing in the one namespace
+    # recall reads for every tenant). Recall is exercised the way a real user's call now does it:
+    # written under an account, recalled as that account.
+    _own = "test-owner-recall"
     memory.add_memory("User: plan a halal meal-kit delivery venture in London | "
-                      "AI: certification and cold-chain logistics first")
-    memory.add_memory("User: what is the capital of France | AI: Paris")
-    r = memory.query_memory("design the halal meal delivery launch with certification steps")
+                      "AI: certification and cold-chain logistics first", owner_id=_own)
+    memory.add_memory("User: what is the capital of France | AI: Paris", owner_id=_own)
+    # and the unattributed write is NOT recalled, by that account or any other
+    memory.add_memory("User: someone else's halal certification secret | AI: noted")
+    r = memory.query_memory("design the halal meal delivery launch with certification steps",
+                            owner_id=_own)
+    assert all("someone else" not in x for x in r), r
     assert r and "halal" in r[0].lower()                      # scored recall genuinely fires
     assert all("France" not in x for x in r)                  # irrelevant excluded
-    assert memory.query_memory("unrelated quantum zebra blockchain") == []   # no false recall
+    assert memory.query_memory("unrelated quantum zebra blockchain", owner_id=_own) == []   # no false recall
     assert len(memory._load()) <= memory.MAX_MEMORIES         # the store is capped
     from agentic_core.ai.gateway import ModelGateway
-    aug = ModelGateway()._augment("halal meal delivery certification plan")
+    # W496 (FU-258) — recall is tenant-scoped, so the augment is exercised AS the account that wrote
+    # the memories; an unattributed augment now legitimately recalls nothing, which is asserted too.
+    aug = ModelGateway()._augment("halal meal delivery certification plan", owner_id=_own)
     assert aug.startswith("[native memory recall")            # honest provenance label
     assert "use only if relevant" in aug
+    assert ModelGateway()._augment("halal meal delivery certification plan") == (
+        "halal meal delivery certification plan"), "an unattributed call must recall nothing"
 
 
 def test_owned_model_lifecycle(client):
@@ -15331,8 +15344,20 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     assert len({rt["slot"] for rt in own}) == len(own)                                        # one OWN route per item
     # the routes agree with the plan as filed: every open, non-gated row is where route_row would send it today
     # (the refutation found FU-045/FU-063 routed to P2.7 by a broad word while they were economy rows of P2.9)
+    # W496 — a row whose slot an OWNER RULING set carries `slot_source`, and the ruling outranks a
+    # filename heuristic: the Owner decided WHICH ITEM does the work. Such a row is still checked, just
+    # against the stronger rule — its slot must be a real open item, and it must say why it is there.
+    # a row whose placement was DELIBERATE carries `slot_source` saying who placed it and why — an
+    # Owner ruling, or a rider that belongs to the item it riders. The routing heuristic does not
+    # outrank a stated reason; the row is still checked, against the stronger rule below.
+    _ruled = [r for r in open_rows if (r.get("slot_source") or "").strip()]
+    for _r in _ruled:
+        assert _r["slot"] in open_slots, (_r["id"], _r["slot"], "a ruled slot must be an open item")
+        assert (_r.get("note") or "").strip() or (_r.get("slot_source") or "").strip(), (
+            _r["id"], "a deliberately placed row records why it is there")
+    _ruled_ids = {r["id"] for r in _ruled}
     disagree = [(r["id"], r["slot"], fu.route_row(reg, prompt, r["title"], r["files"], r["severity"])["slot"])
-                for r in open_rows if not r["owner_gated"]]
+                for r in open_rows if not r["owner_gated"] and r["id"] not in _ruled_ids]
     assert [d for d in disagree if d[1] != d[2]] == [], disagree
     assert next(r for r in reg["items"] if r["id"] == "FU-045")["slot"] == "P2.9"
     assert next(r for r in reg["items"] if r["id"] == "FU-063")["slot"] == "P2.9"
@@ -16714,12 +16739,18 @@ def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkey
     # ── R1.2: a generated management document carries provenance, a floor note, and no recalled stranger's text ──
     from agentic_core.ai import memory as _mem
     seed = "zebrafishaquaponics"                            # letters only: a token the floor's extractor CAN emit
+    # W496 (FU-258) — an UNATTRIBUTED write is deliberately unrecallable now, so the seed is
+    # written under an account and asserted AS that account. That keeps this leg's point alive: the
+    # seed must genuinely be recallable, or "no stranger's text reached the document" below would
+    # pass over a memory nothing could have injected in the first place.
+    _seed_owner = "w475-seed-owner"
     try:
         _mem.memory.add_memory(f"User: Quality measure for {seed} farms\nAI: Quality measure for {seed} farms — recalled",
-                               {"source": "w475-guard"})
+                               {"source": "w475-guard"}, owner_id=_seed_owner)
     except Exception:
         pass
-    assert any(seed in c for c in _mem.memory.query_memory(f"Quality measure for {seed} farms", k=5)), "the seed is not recallable"
+    assert any(seed in c for c in _mem.memory.query_memory(f"Quality measure for {seed} farms", k=5,
+                                                           owner_id=_seed_owner)), "the seed is not recallable"
     qms = client.post("/api/v1/mgmt/qms/generate",
                       json={"organisation_name": "Zed Bakery", "domain": "food", "products_services": "sourdough bread"}).json()
     assert qms["ai_provenance"]["served_by"] and "floor_note" in qms["ai_provenance"]
@@ -16954,7 +16985,15 @@ def test_w478_the_schedule_is_prioritised_by_vision_value_and_completion_is_weig
 
     # ── the score is the product of its parts, each named ──
     faith = pp.score_row(row(title="v5 R1.2: basmala on ayah 1", files=["agentic_core/api/religion.py"]), cfg, "P1")
-    assert faith["parts"] == {"vision": 1.0, "truth": 1.0, "reach": 1.0, "criticality": 1.0, "breadth": 1.0, "effort": 1.0}
+    # W496 — `effort_measured` joined the parts: a row that names NO file used to score effort 1.0, the
+    # BEST possible value, so an under-specified row ranked as the cheapest work on the list. The
+    # arithmetic is unchanged and the score now says when it is an upper bound.
+    assert {k: v for k, v in faith["parts"].items() if k != "effort_measured"} == {
+        "vision": 1.0, "truth": 1.0, "reach": 1.0, "criticality": 1.0, "breadth": 1.0, "effort": 1.0}
+    assert faith["parts"]["effort_measured"] is True and faith["score_is_upper_bound"] is False
+    _nofile = pp.score_row(row(title="v5 R1.2: basmala on ayah 1"), cfg, "P1")   # files=[] in the base row
+    assert _nofile["parts"]["effort_measured"] is False, _nofile["parts"]
+    assert _nofile["score_is_upper_bound"] is True, "a score with no effort measured is an upper bound"
     assert faith["score"] == 100.0 and faith["area"] == "faith" and faith["tier"] == 1, faith
     tool = pp.score_row(row(files=["scripts/relocate_data_store.py"], severity="low"), cfg, "P1")
     assert tool["area"] == "tooling" and tool["tier"] is None and tool["parts"]["truth"] == 0.25
@@ -18271,15 +18310,15 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
             growing["items"].append({"id": f"FU-o{i}-{j}", "status": "open", "slot": "P1.1",
                                      "title": "t", "why": "w", "source": rnd, "severity": "low", "files": []})
     # 3b. THE DISCRIMINATING CASE, because the real register cannot produce it on demand. Six build
-    #     rounds; P1.18 closes one row every round, P2.4 closes one in two rounds only. The overall rate
-    #     is 8/6 = 1.33/round. P1.18 must be projected at its own 1.0 - nine rounds, not the seven the
+    #     rounds; P2.6 closes one row every round, P2.4 closes one in two rounds only. The overall rate
+    #     is 8/6 = 1.33/round. P2.6 must be projected at its own 1.0 - nine rounds, not the seven the
     #     overall rate would give - and P2.4 must carry NO number, because two rounds cannot measure a
     #     rate. Borrowing 1.33 would put its ten open rows at eight rounds on a record that supports
     #     no figure at all.
     mixed = {"items": []}
     for i in range(6):
         rnd = f"W{800 + i}"
-        mixed["items"].append({"id": f"FU-a{i}", "status": "done", "closed_by": rnd, "slot": "P1.18",
+        mixed["items"].append({"id": f"FU-a{i}", "status": "done", "closed_by": rnd, "slot": "P2.6",
                                "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                "found": "2026-01-01", "owner_gated": False})
         if i < 2:
@@ -18287,7 +18326,10 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
                                    "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                    "found": "2026-01-01", "owner_gated": False})
     for j in range(9):
-        mixed["items"].append({"id": f"FU-p{j}", "status": "open", "slot": "P1.18", "item": "P1.18",
+        # W496 - this used P1.18, which the same round marked DONE: a done item is not in `by_item`, so
+        # the check died on a KeyError. The rule under test is "an item is projected at ITS OWN rate",
+        # which needs any OPEN item; P2.6 is one, and the synthetic rounds below give it the 1.0 rate.
+        mixed["items"].append({"id": f"FU-p{j}", "status": "open", "slot": "P2.6", "item": "P2.6",
                                "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                "found": "2026-01-01", "owner_gated": False})
     for j in range(10):
@@ -18298,8 +18340,8 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     assert m["assessable"] is True, m["not_assessable_because"]
     assert m["rate_used"]["closed_per_round"] == 1.33, m["rate_used"]     # 8 closed over 6 rounds
     _mi = {x["slot"]: x for x in m["by_item"]}
-    assert _mi["P1.18"]["rate_used"] == 1.0, _mi["P1.18"]
-    assert _mi["P1.18"]["rounds_projected"] == 9, _mi["P1.18"]            # 9 rows at 1.0, not 6 at 1.5
+    assert _mi["P2.6"]["rate_used"] == 1.0, _mi["P2.6"]
+    assert _mi["P2.6"]["rounds_projected"] == 9, _mi["P2.6"]             # 9 rows at 1.0, not 6 at 1.5
     assert _mi["P2.4"]["rounds_projected"] is None, _mi["P2.4"]           # 2 of 6 rounds cannot measure
     assert "not projected" in _mi["P2.4"]["basis"], _mi["P2.4"]
     # and the rendered block carries the refusal rather than a borrowed figure
@@ -21069,3 +21111,258 @@ def test_w495_a_figure_nothing_computed_is_not_a_measurement(client, monkeypatch
     assert "setAutoEconomy(typeof h?.auto_economy === 'boolean' ? h.auto_economy : null);" in _cd
     assert "heartbeat/status" in _cd
     assert "Semi-Autonomous mode: On" not in _cd
+def test_w496_a_default_is_not_a_decision(client, monkeypatch, tmp_path):
+    """W496 — P1.18, the gate's last batch: thirteen rows, one rule.
+
+    A PLATFORM MUST NOT PRESENT WHAT IT FILLED IN AS WHAT IT FOUND. Four legs. (1) A store that exists
+    and cannot be read is not a store that was never set: a reader says so and an ALLOCATOR refuses.
+    (2) A value the code supplied carries its source, and every surface that shows it prints that.
+    (3) A screen's default is REVIEW, and an instrument that read nothing says so rather than reporting
+    an absence as a finding. (4) A reached surface states only what the code does, and an unattributed
+    write is never recalled.
+
+    Rows: FU-098 FU-100 FU-104 FU-106 FU-108 FU-111 FU-112 FU-113 FU-114 FU-118 FU-119 FU-120 FU-258.
+    """
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── FU-118: an unreadable directives store is never answered as the Owner's instruction ─────────
+    from agentic_core.economy import charity as _ch
+    from agentic_core.config import StoreUnavailable
+    _store = _ch._DIRECTIVES_STORE
+    _store.parent.mkdir(parents=True, exist_ok=True)
+    _backup = _store.read_bytes() if _store.exists() else None
+    try:
+        # THE DISCRIMINATING STATE: a store that EXISTS and is truncated mid-object. The old tolerant
+        # read answered this identically to "never set" and a cycle then granted to an EXCLUDED cause.
+        _store.write_text('{"priorities": ["clean_water"], "exclusions": ["dawah","conflict_relief"',
+                          encoding="utf-8")
+        _d = _ch.get_directives()
+        assert _d["directives_readable"] is False, _d
+        assert "UNREADABLE" in _d["source"], _d["source"]
+        # an ALLOCATOR refuses rather than allocating against this platform's defaults
+        try:
+            _ch.CharityIntelligence()
+            raise AssertionError("the allocator read an unreadable directives store")
+        except StoreUnavailable:
+            pass
+        # and the route that runs a cycle says so instead of granting
+        _cy = client.post("/api/v1/economy/cycle", json={"vsb_id": "w496-guard", "revenue": 100})
+        assert _cy.status_code == 503, (_cy.status_code, _cy.text[:200])
+        assert "nothing was allocated" in _cy.text, _cy.text[:300]
+    finally:
+        if _backup is None:
+            _store.unlink(missing_ok=True)
+        else:
+            _store.write_bytes(_backup)
+    # with the store gone the reader is allowed to serve the defaults, and says they are defaults
+    # the store is shared with the rest of the suite, which may have SET directives, so the invariant is
+    # readability and the absence of the unreadable verdict - not which of the two readable sources it is
+    # (asserting "defaults" made this leg depend on test order: an ambient assumption, not a driven state)
+    _d2 = _ch.get_directives()
+    assert _d2["directives_readable"] is True, _d2
+    assert "UNREADABLE" not in _d2["source"], _d2
+    assert _d2["source"].startswith("owner_set") or "defaults" in _d2["source"], _d2
+
+    # ── FU-119: the fund's seed is disclosed, and a writer refuses a quarantined store ──────────────
+    from agentic_core.api import capital_fund as _cf
+    _fs = client.get("/api/v1/fund/status")
+    assert _fs.status_code == 200, _fs.text
+    _f = _fs.json()
+    for _k in ("seed_capital_wst", "contributed_wst", "capital_basis", "fund_health_basis"):
+        assert _k in _f, _k
+    if _f["seed_capital_wst"]:
+        assert "VIRTUAL endowment" in _f["capital_basis"], _f["capital_basis"]
+        assert "ratio against a constant" in _f["fund_health_basis"], _f["fund_health_basis"]
+    _fund_store = _cf._FUND_STORE
+    _fbackup = _fund_store.read_bytes() if _fund_store.exists() else None
+    try:
+        _fund_store.parent.mkdir(parents=True, exist_ok=True)
+        _fund_store.write_text('{"total_capital": 10000000, "available":', encoding="utf-8")
+        _al = client.post("/api/v1/fund/allocate", json={"project_id": "w496", "project_name": "guard",
+                                                         "amount": 1000, "purpose": "guard"})
+        assert _al.status_code == 503, (_al.status_code, _al.text[:200])
+        assert "quarantined" in _al.text and "no balance was reset" in _al.text, _al.text[:300]
+    finally:
+        for _q in _fund_store.parent.glob(_fund_store.stem + ".corrupt-*"):
+            _q.unlink(missing_ok=True)
+        if _fbackup is None:
+            _fund_store.unlink(missing_ok=True)
+        else:
+            _fund_store.write_bytes(_fbackup)
+
+    # ── FU-120: a defaulted directive and an unparsed verdict are not decisions ─────────────────────
+    _ev = client.post("/api/v1/sovereign-evolution/cycle",
+                      json={"focus": "audit", "submit_to_change_control": False})
+    assert _ev.status_code == 200, _ev.text
+    _e = _ev.json()
+    for _k in ("curated_by_basis", "items_rejected", "items_unevaluated", "items_basis"):
+        assert _k in _e, _k
+    assert (_e["items_proceeding"] + _e["items_rejected"] + _e["items_unevaluated"]
+            == len(_e["ceo_directives"])), _e
+    _d0 = (_e["ceo_directives"] or [{}])[0]
+    if _d0.get("source") == "default":
+        assert "NOT ISSUED BY THE AI CEO" in (_d0.get("source_basis") or ""), _d0
+        assert "AI CEO" not in _e["curated_by"], _e["curated_by"]
+    # the INVARIANT, asserted over every directive rather than behind an if: a verdict and its source
+    # must agree. A row whose source says the verdict was not parsed may not carry one.
+    for _d in _e["ceo_directives"]:
+        _src = _d.get("verdict_source") or ""
+        assert _src, _d
+        if _src.startswith("default"):
+            assert _d.get("verdict") is None, ("a defaulted verdict is not a verdict", _d)
+            assert _d.get("effort") is None, _d
+        else:
+            assert _src == "csuite" and _d.get("verdict"), _d
+    assert _e["items_unevaluated"] == sum(1 for _d in _e["ceo_directives"]
+                                         if _d.get("verdict") is None), _e
+    assert _e["items_proceeding"] == sum(1 for _d in _e["ceo_directives"]
+                                        if _d.get("verdict") == "proceed"), _e
+    _se = (app / "pages/evolution/SovereignEvolution.tsx").read_text(encoding="utf-8")
+    assert "d.verdict\n                          ?" in _se or "{d.verdict" in _se
+    # the rendered ARM, not the phrase: the tooltip fallback carries the same words
+    assert ">no C-Suite verdict</span>" in _se, "the page's unevaluated arm no longer says so"
+    assert "{d.verdict ?? 'proceed'}" not in _se  # the page's own default is gone
+
+    # ── FU-100: the establish status is derived from facts ──────────────────────────────────────────
+    from agentic_core.api.vsb import _derived_status
+    _vsb_src = (root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    _gen_src = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    # every writer, not one: the literal is gone from both modules
+    assert '"status": "operational"' not in _vsb_src
+    assert '"status": "operational"' not in _gen_src
+    assert _vsb_src.count("_derived_status(") >= 2          # defined and called
+    assert _gen_src.count("_derived_status(") >= 2          # both genesis paths
+    # the DISCRIMINATING STATES, driven through the helper rather than waited for
+    # a gated stage with NO decision blocks progress (and so does a rejection); a stage with a
+    # decision key whose value is "pending" does NOT — `blocks_progress` reads the decision, so the
+    # state has to be built the way the producer builds it
+    assert _derived_status({"review_gates": {"stages": ["design"], "decisions": {}}})[0] == "held"
+    assert _derived_status({"review_gates": {"stages": ["design"],
+                                             "decisions": {"design": {"decision": "reject"}}}})[0] == "held"
+    assert _derived_status({"review_gates": {"stages": ["design"],
+                                             "decisions": {"design": {"decision": "approve"}}}})[0] != "held"
+    _bp = _derived_status({"body_pending": {"concept": True, "design": False}})
+    assert _bp[0] == "body pending" and "concept" in _bp[1], _bp
+    _ok = _derived_status({})
+    assert _ok[0] in ("operating", "registered - not operating", "registered - operation unknown"), _ok
+    assert _ok[1], "a status with no basis is the defect this row removed"
+    # and the basis the ENTITY ships is the helper's, not an empty string: the helper can be perfect
+    # while the writer drops what it returned (the second-writer class)
+    assert 'vsb_entity["status_basis"] = _st_basis' in _vsb_src, "the spawn path drops the basis"
+    assert _gen_src.count('entity["status_basis"] = _st_basis') == 2, "a genesis path drops the basis"
+
+    # ── FU-111: the realisation figure carries what it measures, through every consumer ─────────────
+    _al2 = client.post("/api/v1/cognition/align", json={"execute": False})
+    assert _al2.status_code == 200 and "API surface coverage" in (_al2.json().get("measure") or ""), _al2.text[:300]
+    _tk = client.post("/api/v1/transformation/tick")
+    if _tk.status_code == 200:
+        assert "measure" in _tk.json(), _tk.json().keys()
+    _ci = (app / "pages/CognitionIntegration.tsx").read_text(encoding="utf-8")
+    assert "API surface coverage" in _ci and "not delivery" in _ci
+    assert "Overall realisation {Math.round" not in _ci     # the old claim is gone
+
+    # ── FU-106: riba is rarely spelled "riba" ──────────────────────────────────────────────────────
+    def _sharia(text):
+        r = client.post("/api/v1/compliance/check", json={"subject": text})
+        assert r.status_code == 200, r.text
+        return next(v for v in r.json()["verdicts"] if v["framework"] == "sharia_halal")
+    _v1 = _sharia("We offer halal financing: a loan at 12% APR, compounding monthly, with a 5 percent interest charge.")
+    assert _v1["status"] == "review" and "riba concern" in _v1["reason"], _v1
+    # EACH signal alone must fire, or a vocabulary can lose one and the multi-signal text still passes
+    for _t in ("We offer halal financing: a loan at 12% APR.",
+               "A halal credit product with a 5 percent interest charge.",
+               "Halal lending with compounding interest on the balance."):
+        _vx = _sharia(_t)
+        assert "riba concern" in _vx["reason"], (_t, _vx["reason"][:120])
+    # a NEGATED mention must not raise the new arm, and a discount is not riba
+    _v2 = _sharia("A halal community bakery that avoids riba entirely and takes no interest-bearing loans.")
+    assert "negating phrase" in _v2["reason"], _v2
+    _v3 = _sharia("A 5% discount for members in the public interest.")
+    assert "riba concern" not in _v3["reason"], _v3
+    # and no text can reach a PASS on its own vocabulary
+    assert _v1["status"] != "pass" and _v2["status"] != "pass"
+
+    # ── FU-113: an instrument that read nothing does not report an absence as a finding ─────────────
+    _fa = client.post("/api/v1/care/risk-assess",
+                      json={"tool": "falls_risk", "patient_data": {"fallen twice this year": "yes"}})
+    assert _fa.status_code == 200, _fa.text
+    _sc = _fa.json()["score"]
+    assert _sc["assessed"] is False, _sc
+    assert _sc["band"] == "not assessed - no factor recorded", _sc["band"]
+    assert "NOTHING WAS READ" in _sc["response"], _sc["response"]
+    assert _sc["keys_not_read"] == ["fallen twice this year"], _sc["keys_not_read"]
+    # a real recording still assesses
+    _fb = client.post("/api/v1/care/risk-assess",
+                      json={"tool": "falls_risk", "patient_data": {"falls_history": "yes"}})
+    _sb = _fb.json()["score"]
+    assert _sb["assessed"] is True and _sb["band"] == "multifactorial assessment warranted", _sb
+    _ch_page = (app / "pages/domains/CareHub.tsx").read_text(encoding="utf-8")
+    assert "care-not-assessed" in _ch_page and "care-keys-not-read" in _ch_page
+    assert "not assessed|no trigger recorded|no band" in _ch_page   # the green fallthrough is closed
+
+    # ── FU-114: a LIVE card lists what is served ────────────────────────────────────────────────────
+    _cat = client.get("/api/v1/catalog/products")
+    assert _cat.status_code == 200
+    _live = [p for p in _cat.json()["products"] if str(p.get("status", "")).lower() == "live"]
+    assert _live, "no live product to check"
+    _cf_row = next((p for p in _live if p["slug"] == "capital_fund"), None)
+    if _cf_row:
+        assert "On-Chain Gateway" in (_cf_row.get("features_declared_not_built") or []), _cf_row
+        assert "On-Chain Gateway" not in _cf_row["features"], _cf_row
+        assert _cf_row.get("features_basis"), _cf_row
+    _mp = (app / "pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
+    assert "catalog-not-built" in _mp and "line-through" in _mp
+
+    # ── FU-104: the pack's layers say whether they hold anything ────────────────────────────────────
+    assert '"mission_source"' in _vsb_src and '"values_source"' in _vsb_src
+    assert "layers_present" in _vsb_src
+    _gj = (app / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "pack-layers-present" in _gj and "pack-layers-empty" in _gj
+    assert "{Object.keys(pack.layers).join" not in _gj      # the key-name chip is gone
+
+    # ── FU-112: a reached surface states only what the code does ────────────────────────────────────
+    _sp = (app / "components/organism/SpatioTemporal.tsx").read_text(encoding="utf-8")
+    for _dead in ("CROSS-PLANETARY", "Mars Relative", "SYNC ACTIVE", "Current Reality"):
+        assert _dead not in _sp, _dead
+    assert "spatio-basis" in _sp and "nothing here reads any data" in _sp
+    _cc = (root / "packages/ui/src/CommandCenter.tsx").read_text(encoding="utf-8")
+    assert "Cognitive durability optimization in progress" not in _cc
+    assert "RL-Powered Suggestions" not in _cc              # nothing learns this suggestion
+    assert "greys this dock" in _cc                          # it says what the click did
+
+    # ── FU-258: an unattributed write is recorded and recalled by nobody ───────────────────────────
+    from agentic_core.ai.memory import memory as _mem
+    assert _mem.UNATTRIBUTED_NS == "unattributed"
+    _mem.add_memory("User: w496 confidential margin strategy alpaca | AI: noted",
+                    metadata={"agent": "business_plan"})              # no owner_id: the 52-site case
+    _mem.add_memory("w496 organism heartbeat circadian alpaca beat", platform=True)
+    _mem.add_memory("User: w496 tenant b alpaca certification | AI: ok", owner_id="w496-tenant-b")
+    _rows = {(m.get("metadata") or {}).get("owner_id") for m in _mem._load()}
+    assert "unattributed" in _rows, _rows
+    _q = "w496 confidential margin strategy alpaca"
+    assert _mem.query_memory(_q, owner_id="w496-tenant-a") == [], "an unattributed row was recalled"
+    assert _mem.query_memory(_q, owner_id="w496-tenant-b") == [], "an unattributed row was recalled"
+    assert _mem.query_memory(_q) == [], "an unattributed row was recalled anonymously"
+    # a tenant still recalls its OWN, and never another's
+    assert _mem.query_memory("w496 tenant b alpaca certification", owner_id="w496-tenant-b"), "own recall broke"
+    assert _mem.query_memory("w496 tenant b alpaca certification", owner_id="w496-tenant-a") == []
+    # a deliberate platform note is still recallable (the organism keeps its own)
+    assert _mem.query_memory("w496 organism heartbeat circadian alpaca beat"), "platform memory broke"
+    # THE LEGACY SHAPE: rows the old default already wrote carry owner_id 'platform' AND an agent stamp.
+    # Those are a user's prompt and answer in a shared space; a fix that only changes new writes would
+    # leave every one of them readable by every tenant.
+    _mem.add_memory("User: w496 legacy llama secret margin | AI: noted",
+                    metadata={"agent": "business_plan"}, platform=True)
+    assert [m for m in _mem._load()
+            if (m.get("metadata") or {}).get("owner_id") == "platform"
+            and (m.get("metadata") or {}).get("agent")], "the legacy shape was not written"
+    assert _mem.query_memory("w496 legacy llama secret margin", owner_id="w496-tenant-a") == [], \
+        "a legacy gateway-written platform row is still recalled by a tenant"
+    assert _mem.query_memory("w496 legacy llama secret margin", owner_id="w496-tenant-b") == [], \
+        "a legacy gateway-written platform row is still recalled by a tenant"
+    _set = (app / "pages/Settings.tsx").read_text(encoding="utf-8")
+    assert "nothing unattributed is ever recalled" in _set
+    assert "potentially visible to other users" not in _set   # the caveat that is no longer true

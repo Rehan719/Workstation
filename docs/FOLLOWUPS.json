@@ -4448,9 +4448,9 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
-      "note": "",
+      "status": "done",
+      "closed_by": "W496",
+      "note": "W496 closed the LEAK at the mechanism rather than at 52 call sites: a completion written with no account id lands in an UNATTRIBUTED namespace that recall never reads, for any account. Driven: tenant-a, tenant-b and an anonymous caller each recall nothing from it; a deliberate platform note stays recallable; each tenant still recalls its own; and the LEGACY shape (a gateway-written row stamped 'platform' with an agent) is excluded too, so yesterday's writes are not readable by every tenant either. The Settings page now states what is true instead of warning that anything typed may be visible. The remaining work - threading owner_id through the nine user-facing files so a user's own output is recallable BY THEM - is an enhancement, registered separately on P2.4.",
       "tier": 1
     },
     {
@@ -4592,12 +4592,13 @@
         "apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.10",
       "status": "open",
       "closed_by": null,
-      "note": "",
-      "tier": 2
+      "note": "OWNER RULED 2026-09-27: a fourth option - no separate constitution document, and the endpoint serves the OWNER'S RATIFIED RULINGS as the articles (A.9.5, A.12.3, A.12.4, the FU-012/013/014 rulings and their successors), with canon_present true and a basis naming where they live. The archived Jules canon stays out. P2.10's method register is the machine-readable half Change Control keeps.",
+      "tier": 2,
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-267",
@@ -4609,11 +4610,12 @@
         "docs/HORIZON_INTEGRATION.md"
       ],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.11",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "OWNER RULED 2026-09-27: keep Horizon TAXONOMY-FREE (domain + stakes), plus an optional reflection tag the USER selects and can clear, stored as the user's own words. No AI verdict on a person's state (A.9.5 stands). The 0-9 / 25-station scheme may later enter as a user-facing vocabulary only.",
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-268",
@@ -4625,11 +4627,12 @@
         "docs/HORIZON_INTEGRATION.md"
       ],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.13",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "OWNER RULED 2026-09-27: read three of the four archives read-only with the secret-exclusion rules, recorded exclusions and stated scan bounds; the index stays in data/ and is never committed. DROP openQuran - after exclusions it holds one file, a .env. The Owner rotates that key separately; the platform never reads it.",
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-269",
@@ -4642,11 +4645,12 @@
         "docs/HORIZON_INTEGRATION.md"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.13",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "OWNER RULED 2026-09-27: install pypdf + python-docx (pure Python, permissive, no native build). Without them the platform reads none of the book folder and 4 of 9 p3 documents, and no case bundle - and the archive audit shows the previous 'extraction' was 342 placeholder strings.",
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-270",
@@ -4658,11 +4662,12 @@
         "docs/HORIZON_INTEGRATION.md"
       ],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.12",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "OWNER RULED 2026-09-27: ship the refusal immediately (withhold AI counsel, state plainly that the platform is not a person, invent no route). The route list to ratify: 999, NHS 111, Samaritans 116 123, Shout text 85258 - the Owner confirms the list and the reviewer, and the surface shows the reviewed-on date. Never presented as detection and never as care.",
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-271",
@@ -4674,11 +4679,12 @@
         "docs/NATIVE_AI_FABRIC_ROADMAP.md"
       ],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P3.20",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "OWNER RULED 2026-09-27: design the fabric for the 1-3B local tier plus the deterministic floor, with every higher tier reporting 'not runnable here' and the measured reason; add an Owner-gated external accelerant for NAMED drafting tasks; defer buying hardware until a specific deliverable measurably fails on 3B. P3.20 makes the hardware a declared fact, so a GPU later lights the tiers up with no code change.",
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-272",
@@ -4690,11 +4696,12 @@
         "docs/NATIVE_AI_FABRIC_ROADMAP.md"
       ],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P3.23",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "OWNER RULED 2026-09-27: an EXPLICIT LOCAL INBOX the Owner copies documents into - not a folder scan. Read-only, never sent to any external service, provenance per document and line, a human-approval gate on every filing-shaped artefact, the index never committed, and the surface stating that the platform is not counsel. See also the archive audit: the previous corpus was simulated.",
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-273",
@@ -4706,11 +4713,12 @@
         "docs/NATIVE_AI_FABRIC_ROADMAP.md"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P3.24",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "OWNER RULED 2026-09-27: the tribunal outcome predictor is REFUSED and stays refused. What is built instead: the procedural timeline (deadlines and windows computed from published rules and the case's own dates - a schedule, not a forecast) and an evidence-completeness checklist (what the claim's elements require against what the bundle contains). No probability of a legal outcome, ever.",
+      "slot_source": "owner_ruling 2026-09-27"
     },
     {
       "id": "FU-274",
@@ -4745,6 +4753,64 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-276",
+      "title": "52 of 61 gateway call sites still thread no account id, so their output is unattributed and recallable by nobody - including its own author",
+      "why": "W496 closed the LEAK at the mechanism: a completion written with no account id lands in an UNATTRIBUTED namespace that recall never reads, for any account (driven: tenant-a, tenant-b and an anonymous caller all recall nothing from it, while a deliberate platform note stays recallable and each tenant still recalls its own). That removes the cross-tenant exposure whatever a call site does, which is why it was the right fix rather than editing 52 sites. What remains is the ENHANCEMENT: measured on 2026-09-27, 52 of 61 gateway call sites across 28 files pass no owner_id, so the work those users ask for is stored unattributed and cannot be recalled even BY THEM - the AI CEO chat and the avatar therefore recall far less than the user typed. Nine of the 28 files already have a user in scope (vsb.py 4 calls, synthesis_studio.py 3, change_control.py 3, qep_intelligence.py 2, genesis.py 2, capital_fund.py 2, integration_surface.py 1, projects/api.py 1, organism/reconfiguration.py 1), so threading is plumbing there; the rest (products.py 8, digital_twin.py 3, swarm.py 2, genome.py 1, ...) are platform-internal calls with no user, where unattributed is the correct namespace and nothing needs changing. FIX: thread owner_id through the nine user-facing files and assert per file that a user's own call is recallable BY THAT USER and by nobody else.",
+      "source": "W496 (FU-258, the mechanism fix)",
+      "found": "2026-09-27",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/api/synthesis_studio.py",
+        "agentic_core/api/capital_fund.py",
+        "agentic_core/api/qep_intelligence.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-277",
+      "title": "The archived employment-tribunal corpus is 342 rows of 'Simulated content for <filename>' stamped EXTRACTED, and its submission report tells the Owner the evidence is on their side",
+      "why": "The Owner asked whether the archive already holds work on the legal matter. It holds 272 files, and the corpus is SIMULATED. _archive/scripts/Law/EmploymentTribunal/content_extraction.py says so in its own comment - 'Simulated extraction with granular citations / In real execution, pypdf / python-docx would be used' - and then stamps every row status EXTRACTED with granularity page_paragraph and a sha256 computed over the PLACEHOLDER STRING, so the provenance hash attests the placeholder rather than the document. The output, extracted_content_v9.0_gold_exec.json (151 KB, tracked in git), holds 342 rows: all status EXTRACTED, all with text, and 17,265 characters of text in TOTAL - a median of 50 characters per document, every one of the form 'Simulated content for RM CV Science Oct 2025 (1).docx'. source_inventory_v9.0_gold_exec.json and unified_assimilated_graph.json are built on those rows. And _archive/legacy-archive/law-grand-operation/v9.0-ULTIMATE-definitive/FINAL_SUBMISSION_REPORT_v9.0_ULTIMATE.md tells the Owner, about a REAL live tribunal matter: 'Granular Citations: All chronology entries, legal tests, evidentiary references include page/paragraph' and 'You are ready. The evidence is on your side. Proceed with confidence.' That is the most consequential instance of this defect class in the repository: a submission-readiness verdict over placeholders, in a live dispute. WHAT TO DO: (a) do NOT recover the corpus - it contains no document content and its hashes attest nothing; (b) recover only the SHAPE, which is sound (the manifest row schema path/filename/type/status/timestamp/extracted_text/granularity/sha256, and _archive/jules-phase2/.../evidence_ingestion.py's inbox + graph + per-file skeleton, which globs only *.txt and imports a src/organism tree that does not exist here); (c) write a README marker into those archive directories saying the content is simulated, so no later round or agent reads them as prior analysis; (d) when the real extractor is installed (FU-269), re-extract from the Owner's own documents through the explicit inbox (FU-272) with a hash over the REAL bytes. ESCALATED THE SAME DAY, AFTER FOLLOWING THE TRAIL INTO THE LIVE TREE: the simulated corpus did not stay in the archive. products/Law/VSB-SIG-LAW-OMNIOCTO-19.0/outputs/ is a LIVE, git-tracked directory holding five documents built on it, including three READY-TO-SEND EMAILS addressed to the opposing solicitor by name with the respondent's HR in copy, in the Owner's real matter (case number in the subject line). Email_1_Exhibit_Q1_Demand.md asserts in the first person: 'I have reviewed the internal HR performance record (\"Exhibit Q-1\") which indicates that I maintained a 94% punctuality rate during the monitoring period of October 2025 to January 2026', demands disclosure under Rule 31 within 7 days, references 'the recommendations made by Occupational Health on 14 November 2025', and cites 'the precedent in Thompson v TechFlow Ltd [2026] EAT 12'. That citation propagated through the archived pipeline as a legal_source (jules-phase2 stl_procedural_specs.yaml) and a legal_authority graph node before arriving in a sendable letter - a fabricated authority before a tribunal is among the most damaging things that can happen to a litigant. None of these particulars can have come from a document: the pipeline read 342 placeholder strings. ACTION TAKEN in W496: a VERIFY-BEFORE-USE block prepended to all five live documents naming each particular to check (nothing deleted - they are the Owner's files and the content is evidence of what was generated), and a marker README in the four affected archive directories. ACTION FOR THE OWNER: verify or remove each particular; the structure of these documents is useful, the facts in them are not sourced. THE LESSON FOR THE BUILD: this is why FU-272's inbox is explicit and human-gated and why FU-269 installs a real extractor - a generated legal artefact must cite a page and a line that exist, or it must not be generatable. OWNER RESPONSE 2026-09-27: 'I cannot verify so proceed accordingly.' ACTED ON THE SAME DAY - the particulars were REDACTED out of the live documents rather than left behind a warning: an unverifiable specific in a sendable letter is a risk a banner does not remove. Every occurrence across six live documents was replaced with a marked blank ([[VERIFY-EXHIBIT]], [[VERIFY-FIGURE]], [[VERIFY-PERIOD]], [[VERIFY-DATE]]) and the cited authority was removed outright with a note saying why. The originals are preserved byte-for-byte at products/Law/VSB-SIG-LAW-OMNIOCTO-19.0/outputs/_unverified_originals/ with a README stating they must not be sent - nothing was destroyed, because they are evidence of what was generated. Verified after: 0 live files still assert an unsourced particular, and the templates keep the structure that is genuinely useful (Rule 31 mechanics, ss.15/20/21 framing, the Unless Order escalation). WHAT REMAINS FOR THIS ROW: the same discipline as an ACCEPTANCE BAR on P3.23/P3.24 - a generated legal artefact must cite a page and a line that exist in a document the platform actually read, or it must not be generatable.",
+      "source": "W496 archive audit (the Owner's instruction: search the archive for work already done)",
+      "found": "2026-09-27",
+      "files": [
+        "_archive/outputs/Law/EmploymentTribunal/audit/extracted_content_v9.0_gold_exec.json",
+        "_archive/scripts/Law/EmploymentTribunal/content_extraction.py",
+        "docs/HORIZON_INTEGRATION.md",
+        "products/Law/VSB-SIG-LAW-OMNIOCTO-19.0/outputs/LITIGANT_MASTER_GUIDE_v16.0_OMNIPOTENT.md",
+        "products/Law/VSB-SIG-LAW-OMNIOCTO-19.0/outputs/emails/Email_1_Exhibit_Q1_Demand.md"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P1.18",
+      "status": "done",
+      "closed_by": "W496",
+      "note": "W496 audited the archive on the Owner's instruction and acted the same day: marker READMEs in the four affected archive directories; the unverifiable particulars REDACTED out of six live documents (exhibit reference, every punctuality figure, monitoring period, OH date) with the cited authority removed outright; the originals preserved byte-for-byte in _unverified_originals/ with a README stating they must not be sent. Verified: 0 live files still assert an unsourced particular, and the templates keep the structure that is useful. The rider - the acceptance bar for any future generated legal artefact - is FU-278 on P3.23."
+    },
+    {
+      "id": "FU-278",
+      "title": "ACCEPTANCE BAR for the legal specialist: a generated artefact must cite a page and a line that exist in a document the platform read, or it must not be generatable",
+      "why": "The rider FU-277 leaves behind. W496's archive audit found the previous Law pipeline generating a ready-to-send disclosure letter over 342 rows of 'Simulated content for <filename>': it asserted an exhibit reference, a punctuality figure, a monitoring period, an Occupational Health date and a case citation, none of which existed in anything it read, and the Owner confirmed none could be verified (the particulars were redacted out in W496 and the originals preserved). The lesson is an ACCEPTANCE BAR for P3.23's legal specialist, not a one-off cleanup: (a) every factual particular in a generated artefact carries the document id and the location it came from, and a particular with no location cannot be rendered; (b) a citation of an authority is either resolved against a real source the platform holds or is refused - never emitted as prose; (c) the artefact states, on its face, which of its particulars came from a document and which are blanks the user must fill; (d) a guard drives the empty-corpus case and proves the generator produces a TEMPLATE with blanks rather than a letter with invented specifics. Without this bar the same class returns the first time the specialist runs on a thin bundle.",
+      "source": "W496 (FU-277, the archive audit)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/NATIVE_AI_FABRIC_ROADMAP.md",
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.23",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "rider of FU-277 (W496): an acceptance bar belongs to the item that BUILDS the thing it bars - the legal specialist is P3.23's work, while this row's files route to P2.4 by filename"
     }
   ],
   "routes": [
