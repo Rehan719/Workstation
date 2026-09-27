@@ -7797,3 +7797,57 @@ are registered as FU-267 to FU-270.
 **What the round moved.** Eight rows closed. The gate P1.18 went from 21 open rows to 13, and the whole
 register from 119 to 111 open with the four new Owner rows counted — the gate's projection is now three
 rounds at its own measured rate.
+### W495b — the native AI fabric roadmap, interrogated (docs + plan only)
+
+The Owner supplied a second architect's brief — a *Native AI Fabric Strategic Enhancement Roadmap v2.0*
+with an Execution Directive for four phases: wire the cognitive engines to local models, deploy LoRA
+specialists and a knowledge graph, activate a litigation/career agent swarm with a verifier, and prototype
+world models. `docs/NATIVE_AI_FABRIC_ROADMAP.md` is the interrogation; plan items **P3.20–P3.24** are the
+adopted parts, extending the cognitive items **P3.12–P3.19** that already existed.
+
+**Its central diagnosis is right, and the measurement is stronger than the brief's own wording.** A grep
+for `gateway|orchestrator|complete(` across all six cognitive engine modules returns **zero for every one
+of them** — there is no disabled call, no try/except around a model, no injection point. The engines were
+never wired to anything, so making them compute is new wiring rather than repair. That is already plan item
+P3.12 with five registered rows; the roadmap's Phase 1 is not new work.
+
+**Three measurements changed the plan.** (1) The registry's `EngineType` enum declares nine engines; six
+modules exist and `cognitive/foundational/`, `cognitive/meta/` and `cognitive/v2/` are empty package shells,
+so "register the 9 engines" would register three that do not exist. (2) The archived bootstrap the brief
+says to un-archive imports those three from the archive, where they are **7-line stubs returning literals**
+— `niyyah_engine` returns `{"ratified": True, "signatures": ["council_node_1", "council_node_2",
+"council_node_owner"], "intent_status": "COMMITTED"}`, a fabricated governance record with three invented
+signatories — and the archived base class hard-codes **`confidence=0.95`** on every successful output.
+Recovering that file without reading it would import a fabricated ratification into the clearance chain
+P3.14 exists to make refusable. (3) **The hardware.** This machine has **7.7 GB of RAM**, an i3-1315U and
+integrated Intel graphics with **no CUDA device**. The roadmap's 14B and 15B tiers need 9–12 GB at 4-bit —
+more than the machine's entire memory — its 8B specialist is minutes-per-reply on CPU, and "hot-swap the
+adapter to save VRAM" has no VRAM to save. What runs here is the 1–3B tier already pulled, plus the
+deterministic floor. So the tiering is adopted as an architecture and refused as an inventory: every tier
+reports `runnable here` with the measured reason, because a surface listing a model the machine cannot run
+is the same defect as a leaderboard nothing scored.
+
+**What was refused.** The "Final Summary of Execution Status" table marking four phases WIRED / DEPLOYED /
+ACTIVE / PROTOTYPED, and "The Workstation is now alive. It thinks, it remembers, it verifies, and it
+predicts" — claims about code that does not exist, in the same document that proposes writing it. Every
+code block in the Execution Directive is **empty** (line numbers only), which is recorded so no later round
+mistakes the roadmap for delivered code. Withholding on "verifier confidence < 0.8" is refused because a
+model's confidence about itself is not a measurement — this repo already carries rows against that exact
+shape — so the verifier checks checkable things (does the citation resolve? does the quoted line exist at
+the cited location?) and returns MET / UNMET / NOT ASSESSABLE. The **tribunal outcome predictor** is refused
+as specified: there is no outcome dataset, no judge data, and a settlement range shown to a party in a live
+matter is a number they may act on however it is labelled. What is adopted instead is procedural — deadlines
+and hearing windows computed from published rules and the case's own dates, labelled a schedule, not a
+forecast.
+
+**What was adopted and strengthened.** The tier architecture and a router that records why it chose; the
+verifier as an independent step with checkable checks and a withhold it can trigger; an owned lexical and
+citation-graph index that states `embeddings: none installed` rather than implying semantic recall; the four
+domain specialists as compositions of retrieval + prompt + verifier, each with a real human gate (Owner
+approval on anything filing-shaped, QA sign-off on a GMP record, scholar review on doctrinal content, and no
+invented achievement in a CV); staged simulation with procedural arithmetic first; and the brief's **sacred
+text firewall** as the executable form of a canon rule — a generation request that would emit Quranic Arabic
+is intercepted and replaced by a retrieval call, recorded, with the surface saying where the text came from.
+Five rows registered: FU-271 (the hardware decision), FU-272 (may the platform index the live matter's
+documents, and on what terms), FU-273 (confirm the predictor refusal or name a data source), FU-274 (the
+archived bootstrap must not be recovered as-is) and FU-275 (the measurement behind P3.12).

@@ -4663,6 +4663,88 @@
       "status": "open",
       "closed_by": null,
       "note": ""
+    },
+    {
+      "id": "FU-271",
+      "title": "OWNER DECISION: the hardware ceiling - the roadmap's model stack cannot run on this machine",
+      "why": "Measured on 2026-09-27: this machine has 7.7 GB of RAM total, an Intel i3-1315U (6 cores) and integrated Intel UHD graphics with no CUDA device (nvidia-smi is not installed and no discrete GPU is present). The roadmap's tiers assume otherwise: DeepSeek-R1-Distill-Qwen-14B and StarCoder2-15B need roughly 9-12 GB at 4-bit, which is more than the machine's ENTIRE memory, so they cannot load; Llama-3-8B at Q4 is ~4.7 GB, nominally loadable but sharing 7.7 GB with Windows, the browser, the dev server, the backend and the suite, and minutes-per-reply on a CPU-only i3; Qwen-VL vision is out; and 'hot-swap the adapter to save VRAM' has no VRAM to save - Ollama runs on the CPU here. What IS runnable today is llama3.2:1b and llama3.2 (3B), both already pulled, plus the deterministic floor. THE DECISION: (a) design the fabric for a 1-3B local tier plus the floor, and have every higher tier report 'not runnable here' with the measured reason (this is what P3.20 builds by default); (b) provision hardware (a discrete GPU with 12-24 GB, or a rented instance) and state which tiers it unlocks; or (c) route specific high-value tasks to an Owner-gated external accelerant, which the platform supports and keeps off by default. Blocks the inventory half of P3.20. Default if undecided: (a).",
+      "source": "W495 (the Owner's native-AI-fabric roadmap, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/NATIVE_AI_FABRIC_ROADMAP.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-272",
+      "title": "OWNER DECISION: may the platform index the live legal matter's documents, and on what terms",
+      "why": "The roadmap's Litigation Strategist reads the Owner's disclosure bundles, extracts a timeline, maps events to ACAS Code breaches and drafts witness statements for a LIVE employment matter. The document work is buildable and genuinely useful - assembling, citing and cross-checking with provenance per line. The terms are the Owner's to set, because this is sensitive personal data about real people in a live dispute. THE DECISION: (a) read-only, LOCAL-ONLY indexing of a named folder, never sent to any external service (the egress alarm in P3.21/P3.23 covers this), with provenance per document, a human-approval gate on every filing-shaped artefact, and the index kept in data/ and never committed; (b) a narrower scope (e.g. only documents the Owner copies into an explicit inbox); or (c) none, and the platform stays out of the case entirely. Also to confirm: nothing the platform produces is legal advice and it must say so on the surface - the platform may be a meticulous clerk, not counsel. Blocks the law specialist in P3.23. Related: FU-268 (the four desktop archives).",
+      "source": "W495 (the Owner's native-AI-fabric roadmap, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/NATIVE_AI_FABRIC_ROADMAP.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-273",
+      "title": "OWNER DECISION: the tribunal outcome predictor is refused by default - confirm, or name a data source",
+      "why": "The roadmap proposes a Tribunal Outcome Prediction that takes evidence strength, the opponent's likely arguments and 'judge tendencies (from public rulings)' and outputs a probability distribution of winning and a settlement range, labelled a 'Predictive Heuristic'. I have REFUSED it as specified and built the procedural half instead (P3.24 stage 1: deadlines and hearing windows computed from published rules and the case's own dates - checkable arithmetic, labelled a schedule). The reasons: there is no outcome dataset in this repo, no judge data, 'judge tendencies' is neither available nor a proper basis for advice to a party, and a settlement range shown to someone in a live matter is a number they may act on however it is labelled. THE DECISION: (a) confirm the refusal - the platform computes schedules and assembles evidence, and never forecasts an outcome (the default); or (b) name a real data source (e.g. a published outcomes dataset) and accept that any figure would be labelled a heuristic over that source, never a legal opinion, and never shown without its base rate and sample size. Governs the scope of P3.24.",
+      "source": "W495 (the Owner's native-AI-fabric roadmap, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/NATIVE_AI_FABRIC_ROADMAP.md"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-274",
+      "title": "The archived nine-engine bootstrap must NOT be recovered as-is: two of its three meta engines return fabricated ratifications and its base class hard-codes confidence 0.95",
+      "why": "The roadmap's Phase 1 says to un-archive cognitive/bootstrap.py and register the nine engines. Measured on 2026-09-27: bootstrap.py exists only at _archive/jules-unwired/agentic_core/cognitive/bootstrap.py and imports the nine from foundational/ and meta/, which in the live tree are EMPTY package shells (__init__.py only) - six engines live at the top level of cognitive/ and the three meta engines do not exist in the live tree at all, though the registry's EngineType enum declares them. The archived meta engines are 7-line stubs returning literals: niyyah_engine returns {'ratified': True, 'signatures': ['council_node_1','council_node_2','council_node_owner'], 'intent_status': 'COMMITTED'} - a fabricated governance record with three invented signatories - and the archived base_engine.py hard-codes confidence=0.95 on every successful output, which is the shape FU-224 and FU-233 already record. FIX (the three engines themselves ride the meta-engine item; this row rides the engine-contract item because that is where cognitive/ routes): write the three engines so each reads its input or returns assessable:false with a reason; recover the CALL CONTRACT from the archive (one signature the engines implement, per FU-221) and nothing else; and never register an engine that cannot compute. Recovering the file without reading it would import a fabricated ratification into the clearance chain P3.14 is meant to make refusable.",
+      "source": "W495 (the Owner's native-AI-fabric roadmap, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "agentic_core/cognitive/registry.py",
+        "agentic_core/cognitive/meta/__init__.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-275",
+      "title": "The cognitive engines have no path to a model at all - not a stub call, no import: measured 0 of 6",
+      "why": "Recorded as the measurement behind P3.12, because it is stronger than 'they return constants': a grep for gateway|orchestrator|complete( across all six engine modules returns ZERO for every one of them. There is no disabled call, no try/except around a model, no injection point - the engines were never wired to anything, so making them compute is new wiring rather than repair. The roadmap is right that this is the first job, and its own deliverable is the right shape: one engine reasoning about a real input through a local model, with the result traceable to the call that produced it. Two constraints this repo already knows: on THIS hardware the runnable local tier is llama3.2:1b / 3B (see FU-271), so the not-assessable path will be the common path and must be first-class, not a fallback literal; and the engine must carry what served it, because a reasoning step with no provenance cannot be told from the floor composing headings.",
+      "source": "W495 (the Owner's native-AI-fabric roadmap, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "agentic_core/cognitive/soch_engine.py",
+        "agentic_core/ai/native/orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [
