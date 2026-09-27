@@ -21643,3 +21643,156 @@ def test_w498b_a_test_that_asks_for_the_event_loop_depends_on_what_ran_before_it
     assert _h, "the helper this class depends on is gone"
     assert "except RuntimeError:" in _h.group(0), _h.group(0)[:300]
     assert "set_event_loop(" in _h.group(0), _h.group(0)[:300]
+
+
+def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
+    """W499 — the plan's own figures are held to the plan's own rule.
+
+    A FIGURE NOTHING RECOMPUTES IS NOT A FORECAST, and three of the plan's own were not recomputed.
+    (a) The item projection divided EVERY open item by a rate measured entirely on P1, including the
+    six P4 items, which are switches the Owner flips — no round closes one, so those rounds were
+    invented; and 27 of the open items have never been sized, which the single figure did not say.
+    (b) The effort paragraph read as the remaining cost of the campaign while its own evidence list
+    stopped 24 rounds earlier, and it disagreed with the generated block in the same document.
+    (c) The README stated an operation count and a route count that nothing measured; both had
+    drifted, and an external audit of this repo inherited them as its baseline.
+
+    Rows: FU-280 FU-281 FU-282 (registered by this round, not closed by it).
+    """
+    import json
+    import math
+    import pathlib
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from agentic_core.plan_followups import forecast, plan_items, render_forecast
+
+    _text = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _items = plan_items(_text)
+    _by = {i["slot"]: i for i in _items}
+    assert len(_items) > 40, len(_items)
+
+    # ── (a1) a phase's kind is READ from its own heading, for every phase, not guessed ──────────────
+    assert _by["P4.1"]["delivered_by"] == "owner-switch", _by["P4.1"]
+    assert _by["P4.1"]["phase"] == "P4", _by["P4.1"]
+    for _s in ("P1.1", "P2.1", "P3.1"):
+        assert _by[_s]["delivered_by"] == "build", (_s, _by[_s])
+    # every item carries a phase: an item parsed outside any phase heading would silently lose its kind
+    assert [i["slot"] for i in _items if not i.get("phase")] == []
+
+    # ── (a2) the projection counts the build items and refuses the Owner's switches ─────────────────
+    f = forecast(_reg, _text)
+    _open_owner = [i for i in _items if not i["done"] and i["delivered_by"] == "owner-switch"]
+    _open_build = [i for i in _items if not i["done"] and i["delivered_by"] == "build"]
+    assert f["items_open_owner_switch"] == len(_open_owner) > 0, (f["items_open_owner_switch"],
+                                                                 len(_open_owner))
+    assert f["items_open_build"] == len(_open_build), (f["items_open_build"], len(_open_build))
+    # the projected figure is the BUILD backlog over the build rate — never the whole population
+    if f["items_rounds_projected"] is not None:
+        assert f["item_build_rate_per_round"] > 0, f["item_build_rate_per_round"]
+        assert f["items_rounds_projected"] == math.ceil(
+            f["items_open_build"] / f["item_build_rate_per_round"]), f["items_rounds_projected"]
+        # ... and that is strictly fewer rounds than the old all-items divisor produced
+        assert f["items_rounds_projected"] < math.ceil(
+            f["items_open"] / f["item_build_rate_per_round"]), "the switches are still being counted"
+    _b = f["items_basis"]
+    assert "NOT PROJECTED" in _b and "owner-switch" in _b, _b
+    assert "THE RATE'S POPULATION" in _b, _b
+    assert f["item_rate_phases"], f["item_rate_phases"]
+    # the coverage sentence appears exactly when the build backlog is not fully sized
+    # the coverage COUNT is computed here from the register, not taken on trust: gating the sentence
+    # on the figure it describes means a figure that lies about full coverage skips its own check
+    _rows = _reg.get("items") if isinstance(_reg, dict) else _reg
+    _slots_with_rows = {r.get("slot") for r in _rows
+                        if isinstance(r, dict) and r.get("status") == "open"}
+    _expected_sized = sum(1 for i in _open_build if i["slot"] in _slots_with_rows)
+    assert f["items_sized_build"] == _expected_sized, (f["items_sized_build"], _expected_sized)
+    if _expected_sized < len(_open_build):
+        assert "PROJECTION COVERAGE" in _b, _b
+    _line = render_forecast(_reg, _text)
+    assert "owner-switch (not projected)" in _line, _line[:400]
+
+    # ── (b) the effort paragraph says which figure is live, and names what it cost ──────────────────
+    assert "THIS PARAGRAPH IS NOT THE LIVE FIGURE" in _text
+    assert "WHAT P1 ACTUALLY COST" in _text
+    # the old headline claimed a remaining cost; it may survive only as a labelled estimate
+    _headline = "EFFORT, HONESTLY: ~33 rounds at the current cadence"
+    assert _headline not in _text, "the unlabelled headline is back"
+    assert "THE ESTIMATE WAS ~33 rounds before P4" in _text
+    # each phase declares how its items are delivered, so the reader sees it too
+    assert _text.count("delivered_by: build") == 3, _text.count("delivered_by: build")
+    assert _text.count("delivered_by: owner-switch") == 1
+
+    # ── (c) the README's figures equal what the tree exposes ────────────────────────────────────────
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location("_rf", root / "scripts/readme_figures.py")
+    _rf = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_rf)
+    _m, _s = _rf.measured(), _rf.stated()
+    assert _s["api_line_found"] and _s["fe_line_found"], _s
+    for _k in ("ops", "paths", "routes"):
+        assert _s[_k] == _m[_k], (_k, _s[_k], _m[_k])
+    # the claim that one file owns the routes is itself measured
+    assert _m["route_files"] == ["apps/workstation-superapp/src/App.tsx"], _m["route_files"]
+    # and the figures are exact, so they CAN be wrong: an open-ended count cannot be checked
+    _readme = (root / "README.md").read_text(encoding="utf-8")
+    assert "140+ routes" not in _readme
+    assert "scripts/readme_figures.py" in _readme
+
+    # ── (d) the page shows the plan's completion, and marks the items no round closes ───────────────
+    # this dashboard showed ONLY the row backlog - "~12 rounds for all open rows" - with nothing about
+    # the plan being 110 build rounds from done, and it queued P4 items with no sign a round cannot
+    # close them.
+    from agentic_core.plan_followups import schedule as _schedule
+    _app = root / "apps/workstation-superapp/src"
+    _sc = _schedule(_reg, _text)
+    _switch_slots = [x["slot"] for x in _sc["schedule"] if x.get("delivered_by") == "owner-switch"]
+    assert _switch_slots, "no owner-switch item is in the schedule, so the queue marker is unreachable"
+    assert all(x.startswith("P4.") for x in _switch_slots), _switch_slots
+    assert all(x.get("delivered_by") == "build" for x in _sc["schedule"]
+               if not x["slot"].startswith("P4.")), [x["slot"] for x in _sc["schedule"]]
+    _dash = (_app / "pages/TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="plan-completion-pace"' in _dash
+    assert 'data-testid="plan-completion-basis"' in _dash
+    for _need in ("items_rounds_projected", "items_open_build", "items_open_owner_switch",
+                  "item_build_rate_per_round", "items_sized_build", "item_rate_phases"):
+        assert _need in _dash, _need
+    # the page carries the CAVEATS, not just the number: a projection without its coverage is what
+    # this round removed from the document
+    assert "weakest figure on this page" in _dash
+    assert "THAT work closed at" in _dash          # JSX wraps the sentence, so match one line of it
+    assert "have never been sized" in _dash
+    assert "not projected" in _dash
+    # and the queue says which items a round cannot close. The WORDING surviving inside a dead
+    # branch is not the marker rendering, so the condition it hangs on is asserted too.
+    assert "the Owner flips this" in _dash and "slot-kind-" in _dash
+    assert "s.delivered_by === 'owner-switch' &&" in _dash, "the marker is not bound to the kind"
+
+    # ── (e) a DELIBERATE placement is expressible through the tool, and records why ─────────────────
+    # this round filed two rows onto items the router would not choose, and the plan-currency guard
+    # rejected both: `slot_source` exempts a row from the routing heuristic because a stated reason
+    # outranks a filename match, but there was no CLI flag for it, so W496's rulings had been written
+    # into the register by hand and a later round had no way to say why it placed a row.
+    _cli = (root / "scripts/followups.py").read_text(encoding="utf-8")
+    # each assertion binds to ONE site: `add` and `reslot` both declare the flag and both write the
+    # field, so a whole-file search for either string is satisfied by the other path surviving
+    assert 'a.add_argument("--slot-source"' in _cli, "`add` cannot express a deliberate placement"
+    assert 'rs.add_argument("--slot-source"' in _cli, "`reslot` cannot express a deliberate placement"
+    assert '**({"slot_source": _one_line(args.slot_source)}' in _cli, "`add` never writes the field"
+    assert 'r["slot_source"] = _one_line(args.slot_source)' in _cli, "`reslot` never writes the field"
+    # naming a reason and asking to be routed is a contradiction the tool refuses
+    assert 'args.slot_source.strip() and args.slot.strip() == "auto"' in _cli
+    _deliberate = [r for r in _rows if isinstance(r, dict) and (r.get("slot_source") or "").strip()]
+    assert _deliberate, "no row records a deliberate placement, so the field is unexercised"
+    for _r in _deliberate:
+        assert str(_r.get("slot") or "") not in ("", "auto"), _r.get("id")
+    _byid = {r["id"]: r for r in _rows if isinstance(r, dict) and r.get("id")}
+    for _id in ("FU-280", "FU-282"):
+        assert (_byid[_id].get("slot_source") or "").strip(), (_id, "placed deliberately, unexplained")
+    # and the queue SHOWS it: the field was written into the register and rendered nowhere, so a
+    # reader saw the placement without the reason. The marker is asserted bound, not merely present.
+    assert "placed here on purpose" in _dash and "row-placed-" in _dash
+    assert "r.slot_source &&" in _dash, "the marker is not bound to the field"
+    assert "placed on ${r.slot} deliberately" in _dash, "the reason does not travel with the row"

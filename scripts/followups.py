@@ -142,6 +142,13 @@ def main() -> int:
     a.add_argument("--tier", type=int, choices=(1, 2, 3), help="1 a truth defect on a reached surface · 2 an invisible shortfall · 3 disclosed/unreached")
     a.add_argument("--area", default="", help="a priority area id from docs/PRIORITY.json (default: derived from the files)")
     a.add_argument("--reach", choices=("core", "secondary", "internal"), help="default: derived from the files")
+    # W499 — a DELIBERATE placement is expressible through the tool. The plan's own guard exempts a row
+    # carrying `slot_source` from agreeing with the routing heuristic, because a stated reason outranks a
+    # filename match — but there was no flag for it, so W496's rulings were written into the JSON by hand
+    # and this round filed two rows the guard then rejected. Say why, or accept where the router sends it.
+    a.add_argument("--slot-source", default="", help="why THIS item, when the router would choose another "
+                                                     "(an Owner ruling, or the row it riders). Required "
+                                                     "reading for the plan's currency guard.")
     rp = sub.add_parser("reprioritise", help="set a row's priority parts (tier / area / reach)")
     rp.add_argument("id")
     rp.add_argument("--tier", type=int, choices=(1, 2, 3))
@@ -163,6 +170,7 @@ def main() -> int:
     rs = sub.add_parser("reslot")
     rs.add_argument("id")
     rs.add_argument("--slot", help="a plan item, or auto to route it")
+    rs.add_argument("--slot-source", default="", help="why THIS item (see `add --slot-source`)")
     g = rs.add_mutually_exclusive_group()
     g.add_argument("--ungate", action="store_true", help="the Owner has ruled: schedule it into --slot")
     g.add_argument("--gate", action="store_true", help="it waits on the Owner: slot OWNER")
@@ -297,12 +305,16 @@ def main() -> int:
                     sys.exit(f"REFUSED — {routed['reason']}")
                 slot = routed["slot"]
                 said.append(f"routed to {slot} — {routed['by']}")
+            if args.slot_source.strip() and args.slot.strip() == "auto":
+                sys.exit("REFUSED — --slot-source says why THIS item was chosen, so name the item with "
+                         "--slot; routing it defeats the point")
             reg["items"].append({
                 "id": f"FU-{n:03d}", "title": title, "why": _one_line(args.why),
                 "source": _one_line(args.source), "found": time.strftime("%Y-%m-%d"),
                 "files": files,
                 "severity": args.severity, "owner_gated": bool(args.owner_gated),
                 "slot": slot, "status": "open", "closed_by": None, "note": "",
+                **({"slot_source": _one_line(args.slot_source)} if args.slot_source.strip() else {}),
             })
             _set_priority_parts(reg["items"][-1], args)
             added_id = f"FU-{n:03d}"
@@ -369,7 +381,12 @@ def main() -> int:
                         sys.exit(f"REFUSED — {args.id}: {routed['reason']}")
                     slot = routed["slot"]
                     said.append(f"{args.id} routed to {slot} — {routed['by']}")
+                    if args.slot_source.strip():
+                        sys.exit("REFUSED — --slot-source says why THIS item was chosen; do not pass it "
+                                 "with --slot auto")
                 r["slot"] = slot
+                if args.slot_source.strip():
+                    r["slot_source"] = _one_line(args.slot_source)
         elif args.cmd == "route":
             routes = reg.setdefault("routes", [])
             if not isinstance(routes, list):

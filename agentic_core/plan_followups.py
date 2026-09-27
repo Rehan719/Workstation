@@ -202,7 +202,20 @@ def plan_items(prompt_text: str) -> List[Dict[str, Any]]:
     if body is None:
         return []
     items = []
+    # §planner (W499) — A PHASE'S KIND IS DECLARED IN ITS HEADING AND READ HERE, NEVER GUESSED FROM
+    # ITS PROSE. P4's items are switches the Owner flips, not work a round closes, and the projection
+    # was counting them as rounds. Deciding that from words like "Owner" in a heading would be the
+    # naming trap this plan forbids, so the heading carries `delivered_by: <kind>` and an unmarked
+    # phase stays None - named in the basis, never assumed to be build work.
+    _phase = None
+    _phase_kind: Dict[str, Optional[str]] = {}
     for line in _without_blocks(body).splitlines():
+        _ph = re.match(r"^PHASE (P\d+)\b(.*?)\r?$", line)
+        if _ph:
+            _phase = _ph.group(1)
+            _k = re.search(r"delivered_by:\s*([a-z][a-z-]*)", _ph.group(2))
+            _phase_kind[_phase] = _k.group(1) if _k else None
+            continue
         m = re.match(r"^ (P\d+\.\d+)\b(.*?)\r?$", line)
         if not m:
             continue
@@ -213,6 +226,7 @@ def plan_items(prompt_text: str) -> List[Dict[str, Any]]:
         title = title.split(". ")[0].rstrip(".")          # the item's name: its first sentence
         items.append({"slot": m.group(1), "title": title[:110], "done": bool(done),
                       "done_by": done.group(1) if done else None,
+                      "phase": _phase, "delivered_by": _phase_kind.get(_phase),
                       # said done in any other form or place on the line: reported, never read as open
                       "malformed_done": (not done) and bool(_DONE_MENTION.search(rest))})
     return items
@@ -326,6 +340,10 @@ def schedule(register: Dict[str, Any], prompt_text: str) -> Dict[str, Any]:
         slotted = _prioritised([r for r in riders if r["slot"] == it["slot"]], cfg, gate)
         if slotted:
             slots.append({"slot": it["slot"], "title": it["title"], "items": slotted,
+                          # W499 — the item's DECLARED delivery kind travels with it: a reader seeing
+                          # P4.1 in the queue would otherwise assume a round closes it, and a round
+                          # cannot flip a switch the Owner holds.
+                          "delivered_by": it.get("delivered_by"),
                           "open_priority": round(sum(r["priority"]["score"] for r in slotted), 1)})
     # W469 — a row that rides no open plan item (the retired NEXT, an unknown slot, a finished item) is shown, never
     # silently left out of the schedule; check() names what to do with it
@@ -635,6 +653,22 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
     for _r in _all_open:
         _rows_by_slot[_r["slot"]] = _rows_by_slot.get(_r["slot"], 0) + 1
     _items_no_rows = [i["slot"] for i in open_items if not _rows_by_slot.get(i["slot"])]
+    # §planner (W499) — THE PROJECTION AVERAGED POPULATIONS THAT ARE NOT THE SAME WORK. Every item
+    # ever marked done is P1, so the rate is the rate TRUTH-SWEEP work closed at - and it was being
+    # applied to P4, whose items are the Owner's switches. Counting those adds rounds nobody spends.
+    # The population is split by the declared kind; only build items are projected; and the figure
+    # now carries what it covers, because most open build items have never been sized.
+    _open_build = [i for i in open_items if i.get("delivered_by") == "build"]
+    _open_owner = [i for i in open_items if i.get("delivered_by") == "owner-switch"]
+    _open_unmarked = [i for i in open_items
+                      if i.get("delivered_by") not in ("build", "owner-switch")]
+    _done_build = [i for i in items if i.get("done") and i.get("delivered_by") == "build"]
+    _rate_phases = sorted({str(i.get("phase")) for i in items if i.get("done") and i.get("phase")})
+    _sized_build = [i for i in _open_build if _rows_by_slot.get(i["slot"])]
+    _build_rate = round(len(_done_build) / _span, 3) if _span else 0.0
+    _build_projected = (
+        None if len(_done_build) < MIN_OBSERVED or _build_rate <= 0 or not _open_build
+        else int(__import__("math").ceil(len(_open_build) / _build_rate)))
     nxt = open_items[0] if open_items else None
     next_open = len(riding.get(nxt["slot"], [])) if nxt else 0
 
@@ -715,9 +749,15 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
         "items_done_total": _items_done_total,
         "item_rounds_in_window": _items_in_window,
         "items_closed_in_window": _items_closed_in_window,
-        "items_rounds_projected": (
-            None if _items_done_total < MIN_OBSERVED or _item_rate_span <= 0
-            else int(__import__("math").ceil(len(open_items) / _item_rate_span))),
+        # W499 — the projection covers the BUILD items only, at the rate build items closed at
+        "items_open_build": len(_open_build),
+        "items_open_owner_switch": len(_open_owner),
+        "items_owner_switch_slots": [i["slot"] for i in _open_owner],
+        "items_open_unmarked": [i["slot"] for i in _open_unmarked],
+        "item_rate_phases": _rate_phases,
+        "item_build_rate_per_round": _build_rate,
+        "items_sized_build": len(_sized_build),
+        "items_rounds_projected": _build_projected,
         "items_basis": (
             (f"{_items_done_total} of {len(items)} plan item(s) carry a DONE marker, across a span of "
              f"{_span} round(s) (W{_done_rounds[0]} to W{_done_rounds[-1]}) - a rate of "
@@ -731,7 +771,24 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
                f"registered row - their work is their own ACCEPT criteria and no row count covers it."
                if _items_no_rows else f"{len(open_items)} item(s) remain open.")
             + (f" Too few items have ever been marked done to project from ({_items_done_total}; a rate "
-               f"needs {MIN_OBSERVED})." if _items_done_total < MIN_OBSERVED else "")),
+               f"needs {MIN_OBSERVED})." if _items_done_total < MIN_OBSERVED else "")
+            # W499 — the three sentences the old single figure left out
+            + (f" THE RATE'S POPULATION: every completed item is in "
+               f"{', '.join(_rate_phases)}, so this is the rate THAT work closed at, applied to "
+               f"phases whose work differs." if _rate_phases else "")
+            + (f" NOT PROJECTED: {len(_open_owner)} open item(s) "
+               f"({', '.join(i['slot'] for i in _open_owner)}) are declared owner-switch - a switch "
+               f"the Owner flips is not closed by a round, so counting it as rounds would invent "
+               f"them." if _open_owner else "")
+            + (f" A further {len(_open_unmarked)} open item(s) "
+               f"({', '.join(i['slot'] for i in _open_unmarked)}) sit in a phase whose heading "
+               f"declares no delivered_by, so their kind is unknown and they are left out of the "
+               f"projection rather than assumed." if _open_unmarked else "")
+            + (f" PROJECTION COVERAGE: {len(_sized_build)} of {len(_open_build)} build item(s) carry "
+               f"a registered row; the other {len(_open_build) - len(_sized_build)} have never been "
+               f"sized, so the figure is an average over a population most of which no round has "
+               f"measured - it is the weakest number on this page."
+               if _open_build and len(_sized_build) < len(_open_build) else "")),
         "open_rows_awaiting_owner": len(_unscheduled),
         "awaiting_owner_ids": sorted(r["id"] for r in _unscheduled),
         "next_item": (None if not nxt else dict(
@@ -797,11 +854,16 @@ def render_forecast(register: Any, prompt_text: str) -> str:
                       if f["open_rows_awaiting_owner"] else ", and none awaits an Owner decision."))
         # §planner (W496) - the row projection is the DEFECT BACKLOG; plan completion is its own figure
         out.append(f"  PLAN COMPLETION (a different population from the rows): "
-                   + (f"{f['items_open']} open item(s) \u2248 {f['items_rounds_projected']} round(s) at "
-                      f"{f['item_rate_per_round']} item(s)/round."
+                   f"{f['items_open']} open item(s) - "
+                   + (f"{f['items_open_build']} build \u2248 {f['items_rounds_projected']} round(s) at "
+                      f"{f['item_build_rate_per_round']} item(s)/round"
                       if f["items_rounds_projected"] is not None else
-                      f"{f['items_open']} open item(s) \u2014 NOT PROJECTED.")
-                   + f" {f['items_basis']}")
+                      f"{f['items_open_build']} build \u2014 NOT PROJECTED")
+                   + (f", {f['items_open_owner_switch']} owner-switch (not projected)"
+                      if f["items_open_owner_switch"] else "")
+                   + (f", {len(f['items_open_unmarked'])} of unknown kind (not projected)"
+                      if f["items_open_unmarked"] else "")
+                   + f". {f['items_basis']}")
         rest = [x for x in f["by_item"] if x["open_rows"] > 0][:8]
         out.append("  BY ITEM (each at its OWN measured rate; \u2014 = too few rounds have closed one of its "
                    "rows to measure): "

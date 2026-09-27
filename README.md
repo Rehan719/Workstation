@@ -116,7 +116,7 @@ vercel deploy
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 461 API endpoints (method+path; 440 distinct paths), boots clean
+  app_mvp.py           — entrypoint; 471 API operations (method+path; 449 distinct paths), boots clean
   ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
   ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log
@@ -132,12 +132,12 @@ agentic_core/          — FastAPI backend (the real code)
   synthesis/ · api/intelligence.py — multi-format synthesis + cognitive/MJM/Nexus engines
 
 apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
-  src/App.tsx          — 140+ routes (64 verified operational end-to-end)
+  src/App.tsx          — 73 routes (the only file in src/ that defines any; recomputed by scripts/readme_figures.py)
   src/pages/           — Enterprise, Learner, Developer, Scholar realms
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **370 integration tests passing / 16 skipped** (last CI-green full run, W463; grows every round); production
+> Verified in CI on every push: backend boots clean; **405 integration tests passing / 15 skipped** (full run on the W498 tree; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.

@@ -36,7 +36,10 @@ interface OrchestrationRun {
 
 // W462 — the follow-up register (GET /api/v1/plan/followups): found-but-not-done work, scheduled in plan order
 interface FollowupPriority { score: number; area: string | null; tier: number | null; parts: Record<string, number>; basis: Record<string, string> }
-interface FollowupRow { id: string; title: string; why: string; severity: string; slot: string; source: string; priority?: FollowupPriority }
+// W499 — `slot_source` is why a row sits on THIS item when the routing heuristic would have sent
+// it elsewhere. It was written into the register and shown nowhere, so a reader saw the placement
+// and not the reason for it.
+interface FollowupRow { id: string; title: string; why: string; severity: string; slot: string; source: string; slot_source?: string | null; priority?: FollowupPriority }
 // W469 — the delivery plan's live state (PLAN NOW), derived on every call from the plan's items and the register
 interface PlanItemNow { slot: string; title: string; followups: number; by_severity: Record<string, number> }
 interface PlanNow {
@@ -54,13 +57,27 @@ interface Forecast {
   open_rows: number;
   next_item: { slot: string; title: string; open_rows: number; rounds_projected: number | null } | null;
   all_rows_rounds_projected: number | null;
+  // W499 — PLAN COMPLETION is a different population from the rows, and this page showed only the
+  // rows: a reader saw "~12 rounds for all open rows" and had no way to know the PLAN is 110 build
+  // rounds from done. The partition travels with the figure: switches the Owner flips are not
+  // projected, and the coverage says how much of the population was ever sized.
+  items_open: number;
+  items_open_build: number;
+  items_open_owner_switch: number;
+  items_owner_switch_slots: string[];
+  items_open_unmarked: string[];
+  items_rounds_projected: number | null;
+  item_build_rate_per_round: number;
+  item_rate_phases: string[];
+  items_sized_build: number;
+  items_with_no_row: string[];
 }
 interface Followups {
   available: boolean; reason?: string;
   forecast?: Forecast;
   counts: { open: number; scheduled: number; high: number; awaiting_owner: number; done: number; dropped: number; unscheduled?: number };
   next_plan_item: string | null;
-  schedule: { slot: string; title: string; items: FollowupRow[] }[];
+  schedule: { slot: string; title: string; items: FollowupRow[]; delivered_by?: string | null }[];
   unscheduled?: FollowupRow[];
   awaiting_owner: FollowupRow[];
   plan?: PlanNow;
@@ -354,6 +371,25 @@ export const TransformationDashboard: React.FC = () => {
                           ` One-time intake excluded: ${followups.forecast.steady!.excluded.join(', ')}.`}
                         {' '}Arithmetic over an observed mean, in rounds — not a date and not a promise.
                       </p>
+                      {/* W499 — the plan's own completion, which this page did not show at all */}
+                      <p className="text-[11px] font-black text-white mt-2" data-testid="plan-completion-pace">
+                        {followups.forecast.items_rounds_projected != null
+                          ? <>~{followups.forecast.items_rounds_projected} round{followups.forecast.items_rounds_projected === 1 ? '' : 's'} for the {followups.forecast.items_open_build} open BUILD plan items</>
+                          : <>{followups.forecast.items_open_build} open build plan items — NOT PROJECTED</>}
+                        {followups.forecast.items_open_owner_switch > 0 && (
+                          <span className="text-slate-500 font-bold"> · {followups.forecast.items_open_owner_switch} the Owner flips ({followups.forecast.items_owner_switch_slots.join(', ')}) — not projected</span>
+                        )}
+                      </p>
+                      <p className="text-[9px] text-slate-500 mt-1 leading-relaxed" data-testid="plan-completion-basis">
+                        At {followups.forecast.item_build_rate_per_round} plan items per round — a rate measured
+                        entirely on {followups.forecast.item_rate_phases.join(', ') || 'no completed phase'}, so it is the rate
+                        THAT work closed at, applied to phases whose work differs.
+                        {' '}Coverage: {followups.forecast.items_sized_build} of {followups.forecast.items_open_build} build
+                        items carry a registered row; the other {followups.forecast.items_open_build - followups.forecast.items_sized_build}
+                        {' '}have never been sized, so this is the weakest figure on this page.
+                        {followups.forecast.items_open_unmarked.length > 0 &&
+                          ` ${followups.forecast.items_open_unmarked.length} item(s) sit in a phase that declares no delivery kind and are left out: ${followups.forecast.items_open_unmarked.join(', ')}.`}
+                      </p>
                     </>
                   ) : (
                     <p className="text-[11px] font-bold text-amber-400" data-testid="plan-pace-not-assessable">
@@ -407,10 +443,14 @@ export const TransformationDashboard: React.FC = () => {
               <div className="space-y-3">
                 {followups.schedule.map(s => (
                   <div key={s.slot}>
-                    <p className="text-[10px] font-black text-white">{s.slot} <span className="text-slate-600 font-bold">— {s.title}</span></p>
+                    <p className="text-[10px] font-black text-white">{s.slot} <span className="text-slate-600 font-bold">— {s.title}</span>
+                      {/* W499 — an item a round cannot close says so where it is queued */}
+                      {s.delivered_by === 'owner-switch' && (
+                        <span className="ml-2 text-[9px] text-amber-400 font-bold" data-testid={`slot-kind-${s.slot}`}>the Owner flips this — no round closes it</span>
+                      )}</p>
                     {s.items.map(r => (
-                      <p key={r.id} className="text-[10px] text-slate-400 mt-1 pl-3" title={`${r.why} (found ${r.source})${r.priority ? `\npriority ${r.priority.score}: ` + Object.entries(r.priority.basis).map(([k, v]) => `${k} — ${v}`).join('; ') : ''}`}>
-                        <span className={r.severity === 'high' ? 'text-amber-400 font-black' : 'text-slate-500 font-black'}>{r.id} · {r.severity}{r.priority ? ` · p ${r.priority.score}` : ''}</span> {r.title}
+                      <p key={r.id} className="text-[10px] text-slate-400 mt-1 pl-3" title={`${r.why} (found ${r.source})${r.slot_source ? `\nplaced on ${r.slot} deliberately — ${r.slot_source}` : ''}${r.priority ? `\npriority ${r.priority.score}: ` + Object.entries(r.priority.basis).map(([k, v]) => `${k} — ${v}`).join('; ') : ''}`}>
+                        <span className={r.severity === 'high' ? 'text-amber-400 font-black' : 'text-slate-500 font-black'}>{r.id} · {r.severity}{r.priority ? ` · p ${r.priority.score}` : ''}</span>{r.slot_source && <span className="ml-1 text-[9px] text-sky-400 font-bold" data-testid={`row-placed-${r.id}`}>placed here on purpose</span>} {r.title}
                       </p>
                     ))}
                   </div>

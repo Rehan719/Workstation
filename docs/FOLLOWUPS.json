@@ -4828,6 +4828,61 @@
       "closed_by": "W498",
       "note": "",
       "tier": 1
+    },
+    {
+      "id": "FU-280",
+      "title": "FU-251's premise is false: the AI CEO chat keeps cross-request recall too, so the isolation leg it asks for would have covered one of two callers",
+      "why": "FU-251 states 'The avatar is the one caller that keeps cross-request recall' and that W488 'left exactly one deliberate exception'. Measured: TWO live callers pass augment=True - agentic_core/avatars/api.py:381 (the avatar, the documented exception) and agentic_core/api/v138/ceo.py:432 (the AI CEO chat stream), whose router IS mounted (app_mvp.py:78, prefix /api/v138). W488 audited the query_meta seam and this one is stream_meta, which is the grep-one-entry-point class this programme already has a rule about. NOT AN OPEN LEAK: all four gateway seams (query, query_meta, stream, stream_meta) now default to _RECALL_OFF, so recall happens only where it is asked for, and both callers pass owner_id. THE DEFECT IS THE CLAIM AND THE COVERAGE: a false universal sits in the register, and the behavioural leg FU-251 asks for - seed two tenants, ask as each, prove neither sees the other - would have been written for the avatar alone and reported as proving the repo. The leg must drive BOTH callers, and the count of augment=True sites must be asserted so a third cannot appear unproven.",
+      "source": "W499 (verifying an external audit's claim that the avatar is the only recall caller)",
+      "found": "2026-09-27",
+      "files": [
+        "agentic_core/api/v138/ceo.py",
+        "agentic_core/avatars/api.py",
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.3",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "slot_source": "W499: it corrects FU-251, which rides P2.3 — the row it fixes owns the item"
+    },
+    {
+      "id": "FU-281",
+      "title": "OWNER DECISION: the plan has no Phase 5 - it ends at the Owner's switches and never reaches commercialisation, which is what the platform is for",
+      "why": "grep for P5 / 'Phase 5' in docs/FABLE_DELIVERY_PROMPT.md returns ZERO hits. The plan runs P1 truth (18/18 done) -> P2 reach (0/16) -> P3 capability (0/25) -> P4 the Owner's switches (0/6), and stops. There is no item for a first paying tenant, a pricing model, support operations, or the entity repository handed over as a versioned product - although the README's first line calls this an AI-mediated workspace for moving ideas 'from concept to commercial output' and the lifecycle is named Concept->Commercialise. Two independent external audits of this repo inferred a commercial destination from that vocabulary and were not wrong to; what they got wrong was the SHAPE (they inferred a multi-tenant SaaS with real-money rails, which the canon rules out: virtual WST, local-first, external providers opt-in). A PROPOSED SKELETON, for the Owner to ratify, reject or replace: P5.1 the first tenant journey end to end on the virtual economy, measured not narrated; P5.2 the price of a VSB stated in WST with the waterfall that produces it (the section 4 waterfall already exists and is Owner-adjustable); P5.3 support operations - who answers when an autonomous entity is wrong, and what the platform records when it does; P5.4 the entity repository as a shippable artifact (docs + site + app + board pack) with a version, a changelog and a handover that does not need this repo; P5.5 what is NOT for sale, stated plainly - the faith content, the Fitrah spectrum, anything real-money. THE DECISION THE OWNER OWNS: (a) ratify a Phase 5 of roughly this shape; (b) rule that commercialisation is out of this plan's scope and belongs to a separate programme, in which case the plan should say so where it currently just stops; or (c) replace the skeleton. Nothing should be built into a phase the Owner has not named.",
+      "source": "W499 (measuring the plan against the external briefs' commercialisation premise)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-282",
+      "title": "ten dependencies are pinned and imported by nothing: five opentelemetry packages, asyncpg, alembic, aiosqlite - the gap is wiring, not procurement",
+      "why": "An external audit named 'no APM, no error tracking' and 'JSON files, no relational DB' as gaps to procure. Measured: opentelemetry-api, -sdk, -proto and two otlp exporters (all 1.40.0), plus asyncpg 0.31.0, alembic 1.18.4 and aiosqlite 0.22.1, are ALL pinned in requirements.txt, and grep over agentic_core, integration_tests and scripts finds NO file importing any of them. So both 'gaps' are adoption gaps. What DOES exist, measured: psutil vitals in 8 modules, 13 record_outcome call sites across 6 modules (the outcome ledger built W495), and the hash-chained UEG log referenced in 11 api modules - so the platform is not blind to itself, it has no EXTERNAL telemetry and no error capture. THE WORK: for the database three, this is P4.4's pre-flight - a migration dry-run and rollback proven on a copy - so they stay pinned and the row rides P4.4. For the five opentelemetry packages there is NO plan item that owns observability at all, which is the finding: either an item is added and they are wired to the outcome ledger and the UEG chain that already exist, or they are retired from the manifest. A dependency pinned for a year and imported by nothing is a claim the manifest makes and the code does not keep.",
+      "source": "W499 (verifying an external audit's scalability and observability gaps)",
+      "found": "2026-09-27",
+      "files": [
+        "requirements.txt"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "slot_source": "W499: the three database pins are P4.4's own pre-flight material, so the row rides the switch they belong to"
     }
   ],
   "routes": [

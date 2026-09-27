@@ -7971,3 +7971,159 @@ Four more blinds, all catching - F01 restores the exact CI break, F02 reverts a 
 only the scan can see it, F03 removes the `except RuntimeError:` the helper exists for, F04 creates a
 loop without making it current. **33 blinds this round, none vacuous. Final tree: 405 passed, 15
 skipped, 0 failed.** Registered as FU-279, closed in the same round.
+
+## W499 — the plan's own figures, held to the plan's own rule
+
+Two external audits of this repo arrived this round. The Owner asked that they be verified before
+being considered. They were, and that is the whole of this round: **neither brief named a
+destination this plan does not already have, and verifying them found five defects in the plan's own
+measurements.** Three are fixed here; two are registered.
+
+What the briefs got right is worth recording, because it is not nothing: the second one had plainly
+read the delivery prompt — the 67-op scatter in 38 clusters, 107 open rows, the Stripe key still in
+git history, P2.10 as the delivery method held by the arms-length agency, all verbatim. Its leading
+recommendation — formalise the method into machine-readable JSON the CCA checks — **is already
+P2.10(a)**, `docs/DELIVERY_METHOD.json` served by `/api/v1/method`, added on the Owner's instruction
+the same day. Its other two were stale: the forecast reports `0 awaiting the Owner`, and the
+instrument it told the next session to run, `fidelity_audit_v3.js`, **is not in the tree** (the real
+ones are `scripts/render_fidelity_ledger.py`, `scripts/reach_audit.py`,
+`scripts/check_import_integrity.py`).
+
+The first brief's four "gaps to close" measured out as three plan items and one hole:
+multi-tenant auth is **P4.1**, JSON→Postgres is **P4.4**, Stripe/KYC is **P4.6** — and P4's own
+heading reads *"THE OWNER'S HAND … switches flipped by the Owner"*. Three of the four were switches
+the Owner holds, presented as backlog. Its fourth, observability, is real and is registered. Its
+inferred destination — an autonomous multi-tenant SaaS moving real money — was derived from README
+adjectives; the canon says virtual WST, local-first, external providers opt-in. **The verification
+discipline is worth taking. The destination is not the Owner's, and this round refuses it.**
+
+### 1. The projection counted rounds nobody will spend
+
+`items_rounds_projected` divided **every** open item by a rate measured **entirely on P1**. Every one
+of the 18 items ever marked done is a P1 item; the other 47 are P2 reach, P3 capability, and P4 —
+whose six items are switches. No round closes a switch, so six items' worth of rounds were invented.
+And 26 of the 47 open items carry no registered row at all, which the single figure did not say.
+
+- **A phase's kind is now DECLARED in its heading and read, never inferred.** Each `PHASE P…` line
+  carries `delivered_by: build` or `delivered_by: owner-switch`, and `plan_items` parses it. An
+  unmarked phase stays `None` and its items are named in the basis and left out — deciding a
+  phase's kind by looking for the word "Owner" in its prose is the naming trap this plan forbids.
+- **Only build items are projected**, at the rate build items closed at. The basis now states the
+  rate's population ("every completed item is in P1, so this is the rate THAT work closed at,
+  applied to phases whose work differs"), names the owner-switch items it refused to project, and
+  ends with **PROJECTION COVERAGE: 20 of 41 build item(s) carry a registered row** — the other 21 have
+  never been sized, so the figure is an average over a population most of which no round has
+  measured. It says, in the document, that it is the weakest number on the page.
+- Measured effect: **126 rounds over 47 items becomes 110 rounds over 41 build items**, with 6
+  switches excluded and the coverage stated. Fifteen of the 21 unsized items are P3.
+
+### 2. The plan carried two timelines, and the hand-written one was 3.4× out
+
+Line 774 is generated from the register and this plan's own DONE markers. Line 1830 was prose:
+*"EFFORT, HONESTLY: ~33 rounds at the current cadence before P4"* — and its evidence list stopped at
+**W473**, twenty-four rounds before this one. Measured against the only phase that has finished: P1
+was estimated at ~14 rounds and its 18 items spanned **48** (W449→W496). The same instrument
+produced P2's ~9 and P3's ~11, and nothing has remeasured them.
+
+The paragraph is **kept, and relabelled** — deleting it would destroy the evidence that estimates
+here run 3.4× over, which is the lesson. It now opens `THIS PARAGRAPH IS NOT THE LIVE FIGURE`,
+points at the generated block, preserves the estimate as an estimate, and states what P1 cost. Each
+phase heading records `ESTIMATED … ACTUAL …` where an actual exists and `NOT REMEASURED` where it
+does not. Its own closing line already said *"Do not shorten it by declaring; shorten it by
+measuring"*; this round applied that to the paragraph.
+
+### 3. The front door was the stale baseline both briefs inherited
+
+The README claimed `461 API endpoints (method+path; 440 distinct paths)` and `140+ routes`. Measured:
+**471 operations over 449 paths**, and **73 routes** in `App.tsx`, which is the only file in `src/`
+that defines any. Nothing in the tree recomputed either figure, and the first brief built its entire
+"As-Is" baseline on them.
+
+`scripts/readme_figures.py` measures all four figures from the booted app and from `App.tsx`, and
+`--check` / `--fix` make the README correctable in one command. The figures are stated **exactly**,
+not as `140+`: a range cannot be wrong, so it cannot be checked. The suite asserts the README equals
+the measurement, so a new route now fails CI until the front door is updated — which is the point.
+The script also measures the claim that App.tsx is the only file defining routes, and says so if
+that stops being true rather than quietly fixing the number.
+
+### Registered, not done
+
+- **FU-280 — the recall claim.** FU-251 states the avatar is the one caller keeping cross-request
+  recall. Measured: **two** live callers pass `augment=True` — `avatars/api.py:381` and
+  `api/v138/ceo.py:432`, the AI CEO chat, whose router is mounted at `/api/v138`. W488 audited the
+  `query_meta` seam; this one is `stream_meta`. Not an open leak — all four seams default to recall
+  off and both callers pass `owner_id` — but the behavioural isolation leg FU-251 asks for would have
+  been written for one of two surfaces and reported as proving the repo.
+- **FU-281 — Phase 5, for the Owner.** `grep P5` returns zero hits: the plan ends at the Owner's
+  switches and never reaches the commercial output its own first line names. A five-item skeleton is
+  proposed in the row for the Owner to ratify, reject or replace — including what is *not* for sale.
+- **FU-282 — ten pinned, unimported dependencies.** Five `opentelemetry` packages, `asyncpg`, `alembic`,
+  `aiosqlite`: pinned in `requirements.txt`, imported by nothing. The database three are P4.4's
+  pre-flight material and stay. The five telemetry packages have **no plan item that owns
+  observability at all** — that is the finding, not the packages.
+
+### Also in W499
+
+- The README's `64 verified operational end-to-end` was **removed rather than instrumented**: it sat
+  beside two figures this round made checkable, and I cannot measure it. Absence beats an unmeasured
+  number next to measured ones.
+- Fifteen of the 21 unsized build items are P3, which is where the projection is weakest and where
+  the next sizing pass should start.
+
+### 4. The page showed the row backlog and never the plan's
+
+`TransformationDashboard.tsx` printed "~12 rounds for all open rows" and nothing at all about plan
+completion, so the screen's most prominent number was the defect backlog and the 110-round figure
+existed only in a document. It also queued P4 items with no sign that a round cannot close one.
+
+The dashboard now carries a second projection beside the first: the build items and their rounds,
+the switch items named and marked not projected, and underneath it the basis in full - the rate's
+population, the coverage count, and the sentence saying this is the weakest figure on the page. The
+schedule carries each item's declared kind, so an item the Owner flips says so where it is queued
+(`slot-kind-P4.4`, reachable because FU-282 rides P4.4). This also closed all eight
+`[keys] a key produced but read by no surface` leads that the round's own pre-flight raised: the new
+fields now reach a reader instead of sitting in JSON.
+
+### The three blinds that were vacuous first
+
+Worth recording, because each was a defect in the instrument rather than a miss:
+
+- **the coverage assert was gated on the figure it describes** - `if items_sized_build <
+  items_open_build: assert "PROJECTION COVERAGE" in basis`. A blind that reports every item as sized
+  skips the branch, so a figure lying about full coverage skipped its own check. The test now
+  computes the expected count from the register and asserts equality.
+- **the README names the script twice**, so renaming one mention left the other holding the property
+  up. A blind on one leg of a twice-held claim proves nothing.
+- **the queue marker's WORDING survives inside a dead branch.** Setting the condition to `false`
+  removed the rendering and the source-reading assert still passed - a guard that reads source cannot
+  see reachability. The condition it hangs on is now asserted too.
+
+**27 blinds, each alone, each caught, none vacuous.**
+
+### 5. The full suite caught two rows I filed wrong — and the tool had no way to file them right
+
+The round's guard passed and 27 blinds caught, and the full suite still failed:
+`test_w469_the_plan_carries_every_followup_and_keeps_itself_current`. **Third time this session the
+full suite found what the guard and the sweep could not.**
+
+The rule it enforces: every open, non-gated row must sit where `route_row` would send it today. Two of
+the three rows this round registered did not - FU-280 was filed on P2.3 (the router says P2.1) and
+FU-282 on P4.4 (the router returns nothing). Both placements were **right**: FU-280 corrects FU-251,
+which rides P2.3, and FU-282's database pins are P4.4's own pre-flight material. The guard exempts a
+row carrying `slot_source`, because a stated reason outranks a filename match - **but there was no CLI
+flag for `slot_source`.** W496 had written its Owner rulings into the register by hand, so the field
+existed and the tool could not produce it.
+
+- `followups.py add` and `reslot` now take **`--slot-source`**, and refuse it together with
+  `--slot auto`: naming why THIS item was chosen while asking to be routed is a contradiction.
+- Both rows now record why they sit where they do.
+- **And the queue shows it.** `slot_source` was written into the register and rendered nowhere, so a
+  reader saw the placement without the reason - the same shape as the plan-completion gap above. The
+  scheduled row now carries `placed here on purpose` with the reason in its tooltip.
+
+Two of these blinds were vacuous first, for the same reason as D06: **`add` and `reslot` both declare
+the flag and both write the field**, so a whole-file string search was satisfied by whichever path
+survived. Each assertion is now bound to its own site.
+
+**Final: 33 blinds, none vacuous.** The three vacuous-first cases and these two share one lesson -
+a property held in two places needs two assertions, or a blind on either leg proves nothing.
