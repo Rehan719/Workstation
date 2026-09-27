@@ -5,6 +5,11 @@ W499. The README claimed "461 API endpoints (method+path; 440 distinct paths)" a
 only file that defines any. Nothing in the tree recomputed either figure, so both drifted - and an
 external audit of this repo built its whole baseline on them, inheriting the drift.
 
+W500: the first fix asserted a figure that was ENVIRONMENT-DEPENDENT and CI failed with
+('ops', 471, 469) - two routes mount only when the built frontend exists. The count is now
+restricted to /api/, which is what the README's sentence claims, and is the same number with or
+without dist/.
+
 This plan says of every product surface that a figure nothing computed is not a measurement. The
 README is the first surface anyone reads, so it is held to the same rule.
 
@@ -45,7 +50,13 @@ def api_figures() -> tuple[int, int]:
     ops, paths = set(), set()
     for r in app.routes:
         p = getattr(r, "path", None)
-        if not p:
+        # ONLY /api/, and this is not cosmetic. `GET /` and `GET /{full_path:path}` are mounted
+        # only when the built frontend is present, so a TOTAL differs between a developer tree
+        # (471) and CI (469), where the backend job runs before any dist/ exists - CI caught
+        # exactly that. The README claims API operations, and the SPA catch-all, /docs, /redoc,
+        # /health and /openapi.json are not any. Excluding them makes the figure mean what it
+        # says, and makes it the same number in both environments.
+        if not p or not p.startswith("/api/"):
             continue
         paths.add(p)
         for m in (getattr(r, "methods", None) or ()):
@@ -82,7 +93,9 @@ def measured() -> dict:
             "route_files": route_files()}
 
 
-_API_RE = re.compile(r"(entrypoint; )(\d+)( API operations \(method\+path; )(\d+)( distinct paths\))")
+# the trailing clause after "distinct paths" is prose and may change; the pattern anchors on the
+# two FIGURES and stops there, so a reworded sentence does not silently stop being checked
+_API_RE = re.compile(r"(entrypoint; )(\d+)( API operations \(method\+path; )(\d+)( distinct paths)")
 _FE_RE = re.compile(r"(src/App\.tsx\s+— )(\d+)( routes \(the only file in src/ that defines any)")
 
 

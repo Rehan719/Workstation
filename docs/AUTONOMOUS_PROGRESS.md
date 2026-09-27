@@ -8127,3 +8127,217 @@ survived. Each assertion is now bound to its own site.
 
 **Final: 33 blinds, none vacuous.** The three vacuous-first cases and these two share one lesson -
 a property held in two places needs two assertions, or a blind on either leg proves nothing.
+
+## W500 — the Owner's ruling in the plan, and the half of it that was wrong
+
+The Owner ruled on all three open questions with "I want to go with your recommendation". One of the
+three recommendations was mine and was **wrong**, and verifying before acting caught it before a line
+was edited. That is the most useful thing in this round, so it comes first.
+
+### The retirement that did not happen
+
+The ruling as taken was: retire the five `opentelemetry` pins, build error capture instead. The
+premise was that ten dependencies are pinned and imported by nothing, so the gap is wiring.
+**`pip show` falsifies half of it.** `opentelemetry-api` and `opentelemetry-sdk` are
+`Required-by: chromadb`, and chromadb is **live** — `agentic_core/ai/ceo/memory_v01.py` imports it
+(lazily, inside a method), and `memory_v01` is imported by `api/v138/ceo.py` and `avatars/api.py`, the
+two surfaces that keep cross-request recall. `asyncpg` is `Required-by: prefect`. And
+`requirements.txt` is a 298-line lock that **CI and the Dockerfile both install from**, so it carries
+transitive dependencies by design.
+
+The measurement ("no file imports them") was right. **The inference was wrong:** *no file imports it*
+is not *nothing needs it*, and removing a transitive entry from a lock breaks the install rather than
+tidying it. So P3.25 was authored with the retirement **removed**, its heading marked
+`CORRECTED W500 BEFORE ANY WORK WAS DONE`, and its ACCEPT ending "requirements.txt is NOT edited by
+this item". FU-282 was **dropped**, not closed, with the falsification recorded — a row whose premise
+fails is not a row that got done.
+
+What survives untouched, because it was measured directly rather than inferred: `app_mvp.py` registers
+a handler for `RequestValidationError` and **nothing else**, so an uncaught 500 leaves no record
+anywhere. OTLP has nowhere to export to either, so the record belongs in the outcome ledger this
+platform already keeps (13 `record_outcome` sites, the UEG chain in 11 API modules, psutil in 8).
+
+### And my instrument was wrong too, in the other direction
+
+Re-measuring the manifest question honestly: a first pass matched **distribution** names and reported
+28 unimported dependencies. Wrong — `pyyaml` imports as `yaml`, `PyJWT` as `jwt`, `scikit-learn` as
+`sklearn`, `psycopg2-binary` as `psycopg2`, `pyro-ppl` as `pyro`, `z3-solver` as `z3`. Re-run against
+each installed distribution's own `top_level.txt`: of 43 direct dependencies, **25 are imported by no
+`.py`** in the repo — including `ray`, `celery`, `qiskit`, `pennylane`, `web3`, `transformers`,
+`firebase-admin`. **Two are undecidable and excluded**: `POT` is not installed, and `autogen`'s
+`top_level.txt` is empty, which makes `any()` false and would have reported it unimported for the
+wrong reason. Registered as FU-283, and deliberately **not a deletion list**: a driver is loaded by
+URL, not imported, so each of the 25 needs one of three verdicts — reached without an import, held for
+a named item, or removable — and nothing goes until each has one.
+
+### The ruling, as it now stands in the plan
+
+- **PHASE P5 — COMMERCIALISATION, REHEARSED ON VIRTUAL WST** (`delivered_by: build`), whose heading
+  states that **no item in it requires a P4 switch** and that §18 is unchanged by it. P5.1 one tenant
+  concept→output, measured and read back from the stores it wrote to · P5.2 a price DERIVED from the
+  §4 waterfall and recomputed on read, a missing input yielding null and a reason rather than a
+  default · P5.3 support operations, the one item with no existing machinery and flagged as such ·
+  P5.4 the entity repository handed over, with a guard that boots a clean clone · P5.5 what is NOT for
+  sale, served from one place the pricing surface reads so an excluded capability cannot be priced.
+- **P3.25** as corrected above.
+- **P2.17 — THE ROUND'S OWN COST**, the Owner's question ("can a round carry more items?") measured
+  before being answered: median round 4.1 h, the suite 46 min of it (~19%), the sweep ~10 min (~4%),
+  the remaining ~77% the work itself. And the item rate is not "0.375 per round" in any useful sense —
+  18 items carry a DONE marker across **18 distinct rounds**, so a round that closes an item closes
+  exactly one, and **30 of 48 rounds closed none**. Three parts: item-aware selection and bundling of
+  items with DISJOINT file sets (the suite and the sweep are fixed costs per round, not per item); the
+  fixed cost cut where it is safe, with both cautions written in (CI runs `--noconftest`, and W498
+  proved there is at least one order-dependent test so `--dist load` will expose more); and the round's
+  own cost reported beside the pace so the change is measured. With an explicit boundary: the one full
+  suite and the blind sweep are **not traded** — "a round that skips either is not a faster round, it
+  is an unverified one."
+
+The plan went from 65 items to **72**, and the projection rose from 110 build rounds to 128. The number
+got worse because the plan stopped being silent about the work.
+
+### The recall leg, on both callers
+
+FU-251 said the avatar is the one caller keeping cross-request recall. W488 audited the `query_meta`
+seam and `api/v138/ceo.py` keeps it on `stream_meta`, with its router mounted — and the two derive
+identity by **different** paths (`user.get("username")` plus `user_can_access` versus
+`request_owner_id`), so neither leg stands in for the other.
+
+- all four gateway seams are read **from the signature** and default to recall off
+- **the set of callers is asserted** — exactly `api/v138/ceo.py` and `avatars/api.py` — so a third
+  cannot appear unproven
+- **the positive leg runs first**: the writing tenant recalls her own row. A leak test that only shows
+  nothing came back proves nothing if recall never happens at all
+- then the other tenant gets nothing of hers, through the memory layer, through the avatar and through
+  the AI CEO chat, with real tokens on the **same subject** — token overlap being exactly how a leak
+  would surface
+
+### Two guards that caught their own round
+
+- **W499's guard failed at baseline** after FU-282 was dropped, and it was right: that row was the only
+  one riding a P4 item, so the "the Owner flips this" marker on the queue became **unreachable**. The
+  guard asserts reachability rather than presence, so it noticed. The fix was not to weaken it but to
+  register the row the corrected analysis implies — **FU-284: P4.4's pre-flight has not been started.**
+  The Postgres toolchain is installed and nothing has been written with it: no schema, no migration,
+  no dry-run, no rollback, which is exactly what P4.4 says must exist before the Owner is asked.
+- **W499's own `delivered_by` assertion was a count**, `== 3`, which W500 broke the next round by
+  adding a phase. A count of today's phases is not the property. It now asserts: no phase is silent,
+  no kind is invented, both kinds exist, and the parser and the document agree phase by phase.
+
+### Mechanical, and both already in my notes
+
+- A heredoc turned `\\b` into a **literal backspace byte** inside the new regex, so it matched nothing
+  and the guard failed with `0 >= 4`. My own rule says load-bearing edits go through Write/Edit, not a
+  heredoc; the repair had to be done byte-level with an assertion that no 0x08 survived.
+- An item's text may not name a row that rides a **different** item. P3.25 cited a row riding P2.3 and
+  the plan-currency check refused it: say the area, not the id.
+
+### Three vacuous blinds on the recall leg, and each taught something real
+
+The leg passed and then failed to be falsifiable, twice over:
+
+1. **`owner_id=None` is not a leak.** The first blind passed None into recall on each caller, expecting
+   a cross-tenant read. `query_memory` treats None as **platform-memory-only** - the deliberate safe
+   default for anonymous callers - so the blind produced no leak and proved nothing.
+2. **A namespace shared by every tenant still showed nothing.** The second attempt hardcoded one
+   constant namespace, which the gateway also writes back under, so alice and bob genuinely shared a
+   pool - and bob's response STILL carried nothing of hers. The reason is deliberate and is W332:
+   recall lines are relabelled `[recalled prompt]` / `[recalled reply]` exactly so the deterministic
+   floor cannot take recalled text as its subject. **So an output-level leak assertion cannot fire
+   here whatever the scoping does** - it was never a check.
+3. **The CEO leg had no writer of its own.** alice had only ever spoken to the avatar, so the CEO's
+   namespace held nothing of hers and its leak check could not have fired either way.
+
+So the assertions moved to the boundary where scoping is actually decided: `_augment` is wrapped to
+record the `owner_id` each caller hands to recall, and every route is asserted to pass **its own
+authenticated tenant** - `{"alice-recall"}` for alice, `{"bob-recall"}` for bob, on the avatar and on
+the CEO chat - with `assert _seen` first, so a route that never reaches recall fails rather than
+passing silently. Both blinds now catch with `AssertionError: ['all-tenants']`.
+
+**9 blinds, none vacuous.** The lesson is not about recall: it is that an end-to-end assertion over a
+surface that is DESIGNED not to propagate the thing you are testing is indistinguishable from a
+passing test.
+
+### W499's CI failed, and the figure it had just made checkable was the reason
+
+`AssertionError: ('ops', 471, 469)`. The README stated 471 API operations; CI measured **469**.
+**The second time tonight CI found what a green local suite could not.**
+
+Two routes - `GET /` and `GET /{full_path:path}` - are mounted only when the built frontend is
+present, and CI's backend job runs before any `dist/` exists. So W499 made the README checkable and
+pinned it to a number that **changes with the environment** - the env-assumption class already in my
+notes, committed the same round I wrote the instrument.
+
+The fix makes the figure mean what the sentence claims: the README says "API operations", and the SPA
+catch-all, `/docs`, `/redoc`, `/health` and `/openapi.json` are not any. Counting only `/api/` gives
+**464 operations over 441 paths**, identical with or without the frontend build. Two further things,
+because a fix that is only a number is not a fix:
+
+- the guard now **recomputes the figure independently** from the app's own routes rather than reading
+  it off the script, with `assert _api_ops` first so an empty route set cannot pass;
+- the `--check` pattern anchors on the two FIGURES and stops there, instead of requiring the sentence's
+  closing parenthesis - otherwise adding the explanatory clause would have silently stopped the check
+  from finding the line at all, which is exactly what happened on the first attempt and is why the
+  script printed "the patterns and the README have diverged, so nothing was checked" rather than
+  passing;
+- and blind C01 reproduces the CI failure locally: `('ops', 464, 471)`.
+
+**10 blinds this round, none vacuous.**
+
+### Mechanical, for the third time in one night
+
+Two more heredoc escape failures: `\n` inside a patch string became a real newline and broke a
+string literal, and an escaped apostrophe in an anchor stopped matching. Both were load-bearing edits
+that my own notes say should go through Write/Edit rather than a shell heredoc. Every subsequent patch
+in this round was written to a file first.
+
+### The Owner asked whether rounds could carry bigger groups. Measured: yes, and P2.17(a) was wrong
+
+The question was whether there are bigger, more rational groups of rows and items per round. Measured
+over the 106 open rows, treating "row cites file" as an edge and taking connected components:
+
+| component | rows | files | items it advances |
+| :-- | --: | --: | :-- |
+| 1 | **32** | 34 | P2.4, P2.6, P2.8, P2.9, P3.12 |
+| 2 | 9 | 12 | P2.6, P2.8, P2.9, P2.10, P3.15 |
+| 3 | 5 | 4 | P2.4, P2.11, P2.12, P2.13 |
+| 4 | 5 | 3 | P2.6, P2.8 |
+| 12 more | 2-4 | | |
+| 26 | 1 | | the residue tail |
+
+**42 components, and one of them is 30% of the entire backlog in a single connected piece.** The four
+largest are 48% of all open rows across ten items. What `batches` proposed the same day was
+"C2 - 2 rows across 9 files".
+
+So **P2.17(a) was wrong in its central idea, and the Owner had already approved it.** It said "bundle
+items whose file sets are DISJOINT". Disjointness avoids CONFLICT and discards the leverage: rows on
+the SAME files share the measurement, the guard, the blinds and the refutation, and that shared reading
+of a subsystem is the ~77% of a round that is not the suite. I optimised for not colliding when the
+cost is understanding. Rewritten before any of it was built, with the correction on the item's face and
+four limits written in rather than left to be discovered: a cap whose REASON is stated (a guard
+spanning 34 files is where this programme's vacuous legs come from); the graph being only as good as
+the declared `files` lists, so a singleton is "possibly under-connected", never isolated; no component
+closing an item outright (the closest measured is 23 of one item's 26 rows), so a proposal says
+ADVANCES; and disjointness keeping its place for combining separate components and for the tail.
+
+`scripts/row_components.py` computes it on every run, so the item cites an instrument and not prose.
+`test_w500b` DRIVES the algorithm with synthetic rows - two rows sharing a file are one component,
+connection is transitive along a chain, rows sharing nothing stay apart, a fileless row is its own
+component and carries the flag - rather than only checking that today's register looks right.
+
+### The harness reported green off a test that never ran
+
+All seven new blinds came back vacuous at once, which is a number too round to believe. The cause was
+not the blinds: the new guard was keyed `"w500b"`, but this harness selects by NODE ID
+(`file.py::name`), so pytest collected nothing, **exited 5, and `run_one` read that as "the guard
+passed"**. The baseline check could not see it either - it aborts when a baseline FAILS, never when it
+does not exist.
+
+`run_one` now treats exit code 5 or "no tests ran" as a **hard abort**, naming the selector. Then the
+whole seventeen-blind sweep was re-run rather than only the seven, because the old code could have been
+hiding others.
+
+**That is the third blind instrument in one night**: a watcher whose success pattern pytest never
+prints, which slept four hours; a leak assertion over a surface designed not to propagate what it was
+testing; and a sweep reporting off an absent test. All three are the shape this campaign exists to
+remove - a check that cannot fail - committed in the tools used to find it. The rule earned:
+**a new instrument must be made to fail once before its green is worth anything.**

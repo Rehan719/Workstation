@@ -4321,8 +4321,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W500",
       "note": "",
       "tier": 2
     },
@@ -4843,8 +4843,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W500",
       "note": "",
       "tier": 2,
       "slot_source": "W499: it corrects FU-251, which rides P2.3 — the row it fixes owns the item"
@@ -4861,8 +4861,8 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W500",
       "note": "",
       "tier": 2
     },
@@ -4878,11 +4878,48 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.4",
+      "status": "dropped",
+      "closed_by": null,
+      "note": "PREMISE FALSIFIED by verifying before acting (W500). The row said ten dependencies are pinned and imported by nothing, so the gap is wiring. The measurement 'no file imports them' was right; the INFERENCE was wrong. pip show reports opentelemetry-api and -sdk as Required-by: chromadb, and chromadb is LIVE - agentic_core/ai/ceo/memory_v01.py imports it lazily, and memory_v01 is imported by api/v138/ceo.py and avatars/api.py, the same two recall callers FU-280 is about. asyncpg is Required-by: prefect. requirements.txt is a 298-line lock that CI and the Dockerfile both install from, so it carries transitive dependencies by design: removing one would break the install, not tidy it. The Owner had ratified 'retire them', and the retirement was cancelled BEFORE any edit. The two halves went elsewhere: the error-capture gap (app_mvp.py handles RequestValidationError and nothing else, so an uncaught 500 leaves no record) is now P3.25's whole subject, with the retirement removed from it; and the manifest question is re-registered with a proper measurement, because the real figure is about DIRECT declarations, not transitive pins.",
+      "tier": 3,
+      "slot_source": "W499: the three database pins are P4.4's own pre-flight material, so the row rides the switch they belong to"
+    },
+    {
+      "id": "FU-283",
+      "title": "25 of 43 DECLARED direct dependencies are imported by no .py in the repo — measured with each distribution's own top-level module names, not its package name",
+      "why": "FU-282 was dropped because its transitive-pin premise was false. This is the claim that survives re-measurement, and the instrument matters: a first pass matched the DISTRIBUTION name and reported 28, which was wrong - pyyaml imports as yaml, PyJWT as jwt, scikit-learn as sklearn, psycopg2-binary as psycopg2, pyro-ppl as pyro, z3-solver as z3, POT as ot. Re-run against each installed distribution's own top_level.txt: of 43 direct dependencies in pyproject.toml [tool.poetry.dependencies], 16 are imported and 25 are imported by NO .py under agentic_core, integration_tests or scripts - langchain, langchain-community, streamlit, redis, sqlmodel, sqlalchemy, prefect, transformers, shap, PyJWT, pandas, seaborn, plotly, scikit-learn, pyro-ppl, ray, celery, web3, z3-solver, sympy, qiskit, pennylane, oqs, psycopg2-binary, firebase-admin. TWO ARE UNDECIDABLE and are not counted: POT is not installed here, and autogen's top_level.txt is empty so the instrument could not read its modules - an empty module list makes any() false, which would have reported it as unimported for the wrong reason. WHY THIS IS NOT YET A DELETION LIST: a dependency can be needed without a source import. psycopg2-binary and sqlalchemy/sqlmodel are exactly P4.4's pre-flight material and a driver is loaded by URL, not imported; redis may be reached the same way. So each of the 25 needs one of three verdicts - reached without an import (name the mechanism), held deliberately for a named plan item, or removable - and the ones that are removable matter, because CI and the Dockerfile both install from requirements.txt and the heavy ones here are ray, celery, qiskit, pennylane, transformers, web3 and firebase-admin. NOTHING IS REMOVED UNTIL EACH HAS A VERDICT.",
+      "source": "W500 (re-measuring FU-282's premise with real module names after it was falsified)",
+      "found": "2026-09-27",
+      "files": [
+        "pyproject.toml",
+        "requirements.txt"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.25",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 3,
-      "slot_source": "W499: the three database pins are P4.4's own pre-flight material, so the row rides the switch they belong to"
+      "slot_source": "W500: it is the item that owns what the platform records about itself; the measurement replaces FU-282's falsified half",
+      "tier": 3
+    },
+    {
+      "id": "FU-284",
+      "title": "P4.4's pre-flight has not been started: six database dependencies are declared and imported by nothing, so no migration dry-run or rollback exists to prove",
+      "why": "P4.4 reads 'Managed Postgres - migration dry-run script and rollback proven on a copy first'. That pre-flight is OURS to build; the switch is the Owner's. Measured while correcting FU-282: sqlalchemy, sqlmodel and psycopg2-binary are DIRECT dependencies in pyproject.toml and no .py under agentic_core, integration_tests or scripts imports any of them; asyncpg and alembic are pinned in requirements.txt as transitive dependencies of prefect. So the toolchain for a Postgres migration is installed and NOTHING has been written with it - there is no schema, no migration, no dry-run script and no rollback, which is exactly what P4.4 says must exist before the Owner is asked to flip anything. A driver is legitimately loaded by URL rather than imported, so their presence is not the defect; the ABSENCE of the pre-flight they were installed for is. THE WORK, when P4.4's round comes: a schema derived from the stores that actually accumulate (VSB entities, the token ledger, the UEG chain, marketplace listings), a migration that runs against a COPY, a rollback proven on that copy, and a measured statement of what the JSON stores hold today so the migration has a known input. NOTHING is switched by this row.",
+      "source": "W500 (the corrected FU-282 analysis: the database dependencies exist for P4.4 and nothing imports them)",
+      "found": "2026-09-27",
+      "files": [
+        "pyproject.toml"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W500: it IS P4.4's own pre-flight - the item says the migration dry-run and rollback are proven before the Owner flips anything",
+      "tier": 3
     }
   ],
   "routes": [

@@ -21721,9 +21721,22 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
     _headline = "EFFORT, HONESTLY: ~33 rounds at the current cadence"
     assert _headline not in _text, "the unlabelled headline is back"
     assert "THE ESTIMATE WAS ~33 rounds before P4" in _text
-    # each phase declares how its items are delivered, so the reader sees it too
-    assert _text.count("delivered_by: build") == 3, _text.count("delivered_by: build")
-    assert _text.count("delivered_by: owner-switch") == 1
+    # every phase declares how its items are delivered, and what the parser read agrees with what the
+    # heading says. W499 pinned this to "exactly 3 build phases", which W500 broke by adding PHASE P5
+    # the day after - a count of today's phases is not the property. The property is: no phase is
+    # silent, no kind is invented, both kinds exist, and the parser and the document agree.
+    import re as _re_ph
+    _headings = _re_ph.findall(r"(?m)^PHASE (P\d+)\b(.*)$", _text)
+    assert len(_headings) >= 4, _headings
+    _declared = {}
+    for _ph, _rest_ph in _headings:
+        _m_ph = _re_ph.search(r"delivered_by:\s*([a-z][a-z-]*)", _rest_ph)
+        assert _m_ph, (_ph, "a phase heading that declares no delivery kind")
+        _declared[_ph] = _m_ph.group(1)
+    assert set(_declared.values()) <= {"build", "owner-switch"}, _declared
+    assert "build" in _declared.values() and "owner-switch" in _declared.values(), _declared
+    for _i in _items:
+        assert _i["delivered_by"] == _declared.get(_i["phase"]), (_i["slot"], _i["delivered_by"])
 
     # ── (c) the README's figures equal what the tree exposes ────────────────────────────────────────
     import importlib.util
@@ -21736,6 +21749,17 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
         assert _s[_k] == _m[_k], (_k, _s[_k], _m[_k])
     # the claim that one file owns the routes is itself measured
     assert _m["route_files"] == ["apps/workstation-superapp/src/App.tsx"], _m["route_files"]
+    # the operation figure must be ENVIRONMENT-INDEPENDENT. W499 counted every route and CI failed
+    # with (471, 469): `GET /` and the SPA catch-all mount only when the frontend is built, and the
+    # backend job runs before any dist/ exists. Recomputed here from the app itself rather than read
+    # off the script, so the restriction cannot quietly be dropped again.
+    from agentic_core.app_mvp import app as _app499
+    _api_ops = {(_mm, _rt.path) for _rt in _app499.routes
+                if str(getattr(_rt, "path", "")).startswith("/api/")
+                for _mm in (getattr(_rt, "methods", None) or ())
+                if _mm in ("GET", "POST", "PUT", "PATCH", "DELETE")}
+    assert _api_ops, "no /api/ operation was found, so the recomputation proves nothing"
+    assert _m["ops"] == len(_api_ops), (_m["ops"], len(_api_ops), "the figure is not /api/-only")
     # and the figures are exact, so they CAN be wrong: an open-ended count cannot be checked
     _readme = (root / "README.md").read_text(encoding="utf-8")
     assert "140+ routes" not in _readme
@@ -21796,3 +21820,211 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
     assert "placed here on purpose" in _dash and "row-placed-" in _dash
     assert "r.slot_source &&" in _dash, "the marker is not bound to the field"
     assert "placed on ${r.slot} deliberately" in _dash, "the reason does not travel with the row"
+
+
+def test_w500_cross_request_recall_is_tenant_scoped_on_every_caller_that_keeps_it(client, monkeypatch):
+    """W500 — FU-251 said "the avatar is the one caller that keeps cross-request recall". It is not.
+
+    W488 set augment=False across the repo and recorded ONE deliberate exception. It audited the
+    `query_meta` seam; `agentic_core/api/v138/ceo.py` keeps recall on `stream_meta`, and its router IS
+    mounted. So the behavioural isolation leg FU-251 asked for would have been written for one of two
+    surfaces and reported as proving the repo — and the two derive identity by DIFFERENT code paths
+    (the avatar via `user.get("username")` plus `user_can_access`, the CEO via `request_owner_id`), so
+    neither leg stands in for the other.
+
+    A leak test that only shows nothing came back proves nothing if recall never happens, so the
+    positive leg comes first: the writing tenant DOES recall her own row.
+
+    Rows: FU-280 FU-251.
+    """
+    import inspect
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── 1. every gateway seam defaults to recall OFF (read from the signature, not the source) ───────
+    from agentic_core.ai.gateway import gateway as _gw
+    for _seam in ("query", "query_meta", "stream", "stream_meta"):
+        _sig = inspect.signature(getattr(_gw, _seam))
+        assert "augment" in _sig.parameters, _seam
+        assert _sig.parameters["augment"].default is False, (_seam, _sig.parameters["augment"].default)
+
+    # ── 2. exactly TWO files ask for it, and the set is asserted so a third cannot appear unproven ──
+    _sites = {}
+    for _p in (root / "agentic_core").rglob("*.py"):
+        _rel = _p.relative_to(root).as_posix()
+        if "_archive" in _rel or "__pycache__" in _rel:
+            continue
+        for _n, _l in enumerate(_p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            _code = _l.split("#", 1)[0]
+            if "augment=True" in _code:
+                _sites.setdefault(_rel, []).append(_n)
+    assert sorted(_sites) == ["agentic_core/api/v138/ceo.py", "agentic_core/avatars/api.py"], _sites
+
+    # ── 3. the POSITIVE leg: the memory layer really recalls, and really scopes ─────────────────────
+    from agentic_core.ai.memory import memory as _mem
+    _MARK = "zarquon7731manifold"
+    _mem.add_memory(f"the project codename is {_MARK} and the manifold survey is due",
+                    {"kind": "w500-isolation"}, owner_id="alice-recall")
+    _own = _mem.query_memory("what is the project codename manifold survey", owner_id="alice-recall")
+    assert any(_MARK in x for x in _own), ("recall did not return the writer's own row, so a leak "
+                                           "test over it would prove nothing", _own)
+    _other = _mem.query_memory("what is the project codename manifold survey", owner_id="bob-recall")
+    assert not any(_MARK in x for x in _other), ("the memory layer leaked across tenants", _other)
+    _anon = _mem.query_memory("what is the project codename manifold survey", owner_id=None)
+    assert not any(_MARK in x for x in _anon), ("an unidentified caller reached a tenant's row", _anon)
+
+    # ── 4. and through BOTH routes, with real tokens, on the same subject ───────────────────────────
+    from agentic_core.auth import core as _auth
+    if not _auth._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    _users = _auth._load_users()
+    for _u, _p in (("alice-recall", "pw-alice-500"), ("bob-recall", "pw-bob-500")):
+        _users[_u] = {"user_id": _u, "username": _u, "hashed_password": _auth._pwd_ctx.hash(_p),
+                      "role": "user", "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    _auth._save_users(_users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+
+    def _hdr(u, p):
+        r = client.post("/api/v1/auth/token", data={"username": u, "password": p})
+        assert r.status_code == 200, r.text
+        return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+    _alice, _bob = _hdr("alice-recall", "pw-alice-500"), _hdr("bob-recall", "pw-bob-500")
+
+    # WHERE A LEAK WOULD BE VISIBLE, measured: NOT in the response. W332 relabels recall lines as
+    # `[recalled prompt]`/`[recalled reply]` precisely so the deterministic floor cannot take recalled
+    # text as its subject, and the floor is what serves here - so "the marker is not in bob's output"
+    # passes whatever the scoping does and is not a check at all. Proved: a namespace shared by every
+    # tenant left bob's output unchanged. The decision point is the owner_id each caller hands to
+    # recall, so it is recorded AT THAT BOUNDARY and asserted per tenant.
+    _seen: list = []
+    _orig_aug = _gw._augment
+
+    def _recording_augment(prompt, owner_id=None):
+        _seen.append(owner_id)
+        return _orig_aug(prompt, owner_id=owner_id)
+
+    monkeypatch.setattr(_gw, "_augment", _recording_augment)
+
+    def _recall_ids(resp):
+        assert resp.status_code == 200, resp.text
+        assert _seen, "recall was never reached on this route, so nothing about scoping was proved"
+        return set(_seen)
+
+    _seen.clear()
+    _wa = client.post("/api/v1/avatar/chat",
+                      json={"message": f"Remember: the project codename is {_MARK} manifold survey.",
+                            "context": "general"}, headers=_alice)
+    assert _recall_ids(_wa) == {"alice-recall"}, _seen
+
+    _seen.clear()
+    _rb = client.post("/api/v1/avatar/chat",
+                      json={"message": "What is the project codename manifold survey?",
+                            "context": "general"}, headers=_bob)
+    assert _recall_ids(_rb) == {"bob-recall"}, _seen      # never alice's, never a shared constant
+
+    # the CEO chat is the caller FU-251 did not know about, and it derives identity by another path
+    _seen.clear()
+    _ca = client.post("/api/v138/ceo/chat",
+                      json={"message": f"Note for the record: the codename is {_MARK} manifold survey."},
+                      headers=_alice)
+    assert _recall_ids(_ca) == {"alice-recall"}, _seen
+
+    _seen.clear()
+    _cb = client.post("/api/v138/ceo/chat",
+                      json={"message": "What is the project codename manifold survey?"}, headers=_bob)
+    assert _recall_ids(_cb) == {"bob-recall"}, _seen
+
+    # and the namespace those ids select really is separated - re-proved AFTER the traffic above, so
+    # none of it was measured against an empty store
+    _after = _mem.query_memory("project codename manifold survey", owner_id="alice-recall")
+    assert any(_MARK in x for x in _after), ("alice's own rows vanished, so nothing above was "
+                                            "measured against a populated namespace", _after)
+    assert not any(_MARK in x for x in _mem.query_memory("project codename manifold survey",
+                                                         owner_id="bob-recall"))
+def test_w500b_the_bundle_a_round_can_hold_is_a_file_connected_component(client):
+    """W500 — the Owner asked whether rounds could carry bigger, more rational groups. Measured: yes,
+    and the unit is the FILE-CONNECTED COMPONENT.
+
+    `batches` groups by sweep class - right for a mechanism, wrong for a round's cost, because the
+    expensive part of a round is reading a subsystem well enough to measure it, and rows on the same
+    files share the measurement, the guard, the blinds and the refutation. P2.17(a) was first written
+    as "bundle items with DISJOINT file sets", which avoids conflict and discards exactly that
+    leverage; it was corrected before anything was built.
+
+    The algorithm is DRIVEN with synthetic rows here, not merely read off today's register, because a
+    grouping that happens to look right on one dataset is not a grouping rule.
+    """
+    import importlib.util
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    _spec = importlib.util.spec_from_file_location("_rc", root / "scripts/row_components.py")
+    _rc = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_rc)
+
+    # ── driven: two rows sharing one file are ONE component, and it names both items ────────────────
+    _two = _rc.components([{"id": "FU-T1", "status": "open", "slot": "P2.4", "files": ["x/shared.py"]},
+                           {"id": "FU-T2", "status": "open", "slot": "P2.9", "files": ["x/shared.py"]}])
+    assert len(_two) == 1, _two
+    assert _two[0]["size"] == 2 and _two[0]["items_advanced"] == ["P2.4", "P2.9"], _two[0]
+    assert _two[0]["possibly_under_connected"] is False
+
+    # ── driven: connection is TRANSITIVE — A-f1, B-f1+f2, C-f2 is one component, not two ───────────
+    _chain = _rc.components([{"id": "FU-T3", "status": "open", "slot": "P2.4", "files": ["a.py"]},
+                             {"id": "FU-T4", "status": "open", "slot": "P2.4", "files": ["a.py", "b.py"]},
+                             {"id": "FU-T5", "status": "open", "slot": "P2.6", "files": ["b.py"]}])
+    assert len(_chain) == 1 and _chain[0]["size"] == 3, _chain
+
+    # ── driven: rows that share NO file are separate, however alike they look ───────────────────────
+    _apart = _rc.components([{"id": "FU-T6", "status": "open", "slot": "P2.4", "files": ["one.py"]},
+                             {"id": "FU-T7", "status": "open", "slot": "P2.4", "files": ["two.py"]}])
+    assert len(_apart) == 2, _apart
+
+    # ── driven: a row citing NO file is its own component, and is flagged as possibly ───────────────
+    #    under-connected rather than isolated — the graph is built from DECLARED files
+    _none = _rc.components([{"id": "FU-T8", "status": "open", "slot": "P2.4", "files": []}])
+    assert len(_none) == 1 and _none[0]["rows"] == ["FU-T8"], _none
+    assert _none[0]["possibly_under_connected"] is True
+
+    # ── over the real register: the components PARTITION the open rows, exactly once each ───────────
+    _reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _rows = _rc.open_rows(_reg)
+    assert _rows, "no open row, so nothing about grouping was measured"
+    _comps = _rc.components(_rows)
+    _ids = [i for c in _comps for i in c["rows"]]
+    assert sorted(_ids) == sorted(r["id"] for r in _rows), "the components do not partition the rows"
+    assert len(_ids) == len(set(_ids)), "a row appears in two components"
+    # every component is non-empty and orders largest first
+    assert all(c["size"] >= 1 for c in _comps)
+    assert [c["size"] for c in _comps] == sorted((c["size"] for c in _comps), reverse=True)
+
+    # ── the property that motivates the plan item: the largest bundle CROSSES items ─────────────────
+    assert _comps[0]["size"] > 1, _comps[0]
+    assert len(_comps[0]["items_advanced"]) > 1, ("the largest component sits inside one item, so a "
+                                                 "class-based batch would already have found it",
+                                                 _comps[0]["items_advanced"])
+    # and what a READER sees never claims to close an item - the script is run and its output
+    # asserted, rather than its docstring searched for the promise
+    import contextlib
+    import io as _io500
+    _buf = _io500.StringIO()
+    with contextlib.redirect_stdout(_buf):
+        assert _rc.main() == 0
+    _printed = _buf.getvalue()
+    assert _printed.strip(), "the script printed nothing, so nothing about its wording was checked"
+    assert "ADVANCES" in _printed and "does not close them" in _printed, _printed[-300:]
+    assert "closes them" not in _printed.replace("does not close them", ""), _printed[-300:]
+    # the printed component count agrees with the computed one, so the summary is not decoration
+    assert f"{len(_comps)} component(s)" in _printed, (_printed[:120], len(_comps))
+    # the flag is not decoration: it is true of exactly the singletons
+    assert all(c["possibly_under_connected"] for c in _comps if c["size"] == 1)
+    assert not any(c["possibly_under_connected"] for c in _comps if c["size"] > 1)
+
+    # ── the plan item points at this instrument, so its figures are recomputable ────────────────────
+    _plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert "scripts/row_components.py" in _plan
+    assert "THE BUNDLE IS A FILE-CONNECTED COMPONENT" in _plan
+    assert "WRONG in its central idea" in _plan        # the correction stays on the record
