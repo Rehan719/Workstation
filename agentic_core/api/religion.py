@@ -84,17 +84,51 @@ async def fatwa_research(req: FatwaResearchRequest):
 
     research, provenance = await ai_text(prompt, "religion_fiqh")
 
+    # §15 (W498, FU-185, class C6) — THE TAFSIR PATTERN, APPLIED HERE. On the deterministic floor these
+    # headings came back filled with keyword bigrams and a "service frame", and the response carried no
+    # floor_note and no sections_withheld: a reader saw "## Position of the Hanafi School" and "## Primary
+    # Sources (Quran and Hadith)" over text that researched nothing, under a disclaimer that called it
+    # "AI-assisted scholarly research". The floor composes headings, not madhab positions, so the
+    # scholarly sections are withheld and named, and the disclaimer says what actually served it.
+    _floor = (provenance or {}).get("served_by") == "native"
+    sections_withheld: list[str] = []
+    floor_note = None
+    if _floor:
+        research, sections_withheld = _withhold_sections(research, (
+            "Primary Sources (Quran and Hadith)", "Primary Sources",
+            "Position of the " + madhab_info["name"] + " School",
+            "Positions of Other Schools (brief comparison)", "Positions of Other Schools",
+            "Legal Reasoning (Qiyas/Ijtihad)", "Legal Reasoning",
+            "Scholarly Consensus (Ijma) if applicable", "Scholarly Consensus",
+            # bare forms the floor shortens to
+            "Primary", "Position", "Positions", "Legal", "Consensus",
+            # a summary of nothing researched, and "considerations" nothing considered, are the same
+            # claim as the sections above - only the restated question survives the floor
+            "Contemporary Considerations", "Contemporary", "Research Summary", "Research"))
+        floor_note = (
+            "served by the deterministic native floor — NO jurisprudential research happened. The floor "
+            "composes the headings it is asked for from the words of the request; it does not read a "
+            "madhab's position, locate a primary source, or reason by qiyas. Those sections are withheld "
+            "rather than shown as a frame: a citation or a school's position that nothing looked up is "
+            "worse than silence. Take this question to a qualified scholar or mufti.")
+
     return {
         "research_id": uuid.uuid4().hex[:10],
         "question": req.question,
         "madhab": req.madhab,
         "madhab_name": madhab_info["name"],
         "research": research,
+        "sections_withheld": sections_withheld,
+        **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
-            "This is AI-assisted scholarly research only. It is NOT a fatwa and does not constitute "
-            "a religious ruling. Please consult a qualified Islamic scholar or mufti for personal guidance."
+            ("NO RESEARCH WAS PERFORMED — the deterministic floor served this, so what remains is a "
+             "structured frame over your own question, not scholarship. It is NOT a fatwa and NOT a "
+             "ruling. Consult a qualified Islamic scholar or mufti." if _floor else
+             "This is AI-assisted scholarly research only. It is NOT a fatwa and does not constitute "
+             "a religious ruling. Please consult a qualified Islamic scholar or mufti for personal "
+             "guidance.")
         ),
     }
 
@@ -131,16 +165,52 @@ async def hadith_study(req: HadithStudyRequest):
 
     research, provenance = await ai_text(prompt, "religion_hadith")
 
+    # §15 (W498, FU-185, class C6) — the same pattern, and here it matters most. The prompt itself says
+    # "fabricating a hadith grade or attribution is a serious error", and on the floor the response came
+    # back with "## Grading", "## Chain (Isnad) Considerations" and "## Text (Matn)" over keyword bigrams
+    # and a service frame — with no floor_note to say so. A grade, an isnad or a matn that nothing looked
+    # up must not be rendered under those headings at all.
+    _floor = (provenance or {}).get("served_by") == "native"
+    sections_withheld: list[str] = []
+    floor_note = None
+    if _floor:
+        research, sections_withheld = _withhold_sections(research, (
+            "Identification (the likely narration; the collection(s) and hadith number(s) where it appears, if recognisable)",
+            "Identification",
+            "Text (Matn) — the Arabic if known, plus an English translation", "Text (Matn)",
+            # the floor emits SHORTENED headings ("## Chain"), so the bare form is listed too: a
+            # withhold list that only knows the long form leaves the section standing (measured W498)
+            "Chain (Isnad) Considerations", "Chain (Isnad)", "Chain",
+            "Grading (authenticity grade — sahih / hasan / da'if / mawdu' — per recognised scholars, naming who graded it)",
+            "Grading",
+            "Explanation (Sharh) — the meaning and context", "Explanation (Sharh)",
+            "Application & Rulings Derived (how scholars have understood and applied it)",
+            "Application & Rulings Derived", "Related Narrations"))
+        floor_note = (
+            "served by the deterministic native floor — NOTHING WAS RESEARCHED, GRADED OR ATTRIBUTED. The "
+            "floor composes the headings it is asked for from the words of the request; it does not "
+            "identify a narration, read an isnad, grade authenticity or reproduce a matn. Every one of "
+            "those sections is withheld: a grade or an attribution nothing verified is the error this "
+            "tool's own prompt calls serious. Verify any hadith against an authenticated collection and "
+            "a qualified scholar.")
+
     return {
         "study_id": uuid.uuid4().hex[:10],
         "focus": req.focus,
         "study": research,
+        "sections_withheld": sections_withheld,
+        **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
-            "AI-assisted scholarly research only — NOT a ruling and NOT a substitute for authenticated hadith "
-            "collections. Hadith grading and attribution must be verified with qualified scholars; treat any "
-            "grade stated here as provisional until confirmed against a recognised source."
+            ("NOTHING WAS GRADED OR ATTRIBUTED — the deterministic floor served this, so no narration was "
+             "identified and no authenticity grade was determined. What remains is a structured frame "
+             "over your own text. Verify any hadith against an authenticated collection (Bukhari, Muslim, "
+             "the four Sunan) and a qualified scholar." if _floor else
+             "AI-assisted scholarly research only — NOT a ruling and NOT a substitute for authenticated "
+             "hadith collections. Hadith grading and attribution must be verified with qualified "
+             "scholars; treat any grade stated here as provisional until confirmed against a recognised "
+             "source.")
         ),
     }
 

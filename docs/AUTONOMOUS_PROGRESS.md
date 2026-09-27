@@ -7899,3 +7899,75 @@ one guard reading a redundant string, one asserting a basis rather than the evid
 that was simply badly chosen (it removed one of two independent safeguards, which is a property worth
 knowing rather than a hole). All 14 catch now. Two older guards pinned the behaviour this round refuses
 and were updated to assert the refusal. Full suite green on the final tree.
+
+## W498 — a grade nothing verified, and a school's position nothing read (C6: faith-content fidelity)
+
+**Closes FU-185, FU-203.** Batch C6, chosen by the generator: 2 rows across 4 files, riding P2.4.
+
+The tafsir route has withheld its unserved sections since W456. Its two siblings had not. On the
+deterministic floor — which is what serves these tools on this machine — `/religion/hadith-study`
+returned `## Grading`, `## Chain (Isnad) Considerations` and `## Text (Matn)` filled with keyword
+bigrams from the request, and `/religion/fatwa-research` returned `## Position of the Hanafi School`
+and `## Primary Sources (Quran and Hadith)` the same way. Neither carried a `floor_note`; neither
+named a withheld section; both were captioned "AI-assisted scholarly research".
+
+The hadith prompt in this same file says fabricating a hadith grade or attribution is a serious
+error. The route was doing it under a heading.
+
+- **`religion.py` — the two routes now withhold what the floor did not do.** `_floor` is
+  `served_by == "native"`. On the floor both routes call `_withhold_sections` over their scholarly
+  headings, return `sections_withheld`, add a `floor_note`, and swap the disclaimer for a
+  floor-specific one: "NOTHING WAS GRADED OR ATTRIBUTED" (hadith) and "NO RESEARCH WAS PERFORMED"
+  (fiqh). **Measured after the fix:** hadith withholds all 7 sections and leaves no `##` heading at
+  all; fiqh withholds 7 and leaves only the restated question.
+  The withhold lists carry the **bare** heading forms as well as the long ones, because the floor
+  shortens what it emits — a list that knows only `Chain (Isnad) Considerations` leaves `## Chain`
+  standing. That was measured, not assumed: `## Chain` survived the first fix.
+- **`ReligionHub.tsx` — the withholding reaches the screen.** Both tabs gained the `renderExtra`
+  the tafsir tab already had: the `floor_note` in amber, then `Withheld on the floor: …`. A route
+  that withholds in silence shows a shorter answer with no word about why it is shorter.
+- **The three descriptions, the three registry cards and the catalogue header** described
+  scholarship. They now describe the output: a study *frame*, notes to be read *against* the
+  classical tafasir rather than drawn from them, and Arabic that is retrieved and never generated.
+  The catalogue header no longer rules out an outside provider unconditionally — one exists as an
+  Owner opt-in — and names the floor that in fact serves these tools.
+
+**The guard** (`test_w498_…`) drives both routes, asserts not one scholarly heading survives on the
+floor and that the grading vocabulary appears nowhere in the body, asserts both notes and both
+disclaimers, and reads the four front-door files. It has a model-served arm too, so it cannot pass
+by the floor never appearing.
+
+**29 blinds, each alone, each caught. One was vacuous first and was fixed:** removing only the bare
+`Text (Matn)` spelling left the long form matching the same section, so the blind proved nothing —
+the heading blinds now remove **both** spellings, because either one suffices. Four more would have
+been vacuous the same way and were corrected before the sweep ran, when reading the live tuples
+showed the bare forms subsume the long ones.
+
+### W498b — the round's own suite found last round's guard, and CI had found it first
+
+The full run came back **403 passed / 1 failed**, and the failure was **W497's** guard, not this
+round's: `RuntimeError: There is no current event loop in thread 'MainThread'`. Checking CI showed
+one of the two workflows had been **red at `1eb972a0` since W497 was pushed** - I had not looked. The
+standing rhythm says check the run of every push before starting the next round; this is what
+skipping it costs.
+
+`asyncio.get_event_loop()` raises on 3.12 once any earlier test has created and closed a loop, so
+W497's quality leg passed under `-k` and failed the full run. **A guard that acquires "the" event
+loop is asserting what ran before it.** `_ensure_loop()` already existed in this file, written for
+exactly this, and eight sites were still calling bare (1483, 1513, 1616, 1669, 20757, 21437, 21451,
+21457). All eight now use it; the only remaining mentions are the helper's own body and two comments
+warning against it.
+
+Proven in 27 seconds rather than by a 46-minute rerun: reverting one site and running
+`test_vbs_living_systems_integrated_in_house or w497_a_screen` reproduces the original error, and
+restoring it gives three passes. `test_w498b_…` then **drives** the condition instead of hoping to be
+scheduled into it - `asyncio.run()` to unset the loop, the assertion again through the helper, unset
+a second time because once is luck, and a scan for the two dangerous shapes whose needles are built
+by concatenation so it cannot match its own source line. That scan's first run was wrong in the
+instructive direction: it read line 9029's *comment warning against the call* as a use of it, so it
+now tests only the code half of each line.
+
+Four more blinds, all catching - F01 restores the exact CI break, F02 reverts a different site so
+only the scan can see it, F03 removes the `except RuntimeError:` the helper exists for, F04 creates a
+loop without making it current. **33 blinds this round, none vacuous. Final tree: 405 passed, 15
+skipped, 0 failed.** Registered as FU-279, closed in the same round.

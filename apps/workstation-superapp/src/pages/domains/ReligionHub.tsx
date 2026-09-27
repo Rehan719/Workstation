@@ -128,10 +128,28 @@ export const ReligionHub: React.FC = () => {
                   ) : activeTab === 'dialogue' ? (
                     <DomainTool
                       title={T['dialogue'].title}
-                      description={<>Pose a question of Islamic jurisprudence — Workstation's <span className="text-aura">own</span> AI researches it within your chosen madhab, in-house, with scholarly humility.</>}
+                      /* W498 (FU-185, class C6) — the old copy promised research inside the chosen school. It described
+                         research that does not happen on the deterministic floor: the headings came back
+                         as keyword bigrams. The route now WITHHOLDS the scholarly sections and says so;
+                         the copy says what the tool is and what it is not. */
+                      description={<>Pose a question of Islamic jurisprudence. Workstation's <span className="text-aura">own</span> AI
+                        drafts a structured research frame within your chosen madhab — in-house, and never a fatwa. When only the
+                        deterministic floor is serving, the primary sources, the school's position and the legal reasoning are
+                        WITHHELD rather than framed: the run says so on its face.</>}
                       endpoint="/api/v1/religion/fatwa-research"
                       resultKey="research"
                       submitLabel="Research question"
+                      renderExtra={(r: any) => (
+                        <div className="space-y-2" data-testid="fiqh-extra">
+                          {/* W498 (FU-185, class C6) — the route WITHHOLDS its scholarly sections when only
+                              the deterministic floor served it. That has to reach the screen, or the page
+                              shows a shorter answer with no word about why it is shorter. */}
+                          {r.floor_note && <p className="text-[10px] text-amber-300 font-bold leading-snug">{r.floor_note}</p>}
+                          {Array.isArray(r.sections_withheld) && r.sections_withheld.length > 0 && (
+                            <p className="text-[9px] text-slate-500">Withheld on the floor: {r.sections_withheld.join(' · ')}</p>
+                          )}
+                        </div>
+                      )}
                       fields={[
                         { name: 'question', label: 'Question', type: 'textarea', placeholder: 'e.g. What are the conditions for combining prayers when travelling?' },
                         { name: 'madhab', label: 'Madhab (school of jurisprudence)', type: 'select', options: ['hanafi', 'maliki', 'shafi', 'hanbali', 'jafari'], default: 'hanafi' },
@@ -141,7 +159,13 @@ export const ReligionHub: React.FC = () => {
                   ) : activeTab === 'tafsir' ? (
                     <DomainTool
                       title={T['tafsir'].title}
-                      description={<>Study an ayah — Workstation's <span className="text-aura">own</span> AI offers structured tafsir (classical, thematic, contemporary or linguistic), in-house, drawing on the classical mufassirun.</>}
+                      /* W498 (FU-203, class C6) — the old copy claimed the notes were drawn from the classical
+                         exegetes. That is a lineage the run does not have: its own disclaimer calls it
+                         an AI study aid and not scholarship. */
+                      description={<>Study an ayah. The Arabic is RETRIEVED from an authorised source and never generated;
+                        Workstation's <span className="text-aura">own</span> AI then writes structured study notes
+                        (classical, thematic, contemporary or linguistic) to be read <em>against</em> the classical tafasir —
+                        not drawn from them, and never a substitute for a teacher.</>}
                       endpoint="/api/v1/religion/quran-tafsir"
                       resultKey="tafsir"
                       submitLabel="Generate tafsir"
@@ -187,10 +211,28 @@ export const ReligionHub: React.FC = () => {
                   ) : activeTab === 'hadith' ? (
                     <DomainTool
                       title={T['hadith'].title}
-                      description={<>Enter a hadith (text or reference) — Workstation's <span className="text-aura">own</span> AI researches its narration, isnad, grading and sharh, in-house, with scholarly humility. Research only — grading must be verified against authenticated collections and a qualified scholar.</>}
+                      /* W498 (FU-185, class C6) — this promised research into narration, isnad, grading
+                         and sharh. On the floor none of it happened and the headings were filled with
+                         keyword bigrams, so the route now withholds every one of those sections. */
+                      description={<>Enter a hadith (text or reference). Workstation's <span className="text-aura">own</span> AI
+                        drafts a study frame — research only, never a ruling. When only the deterministic floor is serving,
+                        the identification, matn, isnad, GRADING and sharh are WITHHELD: a grade nothing verified is the one
+                        error this tool must never make. Any grading must be confirmed against an authenticated collection
+                        and a qualified scholar.</>}
                       endpoint="/api/v1/religion/hadith-study"
                       resultKey="study"
                       submitLabel="Study hadith"
+                      renderExtra={(r: any) => (
+                        <div className="space-y-2" data-testid="hadith-extra">
+                          {/* W498 (FU-185, class C6) — the route WITHHOLDS its scholarly sections when only
+                              the deterministic floor served it. That has to reach the screen, or the page
+                              shows a shorter answer with no word about why it is shorter. */}
+                          {r.floor_note && <p className="text-[10px] text-amber-300 font-bold leading-snug">{r.floor_note}</p>}
+                          {Array.isArray(r.sections_withheld) && r.sections_withheld.length > 0 && (
+                            <p className="text-[9px] text-slate-500">Withheld on the floor: {r.sections_withheld.join(' · ')}</p>
+                          )}
+                        </div>
+                      )}
                       fields={[
                         { name: 'hadith', label: 'Hadith (text or reference)', type: 'textarea', placeholder: 'e.g. "Actions are but by intentions" — or Bukhari 1' },
                         { name: 'focus', label: 'Focus', type: 'select', options: ['authentication', 'explanation', 'thematic'], default: 'authentication' },

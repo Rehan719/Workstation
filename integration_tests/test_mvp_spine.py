@@ -1480,7 +1480,7 @@ def test_continuous_compliance_beat(client):
     import asyncio as _aio, uuid as _uuid
     from agentic_core.organism.heartbeat import heartbeat
     from agentic_core.economy.living_vsbs import register
-    loop = _aio.get_event_loop()
+    loop = _ensure_loop()
     vid = f"vsb-w288-{_uuid.uuid4().hex[:6]}"
     try:
         heartbeat.configure(auto_compliance=True, auto_economy=False)
@@ -1510,7 +1510,7 @@ def test_compliance_sealed_ueg_immune_and_routed(client):
     # tier (never auto-approved — a genuine human decision). Flag-not-block preserved throughout.
     import asyncio as _aio
     from agentic_core.vbs.quality import assure_delivery
-    loop = _aio.get_event_loop()
+    loop = _ensure_loop()
     r = loop.run_until_complete(assure_delivery(
         "a cascade delivery promoting alcohol sales and gambling revenue " + "x" * 200,
         ["Section"], label="cascade"))
@@ -1613,7 +1613,7 @@ def test_tree_planner_swarm_planned_with_honest_floor(client):
     import asyncio as _aio
     from agentic_core.ai.native.orchestrator import orchestrator
     import agentic_core.ai.native.model_resource as mr
-    loop = _aio.get_event_loop()
+    loop = _ensure_loop()
     r = loop.run_until_complete(orchestrator.orchestrate_tree("w283 planner honesty contract"))
     assert r["planner"] == "deterministic_template"       # AI_DISABLE_LOCAL → the honest floor
     assert len(r["nodes"]) >= 4 and r["final"]            # the template tree still genuinely ran
@@ -1666,7 +1666,7 @@ def test_delegate_standard_catalogue_landing_and_stage_models(client):
     assert pc[0]["raw"]                                       # raw preserved even when items parse 0
     import asyncio as _aio
     from agentic_core.ai.native.orchestrator import orchestrator
-    s = _aio.get_event_loop().run_until_complete(orchestrator.swarm("w282", [
+    s = _ensure_loop().run_until_complete(orchestrator.swarm("w282", [
         {"role": "a", "instruction": "say hi", "model": "native"},
         {"role": "b", "instruction": "say more"}]))
     assert s["trace"][0]["requested_model"] == "native"       # the named stage routing recorded
@@ -20754,7 +20754,7 @@ def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(clie
     # ── FU-103: an efficiency verdict with one reachable branch ────────────────────────────────────
     import asyncio as _aio494
     from agentic_core.vbs.registry import bms as _bms494
-    _u = _aio494.get_event_loop().run_until_complete(_bms494.calculate_unit_economics(10, 1.0)) \
+    _u = _ensure_loop().run_until_complete(_bms494.calculate_unit_economics(10, 1.0)) \
         if False else _aio494.run(_bms494.calculate_unit_economics(10, 1.0))
     assert _u["status"] == "not_assessed", _u
     assert _u["status_measured"] is False
@@ -21434,7 +21434,7 @@ def test_w497_a_screen_that_matched_nothing_is_not_a_pass(client, monkeypatch):
     assert _delivery_coverage("## Alpha\n## Beta", ["Alpha", "Beta"]) == 1.0
     assert _delivery_coverage("## Alpha", ["Alpha", "Beta"]) == 0.5
     # the gate cannot pass on a coverage that does not exist
-    _qa = asyncio.get_event_loop().run_until_complete(
+    _qa = _ensure_loop().run_until_complete(
         assure_delivery("y " * 200, None, label="w497-guard", served_by="ollama:probe"))
     _q = _qa["quality"]
     assert _q["delivery_coverage"] is None, _q
@@ -21448,13 +21448,13 @@ def test_w497_a_screen_that_matched_nothing_is_not_a_pass(client, monkeypatch):
     assert "NOT MEASURED" in _crit.get("basis", ""), _crit
     assert _crit.get("source") == "none", _crit
     # a delivery that DOES declare structure still measures
-    _qa2 = asyncio.get_event_loop().run_until_complete(
+    _qa2 = _ensure_loop().run_until_complete(
         assure_delivery("## Alpha\n" + "y " * 200, ["Alpha"], label="w497-guard-2", served_by="ollama:probe"))
     assert _qa2["quality"]["delivery_coverage"] == 1.0, _qa2["quality"]
 
     # ── FU-201: the re-verify refuses when the gate's own criteria were never stored ────────────────
     from agentic_core.vbs.registry import qms
-    _ok = asyncio.get_event_loop().run_until_complete(
+    _ok = _ensure_loop().run_until_complete(
         qms.run_quality_gates({"coverage": 0.5, "stubs_found": False}, label="w497-guard-defect",
                               delivery_ref={"content_sha3": "dead", "required_sections": [],
                                             "label": "w497-guard-defect"}))
@@ -21505,3 +21505,141 @@ def test_w497_a_screen_that_matched_nothing_is_not_a_pass(client, monkeypatch):
     _fab = (app / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
     assert "in-house, ranked, QMS-gated" not in _fab
     assert "reports whether the comparison actually ranked them" in _fab
+
+
+def test_w498_the_floor_does_not_grade_a_hadith_or_state_a_madhab_position(client):
+    """W498 — the C6 batch (faith-content fidelity): two rows, one rule.
+
+    A SCHOLARLY SECTION IS WITHHELD WHEN NOTHING SCHOLARLY HAPPENED. On the deterministic floor the
+    hadith and fiqh routes returned '## Grading', '## Chain (Isnad)', '## Text (Matn)' and '## Position
+    of the Hanafi School' filled with keyword bigrams and a service frame, with no floor_note and no
+    sections_withheld — while their tafsir sibling had withheld since W456. A grade nothing verified and
+    a school's position nothing read are not shorter answers; they are false ones. And the front door
+    described all three as scholarship.
+
+    Rows: FU-185 FU-203.
+    """
+    import re
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── the hadith route: nothing identified, nothing graded, nothing attributed ─────────────────────
+    _h = client.post("/api/v1/religion/hadith-study",
+                     json={"hadith": "Actions are but by intentions", "focus": "authentication"})
+    assert _h.status_code == 200, _h.text
+    _hb = _h.json()
+    _served = ((_hb.get("ai_provenance") or {}).get("served_by"))
+    if _served == "native":
+        _body = _hb["study"]
+        # not one scholarly heading survives, and the grading vocabulary appears nowhere
+        assert re.findall(r"(?m)^##\s*(.+)$", _body) == [], re.findall(r"(?m)^##\s*(.+)$", _body)
+        for _w in ("sahih", "hasan", "da'if", "mawdu", "isnad", "matn"):
+            assert _w not in _body.lower(), (_w, _body[:200])
+        assert _hb["sections_withheld"], _hb
+        assert "NOTHING WAS RESEARCHED, GRADED OR ATTRIBUTED" in _hb["floor_note"], _hb["floor_note"]
+        assert "NOTHING WAS GRADED OR ATTRIBUTED" in _hb["disclaimer"], _hb["disclaimer"]
+    else:
+        # a model served it: the sections stand, and nothing is withheld
+        assert _hb["sections_withheld"] == [], _hb
+        assert "floor_note" not in _hb, _hb
+
+    # ── the fiqh route: no primary source, no school position, no qiyas ─────────────────────────────
+    _f = client.post("/api/v1/religion/fatwa-research",
+                     json={"question": "May travellers combine prayers?", "madhab": "hanafi"})
+    assert _f.status_code == 200, _f.text
+    _fb = _f.json()
+    if ((_fb.get("ai_provenance") or {}).get("served_by")) == "native":
+        _body = _fb["research"]
+        _left = re.findall(r"(?m)^##\s*(.+)$", _body)
+        # only the restated question may remain: a summary of nothing researched is the same claim
+        assert all(h.strip().startswith("The Question") for h in _left), _left
+        for _w in ("position of the", "primary sources", "qiyas", "ijma", "consensus"):
+            assert _w not in _body.lower(), (_w, _body[:200])
+        assert _fb["sections_withheld"], _fb
+        assert "NO jurisprudential research happened" in _fb["floor_note"], _fb["floor_note"]
+        assert "NO RESEARCH WAS PERFORMED" in _fb["disclaimer"], _fb["disclaimer"]
+
+    # ── the tafsir sibling still behaves as it did (the pattern was copied, not moved) ──────────────
+    _t = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 2})
+    assert _t.status_code in (200, 503), _t.text
+    if _t.status_code == 200:
+        _tb = _t.json()
+        assert "NOT a scholarly tafsir" in _tb["disclaimer"], _tb["disclaimer"]
+        # the Arabic is retrieved or absent — never generated
+        assert "never AI-generated" in (_tb.get("arabic_source") or ""), _tb.get("arabic_source")
+
+    # ── both tabs put the withholding on the screen ─────────────────────────────────────────────────
+    _hub = (app / "pages/domains/ReligionHub.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="hadith-extra"' in _hub and 'data-testid="fiqh-extra"' in _hub
+    assert _hub.count("Withheld on the floor:") == 3, _hub.count("Withheld on the floor:")
+    # and the copy no longer promises the research the floor does not do
+    assert "AI researches its narration, isnad, grading and sharh" not in _hub
+    assert "AI researches it within your chosen madhab" not in _hub
+    assert "drawing on the classical mufassirun" not in _hub
+
+    # ── the front door describes the output, not a lineage ──────────────────────────────────────────
+    _reg = (app / "lib/toolRegistry.ts").read_text(encoding="utf-8")
+    assert "drawing on the classical mufassirun" not in _reg
+    assert "read them against the classical tafasir" in _reg
+    assert "never generated" in _reg
+    for _claim in ("Research a question of Islamic jurisprudence within a chosen madhab, with scholarly humility.",
+                   "Research a hadith’s narration, isnad, grading and sharh."):
+        assert _claim not in _reg, _claim
+    _cat = (app / "pages/AIToolsCatalogue.tsx").read_text(encoding="utf-8")
+    assert "never an external dependency" not in _cat     # an opt-in accelerant exists
+    assert "only if the Owner enables it" in _cat
+    assert "deterministic floor otherwise" in _cat
+
+
+def test_w498b_a_test_that_asks_for_the_event_loop_depends_on_what_ran_before_it(client):
+    """W498b — W497's guard was green alone and RED in the suite, and CI caught it before I did.
+
+    `asyncio.get_event_loop()` on 3.12 raises once any earlier test has run and closed its own loop,
+    so a guard that acquires "the" loop is really asserting what ran before it. W497's quality leg
+    did exactly that and failed the full suite at 1eb972a0 with RuntimeError: there is no current
+    event loop. Eight sites in this file had the same shape; `_ensure_loop()` (already here, written
+    for this) get-or-creates it. Fixed as a CLASS, and this guard DRIVES the condition rather than
+    hoping to be scheduled into it.
+    """
+    import asyncio
+    import pathlib
+    import re
+
+    async def _nothing():
+        return True
+
+    # ── the condition, forced: asyncio.run() closes its loop and leaves none current ────────────────
+    assert asyncio.run(_nothing()) is True
+    _loop = _ensure_loop()
+    assert _loop is not None and not _loop.is_closed()
+
+    # ── W497's own leg now survives it: the gate with nothing to compare still refuses to pass ──────
+    from agentic_core.vbs.quality import assure_delivery
+    _qa = _ensure_loop().run_until_complete(
+        assure_delivery("y " * 200, None, label="w498b-loop", served_by="ollama:probe"))
+    assert _qa["quality"]["qms_gate_passed"] is None, _qa["quality"]
+    assert _qa["quality"]["delivery_coverage"] is None, _qa["quality"]
+    # and again, after the loop is unset a second time - once is luck, twice is the property
+    assert asyncio.run(_nothing()) is True
+    _again = _ensure_loop().run_until_complete(
+        assure_delivery("y " * 200, ["Alpha"], label="w498b-loop-2", served_by="ollama:probe"))
+    assert _again["quality"]["delivery_coverage"] == 0.0, _again["quality"]
+
+    # ── no test in this file acquires "the" loop to run work on: the needles are built, not written,
+    #    so this assertion cannot match its own source line ──────────────────────────────────────────
+    _src = pathlib.Path(__file__).read_text(encoding="utf-8")
+    _bare = "get_event" + "_loop()"
+    _lines = _src.splitlines()
+    # only the CODE part of a line counts: a comment naming the call (9029 warns against it) is not
+    # a use of it, and a scan that cannot tell them apart reports the warning as the defect
+    _code = [l.split("#", 1)[0] for l in _lines]
+    _dangerous = [(i, _lines[i - 1].strip()[:72]) for i, c in enumerate(_code, 1)
+                  if (_bare + ".run_until_complete") in c
+                  or (c.strip().startswith("loop = ") and _bare in c)]
+    assert _dangerous == [], _dangerous
+    # the helper is the one place that may ask, and it must handle the raise rather than propagate it
+    _h = re.search(r"def _ensure_loop\(\):.*?(?=\ndef )", _src, re.S)
+    assert _h, "the helper this class depends on is gone"
+    assert "except RuntimeError:" in _h.group(0), _h.group(0)[:300]
+    assert "set_event_loop(" in _h.group(0), _h.group(0)[:300]

@@ -3118,8 +3118,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W498",
       "note": ""
     },
     {
@@ -3440,8 +3440,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W498",
       "note": ""
     },
     {
@@ -4811,6 +4811,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "rider of FU-277 (W496): an acceptance bar belongs to the item that BUILDS the thing it bars - the legal specialist is P3.23's work, while this row's files route to P2.4 by filename"
+    },
+    {
+      "id": "FU-279",
+      "title": "W497's guard was green alone and red in the suite: eight test sites asked asyncio for THE event loop, so they asserted what ran before them",
+      "why": "FIXED IN W498 - registered so the class is on the record, not because work remains. asyncio.get_event_loop() raises on 3.12 once any earlier test has created and closed a loop, so test_w497_a_screen_that_matched_nothing_is_not_a_pass passed under -k and failed the full run at 1eb972a0 with RuntimeError: there is no current event loop. CI caught it before I did, because I pushed W497 without checking the run. Eight sites had the shape (lines 1483 1513 1616 1669 20757 21437 21451 21457); _ensure_loop() already existed in the file for exactly this and now serves all of them. test_w498b drives the condition instead of hoping to be scheduled into it - it calls asyncio.run() to unset the loop, re-runs the assertion through the helper, unsets it again, and scans the file for the two dangerous shapes with needles built by concatenation so it cannot match its own source. THE STANDING LESSON: check the CI run of every push before starting the next round, and a guard that reads ambient state is not a guard.",
+      "source": "W498 (the full suite, and CI at 1eb972a0 which I had not checked)",
+      "found": "2026-09-27",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.3",
+      "status": "done",
+      "closed_by": "W498",
+      "note": "",
+      "tier": 1
     }
   ],
   "routes": [

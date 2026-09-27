@@ -19,10 +19,13 @@ const form = (tab: string, title: string, desc: string): ToolEntry => ({ tab, ti
 
 export const TOOL_REGISTRY: DomainTools[] = [
   { name: 'Religion', route: '/religion', tools: [
-    form('dialogue', 'Comparative Fiqh Research', 'Research a question of Islamic jurisprudence within a chosen madhab, with scholarly humility.'),
-    form('tafsir', "Qur'anic Tafsir", 'Structured tafsir of an ayah (classical, thematic, contemporary, linguistic), drawing on the classical mufassirun.'),
+    // W498 (FU-203, class C6) — the front-door cards described scholarship the runs do not perform on
+    // the deterministic floor, while the tool pages themselves disclosed it correctly. The card says
+    // what comes out.
+    form('dialogue', 'Comparative Fiqh Research', 'A structured research frame on a question of jurisprudence within a chosen madhab — AI-composed, never a fatwa; on the floor the sources and the school position are withheld.'),
+    form('tafsir', "Qur'anic Tafsir", 'AI-composed study notes on an ayah (classical, thematic, contemporary, linguistic). The Arabic is retrieved from an authorised source, never generated; the notes are not scholarship — read them against the classical tafasir.'),
     form('halal', 'Halal Certification Pre-Assessment', 'Halal pre-assessment of a product and its ingredients: flags, process concerns, certification guidance.'),
-    form('hadith', 'Hadith Study (Ulum al-Hadith)', 'Research a hadith’s narration, isnad, grading and sharh. Research only — grading must be verified against authenticated collections.'),
+    form('hadith', 'Hadith Study (Ulum al-Hadith)', 'A study frame on a hadith — research only, never a ruling. On the deterministic floor the identification, matn, isnad, grading and sharh are withheld: a grade nothing verified is not offered at all.'),
     { tab: 'qep', kind: 'flagship', title: 'Quran Education Platform', desc: 'The Religion domain’s flagship: authentic Quran text from the recognised sources, real SM-2 hifz scheduling, honest written recall, provenance-labelled AI. Recitation is never scored.' },
   ]},
   { name: 'Science', route: '/science', tools: [

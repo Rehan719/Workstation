@@ -25,8 +25,13 @@ export const AIToolsCatalogue: React.FC = () => (
       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · In-House AI</p>
       <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">AI Tools</h1>
       <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
+        {/* W498 (FU-203, class C6) - the old sentence ruled out any outside provider unconditionally, while an
+            external accelerant exists as an Owner opt-in (AI_ALLOW_EXTERNAL), and the sentence said
+            nothing about the deterministic floor that in fact serves these tools here. */}
         {TOTAL} tools across {DOMAINS.length} domains, every one on Workstation's
-        <span className="text-highlight"> own</span> native AI fabric (honest in-house provenance, never an external dependency):
+        <span className="text-highlight"> own</span> fabric by default — the owned local model when one is up, the
+        deterministic floor otherwise, and an external accelerant only if the Owner enables it. Each run's badge names
+        which served it:
         {FORMS} form tools whose output is <span className="text-aura">runnable, iteratively refinable, and exportable</span> (Copy / Download),
         {SURFACES} hand-built surfaces, and the Religion domain's QEP flagship — each labelled below.
       </p>
