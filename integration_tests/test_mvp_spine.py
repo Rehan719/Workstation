@@ -673,7 +673,15 @@ def test_all_four_management_systems_compute(client):
     assert ms["document_control"] and r["quality"].get("qms_basis")   # W449: the verdict may be None; the basis proves the gate ran
     bms = ms["bms"]
     assert isinstance(bms["cost_per_insight_usd"], (int, float)) and bms["insights_count"] >= 4
-    assert bms["status"] in ("EFFICIENT", "REVISE") and "estimate" in bms["caveat"]
+    # W494 — this asserted the old two-value enum. The efficiency verdict is now WITHHELD, because the
+    # only cost input is a simulated $/Wh constant, so cost_per_insight is a fraction of a cent for any
+    # duration and the comparison against the target could not come out REVISE. The round fixed its own
+    # guard for the moved figure and did not sweep the suite for this second reader — the exact miss the
+    # register's "grep the call, not the method name" rule is about.
+    assert bms["status"] == "not_assessed" and bms["status_measured"] is False
+    assert "can only ever come out" in bms["status_basis"]
+    assert bms["target_comparison_on_simulated_inputs"] in ("below target", "above target")
+    assert "estimate" in bms["caveat"]
     ems = ms["ems"]
     # W489 — this run's emissions and the process-lifetime total are different numbers, and the
     # efficiency figure is a constant that is named one rather than reported as a measured gain.
@@ -2278,7 +2286,10 @@ def test_organism_status(client):
     assert "composite_health" in body
     assert "mode" in body
     assert "systems" in body
-    assert body["mode"] in ("FULL_POWER", "NOMINAL", "DEGRADED", "EMERGENCY")
+    # W494 — UNKNOWN is a real fifth mode: when the organism context errors, nothing was measured, so
+    # no mode is decided. This tuple pinned four and passed only because the test client never forces
+    # that state — the very state the round added the mode for.
+    assert body["mode"] in ("FULL_POWER", "NOMINAL", "DEGRADED", "EMERGENCY", "UNKNOWN")
     assert 0.0 <= body["composite_health"] <= 1.0
 
 
@@ -3986,7 +3997,12 @@ def test_cca_twin_prevalidation_gates_major_changes(client):
     assert ap["decision"] == "approved"
     rec = client.get(f"/api/v1/cca/{cid}").json()
     tp = rec.get("twin_prevalidation") or {}
-    assert tp.get("verdict") in ("pass", "fail")                      # ran at approval
+    # W494 — the fallback gate returns "not_assessable" when nothing was measured, because a gate that
+    # cannot refuse must not pass by default. The enum pinned two values and rejected the third.
+    assert tp.get("verdict") in ("pass", "fail", "not_assessable")     # ran at approval
+    if tp.get("verdict") == "not_assessable":
+        assert tp.get("source") == "health_gate_not_decidable", tp
+        assert "not decidable" in str(tp.get("source_label")), tp
     assert tp.get("source") in ("twin_marker", "health_gate_default")  # honest provenance
     assert any(a["event"].startswith("twin_prevalidation_") for a in rec["audit_trail"])
     if tp["verdict"] == "pass":
@@ -4004,7 +4020,7 @@ def test_cca_twin_prevalidation_gates_major_changes(client):
     first = client.post(f"/api/v1/cca/{cid2}/implement")
     assert first.status_code == 409 and "§17.5" in first.json()["detail"], first.text
     pv = client.post(f"/api/v1/cca/{cid2}/twin-prevalidate").json()
-    assert (pv.get("twin_prevalidation") or {}).get("verdict") in ("pass", "fail")
+    assert (pv.get("twin_prevalidation") or {}).get("verdict") in ("pass", "fail", "not_assessable")
     if pv["twin_prevalidation"]["verdict"] == "pass":
         assert client.post(f"/api/v1/cca/{cid2}/implement").status_code == 200
 
@@ -4401,7 +4417,14 @@ def test_native_validation_capability_in_house(client):
     t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
     v = t.get("validation")
     assert v and "difflib" in v["method"]
-    assert 0.0 <= v["max_branch_overlap"] <= 1.0 and isinstance(v["integrated"], bool) and v["branches_checked"] >= 1
+    # W494 — `integrated` is three-state now: with no external provider configured (CI, and the default
+    # local run) every branch is floor-served, so it is None with a basis. Asserting `isinstance(..., bool)`
+    # made this leg fail in the one environment it always runs in.
+    assert 0.0 <= v["max_branch_overlap"] <= 1.0 and v["branches_checked"] >= 1
+    assert isinstance(v["integrated"], bool) or v["integrated"] is None, v
+    assert v["integrated_basis"], v
+    if v["integrated"] is None:
+        assert "NOT ASSESSABLE" in v["integrated_basis"], v["integrated_basis"]
 
 
 def test_ueg_provenance_ledger_in_house(client):
@@ -10026,6 +10049,13 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     def _ctx():
         c = dict(_real_ctx())
         c["composite_health"] = health["h"]
+        # W494 — the rule decides on the MEASURED part of the composite, not the blend (the blend is
+        # 0.4·immune + 0.4 when no circuit is tracked + 0.2·a-simulator-that-only-rises, so it has no
+        # failing branch). This stub used to move only the blend, which left the legs below asserting
+        # against a figure the rule no longer reads. Both move together, so each leg still tests the
+        # arithmetic it was written for.
+        c["composite_health_measured_only"] = health["h"]
+        c["composite_health_measured_weight"] = 0.4
         return c
     monkeypatch.setattr(CC.biobus, "organism_context", _ctx)
 
@@ -10066,7 +10096,14 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     assert rv["decision"] == "approved" and rv["decision_source"] == "health_threshold_rule"
     m = _rec(mid)
     assert m["review_result"].startswith("DECIDED BY RULE, NOT BY THE MODEL: no [DECISION: …] marker was returned")
-    assert "composite_health 0.87 >= 0.5 → approved" in m["review_result"]
+    assert "MEASURED composite_health 0.87 >= 0.5 → approved" in m["review_result"]
+    # W494 (refutation) - this pinned a HARD-CODED clause ("the blended X has no failing branch"), which
+    # the refutation showed to be false whenever a circuit is tracked. The clause is derived from the
+    # terms now, so the record states the blend's ACTUAL floor rather than a universal.
+    assert "has no failing branch" not in m["review_result"], m["review_result"]
+    assert ("which hold it at or above" in m["review_result"]
+            or "is measured throughout" in m["review_result"]
+            or "is a fallback constant" in m["review_result"]), m["review_result"]
     (d,) = _decisions(m)
     assert d["decided_by"] == "organism_health_threshold_rule" and d["via"] == "review_request"
 
@@ -10075,11 +10112,11 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     serve["text"], health["h"] = "no marker", 0.30
     assert client.post(f"/api/v1/cca/{low}/review", json={}).json()["decision"] == "rejected"
     lt = _rec(low)["review_result"]
-    assert "composite_health 0.30 < 0.5 → rejected" in lt and ">= 0.5" not in lt
+    assert "MEASURED composite_health 0.30 < 0.5 → rejected" in lt and ">= 0.5" not in lt
     edge = _submit(change_type="config_major", title="W459 threshold probe").json()["cca_id"]
     health["h"] = 0.4999
     client.post(f"/api/v1/cca/{edge}/review", json={})
-    assert "composite_health 0.4999 < 0.5 → rejected" in _rec(edge)["review_result"]   # never "0.50 < 0.5"
+    assert "MEASURED composite_health 0.4999 < 0.5 → rejected" in _rec(edge)["review_result"]   # never "0.50 < 0.5"
     health["h"] = 0.87
 
     # BOTH markers (the floor echoes the prompt) → the rule decides, and the text says the markers conflicted
@@ -10576,7 +10613,19 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
     assert not re.search(r"^\s*gaas_passed = True\s*$", vsb_src, flags=re.M)      # never starts as PASSED
     assert "<CheckCircle2 size={20} className=\"text-emerald-500 opacity-20" not in (S / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
     cui = (S / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
-    assert "'UNAVAILABLE'" in cui and "gaas.circuit_breaker.tripped ? 'BREAKER OPEN' : 'NOMINAL'" in cui
+    # W494 (FU-141) - the third arm was a bare 'NOMINAL' read as the engine's health; the badge reports
+    # ONE interceptor's breaker (the module-level sovereign-node one), so it names the node. The W460
+    # intent holds and is pinned on the WHOLE expression, so neither the UNAVAILABLE leg nor the
+    # de-greened colour can regress: an unanswered status call must not read as a closed breaker.
+    assert "'UNAVAILABLE'" in cui
+    _breaker_arms = "\n".join([
+        "{!gaas?.circuit_breaker ? 'UNAVAILABLE'",
+        "                       : gaas.circuit_breaker.tripped ? 'BREAKER OPEN'",
+        "                       : `${gaas.circuit_breaker_node ?? 'node'} BREAKER CLOSED`}",
+    ])
+    assert _breaker_arms in cui, "the breaker badge's three arms are not pinned as written"
+    assert ("color={!gaas?.circuit_breaker ? 'slate' "
+            ": gaas.circuit_breaker.tripped ? 'vital' : 'slate'}") in cui
     gh = (S / "pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
     assert "e?.flag?.level" in gh
     # W492 (FU-196) - the chain card had two states; it now has four, because an unreadable ledger is not
@@ -10656,7 +10705,14 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
     for st in ("allowed", "halted", "blocked"):
         g = _genesis._establish_gate(SimpleNamespace(status=st, checkpoint_id="cp"))
         assert g["constitutional_alignment"] is None and g["constitutional_gate"]["status"] == st
-        assert "not screened" in g["constitutional_gate"]["scope"]
+        # W494 — this pinned the lowercase phrase, and the wording moved into the SHARED gaas.v5
+        # constant ("The delivery's content was NOT screened …") so that all five intent-gate emitters
+        # say one thing. The guard's INTENT is unchanged: the scope must say the content was not
+        # screened, and must not be satisfiable by some other sentence. It asserts the FACT, plus the
+        # machine-readable field that carries it, rather than one spelling.
+        assert "not screened" in g["constitutional_gate"]["scope"].lower()
+        assert "content" in g["constitutional_gate"]["scope"].lower()
+        assert g["constitutional_gate"].get("content_screened") is False, g["constitutional_gate"]
     # the spawn gate follows the validator's OWN verdict: passed=False with no violations is not a pass
     from agentic_core.api import vsb as _vsb
     class _BelowThreshold:
@@ -20197,3 +20253,446 @@ def test_w493_a_present_tense_claim_needs_the_process_running(client):
     assert _rc2 == 2, (_rc2, _out2)          # a check that cannot run is a failure OF THE TOOL
     assert "CHECK(S) COULD NOT RUN" in _out2, _out2
     assert "w493 deliberate" in _out2, _out2
+
+
+def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(client, monkeypatch):
+    """W494 — P1.18, the gate's own batch: fourteen rows, one rule.
+
+    A VERDICT IS NOT AN ASSESSMENT IF IT CANNOT COME OUT OTHERWISE, AND A FIGURE IS DECIDED ON WHAT
+    WAS MEASURED. Three clauses. (1) Where a score blends measured with defaulted or simulated terms,
+    the decision is taken on the measured-only part; an unmeasured term is unknown, never 1.0; where
+    nothing was measured the decision HOLDS rather than being granted. (2) A predicate computed from
+    "the bad word is absent", "a route prefix is mounted", "the output is non-empty" or "a constant
+    beats a constant" is reported as the mechanical fact it is, or returned as not-assessable.
+    (3) The measured share travels to every surface that prints the figure.
+
+    Rows: FU-102 FU-103 FU-107 FU-109 FU-110 FU-116 FU-117 FU-130 FU-132 FU-135 FU-139 FU-141
+    FU-147 FU-148.
+    """
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+
+    # ── FU-116 / FU-110: the mode is decided on the MEASURED score ─────────────────────────────────
+    from agentic_core.organism import biobus as _bb
+    _real_immune = _bb.immune.status
+    _real_healer = _bb.self_healer.status
+
+    def _immune(health, threat, errs=0):
+        return lambda: {"health": health, "threat_level": threat, "errors_in_window": errs}
+
+    # THE DISCRIMINATING STATE. ATP is pinned at its ceiling, which is where a process spends all but
+    # its first half-minute: the blend is then 0.4*immune + 0.4 (self-healing defaulted) + 0.2 = 0.6 +
+    # 0.4*immune, which is >= 0.6 for EVERY immune value. A fresh process starts at atp 0.333, where
+    # the blend happens to sit at 0.47 and the old decider would have refused too — pinning it there
+    # made three legs of this test agree with the code it was written to reject.
+    monkeypatch.setattr(_bb.biobus, "_update_atp", lambda *a, **k: 1.0)
+    # the self-healing registry is PROCESS-GLOBAL and other tests in the same session open circuits in
+    # it, so relying on "no circuit tracked yet" made this block depend on test ORDER: run after one of
+    # them, measured_weight is 0.8 and the figures below differ. The state each leg needs is stated.
+    monkeypatch.setattr(_bb.self_healer, "status", lambda: {"overall_health": None, "open_circuits": []})
+    monkeypatch.setattr(_bb.immune, "status", _immune(0.0, "CRITICAL", 11))
+    ctx = _bb.biobus.organism_context()
+    assert ctx["composite_health_measured_weight"] == 0.4, ctx   # immune alone is measured here
+    assert ctx["composite_health"] >= 0.6, ctx["composite_health"]   # the old decider read NOMINAL here
+    assert ctx["composite_health"] >= 0.5
+    assert ctx["composite_health_measured_only"] == 0.0, ctx
+    assert ctx["mode"] == "EMERGENCY", (ctx["mode"], ctx["composite_health"])
+    assert ctx["recommended"]["should_throttle"] is True, ctx["recommended"]
+    assert ctx["recommended"]["max_parallel_agents"] == 1, ctx["recommended"]
+    assert "MEASURED-only" in ctx["mode_basis"], ctx["mode_basis"]
+    assert ctx["mode_decided_on"] == "composite_health_measured_only"
+    assert "measured health 0%" in ctx["health_summary"], ctx["health_summary"]
+    assert "of the composite's weight is measured" in ctx["health_summary"]
+    # asserted on the branch that PRODUCES the claim, not on EMERGENCY where it never appeared: with
+    # the FULL_POWER line restored this assertion stayed green because it was evaluated against the
+    # wrong summary entirely.
+    monkeypatch.setattr(_bb, "_circadian_cycle", lambda: "ACTIVE_FOCUS")
+    monkeypatch.setattr(_bb.immune, "status", _immune(1.0, "NOMINAL"))
+    _fp = _bb.biobus.organism_context()
+    assert _fp["mode"] == "FULL_POWER", _fp["mode"]
+    assert "Full cognitive power" not in _fp["health_summary"], _fp["health_summary"]
+    assert "on what is measured" in _fp["health_summary"], _fp["health_summary"]
+    monkeypatch.setattr(_bb.immune, "status", _immune(0.0, "CRITICAL", 11))
+    assert ctx["composite_health_basis"] and "is measured" in ctx["composite_health_basis"]
+    # and a healthy immune reading still reaches the good modes
+    monkeypatch.setattr(_bb.immune, "status", _immune(1.0, "NOMINAL"))
+    ok = _bb.biobus.organism_context()          # self-healing still stubbed untracked, so measured == immune
+    assert ok["composite_health_measured_only"] == 1.0
+    assert ok["mode"] in ("FULL_POWER", "NOMINAL"), ok["mode"]
+    assert ok["recommended"]["should_throttle"] is False
+
+    # and when the context ERRORS, nothing was measured, so no mode is decided — it used to report
+    # NOMINAL, which is a healthy mode for a state in which nothing was read at all
+    def _raise():
+        raise RuntimeError("w494 forced context failure")
+
+    monkeypatch.setattr(_bb.immune, "status", _raise)
+    _fb = _bb.biobus.organism_context()
+    assert _fb["mode"] == "UNKNOWN", _fb["mode"]
+    assert _fb["mode_decidable"] is False and _fb["composite_health_measured_weight"] == 0.0, _fb
+    assert _fb["composite_health_measured_only"] is None, _fb
+    assert "nothing was measured" in _fb["mode_basis"], _fb["mode_basis"]
+    # and the fallback is shape-complete for every key a consumer indexes (organism_status.py:494
+    # reads self_healing["open_circuits"] and nervous["arousal_state"] on the DEGRADED/EMERGENCY path)
+    for _k in ("immune", "self_healing", "nervous", "circadian", "recommended", "metabolic"):
+        assert _k in _fb, _k
+    assert "open_circuits" in _fb["self_healing"] and "arousal_state" in _fb["nervous"], _fb
+    # clause (1) on the fallback: nothing measured means the advice HOLDS, it does not grant capacity
+    assert _fb["recommended"]["should_throttle"] is True, _fb["recommended"]
+    assert _fb["recommended"]["max_parallel_agents"] == 1, _fb["recommended"]
+    assert "HOLDS rather than granting" in _fb["recommended"]["basis"], _fb["recommended"]
+    # and the prose sentence in the same dict says what the mode says
+    assert "nominal" not in _fb["health_summary"].lower(), _fb["health_summary"]
+    assert "nothing was measured" in _fb["health_summary"], _fb["health_summary"]
+    # the metabolic term keeps its qualifiers here too (organism_status forwards this dict verbatim)
+    assert _fb["metabolic"]["measured"] is False and _fb["metabolic"]["can_fall"] is False, _fb["metabolic"]
+    assert _fb["metabolic"]["basis"], _fb["metabolic"]
+    # mode_decidable must agree with the test the gates apply, not publish advice they ignore
+    assert ctx["mode_decidable"] is True, ctx          # a measured term exists on the success path
+    assert "This is the same test the gates apply." in ctx["mode_decidable_basis"], ctx
+    assert ctx["measured_weight_below_half"] is True, ctx   # and the SHARE is a separate plain fact
+    assert "not a rule about who may decide" in ctx["measured_weight_basis"], ctx
+
+    # clause (3) END TO END: the keys the pages render must leave the process. /organism/status builds
+    # an explicit dict with no **ctx spread, so the paragraph the round added could not render at all.
+    # the REAL producer, not a stub: /organism/status indexes immune keys a hand-written stub does not
+    # carry (response_playbook among them), so exercising the route against a stub tests the stub
+    monkeypatch.setattr(_bb.immune, "status", _real_immune)
+    monkeypatch.setattr(_bb.self_healer, "status", _real_healer)
+    _os = client.get("/api/v1/organism/status").json()
+    for _k in ("mode_basis", "composite_health_basis", "composite_health_measured_weight",
+               "mode_decidable", "mode_decidable_basis", "measured_weight_basis"):
+        assert _k in _os, (_k, sorted(_os))
+    assert _os["mode_basis"] and _os["composite_health_basis"]
+    _home = (app / "pages/DashboardNew.tsx").read_text(encoding="utf-8")
+    _od = (app / "pages/organism/OrganismDashboard.tsx").read_text(encoding="utf-8")
+    # neither page may label the fallback CONSTANT as measured health
+    assert "health not measured" in _home, "the landing page still falls back to the blend"
+    assert "(health.measuredOnly ?? health.composite)" not in _home
+    assert "composite-health-headline" in _od
+    # the else-ARM of the headline ternary: "not measured" occurs four times in this file, so asserting
+    # the phrase was satisfied by the caption and the label while the headline fell back to the blend
+    assert (": <span className=\"text-base font-bold text-slate-400\">not measured</span>}") in _od
+    assert "? status.composite_health_measured_only : status.composite_health} />" not in _od
+    # and the bar draws 0 rather than the constant when nothing was measured
+    assert "? status.composite_health_measured_only : 0} />" in _od
+    monkeypatch.setattr(_bb.immune, "status", _immune(1.0, "NOMINAL"))
+
+    # ── FU-117: the metabolic term can only RISE, so every threshold on it is dead ─────────────────
+    from agentic_core.molecular.atp_simulator import ATPSimulator
+    _a = ATPSimulator()
+    _start = _a.ratio
+    # the worst case WITHIN the declared domain: maximum load, minimum circadian efficiency
+    for _ in range(40):
+        _a.update(dt=1.0, metabolic_load=1.0, circadian_efficiency=0.8)
+    assert _a.ratio > _start, "the simulator can fall after all — re-read the thresholds below"
+    assert _a.ratio / 15.0 > 0.3, "atp normalised stayed under the 0.3 levers"
+    # AT THE ENTRY POINT. The first version probed only the regime in which the claim is true, so it
+    # could not fail: the refutation drove the fabric's own reconfigurable `metabolic_load` param —
+    # declared "float 0-1" and validated nowhere — with 100, and took the PROCESS-WIDE singleton from
+    # 0.358 to 0.033 in one call, firing every threshold the round called unreachable. The domain is
+    # enforced now, in the simulator and at biobus's entry, which is what makes the claim true.
+    _b = ATPSimulator()
+    _b0 = _b.ratio
+    _b.update(dt=1.0, metabolic_load=100, circadian_efficiency=1.0)      # out of the declared domain
+    assert _b.ratio >= _b0, ("an out-of-domain load still drains the simulator", _b0, _b.ratio)
+    _b.update(dt=1.0, metabolic_load=float("nan") if False else 5.0, circadian_efficiency=99)
+    assert _b.ratio >= _b0
+    assert "max(0.0, min(1.0, float(metabolic_load)))" in (
+        root / "agentic_core/molecular/atp_simulator.py").read_text(encoding="utf-8")
+    assert "max(0.0, min(1.0, float(metabolic_load)))" in (
+        root / "agentic_core/organism/biobus.py").read_text(encoding="utf-8")
+    # and the basis states the CONDITION the claim rests on rather than asserting it flatly
+    assert "clamped to its declared 0-1 domain" in ok["metabolic"]["basis"], ok["metabolic"]["basis"]
+    assert ok["metabolic"]["can_fall"] is False, ok["metabolic"]
+    assert ok["metabolic"]["measured"] is False
+    assert "only rises" in ok["metabolic"]["basis"] and "cannot fire" in ok["metabolic"]["basis"]
+
+    # ── FU-107: three governance gates decided on a figure with no failing branch ──────────────────
+    cc = (root / "agentic_core/api/change_control.py").read_text(encoding="utf-8")
+    assert "composite_health_measured_only" in cc
+    assert 'rule_verdict = (None if _hm is None else' in cc
+    assert "MEASURED composite_health" in cc                 # the record states what it compared
+    assert "health_rule_not_evaluable" in cc                 # a rule it cannot evaluate HOLDS
+    # the BRANCH, not only its body: asserting the reason string alone left `elif False:` green
+    assert "        elif rule_verdict is None:" in cc
+    assert 'decision, held, hold_reason = None, True, "health_rule_not_evaluable"' in cc
+    assert "A rule with no evaluable input is not an " in cc
+    assert 'if tier == "LOW" and _health_ok and threat in ("NOMINAL", "ELEVATED"):' in cc
+    assert "health_gate_not_decidable" in cc                 # the twin fallback is not a pass
+    assert 'verdict, source = "not_assessable", "health_gate_not_decidable"' in cc
+    # the auto-approval record carries the figure that decided, not only the blend
+    assert '"composite_health_measured_only": _measured,' in cc
+    # THE DISCRIMINATING STATE, on the second attempt. An immune threat of HIGH/CRITICAL already held
+    # a LOW change before this round, so testing with CRITICAL proves nothing about the health leg —
+    # the first version of this leg did exactly that and was vacuous. The second version stubbed immune
+    # health 0.0 WITH threat ELEVATED, which the refutation showed the real system can never produce:
+    # immune.py is the sole writer of threat_level and derives it FROM health (>=0.8 NOMINAL, >=0.5
+    # ELEVATED, >=0.2 HIGH, else CRITICAL), so health 0.0 is always CRITICAL. A guard whose state the
+    # producer cannot emit is testing fiction.
+    #
+    # The REACHABLE state is a tracked self-healing registry reading low while immune is perfectly
+    # healthy: measured_only is then 0.5*immune + 0.5*self_healing = 0.5, below the 0.6 auto-approval
+    # mark, while threat is NOMINAL so the immune leg passes. The refutation reproduced it with eight
+    # real record_failure calls; this stubs the same reading.
+    monkeypatch.setattr(_bb.immune, "status", _immune(1.0, "NOMINAL", 0))
+    monkeypatch.setattr(_bb.self_healer, "status",
+                        lambda: {"overall_health": 0.0, "open_circuits": ["ep-a"]})
+    _dstate = _bb.biobus.organism_context()
+    assert _dstate["composite_health_measured_only"] == 0.5, _dstate   # 0.5*1.0 + 0.5*0.0
+    assert _dstate["composite_health_measured_weight"] == 0.8, _dstate  # self-healing is MEASURED here
+    assert _dstate["immune"]["threat_level"] == "NOMINAL"              # so the immune leg cannot hold it
+    _sub = client.post("/api/v1/cca/submit", json={"change_type": "config_minor",
+                                                   "title": "W494 low-health probe",
+                                                   "description": "a LOW change while measured health is zero",
+                                                   "rationale": "the health leg must be able to refuse"})
+    assert _sub.status_code == 200, _sub.text
+    _rec494 = client.get(f"/api/v1/cca/{_sub.json()['cca_id']}").json()
+    assert _rec494["status"] != "approved", _rec494          # it auto-approved here before this round
+    assert _rec494["health_gate"]["verdict"] == "fail", _rec494["health_gate"]
+    # 0.5 in the reachable state: 0.5*immune(1.0) + 0.5*self_healing(0.0), below the 0.6 gate mark
+    assert _rec494["health_gate"]["measured_health"] == 0.5, _rec494["health_gate"]
+    assert _rec494["health_gate"]["measured_weight"] == 0.8, _rec494["health_gate"]
+    assert _rec494["health_gate"]["decided_on"] == "composite_health_measured_only"
+    _events = [a.get("event") for a in _rec494.get("audit_trail", [])]
+    assert "held_measured_health" in _events, _events        # the HEALTH leg held it, not the threat
+    assert "held_immune_threat" not in _events, _events      # and the threat leg did not fire
+    assert "measured organism health 50%" in _rec494["review_result"], _rec494["review_result"]
+    # THE BASIS SENTENCE ITSELF. The first version hard-coded "carries a defaulted and a simulated term
+    # and cannot fall below 0.6", which is false in exactly this state: self-healing is measured (no
+    # defaulted term) and the blend has already fallen below 0.6. A basis that cannot come out otherwise
+    # is the class this round removes, and nothing asserted its content, so it shipped unnoticed.
+    _basis = _rec494["health_gate"]["basis"]
+    assert "cannot fall below 0.6" not in _basis, _basis
+    assert "a defaulted" not in _basis, _basis               # nothing is defaulted in this state
+    assert "1 unmeasured term(s) (metabolic)" in _basis, _basis
+    assert "which hold it at or above" in _basis, _basis
+    # and the floor it names is one the blend actually respects
+    import re as _re494
+    _floor = float(_re494.search(r"at or above ([0-9.]+)", _basis).group(1))
+    assert _floor <= float(_dstate["composite_health"]) + 1e-9, (_floor, _dstate["composite_health"])
+    # and the same change with a healthy MEASURED reading still auto-approves: the gate works both ways.
+    # BOTH stubs must come off — leaving the low self-healing registry in place made this leg fail for
+    # the reason the leg above proves, which would have read as the gate being unable to grant at all.
+    monkeypatch.setattr(_bb.self_healer, "status", _real_healer)
+    monkeypatch.setattr(_bb.immune, "status", _immune(1.0, "NOMINAL"))
+    _sub2 = client.post("/api/v1/cca/submit", json={"change_type": "config_minor",
+                                                    "title": "W494 healthy probe",
+                                                    "description": "the same LOW change, health measured high",
+                                                    "rationale": "the gate must still be able to grant"})
+    _rec2 = client.get(f"/api/v1/cca/{_sub2.json()['cca_id']}").json()
+    assert _rec2["status"] == "approved", _rec2
+    assert _rec2["health_gate"]["verdict"] == "pass", _rec2["health_gate"]
+    monkeypatch.setattr(_bb.immune, "status", _real_immune)
+
+    # ── FU-109: a viability verdict read off an ABSENT phrase ──────────────────────────────────────
+    # the SECOND writer of the same gate: the resource fabric re-implements it, and it was left reading
+    # the blend with a 1.0 default, so it granted "auto-approved" while measured health was 0.0
+    _rf = (root / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8")
+    assert 'health = _ctx_cc.get("composite_health_measured_only")' in _rf
+    assert '.get("composite_health", 1.0)' not in _rf          # no numeric default for a missing reading
+    assert '"not assessable (nothing measured)" if not _decidable' in _rf
+    assert "organism_health_measured_only" in _rf
+    # and the petri row follows the contract every sibling row uses: a count MAP rendered into the
+    # provenance badge printed an object where a provenance belongs
+    assert "**_intel_served(r.ai_provenance)," in _rf
+    # the model-facing prompts see what the rule sees
+    assert cc.count("Measured composite health:") >= 2, cc.count("Measured composite health:")
+    # every other surface that prints an intent-gate verdict
+    for _pg, _need in ((app / "pages/TransformationDashboard.tsx", "content not screened"),
+                       (app / "pages/synthesis/GenesisJourney.tsx", "journey-intent-gate"),
+                       (app / "pages/developers/ForgePipeline.tsx", "forge-intent-gate")):
+        assert _need in _pg.read_text(encoding="utf-8"), _pg.name
+    # forge's governance became an object; rendering it as a JSX child throws
+    _fp = (app / "pages/developers/ForgePipeline.tsx").read_text(encoding="utf-8")
+    assert "governance {result.governance}</span>" not in _fp
+    # TWICE: once on the title attribute, once on the rendered text. Asserting the literal once let the
+    # render arm be removed with the attribute still satisfying the assertion.
+    assert _fp.count("typeof result.governance === 'string'") >= 2, _fp.count("typeof result.governance === 'string'")
+    assert "? `governance ${result.governance}`" in _fp
+    assert "`intent gate: ${result.governance?.status}" in _fp
+    # an unassessable pre-validation is not painted as a failure
+    _cca_pg = (app / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "'fail' ? 'text-red-400' : 'text-slate-400'" in _cca_pg
+    # the withheld BMS verdict reaches its second surface with its basis
+    _vbs = (app / "components/VBSSystemsPanel.tsx").read_text(encoding="utf-8")
+    assert "vbs-bms-basis" in _vbs and "econ.status_basis" in _vbs
+    # the fund cannot call a fallback constant fully measured
+    _cf = (root / "agentic_core/api/capital_fund.py").read_text(encoding="utf-8")
+    assert "a fallback constant and no term was measured" in _cf
+    # BEHAVIOURALLY, on the state that produced the false claim: an EMPTY term map has no unmeasured
+    # terms, so the else-arm fired and the fund reported the 0.9 fallback constant as fully measured.
+    # The source literal alone is vacuous here - it sits inside an expression that survives the break.
+    from agentic_core.api.capital_fund import _organism_posture as _op494
+    import agentic_core.api.capital_fund as _cfmod
+    class _StubBus494:
+        # the module-level NAME is replaced, so the shared biobus singleton is never mutated
+        @staticmethod
+        def organism_context(*_a, **_k):
+            return {"mode": "UNKNOWN", "composite_health": 0.9,
+                    "composite_health_measured_only": None, "composite_health_terms": None,
+                    "metabolic": {"atp_ratio": None}}
+
+    monkeypatch.setattr(_cfmod, "biobus", _StubBus494)
+    _post = _op494()
+    assert "every term in this figure is measured" not in str(_post.get("composite_health_basis")), _post
+    assert "no term was measured" in str(_post.get("composite_health_basis")), _post
+    # and the board pack carries the measured figure to the economy page
+    _ec = (root / "agentic_core/api/economy.py").read_text(encoding="utf-8")
+    assert '"composite_health_measured_only": ctx.get("composite_health_measured_only"),' in _ec
+    _ecp = (app / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert "vsb-organism-posture" in _ecp
+    # both arms: "health not measured" is the ELSE arm, which the break leaves untouched
+    assert "? `measured health ${Math.round(bp.organism_posture.composite_health_measured_only * 100)}%`" in _ecp
+    assert ": 'health not measured'" in _ecp
+    assert "` \u00b7 blended ${Math.round(bp.organism_posture.composite_health * 100)}%`" in _ecp
+
+    pc = client.post("/api/v1/petri/culture",
+                     json={"specimen": "sell ice to penguins at a premium, financed with riba loans",
+                           "domain": "enterprise"})
+    assert pc.status_code == 200, pc.text
+    _p = pc.json()
+    assert _p["viable"] is None, _p                          # it returned True for exactly this input
+    # the basis must say WHY it is not assessable: with the floor check removed the fall-through also
+    # returns None ("states neither VIABLE nor NOT-VIABLE"), so asserting the verdict alone is vacuous
+    assert "NOT ASSESSABLE" in _p["viable_basis"], _p["viable_basis"]
+    assert "deterministic floor" in _p["viable_basis"], _p["viable_basis"]
+    assert "does not judge viability" in _p["viable_basis"], _p["viable_basis"]
+    pr = (root / "agentic_core/api/products.py").read_text(encoding="utf-8")
+    assert '_says_not = ("not-viable" in tail) or ("not viable" in tail)' in pr
+    assert 'viable = ("not-viable" not in tail) and ("not viable" not in tail)' not in pr
+    rf = (app / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    assert "viability not assessed" in rf                    # the page shows the third state
+    assert "rr.viable === null" in rf
+
+    # ── FU-139: "connected" is a mounted-route check ───────────────────────────────────────────────
+    w = client.get("/api/v1/cognition/wiring").json()
+    assert w["coherence_measured"] is False, w
+    assert "MOUNTED-ROUTE count" in w["coherence_basis"], w["coherence_basis"]
+    assert isinstance(w.get("routes_mounted"), int)
+    assert all(t.get("connected_basis") for t in w["tiers"]), w["tiers"][:1]
+    ci = (app / "pages/CognitionIntegration.tsx").read_text(encoding="utf-8")
+    assert "% coherence" not in ci                            # the page no longer prints it as one
+    assert "tiers have a route mounted" in ci
+    assert 'text-emerald-400">{wiring.connected}' not in ci
+
+    # ── FU-141: the breaker reported belongs to ONE route ──────────────────────────────────────────
+    g = client.get("/api/v1/gaas/status").json()
+    # the list must name EVERY driver: the fabric's gaas_v5 requisition drives the same module-level
+    # interceptor, so a one-item list was itself a claim the code does not support
+    assert "POST /api/v1/gaas/intercept" in g["circuit_breaker_covers"], g
+    assert any("resource fabric" in c for c in g["circuit_breaker_covers"]), g
+    assert "and nothing else" not in g["circuit_breaker_scope"], g["circuit_breaker_scope"]
+    assert g["circuit_breaker_node"], g
+    assert "not a platform-wide" in g["circuit_breaker_scope"], g["circuit_breaker_scope"]
+    cu = (app / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
+    assert "gaas-breaker-scope" in cu and "These figures cover" in cu
+    assert "BREAKER CLOSED" in cu                             # names the node, never a bare verdict
+
+    # ── FU-147: "BUILT" meant "produce() did not raise" ────────────────────────────────────────────
+    bt = (root / "agentic_core/catalog/bto.py").read_text(encoding="utf-8")
+    assert '"BUILT" if qms is True else' in bt
+    assert "COMPOSED_NOT_ASSESSED" in bt and "Composed is not built." in bt
+    assert '"delivered_count": _built_n,' in bt and "composed_not_assessed_count" in bt
+    assert "delivered_basis" in bt
+    bc = (app / "pages/BTOCatalog.tsx").read_text(encoding="utf-8")
+    assert "bto-delivered-basis" in bc and "composed, not assessed" in bc
+    assert "COMPOSED_NOT_ASSESSED" in bc                      # neither green nor red
+    # a gate that FAILED is not a gate that could not assess: counted apart
+    assert 'b["status"] == "COMPOSED_NOT_ASSESSED")' in bt and "gate_failed_count" in bt
+    assert "they are not the same outcome" in bt
+
+    # ── FU-135: the abstain rule the run already applied to every other voter ──────────────────────
+    orc = (root / "agentic_core/ai/native/orchestrator.py").read_text(encoding="utf-8")
+    assert '"integrated": (None if _vf else bool(max_ov < 0.85)),' in orc
+    assert "integrated_basis" in orc
+    # the abstention must speak the consensus engine's OWN token: `_cast` filters on the string
+    # "abstain", so None was still counted as a vote and still diluted proceed_fraction
+    assert '"validation": ("abstain" if (validation or {}).get("integrated") is None else' in orc
+    assert '_cast = {v: c for v, c in voters.items() if c != "abstain"}' in orc
+    na = (app / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    # both arms: the COLOUR ternary and the LABEL ternary. Asserting the literal once left the colour
+    # arm removable, and an abstention was painted amber (the near-copy colour) with a neutral label.
+    assert na.count("run.validation.integrated === null") >= 2, na.count("run.validation.integrated === null")
+    assert "run.validation.integrated === null ? 'bg-slate-800 text-slate-400'" in na
+    assert "run.validation.integrated === null ? 'not assessable'" in na
+    assert "tree-validation-basis" in na
+
+    # ── FU-132: answering is not readiness, and four tiles named what does not exist ───────────────
+    sp = (app / "pages/SolutionsPlatform.tsx").read_text(encoding="utf-8")
+    assert "Readiness check PASSED" not in sp
+    assert "That is reachability, not readiness" in sp
+    assert "NO owned model is serving" in sp
+    # the CONDITION, not only the message it guards: setting it to false left the string in the file
+    assert "const floorServing = ai?.floor_active === true || ai?.is_real_model === false;" in sp
+    for _absent in ("V9 Engine", "Sovereign execution runtime", "Real-time mission telemetry"):
+        assert _absent not in sp, _absent
+    assert "Nothing measures a mission yet" in sp and "Missions are not stored or versioned" in sp
+    # and the claim is true: that engine name exists nowhere in the backend
+    import subprocess as _sp494
+    _hit = _sp494.run(["git", "grep", "-l", "V9 Engine", "--", "agentic_core"],
+                      cwd=root, capture_output=True, text=True)
+    assert not _hit.stdout.strip(), _hit.stdout
+
+    # ── FU-148: a player announced over a result with nothing to play ──────────────────────────────
+    ss = (app / "pages/synthesis/SynthesisStudio.tsx").read_text(encoding="utf-8")
+    assert "Web Player Ready" not in ss
+    assert "slides_count: ev.slides_count" in ss              # the stream's own field, not a constant
+    # and the stream actually SENDS them: the first version read fields the done frame never emitted,
+    # so `format` fell back to a hard-coded 'md' and the slides_count branch was dead
+    _sapi = (root / "agentic_core/synthesis/api.py").read_text(encoding="utf-8")
+    assert "'format': ext," in _sapi and "_done['slides_count'] = _slides_n" in _sapi
+    assert "format: ev.format ?? (type === 'presentation' ? undefined : 'md')" not in ss
+    # the player claim rests on a parse, not on the output being non-empty
+    assert "JSON.parse(result.content)" in ss and "slides !== null" in ss
+    assert "metadata: { type, format: 'md', title: type }," not in ss
+    assert "no slide data in this result" in ss
+    assert "disabled={!result.content}" in ss and "Nothing to play" in ss
+
+    # ── FU-102: a chart titled "measured" plotting a value that is 1.0 by construction ─────────────
+    swi = (app / "components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    assert "QMS coverage vs run duration (measured)" not in swi
+    assert "const assessedRuns = plottableRuns.filter" in swi
+    assert "const paretoPoints: { x: number; y: number }[] = assessedRuns" in swi   # and it is USED
+    assert "unassessedRunCount" in swi and "excluded: the quality gate could not assess them" in swi
+    # the caption claimed to name what it left out while slice(0, 8) dropped assessed runs silently
+    assert "more assessed run(s) beyond the 8 plotted" in swi
+
+    # ── FU-103: an efficiency verdict with one reachable branch ────────────────────────────────────
+    import asyncio as _aio494
+    from agentic_core.vbs.registry import bms as _bms494
+    _u = _aio494.get_event_loop().run_until_complete(_bms494.calculate_unit_economics(10, 1.0)) \
+        if False else _aio494.run(_bms494.calculate_unit_economics(10, 1.0))
+    assert _u["status"] == "not_assessed", _u
+    assert _u["status_measured"] is False
+    assert "can only ever come out" in _u["status_basis"], _u["status_basis"]
+    # the arithmetic is still reported, and it is 666x below the target — which is the point
+    assert _u["cost_per_insight"] < _u["unit_cost_target"] / 100
+    assert "bms-chip" in swi and "(sim)" in swi
+
+    # ── FU-130: five intent gates reported a verdict over a delivery they never saw ────────────────
+    from agentic_core.gaas.v5 import INTENT_GATE_SCOPE, intent_gate_result
+    assert "content was NOT screened" in INTENT_GATE_SCOPE
+    _r = intent_gate_result("allowed", "CHK-1", "n", arms_length=True)
+    # every key the previous shape carried survives — five emitters' consumers depend on them
+    for _k in ("status", "checkpoint", "node", "arms_length", "scope", "content_screened"):
+        assert _k in _r, _k
+    assert _r["content_screened"] is False
+    # the CALL, not the import: asserting the name alone left an emitter free to go back to building
+    # the dict by hand with the (now unused) import still sitting above it.
+    for _f, _label, _call in (
+            (root / "agentic_core/api/swarm.py", "cascade",
+             "governance = intent_gate_result(_gov.status, _gov.checkpoint_id, _gov.node, arms_length=True)"),
+            (root / "agentic_core/api/forge.py", "forge",
+             'governance = intent_gate_result(res.status, res.checkpoint_id, getattr(res, "node", None))'),
+            (root / "agentic_core/api/transformation_orchestration.py", "orchestration",
+             "governance = intent_gate_result(gov.status, gov.checkpoint_id, gov.node)"),
+            (root / "agentic_core/api/genesis.py", "genesis",
+             '"governance": _intent_gate_result(gov.status, gov.checkpoint_id')):
+        _src = _f.read_text(encoding="utf-8")
+        assert _call in _src, (_label, _call)
+        # and nobody re-introduced a hand-built verdict beside it
+        assert '"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node}' not in _src, _label
+    assert "cascade-gov-chip" in swi and "content not screened" in swi
+    assert "bg-emerald-500/15 text-emerald-400'}`}>gov: " not in swi

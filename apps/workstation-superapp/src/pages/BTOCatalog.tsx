@@ -264,12 +264,30 @@ export const BTOCatalog: React.FC = () => {
                 </div>
                 {btoResult && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                      Delivered <span className="text-emerald-400">{btoResult.delivered_count}</span> · {btoResult.posture}
+                    {/* W494 (FU-147) — "Delivered N" counted every product whose produce() call did not
+                        raise, including floor-composed scaffolds the quality gate could not assess.
+                        The two outcomes are counted separately and the basis is on the line. */}
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500"
+                       data-testid="bto-delivered-line" title={btoResult.delivered_basis}>
+                      Delivered <span className={btoResult.delivered_count ? 'text-emerald-400' : 'text-slate-400'}>{btoResult.delivered_count}</span>
+                      {typeof btoResult.composed_not_assessed_count === 'number' && btoResult.composed_not_assessed_count > 0 && (
+                        <span className="text-slate-400"> · {btoResult.composed_not_assessed_count} composed, not assessed</span>
+                      )}
+                      {' · '}{btoResult.posture}
                     </p>
+                    {btoResult.delivered_basis && (
+                      <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="bto-delivered-basis">
+                        {btoResult.delivered_basis}
+                      </p>
+                    )}
                     {(btoResult.built || []).map((b: any, i: number) => (
                       <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950 border border-slate-900">
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.status === 'BUILT' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>{b.status}</span>
+                        {/* a composed-but-unassessed product is neither a pass nor a failure: neutral */}
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                          b.status === 'BUILT' ? 'bg-emerald-500/15 text-emerald-400'
+                          : b.status === 'COMPOSED_NOT_ASSESSED' ? 'bg-slate-800 text-slate-400'
+                          : 'bg-vital/15 text-vital'}`} title={b.status_basis}
+                              data-testid={`bto-status-${b.slug ?? i}`}>{String(b.status).replace(/_/g, ' ').toLowerCase()}</span>
                         <span className="text-xs font-bold text-white truncate flex-1">{b.name}</span>
                         {(() => { const c = qmsChip({ qms_gate_passed: b.qms_gate_passed }); return c && (
                           <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>

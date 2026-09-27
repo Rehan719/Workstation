@@ -96,14 +96,32 @@ async def knowledge_layers():
 @router.get("/wiring")
 async def wiring_map():
     """The integration map — how the knowledge system connects to every living tier."""
+    # §7 (W494, FU-139) — "connected" is a MOUNTED-ROUTE check: _has() asks whether any registered
+    # path starts with the tier's prefix. Every tier's router is imported at app start, so it cannot be
+    # false while the app is running: the endpoint reported "13/13 connected · 100% coherence" and a
+    # green tick per tier, which the page read as the knowledge system being wired into each tier.
+    # It says what it tests now, and the figure that cannot fail is named as such rather than being
+    # presented as a coherence measurement.
     routes = _routes()
-    tiers = [{**t, "connected": _has(routes, t["endpoint"])} for t in _TIERS]
-    connected = sum(1 for t in tiers if t["connected"])
+    tiers = [{**t, "route_mounted": _has(routes, t["endpoint"]),
+              # kept for readers that already index it, with the meaning stated beside it
+              "connected": _has(routes, t["endpoint"]),
+              "connected_basis": ("a route starting with this tier's prefix is mounted in this process; "
+                                  "nothing here checks that the knowledge system reaches the tier")}
+             for t in _TIERS]
+    mounted = sum(1 for t in tiers if t["route_mounted"])
     return {
         "tiers": tiers,
-        "connected": connected,
+        "connected": mounted,
+        "routes_mounted": mounted,
         "total": len(tiers),
-        "coherence": round(connected / len(tiers), 3),
+        "coherence": round(mounted / len(tiers), 3),
+        "coherence_measured": False,
+        "coherence_basis": (
+            f"{mounted} of {len(tiers)} tiers have a route mounted under their prefix. This is a "
+            "MOUNTED-ROUTE count, not a measurement of integration: every tier's router is imported at "
+            "startup, so it cannot come out below 100% while the app answers at all. Nothing here "
+            "exercises a tier or checks that knowledge reaches it."),
         "principle": ("Knowledge layers → Transformation (measures realisation) → routed to the right tier "
                       "(Board / Evolution / Change Control) → governed by gaas/UEG → continuous via the Heartbeat."),
     }

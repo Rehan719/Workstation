@@ -507,7 +507,12 @@ class PetriResult(BaseModel):
     medium: str
     passages: int
     culture: str
-    viable: bool
+    # §7 · §15.6 (W494, FU-109) — three-state: True, False, or None for "not assessable". The verdict
+    # was a bool computed as "the words 'not viable' are absent from the tail", which the deterministic
+    # floor never writes, so every floor-served culture came back viable=True. A specimen of
+    # "sell ice to penguins, financed with riba loans" was returned VIABLE.
+    viable: bool | None
+    viable_basis: str
     ai_provenance: dict
     quality_assurance: dict
     cultured_at: float
@@ -542,12 +547,31 @@ async def petri_culture(req: PetriRequest) -> PetriResult:
         culture = (meta.get("output", "") or "").strip() or culture
         _record(meta)
 
+    # §7 · §15.6 (W494, FU-109) — a verdict read off the ABSENCE of two phrases cannot come out false
+    # when the writer never produces them. It now requires the model to state VIABLE explicitly, and
+    # where no resource assessed the culture at all the verdict is None — not assessable — rather than
+    # the optimistic default. An affirmative marker can be absent; an absent marker is not a pass.
     tail = culture.lower()[-400:]
-    viable = ("not-viable" not in tail) and ("not viable" not in tail)
+    _says_not = ("not-viable" in tail) or ("not viable" in tail)
+    _says_yes = ("viable" in tail) and not _says_not
+    _floor_served = not any(k for k in (prov.get("served_by") or {}) if k not in ("native", "template"))
+    if _says_not:
+        viable, viable_basis = False, "the culture states NOT-VIABLE"
+    elif _floor_served:
+        viable = None
+        viable_basis = ("NOT ASSESSABLE — the culture was composed by the deterministic floor, which "
+                        "does not judge viability. The old verdict was 'the words \"not viable\" are "
+                        "absent', which the floor never writes, so it could only ever say viable.")
+    elif _says_yes:
+        viable, viable_basis = True, "the culture states VIABLE"
+    else:
+        viable = None
+        viable_basis = "NOT ASSESSABLE — the culture states neither VIABLE nor NOT-VIABLE"
     qa = await assure_delivery(culture, ["Growth", "Nutrients Required", "Contamination Risks", "Viability"], label="petri",
                                served_by=prov["served_by"])
     return PetriResult(culture_id=cid, specimen=req.specimen, domain=req.domain, medium=req.medium,
-                       passages=passages, culture=culture, viable=viable, ai_provenance=prov,
+                       passages=passages, culture=culture, viable=viable, viable_basis=viable_basis,
+                       ai_provenance=prov,
                        quality_assurance=qa, cultured_at=time.time())
 
 

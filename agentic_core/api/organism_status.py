@@ -246,7 +246,19 @@ async def organism_status():
         "composite_health": ctx["composite_health"],
         "composite_health_measured_only": ctx.get("composite_health_measured_only"),
         "composite_health_terms": ctx.get("composite_health_terms"),
+        # W494 (refutation) — the round taught OrganismDashboard.tsx to render mode_basis and to hang
+        # composite_health_basis on the figure's tooltip, and this payload is built as an explicit dict
+        # with no **ctx spread, so neither field ever left the process: the paragraph the round added
+        # could not render at all. Clause (3) is that the measured share TRAVELS.
+        "composite_health_basis": ctx.get("composite_health_basis"),
+        "composite_health_measured_weight": ctx.get("composite_health_measured_weight"),
         "mode": ctx["mode"],
+        "mode_basis": ctx.get("mode_basis"),
+        "mode_decided_on": ctx.get("mode_decided_on"),
+        "mode_decidable": ctx.get("mode_decidable"),
+        "mode_decidable_basis": ctx.get("mode_decidable_basis"),
+        "measured_weight_below_half": ctx.get("measured_weight_below_half"),
+        "measured_weight_basis": ctx.get("measured_weight_basis"),
         "health_summary": ctx["health_summary"],
         **({"context_error": ctx["error"]} if ctx.get("error") else {}),
 

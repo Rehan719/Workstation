@@ -1659,8 +1659,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -1673,8 +1673,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -1731,8 +1731,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -1762,8 +1762,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -1778,8 +1778,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -1879,8 +1879,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -1898,8 +1898,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -2148,8 +2148,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -2183,8 +2183,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -2235,8 +2235,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -2308,8 +2308,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -2348,8 +2348,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -2454,8 +2454,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -2471,8 +2471,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W494",
       "note": ""
     },
     {
@@ -4556,6 +4556,26 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-265",
+      "title": "Four pre-existing second readers of the metabolic (ATP) term still present it as live capacity or decide on it",
+      "why": "W494's refutation found these while sweeping the ATP term; they are OUTSIDE the fourteen rows that round closed and form one coherent follow-on batch. (a) agentic_core/app_mvp.py:438 serves /api/v1/biometrics/status with the raw simulator ratio and NO /15 normalisation, so the figure is a constant 1.0 and the Introspection surface prints 'Metabolic (ATP 100%)' as a live vital that cannot come out otherwise; it also floors the Metabolic efficiency bar at 50%. (b) agentic_core/api/integration_surface.py:469 builds a FRESH ATPSimulator per request, so metabolic_atp_ratio is the constant 0.333, published under a label saying it is real and contrasted in the same payload with values marked simulated; metabolism.py documents that callers must read the SHARED singleton via biobus._get_atp(). (c) agentic_core/economy/metabolism.py:158 DECIDES the reserve rate on the term (atp < 0.3) and records an energy_state that can only read healthy, in the economy that writes the virtual ledger - every VSB cycle therefore records a reserve decided on a simulator. (d) apps/workstation-superapp/src/pages/developers/NativeAI.tsx:618 and the ResourceFabric tooltip print ATP as live capacity with no disclosure, and NativeAI's body copy asserts it governs parallelism. W494 added metabolic.measured=False, can_fall=False and a basis to the organism context and clamped the load to its declared 0-1 domain, so the qualifier now exists for these readers to carry. FIX: normalise (a) and carry measured/basis onto the Introspection label; have (b) read the shared singleton or drop the term; give (c) a three-state energy_state that says the reserve was NOT adjusted because the term is unmeasured; forward metabolic.basis to (d). Note for whoever takes it: driving ATP from a real load signal that can fall is a CAPABILITY change, not a truth fix - the truthful move until then is to say the levers are inert.",
+      "source": "W494 refutation (atp-thresholds lens), deferred as outside the round's fourteen rows",
+      "found": "2026-09-26",
+      "files": [
+        "agentic_core/app_mvp.py",
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/economy/metabolism.py",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.8",
       "status": "open",
       "closed_by": null,
       "note": "",

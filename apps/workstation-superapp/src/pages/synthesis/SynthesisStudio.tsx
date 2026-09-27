@@ -252,7 +252,15 @@ export const SynthesisStudio: React.FC = () => {
                   output_id: ev.output_id,
                   output_url: ev.download_url,
                   content: '',
-                  metadata: { type, format: 'md', title: type },
+                  // W494 (FU-148) - this hard-coded the metadata for EVERY streamed type, so a
+                  // presentation arrived with format 'md', no slides_count, and content '' - and the
+                  // block below still announced a ready web player with a Launch button that could
+                  // only fail. The stream's own fields are used where it sends them, and what it does
+                  // not send is left absent rather than invented.
+                  // W494 (refutation) - `ev.format ?? 'md'` was still an invented default for every
+                  // non-presentation type, and `ev.slides_count` did not exist on the frame at all. The
+                  // stream reports both now; what it does not send stays absent.
+                  metadata: { type, title: type, format: ev.format, slides_count: ev.slides_count },
                   timestamp: ev.timestamp,
                   outputType: type,
                   served_by: ev.served_by, is_external: ev.is_external, profile_applied: ev.profile_applied,
@@ -515,19 +523,46 @@ export const SynthesisStudio: React.FC = () => {
                               <div className="w-8 h-8 rounded-full bg-aura flex items-center justify-center text-sovereign shrink-0">
                                 <Play size={14} />
                               </div>
-                              <p className="text-[10px] font-black text-aura uppercase tracking-widest">
-                                {result.metadata?.slides_count} Slides · Web Player Ready
+                              {/* W494 (FU-148) - this printed "undefined Slides" and claimed a ready
+                                  player for a streamed result whose content is empty: nothing checked
+                                  either. It states what it has, and says plainly when the player
+                                  cannot open this result. */}
+                              {/* W494 (refutation) - the fallback arm decided "player can open this"
+                                  from the content being NON-EMPTY, which is exactly the predicate shape
+                                  clause (2) forbids: a markdown blob is non-empty and the player cannot
+                                  open it. It decides on an actual parse. */}
+                              <p className="text-[10px] font-black uppercase tracking-widest"
+                                 data-testid="studio-player-line">
+                                {(() => {
+                                  let slides: number | null = typeof result.metadata?.slides_count === 'number'
+                                    ? result.metadata.slides_count : null;
+                                  if (slides === null && result.content) {
+                                    try {
+                                      const p = JSON.parse(result.content);
+                                      if (Array.isArray(p)) slides = p.length;
+                                      else if (Array.isArray(p?.slides)) slides = p.slides.length;
+                                    } catch { slides = null; }
+                                  }
+                                  return slides !== null
+                                    ? <span className="text-aura">{slides} slides · player can open this</span>
+                                    : <span className="text-amber-400">no slide data in this result · the player has nothing to open</span>;
+                                })()}
                               </p>
                             </div>
+                            {/* W494 - offered on a result with empty content, where it could only fail */}
                             <button
                               type="button"
+                              disabled={!result.content}
                               onClick={() => {
                                 try { setActivePresentation(JSON.parse(result.content)); }
                                 catch { setErrorMsg('Could not parse slide data.'); }
                               }}
-                              className="px-4 py-2 rounded-xl bg-aura text-sovereign text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-transform"
+                              data-testid="studio-launch-player"
+                              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-transform ${
+                                result.content ? 'bg-aura text-sovereign hover:scale-105'
+                                               : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
                             >
-                              Launch Player
+                              {result.content ? 'Launch Player' : 'Nothing to play'}
                             </button>
                           </div>
                         )}

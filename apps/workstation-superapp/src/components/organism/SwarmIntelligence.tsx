@@ -182,8 +182,16 @@ const SwarmIntelligence: React.FC = () => {
   // W344 — the old 'Pareto: Accuracy vs Latency' plotted INVENTED fitness against an x that was
   // never latency, with a hardcoded no-data fallback. This is now a REAL scatter of what runs
   // genuinely measure: QMS delivery coverage (y) vs duration (x, scaled) — empty when no runs.
-  const paretoPoints: { x: number; y: number }[] = runs
-    .filter(r => typeof (r as any)?.quality?.delivery_coverage === 'number' && r.duration_ms)
+  // W494 (FU-102) - a run whose quality gate could NOT assess it still carried a
+  // delivery_coverage, and on the deterministic floor that value is 1.0 by construction: the floor
+  // emits every requested heading, so coverage cannot come out low. Each such run therefore plotted
+  // as a top-of-chart point on an axis labelled measured. A run the gate could not assess is
+  // excluded and counted, so the chart says what it left out instead of silently including it.
+  const plottableRuns = runs.filter(r => typeof (r as any)?.quality?.delivery_coverage === 'number' && r.duration_ms);
+  const assessedRuns = plottableRuns.filter(r => (r as any)?.quality?.qms_gate_passed === true
+                                              || (r as any)?.quality?.qms_gate_passed === false);
+  const unassessedRunCount = plottableRuns.length - assessedRuns.length;
+  const paretoPoints: { x: number; y: number }[] = assessedRuns
     .slice(0, 8)
     .map(r => ({ x: Math.min(95, 5 + (r.duration_ms! / 60000) * 90),
                  y: (r as any).quality.delivery_coverage }));
@@ -268,7 +276,17 @@ const SwarmIntelligence: React.FC = () => {
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[8px] font-black uppercase tracking-widest text-fuchsia-400">Living-Organisation delivery</span>
               {(() => { const b = provenanceMapBadge(cascade.ai_provenance?.served_by, cascade.ai_provenance?.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
-              {cascade.governance && <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.governance.status === 'allowed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>gov: {cascade.governance.status}{cascade.governance.arms_length ? ' · arms-length' : ''}</span>}
+              {/* W494 (FU-130) — an emerald chip read as governance over the whole cascade. The gate
+                  receives the intent label, the domain and a constant attestation sentence; it never
+                  sees what any tier produced, so it cannot come out otherwise for a well-formed
+                  request. Neutral, and it names what was screened. */}
+              {cascade.governance && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                      title={cascade.governance.scope} data-testid="cascade-gov-chip">
+                  intent gate: {cascade.governance.status}
+                  {cascade.governance.content_screened === false ? ' · content not screened' : ''}
+                </span>
+              )}
               {/* W491 (FU-159) - the API stopped sending `integrated` (a static catalogue reported as a
                   record of operation) and sends `operated_this_run` instead. Reading the removed field made
                   this chip vanish silently, so the honest list never reached the page. */}
@@ -310,8 +328,11 @@ const SwarmIntelligence: React.FC = () => {
               )}
               {/* W271/W284 — BMS/EMS COMPUTE over this run's own telemetry (simulated constants, honestly labelled) */}
               {cascade.management_systems?.bms && (
-                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300" title={cascade.management_systems.bms.caveat}>
-                  BMS {cascade.management_systems.bms.status} · ${cascade.management_systems.bms.cost_per_insight_usd}/insight
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-700/40 text-slate-300"
+                      title={cascade.management_systems.bms.status_basis || cascade.management_systems.bms.caveat}
+                      data-testid="bms-chip">
+                  BMS {String(cascade.management_systems.bms.status).replace(/_/g, ' ')}
+                  {' · '}${cascade.management_systems.bms.cost_per_insight_usd}/insight (sim)
                 </span>
               )}
               {/* W489 (sweep S11.7, C3) — this chip was emerald and showed a fixed 0.85 as a percentage
@@ -486,7 +507,17 @@ const SwarmIntelligence: React.FC = () => {
         <div className="bg-[#0a0a0a] p-4 rounded-xl border border-[#111]">
           {/* W344 — a REAL measured scatter (was: invented fitness on an x that was never latency,
               with a hardcoded no-data fallback rendered as live) */}
-          <h3 className="text-xs text-[#666] mb-4 uppercase tracking-widest">QMS coverage vs run duration (measured)</h3>
+          <h3 className="text-xs text-[#666] mb-4 uppercase tracking-widest" data-testid="pareto-title">
+            QMS coverage vs run duration
+            {/* W494 (refutation) - the caption claimed to name what it left out while slice(0, 8)
+                dropped assessed runs silently. Both exclusions are named. */}
+            {unassessedRunCount > 0
+              ? ` — ${unassessedRunCount} run(s) excluded: the quality gate could not assess them`
+              : ' (gate-assessed runs only)'}
+            {assessedRuns.length > paretoPoints.length
+              ? ` — ${assessedRuns.length - paretoPoints.length} more assessed run(s) beyond the 8 plotted`
+              : ''}
+          </h3>
           <svg viewBox="0 0 100 100" className="w-full h-[120px]" aria-label="QMS coverage vs duration scatter">
             <line x1="0" y1="100" x2="100" y2="100" stroke="#333" strokeWidth="0.5" />
             <line x1="0" y1="0" x2="0" y2="100" stroke="#333" strokeWidth="0.5" />
@@ -500,7 +531,11 @@ const SwarmIntelligence: React.FC = () => {
               />
             ))}
             {paretoPoints.length === 0 && (
-              <text x="50" y="55" fontSize="5" fill="#555" textAnchor="middle">no measured runs yet — nothing simulated</text>
+              <text x="50" y="55" fontSize="5" fill="#555" textAnchor="middle">
+                {unassessedRunCount > 0
+                  ? `no gate-assessed runs — ${unassessedRunCount} run(s) could not be assessed`
+                  : 'no measured runs yet — nothing simulated'}
+              </text>
             )}
             <text x="95" y="99" fontSize="5" fill="#444" textAnchor="end">Duration</text>
             <text x="4" y="6" fontSize="5" fill="#444">Coverage</text>

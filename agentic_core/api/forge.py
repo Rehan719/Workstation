@@ -190,7 +190,9 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
         async def _attest():
             return f"Forge pipeline {run_id} synthesised under constitutional supervision."
         res = await gov.intercept({"intent": "forge_pipeline", "domain": req.domain}, _attest)
-        governance = res.status
+        # W494 (FU-130) — a bare status string, with nothing saying the pipeline's output was not seen
+        from agentic_core.gaas.v5 import intent_gate_result
+        governance = intent_gate_result(res.status, res.checkpoint_id, getattr(res, "node", None))
     except Exception:
         pass
     try:

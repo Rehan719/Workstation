@@ -648,7 +648,10 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "phase_2_design_development": design,
         "stage_7_operational_intelligence": operations,   # §4.7 — deliverable · compliant · operable
         "phase_3_commercialisation": commercial,
-        "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node},
+        # W494 (FU-130) — the streaming establish path already said the gate screens the intent and
+        # not the content; the journey verdict did not, so the same verdict meant different things on
+        # two surfaces. One shared wording now, from gaas.v5.
+        "governance": _intent_gate_result(gov.status, gov.checkpoint_id, gov.node),
         "stage_verifications": stage_verifications,       # §5 — each stage verified/tested/validated (measured)
         # W436 (v10 item 1) — the denominator is what was ASSESSABLE, not what exists. "5/5" on a
         # fully floor-served run certified checks that cannot fail by construction; "0/0 assessable"
@@ -827,7 +830,12 @@ _BODY_AGENTS = (("concept", "genesis_concept", "concept"),
                 ("operations", "genesis_operations", "operational intelligence"))
 
 
-_ESTABLISH_GATE_SCOPE = "intent + domain only — the enterprise's problem, concept and design are not screened by this gate"
+# W494 (FU-130) — this wording now lives in gaas.v5 so every intent-gate emitter shares it: the
+# journey, both establish paths, the org cascade, the forge pipeline and the transformation
+# orchestration all returned the same verdict while only this path said what it covered.
+from agentic_core.gaas.v5 import (INTENT_GATE_SCOPE as _INTENT_GATE_SCOPE,
+                                  intent_gate_result as _intent_gate_result)
+_ESTABLISH_GATE_SCOPE = _INTENT_GATE_SCOPE
 
 
 def _establish_gate(gov) -> dict:
@@ -836,9 +844,11 @@ def _establish_gate(gov) -> dict:
     None (not assessed) whatever the gate returned, and the record carries the gate's real status and
     its scope. (It used to store gov.status == 'allowed' — true for every enterprise, and false only
     when the breaker was open, i.e. when nothing was evaluated at all.)"""
+    # W494 — the inner verdict now comes from the ONE shared shape every intent-gate emitter uses, so
+    # this record carries `screened` and `content_screened: False` in machine-readable form beside the
+    # prose scope, and cannot drift from the other four emitters' wording.
     return {"constitutional_alignment": None,
-            "constitutional_gate": {"status": gov.status, "checkpoint": gov.checkpoint_id,
-                                    "scope": _ESTABLISH_GATE_SCOPE}}
+            "constitutional_gate": _intent_gate_result(gov.status, gov.checkpoint_id)}
 
 
 def _birth_gates(req: "EstablishRequest") -> dict:
@@ -1030,7 +1040,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         # pending the owned model; a slug name is PENDING the founder's choice.
         "name_source": name_source, "name_pending": name_source == "slug",
         "body_pending": body_pending, "ship_requested": bool(req.ship_output),
-        "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
+        "governance": _intent_gate_result(gov.status, gov.checkpoint_id),
         "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
     }
     # Every generated VSB IDBO entity gets its own Board of Directors, chaired by a
@@ -1217,7 +1227,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "review_gates": birth_gates,                        # W452 — parity with the blocking path
             "name_source": name_source, "name_pending": name_source == "slug",   # W450
             "body_pending": body_pending, "ship_requested": bool(req.ship_output),
-            "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
+            "governance": _intent_gate_result(gov.status, gov.checkpoint_id),
             "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
         }
         vsb_mod.enrich_vsb_entity(entity, owner_id=req.owner_id, problem=req.problem,

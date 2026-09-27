@@ -26,7 +26,9 @@ interface OrchestrationRun {
   cascade: CascadeStage[];
   digital_twin: { model_id: string; projection?: { projected?: number; current?: number; formula?: string; note?: string; of?: string;
     compared_with_current?: string } };
-  governance: { status: string; checkpoint?: string };
+  // W494 (FU-130) - the shared intent-gate result carries what it screened
+  governance: { status: string; checkpoint?: string;
+                scope?: string; screened?: string; content_screened?: boolean };
   validation: { stages: number; assessable_stages?: number; not_assessable_stages?: number; presence_stages?: number;
     delivery_verified_stages?: number[]; verified_stages: number; end_to_end_chief_to_bto: boolean;
     biomimetic_signals_fired: number; validated: boolean | null; validated_basis?: string; report: string };
@@ -232,7 +234,10 @@ export const TransformationDashboard: React.FC = () => {
               <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
                 <Stat label="Stages verified" value={`${orch.validation.verified_stages}/${orch.validation.assessable_stages ?? orch.validation.stages} assessable · ${orch.validation.delivery_verified_stages?.length ?? 0} delivery`} />
                 <Stat label="Bio signals" value={String(orch.validation.biomimetic_signals_fired)} />
-                <Stat label="Governance" value={orch.governance.status} icon={ShieldCheck} />
+                {/* W494 (FU-130 refutation) — the gate screens the intent label and a constant
+                    attestation sentence, never what the delivery org produced. Said, not implied. */}
+                <Stat label="Intent gate" icon={ShieldCheck}
+                      value={`${orch.governance.status}${orch.governance.content_screened === false ? ' — content not screened' : ''}`} />
                 <Stat label="Twin projection" value={String(orch.digital_twin.projection?.projected ?? '—')} />
               </div>
               <p className="text-[10px] text-slate-500 mt-3 leading-relaxed">{orch.validation.report}</p>

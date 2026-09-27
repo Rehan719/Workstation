@@ -38,7 +38,9 @@ interface JourneyResult {
   phase_2_design_development: string;
   stage_7_operational_intelligence?: string;   // §4.7 — deliverability · compliance · operability
   phase_3_commercialisation: string;
-  governance: { status: string; checkpoint: string | null; node: string };
+  // W494 (FU-130) - the shared intent-gate result carries what it screened
+  governance: { status: string; checkpoint: string | null; node: string;
+                scope?: string; screened?: string; content_screened?: boolean };
   // §5 — each stage verified/tested/validated on real measured proxies.
   // W436 — `verified: null` means NOT ASSESSABLE (floor-served): the proxies cannot fail on floor
   // output, so no verdict is claimed. Null is a third state, never rendered as pass OR fail.
@@ -814,8 +816,13 @@ export const GenesisJourney: React.FC = () => {
                 <span key={e} className="px-2 py-0.5 rounded-md bg-highlight/10 text-highlight text-[9px] font-black uppercase tracking-wider">{e}</span>
               ))}
             </div>
-            <p className="text-[9px] font-mono text-slate-500 mt-3">
-              governance: {result.governance.status} · checkpoint {result.governance.checkpoint ?? '—'}
+            {/* W494 (FU-130 refutation) — same verdict, same omission: this gate saw the intent and
+                the domain, not the journey's content. */}
+            <p className="text-[9px] font-mono text-slate-500 mt-3" data-testid="journey-intent-gate"
+               title={result.governance.scope}>
+              intent gate: {result.governance.status}
+              {result.governance.content_screened === false ? ' · content not screened' : ''}
+              {' · '}checkpoint {result.governance.checkpoint ?? '—'}
             </p>
             {/* Continual operational delivery within the living QMS — §10 bar + §8 organism */}
             {result.quality_assurance?.quality && (

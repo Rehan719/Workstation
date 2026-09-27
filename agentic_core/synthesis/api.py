@@ -453,7 +453,29 @@ async def stream_synthesis(request: SynthesisRequest):
             "timestamp": timestamp,
         })
 
-        yield f"data: {json.dumps({'done': True, 'output_id': output_id, 'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp, 'served_by': fin.get('served_by'), 'is_external': bool(fin.get('is_external')), 'profile_applied': bool(fin.get('profile_applied'))})}\n\n"
+        # W494 (FU-148 refutation) - the done frame sent no `format` and no `slides_count`, so the
+        # studio page invented `format: 'md'` for every streamed type and its slides_count branch was
+        # dead. Both are computed here already (`ext`, and the content for a slide deck is the JSON the
+        # player parses), so the stream reports them instead of leaving the page to guess. slides_count
+        # is omitted rather than defaulted when the content does not parse to a deck.
+        _slides_n = None
+        if otype in ("presentation", "video"):
+            try:
+                _parsed = json.loads(content)
+                if isinstance(_parsed, list):
+                    _slides_n = len(_parsed)
+                elif isinstance(_parsed, dict) and isinstance(_parsed.get("slides"), list):
+                    _slides_n = len(_parsed["slides"])
+            except Exception:
+                _slides_n = None
+        _done = {'done': True, 'output_id': output_id,
+                 'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp,
+                 'format': ext,
+                 'served_by': fin.get('served_by'), 'is_external': bool(fin.get('is_external')),
+                 'profile_applied': bool(fin.get('profile_applied'))}
+        if _slides_n is not None:
+            _done['slides_count'] = _slides_n
+        yield f"data: {json.dumps(_done)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 

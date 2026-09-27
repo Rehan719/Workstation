@@ -220,9 +220,20 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
     appendLog(`Readiness check for "${missionName}" \u2014 querying the live fabric...`, 'info');
     let ready = true;
     try {
-      const ai = await apiJson('/api/v1/native-ai/status');
+      const ai = await apiJson<{ owned_models?: unknown[]; models?: unknown[]; is_real_model?: boolean;
+                                 mode?: string; floor_active?: boolean }>('/api/v1/native-ai/status');
       const models = (ai?.owned_models ?? ai?.models ?? []).length;
-      appendLog(`Native AI fabric: reachable${models ? ` \u00b7 ${models} owned model(s)` : ''}.`, 'success');
+      // W494 (FU-132) - "reachable" was logged in green whatever the endpoint said, and the same
+      // response reports is_real_model false with floor_active true: the fabric answers, but nothing
+      // owned is serving. Answering is not readiness, so the log says which of the two it found.
+      const floorServing = ai?.floor_active === true || ai?.is_real_model === false;
+      if (floorServing) {
+        appendLog(`Native AI fabric: answering, but NO owned model is serving \u2014 mode `
+          + `${ai?.mode ?? 'deterministic_floor'}${models ? ` \u00b7 ${models} installed, none serving` : ''}. `
+          + `Output would be composed by the deterministic floor, not generated.`, 'warn');
+      } else {
+        appendLog(`Native AI fabric: an owned model is serving${models ? ` \u00b7 ${models} owned model(s)` : ''}.`, 'success');
+      }
     } catch (e) { ready = false; appendLog(`Native AI fabric: ${errorMessage(e)}`, 'warn'); }
     try {
       // W492 (refutation) \u2014 this is the THIRD reader of /gaas/ueg/verify and the round updated only the
@@ -245,9 +256,12 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
     } catch (e) { ready = false; appendLog(`Constitutional ledger: ${errorMessage(e)}`, 'warn'); }
 
     appendLog(`Deployment plan: ${buildConfig.nodes} node(s) \u00b7 ${buildConfig.regions.join(', ') || 'no region selected'} \u00b7 ${buildConfig.scale_tier}.`, 'info');
+    // W494 (FU-132) - PASSED was printed whenever every service merely ANSWERED. It reports what it
+    // checked and names what it did not, rather than certifying a readiness nothing tested.
     appendLog(ready
-      ? 'Readiness check PASSED. No infrastructure was provisioned by this page \u2014 it produces a plan.'
-      : 'Readiness check found problems above. No infrastructure was provisioned.', ready ? 'success' : 'warn');
+      ? 'Readiness check: every service queried above answered. That is reachability, not readiness '
+        + '\u2014 nothing here provisioned or tested infrastructure, and this page produces a plan only.'
+      : 'Readiness check found problems above. No infrastructure was provisioned.', ready ? 'info' : 'warn');
     appendLog('To establish something that actually runs, use Genesis \u2014 it creates a living VSB IDBO entity.', 'info');
 
     setLaunching(false);
@@ -704,7 +718,8 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                 <Card className="p-6 border-emerald-500/20 bg-emerald-500/5 flex flex-col gap-5">
                   <div className="flex items-center gap-2">
                     <Rocket size={16} className="text-emerald-400" />
-                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.25em]">Mission Control · V9 Engine</span>
+                    {/* W494 - named an execution runtime that does not exist in the codebase */}
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">Mission Control · plan only</span>
                   </div>
 
                   {/* Summary */}
@@ -850,10 +865,14 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
 
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { icon: Zap,      label: 'V9 Engine',    desc: 'Sovereign execution runtime', color: 'text-yellow-400' },
-                    { icon: Activity, label: 'Monitoring',   desc: 'Real-time mission telemetry', color: 'text-emerald-400' },
-                    { icon: BarChart3, label: 'Analytics',   desc: 'Performance & usage metrics', color: 'text-blue-400' },
-                    { icon: GitBranch, label: 'Versioning',  desc: 'Mission history & rollbacks', color: 'text-purple-400' },
+                    /* W494 (FU-132) - these four named a runtime, telemetry, metrics and rollbacks that
+                       do not exist: the first label appears nowhere in the backend or the rest of the
+                       frontend, and no telemetry, metrics or mission-history store is wired to this
+                       page. They name what the page actually produces. */
+                    { icon: Zap,      label: 'Mission plan',  desc: 'A deployment plan; nothing is provisioned', color: 'text-slate-400' },
+                    { icon: Activity, label: 'Readiness log', desc: 'Which services answered, on this page only', color: 'text-slate-400' },
+                    { icon: BarChart3, label: 'No metrics',   desc: 'Nothing measures a mission yet', color: 'text-slate-500' },
+                    { icon: GitBranch, label: 'No history',   desc: 'Missions are not stored or versioned', color: 'text-slate-500' },
                   ].map(c => {
                     const Icon = c.icon;
                     return (

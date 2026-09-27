@@ -4,8 +4,10 @@ import { Network, CheckCircle2, Circle, Loader2, Sparkles, GitBranch, Layers, Br
 import { apiJson, errorMessage } from '../lib/api';
 import { StageBadge, StageMark, FLOOR_STAGE_NOTE, stageOutcome, type StageData } from '../components/StageOutcome';
 
-interface Tier { tier: string; endpoint: string; role: string; connected: boolean }
-interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: number; principle: string }
+interface Tier { tier: string; endpoint: string; role: string; connected: boolean;
+  route_mounted?: boolean; connected_basis?: string }
+interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: number; principle: string;
+  routes_mounted?: number; coherence_measured?: boolean; coherence_basis?: string }
 interface Gap { gap: string; realisation: number; routed_to: string; endpoint: string; action: string; missing: string[] }
 interface Align { overall_realisation: number; gaps_routed: Gap[]; executed: any[] }
 
@@ -205,12 +207,25 @@ export const CognitionIntegration: React.FC = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><Network size={14} /> Integration Wiring</h3>
-            <span className="text-[10px] font-black text-emerald-400">{wiring.connected}/{wiring.total} connected · {Math.round(wiring.coherence * 100)}% coherence</span>
+            {/* W494 (FU-139) — this printed the tier count and a percentage in emerald, worded as a
+                coherence measurement, with a green tick per tier. The underlying check only asks
+                whether a route is mounted under each tier's prefix, which cannot be false while the
+                app answers at all. The wording now names what is counted. */}
+            <span className="text-[10px] font-black text-slate-300" data-testid="wiring-count"
+                  title={wiring.coherence_basis}>
+              {wiring.routes_mounted ?? wiring.connected}/{wiring.total} tiers have a route mounted
+            </span>
           </div>
           <div className="grid grid-cols-1 @[560px]:grid-cols-2 gap-2">
             {wiring.tiers.map(t => (
               <div key={t.tier} className="flex items-start gap-3 p-3 rounded-xl bg-slate-950 border border-slate-900">
-                {t.connected ? <CheckCircle2 size={14} className="text-emerald-400 mt-0.5 shrink-0" /> : <Circle size={14} className="text-slate-600 mt-0.5 shrink-0" />}
+                {/* a mounted route is not a verified integration: neutral, with the basis on hover */}
+                {/* lucide icons take no title, so the basis rides a wrapping span */}
+                <span title={t.connected_basis} className="mt-0.5 shrink-0 inline-flex">
+                  {(t.route_mounted ?? t.connected)
+                    ? <CheckCircle2 size={14} className="text-slate-400" />
+                    : <Circle size={14} className="text-slate-600" />}
+                </span>
                 <div className="min-w-0">
                   <p className="text-xs font-black text-white">{t.tier}</p>
                   <p className="text-[9px] text-slate-500">{t.role}</p>

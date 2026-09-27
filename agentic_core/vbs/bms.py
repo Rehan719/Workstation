@@ -31,7 +31,24 @@ class BusinessManagementSystem:
                           if total_cost > 0 else
                           "no energy cost recorded — ROI is undefined, not infinite"),
             "insight_value_usd_simulated": insight_value,
-            "status": "EFFICIENT" if cost_per_insight < self.unit_cost_target else "REVISE",
+            # §5 (W494, FU-103) — EFFICIENT was unreachable-in-reverse: the only cost input is
+            # wh_consumed x a SIMULATED $/Wh constant of 0.00015, so cost_per_insight is a fraction of
+            # a cent for any plausible duration and the comparison against the target could not come
+            # out REVISE. A verdict with one reachable branch is not a verdict. The arithmetic is
+            # still reported; the efficiency VERDICT is withheld because nothing measured a cost.
+            "status": "not_assessed",
+            "status_measured": False,
+            "unit_cost_target": self.unit_cost_target,
+            "status_basis": (
+                f"NOT ASSESSED — cost_per_insight (${cost_per_insight:.8f}) is computed from a "
+                f"simulated ${wh_cost}/Wh constant and a duration-derived energy estimate, not from a "
+                f"measured cost. Against the ${self.unit_cost_target} target it can only ever come out "
+                f"EFFICIENT, so no efficiency verdict is given. The arithmetic below is real; its "
+                f"inputs are simulated."),
+            # what the comparison WOULD say, kept separate from a verdict so no surface can read it
+            # as one
+            "target_comparison_on_simulated_inputs": (
+                "below target" if cost_per_insight < self.unit_cost_target else "above target"),
         }
 
     async def engineer_go_viral(self, truth_score: float) -> Dict[str, Any]:

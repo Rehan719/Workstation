@@ -471,6 +471,34 @@ _IMMUNE_DEFENCE: dict[str, dict] = {
 }
 
 
+def _blend_clause(ctx: dict) -> str:
+    """What the blended composite actually is, in THIS state - computed, never asserted.
+
+    W494 (refutation) - the first version hard-coded "carries a defaulted and a simulated term and
+    cannot fall below 0.6, so it could not have refused" into every permanent CCA record. Both clauses
+    are false once a circuit is tracked: self-healing is then MEASURED (no defaulted term) and the blend
+    can and does fall below 0.6 - reproduced at 0.472 with eight real record_failure calls, a sentence
+    contradicted by the number printed inside it. A verdict's basis that cannot come out otherwise is
+    the very class this round removes, so this derives every clause from composite_health_terms.
+    """
+    terms = ctx.get("composite_health_terms") or {}
+    unmeasured = [(k, t) for k, t in terms.items() if isinstance(t, dict) and not t.get("measured")]
+    if not terms:
+        return (f"the blended figure {ctx.get('composite_health')} is a fallback constant - the organism "
+                f"context errored, so no term was measured")
+    if not unmeasured:
+        return (f"the blended figure {ctx.get('composite_health')} is measured throughout, and the "
+                f"decision was still taken on the measured-only score so the two agree")
+    # the blend's FLOOR is the sum of the unmeasured terms' contributions: the measured ones can go to 0
+    floor = 0.0
+    for _k, t in unmeasured:
+        floor += float(t.get("weight") or 0) * float(t.get("value") or 0)
+    names = ", ".join(k.replace("_", " ") for k, _t in unmeasured)
+    return (f"the blended figure {ctx.get('composite_health')} carries {len(unmeasured)} unmeasured "
+            f"term(s) ({names}), which hold it at or above {round(floor, 3)} whatever the measured terms "
+            f"read - so it cannot refuse below that, and the decision was taken on the measured part")
+
+
 async def submit_change(req: SubmitChangeRequest, principal: str | None = None) -> dict:
     """Submit a change request to the Change Control Agency.
 
@@ -555,13 +583,42 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     ctx = biobus.organism_context()
     threat = _immune_threat()
     change["immune_threat_at_submit"] = threat
-    if tier == "LOW" and ctx["composite_health"] >= 0.6 and threat in ("NOMINAL", "ELEVATED"):
+    # §5 (W494, FU-107/FU-116) — the health leg of this gate could not refuse. It read the BLENDED
+    # composite, which is 0.4·immune + 0.4 (self-healing defaulted to 1.0 when no circuit is tracked)
+    # + 0.2·atp, and the ATP simulator only ever rises, so within about half a minute of a process's
+    # reads the blend is >= 0.6 for EVERY immune value, including 0.0 with threat CRITICAL. A gate
+    # that cannot refuse is not a gate: it grants. It decides on the MEASURED score now, and where too
+    # little is measured to decide it HOLDS for review rather than granting on absent evidence.
+    # Decided on the measured score whenever there IS one: immune health is a real measurement of the
+    # thing that matters most here (errors in the window and the threat level), and gating on it gives
+    # the rule a failing branch it never had. Only a context that measured NOTHING holds.
+    _measured = ctx.get("composite_health_measured_only")
+    _health_decidable = _measured is not None
+    _health_ok = bool(_health_decidable and float(_measured) >= 0.6)
+    change["health_gate"] = {
+        "decided_on": "composite_health_measured_only" if _health_decidable else None,
+        "measured_health": _measured,
+        "measured_weight": ctx.get("composite_health_measured_weight"),
+        "verdict": ("pass" if _health_ok else "held_not_decidable" if not _health_decidable else "fail"),
+        # W494 (refutation) - this sentence was hard-coded and stated two clauses that are false
+        # whenever a circuit is tracked. It is computed from the terms now.
+        "basis": (f"decided on the measured part of the composite "
+                  f"({float(ctx.get('composite_health_measured_weight') or 0):.0%} of its weight); "
+                  + _blend_clause(ctx)
+                  if _health_decidable else
+                  "nothing was measured (the organism context errored), so the auto-approval is "
+                  "HELD for review rather than granted on absent evidence"),
+    }
+    if tier == "LOW" and _health_ok and threat in ("NOMINAL", "ELEVATED"):
         change["status"] = "approved"
         change["decision"] = "auto_approved"
         # W464 — every record says what decided it (the mechanism, named)
         change["decision_source"] = "low_tier_auto_approval"
         change["reviewed_at"] = now
-        change["review_result"] = f"Auto-approved: LOW impact, organism healthy, immune threat {threat}."
+        change["review_result"] = (
+            f"Auto-approved: LOW impact, measured organism health "
+            f"{float(_measured):.0%} (over {float(ctx.get('composite_health_measured_weight') or 0):.0%} "
+            f"of the composite's weight, the part that is measured), immune threat {threat}.")
         change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "biobus", "immune_threat": threat})
         biobus.fire_signal("motor", "cca.auto_approve", f"Auto-approved: {req.title}", 0.3)
     else:
@@ -570,6 +627,22 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
                                        "while the organism defends itself.")
             change["audit_trail"].append({"event": "held_immune_threat", "ts": now, "by": "biobus",
                                           "immune_threat": threat})
+        elif tier == "LOW" and not _health_decidable:      # the context measured nothing at all
+            # W494 — a LOW change is no longer auto-approved on a score that is mostly unmeasured; the
+            # record says which part could not be assessed rather than implying the organism failed.
+            change["review_result"] = (
+                "Held for review: the organism's composite health is not decidable — "
+                + (ctx.get("mode_decidable_basis") or "")
+                + ". Auto-approval requires a measured health signal.")
+            change["audit_trail"].append({"event": "held_health_not_decidable", "ts": now,
+                                          "by": "biobus",
+                                          "measured_weight": ctx.get("composite_health_measured_weight")})
+        elif tier == "LOW":
+            change["review_result"] = (
+                f"Held for review: measured organism health "
+                f"{float(_measured):.0%} is below the 60% auto-approval threshold.")
+            change["audit_trail"].append({"event": "held_measured_health", "ts": now, "by": "biobus",
+                                          "measured_health": _measured})
         biobus.fire_signal("sensory", "cca.submit", f"Change submitted: {req.title} [{tier}] (immune: {threat})", 0.5)
 
     _save_change(change)
@@ -580,7 +653,13 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
                                     "decision": "approved", "decision_source": "low_tier_auto_approval",
                                     "decided_by": "biobus", "by": "biobus", "by_verified": False,
                                     "immune_threat": threat,
-                                    "composite_health": round(float(ctx["composite_health"]), 4)})
+                                    # W494 — the UEG recorded only the blended score, which is the one
+                                    # figure that could not have refused; both travel now
+                                    "composite_health": round(float(ctx["composite_health"]), 4),
+                                    "composite_health_measured_only": _measured,
+                                    "composite_health_measured_weight":
+                                        ctx.get("composite_health_measured_weight"),
+                                    "decided_on": "composite_health_measured_only"})
     return {
         "cca_id": cca_id,
         "impact_tier": tier,
@@ -755,7 +834,10 @@ async def _twin_prevalidate(change: dict) -> dict:
     prompt = (
         f"You are the digital-twin simulator pre-validating a change BEFORE implementation.\n\n"
         f"Twin model — the live organism state:\n"
-        f"  Composite health: {ctx['composite_health']:.0%} | mode: {ctx['mode']}\n"
+        # W494 (refutation) - the model was handed the blend after the rule stopped deciding on it
+        f"  Measured composite health: {float(ctx.get('composite_health_measured_only') or 0):.0%} over "
+        f"{float(ctx.get('composite_health_measured_weight') or 0):.0%} of the composite's weight "
+        f"(the blended {ctx['composite_health']:.0%} is not what any gate decides on) | mode: {ctx['mode']}\n"
         f"  Immune threat: {ctx['immune']['threat_level']} | circadian: {ctx['circadian']['cycle']}\n\n"
         f"Proposed change ({effective_tier(change)}): {change['title']}\n"
         f"Type: {change['change_type']}\nDescription: {change['description']}\n"
@@ -780,12 +862,22 @@ async def _twin_prevalidate(change: dict) -> dict:
     else:
         # no marker — or BOTH markers (a floor/echo artifact, not a real verdict): fall back to the
         # honest organism health gate rather than trusting an echoed marker.
-        healthy = ctx["composite_health"] >= 0.6 and ctx["immune"]["threat_level"] in ("NOMINAL", "ELEVATED")
-        verdict, source = ("pass" if healthy else "fail"), "health_gate_default"
+        # §17.5 (W494, FU-107/FU-116) — this fell back to a health gate that could not refuse, so on
+        # the deterministic floor (the only branch reachable without a twin) the pre-validation always
+        # returned PASS. It decides on the measured score, and where too little is measured it is
+        # NOT ASSESSABLE — never a pass by default.
+        _m = ctx.get("composite_health_measured_only")
+        if _m is None:
+            verdict, source = "not_assessable", "health_gate_not_decidable"
+        else:
+            healthy = float(_m) >= 0.6 and ctx["immune"]["threat_level"] in ("NOMINAL", "ELEVATED")
+            verdict, source = ("pass" if healthy else "fail"), "health_gate_default"
     return {
         "verdict": verdict,
         "source": source,
         "composite_health_at_sim": ctx["composite_health"],
+        "composite_health_measured_only_at_sim": ctx.get("composite_health_measured_only"),
+        "composite_health_measured_weight_at_sim": ctx.get("composite_health_measured_weight"),
         "immune_threat_at_sim": ctx["immune"]["threat_level"],
         "summary": (sim or "")[:600],
         "simulated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -793,9 +885,13 @@ async def _twin_prevalidate(change: dict) -> dict:
         # deterministic floor can reach) claimed a forward simulation that never ran.
         "method": ("digital-twin forward simulation over the live organism state"
                    if source == "twin_marker" else
-                   "no twin model — organism health gate only (composite_health >= 0.6 and immune "
-                   "threat in NOMINAL/ELEVATED); the proposed change was NOT simulated"),
+                   "no twin model — organism health gate only, decided on the MEASURED part of the "
+                   "composite (>= 0.6) and immune threat in NOMINAL/ELEVATED; where too little is "
+                   "measured the gate returns not_assessable rather than a pass. The proposed change "
+                   "was NOT simulated"),
         "source_label": ("model twin verdict" if source == "twin_marker"
+                         else "no twin model — health not decidable, nothing assessed"
+                         if source == "health_gate_not_decidable"
                          else "no twin model — health gate only"),
     }
 
@@ -912,7 +1008,11 @@ async def review_change(cca_id: str, req: ReviewDecision,
             f"Affected Systems: {', '.join(c['affected_systems']) or 'Not specified.'}\n"
             f"Rollback Plan: {c['rollback_plan'] or 'Not provided.'}\n\n"
             f"Current Organism Health:\n"
-            f"  Composite health: {ctx['composite_health']:.0%}\n"
+            # W494 (refutation) - same: the reviewer saw only the blend
+            f"  Measured composite health: {float(ctx.get('composite_health_measured_only') or 0):.0%} "
+            f"over {float(ctx.get('composite_health_measured_weight') or 0):.0%} of the composite's "
+            f"weight; the blended figure is {ctx['composite_health']:.0%} and is not what the rule "
+            f"decides on\n"
             f"  Immune threat: {ctx['immune']['threat_level']}\n"
             f"  Organism mode: {ctx['mode']}\n"
             f"  Circadian cycle: {ctx['circadian']['cycle']}\n\n"
@@ -932,13 +1032,35 @@ async def review_change(cca_id: str, req: ReviewDecision,
         why_no_marker = ("the serving resource returned BOTH [DECISION: APPROVED] and [DECISION: REJECTED] "
                          "(conflicting markers)" if (_yes and _no) else
                          "no [DECISION: …] marker was returned")
+        # §5 (W494, FU-107) — this decided on the blended composite, and 0.4·immune + 0.4 + 0.2·atp
+        # is >= 0.5 for every immune value once the (only-rising) ATP term passes 0.5, which happens
+        # within seconds of boot. So "composite_health >= 0.5 → approved" could not reject anything,
+        # and MEDIUM changes became implementable on a rule that had no failing branch. It decides on
+        # the MEASURED score; where too little is measured, there is no rule verdict at all and the
+        # change is HELD for an explicit decision rather than approved by default.
         _h = float(ctx["composite_health"])
-        rule_verdict = "approved" if _h >= 0.5 else "rejected"
+        _hm = ctx.get("composite_health_measured_only")
+        rule_verdict = (None if _hm is None else
+                        "approved" if float(_hm) >= 0.5 else "rejected")
         # print the value with enough precision that the stated comparison is TRUE as written (0.4999
         # rounded to "0.50 < 0.5" was a false sentence in the record)
-        _shown = next(f"{_h:.{n}f}" for n in range(2, 12)
-                      if (float(f"{_h:.{n}f}") >= 0.5) == (_h >= 0.5))
-        rule_clause = f"composite_health {_shown} {'>=' if rule_verdict == 'approved' else '<'} 0.5 → {rule_verdict}"
+        if rule_verdict is None:
+            # W494 - a rule with no evaluable input has no verdict; writing "< 0.5 -> None" would
+            # put a false sentence in the permanent record
+            rule_clause = ("the organism-health threshold rule could NOT be evaluated: "
+                           + (ctx.get("mode_decidable_basis") or "nothing was measured"))
+        else:
+            _mh = float(_hm)
+            _shown = next(f"{_mh:.{n}f}" for n in range(2, 12)
+                          if (float(f"{_mh:.{n}f}") >= 0.5) == (_mh >= 0.5))
+            # W494 (refutation) - "the blended {_h} has no failing branch" was hard-coded, and it
+            # printed "the blended 0.27 has no failing branch" for a blend that WOULD have failed this
+            # very 0.5 rule. The clause is derived from the terms.
+            rule_clause = (f"MEASURED composite_health {_shown} "
+                           f"{'>=' if rule_verdict == 'approved' else '<'} 0.5 → {rule_verdict}"
+                           f" (that is the measured part, "
+                           f"{float(ctx.get('composite_health_measured_weight') or 0):.0%} of the "
+                           f"composite's weight; " + _blend_clause(ctx) + ")")
         _u = _principal(user)
         admin_requested = (not auth_enabled()) or bool(_u and _u.get("role") == "admin")
         model_out = "\n\n--- model output ---\n" + (review_text or "")
@@ -972,6 +1094,17 @@ async def review_change(cca_id: str, req: ReviewDecision,
                 f"HELD — {why_no_marker}, so only the organism-health threshold rule could decide this "
                 f"change ({rule_clause}). With authentication enabled a rule verdict is applied only "
                 "when an admin requests the review; it is recorded here as a recommendation."
+                + model_out)
+        elif rule_verdict is None:
+            # W494 - the rule could not be evaluated, and a rule that cannot be evaluated does not
+            # approve by default. Held for an explicit decision, with the reason on the record.
+            decision, held, hold_reason = None, True, "health_rule_not_evaluable"
+            decision_source = "held_awaiting_admin"
+            recommendation = ({"verdict": marker, "source": "model_decision_marker"} if marker else None)
+            review_text = (
+                f"HELD — {why_no_marker}, so only the organism-health threshold rule could decide "
+                f"this change, and {rule_clause}. A rule with no evaluable input is not an "
+                "approval: this waits for an explicit decision."
                 + model_out)
         else:
             decision, decision_source = rule_verdict, "health_threshold_rule"

@@ -127,6 +127,31 @@ def grep_repo(needle: str) -> list[str]:
     return hits
 
 
+_WORD_TAIL = re.compile(r"[A-Za-z0-9_]")
+
+
+def reads_key(line: str, key: str) -> bool:
+    """Does this line reference THIS key, rather than one that merely starts with it?
+
+    W494 - `renames` reported `arms_length` as an orphaned key because a page mentions
+    `charter.arms_length_agency`: a key that is a PREFIX of another key matched it. The same trap the
+    blind harness hits with a twice-occurring anchor. A reference must not continue into another
+    identifier character."""
+    for form in (f'"{key}"', f"'{key}'", f".{key}"):
+        start = 0
+        while True:
+            i = line.find(form, start)
+            if i < 0:
+                break
+            end = i + len(form)
+            # a quoted form is already delimited; a dotted one must not run on into a longer name
+            if form.startswith(".") and end < len(line) and _WORD_TAIL.match(line[end]):
+                start = i + 1
+                continue
+            return True
+    return False
+
+
 # ── keys / renames ─────────────────────────────────────────────────────────────────────────────────
 KEY_RE = re.compile(r'"([a-z_][a-z0-9_]{2,})"\s*:')
 # W493 — a key is also introduced and removed by SUBSCRIPT ASSIGNMENT (`vsb["last_evolved"] = now`),
@@ -157,7 +182,8 @@ def check_keys(rev: str, files: list[str]) -> list[str]:
             for key in keys_in(line):
                 if key in BORING_KEYS or key in removed_keys:
                     continue
-                hits = (grep_repo(f'"{key}"') + grep_repo("'" + key + "'") + grep_repo("." + key))
+                hits = [h for h in (grep_repo(f'"{key}"') + grep_repo("'" + key + "'")
+                                    + grep_repo("." + key)) if reads_key(h, key)]
                 others = {h.split(":", 1)[0] for h in hits} - {f}
                 # W493 (refutation) - this was narrowed to "skip if ANY other file mentions it", which
                 # made the printed label ("read by no surface") false: docs/ and integration_tests are
@@ -189,7 +215,7 @@ def check_renames(rev: str, files: list[str]) -> list[str]:
         for key in sorted(gone):
             readers = [h for h in (grep_repo(f'"{key}"') + grep_repo("'" + key + "'")
                                    + grep_repo("." + key))
-                       if not h.startswith(f + ":")]
+                       if not h.startswith(f + ":") and reads_key(h, key)]
             # W493 (refutation) - this subtracted EVERY file in the diff, assuming a touched file had
             # been updated for THIS key. Nothing checked that. On the round that added this comment,
             # all three surviving readers of the renamed key were in the diff, so the check printed

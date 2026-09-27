@@ -143,12 +143,24 @@ export const ConstitutionalUI: React.FC = () => {
                      <Terminal size={18} />
                      <h4 className="text-[11px] font-black uppercase tracking-widest">Constitutional Engine</h4>
                   </div>
-                  {/* W460 — "NOMINAL" in green used to show even when the status call never answered */}
-                  <Badge color={!gaas?.circuit_breaker ? 'slate' : gaas.circuit_breaker.tripped ? 'vital' : 'emerald-500'}>
-                     {!gaas?.circuit_breaker ? 'UNAVAILABLE' : gaas.circuit_breaker.tripped ? 'BREAKER OPEN' : 'NOMINAL'}
+                  {/* W460 — the green verdict used to show even when the status call never answered.
+                      W494 (FU-141) — and the verdict describes ONE route's breaker, not the engine: the
+                      badge names the node it read rather than implying a platform-wide state. */}
+                  <Badge color={!gaas?.circuit_breaker ? 'slate' : gaas.circuit_breaker.tripped ? 'vital' : 'slate'}
+                         title={gaas?.circuit_breaker_scope} data-testid="gaas-breaker-badge">
+                     {!gaas?.circuit_breaker ? 'UNAVAILABLE'
+                       : gaas.circuit_breaker.tripped ? 'BREAKER OPEN'
+                       : `${gaas.circuit_breaker_node ?? 'node'} BREAKER CLOSED`}
                   </Badge>
                </div>
                <p className="text-[9px] font-mono text-slate-600">{gaas?.interceptor ?? '—'}</p>
+               {/* W494 (FU-141) — the three figures below are this ONE interceptor's; every other governed
+                   path builds its own per call and nothing aggregates them. Said, not left to a hover. */}
+               {gaas?.circuit_breaker_scope && (
+                 <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="gaas-breaker-scope">
+                   These figures cover {gaas.circuit_breaker_scope}
+                 </p>
+               )}
                <div className="space-y-3">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
                      <span>Breaker Threshold</span>

@@ -7508,3 +7508,156 @@ passes. Two probe checks failed on the first run and both were faults in the pro
 board-pack GET 404s until a POST assembles one, and the cockpit opens on the Organisation tab while the two
 claims under test live on the Economy and Transformation tabs. A probe that looks at the wrong tab reports
 a true claim as false, which is the same error in the other direction.
+
+### W494 — a verdict that cannot come out otherwise is not an assessment (the gate's own batch)
+
+**Fourteen rows, one rule.** A verdict is not an assessment if it cannot come out otherwise, and a figure
+is decided on what was measured. Three clauses: where a score blends measured with defaulted or simulated
+terms the decision is taken on the measured part, and an unmeasured term is unknown rather than 1.0; a
+predicate computed from "the bad word is absent", "a route prefix is mounted", "the output is non-empty"
+or "a constant beats a constant" is reported as the mechanical fact it is, or returned as not assessable;
+and the measured share travels to every surface that prints the figure.
+
+**This batch exists because of how it was found.** The gate P1.18 had been closing at 2.67 rows a round
+while the register overall closed 9.83, and the reason was not scheduling: **20 of its 35 open rows cite no
+sweep class at all.** They came from the fidelity ledger rather than the W477 sweep, and the batch
+generator groups by cited class, so it could only ever propose three of them. Reading the ledger rows
+beside the C1 and C8 sweep rows found one mechanism across fourteen.
+
+**What could not come out otherwise.** The organism's own health composite is
+`0.4·immune + 0.4·self_healing + 0.2·metabolic`. With no circuit breaker tracked, self-healing is
+*defaulted* to 1.0; the metabolic term is an `ATPSimulator` whose production (`0.5 × efficiency`, and
+efficiency is 1.0 or 0.8) always exceeds its consumption (`0.1 × load`, load in 0–1), so it only rises —
+from 0.333 at boot to its 1.0 ceiling — and can never fall. So after about twenty-five reads the blend is
+`0.6 + 0.4·immune` for the rest of the process's life. Everything decided on it was therefore decided:
+
+- the **mode** read NOMINAL with the summary "Standard operations active" while the only measured term was
+  immune health **0.0 with threat CRITICAL** and eleven errors in the window;
+- the Change Control **review rule** (`composite_health >= 0.5 → approved`) had no failing branch, so
+  MEDIUM changes became implementable on a rule that could not reject;
+- the **LOW auto-approval** and the **twin pre-validation fallback** (both `>= 0.6`) likewise;
+- and four survival levers written against the metabolic term (`< 0.3` three times, `< 0.2` once) are
+  unreachable from the *first* read, because 0.333 is already above both.
+
+The mode, the throttle advice and all three gates now decide on `composite_health_measured_only`, which
+already existed beside the blend and which no gate read. An unmeasured term contributes no evidence, so it
+does not vote. Where the context measured *nothing* — the error fallback — the mode is UNKNOWN and the
+gates HOLD rather than granting: a rule with no evaluable input is not an approval. The measured figure is
+the headline on the landing page and the organism hub, with the blend stated beside it.
+
+**And the same shape in eleven other places.** A Petri-dish viability verdict computed as
+`'not viable' not in tail`, which the deterministic floor never writes — the row's own specimen, *"sell ice
+to penguins at a premium, financed with riba loans"*, came back VIABLE. "13/13 connected · 100% coherence"
+where *connected* means a route is mounted under the tier's prefix, which cannot be false while the app
+answers. A green NOMINAL and "Error Rate 0.0" read off one interceptor's breaker — the `sovereign-node`
+one, driven by a single route — while every other governed path builds its own. A green BUILT chip per
+product where BUILT meant "`produce()` did not raise", with `qms_gate_passed` null for every item. A green
+"integrated" chip from a difflib threshold over floor template text, in a run that reported its QMS gate,
+its minimax decision and its consensus as not assessable — the abstain rule existed and was simply not
+applied to this voter. "Native AI fabric: reachable" and "Readiness check PASSED" over a status response
+saying `is_real_model: false, floor_active: true`, beside four tiles naming a runtime, telemetry, metrics
+and rollbacks that do not exist. "N Slides · Web Player Ready" with a Launch button on a streamed result
+whose metadata was hard-coded and whose content is empty. A scatter titled "(measured)" plotting a
+coverage that is 1.0 by construction on the floor. A BMS chip reading EFFICIENT from a cost computed with
+a simulated $/Wh constant — $0.000015 against a $0.01 target, so REVISE was unreachable. And "gov: allowed
+· arms-length" in emerald from a gate handed an intent label, a domain and a constant attestation
+sentence, never any tier's output — the same unscoped verdict emitted at **five** call sites, of which one
+already said what it covered.
+
+
+**The refutation raised 77 findings, verified all 77, and confirmed 76 — and thirty-two of them were
+this round's own rule broken inside its own fix.** Seven lenses ran in isolated worktrees; every finding
+got a verdict, so nothing was left unadjudicated. The composition by shape: 32 "the round's own class,
+re-committed", 14 "a second writer or reader left disagreeing", 12 "a dropped qualifier", 11 "a live
+break", 8 "a guard that cannot fail".
+
+**Six things would have shipped broken.** The suite was RED: a pre-existing leg asserts
+`bms["status"] in ("EFFICIENT", "REVISE")` and this round withdrew that verdict — I swept my own guard
+for the moved figure and not the rest of the suite, which is precisely the miss the register's
+"grep the call, not the method name" rule exists for. Four more pinned enums rejected states this round
+introduced: the `UNKNOWN` mode, the `not_assessable` pre-validation verdict, `validation.integrated`
+becoming `None` in exactly the environment CI runs in, and a W460 pin requiring the `'NOMINAL'` literal
+the breaker badge no longer prints. A page would have thrown: forge's `governance` changed from a string
+to the shared gate object and `ForgePipeline.tsx` renders it directly as a JSX child. And a provenance
+badge would have printed `in-house · [object Object]`, because the petri fabric row passed a per-server
+COUNT MAP where every sibling row passes the comma-joined string that badge reads.
+
+**A claim I wrote into the code was false, and the refuter falsified it with one call.** The round
+declared that the metabolic term "only rises, so the thresholds written against it cannot fire", and put
+that in a basis string served to every reader. The resource fabric exposes `metabolic_load` as a
+user-reconfigurable parameter, declared `"float 0-1"` by the registry and **validated nowhere**. One
+composition run with `metabolic_load=100` drove the process-wide ATP singleton from 0.358 to **0.033**,
+firing every threshold at once. I reproduced it by hand before fixing it. The declared domain is now
+enforced in `ATPSimulator.update` and at `biobus._update_atp`, which is what makes the claim true — and
+the basis says what the claim *rests on* rather than asserting it flatly. The guard leg for it had
+probed only `metabolic_load=1.0`, the single regime where the claim holds, so it could not have failed;
+it drives the entry point now.
+
+**The round's own basis strings were the largest group.** They were hard-coded sentences asserting
+universals instead of statements computed from state. The health gate wrote this into every permanent
+change record: *"the blended figure 0.472 carries a defaulted and a simulated term and cannot fall below
+0.6, so it could not have refused"* — reproduced with eight real `record_failure` calls and no
+monkeypatching at all. Both clauses are false there: self-healing is MEASURED (nothing is defaulted), and
+0.472 has already fallen below 0.6. A sentence contradicted by the number printed inside it. The second
+site read *"the blended 0.27 has no failing branch"* for a blend that **would** have failed the very 0.5
+rule the sentence was about. A shared `_blend_clause(ctx)` derives every clause from
+`composite_health_terms` now, including the blend's actual floor, and the guard asserts the sentence's
+content and checks that floor against the blend. Nothing had asserted `basis` at all, which is why it
+shipped.
+
+**And the round contradicted itself in three places.** `mode_decidable` was published as
+`measured_weight >= 0.5`, False for the whole ordinary life of a process, with a basis telling gates they
+"should HOLD" — while all three gates this round wrote decide on `measured_only is not None` and grant.
+Two fields added in the same round disagreeing about the same state; the field now says what the gates
+test, and the *share* is reported separately as the plain fact it is, with no instruction attached. The
+error fallback had its mode changed to UNKNOWN precisely because "a fallback constant must not decide a
+mode", and three lines below still granted full capacity (`should_throttle: False`,
+`max_parallel_agents: 2`) and said *"running at nominal"*. And `/organism/status` builds its payload as an
+explicit dict with no spread, so `mode_basis` and `composite_health_basis` never left the process: the
+paragraph this round added to the organism page **could not render at all**.
+
+**Clause (3) was unmet in seven more places.** The withheld BMS verdict reached a second panel as the raw
+token `not_assessed` with nothing saying why; four surfaces printed an intent-gate verdict bare after the
+round moved five emitters onto one shared scope; an `not_assessable` pre-validation was painted RED, which
+reads as a failure rather than as nothing-assessed; `capital_fund` reported the 0.9 fallback constant as
+"every term in this figure is measured", because an empty term map has no unmeasured terms; gate-FAILED
+products were counted and printed as "composed, not assessed"; the pareto caption claimed to name what it
+left out while `slice(0, 8)` dropped assessed runs silently; and both the landing page and the organism hub
+fell back to the blend and labelled it **"measured health"** — on the organism's error path that is the
+constant 0.9 with nothing measured, printed as a measurement on the most reachable page in the product.
+
+**Three of my test stubs were thinner than the producers they replaced.** Hand-written `immune` and
+`self_healer` stubs omitted keys the routes index (`response_playbook`, `healing_log`), and one block
+depended on the process-global self-healing registry being untracked — true only if no earlier test in the
+session had opened a circuit. Routes are exercised against the real producer now, and every leg states the
+registry state it needs.
+
+
+**Verification.** Sixty-five blinds, all caught, none vacuous, every guard confirmed passing on the clean
+tree before sweeping. It took two passes twice over. Nine of the first thirty-eight were vacuous, and
+seven of those nine shared one cause: **the assertion named a message while the blind removed its
+condition**, so the literal survived in the file after the branch producing it was gone. Three health legs
+were also pinned to a fresh process, where ATP sits at 0.333 and the blend is 0.47 — itself below both
+thresholds, so the old decider would have refused there too; the paper case is ATP saturated, where the
+blend is 0.6 + 0.4·immune and cannot fall below 0.6 for any immune value. Four of the twenty-seven
+refutation blinds were vacuous for the same reason as the seven: a phrase that occurs four times in a file,
+asserted once. One of those four turned out to be a **badly written blind rather than a weak guard** — it
+replaced a prefix the `or` expression behind it already handled, so nothing false was reintroduced; the
+branch that guards the false arm is what breaks it, and the leg is behavioural now. Reading which of the
+two you have is the difference between closing a gap and adding noise.
+
+The browser probe runs thirty checks against a fresh backend and a fresh bundle, all passing. Two checks
+are reported NOT ASSESSABLE and stay that way honestly: the BMS chip and the cascade verdict chip render
+only from a cascade run in that component's own state, which a page load does not produce — their API-level
+facts are asserted instead. Two probe checks failed on the first run and both were faults in the probe: it
+still expected the one-item breaker list the refutation had corrected, and it opened the governance hub on
+its default tab while the card under test lives on the Constitution tab. That is the same miss as W493's
+cockpit tabs, and it costs the same as the reverse: a probe that never renders the region reports a true
+claim as false.
+
+**What the round moved.** The gate P1.18 went from 35 open rows to 21, and its own measured rate from 2.67
+to 4.0 rows per round — so its projection fell from fourteen rounds to six. That is the batch choice
+paying for itself: reading the fidelity-ledger rows the class generator cannot see found one mechanism
+across fourteen rows where the generator offered three. FU-265 registers what this round deliberately did
+not take: four pre-existing second readers of the metabolic term, which the round's own clamp and basis now
+give something truthful to carry.

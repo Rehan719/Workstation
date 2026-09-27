@@ -9,7 +9,13 @@ interface StageOutput { resource: string; name: string; biomimetic: string; outp
 // W490 (sweep S8.12, C7) — the run's ai_provenance was returned and never rendered: each stage card is
 // named for a fabric engine (Petri Dish / Laboratory / Factory) with a biomimetic subtitle, and every
 // one is in fact a persona prompt through the gateway. On the floor all five calls compose scaffolds.
-interface RunResult { run_id: string; pipeline: string[]; ceo_framing: string; stage_outputs: StageOutput[]; integrated_deliverable: string; governance: string;
+// W494 (FU-130 refutation) — forge's `governance` became the shared intent-gate object (status +
+// scope + content_screened); it was typed `string` here and rendered directly as a JSX child, which
+// throws "Objects are not valid as a React child". The pre-gate "ungated" string is still possible, so
+// both shapes are accepted and the qualifier is shown when the object carries it.
+type IntentGate = { status: string; scope?: string; content_screened?: boolean; checkpoint?: string; node?: string };
+interface RunResult { run_id: string; pipeline: string[]; ceo_framing: string; stage_outputs: StageOutput[]; integrated_deliverable: string;
+  governance: string | IntentGate;
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean } }
 
 export const ForgePipeline: React.FC = () => {
@@ -83,7 +89,15 @@ export const ForgePipeline: React.FC = () => {
       {result && (
         <div className="space-y-3">
           <div className="text-[9px] font-mono text-slate-500 flex items-center gap-2 flex-wrap">
-            <span>{result.run_id} · {result.pipeline.join(' → ')} · governance {result.governance}</span>
+            <span>{result.run_id} · {result.pipeline.join(' → ')}</span>
+            {/* W494 — the verdict, and what it covers: the gate screens the intent label and a constant
+                attestation sentence, never the pipeline's output. */}
+            <span data-testid="forge-intent-gate"
+                  title={typeof result.governance === 'string' ? undefined : result.governance?.scope}>
+              {typeof result.governance === 'string'
+                ? `governance ${result.governance}`
+                : `intent gate: ${result.governance?.status}${result.governance?.content_screened === false ? ' · content not screened' : ''}`}
+            </span>
             {(() => { const b = provenanceMapBadge(result.ai_provenance?.served_by, result.ai_provenance?.any_external);
               return <span data-testid="forge-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
           </div>

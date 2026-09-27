@@ -147,22 +147,54 @@ async def build_to_order(request: BTOBuildRequest):
                 d = await produce(ProduceRequest(type="report", title=f"{p['name']} — Build-to-Order",
                                                  brief=brief, domain=request.domain))
                 qms = ((d.get("quality_assurance") or {}).get("quality") or {}).get("qms_gate_passed") if isinstance(d, dict) else None
+                # §5 (W494, FU-147) — "BUILT" was set whenever produce() did not raise, so a
+                # floor-composed report scaffold with qms_gate_passed None counted as a built product
+                # and the page showed a green BUILT chip. "did not raise" is not "was built". The
+                # status now names what actually happened, and only a PASSED quality gate is BUILT.
+                _status = ("BUILT" if qms is True else
+                           "COMPOSED_GATE_FAILED" if qms is False else
+                           "COMPOSED_NOT_ASSESSED")
                 built.append({"slug": p["slug"], "name": p["name"],
                               "deliverable_id": d.get("id") if isinstance(d, dict) else None,
-                              "qms_gate_passed": qms, "status": "BUILT"})
+                              "qms_gate_passed": qms, "status": _status,
+                              "status_basis": (
+                                  "the living-QMS gate passed on this deliverable" if qms is True else
+                                  "the living-QMS gate FAILED on this deliverable" if qms is False else
+                                  "a document was composed and the living-QMS gate could not assess it "
+                                  "(floor-served: the floor emits the requested headings, so coverage "
+                                  "cannot be measured). Composed is not built.")})
             except Exception as e:
                 built.append({"slug": p["slug"], "name": p["name"], "status": "FAILED", "error": str(e)[:160]})
+    _built_n = sum(1 for b in built if b["status"] == "BUILT")
+    # W494 (refutation) - startswith("COMPOSED") also matched COMPOSED_GATE_FAILED, so a product whose
+    # quality gate FAILED was counted and printed as "composed, not assessed". A gate that ran and said
+    # no is the opposite of a gate that could not say anything. Counted apart.
+    _composed_n = sum(1 for b in built if b["status"] == "COMPOSED_NOT_ASSESSED")
+    _gate_failed_n = sum(1 for b in built if b["status"] == "COMPOSED_GATE_FAILED")
     try:
         from agentic_core.organism.biobus import biobus
         biobus.fire_signal("motor", "bto.build",
-                           f"Build-to-order: {sum(1 for b in built if b['status'] == 'BUILT')} product(s) → {request.entity_name}", 0.7)
+                           f"Build-to-order: {_built_n} gate-passed, {_composed_n} composed but "
+                           f"unassessed → {request.entity_name}", 0.7)
     except Exception:
         pass
     return {"entity_name": request.entity_name, "objective": objective, "domain": request.domain,
             "requested": request.product_resources, "built": built,
-            "delivered_count": sum(1 for b in built if b["status"] == "BUILT"),
+            # W494 (FU-147) — this counted every non-raising produce() call and was printed as
+            # "Delivered N". It counts gate-passed products only, and the composed-but-unassessed
+            # ones are counted separately rather than folded into a delivery figure.
+            "delivered_count": _built_n,
+            "composed_not_assessed_count": _composed_n,
+            "gate_failed_count": _gate_failed_n,
+            "delivered_basis": (
+                f"{_built_n} product(s) passed the living-QMS gate; {_composed_n} had a document "
+                "composed that the gate could not assess (floor-served); "
+                f"{_gate_failed_n} had a document composed that the gate FAILED. Neither of the last "
+                "two is a delivery, and they are not the same outcome"),
             "posture": "in-house-first",
-            "note": "Real build-to-order via the §13 living-deliverables engine (QMS-gated)."}
+            "note": ("Build-to-order via the §13 living-deliverables engine. A product counts as BUILT "
+                     "only when the living-QMS gate PASSED on its deliverable; a composed document the "
+                     "gate could not assess is reported as composed, not delivered.")}
 
 
 @router.post("/configure")

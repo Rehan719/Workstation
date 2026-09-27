@@ -46,6 +46,28 @@ async def gaas_status():
         "interceptor": "UnifiedConstitutionalInterceptorV16Omega",
         "node": _INTERCEPTOR.node_id,
         "circuit_breaker": _INTERCEPTOR.circuit_breaker.state(),
+        # §10 (W494, FU-141) — this breaker belongs to the module-level "sovereign-node" interceptor,
+        # which ONLY POST /api/v1/gaas/intercept drives. Every other governed path builds its own
+        # interceptor per call (board.py:363 "board-node", economy.py:711 "economy-node",
+        # forge.py "forge-node", and so on), each with its own breaker, and nothing aggregates them.
+        # So a green NOMINAL here with error_rate 0.0 was read as "the live constitutional engine is
+        # healthy" when it only ever said "one route's breaker has not tripped" — and that route is
+        # rarely called, so the figure could not move.
+        "circuit_breaker_node": _INTERCEPTOR.node_id,
+        # W494 (refutation) - the first version said this route "and nothing else", which is itself a
+        # claim the code does not support: the resource fabric's gaas_v5 requisition drives the same
+        # module-level interceptor through /api/v1/resources/compose and /compositions/{cid}/run. A
+        # scope that under-reports sends a reader looking in one place.
+        "circuit_breaker_covers": ["POST /api/v1/gaas/intercept",
+                                   "the resource fabric's gaas_v5 requisition "
+                                   "(/api/v1/resources/compose, /compositions/{cid}/run)"],
+        "circuit_breaker_scope": (
+            f"the '{_INTERCEPTOR.node_id}' interceptor only, which is driven by POST "
+            "/api/v1/gaas/intercept and by the resource fabric's gaas_v5 requisition. Every other "
+            "governed path constructs its own "
+            "interceptor per call with its own breaker (board-node, economy-node, forge-node and "
+            "others); none of those is reflected here and no surface aggregates them. This is not a "
+            "platform-wide constitutional health figure."),
         "ueg": _UEG.summary(),
         "articles_enforced": ["11.1 (UCI)", "7.3 (human escalation)", "5.2 (self-tuning breaker)"],
     }

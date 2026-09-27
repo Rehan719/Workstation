@@ -394,7 +394,9 @@ async def orchestrate(req: OrchestrateRequest):
         return "Transformation orchestrated through the VSB delivery org under v16-Omega supervision."
     try:
         gov = await _GOV.intercept({"intent": "transformation_orchestrate", "domain": req.domain}, _attest)
-        governance = {"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node}
+        # W494 (FU-130) — same class: the gate never saw what the delivery org produced
+        from agentic_core.gaas.v5 import intent_gate_result
+        governance = intent_gate_result(gov.status, gov.checkpoint_id, gov.node)
     except Exception as e:
         governance = {"status": "ungoverned", "error": str(e)[:120]}
 

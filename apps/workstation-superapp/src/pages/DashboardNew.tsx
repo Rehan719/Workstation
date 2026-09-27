@@ -300,16 +300,35 @@ export const DashboardNew: React.FC = () => {
                 <div className="w-12 h-12 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20"><Activity size={24} /></div>
                 <div>
                   <h4 className="text-lg font-black text-white uppercase">{t('home.organism')}</h4>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{health ? `${health.mode} · ${Math.round(health.composite * 100)}% health` : 'reading vitals…'}</p>
+                  {/* W494 (FU-110/FU-116) — this printed the mode beside the BLENDED figure as
+                      "health". The blend cannot fall below 0.6 while no circuit is tracked, and the
+                      mode is now decided on the measured part, so the two must agree: the measured
+                      figure is what is shown. */}
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest"
+                     data-testid="home-vitals-line">{health
+                       ? (health.measuredOnly === null
+                         /* W494 (refutation) - `?? health.composite` fell back to the BLEND and labelled
+                            it "measured health". On the organism's error path that blend is the constant
+                            0.9 with nothing measured at all, so the most reachable page in the product
+                            printed a fallback constant as a measurement. Absence is a third state. */
+                         ? `${health.mode} · health not measured`
+                         : `${health.mode} · ${Math.round(health.measuredOnly * 100)}% measured health`)
+                       : 'reading vitals…'}</p>
                 </div>
               </div>
               <div className="space-y-6 pt-6 border-t border-aura/10">
-                <Vital label="Composite Health" value={health ? `${Math.round(health.composite * 100)}%` : '—'} pct={health ? health.composite * 100 : 0} tone="aura" />
+                <Vital label="Measured Health"
+                       value={!health ? '—' : health.measuredOnly === null ? 'not measured'
+                              : `${Math.round(health.measuredOnly * 100)}%`}
+                       pct={health && health.measuredOnly !== null ? health.measuredOnly * 100 : 0} tone="aura" />
+                {/* the blend is not hidden: it is stated as the blend, beside the measured figure */}
                 {health && health.unmeasuredShare > 0 && (
                   <p className="text-[10px] text-amber-400/80 font-bold -mt-4" data-testid="home-composite-health-basis">
-                    {Math.round(health.unmeasuredShare * 100)}% of that figure is not measured
-                    ({health.unmeasuredTerms.join(', ')})
-                    {health.measuredOnly !== null ? ` — measured terms alone give ${Math.round(health.measuredOnly * 100)}%.` : '.'}
+                    {/* W494 — the figure above is now the MEASURED one, so this sentence describes the
+                        BLEND instead of calling the displayed number part-unmeasured. */}
+                    The blended composite is {Math.round(health.composite * 100)}%, of which
+                    {' '}{Math.round(health.unmeasuredShare * 100)}% is not measured
+                    ({health.unmeasuredTerms.join(', ')}).
                   </p>
                 )}
                 <Vital label="CPU" value={vitals ? `${vitals.cpu.toFixed(1)}%` : '—'} pct={vitals?.cpu ?? 0} tone="highlight" />

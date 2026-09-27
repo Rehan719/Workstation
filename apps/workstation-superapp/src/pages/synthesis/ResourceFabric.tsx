@@ -104,7 +104,11 @@ interface CompositionRun {
     // W491 (refutation) — `kind` is what the resource IS; `outcome` is what happened on THIS run
     outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'raised' | 'no_calls_ran';
     outcome_phrase?: string;
-    viable?: boolean; passages?: number; cognitive_primed?: boolean; engines_used?: string[];
+    // W494 (FU-109) — three-state: the floor does not judge viability, so `null` means NOT ASSESSED.
+    // `typeof === 'boolean'` used to hide that case entirely, which reads as "no verdict was wanted"
+    // rather than "nothing assessed this".
+    viable?: boolean | null; viable_basis?: string;
+    passages?: number; cognitive_primed?: boolean; engines_used?: string[];
     scenarios_run?: number; generations_run?: number; winner?: string;
     served_by?: string; is_external?: boolean; stages_run?: number;   // §6 — owned-resource provenance
     // W479 (FU-121 refutation) — the intelligence engines report their calls: a run whose every call failed is
@@ -742,9 +746,16 @@ export const ResourceFabric: React.FC = () => {
                                           title="what this resource did was not recorded on this run">not recorded</span>
                                   : <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400"
                                           title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>ran</span>}
-                                {typeof rr.viable === 'boolean' && (
-                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.viable ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{rr.viable ? 'viable' : 'not viable'}{rr.passages ? ` · ${rr.passages}p` : ''}</span>
-                                )}
+                                {typeof rr.viable === 'boolean' ? (
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.viable ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}
+                                        title={rr.viable_basis} data-testid={`petri-viable-${rr.resource}`}>{rr.viable ? 'viable' : 'not viable'}{rr.passages ? ` · ${rr.passages}p` : ''}</span>
+                                ) : rr.viable === null ? (
+                                  /* W494 (FU-109) — the verdict used to be "the words 'not viable' are absent",
+                                     which the deterministic floor never writes, so every floor-served culture
+                                     came back viable. An unassessed culture says so on the card. */
+                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                                        title={rr.viable_basis} data-testid={`petri-viable-${rr.resource}`}>viability not assessed{rr.passages ? ` · ${rr.passages}p` : ''}</span>
+                                ) : null}
                                 {typeof rr.cognitive_primed === 'boolean' && (
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.cognitive_primed ? 'cognitive-primed' : rr.prime_failed ? 'prime did not run' : 'context-fed'}</span>
                                 )}

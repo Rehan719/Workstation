@@ -21,7 +21,10 @@ interface TreeNodeDef { id: string; role: string; depends_on: string[] }
 interface TreeNodeResult extends TreeNodeDef { served_by: string; is_external: boolean; output: string }
 interface TreeGovernance { governed_by: string; qms_passed: boolean | null; qms_basis?: string; qms_coverage_proxy: number; dcms_hash: string; dcms_algo: string; dcms_version: number }
 interface TreeDecision { recommendation: string | null; consistency: number | null; worst_case_utility: number | null; method: string; stressors: string[]; basis?: string }
-interface TreeValidation { max_branch_overlap: number; integrated: boolean; branches_checked: number; method: string }
+// W494 (FU-135) — three-state: null means the branches were floor-served scaffolds, so an overlap
+// measured over them says nothing about integration. It used to be a bool and null painted as near-copy.
+interface TreeValidation { max_branch_overlap: number; integrated: boolean | null; branches_checked: number;
+  method: string; integrated_basis?: string }
 interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number | null; method: string; basis?: string }
 interface TreeSignal { input_strength: number; activation: number; supra_threshold: boolean; k50: number; hill: number; basis: string; method: string }
 interface TreeRun {
@@ -119,7 +122,21 @@ function TreeView({ run }: { run: TreeRun }) {
       {run.validation && (
         <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
           <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Validation</span>
-          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.validation.integrated ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{run.validation.integrated ? 'integrated' : 'near-copy'}</span>
+          {/* W494 (FU-135) — an emerald chip certified integration from a difflib threshold over
+              floor template text, while this same run reported its QMS gate, minimax decision and
+              consensus as not assessable. An abstention is neither a pass nor a near-copy. */}
+          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${
+            run.validation.integrated === null ? 'bg-slate-800 text-slate-400'
+            : run.validation.integrated ? 'bg-emerald-500/15 text-emerald-400'
+            : 'bg-amber-500/20 text-amber-400'}`}
+                title={run.validation.integrated_basis} data-testid="tree-validation-chip">
+            {run.validation.integrated === null ? 'not assessable'
+              : run.validation.integrated ? 'integrated' : 'near-copy'}
+          </span>
+          {run.validation.integrated_basis && (
+            <span className="text-[8px] text-slate-500 basis-full leading-relaxed"
+                  data-testid="tree-validation-basis">{run.validation.integrated_basis}</span>
+          )}
           <span className="text-[8px] font-bold uppercase text-slate-500">max branch overlap {Math.round(run.validation.max_branch_overlap * 100)}% · {run.validation.branches_checked} branches</span>
           <span className="text-[8px] text-slate-600">difflib</span>
         </div>

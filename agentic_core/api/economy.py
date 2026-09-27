@@ -1322,7 +1322,12 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
     try:
         from agentic_core.organism.biobus import biobus
         ctx = biobus.organism_context()
+        # W494 (refutation) — clause (3): this forwarded the blend alone and VSBEconomy printed it as
+        # plain "health NN%". The measured figure and its basis travel with it now.
         organism = {"mode": ctx.get("mode"), "composite_health": ctx.get("composite_health"),
+                    "composite_health_measured_only": ctx.get("composite_health_measured_only"),
+                    "composite_health_measured_weight": ctx.get("composite_health_measured_weight"),
+                    "composite_health_basis": ctx.get("composite_health_basis"),
                     "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
     except Exception:
         organism = {}

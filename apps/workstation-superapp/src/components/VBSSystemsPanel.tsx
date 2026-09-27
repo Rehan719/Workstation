@@ -274,9 +274,19 @@ export const VBSSystemsPanel: React.FC = () => {
           {econ && (
             <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-900 mb-2">
               <p className="text-[11px] text-slate-300">
-                cost/insight ${Number(econ.cost_per_insight).toFixed(6)} · {econ.status} ·{' '}
+                cost/insight ${Number(econ.cost_per_insight).toFixed(6)} ·{' '}
+                {/* W494 (FU-103 refutation) — this printed the raw token "not_assessed" mid-sentence with
+                    nothing saying why the verdict was withheld. Clause (3): the basis travels. */}
+                <span title={econ.status_basis} data-testid="vbs-bms-status">
+                  {String(econ.status).replace(/_/g, ' ')}
+                </span> ·{' '}
                 roi {econ.roi === null ? <span className="text-slate-500">null — {econ.roi_basis}</span> : Number(econ.roi).toFixed(2)}
               </p>
+              {econ.status_basis && (
+                <p className="text-[8px] text-amber-400/80 mt-1 leading-relaxed" data-testid="vbs-bms-basis">
+                  {econ.status_basis}
+                </p>
+              )}
               <p className="text-[8px] text-amber-400/70 mt-1">simulated: {(econ.simulated || []).join(' · ')}</p>
             </div>
           )}

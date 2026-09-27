@@ -890,6 +890,12 @@ async def cascade_orchestration(req: CascadeRequest):
             # validate-handler class — the engine's honesty crashing its consumer)
             "roi": round(float(_roi), 3) if _roi is not None else None,
             "roi_basis": _unit.get("roi_basis"), "status": _unit.get("status"),
+            # W494 (FU-103) — the chip printed `status` beside a $/insight figure with the caveat only
+            # in a hover title, while its EMS sibling carried "(sim)" on the face of the chip
+            "status_measured": _unit.get("status_measured"),
+            "status_basis": _unit.get("status_basis"),
+            "unit_cost_target": _unit.get("unit_cost_target"),
+            "target_comparison_on_simulated_inputs": _unit.get("target_comparison_on_simulated_inputs"),
             "insights_count": _insights, "energy_wh_estimate": _energy_wh,
             "caveat": "energy is a duration-derived estimate; $/Wh is the catalogue's simulated constant",
         }
@@ -933,7 +939,10 @@ async def cascade_orchestration(req: CascadeRequest):
         async def _attest() -> str:
             return "Org cascade (Chief → Build-to-Order) attested under v16-Omega constitutional supervision."
         _gov = await _gov_engine.intercept({"intent": "org_cascade", "domain": req.domain}, _attest)
-        governance = {"status": _gov.status, "checkpoint": _gov.checkpoint_id, "node": _gov.node, "arms_length": True}
+        # W494 (FU-130) — this verdict was rendered as governance over the whole cascade; the gate
+        # saw only the intent label and a constant sentence, never any tier's output.
+        from agentic_core.gaas.v5 import intent_gate_result
+        governance = intent_gate_result(_gov.status, _gov.checkpoint_id, _gov.node, arms_length=True)
     except Exception as exc:
         governance = {"status": "ungoverned", "arms_length": True, "error": str(exc)}
 

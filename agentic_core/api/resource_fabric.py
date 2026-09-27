@@ -530,7 +530,17 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             r = await petri_culture(PetriRequest(specimen=str(cfg.get("specimen") or objective), domain=domain,
                                                  medium=str(cfg.get("medium") or "standard"),
                                                  iterations=_cfg_num(cfg.get("iterations"), 1, int)))
+            # W494 (FU-109) — the fabric row dropped the verdict's basis and its provenance, so a
+            # composition showed a bare viable=true with nothing saying the floor composed it.
+            # W494 (refutation) — the first version passed ai_provenance["served_by"] through RAW, which
+            # is a per-server COUNT MAP, while every other row here emits the comma-joined STRING (and
+            # the map separately under served_by_map) because that is what the page's provenance badge
+            # reads. A map rendered into that badge prints "in-house · [object Object]". It also sent
+            # `any_external`, and the badge reads `is_external`. _intel_served() is the one helper that
+            # produces the contract, so the row uses it instead of hand-building a near-copy.
             return {"resource": "petri_dish", "ran": "/api/v1/petri/culture", "viable": r.viable,
+                    "viable_basis": r.viable_basis,
+                    **_intel_served(r.ai_provenance),
                     "passages": r.passages, "output": (r.culture or "")[:600]}
         if rid == "mjm":
             from agentic_core.api.intelligence import mjm_assess, MJMRequest
@@ -713,15 +723,32 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             from agentic_core.organism.immune import immune
             from agentic_core.organism.biobus import biobus
             tier = _determine_tier(str(cfg.get("change_type") or "feature"), str(objective))
-            health = (biobus.organism_context(0.3) or {}).get("composite_health", 1.0)
+            # W494 (refutation) — this is a SECOND writer of the very verdict change_control.py was
+            # fixed for, and it was left reading the BLENDED composite with a 1.0 default: the blend is
+            # held up by a defaulted self-healing term and an only-rising simulator, so its floor is
+            # the pass mark and this row granted "auto-approved" while measured health was 0.0. It
+            # decides on the measured score, with a third state when nothing was measured.
+            _ctx_cc = biobus.organism_context(0.3) or {}
+            health = _ctx_cc.get("composite_health_measured_only")
             threat = immune.status().get("threat_level", "NOMINAL")
+            _decidable = health is not None
             verdict = ("blocked (human escalation)" if tier == "CRITICAL"
-                       else "auto-approved" if (tier == "LOW" and health >= 0.6 and threat in ("NOMINAL", "ELEVATED"))
+                       else "not assessable (nothing measured)" if not _decidable
+                       else "auto-approved" if (tier == "LOW" and float(health) >= 0.6
+                                                and threat in ("NOMINAL", "ELEVATED"))
                        else "queued for AI review")
             return {"resource": "change_control", "ran": "/api/v1/cca/submit (assess · not persisted)",
-                    "impact_tier": tier, "verdict": verdict, "organism_health": round(float(health), 3),
+                    "impact_tier": tier, "verdict": verdict,
+                    # W494 (refutation) — float(None) raises on the not-assessable path, and the key was
+                    # named for a figure that is now explicitly the MEASURED part of the composite
+                    "organism_health_measured_only": (None if health is None else round(float(health), 3)),
+                    "organism_health_measured_weight": _ctx_cc.get("composite_health_measured_weight"),
+                    "organism_health_basis": _ctx_cc.get("composite_health_basis"),
                     "immune_threat": threat,
-                    "output": f"Governance: tier {tier} → {verdict} (organism health {round(float(health), 3)}, immune {threat})."}
+                    "output": (f"Governance: tier {tier} → {verdict} (measured organism health "
+                               f"{'not measured' if health is None else round(float(health), 3)} over "
+                               f"{float(_ctx_cc.get('composite_health_measured_weight') or 0):.0%} of the "
+                               f"composite's weight, immune {threat}).")}
         if rid == "products_catalogue":
             from agentic_core.catalog.api import list_products, served_products
             ps = served_products()                           # W470 — never rank a legacy archive as a match

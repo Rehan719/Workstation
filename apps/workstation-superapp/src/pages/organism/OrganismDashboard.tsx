@@ -21,7 +21,14 @@ interface OrganismStatus {
   // so it showed the blend as a straight health percentage.
   composite_health_measured_only?: number;
   composite_health_terms?: Record<string, unknown>;
-  mode: 'FULL_POWER' | 'NOMINAL' | 'DEGRADED' | 'EMERGENCY';
+  composite_health_basis?: string;
+  // W494 (FU-116) — UNKNOWN is a real state: the organism context errored, so nothing was measured
+  // and no mode is decided. It used to be absent from this union and the lookup below fell back to
+  // NOMINAL, which printed a healthy blue "Nominal" for a state nothing assessed.
+  mode: 'FULL_POWER' | 'NOMINAL' | 'DEGRADED' | 'EMERGENCY' | 'UNKNOWN';
+  mode_basis?: string;
+  mode_decided_on?: string | null;
+  composite_health_measured_weight?: number;
   health_summary: string;
   systems: {
     immune:        { health: number; threat_level: string; errors_in_window: number; response_playbook?: string[]; hot_endpoint?: string };
@@ -68,6 +75,8 @@ const MODE_META: Record<string, { label: string; color: string; glow: string }> 
   NOMINAL:    { label: 'Nominal',     color: 'text-blue-400',   glow: 'shadow-blue-500/30'  },
   DEGRADED:   { label: 'Degraded',    color: 'text-yellow-400', glow: 'shadow-yellow-500/30'},
   EMERGENCY:  { label: 'Emergency',   color: 'text-red-400',    glow: 'shadow-red-500/40'   },
+  // W494 — nothing measured, nothing decided. Never shown as a healthy mode.
+  UNKNOWN:    { label: 'Not assessed', color: 'text-slate-400', glow: ''                    },
 };
 
 const THREAT_COLOR: Record<string, string> = {
@@ -193,7 +202,9 @@ export const OrganismDashboard: React.FC = () => {
     );
   }
 
-  const mode = MODE_META[status.mode] ?? MODE_META.NOMINAL;
+  // W494 — an unrecognised mode fell back to NOMINAL, so a state this page could not read printed
+  // as healthy. An unknown mode is shown as unknown.
+  const mode = MODE_META[status.mode] ?? MODE_META.UNKNOWN;
   const { systems, operations, recommended } = status;
 
   return (
@@ -268,11 +279,29 @@ export const OrganismDashboard: React.FC = () => {
               )}
             </span>
           </div>
-          <span className="text-3xl font-black text-white">
-            {Math.round(status.composite_health * 100)}<span className="text-sm font-normal text-white/40">%</span>
+          {/* W494 (FU-110) — the headline was the BLENDED figure, of which 60% is not measured when
+              no circuit is tracked: a self-healing term defaulted to 1.0 and a simulated metabolic
+              term. The measured figure is the headline now, and the blend is stated beside it. */}
+          <span className="text-3xl font-black text-white" data-testid="composite-health-headline">
+            {/* W494 (refutation) - the else-arm fell back to the BLEND, which on the organism's error
+                path is the constant 0.9 with no term measured: the headline then read 90% under the
+                label "measured". Nothing measured is its own state. */}
+            {typeof status.composite_health_measured_only === 'number'
+              ? <>{Math.round(status.composite_health_measured_only * 100)}<span className="text-sm font-normal text-white/40">%</span></>
+              : <span className="text-base font-bold text-slate-400">not measured</span>}
+            <span className="block text-[9px] font-bold text-white/40 tracking-normal text-right"
+                  title={status.composite_health_basis}>
+              {typeof status.composite_health_measured_only === 'number'
+                ? `measured · blended ${Math.round(status.composite_health * 100)}%`
+                : 'blended'}
+            </span>
           </span>
         </div>
-        <HealthBar value={status.composite_health} />
+        <HealthBar value={typeof status.composite_health_measured_only === 'number'
+                     ? status.composite_health_measured_only : 0} />
+        {status.mode_basis && (
+          <p className="text-[10px] text-slate-400 mt-1" data-testid="mode-basis">{status.mode_basis}</p>
+        )}
         {/* W491 (refutation) - this rendered only while the two numbers DIFFERED. The metabolic term is
             an ATP simulator that climbs monotonically to its cap, so on any server polled for ~20s the
             blend equals the measured-only value and the caveat vanished at exactly 100% - the case where
@@ -285,11 +314,11 @@ export const OrganismDashboard: React.FC = () => {
           return (
             <p className="text-[10px] text-amber-400/80 font-bold mt-1" data-testid="composite-health-basis"
                title={unmeasured.map(([k, t]) => `${k}: ${t.basis || 'not measured'}`).join(' | ')}>
-              A blend: {Math.round(share * 100)}% of this figure is not measured
-              ({unmeasured.map(([k]) => k.replace(/_/g, ' ')).join(', ')})
-              {typeof status.composite_health_measured_only === 'number'
-                ? ` - measured terms alone give ${Math.round(status.composite_health_measured_only * 100)}%.`
-                : '.'}
+              {/* W494 — the headline above is now the MEASURED figure, so this names the BLEND it is
+                  shown beside rather than describing the displayed number as part-unmeasured. */}
+              The blended composite is {Math.round(status.composite_health * 100)}%, of which
+              {' '}{Math.round(share * 100)}% is not measured
+              ({unmeasured.map(([k]) => k.replace(/_/g, ' ')).join(', ')}).
             </p>
           );
         })()}

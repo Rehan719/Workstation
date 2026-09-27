@@ -649,10 +649,27 @@ class NativeOrchestrator:
                     bo = results[n["id"]]["output"]
                     if bo.strip() and final.strip():
                         overlaps.append(float(av.validate_output(final, bo, task_type="SEMANTIC")["confidence"]))
+            # §7 (W494, FU-135) — the abstain rule this run already applies to the QMS gate, the
+            # minimax decision and the consensus was NOT applied here, so a difflib threshold over
+            # floor TEMPLATE text emitted integrated:true and the page painted it emerald. When every
+            # branch is the same scaffold, a low overlap measures the scaffold's variation, not a
+            # synthesis. Same flag, same rule: floor-served branches are not assessable.
+            _vf = bool(results) and all((r or {}).get("served_by") == "native" for r in results.values())
             if overlaps:
                 max_ov = max(overlaps)
-                validation = {"max_branch_overlap": round(max_ov, 3), "integrated": bool(max_ov < 0.85),
+                validation = {"max_branch_overlap": round(max_ov, 3),
+                              "integrated": (None if _vf else bool(max_ov < 0.85)),
                               "branches_checked": len(overlaps),
+                              "integrated_basis": (
+                                  "NOT ASSESSABLE — every branch was floor-served, so each output is "
+                                  "the same deterministic scaffold; an overlap measured over templates "
+                                  "says nothing about whether the branches were integrated"
+                                  if _vf else
+                                  "measured: the synthesis overlaps its closest branch by "
+                                  f"{round(max_ov * 100)}%, below the 85% near-copy threshold"
+                                  if max_ov < 0.85 else
+                                  "measured: the synthesis near-copies one branch "
+                                  f"({round(max_ov * 100)}% overlap, at or above the 85% threshold)"),
                               "method": "difflib SequenceMatcher (owned validation)"}
         except Exception:
             validation = None
@@ -708,7 +725,15 @@ class NativeOrchestrator:
             _qv = (governance or {}).get("qms_passed")
             voters = {
                 "qms": "proceed" if _qv is True else "caution" if _qv is False else "abstain",
-                "validation": "proceed" if (validation or {}).get("integrated") else "caution",
+                # W494 — `integrated` is now three-state, and `None` is not a caution: it is an
+                # abstention. A voter that could not assess does not vote.
+                # W494 (refutation) — but `None` is not this consensus engine's abstention either: the
+                # convention in the same dict is the STRING "abstain", which `_cast` and `abstained`
+                # test for. `None != "abstain"`, so the voter was still counted in len(_cast) and still
+                # diluted proceed_fraction exactly as the old "caution" vote did — the numbers were
+                # unchanged from before the fix. It speaks the convention now.
+                "validation": ("abstain" if (validation or {}).get("integrated") is None else
+                               "proceed" if (validation or {}).get("integrated") else "caution"),
                 "minimax": ("proceed" if (decision or {}).get("recommendation") == "proceed"
                             else "abstain" if (decision or {}).get("recommendation") is None else "caution"),
                 "immune": "proceed" if threat == "NOMINAL" else "caution",

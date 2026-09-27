@@ -39,7 +39,9 @@ interface CCADetail extends CCARow {
   rollback_plan?: string | null;
   // W459 — source_label says whether a twin model produced the verdict; decision_source says what
   // decided the review (a model marker, the organism-health rule, or an explicit admin decision)
-  twin_prevalidation?: { verdict?: string; source?: string; source_label?: string } | null;
+  // W494 (FU-107) - the fallback gate returns not_assessable, and says what it decided on
+  twin_prevalidation?: { verdict?: string; source?: string; source_label?: string;
+                         method?: string } | null;
   decision_source?: string | null;
   hold_reason?: string | null;
   recommendation?: { verdict?: string; source?: string } | null;
@@ -204,8 +206,13 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
               {detail?.twin_prevalidation?.verdict && (
                 <p className="text-xs font-mono text-white/40" data-testid="cca-twin-line">
                   §17.5 pre-validation:{' '}
-                  <span className={detail.twin_prevalidation.verdict === 'pass' ? 'text-green-400' : 'text-red-400'}>
-                    {detail.twin_prevalidation.verdict.toUpperCase()}
+                  {/* W494 (FU-107 refutation) - the twin fallback returns 'not_assessable' when too
+                      little of the composite is measured to decide. A two-colour ternary painted that
+                      RED, which reads as a failed pre-validation: the opposite of "nothing assessed". */}
+                  <span className={detail.twin_prevalidation.verdict === 'pass' ? 'text-green-400'
+                    : detail.twin_prevalidation.verdict === 'fail' ? 'text-red-400' : 'text-slate-400'}
+                        title={detail.twin_prevalidation.method} data-testid="cca-twin-verdict">
+                    {detail.twin_prevalidation.verdict.replace(/_/g, ' ').toUpperCase()}
                   </span>{' '}
                   {/* W459 — the label, not the raw token: on the floor there is NO twin model and the
                       verdict is an organism health gate; the old line read as a simulation result */}

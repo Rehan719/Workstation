@@ -615,7 +615,19 @@ export const VSBEconomy: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">§8 organism posture</p>
               <p className="text-sm font-black text-white capitalize">{bp.organism_posture?.mode ?? '—'}</p>
-              <p className="text-[9px] text-slate-500 mt-0.5">ATP {bp.organism_posture?.atp_ratio != null ? `${Math.round(bp.organism_posture.atp_ratio * 100)}%` : '—'} · health {bp.organism_posture?.composite_health != null ? `${Math.round(bp.organism_posture.composite_health * 100)}%` : '—'}</p>
+              {/* W494 (refutation) - this printed the BLENDED composite as plain "health NN%". The blend
+                  is held up by a defaulted self-healing term and a simulated ATP term, so the measured
+                  figure and the basis travel with it (clause 3). ATP is a simulation in every state. */}
+              <p className="text-[9px] text-slate-500 mt-0.5" data-testid="vsb-organism-posture"
+                 title={bp.organism_posture?.composite_health_basis}>
+                ATP {bp.organism_posture?.atp_ratio != null ? `${Math.round(bp.organism_posture.atp_ratio * 100)}% (sim)` : '—'}
+                {' · '}
+                {bp.organism_posture?.composite_health_measured_only != null
+                  ? `measured health ${Math.round(bp.organism_posture.composite_health_measured_only * 100)}%`
+                  : 'health not measured'}
+                {bp.organism_posture?.composite_health != null
+                  ? ` · blended ${Math.round(bp.organism_posture.composite_health * 100)}%` : ''}
+              </p>
             </div>
           </div>
           {/* W442 — §9.1: the CFO's current-period statements (real double-entry postings) + the

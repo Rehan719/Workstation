@@ -109,10 +109,19 @@ def _organism_posture() -> dict:
         return {"mode": ctx.get("mode"), "composite_health": ctx.get("composite_health"),
                 "composite_health_measured_only": ctx.get("composite_health_measured_only"),
                 "composite_health_unmeasured_weight": round(_unmeasured_weight, 3),
+                # W494 (refutation) - the else-arm asserted "every term in this figure is measured"
+                # whenever _terms was EMPTY, which is exactly the organism's error fallback: terms None,
+                # composite_health 0.9, nothing measured at all. The fund reported a fallback constant
+                # as fully measured. Absence of unmeasured terms is not evidence that terms were measured.
+                "composite_health_measured_weight": ctx.get("composite_health_measured_weight"),
                 "composite_health_basis": (
-                    f"a blend; {round(_unmeasured_weight * 100)}% of it is not measured "
-                    f"({', '.join(sorted(_unmeasured))})" if _unmeasured else
-                    "every term in this figure is measured"),
+                    ctx.get("composite_health_basis")
+                    or (f"NOT MEASURED - the organism context errored, so "
+                        f"{ctx.get('composite_health')} is a fallback constant and no term was measured"
+                        if not _terms else
+                        f"a blend; {round(_unmeasured_weight * 100)}% of it is not measured "
+                        f"({', '.join(sorted(_unmeasured))})" if _unmeasured else
+                        "every term in this figure is measured")),
                 "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
     except Exception:
         return {}
