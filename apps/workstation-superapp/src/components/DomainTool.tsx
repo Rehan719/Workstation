@@ -164,8 +164,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
 
   // W485 (sweep S7.8, the class) — text that LEAVES the platform carries its provenance. The badge
   // beside the result is not a label on a copied or downloaded file; only the json export carried it.
-  const provHeader = () => provenanceLine(
-    (effectiveProv as any)?.served_by, (effectiveProv as any)?.is_external);
+  // W495 (FU-127, S4.2) — a count-map provenance carries `any_external`, not `is_external`; reading
+  // only the latter meant an external accelerant could go unnamed in the exported header.
+  const provExternal = (effectiveProv as any)?.is_external ?? (effectiveProv as any)?.any_external;
+  const provHeader = () => provenanceLine((effectiveProv as any)?.served_by, provExternal);
 
   const copyResult = async () => {
     try { await navigator.clipboard.writeText(provHeader() + exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
@@ -244,16 +246,28 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                 /* W439 audit catch: floor-served output wore the same GREEN badge as a real model,
                    so a deterministic scaffold read as scholarship. provenanceBadge is the
                    class-kill — every badge in the app routes through it. */
-                const b = provenanceBadge(effectiveProv.served_by, effectiveProv.is_external);
+                const b = provenanceBadge(effectiveProv.served_by, provExternal);
                 return <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${b.cls}`} title={b.title}>{b.label}</span>;
               })()}
               {/* §10×§11 (W308) — every Offering-1 response carries its real QMS + compliance posture */}
               {(() => {
                 /* W449 (P1.1) — three states through one helper: a floor-served response is 'QMS —'
                    (not assessable, basis in the title), never green 'pass' beside the amber floor badge. */
-                const c = qmsChip(effectiveProv?.quality_assurance);
+                /* W495 (FU-127, S4.2) — several §7 engines (reactor/experiment, petri, factory) return
+                   `quality_assurance` at the TOP LEVEL of the response, not inside ai_provenance, so
+                   this chip silently never appeared for them even though a gate had run. A refine is a
+                   different call: its own provenance may carry a gate, but the original result's gate
+                   verdict is not a verdict on refined text, so it is not borrowed. */
+                const qaRaw = (effectiveProv as any)?.quality_assurance
+                  ?? (refineProv ? undefined : (result as any)?.quality_assurance);
+                /* assure_delivery returns {quality, biomimetic}; the gate lives on `.quality`. Passing
+                   the WRAPPER to qmsChip reads qms_gate_passed as undefined, which is its "no gate ran"
+                   answer - so the chip stayed hidden for a gate that had in fact run and returned
+                   "not assessable". Probed live on /api/v1/reactor/experiment. */
+                const qa = qaRaw?.qms_gate_passed !== undefined ? qaRaw : qaRaw?.quality;
+                const c = qmsChip(qa);
                 return c && (
-                  <span title={`${c.title} · compliance ${effectiveProv.quality_assurance.compliance_overall ?? 'n/a'}`}
+                  <span title={`${c.title} · compliance ${qa?.compliance_overall ?? 'n/a'}`}
                     className={`text-[8px] font-black uppercase px-2 py-1 rounded ${c.cls}`}>{c.label}</span>
                 );
               })()}

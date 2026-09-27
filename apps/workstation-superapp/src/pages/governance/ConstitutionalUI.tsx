@@ -9,6 +9,10 @@ export const ConstitutionalUI: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
   const [search, setSearch] = useState('');
   const [articles, setArticles] = useState<any[]>([]);
+  // W495 (FU-126, S10.3) - the endpoint's own report: whether a canon is present, why not, and what
+  // governs in its place. A missing canon is a state, not an occasion to show one invented article.
+  const [canon, setCanon] = useState<{ canon_present?: boolean; canon_basis?: string;
+    what_governs_instead?: string[]; categories_available?: string[] } | null>(null);
   const [gaas, setGaas] = useState<any>(null);
   const [ueg, setUeg] = useState<any[]>([]);
   // W491 — the chain's real size, so the badge can say what its 40 rows are 40 *of*
@@ -22,12 +26,21 @@ export const ConstitutionalUI: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    // v0.2: Constitution Explorer - Fetch all 1127 articles
+    // W495 (FU-126, S10.3) - the comment said "all 1127 articles" and the endpoint returned ONE
+    // fabricated article whenever the canon file was absent, which it is: a cleanup moved it to the
+    // archive, and the archived copy is the inherited Jules-era document, excluded as dated. The
+    // endpoint now reports canon_present:false with a basis and names what governs instead; the page
+    // shows that rather than presenting an invented article as the constitution.
     fetch('/api/v1/gaas/ueg/verify').then(r => r.json()).then(setIntegrity).catch(() => setIntegrity(null));
     fetch('/api/v154/constitution/articles')
       .then(res => res.json())
-      .then(data => setArticles(Array.isArray(data) ? data : []))
-      .catch(() => setArticles([]));
+      .then(data => {
+        // the endpoint used to return a bare array; it now returns an object carrying the basis
+        if (Array.isArray(data)) { setArticles(data); setCanon(null); return; }
+        setArticles(Array.isArray(data?.articles) ? data.articles : []);
+        setCanon(data ?? null);
+      })
+      .catch(() => { setArticles([]); setCanon(null); });
   }, []);
 
   // Live GaaS v5 constitutional engine (v16-Omega interceptor + UEG audit log)
@@ -193,8 +206,31 @@ export const ConstitutionalUI: React.FC = () => {
                     className="bg-transparent border-none outline-none text-xs text-white font-bold w-full"
                   />
                </div>
+               {/* W495 (FU-126, S10.3) - the four chips were hard-coded and three of them matched
+                   nothing; the parser assigns every article the CORE category. Driven by what was
+                   actually parsed, so a chip exists only if something carries it. */}
+               {canon && canon.canon_present === false && (
+                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30" data-testid="canon-absent">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+                     No constitution document is present
+                   </p>
+                   <p className="text-[10px] text-amber-400/80 mt-1 leading-relaxed">{canon.canon_basis}</p>
+                   {!!canon.what_governs_instead?.length && (
+                     <>
+                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mt-2">What governs instead</p>
+                       <ul className="mt-1 space-y-0.5">
+                         {canon.what_governs_instead.map(w => (
+                           <li key={w} className="text-[9px] text-slate-400">{w}</li>
+                         ))}
+                       </ul>
+                     </>
+                   )}
+                 </div>
+               )}
                <div className="flex flex-wrap gap-2">
-                  {['CORE', 'ETERNAL', 'COSMIC', 'CARE'].map(cat => (
+                  {(canon?.categories_available?.length
+                     ? canon.categories_available
+                     : Array.from(new Set(articles.map(a => a.category).filter(Boolean)))).map(cat => (
                     <button type="button" key={cat} onClick={() => setSearch(cat)} className="px-3 py-1 rounded-lg bg-slate-900 text-[8px] font-black text-slate-500 hover:text-aura transition-all">{cat}</button>
                   ))}
                </div>

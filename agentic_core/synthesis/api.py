@@ -56,15 +56,28 @@ class SynthesisManager:
 
         parts: List[str] = []
         topic_candidates: List[str] = []
+        # W495 (FU-124) — this pasted every selected file's `extracted_text` into the prompt as
+        # "Knowledge base", and before this round that field held INVENTED text for every type but
+        # .txt/.md: a constant for pdf/docx, a filename-pattern lookup for audio (including a scripture
+        # rendering), a sentence for everything else. A file the platform could not read contributes
+        # nothing to a prompt, and the skipped ones are named rather than silently thinning the context.
+        skipped: List[str] = []
         for cid in content_ids:
             for entry in ingestion_manager.registry:
                 if entry["file_id"] == cid:
-                    text = entry.get("extracted_text", "")
+                    text = (entry.get("extracted_text") or "").strip()
+                    if entry.get("status") != "EXTRACTED" or not text:
+                        skipped.append(f"{entry['filename']} ({entry.get('status') or 'NOT_EXTRACTED'})")
+                        break
                     parts.append(f"[Source: {entry['filename']}]\n{text}")
                     topic_candidates.append(
                         entry["filename"].rsplit(".", 1)[0].replace("_", " ").replace("-", " ").title()
                     )
                     break
+        self._last_context_skipped = skipped
+        if skipped:
+            logger.warning("synthesis context: %d selected file(s) contributed nothing because the "
+                           "platform has not read them: %s", len(skipped), "; ".join(skipped))
 
         context = "\n\n---\n\n".join(parts)
         inferred_topic = " · ".join(topic_candidates[:2]) if topic_candidates else "Comprehensive Analysis"

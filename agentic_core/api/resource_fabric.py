@@ -288,11 +288,18 @@ _REGISTRY: List[Dict[str, Any]] = [
     # Workstation's OWN omnimedia output factory — surfaced into the fabric so the swarm/delivery
     # pipeline can render deliverables across formats (agentic_core.omnimedia).
     _R("omnimedia", "Omnimedia Output Factory", "output_media", "generator",
-       # W344 — HONEST: matches /output-formats exactly. 10 LIVE in-house renders; binary AV
-       # formats are catalogue targets not yet produced — never advertised as rendering.
-       "Workstation's own output factory — 10 LIVE in-house formats rendered via /export?format= "
-       "(md · html · slides · txt · json · self-playing video-html · pdf · docx · pptx · xlsx). "
-       "mp4/mp3/png/svg are catalogue targets NOT yet produced (honestly listed, never faked).",
+       # §7 (W495, FU-123, S4.3) — this hard-coded "10 LIVE ... pdf · docx · pptx · xlsx" and put
+       # "png/svg" among the not-yet-produced, which is BOTH the wrong count and the two groups the
+       # wrong way round: the served /output-formats reports 8 live (md, html, slides, txt, json,
+       # video-html, svg, png) and lists pptx/pdf/docx/xlsx/mp4/mp3 as catalogue targets. Worse, the
+       # live set is DEPENDENCY-CONDITIONAL — pdf/docx/pptx/xlsx/png appear only when fpdf2,
+       # python-docx, python-pptx, openpyxl and Pillow are importable — so no static list can be true
+       # across deployments. The description states the MECHANISM and _live_formats_sentence() appends
+       # this deployment's actual set at request time.
+       "Workstation's own output factory — deterministic in-house renders via /export?format=. The live "
+       "set depends on which optional renderers this deployment has installed, so it is read from "
+       "/api/v1/deliverables/output-formats rather than listed here; catalogue targets are named there "
+       "too and are never faked.",
        ["multi-format output", "document", "presentation", "spreadsheet", "self-playing video (HTML)"],
        {"deliverable_id": "str", "format": "str"}, "/api/v1/deliverables/output-formats",
        ["synthesis", "delivery", "commercialisation", "forge"], methods=("GET",)),
@@ -354,10 +361,27 @@ def _save_compositions(rows: List[Dict[str, Any]]) -> None:
     _STORE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
 
 
+async def _omnimedia_live_sentence() -> str:
+    try:
+        from agentic_core.api.deliverables import output_formats as _of
+        f = await _of()
+        live = f.get("live_ids") or []
+        cat = f.get("catalogue_not_yet_produced") or []
+        return (f" Live in this deployment ({len(live)}): {' · '.join(live)}."
+                + (f" Catalogue targets not yet produced: {' · '.join(cat)}." if cat else ""))
+    except Exception:
+        return " The live format list could not be read from /api/v1/deliverables/output-formats."
+
+
 @router.get("")
 async def list_resources(resource_class: Optional[str] = None, usable_in: Optional[str] = None):
     """List the resource fabric, optionally filtered by class and/or usage area."""
     items = _REGISTRY
+    # W495 (FU-123, S4.3) — omnimedia's description named a format list that disagreed with the served
+    # one; it is completed here from the endpoint that decides it, per request.
+    _live_note = await _omnimedia_live_sentence()
+    items = [({**r, "description": r["description"] + _live_note} if r.get("id") == "omnimedia" else r)
+             for r in items]
     if resource_class:
         items = [r for r in items if r["resource_class"] == resource_class]
     if usable_in:
@@ -797,17 +821,53 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             # real reputation-weighted consensus over the USER-CONFIGURED claims — honestly skips
             #   (→ generic stage) when no claims are configured, like the studio's no-series skip.
             raw = cfg.get("claims")
-            claim_texts = _csv(raw) if not isinstance(raw, list) else [str(x) for x in raw if str(x).strip()]
-            if not claim_texts:
+            # §7 (W495, FU-123, S4.9) - every claim was given a CONSTANT confidence=0.8 and
+            # reputation=0.8, and the resource's DECLARED shape (a list of {claim, confidence,
+            # reputation}) was split as bare CSV with the supplied figures discarded. The verdict
+            # therefore never depended on the claims: at the default 0.85 threshold nothing can be
+            # accepted, and at 0.8 or below everything is. The declared shape is honoured when it is
+            # given, and where only text is supplied the run says the confidence was NOT supplied and
+            # reports the consensus as not assessable rather than as a verdict over measured claims.
+            _parsed, _text_only = [], 0
+            _items = raw if isinstance(raw, list) else _csv(raw)
+            for _x in _items:
+                if isinstance(_x, dict) and str(_x.get("claim") or "").strip():
+                    _parsed.append({"claim": str(_x["claim"]).strip(),
+                                    "confidence": float(_x.get("confidence", 0.8) or 0.8),
+                                    "reputation": float(_x.get("reputation", 0.8) or 0.8),
+                                    "supplied": True})
+                elif str(_x).strip():
+                    _text_only += 1
+                    _parsed.append({"claim": str(_x).strip(), "confidence": 0.8, "reputation": 0.8,
+                                    "supplied": False})
+            if not _parsed:
                 return None
             from agentic_core.api.collective import consensus as consensus_ep, ConsensusRequest, Claim
+            _thr = _cfg_num(cfg.get("threshold"), 0.85, float)
             r = await consensus_ep(ConsensusRequest(
-                claims=[Claim(claim=t, confidence=0.8, reputation=0.8) for t in claim_texts[:8]],
-                threshold=_cfg_num(cfg.get("threshold"), 0.85, float)))
+                claims=[Claim(claim=_c["claim"], confidence=_c["confidence"],
+                              reputation=_c["reputation"]) for _c in _parsed[:8]],
+                threshold=_thr))
+            # a run where NO claim carried a supplied confidence is decided entirely by the threshold
+            # against a constant, which is not an assessment of the claims
+            _assessable = any(_c["supplied"] for _c in _parsed[:8])
+            _basis = ("reputation-weighted consensus over the confidences supplied with the claims"
+                      if _assessable else
+                      f"NOT ASSESSABLE - no claim carried a confidence, so each was given the constant "
+                      f"0.8 and the outcome is decided by the threshold ({_thr}) against that constant, "
+                      f"not by the claims. Supply claims as {{claim, confidence, reputation}} to have "
+                      f"them weighed.")
             return {"resource": "truth_consensus", "ran": "/api/v1/collective/consensus",
-                    "claims": r.get("claims"), "accepted": r.get("accepted"), "method": r.get("method"),
-                    "output": json.dumps({"accepted": r.get("accepted"), "of": r.get("claims"),
-                                          "threshold": r.get("threshold")}, default=str)[:400]}
+                    "claims": r.get("claims"),
+                    "accepted": (r.get("accepted") if _assessable else None),
+                    "accepted_measured": _assessable,
+                    "claims_with_supplied_confidence": sum(1 for _c in _parsed[:8] if _c["supplied"]),
+                    "consensus_basis": _basis,
+                    "method": r.get("method"),
+                    "output": json.dumps(
+                        {"accepted": (r.get("accepted") if _assessable else "not assessable"),
+                         "of": r.get("claims"), "threshold": r.get("threshold"),
+                         "basis": _basis}, default=str)[:600]}
         if rid == "mega_project":
             from agentic_core.api.mega_project import synthesise as mega_synthesise, SynthesiseRequest as MegaReq
             r = await mega_synthesise(MegaReq(concept=str(cfg.get("concept") or objective), domain=domain))
@@ -875,6 +935,12 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                     "sub_facilities": r["sub_facilities"], "generations_run": r["evolution"]["generations_run"],
                     "scenarios_run": r["experimentation"]["scenarios_run"],
                     "studio_dimensions": (r["studio"] or {}).get("dimensions"),
+                    # W495 (FU-127, S8.0) — the composite says how many variants were SCORED and, when
+                    # none was, why there is no chart and no winner. This row dropped both, so the card
+                    # showed "N generations" beside nothing and the absence read as a rendering gap.
+                    "variants_scored": r["evolution"]["variants_scored"],
+                    "evolution_scored": r["evolution"]["scored"],
+                    "studio_basis": r.get("studio_basis") or "",
                     "output": (r["evolution"]["winner"] or r["experimentation"]["comparison"] or "")[:600]}
         if rid == "factory":
             from agentic_core.api.products import run_factory_produce
@@ -1158,7 +1224,9 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         record_outcome("composition_run", f"composition:{comp['name']}", served_by=served,
                        is_external=bool(res.get("any_external")),
                        duration_ms=int((time.time() - _t0) * 1000),
-                       success=bool(res.get("trace")), ref=cid)
+                       # W495 (FU-125, S7.3) — a non-empty trace is not a quality verdict
+                       success=bool(res.get("trace")),
+                       quality_gate=(res.get("quality") or {}).get("qms_gate_passed"), ref=cid)
     except Exception:
         pass
     try:
@@ -1178,7 +1246,15 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     if org_r:
         try:
             from agentic_core.api.swarm import cascade_orchestration, CascadeRequest
-            cfg = _eff_cfg(org_r)
+            # §5/§7 (W495, FU-123, S4.8) — this used the RAW effective config, so the registry's own
+            # example placeholder ("e.g. CSO,CFO,CTO,COO,CLO,Forecasting,Policy") was parsed as the
+            # user's design: the "e.g. CSO" fragment was silently discarded and the remaining six were
+            # reported as "C-Suite engaged (your design)" for a user who had set nothing. The mechanism
+            # that drops a value equal to its declared placeholder already exists in this file (W273,
+            # `_run_real_resource_handler`) and in the stage-summary loop above; the cascade path was the
+            # one that did not use it. A design nobody entered is not the user's design.
+            _declared_org = (_BY_ID.get(org_r["id"]) or {}).get("reconfigurable_params") or {}
+            cfg = {k: v for k, v in _eff_cfg(org_r).items() if v != _declared_org.get(k)}
             def _csv(v): return [s.strip() for s in str(v).replace(";", ",").split(",") if s.strip()]
             casc = await cascade_orchestration(CascadeRequest(
                 mission=objective, domain=(comp.get("usage_area") or "general"),
@@ -1190,6 +1266,12 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 "run_id": casc.get("run_id"),
                 "org_hierarchy": casc.get("org_hierarchy"),
                 "csuite_engaged": (casc.get("csuite_roster") or {}).get("engaged"),
+                # W495 (FU-123, S4.8) — the page headed this "your design"; it is the cascade's own
+                # default unless the user actually set csuite_roles.
+                "csuite_designed_by": ("the composition's csuite_roles" if cfg.get("csuite_roles")
+                                       else "the cascade's default roster — no C-Suite was configured"),
+                "coe_designed_by": ("the composition's coe_specialisms" if cfg.get("coe_specialisms")
+                                    else "the cascade's default specialisms — none was configured"),
                 # W491 (refutation) — this sent the cascade dict's internal KEYS, which a page renders as
                 # chips: after this round's rename that printed a chip reading "operated_basis" (a prose
                 # sentence) as a management system. Send the two real lists instead.
@@ -1615,7 +1697,9 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
         record_outcome("swarm_run", f"swarm:{name}", served_by=served,
                        is_external=bool(res.get("any_external")),
                        duration_ms=int((time.time() - _t0) * 1000),
-                       success=bool(res.get("trace")), ref=req.swarm_id, vsb_id=run_vsb_id)
+                       success=bool(res.get("trace")),
+                       quality_gate=(res.get("quality") or {}).get("qms_gate_passed"),
+                       ref=req.swarm_id, vsb_id=run_vsb_id)
     except Exception:
         pass
     return {"name": name, "swarm_id": req.swarm_id, "vsb_id": run_vsb_id,

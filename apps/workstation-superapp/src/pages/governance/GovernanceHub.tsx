@@ -45,8 +45,15 @@ const ProposalsPanel: React.FC = () => {
 
   const vote = async (proposal_id: string, approve: boolean) => {
     try {
-      await axios.post(`/api/v1/projects/governance/proposals/${proposal_id}/vote?approve=${approve}`);
-      toast(approve ? 'Proposal approved — stage advanced.' : 'Proposal rejected.');
+      const res = await axios.post(`/api/v1/projects/governance/proposals/${proposal_id}/vote?approve=${approve}`);
+      // W495 (FU-131, S10.1) - this toast was a FIXED string: it said "stage advanced" whether or not
+      // anything had advanced. The endpoint used to approve a stale proposal (moving the stage BACKWARD)
+      // and a proposal for a deleted project, and both showed this same sentence. It now refuses those
+      // (409 / 404, handled below) and the toast is built from the verdict the server returned.
+      const d = res.data;
+      toast(approve
+        ? `Proposal ${d?.status ?? 'approved'} — stage set to ${d?.to_stage ?? 'the proposed stage'}.`
+        : `Proposal ${d?.status ?? 'rejected'}.`);
       load();
     } catch (e: any) {
       toast(e?.response?.data?.detail ?? 'Vote failed');

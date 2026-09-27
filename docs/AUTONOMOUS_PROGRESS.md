@@ -7661,3 +7661,139 @@ paying for itself: reading the fidelity-ledger rows the class generator cannot s
 across fourteen rows where the generator offered three. FU-265 registers what this round deliberately did
 not take: four pre-existing second readers of the metabolic term, which the round's own clamp and basis now
 give something truthful to carry.
+### W495 — a figure nothing computed is not a measurement (the residue batch)
+
+**Eight rows, one rule.** A platform may only report what it did. Four clauses: a score, rank, verdict or
+transcript that nothing produced is absent and says why; a parameter a user sets must reach something that
+reads it, and a switch nothing reads is removed rather than left on screen; a file the platform never read
+is not in its knowledge base, and nothing "grounded in" it may claim to be; and what served an output
+travels with it — to the page, the export and the file on disk.
+
+**Why this batch.** The five preceding rounds each took one sweep class repo-wide (C7, C10, C5, C4, then
+the gate's own fidelity-ledger mechanism). A register row closes only when *every* finding in it is fixed,
+so each of those rounds left rows open that it had partly cleared — the residue. Eight rows carried
+between one and three findings each across ten files, and they turned out to share the rule above, so they
+went as one batch rather than eight visits.
+
+**The tournament that ranked copies.** `POST /api/v1/incubator/evolve` presented a leaderboard —
+`Winner V1 · 95%`, bars at 95/90/85, "Strengths: Strong analytical depth", "Weaknesses: Could be more
+concise" — for runs in which **nothing scored anything**. The scorer is asked for `VARIANT_N|SCORE|…`
+lines; the deterministic floor writes none, so the code fell through to `0.95 - (i-1)*0.05` by list
+position, with the same two sentences on every variant, over three "distinct variants" that were the same
+floor text. Rank was reassigned after the sort, so the winner was always labelled Variant 1. Now: `rank`,
+`fitness_score`, `strengths` and `weaknesses` are three-state and default to the *unscored* state; the
+winner is `None` unless a scored row exists; `score_basis` says what did not happen and, when the variants
+came back identical, that there is nothing to rank either; and the analysis prompt no longer asks what
+makes the winner strongest on a run with no winner. The composite Reactor charted those constants as "the
+REAL evolution fitness leaderboard (genuine data)" — it now plots only scored variants, reports
+`variants_scored`, and states `NO CHART … NO WINNER` with the reason. The result also carries
+`ai_provenance` for the first time (every sibling engine in that module already did), so the page can name
+what served it. The page renders the state: *No winner — no variant was scored*, the list headed "Variants
+produced (unranked)", and a "not scored" chip per row carrying its basis.
+
+**And it now honours the parameter it always accepted.** The page never sent `iterations`, so every
+tournament ran one generation while the fabric card promised fitness evolved "over generations". The
+backend has capped-and-honoured `iterations` all along; the modal now offers Generations 1–4 and says what
+happens when nothing scores a generation.
+
+**Four switches wired to nothing.** `/reactor`'s "Simulation Parameters" offered Article 1095 Logic,
+Latency Stress Test, Byzantine Fault Mode and In-House Fabric, with "High-complexity run." when more than
+two were on. A repo-wide grep for their keys hit that page and nothing else: they were serialised into a
+prompt, so no latency was injected, no fault simulated, the fabric switch changed nothing when off, and one
+of them named a clause with no referent anywhere in the codebase — the class W314 removed with the
+fabricated post-quantum chip. They are gone, replaced by the one parameter `POST /api/v1/reactor/run`
+really honours: which owned tier serves the run (`prefer` → native | local | auto). The prompt also asked
+the model to report "processing time, data volume, quality score" for a run that never happened; it now
+asks what a real implementation *would* measure and how, and states that nothing has executed. The done
+frame's `served_by` and `is_external` were dropped by the page and are now rendered and written into the
+exported trace, and "✓ Simulation complete" reads *Narrative complete — … written in Nms by native.
+Nothing was executed: no data entered a node, no latency was injected and no gate ran.*
+
+**A count map is not a token.** `reactor_experiment` returns `ai_provenance.served_by` as a count **map**
+(`{native: 4}`); `DomainTool` passed it to `provenanceBadge`, which is string-shaped, so an object fell
+through every arm to the emerald `in-house · ${sb}` branch and rendered **`in-house · [object Object]`**
+over floor-served output — the badge that exists to withhold exactly that claim. The parameter was typed
+`string` and the caller held `any`, so TypeScript never saw it. `provenanceBadge` now routes any non-string
+to `provenanceMapBadge`, which counts the keys, so no shape can reach the emerald arm by falling through.
+The same panel showed no QMS chip at all, because `assure_delivery` returns `{quality, biomimetic}` and the
+chip was handed the wrapper — whose `qms_gate_passed` is `undefined`, the helper's "no gate ran" answer.
+It now unwraps the envelope, and a floor-served run shows `QMS —` with its basis.
+
+**A design nobody entered.** The fabric's Chief→Build-to-Order cascade reported "C-Suite engaged (your
+design): CFO · CTO · COO · CLO · Forecasting · Policy" for users who had configured nothing: the registry's
+own example placeholder was parsed as the configuration, its "e.g. CSO" fragment silently discarded. The
+mechanism that drops a value equal to its declared placeholder already existed in that file; the cascade
+path was the one that did not use it. The response now says whose design the roster is, and the page prints
+that instead of asserting "your design".
+
+**Verification.** 56 blinds, each undoing one fix on the real tree with a byte restore asserted after it:
+45 caught on the first sweep, **11 vacuous — every one a guard gap, not a fix gap**, and all eleven now
+caught (56/56). Four of the eleven were the *prefix trap*: renaming `unread_files` to
+`unread_files_unused` leaves the old name as a substring, so `"unread_files" in src` still passed. Two were
+levers read into a constant (`setAutoEvolve(true)`) while the key survived in the comment above. One —
+`quality_gate: Optional[bool] = True` — was invisible because every leg passed the gate explicitly; the
+guard now asserts the **default**, which is what a future caller that omits it would get. Two needed the
+behaviour driven rather than the source read: the consensus verdict (now composed and run through the real
+fabric route, text-only claims → `accepted: None`, supplied confidences → a real count) and the tournament's
+provenance (asserting the call **count**, since dropping one recorder left the other two in the map). A
+30-check browser probe on a fresh backend passes 25 of 25 reached checks with one honestly not-assessable
+(the *scored* arm cannot be produced on the deterministic floor, so the probe says so rather than folding
+it into the passes). Full suite green on the final tree.
+
+**The lesson this round kept re-learning.** Five consecutive red runs came from the fix's own comment
+quoting the literal its guard forbids — the removed switch labels, the old subtitle, the old prompt phrase,
+the deleted symbol and the old badge title. The rule now recorded: put the removed wording in the commit
+message, and forbid the **binding** or the **rendered label** rather than any mention. A CRLF file also
+picked up two LF lines from a quick scripted edit, visible only as `w/mixed` in `git ls-files --eol` —
+checked over the whole diff before committing.
+
+**The full suite found nine failures the guard could not — and one of them was mine.** The round's own
+guard passed, 66 blinds caught, and the suite still came back 9 red. Six were one mistake: the FU-125 fix
+re-pointed the stored `success` field at the quality-gate verdict, and `success` already had readers —
+`model_health()` scores every model attempt on it, the native orchestrator's `_reorder_by_health` ROUTES on
+that score, and `/api/v1/native-ai/status` reports `mode_measured` from it. So every model attempt became
+unassessed, model health became unmeasurable, and the status route read "unmeasured" instead of
+"deterministic_floor". **A field's meaning belongs to its readers, not to the newest writer.** The row now
+keeps `success` as the call outcome and carries the three-state gate verdict as `quality_verdict`, which is
+what the Learning Loop's rate is computed from — the same fix, without redefining a word four other
+modules already used. Two more were older guards pinning the claims this round removed (a tournament
+winner on an unscored run; a success rate that always exists), updated to assert both arms. One was a real
+defect of my own the suite caught and nothing else would have: converting four `gateway.query` calls to
+`query_meta` for provenance dropped `augment=False`, so four generation-class callers would have carried
+cross-request recall into text the platform persists — the repo has a guard that sweeps every `query_meta`
+call site for exactly that, and it fired.
+
+**A count that did not cover its own population — found by adding to it.** Registering the four Horizon
+Owner decisions broke two plan-tooling guards, because the forecast's "open rows" came from the SCHEDULE
+(rows riding a plan item) while the register counted every open row: 111 against 116, with nothing naming
+the difference. The batch report was worse — an Owner-decision row appeared in no bucket at all: not
+batched, not partial, not unclassed, not counted. Both now count every open row and name the two
+populations apart, because no build round can close a decision only the Owner can make, so projecting one
+at the build rate is a figure its label denies. That is the W491 class, found in the planning mechanism
+itself by the act of registering a row it had never had to handle.
+
+**HORIZON.** The Owner supplied an architect's Phase 0–5 brief for a "conscious membrane" in front of the
+delivery loop — MDL compression of intent, an asset genome over four local archives, a self-correction
+daemon, a companion surface and epistemic/theological guardrails — with the instruction to interrogate it
+and build on it. `docs/HORIZON_INTEGRATION.md` is that interrogation, and plan items **P2.11–P2.16** are
+the adopted parts. The design is sound and fills real gaps; the brief carried the exact defect class these
+rounds exist to remove, and the audit measured it: its audit was explicitly *simulated* and two of its five
+"exists" rows are wrong (there is no single plan/execute/verify seam to wrap — the loop is distributed
+across four modules — and QEP is a vision document, not built modules); its compressor returned a
+hard-coded "compressed meaning"; its alignment score was `1.0 if <string non-empty>` blended with invented
+weights; its ingestor returned `ASSIMILATED` over files it only `print`ed; its daemon's root cause was
+commented "Simulated LLM analysis"; and it declared "The Organism is Now Alive". Measuring the four local
+paths changed the design outright: the book folder holds 14 files, all `.docx`/`.pdf`, so this platform
+reads **none** of them today (the extractor W495 itself made honest); `github_repos` is 48,230 files raw
+and 4,089 after excluding `node_modules`/`.git`; and `openQuran` — labelled PRIMARY_SOURCE_TRUTH for
+Quranic ontology — holds exactly **one** file, which is a `.env`. So any indexer needs secret-exclusion by
+rule, recorded exclusions and stated scan bounds. Ratified ruling **A.9.5** also forbids what the brief's
+`spiritual_station` and `virtue_forged` fields do: an AI may not pass a verdict on a person's spiritual
+state, so those are user-chosen or Owner-entered only, and the 0–9 / 25-station taxonomy — which is not in
+this canon — waits on the Owner. Horizon's "systemic Muhasabah" is P2.10's mechanism at runtime scope, so
+they share one register shape and one arms-length gate rather than forking governance. Four Owner decisions
+are registered as FU-267 to FU-270.
+
+**What the round moved.** Eight rows closed. The gate P1.18 went from 21 open rows to 13, and the whole
+register from 119 to 111 open with the four new Owner rows counted — the gate's projection is now three
+rounds at its own measured rate.

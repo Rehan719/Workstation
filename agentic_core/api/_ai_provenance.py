@@ -34,7 +34,11 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     try:
         from agentic_core.api.operational_excellence import record_outcome
         record_outcome("ai_call", f"agent:{agent}", served_by=served_by, is_external=is_external,
-                       duration_ms=int((time.monotonic() - t0) * 1000), success=bool(output))
+                       # W495 (FU-125, S7.3) — this wrapper sees no quality gate at all, so it records
+                       # that the run PRODUCED output and leaves the verdict unset (NOT ASSESSED) rather
+                       # than filing "the floor returned text" as a success.
+                       duration_ms=int((time.monotonic() - t0) * 1000), success=bool(output),
+                       quality_gate=None)
     except Exception:
         pass
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": served_by,

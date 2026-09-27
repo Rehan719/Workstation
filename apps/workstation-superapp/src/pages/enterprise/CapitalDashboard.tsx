@@ -58,7 +58,15 @@ export const CapitalDashboard: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
   const [fund, setFund] = useState<FundStatus | null>(null);
   const [fundError, setFundError] = useState('');
-  const [autonomousEnabled, setAutonomousEnabled] = useState(false);
+  // W495 (FU-133, S2.6) - this was `autonomousEnabled`, local React state that NOTHING read: the
+  // switch styled itself from it and its title announced a semi-autonomous mode as ON (the exact wording
+  // is not repeated here - a guard forbids it in this file). No request was sent, no
+  // lever changed, and no autonomous capital process exists. A control that changes nothing must not
+  // report a mode. The real lever is the heartbeat's auto_economy, which is set on the Heartbeat
+  // surface; this page READS it and says where it is changed, exactly as the landing page does for the
+  // "self-running" claim (W493).
+  const [autoEconomy, setAutoEconomy] = useState<boolean | null>(null);
+  const [heartbeatRunning, setHeartbeatRunning] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'external' | 'crypto' | 'evolution'>('overview');
   const [changes, setChanges] = useState<CcaChange[] | null>(null);
   const [changesError, setChangesError] = useState('');
@@ -75,6 +83,15 @@ export const CapitalDashboard: React.FC = () => {
     apiJson<FundStatus>("/api/v1/fund/status")
       .then(f => { setFund(f); setFundError(""); })
       .catch(e => setFundError(errorMessage(e)));
+
+    // W495 (FU-133, S2.6) - the REAL autonomy lever, in place of the switch that set local state
+    // nothing read. A lever set to true does nothing while the heartbeat is stopped, so both are read.
+    apiJson<{ auto_economy?: boolean; running?: boolean }>("/api/v1/heartbeat/status")
+      .then(h => {
+        setAutoEconomy(typeof h?.auto_economy === 'boolean' ? h.auto_economy : null);
+        setHeartbeatRunning(typeof h?.running === 'boolean' ? h.running : null);
+      })
+      .catch(() => { setAutoEconomy(null); setHeartbeatRunning(null); });
 
     axios.get<PortfolioStats>("/api/v1/projects/stats/summary", { validateStatus: () => true })
       .then(res => { if (res.status === 200) setPortfolio(res.data); })
@@ -95,18 +112,29 @@ export const CapitalDashboard: React.FC = () => {
           <p className="text-slate-500 font-bold tracking-widest uppercase text-xs mt-2">vΩ∞-CAPITAL-FUND | Global Investment Civilisation</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-            <Badge variant="outline" className="border-aura text-aura font-black">PHASE 3: EXTERNALLY INTEGRATED</Badge>
-            <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-800">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Semi-Autonomous</span>
-                <button
-                    type="button"
-                    aria-label={`Toggle Semi-Autonomous mode: currently ${autonomousEnabled ? 'On' : 'Off'}`}
-                    title={`Semi-Autonomous mode: ${autonomousEnabled ? 'On' : 'Off'}`}
-                    onClick={() => setAutonomousEnabled(!autonomousEnabled)}
-                    className={`w-10 h-5 rounded-full transition-colors relative ${autonomousEnabled ? 'bg-aura' : 'bg-slate-700'}`}
-                >
-                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${autonomousEnabled ? 'left-6' : 'left-1'}`} />
-                </button>
+            {/* W495 (FU-133, S2.5) - this badge was a literal with no data behind it, while this same
+                page's External Markets tab says no market-data provider is connected and its Real-Money
+                Rails tab says no on-chain integration exists. Nothing external is integrated. */}
+            <Badge variant="outline" className="border-slate-700 text-slate-400 font-black"
+                   title="No market-data provider and no on-chain integration exist in this deployment; the fund is virtual WST held by this platform.">
+              VIRTUAL FUND — NO EXTERNAL INTEGRATION
+            </Badge>
+            {/* the real lever, read-only, with where it is set - not a switch that changes nothing */}
+            <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-800"
+                 data-testid="capital-autonomy-lever"
+                 title="The autonomous economy lever lives on the heartbeat (Organism -> Heartbeat: auto_economy). A lever set to true does nothing while the heartbeat is stopped.">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Autonomous economy</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${
+                  autoEconomy === null ? 'text-slate-500'
+                  : !autoEconomy ? 'text-slate-400'
+                  : heartbeatRunning === false ? 'text-amber-400' : 'text-aura'}`}>
+                  {autoEconomy === null ? 'lever state unread'
+                    : !autoEconomy ? 'off'
+                    : heartbeatRunning === false ? 'set, but the heartbeat is stopped'
+                    : heartbeatRunning === null ? 'set (whether the heartbeat beats could not be read)'
+                    : 'on'}
+                </span>
+                <span className="text-[9px] text-slate-600">set on Organism → Heartbeat</span>
             </div>
         </div>
       </header>

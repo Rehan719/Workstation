@@ -1,28 +1,39 @@
 import React, { useState } from 'react';
 import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { Card, Badge } from '@workstation/ui';
-import { Beaker, Trophy, Plus, X, FlaskConical, TrendingUp, Loader2 } from 'lucide-react';
+import { Beaker, Trophy, Plus, X, FlaskConical, TrendingUp, Loader2, MinusCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { provenanceMapBadge } from '../../lib/api';
 
 const DOMAINS = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 
+// W495 (FU-127, S8.0) - these four were typed non-null and rendered as certainties: this page drew
+// "Winner V1 - 95%", a 95/90/85 leaderboard and two fixed sentences of Strengths/Weaknesses for runs in
+// which NOTHING scored a variant. The backend now returns null for each with `scored` and `score_basis`
+// saying why, and the page renders that state instead of inventing a ranking.
 interface TournamentVariant {
   variant_id: string;
-  rank: number;
-  fitness_score: number;
+  rank: number | null;
+  fitness_score: number | null;
   response: string;
-  strengths: string;
-  weaknesses: string;
+  strengths: string | null;
+  weaknesses: string | null;
+  scored: boolean;
+  score_basis: string;
 }
 
 interface TournamentResult {
   tournament_id: string;
   name: string;
   variants_evaluated: number;
-  winner: TournamentVariant;
+  winner: TournamentVariant | null;
+  winner_basis: string;
+  scored: boolean;
   leaderboard: TournamentVariant[];
   analysis: string;
+  ai_provenance?: { posture?: string; served_by?: Record<string, number>; any_external?: boolean };
+  generations_run?: number;
   completed_at: number;
 }
 
@@ -32,6 +43,7 @@ interface TournamentRecord {
   domain: string;
   base_prompt: string;
   variants: number;
+  iterations: number;
   status: 'pending' | 'running' | 'done' | 'error';
   result?: TournamentResult;
   error?: string;
@@ -47,6 +59,10 @@ export const Incubator: React.FC = () => {
   const [domain,     setDomain]     = useState('general');
   const [basePrompt, setBasePrompt] = useState('');
   const [variants,   setVariants]   = useState(3);
+  // W495 (FU-127, S8.0) - the page never sent `iterations`, so every tournament ran ONE generation
+  // while the fabric card promised fitness evolved "over generations". The backend has honoured
+  // iterations (capped 1-4) all along; the user can now choose.
+  const [iterations, setIterations] = useState(1);
   const [fitness,    setFitness]    = useState('relevance, clarity, commercial value, originality');
 
   const updateTournament = (id: string, patch: Partial<TournamentRecord>) =>
@@ -55,7 +71,7 @@ export const Incubator: React.FC = () => {
   const handleCreate = () => {
     if (!name.trim() || !basePrompt.trim()) return;
     const id = `t-${Date.now()}`;
-    setTournaments(ts => [...ts, { id, name, domain, base_prompt: basePrompt, variants, status: 'pending' }]);
+    setTournaments(ts => [...ts, { id, name, domain, base_prompt: basePrompt, variants, iterations, status: 'pending' }]);
     setSelected(id);
     setShowNew(false);
     setName(''); setBasePrompt('');
@@ -71,6 +87,7 @@ export const Incubator: React.FC = () => {
         base_prompt: t.base_prompt,
         domain: t.domain,
         variants: t.variants,
+        iterations: t.iterations,
         fitness_criteria: fitness,
       });
       updateTournament(id, { status: 'done', result: data });
@@ -114,7 +131,7 @@ export const Incubator: React.FC = () => {
                   <Beaker size={14} className="text-aura shrink-0" />
                   <div className="min-w-0">
                     <p className="text-xs font-black text-white uppercase truncate">{t.name}</p>
-                    <p className="text-[8px] text-slate-500 capitalize">{t.domain} · {t.variants} variants</p>
+                    <p className="text-[8px] text-slate-500 capitalize">{t.domain} · {t.variants} variants · {t.iterations} gen</p>
                   </div>
                 </div>
                 <Badge color={t.status === 'done' ? 'emerald-500' : t.status === 'running' ? 'aura' : t.status === 'error' ? 'vital' : 'slate-500'}>
@@ -123,8 +140,17 @@ export const Incubator: React.FC = () => {
               </div>
               {t.result && (
                 <div className="mt-3 pt-3 border-t border-slate-800 flex items-center gap-2">
-                  <Trophy size={10} className="text-yellow-500" />
-                  <span className="text-[9px] text-yellow-500 font-black">Winner V{t.result.winner.rank} · {(t.result.winner.fitness_score * 100).toFixed(0)}%</span>
+                  {t.result.scored && t.result.winner && t.result.winner.fitness_score != null ? (
+                    <>
+                      <Trophy size={10} className="text-yellow-500" />
+                      <span className="text-[9px] text-yellow-500 font-black">Winner V{t.result.winner.rank} · {(t.result.winner.fitness_score * 100).toFixed(0)}%</span>
+                    </>
+                  ) : (
+                    <>
+                      <MinusCircle size={10} className="text-slate-500" />
+                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider" title={t.result.winner_basis}>No winner · not scored</span>
+                    </>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -173,48 +199,82 @@ export const Incubator: React.FC = () => {
 
               {selectedT.status === 'done' && selectedT.result && (
                 <div className="flex-1 space-y-5 overflow-y-auto">
-                  {/* Winner card */}
-                  <div className="p-5 rounded-2xl bg-yellow-500/5 border border-yellow-500/30">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Trophy size={16} className="text-yellow-500" />
-                      <span className="text-[10px] font-black uppercase text-yellow-500 tracking-widest">Winner — Variant {selectedT.result.winner.rank}</span>
-                      <span className="ml-auto text-[10px] font-black text-yellow-500">{(selectedT.result.winner.fitness_score * 100).toFixed(0)}%</span>
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">{selectedT.result.winner.response}</p>
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-[8px] font-black text-emerald-400 uppercase mb-1">Strengths</p>
-                        <p className="text-[9px] text-slate-400">{selectedT.result.winner.strengths}</p>
+                  {/* Provenance — what served this tournament */}
+                  {(() => {
+                    const pb = provenanceMapBadge(selectedT.result!.ai_provenance?.served_by,
+                                                  selectedT.result!.ai_provenance?.any_external);
+                    return (
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${pb.cls}`} title={pb.title}>{pb.label}</span>
+                        <span className="text-[8px] text-slate-600 uppercase tracking-widest">{selectedT.result!.variants_evaluated} variants · {selectedT.result!.generations_run ?? 1} generation(s)</span>
                       </div>
-                      <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-                        <p className="text-[8px] font-black text-red-400 uppercase mb-1">Weaknesses</p>
-                        <p className="text-[9px] text-slate-400">{selectedT.result.winner.weaknesses}</p>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
-                  {/* Leaderboard */}
+                  {/* Winner card — or the stated absence of one */}
+                  {selectedT.result.scored && selectedT.result.winner && selectedT.result.winner.fitness_score != null ? (
+                    <div className="p-5 rounded-2xl bg-yellow-500/5 border border-yellow-500/30">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Trophy size={16} className="text-yellow-500" />
+                        <span className="text-[10px] font-black uppercase text-yellow-500 tracking-widest">Winner — Variant {selectedT.result.winner.rank}</span>
+                        <span className="ml-auto text-[10px] font-black text-yellow-500">{(selectedT.result.winner.fitness_score * 100).toFixed(0)}%</span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">{selectedT.result.winner.response}</p>
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                          <p className="text-[8px] font-black text-emerald-400 uppercase mb-1">Strengths</p>
+                          <p className="text-[9px] text-slate-400">{selectedT.result.winner.strengths ?? 'not returned by the evaluator'}</p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
+                          <p className="text-[8px] font-black text-red-400 uppercase mb-1">Weaknesses</p>
+                          <p className="text-[9px] text-slate-400">{selectedT.result.winner.weaknesses ?? 'not returned by the evaluator'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-700">
+                      <div className="flex items-center gap-3 mb-2">
+                        <MinusCircle size={16} className="text-slate-400" />
+                        <span className="text-[10px] font-black uppercase text-slate-300 tracking-widest">No winner — no variant was scored</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">{selectedT.result.winner_basis || 'The run returned no fitness score, so no variant was evaluated and none is ranked.'}</p>
+                      <p className="text-[9px] text-slate-500 mt-2">The variants below are what the run produced. They are shown in the order they were generated — that order is not a ranking.</p>
+                    </div>
+                  )}
+
+                  {/* Leaderboard — a leaderboard only where there are scores to order */}
                   <div>
-                    <h5 className="text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] mb-3">Leaderboard</h5>
+                    <h5 className="text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] mb-3">
+                      {selectedT.result.scored ? 'Leaderboard' : 'Variants produced (unranked)'}
+                    </h5>
                     <div className="space-y-2">
-                      {selectedT.result.leaderboard.map(v => (
+                      {selectedT.result.leaderboard.map((v, i) => (
                         <div key={v.variant_id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800">
-                          <span className="text-[9px] font-black text-slate-500 w-5">#{v.rank}</span>
+                          <span className="text-[9px] font-black text-slate-500 w-5">{v.rank != null ? `#${v.rank}` : `V${i + 1}`}</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-[9px] text-slate-400 truncate">{v.response.slice(0, 80)}…</p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <progress
-                              value={v.fitness_score}
-                              max={1}
-                              aria-label={`Fitness score ${(v.fitness_score * 100).toFixed(0)}%`}
-                              className="w-20 h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura"
-                            />
-                            <span className="text-[9px] font-black text-aura">{(v.fitness_score * 100).toFixed(0)}%</span>
+                            {v.scored && v.fitness_score != null ? (
+                              <>
+                                <progress
+                                  value={v.fitness_score}
+                                  max={1}
+                                  aria-label={`Fitness score ${(v.fitness_score * 100).toFixed(0)}%`}
+                                  className="w-20 h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura"
+                                />
+                                <span className="text-[9px] font-black text-aura">{(v.fitness_score * 100).toFixed(0)}%</span>
+                              </>
+                            ) : (
+                              <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider" title={v.score_basis || 'the run recorded no fitness score for this variant'}>not scored</span>
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
+                    {!selectedT.result.scored && selectedT.result.leaderboard[0]?.score_basis && (
+                      <p className="text-[9px] text-slate-500 mt-3 leading-relaxed">{selectedT.result.leaderboard[0].score_basis}</p>
+                    )}
                   </div>
 
                   {/* Analysis */}
@@ -222,7 +282,9 @@ export const Incubator: React.FC = () => {
                     <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
                       <div className="flex items-center gap-2 mb-2">
                         <TrendingUp size={12} className="text-aura" />
-                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Evolution Analysis</span>
+                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">
+                          {selectedT.result.scored ? 'Evolution Analysis' : 'Summary of the run (no fitness was computed)'}
+                        </span>
                       </div>
                       <p className="text-[10px] text-slate-400 leading-relaxed">{selectedT.result.analysis}</p>
                     </div>
@@ -274,6 +336,18 @@ export const Incubator: React.FC = () => {
                       aria-label="Number of variants"
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-aura" />
                   </div>
+                </div>
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">Generations (1-4)</label>
+                  <input type="number" min={1} max={4} value={iterations}
+                    onChange={e => setIterations(Math.min(4, Math.max(1, parseInt(e.target.value) || 1)))}
+                    aria-label="Number of generations"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-aura" />
+                  <p className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+                    Each generation after the first evolves the previous winner. With more than one
+                    generation and nothing scoring the variants, there is no winner to evolve and each
+                    generation starts again from your task - the run will say so.
+                  </p>
                 </div>
                 <div>
                   <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">Base Prompt / Task</label>

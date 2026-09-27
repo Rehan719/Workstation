@@ -43,6 +43,12 @@ export const SovereignEvolution: React.FC = () => {
   const [focus, setFocus] = useState('');
   const [submitCC, setSubmitCC] = useState(false);
   const [running, setRunning] = useState(false);
+  // W495 (FU-126, S13.1) - the header said the organism "evolves itself - autonomously" and the
+  // button said "Run Autonomous Cycle", while the ONLY autonomous caller is the heartbeat gated on
+  // auto_evolve, which is False by default. The page never read that lever. It reads it now, and a
+  // lever set to true still does nothing while the heartbeat is stopped, so both are read.
+  const [autoEvolve, setAutoEvolve] = useState<boolean | null>(null);
+  const [beating, setBeating] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
 
@@ -51,6 +57,13 @@ export const SovereignEvolution: React.FC = () => {
       .then(r => r.json())
       .then(d => { if (d && d.ceo_directives) setRoadmap(d); })
       .catch(() => {});
+    fetch('/api/v1/heartbeat/status')
+      .then(r => r.json())
+      .then(h => {
+        setAutoEvolve(typeof h?.auto_evolve === 'boolean' ? h.auto_evolve : null);
+        setBeating(typeof h?.running === 'boolean' ? h.running : null);
+      })
+      .catch(() => { setAutoEvolve(null); setBeating(null); });
   }, []);
 
   const runCycle = async () => {
@@ -79,9 +92,21 @@ export const SovereignEvolution: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Self-Evolution</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Sovereign Evolution Office</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          The organism evolves itself — autonomously, and curated by its own Virtual Sovereign Business.
-          It observes its state, then the <span className="text-highlight">AI CEO → C-Suite → CoE → BTO</span> curate
-          self-improvement, maintenance, development and correction into a governed transformation roadmap.
+          The <span className="text-highlight">AI CEO → C-Suite → CoE → BTO</span> curate self-improvement,
+          maintenance, development and correction into a governed transformation ROADMAP. A cycle writes
+          that roadmap; it does not change the organism by itself.
+          {' '}
+          <span data-testid="evolution-autonomy-basis">
+            {autoEvolve === null
+              ? 'Whether a cycle also runs on the beat could not be read.'
+              : !autoEvolve
+              ? 'Running on the beat is OFF (the Self-evolve lever on the heartbeat), so a cycle happens only when you press the button below.'
+              : beating === false
+              ? 'The Self-evolve lever is set, but the heartbeat is STOPPED, so no cycle runs on the beat.'
+              : beating === null
+              ? 'The Self-evolve lever is set (whether the heartbeat beats could not be read).'
+              : 'The Self-evolve lever is on and the heartbeat is beating, so a cycle also runs on the paced maintenance tick.'}
+          </span>
         </p>
       </header>
 
@@ -130,7 +155,9 @@ export const SovereignEvolution: React.FC = () => {
         <div className="flex items-center gap-4 pt-1">
           <Button onClick={runCycle} disabled={running} className="flex items-center gap-2 bg-highlight text-sovereign">
             {running ? <Loader2 size={16} className="animate-spin" /> : <Dna size={16} />}
-            {running ? 'Curating Evolution Cycle…' : 'Run Autonomous Cycle'}
+            {/* W495 - the button ran the cycle on a click; calling that "Autonomous" named the one
+                thing it is not. */}
+            {running ? 'Curating Evolution Cycle…' : 'Run a Curation Cycle Now'}
           </Button>
           {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
         </div>

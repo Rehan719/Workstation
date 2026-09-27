@@ -17,7 +17,9 @@ const STUDIOS: { name: string; desc: string; route: string; icon: React.Componen
   { name: 'Synthesis Studio',  desc: 'Ingest & synthesise knowledge',      route: '/synthesis',     icon: Sparkles },
   { name: 'Synthesis Nexus',   desc: 'Four-layer engine orchestration',     route: '/nexus',         icon: Sparkles },
   { name: 'Forge Pipeline',    desc: 'Forge digital resources',             route: '/forge-pipeline',icon: Hammer },
-  { name: 'Digital Reactor',   desc: 'Mutate & iterate variants',           route: '/reactor',       icon: Zap },
+  // W495 (FU-127, S8.7) — the page runs ONE domain narrative; it mutates and iterates nothing.
+  // (The engine that does iterate variants is the Incubator, on the next line.)
+  { name: 'Digital Reactor',   desc: 'Narrate a domain pipeline (nothing executed)', route: '/reactor', icon: Zap },
   { name: 'Incubator',         desc: 'Evolve fitness over generations',     route: '/incubator',     icon: FlaskConical },
   { name: 'Reactor Studio',    desc: '2D/3D visual analytics',              route: '/reactor-studio',icon: BarChart3 },
   { name: 'Factory',           desc: 'Produce deliverables at scale',       route: '/factory',       icon: Factory },
@@ -89,6 +91,10 @@ interface CompositionRun {
   // §7→§5→§6→§8 — when the config includes the org resource, the real Chief→Build-to-Order cascade also runs.
   org_cascade?: {
     ran?: string; csuite_engaged?: string[]; appraisals?: string[];
+    // W495 (FU-123, S4.8) - whose design the roster is. The page asserted "(your design)" for every
+    // run, including the runs where nothing was configured and the cascade used its own default
+    // roster - which is exactly what the registry's example placeholder produced.
+    csuite_designed_by?: string; coe_designed_by?: string;
     // W491 (refutation) — `management_systems` was the cascade dict's KEY list, so this round's rename
     // made the page print a chip reading "operated_basis" (a prose sentence) as a management system.
     management_systems_operated?: string[]; management_systems_catalogue?: string[];
@@ -110,6 +116,9 @@ interface CompositionRun {
     viable?: boolean | null; viable_basis?: string;
     passages?: number; cognitive_primed?: boolean; engines_used?: string[];
     scenarios_run?: number; generations_run?: number; winner?: string;
+    // W495 (FU-127, S8.0) — the composite Reactor's fitness figures were invented on every floor-served
+    // run. It now scores nothing it did not score, and these say so on the card.
+    variants_scored?: number; evolution_scored?: boolean; studio_basis?: string;
     served_by?: string; is_external?: boolean; stages_run?: number;   // §6 — owned-resource provenance
     // W479 (FU-121 refutation) — the intelligence engines report their calls: a run whose every call failed is
     // not 'ran', and the stage count they send is `stages`
@@ -668,9 +677,19 @@ export const ResourceFabric: React.FC = () => {
                       {runResult.org_cascade && (
                         <div className="border border-highlight/30 bg-highlight/5 rounded-lg p-2.5 space-y-1">
                           <p className="text-[9px] font-black uppercase tracking-widest text-highlight">§5 Living Organisation · real Chief→Build-to-Order cascade ran</p>
-                          {runResult.org_cascade.csuite_engaged && (
-                            <p className="text-[9px] text-slate-400">C-Suite engaged (your design): <span className="text-white">{runResult.org_cascade.csuite_engaged.join(' · ')}</span> — each drives a CoE</p>
-                          )}
+                          {runResult.org_cascade.csuite_engaged && (() => {
+                            /* W495 (FU-123, S4.8) - "(your design)" was asserted on every run. The
+                               cascade has its own default roster, and a config that set nothing (or set
+                               the registry's example placeholder) produced exactly this line. */
+                            const _by = runResult.org_cascade!.csuite_designed_by || '';
+                            const _yours = _by.startsWith("the composition's");
+                            return (
+                              <p className="text-[9px] text-slate-400" data-testid="org-csuite-designed-by"
+                                 title={_by || 'the response did not say whose design this roster is'}>
+                                C-Suite engaged ({_by ? (_yours ? 'your design' : _by) : 'source not stated'}): <span className="text-white">{runResult.org_cascade!.csuite_engaged!.join(' · ')}</span> — each drives a CoE
+                              </p>
+                            );
+                          })()}
                           <div className="flex flex-wrap items-center gap-1.5">
                             {(runResult.org_cascade.management_systems_operated || []).map(m => (
                               <span key={m} data-testid={`org-mgmt-operated-${m}`}
@@ -764,6 +783,16 @@ export const ResourceFabric: React.FC = () => {
                                 )}
                                 {typeof rr.generations_run === 'number' && (
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.generations_run} generations</span>
+                                )}
+                                {typeof rr.variants_scored === 'number' && (
+                                  rr.variants_scored > 0 ? (
+                                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400"
+                                          data-testid={`reactor-scored-${rr.resource}`}>{rr.variants_scored} variant(s) scored</span>
+                                  ) : (
+                                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                                          data-testid={`reactor-scored-${rr.resource}`}
+                                          title={rr.studio_basis || 'no variant was scored, so there is no fitness chart and no winner'}>no variant scored · no chart</span>
+                                  )
                                 )}
                                 {typeof rr.stages === 'number' && (
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.stages} stages ran</span>

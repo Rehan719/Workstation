@@ -146,9 +146,42 @@ async def v154_constitution_articles():
             if articles:
                 break
     if not articles:
-        articles = [{"id": "1", "title": "The Sovereign Digital Organism", "category": "CORE",
-                     "content": "Workstation is a self-evolving, constitutionally-governed digital organism."}]
-    return articles[:200]
+        # §10 (W495, FU-126, S10.3) - this fabricated a single article and the page presented it as THE
+        # parsed constitution, with category chips (ETERNAL / COSMIC / CARE) that match nothing. The file
+        # it was written to parse does not exist in the live tree: a cleanup MOVED the canon to
+        # _archive/agentic_core/constitution/.
+        #
+        # It is NOT restored, and that is a deliberate call. The archived document is the Jules-era
+        # v130.0 "Sovereign Digital Life Constitution": ~750 articles asserting live global marketplaces,
+        # signed MoUs, ORCID scholar onboarding and post-quantum deployment - capabilities this platform
+        # does not have. The plan already excludes inherited Jules material as dated and
+        # agent-unreliable, so parsing it here would import hundreds of unbuilt claims onto a governance
+        # surface: the exact defect class this pass exists to remove. Instead the endpoint reports that
+        # no canon is present and names what actually governs. Registered for the Owner to decide whether
+        # a constitution document should be authored.
+        _archived = Path("_archive/agentic_core/constitution/CONSTITUTION_canonical.md")
+        return {
+            "articles": [],
+            "canon_present": False,
+            "canon_basis": (
+                "NO CONSTITUTION DOCUMENT IS PRESENT in the live tree. This endpoint parses "
+                "agentic_core/constitution/CONSTITUTION_canonical.md, which a repository cleanup moved to "
+                + (f"{_archived.as_posix()} (still on disk). " if _archived.exists() else "the archive. ")
+                + "That archived document is the inherited Jules-era v130.0 canon and is EXCLUDED as "
+                  "dated: it asserts live marketplaces, signed MoUs and scholar onboarding that do not "
+                  "exist here. It is not parsed, and no article is invented in its place."),
+            "what_governs_instead": [
+                "docs/WORKSTATION_IDBO_WHOLE_VISION.md - the vision this delivery is measured against",
+                "docs/FABLE_DELIVERY_PROMPT.md - the ordered delivery plan and the Owner's rulings",
+                "the arms-length Change Control Agency (/api/v1/cca) - what may change and who decides",
+                "the gaas.v5 constitutional interceptor (/api/v1/gaas) - the runtime intent gate",
+            ],
+            "categories_available": [],
+        }
+    return {"articles": articles[:200], "canon_present": True,
+            "canon_basis": f"parsed {len(articles)} article heading(s) from the canonical markdown",
+            "what_governs_instead": [],
+            "categories_available": sorted({a.get("category") for a in articles if a.get("category")})}
 
 
 # ── Evidence graph (from the gaas.v5 UEG) ────────────────────────────────────

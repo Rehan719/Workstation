@@ -2690,7 +2690,18 @@ def test_incubator_parameterised_evolution(client):
                           "temperature": 0.8, "mutation": 0.6, "iterations": 2}).json()
     assert r["generations_run"] == 2                         # the Iteration loop ran 2 generations
     assert r["variants_evaluated"] == 3 and len(r["leaderboard"]) >= 2
-    assert r["winner"]["rank"] == 1 and r["winner"]["response"]
+    # W495 (FU-127, S8.0) — this asserted `winner.rank == 1` on every run, which is what the defect
+    # produced: with no VARIANT|SCORE line parsed (every floor-served run) the code invented
+    # 0.95/0.90/0.85 by list position and relabelled the first variant "Variant 1". A winner exists
+    # only where a score does, so the guard now pins BOTH arms.
+    if r["scored"]:
+        assert r["winner"]["rank"] == 1 and r["winner"]["response"]
+        assert r["winner"]["fitness_score"] is not None
+        assert all(v["scored"] and v["fitness_score"] is not None for v in r["leaderboard"])
+    else:
+        assert r["winner"] is None and "NO WINNER" in r["winner_basis"]
+        assert all(v["rank"] is None and v["fitness_score"] is None and not v["scored"]
+                   and "NOT SCORED" in v["score_basis"] for v in r["leaderboard"])
     # iterations are capped (1..4); a single-generation run is the default
     capped = client.post("/api/v1/incubator/evolve",
                          json={"name": "x", "base_prompt": "a tagline", "variants": 2, "iterations": 9}).json()
@@ -3498,10 +3509,18 @@ def test_operations_learning_loop(client):
     client.post("/api/v1/resources/swarm/run", json={"swarm_id": sid})
     summ = client.get("/api/v1/operations/summary").json()
     assert summ["total_runs"] >= 1 and "swarm_run" in summ["kinds"]
-    assert 0.0 <= summ["success_rate"] <= 1.0 and 0.0 <= summ["in_house_rate"] <= 1.0
+    # W495 (FU-125, S7.3) — `success_rate` is None when no quality gate assessed any run, because a
+    # rate over an unassessed population is not a measurement. This asserted a number was always
+    # there, which is what let "Success rate 100%" stand over rows nothing had judged.
+    assert summ["success_rate"] is None or 0.0 <= summ["success_rate"] <= 1.0
+    assert summ["success_rate_basis"] and 0.0 <= summ["produced_rate"] <= 1.0
+    assert summ["assessed_runs"] + summ["unassessed_runs"] == summ["total_runs"]
+    assert 0.0 <= summ["in_house_rate"] <= 1.0
     ranks = client.get("/api/v1/operations/rankings").json()["rankings"]
     mine = [r for r in ranks if r["resource"] == "swarm:ops pytest"]
-    assert mine and mine[0]["runs"] >= 1 and 0.0 <= mine[0]["success_rate"] <= 1.0
+    assert mine and mine[0]["runs"] >= 1
+    assert mine[0]["success_rate"] is None or 0.0 <= mine[0]["success_rate"] <= 1.0
+    assert mine[0]["success_basis"] and 0.0 <= mine[0]["produced_rate"] <= 1.0
     assert client.get("/api/v1/operations/outcomes?kind=swarm_run").json()["total"] >= 1
 
 
@@ -3840,7 +3859,10 @@ def test_ai_calls_recorded_to_learning_loop(client):
     assert 0.0 <= summ["in_house_rate"] <= 1.0
     ranks = client.get("/api/v1/operations/rankings").json()["rankings"]
     agent_rows = [r for r in ranks if str(r["resource"]).startswith("agent:")]
-    assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
+    # W495 (FU-125) — three-state: an agent nothing gate-assessed carries no rate, and says so
+    assert agent_rows and all(r["success_rate"] is None or 0.0 <= r["success_rate"] <= 1.0
+                              for r in agent_rows)
+    assert all(r["success_basis"] for r in agent_rows)
 
 
 def test_avatar_guided_navigation_whitelisted(client):
@@ -18190,8 +18212,12 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     if f["assessable"]:
         rate = f["rate_used"]["closed_per_round"]
         assert rate > 0 and f["rate_used"]["net_per_round"] > 0, f["rate_used"]
-        # ALL OPEN ROWS is the one figure this rate covers: the same population it was measured over
-        assert f["all_rows_rounds_projected"] == math.ceil(f["open_rows"] / rate), f
+        # W495 — the rate was measured on rows BUILD ROUNDS closed, so it covers the rows riding a
+        # plan item. An Owner-decision row rides none and no round can close one, so it is counted
+        # apart and not projected; `open_rows` is every open row, and the two populations add up.
+        assert f["open_rows_scheduled"] + f["open_rows_awaiting_owner"] == f["open_rows"], f
+        assert len(f["awaiting_owner_ids"]) == f["open_rows_awaiting_owner"], f
+        assert f["all_rows_rounds_projected"] == math.ceil(f["open_rows_scheduled"] / rate), f
         assert "ACROSS EVERY ITEM" in f["basis"], f["basis"]
         # W493 - this leg asserted the NEXT item's projection was its own rows over the OVERALL rate,
         # which IS the defect: a class-wide batch closes rows on five or six items at once, so the gate
@@ -18345,7 +18371,11 @@ def test_w487_the_plan_proposes_the_round_not_just_the_row(client):
 
     # 4. rows citing NO class are listed, never guessed at or silently dropped
     open_ids = {r["id"] for r in fu.raw_items(reg) if isinstance(r, dict) and r.get("status") == "open"}
-    counted = set(everywhere) | {rid for x in b["batches"] for rid in x["partial"]} | set(b["unclassed"])
+    # W495 — an OWNER decision row rides no plan item, so it appeared in no bucket at all until this
+    # round: not batched, not partial, not unclassed, not counted. A batch report that omits a
+    # population cannot be checked for coverage, so they are listed apart and counted here.
+    counted = (set(everywhere) | {rid for x in b["batches"] for rid in x["partial"]}
+               | set(b["unclassed"]) | set(b["awaiting_owner"]))
     assert counted == open_ids, sorted(open_ids ^ counted)[:6]
     assert all(fu.row_classes(raw[rid]) == [] for rid in b["unclassed"])
 
@@ -20696,3 +20726,336 @@ def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(clie
         assert '"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node}' not in _src, _label
     assert "cascade-gov-chip" in swi and "content not screened" in swi
     assert "bg-emerald-500/15 text-emerald-400'}`}>gov: " not in swi
+def test_w495_a_figure_nothing_computed_is_not_a_measurement(client, monkeypatch):
+    """W495 — P1.18, the residue batch: eight rows, one rule.
+
+    A PLATFORM MAY ONLY REPORT WHAT IT DID. Four clauses. (1) A score, rank, verdict or transcript
+    that nothing produced is absent and says so — never a constant standing in for a measurement.
+    (2) A parameter a user sets must reach something that reads it; a switch nothing reads is removed,
+    not left on screen. (3) A file the platform never read is not in its knowledge base, and nothing
+    "grounded in" it may claim to be. (4) What served an output travels with it — to the page, the
+    export, and the file on disk.
+
+    Rows: FU-123 FU-124 FU-125 FU-126 FU-127 FU-129 FU-131 FU-133.
+    """
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp/src"
+    _prod = (root / "agentic_core/api/products.py").read_text(encoding="utf-8")
+
+    # ── FU-127 / S8.0: a rank by list position is not a tournament result ──────────────────────────
+    from agentic_core.api.products import TournamentVariant, TournamentResult
+    # the three-state shape: the DEFAULTS are the unscored state, so a row can only carry a score
+    # because something set one
+    _v = TournamentVariant(variant_id="v", response="text")
+    assert _v.rank is None and _v.fitness_score is None and _v.scored is False
+    assert _v.strengths is None and _v.weaknesses is None
+    _r = TournamentResult(tournament_id="t", name="n", variants_evaluated=2, leaderboard=[],
+                          analysis="", completed_at=0.0)
+    assert _r.winner is None and _r.scored is False
+
+    # THE STATE THAT USED TO INVENT A LEADERBOARD: the scorer returns no VARIANT|SCORE line, which is
+    # every run the deterministic floor serves.
+    _ev = client.post("/api/v1/incubator/evolve", json={
+        "name": "w495 guard", "base_prompt": "Write a launch tagline for a bakery",
+        "domain": "general", "variants": 3, "iterations": 2})
+    assert _ev.status_code == 200, _ev.text
+    _b = _ev.json()
+    assert _b["generations_run"] == 2, _b["generations_run"]        # the page's `iterations` is honoured
+    # the COUNT, not merely a non-empty map: dropping one recorder left the other two calls in it, so
+    # "provenance exists" could not see the loss. 2 generations x (variants + scoring) + 1 analysis = 5.
+    assert sum((_b["ai_provenance"]["served_by"] or {}).values()) == 5, _b["ai_provenance"]
+    if _b["scored"] is False:
+        assert _b["winner"] is None, _b["winner"]
+        assert "NO WINNER" in _b["winner_basis"], _b["winner_basis"]
+        assert len(_b["leaderboard"]) == 3
+        for _row in _b["leaderboard"]:
+            assert _row["rank"] is None and _row["fitness_score"] is None, _row
+            assert _row["scored"] is False and "NOT SCORED" in _row["score_basis"], _row
+            # the two constant sentences are gone, not replaced by another constant
+            assert _row["strengths"] is None and _row["weaknesses"] is None, _row
+    else:
+        for _row in _b["leaderboard"]:
+            assert isinstance(_row["rank"], int) and _row["fitness_score"] is not None, _row
+    # the invented figures are absent from the PRODUCER, not merely unused by the page
+    assert "0.95 - (i - 1) * 0.05" not in _prod
+    assert "Strong analytical depth" not in _prod and "Could be more concise" not in _prod
+    # the analysis prompt cannot ask what makes a winner strongest when there is no winner
+    assert "if winner is None:" in _prod
+    assert "no variant was scored, so " in _prod
+    # and the composite charts nothing it did not score
+    _cp = client.post("/api/v1/reactor/composite",
+                      json={"subject": "a bakery in Leeds", "domain": "general", "variants": 3})
+    assert _cp.status_code == 200, _cp.text
+    _c = _cp.json()
+    assert isinstance(_c["evolution"]["variants_scored"], int)
+    if _c["evolution"]["scored"] is False:
+        assert _c["studio"] is None and _c["evolution"]["winner_fitness"] is None, _c["evolution"]
+        assert "NO CHART" in _c["studio_basis"] and "NO WINNER" in _c["studio_basis"], _c["studio_basis"]
+    # the page renders the state rather than a percentage
+    _inc = (app / "pages/developers/Incubator.tsx").read_text(encoding="utf-8")
+    assert "rank: number | null" in _inc and "fitness_score: number | null" in _inc
+    assert "No winner" in _inc and "winner_basis" in _inc
+    assert "Variants produced (unranked)" in _inc
+    # the percentage arm is GUARDED by `scored`, not merely present somewhere in the file
+    assert ("selectedT.result.scored && selectedT.result.winner "
+            "&& selectedT.result.winner.fitness_score != null") in _inc
+    assert 'aria-label="Number of generations"' in _inc   # the real control the backend honours
+    assert "        iterations: t.iterations," in _inc    # and the page SENDS what it collected
+    # the list card's own chip: "No winner" alone also matched the winner panel below it
+    assert "No winner \u00b7 not scored" in _inc
+
+    # ── FU-127 / S8.7: a switch nothing reads is not a parameter ───────────────────────────────────
+    _dr = (app / "pages/developers/DigitalReactor.tsx").read_text(encoding="utf-8")
+    for _dead in ("article_1095", "latency_stress", "byzantine", "inhouse_fabric",
+                  "Article 1095", "Latency Stress", "Byzantine Fault", "In-House Fabric"):
+        assert _dead not in _dr, _dead
+    assert "High-complexity run" not in _dr and "Real AI Domain Simulation" not in _dr
+    assert "Simulation complete" not in _dr
+    assert "Narrative complete" in _dr and "Nothing was executed" in _dr
+    assert "model: serving" in _dr                        # the one parameter the endpoint honours
+    assert "provenanceLine(servedBy, isExternal)" in _dr  # the export carries it
+    # nothing else in the app reads those keys either — the switches are gone, not relocated
+    for _dead in ("article_1095", "latency_stress", "inhouse_fabric"):
+        _hits = [p.name for p in list(app.rglob("*.tsx")) + list(app.rglob("*.ts"))
+                 if _dead in p.read_text(encoding="utf-8")]
+        assert not _hits, (_dead, _hits)
+    # the prompt no longer asks a model to report measurements of a run that did not happen
+    assert "processing time, data volume, quality score" not in _prod
+    assert "State no values: nothing has executed" in _prod
+
+    # ── FU-127 / S4.2: a count MAP is not a token ──────────────────────────────────────────────────
+    _api = (app / "lib/api.ts").read_text(encoding="utf-8")
+    assert "typeof servedBy !== 'string'" in _api
+    assert "return provenanceMapBadge(servedBy as Record<string, number>, isExternal);" in _api
+    _dt = (app / "components/DomainTool.tsx").read_text(encoding="utf-8")
+    assert "qaRaw?.qms_gate_passed !== undefined ? qaRaw : qaRaw?.quality" in _dt
+    assert "provenanceBadge(effectiveProv.served_by, provExternal)" in _dt
+    # the shape the badge must handle is what the engine really returns
+    _ex = client.post("/api/v1/reactor/experiment", json={
+        "subject": "a pricing model", "domain": "general", "scenarios": ["Raise 10%", "Hold"]})
+    assert _ex.status_code == 200, _ex.text
+    assert isinstance(_ex.json()["ai_provenance"]["served_by"], dict)
+    assert "qms_gate_passed" in (_ex.json()["quality_assurance"]["quality"] or {})
+
+    # ── FU-123 / S4.8: a design nobody entered is not the user's design ────────────────────────────
+    _rf = (root / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8")
+    assert '_declared_org = (_BY_ID.get(org_r["id"]) or {}).get("reconfigurable_params") or {}' in _rf
+    assert 'cfg = {k: v for k, v in _eff_cfg(org_r).items() if v != _declared_org.get(k)}' in _rf
+    assert "csuite_designed_by" in _rf and "the cascade's default roster" in _rf
+    _rfp = (app / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    assert "org-csuite-designed-by" in _rfp
+    assert "C-Suite engaged (your design)" not in _rfp   # never asserted unconditionally again
+    assert "_yours ? 'your design' : _by" in _rfp
+
+    # ── FU-123 / S4.9: a verdict over a constant is not a consensus ────────────────────────────────
+    assert "accepted_measured" in _rf and "claims_with_supplied_confidence" in _rf
+    assert "NOT ASSESSABLE - no claim carried a confidence" in _rf
+    # DRIVEN, not read from source: claims with no confidence cannot produce a verdict, and claims that
+    # carry one can. Reading the source could not see `_assessable = True` put back.
+    def _consensus(cfg):
+        _c = client.post("/api/v1/resources/compose", json={
+            "name": "w495 consensus", "resource_ids": ["truth_consensus"], "usage_area": "synthesis",
+            "config": {"truth_consensus": cfg}})
+        if _c.status_code not in (200, 201):
+            return None
+        _r2 = client.post(f"/api/v1/resources/compositions/{_c.json()['id']}/run",
+                          json={"objective": "w495 consensus"})
+        if _r2.status_code != 200:
+            return None
+        return next((r for r in (_r2.json().get("real_resource_runs") or [])
+                     if r.get("resource") == "truth_consensus"), None)
+    _text_only = _consensus({"claims": "halal supply is verified\nprice is optimal", "threshold": "0.85"})
+    assert _text_only is not None, "the consensus resource did not run"
+    assert _text_only["accepted"] is None, _text_only
+    assert _text_only["accepted_measured"] is False, _text_only
+    assert "NOT ASSESSABLE" in _text_only["consensus_basis"], _text_only
+    assert _text_only["claims_with_supplied_confidence"] == 0, _text_only
+    _supplied = _consensus({"claims": [{"claim": "halal supply is verified", "confidence": 0.95,
+                                        "reputation": 2},
+                                       {"claim": "price is optimal", "confidence": 0.4, "reputation": 1}],
+                            "threshold": "0.85"})
+    assert _supplied is not None, "the consensus resource did not run with supplied confidences"
+    assert _supplied["accepted_measured"] is True, _supplied
+    assert isinstance(_supplied["accepted"], int), _supplied
+    assert _supplied["claims_with_supplied_confidence"] == 2, _supplied
+
+    # ── FU-123 / S4.3: the format count is READ, not asserted ──────────────────────────────────────
+    assert "async def _omnimedia_live_sentence() -> str:" in _rf
+    _res = client.get("/api/v1/resources")
+    assert _res.status_code == 200
+    _omni = [r for r in _res.json()["resources"] if r["id"] == "omnimedia"]
+    assert _omni, "the omnimedia resource is missing"
+    _desc = _omni[0]["description"]
+    assert "10 LIVE" not in _desc, _desc
+    assert "live" in _desc.lower(), _desc
+
+    # ── FU-124: a file the platform never read is not in its knowledge base ────────────────────────
+    _ing = (root / "agentic_core/ingestion/api.py").read_text(encoding="utf-8")
+    # the lookup table is deleted, not bypassed. The BINDING is what is forbidden, not the name: the
+    # comment recording the removal may say what was removed (asserting the bare name made this guard
+    # fire on that comment — the fourth time in this round that a fix's own words tripped its guard).
+    assert not [l for l in _ing.splitlines() if l.strip().startswith("TRANSCRIPTION_MOCK")
+                and ("=" in l or ":" in l.split("#")[0])], "a transcript lookup table is bound again"
+    assert "def _pdf_docx_extractor(" in _ing
+    assert 'status = "NOT_EXTRACTED"' in _ing and 'status = "NOT_TRANSCRIBED"' in _ing
+    assert 'if status == "EXTRACTED" and extracted_text.strip():' in _ing
+    for _f in ("status:", "extraction_method:", "extraction_basis:", "in_knowledge_base:"):
+        assert _f in _ing, _f                      # declared on the model, or the key is stripped out
+    import io as _io
+    _up = client.post("/api/v1/ingest/",
+                      files={"file": ("recitation-lesson.mp3", _io.BytesIO(b"\x00\x01audio"), "audio/mpeg")})
+    assert _up.status_code == 200, _up.text
+    _ub = _up.json()
+    assert _ub.get("in_knowledge_base") is False, _ub
+    assert _ub.get("status") in ("NOT_TRANSCRIBED", "NOT_EXTRACTED"), _ub
+    assert "NOT TRANSCRIBED" in (_ub.get("extraction_basis") or ""), _ub
+    assert not (_ub.get("extracted_text") or "").strip(), _ub
+    # a rich document with no extractor installed is the same three-state answer, never a summary
+    _up2 = client.post("/api/v1/ingest/",
+                       files={"file": ("brief.pdf", _io.BytesIO(b"%PDF-1.4 not really"), "application/pdf")})
+    assert _up2.status_code == 200, _up2.text
+    _ub2 = _up2.json()
+    if _ub2.get("status") != "EXTRACTED":
+        assert _ub2.get("in_knowledge_base") is False, _ub2
+        assert "NOT EXTRACTED" in (_ub2.get("extraction_basis") or ""), _ub2
+        assert "Content extracted from rich document" not in (_ub2.get("extracted_text") or ""), _ub2
+    # synthesis skips what was never read rather than counting it as context
+    _syn = (root / "agentic_core/synthesis/api.py").read_text(encoding="utf-8")
+    assert 'if entry.get("status") != "EXTRACTED" or not text:' in _syn
+    assert "_last_context_skipped" in _syn
+    # and the career studio says which uploaded file it could not read
+    _car = (root / "agentic_core/api/career.py").read_text(encoding="utf-8")
+    assert '"unread_files": _unread,' in _car and '"unread_basis"' in _car
+    _as = (app / "components/employment/ApplicationStudio.tsx").read_text(encoding="utf-8")
+    assert "resp.data.unread_files || []" in _as and "resp.data.unread_basis || ''" in _as
+
+    # ── FU-125 / S7.3: "the output was non-empty" is not a success rate ────────────────────────────
+    from agentic_core.api import operational_excellence as _oex
+    _oex.record_outcome("w495_guard", "w495-probe-none", duration_ms=1, success=True, quality_gate=None)
+    _oex.record_outcome("w495_guard", "w495-probe-pass", duration_ms=1, success=True, quality_gate=True)
+    _oex.record_outcome("w495_guard", "w495-probe-fail", duration_ms=1, success=True, quality_gate=False)
+    _rows = {r["resource"]: r for r in _oex._rankings(_oex._load())}
+    # a run with no gate is counted as PRODUCED and not as an assessed success
+    assert _rows["w495-probe-none"]["success_rate"] is None, _rows["w495-probe-none"]
+    assert _rows["w495-probe-none"]["assessed_runs"] == 0, _rows["w495-probe-none"]
+    assert _rows["w495-probe-none"]["produced_rate"] == 1.0, _rows["w495-probe-none"]
+    assert _rows["w495-probe-pass"]["success_rate"] == 1.0, _rows["w495-probe-pass"]
+    assert _rows["w495-probe-fail"]["success_rate"] == 0.0, _rows["w495-probe-fail"]
+    _sm = client.get("/api/v1/operations/summary")
+    assert _sm.status_code == 200, _sm.text
+    _s = _sm.json()
+    for _k in ("assessed_runs", "unassessed_runs", "success_rate_basis", "produced_rate"):
+        assert _k in _s, _k
+    assert _s["unassessed_runs"] >= 1, _s
+    # every writer passes the gate EXPLICITLY — a default would silently re-create the old claim
+    import inspect
+    assert "quality_gate" in inspect.signature(_oex.record_outcome).parameters
+    # the DEFAULT itself: every leg above passes the gate explicitly, so a default of True was invisible
+    # to them and would have made any future caller that omits it claim an assessed pass.
+    assert inspect.signature(_oex.record_outcome).parameters["quality_gate"].default is None
+    for _f in ("agentic_core/api/deliverables.py", "agentic_core/api/board.py",
+               "agentic_core/api/swarm.py", "agentic_core/api/_ai_provenance.py",
+               "agentic_core/api/resource_fabric.py",
+               "agentic_core/api/transformation_orchestration.py"):
+        _src = (root / _f).read_text(encoding="utf-8")
+        if "record_outcome(" in _src:
+            assert "quality_gate=" in _src, _f
+    _oepage = (app / "pages/OperationalExcellence.tsx").read_text(encoding="utf-8")
+    assert "                  ? 'not assessed' : pct(summary.success_rate)} />" in _oepage
+    assert ">not assessed{typeof r.unassessed_runs === 'number'" in _oepage
+
+    # ── FU-126 / S10.3: an archived canon is not a live constitution ───────────────────────────────
+    _con = client.get("/api/v154/constitution/articles")
+    assert _con.status_code == 200, _con.text
+    _cb = _con.json()
+    assert isinstance(_cb, dict) and "canon_present" in _cb, _cb
+    if _cb["canon_present"] is False:
+        assert _cb["articles"] == [] and _cb["categories_available"] == [], _cb
+        assert "NO CONSTITUTION DOCUMENT IS PRESENT" in _cb["canon_basis"], _cb["canon_basis"]
+        assert _cb["what_governs_instead"], _cb
+    _isf = (root / "agentic_core/api/integration_surface.py").read_text(encoding="utf-8")
+    assert "Workstation is a self-evolving, constitutionally-governed digital organism." not in _isf
+    _cui = (app / "pages/governance/ConstitutionalUI.tsx").read_text(encoding="utf-8")
+    assert "canon-absent" in _cui
+    assert "canon.canon_present === false" in _cui   # the panel is driven by the fact, not hard-coded
+
+    # ── FU-126 / S13.1: a cycle a human clicks is not autonomy ─────────────────────────────────────
+    _se = (app / "pages/evolution/SovereignEvolution.tsx").read_text(encoding="utf-8")
+    assert "evolution-autonomy-basis" in _se
+    assert "it does not change the organism by itself" in _se
+    # the READ itself: the bare name also appears in the comment above it
+    assert "setAutoEvolve(typeof h?.auto_evolve === 'boolean' ? h.auto_evolve : null);" in _se
+    _hb = client.get("/api/v1/heartbeat/status")
+    assert _hb.status_code == 200 and "auto_evolve" in _hb.json(), _hb.text
+
+    # ── FU-129 / S8.6: an entry nothing reads is an observation, not an adjustment ─────────────────
+    _hm = client.post("/api/v1/organism/homeostasis", json={"reason": "w495_guard"})
+    assert _hm.status_code == 200, _hm.text
+    _h = _hm.json()
+    for _k in ("adjustments_effective_count", "observations_only_count", "adjustments_basis"):
+        assert _k in _h, _k
+    assert (_h["adjustments_effective_count"] + _h["observations_only_count"]
+            == len(_h["adjustments_made"])), _h
+    _os_src = (root / "agentic_core/api/organism_status.py").read_text(encoding="utf-8")
+    # the two entries nothing reads are marked ineffective AT THE APPEND, not filtered afterwards
+    for _act in ("elevated_monitoring", "defer_non_urgent"):
+        _i = _os_src.index(f'"action": "{_act}"')
+        assert '"effective": False' in _os_src[_i:_i + 600], _act
+    assert '"ai_recommendation_served_by": recommendation_served_by,' in _os_src
+    assert "ai_recommendation_served_by" in _h, _h   # and it reaches the response
+    _od = (app / "pages/organism/OrganismDashboard.tsx").read_text(encoding="utf-8")
+    assert "adjustments_effective_count" in _od and "observations_only_count" in _od
+    assert "provenance not recorded" in _od
+
+    # ── FU-129 / S8.2: a STORED genome is not an ENCODED one ───────────────────────────────────────
+    _gs = client.get("/api/v1/organism/status")
+    assert _gs.status_code == 200
+    _gen = ((_gs.json() or {}).get("systems") or {}).get("genome") or {}
+    assert "encoded_genomes" in _gen and "total_genomes" in _gen, _gen
+    assert _gen["encoded_genomes"] <= _gen["total_genomes"], _gen
+    assert _gen["encoded_basis"], _gen          # the count says what it counts
+    # the headline no longer calls every stored genome encoded
+    assert "encoded genomes" not in _od, "the dashboard headline reads 'N encoded genomes' again"
+
+    # ── FU-131 / S10.1: a vote on a stale proposal is not an advance ───────────────────────────────
+    from agentic_core.projects.api import Proposal as _Proposal, _save_proposal, _load as _load_project, _save as _save_project
+    _cre = client.post("/api/v1/projects/", json={
+        "title": "w495 guard project", "description": "guard", "realm": "technology", "domain": "product"})
+    assert _cre.status_code in (200, 201), _cre.text
+    _pid = _cre.json()["id"]
+    # the discriminating state: a proposal raised from 'concept' while the project has moved on
+    _p = _Proposal(project_id=_pid, project_title="w495 guard project",
+                   from_stage="concept", to_stage="prototype")
+    _save_proposal(_p)
+    _proj = _load_project(_pid)
+    _proj.stage = "commercialise"
+    _save_project(_proj)
+    _vote = client.post(f"/api/v1/projects/governance/proposals/{_p.id}/vote?approve=true")
+    assert _vote.status_code == 409, (_vote.status_code, _vote.text)
+    assert _load_project(_pid).stage == "commercialise"        # nothing moved
+    from agentic_core.projects.api import _load_proposal as _lp
+    assert _lp(_p.id).status == "pending"                      # and nothing was recorded as decided
+    # a vote whose project no longer exists is refused, not reported as approved
+    _p2 = _Proposal(project_id="does-not-exist", project_title="gone",
+                    from_stage="concept", to_stage="prototype")
+    _save_proposal(_p2)
+    _vote2 = client.post(f"/api/v1/projects/governance/proposals/{_p2.id}/vote?approve=true")
+    assert _vote2.status_code == 404, (_vote2.status_code, _vote2.text)
+    assert _lp(_p2.id).status == "pending"
+    _pj = (root / "agentic_core/projects/api.py").read_text(encoding="utf-8")
+    assert "except Exception:\n            pass\n        proposal.votes_for" not in _pj
+
+    # ── FU-131 / S12.6: a saved output carries what served it ──────────────────────────────────────
+    assert "served_by: Optional[str] = None" in _pj and "provenance_basis: str = \"\"" in _pj
+    _ph = (app / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8")
+    assert "provenanceLine(" in _ph          # the exported .md carries it, not only the screen
+    assert "provenanceBadge(" in _ph
+
+    # ── FU-133: a literal badge is not a phase, and a toggle nothing reads is not a mode ───────────
+    _cd = (app / "pages/enterprise/CapitalDashboard.tsx").read_text(encoding="utf-8")
+    assert "PHASE 3: EXTERNALLY INTEGRATED" not in _cd
+    # the READ itself, not the name in the comment beside it
+    assert "setAutoEconomy(typeof h?.auto_economy === 'boolean' ? h.auto_economy : null);" in _cd
+    assert "heartbeat/status" in _cd
+    assert "Semi-Autonomous mode: On" not in _cd

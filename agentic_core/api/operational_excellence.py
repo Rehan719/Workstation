@@ -49,9 +49,35 @@ def _save(rows: List[Dict[str, Any]]) -> None:
 
 def record_outcome(kind: str, resource: str, *, served_by: str = "native",
                    is_external: bool = False, duration_ms: int = 0, success: bool = True,
+                   quality_gate: Optional[bool] = None,
                    ref: Optional[str] = None, vsb_id: Optional[str] = None) -> Dict[str, Any]:
     """Append one real run outcome. Reusable in-process (the run paths call this best-effort)
-    and via the /record endpoint. Never raises into a caller — recording is non-critical."""
+    and via the /record endpoint. Never raises into a caller — recording is non-critical.
+
+    §7 (W495, FU-125, S7.3) — every caller passed `success=bool(output)`, i.e. "the run returned some
+    text". The deterministic floor ALWAYS returns text, so the recorded success could not come out
+    false: the Learning Loop showed "Success rate 100%" over 119 rows and every ranked resource at an
+    emerald 100%, and deliverables whose QMS gate said NOT ASSESSABLE counted as successes. Producing
+    output and passing a quality gate are different facts, so both are stored:
+
+      produced          — the run returned something (this is what `success` has always meant here)
+      success           — kept AS the call outcome, because it is what every existing reader means by
+                          it: model_health() scores a model on it, the orchestrator's
+                          _reorder_by_health routes on that score, and /api/v1/native-ai/status
+                          reports `mode_measured` from it. Re-pointing this field at a gate verdict
+                          (the first attempt at this fix) silently made every model attempt unassessed,
+                          so model health became unmeasurable and the status route read "unmeasured".
+                          A field's meaning belongs to its readers, not to the newest writer.
+      quality_gate      — True / False / None: what a gate said, or that none assessed it
+      quality_verdict   — the three-state QUALITY outcome: the gate's verdict, or None for
+                          "nothing assessed this run". THIS is what the Learning Loop's success RATE is
+                          computed from, because "the run returned text" is not a quality judgement.
+
+    A rate computed over rows whose `quality_verdict` is None is a rate over a population nothing
+    measured, so `summary()` and `_rankings()` count assessed rows only and say how many they left out.
+    """
+    _produced = bool(success)
+    _verdict = None if quality_gate is None else bool(quality_gate)
     outcome = {
         "id": f"op-{uuid.uuid4().hex[:8]}",
         "kind": kind,
@@ -59,7 +85,16 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
         "served_by": served_by,
         "is_external": bool(is_external),
         "duration_ms": int(duration_ms),
-        "success": bool(success),
+        "produced": _produced,
+        "quality_gate": _verdict,
+        # the CALL outcome — model_health() and the orchestrator's routing read this
+        "success": _produced,
+        # None means "no gate assessed this run" — never a pass, and never counted as one
+        "quality_verdict": _verdict,
+        "success_basis": ("the quality gate passed" if _verdict is True else
+                          "the quality gate failed" if _verdict is False else
+                          "NOT ASSESSED — no quality gate evaluated this run; it produced "
+                          + ("output" if _produced else "nothing")),
         "ref": ref,
         "vsb_id": vsb_id,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -78,9 +113,20 @@ def _rankings(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     for r in rows:
         key = r.get("resource", "unknown")
         a = agg.setdefault(key, {"resource": key, "kind": r.get("kind"), "runs": 0, "successes": 0,
+                                 "assessed": 0, "produced": 0,
                                  "total_ms": 0, "in_house": 0, "last_seen": ""})
         a["runs"] += 1
-        a["successes"] += 1 if r.get("success") else 0
+        # W495 (FU-125, S7.3) — the RATE is computed from the three-state quality verdict, never from
+        # "the run returned text": the floor always returns text, so the old rate could not come out
+        # below 1.0. A rate over rows nothing assessed is a rate over a population nothing measured,
+        # so only assessed rows enter it. Legacy rows carry no `quality_verdict` key and are therefore
+        # unassessed, which is the truth about them: no gate verdict was ever recorded.
+        _v = r.get("quality_verdict")
+        if _v is not None:
+            a["assessed"] += 1
+            a["successes"] += 1 if _v else 0
+        if r.get("produced", r.get("success")):
+            a["produced"] += 1
         a["total_ms"] += int(r.get("duration_ms", 0))
         a["in_house"] += 0 if r.get("is_external") else 1
         a["last_seen"] = max(a["last_seen"], r.get("created_at", ""))
@@ -89,13 +135,25 @@ def _rankings(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         runs = a["runs"] or 1
         out.append({
             "resource": a["resource"], "kind": a["kind"], "runs": a["runs"],
-            "success_rate": round(a["successes"] / runs, 3),
+            # None when no run of this resource was ever gate-assessed: the page must not draw a bar
+            "success_rate": (round(a["successes"] / a["assessed"], 3) if a["assessed"] else None),
+            "assessed_runs": a["assessed"],
+            "unassessed_runs": a["runs"] - a["assessed"],
+            "produced_rate": round(a["produced"] / runs, 3),
+            "success_basis": (
+                f"{a['successes']} of {a['assessed']} gate-assessed run(s) passed"
+                if a["assessed"] else
+                f"NOT ASSESSED — no quality gate evaluated any of this resource's {a['runs']} run(s); "
+                f"{a['produced']} produced output, which is not the same thing"),
             "avg_duration_ms": round(a["total_ms"] / runs),
             "in_house_rate": round(a["in_house"] / runs, 3),
             "last_seen": a["last_seen"],
         })
     # best operational performers first: success, then in-house, then speed, then volume
-    out.sort(key=lambda x: (x["success_rate"], x["in_house_rate"], -x["avg_duration_ms"], x["runs"]), reverse=True)
+    # W495 — success_rate is None for a resource nothing assessed; an unassessed resource sorts below
+    # every assessed one rather than crashing the comparison or ranking as a zero
+    out.sort(key=lambda x: (x["success_rate"] is not None, x["success_rate"] or 0.0,
+                            x["in_house_rate"], -x["avg_duration_ms"], x["runs"]), reverse=True)
     return out
 
 
@@ -346,12 +404,26 @@ async def model_health_view():
 async def summary():
     rows = [r for r in _load() if r.get("kind") != "model_attempt"]
     n = len(rows)
-    successes = sum(1 for r in rows if r.get("success"))
+    # W495 (FU-125, S7.3) — this divided "rows that returned text" by "all rows", which on the
+    # deterministic floor is 1.0 by construction and was shown as "Success rate 100%".
+    # the QUALITY verdict decides the rate; `success` here is still the call outcome (see
+    # record_outcome's docstring: its readers are model_health and the orchestrator's routing)
+    assessed = [r for r in rows if r.get("quality_verdict") is not None]
+    successes = sum(1 for r in assessed if r.get("quality_verdict"))
+    produced = sum(1 for r in rows if r.get("produced", r.get("success")))
     in_house = sum(1 for r in rows if not r.get("is_external"))
     ranks = _rankings(rows)
     return {
         "total_runs": n,
-        "success_rate": round(successes / n, 3) if n else 0.0,
+        "assessed_runs": len(assessed),
+        "unassessed_runs": n - len(assessed),
+        "success_rate": (round(successes / len(assessed), 3) if assessed else None),
+        "success_rate_basis": (
+            f"{successes} of {len(assessed)} gate-assessed run(s) passed"
+            if assessed else
+            f"NOT ASSESSED — no quality gate evaluated any of these {n} run(s). {produced} returned "
+            f"output, which the deterministic floor always does, so it is not a success measure."),
+        "produced_rate": round(produced / n, 3) if n else 0.0,
         "in_house_rate": round(in_house / n, 3) if n else 0.0,
         "distinct_resources": len(ranks),
         "top_resource": ranks[0]["resource"] if ranks else None,

@@ -581,7 +581,17 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
     steady_found = round(sum(act[r]["found"] for r in steady) / sn, 2) if sn else 0.0
     steady_net = round(steady_closed - steady_found, 2)
 
-    open_rows = [r for slot in s["schedule"] for r in slot["items"]]
+    # W495 — `open_rows` was the SCHEDULE's rows, i.e. only the rows riding a plan item. Five OWNER
+    # decision rows (FU-266 to FU-270) ride no item, so the register said 116 open while this said 111
+    # and nothing named the difference — a count that does not say what population it covers, which is
+    # the defect class W491 removed from eleven surfaces. Every open row is counted here; the rows the
+    # BUILD rate can close are counted apart, because a round cannot close a decision only the Owner
+    # can make, and a projection over rows the rate never measured is a figure its label denies.
+    _scheduled = [r for slot in s["schedule"] for r in slot["items"]]
+    _sched_ids = {r["id"] for r in _scheduled}
+    _all_open = [r for r in _rows(register) if r["status"] == "open"]
+    _unscheduled = [r for r in _all_open if r["id"] not in _sched_ids]
+    open_rows = _all_open
     open_items = _open_items(items)
     nxt = open_items[0] if open_items else None
     next_open = len(riding.get(nxt["slot"], [])) if nxt else 0
@@ -653,6 +663,10 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
                       "source": ("steady (one-time intakes excluded)" if sn >= MIN_OBSERVED
                                  else "the whole window")},
         "open_rows": len(open_rows),
+        # the population the build rate covers, and the one it does not
+        "open_rows_scheduled": len(_scheduled),
+        "open_rows_awaiting_owner": len(_unscheduled),
+        "awaiting_owner_ids": sorted(r["id"] for r in _unscheduled),
         "next_item": (None if not nxt else dict(
             {"slot": nxt["slot"], "title": nxt["title"], "open_rows": next_open},
             **_item_projection(nxt["slot"], next_open))),
@@ -661,12 +675,15 @@ def forecast(register: Any, prompt_text: str, window: int = FORECAST_WINDOW) -> 
                     for it in open_items],
         "items": {"done": sum(1 for i in items if i["done"]), "total": len(items),
                   "open": len(open_items)},
-        "all_rows_rounds_projected": _rounds_for(len(open_rows)),
+        # projected over the SCHEDULED rows only — the rate was measured on rows build rounds closed
+        "all_rows_rounds_projected": _rounds_for(len(_scheduled)),
         "basis": ("measured from the register: which round closed each row and which round found it. "
                   f"The rate is the mean over the last {n} round(s) that closed anything, ACROSS EVERY "
                   "ITEM - a class-wide batch closes rows on five or six items at once, so no single "
-                  "item moves at this rate. ALL OPEN ROWS uses it because it covers the same "
-                  "population; each ITEM is projected at the rate measured on its own rows, or not "
+                  "item moves at this rate. The projection covers the rows that RIDE A PLAN ITEM, "
+                  "which is the population the rate was measured over; rows awaiting an Owner decision "
+                  "are counted separately and are NOT projected, because no build round can close one. "
+                  "Each ITEM is projected at the rate measured on its own rows, or not "
                   "projected at all. A projection "
                   "is arithmetic over that mean, in ROUNDS — the register does not record how long a "
                   "round takes, and this is not a date, a deadline or a promise. Rounds that only "
@@ -699,8 +716,11 @@ def render_forecast(register: Any, prompt_text: str) -> str:
             out.append(f"  NEXT — {nx['slot']}: {nx['open_rows']} open rows "
                        + (f"\u2248 {nx['rounds_projected']} round(s) \u2014 {nx['basis']}."
                           if nx["rounds_projected"] is not None else f"\u2014 {nx['basis']}."))
-        out.append(f"  ALL OPEN ROWS: {f['open_rows']} \u2248 {f['all_rows_rounds_projected']} round(s) at the "
-                   f"overall rate, which covers every item's rows.")
+        out.append(f"  ALL OPEN ROWS: {f['open_rows']} — of which {f['open_rows_scheduled']} ride a plan "
+                   f"item \u2248 {f['all_rows_rounds_projected']} round(s) at the overall rate"
+                   + (f", and {f['open_rows_awaiting_owner']} await an OWNER decision "
+                      f"({', '.join(f['awaiting_owner_ids'])}) and are not projected."
+                      if f["open_rows_awaiting_owner"] else ", and none awaits an Owner decision."))
         rest = [x for x in f["by_item"] if x["open_rows"] > 0][:8]
         out.append("  BY ITEM (each at its OWN measured rate; \u2014 = too few rounds have closed one of its "
                    "rows to measure): "
@@ -779,6 +799,13 @@ def batches(register: Any, prompt_text: str, slot: Optional[str] = None) -> Dict
     rows = [r for x in s["schedule"] for r in x["items"] if not slot or r["slot"] == slot]
     by_id = {r["id"]: r for r in rows}
     raw = {r.get("id"): r for r in raw_items(register) if isinstance(r, dict)}
+    # W495 — the schedule lists only rows riding a plan item, so OWNER decision rows were absent from
+    # this report altogether: not batched, not unclassed, not counted. A batch report that silently
+    # omits a population cannot be checked for coverage. They are listed apart, and never batched: a
+    # mechanism cannot close a decision only the Owner can make.
+    _sched_ids = {r["id"] for r in rows}
+    awaiting_owner = sorted(r["id"] for r in _rows(register)
+                            if r["status"] == "open" and r["id"] not in _sched_ids) if not slot else []
 
     groups: Dict[str, Dict[str, Any]] = {}
     unclassed: List[str] = []
@@ -816,6 +843,8 @@ def batches(register: Any, prompt_text: str, slot: Optional[str] = None) -> Dict
         "batches": out,
         "unclassed": sorted(unclassed),
         "unclassed_count": len(unclassed),
+        "awaiting_owner": awaiting_owner,
+        "awaiting_owner_count": len(awaiting_owner),
         "rows": len(rows),
         "basis": ("grouped by the sweep class each row's own evidence cites (W477's ten). `closes` are "
                   "rows citing ONLY this class \u2014 one mechanism can finish them; `partial` cite others too, "
@@ -829,7 +858,9 @@ def render_batches(register: Any, prompt_text: str, slot: Optional[str] = None, 
     b = batches(register, prompt_text, slot)
     head = f"NEXT ROUNDS BY BATCH (generated \u2014 {b['rows']} open row(s)"
     head += f" on {slot}" if slot else ""
-    out = [head + f"; {b['unclassed_count']} cite no sweep class)"]
+    out = [head + f"; {b['unclassed_count']} cite no sweep class"
+                + (f"; {b['awaiting_owner_count']} await an OWNER decision and are not batchable"
+                   if b.get("awaiting_owner_count") else "") + ")"]
     if not b["batches"]:
         out.append("  No row in scope cites a sweep class, so no batch can be proposed from the evidence.")
     for x in b["batches"][:top]:

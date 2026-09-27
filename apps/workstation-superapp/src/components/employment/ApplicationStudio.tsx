@@ -83,6 +83,11 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   const [selectedOutputs, setSelectedOutputs] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<GeneratedDoc[] | null>(null);
+  // W495 (FU-124, S12.2) - uploads this platform could not read contribute NOTHING to these outputs.
+  // Before this round they arrived as invented text ("Primary topics identified: ..."), so the studio
+  // wrote an application "from" a CV nobody had read. The user is told which files were not used.
+  const [unread, setUnread] = useState<{ filename: string; status: string; basis: string }[]>([]);
+  const [unreadBasis, setUnreadBasis] = useState('');
   const [jobQuery, setJobQuery] = useState('');
   const [jobSearching, setJobSearching] = useState(false);
   const [jobResults, setJobResults] = useState<JobListing[] | null>(null);
@@ -188,6 +193,8 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
         output_types: selectedOutputs,
       });
       setResults(resp.data.results);
+      setUnread(resp.data.unread_files || []);
+      setUnreadBasis(resp.data.unread_basis || '');
     } catch (err) {
       alert('Generation failed.');
     } finally {
@@ -530,6 +537,21 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
 
       {results && (
         <div className="space-y-4 pt-6 border-t border-slate-800">
+          {unread.length > 0 && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30" data-testid="studio-unread-files">
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+                {unread.length} uploaded file(s) were NOT used
+              </p>
+              <p className="text-[10px] text-amber-400/80 mt-1 leading-relaxed">{unreadBasis}</p>
+              <ul className="mt-1 space-y-0.5">
+                {unread.map(u => (
+                  <li key={u.filename} className="text-[9px] text-slate-400" title={u.basis}>
+                    {u.filename} — {u.status.replace(/_/g, ' ').toLowerCase()}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {results.map(doc => (
             <div key={doc.output_id} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">

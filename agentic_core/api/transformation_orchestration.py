@@ -473,7 +473,10 @@ async def orchestrate(req: OrchestrateRequest):
                        duration_ms=int((time.time() - _t0) * 1000),
                        # W481 (refutation) — `validated` is three-state: a NOT ASSESSABLE run is not a failure.
                        # Only a run with a verdict is filed; otherwise nothing is claimed either way.
+                       # W495 (FU-125, S7.3) — `validated` is this run's verdict, so it is passed as
+                       # the gate rather than only as "did it return something"
                        success=bool(validation.get("validated")),
+                       quality_gate=validation.get("validated"),
                        ref=run["transformation_id"],
                        vsb_id=req.scope if req.scope != "workstation" else None)
     except _NotAssessable:

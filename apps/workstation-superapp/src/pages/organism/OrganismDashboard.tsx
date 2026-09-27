@@ -36,7 +36,9 @@ interface OrganismStatus {
     self_healing:  { overall_health: number | null; open_circuits: number; recent_events: unknown[] };
     metabolic:     { atp_ratio: number };
     circadian:     { cycle: string; is_peak_focus: boolean };
-    genome:        { total_genomes: number };
+    // W495 (FU-129, S8.2) - the count is of STORED genomes; encoded_genomes says how many were
+    // actually encoded by a model (zero on the deterministic floor, which cannot declare traits)
+    genome:        { total_genomes: number; encoded_genomes?: number; encoded_basis?: string };
     reconfiguration: { features_active: number; domains_enabled: number; rpm_limit: number; preferred_provider: string };
   };
   operations: {
@@ -172,10 +174,22 @@ export const OrganismDashboard: React.FC = () => {
     try {
       const res = await axios.post('/api/v1/organism/homeostasis', { reason: 'manual_dashboard' });
       const d = res.data;
-      const adj = d.adjustments_made?.length ?? 0;
+      // W495 (FU-129, S8.6) — this counted every entry in adjustments_made and called them all
+      // "adjustments made". Two of the four actions the endpoint can append (elevated_monitoring,
+      // defer_non_urgent) are recorded and read by NOTHING, so nothing was monitored or deferred. The
+      // two kinds are counted apart, and the AI text is labelled with what served it.
+      const eff = d.adjustments_effective_count ?? 0;
+      const obs = d.observations_only_count ?? 0;
+      const served = d.ai_recommendation_served_by;
       setHomeostasisResult(
-        `Homeostasis complete. ${adj} adjustment${adj !== 1 ? 's' : ''} made. Mode: ${d.organism_mode}.` +
-        (d.ai_recommendation ? `\n\n${d.ai_recommendation}` : '')
+        `Homeostasis ran. ${eff} change${eff !== 1 ? 's' : ''} made`
+        + (obs > 0 ? `, ${obs} observation${obs !== 1 ? 's' : ''} recorded that nothing acts on` : '')
+        + `. Mode: ${d.organism_mode}.`
+        + (d.adjustments_basis ? `\n${d.adjustments_basis}` : '')
+        + (d.ai_recommendation
+            ? `\n\n[${served ? `served by ${served}${d.ai_recommendation_is_external ? ' (external)' : ''}`
+                             : 'provenance not recorded'}]\n${d.ai_recommendation}`
+            : '')
       );
     } catch {
       setHomeostasisResult('Homeostasis call failed — check organism status.');
@@ -425,8 +439,22 @@ export const OrganismDashboard: React.FC = () => {
 
           {/* Genome */}
           <SystemCard icon={Dna} title="Genome" accent="border-white/10">
-            <div className="text-2xl font-black text-white">{systems.genome.total_genomes}</div>
-            <div className="text-xs font-mono text-white/30">encoded genomes</div>
+            {/* W495 (FU-129, S8.2) - this printed the number of JSON files in genomes/ under a label
+                claiming they were all ENCODED, while every stored genome carries encoded:false: the
+                deterministic floor cannot declare traits, and each record says its vector is not an
+                analysis of the entity. The count is labelled "stored" and the encoded number is stated
+                separately. (The old label is not quoted here - a guard forbids that phrase in this file.) */}
+            <div className="text-2xl font-black text-white" data-testid="genome-count">{systems.genome.total_genomes}</div>
+            <div className="text-xs font-mono text-white/30">
+              stored genomes
+              {typeof systems.genome.encoded_genomes === 'number'
+                ? ` · ${systems.genome.encoded_genomes} encoded` : ''}
+            </div>
+            {systems.genome.encoded_basis && systems.genome.encoded_genomes === 0 && systems.genome.total_genomes > 0 && (
+              <div className="text-[9px] text-amber-400/80 mt-1 leading-relaxed" data-testid="genome-encoded-basis">
+                {systems.genome.encoded_basis}
+              </div>
+            )}
           </SystemCard>
 
           {/* Reconfiguration */}

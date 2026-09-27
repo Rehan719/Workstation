@@ -3,17 +3,25 @@ import { provenanceBadge } from '../lib/api';
 import { Card } from '@workstation/ui';
 import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 
+// W495 (FU-125, S7.3) - `success` was recorded as "the run returned text", which the deterministic
+// floor always does, so every rate here was 1.0 by construction. The rate now covers gate-ASSESSED runs
+// only and is NULL when none were assessed; `produced` is the separate, weaker fact.
 interface Summary {
-  total_runs: number; success_rate: number; in_house_rate: number;
+  total_runs: number; success_rate: number | null; in_house_rate: number;
   distinct_resources: number; top_resource: string | null; kinds: string[];
+  assessed_runs?: number; unassessed_runs?: number;
+  success_rate_basis?: string; produced_rate?: number;
 }
 interface Ranking {
-  resource: string; kind: string; runs: number; success_rate: number;
+  resource: string; kind: string; runs: number; success_rate: number | null;
   avg_duration_ms: number; in_house_rate: number; last_seen: string;
+  assessed_runs?: number; unassessed_runs?: number;
+  produced_rate?: number; success_basis?: string;
 }
 interface Outcome {
   id: string; kind: string; resource: string; served_by: string;
-  is_external: boolean; duration_ms: number; success: boolean; created_at: string;
+  is_external: boolean; duration_ms: number; success: boolean | null; created_at: string;
+  produced?: boolean; quality_gate?: boolean | null; success_basis?: string;
 }
 interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms: number; deprioritised: boolean }
 
@@ -61,10 +69,22 @@ export const OperationalExcellence: React.FC = () => {
       {summary && (
         <div className="grid grid-cols-2 @[640px]:grid-cols-4 gap-3">
           <Stat icon={Gauge} label="Total runs" value={String(summary.total_runs)} />
-          <Stat icon={CheckCircle2} label="Success rate" value={pct(summary.success_rate)} />
+          {/* W495 (FU-125, S7.3) - this printed "100%" over a figure recorded as "the run returned
+              text", which the deterministic floor always does, so it could not come out lower. The rate
+              now covers gate-ASSESSED runs only and is null when none were assessed. */}
+          <Stat icon={CheckCircle2} label="Success rate (gate-assessed)"
+                value={summary.success_rate === null || summary.success_rate === undefined
+                  ? 'not assessed' : pct(summary.success_rate)} />
           <Stat icon={Cpu} label="In-house rate" value={pct(summary.in_house_rate)} />
           <Stat icon={TrendingUp} label="Resources" value={String(summary.distinct_resources)} />
         </div>
+      )}
+      {summary?.success_rate_basis && (
+        <p className="text-[10px] text-amber-400/80 leading-relaxed" data-testid="ops-success-basis">
+          {summary.success_rate_basis}
+          {typeof summary.produced_rate === 'number'
+            ? ` Output was produced on ${pct(summary.produced_rate)} of runs — a different measure.` : ''}
+        </p>
       )}
 
       {/* Rankings */}
@@ -85,7 +105,14 @@ export const OperationalExcellence: React.FC = () => {
                   <tr key={r.resource} className={`text-[11px] ${i % 2 ? 'bg-slate-950/40' : ''}`}>
                     <td className="p-3 font-bold text-white">{r.resource} <span className="text-[8px] text-slate-600 uppercase">{r.kind}</span></td>
                     <td className="p-3 text-slate-400">{r.runs}</td>
-                    <td className="p-3"><span className="text-emerald-400 font-bold">{pct(r.success_rate)}</span></td>
+                    {/* an emerald 100% for a resource nothing ever gate-assessed */}
+                    <td className="p-3">
+                      {r.success_rate === null || r.success_rate === undefined
+                        ? <span className="text-slate-500" title={r.success_basis}>not assessed{typeof r.unassessed_runs === 'number' ? ` (${r.unassessed_runs} run${r.unassessed_runs === 1 ? '' : 's'})` : ''}</span>
+                        : <span className="text-emerald-400 font-bold" title={r.success_basis}>{pct(r.success_rate)}
+                            <span className="text-[8px] text-slate-500 font-normal"> of {r.assessed_runs} assessed</span>
+                          </span>}
+                    </td>
                     <td className="p-3"><span className={r.in_house_rate >= 1 ? 'text-aura font-bold' : 'text-amber-400'}>{pct(r.in_house_rate)}</span></td>
                     <td className="p-3 text-slate-500">{r.avg_duration_ms}</td>
                   </tr>

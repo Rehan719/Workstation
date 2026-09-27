@@ -14,12 +14,45 @@ from agentic_core.ai.ceo.memory_v01 import memory_v01
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ingest", tags=["Content Ingestion"])
 
-# High-Fidelity Simulation Mapping (Filename pattern -> Transcribed Text)
-TRANSCRIPTION_MOCK = {
-    "recitation": "In the name of Allah, the Most Gracious, the Most Merciful. All praise is due to Allah, Lord of the worlds.",
-    "lecture": "The concept of divine justice in the Quran is intrinsically linked to the concept of Balance (Mizan).",
-    "interview": "Our research indicates that digital sovereignty is the primary challenge for AI-first organizations in 2025."
-}
+# §15.6 (W495, FU-124) — TRANSCRIPTION_MOCK IS DELETED.
+#
+# It was a filename-pattern lookup table whose output was registered as a file's `extracted_text` with
+# status INGESTED, written into memory_v01 (the store the AI CEO and the avatars read) and fed into every
+# synthesis prompt as "Knowledge base". Nothing was transcribed; no transcription engine exists in this
+# codebase. An upload whose NAME contained "recitation" was given this as its content:
+#
+#     "In the name of Allah, the Most Gracious, the Most Merciful. All praise is due to Allah, Lord of
+#      the worlds."
+#
+# — an English rendering of the Basmala and Al-Fatiha 1:2, attached to a user's file as its transcription.
+# Under this platform's faith-content rules scripture is served only from its recorded sources and is
+# never produced by this system, so a hard-coded rendering presented as a user's file content is the
+# worst shape this defect class takes. The other two patterns fabricated sentences about the Qur'an and
+# about "digital sovereignty" the same way.
+#
+# There is no replacement, because there is nothing here that transcribes audio. The honest states are
+# read, not-readable-here, or absent — see _extract_text below.
+
+# what a real extractor would be, when one is installed: checked at call time, never assumed
+def _pdf_docx_extractor(ext: str):
+    """Returns (name, callable) for a REAL extractor if one is importable, else (None, None).
+
+    Kept as a lookup so that installing pypdf or python-docx makes extraction work without another
+    truth fix — and so that its absence is reported rather than papered over."""
+    if ext == ".pdf":
+        for mod, fn in (("pypdf", "PdfReader"), ("PyPDF2", "PdfReader")):
+            try:
+                m = __import__(mod)
+                return f"{mod}.{fn}", getattr(m, fn)
+            except Exception:
+                continue
+    if ext == ".docx":
+        try:
+            import docx  # python-docx
+            return "python-docx", docx.Document
+        except Exception:
+            pass
+    return None, None
 
 class IngestedFile(BaseModel):
     file_id: str
@@ -29,6 +62,12 @@ class IngestedFile(BaseModel):
     timestamp: str
     extracted_text: str
     status: str
+    # W495 (FU-124) — the response MODEL strips undeclared keys, so the three fields that say which of
+    # the three states applied were dropped at the boundary and no surface could have read them. A
+    # qualifier that does not leave the process is not a qualifier.
+    extraction_method: Optional[str] = None
+    extraction_basis: str = ""
+    in_knowledge_base: bool = False
     category: Optional[str] = None
 
 class IngestionManager:
@@ -56,31 +95,62 @@ class IngestionManager:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # 2. Extract Text / Transcribe (Production Simulation)
+        # 2. Read the content, or say it was not read. §15.6 (W495, FU-124) — every branch but the
+        #    first invented text: a constant for pdf/docx, a filename lookup for audio, a sentence for
+        #    everything else. `extracted_text` now holds ONLY text this process actually read, and the
+        #    status says which of the three states applies.
         extracted_text = ""
-        filename_lower = file.filename.lower()
+        status = "NOT_EXTRACTED"
+        extraction_method = None
+        extraction_basis = ""
+        filename_lower = (file.filename or "").lower()
+        _ext = os.path.splitext(filename_lower)[1]
 
-        if any(ext in filename_lower for ext in [".txt", ".md"]):
-             with open(file_path, "r") as f:
-                 extracted_text = f.read()
-        elif any(ext in filename_lower for ext in [".pdf", ".docx"]):
-             # Simulation: High-fidelity placeholder for PDF/DOCX
-             extracted_text = f"Content extracted from rich document: {file.filename}. Primary topics identified: Digital Sovereign Intelligence, Autonomous Evolution."
-        elif any(ext in filename_lower for ext in [".mp3", ".mp4", ".wav"]):
-             # High-Fidelity Transcription Simulation
-             found = False
-             for pattern, text in TRANSCRIPTION_MOCK.items():
-                 if pattern in filename_lower:
-                     extracted_text = text
-                     found = True
-                     break
-             if not found:
-                 extracted_text = f"Automated transcription of {file.filename} complete. Identifying spiritual and technical semantics..."
+        if _ext in (".txt", ".md"):
+            try:
+                extracted_text = file_path.read_text(encoding="utf-8", errors="replace")
+                status, extraction_method = "EXTRACTED", "read as UTF-8 text from disk"
+                extraction_basis = "the file is plain text and was read in full"
+            except Exception as e:
+                extraction_basis = f"the file could not be read as text: {type(e).__name__}"
+        elif _ext in (".pdf", ".docx"):
+            _name, _reader = _pdf_docx_extractor(_ext)
+            if _reader is None:
+                extraction_basis = (f"NOT EXTRACTED — no {_ext[1:]} extractor is installed in this "
+                                    f"environment (pypdf / python-docx), so nothing in this document has "
+                                    f"been read. It is stored as an attachment only.")
+            else:
+                try:
+                    if _ext == ".pdf":
+                        extracted_text = "\n".join((pg.extract_text() or "")
+                                                   for pg in _reader(str(file_path)).pages)
+                    else:
+                        extracted_text = "\n".join(p.text for p in _reader(str(file_path)).paragraphs)
+                    extracted_text = extracted_text.strip()
+                    if extracted_text:
+                        status, extraction_method = "EXTRACTED", _name
+                        extraction_basis = f"text extracted by {_name}"
+                    else:
+                        extraction_basis = (f"NOT EXTRACTED — {_name} read the file and found no text "
+                                            f"(it may be a scan or an image-only document)")
+                except Exception as e:
+                    extraction_basis = (f"NOT EXTRACTED — {_name} failed on this file: "
+                                        f"{type(e).__name__}")
+        elif _ext in (".mp3", ".mp4", ".wav", ".m4a", ".ogg", ".flac", ".webm", ".mov"):
+            status = "NOT_TRANSCRIBED"
+            extraction_basis = ("NOT TRANSCRIBED — this platform has no transcription engine, so nothing "
+                                "in this recording has been heard or read. It is stored as an attachment "
+                                "only. (Before W495 a filename-pattern table supplied invented text here, "
+                                "including a scripture rendering for any file named 'recitation'.)")
         else:
-             extracted_text = f"Raw metadata for {file.filename} ingested."
+            extraction_basis = (f"NOT EXTRACTED — no reader is wired for '{_ext or 'this type'}'. The "
+                                f"file is stored as an attachment only.")
 
-        # 3. Add to Long-Term Memory (ChromaDB)
-        memory_v01.add_exchange(f"INGEST: {file.filename}", extracted_text)
+        # 3. Long-term memory takes only what was actually READ. Unextracted files used to enter
+        #    memory_v01 as their invented text, which the AI CEO and the avatars then recalled as
+        #    knowledge, and synthesis pasted into prompts as "Knowledge base".
+        if status == "EXTRACTED" and extracted_text.strip():
+            memory_v01.add_exchange(f"INGEST: {file.filename}", extracted_text)
 
         # 4. Registry Entry
         entry = {
@@ -89,8 +159,12 @@ class IngestionManager:
             "content_type": file.content_type,
             "size": file_path.stat().st_size,
             "timestamp": datetime.datetime.utcnow().isoformat(),
-            "extracted_text": extracted_text[:1000], # Preview
-            "status": "INGESTED",
+            "extracted_text": extracted_text[:1000], # Preview — empty unless it was really read
+            # W495 (FU-124) — this was the literal "INGESTED" for every upload, whatever had happened
+            "status": status,
+            "extraction_method": extraction_method,
+            "extraction_basis": extraction_basis,
+            "in_knowledge_base": bool(status == "EXTRACTED" and extracted_text.strip()),
             "category": category
         }
         self.registry.append(entry)

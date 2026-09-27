@@ -302,7 +302,14 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         record_outcome("deliverable", f"deliverable:{req.type}",
                        served_by=gen["ai_provenance"]["served_by"],
                        is_external=gen["ai_provenance"]["is_external"],
+                       # W495 (FU-125, S7.3) — `bool(content)` is "the floor returned text", which it
+                       # always does. The deliverable's own QMS verdict is the fact; when it is None the
+                       # run is recorded as NOT ASSESSED rather than as a success.
+                       # W495 (FU-125, S7.3) — `bool(content)` is "the floor returned text", which it
+                       # always does. The deliverable's own QMS verdict is the fact; when it is None the
+                       # run is recorded as NOT ASSESSED rather than as a success.
                        duration_ms=_dur, success=bool(gen["content"]),
+                       quality_gate=((gen.get("quality_assurance") or {}).get("quality") or {}).get("qms_gate_passed"),
                        ref=deliverable["id"], vsb_id=req.vsb_id)
     except Exception:
         pass

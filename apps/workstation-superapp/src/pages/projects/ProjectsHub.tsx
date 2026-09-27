@@ -4,6 +4,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { downloadExport } from '../../lib/download';
+// W495 (FU-131, S12.6) - the shared provenance helpers, so this page labels output the same way
+// every other surface does rather than inventing its own wording
+import { provenanceBadge, provenanceLine } from '../../lib/api';
 import {
   Plus, Play, ChevronRight, Download, Loader2, Trash2,
   Sparkles, FolderOpen, AlertCircle, CheckCircle2, Clock
@@ -20,6 +23,11 @@ interface ProjectOutput {
   created_at: number;
   download_url: string;
   preview: string;
+  // W495 (FU-131, S12.6) - the run's done frame reports these and the record dropped them, so a
+  // deterministic-floor scaffold was listed as an "AI deliverable" with nothing saying what composed it
+  served_by?: string | null;
+  is_external?: boolean;
+  provenance_basis?: string;
 }
 
 interface Project {
@@ -193,6 +201,9 @@ interface DetailPanelProps {
 
 const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }) => {
   const [streamText, setStreamText]   = useState('');
+  // W495 (FU-131, S12.6) - the done frame reports these and the page discarded them
+  const [streamServedBy, setStreamServedBy] = useState<string | null | undefined>(undefined);
+  const [streamIsExternal, setStreamIsExternal] = useState(false);
   const [streaming,  setStreaming]    = useState(false);
   const [error,      setError]        = useState('');
   const [advancing,  setAdvancing]    = useState(false);
@@ -202,7 +213,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
 
   const handleExportMarkdown = () => {
     if (!streamText) return;
-    const header = `# ${project.title}\n**Stage:** ${project.stage} | **Realm:** ${project.realm} | **Domain:** ${project.domain}\n**Generated:** ${new Date().toISOString().slice(0,10)}\n\n---\n\n`;
+    // W495 (FU-131, S12.6) - the exported file carried no provenance at all, so a floor-composed
+    // scaffold left the product as a document with a "Generated" date and nothing else. The label
+    // travels INTO the file (the W490 rule).
+    const prov = provenanceLine(streamServedBy, streamIsExternal);
+    const header = `# ${project.title}\n**Stage:** ${project.stage} | **Realm:** ${project.realm} | **Domain:** ${project.domain}\n**Generated:** ${new Date().toISOString().slice(0,10)}\n${prov}\n\n---\n\n`;
     const blob = new Blob([header + streamText], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -268,6 +283,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
           if (payload.token !== undefined) {
             setStreamText(prev => prev + String(payload.token).replace(/\\n/g, '\n'));
           } else if (payload.done) {
+            setStreamServedBy(payload.served_by ?? null);
+            setStreamIsExternal(Boolean(payload.is_external));
             // Reload full project to get outputs list updated
             const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);
             onUpdate(updated.data);
@@ -414,6 +431,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
                 ? <><div className="w-5 h-5 rounded-full border-2 border-aura animate-spin border-t-transparent" /><span className="text-[9px] font-black uppercase tracking-[0.3em] text-aura">Generating…</span></>
                 : <><Sparkles size={12} className="text-aura" /><span className="text-[9px] font-black uppercase tracking-[0.3em] text-aura">Latest output</span></>
               }
+              {/* W495 (FU-131, S12.6) - the stream's done frame carries served_by and is_external and
+                  this panel ignored both, so floor-composed text read as a generated deliverable. */}
+              {!streaming && streamServedBy !== undefined && (() => {
+                const b = provenanceBadge(streamServedBy, streamIsExternal);
+                return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`}
+                             title={b.title} data-testid="project-stream-provenance">{b.label}</span>;
+              })()}
             </div>
             {!streaming && streamText && (
               <button
@@ -445,6 +469,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
                 <div className="flex items-center gap-2">
                   <StagePill stage={out.stage} />
                   <span className="text-[8px] text-slate-600">{fmt(out.created_at)}</span>
+                  {/* W495 (FU-131, S12.6) - every saved output says what composed it */}
+                  {(() => {
+                    const b = provenanceBadge(out.served_by, out.is_external);
+                    return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`}
+                                 title={out.provenance_basis || b.title}
+                                 data-testid={`project-output-provenance-${out.output_id}`}>{b.label}</span>;
+                  })()}
                 </div>
                 {/* Ledger cluster 5 — a raw <a download> to /api/... skips the bearer layer and
                     401s under auth; downloadExport fetches through the patched window.fetch. */}
@@ -467,7 +498,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-8">
           <Sparkles size={20} className="text-slate-700" />
           <p className="text-[10px] text-slate-600 leading-relaxed max-w-[200px]">
-            Press <span className="text-aura font-black">Run {project.stage}</span> to generate your first AI deliverable for this project.
+            {/* W495 (FU-131, S12.6) - on the deterministic floor the run composes a structured
+                scaffold; the badge on each output says which it was. */}
+            Press <span className="text-aura font-black">Run {project.stage}</span> to produce this project's first stage document. Each output is labelled with what composed it.
           </p>
         </div>
       )}

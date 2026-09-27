@@ -3,18 +3,28 @@ import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@workstation/ui';
 import { Play, Square, Terminal, Zap, Bug, Share2, Download, Loader2, CheckCircle2 } from 'lucide-react';
+import { provenanceBadge, provenanceLine } from '../../lib/api';
 
 const DOMAINS = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 type Domain = typeof DOMAINS[number];
 
-interface Param { label: string; key: string; active: boolean }
+// W495 (FU-127, S8.7) — THE FOUR SIMULATION-PARAMETER TOGGLES ARE GONE. They were switches wired
+// to nothing: a repo-wide grep for their keys hit only this file. They were serialised into a prompt,
+// so no latency was injected, no fault was simulated, the fabric switch changed nothing when off, and
+// one of them named a clause with no referent anywhere in the codebase. This is the class W314 removed
+// with the fabricated post-quantum chip. Their names are deliberately not repeated here: a guard
+// forbids them in this file, and a comment quoting them would keep them alive in it.
+// In their place is the ONE parameter /api/v1/reactor/run really honours: which owned tier serves the
+// run (orchestrator.complete's `prefer` — native | local | auto).
+interface ServingChoice { label: string; value: string; note: string }
 
-const DEFAULT_PARAMS: Param[] = [
-  { label: 'Article 1095 Logic',   key: 'article_1095',   active: true  },
-  { label: 'Latency Stress Test',  key: 'latency_stress', active: false },
-  { label: 'Byzantine Fault Mode', key: 'byzantine',      active: false },
-  // W314 — the fabricated 'PQC Enforced' chip removed: no PQC implementation exists.
-  { label: 'In-House Fabric',      key: 'inhouse_fabric', active: true  },
+const SERVING: ServingChoice[] = [
+  { label: 'In-house first (auto)', value: 'auto',
+    note: 'the local owned model if it is up, else the deterministic floor' },
+  { label: 'Deterministic floor only', value: 'native',
+    note: 'the native floor composes the trace from your request — fast, free, reproducible, and not model analysis' },
+  { label: 'Local owned model', value: 'local',
+    note: 'requires the local model (Ollama); falls back to the floor if it cannot serve, and the badge will say so' },
 ];
 
 export const DigitalReactor: React.FC = () => {
@@ -25,15 +35,14 @@ export const DigitalReactor: React.FC = () => {
   const [domain,      setDomain]      = useState<Domain>(
     urlDomain && (DOMAINS as readonly string[]).includes(urlDomain) ? urlDomain : 'general'
   );
-  const [params,      setParams]      = useState<Param[]>(DEFAULT_PARAMS);
+  const [serving,     setServing]     = useState<string>('auto');
+  const [servedBy,    setServedBy]    = useState<string | null>(null);
+  const [isExternal,  setIsExternal]  = useState(false);
   const [log,         setLog]         = useState<string[]>([]);
   const [runId,       setRunId]       = useState('');
   const [durationMs,  setDurationMs]  = useState(0);
   const logRef  = useRef<HTMLDivElement>(null);
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
-
-  const toggleParam = (key: string) =>
-    setParams(ps => ps.map(p => p.key === key ? { ...p, active: !p.active } : p));
 
   const appendLog = useCallback((line: string) => {
     setLog(prev => {
@@ -43,28 +52,33 @@ export const DigitalReactor: React.FC = () => {
     });
   }, []);
 
+  const servingLabel = SERVING.find(s => s.value === serving)?.label ?? serving;
+  const servingNote = SERVING.find(s => s.value === serving)?.note ?? '';
+  const provBadge = isDone ? provenanceBadge(servedBy, isExternal) : null;
+
   const handleLaunch = async () => {
     if (isRunning) {
       // Stop
       readerRef.current?.cancel();
       setIsRunning(false);
-      appendLog('[SYSTEM] Simulation stopped by user.');
+      appendLog('[SYSTEM] Stopped by user - the trace is incomplete.');
       return;
     }
 
     setLog([]);
     setIsDone(false);
     setIsRunning(true);
-    appendLog(`[SYSTEM] Launching ${domain.toUpperCase()} reactor…`);
-
-    const activeParams: Record<string, boolean> = {};
-    params.filter(p => p.active).forEach(p => { activeParams[p.key] = true; });
+    setServedBy(null);
+    setIsExternal(false);
+    appendLog(`[SYSTEM] Asking the ${servingLabel.toLowerCase()} to narrate a ${domain.toUpperCase()} pipeline. Nothing is executed.`);
 
     try {
       const response = await fetch('/api/v1/reactor/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain, params: activeParams, label: `${domain} simulation` }),
+        // W495 (FU-127, S8.7) — `model` is the one parameter this endpoint honours (it reaches
+        // orchestrator.complete as `prefer`). `params` used to carry four switches nothing read.
+        body: JSON.stringify({ domain, params: {}, label: `${domain} narrative`, model: serving }),
       });
       if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
 
@@ -102,8 +116,14 @@ export const DigitalReactor: React.FC = () => {
             } else if (ev.done) {
               setRunId(ev.run_id ?? '');
               setDurationMs(ev.duration_ms ?? 0);
+              // W495 (FU-127, S8.7) — the done frame has carried served_by and is_external all along and
+              // the page dropped both, so nothing named what produced the trace; and "Simulation
+              // complete" described an execution that never happened. The duration is real — it is the
+              // time taken to WRITE the trace, which is what it now says.
+              setServedBy(ev.served_by ?? null);
+              setIsExternal(Boolean(ev.is_external));
               setIsDone(true);
-              appendLog(`\n[SYSTEM] ✓ Simulation complete — run ${ev.run_id} (${ev.duration_ms}ms)`);
+              appendLog(`\n[SYSTEM] Narrative complete — run ${ev.run_id}, written in ${ev.duration_ms}ms by ${ev.served_by ?? 'an unrecorded resource'}. Nothing was executed: no data entered a node, no latency was injected and no gate ran.`);
             } else if (ev.error) {
               appendLog(`[ERROR] ${ev.error}`);
             }
@@ -120,7 +140,13 @@ export const DigitalReactor: React.FC = () => {
   };
 
   const handleExport = () => {
-    const content = log.join('\n');
+    // W495 (FU-127, S8.7) — the exported trace left the platform with no provenance and no statement of
+    // what it is, so a file on disk read as a record of an executed simulation.
+    const content = provenanceLine(servedBy, isExternal)
+      + `> This is a ${servedBy === 'native' ? 'floor-composed' : 'model-written'} NARRATIVE of a ${domain} pipeline.`
+      + ` Nothing was executed: no data entered a node, no latency was injected, no fault was simulated`
+      + ` and no quality gate ran. Any figure under [METRICS] is a description of what would be measured.\n\n`
+      + log.join('\n');
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -130,14 +156,16 @@ export const DigitalReactor: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const activeParamCount = params.filter(p => p.active).length;
-
   return (
     <div className="space-y-8 pb-24">
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
           <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black mb-1 text-aura break-words uppercase tracking-tighter">Digital Reactor</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Real AI Domain Simulation · Layer A5</p>
+          {/* W495 (FU-127, S8.7) — the previous subtitle called this a real domain simulation, which
+              describes an execution. The page asks an owned tier to WRITE how a pipeline would behave;
+              nothing is simulated in the engineering sense. The old wording is not quoted here: a guard
+              forbids it in this file. */}
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Written pipeline trace · nothing executed · Layer A5</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap shrink-0">
           <select
@@ -163,33 +191,33 @@ export const DigitalReactor: React.FC = () => {
       <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8 min-h-[560px]">
         {/* Left: params */}
         <aside className="p-6 rounded-[2rem] bg-slate-900/40 border border-slate-800 flex flex-col gap-6">
-          <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Simulation Parameters</h3>
-          <div className="space-y-5 flex-1">
-            {params.map(p => (
-              <label
-                key={p.key}
-                className={`w-full flex justify-between items-center group cursor-pointer ${isRunning ? 'opacity-50 pointer-events-none' : ''}`}
+          <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Run Parameter</h3>
+          <div className="space-y-4 flex-1">
+            <div>
+              <label htmlFor="reactor-serving" className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-2">Which owned tier serves the run</label>
+              <select
+                id="reactor-serving"
+                value={serving}
+                onChange={e => setServing(e.target.value)}
+                disabled={isRunning}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-[10px] font-black uppercase text-white focus:outline-none focus:border-aura disabled:opacity-40"
               >
-                <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors text-left">{p.label}</span>
-                <input
-                  type="checkbox"
-                  checked={p.active}
-                  onChange={() => toggleParam(p.key)}
-                  disabled={isRunning}
-                  className="sr-only"
-                />
-                <div className={`w-9 h-5 rounded-full transition-all relative shrink-0 ml-4 ${p.active ? 'bg-aura' : 'bg-slate-800'}`} aria-hidden="true">
-                  <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${p.active ? 'left-5' : 'left-1'}`} />
-                </div>
-              </label>
-            ))}
+                {SERVING.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+              <p className="text-[9px] text-slate-500 mt-2 leading-relaxed">{servingNote}</p>
+            </div>
+            <p className="text-[9px] text-slate-500 leading-relaxed border-t border-slate-800 pt-4">
+              This is the only parameter the run honours. Four switches that used to sit here were wired
+              to nothing — no code anywhere read them — and have been removed rather than left to imply
+              behaviour that does not exist.
+            </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 flex items-center gap-3">
-            <Bug size={18} className={activeParamCount > 2 ? 'text-yellow-500' : 'text-emerald-500'} />
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 flex items-start gap-3">
+            <Bug size={18} className="text-slate-500 shrink-0 mt-0.5" />
             <p className="text-[9px] font-bold text-slate-400 leading-relaxed">
-              {activeParamCount} parameter{activeParamCount !== 1 ? 's' : ''} active.{' '}
-              {activeParamCount > 2 ? 'High-complexity run.' : 'Standard configuration.'}
+              The run produces a WRITTEN TRACE of how a {domain} pipeline would behave. No data enters a
+              node, no latency is injected, no fault is simulated and no quality gate runs.
             </p>
           </div>
         </aside>
@@ -200,7 +228,14 @@ export const DigitalReactor: React.FC = () => {
             <Terminal size={12} className="text-aura" />
             <span className="text-[9px] font-black uppercase tracking-widest text-aura">Reactor Console</span>
             {isRunning && <Loader2 size={10} className="text-aura animate-spin ml-auto" />}
-            {isDone && <CheckCircle2 size={10} className="text-emerald-500 ml-auto" />}
+            {isDone && (
+              <span className="ml-auto flex items-center gap-2">
+                {provBadge && (
+                  <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${provBadge.cls}`} title={provBadge.title}>{provBadge.label}</span>
+                )}
+                <CheckCircle2 size={10} className="text-emerald-500" aria-label="the trace finished streaming" />
+              </span>
+            )}
           </div>
 
           <div

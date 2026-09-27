@@ -123,7 +123,10 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) 
             record_outcome("ai_call", f"agent:{agent}", served_by=res.get("served_by", "native"),
                            is_external=bool(res.get("is_external")),
                            duration_ms=int((time.time() - _t0) * 1000),
-                           success=bool((res.get("output") or "").strip()))
+                           # W495 (FU-125, S7.3) — no gate assesses a board directive, so the run is
+                           # recorded as having produced output, with no verdict claimed
+                           success=bool((res.get("output") or "").strip()),
+                           quality_gate=None)
         except Exception:
             pass
         return res.get("output", "")

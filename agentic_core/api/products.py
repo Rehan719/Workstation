@@ -87,7 +87,14 @@ def _reactor_prompt(domain: str, params: dict, label: str) -> str:
         "2. PROCESS — describe each processing node (what it does, what it produces)\n"
         "3. VALIDATE — describe quality checks and validation gates\n"
         "4. OUTPUT — describe the final artefact produced\n"
-        "5. METRICS — summarise: processing time, data volume, quality score\n\n"
+        # W495 (FU-127, S8.7) - this used to ask the model to report a duration, a data volume and a
+        # quality figure for the run (the exact phrase is not quoted here: a guard forbids it in this
+        # file, and a comment carrying it would keep the old request alive). Nothing
+        # executes here: no data enters, no node runs and no gate is applied, so any figure a model put
+        # under [METRICS] was invented, and the page coloured it emerald as measured output. The section
+        # now asks what WOULD be measured and how - which is a real answer to a design question.
+        "5. METRICS - name the metrics a real implementation of this pipeline would report and HOW each "
+        "would be measured. State no values: nothing has executed, so there is nothing to measure yet.\n\n"
         "Format each section with [INIT], [PROCESS], [VALIDATE], [OUTPUT], [METRICS] headers. Be specific and technical."
     )
 
@@ -279,26 +286,44 @@ class EvolveTournamentRequest(BaseModel):
 
 class TournamentVariant(BaseModel):
     variant_id: str
-    rank: int
-    fitness_score: float
+    # §7 (W495, FU-127, S8.0) - `rank` and `fitness_score` were HARD-CODED when the scorer produced no
+    # VARIANT_N|SCORE lines, which is every run on the deterministic floor: 0.95, 0.90, 0.85 by list
+    # position, with the same strength and weakness sentence on every variant, over three responses that
+    # were byte-identical. A ranking of copies is not a tournament, and a score nothing computed is not
+    # a fitness. All three are three-state now, and `scored` says which.
+    rank: Optional[int] = None
+    fitness_score: Optional[float] = None
     response: str
-    strengths: str
-    weaknesses: str
+    strengths: Optional[str] = None
+    weaknesses: Optional[str] = None
+    scored: bool = False
+    score_basis: str = ""
 
 
 class TournamentResult(BaseModel):
     tournament_id: str
     name: str
     variants_evaluated: int
-    winner: TournamentVariant
+    # §7 (W495, FU-127, S8.0) — there is no winner when nothing scored the variants. `winner` used to be
+    # leaderboard[0], i.e. the FIRST variant by list position, relabelled "Variant 1" after the sort — so
+    # a page showed "Winner V1 · 95%" for a run in which no variant was evaluated and all three variants
+    # were the same text.
+    winner: Optional[TournamentVariant] = None
+    winner_basis: str = ""
+    scored: bool = False
     leaderboard: list[TournamentVariant]
     analysis: str
+    # W495 (FU-127, S8.0) — the tournament was the one §7 engine whose result named no serving resource,
+    # so a page could not say who produced the variants or (when it happens) scored them. Every sibling
+    # engine in this module already carries this shape.
+    ai_provenance: dict = {}
     completed_at: float
     generations_run: int = 1   # §7 Reactor — Temperature/Mutation/Iteration generations actually run
 
 
 async def _tournament_generation(base_prompt: str, domain: str, n: int, fitness_criteria: str,
-                                 temperature: float, tournament_id: str, gen: int) -> list[TournamentVariant]:
+                                 temperature: float, tournament_id: str, gen: int,
+                                 record=None) -> list[TournamentVariant]:
     """One generation of the evolution tournament: generate N variants at the given diversity
     `temperature`, score them, and return the ranked leaderboard. Pure per-generation step."""
     variations_prompt = (
@@ -311,7 +336,10 @@ async def _tournament_generation(base_prompt: str, domain: str, n: int, fitness_
         f"Label each with VARIANT_1:, VARIANT_2:, etc. and provide a complete, substantive response for each.\n\n"
         f"Produce all {n} variants now."
     )
-    raw_variations = await gateway.query(variations_prompt, agent="incubator")
+    _var_meta = await gateway.query_meta(variations_prompt, agent="incubator", augment=False)
+    raw_variations = _var_meta.get("output", "") or ""
+    if record is not None:
+        record(_var_meta)
 
     score_prompt = (
         f"You are a Fitness Evaluator for an AI Evolution Engine.\n"
@@ -325,7 +353,10 @@ async def _tournament_generation(base_prompt: str, domain: str, n: int, fitness_
         f"Then add a final line: WINNER|VARIANT_N|one sentence explaining why\n\n"
         f"Provide ONLY the formatted lines, no other text."
     )
-    scores_raw = await gateway.query(score_prompt, agent="incubator")
+    _score_meta = await gateway.query_meta(score_prompt, agent="incubator", augment=False)
+    scores_raw = _score_meta.get("output", "") or ""
+    if record is not None:
+        record(_score_meta)
 
     leaderboard: list[TournamentVariant] = []
     lines = [l.strip() for l in scores_raw.splitlines() if l.strip() and "|" in l]
@@ -355,22 +386,41 @@ async def _tournament_generation(base_prompt: str, domain: str, n: int, fitness_
                     response=variant_texts.get(idx, "")[:800],
                     strengths=parts[2].strip(),
                     weaknesses=parts[3].strip(),
+                    scored=True,
+                    score_basis="scored by the serving resource, which returned VARIANT|SCORE lines",
                 ))
             except (ValueError, IndexError):
                 pass
 
     if not leaderboard:
+        # §7 (W495, FU-127, S8.0) - NOTHING SCORED THESE. The previous fallback invented
+        # 0.95 / 0.90 / 0.85 by list position and gave every variant the same strength and weakness
+        # sentence, over responses that on the floor are the SAME text. The variants are returned
+        # unscored and unranked, each saying why, so no surface can draw a leaderboard from them.
+        _identical = len({(variant_texts.get(i) or raw_variations[:400])[:400]
+                          for i in range(1, n + 1)}) <= 1 and n > 1
+        _basis = ("NOT SCORED - the serving resource returned no VARIANT|SCORE lines, so no variant was "
+                  "evaluated. "
+                  + ("All variants came back as the same text, so there is nothing to rank either. "
+                     if _identical else "")
+                  + "A fitness figure here would be a number nothing computed.")
         for i in range(1, n + 1):
             leaderboard.append(TournamentVariant(
                 variant_id=f"v-{tournament_id}-g{gen}-{i}",
-                rank=i,
-                fitness_score=round(0.95 - (i - 1) * 0.05, 2),
+                rank=None,
+                fitness_score=None,
                 response=variant_texts.get(i, raw_variations[:400]),
-                strengths="Strong analytical depth",
-                weaknesses="Could be more concise",
+                strengths=None,
+                weaknesses=None,
+                scored=False,
+                score_basis=_basis,
             ))
+        return leaderboard
 
-    leaderboard.sort(key=lambda v: v.fitness_score, reverse=True)
+    # only a scored leaderboard is ordered and ranked: sorting on None would crash, and ranking
+    # unscored variants would re-introduce the position-as-fitness defect
+    leaderboard.sort(key=lambda v: (v.fitness_score if v.fitness_score is not None else -1.0),
+                     reverse=True)
     for rank, v in enumerate(leaderboard, 1):
         v.rank = rank
     return leaderboard
@@ -386,35 +436,69 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
     temperature = min(max(req.temperature, 0.0), 1.0)
     mutation = min(max(req.mutation, 0.0), 1.0)
     tournament_id = uuid.uuid4().hex[:10]
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    def _record(meta: dict) -> None:
+        sb = meta.get("served_by", "native")
+        prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
+        prov["any_external"] = prov["any_external"] or bool(meta.get("is_external"))
 
     base = req.base_prompt
     leaderboard: list[TournamentVariant] = []
     winner: TournamentVariant | None = None
     for gen in range(1, gens + 1):
         leaderboard = await _tournament_generation(base, req.domain, n, req.fitness_criteria,
-                                                   temperature, tournament_id, gen)
-        winner = leaderboard[0]
-        # Mutation: the next generation evolves the winning approach (mutation rate shapes how far)
-        if gen < gens:
+                                                   temperature, tournament_id, gen, record=_record)
+        # W495 (FU-127, S8.0) - a winner exists only where a score does. leaderboard[0] on an unscored
+        # run is the first variant by list position, which is the defect rather than the winner.
+        _scored_rows = [v for v in leaderboard if v.scored and v.fitness_score is not None]
+        winner = _scored_rows[0] if _scored_rows else None
+        # Mutation: the next generation evolves the winning approach (mutation rate shapes how far).
+        # W495 — with nothing scored there is no winning approach to evolve, and interpolating an unscored
+        # variant's None strengths/weaknesses would put the word "None" into the next generation's prompt.
+        if gen < gens and winner is None:
+            base = (f"No variant was scored in the previous generation, so no winning approach was "
+                    f"identified. Produce a fresh attempt at the original task: {req.base_prompt}")
+        elif gen < gens:
             base = (f"Evolve and improve this winning approach with mutation rate {mutation:.2f} "
                     f"(0 = refine carefully, 1 = reimagine boldly), keeping its strengths "
                     f"('{winner.strengths}') and fixing its weaknesses ('{winner.weaknesses}'):\n"
                     f"{winner.response[:600]}\n\nOriginal task: {req.base_prompt}")
 
-    analysis_prompt = (
-        f"Summarise in 3 sentences this '{req.name}' evolution tournament (ran {gens} generation(s) at "
-        f"temperature {temperature:.2f}, mutation {mutation:.2f}): what makes the winner strongest, and what "
-        f"should the next generation improve? Domain: {req.domain}."
-    )
-    analysis = await gateway.query(analysis_prompt, agent="incubator")
+    # W495 (FU-127, S8.0) — the prompt used to ask "what makes the winner strongest" on every run,
+    # including the runs where nothing scored a variant. Asking that question of an unscored tournament
+    # is how a summary comes back describing a winner that was never chosen.
+    if winner is None:
+        analysis_prompt = (
+            f"Summarise in 3 sentences this '{req.name}' evolution tournament (ran {gens} generation(s) at "
+            f"temperature {temperature:.2f}, mutation {mutation:.2f}). IMPORTANT: no variant was scored, so "
+            f"there is NO winner — do not name one or describe one as strongest. Say what was produced and "
+            f"what would have to happen for a fitness score to exist. Domain: {req.domain}."
+        )
+    else:
+        analysis_prompt = (
+            f"Summarise in 3 sentences this '{req.name}' evolution tournament (ran {gens} generation(s) at "
+            f"temperature {temperature:.2f}, mutation {mutation:.2f}): what makes the winner strongest, and what "
+            f"should the next generation improve? Domain: {req.domain}."
+        )
+    _an_meta = await gateway.query_meta(analysis_prompt, agent="incubator", augment=False)
+    analysis = _an_meta.get("output", "") or ""
+    _record(_an_meta)
 
     return TournamentResult(
         tournament_id=tournament_id,
         name=req.name,
         variants_evaluated=n,
         winner=winner,
+        scored=bool(winner is not None),
+        winner_basis=(
+            "the highest fitness score returned by the serving resource" if winner is not None else
+            "NO WINNER — the serving resource scored no variant, so none was evaluated and none is "
+            "ranked. On the deterministic floor the scorer emits no VARIANT|SCORE lines and the variants "
+            "come back as the same text."),
         leaderboard=leaderboard,
         analysis=analysis,
+        ai_provenance=prov,
         completed_at=time.time(),
         generations_run=gens,
     )
@@ -833,8 +917,17 @@ async def run_reactor_composite(subject: str, domain: str = "general", variants:
     exp = await reactor_experiment(ExperimentRequest(
         subject=subject, domain=domain, scenarios=scen, fitness_criteria=fitness_criteria))
     # 3 — Studio: 2D analytics + insight over the REAL evolution fitness leaderboard (genuine data)
+    # §7 (W495, FU-127, S8.0) — the comment above calls this "the REAL evolution fitness leaderboard
+    # (genuine data)". Those figures were HARD-CODED (0.95 / 0.90 / 0.85 by list position) on every
+    # floor-served run, so the chart plotted list ORDER as measured fitness. Only SCORED variants are
+    # plotted; an unscored tournament produces no chart and says why. (It would also now raise:
+    # float(None), once the invented fallback was removed.)
+    _scored_variants = [v for v in (evo.leaderboard or []) if v.scored and v.fitness_score is not None]
     pts = [StudioPoint(label=(v.variant_id or f"rank{v.rank}")[:24], value=round(float(v.fitness_score), 4))
-           for v in (evo.leaderboard or [])]
+           for v in _scored_variants]
+    _chart_basis = ("" if pts else
+                    f"NO CHART — none of the {len(evo.leaderboard or [])} variant(s) was scored, so there "
+                    f"is no fitness to plot. " + (evo.winner_basis or ""))
     studio = None
     if pts:
         studio = await reactor_studio(StudioRequest(
@@ -852,10 +945,17 @@ async def run_reactor_composite(subject: str, domain: str = "general", variants:
         "evolution": {"generations_run": evo.generations_run, "variants_evaluated": evo.variants_evaluated,
                       "winner": (evo.winner.response[:300] if evo.winner else None),
                       "winner_fitness": (evo.winner.fitness_score if evo.winner else None),
+                      # W495 (FU-127, S8.0) — the composite reported a winner_fitness and said nothing
+                      # about whether anything had scored it
+                      "scored": bool(evo.winner is not None),
+                      "winner_basis": evo.winner_basis,
+                      "variants_scored": len(_scored_variants),
                       "analysis": (evo.analysis or "")[:300]},
         "experimentation": {"scenarios_run": exp.scenarios_run, "comparison": (exp.comparison or "")[:300]},
         "studio": ({"dimensions": studio.dimensions, "analytics": studio.analytics,
                     "insight": (studio.insight or "")[:300]} if studio else None),
+        # W495 (FU-127, S8.0) - why there is no chart, when there is none
+        "studio_basis": _chart_basis,
         "run_id": uuid.uuid4().hex[:12],
     }
 

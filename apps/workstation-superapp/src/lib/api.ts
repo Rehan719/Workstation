@@ -62,7 +62,20 @@ export function errorMessage(e: unknown): string {
 // W439 — the deterministic floor must never wear the green in-house badge: it composes structured
 // output from the REQUEST (not model inference), and eight separate renderers were labelling it
 // "in-house · native" in green. One helper, every badge; the class dies here.
-export const provenanceBadge = (servedBy: string | null | undefined, isExternal?: boolean) => {
+// W495 (FU-127, S4.2) - the two badge helpers now call each other (a map reaching the string helper is
+// routed to the map one), so both need a declared return type: TypeScript cannot infer through the cycle.
+export type ProvBadge = { label: string; cls: string; title?: string };
+
+export const provenanceBadge = (servedBy: string | Record<string, number> | null | undefined,
+                                isExternal?: boolean): ProvBadge => {
+  // W495 (FU-127, S4.2) - a COUNT MAP reached here and fell through every string arm to the emerald
+  // `in-house · ${sb}` branch, which rendered as "in-house · [object Object]" over output the
+  // deterministic floor served (served_by {native: 4}). The parameter was typed `string`, so nothing
+  // failed; TypeScript did not see it because the caller held `any`. Any non-string is routed to the
+  // map helper, which counts the keys — so no shape can reach the emerald arm by falling through.
+  if (servedBy !== null && servedBy !== undefined && typeof servedBy !== 'string') {
+    return provenanceMapBadge(servedBy as Record<string, number>, isExternal);
+  }
   // W490 (refutation) — THE THIRD STATE. `servedBy ?? 'native'` turned "no call is recorded as having
   // served this" into the positive claim "structured floor — not model analysis". Two surfaces this
   // round added hit exactly that: a transformation assessment whose call RAISED (served_by: null), and
@@ -82,6 +95,18 @@ export const provenanceBadge = (servedBy: string | null | undefined, isExternal?
   // over someone else's words — and it contradicted the exported file, which now says so correctly.
   if (sb === 'verbatim-ingest') return { label: 'supplied verbatim by the caller', cls: 'bg-slate-800 text-slate-400',
     title: 'the platform did not compose this text and records no origin for it' };
+  // W495 (FU-123, S11.3) - the emerald `in-house · <sb>` arm caught every token that is not 'native',
+  // 'template', 'verbatim-ingest' or external - and the backend writes several NON-MODEL PLACEHOLDERS
+  // into served_by: 'real-engine' (a fabric run that completed with no AI call recorded), 'none' (a
+  // failed board call), 'unavailable' (a failed business-plan Chief) and '' (an ensemble whose members
+  // reported none). Each rendered as the in-house MODEL badge this helper exists to withhold from floor
+  // or failed output, on every surface that calls it. They are named for what they are.
+  if (sb === 'real-engine') return { label: 'engine ran · no model call recorded', cls: 'bg-slate-800 text-slate-400',
+    title: 'a resource ran to completion and recorded no AI call, so nothing here is model output' };
+  if (sb === 'none') return { label: 'no call served this', cls: 'bg-slate-800 text-slate-400',
+    title: 'the run recorded no serving call at all - neither a model nor the floor is claimed' };
+  if (sb === 'unavailable') return { label: 'the serving call FAILED', cls: 'bg-vital/20 text-vital',
+    title: 'the resource that should have served this raised, so there is no output to attribute' };
   return { label: `in-house · ${sb}`, cls: 'bg-emerald-500/20 text-emerald-400', title: undefined };
 };
 
@@ -187,7 +212,7 @@ export const provenanceMapFromTrace = (steps: Array<{ served_by?: string | null 
   for (const s of steps ?? []) { const k = s?.served_by || 'native'; m[k] = (m[k] || 0) + 1; }
   return m;
 };
-export const provenanceMapBadge = (servedBy: Record<string, number> | null | undefined, anyExternal?: boolean) => {
+export const provenanceMapBadge = (servedBy: Record<string, number> | null | undefined, anyExternal?: boolean): ProvBadge => {
   const keys = Object.entries(servedBy ?? {}).filter(([, n]) => (n || 0) > 0).map(([k]) => k);
   // refuter F4 — an external run still lists the owned model in its map; 'via' names only the accelerant
   if (anyExternal) return { label: `via ${keys.filter(k => k !== 'native' && !k.startsWith('ollama:')).join(' · ') || 'external'}`, cls: 'bg-amber-500/20 text-amber-400',
@@ -196,9 +221,19 @@ export const provenanceMapBadge = (servedBy: Record<string, number> | null | und
   // returned the floor's positive claim for it (the same shape W485 fixed in provenanceLine).
   if (!keys.length) return provenanceBadge(null);
   if (keys.every(k => k === 'native')) return provenanceBadge('native');
-  const models = keys.filter(k => k !== 'native');
+  // W495 (FU-123, S11.3) - the map variant had the same defect as the single-token one: every key that
+  // is not 'native' was counted as a MODEL, so the backend's non-model placeholders ('real-engine',
+  // 'none', 'unavailable', '') inflated modelCalls and could carry the map to the emerald in-house arm.
+  // They are counted apart and named, never as model calls.
+  const NON_MODEL = new Set(['native', 'template', 'real-engine', 'none', 'unavailable', '']);
+  const models = keys.filter(k => !NON_MODEL.has(k));
+  const placeholders = keys.filter(k => k !== 'native' && NON_MODEL.has(k));
   const floorCalls = servedBy?.['native'] || 0;
   const modelCalls = models.reduce((n, k) => n + (servedBy?.[k] || 0), 0);
+  const placeholderCalls = placeholders.reduce((n, k) => n + (servedBy?.[k] || 0), 0);
+  if (!models.length) return { label: `no model call recorded${placeholderCalls ? ` · ${placeholders.join(' · ')}` : ''}`,
+    cls: 'bg-slate-800 text-slate-400',
+    title: `this run records ${floorCalls} floor call(s)${placeholderCalls ? ` and ${placeholderCalls} call(s) that served nothing (${placeholders.join(', ')})` : ''} and no model call, so nothing here is model output` };
   // W479 (refutation 3) — the counts decide: a run the floor served mostly is not an in-house model run,
   // and the tooltip states the split instead of assuming the model served most calls
   if (floorCalls >= modelCalls) return { label: `mostly structured floor · ${floorCalls} of ${floorCalls + modelCalls} calls (+${models.join(' · ')})`,

@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import time
 import uuid
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
@@ -189,16 +189,25 @@ async def generate_career_docs(req: GenerateRequest):
 
     # Retrieve uploaded file content from ingestion registry
     profile_context = ""
+    # W495 (FU-124, S12.2) — before this round an uploaded CV of any type but .txt/.md arrived here as
+    # INVENTED text ("Primary topics identified: Digital Sovereign Intelligence, Autonomous Evolution"),
+    # so Application Studio generated an application "from" a document nobody had read. Unread files now
+    # carry empty text; they are NAMED back to the caller rather than silently thinning the context.
+    _unread: List[Dict[str, Any]] = []
     if req.file_ids:
         try:
             from agentic_core.ingestion.api import ingestion_manager
             registry = ingestion_manager.registry
             for entry in registry:
                 if entry.get("file_id") in req.file_ids:
-                    text = entry.get("extracted_text", "")
+                    text = (entry.get("extracted_text") or "").strip()
                     category = entry.get("category", "document")
-                    if text:
+                    if text and entry.get("status") == "EXTRACTED":
                         profile_context += f"\n[{category.upper()}]\n{text[:600]}\n"
+                    else:
+                        _unread.append({"filename": entry.get("filename"),
+                                        "status": entry.get("status") or "NOT_EXTRACTED",
+                                        "basis": entry.get("extraction_basis") or ""})
         except Exception:
             pass
 
@@ -233,7 +242,13 @@ async def generate_career_docs(req: GenerateRequest):
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
 
-    return {"results": results, "generated_count": len(results)}
+    # W495 - the caller is told which of its uploads contributed nothing, and why
+    return {"results": results, "generated_count": len(results),
+            "unread_files": _unread,
+            "unread_basis": ("" if not _unread else
+                             f"{len(_unread)} uploaded file(s) contributed nothing to these outputs "
+                             f"because this platform has not read them: "
+                             + "; ".join(f"{u['filename']} ({u['status']})" for u in _unread))}
 
 
 # ── Job search (AI-synthesized listings) ─────────────────────────────────────

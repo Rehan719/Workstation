@@ -2011,8 +2011,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -2030,8 +2030,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -2051,8 +2051,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -2071,8 +2071,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -2092,8 +2092,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -2127,8 +2127,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -2167,8 +2167,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -2199,8 +2199,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P1.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W495",
       "note": ""
     },
     {
@@ -4580,6 +4580,89 @@
       "closed_by": null,
       "note": "",
       "tier": 2
+    },
+    {
+      "id": "FU-266",
+      "title": "OWNER DECISION: is there a constitution document, and what is in it? The endpoint that served one now reports there is none",
+      "why": "W495 (FU-126, S10.3) found /api/v154/constitution/articles fabricating a single article whenever its source file was absent, and the page presenting it as the parsed constitution with three category chips that matched nothing. The file a cleanup moved is _archive/agentic_core/constitution/CONSTITUTION_canonical.md, and I deliberately did NOT restore it: it is the inherited Jules-era v130.0 canon, asserting ~750 articles of live global marketplaces, digitally signed MoUs, ORCID scholar onboarding and post-quantum deployment - none of which exists here. The plan already excludes inherited Jules material as dated and agent-unreliable (answer A.10), so parsing it onto a governance surface would import hundreds of unbuilt capability claims, which is the defect class the truth passes exist to remove. The endpoint therefore reports canon_present:false with a basis, and names what actually governs: the vision doc, the delivery plan and the Owner's rulings, the arms-length CCA, and the gaas.v5 runtime intent gate. THE DECISION THE OWNER OWNS: (a) leave it as it is - the vision plus the rulings plus the CCA ARE the constitution and no separate document should exist; or (b) author a real constitution document for this platform, in which case it should state only what is built or explicitly name what is intended, and this endpoint should parse it; or (c) salvage specific articles from the archived canon that the Owner still stands behind, restated truthfully. Nothing should be restored wholesale. Note: P2.10 (the delivery method held by the arms-length agency) is where a real constitution would most naturally live, since that item already makes Change Control the keeper of what governs.",
+      "source": "W495 (FU-126, S10.3) - a decision only the Owner can make",
+      "found": "2026-09-27",
+      "files": [
+        "agentic_core/api/integration_surface.py",
+        "apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-267",
+      "title": "OWNER DECISION: the Horizon node/station taxonomy - ratify one, or keep Horizon taxonomy-free",
+      "why": "The Owner's Horizon brief introduces a 0-9 'cosmic blueprint' and 25 'spiritual stations', and has the compressor ASSIGN a station to the user's situation. Neither taxonomy is in this repo's canon, and the canon's nearest structure - the 99-aspect Fitrah Spectrum - was never enumerated in any source (docs/QURAN_EDUCATION_PLATFORM_VISION.md section 12) and is governed by ratified ruling A.9.5: the Spectrum is never a measurement and AI must not claim to measure the soul. An AI assigning a spiritual station, or writing a 'virtue forged' field, is exactly that claim. THE DECISION: (a) ratify a taxonomy as canon, used ONLY as user-chosen labels and reflection prompts the user may dismiss - never scored, never persisted as a fact about the person; (b) keep Horizon taxonomy-free (domain and stakes only), which is what P2.11 builds by default; or (c) defer. Blocks the station field in P2.11 and any virtue vocabulary in P2.15. Default if undecided: (b).",
+      "source": "W495 (the Owner's Horizon brief, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/HORIZON_INTEGRATION.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-268",
+      "title": "OWNER DECISION: may the platform read the four desktop archives, and on what terms (one of them holds a .env)",
+      "why": "The Horizon brief registers four OneDrive Desktop folders as sensory organs for indexing. Measured on 2026-09-27: 'Book n Guidance App' holds 14 files, all .docx/.pdf; 'github_repos' holds 48,230 files raw and 4,089 after excluding node_modules/.git; 'openQuran' - which the brief labels PRIMARY_SOURCE_TRUTH for Quranic ontology - holds exactly ONE file after exclusions, and it is mvp/frontend-vite/.env, a credentials file; 'p3' holds 5 .txt + 4 .docx. These are outside the repo and outside anything the platform has ever read. THE DECISION: (a) read-only indexing per path with secret-exclusion by rule (.env, *key*, *secret*, credentials*, id_rsa*, *.pem), recorded exclusions and a stated scan bound, the index kept in data/ and NEVER committed or sent anywhere; (b) a subset of the paths only; (c) none. Blocks P2.13. Separately, the .env in openQuran is the Owner's to rotate or remove - the platform must not read it either way.",
+      "source": "W495 (the Owner's Horizon brief, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/HORIZON_INTEGRATION.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-269",
+      "title": "OWNER DECISION: install a pdf/docx extractor, or accept that those documents stay unread",
+      "why": "W495 (FU-124) removed the fabricated extraction: a .pdf or .docx now returns NOT_EXTRACTED with the reason 'no extractor is installed in this deployment', and its text never enters the knowledge base. That is now the honest state of the Owner's own archives: all 14 files of the book folder and 4 of the 9 p3 files are .docx/.pdf, so the platform reads NONE of the book drafts and none of the four p3 documents. _pdf_docx_extractor() already probes for pypdf / python-docx, so installing either makes extraction work with no further code. THE DECISION: (a) add pypdf and python-docx to requirements (a dependency and a supply-chain decision the Owner owns); (b) leave them out and accept that those documents are listed as not read wherever they appear; (c) convert the documents to text by hand outside the platform. Blocks any coverage claim over those folders in P2.13.",
+      "source": "W495 (FU-124 measurement + the Horizon brief)",
+      "found": "2026-09-27",
+      "files": [
+        "agentic_core/ingestion/api.py",
+        "docs/HORIZON_INTEGRATION.md"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-270",
+      "title": "OWNER DECISION: the distress-route list, and who reviews it",
+      "why": "The Horizon brief's third guardrail returns a crisis message to a user in distress. The substance is right - the platform must withhold AI counsel, say plainly it is not a person, and name a human route - but the brief hard-codes a generic sentence with no route in it, triggered by two English phrases. An out-of-date or wrong helpline is worse than none, and a phrase screen that misses a signal must never be presented as detection. THE DECISION: the Owner supplies (a) the real, current human routes for the relevant jurisdiction, (b) who reviews them and how often, and (c) whether the platform states its own limits on that surface (proposed: yes, with the reviewed-on date shown). Until then P2.12 ships the refusal - withhold counsel, state that the platform cannot help with this - WITHOUT inventing a route. Blocks the route half of P2.12.",
+      "source": "W495 (the Owner's Horizon brief, interrogated)",
+      "found": "2026-09-27",
+      "files": [
+        "docs/HORIZON_INTEGRATION.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [

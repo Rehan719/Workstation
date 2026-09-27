@@ -47,7 +47,12 @@ interface IngestedFile {
   size: number;
   timestamp: string;
   extracted_text: string;
+  // W495 (FU-124) - three states now: EXTRACTED (the text below is what this platform read),
+  // NOT_EXTRACTED (no reader is wired for this type) or NOT_TRANSCRIBED (there is no transcription
+  // engine at all). Before this round every upload said INGESTED and carried invented text.
   status: string;
+  extraction_basis?: string;
+  in_knowledge_base?: boolean;
 }
 
 interface SynthesisResult {
@@ -737,7 +742,12 @@ export const SynthesisStudio: React.FC = () => {
                     key={f.file_id}
                     type="button"
                     onClick={() => toggleSelect(f.file_id)}
-                    title={`${f.filename} · ${formatBytes(f.size)}\n${f.extracted_text?.slice(0, 120)}...`}
+                    /* W495 (FU-124) — this showed extracted_text, which for every type but .txt/.md was
+                       invented: a constant for pdf/docx, a filename lookup for audio. When nothing was
+                       read the chip says so instead of quoting text the platform never saw. */
+                    title={`${f.filename} · ${formatBytes(f.size)}\n${
+                      f.in_knowledge_base ? `${f.extracted_text?.slice(0, 120)}...`
+                        : (f.extraction_basis || 'this file has not been read by the platform')}`}
                     className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${
                       active
                         ? 'bg-aura/10 border-aura text-white'
@@ -746,6 +756,13 @@ export const SynthesisStudio: React.FC = () => {
                   >
                     <FileText size={9} className={active ? 'text-aura' : 'text-slate-600'} />
                     <span className="max-w-[120px] truncate">{f.filename}</span>
+                    {/* W495 (FU-124) — VISIBLE, not only in the tooltip: W490 established that a caveat
+                        living in a hover title is itself the defect. A file the platform has not read
+                        contributes nothing to any output, and the chip says so on its face. */}
+                    {f.in_knowledge_base === false && (
+                      <span className="text-[8px] font-black uppercase px-1 rounded bg-amber-500/15 text-amber-400 shrink-0"
+                            data-testid={`ingest-unread-${f.file_id}`}>not read</span>
+                    )}
                     {active && <CheckSquare size={9} className="text-aura shrink-0" />}
                     <span
                       role="button"

@@ -162,12 +162,24 @@ def _genome_state() -> dict:
     try:
         genome_store = data_path("genomes")
         if not genome_store.exists():
-            return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None}
+            return {"total_genomes": 0, "encoded_genomes": 0, "mean_fitness": None,
+                    "max_generation": 0, "dominant_trait": None, "dominant_trait_tied": [],
+                    "dominant_trait_basis": "no genomes stored yet",
+                    "encoded_basis": "no genome store exists yet"}
         files = list(genome_store.glob("*.json"))
         if not files:
-            return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None}
+            return {"total_genomes": 0, "encoded_genomes": 0, "mean_fitness": None,
+                    "max_generation": 0, "dominant_trait": None, "dominant_trait_tied": [],
+                    "dominant_trait_basis": "no genomes stored yet",
+                    "encoded_basis": "no genomes stored yet"}
         fitnesses: list[float] = []
         max_gen = 0
+        # §8 (W495, FU-129, S8.2) - the page labelled this count "encoded genomes" while it was simply
+        # the number of JSON files in genomes/. Every stored genome has encoded:false, because the
+        # deterministic floor cannot declare traits and each record says so ("not encoded - this vector
+        # is NOT an analysis of the entity"). A count says what population it covers, so the encoded
+        # ones are counted separately and the label can be true either way.
+        encoded_n = 0
         trait_sums: dict[str, float] = {}
         trait_counts: dict[str, int] = {}
         for p in files:
@@ -175,6 +187,8 @@ def _genome_state() -> dict:
                 g = _json.loads(p.read_text())
             except Exception:
                 continue
+            if g.get("encoded") is True:
+                encoded_n += 1
             f = g.get("fitness_score")
             if isinstance(f, (int, float)):
                 fitnesses.append(float(f))
@@ -199,14 +213,24 @@ def _genome_state() -> dict:
             # finding, not an occasion to name the alphabetically-first axis.
             dominant = tied[0] if len(tied) == 1 else None
         return {"total_genomes": len(files), "mean_fitness": mean_fitness,
+                "encoded_genomes": encoded_n,
+                "encoded_basis": (
+                    f"{encoded_n} of {len(files)} stored genome(s) carry encoded:true. An unencoded "
+                    f"genome's traits were not declared by any model - the deterministic floor cannot "
+                    f"encode, so its vector is not an analysis of the entity."
+                    if encoded_n < len(files) else
+                    f"all {len(files)} stored genome(s) are encoded"),
                 "max_generation": max_gen, "dominant_trait": dominant,
                 "dominant_trait_tied": tied if len(tied) > 1 else [],
                 "dominant_trait_basis": ("no numeric traits stored" if not trait_sums else
                                          f"{len(tied)} trait axes tie at the top - none dominates"
                                          if len(tied) > 1 else f"highest mean of {len(means)} axes")}
     except Exception:
-        return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None,
-                "dominant_trait_tied": [], "dominant_trait_basis": "unavailable (read error)"}
+        # W495 - shape-complete: every return of this function carries the same keys
+        return {"total_genomes": 0, "encoded_genomes": 0, "mean_fitness": None, "max_generation": 0,
+                "dominant_trait": None, "dominant_trait_tied": [],
+                "dominant_trait_basis": "unavailable (read error)",
+                "encoded_basis": "unavailable - the genome store could not be read"}
 
 
 # ── Main status endpoint ──────────────────────────────────────────────────────
@@ -445,6 +469,8 @@ async def trigger_homeostasis(req: HomeostasisRequest):
             "system": "gateway",
             "action": "reduce_rpm",
             "reason": f"Low ATP ratio ({ctx['metabolic']['atp_ratio']:.0%})",
+            "effective": True,
+            "effect": "a config-change request is filed with Change Control (below)",
         })
         # Auto-submit a CCA for config change
         try:
@@ -470,24 +496,36 @@ async def trigger_homeostasis(req: HomeostasisRequest):
                     "system": "metabolic",
                     "action": "rest_recovery",
                     "reason": f"Rest cycles restored ATP {rec['atp_before']:.0%} -> {rec['atp_after']:.0%}",
+                    "effective": True,
+                    "effect": "rest cycles were run against the ATP simulator",
                 })
         except Exception:
             pass
 
     # Immune recovery — fire recovery signals
     if ctx["immune"]["threat_level"] in ("HIGH", "CRITICAL"):
+        # §8 (W495, FU-129, S8.6) - "elevated_monitoring" is appended here and read NOWHERE: a
+        # repo-wide grep finds only this append site. Nothing monitors anything more closely because of
+        # it, so it is an OBSERVATION, not an adjustment, and the response counts the two kinds apart.
         adjustments.append({
             "system": "immune",
             "action": "elevated_monitoring",
             "reason": f"Threat level {ctx['immune']['threat_level']}",
+            "effective": False,
+            "effect": ("recorded only - nothing in this codebase reads 'elevated_monitoring', so no "
+                       "monitoring changed"),
         })
 
     # Circadian regulation — adjust priority
     if not ctx["circadian"]["is_peak_focus"]:
+        # §8 (W495, FU-129, S8.6) - same: nothing reads "defer_non_urgent", so nothing is deferred.
         adjustments.append({
             "system": "scheduler",
             "action": "defer_non_urgent",
             "reason": f"Outside peak focus window ({ctx['circadian']['cycle']})",
+            "effective": False,
+            "effect": ("recorded only - nothing in this codebase reads 'defer_non_urgent', so no work "
+                       "was deferred or re-prioritised"),
         })
 
     biobus.fire_signal(
@@ -498,6 +536,9 @@ async def trigger_homeostasis(req: HomeostasisRequest):
 
     # AI recommendation if degraded
     recommendation = None
+    # W495 - initialised here, not reached out of locals(): the response declares them unconditionally
+    recommendation_served_by = None
+    recommendation_is_external = False
     if ctx["mode"] in ("DEGRADED", "EMERGENCY"):
         prompt = (
             f"The IDBO organism is in {ctx['mode']} mode.\n"
@@ -509,7 +550,13 @@ async def trigger_homeostasis(req: HomeostasisRequest):
             f"Be specific — name which system, what action, and expected recovery time."
         )
         try:
-            recommendation = await gateway.query(prompt, agent="homeostasis")
+            # W495 (FU-129, S8.6) - this used gateway.query, which discards served_by, so the text was
+            # printed into the result box with nothing saying whether a model wrote it or the
+            # deterministic floor composed it. query_meta carries the provenance the page needs.
+            _meta = await gateway.query_meta(prompt, agent="homeostasis", augment=False)
+            recommendation = _meta.get("output") if isinstance(_meta, dict) else str(_meta)
+            recommendation_served_by = (_meta or {}).get("served_by") if isinstance(_meta, dict) else None
+            recommendation_is_external = bool((_meta or {}).get("is_external")) if isinstance(_meta, dict) else False
         except Exception:
             recommendation = "AI recommendation unavailable — check gateway health."
 
@@ -518,7 +565,18 @@ async def trigger_homeostasis(req: HomeostasisRequest):
         "reason": req.reason,
         "organism_mode": ctx["mode"],
         "composite_health": ctx["composite_health"],
+        # W495 (FU-129, S8.6) - the page read len(adjustments_made) and printed "N adjustment(s)
+        # made". Two of the four actions are recorded and read by nothing, so the counts are separate
+        # and the label can be true.
         "adjustments_made": adjustments,
+        "adjustments_effective": [a for a in adjustments if a.get("effective")],
+        "adjustments_effective_count": sum(1 for a in adjustments if a.get("effective")),
+        "observations_only_count": sum(1 for a in adjustments if a.get("effective") is False),
+        "adjustments_basis": (
+            f"{sum(1 for a in adjustments if a.get('effective'))} of {len(adjustments)} entr(y/ies) "
+            f"changed something; the rest are observations this codebase records and does not act on"),
         "ai_recommendation": recommendation,
+        "ai_recommendation_served_by": recommendation_served_by,
+        "ai_recommendation_is_external": recommendation_is_external,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
