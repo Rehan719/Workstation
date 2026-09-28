@@ -10,10 +10,15 @@ self-improvement/evolution is handled by the Sovereign Evolution Office and the 
 from __future__ import annotations
 
 import json
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
 from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict
+
+# W504 (FU-060) — this module moves virtual money and had no logger: a draw from the self-investment fund
+# that failed left a UEG record and nothing an operator watching the process would see.
+logger = logging.getLogger("economy.living_vsbs")
 
 _STORE = data_path("living_vsbs.json")
 _HISTORY = data_path("vsb_compliance_history.json")
@@ -144,15 +149,62 @@ def _update_entry(vsb_id: str, mutate) -> Optional[Dict[str, Any]]:
         return dict(entry)
 
 
+# W504 (FU-064) — whether an entity's ledger parses, keyed on the FILE rather than re-read per call.
+# `_ledger_hold_text` built a VirtualLedger purely to read `load_error`, and that constructor does a strict
+# read of the whole file. `list_living` calls it once per held row and the heartbeat and pages call
+# `list_living` often, so a roster of large held ledgers re-parsed all of them on every request (the row
+# measured 4 s for 60 held rows of 4 MB, and said plainly that this is negligible at today's sizes — this is
+# a cost fix, not a user-visible one).
+#
+# The correctness that must not break is W468's: a ledger REPAIRED since the last visit must stop being
+# described as unreadable. The key is therefore the file's own (size, mtime_ns). Every store write in this
+# codebase goes through `atomic_write_json`, which writes a temp file and os.replace()s it, so the result
+# carries a fresh mtime and a repair always misses the cache. That is the assumption this rests on; a store
+# written some other way, in place, preserving both size and mtime_ns, would be served a stale answer.
+_LEDGER_READS: Dict[str, tuple] = {}
+_LEDGER_READS_MAX = 512
+
+
+def _ledger_path(vsb_id: str):
+    """The ledger file for this entity, WITHOUT constructing a VirtualLedger — whose __init__ performs the
+    strict read this cache exists to avoid. Mirrors the ledger module's own expression; a guard asserts the
+    two stay in step, and a mismatch only costs a real read (it is never wrong)."""
+    from agentic_core.economy import ledger as _led
+    return _led._STORE / f"{vsb_id}_ledger.json"
+
+
+def _ledger_reads_whole(vsb_id: str) -> bool:
+    """True when this entity's ledger parses whole. Cached against the file's size and mtime.
+
+    The stat comes FIRST. An earlier version of this built a VirtualLedger to reach `.path`, which meant the
+    strict read had already happened before the cache was consulted — a cache after the expensive step saves
+    nothing."""
+    try:
+        st = _ledger_path(vsb_id).stat()
+        key = (st.st_size, st.st_mtime_ns)
+    except Exception:
+        key = None
+    if key is not None:
+        hit = _LEDGER_READS.get(vsb_id)
+        if hit is not None and hit[0] == key:
+            return bool(hit[1])
+    try:
+        from agentic_core.economy.ledger import VirtualLedger
+        readable = VirtualLedger(vsb_id).load_error is None
+    except Exception:
+        return False
+    if key is not None:
+        if len(_LEDGER_READS) >= _LEDGER_READS_MAX:
+            _LEDGER_READS.pop(next(iter(_LEDGER_READS)), None)
+        _LEDGER_READS[vsb_id] = (key, readable)
+    return readable
+
+
 def _ledger_hold_text(vsb_id: Any, decision: Any = None) -> str:
     """W468 (refutation) — the hold is what the LAST visit found; the ledger is read now, so a repaired ledger is never
     still described as unreadable. A Change Control decision behind it is named (sixth refutation)."""
     behind = (f" — and a Change Control decision ({str(decision).replace('_', ' ')}) stands behind it" if decision else "")
-    try:
-        from agentic_core.economy.ledger import VirtualLedger
-        readable = VirtualLedger(str(vsb_id)).load_error is None
-    except Exception:
-        readable = False
+    readable = _ledger_reads_whole(str(vsb_id))
     if readable:
         return ("its ledger could not be read whole at the last visit and reads whole now — the next visit tries its "
                 "cycle again" + behind)
@@ -366,17 +418,47 @@ def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_W
             except Exception:
                 pass
             return rec
-        bal = float((m.ledger.statement().get("balances") or {}).get("self_investment", 0.0))
-        spent = round(min(max(bal, 0.0), float(amount)), 6)
-        if spent > 0:
-            # §12 (W339) — the spend must hit the SAME surface the balance check reads: post()
-            # moves only the double-entry `accounts`, so the `balances` fund never depleted and
-            # every spend reported funded:true forever (audit-proven: 200 WST "spent" from a fund
-            # that never dropped). record() decrements `balances` AND makes the balanced posting.
-            m.ledger.record("self_investment", spent, kind="debit",
-                            memo=f"reinvestment: {purpose[:120]}")
+        # §12 (W339) — the spend must hit the SAME surface the balance check reads: post() moves only the
+        # double-entry `accounts`, so the `balances` fund never depleted and every spend reported
+        # funded:true forever (audit-proven: 200 WST "spent" from a fund that never dropped).
+        # W504 (FU-060) — and the check and the write happen under ONE hold of the ledger's lock. This
+        # read the balance from statement() and then called record(), which locks separately: two
+        # concurrent spends both saw the whole balance and both drew it, taking the fund negative.
+        try:
+            _drawn = m.ledger.spend_from("self_investment", float(amount),
+                                         memo=f"reinvestment: {purpose[:120]}")
+        except Exception as _err:
+            from agentic_core.economy.ledger import LedgerUnavailable as _LU, LedgerWriteRefused as _LWR
+            if isinstance(_err, (_LU, _LWR)):
+                # W504 — NOT MINE TO ANSWER. The outer handler below distinguishes these two, sets
+                # `ledger_unavailable` / `ledger_write_refused` and emits
+                # `economy.self_investment_spend_refused` — W468's contract, added so a refusal is
+                # RECORDED and not merely returned. Catching them here silently replaced that answer with
+                # a different flag and a different chain event.
+                raise
+            # W504 (FU-060) — A SPEND THAT FAILED IS SAID. Only an unreadable ledger was handled; a busy
+            # lock or a refused write raised out of this helper, so the development action went ahead with
+            # nothing recording that its funding never happened. This branch is for THOSE failures.
+            rec = {"vsb_id": vsb_id, "purpose": purpose[:120], "requested_wst": float(amount),
+                   "spent_wst": 0.0, "funded": False, "spend_failed": True,
+                   "error": f"{type(_err).__name__}: {str(_err)[:160]}",
+                   "note": "the self_investment fund could not be drawn from, so this development action is "
+                           "UNFUNDED; the fund is unchanged and whether it could have paid is unknown"}
+            try:
+                from agentic_core.economy.governance import _ueg_log
+                _ueg_log({"type": "economy.self_investment_spend_failed", **rec,
+                          "disclaimer": "Virtual/simulated WST — no real funds moved."})
+            except Exception:
+                pass
+            logger.warning("self_investment spend failed for %s: %s", vsb_id, str(_err)[:160])
+            return rec
+        spent = _drawn["spent_wst"]
         rec = {"vsb_id": vsb_id, "purpose": purpose[:120], "requested_wst": float(amount),
                "spent_wst": spent, "funded": spent > 0,
+               # W504 — the fund's own figures, read under the lock that drew from it
+               "fund_before_wst": _drawn["balance_before_wst"],
+               "fund_after_wst": _drawn["balance_after_wst"],
+               "posted_as": "development_spend (an expense of its own, not a second distribution)",
                "note": ("self_investment funded this development action" if spent > 0 else
                         "self_investment balance empty — action ran unfunded (recorded honestly)")}
         try:

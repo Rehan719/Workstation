@@ -982,8 +982,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W504",
       "note": ""
     },
     {
@@ -1049,8 +1049,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W504",
       "note": ""
     },
     {
@@ -4933,8 +4933,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W504",
       "note": "",
       "slot_source": "W502: measured while fixing FU-057's wording half; it is the same transfer-answer code path",
       "tier": 1

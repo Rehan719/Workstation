@@ -15295,6 +15295,11 @@ def test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced(client, monkeyp
         raise lg.LedgerWriteRefused("w468 the books would hold a non-finite balance")
     with monkeypatch.context() as mp:
         mp.setattr(lg.VirtualLedger, "record", _refuse)
+        # W504 (FU-060) — the spend now performs its write through `spend_from` (the balance check and the
+        # write have to happen under one lock), so patching `record` alone stopped forcing a refusal and
+        # this would have asserted one that never happened. The claim is unchanged: a write the ledger
+        # refuses to save is answered, and the refusal is recorded.
+        mp.setattr(lg.VirtualLedger, "spend_from", _refuse)
         refused_spend = lv.spend_self_investment(a, "w468 refused at its write")
         mp.setattr(lg.VirtualLedger, "close_period", _refuse)
         closing = client.post("/api/v1/economy/close-period", json={"vsb_id": a})
@@ -23345,3 +23350,200 @@ def test_w503j_a_refusal_does_not_leave_the_last_answer_on_screen(client):
     _close = _close[:_close.index("const ", _close.index("setClosing(false);"))]
     assert "await r.json().catch(() => null)" in _close, "the close still assumes the body is JSON"
     assert "were NOT closed" in _close, "an unreadable refusal does not say the books are untouched"
+
+
+def test_w504_a_repair_credits_what_was_debited(client):
+    """W504 (FU-285) — the settlement's replay branch completes an already-posted debit WITHOUT the
+    materiality gate, and that is deliberate and right: the money already left the sender, and re-gating
+    would hold it and strand it. What was wrong is what the repair CREDITED. It called record_transfer
+    with the amount and provider re-read from the CONTRACT, while the sender had been debited whatever the
+    first attempt used — recorded on the posting itself. A repair completes one specific debit, so its
+    figures must be that debit's. Not reachable today (price_wst and provider_vsb are written once at
+    creation and no route amends them), so this closes the shape, as FU-019 did."""
+    import uuid as _uuid
+    import agentic_core.economy.living_vsbs as lv
+    from agentic_core.economy import transfers as tr
+    from agentic_core.economy.ledger import VirtualLedger
+
+    a = f"vsb-w504a-{_uuid.uuid4().hex[:6]}"
+    b = f"vsb-w504b-{_uuid.uuid4().hex[:6]}"
+    c = f"vsb-w504c-{_uuid.uuid4().hex[:6]}"
+    for v in (a, b, c):
+        lv.register(v, name=f"repair probe {v[-4:]}", domain="care")
+    # fund a's reserve so a real debit can post
+    led = VirtualLedger(a)
+    led.record("reserves", 500.0, kind="credit", memo="w504 seed")
+
+    xid = f"xfer-w504-{_uuid.uuid4().hex[:8]}"
+    first = tr.record_transfer(a, b, 120.0, "first attempt", transfer_id=xid)
+    assert first["amount_wst"] == 120.0 and first["to_vsb"] == b, first
+
+    # the receiver's queue now holds it; clear the credit marker to force the REPAIR path, which is the
+    # state a first attempt that died between the debit and the queue write leaves behind
+    from agentic_core.config import data_path, load_json_tolerant, atomic_write_json
+    pend = data_path("economy_pending_transfers.json")
+    d = load_json_tolerant(pend, {}) or {}
+    assert b in d, list(d)
+    d[b]["credited_ids"] = [i for i in (d[b].get("credited_ids") or []) if i != xid]
+    d[b]["transfers"] = [t for t in (d[b].get("transfers") or []) if t.get("transfer_id") != xid]
+    d[b]["pending_wst"] = 0.0
+    atomic_write_json(pend, d)
+
+    # the repair asks for a DIFFERENT amount and a DIFFERENT receiver than the debit recorded
+    repaired = tr.record_transfer(a, c, 999.0, "repair", transfer_id=xid)
+    assert repaired["amount_wst"] == 120.0, f"the repair credited its own figure, not the debit's: {repaired}"
+    assert repaired["to_vsb"] == b, f"the repair credited the wrong entity: {repaired}"
+    # and it SAYS so rather than silently substituting
+    mism = repaired.get("repair_used_debited_figures")
+    assert mism, f"the disagreement was not reported: {repaired}"
+    assert mism["differs"]["amount_wst"] == {"debited": 120.0, "requested": 999.0}, mism
+    assert mism["differs"]["to_vsb"] == {"debited": b, "requested": c}, mism
+    assert repaired.get("requested_amount_wst") == 999.0 and repaired.get("requested_to_vsb") == c
+
+    # the money landed in the DEBITED receiver's queue, not the requested one
+    d2 = load_json_tolerant(pend, {}) or {}
+    assert round(float((d2.get(b) or {}).get("pending_wst", 0.0)), 2) == 120.0, d2.get(b)
+    assert round(float((d2.get(c) or {}).get("pending_wst", 0.0)), 2) == 0.0, d2.get(c)
+
+    # W504 — AND A SECOND REPAIR MUST NOT CREDIT AGAIN. The pending record's key decides which row the
+    # already-credited check reads: opened on the receiver the CALLER named, that check sees an empty row
+    # and credits a second time, creating virtual WST. Crediting once is not evidence that the key is
+    # right — blind R03 passed the single-repair assertions above untouched.
+    again = tr.record_transfer(a, c, 999.0, "repair twice", transfer_id=xid)
+    d3 = load_json_tolerant(pend, {}) or {}
+    assert round(float((d3.get(b) or {}).get("pending_wst", 0.0)), 2) == 120.0, \
+        f"a second repair credited the receiver again: {d3.get(b)}"
+    assert round(float((d3.get(c) or {}).get("pending_wst", 0.0)), 2) == 0.0, d3.get(c)
+    assert (d3.get(b) or {}).get("credited_ids", []).count(xid) == 1, d3.get(b)
+    assert again.get("repaired") in (False, None), again
+    # W504 - and the row the repair wrote must BE the debited receiver's row. Opening it on the receiver
+    # the caller named builds a FRESH record for that entity and writes it under the debited key, so the
+    # row is replaced rather than updated: it carries the wrong vsb_id and any other pending transfer to
+    # this receiver is silently dropped. That is what blind R03 does, and crediting the right figure once
+    # does not reveal it.
+    assert (d3.get(b) or {}).get("vsb_id") == b,         f"the repair replaced the receiver's row with another entity's: {d3.get(b)}"
+    other = tr.record_transfer(a, b, 7.0, "an unrelated transfer to the same receiver")
+    tr.record_transfer(a, c, 999.0, "repair a third time", transfer_id=xid)
+    d4 = load_json_tolerant(pend, {}) or {}
+    assert round(float((d4.get(b) or {}).get("pending_wst", 0.0)), 2) == 127.0,         f"a repair dropped an unrelated pending transfer to the same receiver: {d4.get(b)}"
+    assert other["transfer_id"] in ((d4.get(b) or {}).get("credited_ids") or []), d4.get(b)
+
+
+def test_w504b_the_hold_text_reads_a_ledger_once_per_change(client):
+    """W504 (FU-064) — the roster's hold text built a VirtualLedger per held row purely to read
+    `load_error`, and that constructor strictly reads the whole file. Cached against the file's own
+    (size, mtime_ns), because the correctness that must not break is W468's: a ledger REPAIRED since the
+    last visit must stop being described as unreadable.
+
+    Counted, not timed: a timing assertion passes on a fast machine with the cache removed."""
+    import uuid as _uuid
+    import agentic_core.economy.living_vsbs as lv
+    from agentic_core.economy import ledger as ledmod
+
+    vid = f"vsb-w504c-{_uuid.uuid4().hex[:6]}"
+    lv.register(vid, name="cache probe", domain="care")
+    ledmod.VirtualLedger(vid).record("reserves", 10.0, kind="credit", memo="w504 seed")
+    lv._LEDGER_READS.clear()
+
+    built = {"n": 0}
+    _real = ledmod.VirtualLedger
+
+    class _Counting(_real):
+        def __init__(self, *a, **k):
+            built["n"] += 1
+            super().__init__(*a, **k)
+
+    ledmod.VirtualLedger = _Counting
+    try:
+        assert lv._ledger_reads_whole(vid) is True
+        assert built["n"] == 1, "the first call must actually read"
+        for _ in range(5):
+            assert lv._ledger_reads_whole(vid) is True
+        assert built["n"] == 1, f"the cache did not hold: {built['n']} reads for six calls"
+
+        # a CHANGED ledger must be re-read — this is W468's correctness, not an optimisation
+        _real(vid).record("reserves", 1.0, kind="credit", memo="w504 change")
+        assert lv._ledger_reads_whole(vid) is True
+        assert built["n"] == 2, "a changed ledger was served from the cache"
+    finally:
+        ledmod.VirtualLedger = _real
+        lv._LEDGER_READS.clear()
+
+    # the path is derived without constructing a ledger — the whole point, since the constructor IS the read
+    assert lv._ledger_path(vid) == ledmod._STORE / f"{vid}_ledger.json", \
+        "the cache's path expression drifted from the ledger module's"
+
+
+def test_w504c_a_development_spend_is_not_a_second_distribution(client):
+    """W504 (FU-060) — three defects. `_COMPAT_POSTING` is keyed on the ACCOUNT ALONE, so
+    `record("self_investment", x, kind="debit")` posted the identical entry as the allocation that funded
+    it: the distribution expense grew on both and counted the money twice. The balance was read from
+    statement() outside any lock and written under one, so two spends each drew the whole fund. And only
+    an unreadable ledger was handled — any other failure raised out of the helper, leaving a development
+    action funded by nothing with no record of it."""
+    import uuid as _uuid
+    import agentic_core.economy.living_vsbs as lv
+    from agentic_core.economy.ledger import VirtualLedger, CHART
+
+    assert CHART.get("development_spend") == "expense", "a spend has no account of its own"
+
+    vid = f"vsb-w504d-{_uuid.uuid4().hex[:6]}"
+    lv.register(vid, name="spend probe", domain="care")
+    led = VirtualLedger(vid)
+    led.record("self_investment", 100.0, kind="credit", memo="w504 allocation")
+    _accts = dict((led._data.get("accounts") or {}))
+    _alloc = round(float(_accts.get("distribution_self_investment", 0.0)), 2)
+    assert _alloc == 100.0, _accts
+
+    r1 = lv.spend_self_investment(vid, "w504 development action", amount=40.0)
+    assert r1["funded"] is True and r1["spent_wst"] == 40.0, r1
+    assert r1["fund_before_wst"] == 100.0 and r1["fund_after_wst"] == 60.0, r1
+
+    led2 = VirtualLedger(vid)
+    a2 = led2._data.get("accounts") or {}
+    # the spend is its OWN expense, and it did NOT charge the distribution a second time
+    assert round(float(a2.get("development_spend", 0.0)), 2) == 40.0, a2
+    assert round(float(a2.get("distribution_self_investment", 0.0)), 2) == 60.0, \
+        f"the spend re-charged the distribution instead of reclassifying it: {a2}"
+    # total expense is still what was allocated, not allocation + spend
+    assert round(float(a2.get("development_spend", 0.0))
+                 + float(a2.get("distribution_self_investment", 0.0)), 2) == 100.0, a2
+    assert led2.trial_balance()["balanced"] is True, led2.trial_balance()
+
+    # the fund cannot be overdrawn: the remaining 60 caps a request for 500
+    r2 = lv.spend_self_investment(vid, "w504 oversized", amount=500.0)
+    assert r2["spent_wst"] == 60.0 and r2["fund_after_wst"] == 0.0, r2
+    bal = float((VirtualLedger(vid).statement().get("balances") or {}).get("self_investment", 0.0))
+    assert bal == 0.0, f"the fund went past zero: {bal}"
+    r3 = lv.spend_self_investment(vid, "w504 empty", amount=10.0)
+    assert r3["spent_wst"] == 0.0 and r3["funded"] is False, r3
+
+    # a draw that FAILS for any other reason is recorded, not raised away
+    import agentic_core.economy.ledger as ledmod
+    _real_spend = ledmod.VirtualLedger.spend_from
+
+    def _boom(self, *a, **k):
+        raise RuntimeError("w504 forced spend failure")
+    ledmod.VirtualLedger.spend_from = _boom
+    try:
+        r4 = lv.spend_self_investment(vid, "w504 failing draw", amount=5.0)
+    finally:
+        ledmod.VirtualLedger.spend_from = _real_spend
+    assert r4.get("spend_failed") is True and r4.get("funded") is False, r4
+    assert "w504 forced spend failure" in str(r4.get("error")), r4
+    assert "UNFUNDED" in str(r4.get("note")), r4
+
+    # W504 — THE LEGACY DEBIT SURFACE, exercised directly. `record()` is the documented single-sided
+    # surface kept for existing readers, and nothing in the codebase calls it with kind="debit" today — so
+    # blind D01 reverted its mapping and no guard noticed. A future caller debiting self_investment there
+    # would double-charge the distribution exactly as before, so the mapping belongs there AND is tested.
+    vid2 = f"vsb-w504e-{_uuid.uuid4().hex[:6]}"
+    lv.register(vid2, name="legacy debit probe", domain="care")
+    led3 = VirtualLedger(vid2)
+    led3.record("self_investment", 80.0, kind="credit", memo="w504 allocation")
+    led3.record("self_investment", 30.0, kind="debit", memo="w504 legacy spend")
+    a3 = VirtualLedger(vid2)._data.get("accounts") or {}
+    assert round(float(a3.get("development_spend", 0.0)), 2) == 30.0, \
+        f"the legacy debit surface still posts a spend as a distribution: {a3}"
+    assert round(float(a3.get("distribution_self_investment", 0.0)), 2) == 50.0, a3
+    assert VirtualLedger(vid2).trial_balance()["balanced"] is True

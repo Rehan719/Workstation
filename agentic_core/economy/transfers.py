@@ -212,7 +212,13 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
         except LedgerUnavailable as err:
             raise SenderLedgerUnavailable(f"{err}; nothing was debited") from err
         reserve = round((sender._data.get("accounts") or {}).get("reserve_fund", 0.0), 2)
-        already = any(_posting_names(p, transfer_id) for p in sender._data.get("postings", []))
+        # W504 (FU-285) — THE DEBIT, not just the fact of one. This asked only whether a posting for this
+        # id exists; the repair below then credited the receiver with the `amount` and `to_vsb` the CALLER
+        # passed. A settlement replay re-reads those from its contract, so the receiver's credit came from
+        # the contract while the sender's debit came from an earlier attempt. A repair completes ONE
+        # specific debit, so its figures must be that debit's.
+        _prior = next((p for p in sender._data.get("postings", []) if _posting_names(p, transfer_id)), None)
+        already = _prior is not None
         if already:
             posted = False
         elif require_debit:
@@ -232,11 +238,41 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
             sender._save()
             posted = True
 
+    # W504 (FU-285) — a REPAIR credits what was DEBITED. The ledger is the truth about a posted debit;
+    # the caller's arguments are only a request to finish it. Where they disagree the debit wins and the
+    # disagreement is reported, because silently crediting a different figure than was debited is the
+    # defect. Not reachable today (a contract's price_wst and provider_vsb are written once at creation and
+    # no route amends them), so this closes the shape before it can become reachable.
+    _debited = (_prior or {}).get("transfer") or {} if already else {}
+    _credit_amount, _credit_to = amount, to_vsb
+    _repair_mismatch = None
+    if already and _debited:
+        _dam = _debited.get("amount_wst")
+        _dto = _debited.get("to_vsb")
+        _differs = {}
+        if isinstance(_dam, (int, float)) and round(float(_dam), 2) != amount:
+            _differs["amount_wst"] = {"debited": round(float(_dam), 2), "requested": amount}
+            _credit_amount = round(float(_dam), 2)
+        if isinstance(_dto, str) and _dto and _dto != to_vsb:
+            _differs["to_vsb"] = {"debited": _dto, "requested": to_vsb}
+            _credit_to = _dto
+            _receiver_id_ok(_credit_to, transfer_id)   # the receiver actually credited is validated too
+        if _differs:
+            _repair_mismatch = {
+                "transfer_id": transfer_id, "differs": _differs,
+                "credited": "the DEBITED figures — a repair completes the debit on the sender's ledger, "
+                            "it does not re-price the transfer from the caller's arguments",
+            }
+
     # queue the receiver's intake (consumed by its next metabolic cycle → enters its waterfall)
     repaired = False
     with store_lock(_PENDING_STORE):
         d = _read_pending()
-        rec = d.get(to_vsb) or {"vsb_id": to_vsb, "pending_wst": 0.0, "transfers": []}
+        # W504 (FU-285) — keyed on the receiver the DEBIT names. Correcting only the amount would credit
+        # the right figure into the queue of the receiver the caller named, which is the same defect one
+        # field over: the idempotency check below reads THIS entity's credited_ids, so the key decides
+        # whether a replay is seen as already credited at all.
+        rec = d.get(_credit_to) or {"vsb_id": _credit_to, "pending_wst": 0.0, "transfers": []}
         # W442 refuter catch: a first attempt can die BETWEEN the sender's debit and this queue
         # write; the replay then found the debit, skipped the queue unconditionally, and reported
         # green — sender debited, receiver never credited. A replay now REPAIRS the missing leg.
@@ -254,12 +290,13 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
         # other request had queued it first
         if not queued:
             repaired = (not posted) and (not queued)
-            rec["pending_wst"] = round(rec.get("pending_wst", 0.0) + amount, 2)
+            rec["pending_wst"] = round(rec.get("pending_wst", 0.0) + _credit_amount, 2)
             rec["transfers"] = (rec.get("transfers") or [])[-49:] + [{
-                "transfer_id": transfer_id, "from_vsb": from_vsb, "amount_wst": amount,
+                "transfer_id": transfer_id, "from_vsb": from_vsb, "amount_wst": _credit_amount,
+                **({"requested_amount_wst": amount} if _credit_amount != amount else {}),
                 "memo": memo, "at": _now()}]
             rec["credited_ids"] = credited + [transfer_id]
-            d[to_vsb] = rec
+            d[_credit_to] = rec
             atomic_write_json(_PENDING_STORE, d)
 
     # W466 — the receiver's queue holds the id: close the debit's leg (a close that does not land leaves it open; the
@@ -267,8 +304,18 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
     leg_closed = _close_receiver_leg(from_vsb, transfer_id)
 
     return {
-        "transfer_id": transfer_id, "from_vsb": from_vsb, "to_vsb": to_vsb,
-        "amount_wst": amount, "memo": memo, "at": _now(),
+        "transfer_id": transfer_id, "from_vsb": from_vsb, "to_vsb": _credit_to,
+        "amount_wst": _credit_amount, "memo": memo, "at": _now(),
+        # W504 (FU-285) — when a repair's figures came from the debit rather than from the caller's
+        # arguments, the answer says so and says what disagreed. Silence here would let a caller book a
+        # figure it never moved.
+        # The settlement route returns this whole record as its `transfer` field (economy.py:1425), so the
+        # disclosure TRAVELS to the API caller. No page arm renders it, deliberately: the condition cannot
+        # occur while price_wst and provider_vsb are written once at creation, and an arm for an
+        # unreachable state is dead UI no guard can exercise. If either field ever becomes amendable, the
+        # surface that shows a settlement has to read this.
+        **({"repair_used_debited_figures": _repair_mismatch,
+            "requested_amount_wst": amount, "requested_to_vsb": to_vsb} if _repair_mismatch else {}),
         # on an idempotent replay the debit already happened — reserve is already post-debit
         "idempotent_replay": not posted,
         "replay_repaired_receiver_leg": repaired,

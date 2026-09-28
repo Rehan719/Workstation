@@ -299,6 +299,9 @@ CHART: Dict[str, str] = {
     "revenue":                       "income",
     "distribution_owner":            "expense",
     "distribution_self_investment":  "expense",
+    # W504 (FU-060) — what the self-investment fund was actually SPENT on. A spend used to post the same
+    # entry as the allocation, so the distribution expense grew on both and counted the money twice.
+    "development_spend":             "expense",
     "distribution_capital_fund":     "expense",
     "distribution_user_projects":    "expense",
     "distribution_charity":          "expense",
@@ -318,6 +321,18 @@ _COMPAT_POSTING: Dict[str, tuple] = {
     "capital_fund":    ("distribution_capital_fund", "cash"),
     "user_projects":   ("distribution_user_projects", "cash"),
     "charity":         ("distribution_charity", "cash"),
+}
+
+# W504 (FU-060) — consulted FIRST for a `kind="debit"` record, because _COMPAT_POSTING is keyed on the
+# account alone and therefore gave a spend the same entry as the allocation that funded it. Only the
+# accounts listed here change behaviour; every other account keeps exactly the entry it had (W495 — a
+# field's meaning belongs to its readers, and so does an account's).
+#
+# A spend from self_investment RECLASSIFIES an expense already recognised when the money was set aside:
+# Dr development_spend / Cr distribution_self_investment. Total expense stays at what was allocated, and the
+# books now say how much of it has been spent on development rather than merely earmarked.
+_COMPAT_POSTING_DEBIT: Dict[str, tuple] = {
+    "self_investment": ("development_spend", "distribution_self_investment"),
 }
 
 
@@ -427,10 +442,42 @@ class VirtualLedger:
             }
             self._data["entries"].append(entry)
             # the balanced posting this legacy entry really means
-            dr, cr = _COMPAT_POSTING.get(account) or (
-                (account, "cash") if kind == "debit" else ("cash", account))
+            # W504 (FU-060) — a DEBIT may mean something different from a credit to the same account
+            dr, cr = (_COMPAT_POSTING_DEBIT.get(account) if kind == "debit" else None) \
+                or _COMPAT_POSTING.get(account) \
+                or ((account, "cash") if kind == "debit" else ("cash", account))
             self.post(dr, cr, amount, memo=memo or f"legacy:{account}", save=False)
             return entry
+
+    def spend_from(self, account: str, amount: float, memo: str = "") -> Dict[str, Any]:
+        """W504 (FU-060) — draw from a legacy fund balance, CHECKING AND WRITING UNDER ONE LOCK.
+
+        The caller used to read the balance from `statement()` and then call `record()`, which takes the lock
+        separately: two concurrent spends both saw the whole balance and both drew it, so the fund went
+        negative (the shared-store concurrency class). Returns what was actually drawn — never more than the
+        balance, never negative — and the balance both before and after, so the caller reports facts rather
+        than its own assumption."""
+        with self._locked():
+            available = round(float(self._data.get("balances", {}).get(account, 0.0)), 6)
+            spend = round(min(max(available, 0.0), max(float(amount), 0.0)), 6)
+            if spend <= 0:
+                return {"account": account, "requested_wst": round(float(amount), 6), "spent_wst": 0.0,
+                        "balance_before_wst": available, "balance_after_wst": available, "entry": None}
+            # inline rather than calling record(): that would take this same lock a second time
+            bals = self._data.setdefault("balances", {})
+            bals.setdefault(account, 0.0)
+            bals[account] = round(bals[account] - spend, 2)
+            entry = {
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "account": account, "kind": "debit", "amount": round(spend, 2),
+                "memo": memo, "balance_after": bals[account],
+            }
+            self._data["entries"].append(entry)
+            dr, cr = (_COMPAT_POSTING_DEBIT.get(account) or _COMPAT_POSTING.get(account)
+                      or (account, "cash"))
+            self.post(dr, cr, spend, memo=memo or f"spend:{account}", save=False)
+            return {"account": account, "requested_wst": round(float(amount), 6), "spent_wst": spend,
+                    "balance_before_wst": available, "balance_after_wst": bals[account], "entry": entry}
 
     def trial_balance(self) -> Dict[str, Any]:
         """The double-entry invariant, GENUINELY verified: the sum of debit-normal account balances
