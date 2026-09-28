@@ -1098,7 +1098,14 @@ def test_candidates_selected_on_simulated_evidence(client):
         # criterion — the defect was never the tie, it was resolving one silently by list order
         # while reporting the winner as "selected on evidence".
         assert "NOT by evidence" in s5["selection_basis"]
-        assert s5["tie"]["resolved_by"] == "list order — NOT evidence"
+        # W503 (FU-240) — the INVARIANT, not the sentence. This pinned the exact wording "list order
+        # — NOT evidence"; the tiebreak is now a DECLARED rule rather than an accident of list order, and
+        # says so. Both wordings disclose that the resolution is not evidence, which is the claim. An
+        # honest rewording must not break this; dropping the disclosure still must.
+        _rb = s5["tie"]["resolved_by"]
+        assert "NOT evidence" in _rb, _rb
+        assert s5["tie"]["tiebreak_is_merit"] is False, s5["tie"]
+        assert s5["tie"]["tiebreak_rule"], s5["tie"]
         assert len(s5["tie"]["tied_candidates"]) > 1
     # and what is NOT measured at selection time is NAMED, never proxied
     assert set(s5["criteria_not_measured"]) == {"effectiveness", "efficiency", "commercial viability"}
@@ -15318,7 +15325,16 @@ def test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced(client, monkeyp
     # with its data rather than being flattened into "no data".
     assert ("if (issuedFor !== selectedRef.current) return;\n      setDetail(d); setPlan(p.data); "
             "setPlanErr(p.err); setLedger(l.data); setLedgerErr(l.err); setLoading(false);") in cockpit
-    assert "if (issuedFor === selectedRef.current) {\n        setLastCycle(r.data.cycle || null);\n        setLedger(l.data); setLedgerErr(l.err);" in cockpit
+    # W503 (FU-059) — the GATE and each setter inside it, not one contiguous block. FU-059 inserted
+    # setCycleHold between setLastCycle and setLedger, because a 200 whose `cycle` is null is a HOLD and
+    # used to render as nothing at all. W468's claim is that a late answer for a switched-away entity is
+    # dropped, and that is what is asserted.
+    _rc = cockpit[cockpit.index("const runCycle = async"):cockpit.index("const configureBto = async")]
+    assert "if (issuedFor === selectedRef.current) {" in _rc
+    _gated = _rc[_rc.index("if (issuedFor === selectedRef.current) {"):]
+    _gated = _gated[:_gated.index("\n      }")]
+    for _setter in ("setLastCycle(r.data.cycle || null);", "setLedger(l.data);", "setLedgerErr(l.err);"):
+        assert _setter in _gated, f"{_setter} is not inside the entity gate"
     assert "setActErr((issuedFor !== selectedRef.current ? `${issuedFor}: ` : '') + serverDetail(e, 'The cycle failed'));" in cockpit
     assert "setLastCycle(null); setLedgerErr(''); setActErr('');" in cockpit and "setCycling(true); setActErr('');" in cockpit
     assert 'data-testid="ledger-error">{ledgerErr}</p>' in cockpit
@@ -22700,3 +22716,632 @@ def test_w502b_the_economy_says_whether_a_cycle_is_coming_and_whose_the_prioriti
     assert any("vsb-w502b-torn" in d for d in _tj.get("unreadable_detail", [])), _tj.get("unreadable_detail")
     # and the torn ledger contributed no rows
     assert not [u for u in _tj["unmarked"] if u["from_vsb"] == "vsb-w502b-torn"], _tj["unmarked"]
+
+
+def test_w503_visit_outcomes_are_four_and_named(client):
+    """W503 (FU-063) — held, refused, raised and ran, said as four outcomes instead of re-derived
+    four different ways. `operate_vsb` had EIGHT return shapes and no field saying what happened:
+    genesis printed "cycle ran" for a visit that only raised (the raised return carried no
+    `cycle_ran` key, and `None is not False`), the heartbeat counted a hold as an entity operated,
+    and list_living called an unavailable intake a governance decision about the entity."""
+    import uuid as _uuid
+    import agentic_core.economy.living_vsbs as lv
+    from agentic_core.config import data_path, atomic_write_json
+
+    # the classification itself: a DECISION is a hold; anything else in the hold position is the
+    # platform unable to act, which must never be reported as a judgement about the entity
+    assert lv._outcome_of_hold("compliance_fail_hold") == "held"
+    for _decision in lv._DECISION_HOLDS:
+        assert lv._outcome_of_hold(_decision) == "held", _decision
+    for _unavailable in ("ledger_unavailable", "intake_unavailable", "intake_consumed_elsewhere",
+                         "roster_unavailable", "compliance_history_unavailable"):
+        assert lv._outcome_of_hold(_unavailable) == "refused", _unavailable
+
+    vid = f"vsb-w503o-{_uuid.uuid4().hex[:6]}"
+    lv.register(vid, name="Outcome vocabulary probe", domain="care")
+    hp = data_path("vsb_compliance_history.json")
+
+    # 1. RAN — and the success return finally states cycle_ran, which it never carried
+    ran = lv.operate_vsb(vid)
+    assert ran and ran.get("outcome") == "ran" and ran.get("cycle_ran") is True, ran
+
+    # 2. HELD — a FAIL screen is a judgement
+    _h = {}
+    try:
+        _h = __import__("json").loads(hp.read_text(encoding="utf-8")) if hp.exists() else {}
+    except Exception:
+        _h = {}
+    _h[vid] = {"overall": "fail", "last_at": "2026-09-28T00:00:00Z", "history": []}
+    atomic_write_json(hp, _h)
+    held = lv.operate_vsb(vid)
+    assert held.get("outcome") == "held" and held.get("held") == "compliance_fail_hold", held
+
+    # 3. REFUSED — an unreadable history means the standing is UNKNOWN. Not a decision about anyone.
+    _raw = hp.read_bytes()
+    try:
+        hp.write_bytes(b"{ this is not json")
+        refused = lv.operate_vsb(vid)
+    finally:
+        hp.write_bytes(_raw)
+    assert refused.get("outcome") == "refused", refused
+    assert refused.get("held") == "compliance_history_unavailable", refused
+
+    # 4. RAISED — and the raised return now carries cycle_ran False, so a reader testing EITHER
+    #    field is right. This is the exact shape that made genesis announce a cycle that never ran.
+    _h[vid] = {"overall": "pass", "last_at": "2026-09-28T00:00:00Z", "history": []}
+    atomic_write_json(hp, _h)
+    import agentic_core.economy.governance as _gov
+    _real = _gov.governed_cycle_sync
+
+    def _boom(*a, **k):
+        raise RuntimeError("w503 forced cycle failure")
+    _gov.governed_cycle_sync = _boom
+    try:
+        raised = lv.operate_vsb(vid)
+    finally:
+        _gov.governed_cycle_sync = _real
+    assert raised.get("outcome") == "raised", raised
+    assert raised.get("cycle_ran") is False and raised.get("error"), raised
+    # every outcome produced above is one of the four the module declares
+    for _r in (ran, held, refused, raised):
+        assert _r.get("outcome") in lv.VISIT_OUTCOMES, _r
+
+    # and list_living stops calling an unavailable store a governance decision. Drive it: put a
+    # non-decision hold on the row and read the sentence the founder is shown.
+    lv._update_entry(vid, lambda e: e.update(last_hold="intake_unavailable"))
+    row = [r for r in lv.list_living().get("living_vsbs", []) if r.get("vsb_id") == vid]
+    assert row, "the probe entity vanished from the roster"
+    _eh = row[0].get("economy_held") or {}
+    assert _eh.get("outcome") == "refused", _eh
+    assert "governance" not in str(_eh.get("consequence") or "").lower(), _eh
+    # ...while a real Change Control decision IS named as one
+    lv._update_entry(vid, lambda e: e.update(last_hold="held_for_change_control"))
+    _eh2 = [r for r in lv.list_living().get("living_vsbs", [])
+            if r.get("vsb_id") == vid][0].get("economy_held") or {}
+    assert _eh2.get("outcome") == "held" and "change control" in str(_eh2.get("consequence")).lower(), _eh2
+
+
+def test_w503b_a_failed_visit_leaves_a_trace(client):
+    """W503 (FU-045, FU-063) — the beat discarded operate_one's error result entirely, so a visit
+    that failed left nothing in the beat, nothing in the chain and nothing in the log. And only a
+    cycle that RAN may set last_vsb_operated: a hold used to set it too, so a held entity read as
+    an entity the organism had operated."""
+    # W503 — DRIVE THE INSTANCE THE ROUTE SERVES. An earlier test in this file calls
+    # `importlib.reload` on the heartbeat module, which re-runs `heartbeat = OrganismHeartbeat()` and
+    # rebinds the module attribute to a NEW object — while agentic_core/api/heartbeat.py still holds the
+    # reference it bound at import time. From then on `from agentic_core.organism.heartbeat import
+    # heartbeat` and the /status route are two different heartbeats. Driving the module's one made this
+    # guard mutate one object and assert about another: it passed alone and failed in the full suite,
+    # with `last_vsb_failed` set on the object and None in the payload. Taking the route's own reference
+    # is also the truer form of the claim, since what is under test is a field reaching a surface.
+    import agentic_core.api.heartbeat as _hbapi
+    heartbeat = _hbapi.heartbeat
+    import agentic_core.organism.heartbeat as hb
+    loop = _ensure_loop()
+    import agentic_core.economy.living_vsbs as lv
+    _real = lv.operate_one
+
+    def _run(fake):
+        hb_lv_real = lv.operate_one
+        lv.operate_one = lambda: fake
+        try:
+            heartbeat.configure(auto_economy=True)
+            return loop.run_until_complete(heartbeat.beat())
+        finally:
+            lv.operate_one = hb_lv_real
+            heartbeat.configure(auto_economy=False)
+
+    try:
+        heartbeat.last_vsb_operated = None
+        # a visit that RAISED: recorded, logged, and NOT counted as an entity operated
+        r = _run({"vsb_id": "vsb-w503f", "error": "boom", "cycle_ran": False, "outcome": "raised"})
+        assert "operate_vsb_failed" in r.get("actions", []), r.get("actions")
+        assert "operate_vsb" not in r.get("actions", []), r.get("actions")
+        assert heartbeat.last_vsb_failed and heartbeat.last_vsb_failed["vsb_id"] == "vsb-w503f"
+        assert heartbeat.last_vsb_operated is None, "a failed visit operated nothing"
+        # W503 — read the published field HERE, while this is the beat that just happened. Asserting a
+        # value read back at the END of the test made this guard depend on ambient state: in the full
+        # suite a background heartbeat loop is running, so by then the singleton had moved on and the
+        # field came back None. It passed alone and failed in the suite, which is what a guard reading
+        # its environment instead of driving it looks like.
+        _st1 = client.get("/api/v1/heartbeat/status").json()
+        assert (_st1.get("last_vsb_failed") or {}).get("vsb_id") == "vsb-w503f", _st1.get("last_vsb_failed")
+
+        # a HELD visit: a visit happened, nothing was operated, and it says which of the four it was
+        r2 = _run({"vsb_id": "vsb-w503h", "cycle_ran": False, "held": "compliance_fail_hold",
+                   "outcome": "held"})
+        assert "vsb_held" in r2.get("actions", []), r2.get("actions")
+        assert "operate_vsb" not in r2.get("actions", []), r2.get("actions")
+        assert heartbeat.last_vsb_operated is None, "a held entity is not an entity operated"
+        assert (heartbeat.last_vsb_not_operated or {}).get("outcome") == "held"
+
+        # a REFUSED visit is distinguished from a held one
+        r3 = _run({"vsb_id": "vsb-w503r", "cycle_ran": False, "held": "intake_unavailable",
+                   "outcome": "refused"})
+        assert "vsb_refused" in r3.get("actions", []), r3.get("actions")
+        assert (heartbeat.last_vsb_not_operated or {}).get("outcome") == "refused"
+
+        # a cycle that POSTED and whose bookkeeping then raised is a cycle that RAN. W503's own
+        # FU-045 branch filed this as a failed visit until FU-063 corrected it in the same round.
+        r4 = _run({"vsb_id": "vsb-w503bk", "error": "roster write failed", "cycle_ran": True,
+                   "outcome": "ran", "bookkeeping_raised": True})
+        assert "operate_vsb" in r4.get("actions", []), r4.get("actions")
+        assert "operate_vsb_failed" not in r4.get("actions", []), r4.get("actions")
+        assert "operate_vsb_bookkeeping_raised" in r4.get("actions", []), r4.get("actions")
+        assert heartbeat.last_vsb_operated == "vsb-w503bk"
+
+        # an unreadable roster keeps its own name (W472), ahead of the generic refused branch
+        r5 = _run({"cycle_ran": False, "held": "roster_unavailable", "outcome": "refused"})
+        assert "roster_unavailable" in r5.get("actions", []), r5.get("actions")
+
+        # W503 — a result naming NO outcome must not fall through to nothing. The four branches match
+        # on `outcome` and on `error`; a result with neither used to match none of them, which would be
+        # a silent fall-through inside the code written to remove silent fall-throughs (FU-045's own
+        # shape). Not reachable from the tree today — every return stamps `outcome` — so it is driven
+        # here directly, which is the only way to know the branch exists and works.
+        heartbeat.last_vsb_operated = None
+        r6 = _run({"vsb_id": "vsb-w503u", "name": "no outcome named"})
+        assert "operate_vsb_unclassified" in r6.get("actions", []), r6.get("actions")
+        assert "operate_vsb" not in r6.get("actions", []), r6.get("actions")
+        assert heartbeat.last_vsb_operated is None, "an unclassifiable result operated nothing"
+        assert (heartbeat.last_vsb_not_operated or {}).get("outcome") == "unclassified"
+        assert "cannot say" in str((heartbeat.last_vsb_not_operated or {}).get("reason"))
+    finally:
+        lv.operate_one = _real
+        heartbeat.configure(auto_economy=False)
+
+    # and every one of them reaches a surface: these were assigned and published NOWHERE, which is
+    # the produced-and-unread shape FU-264 exists to remove
+    # the FIELDS are published — which is the claim, and what blind B04 removes. The VALUES are asserted
+    # above, at the moment each beat happens, because a singleton's fields are ambient state by the end of
+    # a suite in which other tests run beats.
+    st = client.get("/api/v1/heartbeat/status").json()
+    for key in ("last_vsb_operated", "last_vsb_failed", "last_vsb_not_operated"):
+        assert key in st, f"{key} is not published"
+
+
+def test_w503c_the_ungated_consumer_is_gone(client):
+    """W503 (FU-045) — revenue.consume_pending drained EVERY pending event with no governance gate
+    and had no callers. The gated trio exists precisely because consuming before the gates destroyed
+    money a hold then refused (W465-W467), so the ungated twin is removed, not left as a
+    convenience waiting for its first caller."""
+    import agentic_core.economy.revenue as rev
+    assert not hasattr(rev, "consume_pending"), "the ungated drain is back"
+    assert not hasattr(rev, "_consume_pending_locked"), "its helper is back"
+    # the GATED path is intact and still the only way to consume
+    for name in ("peek_pending", "consume_events", "unconsume_events"):
+        assert callable(getattr(rev, name)), name
+
+
+def test_w503d_evolution_apply_release_names_its_own_claim(client):
+    """W503 (FU-019) — the release flipped ANY record whose status was `implemented` back to
+    `approved`, which is the status-only compare-and-set W463 removed from the economy's approval
+    restore: there, a re-discovered target let one action hand back an approval a DIFFERENT action
+    had spent. Not reachable today; the shape is closed before it becomes reachable."""
+    import agentic_core.api.vsb as vsbmod
+    import ast, inspect, textwrap
+    src = inspect.getsource(vsbmod.apply_approved_evolution)
+    # W503 — ASSERTED ON THE SYNTAX TREE, not on the wording. `if False:` leaves every literal in
+    # place: the claim is still stamped, the nonce still appears, and the decline record is still
+    # written in the source, merely unreachable. The first version of this guard looked for those
+    # literals and blind D01 walked straight past it. What matters is that the branch which declines a
+    # foreign claim is GUARDED BY A TEST THAT READS THE NONCE.
+    _tree = ast.parse(textwrap.dedent(src))
+    _rel = [n for n in ast.walk(_tree)
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "_release"]
+    assert len(_rel) == 1, "the release helper was renamed or removed"
+    _ifs = [n for n in ast.walk(_rel[0]) if isinstance(n, ast.If)]
+    _nonce_tests = [n for n in _ifs if "_apply_nonce" in ast.dump(n.test)]
+    assert _nonce_tests, "the release does not compare the claim against this apply's nonce"
+    # and the decline record lives INSIDE that guarded branch, so it is reachable
+    _declines = [n for n in _nonce_tests
+                 if "apply_release_declined_not_my_claim" in ast.dump(ast.Module(body=n.body, type_ignores=[]))]
+    assert _declines, "declining a foreign claim is not recorded inside the nonce test"
+    # the status check that precedes it is a real early return, not a fall-through
+    assert any("implemented" in ast.dump(n.test) for n in _ifs), "the release no longer checks the status"
+    assert "apply_claim" in src, "the claim carries no nonce"
+    # the nonce is created PER CALL, not per process: a module-level one would be identical for two
+    # concurrent applies, so the release could still hand back the other caller's claim. Asserted
+    # against the function's own body, because where it is bound is the whole point.
+    assert not hasattr(vsbmod, "_apply_nonce"), "a process-wide nonce cannot tell two applies apart"
+    _body = [ln.strip() for ln in src.splitlines() if "_apply_nonce =" in ln]
+    assert len(_body) == 1 and _body[0].startswith("_apply_nonce = uuid.uuid4()"), _body
+
+
+def test_w503e_two_reserve_figures_are_told_apart(client):
+    """W503 (FU-169) — the cockpit tile said "reserves 2,020" while the fund held 2,019 after a
+    1 WST transfer left it, and the board pack printed the same cumulative figure beside its own
+    balance sheet. The server has disclosed the split since W442 (`reserve_fund_wst`,
+    `balances_note`) and NO page read either field."""
+    import uuid as _uuid
+    import agentic_core.economy.living_vsbs as lv
+    vid = f"vsb-w503r-{_uuid.uuid4().hex[:6]}"
+    lv.register(vid, name="Reserve split probe", domain="care")
+    from agentic_core.economy.revenue import record_event
+    record_event(vid, "revenue", 400.0, "marketplace", ref="w503-reserve")
+    lv.operate_vsb(vid)
+    pack = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid})
+    assert pack.status_code == 200, pack.text
+    pnl = pack.json().get("profit_and_loss") or {}
+    # BOTH figures, each with the basis that separates them — a number whose meaning is not stated
+    # is the defect, not the number
+    assert "reserve_fund_live_wst" in pnl, pnl
+    assert pnl.get("total_reserves_wst_basis") and pnl.get("reserve_fund_live_wst_basis"), pnl
+    assert "cumulative" in str(pnl["total_reserves_wst_basis"]).lower(), pnl
+    # and the ledger route still carries what W442 added, which the pages now read
+    led = client.get(f"/api/v1/economy/ledger/{vid}")
+    assert led.status_code == 200, led.text
+    assert "reserve_fund_wst" in led.json() and led.json().get("balances_note")
+
+
+def test_w503f_a_tie_is_resolved_by_a_declared_rule(client):
+    """W503 (FU-240) — §4.5 form saturates (min(1, len/2800)), so candidates past ~2800 characters
+    all score exactly 1.000 and tie, and the winner was whichever `_cand_specs` happened to name
+    first. W483 made the payload DETECT the tie; an accident that is disclosed is still an accident.
+    The rule is declared, so it can be disagreed with, and the sort key no longer depends on
+    stable-sort behaviour."""
+    import agentic_core.api.genesis as gen
+    import ast, inspect
+    src = inspect.getsource(gen)
+    # W503 — READ THE SORT KEY, not the file's words. The first version asserted that the identifier
+    # `_declared_order` appeared somewhere in the module, and the COMMENT explaining the fix contained
+    # it: blind F01 deleted the key outright and the guard stayed green. What must be true is structural.
+    _tree = ast.parse(src)
+    _sorts = [n for n in ast.walk(_tree)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "sort"
+              and isinstance(n.func.value, ast.Name) and n.func.value.id == "candidates"]
+    assert len(_sorts) == 1, f"expected exactly one candidates.sort, found {len(_sorts)}"
+    _key = [k.value for k in _sorts[0].keywords if k.arg == "key"]
+    assert len(_key) == 1 and isinstance(_key[0], ast.Lambda), "the sort has no key lambda"
+    _tuple = _key[0].body
+    assert isinstance(_tuple, ast.Tuple), "the sort key is not a tuple of ranked criteria"
+    # three elements: the §11 veto FIRST (it must outrank everything), then the score, then the
+    # declared tiebreak. Two elements means the tiebreak is back to stable-sort luck.
+    assert len(_tuple.elts) == 3, f"the sort key ranks {len(_tuple.elts)} things, not 3"
+    assert "disqualified" in ast.dump(_tuple.elts[0]), "the veto is no longer the first criterion"
+    assert "score" in ast.dump(_tuple.elts[1]), "the score is no longer the second criterion"
+    _third = ast.dump(_tuple.elts[2])
+    assert "Subscript" in _third and "declared" in _third.lower(), \
+        f"the third criterion is not a declared order: {_third[:120]}"
+    # and when a tie is detected the payload names the rule AND says it is not merit
+    assert "tiebreak_rule" in src and "tiebreak_is_merit" in src and "tiebreak_why" in src
+    # W503 — the key EXISTING is not the claim; the reason being given is. Blind F04 replaced the whole
+    # expression with `"tiebreak_why": None` — a realistic regression, since a field present and empty
+    # tells a reader nothing — and a key-presence assertion passed straight over it. The phrase below
+    # appears only in the code, never in a comment, so no comment can satisfy this.
+    assert "nothing separates these candidates on evidence" in src, \
+        "the tiebreak no longer says why a rule was needed"
+    assert "form saturates at 1.000" in src, "the reason no longer names what saturated"
+
+
+def test_w503g_the_pages_read_what_the_server_already_said(client):
+    """W503 (FU-209, FU-169, FU-263, FU-264) — four facts the backend produced and no page read:
+    the evolution apply endpoint (no frontend file called it at all), the entity's evolution
+    timeline, the live reserve balance W442 has disclosed since then, and the beat's account of its
+    last entity visit. Plus FU-209: a keyword screen described as a moral-alignment judgement."""
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    ck = (root / "enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    ec = (root / "enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    hm = (root / "organism/HeartbeatMonitor.tsx").read_text(encoding="utf-8")
+    rh = (root / "domains/ReligionHub.tsx").read_text(encoding="utf-8")
+
+    # a render inside a dead branch keeps its text and shows nothing — W500 and W502 both shipped one
+    for name, src in (("VSBCockpit", ck), ("VSBEconomy", ec), ("HeartbeatMonitor", hm), ("ReligionHub", rh)):
+        assert "{false &&" not in src, f"{name} holds a dead branch"
+
+    # FU-263 — the apply is REACHABLE: a caller, the route, and the arm that renders its answer
+    assert "'apply'" in ck and "evolution/apply" in ck, "nothing calls the apply endpoint"
+    assert "cockpit-apply-evolution" in ck, "no control reaches it"
+    assert "growthResult.kind === 'apply'" in ck, "its answer has no arm"
+    # W503 — SCOPED TO THE APPLY ARM. `generation_basis` already had a render in the EVOLVE arm
+    # (W493's self-check), so asserting the identifier appears somewhere in this file was satisfied by
+    # that one and blind G04 deleted the apply arm's copy unseen. The apply response is a different
+    # response: an approval consumed with no applicable mutation reaches THIS arm, never the evolve one.
+    _apply_arm = ck[ck.index("growthResult.kind === 'apply' ? ("):]
+    _apply_arm = _apply_arm[:_apply_arm.index("growthResult.kind === 'ship' ? (")]
+    assert 'data-testid="cockpit-apply-result"' in _apply_arm, "the apply answer has no surface of its own"
+    assert "growthResult.generation_basis" in _apply_arm, \
+        "the apply arm does not say why a generation did not advance"
+    assert "growthResult.mutations_applied ?? 0" in _apply_arm, "mutations_applied is an int, not a list"
+    assert "(NOT advanced)" in _apply_arm, "the apply arm does not distinguish a mutation from a filing"
+    # a refusal must read as a refusal, not as a quiet success
+    assert "Nothing was applied" in _apply_arm, "a refused apply does not say so"
+
+    # FU-264 — the timeline, with cycles run and the APPLIED generation kept apart
+    assert "cockpit-evolution-timeline" in ck
+    for key in ("detail.evolution_cycles_run", "detail.last_evolution_cycle", "detail.last_evolved",
+                "detail.evolution_pending_cca"):
+        assert key in ck, f"{key} still reaches no surface"
+    # W503 — AND THE GATES THAT DECIDE WHETHER ANY OF IT RENDERS. A presence check proves a field
+    # is mentioned, not that a reader sees it: blind G08 turned the pending-review gate into
+    # `{false ? (` and every identifier survived inside the unreachable branch. Four blinds this
+    # round walked past presence checks the same way.
+    assert "{detail.evolution_pending_cca ? (" in ck, "the pending panel is not gated on there being one"
+    assert "{detail && (" in ck, "the timeline is not gated on the entity having loaded"
+    # read_text normalises newlines, so the gate is `{detail.last_evolved` at end of line
+    assert "{detail.last_evolved" + chr(10) in ck, \
+        "the applied-generation line is not gated on a mutation having been applied"
+    # and the pending panel says the thing the founder actually needs to know. JSX wraps the sentence
+    # across lines, so whitespace is collapsed first: the claim is the subject, not the wrapping.
+    _ck1 = " ".join(ck.split())
+    assert "approval alone does not mutate the genome" in _ck1, \
+        "the pending panel does not say that approving is not applying"
+    assert "filing a proposal does not mutate the genome" in _ck1, \
+        "the apply refusal does not say that filing is not applying"
+
+    # FU-169 — the live reserve balance, on both pages, each gated on the figures DISAGREEING.
+    # W503 — the GATE is asserted, not the identifier. A React conditional names its field twice,
+    # once in the condition and once in the output, so a presence check is satisfied by the half
+    # that renders nothing: blind G11 replaced the pack's condition with `false` and the guard
+    # stayed green off the identifier in the branch body. Five of this round's vacuous blinds were
+    # this one class.
+    assert "ledger.balances_note" in ck
+    assert "{ledger.reserve_fund_wst != null &&" in ck, \
+        "the cockpit's live-fund line is not gated on there being a figure"
+    assert "!== Number((ledger.balances || {}).reserves" in ck, \
+        "the cockpit shows the live fund unconditionally instead of when the two disagree"
+    assert "bp.profit_and_loss?.reserve_fund_live_wst != null" in ec, \
+        "the pack's live-fund line is not gated on there being a figure"
+    assert "!== bp.profit_and_loss.total_reserves_wst" in ec, \
+        "the pack shows the live fund unconditionally instead of when the two disagree"
+    assert 'data-testid="pack-reserve-split"' in ec, "the pack's split has no surface"
+    # the giving-back object is no longer printed through the generic String(val)
+    assert "'Giving back', lastCycle.giving_back" not in ck, "the object is back in the generic map"
+    assert "lastCycle.giving_back.budget_wst" in ck, "the amount is not named"
+    assert "{lastCycle.giving_back && (" in ck, "the giving-back line is not gated on there being one"
+    assert 'data-testid="cockpit-giving-back"' in ck, "the amount has no surface of its own"
+
+    # FU-264/FU-063 — the beat's visit outcomes reach the monitor, kept as four
+    assert "heartbeat-vsb-visits" in hm
+    for key in ("s.last_vsb_operated", "s.last_vsb_failed", "s.last_vsb_not_operated",
+                "s.last_vsb_evolved"):
+        assert key in hm, f"{key} is published and read nowhere"
+    assert "last_vsb_not_operated.outcome === 'held'" in hm, "held and refused are not told apart"
+    assert "{(s.last_vsb_operated || s.last_vsb_failed || s.last_vsb_not_operated || s.last_vsb_evolved) && (" in hm, \
+        "the visits panel is not gated on there being a visit to report"
+    assert "{s.last_vsb_failed && (" in hm, "a failed visit is not gated on there being one"
+    assert "{s.last_vsb_not_operated && (" in hm, "a held/refused visit is not gated on there being one"
+
+    # FU-209 — a word list FLAGS and escalates; it does not judge, and it can never clear
+    assert "Moral alignment checks run through" not in rh, "the judgement claim is back"
+    assert "word lists" in rh, "the screens are not described as word lists"
+    # W503 — the RENDERED element, not a substring any prose could satisfy. The comment explaining
+    # this fix used to contain the phrase, and blind G15 swapped the rendered wording for "no
+    # concerns" — a word list clearing a person, which A.9.5 forbids — while the guard stayed green
+    # off the comment.
+    assert '<span className="font-black"> nothing matched</span>' in rh, \
+        "the screen no longer renders an unmatched list as having found nothing"
+    # and not the opposite claim IN THE CLAIM POSITION. A blanket ban was wrong: the sentence
+    # deliberately quotes the phrase it rejects, to teach the distinction, and that is good writing.
+    # What must never appear is the phrase as the emphasised claim itself.
+    assert '<span className="font-black"> no concerns</span>' not in rh,         "a word list is presented as clearing the text"
+    assert "belongs to a qualified scholar" in rh, "the ruling is not reserved to a scholar"
+
+
+def test_w503h_a_hold_names_the_decision_it_stands_on(client):
+    """W503 (FU-063 part 5) — a materiality gate that ERRORS returns status `held_for_change_control`
+    with `cca_id` None (governance.py:747). The action is held, correctly; but that status is in
+    _DECISION_HOLDS, so the hold was reported as a Change Control DECISION about the entity and a later
+    raise kept it as a standing one. There is no record. The platform was claiming a judgement nobody
+    made. The status string is unchanged — its readers depend on it and the action IS held — and what is
+    added is the record the claim rests on: a decision hold with a record is a decision, a decision hold
+    with none is the platform unable to reach its own gate.
+
+    This is also the branch blind A10 proved had no instrument on it: the first version of this round's
+    guard drove a run, a compliance hold, an unreadable history and a raise, and never the gate's own."""
+    import uuid as _uuid
+    import agentic_core.economy.living_vsbs as lv
+    import agentic_core.economy.governance as gov
+
+    # the classifier, given the record
+    assert lv._outcome_of_hold("held_for_change_control", "cca-real") == "held"
+    assert lv._outcome_of_hold("held_for_change_control", None) == "refused"
+    # an UNKNOWN record is not evidence that none exists, so the old answer stands
+    assert lv._outcome_of_hold("held_for_change_control") == "held"
+    assert lv._outcome_of_hold("held_for_change_control", lv._RECORD_UNKNOWN) == "held"
+    # and a non-decision status is a refusal whatever record accompanies it
+    assert lv._outcome_of_hold("intake_unavailable", "cca-real") == "refused"
+
+    vid = f"vsb-w503g-{_uuid.uuid4().hex[:6]}"
+    lv.register(vid, name="Gate hold probe", domain="care")
+    _real = gov.governed_cycle_sync
+
+    def _held_as(status, cca):
+        def _fake(*a, **k):
+            return {"cycle": None, "governance": {"status": status, "cca_id": cca,
+                                                  "note": "forced by w503h"}}
+        gov.governed_cycle_sync = _fake
+        try:
+            return lv.operate_vsb(vid)
+        finally:
+            gov.governed_cycle_sync = _real
+
+    # a real Change Control record → a decision, named as one
+    r1 = _held_as("held_for_change_control", "cca-w503h")
+    assert r1.get("outcome") == "held", r1
+    assert r1.get("hold_names_a_decision") is True, r1
+    assert "hold_basis" not in r1, r1
+
+    # the gate ERRORED: held, but nothing was decided about this entity
+    r2 = _held_as("held_for_change_control", None)
+    assert r2.get("outcome") == "refused", r2
+    assert r2.get("hold_names_a_decision") is False, r2
+    assert "Change Control record" in str(r2.get("hold_basis") or ""), r2
+    assert "nothing has been decided" in str(r2.get("hold_basis") or ""), r2
+
+    # a non-decision governance status was never a decision
+    r3 = _held_as("intake_unavailable", None)
+    assert r3.get("outcome") == "refused", r3
+
+    # the ROW agrees, and the sentence the founder reads does not claim a ruling. The recordless hold is
+    # re-established first: the row carries the LAST visit's outcome, and r3 above left
+    # `intake_unavailable` on it, so reading the row here asserted a different state than it named.
+    _held_as("held_for_change_control", None)
+    row = [r for r in lv.list_living().get("living_vsbs", []) if r.get("vsb_id") == vid]
+    assert row, "the probe entity vanished from the roster"
+    eh = row[0].get("economy_held") or {}
+    assert eh.get("outcome") == "refused", eh
+    assert "a Change Control decision" not in str(eh.get("consequence") or ""), eh
+    assert "Change Control record" in str(eh.get("consequence") or ""), eh
+    assert "Nothing has been decided" in str(eh.get("consequence") or ""), eh
+
+    # W503 — THE SECOND WRITER. When the governance branch's own roster bookkeeping raises, a different
+    # return reports the hold, and it classified WITHOUT the record: the same recordless gate-error hold
+    # came back "held" there and "refused" here. Forced by making the roster write raise while the gate
+    # returns a recordless hold.
+    import agentic_core.economy.living_vsbs as _lv2
+    _real_upd = _lv2._update_entry
+    _calls = {"n": 0}
+
+    def _raise_on_hold_write(vid, mutate):
+        _calls["n"] += 1
+        raise RuntimeError("w503h forced roster write failure")
+
+    def _fake_hold(*a, **k):
+        return {"cycle": None, "governance": {"status": "held_for_change_control", "cca_id": None,
+                                              "note": "forced by w503h second writer"}}
+    gov.governed_cycle_sync = _fake_hold
+    _lv2._update_entry = _raise_on_hold_write
+    try:
+        r4 = lv.operate_vsb(vid)
+    finally:
+        _lv2._update_entry = _real_upd
+        gov.governed_cycle_sync = _real
+    assert _calls["n"] > 0, "the forced roster write never ran, so this leg proved nothing"
+    assert r4.get("bookkeeping_raised") is True, r4
+    assert r4.get("outcome") == "refused", \
+        f"the second writer classifies the same recordless hold differently: {r4.get('outcome')}"
+
+    # ...and a raise on top of a recordless hold must not promote it into a standing decision
+    def _boom(*a, **k):
+        raise RuntimeError("w503h forced raise")
+    gov.governed_cycle_sync = _boom
+    try:
+        lv.operate_vsb(vid)
+    finally:
+        gov.governed_cycle_sync = _real
+    after = [r for r in lv.list_living().get("living_vsbs", []) if r.get("vsb_id") == vid][0]
+    assert after.get("decision_hold") is None, after
+    # W503 — and the row must STOP claiming the hold. `decision_hold` is only ever written in the
+    # ledger_unavailable arm, so asserting on it could not see this: blind H04 kept `last_hold` as
+    # `held_for_change_control` after the raise, so the row went on asserting a Change Control hold that
+    # had no record, with the raise recorded beside it. The fix drops the hold and lets last_error speak.
+    assert after.get("last_hold") is None, \
+        f"a recordless hold survived a raise as a standing claim: {after.get('last_hold')}"
+    # `last_visit_error` is published inside economy_held, not at the row's top level
+    _eh3 = after.get("economy_held") or {}
+    assert _eh3.get("last_visit_error"), f"the raise itself is not recorded: {_eh3}"
+    assert _eh3.get("outcome") == "raised", _eh3
+
+    # the founder's own avatar says the same thing, from the same classifier
+    from agentic_core.avatars.api import _hold_phrase
+    assert "nothing has been decided" in _hold_phrase(
+        {"last_hold": "held_for_change_control", "last_hold_record": None})
+    assert "HELD by a decision" in _hold_phrase(
+        {"last_hold": "held_for_change_control", "last_hold_record": "cca-x"})
+    assert "about the platform, not this" in _hold_phrase({"last_hold": "intake_unavailable"})
+    assert "RAISED" in _hold_phrase({"last_error": "boom"})
+
+
+def test_w503i_an_unreadable_roster_says_so_from_the_real_function(client):
+    """W503 (FU-063) — `operate_one` has a return of its OWN that never reaches `operate_vsb`: an
+    unreadable roster (W472/FU-050). It therefore needed its own `outcome`, and the heartbeat's ladder
+    matches on `outcome` and on `error` — that return has neither unless it says so, in which case the
+    roster_unavailable disclosure W472 added would silently produce no action at all.
+
+    This leg exists because blind B08 was VACUOUS: test_w503b stubs `operate_one` to drive the beat, so
+    it cannot see anything inside the real one."""
+    import agentic_core.economy.living_vsbs as lv
+    from agentic_core.config import data_path
+
+    store = data_path("living_vsbs.json")
+    had = store.exists()
+    raw = store.read_bytes() if had else None
+    try:
+        store.write_bytes(b"{ not json at all")
+        got = lv.operate_one()
+    finally:
+        if had:
+            store.write_bytes(raw)
+            assert store.read_bytes() == raw, "the roster was not restored byte-for-byte"
+        else:
+            store.unlink(missing_ok=True)
+
+    assert got and got.get("held") == "roster_unavailable", got
+    # the outcome is the point: without it the beat's ladder matches nothing and the disclosure vanishes
+    assert got.get("outcome") == "refused", got
+    assert got.get("cycle_ran") is False, got
+
+    # and the beat, driven by the REAL function over that same unreadable roster, still says so
+    from agentic_core.organism.heartbeat import heartbeat
+    loop = _ensure_loop()
+    had2 = store.exists()
+    raw2 = store.read_bytes() if had2 else None
+    try:
+        store.write_bytes(b"{ not json at all")
+        heartbeat.configure(auto_economy=True)
+        beat = loop.run_until_complete(heartbeat.beat())
+    finally:
+        heartbeat.configure(auto_economy=False)
+        if had2:
+            store.write_bytes(raw2)
+            assert store.read_bytes() == raw2, "the roster was not restored byte-for-byte"
+        else:
+            store.unlink(missing_ok=True)
+    assert "roster_unavailable" in beat.get("actions", []), beat.get("actions")
+
+
+def test_w503j_a_refusal_does_not_leave_the_last_answer_on_screen(client):
+    """W503 (FU-059) — four shapes, each measured. VSBEconomy.runCycle's failure path returned without
+    clearing `cycle`, `gov` or `hold`, so the PREVIOUS cycle's report sat under a refusal saying no cycle
+    ran. VSBCockpit.runCycle discarded `governance` and set `lastCycle` to null, so a 200 that HELD
+    rendered as nothing at all — indistinguishable from an entity that never ran one. `runGrowth` read
+    `selected` after its await with no check, so switching entity mid-request showed one enterprise's
+    answer on another's screen (W468 fixed exactly this for the ledger). And doClosePeriod parsed the
+    body as JSON BEFORE testing r.ok with no catch, so a non-JSON error body showed the founder a JSON
+    syntax error instead of why the close was refused."""
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/enterprise"
+    ec = (root / "VSBEconomy.tsx").read_text(encoding="utf-8")
+    ck = (root / "VSBCockpit.tsx").read_text(encoding="utf-8")
+    for name, src in (("VSBEconomy", ec), ("VSBCockpit", ck)):
+        assert "{false &&" not in src, f"{name} holds a dead branch"
+
+    # 1 — the refusal path clears what the last cycle left, in the same statement that sets the error.
+    # Anchored INSIDE runCycle: an earlier loader in this file also parses a body, and slicing from the
+    # first `if (!r.ok)` to the first `await r.json()` produced an EMPTY string, so the first version of
+    # this assertion was checking nothing at all.
+    _cycle = ec[ec.index("const runCycle = async"):]
+    _cycle = _cycle[:_cycle.index("const loadOwnerPay") if "const loadOwnerPay" in _cycle
+                    else _cycle.index("return (")]
+    _fail = _cycle[_cycle.index("if (!r.ok) {"):_cycle.index("const d = await r.json()")]
+    assert _fail.strip(), "the refusal path could not be located in runCycle"
+    for cleared in ("setCycle(null)", "setGov('')", "setHold(null)"):
+        assert cleared in _fail, f"a refusal keeps the previous cycle's figures: {cleared} missing"
+
+    # 2 — a 200 whose cycle is null renders the HOLD, and the hold comes from the server's own reason
+    assert "setCycleHold(" in ck, "the cockpit still discards a hold"
+    assert "r.data.governance" in ck, "the cockpit invents a reason instead of reading the server's"
+    assert 'data-testid="cockpit-cycle-hold"' in ck, "the hold reaches no surface"
+    assert "{cycleHold && (" in ck, "the hold card is not gated on there being one"
+    # and switching entity never leaves the previous one's hold or growth answer behind
+    assert "setCycleHold(null); setGrowthResult(null);" in ck
+
+    # 3 — every growth action is tied to the entity it was issued for
+    _grow = ck[ck.index("const runGrowth = async"):ck.index("const instructChief")]
+    assert "const issuedFor = selected;" in _grow, "runGrowth still reads `selected` after its await"
+    # W503 — THE WHOLE STATEMENT. This literal appears twice in runGrowth: in the success-path check and
+    # again in the error label's prefix, so a presence check was satisfied by the error one and blind J04
+    # deleted the check unseen. Sixth time this class bit in one round.
+    assert "if (issuedFor !== selectedRef.current) { setGrowthBusy(''); return; }" in _grow, \
+        "a late answer is not dropped before it is shown"
+    assert "${issuedFor}/evolution/apply" in _grow, "the request still names `selected`, not the entity it was issued for"
+    assert "${selected}" not in _grow, "a growth URL still reads `selected`"
+
+    # 4 — a non-JSON refusal is read as a refusal, not as a parse error
+    # doClosePeriod sits AFTER runCycle in this file, so the slice runs forward from it
+    _close = ec[ec.index("const doClosePeriod"):]
+    _close = _close[:_close.index("const ", _close.index("setClosing(false);"))]
+    assert "await r.json().catch(() => null)" in _close, "the close still assumes the body is JSON"
+    assert "were NOT closed" in _close, "an unreadable refusal does not say the books are untouched"

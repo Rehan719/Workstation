@@ -149,6 +149,33 @@ def _suggest_areas(message: str, limit: int = 3) -> List[Dict[str, str]]:
     return [a for _, a in scored[:limit]]
 
 
+def _hold_phrase(reg: dict) -> str:
+    """W503 (FU-059, FU-063) — what the roster row actually says about this entity, in one phrase.
+
+    Four outcomes, not one word: a DECISION hold names the decision; a decision hold with no Change
+    Control record is the gate erroring, and says so rather than claiming a ruling; anything else in the
+    hold position is the platform unable to act; and a visit that RAISED is not a hold at all. The
+    module's own classifier is reused so the avatar cannot drift from the roster page."""
+    from agentic_core.economy.living_vsbs import _DECISION_HOLDS, _RECORD_UNKNOWN, _outcome_of_hold
+    hold = reg.get("last_hold")
+    parts = []
+    if hold:
+        record = reg.get("last_hold_record", _RECORD_UNKNOWN)
+        if hold in _DECISION_HOLDS and record is None:
+            parts.append(f" — HELD ({hold}), but NO Change Control record was written: the gate could "
+                         "not be reached, so nothing has been decided about this enterprise")
+        elif _outcome_of_hold(hold, record) == "held":
+            parts.append(f" — HELD by a decision ({hold})")
+        else:
+            parts.append(f" — no cycle runs: {hold} could not be used (about the platform, not this "
+                         "enterprise)")
+    if reg.get("decision_hold"):
+        parts.append(f" · a standing Change Control decision ({reg['decision_hold']}) sits behind that")
+    if reg.get("last_error"):
+        parts.append(f" · the last visit RAISED: {str(reg['last_error'])[:120]}")
+    return "".join(parts)
+
+
 def _vsb_grounding(vsb_id: str) -> str:
     """Build a grounding block from a live VSB entity so the avatar answers IN its context."""
     try:
@@ -177,7 +204,12 @@ def _vsb_grounding(vsb_id: str) -> str:
                             f"autonomous roster (cycles run by other paths are on the books, not in this tally)"
                             + (f", last distributable {reg.get('last_distributable')} WST"
                                if reg.get("last_distributable") is not None else "")
-                            + (f" — HELD ({reg.get('last_hold')})" if reg.get("last_hold") else ""))
+                            # W503 (FU-059, FU-063) — this printed the raw roster field as "HELD (x)",
+                            # blind to whether x is a DECISION or the platform simply unable to act, and
+                            # blind to `decision_hold` and `last_error` entirely. A gate that errors
+                            # records `held_for_change_control` with NO record, so the founder's own
+                            # avatar would have told them Change Control had ruled on their enterprise.
+                            + _hold_phrase(reg))
         except Exception:
             pass
         try:

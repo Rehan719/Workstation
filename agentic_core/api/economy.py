@@ -1636,6 +1636,17 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
         "currency": "WST (virtual)", "generated_at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()),
         "profit_and_loss": {
             "total_revenue_wst": revenue, "total_reserves_wst": reserves,
+            # W503 (FU-169, S1.19 C5) — TWO FIGURES OF THE SAME NAME. `total_reserves_wst` reads the
+            # legacy cumulative `balances` view, which only `record()` moves: a transfer out of the
+            # reserve fund and a period close never touch it. The balance sheet in `statements()` below
+            # is computed from the real double-entry postings, so the pack printed "Reserves 2,020"
+            # beside its own "2,019 assets" with nothing saying why. Both figures now travel with the
+            # basis that separates them, and the page prints the live one whenever they differ.
+            "reserve_fund_live_wst": stmt.get("reserve_fund_wst"),
+            "total_reserves_wst_basis": ("cumulative reserve allocations recorded by cycles; excludes "
+                                         "transfers out of the fund and period closes"),
+            "reserve_fund_live_wst_basis": ("the live double-entry reserve_fund balance — what the fund "
+                                            "actually holds now"),
             "total_costs_wst": round(bal.get("costs", 0.0), 2),     # W475 (ledger v4 R6.1) — an expense of its own
             "total_distributed_wst": distributed,
             "distribution_by_stage": {s: round(bal.get(s, 0.0), 2) for s in stages},

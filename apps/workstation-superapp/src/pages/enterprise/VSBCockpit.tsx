@@ -127,6 +127,7 @@ export const VSBCockpit: React.FC = () => {
   useEffect(() => {
     if (!selected) return;
     setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setActErr(''); setPlanErr('');
+    setCycleHold(null); setGrowthResult(null);   // W503 (FU-059) — never another entity's answer
     const issuedFor = selected;
     Promise.all([
       axios.get(`/api/v1/vsb/${selected}`).then(r => r.data).catch(() => null),
@@ -147,6 +148,8 @@ export const VSBCockpit: React.FC = () => {
   const [growthBusy, setGrowthBusy] = useState('');
   const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
   const [growthResult, setGrowthResult] = useState<Dict | null>(null);
+  // W503 (FU-059) — a 200 that HELD, kept apart from a cycle that ran
+  const [cycleHold, setCycleHold] = useState<Dict | null>(null);
   const [chiefText, setChiefText] = useState('');
   const [chiefBusy, setChiefBusy] = useState(false);
   const [chiefResult, setChiefResult] = useState<Dict | null>(null);
@@ -155,19 +158,31 @@ export const VSBCockpit: React.FC = () => {
   const detailText = (d: any): string => (d && typeof d === 'object')
     ? (d.error ? `${d.error} — gate '${d.gate}' is ${d.status}` : JSON.stringify(d))
     : String(d ?? 'failed');
-  const runGrowth = async (kind: 'ship' | 'cascade' | 'evolve') => {
+  // W503 (FU-263) — 'apply' was missing entirely: the cockpit filed proposals and Change Control
+  // approved them, and nothing in the product then APPLIED one, so the genome mutation needed an API
+  // call the Owner could not make. W493's self-check saw the symptom — `generation_advanced` produced
+  // and read by nothing.
+  const runGrowth = async (kind: 'ship' | 'cascade' | 'evolve' | 'apply') => {
     if (!selected) return;
+    // W503 (FU-059) — TIED TO THE ENTITY IT WAS ISSUED FOR. These read `selected` after the await, so
+    // switching entity mid-request showed one enterprise's answer on another's screen. W468 fixed this
+    // for the ledger with exactly this pattern; the growth actions never got it.
+    const issuedFor = selected;
     setGrowthBusy(kind); setGrowthResult(null);
     try {
-      const url = kind === 'ship' ? `/api/v1/vsb/${selected}/repo/ship`
-        : kind === 'cascade' ? `/api/v1/vsb/${selected}/repo/cascade`
-        : `/api/v1/vsb/${selected}/evolve`;
+      const url = kind === 'ship' ? `/api/v1/vsb/${issuedFor}/repo/ship`
+        : kind === 'cascade' ? `/api/v1/vsb/${issuedFor}/repo/cascade`
+        : kind === 'apply' ? `/api/v1/vsb/${issuedFor}/evolution/apply`
+        : `/api/v1/vsb/${issuedFor}/evolve`;
       const body = kind === 'evolve' ? { trigger: 'cockpit' } : {};
       const r = await axios.post(url, body);
+      if (issuedFor !== selectedRef.current) { setGrowthBusy(''); return; }   // W503 — another entity is on screen now
       setGrowthResult({ kind, ...r.data });
       loadShipState(selected);   // W338 — the staleness banner reflects the ship immediately
     } catch (e: any) {
-      setGrowthResult({ kind, error: detailText(e?.response?.data?.detail ?? e?.message) });
+      setGrowthResult({ kind, forEntity: issuedFor,
+                        error: (issuedFor !== selectedRef.current ? `${issuedFor}: ` : '')
+                               + detailText(e?.response?.data?.detail ?? e?.message) });
     }
     setGrowthBusy('');
   };
@@ -300,6 +315,11 @@ export const VSBCockpit: React.FC = () => {
         .catch(e => ({ data: null, err: serverDetail(e, 'Could not load the ledger') }));
       if (issuedFor === selectedRef.current) {
         setLastCycle(r.data.cycle || null);
+        // W503 (FU-059) — a 200 whose `cycle` is null is a HOLD, and `governance` said why. Both were
+        // discarded, so a held cycle rendered as nothing at all: the "Latest metabolic cycle" card
+        // simply vanished, which reads as an entity that has never run one.
+        setCycleHold(r.data.cycle ? null : (r.data.governance
+          || { status: 'no_cycle', note: 'The cycle returned no result and no reason.' }));
         setLedger(l.data); setLedgerErr(l.err);
       }
     } catch (e: any) {
@@ -817,19 +837,57 @@ export const VSBCockpit: React.FC = () => {
                       ))}
                     </div>
                     <p className="text-[10px] text-slate-500 mt-3">Total revenue: <span className="text-white font-bold">{Number(ledger.total_revenue || 0).toLocaleString()}</span> · distributed: <span className="text-white font-bold">{Number(ledger.total_distributed || 0).toLocaleString()}</span> · entries: {ledger.entry_count ?? 0}</p>
+                    {/* W503 (FU-169, S1.19 C5) — the tiles above are the CUMULATIVE view. The server has
+                        said so since W442 (`balances_note`, `reserve_fund_wst`) and this page printed
+                        neither, so a tile read "reserves 2,020" while the fund held 2,019 after a 1 WST
+                        transfer left it. The live balance is named whenever it differs from its tile. */}
+                    {ledger.reserve_fund_wst != null && Number(ledger.reserve_fund_wst) !== Number((ledger.balances || {}).reserves ?? ledger.reserve_fund_wst) && (
+                      <p className="text-[10px] text-amber-400/90 mt-1" data-testid="ledger-reserve-split">
+                        The reserve fund holds {Number(ledger.reserve_fund_wst).toLocaleString()} WST now — the tile
+                        above is cumulative. {String(ledger.balances_note ?? '')}
+                      </p>
+                    )}
                   </>
                 ) : ledgerErr ? <p role="alert" className="text-vital text-xs font-bold" data-testid="ledger-error">{ledgerErr}</p>
                   : <p className="text-slate-600 text-xs">No ledger yet — run an economic cycle to seed it.</p>}
                 {ledger?.disclaimer && <p className="text-[9px] text-slate-600 italic mt-3">{ledger.disclaimer}</p>}
               </Card>
 
+              {cycleHold && (
+                <Card className="p-6 border-amber-500/40" data-testid="cockpit-cycle-hold">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-2">No cycle ran</h4>
+                  <p className="text-[11px] text-slate-300">
+                    The cycle was held: <span className="font-bold text-amber-400">{String(cycleHold.status ?? 'reason not reported')}</span>
+                    {cycleHold.note ? <> — {String(cycleHold.note)}</> : null}
+                  </p>
+                  <p className="text-[9px] text-slate-500 mt-2">
+                    Nothing was distributed and nothing was posted to the books. Recognised revenue stays pending.
+                  </p>
+                </Card>
+              )}
               {lastCycle && (
                 <Card className="p-6 border-highlight/30">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3">Latest metabolic cycle</h4>
                   <div className="grid grid-cols-2 @[560px]:grid-cols-3 gap-3 text-[11px]">
-                    {[['Intake revenue', lastCycle.intake_revenue], ['Operating costs', lastCycle.operating_costs], ['Reserve', lastCycle.homeostasis_reserves], ['Distributable profit', lastCycle.distributable_profit], ['Giving back', lastCycle.giving_back], ['Metabolic energy', lastCycle.metabolic_energy]].map(([label, val]) => val != null && (
+                    {[['Intake revenue', lastCycle.intake_revenue], ['Operating costs', lastCycle.operating_costs], ['Reserve', lastCycle.homeostasis_reserves], ['Distributable profit', lastCycle.distributable_profit], ['Metabolic energy', lastCycle.metabolic_energy]].map(([label, val]) => val != null && (
                       <div key={label as string}><span className="text-slate-500">{label}: </span><span className="text-white font-bold">{typeof val === 'number' ? Number(val).toLocaleString() : String(val)}</span></div>
                     ))}
+                    {/* W503 (FU-169, S1.20 C10) — `giving_back` is charity.allocate's dict
+                        ({budget_wst, grants, excluded_by_compliance}) and went through the generic
+                        String(val) above, so the screen printed the literal text '[object Object]'
+                        where an amount belonged. The budget and the grant count are named instead, and
+                        a budget the §11 screen withheld in full says so rather than reading as zero
+                        generosity. */}
+                    {lastCycle.giving_back && (
+                      <div data-testid="cockpit-giving-back">
+                        <span className="text-slate-500">Giving back: </span>
+                        <span className="text-white font-bold">{Number(lastCycle.giving_back.budget_wst ?? 0).toLocaleString()}</span>
+                        <span className="text-slate-500"> across {(lastCycle.giving_back.grants || []).length} grant(s)</span>
+                        {(lastCycle.giving_back.excluded_by_compliance || []).length > 0 && (
+                          <span className="text-amber-400"> · {(lastCycle.giving_back.excluded_by_compliance || []).length} cause(s) withheld by the compliance screen</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {lastCycle.disclaimer && <p className="text-[9px] text-slate-600 italic mt-3">{lastCycle.disclaimer}</p>}
                 </Card>
@@ -855,6 +913,55 @@ export const VSBCockpit: React.FC = () => {
               {shipState && !shipState.stale && (
                 <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500/80">Shipped body is current (shipped {String(shipState.shipped_at ?? '')})</p>
               )}
+              {/* W503 (FU-264) — THE EVOLUTION LIFECYCLE, WHICH REACHED NO SURFACE. The record has
+                  carried all of this since W493 and no page read any of it: a founder could run ten
+                  cycles and see no trace, and an entity that never applied a mutation looked the same as
+                  one evolving daily. The cycle count and the applied generation are kept APART on
+                  purpose — W493 was registered because a counter that advanced on FILING implied traits
+                  had changed when nothing had. */}
+              {detail && (
+                <Card className="p-6 border-emerald-500/20" data-testid="cockpit-evolution-timeline">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-3">Evolution so far</h4>
+                  <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3 text-[11px]">
+                    <div>
+                      <p className="text-slate-500">Cycles run</p>
+                      <p className="text-white font-bold">{Number(detail.evolution_cycles_run ?? 0).toLocaleString()}</p>
+                      <p className="text-[9px] text-slate-600">a cycle FILES proposals; it does not change the traits</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Last cycle</p>
+                      <p className="text-white font-bold">{detail.last_evolution_cycle ? String(detail.last_evolution_cycle) : 'never run'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Generation</p>
+                      <p className="text-white font-bold">{Number(detail.generation ?? 0)}</p>
+                      <p className="text-[9px] text-slate-600">
+                        {detail.last_evolved
+                          ? <>a mutation was last APPLIED {String(detail.last_evolved)}</>
+                          : <>no mutation has ever been applied{Number(detail.evolution_cycles_run ?? 0) > 0 ? ' — the cycles above only filed proposals' : ''}</>}
+                      </p>
+                    </div>
+                  </div>
+                  {detail.evolution_pending_cca ? (
+                    <p className="text-[10px] text-amber-400 mt-3" data-testid="cockpit-evolution-pending">
+                      A review is pending: change record {String(detail.evolution_pending_cca)} is awaiting your decision
+                      in Change Control. Approve it there, then use “Apply an approved evolution” below — approval
+                      alone does not mutate the genome.
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-slate-500 mt-3">No evolution review is pending.</p>
+                  )}
+                  {(detail.evolution_proposals || []).length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {(detail.evolution_proposals || []).map((p: any, i: number) => (
+                        <li key={i} className="text-[10px] text-slate-400">
+                          <span className="text-slate-300 font-bold">{String(p.trait ?? '?')}</span>: {String(p.proposed_change ?? '')}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              )}
               {/* W299 — §13 growth machinery, now reachable for THIS entity (previously API-only) */}
               <Card className="p-6 border-emerald-500/30">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2">Grow the living enterprise (§13)</h4>
@@ -871,11 +978,32 @@ export const VSBCockpit: React.FC = () => {
                     className="bg-emerald-500/15 text-emerald-300 text-[11px] flex items-center gap-1.5">
                     {growthBusy === 'evolve' ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Evolve (re-ships the repo)
                   </Button>
+                  {/* W503 (FU-263) — apply an evolution the Owner has already APPROVED in Change Control.
+                      Filing a proposal is not a mutation: the genome advances only when this runs. */}
+                  <Button type="button" onClick={() => runGrowth('apply')} disabled={!!growthBusy}
+                    data-testid="cockpit-apply-evolution"
+                    className="bg-emerald-500/15 text-emerald-300 text-[11px] flex items-center gap-1.5">
+                    {growthBusy === 'apply' ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Apply an approved evolution
+                  </Button>
                 </div>
                 {growthResult && (
                   <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
                     {growthResult.error ? (
                       <p className="text-vital">{String(growthResult.error)}</p>
+                    ) : growthResult.kind === 'apply' ? (
+                      /* W503 (FU-263) — `applied` and `generation_advanced` are the facts that separate a
+                         real mutation from a filing, which is the distinction W493 found the old counter
+                         collapsing. A refusal says its own reason rather than reading as a success. */
+                      <p data-testid="cockpit-apply-result">
+                        {growthResult.applied
+                          ? <>Applied · record {String(growthResult.cca_id ?? '—')} · {String(growthResult.mutations_applied ?? 0)} mutation(s) · generation {String(growthResult.generation ?? '—')}
+                              {growthResult.generation_advanced
+                                ? ' (advanced by this apply)'
+                                : ' (NOT advanced)'}
+                              {growthResult.generation_basis && <span className="block text-slate-500">{String(growthResult.generation_basis)}</span>}
+                            </>
+                          : <>Nothing was applied — {String(growthResult.reason ?? 'no reason reported')}{growthResult.detail ? `: ${String(growthResult.detail)}` : ''}. An evolution must be APPROVED in Change Control first; filing a proposal does not mutate the genome.</>}
+                      </p>
                     ) : growthResult.kind === 'ship' ? (
                       <p>Shipped {Object.values(growthResult.surfaces || {}).filter((s: any) => s && !s.error && !s.deferred).length} of {Object.keys(growthResult.surfaces || {}).length} surfaces · coherent whole: {String(growthResult.coherent_whole)} · commit {growthResult.version_control?.commit}</p>
                     ) : growthResult.kind === 'cascade' ? (

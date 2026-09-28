@@ -215,6 +215,10 @@ export const VSBEconomy: React.FC = () => {
           ? fail.detail.map((d: any) => d?.msg && `${Array.isArray(d.loc) && d.loc.length ? `${d.loc[d.loc.length - 1]}: ` : ''}${d.msg}`)
             .filter(Boolean).join('; ') : '';
         const why = typeof fail?.detail === 'string' ? fail.detail : reasons ? `No cycle ran — ${reasons}.` : '';
+        // W503 (FU-059) — the PREVIOUS cycle's report and governance status stayed on screen
+        // underneath this refusal, so a founder read last week's distribution as this click's result.
+        // Nothing ran, so nothing is shown.
+        setCycle(null); setGov(''); setHold(null);
         setError(why || `HTTP ${r.status}`); setRunning(false); return;
       }
       const d = await r.json();
@@ -239,8 +243,16 @@ export const VSBEconomy: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vsb_id: vsbId }),
       });
-      const d = await r.json();
-      if (!r.ok) { setCloseErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setClosing(false); return; }
+      // W503 (FU-059) — this parsed the body as JSON BEFORE testing r.ok and with no catch, so a
+      // non-JSON error body (a proxy's HTML 502, say) threw and the founder was shown a JSON syntax
+      // error instead of why the close was refused.
+      const d = await r.json().catch(() => null);
+      if (!r.ok) {
+        setCloseErr((typeof d?.detail === 'string' && d.detail)
+          || `HTTP ${r.status} — the server's reply could not be read; the books were NOT closed.`);
+        setClosing(false); return;
+      }
+      if (!d) { setCloseErr('The close returned a reply that could not be read — check the books before retrying.'); setClosing(false); return; }
       setCloseMsg(`Books closed — net profit ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST. `
         + `Next period starts clean.${d.ueg_logged ? ' UEG-logged.' : ' (UEG event did NOT land — logging was unavailable.)'}`);
       loadBoardPack();
@@ -606,10 +618,21 @@ export const VSBEconomy: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
             <Metric label="Revenue (cumulative)" value={`${(bp.profit_and_loss?.total_revenue_wst ?? 0).toLocaleString()} WST`} />
-            <Metric label="Reserves" value={`${(bp.profit_and_loss?.total_reserves_wst ?? 0).toLocaleString()} WST`} />
+            {/* W503 (FU-169, S1.19 C5) — the cumulative figure and the live fund are different numbers
+                and were shown as one. When they disagree the live balance is named beside it with its
+                reason, because "Reserves" next to a smaller balance sheet reads as an error otherwise. */}
+            <Metric label="Reserves (cumulative)" value={`${(bp.profit_and_loss?.total_reserves_wst ?? 0).toLocaleString()} WST`} />
             <Metric label="Distributed" value={`${(bp.profit_and_loss?.total_distributed_wst ?? 0).toLocaleString()} WST`} tone="good" />
             <Metric label="Owner balance" value={bp.owner_payments?.available === false ? 'unavailable' : `${(bp.owner_payments?.balance_wst ?? 0).toLocaleString()} WST`} tone={bp.owner_payments?.available === false ? undefined : 'good'} />
           </div>
+          {bp.profit_and_loss?.reserve_fund_live_wst != null
+            && bp.profit_and_loss.reserve_fund_live_wst !== bp.profit_and_loss.total_reserves_wst && (
+            <p className="text-[9px] text-amber-400/90 mt-2" data-testid="pack-reserve-split">
+              The reserve fund holds {Number(bp.profit_and_loss.reserve_fund_live_wst).toLocaleString()} WST now.
+              The cumulative figure above is {Number(bp.profit_and_loss.total_reserves_wst ?? 0).toLocaleString()} WST:
+              {' '}{String(bp.profit_and_loss.total_reserves_wst_basis ?? 'a cumulative view')}.
+            </p>
+          )}
           <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3 mt-3">
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Venture portfolio (§6)</p>

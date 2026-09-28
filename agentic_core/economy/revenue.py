@@ -269,32 +269,12 @@ def reconcile_stranded_consumes(min_age_s: float = 900.0) -> Dict[str, Any]:
     return report
 
 
-def consume_pending(vsb_id: str) -> Dict[str, Any]:
-    """Consume (exactly once) all pending events for a VSB → the next cycle's REAL intake.
-    Returns {"revenue": X, "costs": Y, "events": n, "sources": {...}}.
-    §12 (W349) — serialised: two concurrent consumers previously both read the same pending set."""
-    with store_lock(_STORE):
-        return _consume_pending_locked(vsb_id)
-
-
-def _consume_pending_locked(vsb_id: str) -> Dict[str, Any]:
-    rows = _read_rows()
-    revenue = costs = 0.0
-    sources: Dict[str, int] = {}
-    n = 0
-    for ev in rows:
-        if ev.get("vsb_id") == vsb_id and not ev.get("consumed"):
-            if ev.get("kind") == "revenue":
-                revenue += float(ev.get("amount_wst") or 0.0)
-            else:
-                costs += float(ev.get("amount_wst") or 0.0)
-            sources[ev.get("source", "?")] = sources.get(ev.get("source", "?"), 0) + 1
-            ev["consumed"] = True
-            ev["consumed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            n += 1
-    if n:
-        atomic_write_json(_STORE, _trim(rows))
-    return {"revenue": round(revenue, 6), "costs": round(costs, 6), "events": n, "sources": sources}
+# W503 (FU-045) — `consume_pending` and its `_consume_pending_locked` helper are DELETED. Nothing called
+# either (measured: no import, no reference outside this file and the register row), and the pair drained
+# EVERY pending event with no governance gate. The live path is the gated trio `peek_pending` →
+# `consume_events` → `unconsume_events` (W465-W467), which exists because consuming before the gates
+# destroyed money a hold then refused. An ungated drain sitting beside the gated one is a defect waiting
+# for its first caller, so it is removed rather than left as a convenience.
 
 
 def pending_summary(vsb_id: str | None = None) -> Dict[str, Any]:

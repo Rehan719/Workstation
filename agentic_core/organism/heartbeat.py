@@ -131,6 +131,10 @@ class OrganismHeartbeat:
         self.last_genome: Optional[Dict[str, Any]] = None   # last genome-population vital sign on the beat
         self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
         self.last_vsb_operated: Optional[str] = None   # §4 — last living VSB autonomously operated on the beat
+        # W503 (FU-045, FU-063) — the visits that were NOT cycles. Declared and published, because a
+        # trace the beat keeps and /status never reports is a fact rendered nowhere (FU-264's shape).
+        self.last_vsb_failed: Optional[Dict[str, Any]] = None        # the visit raised
+        self.last_vsb_not_operated: Optional[Dict[str, Any]] = None  # the visit was held or refused
         self.last_transfer_reconcile: Optional[Dict[str, Any]] = None   # W466 — last stranded-transfer pass
         self.last_intake_reconcile: Optional[Dict[str, Any]] = None     # W467 — last stranded-consume pass
         self.last_vsb_evolved: Optional[Dict[str, Any]] = None   # §8×§3 (W309) — last child VSB evolved on the tick
@@ -243,11 +247,68 @@ class OrganismHeartbeat:
             try:
                 from agentic_core.economy.living_vsbs import operate_one
                 op = operate_one()
+                # W503 (FU-063) — THE FOUR OUTCOMES, read from the one field the producer now sets
+                # instead of re-derived here. The ladder this replaces counted a FAIL-screen hold and a
+                # governance hold as an entity OPERATED (`last_vsb_operated` set, action "operate_vsb"),
+                # and W503's own FU-045 branch filed `{error, cycle_ran: True}` — a cycle that POSTED and
+                # whose roster bookkeeping then raised — as a failed visit. `outcome` distinguishes all
+                # four, and only `ran` sets `last_vsb_operated`, because only `ran` operated anything.
+                _outcome = (op or {}).get("outcome")
                 if op and op.get("held") == "roster_unavailable":
-                    actions.append("roster_unavailable")           # W472 — nothing was tended, and the beat says so
-                elif op and not op.get("error"):
+                    # W472 — nothing was tended, and the beat says so under this exact name, which
+                    # /status publishes. Kept ahead of the generic refused branch on purpose.
+                    actions.append("roster_unavailable")
+                elif op and _outcome == "ran":
                     self.last_vsb_operated = op.get("vsb_id")
                     actions.append("operate_vsb")
+                    if op.get("bookkeeping_raised"):
+                        # the cycle stands; the roster's record of the visit did not
+                        actions.append("operate_vsb_bookkeeping_raised")
+                        logger.warning("heartbeat: %s's cycle posted but the roster bookkeeping raised: %s",
+                                       op.get("vsb_id"), str(op.get("error"))[:200])
+                elif op and _outcome in ("held", "refused"):
+                    # a visit happened and nothing was operated. `last_vsb_operated` stays as it was.
+                    actions.append(f"vsb_{_outcome}")
+                    self.last_vsb_not_operated = {
+                        "vsb_id": op.get("vsb_id"), "outcome": _outcome,
+                        "reason": str(op.get("held") or (op.get("governance") or {}).get("status")
+                                      or "unrecorded"),
+                        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                elif op and (_outcome == "raised" or op.get("error")):
+                    # W503 (FU-045) — A FAILED VISIT LEAVES A TRACE. There was no branch here at all: the
+                    # error result was discarded, so a visit that failed left nothing in the beat, nothing
+                    # in the chain and nothing in the log. `last_vsb_operated` is deliberately NOT set.
+                    actions.append("operate_vsb_failed")
+                    self.last_vsb_failed = {"vsb_id": op.get("vsb_id"), "error": str(op.get("error"))[:200],
+                                            "cycle_ran": bool(op.get("cycle_ran")), "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                    try:
+                        from agentic_core.gaas.v5 import UEGLogger
+                        UEGLogger().log({"type": "organism.vsb_visit_failed", "vsb_id": op.get("vsb_id"),
+                                         "error": str(op.get("error"))[:200],
+                                         "cycle_ran": bool(op.get("cycle_ran")),
+                                         "disclaimer": "Virtual/simulated WST — no real funds moved."})
+                    except Exception:
+                        pass
+                    logger.warning("heartbeat: VSB visit failed for %s: %s",
+                                    op.get("vsb_id"), str(op.get("error"))[:200])
+                elif op:
+                    # W503 (FU-045, FU-063) — A RESULT THIS READER CANNOT CLASSIFY. Every return path in
+                    # the tree stamps `outcome` today, so this is not reachable; it exists because the
+                    # alternative is the exact defect FU-045 was registered for. The four branches above
+                    # match on `outcome` (and on `error`), and a result carrying neither would match
+                    # NOTHING and leave the visit with no trace anywhere — a silent fall-through inside
+                    # the code written to remove silent fall-throughs. It is reported as unclassified,
+                    # which is louder than the other outcomes on purpose: reaching it means a producer
+                    # and this reader disagree about what a visit result looks like.
+                    actions.append("operate_vsb_unclassified")
+                    self.last_vsb_not_operated = {
+                        "vsb_id": op.get("vsb_id"), "outcome": "unclassified",
+                        "reason": ("the visit returned a result naming no outcome, so the beat cannot say "
+                                   "what happened; nothing is claimed about this entity"),
+                        "keys": sorted(str(k) for k in op)[:12],
+                        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                    logger.error("heartbeat: a VSB visit returned an unclassifiable result for %s (keys: %s)",
+                                 op.get("vsb_id"), sorted(str(k) for k in op)[:12])
             except Exception:
                 pass
             # W466 (register FU-023) — every fifth beat, complete transfers whose sender was debited and whose receiver
@@ -607,6 +668,10 @@ class OrganismHeartbeat:
             "last_genome": self.last_genome,
             "last_evolution": self.last_evolution,
             "last_vsb_operated": self.last_vsb_operated,
+            # W503 — `last_vsb_operated` only ever names an entity a cycle RAN for; these say what
+            # happened on the visits that did not run one, which used to leave no record at all.
+            "last_vsb_failed": self.last_vsb_failed,
+            "last_vsb_not_operated": self.last_vsb_not_operated,
             "last_transfer_reconcile": self.last_transfer_reconcile,
             "last_intake_reconcile": self.last_intake_reconcile,
             "last_vsb_evolved": self.last_vsb_evolved,

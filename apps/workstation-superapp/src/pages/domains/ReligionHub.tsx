@@ -281,8 +281,21 @@ export const ReligionHub: React.FC = () => {
                </div>
                <div>
                   <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Ethical Guidance</h3>
+                  {/* W503 (FU-209, class C2) — "moral alignment checks" described judgement. The §11
+                      Halal/Sharia and Ethical engines are KEYWORD and BARE-WORD SCREENS (R1.0, R3.4): a
+                      list can flag a term and escalate it, and by the standing rule it can never clear
+                      one: a list that matches no term has found nothing, which is not a verdict about
+                      the text and must never be rendered as one. (The exact wording is deliberately not
+                      repeated in this comment — a guard asserting a phrase can be satisfied by a comment
+                      containing it, which is how blind G15 walked past this round's first guard.) W439 removed a
+                      fabricated "Alignment Score OPTIMAL 98%" from under this sentence; the sentence was
+                      the same claim in prose. */}
                   <p className="text-sm text-slate-400 font-bold leading-relaxed">
-                     Moral alignment checks run through the real §11 compliance engines (Halal/Sharia · Ethical).
+                     The §11 screens read your text against the Halal/Sharia and Ethical
+                     <span className="text-amber-400"> word lists</span> — they FLAG terms for review and
+                     escalate them. They do not judge moral alignment, and an unmatched list means
+                     <span className="font-black"> nothing matched</span>, never "no concerns". A ruling
+                     belongs to a qualified scholar, not to a screen.
                   </p>
                </div>
                {/* W439 — an "Alignment Score OPTIMAL" row with a 98% bar sat here, directly under

@@ -2403,6 +2403,8 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
                                      "cca_id": cca_id,
                                      "generation": int(vsb.get("generation", 0))}
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    # W503 (FU-019) — this apply's own claim identity, so the release can name its target
+    _apply_nonce = uuid.uuid4().hex
     proposals = vsb.get("evolution_proposals") or []
     planned = sum(1 for p in proposals if str(p.get("trait") or "").strip())
     # W459 (refuter) — CLAIM the approval first, under the record's lock, and mutate the genome only
@@ -2424,9 +2426,15 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
             return
         fresh["status"] = "implemented"
         fresh["implemented_at"] = now
+        # W503 (FU-019) — the claim carries a NONCE. The release used to flip any `implemented` record
+        # back to `approved`, which is the status-only compare-and-set W463 removed from the economy's
+        # approval restore: there, a re-discovered target let one action hand back an approval a DIFFERENT
+        # action had spent. Not reachable here today (two concurrent applies of one record are prevented
+        # upstream), so this closes the SHAPE before it becomes reachable.
+        fresh["apply_claim"] = _apply_nonce
         fresh.setdefault("audit_trail", []).append(
             {"event": "implemented", "ts": now, "by": "vsb_evolution_apply", "by_verified": False,
-             "mutations_applied": planned})
+             "apply_claim": _apply_nonce, "mutations_applied": planned})
         claim["won"] = True
     try:
         _update_change(cca_id, _claim)
@@ -2465,12 +2473,22 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
         # the claim was won but the genome was not saved: release it, audibly, so the approval is
         # not consumed by an apply that never landed
         def _release(fresh: dict) -> None:
-            if fresh.get("status") == "implemented":
-                fresh["status"] = "approved"
-                fresh.pop("implemented_at", None)
+            # W503 (FU-019) — ONLY THIS CALLER'S OWN CLAIM. A status-only check would hand back an
+            # implemented state some other apply had taken; the nonce makes the release name its target.
+            if fresh.get("status") != "implemented":
+                return
+            if fresh.get("apply_claim") != _apply_nonce:
                 fresh.setdefault("audit_trail", []).append(
-                    {"event": "apply_failed_claim_released", "ts": now, "by": "vsb_evolution_apply",
-                     "by_verified": False})
+                    {"event": "apply_release_declined_not_my_claim", "ts": now,
+                     "by": "vsb_evolution_apply", "by_verified": False,
+                     "held_by": str(fresh.get("apply_claim") or "unrecorded")})
+                return
+            fresh["status"] = "approved"
+            fresh.pop("implemented_at", None)
+            fresh.pop("apply_claim", None)
+            fresh.setdefault("audit_trail", []).append(
+                {"event": "apply_failed_claim_released", "ts": now, "by": "vsb_evolution_apply",
+                 "by_verified": False, "apply_claim": _apply_nonce})
         try:
             _update_change(cca_id, _release)
         except Exception as rel_err:

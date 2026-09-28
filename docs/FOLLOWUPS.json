@@ -304,8 +304,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": ""
     },
     {
@@ -729,8 +729,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": ""
     },
     {
@@ -965,8 +965,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": ""
     },
     {
@@ -1033,8 +1033,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": ""
     },
     {
@@ -2840,8 +2840,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": ""
     },
     {
@@ -3536,8 +3536,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": ""
     },
     {
@@ -4110,8 +4110,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": "",
       "tier": 2,
       "area": "native_ai",
@@ -4536,8 +4536,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": "",
       "tier": 2
     },
@@ -4556,8 +4556,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W503",
       "note": "",
       "tier": 2
     },
@@ -4957,6 +4957,23 @@
       "note": "",
       "slot_source": "W502: the same /cycle route whose error mapping this round fixed",
       "tier": 3
+    },
+    {
+      "id": "FU-287",
+      "title": "Two concurrent visits of one entity leave a row describing one of them and a counter reflecting both",
+      "why": "FU-063's seventh sub-defect, kept separate because it is a concurrency shape rather than the outcome-vocabulary one W503 closed. Measured: living_vsbs._update_entry re-reads the roster under store_lock and mutates only its own entry (W463 sixth refutation), so no OTHER entity's row is lost and operating_cycles cannot drop an increment. But operate_vsb takes no per-entity visit claim, so two visits of ONE entity interleave: visit A may write last_hold while visit B pops it, and the row's final last_hold / last_error / outcome describe whichever finished last while operating_cycles counts both. The money is safe (peek-then-consume means the second visit gets intake_consumed_elsewhere, W466/W467), so this is a REPORTING defect: the row asserts an outcome that was not the outcome of the visit its counter attributes. Fix: claim the entity for the duration of a visit (a nonce like the one W503 gave the evolution apply, FU-019), or record the outcome per visit rather than as a single mutable row.",
+      "source": "W503 (measured while closing FU-063)",
+      "found": "2026-09-28",
+      "files": [
+        "agentic_core/economy/living_vsbs.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
     }
   ],
   "routes": [

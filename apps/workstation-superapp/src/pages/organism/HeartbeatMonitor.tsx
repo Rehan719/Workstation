@@ -11,6 +11,12 @@ interface Status {
   evolution_auto_apply?: { enabled: boolean | null; readable: boolean; governed_by: string;
     consumer?: string; how_to_change?: string; why_not_a_toggle?: string; effect_when_off?: string };
   recent: Beat[]; integrations: string[];
+  // W503 (FU-264, FU-063) — the beat's account of its last entity visit. All four are published by
+  // /api/v1/heartbeat/status and, until now, read by no page at all.
+  last_vsb_operated?: string | null;
+  last_vsb_failed?: { vsb_id?: string; error?: string; cycle_ran?: boolean; at?: string } | null;
+  last_vsb_not_operated?: { vsb_id?: string; outcome?: string; reason?: string; at?: string } | null;
+  last_vsb_evolved?: { vsb_id?: string; [k: string]: any } | null;
 }
 
 /**
@@ -161,6 +167,53 @@ export const HeartbeatMonitor: React.FC = () => {
               {s.integrations.map(i => <span key={i} className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-[8px] font-black uppercase tracking-wider">{i.replace(/_/g, ' ')}</span>)}
             </div>
           </Card>
+
+          {/* W503 (FU-264, FU-063) — WHICH ENTITY THE BEAT TENDED, AND WHAT HAPPENED. The four
+              outcomes are kept apart: only a cycle that RAN counts as operated, a held visit names the
+              decision, a refused visit says the platform could not act, and a failed visit says so
+              instead of vanishing (before FU-045 it left no trace anywhere at all). */}
+          {(s.last_vsb_operated || s.last_vsb_failed || s.last_vsb_not_operated || s.last_vsb_evolved) && (
+            <Card className="p-6" data-testid="heartbeat-vsb-visits">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Living entities the beat tended</h3>
+              <div className="space-y-2 text-[11px]">
+                {s.last_vsb_operated && (
+                  <p><span className="text-slate-500">Last cycle ran for: </span>
+                    <span className="text-emerald-400 font-bold">{String(s.last_vsb_operated)}</span></p>
+                )}
+                {s.last_vsb_not_operated && (
+                  <p data-testid="heartbeat-vsb-not-operated">
+                    <span className="text-slate-500">Last visit that ran no cycle: </span>
+                    <span className="text-amber-400 font-bold">{String(s.last_vsb_not_operated.vsb_id ?? 'an entity')}</span>
+                    <span className="text-slate-400">
+                      {' — '}
+                      {s.last_vsb_not_operated.outcome === 'held'
+                        ? <>held by a decision ({String(s.last_vsb_not_operated.reason ?? 'reason not recorded')})</>
+                        : <>refused: {String(s.last_vsb_not_operated.reason ?? 'reason not recorded')} could not be used — this is about the platform, not the entity</>}
+                      {s.last_vsb_not_operated.at ? ` · ${String(s.last_vsb_not_operated.at)}` : ''}
+                    </span>
+                  </p>
+                )}
+                {s.last_vsb_failed && (
+                  <p role="alert" data-testid="heartbeat-vsb-failed">
+                    <span className="text-slate-500">Last visit that failed: </span>
+                    <span className="text-vital font-bold">{String(s.last_vsb_failed.vsb_id ?? 'an entity')}</span>
+                    <span className="text-slate-400">
+                      {' — '}{String(s.last_vsb_failed.error ?? 'no error recorded')}
+                      {s.last_vsb_failed.cycle_ran
+                        ? ' (the cycle itself posted; the record of the visit did not)'
+                        : ' (no cycle posted)'}
+                      {s.last_vsb_failed.at ? ` · ${String(s.last_vsb_failed.at)}` : ''}
+                    </span>
+                  </p>
+                )}
+                {s.last_vsb_evolved && (
+                  <p><span className="text-slate-500">Last evolution cycle filed for: </span>
+                    <span className="text-white font-bold">{String(s.last_vsb_evolved.vsb_id ?? 'an entity')}</span>
+                    <span className="text-slate-500"> — a cycle FILES proposals; the traits change only when an approved evolution is applied</span></p>
+                )}
+              </div>
+            </Card>
+          )}
 
           {s.recent.length > 0 && (
             <Card className="p-6">

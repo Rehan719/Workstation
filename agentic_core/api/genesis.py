@@ -423,7 +423,17 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                                 f"· 0.25 safety {s['safety']}")
 
     # VETO before ranking: a candidate the §11 screen FAILS cannot win, whatever its prose scores.
-    candidates.sort(key=lambda c: (not c["screen"].get("disqualified", False), c["score"]), reverse=True)
+    # §4.5 (W503, FU-240) — THE TIEBREAK IS A DECLARED KEY, not stable-sort luck. Form saturates
+    # (specificity = min(1, len/2800)), so candidates past ~2800 characters all score exactly 1.000 and
+    # tie; the winner was then whichever `_cand_specs` happened to name first. That is an accident, and an
+    # accident cannot be argued with. The sort key below carries the framing order as an explicit third
+    # element and the payload names the rule, so the outcome is a stated decision rather than a by-product.
+    # (The identifier is deliberately not repeated in this comment: a guard that requires a token can be
+    # satisfied by a comment mentioning it, which is how blind F01 walked past this round's first guard.)
+    # The outcome is unchanged on purpose: the same candidate wins, no longer by coincidence.
+    _declared_order = {c["id"]: i for i, c in enumerate(candidates)}
+    candidates.sort(key=lambda c: (not c["screen"].get("disqualified", False), c["score"],
+                                   -_declared_order[c["id"]]), reverse=True)
     for i, c in enumerate(candidates, 1):
         c["rank"] = i
     _eligible = [c for c in candidates if not c["screen"].get("disqualified", False)]
@@ -468,7 +478,16 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                            "stops here. Nothing was designed, commercialised or established."
                            if _blocked else None),
         "tie": {"detected": _tied, "tied_candidates": _top,
-                "resolved_by": "list order — NOT evidence" if _tied else None},
+                # W503 (FU-240) — the RULE, named, and why it is not merit
+                "resolved_by": ("the declared tiebreak: the first candidate in the fixed framing order "
+                                "(the order `_cand_specs` declares them in) — NOT evidence" if _tied else None),
+                "tiebreak_rule": ("first in the declared framing order" if _tied else None),
+                "tiebreak_is_merit": (False if _tied else None),
+                "tiebreak_why": ("nothing separates these candidates on evidence: form saturates at 1.000 "
+                                 "past ~2800 characters and no §11 framework can assess them, so a rule "
+                                 "had to be chosen. It is stated rather than left to list order so that it "
+                                 "can be disagreed with — it is not a finding about the candidates."
+                                 if _tied else None)},
         # §4.5 (W434) — the candidates must actually BE alternatives before a ranking of them means
         # anything. Measured live: all three came back byte-identical. Ranking three copies of one
         # text and reporting a winner is this defect class in its purest form, so the payload says
@@ -1293,9 +1312,21 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             from agentic_core.economy.living_vsbs import operate_vsb
             birth_vitals["first_cycle"] = operate_vsb(vsb_id)
             _fc = birth_vitals["first_cycle"] or {}
+            # W503 (FU-063) — THIS ANNOUNCED "cycle ran" FOR A VISIT THAT ONLY RAISED. The raised
+            # return is `{vsb_id, error, ...}` and carried no `cycle_ran` key, so `None is not False` was
+            # True and the founder watching their enterprise be born was told its first cycle ran. The
+            # producer now names one of four outcomes and this reads it; an unrecognised value is
+            # reported as unrecognised rather than defaulting to the good news.
+            _oc = _fc.get("outcome")
+            _why = str(_fc.get("held") or (_fc.get("governance") or {}).get("status")
+                       or _fc.get("error") or "not recorded")
             yield _event("vitals", "First Economy Cycle",
-                         ("cycle ran" if _fc.get("cycle_ran") is not False else
-                          f"held: {_fc.get('held') or _fc.get('governance') or 'governance'}"), _fc)
+                         ("cycle ran" if _oc == "ran" else
+                          f"held: {_why}" if _oc == "held" else
+                          f"no cycle ran — {_why} could not be used (about the platform, not this "
+                          f"enterprise)" if _oc == "refused" else
+                          f"the first cycle failed: {_why}" if _oc == "raised" else
+                          f"the first cycle's outcome was not reported ({_why})"), _fc)
         except Exception as exc:
             birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
 

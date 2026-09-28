@@ -159,6 +159,42 @@ def _ledger_hold_text(vsb_id: Any, decision: Any = None) -> str:
     return "its ledger could not be read whole — no cycle runs and nothing is posted to it until it can be" + behind
 
 
+def _hold_consequence(r: Dict[str, Any]) -> tuple:
+    """What a hold on this row MEANS for the entity, and which rule said so.
+
+    W503 (FU-063) — this was a five-deep conditional inside the row literal, and two of its arms were
+    wrong: it fell through to "held by governance" for ANY value in the hold position, so
+    `intake_unavailable` and `intake_consumed_elsewhere` — stores the cycle could not use — were reported
+    to the founder as a governance decision about their enterprise; and a decision hold with NO Change
+    Control record (what a materiality gate that ERRORS produces) claimed a ruling nobody had made.
+
+    The rules are checked in the same order as before, and the basis names which one answered, because a
+    sentence about someone's enterprise should be traceable to the rule that produced it."""
+    hold = r.get("last_hold")
+    if not hold:
+        return None, None
+    if hold == "compliance_fail_hold":
+        return ("distributions are held — no economy cycle runs until a re-screen clears it",
+                "the latest §11 screen is FAIL: a judgement about this entity")
+    if hold == "compliance_history_unavailable":
+        return ("its compliance standing cannot be known — the compliance history could not be read "
+                "whole; no cycle runs until it can be",
+                "the compliance history could not be read: the platform cannot act")
+    if hold == "ledger_unavailable":
+        return (_ledger_hold_text(r.get("vsb_id"), r.get("decision_hold")),
+                "the books could not be read: the platform cannot act")
+    if hold in _DECISION_HOLDS:
+        if r.get("last_hold_record", _RECORD_UNKNOWN) is None:
+            return ("this entity's cycle is held, but no Change Control record was written — the gate "
+                    "could not be reached. Nothing has been decided about this entity.",
+                    "a decision hold with no record: the gate errored, so nothing was decided")
+        return ("this entity's cycle is held by governance — a Change Control decision",
+                "a Change Control decision, with its record")
+    return (f"no cycle runs: {hold} — something this cycle needs could not be used. This is about the "
+            "platform, not a judgement about this entity.",
+            "an unavailability, not a decision")
+
+
 def list_living() -> Dict[str, Any]:
     """§11 × §13 (W421) — each row now carries the entity's LIVE compliance standing and any economic
     hold it causes. Both existed only as side effects before: `_latest_screen` was read by
@@ -191,17 +227,20 @@ def list_living() -> Dict[str, Any]:
             # W472 (FU-049) — a history that cannot be read whole: the standing is UNKNOWN, not clean
             "history_unavailable": hist_error,
         }
+        # W503 — computed ONCE: the ledger-hold arm reads the books, so a call per field would read
+        # them twice for every row in the roster.
+        _cons = _hold_consequence(r)
         r["economy_held"] = {
             "held": bool(r.get("last_hold")),
             "reason": r.get("last_hold"),
-            "consequence": ("distributions are held — no economy cycle runs until a re-screen clears it"
-                            if r.get("last_hold") == "compliance_fail_hold"
-                            else ("its compliance standing cannot be known — the compliance history could not be "
-                                  "read whole; no cycle runs until it can be")
-                            if r.get("last_hold") == "compliance_history_unavailable"
-                            else (_ledger_hold_text(r.get("vsb_id"), r.get("decision_hold"))
-                                  if r.get("last_hold") == "ledger_unavailable"
-                                  else ("this entity's cycle is held by governance" if r.get("last_hold") else None))),
+            # W503 (FU-063) — a function, not five nested ternaries. See _hold_consequence.
+            "consequence": _cons[0],
+            "consequence_basis": _cons[1],
+            # W503 (FU-063) — which of the four outcomes the row's standing hold is. Added beside
+            # `held`, never replacing it: `held` means "there is a hold on this row" and is read elsewhere.
+            "outcome": (_outcome_of_hold(r.get("last_hold"),
+                                        r.get("last_hold_record", _RECORD_UNKNOWN)) if r.get("last_hold")
+                        else ("raised" if r.get("last_error") else None)),
             # W468 — the last visit's raise, when that is what happened (a raise is not a hold)
             "last_visit_error": r.get("last_error"),
             # W468 (sixth refutation) — a Change Control decision (pending or already decided) the ledger hold stands
@@ -240,8 +279,10 @@ def operate_one() -> Optional[Dict[str, Any]]:
     try:
         d = _load()
     except StoreUnavailable as e:
-        # W472 (FU-050) — an unreadable roster is a said outcome of the beat, never an empty roster
-        return {"cycle_ran": False, "held": "roster_unavailable", "note": str(e)}
+        # W472 (FU-050) — an unreadable roster is a said outcome of the beat, never an empty roster.
+        # W503 (FU-063) — this return never passes through operate_vsb, so it needs its own `outcome`:
+        # the roster could not be used, which is a refusal by the platform, not a decision about anyone.
+        return {"cycle_ran": False, "held": "roster_unavailable", "outcome": "refused", "note": str(e)}
     entries = [v for v in d.values() if isinstance(v, dict) and isinstance(v.get("vsb_id"), str)]
     if not entries:
         return None
@@ -258,6 +299,41 @@ def operate_one() -> Optional[Dict[str, Any]]:
 # W468 (refutations 2–4) — holds that record an Owner's decision (or a hold awaiting one): a heartbeat visit that raises
 # does not change them. Every other hold is an earlier visit's outcome, which a later visit's raise supersedes.
 _DECISION_HOLDS = frozenset({"held_for_change_control", "rejected_by_change_control", "governance_hold"})
+
+# W503 (FU-063) — FOUR OUTCOMES, ONE FIELD. `operate_vsb` returns eight shapes and said what happened in
+# none of them, so each consumer re-derived it differently and each was wrong in its own way (genesis
+# announced "cycle ran" for a visit that only raised, because the raised return has no `cycle_ran` key and
+# `None is not False`; the heartbeat counted a hold as an entity operated; list_living called an
+# unavailable intake a governance hold). `outcome` is ADDED — `cycle_ran`, `held`, `governance` and `error`
+# keep their exact meanings, because their readers depend on them (W495: re-pointing a field's meaning at
+# something new broke six of nine suite failures).
+#   ran     — a cycle posted to the books. A later bookkeeping raise does not unmake it.
+#   held    — a DECISION held it: a FAIL §11 screen, or Change Control.
+#   refused — the platform could not act: the roster, the ledger, the compliance history or the intake
+#             could not be used. This is a fact about the platform, NOT a judgement about the entity.
+#   raised  — the visit raised and no cycle posted.
+VISIT_OUTCOMES = ("ran", "held", "refused", "raised")
+
+
+_RECORD_UNKNOWN = object()   # W503 — "nobody told me", which is NOT the same as "there is none"
+
+
+def _outcome_of_hold(hold: Optional[str], record: Any = _RECORD_UNKNOWN) -> str:
+    """Classify whatever sits in the hold position. A Change Control decision or a FAIL screen is a
+    JUDGEMENT, so the entity is held. Everything else there — an unreadable ledger, an unavailable
+    roster or intake, an unreadable compliance history — is the platform unable to act, which is a
+    refusal and must never be reported as a decision about the entity. `compliance_fail_hold` is named
+    explicitly rather than added to _DECISION_HOLDS, which means Change Control specifically and is read
+    elsewhere to decide what a later hold may overwrite.
+
+    W503 (FU-063 part 5) — `record` is the Change Control record the hold names. A materiality gate that
+    ERRORS returns status `held_for_change_control` with `cca_id` None: the action is held, correctly, but
+    there is no decision, and reporting one is a claim about the entity that nothing supports. A decision
+    hold whose record is explicitly None is therefore a REFUSAL. `_RECORD_UNKNOWN` (the default) keeps the
+    old answer, because a caller that does not know the record has not established that none exists."""
+    if hold in _DECISION_HOLDS and record is None:
+        return "refused"
+    return "held" if (hold in _DECISION_HOLDS or hold == "compliance_fail_hold") else "refused"
 
 DEV_SPEND_WST = 50.0   # §12 (W330) — the per-action development cost drawn from self_investment
 
@@ -347,7 +423,8 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     try:
         d = _load()
     except StoreUnavailable as e:
-        return {"vsb_id": vsb_id, "cycle_ran": False, "held": "roster_unavailable", "note": str(e)}
+        return {"vsb_id": vsb_id, "cycle_ran": False, "held": "roster_unavailable",
+                "outcome": "refused", "note": str(e)}
     target = d.get(vsb_id)
     if not target:
         return None
@@ -372,7 +449,7 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         except Exception:
             pass
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
-                "held": "compliance_history_unavailable",
+                "held": "compliance_history_unavailable", "outcome": "refused",
                 "note": "the §11 compliance history could not be read whole — the entity's standing cannot be "
                         "known, so no cycle runs and nothing is posted until it can be read"}
     # §11 teeth (W309) — last screen FAIL → the economy is held, no cycle runs. The tending is
@@ -381,8 +458,24 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     if screen == "fail":
         target["last_operated"] = _now()
         target["last_hold"] = "compliance_fail_hold"
-        _update_entry(vsb_id, lambda e: (e.update(last_operated=target["last_operated"], last_hold="compliance_fail_hold"),
-                                         e.pop("last_error", None)))
+        # W503 (FU-063) — this write sat outside any try, so a raise here left `operate_vsb` altogether:
+        # the caller's `except Exception: pass` swallowed it and the visit left NO trace, neither the hold
+        # it found nor the failure to record it. The hold is still returned when its bookkeeping fails,
+        # because the screen said FAIL whether or not the roster could be written.
+        _fail_booked = True
+        try:
+            _update_entry(vsb_id, lambda e: (e.update(last_operated=target["last_operated"], last_hold="compliance_fail_hold"),
+                                             e.pop("last_error", None)))
+        except Exception as _bk:
+            _fail_booked = False
+            try:
+                from agentic_core.economy.governance import _ueg_log
+                _ueg_log({"type": "economy.compliance_hold_not_recorded", "vsb_id": vsb_id,
+                          "error": f"{type(_bk).__name__}: {str(_bk)[:160]}",
+                          "note": "the FAIL screen holds this entity's distributions; the roster could not "
+                                  "record the visit, so the hold is not on the row"})
+            except Exception:
+                pass
         try:
             from agentic_core.organism.biobus import biobus
             biobus.fire_signal("reflex", "economy.compliance_hold",
@@ -397,7 +490,10 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         except Exception:
             pass
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
-                "held": "compliance_fail_hold",
+                "held": "compliance_fail_hold", "outcome": "held",
+                **({} if _fail_booked else {"hold_recorded": False,
+                                            "hold_record_note": "the hold stands, but the roster row could not "
+                                                                "be written — see the UEG record"}),
                 "note": "latest §11 screen is FAIL — distributions held until a re-screen clears it"}
     cycle_done: Dict[str, Any] = {"report": None, "booked": False, "held": None, "held_booked": False}
     try:
@@ -425,6 +521,9 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             gov = res.get("governance") or {}
             target["last_operated"] = _now()
             target["last_hold"] = str(gov.get("status") or "governance_hold")
+            # W503 (FU-063) — the record the hold NAMES. None here means the gate errored and held
+            # without a Change Control record, which is not a decision about this entity.
+            target["last_hold_record"] = gov.get("cca_id")
             def _held(e: Dict[str, Any]) -> None:
                 # W468 (sixth refutation) — the row has one hold: a Change Control decision an unreadable ledger now
                 # stands in front of is kept apart (decision_hold), never overwritten
@@ -432,7 +531,8 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                 e.pop("decision_hold", None)
                 if target["last_hold"] == "ledger_unavailable" and prior:
                     e["decision_hold"] = prior
-                e.update(last_operated=target["last_operated"], last_hold=target["last_hold"])
+                e.update(last_operated=target["last_operated"], last_hold=target["last_hold"],
+                         last_hold_record=target["last_hold_record"])
                 e.pop("last_error", None)
             cycle_done["held"] = _held           # (seventh refutation) a raise from here on is this hold's bookkeeping
             _update_entry(vsb_id, _held)
@@ -443,6 +543,14 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                 preserved = None
             return {"vsb_id": vsb_id, "name": target.get("name"),
                     "governance": gov, "cycle_ran": False,
+                    # a governance STATUS is not automatically a governance decision: intake_unavailable
+                    # and ledger_unavailable arrive here too, and they are refusals
+                    "outcome": _outcome_of_hold(target["last_hold"], target["last_hold_record"]),
+                    "hold_names_a_decision": target["last_hold_record"] is not None,
+                    **({"hold_basis": "held without a Change Control record — the gate could not be "
+                                      "reached, so nothing has been decided about this entity"}
+                       if target["last_hold"] in _DECISION_HOLDS and target["last_hold_record"] is None
+                       else {}),
                     "pending_preserved_wst": preserved,
                     "note": ("recognised revenue events remain PENDING (unconsumed) while held"
                              if gov.get("status") not in ("intake_unavailable", "intake_consumed_elsewhere",
@@ -481,6 +589,10 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             except Exception:
                 pass
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle": target["operating_cycles"],
+                # W503 (FU-063) - the SUCCESS return carried no `cycle_ran` key at all, so a reader
+                # testing it got None and had to know that None meant yes. Stated, so a reader is right
+                # whichever field it reads.
+                "outcome": "ran", "cycle_ran": True,
                 "distributable_wst": report.get("distributable_profit"),
                 "revenue_events_consumed": pend["events"],
                 "revenue_recognised_wst": pend["revenue"],
@@ -508,7 +620,10 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                     _update_entry(vsb_id, _late)
                 except Exception:
                     pass
-            return {"vsb_id": vsb_id, "error": str(e)[:160], "cycle_ran": True,
+            # the cycle POSTED — the outcome is `ran`, and the raise is reported as what it was. W503's
+            # own FU-045 heartbeat branch read this as a failed visit until this row corrected it.
+            return {"vsb_id": vsb_id, "error": str(e)[:160], "cycle_ran": True, "outcome": "ran",
+                    "bookkeeping_raised": True,
                     "note": "the cycle ran and posted; only the roster's bookkeeping of the visit raised"}
         if cycle_done["held"] is not None:
             # (seventh refutation) the visit FOUND a hold; only the roster's bookkeeping of it raised. The row records that
@@ -519,6 +634,12 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                 except Exception:
                     pass
             return {"vsb_id": vsb_id, "error": str(e)[:160], "cycle_ran": False, "held": target.get("last_hold"),
+                    # W503 (FU-063) — the RECORD travels here too. Without it this fell back to
+                    # "nobody told me" and answered "held", so one recordless gate-error hold was a
+                    # DECISION when the roster write raised and a REFUSAL when it did not.
+                    "outcome": _outcome_of_hold(target.get("last_hold"),
+                                                target.get("last_hold_record", _RECORD_UNKNOWN)),
+                    "bookkeeping_raised": True,
                     "note": "the visit found a hold; only the roster's bookkeeping of it raised"}
         # the ledger as it reads NOW decides the ledger hold (the raise may have come before this visit read it)
         try:
@@ -539,7 +660,12 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             hold = en.get("last_hold")
             # (sixth refutation) a Change Control decision — the hold itself, or one kept behind a ledger hold — stands
             # unless this visit got past Change Control; it is kept apart while the ledger hold is in front of it
-            decision = None if past_cc else (hold if hold in _DECISION_HOLDS else en.get("decision_hold"))
+            # W503 (FU-063) — a decision hold with no record is NOT a standing decision. It was kept as
+            # one here, so a gate that merely could not be reached left the row asserting Change Control
+            # had ruled on this entity.
+            _recordless = hold in _DECISION_HOLDS and en.get("last_hold_record", _RECORD_UNKNOWN) is None
+            decision = None if (past_cc or _recordless) else (
+                hold if hold in _DECISION_HOLDS else en.get("decision_hold"))
             en.pop("decision_hold", None)
             if unreadable_now or (unreadable_now is None and hold == "ledger_unavailable"):
                 en["last_hold"] = "ledger_unavailable"
@@ -553,4 +679,4 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             _update_entry(vsb_id, _raised)
         except Exception:
             pass
-        return {"vsb_id": vsb_id, "error": str(e)[:160]}
+        return {"vsb_id": vsb_id, "error": str(e)[:160], "cycle_ran": False, "outcome": "raised"}
