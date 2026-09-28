@@ -8397,3 +8397,158 @@ sentences that are shown.
 harness itself — one carrying `\u2014` as six literal characters where the file holds an em dash, and
 one written before this round's own fix to the empty return. Four escape or anchor mistakes tonight,
 every one caught by the count assertion rather than shipping as a silent no-op.
+
+## W502 — the first BUNDLE round: one subsystem, six rows, and three claims that changed under measurement
+
+The generator chose this round, not me. `followups.py bundles` proposed **P2.9, 23 rows** — 64% above
+the measured ceiling of 14 — and the sub-cut was made by a rule rather than a judgement: **11 of the 23
+rows bind on `agentic_core/api/economy.py`**, and 11 is under the ceiling. That is the round.
+
+### Measuring first changed three of the eleven rows
+
+- **FU-250 was framed wrongly, and the row's own fix would have been wrong.** It says "nothing migrates
+  the ones already stored", which points at a data migration. Measured: the 422's own advice reads
+  "Register the entity (POST /api/v1/economy/entity-types is the list of forms)" — and `/entity-types`
+  is **GET-only**, with no registration action anywhere in the API. The missing thing was a ROUTE, and
+  the refusal named a GET as a POST. A migration would have been effort spent on the wrong defect.
+- **FU-163 under-counts itself.** It cites three files; `"next metabolic cycle"` is in **six** live ones
+  (economy.py, charity.py, transfers.py, ventures.py, CharityDirectives.tsx, EconomyOperations.tsx).
+  Left for its own round with that recorded.
+- **FU-034 confirmed exactly as written**: a contract offered to `vsb-does-not-exist-at-all` returned
+  **200** and persisted, and `/decline` and `/cancel` answered **405** — the routes did not exist.
+
+### What is fixed, each driven end to end
+
+- **FU-034** both parties validated at offer and again at accept; an UNREADABLE roster answers 503, not
+  404, because when existence cannot be known nothing is recorded under a guess. `decline` (provider) and
+  `cancel` (client) exist, keep what they were withdrawn FROM, log to the hash chain with the
+  virtual-WST disclaimer, and are refused on a settled contract — the payment is recorded and stands.
+  The PAGE offers them, shows a delivery in progress, and shows what a withdrawal was withdrawn from.
+- **FU-035** a settlement's materiality hold now carries its contract: `source="contract:<id>"` gets its
+  own class and a title naming the contract, so two material contracts between the same pair no longer
+  share one hold. Two things had to come with it: `_source_class` must learn the class or a contract
+  hold classifies as "api", and **change_control must RESERVE the new title** — a hold title that is not
+  reserved is one a submitted change can impersonate, which is the W463 hole that check exists to close.
+- **FU-037** the delivery CLAIMS before its cascade and releases on a raise. A second Deliver is refused
+  immediately instead of burning a second provider-scoped cascade and being discarded with 409.
+- **FU-039** an exception exit records outcome `unknown` with what happened, inside the release mutation.
+  It used to leave the EARLIER attempt's outcome, so a page could still say "held for the Owner's
+  decision" after the Owner approved and a later attempt failed for another reason.
+- **FU-057 (part)** "Nothing was debited" is true of THIS request, not of the transfer id a settlement
+  reuses; the answer now says so, and — found while fixing it — `_failure_answer` used to OVERRIDE the
+  header to "false" even when `debit_posted` itself raised, publishing an unknown as a certainty. The
+  gate-retry half of the row is not done, so the row stays open.
+- **FU-061** a close whose statement sums overflow REFUSES before posting (409, "Nothing was posted"),
+  and the ledger's shape check now covers the close markers, so such a figure cannot be written by any
+  path. The reachability is the interesting part: each crafted posting is INDIVIDUALLY finite, so the
+  writer's own check passes and only their sum overflows.
+- **FU-250** `POST /api/v1/economy/entity-form` records a form where none is recorded — 422 becomes 200 —
+  and REFUSES to change one that exists (409), because the form binds the waterfall and flipping it is
+  not something a request should do.
+
+### The five vacuous blinds, and the one that was my instrument's fault
+
+Twenty-one of twenty-six caught first time. Of the five that did not:
+
+**A03 was vacuous because the TEST could not construct the exception.** It claimed the unreadable-roster
+path answers 503; I spent several probes convinced the production code was broken — checking for
+duplicate module objects, stale bytecode, a shadowed exception class. All clean. The cause:
+**`StoreUnavailable(path, problem)` takes TWO arguments**, my fake loader passed one, the resulting
+`TypeError` was swallowed by `except Exception: pass`, and the 503 branch was never reached. Had I
+trusted the vacuous verdict I would have "fixed" working code. The reason is now written into the leg.
+
+The other four were genuinely missing assertions, and each is the same shape: **a property claimed in
+prose and never driven.** A settled contract was never actually offered a withdrawal. The hold title was
+asserted as arithmetic while no real settlement was ever put through the gate. The delivery claim was
+tested by PLANTING a foreign claim — which passes whether or not a genuine delivery claims anything. And
+no cascade was ever made to raise. All four now drive the real path; the B04 leg funds the client with a
+cycle (materiality lifted so the FUNDING is not itself held) and reads the CCA queue to confirm the
+hold's title names that contract.
+
+Mechanically: `TestClient` cannot be called from the event-loop thread, so the nested delivery calls the
+route function as W465 does; and it re-raises server exceptions rather than returning 500.
+
+**26 blinds, each alone, each caught, none vacuous.**
+
+### Two procedural mistakes of my own
+
+- Three "new failures" in the economy cluster were **my own reused data directory** accumulating state
+  across runs, not code. A clean directory gave 32 passed. My own isolation rule, broken by me.
+- The impersonation leg first answered 422 for a **missing required field** rather than the reservation —
+  the "everything 422s" trap. Asserting the detail caught it, and it now has a control proving an
+  ordinary title is accepted.
+
+### Left open, honestly
+
+**FU-047, FU-058, FU-163, FU-166** and **FU-057's gate-retry half**. Five rows measured and not fixed,
+rather than eleven counted and thinly verified. FU-047 in particular asks for a one-off Owner-reviewed
+audit of transfers stranded before W466 — the measurement of whether any exist comes first.
+
+### W502 second pass — the four rows the first pass left open
+
+The Owner asked that the leftovers be folded in rather than deferred, so they are in this commit.
+
+- **FU-163** the promise was in SIX live files, and `living_statement()` already knew the answer:
+  `autonomous_cycles` is the Self-run lever AND a beating heartbeat, false by default. One helper —
+  `living_vsbs.intake_note()` — computes the wording from that fact, and the transfer answer, the venture
+  return, two page blurbs and the directives notice all use it. The honest form is a QUEUE and what would
+  make it move, with the fact returned beside the sentence so a page can render its own. Second half: a
+  `0 defects/N gates` count beside a NOT-ASSESSABLE gate now says "none of them assessed this delivery —
+  a zero here is not a pass", bound to the verdict rather than printed always.
+- **FU-166** `set_directives` computed `[...] or _PRIORITIES`, so "the Owner named none" became "the Owner
+  named these four" with a fresh timestamp — the W496 ruling class, a default presented as a decision.
+  **And the READER did the same substitution**, so fixing the writer alone would have moved the lie one
+  layer down rather than removing it. `priorities` (what allocation uses — deliberately UNCHANGED, so the
+  2026-06-21 directive still holds) is now separate from `priorities_owner_named` and
+  `priorities_source` (owner / none_set / never_set / unreadable). The page says its five ranking inputs
+  are editorial constants a maintainer typed, which `charity.py` has disclosed since W415 while the page
+  did not.
+- **FU-058 (two of three parts)** a `TimeoutError` from `store_lock` or a `PermissionError` from
+  `atomic_write_json` escaped /cycle as a BARE 500 with no statement of what had been written — the one
+  thing a caller of a posting route needs. Both now answer 503 with the same `ledger_written` wording the
+  neighbouring handlers use, and a raised cycle leaves `economy.cycle_raised` in the chain, which the
+  heartbeat path wrote and this route did not. Handler ORDER matters: `TimeoutError` is an `OSError`
+  subclass, so it is matched first or the generic handler swallows it and the wording is wrong. The third
+  part — the strict read's retry sleeps blocking the event loop — is **not** done: registered as FU-286
+  with the measurement that must come first, because a fix nobody needs is still a change to a
+  money-adjacent path.
+- **FU-047** `GET /economy/transfers/unmarked-audit` lists the pre-W466 debits, turning "can only be found
+  by hand" into found. READ-ONLY: it completes nothing and recommends nothing, reports
+  `receiver_credited: null` with why, and COUNTS unreadable ledgers as excluded rather than clean —
+  because the reason these are hard is that the evidence is missing.
+
+**44 blinds, each alone, each caught, none vacuous.** Two were wrong before they ran and were fixed:
+J01/J02 substituted an undefined name into an `except` clause, which raises `NameError` INSIDE the handler
+— the guard would then error rather than see a wrong answer, and this harness reads an error as "not a
+catch". And K04 came back vacuous because nothing drove an unreadable ledger through the audit: the leg
+now tears a ledger file in half and asserts it is counted, named in `unreadable_detail`, excluded from the
+rows, and reported as "NOT included".
+
+**Eleven rows worked; FU-034, FU-035, FU-037, FU-039, FU-047, FU-057, FU-058, FU-061, FU-163, FU-166 and
+FU-250 closed** — against a measured ceiling of 14 and a median of 5. FU-285 and FU-286 carry the two
+halves that are genuinely not done.
+
+### The full suite found three defects in this round's own fixes — the fourth time tonight
+
+The guard passed and 49 blinds caught. The full run came back **4 failed / 407 passed**, and three of the
+four were mine, made while fixing the rows above.
+
+- **FU-057 was OVER-corrected.** I stopped forcing `X-Transfer-Debited: false` whenever `debit_posted`
+  could not read the ledger. But for a FRESH transfer id that "false" is TRUE and knowable: the refusal
+  happens under the ledger's lock before any posting, and this request is the only attempt under that id.
+  "unknown" belongs only to a REUSED id, where an earlier attempt may have debited.
+  `test_w468_an_unreadable_vsb_ledger_is_refused_never_replaced` caught it. **Removing a true statement is
+  the same defect as making a false one** — the honest fix for a lie is not a vaguer claim.
+- **FU-058 caught a class broader than the defect.** `except OSError` swallowed an OSError that
+  `test_w467_a_heartbeat_cycle_distributes_its_recognised_events_once` deliberately raises and expects to
+  propagate. The row named a PermissionError from atomic_write_json; that is what is caught now.
+- **My own guard asserted over a SHARED population.** `all(ledger_written is False)` ran over every
+  `economy.cycle_raised` in the UEG chain — which the whole suite shares — so it picked up the heartbeat
+  path's records from another test. Scoped to this test's entity. That is the "a count is only as good as
+  the population it names" rule, committed by me inside the round that closed rows about exactly that.
+
+The fourth failure was the mechanism working: `('ops', 464, 468)`. This round added four routes
+(/entity-form, the two withdrawal routes, the unmarked-debit audit), so the README figure failed CI until
+it was refreshed — which is what W499 built that guard to do. Now 468 operations over 445 paths.
+
+**49 blinds re-run after the corrections: each alone, each caught, none vacuous.**

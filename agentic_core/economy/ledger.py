@@ -58,6 +58,26 @@ def _number_ok(v: Any) -> bool:
         return False
 
 
+def _nonfinite_figure(obj: Any, path: str = "") -> Optional[str]:
+    """W502 (FU-061) — the first `<path> = <value>` in a nested structure that is a float but not a
+    finite one, or None. Used to refuse a close whose sums overflowed before anything is posted."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            found = _nonfinite_figure(v, f"{path}.{k}" if path else str(k))
+            if found:
+                return found
+        return None
+    if isinstance(obj, (list, tuple)):
+        for i, v in enumerate(obj):
+            found = _nonfinite_figure(v, f"{path}[{i}]")
+            if found:
+                return found
+        return None
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return f"{path or 'value'} = {obj}"
+    return None
+
+
 def _shape_problem(data: Any) -> Optional[str]:
     """What makes a parsed file not a ledger this code can post to, or None. A key that is present must be
     well-formed; a missing key takes its default (ledgers written before a key existed stay readable)."""
@@ -73,6 +93,18 @@ def _shape_problem(data: Any) -> Optional[str]:
         bad = [k for k, v in book.items() if not _number_ok(v)]
         if bad:
             return f"'{key}' holds a non-finite or non-numeric balance ({str(bad[0])[:40]})"
+    # W502 (FU-061) — the close MARKERS are checked too. They were not, so a statement sum that
+    # overflowed to Infinity was saved on the marker and the route then answered a bare 500 (JSON
+    # cannot carry inf). A ledger must not be writable into a state its own reader refuses.
+    closes = data.get("closes", [])
+    if not isinstance(closes, list):
+        return "'closes' is not a list"
+    for i, cl in enumerate(closes):
+        if not isinstance(cl, dict):
+            return f"close {i} is not a close marker"
+        for k, v in cl.items():
+            if k.endswith("_wst") and not _number_ok(v):
+                return f"close {i} holds a non-finite or non-numeric {k} ({str(v)[:40]})"
     postings = data.get("postings", [])
     if not isinstance(postings, list):
         return "'postings' is not a list"
@@ -483,6 +515,14 @@ class VirtualLedger:
         the close itself is recorded as real postings + a close marker."""
         with self._locked():
             stmts = self.statements()
+            # W502 (FU-061) — REFUSE BEFORE POSTING when any figure is not finite. The statements are
+            # computed first, so an overflowed sum is knowable here; it used to be written onto the close
+            # marker and the route answered a bare 500 when JSON could not carry it.
+            bad = _nonfinite_figure(stmts)
+            if bad:
+                raise LedgerWriteRefused(
+                    f"{self.vsb_id}'s books were not closed: the statements hold a figure that is not a "
+                    f"number ({bad}) — the balances are beyond what can be summed. Nothing was posted.")
             accts = self._data.get("accounts", {})
             for name, atype in CHART.items():
                 bal = round(accts.get(name, 0.0), 2)

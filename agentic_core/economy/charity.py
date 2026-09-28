@@ -84,15 +84,35 @@ def get_directives(strict: bool = False) -> Dict[str, Any]:
             d = {}
     else:
         d = {}
+    # W502 (FU-166) — WHAT THE OWNER NAMED AND WHAT ALLOCATION USES ARE TWO FACTS. `or _PRIORITIES`
+    # made them one: a record in which the Owner named NO priorities read back as the four platform
+    # defaults under `source: "owner_set"`. Allocation still falls back to the defaults, so nothing
+    # about behaviour changes here; the provenance stops being a guess.
+    _named = [str(p) for p in (d.get("priorities") or []) if str(p).strip()]
+    _in_force = _named or list(_PRIORITIES)
+    _psource = ("unreadable" if _unreadable else
+                "owner" if _named else
+                "none_set" if d else "never_set")
     return {
-        "priorities": list(d.get("priorities") or _PRIORITIES),
+        "priorities": _in_force,
+        "priorities_owner_named": _named,
+        "priorities_source": _psource,
+        "priorities_note": (
+            "the Owner named these" if _psource == "owner" else
+            "the Owner's record names NO priority causes, so allocation uses this platform's editorial "
+            "defaults (a maintainer's encoding of the 2026-06-21 directive), not an Owner choice"
+            if _psource == "none_set" else
+            "no directives have ever been saved, so allocation uses this platform's editorial defaults"
+            if _psource == "never_set" else
+            "the directives store could not be read, so what the Owner named is not known from it"),
         "exclusions": list(d.get("exclusions") or []),
         "require_100pct": bool(d.get("require_100pct", True)),
         "source": ("UNREADABLE — the directives store exists and could not be read whole, so the "
                    "Owner's priorities and EXCLUSIONS are not known from it; the figures below are "
                    f"this platform's defaults, not the Owner's instruction ({_unreadable})"
                    if _unreadable else
-                   "owner_set" if d else "defaults (2026-06-21 Owner directive)"),
+                   "owner_set" if _named else
+                   "defaults (2026-06-21 Owner directive)"),
         "directives_readable": _unreadable is None,
         "updated_at": d.get("updated_at"),
     }
@@ -102,8 +122,18 @@ def set_directives(priorities: Optional[List[str]] = None, exclusions: Optional[
                    require_100pct: bool = True) -> Dict[str, Any]:
     """Persist the Owner's charity directives — honoured by EVERY subsequent allocation (the
     metabolic cycle constructs CharityIntelligence with these as its defaults)."""
+    # W502 (FU-166) — `[...] or _PRIORITIES` turned "the Owner named none" into "the Owner named these
+    # four", and `updated_at` then stamped the platform's own defaults as a fresh Owner decision. A
+    # default is not a decision (the Owner's W496 ruling class). The empty list is kept as empty and the
+    # record says whose the priorities are; allocation still falls back to the defaults, and says so.
+    named = [str(p) for p in (priorities or []) if str(p).strip()]
     d = {
-        "priorities": [str(p) for p in (priorities or []) if str(p).strip()] or _PRIORITIES,
+        "priorities": named,
+        "priorities_source": "owner" if named else "none_set",
+        "priorities_note": ("the causes the Owner named" if named else
+                            "the Owner named no priority causes: allocations use the platform's "
+                            "editorial defaults (" + ", ".join(_PRIORITIES) + "), which are a "
+                            "maintainer's encoding of the 2026-06-21 directive and not an Owner choice"),
         "exclusions": [str(x) for x in (exclusions or []) if str(x).strip()],
         "require_100pct": bool(require_100pct),
         "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

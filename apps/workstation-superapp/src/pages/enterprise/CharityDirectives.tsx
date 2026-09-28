@@ -26,6 +26,11 @@ interface Directives {
   require_100pct: boolean;
   source?: string;
   updated_at?: string | null;
+  // W502 (FU-166) — a TIMESTAMP is not provenance. A record in which the Owner named no priority causes
+  // still carries `updated_at`, so "set by you" was shown for this platform's editorial defaults.
+  priorities_source?: 'owner' | 'none_set' | 'never_set' | 'unreadable' | string;
+  priorities_owner_named?: string[];
+  priorities_note?: string;
   live_signals?: { enabled: boolean; approved_signal_count: number; note: string };
 }
 
@@ -92,7 +97,10 @@ export const CharityDirectives: React.FC = () => {
       });
       apply(res);
       loadPool();   // the pool re-ranks under the new directives — show the round-trip
-      setNotice('Directives saved — honoured by allocations from the next metabolic cycle.');
+      // W502 (FU-163) — "from the next metabolic cycle" named a cycle that is not scheduled unless the
+      // heartbeat's Self-run lever is on and it is beating. The directives are saved either way.
+      setNotice('Directives saved — they apply to allocations made by the next metabolic cycle that RUNS. '
+                + 'Cycles are not automatic unless Self-run is on and the heartbeat is beating (Heartbeat page).');
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -119,11 +127,23 @@ export const CharityDirectives: React.FC = () => {
           review.
         </p>
         {loaded && (
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-2">
-            {loaded.updated_at
-              ? `set by you · ${loaded.updated_at}`
-              : `still on defaults${loaded.source ? ` · ${loaded.source}` : ''}`}
+          <>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-2"
+             data-testid="directives-provenance">
+            {loaded.priorities_source === 'owner'
+              ? `set by you · ${loaded.updated_at ?? 'no timestamp recorded'}`
+              : loaded.priorities_source === 'none_set'
+                ? `saved by you · ${loaded.updated_at ?? 'no timestamp recorded'} — but you named NO priority causes`
+                : loaded.priorities_source === 'unreadable'
+                  ? `directives unreadable${loaded.source ? ` · ${loaded.source}` : ''}`
+                  : `still on defaults${loaded.source ? ` · ${loaded.source}` : ''}`}
           </p>
+          {loaded.priorities_source !== 'owner' && loaded.priorities_note && (
+            <p className="text-[9px] text-amber-400 font-bold mt-1" data-testid="directives-note">
+              {loaded.priorities_note}
+            </p>
+          )}
+          </>
         )}
       </div>
 

@@ -41,6 +41,12 @@ interface Contract {
   settlement?: { transfer_id?: string; held?: boolean; outcome?: string; rejected_by?: string; cca_id?: string;
                  governance?: { status?: string } | null } | null;
   settling?: { since?: string } | null;
+  // W502 (FU-037) — a delivery claims before its cascade, so a second Deliver is refused immediately.
+  // The claim reaches here the same way a settlement's does: since when, nothing more.
+  delivering?: { since?: string } | null;
+  // W502 (FU-034) — the provider may DECLINE and the client may CANCEL; what it was withdrawn from is
+  // kept, so nothing about the work already done is erased.
+  withdrawn?: { by?: string; from_status?: string; at?: string } | null;
   offered_at?: string;
   note?: string;
 }
@@ -60,7 +66,18 @@ const NEXT_ACTION: Record<string, { verb: string; path: string; who: string }> =
   delivered: { verb: 'Settle',  path: 'settle',  who: 'client' },
 };
 
+// W502 (FU-034) — WITHDRAWING. Until W502 there was no decline and no cancel at all: a contract that
+// could never be settled stayed on the books forever, and the routes answered 405. A settled contract
+// is never withdrawn — the payment is recorded and that record stands.
+const WITHDRAWALS: { verb: string; path: string; who: string }[] = [
+  { verb: 'Decline', path: 'decline', who: 'provider' },
+  { verb: 'Cancel',  path: 'cancel',  who: 'client' },
+];
+const WITHDRAWABLE = new Set(['offered', 'accepted', 'delivered']);
+
 const STATUS_TONE: Record<string, string> = {
+  declined:  'text-slate-500',
+  cancelled: 'text-slate-500',
   offered:   'text-slate-400',
   accepted:  'text-highlight',
   delivered: 'text-aura',
@@ -104,11 +121,17 @@ function qualityText(q: unknown): string | null {
   if (simple !== undefined && typeof simple !== 'object') return String(simple);
 
   const parts: string[] = [];
-  { const c = qmsChip(o as QmsQuality); if (c) parts.push(c.verdict === 'pass' ? 'QMS pass' : c.verdict === 'fail' ? 'QMS FAIL' : 'QMS not assessable'); }
+  const chip = qmsChip(o as QmsQuality);
+  if (chip) parts.push(chip.verdict === 'pass' ? 'QMS pass' : chip.verdict === 'fail' ? 'QMS FAIL' : 'QMS not assessable');
   if (typeof o.delivery_coverage === 'number') parts.push(`coverage ${Math.round(o.delivery_coverage * 100)}%`);
   const d = o.qms_defects as Record<string, any> | undefined;
   if (d && typeof d.defects_total === 'number' && typeof d.gates_run === 'number') {
-    parts.push(`${d.defects_total} defect${d.defects_total === 1 ? '' : 's'}/${d.gates_run} gates`);
+    // W502 (FU-163) — a ZERO here is reassurance, and beside a gate that is NOT ASSESSABLE it is the
+    // zero you get from gates that could not fail rather than from a delivery that passed them. The
+    // count still shows; what it does not do any more is stand on its own as a clean bill.
+    const zeroUnassessed = d.defects_total === 0 && chip && chip.verdict !== 'pass';
+    parts.push(`${d.defects_total} defect${d.defects_total === 1 ? '' : 's'}/${d.gates_run} gates`
+               + (zeroUnassessed ? ' (none of them assessed this delivery — a zero here is not a pass)' : ''));
   } else if (typeof o.qms_non_conformance_rate === 'number') {
     // W489 (refutation) — a per-deliverable row showing the PLATFORM-WIDE rate read as this
     // deliverable's. One QMS store serves every entity and tenant; the label now says so.
@@ -167,8 +190,10 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
     }
   };
 
-  const advance = async (c: Contract) => {
-    const step = NEXT_ACTION[c.status];
+  // W502 (FU-034) — `path` names a WITHDRAWAL (decline/cancel), which is not the "next action" for a
+  // status. Without it these buttons would have run accept/deliver/settle instead.
+  const advance = async (c: Contract, path?: string) => {
+    const step = path ? { verb: path, path, who: '' } : NEXT_ACTION[c.status];
     if (!step) return;
     setBusy(c.id); setError(''); setNotice('');
     // Deliver runs the full org cascade — roughly 22 model calls across Chief → Board → AI CEO →
@@ -190,6 +215,9 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
         } else {
           setError(res.note || 'The settlement did not complete — the contract stays delivered and nothing was paid.');
         }
+      } else if (step.path === 'decline' || step.path === 'cancel') {
+        setNotice(`Contract ${res.status} by the ${res.withdrawn?.by ?? step.path === 'decline' ? 'provider' : 'client'}`
+                  + `${res.withdrawn?.from_status ? ` (it was ${res.withdrawn.from_status})` : ''} — nothing was paid.`);
       } else {
         setNotice(`Contract ${res.status}.`);
       }
@@ -308,6 +336,14 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
                       </Badge>
                     )}
                     {c.settling?.since && <Badge className="text-[8px]">settlement in progress</Badge>}
+                    {c.delivering?.since && (
+                      <Badge className="text-[8px]" data-testid="contract-delivering">delivery in progress</Badge>
+                    )}
+                    {c.withdrawn?.from_status && (
+                      <Badge className="text-[8px]" data-testid="contract-withdrawn">
+                        {c.status} by the {c.withdrawn.by} — from {c.withdrawn.from_status}
+                      </Badge>
+                    )}
                     {c.status === 'settled' && c.settlement?.transfer_id && <><span>·</span><span>transfer {String(c.settlement.transfer_id)}</span></>}
                     {c.status === 'accepted' && (
                       <span className="normal-case tracking-normal font-semibold text-slate-500">
@@ -315,6 +351,14 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
                       </span>
                     )}
                   </div>
+                  <div className="flex items-center gap-1.5">
+                  {WITHDRAWABLE.has(c.status) && !c.settling?.since && !c.delivering?.since && WITHDRAWALS.map(w => (
+                    <Button key={w.path} type="button" onClick={() => advance(c, w.path)} disabled={busy === c.id}
+                      data-testid={`contract-${w.path}`}
+                      className="text-[9px] px-2 py-1.5 bg-transparent border border-white/10 text-slate-400">
+                      {`${w.verb} (${w.who})`}
+                    </Button>
+                  ))}
                   {step && (
                     <Button type="button" onClick={() => advance(c)} disabled={busy === c.id}
                       className="text-[9px] px-3 py-1.5">
@@ -324,6 +368,7 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
                         : `${step.verb} (${step.who})`}
                     </Button>
                   )}
+                  </div>
                 </div>
               </div>
             );

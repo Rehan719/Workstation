@@ -135,7 +135,16 @@ def _pending_intake(vsb_id: str) -> float:
     return round(sum(_pending_parts(vsb_id)), 2)
 
 
+CONTRACT_HOLD_TITLE_PREFIX = "[economy] material contract settlement — "
+
+
 def _hold_title(vsb_id: str, source: str) -> str:
+    """W502 (FU-035) — a contract settlement's hold names the contract in its TITLE, so one hold
+    governs one contract and the Owner reviewing it can see which. Two material contracts between
+    the same pair used to share one hold identity: approving one released the other."""
+    if str(source or "").startswith(CONTRACT_SOURCE_PREFIX):
+        cid = str(source).split(":", 1)[1].strip() or "unnamed"
+        return f"{CONTRACT_HOLD_TITLE_PREFIX}{vsb_id} · contract {cid}"
     return (("[economy] material transfer — " + vsb_id) if source == "transfer"
             else _HOLD_TITLE_PREFIX + vsb_id)
 
@@ -457,8 +466,16 @@ _SUBMIT_ONLY_KEYS = ("submitted_by_verified", "immune_threat_at_submit", "config
 _LEGACY_EST = re.compile(r"estimated distributable ([0-9]+(?:\.[0-9]+)?) WST")
 
 
+CONTRACT_SOURCE_PREFIX = "contract:"
+
+
 def _source_class(source: str) -> str:
+    """W502 (FU-035) — a contract settlement is its OWN class. Without this, source
+    "contract:ctr-1" classified as "api": a transfer-class hold would have matched it and the
+    contract id would have bought nothing."""
     source = str(source or "")
+    if source.startswith(CONTRACT_SOURCE_PREFIX):
+        return "contract"
     return "transfer" if source == "transfer" else ("heartbeat" if source == "heartbeat" else "api")
 
 

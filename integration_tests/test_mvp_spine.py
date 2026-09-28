@@ -13549,19 +13549,33 @@ def test_w465_a_service_contract_is_paid_once_and_its_store_keeps_every_change(c
     c4 = delivered(a, b, 100.0)
     E._mutate_contracts(lambda rows: next(x for x in rows if x["id"] == c4).update(status="accepted", delivery=None))
     c5 = delivered(a, b, 105.0)
-    during = {"inner": None}
+    # W502 (FU-037) — the delivery now CLAIMS before the cascade, so a second Deliver is refused
+    # immediately instead of burning a whole provider-scoped cascade and being discarded with 409
+    # "another delivery bound first". This leg drove that old path; it now drives the new one and
+    # asserts more: the second attempt is refused EARLY, no second cascade runs at all, the first
+    # delivery binds, and the settle that happened meanwhile still stands.
+    during = {"inner": None, "cascades": 0}
 
     async def _cascade_meanwhile(req):
+        during["cascades"] += 1
         if during["inner"] is None:
             during["inner"] = "running"
             await E.settle_contract(c5, user=None)                         # another contract settles meanwhile
-            during["inner"] = await E.deliver_contract(c4, user=None)      # and a second delivery binds first
+            try:
+                await E.deliver_contract(c4, user=None)                    # a second delivery, while this one holds
+                during["inner"] = "bound"                                  # must not happen: the claim holds
+            except Exception as _e:
+                during["inner"] = getattr(_e, "detail", None) or str(_e)
         return {"run_id": f"run-{_uuid.uuid4().hex[:6]}", "quality": {"qms_gate_passed": None}, "ai_provenance": {}}
     monkeypatch.setattr(sw, "cascade_orchestration", _cascade_meanwhile)
     outer = client.post(f"/api/v1/economy/contracts/{c4}/deliver")
     monkeypatch.setattr(sw, "cascade_orchestration", real_cascade)
-    assert outer.status_code == 409 and "another delivery bound first" in outer.json()["detail"], outer.text
-    assert contract(c4)["status"] == "delivered" and contract(c4)["delivery"]["run_id"] == during["inner"]["delivery"]["run_id"]
+    assert outer.status_code == 200, outer.text                             # the holder completes
+    assert "already in progress" in str(during["inner"]), during["inner"]   # the second was refused
+    assert during["cascades"] == 1, (during["cascades"], "the refused delivery ran a cascade anyway")
+    assert contract(c4)["status"] == "delivered"
+    assert contract(c4)["delivery"]["run_id"] == outer.json()["delivery"]["run_id"]
+    assert contract(c4).get("delivering") is None                           # the claim is spent, not left live
     assert contract(c5)["status"] == "settled"                              # the stale write no longer erases it
 
     # ── what an unpaid settlement was (FU-024): held for the Owner, rejected, refused by the gate, a gate error ──
@@ -22148,3 +22162,541 @@ def test_w501_a_round_is_proposed_as_a_subsystem_cut_by_item(client):
     assert _rc.fu._components_of is fu._components_of, "the script bound a different module"
     # and the empty-register shape carries every key the populated one does
     assert set(fu.largest_round_closed({"items": []})) == set(_real), "two return shapes"
+
+
+def test_w502_the_contract_lifecycle_and_the_books_say_what_happened(client, monkeypatch):
+    """W502 — the first BUNDLE round: one file-connected subsystem (agentic_core/api/economy.py), cut by
+    item, eleven rows of which six are closed here.
+
+    FU-034 a contract to an entity that exists nowhere was offered, accepted and DELIVERED (a whole
+    provider-scoped cascade ran) and only refused at settle with 404 — and could never be withdrawn,
+    because /decline and /cancel answered 405: the routes did not exist.
+    FU-035 the settlement's materiality hold was identified by (sender, counterparty, ceiling), so two
+    material contracts between the same pair shared one hold: approving one released the other.
+    FU-037 the delivery bound only AFTER its cascade returned, so a second Deliver burned a second
+    cascade and had it discarded with 409.
+    FU-039 an exception exit from settle left the EARLIER attempt's outcome on the contract, so a page
+    could still say "held for the Owner's decision" after the Owner approved and a later attempt failed.
+    FU-061 a period close saved an Infinity net profit and answered a bare 500: the ledger's own shape
+    check covered balances and posting amounts, not the close markers.
+    FU-250 the 422 for a stored entity with no recorded form told the owner to "Register the entity
+    (POST /api/v1/economy/entity-types)" — a GET-only list, with no registration action anywhere.
+
+    Virtual/simulated WST throughout; nothing here moves real funds.
+    """
+    import json
+    import pathlib
+    import uuid as _uuid
+    from agentic_core.api import economy as E
+    from agentic_core.api import vsb as V
+    from agentic_core.economy import governance as GV
+    from agentic_core.economy import ledger as LG
+
+    def _est(name):
+        r = client.post("/api/v1/genesis/establish",
+                        json={"problem": f"w502 {name}", "ship_output": False, "name": name})
+        assert r.status_code == 200, r.text
+        return r.json()["vsb_id"]
+
+    a, b = _est("W502 Client"), _est("W502 Provider")
+
+    def _offer(price=12.0, provider=None):
+        return client.post("/api/v1/economy/contracts", json={
+            "client_vsb": a, "provider_vsb": provider or b,
+            "brief": "w502 guard contract", "price_wst": price})
+
+    # ── FU-034: a party that exists nowhere is refused, and the refusal names what to do ─────────────
+    ghost = _offer(provider="vsb-w502-exists-nowhere")
+    assert ghost.status_code == 404, ghost.text
+    assert "not a registered entity" in ghost.json()["detail"]
+    assert "genesis/establish" in ghost.json()["detail"]      # actionable, not just a refusal
+    # nothing was persisted by the refused offer
+    assert not [c for c in client.get("/api/v1/economy/contracts").json()["contracts"]
+                if c["provider_vsb"] == "vsb-w502-exists-nowhere"]
+
+    # ── FU-034: the provider declines, the client cancels, and a settled contract does neither ──────
+    c_dec = _offer().json()["id"]
+    dec = client.post(f"/api/v1/economy/contracts/{c_dec}/decline")
+    assert dec.status_code == 200, dec.text
+    assert dec.json()["status"] == "declined"
+    assert dec.json()["withdrawn"]["by"] == "provider" and dec.json()["withdrawn"]["from_status"] == "offered"
+    # a withdrawn contract cannot then be worked
+    assert client.post(f"/api/v1/economy/contracts/{c_dec}/accept").status_code == 409
+    assert client.post(f"/api/v1/economy/contracts/{c_dec}/deliver").status_code == 409
+
+    c_can = _offer().json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{c_can}/accept").status_code == 200
+    can = client.post(f"/api/v1/economy/contracts/{c_can}/cancel")
+    assert can.status_code == 200 and can.json()["status"] == "cancelled"
+    assert can.json()["withdrawn"]["from_status"] == "accepted"      # what it was withdrawn FROM is kept
+
+    # the withdrawal is in the hash-chained log, with the virtual-WST disclaimer the economy always carries
+    _ueg = pathlib.Path(str(E.__dict__.get("__file__")))          # placeholder, replaced below
+    from agentic_core.config import settings as _settings          # noqa: F401  (path resolved by the logger)
+    from agentic_core.gaas.v5 import UEGLogger
+    _graph = json.loads(pathlib.Path(UEGLogger().storage_path).read_text(encoding="utf-8"))
+    _events = [(n.get("data") or {}) for n in _graph.get("nodes", [])]
+    _decl = [e for e in _events if e.get("type") == "economy.contract_declined" and e.get("contract_id") == c_dec]
+    assert _decl, [e.get("type") for e in _events][-8:]
+    assert _decl[0]["by"] == "provider" and "Virtual/simulated WST" in str(_decl[0].get("disclaimer"))
+
+    # ── FU-034: an UNREADABLE roster is 503, never "the entity does not exist" ───────────────────────
+    from agentic_core.config import StoreUnavailable as _SU
+    from agentic_core.economy import living_vsbs as _lv
+
+    def _roster_down():
+        # StoreUnavailable takes (path, problem) — constructing it with one argument raises TypeError,
+        # which `except Exception: pass` then swallows, and the leg silently proves nothing. That is
+        # exactly how this blind came back vacuous the first time.
+        raise _SU("data/living_vsbs.json", "truncated (w502 guard)")
+    monkeypatch.setattr(_lv, "_load", _roster_down)
+    blind = _offer()
+    monkeypatch.undo()
+    assert blind.status_code == 503, blind.text          # not 404: existence cannot be known
+    assert "cannot be known" in blind.json()["detail"]
+    assert "nothing was recorded" in blind.json()["detail"]
+
+    # ── FU-034: a SETTLED contract is never withdrawn — the payment is recorded ──────────────────────
+    c_paid = _offer(price=2.0).json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{c_paid}/accept").status_code == 200
+    assert client.post(f"/api/v1/economy/contracts/{c_paid}/deliver").status_code == 200
+
+    def _mark_settled(rows):
+        cur = next(x for x in rows if x.get("id") == c_paid)
+        cur["status"] = "settled"
+        cur["settlement"] = {"outcome": "paid", "transfer_id": "xfer-w502-paid", "at": "earlier"}
+    E._mutate_contracts(_mark_settled, keep=c_paid)
+    for _path in ("decline", "cancel"):
+        _no = client.post(f"/api/v1/economy/contracts/{c_paid}/{_path}")
+        assert _no.status_code == 409, (_path, _no.text)
+        assert "settled" in _no.json()["detail"] and "cannot be withdrawn" in _no.json()["detail"]
+    assert next(c for c in client.get("/api/v1/economy/contracts").json()["contracts"]
+                if c["id"] == c_paid)["status"] == "settled"
+
+    # ── FU-035: the settlement hold names ONE contract ──────────────────────────────────────────────
+    assert GV._source_class("contract:ctr-1") == "contract"        # its own class, not "api"
+    assert GV._source_class("transfer") == "transfer"              # unchanged
+    t1 = GV._hold_title("vsb-x", "contract:ctr-aaa")
+    t2 = GV._hold_title("vsb-x", "contract:ctr-bbb")
+    assert t1 != t2 and "ctr-aaa" in t1, (t1, t2)                  # two contracts, two identities
+    assert GV._hold_title("vsb-x", "transfer") == "[economy] material transfer — vsb-x"
+    # a submitted change cannot impersonate the new hold title (the W463 hole, for the new class)
+    imp = client.post("/api/v1/cca/submit", json={
+        "title": f"{GV.CONTRACT_HOLD_TITLE_PREFIX}vsb-x · contract ctr-aaa",
+        "change_type": "config_minor", "description": "w502 impersonation probe",
+        "rationale": "w502 impersonation probe"})
+    # a well-formed body: this 422 is the RESERVATION, not a validation error (the first attempt at this
+    # leg omitted `description` and 422'd for the wrong reason, which is why the detail is asserted)
+    assert imp.status_code == 422, imp.text
+    assert "reserved" in str(imp.json()["detail"]), imp.json()["detail"]
+    # the same body with an ordinary title is accepted, so the refusal is about the TITLE
+    fine = client.post("/api/v1/cca/submit", json={
+        "title": "w502 an ordinary config change", "change_type": "config_minor",
+        "description": "w502 control", "rationale": "w502 control"})
+    assert fine.status_code == 200, fine.text
+
+    # and a REAL material settlement files a hold that names ITS contract — the helpers above are
+    # arithmetic; this drives the gate, which is what FU-035 was actually about
+    _mat = _offer(price=5000.0).json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{_mat}/accept").status_code == 200
+    assert client.post(f"/api/v1/economy/contracts/{_mat}/deliver").status_code == 200
+    # fund the client, with materiality lifted so the FUNDING cycle is not itself held
+    monkeypatch.setattr(GV, "MATERIALITY_WST", 1e15)
+    _fund = client.post("/api/v1/economy/cycle", json={"vsb_id": a, "revenue": 60000.0, "costs": 0.0})
+    monkeypatch.undo()
+    assert _fund.status_code == 200, _fund.text
+    assert (_fund.json() or {}).get("cycle") is not None, _fund.json()
+    monkeypatch.setattr(GV, "MATERIALITY_WST", 1000.0)
+    _held = client.post(f"/api/v1/economy/contracts/{_mat}/settle")
+    monkeypatch.undo()
+    assert _held.status_code == 200, _held.text
+    assert _held.json()["status"] == "delivered", _held.json()        # held, so nothing was paid
+    _queue = client.get("/api/v1/cca/queue").json()
+    _rows = _queue.get("queue") or _queue.get("pending") or _queue.get("items") or []
+    _mine = [r for r in _rows if _mat in str(r.get("title") or "")]
+    assert _mine, [str(r.get("title"))[:70] for r in _rows][:4]
+    assert _mine[0]["title"].startswith(GV.CONTRACT_HOLD_TITLE_PREFIX), _mine[0]["title"]
+    assert _mine[0].get("change_type") == "economy_material", _mine[0].get("change_type")
+
+    # ── FU-037: a second delivery is refused BEFORE any cascade ─────────────────────────────────────
+    c_del = _offer().json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{c_del}/accept").status_code == 200
+    import time as _time
+
+    def _hold_delivery(rows):
+        cur = next(x for x in rows if x.get("id") == c_del)
+        cur["delivering"] = {"claim": "someone-else", "at": "earlier", "at_epoch": _time.time()}
+    E._mutate_contracts(_hold_delivery, keep=c_del)
+    _cascades = {"n": 0}
+    import agentic_core.api.swarm as _sw
+    _real = _sw.cascade_orchestration
+
+    async def _counting(req):
+        _cascades["n"] += 1
+        return await _real(req)
+    monkeypatch.setattr(_sw, "cascade_orchestration", _counting)
+    blocked = client.post(f"/api/v1/economy/contracts/{c_del}/deliver")
+    monkeypatch.setattr(_sw, "cascade_orchestration", _real)
+    assert blocked.status_code == 409, blocked.text
+    assert "already in progress" in blocked.json()["detail"]
+    assert "ran no cascade" in blocked.json()["detail"]
+    assert _cascades["n"] == 0, "the refused delivery ran a cascade anyway"
+    # the page sees only SINCE WHEN a delivery is in progress, never the claim token
+    _row = next(c for c in client.get("/api/v1/economy/contracts").json()["contracts"] if c["id"] == c_del)
+    assert _row["delivering"] == {"since": "earlier"}, _row["delivering"]
+
+    # a REAL delivery writes its own claim: the cascade looks at the store while it runs
+    c_live = _offer().json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{c_live}/accept").status_code == 200
+    _seen = {"claim": None, "second": None}
+
+    async def _inspecting(req):
+        _row = next(x for x in E._read_contracts() if x.get("id") == c_live)
+        _seen["claim"] = (_row.get("delivering") or {}).get("claim")
+        # the route function directly: TestClient cannot be called from the event loop thread, and a
+        # second HTTP request is not what this leg needs — it needs a second DELIVERY attempt
+        try:
+            await E.deliver_contract(c_live, user=None)
+            _seen["second"] = "bound"                     # must not happen while the claim is live
+        except Exception as _e2:
+            _seen["second"] = getattr(_e2, "detail", None) or str(_e2)
+        return {"run_id": "run-w502live", "quality": {"qms_gate_passed": None}, "ai_provenance": {}}
+    monkeypatch.setattr(_sw, "cascade_orchestration", _inspecting)
+    _ok = client.post(f"/api/v1/economy/contracts/{c_live}/deliver")
+    monkeypatch.undo()
+    assert _ok.status_code == 200, _ok.text
+    assert _seen["claim"], "the delivery ran its cascade without claiming the contract first"
+    assert "already in progress" in str(_seen["second"]), _seen["second"]   # the claim refuses a second
+    assert "ran no cascade" in str(_seen["second"]), _seen["second"]
+
+    # a cascade that RAISES releases the claim, so the contract is immediately deliverable again
+    c_raise = _offer().json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{c_raise}/accept").status_code == 200
+
+    async def _raising(req):
+        raise RuntimeError("w502 guard: the cascade failed")
+    monkeypatch.setattr(_sw, "cascade_orchestration", _raising)
+    # TestClient re-raises a server exception rather than returning 500, so the raise is caught here;
+    # what matters is the CONTRACT's state afterwards, not the status code
+    _raised = None
+    try:
+        client.post(f"/api/v1/economy/contracts/{c_raise}/deliver")
+    except RuntimeError as _re:
+        _raised = str(_re)
+    monkeypatch.undo()
+    assert _raised and "cascade failed" in _raised, _raised
+    _row = next(x for x in E._read_contracts() if x.get("id") == c_raise)
+    assert not E._claim_live(_row.get("delivering")), _row.get("delivering")
+    assert _row["status"] == "accepted"                     # nothing bound, so it is still deliverable
+    _retry = client.post(f"/api/v1/economy/contracts/{c_raise}/deliver")
+    assert _retry.status_code == 200, _retry.text           # and a retry is not blocked by a dead claim
+
+    # ── FU-039: an exception exit records 'unknown', never the earlier attempt's outcome ────────────
+    c_set = _offer(price=4.0).json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{c_set}/accept").status_code == 200
+    assert client.post(f"/api/v1/economy/contracts/{c_set}/deliver").status_code == 200
+
+    def _plant(rows):
+        cur = next(x for x in rows if x.get("id") == c_set)
+        cur["settlement"] = {"outcome": "held", "at": "earlier",
+                             "note": "Held for the Owner's decision (Change Control hold cca-OLD)"}
+    E._mutate_contracts(_plant, keep=c_set)
+    _before = next(c for c in client.get("/api/v1/economy/contracts").json()["contracts"] if c["id"] == c_set)
+    assert _before["settlement"]["outcome"] == "held"        # the stale outcome is really there first
+    from agentic_core.economy import transfers as _tr
+
+    def _boom(*_a, **_k):
+        raise RuntimeError("w502 guard: the ledger could not be read")
+    monkeypatch.setattr(_tr, "debit_posted", _boom)
+    failed = client.post(f"/api/v1/economy/contracts/{c_set}/settle")
+    monkeypatch.undo()
+    assert failed.status_code == 503, failed.text
+    _after = next(c for c in client.get("/api/v1/economy/contracts").json()["contracts"] if c["id"] == c_set)
+    assert _after["settlement"]["outcome"] == "unknown", _after["settlement"]
+    assert "RuntimeError" in str(_after["settlement"]["raised"]) or "ledger" in str(_after["settlement"]["raised"])
+    assert "never pays twice" in _after["settlement"]["note"]
+    assert _after["status"] == "delivered"                   # nothing was paid, so nothing is settled
+
+    # ── FU-057: "nothing was debited" is about THIS request, not about the transfer id ──────────────
+    assert E._debited_phrase(None) == "Nothing was debited"
+    _reused = E._debited_phrase("xfer-w502")
+    assert "an earlier attempt" in _reused and "xfer-w502" in _reused, _reused
+
+    # ── FU-061: a close whose sums overflow refuses, and writes nothing ─────────────────────────────
+    assert LG._nonfinite_figure({"a": {"b": 1.0}}) is None
+    assert "inf" in str(LG._nonfinite_figure({"pl": {"net_wst": float("inf")}}))
+    _BIG = 1.7e308
+    _crafted = {"vsb_id": "vsb-w502-inf", "currency": "WST", "entries": [],
+                "balances": {k: 0.0 for k in LG.ACCOUNTS},
+                "accounts": {"cash": _BIG, "revenue": _BIG},
+                "postings": [{"debit": "cash", "credit": "revenue", "amount": _BIG, "memo": "crafted"},
+                             {"debit": "cash", "credit": "revenue", "amount": _BIG, "memo": "crafted"}],
+                "closes": []}
+    # each amount is individually FINITE, so the writer's own check passes: that is why this was reachable
+    assert all(LG._number_ok(p["amount"]) for p in _crafted["postings"])
+    assert LG._shape_problem(_crafted) is None
+    from agentic_core.config import atomic_write_json as _awj
+    _bk = LG.VirtualLedger("vsb-w502-inf")
+    _awj(_bk.path, _crafted)
+    _bk = LG.VirtualLedger("vsb-w502-inf")
+    assert _bk.statements()["profit_and_loss"]["net_profit_wst"] == float("inf")
+    try:
+        _bk.close_period()
+        raise AssertionError("close_period accepted an infinite statement")
+    except LG.LedgerWriteRefused as _e:
+        assert "not a number" in str(_e) and "Nothing was posted" in str(_e), str(_e)
+    _saved = json.loads(pathlib.Path(_bk.path).read_text(encoding="utf-8"))
+    assert _saved["closes"] == [], _saved["closes"]          # refused BEFORE anything was written
+    assert len(_saved["postings"]) == 2
+    # and such a marker can never be written by any path
+    assert "non-finite" in str(LG._shape_problem({**_crafted, "closes": [{"ts": "x", "net_profit_wst": float("inf")}]}))
+
+    # ── FU-250: the refusal names a route that exists, and answering it clears the refusal ──────────
+    V._save_vsb({"vsb_id": "vsb-w502-legacy", "name": "W502 Legacy", "owner_id": None})
+    refused = client.get("/api/v1/economy/status", params={"vsb_id": "vsb-w502-legacy"})
+    assert refused.status_code == 422, refused.text
+    _d = refused.json()["detail"]
+    assert "POST /api/v1/economy/entity-form" in _d, _d
+    assert "GET /api/v1/economy/entity-types" in _d, _d       # the list is named as the GET it is
+    bad = client.post("/api/v1/economy/entity-form",
+                      json={"vsb_id": "vsb-w502-legacy", "entity_type": "not-a-form"})
+    assert bad.status_code == 400 and "not one of the recorded forms" in bad.json()["detail"]
+    ok = client.post("/api/v1/economy/entity-form",
+                     json={"vsb_id": "vsb-w502-legacy", "entity_type": "waqf_ltd_hybrid"})
+    assert ok.status_code == 200 and ok.json()["recorded"] is True, ok.text
+    cleared = client.get("/api/v1/economy/status", params={"vsb_id": "vsb-w502-legacy"})
+    assert cleared.status_code == 200, cleared.text           # the refusal is answerable, not a dead end
+    assert cleared.json()["entity_type"] == "waqf_ltd_hybrid"
+    # recording the same form twice changes nothing; changing a recorded one is refused
+    same = client.post("/api/v1/economy/entity-form",
+                       json={"vsb_id": "vsb-w502-legacy", "entity_type": "waqf_ltd_hybrid"})
+    assert same.status_code == 200 and same.json()["recorded"] is False
+    change = client.post("/api/v1/economy/entity-form",
+                         json={"vsb_id": "vsb-w502-legacy", "entity_type": "sole"})
+    assert change.status_code == 409, change.text
+    assert "W313" in change.json()["detail"]
+    assert (V._load_vsb("vsb-w502-legacy").get("economy") or {}).get("entity_type") == "waqf_ltd_hybrid"
+    # the already-recorded answer carries the same keys as the recording one
+    assert set(same.json()) == set(ok.json()), (sorted(same.json()), sorted(ok.json()))
+
+    # ── the PAGE offers the withdrawals and shows a delivery in progress ────────────────────────────
+    # the row asked for the routes AND for the page to offer them; routes alone leave the party stuck
+    _page = (pathlib.Path(__file__).resolve().parents[1]
+             / "apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="contract-decline"' not in _page      # the testid is built from the path
+    assert "data-testid={`contract-${w.path}`}" in _page
+    assert "WITHDRAWALS" in _page and "'decline'" in _page and "'cancel'" in _page
+    # a settled contract is never offered a withdrawal, and neither is one mid-action
+    assert "WITHDRAWABLE = new Set(['offered', 'accepted', 'delivered'])" in _page
+    assert "WITHDRAWABLE.has(c.status) && !c.settling?.since && !c.delivering?.since" in _page
+    # the withdrawal calls its OWN path, not the status's next action
+    assert "advance(c, w.path)" in _page
+    assert "const advance = async (c: Contract, path?: string)" in _page
+    # a delivery in progress reaches the reader, as a settlement already did
+    assert 'data-testid="contract-delivering"' in _page and "delivery in progress" in _page
+    # and what a withdrawal was withdrawn FROM is shown, so nothing about the work is erased
+    assert 'data-testid="contract-withdrawn"' in _page and "c.withdrawn.from_status" in _page
+
+
+def test_w502b_the_economy_says_whether_a_cycle_is_coming_and_whose_the_priorities_are(client, monkeypatch):
+    """W502b — the four rows the first pass left open.
+
+    FU-163 six live files promised "the next metabolic cycle consumes this" while autonomous cycles are
+    OFF by default — which the entity's own living statement says in the same breath. And "0 defects/3
+    gates" stood beside a NOT-ASSESSABLE gate as a clean bill.
+    FU-166 `set_directives` turned "the Owner named no priorities" into the four platform defaults and
+    stamped them with a fresh timestamp; `get_directives` did the same substitution on the way back, so
+    fixing one alone would have moved the lie rather than removed it.
+    FU-058 a cycle whose store was locked or unwritable answered a BARE 500 with no statement of what had
+    been written, and left no record in the chain — while the heartbeat path wrote one.
+    FU-047 a transfer stranded before W466 could only be found by reading ledgers by hand.
+
+    Virtual/simulated WST throughout.
+    """
+    import json
+    import pathlib
+    from agentic_core.economy import charity as CH
+    from agentic_core.economy import governance as GV
+    from agentic_core.economy import living_vsbs as LV
+    from agentic_core.economy import transfers as TR
+    from agentic_core.config import atomic_write_json
+    from agentic_core.economy import ledger as LG
+    from agentic_core.gaas.v5 import UEGLogger
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── FU-163: the wording is COMPUTED from whether a cycle is coming ──────────────────────────────
+    _st = LV.living_statement()
+    _n = LV.intake_note("this transfer")
+    assert _n["autonomous_cycles"] == bool(_st["autonomous_cycles"]), (_n, _st)
+    if not _n["autonomous_cycles"]:
+        # the honest form: a queue, and what would make it move
+        assert "QUEUED" in _n["note"] and "NO next cycle is scheduled" in _n["note"], _n["note"]
+        assert "Self-run" in _n["note"] or "economy/cycle" in _n["note"], _n["note"]
+        assert "next metabolic cycle consumes" not in _n["note"], _n["note"]
+    else:
+        assert "next metabolic cycle consumes" in _n["note"], _n["note"]
+
+    # a real transfer answer carries it, and carries the FACT beside it
+    def _est(name):
+        return client.post("/api/v1/genesis/establish",
+                           json={"problem": f"w502b {name}", "ship_output": False,
+                                 "name": name}).json()["vsb_id"]
+    _s, _r = _est("W502b Sender"), _est("W502b Receiver")
+    monkeypatch.setattr(GV, "MATERIALITY_WST", 1e15)
+    _fund = client.post("/api/v1/economy/cycle", json={"vsb_id": _s, "revenue": 500.0, "costs": 0.0})
+    monkeypatch.undo()
+    assert _fund.status_code == 200, _fund.text
+    _tx = client.post("/api/v1/economy/transfer",
+                      json={"from_vsb": _s, "to_vsb": _r, "amount": 10.0, "memo": "w502b"})
+    assert _tx.status_code == 200, _tx.text
+    # the route nests the posted transfer under `transfer`; the fields live with the transfer itself
+    _body = (_tx.json() or {}).get("transfer") or {}
+    assert _body, _tx.json()
+    assert _body.get("autonomous_cycles") == _n["autonomous_cycles"], _body.get("autonomous_cycles")
+    assert _body["settlement"] == _n["note"], _body["settlement"]
+    # and no writer still hardcodes the promise in a user-facing string
+    for _f, _needle in (
+        ("agentic_core/economy/transfers.py", '"settlement": "the receiver\'s next metabolic cycle'),
+        ("agentic_core/economy/ventures.py", '"recycles": "consumed as intake revenue by the next'),
+    ):
+        assert _needle not in (root / _f).read_text(encoding="utf-8"), _f
+    # the pages stopped promising it too
+    _eo = (root / "apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
+    assert "the next metabolic cycle consumes it as intake revenue" not in _eo
+    assert "QUEUES as pending intake" in _eo and "not automatic unless Self-run" in _eo
+    _cd = (root / "apps/workstation-superapp/src/pages/enterprise/CharityDirectives.tsx").read_text(encoding="utf-8")
+    assert "honoured by allocations from the next metabolic cycle." not in _cd
+    assert "next metabolic cycle that RUNS" in _cd
+
+    # ── FU-163: a zero defect count beside an unassessable gate is not a clean bill ─────────────────
+    _sc = (root / "apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx").read_text(encoding="utf-8")
+    assert "a zero here is not a pass" in _sc
+    assert "d.defects_total === 0 && chip && chip.verdict !== 'pass'" in _sc     # bound to the verdict
+
+    # ── FU-166: what the Owner named and what allocation uses are two facts ─────────────────────────
+    # DRIVE the state: the directives store is shared with every other test in the run, and an earlier
+    # one had already saved directives — so "never set" has to be made, not assumed. This assertion
+    # passed alone and failed in the full suite, which is the whole reason the full suite is run.
+    pathlib.Path(CH._DIRECTIVES_STORE).unlink(missing_ok=True)
+    _never = CH.get_directives()
+    assert _never["priorities_source"] == "never_set", _never["priorities_source"]
+    assert _never["priorities_owner_named"] == [], _never
+    CH.set_directives(priorities=[], exclusions=["dawah"])
+    _none = CH.get_directives()
+    assert _none["priorities_source"] == "none_set", _none["priorities_source"]
+    assert _none["priorities_owner_named"] == [], _none
+    assert _none["priorities"] == list(CH._PRIORITIES)          # allocation still falls back, unchanged
+    assert "not an Owner choice" in _none["priorities_note"], _none["priorities_note"]
+    assert not _none["source"].startswith("owner_set"), _none["source"]   # the old field stopped lying
+    assert _none["exclusions"] == ["dawah"]                    # what WAS named is kept
+    CH.set_directives(priorities=["clean_water"])
+    _owned = CH.get_directives()
+    assert _owned["priorities_source"] == "owner" and _owned["priorities_owner_named"] == ["clean_water"]
+    assert _owned["priorities"] == ["clean_water"] and _owned["source"] == "owner_set"
+
+    # the directives PAGE reads the provenance, not the timestamp: a record naming no causes still has
+    # an `updated_at`, which is how "set by you" came to be shown for this platform's defaults
+    _cdp = (root / "apps/workstation-superapp/src/pages/enterprise/CharityDirectives.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="directives-provenance"' in _cdp
+    assert "loaded.priorities_source === 'owner'" in _cdp
+    assert "but you named NO priority causes" in _cdp
+    # provenance is decided by `priorities_source`, never by the presence of a timestamp. A negative
+    # over "set by you" cannot hold: the `owner` branch says exactly that, and truthfully.
+    for _branch in ("=== 'owner'", "=== 'none_set'", "=== 'unreadable'"):
+        assert f"loaded.priorities_source {_branch}" in _cdp, _branch
+    # every ARM is reachable, which is what the pre-flight's ternary-order lead asks to be shown: the
+    # fourth value is driven here so all four of owner/none_set/never_set/unreadable really occur
+    pathlib.Path(CH._DIRECTIVES_STORE).write_text('{"priorities": ["clean_water"', encoding="utf-8")
+    _torn = CH.get_directives()
+    assert _torn["priorities_source"] == "unreadable", _torn["priorities_source"]
+    assert _torn["directives_readable"] is False, _torn
+    assert "not known from it" in _torn["priorities_note"], _torn["priorities_note"]
+    # and an allocator asking strictly is REFUSED rather than given the defaults
+    try:
+        CH.get_directives(strict=True)
+        raise AssertionError("a strict read accepted an unreadable directives store")
+    except AssertionError:
+        raise
+    except Exception:
+        pass
+    pathlib.Path(CH._DIRECTIVES_STORE).unlink()
+    assert 'data-testid="directives-note"' in _cdp and "loaded.priorities_note" in _cdp
+    # BOUND, not merely present: the note survives inside a dead branch, so the condition is asserted
+    assert "{loaded.priorities_source !== 'owner' && loaded.priorities_note && (" in _cdp
+
+    # the page says the ranking's inputs are editorial, not measured
+    _ve = (root / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert "EDITORIAL CONSTANTS a maintainer typed" in _ve
+    assert "no needs, impact or trust data is measured or sourced" in _ve
+    assert "score {g.score} (editorial)" in _ve
+
+    # ── FU-058: a locked or unwritable store answers 503 and leaves a record ────────────────────────
+    _before = len(json.loads(pathlib.Path(UEGLogger().storage_path).read_text(encoding="utf-8"))["nodes"])
+
+    def _locked(*_a, **_k):
+        raise TimeoutError("w502b: lock held")
+    monkeypatch.setattr(GV, "governed_cycle", _locked)
+    _t = client.post("/api/v1/economy/cycle", json={"vsb_id": _s, "revenue": 1.0, "costs": 0.0})
+    monkeypatch.undo()
+    assert _t.status_code == 503, _t.text                       # not a bare 500
+    assert "held by another writer" in _t.json()["detail"]
+    assert "nothing was posted" in _t.json()["detail"]          # what happened to the ledger is stated
+
+    def _denied(*_a, **_k):
+        raise PermissionError(13, "Permission denied")
+    monkeypatch.setattr(GV, "governed_cycle", _denied)
+    _p = client.post("/api/v1/economy/cycle", json={"vsb_id": _s, "revenue": 1.0, "costs": 0.0})
+    monkeypatch.undo()
+    assert _p.status_code == 503, _p.text
+    assert "could not be written" in _p.json()["detail"] and "PermissionError" in _p.json()["detail"]
+
+    _graph = json.loads(pathlib.Path(UEGLogger().storage_path).read_text(encoding="utf-8"))
+    # SCOPED TO THIS TEST'S ENTITY. The UEG chain is shared by the whole suite, so an unscoped read
+    # picks up other tests' cycle_raised records — including the heartbeat path's, which is where this
+    # assertion first failed. A count is only as good as the population it names.
+    _raised = [(n.get("data") or {}) for n in _graph["nodes"]
+               if (n.get("data") or {}).get("type") == "economy.cycle_raised"
+               and (n.get("data") or {}).get("vsb_id") == _s]
+    assert len(_raised) >= 2, [e.get("error") for e in _raised]
+    assert {"TimeoutError", "PermissionError"} <= {e.get("error") for e in _raised}, _raised
+    assert all(e.get("ledger_written") is False for e in _raised), _raised
+    assert len(_graph["nodes"]) > _before                       # the chain really grew
+
+    # ── FU-047: a pre-W466 debit is LISTED, and the listing recommends nothing ──────────────────────
+    _clean = client.get("/api/v1/economy/transfers/unmarked-audit")
+    assert _clean.status_code == 200, _clean.text
+    _base = _clean.json()["unmarked_total"]
+    _bk = LG.VirtualLedger("vsb-w502b-legacy")
+    atomic_write_json(_bk.path, {
+        "vsb_id": "vsb-w502b-legacy", "currency": "WST", "entries": [],
+        "balances": {k: 0.0 for k in LG.ACCOUNTS}, "accounts": {"reserve_fund": 50.0},
+        "postings": [{"debit": "transfer_out", "credit": "reserve_fund", "amount": 25.0,
+                      "memo": "transfer to vsb-someone (pre-W466)", "at": "2026-05-01T00:00:00Z"}],
+        "closes": []})
+    _aud = client.get("/api/v1/economy/transfers/unmarked-audit")
+    assert _aud.status_code == 200, _aud.text
+    _j = _aud.json()
+    assert _j["unmarked_total"] == _base + 1, (_j["unmarked_total"], _base)
+    _row = next(u for u in _j["unmarked"] if u["from_vsb"] == "vsb-w502b-legacy")
+    assert _row["amount_wst"] == 25.0
+    assert _row["receiver_credited"] is None                    # not guessed at
+    assert "no W466 transfer marker" in _row["why_unknown"]
+    assert "LISTING, not a recommendation" in _j["basis"]
+    assert "Nothing here was changed" in _j["basis"]
+    # a MARKED debit is not listed here — reconcile_receiver_legs owns those
+    assert all(isinstance(u.get("posting_index"), int) for u in _j["unmarked"])
+    _direct = TR.audit_unmarked_debits(from_vsb="vsb-w502b-legacy")
+    assert _direct["unmarked_total"] == 1 and _direct["ledgers_read"] == 1, _direct
+
+    # an UNREADABLE ledger is counted and EXCLUDED, never quietly treated as clean: the audit's whole
+    # value is that it says what it could not see
+    _bad = LG.VirtualLedger("vsb-w502b-torn")
+    pathlib.Path(_bad.path).write_text('{"vsb_id": "vsb-w502b-torn", "postings": [', encoding="utf-8")
+    _tornaudit = client.get("/api/v1/economy/transfers/unmarked-audit")
+    assert _tornaudit.status_code == 200, _tornaudit.text
+    _tj = _tornaudit.json()
+    assert _tj["ledgers_unreadable"] >= 1, _tj
+    assert "NOT included" in _tj["basis"], _tj["basis"]
+    assert any("vsb-w502b-torn" in d for d in _tj.get("unreadable_detail", [])), _tj.get("unreadable_detail")
+    # and the torn ledger contributed no rows
+    assert not [u for u in _tj["unmarked"] if u["from_vsb"] == "vsb-w502b-torn"], _tj["unmarked"]

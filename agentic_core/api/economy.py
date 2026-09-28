@@ -55,6 +55,76 @@ def _require_economy_access(vsb_id: str, user: dict | None) -> None:
         raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
 
 
+class EntityFormRequest(BaseModel):
+    vsb_id: str
+    entity_type: str
+
+
+@router.post("/entity-form")
+async def record_entity_form(req: EntityFormRequest, user: dict | None = Depends(get_current_user)):
+    """§4 (W502, FU-250) — record the legal/economic form of an entity that is STORED WITH NONE.
+
+    A stored entity with no recorded form is refused by every economy surface, which is right: the
+    waterfall bounds cannot be known and a caller's claim must not become the binding (W313). What was
+    missing was any way to answer that refusal — the message named `POST /entity-types`, which is a
+    GET-only list. This is the action it should have named.
+
+    CHANGING a recorded form is refused here. W313 exists because the form decides whether an Owner
+    profit share may be paid at all; flipping it is not something a request should be able to do.
+    """
+    _require_economy_access(req.vsb_id, user)
+    form = str(req.entity_type or "").strip()
+    if form not in ENTITY_TEMPLATES:
+        raise HTTPException(status_code=400, detail=(
+            f"'{form or 'nothing'}' is not one of the recorded forms "
+            f"({', '.join(sorted(ENTITY_TEMPLATES))}); nothing was recorded."))
+    from agentic_core.api.vsb import _load_vsb, _save_vsb, _vsb_path
+    from agentic_core.config import store_lock
+    with store_lock(_vsb_path(req.vsb_id)):
+        v = _load_vsb(req.vsb_id)
+        if not v:
+            raise HTTPException(status_code=404, detail=(
+                f"VSB '{req.vsb_id}' is not in the entity store, so there is nothing to record a form "
+                f"on. Establish it first (POST /api/v1/genesis/establish)."))
+        existing = v.get("entity_type") or (v.get("economy") or {}).get("entity_type")
+        if existing:
+            if str(existing) == form:
+                # the same keys as the recording return: a reader indexing `name` used to get undefined
+                return {"vsb_id": req.vsb_id, "entity_type": form, "recorded": False,
+                        "name": ENTITY_TEMPLATES[form]["name"],
+                        "note": f"This entity already records the form '{form}' — nothing was changed."}
+            raise HTTPException(status_code=409, detail=(
+                f"VSB '{req.vsb_id}' already records the form '{existing}'. A recorded form is not "
+                f"changed here: it binds the waterfall (W313 — a nonprofit could otherwise pay an Owner "
+                f"profit share by claiming another form), so changing it is an Owner decision taken "
+                f"through Change Control, not a request. Nothing was changed."))
+        econ = dict(v.get("economy") or {})
+        econ["entity_type"] = form
+        v["economy"] = econ
+        _save_vsb(v)
+    _contract_ueg({"type": "economy.entity_form_recorded", "vsb_id": req.vsb_id, "entity_type": form})
+    return {"vsb_id": req.vsb_id, "entity_type": form, "recorded": True,
+            "name": ENTITY_TEMPLATES[form]["name"],
+            "note": ("The form is now recorded on the entity, so its economy surfaces can compute the "
+                     "waterfall bounds. All flows are virtual/simulated WST.")}
+
+
+@router.get("/transfers/unmarked-audit")
+async def unmarked_debit_audit(vsb_id: Optional[str] = None, limit: int = 200,
+                               user: dict | None = Depends(get_current_user)):
+    """§15 (W502, FU-047) — the transfer_out debits with no W466 marker, listed. READ-ONLY.
+
+    A stranded transfer made before W466 could only be found by reading ledgers by hand: the reconcile
+    pass skips unmarked debits on purpose (completing one could credit a receiver twice) and
+    /transfers/{id}/complete refuses them. This lists them so the Owner can decide each one; it completes
+    nothing and recommends nothing.
+    """
+    if vsb_id:
+        _require_economy_access(vsb_id, user)
+    from agentic_core.economy.transfers import audit_unmarked_debits
+    return audit_unmarked_debits(from_vsb=vsb_id, limit=limit)
+
+
 @router.get("/entity-types")
 async def entity_types():
     """The legal forms a user can select when generating their VSB."""
@@ -125,6 +195,21 @@ def _intake_not_back(e: BaseException) -> str:
             "log with its amount, and to the UEG as economy.cycle_intake_give_back_failed when the UEG can be written.")
 
 
+def _cycle_raised(req, kind: str, detail: str, exc=None) -> None:
+    """§3 (W502, FU-058) — a cycle that RAISED leaves a record. The heartbeat path wrote
+    `economy.cycle_raised`; this route did not, so a cycle that died on a locked or unwritable store left
+    nothing in the chain to find it by. Whether the ledger had already been written is part of the record,
+    because it decides whether the cycle may be run again."""
+    try:
+        from agentic_core.economy.governance import _ueg_log
+        _ueg_log({"type": "economy.cycle_raised", "vsb_id": getattr(req, "vsb_id", None),
+                  "error": kind, "detail": str(detail)[:200],
+                  "ledger_written": bool(getattr(exc, "ledger_written", False)),
+                  "disclaimer": "Virtual/simulated WST — no real funds moved."})
+    except Exception:
+        pass
+
+
 @router.post("/cycle")
 async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_user)):
     """Run one living metabolic cycle under the FULL §3 governance chain (economy/governance.py):
@@ -191,6 +276,30 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
         raise HTTPException(status_code=409, detail=(
             f"{e}. " + ("The cycle stopped after writing part of its ledger — do NOT run it again; the ledger needs "
                         "checking first." if written else "No cycle ran and nothing was posted.")
+            + _intake_not_back(e))) from None
+    except TimeoutError as e:
+        # W502 (FU-058) — a store_lock timeout escaped as a BARE 500: no status, and no statement of
+        # whether the ledger had already been written, which is the one thing a caller of a posting
+        # route needs. TimeoutError is an OSError subclass, so it is matched before the generic handler.
+        _cycle_raised(req, "TimeoutError", str(e), e)
+        written = bool(getattr(e, "ledger_written", False))
+        raise HTTPException(status_code=503, detail=(
+            f"A store this cycle writes was held by another writer for longer than the wait "
+            f"({e or 'lock timeout'}). "
+            + ("The cycle stopped after writing part of its ledger — do NOT run it again; the ledger "
+               "needs checking first." if written else
+               "No cycle ran and nothing was posted — run it again once the other writer has finished.")
+            + _intake_not_back(e))) from None
+    except PermissionError as e:
+        # W502 (FU-058) — a PermissionError from atomic_write_json, the same treatment as a lock timeout.
+        # NOT `except OSError`: that swallowed an OSError test_w467 deliberately raises and expects to
+        # propagate, which is the cost of catching a class broader than the defect.
+        _cycle_raised(req, type(e).__name__, str(e), e)
+        written = bool(getattr(e, "ledger_written", False))
+        raise HTTPException(status_code=503, detail=(
+            f"A store this cycle writes could not be written ({type(e).__name__}: {e}). "
+            + ("The cycle stopped after writing part of its ledger — do NOT run it again; the ledger "
+               "needs checking first." if written else "No cycle ran and nothing was posted.")
             + _intake_not_back(e))) from None
     if isinstance(result, dict):
         result["attribution"] = {"owner": owner, "entity_type": entity_type, "basis": attribution,
@@ -270,10 +379,14 @@ def _resolve_entity_type(vsb_id: str, claimed: str | None) -> tuple:
             return str(stored), "vsb_store"
         if v:
             # the entity IS known here and records no form: a claim must not become the binding
+            # W502 (FU-250) — this refusal used to say "Register the entity (POST
+            # /api/v1/economy/entity-types is the list of forms)", and /entity-types is GET-only with no
+            # registration action anywhere: the owner was told to call a route that does not exist.
             raise HTTPException(status_code=422, detail=(
                 f"VSB '{vsb_id}' is stored but records no legal/economic form, so the waterfall bounds "
-                f"cannot be known; nothing was computed under the requested form. Register the entity "
-                f"(POST /api/v1/economy/entity-types is the list of forms) before running its economy."))
+                f"cannot be known; nothing was computed under the requested form. Record its form with "
+                f"POST /api/v1/economy/entity-form {{\"vsb_id\": \"{vsb_id}\", \"entity_type\": \"...\"}} "
+                f"(GET /api/v1/economy/entity-types lists the forms), then run its economy."))
     except HTTPException:
         raise
     except Exception:
@@ -544,7 +657,19 @@ async def reconcile_transfers(user: dict | None = Depends(get_current_user)):
     return {**rep, "disclaimer": "Virtual/simulated WST — no real funds moved."}
 
 
-async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None, *, context: str = "transfer") -> dict:
+def _debited_phrase(reused_id: Optional[str]) -> str:
+    """W502 (FU-057) — "Nothing was debited" is true of THIS request. A settlement retries under
+    the transfer id its claim persisted, so when the caller supplied the id an EARLIER attempt may
+    have debited: saying nothing was debited then tells the client its money is untouched when it
+    may not be. Settling again is still safe — it asks the ledger first and never pays twice."""
+    if reused_id:
+        return (f"This attempt debited nothing; an earlier attempt under transfer id {reused_id} may "
+                f"have, and this answer cannot tell")
+    return "Nothing was debited"
+
+
+async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None, *,
+                         context: str = "transfer", gate_source: Optional[str] = None) -> dict:
     """The transfer itself, after the caller's access check. W465: a service-contract settlement passes the
     transfer id its claim persisted, so a retry after a crash posts under the SAME id (record_transfer is idempotent
     on it) instead of minting a fresh one and debiting the client twice. Every dependency stays imported at call
@@ -560,23 +685,30 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         # W468 (register FU-041) — an unreadable sender ledger read as empty books and answered 400 "insufficient funds"
         why = str(e).replace("; nothing was debited", "")
         again = "settle" if context == "settlement" else "retry"
-        raise HTTPException(status_code=503, headers={"X-Transfer-Debited": "false",
-                                                      **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
-                            detail=(f"{why}. Nothing was debited — {again} again once the ledger is readable (a debit "
-                                    "from an earlier transfer may be stranded on it)."))
+        raise HTTPException(status_code=503,
+                            headers={"X-Transfer-Debited": "unknown" if transfer_id else "false",
+                                     **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
+                            detail=(f"{why}. {_debited_phrase(transfer_id)} — {again} again once the ledger is "
+                                    "readable (a debit from an earlier transfer may be stranded on it)."))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e).strip("'\""))
     except StoreUnavailable as e:
         # W472 (refutation) — the living roster could not be read whole: the receiver cannot be known, nothing debited
-        raise HTTPException(status_code=503, headers={"X-Transfer-Debited": "false",
-                                                      **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
-                            detail=f"{e}; the receiver cannot be confirmed — nothing was debited")
+        raise HTTPException(status_code=503,
+                            headers={"X-Transfer-Debited": "unknown" if transfer_id else "false",
+                                     **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
+                            detail=(f"{e}; the receiver cannot be confirmed — "
+                                    f"{_debited_phrase(transfer_id).lower()}"))
 
     # W463 — the gate binds the approval to this amount AND this counterparty, and hands back exactly
     # what it spent (None when nothing was spent) so a transfer that does not post gives back only that
-    held, consumed = _materiality_gate(req.from_vsb, round(float(req.amount), 2), source="transfer",
+    # W502 (FU-035) — a contract settlement passes source "contract:<id>", which gives its hold its
+    # own class and a title naming the contract. Without it, two material contracts between the
+    # same client and provider shared one hold: approving one released the other.
+    held, consumed = _materiality_gate(req.from_vsb, round(float(req.amount), 2),
+                                       source=gate_source or "transfer",
                                        counterparty=req.to_vsb)
     if held is not None:
         return {"transfer": None, "governance": held}
@@ -640,11 +772,22 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
             return HTTPException(status_code=503, headers=headers, detail=(
                 f"{why}. Nothing was debited — {again} again once the store is readable."))
         if isinstance(e, SenderLedgerUnavailable):
-            # refused under the ledger's lock before any posting: this request debited nothing
-            headers["X-Transfer-Debited"] = "false"
+            # refused under the ledger's lock before any posting: THIS request debited nothing.
+            # W502 (FU-057) — the header used to be overridden to "false" even when `debited` came
+            # back UNKNOWN (debit_posted itself raised), publishing an unknown as a certainty; and a
+            # settlement reuses a persisted id, so an earlier attempt under it may have debited.
+            _reused = _xfer_id if settling else None
+            # A FRESH id: this request is the only attempt under it and the refusal happened under the
+            # ledger's lock before any posting, so "false" is TRUE even when debit_posted cannot read.
+            # A REUSED id (a settlement retrying under its claim's id) is the only case where an earlier
+            # attempt may have debited, and only there is the honest answer "unknown".
+            if not _reused:
+                headers["X-Transfer-Debited"] = "false"
+            elif debited is not None:
+                headers["X-Transfer-Debited"] = "true" if debited else "unknown"
             return HTTPException(status_code=503, headers=headers, detail=(
-                f"{why}. Nothing was debited — {again} again once the ledger is readable (a debit from an earlier "
-                "transfer may be stranded on it)."))
+                f"{why}. {_debited_phrase(_reused)} — {again} again once the ledger is readable (a debit "
+                "from an earlier transfer may be stranded on it)."))
         if debited is False:
             if isinstance(e, ValueError):
                 return HTTPException(status_code=400, detail=str(e), headers=headers)
@@ -918,12 +1061,45 @@ def _public_contract(c: dict) -> dict:
     """A contract as the parties see it: a LIVE settle claim shows only since when (its transfer id stays server-side);
     a released or stale claim, kept only so a retry reuses its transfer id, is not shown as a settlement in progress."""
     out = dict(c)
-    cl = out.get("settling")
-    if isinstance(cl, dict) and _claim_live(cl):
-        out["settling"] = {"since": cl.get("at")}
-    else:
-        out.pop("settling", None)
+    for key in ("settling", "delivering"):     # W502 (FU-037) — a delivery claims like a settlement does
+        cl = out.get(key)
+        if isinstance(cl, dict) and _claim_live(cl):
+            out[key] = {"since": cl.get("at")}
+        else:
+            out.pop(key, None)
     return out
+
+
+def _require_known_party(vsb_id: str, role: str) -> None:
+    """§15 (W502, FU-034) — a contract names REGISTERED entities on both sides.
+
+    A contract to an entity that exists nowhere was accepted, delivered (a whole provider-scoped org
+    cascade ran) and only refused at settle with 404, leaving a 'delivered' contract that could never
+    be paid and could not be withdrawn. An unreadable roster answers 503: when existence cannot be
+    known, nothing is recorded under a guess.
+    """
+    try:
+        from agentic_core.economy.living_vsbs import _load as _lv_load
+        if _lv_load().get(vsb_id):
+            return
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"{e}; whether the {role} entity '{vsb_id}' is registered cannot be known — nothing was "
+            f"recorded.")) from None
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        if _load_vsb(vsb_id):
+            return
+    except Exception:
+        pass
+    raise HTTPException(status_code=404, detail=(
+        f"The {role} entity '{vsb_id}' is not a registered entity here, so no contract was recorded. "
+        f"Establish it first (POST /api/v1/genesis/establish) — a contract to an unknown entity can be "
+        f"delivered but never paid."))
 
 
 def _contract_ueg(event: dict) -> None:
@@ -944,6 +1120,8 @@ async def offer_contract(req: ContractRequest, user: dict | None = Depends(get_c
         raise HTTPException(status_code=400, detail="A contract needs a brief.")
     if req.client_vsb == req.provider_vsb:
         raise HTTPException(status_code=400, detail="An entity cannot contract itself.")
+    _require_known_party(req.client_vsb, "client")
+    _require_known_party(req.provider_vsb, "provider")
     import uuid as _uuid
     contract = {
         "id": f"ctr-{_uuid.uuid4().hex[:10]}", "client_vsb": req.client_vsb,
@@ -980,6 +1158,10 @@ async def accept_contract(cid: str, user: dict | None = Depends(get_current_user
     def _accept(rows: list) -> dict:
         c = _find_contract(rows, cid)
         _require_economy_access(c["provider_vsb"], user)   # only the provider accepts
+        # W502 (FU-034) — again at accept: an entity can stop being registered between the offer
+        # and the acceptance, and accepting commits the provider to a cascade
+        _require_known_party(c["provider_vsb"], "provider")
+        _require_known_party(c["client_vsb"], "client")
         if c["status"] != "offered":
             raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not offered.")
         c["status"] = "accepted"
@@ -989,6 +1171,51 @@ async def accept_contract(cid: str, user: dict | None = Depends(get_current_user
     return c
 
 
+_WITHDRAWABLE = ("offered", "accepted", "delivered")
+
+
+def _withdraw_contract(cid: str, user: dict | None, *, by: str, new_status: str, party_key: str) -> dict:
+    """§15 (W502, FU-034) — the provider DECLINES and the client CANCELS. Neither existed, so a contract
+    that could never be settled stayed on the books forever.
+
+    A SETTLED contract is never withdrawn: money moved (virtual WST), and the record of that stands. A
+    delivered one may be withdrawn — the provider's work is recorded in `delivery` either way, and the
+    event says which status it was withdrawn from, so nothing is erased."""
+    def _apply(rows: list) -> dict:
+        c = _find_contract(rows, cid)
+        _require_economy_access(c[party_key], user)
+        if c["status"] == "settled":
+            raise HTTPException(status_code=409, detail=(
+                f"Contract {cid} is settled — the payment is recorded and cannot be withdrawn."))
+        if c["status"] not in _WITHDRAWABLE:
+            raise HTTPException(status_code=409, detail=f"Contract {cid} is {c['status']}, not withdrawable.")
+        cl = c.get("settling") if isinstance(c.get("settling"), dict) else None
+        if cl and _claim_live(cl):
+            raise HTTPException(status_code=409, detail=(
+                f"A settlement of contract {cid} is in progress (since {cl.get('at')}) — nothing was "
+                f"withdrawn. Retry when it has finished."))
+        c["withdrawn"] = {"by": by, "from_status": c["status"], "at": _contract_ts()}
+        c["status"] = new_status
+        c.pop("settling", None)
+        return _public_contract(c)
+    out = _mutate_contracts(_apply, keep=cid)
+    _contract_ueg({"type": f"economy.contract_{new_status}", "contract_id": cid, "by": by,
+                   "from_status": out.get("withdrawn", {}).get("from_status")})
+    return out
+
+
+@router.post("/contracts/{cid}/decline")
+async def decline_contract(cid: str, user: dict | None = Depends(get_current_user)):
+    """The PROVIDER declines — it will not do the work."""
+    return _withdraw_contract(cid, user, by="provider", new_status="declined", party_key="provider_vsb")
+
+
+@router.post("/contracts/{cid}/cancel")
+async def cancel_contract(cid: str, user: dict | None = Depends(get_current_user)):
+    """The CLIENT cancels — it withdraws the commission."""
+    return _withdraw_contract(cid, user, by="client", new_status="cancelled", party_key="client_vsb")
+
+
 @router.post("/contracts/{cid}/deliver")
 async def deliver_contract(cid: str, user: dict | None = Depends(get_current_user)):
     """The provider DELIVERS: a REAL org cascade runs scoped to the provider entity (its own
@@ -996,6 +1223,8 @@ async def deliver_contract(cid: str, user: dict | None = Depends(get_current_use
     to the contract. Honest: a weak delivery carries its real verdict, never a fabricated pass.
     W465 — the cascade runs outside the store's lock and binds only if the contract is still accepted when it
     finishes (a concurrent delivery that bound first wins; this run is reported unbound, never written over it)."""
+    import time as _time
+    import uuid as _uuid
     c = _find_contract(_read_contracts(), cid)
     _require_economy_access(c["provider_vsb"], user)
     if c["status"] != "accepted":
@@ -1006,10 +1235,45 @@ async def deliver_contract(cid: str, user: dict | None = Depends(get_current_use
     _prov = _gate_load(c["provider_vsb"])
     if _prov:
         _refuse_gated(_prov, "contract delivery")
+
+    # W502 (FU-037) — CLAIM BEFORE THE CASCADE. The bind used to happen only after the cascade
+    # returned, so a second Deliver while the first ran started a second provider-scoped org cascade
+    # and had its entire output discarded with 409. `settle` already claimed first; this did not.
+    _dtoken = _uuid.uuid4().hex
+
+    def _claim_delivery(rows: list) -> dict:
+        cur = _find_contract(rows, cid)
+        if cur["status"] != "accepted":
+            raise HTTPException(status_code=409, detail=f"Contract is {cur['status']}, not accepted.")
+        cl = cur.get("delivering") if isinstance(cur.get("delivering"), dict) else None
+        if cl and _claim_live(cl):
+            raise HTTPException(status_code=409, detail=(
+                f"A delivery of contract {cid} is already in progress (since {cl.get('at')}) — this "
+                f"request ran no cascade. Retry when it has finished."))
+        cur["delivering"] = {"claim": _dtoken, "at": _contract_ts(), "at_epoch": _time.time()}
+        return dict(cur)
+
+    c = _mutate_contracts(_claim_delivery, keep=cid)
+
+    def _release_delivery() -> None:
+        def _rel(rows: list) -> None:
+            cur = next((x for x in rows if x.get("id") == cid), None)
+            cl = (cur or {}).get("delivering")
+            if isinstance(cl, dict) and cl.get("claim") == _dtoken:
+                cl["claim"], cl["at_epoch"] = None, 0
+        try:
+            _mutate_contracts(_rel, keep=cid)
+        except Exception:
+            pass                       # the claim goes stale on its own
+
     from agentic_core.api.swarm import CascadeRequest, cascade_orchestration
-    run = await cascade_orchestration(CascadeRequest(
-        mission=f"Deliver the commissioned work: {c['brief'][:400]}",
-        domain="enterprise", scope=c["provider_vsb"]))
+    try:
+        run = await cascade_orchestration(CascadeRequest(
+            mission=f"Deliver the commissioned work: {c['brief'][:400]}",
+            domain="enterprise", scope=c["provider_vsb"]))
+    except BaseException:
+        _release_delivery()            # a cascade that raised must not hold the contract
+        raise
     delivery = {"run_id": run.get("run_id"), "quality": run.get("quality"),
                 "served_by": (run.get("ai_provenance") or {}).get("served_by")}
 
@@ -1024,8 +1288,13 @@ async def deliver_contract(cid: str, user: dict | None = Depends(get_current_use
                 f"run {run.get('run_id')} is not bound to it."))
         cur["delivery"] = delivery
         cur["status"] = "delivered"
+        cur.pop("delivering", None)               # W502 — the claim is spent
         return _public_contract(cur)
-    c = _mutate_contracts(_bind)
+    try:
+        c = _mutate_contracts(_bind)
+    except BaseException:
+        _release_delivery()
+        raise
     _contract_ueg({"type": "economy.contract_delivered", "contract_id": cid,
                    "run_id": run.get("run_id")})
     return c
@@ -1102,14 +1371,27 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
     client, provider, price = c["client_vsb"], c["provider_vsb"], c["price_wst"]
     memo = f"contract {cid} settlement"
 
-    def _release() -> None:
+    def _release(raised: Optional[str] = None) -> None:
         # the claim stays on the contract with its transfer id, immediately reclaimable: the next settle asks the
         # ledger first, so reusing the id can never pay twice
+        # W502 (FU-039) — and when this attempt ENDED IN AN EXCEPTION, the outcome is recorded here as
+        # 'unknown' with what happened. It used to be left untouched, so the contract kept the EARLIER
+        # attempt's outcome and a page could still say "held for the Owner's decision" after the Owner
+        # had approved and a later attempt failed for another reason.
         def _rel(rows: list) -> None:
             cur = next((x for x in rows if x.get("id") == cid), None)
-            cl = (cur or {}).get("settling")
+            if cur is None:
+                return
+            cl = cur.get("settling")
             if isinstance(cl, dict) and cl.get("claim") == token:
                 cl["claim"], cl["at_epoch"] = None, 0
+            if raised and cur.get("status") != "settled":
+                cur["settlement"] = {
+                    "outcome": "unknown", "at": _contract_ts(), "raised": raised,
+                    "note": (f"This settlement attempt ended in an error ({raised}) — whether it paid is "
+                             "not recorded here. Settle again: it asks the client's ledger first and never "
+                             "pays twice."),
+                }
         try:
             _mutate_contracts(_rel, keep=cid)
         except Exception:
@@ -1146,9 +1428,13 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
                                              "it was completed, not paid again"}}
         else:
             result = await _transfer_core(TransferRequest(from_vsb=client, to_vsb=provider, amount=price, memo=memo),
-                                          transfer_id=xid, context="settlement")
-    except BaseException:
-        _release()
+                                          transfer_id=xid, context="settlement",
+                                          gate_source=f"contract:{cid}")
+    except BaseException as _exc:
+        # an HTTPException carries its own detail to the caller; the CONTRACT still has to stop showing
+        # the previous attempt's outcome, which is what FU-039 was about
+        _detail = getattr(_exc, "detail", None)
+        _release(raised=(f"{type(_exc).__name__}: {str(_detail or _exc)[:160]}"))
         raise
 
     transfer, gov, unknown = result.get("transfer"), (result.get("governance") or {}), False

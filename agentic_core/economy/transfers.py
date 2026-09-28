@@ -115,6 +115,19 @@ def _receiver_id_ok(to_vsb: Any, transfer_id: str = "xfer-0000000000") -> None:
                          "transfer's own debit from a replay).")
 
 
+def _intake_fields(what: str) -> dict:
+    """W502 (FU-163) — the queued-intake wording, computed from whether a next cycle is actually coming."""
+    try:
+        from agentic_core.economy.living_vsbs import intake_note
+        n = intake_note(what)
+        return {"settlement": n["note"], "autonomous_cycles": n["autonomous_cycles"]}
+    except Exception:
+        # the fact cannot be known: say that, rather than promising a cycle
+        return {"settlement": (f"{what} is queued as intake revenue; whether a next metabolic cycle is "
+                               f"scheduled could not be determined here"),
+                "autonomous_cycles": None}
+
+
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
@@ -262,8 +275,9 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
         "sender_reserve_fund_after_wst": round(reserve - amount, 2) if posted else reserve,
         "receiver_pending_wst": rec["pending_wst"],
         "receiver_leg_closed": leg_closed,
-        "settlement": "the receiver's next metabolic cycle consumes this as intake revenue "
-                      "(enters its §4 waterfall)",
+        # W502 (FU-163) — this promised a cycle that is not coming: autonomous cycles are OFF by
+        # default, and the entity's own living statement says so while this line said otherwise
+        **_intake_fields("this transfer"),
         "disclaimer": "Virtual/simulated WST — no real funds moved.",
     }
 
@@ -429,6 +443,60 @@ def _live_settle_claims() -> Optional[set]:
 
 
 _RECONCILE_FAILURES_LOGGED: set = set()
+
+
+def audit_unmarked_debits(from_vsb: Optional[str] = None, limit: int = 200) -> Dict[str, Any]:
+    """§15 (W502, FU-047) — LIST the transfer_out debits that carry no W466 marker, so a stranded one no
+    longer has to be found by hand. READ-ONLY: it completes nothing and recommends nothing.
+
+    A marked debit is handled by `reconcile_receiver_legs`. An unmarked one cannot be completed safely
+    because nothing recorded whether its receiver was credited, so each is an Owner decision. What this
+    can say per entry: the sender, the amount, the memo and whether the ledger names a credited id for it.
+    What it cannot say, and says so: whether the receiver was actually credited.
+    """
+    from agentic_core.economy.ledger import _STORE as _LEDGERS
+    out: Dict[str, Any] = {"unmarked": [], "unmarked_total": 0, "ledgers_read": 0,
+                           "ledgers_unreadable": 0, "truncated": False}
+    paths = [_ledger_path(from_vsb)] if from_vsb is not None else sorted(_LEDGERS.glob("*_ledger.json"))
+    for path in paths:
+        if not path.exists():
+            continue
+        try:
+            data = _read_ledger_strict(path)
+        except Exception as err:
+            out["ledgers_unreadable"] += 1
+            out.setdefault("unreadable_detail", []).append(f"{path.name}: {type(err).__name__}")
+            continue
+        out["ledgers_read"] += 1
+        sender = path.name[: -len("_ledger.json")]
+        credited = [str(x) for x in (data.get("credited_ids") or []) if isinstance(x, (str, int))]
+        for i, p in enumerate(data.get("postings", []) or []):
+            if not isinstance(p, dict) or p.get("debit") != "transfer_out":
+                continue
+            if isinstance(p.get("transfer"), dict):
+                continue                       # marked since W466: reconcile_receiver_legs owns it
+            out["unmarked_total"] += 1
+            if len(out["unmarked"]) >= max(1, int(limit)):
+                out["truncated"] = True
+                continue
+            out["unmarked"].append({
+                "from_vsb": sender, "posting_index": i,
+                "amount_wst": p.get("amount"), "memo": str(p.get("memo") or "")[:160],
+                "at": p.get("at") or p.get("ts"),
+                # what the record CAN answer, and what it cannot
+                "sender_names_a_credited_id": bool(credited),
+                "receiver_credited": None,
+                "why_unknown": ("this debit carries no W466 transfer marker, so the receiver it was meant "
+                                "for and whether that receiver was credited are not recorded on it"),
+            })
+    out["basis"] = (
+        f"{out['unmarked_total']} transfer_out debit(s) across {out['ledgers_read']} readable ledger(s) "
+        f"carry no W466 marker" + (f"; {out['ledgers_unreadable']} ledger(s) could not be read and are "
+                                   f"NOT included" if out["ledgers_unreadable"] else "") + ". "
+        "This is a LISTING, not a recommendation: an unmarked debit cannot be completed safely because "
+        "nothing recorded whether its receiver was credited, and completing one could credit twice. Each "
+        "is an Owner decision. Nothing here was changed. Virtual/simulated WST.")
+    return out
 
 
 def reconcile_receiver_legs(min_age_s: float = 120.0, limit: int = 50, transfer_id: Optional[str] = None,

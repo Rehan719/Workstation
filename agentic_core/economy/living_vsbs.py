@@ -71,6 +71,28 @@ def living_statement() -> dict:
             "autonomous_cycles": auto, "virtual": True}
 
 
+def intake_note(what: str = "this") -> Dict[str, Any]:
+    """§15 (W502, FU-163) — what to tell a caller whose money is queued for "the next metabolic cycle".
+
+    Six live files promised that the next cycle would consume an intake. `living_statement` already
+    knows whether a next cycle is coming: `autonomous_cycles` is the Self-run lever AND a beating
+    heartbeat, and it is False by default — so the promise was made to every caller while the entity's
+    own statement said cycles were OFF. The wording is computed from the same fact, and returns the fact
+    beside it so a page can render its own version rather than hardcoding one.
+    """
+    st = living_statement()
+    running = bool(st.get("autonomous_cycles"))
+    if running:
+        note = (f"the receiver's next metabolic cycle consumes {what} as intake revenue (enters its "
+                f"§4 waterfall) — the organism is tending it on the heartbeat")
+    else:
+        note = (f"{what} is QUEUED as intake revenue and NO next cycle is scheduled: autonomous economy "
+                f"cycles are OFF, so it waits until a cycle is run (enable Self-run and start the "
+                f"heartbeat on the Heartbeat page, or run one with POST /api/v1/economy/cycle). It "
+                f"enters the §4 waterfall when that cycle runs, not before")
+    return {"note": note, "autonomous_cycles": running, "virtual": True}
+
+
 def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
              domain: str = "enterprise", owner: str = "Rehan") -> Dict[str, Any]:
     """Register an established VSB as a living entity the organism will autonomously tend.

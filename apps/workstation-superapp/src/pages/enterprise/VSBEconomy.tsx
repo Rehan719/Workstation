@@ -572,13 +572,24 @@ export const VSBEconomy: React.FC = () => {
                       <span className="text-sm text-slate-300 font-bold">{g.cause}</span>
                     </div>
                     <div className="flex items-center gap-3 text-[10px] font-mono">
-                      <span className="text-slate-600">score {g.score}</span>
+                      <span className="text-slate-600" title="A weighted sum of editorial constants — nothing measures need, impact or trust. The arithmetic is real; the inputs are typed.">score {g.score} (editorial)</span>
                       <span className="text-aura font-black">{g.amount_wst.toLocaleString()} WST</span>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-[9px] text-slate-600 mt-3">Ranked by urgency × gravity × reach × marginal-impact × trust. Virtual/simulated — live feeds pending Owner approval.</p>
+              {/* W502 (FU-166) — this read as five measured inputs producing a measured score. charity.py has
+                  disclosed since W415 that they are editorial priority weights a maintainer typed to encode the
+                  2026-06-21 Owner directive, and that NOTHING measures or verifies any of them. The ranking
+                  arithmetic over them is real; the inputs are not observations. */}
+              <p className="text-[9px] text-slate-600 mt-3">
+                Ranked by a weighted sum of urgency × gravity × reach × marginal-impact × trust — and those five
+                are <span className="text-amber-400">EDITORIAL CONSTANTS a maintainer typed</span> to encode the
+                2026-06-21 Owner directive: no needs, impact or trust data is measured or sourced. The ranking
+                over them is real arithmetic; the inputs are not measurements, and the 100%-donation flag is an
+                eligibility rule reported as <span className="font-black">not_checked</span>, never verified.
+                Virtual/simulated — live feeds pending Owner approval.
+              </p>
             </Card>
           )}
         </div>

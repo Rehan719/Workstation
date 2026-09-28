@@ -517,10 +517,15 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     # a LOW 'config_minor' request titled "[economy] material distribution — <vsb>" was auto-approved
     # here and released a 4,000,000-WST distribution nobody reviewed. Refused for every caller.
     _title = req.title.strip().lower()
+    # W502 (FU-035) — the contract-settlement hold title is reserved with the other two. A new hold
+    # title that is NOT reserved here is one a submitted change can impersonate, which is the W463
+    # hole this check exists to close.
     if req.change_type == "economy_material" or _title.startswith(("[economy] material distribution",
-                                                                    "[economy] material transfer")):
+                                                                    "[economy] material transfer",
+                                                                    "[economy] material contract settlement")):
         raise HTTPException(status_code=422, detail=(
-            "change_type 'economy_material' and the '[economy] material distribution/transfer' titles are "
+            "change_type 'economy_material' and the '[economy] material distribution/transfer/contract "
+            "settlement' titles are "
             "reserved for the economy's own materiality holds, which it files and keeps current itself; run "
             "the action (a cycle or transfer) and decide the hold it files in the Governance hub's Sovereign Sanctum."))
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"

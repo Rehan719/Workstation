@@ -547,8 +547,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -564,8 +564,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -597,8 +597,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -631,8 +631,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -762,8 +762,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -930,8 +930,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -947,8 +947,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -999,8 +999,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -2732,8 +2732,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -2785,8 +2785,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": ""
     },
     {
@@ -4302,8 +4302,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W502",
       "note": "",
       "tier": 2
     },
@@ -4919,6 +4919,43 @@
       "closed_by": null,
       "note": "",
       "slot_source": "W500: it IS P4.4's own pre-flight - the item says the migration dry-run and rollback are proven before the Owner flips anything",
+      "tier": 3
+    },
+    {
+      "id": "FU-285",
+      "title": "FU-057's remaining half: a gated action that raised is retried OUTSIDE the gate, so a refusal inside the action runs again ungated",
+      "why": "W502 fixed the WORDING half of FU-057 (a reused transfer id means an earlier attempt may have debited, and the header no longer publishes an UNKNOWN as 'false'). The second half of that row is not done and is recorded here rather than left inside a closed one. The claim, unverified so far: the W463 design retries a gated action OUTSIDE the gate's decision, so when the action itself raises after the gate consumed an approval, the retry runs without the gate. What IS measured: _transfer_core consumes the approval at gate time, before the action runs, and _restore_consumed_approval exists precisely because the action may never run - so the pieces are there and the question is whether the retry path re-enters the gate or bypasses it. THE WORK: drive a settlement whose action raises AFTER the materiality gate consumed an Owner approval, then retry it, and assert the retry is inside the gate's decision (a fresh hold or the same approval, never an ungated run). If it turns out the retry is already gated, close this with the measurement that says so - the row's claim would then be the thing that was wrong.",
+      "source": "W502 (found while fixing FU-057: the header override)",
+      "found": "2026-09-27",
+      "files": [
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W502: measured while fixing FU-057's wording half; it is the same transfer-answer code path",
+      "tier": 1
+    },
+    {
+      "id": "FU-286",
+      "title": "FU-058's remaining part: the strict read's retry sleeps block the event loop in async routes",
+      "why": "W502 fixed two of FU-058's three parts - a locked or unwritable store now answers 503 with the ledger_written wording instead of a bare 500, and a raised cycle leaves an economy.cycle_raised record in the chain as the heartbeat path already did. The third part is NOT done and is recorded here rather than left inside a closed row. THE CLAIM: the strict read retries with time.sleep, and in an async route (POST /cycle, /close-period, /transfer are async def) a blocking sleep holds the event loop, so every other request on the worker waits for a contended store. WHAT IS MEASURED SO FAR: the routes are async def and the ledger read retries exist; what has NOT been measured is the sleep duration, how many retries, and whether the loop is actually held for a user-visible time. THE WORK: measure the blocking window first (a contended store, timed), then move the retries off the loop (asyncio.to_thread or a threadpool read) only if the measurement justifies it - and if it does not, close this with the measurement, because a fix nobody needs is still a change to a money-adjacent path.",
+      "source": "W502 (FU-058's third part, left undone deliberately)",
+      "found": "2026-09-28",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W502: the same /cycle route whose error mapping this round fixed",
       "tier": 3
     }
   ],

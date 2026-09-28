@@ -187,6 +187,18 @@ def _load_portfolio() -> Dict[str, Any]:
     return read_json_strict(_PORTFOLIO_STORE, dict, expect=dict)
 
 
+def _recycle_fields() -> dict:
+    """W502 (FU-163) — what happens to a returned amount, from whether a cycle is coming."""
+    try:
+        from agentic_core.economy.living_vsbs import intake_note
+        n = intake_note("this return")
+        return {"recycles": n["note"], "autonomous_cycles": n["autonomous_cycles"]}
+    except Exception:
+        return {"recycles": ("this return is queued as intake revenue; whether a next metabolic cycle is "
+                             "scheduled could not be determined here"),
+                "autonomous_cycles": None}
+
+
 def _save_portfolio(d: Dict[str, Any]) -> None:
     from agentic_core.config import atomic_write_json
     atomic_write_json(_PORTFOLIO_STORE, d)
@@ -234,7 +246,8 @@ def record_return(vsb_id: str, holding_id: str, amount: float, memo: str = "") -
             "holding_returned_total_wst": h["returned_wst"],
             "pending_returns_wst": pf["pending_returns_wst"],
             "amount_source": "caller_asserted (cumulative returns bounded at 10× invested; nothing measures returns)",
-            "recycles": "consumed as intake revenue by the next metabolic cycle (virtual WST)",
+            # W502 (FU-163) — computed, not promised: autonomous cycles are OFF by default
+            **_recycle_fields(),
             "memo": memo}
 
 

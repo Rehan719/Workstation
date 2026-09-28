@@ -79,8 +79,12 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
         </span>}
       </div>
       <p className="text-[10px] text-slate-500 font-bold mb-4">
+        {/* W502 (FU-163) — this promised "the next metabolic cycle" while autonomous cycles are OFF by
+            default, which the entity's own living statement says. A queue is a queue until a cycle runs. */}
         Every holding with its invested capital AND its returns — the recycle half of the §6 loop. A recorded
-        return queues as pending and the next metabolic cycle consumes it as intake revenue.
+        return QUEUES as pending intake and enters the §4 waterfall only when a metabolic cycle runs — which
+        is not automatic unless Self-run is on and the heartbeat is beating (the Heartbeat page), so until
+        then it waits.
         <span className="text-amber-400"> Returns are caller-asserted (nothing measures them) — cumulative returns bounded at 10× invested. Virtual WST.</span>
       </p>
       {loadErr && <p role="alert" className="text-[10px] font-bold text-vital">{loadErr}</p>}
@@ -241,8 +245,11 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
         <ArrowRightLeft size={14} /> Transfer WST between your entities (federation)
       </h3>
       <p className="text-[10px] text-slate-500 font-bold mb-4">
+        {/* W502 (FU-163) — same promise, same correction. The transfer's own answer now carries the
+            computed sentence, and a completed transfer shows that instead of this general one. */}
         The sender pays from its reserve fund (double-entry, refused on insufficient virtual funds); the
-        receiver's next metabolic cycle consumes it as intake revenue. Material transfers are HELD for
+        receiver's intake QUEUES and enters its §4 waterfall when a metabolic cycle runs — automatic only
+        while Self-run is on and the heartbeat beats. Material transfers are HELD for
         Change Control. <span className="text-amber-400">Virtual WST only — no real funds.</span>
       </p>
       {targets.length === 0 ? (
