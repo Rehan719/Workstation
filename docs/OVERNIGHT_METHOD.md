@@ -1,10 +1,44 @@
 # The unattended-session method — forecast, simulate, engineer, align
 
 Written W514 (2026-09-30) for an ~8-hour unattended run, and kept as the reusable method for any future one.
-Every figure here is measured from this repository or marked as an assumption. Two scripts hold the mechanism:
-`scripts/session_forecast.py` (wall-clock capacity) and `scripts/night_sim.py` (probability of completing a plan).
+Every figure here is measured from this repository or marked as an assumption. **Section 0 is the repeatable
+procedure — start there.** Four scripts hold the mechanism: `plan_night.py` (the plan itself),
+`session_forecast.py` (wall-clock capacity), `night_sim.py` (completion probability) and `coupling.py` (which
+readers a change must not forget).
 
 ---
+
+## 0 · RUN IT AGAIN — the repeatable procedure
+
+Four steps, and only the first is yours.
+
+1. **Tell Claude how many hours and that you are going to sleep.** Capacity is readable only in the app
+   (`get_usage`), so it is an INPUT to the plan; if the hours are wrong, everything downstream is wrong.
+2. **Claude runs `python scripts/plan_night.py <hours>`.** That regenerates this whole plan from live state —
+   measured round cost, the simulated probability of each round completing, where the open work sits, the
+   ordering and batching rules, the pre-round checks and the stop rules. It refuses to project at all below a
+   five-round history rather than substituting a rate.
+3. **Claude reads the generated plan back to you with the committed round count and what each round holds**,
+   and you approve or redirect. This is the alignment step: the numbers are computed, the batching is judgement,
+   and the judgement is stated so you can overrule it.
+4. **You invoke `/loop` with that plan and go to sleep.** Claude self-paces, refreshes the handover's state
+   section at every round boundary, and writes the night report at the start of the last affordable round.
+
+**In the morning:** `git log --oneline` is the report, `docs/NIGHT_STATE.json` is the machine-readable status, and
+`docs/NIGHT_REPORT.md` says what was left and why. Nothing needs the conversation you slept through.
+
+**The one thing no mechanism covers:** keep-awake prevents idle sleep, never a closed lid. Leave the machine open.
+
+### The instruments, and what each refuses to do
+| script | answers | refuses |
+|---|---|---|
+| `scripts/plan_night.py <hours>` | the whole plan, from live state | to choose the work — it orders candidates and states the batching rule |
+| `scripts/session_forecast.py <hours>` | how many rounds fit the hours | to project below a 5-round sample; to pick between two disagreeing history windows |
+| `scripts/night_sim.py` | P(≥k rounds complete) | to state one red-suite rate it cannot measure — it shows a range |
+| `scripts/coupling.py <paths>` | which files historically change together | to assert coupling for a file with fewer than 4 commits |
+
+Each refusal is the point. An instrument that always answers is the one that reports a false clean — which
+happened twice on the night this was written.
 
 ## 1 · Measured: what a round of this project actually costs
 
