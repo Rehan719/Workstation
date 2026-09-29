@@ -291,13 +291,28 @@ _TIER_MAP: dict[str, ImpactTier] = {
 }
 
 
+# W505 (FU-157, S1.18) — the phrases that raise a change to CRITICAL whatever its declared type. Matched on
+# WORD BOUNDARIES: as bare substrings "constitution" also matched "deconstitutionalise" and "unconstitutional",
+# so a description merely discussing constitutionality was filed CRITICAL.
+_CRITICAL_PHRASES = ("constitution", "genome core", "delete all", "reset organism", "override gaas")
+
+
+def _tier_raise(description: str) -> str | None:
+    """Which phrase raises this description to CRITICAL, or None. Pure, so the form can ask before submitting."""
+    import re as _re
+    low = str(description or "").lower()
+    for k in _CRITICAL_PHRASES:
+        if _re.search(r"\b" + _re.escape(k) + r"\b", low):
+            return k
+    return None
+
+
 def _determine_tier(change_type: str, description: str) -> ImpactTier:
     base = _TIER_MAP.get(change_type, "MEDIUM")
-    # Elevate if keywords suggest constitutional or organism impact
-    critical_keywords = ["constitution", "genome core", "delete all", "reset organism", "override gaas"]
-    if any(k in description.lower() for k in critical_keywords):
-        return "CRITICAL"
-    return base
+    # Elevate if the description names something constitutional or organism-wide. Failing closed here is
+    # right; doing it without telling the caller is what FU-157 (S1.18) is about, so submit() records the
+    # raise and the response says which phrase did it.
+    return "CRITICAL" if _tier_raise(description) else base
 
 
 _TIER_RANK = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
@@ -357,11 +372,25 @@ def awaiting_board_ratification(c: dict) -> bool:
     unrecorded decision reads as a review's). A CRITICAL change is never approved by a review (and one that reached
     'approved' some other way is caught here as well). An economy materiality hold is excluded: it is decided only by
     the Owner, and its own gate never releases a review's approval (economy.governance)."""
-    return (isinstance(c, dict) and c.get("status") == "approved"
+    if not (isinstance(c, dict) and c.get("status") == "approved"
             and c.get("change_type") != "economy_material"
             and _TIER_RANK[effective_tier(c)] >= _TIER_RANK["HIGH"]
-            and approval_source(c) in REVIEW_DECISION_SOURCES + ("unrecorded_decision",)
-            and _ratification_decision(c) != "ratified")
+            and _ratification_decision(c) != "ratified"):
+        return False
+    _src = approval_source(c)
+    if _src in REVIEW_DECISION_SOURCES + ("unrecorded_decision",):
+        return True
+    # W505 (FU-030) — an override is excluded from this queue because it IS the Owner's decision, and that
+    # only holds if somebody acknowledged it as one. So a HIGH-or-above override carrying no
+    # acknowledgement waits for the Board — failing closed, as an unrecorded_decision already does.
+    #
+    # NARROWED to an EXPLICITLY STORED admin_override, which is the population the row names: records
+    # written between W459 (which began storing decision_source) and W505 (which added the flag). A
+    # PRE-W459 record carries no decision_source at all and is identified only by its review text
+    # beginning "Manual override:" — W464 already ruled on those and the suite pins that ruling, so using
+    # the INFERRED source here would have silently overturned a decision another round reasoned through.
+    return (c.get("decision_source") == "admin_override"
+            and not c.get("owner_decision_acknowledged"))
 
 
 def _log_decision(event: dict) -> bool:
@@ -369,14 +398,90 @@ def _log_decision(event: dict) -> bool:
     landed and outside its lock: a hash-chained entry cannot be taken back, so it must never describe a decision a
     compare-and-set then refused, and a slow ledger must never hold the record lock. Never raises: a failed write is
     logged and reported to the caller (`ueg_logged: false`) — it never undoes the decision."""
+    return _log_decision_result(event)[0]
+
+
+def _log_decision_result(event: dict) -> tuple[bool, str | None]:
+    """As `_log_decision`, but returns (written, why_not). W505 (FU-031) — the reason was written to the
+    server log and discarded; it has to travel so it can be written onto the record."""
     import logging
     try:
         from agentic_core.gaas.v5 import UEGLogger
-        return bool(UEGLogger().log(event))
+        return bool(UEGLogger().log(event)), None
     except Exception as e:
         logging.getLogger("change_control").error("decision %s for %s was not written to the UEG: %s",
                                                   event.get("type"), event.get("cca_id"), e)
-        return False
+        return False, f"{type(e).__name__}: {e}"
+
+
+def _log_decision_on(cca_id: str, event: dict, by: str = "cca") -> bool:
+    """W505 (FU-031) — write a decision to the constitutional ledger and, if that fails, MARK THE RECORD.
+
+    Without the mark a decision with no ledger node was reported once, in one HTTP response, and then existed
+    nowhere: nothing could find it afterwards and nothing reconciled it. Marking never raises and never undoes
+    the decision — a decision that stands with a recorded gap is honest; one that stands silently is not.
+    """
+    import logging
+    written, why = _log_decision_result(event)
+    ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    if written:
+        # The SUCCESS is marked as well. Without it "no mark" is indistinguishable from "never written",
+        # so the reconciliation below could never come back clean and would be no instrument at all.
+        def _ok(fresh: dict) -> None:
+            fresh.pop("ueg_pending", None)
+            fresh.setdefault("audit_trail", []).append(
+                {"event": "ueg_written", "ts": ts, "by": by, "by_verified": False,
+                 "event_type": event.get("type")})
+        try:
+            _update_change(cca_id, _ok)
+        except Exception as exc:
+            logging.getLogger("change_control").warning(
+                "%s reached the ledger but the record could not be marked: %s", cca_id, exc)
+        return True
+
+    def _mark(fresh: dict) -> None:
+        fresh["ueg_pending"] = {"event_type": event.get("type"), "why": why, "at": ts, "by": by,
+                                "note": ("this decision stands; its constitutional node is missing. A "
+                                         "reconciliation writes it — the request that decided must not "
+                                         "retry, because a chained entry cannot be taken back.")}
+        fresh.setdefault("audit_trail", []).append(
+            {"event": "ueg_write_failed", "ts": ts, "by": by, "by_verified": False,
+             "event_type": event.get("type"), "why": why})
+    try:
+        _update_change(cca_id, _mark)
+    except Exception as exc:
+        logging.getLogger("change_control").error(
+            "the ledger gap for %s could not be marked on the record either: %s", cca_id, exc)
+    return False
+
+
+def decisions_missing_ledger_node() -> list[dict]:
+    """W505 (FU-031) — every decided change whose constitutional node is missing or unproven.
+
+    Two classes, because a reconciliation that only sees observed failures is not a reconciliation:
+      · `marked`   — the write failed and said so (`ueg_pending` is on the record).
+      · `unproven` — the record holds a decision and no mark either way. A worker killed between the record
+                     landing and the ledger write leaves exactly this, and nothing observed it. Reported as
+                     unproven rather than missing: it may well be in the chain.
+    """
+    out = []
+    for p in sorted(_CCA_STORE.glob("*.json"), key=_mtime, reverse=True):
+        c = _load_change(p.stem)
+        if not isinstance(c, dict) or c.get("status") not in ("approved", "rejected", "implemented", "retired"):
+            continue
+        pend = c.get("ueg_pending")
+        if isinstance(pend, dict):
+            out.append({"cca_id": c.get("cca_id"), "kind": "marked", "status": c.get("status"),
+                        "event_type": pend.get("event_type"), "why": pend.get("why"), "at": pend.get("at"),
+                        "title": str(c.get("title") or "")[:120]})
+        elif not any((e or {}).get("event") == "ueg_written" for e in (c.get("audit_trail") or [])):
+            out.append({"cca_id": c.get("cca_id"), "kind": "unproven", "status": c.get("status"),
+                        "event_type": None,
+                        "why": ("no mark either way: this was decided before the mark existed, or a worker "
+                                "died between the record landing and the ledger write. The chain has to be "
+                                "read to tell which — it is not a claim that the node is missing."),
+                        "at": c.get("reviewed_at"), "title": str(c.get("title") or "")[:120]})
+    return out
 
 
 def _decision_fields(c: dict) -> dict:
@@ -424,6 +529,12 @@ class ReviewDecision(BaseModel):
     # this is an admin decision. Required in BOTH auth modes (with auth off there is no admin role
     # to check, so the acknowledgement is the whole gate).
     admin_decision_for_critical: bool = False
+    # W505 (FU-030) — an override on a HIGH-or-above change is never incidental either. A CRITICAL change
+    # required the flag above and a HIGH change required NOTHING, so with auth off any client's override was
+    # recorded as the Owner's explicit decision (admin_override) — which is exactly the decision class
+    # awaiting_board_ratification excludes from the queue. Required in both modes, because with auth off
+    # there is no admin role to check and the acknowledgement is the whole gate.
+    owner_decision_acknowledged: bool = False
     # W463 — an economy materiality hold is kept current while submitted (its amount grows with new intake).
     # A reviewer who read an amount sends it here; if the hold no longer carries that amount the decision is
     # refused (409) rather than approving an amount nobody saw.
@@ -552,6 +663,11 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
             if (cc.section, cc.key) in _GOVERNED_KEYS:
                 change_type = "config_major"   # a live lever is never a minor tweak
     tier = _determine_tier(change_type, req.description)
+    # W505 (FU-157, S1.18) — WHY the tier is what it is. The form shows a type's tier before submitting and a
+    # phrase in the description can raise it to CRITICAL; the record carried no trace, so the page appeared to
+    # contradict itself. `_raised_by` is None whenever the type's own tier stands.
+    _raised_by = _tier_raise(req.description)
+    _tier_from = _TIER_MAP.get(change_type, "MEDIUM")
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     # the name on the record is the authenticated one when there is one; otherwise the caller's
     _by = principal or req.submitted_by or "system"
@@ -571,6 +687,12 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         "submitted_by_verified": bool(principal) and auth_enabled(),
         "submitted_at": now,
         "impact_tier": tier,
+        **({"impact_tier_raised_by": _raised_by, "impact_tier_raised_from": _tier_from,
+            "impact_tier_raised_because": (
+                f"the description names {_raised_by!r}, which raises any change to CRITICAL whatever its "
+                f"declared type ({change_type} is normally {_tier_from}). Failing closed on a description "
+                f"that names something constitutional or organism-wide is deliberate.")}
+           if _raised_by and tier != _tier_from else {}),
         "status": "submitted",
         "vsb_id": req.vsb_id,
         "rollback_plan": req.rollback_plan,
@@ -669,6 +791,16 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         "cca_id": cca_id,
         "impact_tier": tier,
         "status": change["status"],
+        # W505 (FU-157) — the facts the caller needs to describe what happened. S1.11: the gate's own
+        # measurement, so no caller has to invent the word "healthy" over a composite that is 60%
+        # defaulted or simulated. S1.18: the tier raise, so a caller shown a type's tier before submitting
+        # is told when the description changed it, and by which phrase.
+        "health_gate": change.get("health_gate"),
+        "immune_threat_at_submit": change.get("immune_threat_at_submit"),
+        **({"impact_tier_raised_by": change["impact_tier_raised_by"],
+            "impact_tier_raised_from": change.get("impact_tier_raised_from"),
+            "impact_tier_raised_because": change.get("impact_tier_raised_because")}
+           if change.get("impact_tier_raised_by") else {}),
         **({"ueg_logged": ueg_logged} if ueg_logged is not None else {}),
         "message": f"Change request {cca_id} submitted. Tier: {tier}. Status: {change['status']}.",
     }
@@ -788,6 +920,19 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
         "governed_by": "Change Control Agency (arms-length)",
         "message": f"Immune reconfigurator: {threat} → {plan['section']}.{plan['key']}={plan['value']} ({change['status']}).",
     }
+
+
+@router.get("/ledger-gaps")
+async def ledger_gaps():
+    """W505 (FU-031) — decisions whose constitutional node is missing or unproven, so a reconciliation has
+    something to read. A gap never undoes the decision; it says the audit trail is incomplete and where."""
+    rows = decisions_missing_ledger_node()
+    return {"gaps": rows, "total": len(rows),
+            "marked": sum(1 for r in rows if r.get("kind") == "marked"),
+            "unproven": sum(1 for r in rows if r.get("kind") == "unproven"),
+            "rule": ("`marked` means a ledger write failed and said so. `unproven` means the record carries no "
+                     "mark either way — decided before the mark existed, or a worker died between the record "
+                     "landing and the write. Neither is a claim that the decision is invalid.")}
 
 
 @router.get("/queue")
@@ -966,6 +1111,13 @@ async def review_change(cca_id: str, req: ReviewDecision,
         if auth_enabled() and (not u or u.get("role") != "admin"):
             raise HTTPException(status_code=403,
                                 detail="Only an admin may override a Change Control decision.")
+        if (_TIER_RANK[tier] >= _TIER_RANK["HIGH"] and tier != "CRITICAL"
+                and not (req.owner_decision_acknowledged or req.admin_decision_for_critical)):
+            raise HTTPException(status_code=403, detail=(
+                f"A {tier} change decided by override skips Board ratification, because an override is "
+                f"recorded as the Owner's own decision. Resend with owner_decision_acknowledged: true to "
+                f"record this as the Owner's explicit decision, or omit override_decision to have it "
+                f"reviewed and ratified."))
         if tier == "CRITICAL" and not req.admin_decision_for_critical:
             raise HTTPException(status_code=403, detail=(
                 "A CRITICAL change is never decided incidentally: resend with "
@@ -997,21 +1149,35 @@ async def review_change(cca_id: str, req: ReviewDecision,
     biobus.fire_signal("cognitive", "cca.review", f"Reviewing: {c['title']}", 0.6)
 
     held, hold_reason, recommendation = False, None, None
+    # W505 (FU-033) - bound for BOTH branches: `_decide` below closes over it, and an override never reaches
+    # the review branch that computes it.
+    _absent: list = []
     if req.override_decision:
         decision, decision_source = req.override_decision, "admin_override"
         review_text = f"Manual override: {req.reviewer_notes or 'No notes.'}"
+        # W505 (FU-030) — stamped, so a HIGH override that was NOT acknowledged is findable afterwards.
+        _ack_override = bool(req.owner_decision_acknowledged or req.admin_decision_for_critical)
     else:
         # a review by the serving resource (a model, or the deterministic floor)
         ctx = biobus.organism_context()
+        # W505 (FU-033) — which of the review-bearing fields this record simply does not have
+        _absent = [_f for _f in ("rationale", "affected_systems", "rollback_plan") if not c.get(_f)]
         prompt = (
             f"You are the Chief Governance Officer of Workstation IDBO, reviewing a change request.\n\n"
             f"Change Title: {c['title']}\n"
             f"Type: {c['change_type']}\n"
             f"Impact Tier: {tier}\n"
-            f"Description: {c['description']}\n"
-            f"Rationale: {c['rationale'] or 'Not provided.'}\n"
-            f"Affected Systems: {', '.join(c['affected_systems']) or 'Not specified.'}\n"
-            f"Rollback Plan: {c['rollback_plan'] or 'Not provided.'}\n\n"
+            f"Description: {c.get('description') or 'Not provided.'}\n"
+            # W505 (FU-033) — .get, not []. A record written without these raised KeyError here, AFTER
+            # _start had already moved it to under_review, leaving the change stuck in a state no review
+            # could leave. The absences are NAMED below rather than papered over: a change with no
+            # rollback plan is a different proposition from one that has one.
+            f"Rationale: {c.get('rationale') or 'Not provided.'}\n"
+            f"Affected Systems: {', '.join(c.get('affected_systems') or []) or 'Not specified.'}\n"
+            f"Rollback Plan: {c.get('rollback_plan') or 'Not provided.'}\n"
+            + (f"RECORD INCOMPLETE — this change was submitted without: {', '.join(_absent)}. Weigh that in "
+               f"your assessment; do not assume the missing parts are satisfactory.\n\n" if _absent else "\n")
+            + 
             f"Current Organism Health:\n"
             # W494 (refutation) - same: the reviewer saw only the blend
             f"  Measured composite health: {float(ctx.get('composite_health_measured_only') or 0):.0%} "
@@ -1029,7 +1195,25 @@ async def review_change(cca_id: str, req: ReviewDecision,
             f"5. Decision — APPROVED or REJECTED, with one clear sentence of reasoning.\n\n"
             f"End your response with exactly one of: [DECISION: APPROVED] or [DECISION: REJECTED]"
         )
-        review_text = await gateway.query(prompt, agent="cca_review")
+        # W505 (FU-157, S1.12) — WITH PROVENANCE. `query` returns bare text, so the record below called the
+        # prose "the model's" even when the deterministic floor wrote it, which is the normal case when no
+        # local model is present. query_meta says what served it.
+        # W505 — `augment=False` STATED, not inherited. A repo-wide guard requires every query_meta call
+        # site to name its recall decision: W489 flipped the default after 29 generation callers had
+        # another request's content prepended and presented as analysis of their own subject, and an
+        # inherited default is exactly what let that go unnoticed for 29 sites.
+        _rv = await gateway.query_meta(prompt, agent="cca_review", augment=False)
+        review_text = _rv.get("output", "")
+        _served = str(_rv.get("served_by") or "unknown")
+        # the GATEWAY's own floor test, which imports the engine's declared name instead of matching a
+        # string. A second, weaker test here (looking for "engine" in the name) reported the floor as
+        # "the serving resource 'native'", which says no more than the old sentence did.
+        from agentic_core.ai.gateway import ModelGateway as _MG
+        _is_floor = bool(_MG._is_floor(_served)) and not _rv.get("is_external")
+        # a NOUN PHRASE: it lands mid-sentence in three places, and a clause here ("— not a model") read as
+        # "...written by the floor, not a model and had NO bearing on the decision."
+        _writer = ("Workstation's own deterministic native engine (the floor, which is not a model)"
+                   if _is_floor else f"the serving resource '{_served}'")
 
         _up = (review_text or "").upper()
         _yes, _no = "[DECISION: APPROVED]" in _up, "[DECISION: REJECTED]" in _up
@@ -1068,7 +1252,7 @@ async def review_change(cca_id: str, req: ReviewDecision,
                            f"composite's weight; " + _blend_clause(ctx) + ")")
         _u = _principal(user)
         admin_requested = (not auth_enabled()) or bool(_u and _u.get("role") == "admin")
-        model_out = "\n\n--- model output ---\n" + (review_text or "")
+        model_out = f"\n\n--- output of {_writer} ---\n" + (review_text or "")
         if tier == "CRITICAL":
             # never decided by a review: a model marker is a recommendation; the rule never applies.
             # W464 — this now covers every economy materiality hold (FU-014), so the W463 branch that held only a hold
@@ -1083,10 +1267,10 @@ async def review_change(cca_id: str, req: ReviewDecision,
                  + (f"It follows the rejection of {_follows.get('cca_id')}. " if _follows else "")
                  if c.get("change_type") == "economy_material" else
                  "HELD — a CRITICAL change is decided only by an explicit admin decision. ")
-                + (f"The serving model recommended {marker.upper()}; that is recorded as a "
+                + (f"{_writer.capitalize()} recommended {marker.upper()}; that is recorded as a "
                    "recommendation, not a decision." if marker else
-                   f"No model recommendation: {why_no_marker}; the organism-health threshold rule "
-                   "never decides a CRITICAL change.")
+                   f"No recommendation from the serving resource: {why_no_marker}; the organism-health "
+                   "threshold rule never decides a CRITICAL change.")
                 + model_out)
         elif marker:
             decision, decision_source = marker, "model_decision_marker"
@@ -1114,9 +1298,9 @@ async def review_change(cca_id: str, req: ReviewDecision,
         else:
             decision, decision_source = rule_verdict, "health_threshold_rule"
             review_text = (
-                f"DECIDED BY RULE, NOT BY THE MODEL: {why_no_marker}, so the verdict is the "
-                f"organism-health threshold rule (tier is not CRITICAL; {rule_clause}). The prose below "
-                "is the model's and had NO bearing on the decision."
+                f"DECIDED BY RULE, NOT BY THE SERVING RESOURCE: {why_no_marker}, so the verdict is the "
+                f"organism-health threshold rule (tier is not CRITICAL; {rule_clause}). The prose below was "
+                f"written by {_writer} and had NO bearing on the decision."
                 + model_out)
 
     # §17.5 — an APPROVED major change (HIGH/CRITICAL) is pre-validated at approval time so
@@ -1136,7 +1320,19 @@ async def review_change(cca_id: str, req: ReviewDecision,
             raise HTTPException(status_code=409, detail=(
                 "The hold's amount changed during the review; nothing was decided. Re-read it and review again."))
         fresh["review_result"] = review_text
+        # W505 (FU-033, second pass) — ON THE RECORD, not only in the prompt. The absences were named to the
+        # reviewing resource and nowhere a person reading this record back could see them, and a change
+        # reviewed without a rollback plan is a different proposition from one that had one.
+        if _absent:
+            fresh["reviewed_without"] = list(_absent)
+            fresh["reviewed_without_note"] = (
+                f"this change was reviewed while missing: {', '.join(_absent)}. The reviewer was told so; the "
+                f"decision was taken on what the record held.")
         fresh["decision_source"] = decision_source
+        # W505 (FU-030) — stamped so awaiting_board_ratification can tell an ACKNOWLEDGED Owner decision
+        # from an override nobody acknowledged. Without this the backwards check has nothing to read.
+        if req.override_decision:
+            fresh["owner_decision_acknowledged"] = _ack_override
         fresh["reviewed_at"] = now
         trail = fresh.setdefault("audit_trail", [])
         if held:
@@ -1183,12 +1379,14 @@ async def review_change(cca_id: str, req: ReviewDecision,
                       if isinstance(c.get("follows_rejection"), dict) else {}),
                    **({"notes": req.reviewer_notes[:200]} if req.override_decision and req.reviewer_notes else {})}
         if decision == "approved":
-            ueg_logged = _log_decision({"type": "cca.change_approved", **_common, "decision": "approved",
+            ueg_logged = _log_decision_on(cca_id, {"type": "cca.change_approved", **_common,
+                                        "decision": "approved",
                                         "awaiting_board_ratification": awaiting,
                                         **({"twin_prevalidation": {"verdict": tp["verdict"], "source": tp["source"]}}
                                            if tp else {})})
         else:
-            ueg_logged = _log_decision({"type": "cca.change_rejected", **_common, "decision": "rejected"})
+            ueg_logged = _log_decision_on(cca_id, {"type": "cca.change_rejected", **_common,
+                                                   "decision": "rejected"})
 
     if held:
         biobus.fire_signal("reflex", "cca.decision", f"CCA HELD ({hold_reason}): {c['title']}", 0.6)
@@ -1365,12 +1563,25 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
 
     c["status"] = "implemented"
     c["implemented_at"] = now
+    # W505 (FU-157, S1.10) — WHAT IT DID. A change with no config_change payload applies nothing, and every
+    # change submitted from the page's own form is one; the record read IMPLEMENTED and counted in the
+    # Implemented stat regardless. `status` keeps its vocabulary (many readers, and the record IS closed out);
+    # the effect is stated separately so nobody has to infer it from a null.
+    _effect = "applied" if applied else "recorded_only"
+    c["implementation_effect"] = _effect
+    c["implementation_effect_basis"] = (
+        "the change carried a config_change payload and the reconfiguration engine applied it"
+        if applied else
+        "this change carried nothing for the platform to apply, so implementing it recorded the decision and "
+        "closed the record; no platform behaviour changed. Work described in prose is carried out elsewhere.")
     c["audit_trail"].append({"event": "implemented", "ts": now, "by": principal,
-                             "by_verified": verified})
+                             "by_verified": verified, "effect": _effect})
     _save_change(c)
 
     biobus.fire_signal("motor", "cca.implement", f"Implemented: {c['title']}", 0.7)
     return {"cca_id": cca_id, "status": "implemented", "implemented_at": now, "applied": applied,
+            "implementation_effect": _effect,
+            "implementation_effect_basis": c["implementation_effect_basis"],
             "twin_prevalidation": (c.get("twin_prevalidation") or {}).get("verdict")}
 
 
@@ -1437,9 +1648,11 @@ def ratify_change(cca_id: str, decision: str, notes: str, principal: str, verifi
               "by": principal, "by_verified": verified, "on_owner_direction": True,
               **({"notes": notes[:200]} if notes else {}), "status_after": c.get("status")}
     if decision == "ratify":
-        ueg_logged = _log_decision({"type": "board.change_ratified", **_event, "decision": "ratified"})
+        ueg_logged = _log_decision_on(cca_id, {"type": "board.change_ratified", **_event,
+                                               "decision": "ratified"})
     else:
-        ueg_logged = _log_decision({"type": "board.change_ratification_refused", **_event, "decision": "refused"})
+        ueg_logged = _log_decision_on(cca_id, {"type": "board.change_ratification_refused", **_event,
+                                               "decision": "refused"})
     try:
         biobus.fire_signal("motor" if decision == "ratify" else "reflex", "board.ratification",
                            f"Board {'RATIFIED' if decision == 'ratify' else 'REFUSED'}: {c.get('title')}", 0.7)

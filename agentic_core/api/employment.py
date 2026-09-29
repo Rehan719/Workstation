@@ -43,6 +43,7 @@ class CVRequest(BaseModel):
     experience: str                      # free-text career/experience summary
     skills: List[str] = []
     seniority: str = "mid"               # entry | mid | senior | lead | executive
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/cv")
@@ -62,7 +63,7 @@ async def tailor_cv(req: CVRequest):
         "## Suggested Keywords (ATS terms to include for this role)\n"
         "## Gaps & Recommendations (honest gaps for this role and how to address them)"
     )
-    cv, provenance = await ai_text(prompt, "employment_cv")
+    cv, provenance = await ai_text(prompt, "employment_cv", realm=req.realm)
     return {
         "cv_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -79,6 +80,7 @@ class CoverLetterRequest(BaseModel):
     company: str = ""
     highlights: str = ""                 # what to emphasise (achievements / motivation)
     tone: str = "professional"           # professional | warm | concise | enthusiastic
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/cover-letter")
@@ -94,7 +96,7 @@ async def cover_letter(req: CoverLetterRequest):
         "a body evidencing fit with concrete examples, a paragraph on motivation/fit with the employer, "
         "and a confident close. Avoid clichés and generic filler."
     )
-    letter, provenance = await ai_text(prompt, "employment_cover_letter")
+    letter, provenance = await ai_text(prompt, "employment_cover_letter", realm=req.realm)
     return {
         "letter_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -110,6 +112,7 @@ class InterviewPrepRequest(BaseModel):
     target_role: str
     seniority: str = "mid"
     competencies: List[str] = []         # competencies / themes to prepare for
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/interview-prep")
@@ -127,7 +130,7 @@ async def interview_prep(req: InterviewPrepRequest):
         "## Red Flags to Avoid\n"
         "## Preparation Checklist"
     )
-    prep, provenance = await ai_text(prompt, "employment_interview")
+    prep, provenance = await ai_text(prompt, "employment_interview", realm=req.realm)
     return {
         "prep_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -144,6 +147,7 @@ class CareerPathRequest(BaseModel):
     target_role: str
     experience_years: int = 3
     constraints: str = ""                # e.g. "part-time study only, 12-month horizon"
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/career-path")
@@ -162,7 +166,7 @@ async def career_path(req: CareerPathRequest):
         "## Quick Wins (things achievable in the next 90 days)\n"
         "## Risks & Honest Assessment (how realistic the transition is, and key dependencies)"
     )
-    roadmap, provenance = await ai_text(prompt, "employment_career_path")
+    roadmap, provenance = await ai_text(prompt, "employment_career_path", realm=req.realm)
     return {
         "path_id": uuid.uuid4().hex[:10],
         "current_role": req.current_role,
@@ -182,6 +186,7 @@ class SalaryNegotiationRequest(BaseModel):
     current_salary: str = ""             # free text, e.g. "£45,000" or "not disclosed"
     offered_salary: str = ""             # the offer on the table, if any
     leverage: str = ""                   # competing offers, scarce skills, strong performance, etc.
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/salary-negotiation")
@@ -212,7 +217,7 @@ async def salary_negotiation(req: SalaryNegotiationRequest):
         "Be specific and practical. Never fabricate precise market figures as if they were data — frame ranges "
         "as reasoned estimates to validate."
     )
-    plan, provenance = await ai_text(prompt, "employment_salary")
+    plan, provenance = await ai_text(prompt, "employment_salary", realm=req.realm)
     return {
         "negotiation_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -233,6 +238,7 @@ class ApplicationRequest(BaseModel):
     questions: List[str] = []            # specific application-form questions to answer
     word_limit: int = 0                  # 0 = no explicit limit
     organisation: str = ""
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/application")
@@ -267,7 +273,7 @@ async def application_support(req: ApplicationRequest):
         "## Criteria Coverage Check\n"
         "A short checklist of which person-spec criteria are well-evidenced, partially evidenced, or a gap."
     )
-    statement, provenance = await ai_text(prompt, "employment_application")
+    statement, provenance = await ai_text(prompt, "employment_application", realm=req.realm)
     return {
         "application_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,

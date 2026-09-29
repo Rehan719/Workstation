@@ -100,6 +100,13 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
     setRefinedText(null); setRefineProv(null); setRefineText(''); setRefineCount(0);
     try {
       const body: Record<string, any> = {};
+      // W505 (P2.5) — the user's default REALM travels with every Offering-1 request. taxonomy.py states
+      // that realm changes the DEPTH and REGISTER of what is generated, and no domain tool had ever sent
+      // one, so `realm_directive` never reached the surfaces users actually type into. Sent FIRST so a
+      // tool that declares its own `realm` field below still wins; the server treats an empty realm as
+      // "unchanged", so a user who has set no default gets exactly the previous behaviour.
+      const prefRealm = (getPrefs().defaultRealm ?? '').trim();
+      if (prefRealm) body.realm = prefRealm;
       for (const f of fields) {
         body[f.name] = f.type === 'keyvalue' ? parseKeyValue(form[f.name])
           : f.type === 'list' ? parseList(form[f.name])

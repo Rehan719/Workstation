@@ -25,7 +25,11 @@ from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+# W505 (P2.6) — owner scoping: the plan is ONE tenant's record, so the principal is stamped rather
+# than taken from the request body. Both helpers are inert in single-user mode.
+from agentic_core.auth.core import auth_enabled as _auth_enabled, get_current_user as _get_current_user
+from agentic_core.auth.core import request_owner_id as _request_owner_id
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -267,13 +271,24 @@ class SetPlanRequest(BaseModel):
 
 
 @router.post("/set")
-async def set_plan(req: SetPlanRequest):
+async def set_plan(req: SetPlanRequest, user: dict | None = Depends(_get_current_user)):
     """Chief/Board set the plan's constitutional + strategic layers — the owner-edit surface (W471: wired
     from BusinessPlan.tsx; an owner's edit is recorded per field and lifts the field out of 'pending')."""
     plan = _load_or_503(req.scope)
-    plan.update({"owner": req.owner or plan.get("owner", "Rehan")})
+    # W505 (P2.6) — the owner is STAMPED, not claimed. This route rewrites the plan's executive summary,
+    # vision, mission and strategy and re-stamped `owner` from the request body, with no auth dependency: any
+    # authenticated caller could take over the Owner's plan. Inert in single-user mode (the caller's own label
+    # is kept), server-side with auth on.
+    _owner = _request_owner_id(user, req.owner or plan.get("owner", "Rehan"))
+    plan.update({"owner": _owner,
+                 "owner_source": ("the authenticated principal (a client-supplied owner is not trusted while "
+                                  "auth is enabled)" if _auth_enabled() else
+                                  "the caller's own label — single-user mode has no principal to stamp")})
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     edits = plan.setdefault("owner_edits", {})
+    # WHO edited, beside WHEN. The per-field trail recorded a timestamp and nothing about the principal, so
+    # a plan could not show whose edit each field carries.
+    by = plan.setdefault("owner_edits_by", {})
     for f in _OPENING_FIELDS:
         v = (getattr(req, f) or "").strip()
         if v and v.lower().startswith(_PENDING_MARK):
@@ -282,9 +297,11 @@ async def set_plan(req: SetPlanRequest):
             if plan.get(f):                          # clearing what was there is an edit; clearing nothing is not
                 plan[f] = ""
                 edits[f] = ts
+                by[f] = _owner
         elif v and v != (plan.get(f) or ""):         # (refutation) only a CHANGED value is an owner's edit
             plan[f] = v
             edits[f] = ts
+            by[f] = _owner
     if req.aims:
         plan["aims"] = req.aims
     prov = plan.get("provenance")

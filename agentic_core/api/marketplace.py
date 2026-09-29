@@ -15,12 +15,17 @@ Also exposes:
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 import uuid
 from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 from typing import Optional
+
+# W505 (FU-017) — this module moves virtual WST and had no logger: a refund that fails leaves the buyer out
+# of pocket, and that must reach an operator's eyes as well as the chain.
+logger = logging.getLogger("api.marketplace")
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -461,6 +466,35 @@ async def delete_listing(listing_id: str,
     return {"deleted": listing_id, "retired_to_draft": None}
 
 
+async def _refund_or_record(ledger, user_id: str, amount: float, why: str) -> str:
+    """W505 (FU-017) — give back a charge whose sale was never recorded, or record the debt loudly.
+
+    Returns a sentence for the caller. A refund that fails is NOT swallowed: the buyer is out of pocket
+    with nothing recording what they bought, and the only honest response is a durable record that can be
+    reconciled plus a message saying the charge stands. A silent failure here looks like a clean error
+    while money has moved."""
+    if not ledger or amount <= 0:
+        return ""
+    try:
+        await ledger.credit_tokens(user_id, amount, f"refund: {why}")
+        return (f" Your {amount} WST was refunded because the sale could not be recorded.")
+    except Exception as refund_err:
+        try:
+            from agentic_core.economy.governance import _ueg_log
+            _ueg_log({"type": "marketplace.charge_not_refunded", "user_id": user_id,
+                      "amount_wst": amount, "because": why[:200],
+                      "refund_error": f"{type(refund_err).__name__}: {str(refund_err)[:160]}",
+                      "note": "the buyer was charged, the sale was NOT recorded, and the refund also "
+                              "failed - this debt is owed and must be reconciled by hand",
+                      "disclaimer": "Virtual/simulated WST — no real funds moved."})
+        except Exception:
+            pass
+        logger.error("marketplace: %s WST charged to %s was NOT refunded after %s (refund failed: %s)",
+                     amount, user_id, why[:120], str(refund_err)[:160])
+        return (f" Your {amount} WST was charged and could NOT be refunded automatically; the debt is "
+                f"recorded for reconciliation. Quote this listing and your user id.")
+
+
 @router.post("/api/v1/marketplace/listings/{listing_id}/purchase")
 async def purchase_listing(listing_id: str, req: PurchaseRequest,
                            user: dict | None = Depends(get_current_user)) -> dict:
@@ -506,6 +540,10 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
         if listing.status != "active":   # W444 — re-checked inside the lock like the others
             raise HTTPException(status_code=409,
                                 detail=f"Listing is {listing.status} — not offered for sale.")
+        # W505 (FU-017) — what was actually charged, so a later failure can give it back exactly once.
+        # A free listing never enters a refund path at all.
+        _charged = 0.0
+        _ledger = None
         if total_cost > 0:
             try:
                 from agentic_core.commercial.token_ledger import TokenLedger, UserTier
@@ -517,6 +555,7 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
                         status_code=402,
                         detail=f"Insufficient WST balance. Required: {total_cost} WST."
                     )
+                _charged, _ledger = total_cost, ledger   # W505 (FU-017) — the charge is now compensable
             except HTTPException:
                 raise
             except Exception as exc:
@@ -524,7 +563,14 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
 
         # Record sale (still inside the lock — the listing write is part of the money sequence)
         listing.sales_count += req.quantity
-        _save(listing)
+        # W505 (FU-017) — the charge is already made; a save that fails must not leave it standing.
+        try:
+            _save(listing)
+        except Exception as _save_err:
+            _note = await _refund_or_record(_ledger, req.user_id, _charged,
+                                            f"the listing {listing_id} could not be saved")
+            raise HTTPException(status_code=503, detail=(
+                f"The sale could not be recorded ({type(_save_err).__name__}).{_note}")) from None
 
     receipt = {
         "receipt_id": uuid.uuid4().hex[:16],
@@ -538,8 +584,17 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
     }
     # Persist receipt
     receipts_dir = data_path("marketplace/receipts")
-    receipts_dir.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(receipts_dir / f"{receipt['receipt_id']}.json", receipt)
+    # W505 (FU-017) — the last step that can strand a charge. The listing already records the sale here,
+    # so the refund message says both facts rather than implying nothing happened.
+    try:
+        receipts_dir.mkdir(parents=True, exist_ok=True)
+        atomic_write_json(receipts_dir / f"{receipt['receipt_id']}.json", receipt)
+    except Exception as _rcpt_err:
+        _note = await _refund_or_record(_ledger, req.user_id, _charged,
+                                        f"the receipt for listing {listing_id} could not be written")
+        raise HTTPException(status_code=503, detail=(
+            f"Your purchase was charged and the sale recorded, but no receipt could be written "
+            f"({type(_rcpt_err).__name__}).{_note}")) from None
 
     # W293 (§12×§5) — a sale of a VSB-attributed listing is RECOGNISED as that VSB's revenue: the
     # same WST the buyer's TokenLedger deducted feeds the seller's next autonomous economy cycle

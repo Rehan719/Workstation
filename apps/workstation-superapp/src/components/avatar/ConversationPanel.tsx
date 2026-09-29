@@ -113,6 +113,21 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                         reply is not based on what is in it.</>}
                 </p>
               )}
+              {/* W505 (P2.3) — "profile: applied / not usable by the floor". The gateway has produced
+                  `profile_applied` since W428 and no surface showed it. "Not usable by the floor" is said
+                  only when the FLOOR served, because that is the reason; it is a different statement from
+                  having no profile, and a user with no profile is told nothing. */}
+              {m.role === 'assistant' && m.profileApplied === true && (
+                <p data-testid="profile-applied" className="text-[9px] font-bold text-emerald-400 px-1">
+                  profile: applied — your saved profile shaped this answer.
+                </p>
+              )}
+              {m.role === 'assistant' && m.profileApplied === false && m.servedBy === 'native' && (
+                <p data-testid="profile-not-usable" className="text-[9px] font-bold text-amber-400 px-1">
+                  profile: not usable by the floor — the structured floor answered this, and it does not
+                  read your profile. Set up the owned model and ask again.
+                </p>
+              )}
               {m.role === 'assistant' && m.languageRequested && !m.languageHonoured && (
                 <p data-testid="language-not-honoured" className="text-[9px] font-bold text-amber-400 px-1">
                   Answered in English: the structured floor cannot translate, so your {m.languageRequested}

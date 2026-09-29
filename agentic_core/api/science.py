@@ -43,6 +43,7 @@ class SynthesiseRequest(BaseModel):
     domain: str = "general"  # e.g. medicine, physics, social science
     methodology: str = "systematic_review"
     depth: str = "standard"  # brief | standard | comprehensive
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/synthesise")
@@ -79,7 +80,7 @@ async def synthesise_research(req: SynthesiseRequest):
         "Where evidence is absent, state this explicitly rather than speculating."
     )
 
-    report, provenance = await ai_text(prompt, "science_synthesiser")
+    report, provenance = await ai_text(prompt, "science_synthesiser", realm=req.realm)
 
     return {
         "synthesis_id": uuid.uuid4().hex[:10],
@@ -98,6 +99,7 @@ class HypothesisRequest(BaseModel):
     domain: str = "general"
     background_context: str = ""
     num_hypotheses: int = 3
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/hypothesis")
@@ -125,7 +127,7 @@ async def generate_hypotheses(req: HypothesisRequest):
         f"Then add a RECOMMENDATION line: which hypothesis to pursue first and why."
     )
 
-    raw, provenance = await ai_text(prompt, "science_hypothesis")
+    raw, provenance = await ai_text(prompt, "science_hypothesis", realm=req.realm)
 
     hypotheses = []
     recommendation = ""
@@ -153,6 +155,7 @@ class ExperimentDesignRequest(BaseModel):
     methodology: str = "experimental"   # one of the _METHODOLOGIES ids
     constraints: str = ""               # budget / time / sample availability / ethics constraints
     sample_size_hint: str = ""          # any known effect size, prior N, or population size
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/experiment-design")
@@ -187,7 +190,7 @@ async def experiment_design(req: ExperimentDesignRequest):
         "state assumptions explicitly and acknowledge uncertainty."
     )
 
-    design, provenance = await ai_text(prompt, "science_experiment")
+    design, provenance = await ai_text(prompt, "science_experiment", realm=req.realm)
 
     return {
         "design_id": uuid.uuid4().hex[:10],
@@ -205,6 +208,7 @@ class LiteratureRequest(BaseModel):
     domain: str = "general"
     scope_years: int = 10  # how many years back to scope
     include_grey_literature: bool = False
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/literature")
@@ -233,7 +237,7 @@ async def literature_review_outline(req: LiteratureRequest):
         "Be specific and actionable. Tailor to the domain."
     )
 
-    outline, provenance = await ai_text(prompt, "science_literature")
+    outline, provenance = await ai_text(prompt, "science_literature", realm=req.realm)
 
     return {
         "review_id": uuid.uuid4().hex[:10],

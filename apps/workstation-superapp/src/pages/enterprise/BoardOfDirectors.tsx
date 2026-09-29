@@ -35,7 +35,7 @@ interface ChiefResult {
   chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; created_at: string;
   // W270/W284 — the apex runs on the §6 fabric: provenance + gaas verdict + the plan objectives landed
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
-  governance?: { status?: string };
+  governance?: { status?: string; screened?: string; covers_directive_content?: boolean; basis?: string };
   objectives_added?: number;
   business_plan_scope?: string;
 }
@@ -88,7 +88,7 @@ export const BoardOfDirectors: React.FC = () => {
       const r = await apiJson<{ decision: string; note?: string; ueg_logged?: boolean }>(
         `/api/v1/board/ratifications/${id}`,
         { method: 'POST', body: { decision, notes: ratNotes[id] ?? '', on_owner_direction: ownerDirection[id] === true } });
-      setRatResult({ id, ok: true, message: `${r.decision.toUpperCase()} — ${r.note ?? ''}${r.ueg_logged === false ? ' (the ledger entry did not land — see the server log)' : ' Recorded on the constitutional ledger.'}` });
+      setRatResult({ id, ok: true, message: `${r.decision.toUpperCase()} — ${r.note ?? ''}${r.ueg_logged === false ? ' — the decision STANDS, but its constitutional ledger entry did not land. The gap is recorded on the change record itself and listed under Change Control → ledger gaps (GET /api/v1/cca/ledger-gaps); nothing needs re-deciding.' : ' Recorded on the constitutional ledger.'}` });
     } catch (e) {
       // the backend's own refusal (403 not an admin / no Owner direction, 409 no longer awaiting) — never a success
       setRatResult({ id, ok: false, message: errorMessage(e) });
@@ -275,8 +275,19 @@ export const BoardOfDirectors: React.FC = () => {
             {result.ai_provenance?.served_by && (
               (() => { const b = provenanceMapBadge(result.ai_provenance?.served_by, result.ai_provenance?.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={`${b.title ? b.title + ' — ' : ''}calls: ${Object.entries(result.ai_provenance?.served_by ?? {}).map(([k, v]) => `${k}×${v}`).join(' · ') || 'none'}`}>{b.label}</span>; })()
             )}
+            {/* W505 (FU-195) — WHAT WAS SCREENED, not a clearance. The gate compares the declared INTENT
+                against a list of prohibited intents; it never reads the directive's prose. An emerald
+                "allowed" beside the directive read as a verdict on the directive, which the gate cannot give.
+                Slate for a screen that found nothing, amber when the gate did not run. */}
             {result.governance?.status && (
-              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.governance.status === 'allowed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>gaas: {result.governance.status}</span>
+              <span
+                className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.governance.status === 'allowed' ? 'bg-slate-800 text-slate-400' : 'bg-amber-500/15 text-amber-400'}`}
+                title={result.governance.basis ?? 'The gaas.v5 pre-gate screens the declared intent, not the directive\'s content.'}
+              >
+                {result.governance.status === 'allowed'
+                  ? `gate: ${result.governance.screened ? 'screened ' + result.governance.screened : 'intent screened'} — not the directive's content`
+                  : `gate: ${result.governance.status}`}
+              </span>
             )}
             {typeof result.objectives_added === 'number' && (
               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.objectives_added > 0 ? 'bg-highlight/15 text-highlight' : 'bg-slate-800 text-slate-500'}`}>

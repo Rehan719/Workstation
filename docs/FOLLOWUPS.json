@@ -79,8 +79,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -95,8 +95,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -112,8 +112,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -272,8 +272,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -288,8 +288,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -467,8 +467,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -483,8 +483,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -499,8 +499,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -515,8 +515,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -531,8 +531,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -581,8 +581,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -648,8 +648,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -779,8 +779,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -1065,8 +1065,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -1209,8 +1209,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -2624,8 +2624,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -2642,8 +2642,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -2823,8 +2823,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -3299,8 +3299,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": ""
     },
     {
@@ -4128,13 +4128,14 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 2,
       "area": "tooling",
-      "reach": "internal"
+      "reach": "internal",
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
     },
     {
       "id": "FU-242",
@@ -4185,13 +4186,14 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 2,
       "area": "tooling",
-      "reach": "internal"
+      "reach": "internal",
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
     },
     {
       "id": "FU-245",
@@ -4280,13 +4282,14 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 2,
       "area": "tooling",
-      "reach": "internal"
+      "reach": "internal",
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
     },
     {
       "id": "FU-250",
@@ -4337,11 +4340,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
     },
     {
       "id": "FU-253",
@@ -4354,11 +4358,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
     },
     {
       "id": "FU-254",
@@ -4390,11 +4395,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
     },
     {
       "id": "FU-256",
@@ -4464,11 +4470,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
     },
     {
       "id": "FU-260",
@@ -4594,8 +4601,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "OWNER RULED 2026-09-27: a fourth option - no separate constitution document, and the endpoint serves the OWNER'S RATIFIED RULINGS as the articles (A.9.5, A.12.3, A.12.4, the FU-012/013/014 rulings and their successors), with canon_present true and a basis naming where they live. The archived Jules canon stays out. P2.10's method register is the machine-readable half Change Control keeps.",
       "tier": 2,
       "slot_source": "owner_ruling 2026-09-27"
@@ -4612,8 +4619,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.11",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "OWNER RULED 2026-09-27: keep Horizon TAXONOMY-FREE (domain + stakes), plus an optional reflection tag the USER selects and can clear, stored as the user's own words. No AI verdict on a person's state (A.9.5 stands). The 0-9 / 25-station scheme may later enter as a user-facing vocabulary only.",
       "slot_source": "owner_ruling 2026-09-27"
     },
@@ -4629,8 +4636,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "OWNER RULED 2026-09-27: read three of the four archives read-only with the secret-exclusion rules, recorded exclusions and stated scan bounds; the index stays in data/ and is never committed. DROP openQuran - after exclusions it holds one file, a .env. The Owner rotates that key separately; the platform never reads it.",
       "slot_source": "owner_ruling 2026-09-27"
     },
@@ -4647,8 +4654,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "OWNER RULED 2026-09-27: install pypdf + python-docx (pure Python, permissive, no native build). Without them the platform reads none of the book folder and 4 of 9 p3 documents, and no case bundle - and the archive audit shows the previous 'extraction' was 342 placeholder strings.",
       "slot_source": "owner_ruling 2026-09-27"
     },
@@ -4664,8 +4671,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "OWNER RULED 2026-09-27: ship the refusal immediately (withhold AI counsel, state plainly that the platform is not a person, invent no route). The route list to ratify: 999, NHS 111, Samaritans 116 123, Shout text 85258 - the Owner confirms the list and the reviewer, and the surface shows the reviewed-on date. Never presented as detection and never as care.",
       "slot_source": "owner_ruling 2026-09-27"
     },
@@ -4952,8 +4959,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "",
       "slot_source": "W502: the same /cycle route whose error mapping this round fixed",
       "tier": 3
@@ -4970,8 +4977,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "",
       "tier": 2
     },
@@ -5033,8 +5040,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W505",
       "note": "",
       "slot_source": "the row sizes this item's own remaining gap",
       "tier": 2
@@ -5047,12 +5054,13 @@
       "found": "2026-09-28",
       "files": [],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "done",
+      "closed_by": "W505",
       "note": "",
-      "tier": 1
+      "tier": 1,
+      "slot_source": "OWNER ruling 2026-09-28: the ACCEPT bar is restated to match part (a) and split per part; the row is the restatement itself, so it rides P2.17"
     },
     {
       "id": "FU-293",
@@ -5062,12 +5070,79 @@
       "found": "2026-09-28",
       "files": [],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.1",
+      "status": "done",
+      "closed_by": "W505",
+      "note": "",
+      "tier": 1,
+      "slot_source": "OWNER ruling 2026-09-28: criterion 3 restated to the mechanism W479 built; the row rides the item whose bar it restates"
+    },
+    {
+      "id": "FU-294",
+      "title": "STAGE 1: 17 of 48 open build items state no ACCEPT bar, so they cannot be closed as written - 12 are also unsized",
+      "why": "The measurement behind W505, and the reason no P2 item had closed while 32 rows closed in six rounds: an item closes on its ACCEPT criteria, and 17 open build items state none. Nothing was forgotten - there was nothing to check them against. MEASURED (scripts/../stage1_audit.py, bodies parsed from each slot heading to the next heading/MILESTONE/SEQUENCING - an earlier count was WRONG because its pattern required a bracket after the slot and so reported ten Horizon and ruling items as having no body at all): of 48 open build items, 31 state a bar and 17 do not. The 17: P2.2, P2.4, P2.7, P2.8, P3.0, P3.1, P3.2, P3.3, P3.4, P3.5, P3.6, P3.7, P3.8, P3.10, P3.11 (P2.3 and P2.5 were in this list and W505 wrote bars for them from their own bodies and closed them). Of the 17, TWELVE also carry no registered row - unbarred AND unsized, so neither population measures them: P3.0, P3.1, P3.2, P3.3, P3.4, P3.5, P3.6, P3.7, P3.8, P3.10, P3.11 plus P2.3 (now closed). THE WORK, and W505 demonstrated it twice: an item whose body already lists its deliverables does not need a bar invented - the deliverables ARE the bar, and writing them as ACCEPT is transcription plus a guard. P2.3 and P2.5 were closed exactly that way. THE RULE this establishes: a round that finishes an item's work must also write its bar if it has none, or the work cannot be recognised. WHY IT MATTERS BEYOND TIDINESS: the plan's own item projection (128 rounds) is an average over a population most of which nobody has measured, and it says so; 26 of 48 build items being unbarred or unsized is that weakness stated in figures. CORRECTED W505 (second pass): the figure 17 is STALE and this row used it in its own reasoning before checking it. Six of the seventeen have since been given a bar or closed - P2.3 and P2.5 were barred and closed, and P2.4, P2.7 and P2.8 were barred in the same round; P2.2 was never unbarred at all, its GUARD sits inline mid-line and the audit's line-start pattern missed it. The remaining unbarred set is P3.0-P3.8, P3.10, P3.11 and P2.16 (FU-297 covers P2.16). A measurement row that OVERSTATES a problem is the same defect as one that understates it.",
+      "source": "W505 Stage 1 audit",
+      "found": "2026-09-28",
+      "files": [],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.2",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 1
+    },
+    {
+      "id": "FU-295",
+      "title": "Author the new short constitution the Owner ruled for: 20-40 checkable articles from what actually governs",
+      "why": "The decision half of FU-266 is RULED (Owner, 2026-09-28) and this is the build half. Nothing archived is restored: measured across the repo, 41 CONSTITUTION documents exist (v52-v139), the one LIVE file (meta/CONSTITUTION_v99.0_LEGACY.md) declares 297 articles and contains 33, and across the 32 parseable documents 9,547 articles are declared while 778 are present - 92% asserted by a section header and never written. The 'canonical' v130 states 'Articles 1-695 retained from v126.0 as immutable genomic anchors' and contains none of them. What IS written mandates capabilities that do not exist and mostly should not (signed MoUs, global marketplace listings, ORCID onboarding with Oxytocin/Serotonin reputation scores, >=50,000 WST monthly revenue, cryptographic Verifiable Credentials), and two articles are self-certifying completion claims (Art. 60 NO-STUBS MANDATE, Art. 736 '100% completion ... No stubs or placeholders are permitted') - a document cannot make code complete by forbidding incompleteness. THE WORK: author a NEW short constitution, order of magnitude 20-40 articles, each CHECKABLE against this platform, drawn from what genuinely governs it - the ratified Owner rulings, A.9.5, the virtual-WST-only boundary with real-money rails owner-gated, the ten architecture invariants, the never-fabricate principle. Each article names how it is verified, and a guard drives the mechanically checkable ones. The /api/v154/constitution/articles endpoint then parses THAT document and keeps its canon_present honesty for the absent case. Do NOT import article numbering from any archived version. Also unresolved: products/OctoVeritasEngine/constitution refused read with a permission error.",
+      "source": "W505 (the Owner's constitution ruling)",
+      "found": "2026-09-28",
+      "files": [
+        "agentic_core/api/integration_surface.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER ruling 2026-09-28 on FU-266, which rode P2.10; the authoring half stays with the item the decision rode",
+      "tier": 2
+    },
+    {
+      "id": "FU-296",
+      "title": "Install pypdf and python-docx, the dependency the Owner ruled for (FU-269)",
+      "why": "OWNER RULING 2026-09-28 on FU-269: option (a) - pypdf and python-docx are added to requirements. `_pdf_docx_extractor()` already probes for both, so extraction begins working with no further code; this row exists because the RULING is recorded and the INSTALL is not done, and a closed decision row carries no work. MEASURED (W495, FU-124): all 14 files of the book folder and 4 of the 9 p3 files are .docx/.pdf, so the platform currently reads none of them and answers NOT_EXTRACTED with its reason. THE WORK: add both to requirements, confirm the probe finds them, and prove extraction on one .docx and one .pdf - then P2.13 can make a coverage claim over the Owner's explicit inbox (FU-268's ruling) instead of listing those documents as unread. Until the install lands, NOT_EXTRACTED stays the honest answer and must not be replaced by an optimistic one.",
+      "source": "W505 (the Owner's ruling of 2026-09-28 creates work the closed decision row cannot carry)",
+      "found": "2026-09-28",
+      "files": [
+        "requirements.txt"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "Placed on P2.13 because the extractor exists for that item's coverage claim.",
+      "slot_source": "W505 OWNER RULING 2026-09-28 (FU-269 answered (a)): the install is P2.13's own prerequisite - that item's coverage claim over the Owner's inbox is the thing the extractor makes possible. Placed deliberately, not routed: the row names a dependency file, which no routing rule owns."
+    },
+    {
+      "id": "FU-297",
+      "title": "P2.16 states no ACCEPT bar, so the Horizon companion surface cannot be closed as written",
+      "why": "Of the fifteen items the Owner named for the next rounds, P2.16 is the only one with no ACCEPT clause - measured W505 against the prompt. Its body (504 chars) describes the companion surface as 'the record as the user sees it: what was asked, the domain, the...' and lists deliverables without stating what would make them done. THE WORK, and W505 demonstrated it four times (P2.3, P2.4, P2.5, P2.8): an item whose body lists deliverables does not need a bar invented - the deliverables ARE the bar, and writing them as ACCEPT is transcription plus a guard. Do it in the round that takes P2.16, before building, or the work cannot be recognised as finished.",
+      "source": "W505 (audit of the items named for the next rounds)",
+      "found": "2026-09-28",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.16",
+      "status": "dropped",
+      "closed_by": null,
+      "note": "W505 correction: this row is WRONG. P2.16 DOES state a bar - 'ACCEPT: the not-compressed and no-escalation states are reachable on the page and asserted by a guard' - and the row was registered on a pattern that required ACCEPT at line start while P2.16's sits mid-line. Dropped rather than closed, because nothing was done and nothing needed doing. A register row built on a mis-measurement sends a later round to fix nothing, which is worse than having no row."
     }
   ],
   "routes": [
@@ -5146,7 +5221,7 @@
       "note": "W484 — the six cycles bound to measured flows (the geospheric regulators and the causal simulator)"
     },
     {
-      "slot": "P2.6",
+      "slot": "P2.4",
       "files": [
         "agentic_core/api/change_control.py",
         "apps/workstation-superapp/src/pages/governance/",
@@ -5163,7 +5238,8 @@
         "change control",
         "ratification"
       ],
-      "note": "the perimeter and the gate"
+      "note": "handed from P2.6; the perimeter and the gate",
+      "handed_from": "P2.6"
     },
     {
       "slot": "P2.8",
@@ -5180,7 +5256,7 @@
       "note": "bespoke swarms; W482 — the cascade's missing delivery measurement; W483 — and what the §11 screen can actually assess (the capability, not the honesty)"
     },
     {
-      "slot": "P2.9",
+      "slot": "P2.4",
       "files": [
         "agentic_core/economy/",
         "agentic_core/api/economy.py",
@@ -5188,10 +5264,11 @@
         "apps/workstation-superapp/src/pages/enterprise/"
       ],
       "words": [],
-      "note": "the economy's flows, told as they happened"
+      "note": "handed from P2.9; the economy's flows, told as they happened",
+      "handed_from": "P2.9"
     },
     {
-      "slot": "P2.3",
+      "slot": "P3.6",
       "files": [
         "agentic_core/avatars/"
       ],
@@ -5199,7 +5276,8 @@
         "avatar",
         "profile applied"
       ],
-      "note": "avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)"
+      "note": "handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
+      "handed_from": "P2.3"
     },
     {
       "slot": "P2.7",

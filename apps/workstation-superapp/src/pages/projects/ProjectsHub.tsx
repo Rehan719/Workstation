@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { REALMS as CANON_REALMS, REALM_LABELS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
+import { getPrefs } from '../../lib/userPrefs';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { downloadExport } from '../../lib/download';
@@ -91,11 +92,12 @@ const StatusDot: React.FC<{ status: Status }> = ({ status }) => {
 interface CreateFormProps {
   onCreated: (p: Project) => void;
   onCancel: () => void;
-  initialRealm?: string;
+  initialRealm?: string;      // W505: a taxonomy DOMAIN on the hub-CTA path, a canonical realm from the picker
   initialDomain?: string;
+  taxonomyRealm?: string;     // W505 (P2.5): the canonical realm axis, carried separately
 }
 
-const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRealm = 'technology', initialDomain = 'product' }) => {
+const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRealm = 'technology', initialDomain = 'product', taxonomyRealm = '' }) => {
   const [title,       setTitle]       = useState('');
   const [description, setDescription] = useState('');
   const [realm,       setRealm]       = useState(initialRealm);
@@ -109,7 +111,12 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRea
     setSaving(true);
     setError('');
     try {
-      const res = await axios.post<Project>('/api/v1/projects/', { title: title.trim(), description: description.trim(), realm, domain });
+      // W505 (P2.5) — both axes. An empty taxonomy_realm lets the API keep its own default rather than
+      // this form inventing one.
+      const res = await axios.post<Project>('/api/v1/projects/', {
+        title: title.trim(), description: description.trim(), realm, domain,
+        ...(taxonomyRealm ? { taxonomy_realm: taxonomyRealm } : {}),
+      });
       onCreated(res.data);
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? 'Failed to create project.');
@@ -514,6 +521,9 @@ export const ProjectsHub: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlRealm  = searchParams.get('realm')  ?? 'technology';
   const urlDomain = searchParams.get('domain') ?? 'product';
+  // W505 (P2.5) — the canonical realm a hub CTA carried, kept apart from `realm` above (which is a
+  // taxonomy DOMAIN on that path). Falls back to the user's preference, then to the API's own default.
+  const urlTaxRealm = searchParams.get('taxonomyRealm') ?? (getPrefs().defaultRealm ?? '');
   const openNew   = searchParams.get('new') === '1';
 
   const queryClient = useQueryClient();
@@ -639,6 +649,7 @@ export const ProjectsHub: React.FC = () => {
               onCancel={() => setShowCreate(false)}
               initialRealm={urlRealm}
               initialDomain={urlDomain}
+              taxonomyRealm={urlTaxRealm}
             />
           </div>
         )}

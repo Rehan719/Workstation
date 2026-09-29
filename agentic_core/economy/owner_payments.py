@@ -26,6 +26,9 @@ from typing import Any, Callable, Dict
 from agentic_core.config import data_path
 
 _STORE = data_path("economy_owner_payments.json")
+# W505 (FU-036) — missed accruals wait HERE, not in the store above: an accrual fails precisely when that store
+# cannot be read or locked, so parking the claim in it would lose the claim for the same reason.
+_PENDING = data_path("economy_owner_accruals_pending.json")
 
 # BINDING SAFEGUARD — real-money payout rails are OFF until the Owner explicitly authorises them AND a
 # compliance/KYC review passes. Until then every payout is a virtual ledger entry; no real funds move.
@@ -93,7 +96,111 @@ def _new_account(vsb_id: str, owner: str) -> Dict[str, Any]:
     return {"vsb_id": vsb_id, "owner": owner, "currency": "WST", "accrued": 0.0, "paid_out": 0.0, "entries": []}
 
 
-def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle owner share") -> Dict[str, Any] | None:
+def _pending_read() -> list:
+    """The missed accruals waiting to be applied. A store that cannot be read whole is refused rather than
+    answered as empty: answering empty would report the Owner as fully paid while credits are outstanding."""
+    from agentic_core.config import read_json_strict
+    rows = read_json_strict(_PENDING, list, expect=list)
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def record_missed(vsb_id: str, amount: float, owner: str, memo: str, why: str) -> Dict[str, Any] | None:
+    """W505 (FU-036) — park an accrual that could not be applied, so it can be applied later.
+
+    Never raises: this runs on the failure path of a cycle that has already posted its waterfall, and a cycle
+    must not be turned into an exception by its own bookkeeping. A failure to park is returned, so the caller
+    can say the credit is neither applied nor recoverable, which is the worst case and must not be silent.
+    """
+    from agentic_core.config import atomic_write_json, store_lock
+    amount = round(max(0.0, float(amount or 0)), 2)
+    if amount <= 0:
+        return None
+    row = {"id": uuid.uuid4().hex[:12], "vsb_id": vsb_id, "owner": owner, "amount_wst": amount,
+           "memo": memo, "why": why, "at": _now(), "attempts": 0}
+    try:
+        with store_lock(_PENDING):
+            rows = _pending_read() if _PENDING.exists() else []
+            rows.append(row)
+            atomic_write_json(_PENDING, rows)
+        return row
+    except Exception as exc:
+        import logging
+        logging.getLogger("owner_payments").error(
+            "a missed owner accrual for %s (%s WST) could not even be PARKED: %s — the Owner's balance is "
+            "short by this amount and there is no durable claim on it", vsb_id, amount, exc)
+        return {"parked": False, "why": f"{type(exc).__name__}: {exc}", "amount_wst": amount}
+
+
+def reconcile_missed(vsb_id: str | None = None) -> Dict[str, Any]:
+    """W505 (FU-036) — apply the missed accruals, idempotently.
+
+    For each pending row: if an entry with its ref is ALREADY on the account it was applied by an attempt that
+    died before clearing, so the row is only dropped. Otherwise it is accrued with its id as the ref and then
+    dropped. A row whose accrual fails again stays pending with its attempt count raised - it is a claim on the
+    Owner's money and must not be discarded for failing twice.
+    """
+    from agentic_core.config import atomic_write_json, store_lock
+    out = {"applied": [], "already_applied": [], "still_pending": [], "store_unreadable": None}
+    try:
+        rows = _pending_read() if _PENDING.exists() else []
+    except Exception as exc:
+        out["store_unreadable"] = f"{type(exc).__name__}: {exc}"
+        return out
+    if not rows:
+        return out
+    try:
+        accounts = _read()
+    except OwnerPaymentsUnavailable as exc:
+        out["store_unreadable"] = f"{type(exc).__name__}: {exc}"
+        return out
+
+    keep, changed = [], False
+    for row in rows:
+        if vsb_id is not None and row.get("vsb_id") != vsb_id:
+            keep.append(row)
+            continue
+        rid = row.get("id")
+        acct = accounts.get(row.get("vsb_id")) or {}
+        if any((e or {}).get("ref") == rid for e in (acct.get("entries") or [])):
+            out["already_applied"].append({"id": rid, "amount_wst": row.get("amount_wst")})
+            changed = True
+            continue
+        try:
+            accrue(row["vsb_id"], row["amount_wst"], row.get("owner") or "Rehan",
+                   memo=f"{row.get('memo') or 'missed cycle owner share'} (reconciled)", ref=rid)
+            out["applied"].append({"id": rid, "amount_wst": row.get("amount_wst")})
+            changed = True
+        except Exception as exc:
+            row["attempts"] = int(row.get("attempts") or 0) + 1
+            row["last_attempt_error"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+            keep.append(row)
+            out["still_pending"].append({"id": rid, "amount_wst": row.get("amount_wst"),
+                                         "attempts": row["attempts"], "why": row["last_attempt_error"]})
+            changed = True
+    if changed:
+        try:
+            with store_lock(_PENDING):
+                atomic_write_json(_PENDING, keep)
+        except Exception as exc:
+            # the credits ARE applied; the pending file still names them. Said, because the next run would
+            # otherwise re-apply them - which it will not, because the ref check above catches it.
+            out["pending_not_cleared_because"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
+def pending_missed(vsb_id: str | None = None) -> Dict[str, Any]:
+    """READ-ONLY: what the Owner is still owed from accruals that failed."""
+    try:
+        rows = _pending_read() if _PENDING.exists() else []
+    except Exception as exc:
+        return {"unreadable": f"{type(exc).__name__}: {exc}", "rows": [], "total_wst": None}
+    rows = [r for r in rows if vsb_id is None or r.get("vsb_id") == vsb_id]
+    return {"rows": rows, "total_wst": round(sum(float(r.get("amount_wst") or 0) for r in rows), 2),
+            "unreadable": None}
+
+
+def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle owner share",
+           ref: str | None = None) -> Dict[str, Any] | None:
     """Accrue the Owner's share from a cycle (virtual WST). Returns the account, or None for a zero amount.
     Raises ValueError for a non-finite amount and OwnerPaymentsUnavailable / TimeoutError when the store cannot be
     read or locked — the caller must say so (an accrual is never silently dropped)."""
@@ -108,7 +215,10 @@ def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle 
         d[vsb_id] = a
         a["accrued"] = round(a["accrued"] + amount, 2)
         a["entries"].append({"id": uuid.uuid4().hex[:8], "type": "accrual",
-                             "amount_wst": amount, "memo": memo, "at": _now()})
+                             "amount_wst": amount, "memo": memo, "at": _now(),
+                             # W505 (FU-036) — the reconciliation's idempotence key: a re-applied accrual
+                             # carries the pending row's id, so a second attempt can see its own work.
+                             **({"ref": ref} if ref else {})})
         a["entries"] = a["entries"][-200:]
         return json.loads(json.dumps(a))
     return _mutate(change)
@@ -122,6 +232,10 @@ def status(vsb_id: str, owner: str = "Rehan") -> Dict[str, Any]:
         "vsb_id": vsb_id, "owner": a.get("owner", owner), "currency": "WST",
         "accrued_total_wst": a["accrued"], "paid_out_total_wst": a["paid_out"],
         "balance_wst": balance, "entries": a["entries"][-50:][::-1],
+        # W505 (FU-036) - what the Owner is OWED from accruals that failed. Without this the balance reads as
+        # the whole picture while credits sit unapplied in the pending store, which is the same silence the row
+        # is about one layer along.
+        "pending_from_failed_accruals": pending_missed(vsb_id),
         "real_money_rails": "DISABLED", "real_money_enabled": REAL_MONEY_ENABLED,
         "note": "Virtual/simulated WST only. Real-money payouts are gated until the Owner explicitly "
                 "authorises real rails AND a compliance/KYC review passes — no real funds move.",

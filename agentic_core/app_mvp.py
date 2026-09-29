@@ -215,8 +215,20 @@ from agentic_core.api import synthesis_studio
 app.include_router(synthesis_studio.router)
 
 # 35. AI Agent Swarm Orchestration (CEO → C-Suite → CoE delegation)
+# W505 (P2.6, FU-005) — THE FIRST ROUTER PERIMETER. This router carried no dependency and swarm.py has no
+# `Depends` of its own, so with AUTH_ENABLED on, the org cascade, CEO delegation, catalogue curation and the
+# run histories were callable by anyone. `get_current_user` returns None when auth is DISABLED, so this is
+# inert in single-user mode and nothing about today's behaviour changes; with auth on it requires a valid
+# token. Authentication is not owner scoping: P2.6 also asks for per-route scoping of the run histories and
+# the catalogue, which is the larger half and is recorded in the item's criteria, not claimed here.
+from fastapi import Depends as _Depends
+from agentic_core.auth.core import get_current_user as _get_current_user
+# W505 (P2.6) — the ADMIN perimeter for the routers that govern the PLATFORM rather than one tenant's
+# records. require_admin returns a synthetic admin when auth is disabled, so every use is inert in
+# single-user mode and becomes real the moment auth is enabled.
+from agentic_core.auth.core import require_admin as _require_admin
 from agentic_core.api import swarm as swarm_api
-app.include_router(swarm_api.router)
+app.include_router(swarm_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 36. Digital Twin & Simulation (AI model generation + scenario simulation)
 from agentic_core.api import digital_twin as twin_api
@@ -264,15 +276,22 @@ app.include_router(reconfig_api.router)
 
 # 46. IDBO Genome System (project trait encoding, crossover, mutation)
 from agentic_core.organism import genome as genome_api
-app.include_router(genome_api.router)
+app.include_router(genome_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the entity genome is the platform's own DNA
 
 # 47. Master Organism Status + Homeostasis
 from agentic_core.api import organism_status as organism_status_api
-app.include_router(organism_status_api.router)
+app.include_router(organism_status_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): organism status reports the whole platform's state
 
 # 48. Change Control Agency (arms-length governance for organism changes)
 from agentic_core.api import change_control as cca_api
-app.include_router(cca_api.router)
+# W505 (P2.6, CORRECTED) — AUTHENTICATED, NOT ADMIN-ONLY. My first cut mounted the whole Change Control
+# router behind require_admin because P2.6 names 'CCA' among its routers. The suite caught what that
+# breaks: with auth on, a non-admin could no longer SUBMIT a change request, and the arms-length model is
+# that ANYONE may propose a change while only an admin DECIDES one. W459 encodes exactly that split, and
+# the decision paths already enforce it inside their handlers — review_change refuses a non-admin's
+# override, and a ratification requires an admin principal. A blanket perimeter here would have replaced
+# a governed intake with an admin-only one, which is a narrower platform, not a safer one.
+app.include_router(cca_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 49. Constitutional GaaS v5 (v16-Omega interceptor + self-tuning breaker + UEG audit log)
 from agentic_core.api import constitutional_gaas as gaas_api
@@ -297,7 +316,7 @@ app.include_router(genesis_api.router)
 
 # 53. Sovereign Evolution Office — autonomous self-improvement curated by the VSB org
 from agentic_core.api import sovereign_evolution as sov_evo_api
-app.include_router(sov_evo_api.router)
+app.include_router(sov_evo_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): sovereign evolution proposes changes to the platform itself
 
 # 54. Resource Fabric — unified reconfigurable/combinable resource catalogue
 from agentic_core.api import resource_fabric as resource_fabric_api
@@ -305,7 +324,7 @@ app.include_router(resource_fabric_api.router)
 
 # 55. Board of Directors — apex governance; Chief = Owner's digital twin, above the AI CEO
 from agentic_core.api import board as board_api
-app.include_router(board_api.router)
+app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the Board is the apex governance tier
 
 # 56. Living Plan — self-updating current-state + progress spine of the D&D Action Plan
 from agentic_core.api import living_plan as living_plan_api
@@ -321,7 +340,7 @@ app.include_router(transformation_api.router)
 
 # 59. Organism Heartbeat — continuous-autonomy circadian scheduler (the organism runs itself)
 from agentic_core.api import heartbeat as heartbeat_api
-app.include_router(heartbeat_api.router)
+app.include_router(heartbeat_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): stopping the rhythm stops the platform — P2.6's acceptance example
 
 # 60. Cognition & Alignment — wires the knowledge system into every living tier
 from agentic_core.api import cognition as cognition_api

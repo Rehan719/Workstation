@@ -50,6 +50,7 @@ class CurriculumRequest(BaseModel):
     duration_weeks: int = 12
     framework: str = "bloom"
     learning_objectives_count: int = 6
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/curriculum")
@@ -78,7 +79,7 @@ async def design_curriculum(req: CurriculumRequest):
         "Be specific and practical. Each week entry should be actionable for a teacher."
     )
 
-    curriculum, provenance = await ai_text(prompt, "education_curriculum")
+    curriculum, provenance = await ai_text(prompt, "education_curriculum", realm=req.realm)
 
     return {
         "curriculum_id": uuid.uuid4().hex[:10],
@@ -100,6 +101,7 @@ class LessonPlanRequest(BaseModel):
     class_size: int = 30
     special_needs: str = ""
     prior_knowledge: str = ""
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/lesson-plan")
@@ -133,7 +135,7 @@ async def generate_lesson_plan(req: LessonPlanRequest):
         "Format timings as [MM:SS] inline. Be specific and practical."
     )
 
-    plan, provenance = await ai_text(prompt, "education_lesson_plan")
+    plan, provenance = await ai_text(prompt, "education_lesson_plan", realm=req.realm)
 
     return {
         "plan_id": uuid.uuid4().hex[:10],
@@ -154,6 +156,7 @@ class FeedbackRequest(BaseModel):
     rubric: str = ""                # marking criteria / rubric (optional)
     subject: str = "general"
     tone: str = "constructive"      # constructive | encouraging | rigorous
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/feedback")
@@ -181,7 +184,7 @@ async def marking_feedback(req: FeedbackRequest):
         "not write, and do not penalise for things outside the stated task."
     )
 
-    feedback, provenance = await ai_text(prompt, "education_feedback")
+    feedback, provenance = await ai_text(prompt, "education_feedback", realm=req.realm)
 
     return {
         "feedback_id": uuid.uuid4().hex[:10],
@@ -204,6 +207,7 @@ class AssessmentRequest(BaseModel):
     level: str
     assessment_type: str = "quiz"  # quiz | rubric | exam | project_brief | formative
     learning_objectives: list[str] = []
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/assessment")
@@ -235,7 +239,7 @@ async def create_assessment(req: AssessmentRequest):
         "- Free of ambiguity"
     )
 
-    assessment, provenance = await ai_text(prompt, "education_assessment")
+    assessment, provenance = await ai_text(prompt, "education_assessment", realm=req.realm)
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],

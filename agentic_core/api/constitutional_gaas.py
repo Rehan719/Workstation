@@ -15,8 +15,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from agentic_core.auth.core import auth_enabled, require_admin
 
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 
@@ -121,7 +123,25 @@ async def gaas_ueg_verify():
 
 
 @router.post("/breaker/reset")
-async def gaas_breaker_reset():
-    """Manually reset the node's self-tuning circuit breaker (e.g. after remediation)."""
+async def gaas_breaker_reset(user: dict = Depends(require_admin)):
+    """Manually reset the node's self-tuning circuit breaker (e.g. after remediation).
+
+    W505 (FU-007) — an ADMIN act, and a recorded one. This clears a tripped constitutional breaker and had no
+    dependency at all, so with auth on any unauthenticated caller could clear it; and it cleared the history
+    silently, so the reason for the trip was gone with no trace of who cleared it. The dependency is inert in
+    single-user mode (require_admin returns a synthetic admin when auth is off).
+    """
+    was = _INTERCEPTOR.circuit_breaker.state()
     _INTERCEPTOR.circuit_breaker.reset()
-    return {"status": "reset", "circuit_breaker": _INTERCEPTOR.circuit_breaker.state()}
+    _by = (user or {}).get("username") or "unknown"
+    _recorded, _why = True, None
+    try:
+        _UEG.log({"type": "gaas.breaker_reset", "domain": was.get("domain"), "by": _by,
+                  "by_verified": bool(auth_enabled()), "state_before_reset": was})
+    except Exception as exc:
+        _recorded, _why = False, f"{type(exc).__name__}: {exc}"
+    return {"status": "reset", "circuit_breaker": _INTERCEPTOR.circuit_breaker.state(),
+            "state_before_reset": was, "reset_by": _by,
+            "reset_by_verified": bool(auth_enabled()),
+            "recorded_in_ledger": _recorded,
+            **({} if _recorded else {"not_recorded_because": _why})}

@@ -2,7 +2,9 @@
 Projects API — the core entity that binds the MVP spine together.
 
 Every AI workflow in Workstation runs inside a Project. A Project has:
-  - A realm (technology, science, religion, education, law, care, employment)
+  - A subject kind (science, religion, education, law, care, employment — taxonomy DOMAINS — plus the
+    legacy extras 'technology' and 'general'). W505: this field is called `realm` for compatibility with
+    stored projects, and it has never held a taxonomy realm; the real realm axis is `taxonomy_realm`.
   - A domain/type (saas, research, content, service, product, policy, curriculum)
   - A lifecycle stage: concept → prototype → commercialise
   - A set of AI-generated outputs linked to synthesis download URLs
@@ -46,6 +48,39 @@ _STORE.mkdir(parents=True, exist_ok=True)
 
 Stage = Literal["concept", "prototype", "commercialise"]
 STAGE_ORDER: list[Stage] = ["concept", "prototype", "commercialise"]
+
+# W505 (P2.5) — THE AXES, VALIDATED AGAINST THE TAXONOMY. Measured: every key below is a DOMAIN
+# (six are exactly taxonomy.DOMAINS) or one of two extras in neither axis; NONE is a taxonomy REALM
+# ('enterprise', 'learning', 'developing', 'scholarship'). This field has never held a realm. It is not
+# renamed — stored projects hold these values and are readers of it (W495) — but it is now validated
+# against what it actually holds, and the real realm axis is ADDED beside it (see `realm` below).
+_SUBJECT_KINDS: tuple[str, ...] = ("technology", "general")   # in neither taxonomy axis, kept for stored rows
+
+
+def _valid_subject(value: str) -> tuple[str, str]:
+    """Normalise this API's `realm` field and say WHICH AXIS the value came from.
+
+    W505 (P2.5) — this field receives two different axes depending on how the user arrived, and both are
+    legitimate today:
+      * ProjectsHub's picker sends a CANONICAL REALM (its options are CANON_REALMS; W321 corrected that
+        list because "domains were listed as realms").
+      * A domain hub's StartProjectCTA navigates with realm=care / law / education / science — a DOMAIN.
+    An earlier version of this validated against DOMAINS alone, which would have rejected every
+    picker-created project's realm and silently replaced it with "general" — the very defect this item is
+    about, one layer over, and invisible because the fallback is itself a valid value.
+
+    Returns (value, source). Nothing is rejected that the product can currently send; what changes is that
+    the stored row now SAYS which axis its value belongs to instead of leaving a reader to guess."""
+    from agentic_core.taxonomy import DOMAINS, REALMS
+    v = str(value or "").strip().lower()
+    if v in DOMAINS:
+        return v, "taxonomy domain"
+    if v in REALMS:
+        return v, "taxonomy realm"
+    if v in _SUBJECT_KINDS:
+        return v, "legacy value, in neither taxonomy axis"
+    return "general", f"unrecognised ({v or 'empty'}) — fell back to 'general'"
+
 
 REALM_PROMPTS: dict[str, str] = {
     "technology":  "You are an expert technology product strategist and software architect.",
@@ -104,8 +139,10 @@ class Project(BaseModel):
     owner_id: Optional[str] = None
     title: str
     description: str
-    realm: str = "general"
+    realm: str = "general"          # W505: a DOMAIN or a legacy value — see _valid_subject
     domain: str = "product"
+    taxonomy_realm: str = "enterprise"      # W505 (P2.5) — the taxonomy's realm axis
+    realm_source: str = ""                  # W505 — which axis `realm` came from, said not guessed
     stage: Stage = "concept"
     status: Literal["idle", "running", "done", "error"] = "idle"
     created_at: float = Field(default_factory=time.time)
@@ -116,8 +153,13 @@ class Project(BaseModel):
 class CreateProjectRequest(BaseModel):
     title: str
     description: str
-    realm: str = "general"
+    realm: str = "general"          # W505: a DOMAIN or a legacy value — see _valid_subject
     domain: str = "product"
+    # W505 (P2.5) — the taxonomy's realm axis, ADDED rather than written over `realm` above. It changes
+    # the DEPTH and REGISTER of what is generated (taxonomy.realm_directive), which no project generation
+    # consulted before. Validated by normalise_realm, so an unknown value becomes the canonical default
+    # instead of being stored as a realm that does not exist.
+    taxonomy_realm: str = "enterprise"
 
 
 class UpdateProjectRequest(BaseModel):
@@ -316,15 +358,28 @@ async def vote_proposal(proposal_id: str, approve: bool = True) -> Proposal:
 @router.post("/", response_model=Project, status_code=201)
 async def create_project(req: CreateProjectRequest,
                          user: dict | None = Depends(get_current_user)) -> Project:
+    # W505 (P2.5) — the two axes, resolved ONCE. `realm` may carry either a taxonomy domain or a
+    # canonical realm depending on the entry path (the picker sends a realm, a domain hub's CTA sends a
+    # domain), so the axis is determined first and the canonical realm is seeded from it when that is what
+    # arrived — otherwise from the request's own `taxonomy_realm`.
+    from agentic_core.taxonomy import REALMS as _REALMS, normalise_realm as _norm
+    _subject = _valid_subject(req.realm)
+    _tax_realm = _norm(_subject[0] if _subject[0] in _REALMS else req.taxonomy_realm)
     project = Project(
         owner_id=request_owner_id(user),   # W364 — server-stamped; a client cannot claim an owner
         title=req.title,
         description=req.description,
-        realm=req.realm.lower(),
+        # W505 (P2.5) — validated against the taxonomy, and the row says which axis the value is from.
+        # When `realm` IS a canonical realm (the picker's path), it also seeds `taxonomy_realm`, so a
+        # picker-created project carries the realm the user chose rather than the field's default.
+        realm=_subject[0],
+        realm_source=_subject[1],
+        taxonomy_realm=_tax_realm,
         domain=req.domain.lower(),
     )
     _save(project)
-    biobus.fire_signal("sensory", "projects.create", f"New project: {req.title} [{req.realm}/{req.domain}]", 0.5)
+    biobus.fire_signal("sensory", "projects.create",
+                       f"New project: {req.title} [{req.realm}/{req.domain}]", 0.5)
     return project
 
 
@@ -380,11 +435,17 @@ async def run_project(project_id: str,
 
     system_prompt = REALM_PROMPTS.get(project.realm, REALM_PROMPTS["general"])
     stage_instruction = STAGE_PROMPTS[project.stage]
+    # W505 (P2.5) — the realm axis DOES something now. taxonomy.py says "realm changes the DEPTH and
+    # REGISTER of what is generated", and no project generation consulted it: the prompt named
+    # `project.realm` (a domain) and nothing else. The directive is prepended so the axis is real.
+    from agentic_core.taxonomy import normalise_realm as _nr, realm_directive as _rd
+    _realm = _nr(getattr(project, "taxonomy_realm", "") or "enterprise")
     full_prompt = (
+        f"{_rd(_realm)}\n\n"
         f"{stage_instruction}\n\n"
         f"Project title: {project.title}\n"
         f"Project description: {project.description}\n"
-        f"Realm: {project.realm} · Domain: {project.domain}\n\n"
+        f"Subject: {project.realm} · Domain: {project.domain} · Realm: {_realm}\n\n"
         f"Produce a comprehensive, professional document now."
     )
 

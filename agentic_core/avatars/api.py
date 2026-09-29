@@ -90,6 +90,13 @@ class ChatResponse(BaseModel):
     is_external: bool = False
     grounded_in: Optional[str] = None  # the vsb_id the answer was grounded in, if any
     language: Optional[str] = None     # the language the answer was requested in (echoed back)
+    # W505 (P2.3) — a null that SAYS WHY. W326 correctly stopped echoing a requested language the floor
+    # cannot deliver; the user was then left with a null and no reason. This is that reason, and it is
+    # present ONLY when a language was asked for and not honoured.
+    language_note: Optional[str] = None
+    # W505 (P2.3) — whether the user's profile shaped this answer. gateway.query_meta has produced this
+    # since W428 and the avatar's reply never carried it: a field produced and rendered nowhere.
+    profile_applied: bool = False
     suggested_areas: List[Dict[str, str]] = []   # §5/§9 guided navigation — WHITELISTED platform areas only
 
 
@@ -435,6 +442,13 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
         # so a requested language served by the floor is not echoed back as an achievement.
         language=((lang or None) if ((not lang_instr) or meta.get("served_by", "native") != "native")
                   else None),
+        # W505 (P2.3) — the same condition, stated. When a language WAS requested and the floor served it,
+        # the answer is in English and the reason is the floor's own limit, not the user's request.
+        language_note=(f"Answered in English — your language needs the owned model. "
+                       f"You asked for {lang}, and the deterministic floor served this answer; it cannot "
+                       f"translate. Set up the owned local model and ask again."
+                       if (lang and lang_instr and meta.get("served_by", "native") == "native") else None),
+        profile_applied=bool(meta.get("profile_applied")),
         suggested_areas=_suggest_areas(request.message),
     )
 
@@ -464,10 +478,34 @@ async def ai_status():
             ollama = r.status_code == 200
     except Exception:
         ollama = False
+    # W505 (P2.3) — THE EFFECTIVE SERVING MODE. The flags below say what EXISTS; none of them said which
+    # tier would actually serve the next request, which is what "effective serving mode" means. Computed
+    # from the same three facts the gateway decides on, and it names its own limit: an env var's presence is
+    # not a working key, so a mode that depends on one is reported as expected, never as confirmed.
+    _local_off = os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes")
+    # the SAME gate the gateway decides on (gateway.py:425) — external accelerants are OFF by default
+    _external_allowed = os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true"
+    _key_present = bool(os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY"))
+    if ollama and not _local_off:
+        _mode, _basis = "owned local model", "Ollama answered its tags endpoint and local serving is enabled"
+    elif _external_allowed and _key_present:
+        _mode, _basis = ("external accelerant (expected)",
+                         "no owned local model is reachable, external use is permitted and a key is "
+                         "PRESENT — whether that key works is only known at call time")
+    else:
+        _why = ("no owned local model is reachable" if not _key_present else
+                "no owned local model is reachable and, although an external key is present, external use "
+                "is NOT permitted (AI_ALLOW_EXTERNAL is off)")
+        _mode, _basis = ("deterministic floor",
+                         f"{_why}; the floor always answers, and it cannot translate or reason like a model")
     return {
         "online": True,                 # native fabric guarantees the avatar always answers
         "posture": "in-house-first",
         "native": True,
+        "effective_serving_mode": _mode,
+        "effective_serving_mode_basis": _basis,
+        "local_serving_disabled": _local_off,
+        "external_use_permitted": _external_allowed,   # W505 — a present key is not permission
         "ollama_online": ollama,
         # W326 — honest naming: these report ENV-VAR PRESENCE only, not a validated working key
         # (a present-but-invalid key still 401s at call time — the voice endpoints say so live).

@@ -218,14 +218,60 @@ def settle_consume_token(vsb_id: str, token: str) -> int:
     return n
 
 
+def _approval_for_token(vsb_id: str, token: str) -> Optional[Dict[str, Any]]:
+    """W505 (FU-048) — the approval a cycle token spent, read from the constitutional ledger.
+
+    `economy.cycle_intake_consumed` is written with the token and the approval's cca_id and consume_id, so the
+    chain is where the link lives. Returns the `consumed` handle `_restore_consumed_approval` takes, or None
+    when this token spent no approval (a non-material cycle) or the chain cannot be read — in which case
+    nothing is restored, which is the old, restrictive behaviour rather than a guess.
+
+    It returns None when `released_action_ran` is on the record for that consume_id: the caller must not give
+    back an approval whose action started. That is checked HERE as well as inside the restore, because the two
+    readers of this condition must not drift apart.
+    """
+    try:
+        from agentic_core.gaas.v5.ueg import UEGLogger
+        nodes = UEGLogger().recent(limit=2000)
+    except Exception:
+        return None
+    hit = None
+    for n in reversed(nodes):                       # newest first: the most recent consume of this token
+        data = (n or {}).get("data") or {}
+        if (data.get("type") == "economy.cycle_intake_consumed" and data.get("vsb_id") == vsb_id
+                and data.get("token") == token):
+            hit = data
+            break
+    if not hit or not hit.get("cca_id") or not hit.get("consume_id"):
+        return None
+    try:
+        from agentic_core.api import change_control as _cca
+        rec = _cca._load_change(hit["cca_id"])
+    except Exception:
+        return None
+    if not isinstance(rec, dict):
+        return None
+    if any(e.get("event") == "released_action_ran" and e.get("consume_id") == hit["consume_id"]
+           for e in (rec.get("audit_trail") or [])):
+        # the action started and may have posted: never given back
+        return None
+    return {"cca_id": hit["cca_id"], "consume_id": hit["consume_id"],
+            "release": hit.get("release"), "gate": hit.get("gate")}
+
+
 def reconcile_stranded_consumes(min_age_s: float = 900.0) -> Dict[str, Any]:
     """W467 (refutation) — a cycle consumes its events BEFORE it runs; a process that died between that consume and the
     cycle's first ledger write left them consumed and never distributed, with nothing to find them. A consume still
     carrying a cycle token older than `min_age_s` is checked against its VSB's ledger (read strictly): an intake entry
     stamped with that token means the cycle posted — the token is settled; no such entry means nothing was posted —
-    the events are given back to pending (economy.cycle_intake_reconciled). An unreadable ledger is skipped. A spent
-    approval is left as it is (unmarked, it reads as still in flight — the restrictive side; the next cycle asks the
-    Owner again)."""
+    the events are given back to pending (economy.cycle_intake_reconciled). An unreadable ledger is skipped.
+
+    W505 (FU-048) — the APPROVAL is given back too. Leaving it spent meant the next beat filed a fresh CRITICAL
+    hold for the same events and the Owner decided the same distribution twice. The consume's own UEG record
+    names the approval (cca_id + consume_id), and this pass has just proved from the ledger that the cycle wrote
+    nothing — so the released action demonstrably never ran, which is the condition the restore exists for. An
+    approval whose trail carries `released_action_ran` for that consume_id is still never given back: that
+    marker means the action started and may have posted."""
     import calendar as _cal
     from agentic_core.economy.transfers import _ledger_path, _read_ledger_strict
     from agentic_core.economy.governance import _ueg_log
@@ -261,6 +307,21 @@ def reconcile_stranded_consumes(min_age_s: float = 900.0) -> Dict[str, Any]:
             continue
         back = unconsume_events(vsb_id, tok)
         report["given_back"] += 1
+        # W505 (FU-048) — and the approval the consume spent, so the Owner is not asked twice for one
+        # distribution. `_restore_consumed_approval` keeps every W463 give-back rule: it restores only while
+        # that record's latest spend is still this consume, under the gate's own lock, and refuses when a newer
+        # live or rejected record exists for the action.
+        _appr = _approval_for_token(vsb_id, tok)
+        if _appr:
+            from agentic_core.economy.governance import _restore_consumed_approval
+            _outcome = _restore_consumed_approval(
+                _appr, vsb_id=vsb_id,
+                reason=(f"the cycle holding token {tok} consumed these events and wrote no ledger entry, so the "
+                        f"action this approval released never ran"))
+            report.setdefault("approvals_restored", []).append({"cca_id": _appr.get("cca_id"),
+                                                                "outcome": _outcome})
+        else:
+            report.setdefault("approvals_not_found", []).append(tok)
         _ueg_log({"type": "economy.cycle_intake_reconciled", "vsb_id": vsb_id, "token": tok, "event_ids": back["ids"],
                   "revenue_wst": round(sum(float(e.get("amount_wst") or 0.0) for e in evs if e.get("kind") == "revenue"), 6),
                   "note": "a cycle consumed these events and never wrote its ledger (its process stopped, or its "

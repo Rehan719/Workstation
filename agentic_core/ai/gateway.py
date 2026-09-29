@@ -5,12 +5,86 @@ import httpx
 from pathlib import Path
 from agentic_core.config import data_path
 from typing import AsyncIterator
-from agentic_core.ai.guardrails import validate_response
+from agentic_core.ai.guardrails import validate_response, screen_reason
 from agentic_core.ai.logger import interaction_logger
 from agentic_core.ai.memory import memory
 
 _RECONFIG_PATH = data_path("organism_config.json")
 
+
+# ── W505 (P2.6): the constitutional checkpoint on the AI seam ─────────────────────────────────────────
+# Kept at module level, ABOVE the class, and never between a decorator and its function.
+
+_GATE_NAME = "constitutional_policy_gate_v5"
+
+
+def _policy_verdict(action_type: str, context: dict) -> dict:
+    """The pre-gate's verdict. A gate that cannot be consulted does not silently allow: it says so."""
+    try:
+        from agentic_core.gaas.v5.policy_gate import ConstitutionalPolicyGate
+        return ConstitutionalPolicyGate(domain="ai_gateway").validate(action_type, context)
+    except Exception as exc:   # pragma: no cover - the gate is a pure module; an import failure is real news
+        return {"allowed": True, "reason": None, "article": None,
+                "gate_unavailable": f"{type(exc).__name__}: {exc}"}
+
+
+def _output_verdict(output: str) -> dict:
+    try:
+        from agentic_core.gaas.v5.policy_gate import ConstitutionalPolicyGate
+        return ConstitutionalPolicyGate(domain="ai_gateway").validate_output(output)
+    except Exception as exc:   # pragma: no cover
+        return {"compliant": True, "violations": [],
+                "gate_unavailable": f"{type(exc).__name__}: {exc}"}
+
+
+def _chain(event: dict) -> dict:
+    """Append to the constitutional ledger and report WHETHER it was appended.
+
+    The UEG refuses to append when its chain file cannot be read whole (rather than restarting the chain
+    over the old one). That refusal must not take the AI down, and it must not be hidden: a checkpoint
+    that claims to be recorded when it is not is worse than having none.
+    """
+    try:
+        from agentic_core.gaas.v5.ueg import UEGLogger
+        return {"recorded": True, "event_hash": UEGLogger().log(event)}
+    except Exception as exc:
+        return {"recorded": False,
+                "not_recorded_because": f"the constitutional ledger refused the append: "
+                                        f"{type(exc).__name__}: {exc}"}
+
+
+def _record_halt(agent: str, pre: dict) -> dict:
+    """A refused request: chained as a policy_gate_halt, which the UEG classifies as adverse."""
+    chained = _chain({"type": "policy_gate_halt", "node": f"ai_gateway:{agent}",
+                      "action": "ai_generation", "reason": pre.get("reason"),
+                      "article": pre.get("article")})
+    return {"gate": _GATE_NAME, "pre_allowed": False, "refused_reason": pre.get("reason"),
+            "article": pre.get("article"), "post_checked": False, **chained}
+
+
+def _record_checkpoint(agent: str, pre: dict, post: dict, screened: bool) -> dict:
+    """The checkpoint every completed generation carries.
+
+    A COMPLIANT output is chained as a routine ai.generation_gated event; a non-compliant one as an adverse
+    post_validation_failure. Both are recorded, because an audit trail that only holds the bad cases cannot
+    show that the good ones were checked at all.
+    """
+    compliant = bool(post.get("compliant", True))
+    violations = list(post.get("violations") or [])
+    event = {"type": "ai.generation_gated" if compliant else "post_validation_failure",
+             "node": f"ai_gateway:{agent}", "action": "ai_generation",
+             "compliant": compliant, "violations": violations,
+             "response_screen_withheld": screened}
+    chk = {"gate": _GATE_NAME, "pre_allowed": True, "post_checked": True,
+           "post_compliant": compliant, "violations": violations,
+           # the response screen is a separate, narrower thing from the constitutional gate; saying which
+           # one acted is the difference between an auditable record and a shrug.
+           "response_screen_withheld": screened,
+           **_chain(event)}
+    for src, key in ((pre, "gate_unavailable"), (post, "gate_unavailable")):
+        if src.get(key):
+            chk["gate_unavailable"] = src[key]
+    return chk
 
 class _RateLimiter:
     """Token-bucket rate limiter — prevents runaway API spend."""
@@ -107,6 +181,21 @@ class ModelGateway:
         """Return preferred_provider from reconfig, defaulting to 'auto'."""
         return self._reconfig_cache.get("gateway", {}).get("preferred_provider", "auto")
 
+    @staticmethod
+    def _is_floor(served_by: str | None) -> bool:
+        """True when the deterministic floor served this, not a model.
+
+        W505 (P2.1) — "floor output is never STORED for recall". The floor's structured prose is this
+        engine's own framing; storing it means that the moment recall is switched on, the floor recalls
+        its own scaffolding as though it were prior knowledge. The engine's declared name is imported
+        rather than the string "native" hardcoded, so renaming it cannot silently re-enable storing."""
+        try:
+            from agentic_core.ai.native.engine import NativeReasoningEngine as _NSE
+            floor_name = getattr(_NSE, "name", "native")
+        except Exception:
+            floor_name = "native"
+        return (served_by or floor_name) == floor_name
+
     def _augment(self, prompt: str, owner_id: str | None = None) -> str:
         # W277 — recall is real (scored token-overlap retrieval) and HONESTLY labelled.
         # W333 — recall is TENANT-SCOPED (only the caller's namespace + platform); a caller with no
@@ -132,7 +221,8 @@ class ModelGateway:
 
     async def query(self, prompt: str, agent: str = "assistant",
                     timeout: float | None = 90.0,
-                    owner_id: str | None = None, augment: bool = _RECALL_OFF) -> str:
+                    owner_id: str | None = None, augment: bool = _RECALL_OFF,
+                    governance: dict | None = None) -> str:
         """Run one completion through the provider cascade.
 
         `timeout` is an OVERALL bound (seconds) on the whole cascade so an AI call
@@ -142,12 +232,13 @@ class ModelGateway:
         On timeout we return a clearly-labelled fallback rather than blocking.
         """
         res = await self.query_meta(prompt, agent=agent, timeout=timeout,
-                                    owner_id=owner_id, augment=augment)
+                                    owner_id=owner_id, augment=augment, governance=governance)
         return res.get("output", "")
 
     async def query_meta(self, prompt: str, agent: str = "assistant",
                          timeout: float | None = 90.0,
-                         owner_id: str | None = None, augment: bool = _RECALL_OFF) -> dict:
+                         owner_id: str | None = None, augment: bool = _RECALL_OFF,
+                         governance: dict | None = None) -> dict:
         """Like `query()` but returns PROVENANCE — {output, served_by, is_external} — so callers
         can surface which OWNED resource served the completion (Genesis/Forge/Transformation use
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
@@ -161,6 +252,24 @@ class ModelGateway:
         fabric — see agentic_core/ai/native/.)"""
         self._sync_reconfig()
         await self._rate_limiter.acquire()
+        # W505 (P2.6) — THE CONSTITUTIONAL PRE-GATE, on the seam every generation passes through. Before
+        # this the gate had four callers and none of them was the AI gateway, so the claim that every
+        # action is constitutionally gated held for the economy and not for a single completion.
+        _gov = dict(governance or {})
+        _gate_ctx = {"intent": agent, "domain": "ai_gateway", **_gov}
+        # The gate screens its action_type argument; `context["intent"]` is only consulted when
+        # action_type is falsy, so passing a constant there would screen the constant and nothing else -
+        # a gate that cannot refuse. The DECLARED INTENT is the action type; the constant is the domain.
+        _pre = _policy_verdict(agent, _gate_ctx)
+        if not _pre.get("allowed", True):
+            _halt = _record_halt(agent, _pre)
+            return {"output": f"[CONSTITUTIONAL REFUSAL] {_pre.get('reason')}",
+                    "served_by": "constitutional_policy_gate", "is_external": False,
+                    "recall_stored": False,
+                    "recall_not_stored_because": "the request was refused before any model ran, so there "
+                                                 "is no completion to recall",
+                    "profile_applied": False,
+                    "governance_checkpoint": _halt}
         # W332 — generation-class callers whose output SHIPS or PERSISTS must not carry cross-request
         # recall: recall was the leak vector. W489 made that the DEFAULT (see _RECALL_OFF above)
         # rather than a convention each caller had to remember, because two rounds of fixing callers
@@ -192,16 +301,47 @@ class ModelGateway:
             except Exception:
                 response = "[native engine unavailable]"
 
-        if not validate_response(response):
-            response = "[POLICY VIOLATION] The generated response was blocked by safety guardrails."
+        _screen = screen_reason(response)
+        if _screen:
+            # W505 (P2.6) — the basis travels with the refusal. A bare "[POLICY VIOLATION]" told the person
+            # nothing they could act on or dispute.
+            response = ("[POLICY VIOLATION] The generated response was withheld by the response screen: "
+                        f"{_screen}.")
+        # W505 (P2.6) — the POST gate FLAGS and chains; it does not replace. validate_output matches
+        # `DROP TABLE` and `rm -rf /`, so replacing on a match would destroy a correct answer ABOUT them.
+        _post = _output_verdict(response)
+        _chk = _record_checkpoint(agent, _pre, _post, screened=bool(_screen))
 
         interaction_logger.log_interaction(agent, prompt, response, owner_id=owner_id)
-        memory.add_memory(f"User: {prompt} | AI: {response}",
-                          metadata={"agent": agent}, owner_id=owner_id)   # W333 — tenant-stamped
+        # W505 (P2.1) — the FLOOR'S OUTPUT is not stored for recall; the USER'S OWN WORDS still are.
+        # A first cut dropped the whole "User: … | AI: …" record when the floor served, which also threw
+        # away the half recall exists for: what the person said. The interaction LOG above keeps both
+        # either way - that is an audit trail, not a recall pool.
+        _floor = self._is_floor(served_by)
+        _stored = not _floor
+        if _floor:
+            memory.add_memory(f"User: {prompt}",
+                              metadata={"agent": agent, "ai_reply_withheld": "served by the "
+                                        "deterministic floor - its structured prose is the engine's own "
+                                        "framing, not prior knowledge to recall"},
+                              owner_id=owner_id)   # W333 — tenant-stamped
+        else:
+            memory.add_memory(f"User: {prompt} | AI: {response}",
+                              metadata={"agent": agent}, owner_id=owner_id)   # W333 — tenant-stamped
         # W428 — DISCLOSED, not silent. A profile that shapes output without the caller being able
         # to tell is the same opacity §10 spent this cycle removing from the quality record.
         return {"output": response, "served_by": served_by, "is_external": is_external,
-                "profile_applied": bool(_preamble)}
+                # W505 (P2.1) — said, not silent: a caller can tell whether this answer entered the
+                # recall pool, and why it did not.
+                "recall_stored": _stored,
+                **({} if _stored else {"recall_not_stored_because":
+                                       "the deterministic floor served this, so its structured prose was "
+                                       "withheld from the recall pool - it is the engine's own framing, "
+                                       "not prior knowledge. Your own message was kept."}),
+                "profile_applied": bool(_preamble),
+                # W505 (P2.6) — every gateway response carries its governance checkpoint: what the gate
+                # decided before and after, and whether the constitutional ledger actually recorded it.
+                "governance_checkpoint": _chk}
 
     async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
         """Try providers in priority order, return (response_text, provider_name)."""
@@ -339,11 +479,19 @@ class ModelGateway:
         augmented = _preamble + augmented
         from agentic_core.organism.self_healing import self_healer   # W323 — breaker on the stream path
 
-        def _log(text: str) -> None:
+        def _log(text: str, served_by: str | None = None) -> None:
             try:
                 interaction_logger.log_interaction(agent, prompt, text, owner_id=owner_id)
-                memory.add_memory(f"User: {prompt} | AI: {text}",
-                                  metadata={"agent": agent}, owner_id=owner_id)
+                # W505 (P2.1) — the same rule as query_meta, at the second writer. A truth fix is done
+                # only when EVERY writer says the new truth (W475), and this path stores too: the user's
+                # words are kept, the floor's prose is not.
+                if self._is_floor(served_by):
+                    memory.add_memory(f"User: {prompt}",
+                                      metadata={"agent": agent, "ai_reply_withheld": "served by the "
+                                                "deterministic floor"}, owner_id=owner_id)
+                else:
+                    memory.add_memory(f"User: {prompt} | AI: {text}",
+                                      metadata={"agent": agent}, owner_id=owner_id)
             except Exception:
                 pass
 
@@ -366,7 +514,7 @@ class ModelGateway:
             reply cannot be retracted, so the notice is a token every consumer sees; what is
             logged and remembered is the replacement, exactly as query_meta persists it."""
             ok = validate_response(full)
-            _log(full if ok else _NOTICE.strip())
+            _log(full if ok else _NOTICE.strip(), served_by)
             return {"done": True, "served_by": served_by, "is_external": is_external,
                     "output": full if ok else _NOTICE.strip(),
                     "guardrail_passed": ok, "profile_applied": bool(_preamble)}

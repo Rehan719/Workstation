@@ -50,6 +50,7 @@ class FatwaResearchRequest(BaseModel):
     madhab: str = "hanafi"  # preferred school of jurisprudence
     context: str = ""  # geographic/circumstantial context
     language: str = "english"
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/fatwa-research")
@@ -82,7 +83,7 @@ async def fatwa_research(req: FatwaResearchRequest):
         "and recommend consulting a qualified mufti for personal rulings."
     )
 
-    research, provenance = await ai_text(prompt, "religion_fiqh")
+    research, provenance = await ai_text(prompt, "religion_fiqh", realm=req.realm)
 
     # §15 (W498, FU-185, class C6) — THE TAFSIR PATTERN, APPLIED HERE. On the deterministic floor these
     # headings came back filled with keyword bigrams and a "service frame", and the response carried no
@@ -137,6 +138,7 @@ class HadithStudyRequest(BaseModel):
     hadith: str                       # the hadith text, or a reference
     focus: str = "authentication"     # authentication | explanation | thematic
     madhab: str = ""                  # optional jurisprudential lens
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/hadith-study")
@@ -163,7 +165,7 @@ async def hadith_study(req: HadithStudyRequest):
         "collections and a qualified scholar."
     )
 
-    research, provenance = await ai_text(prompt, "religion_hadith")
+    research, provenance = await ai_text(prompt, "religion_hadith", realm=req.realm)
 
     # §15 (W498, FU-185, class C6) — the same pattern, and here it matters most. The prompt itself says
     # "fabricating a hadith grade or attribution is a serious error", and on the floor the response came
@@ -220,6 +222,7 @@ class QuranTafsirRequest(BaseModel):
     ayah_start: int
     ayah_end: int = 0  # 0 = same as start (single ayah)
     tafsir_approach: str = "classical"  # classical | thematic | contemporary | linguistic
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/quran-tafsir")
@@ -303,7 +306,7 @@ async def quran_tafsir(req: QuranTafsirRequest):
     )
 
     _model_expected = _model_available()
-    tafsir, provenance = await ai_text(prompt, "religion_tafsir")
+    tafsir, provenance = await ai_text(prompt, "religion_tafsir", realm=req.realm)
 
     # W456 (P1.8, ledger 1.8 / R1.0) — §11 rule 4 applied HERE as it is at /qep/translation: a
     # translation must come from a model. The deterministic floor composes each requested heading
@@ -469,6 +472,7 @@ class HalalReviewRequest(BaseModel):
     ingredients: list[str] = []
     manufacturing_process: str = ""
     target_markets: list[str] = []
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/halal-review")
@@ -511,7 +515,7 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         + "Note: This is a pre-assessment tool only; formal certification requires an accredited certifying body."
     )
 
-    assessment, provenance = await ai_text(prompt, "religion_halal")
+    assessment, provenance = await ai_text(prompt, "religion_halal", realm=req.realm)
 
     _judging = ("Halal Status Assessment", "Critical Issues", "Flagged Ingredients")
     sections_withheld: list[str] = []
@@ -559,6 +563,7 @@ class InterfaithRequest(BaseModel):
     topic: str
     traditions: list[str] = ["Islam", "Christianity", "Judaism"]
     dialogue_purpose: str = "understanding"  # understanding | commonalities | differences | dialogue
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/interfaith")
@@ -596,7 +601,7 @@ async def interfaith_dialogue(req: InterfaithRequest):
         "noting internal diversity where significant."
     )
 
-    analysis, provenance = await ai_text(prompt, "religion_interfaith")
+    analysis, provenance = await ai_text(prompt, "religion_interfaith", realm=req.realm)
 
     return {
         "analysis_id": uuid.uuid4().hex[:10],

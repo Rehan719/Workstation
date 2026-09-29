@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
 import { provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074) — one component, both pages
 
 interface Objective {
   id: string; title: string; kpi: string; timeline: string; owner_role: string;
@@ -60,23 +61,8 @@ export const BusinessPlan: React.FC = () => {
 
   const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
   const [genNote, setGenNote] = useState('');  // W471 — a generation that wrote nothing says so
-  const [edit, setEdit] = useState<Record<string, string> | null>(null);   // W471 — the owner-edit surface
-  const [saving, setSaving] = useState(false);
-  const OPENING: [string, string][] = [['executive_summary', 'Executive Summary'], ['concept', 'Concept'], ['vision', 'Vision'], ['mission', 'Mission'], ['strategy', 'Strategy']];
-  const openEdit = () => plan && setEdit(Object.fromEntries(OPENING.map(([k]) => [k, (plan as any)[k] || ''])));
-  const saveEdit = async () => {
-    if (!plan || !edit) return;
-    setSaving(true); setActErr('');
-    // only what the owner CHANGED is sent: an untouched Chief/model text is never re-stamped as the owner's
-    const clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim() && (plan as any)[k]);
-    const body: Record<string, unknown> = { scope, owner: plan.owner, clear };
-    OPENING.forEach(([k]) => { const v = edit[k].trim(); if (v && v !== ((plan as any)[k] || '')) body[k] = v; });
-    try {
-      const r = await fetch('/api/v1/business-plan/set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!r.ok) setActErr(`Owner edit not saved (HTTP ${r.status})`); else setEdit(null);
-    } catch { setActErr('Backend unreachable — the owner edit was NOT saved'); }
-    setSaving(false); load();
-  };
+  // W505 (FU-074) — the owner-edit state, the OPENING field list and the save call all moved into
+  // components/PlanOpening.tsx, which BOTH this page and the VSB Cockpit's plan tab now render.
   const generate = async () => {
     setBusy(true);
     setActErr('');
@@ -182,34 +168,11 @@ export const BusinessPlan: React.FC = () => {
                 {(plan.provenance?.body_pending?.length ?? 0) > 0 && (
                   <span className="text-[9px] text-amber-400/80" data-testid="plan-pending" title="the deterministic floor served these; nothing was written — set them yourself, or generate once the owned model serves">pending the owned model: {plan.provenance!.body_pending!.join(' · ')}</span>
                 )}
-                <button type="button" onClick={openEdit} className="ml-auto text-[9px] font-black uppercase tracking-widest text-highlight border border-highlight/40 rounded-lg px-2 py-1 flex items-center gap-1" data-testid="plan-owner-edit-open"><PenLine size={10} /> Owner: edit</button>
               </div>
-              {plan.executive_summary && <Field label="Executive Summary" value={plan.executive_summary} edited={plan.owner_edits?.executive_summary} />}
-              {plan.concept && <Field label="Concept" value={plan.concept} edited={plan.owner_edits?.concept} />}
-              {plan.vision && <Field label="Vision" value={plan.vision} edited={plan.owner_edits?.vision} />}
-              {!plan.executive_summary && !plan.concept && !plan.vision && (
-                <p className="text-[11px] text-slate-500">No opening recorded yet — nothing here is the Chief's framing until the owned model composes it or you set it.</p>
-              )}
-            </Card>
-          )}
-
-          {edit && (
-            <Card className="p-6 border-highlight/40" data-testid="plan-owner-edit">
-              <div className="flex items-center gap-2 mb-3"><PenLine size={14} className="text-highlight" /><h3 className="text-[10px] font-black uppercase tracking-widest text-highlight">Owner edit — set or clear the opening and strategic layers</h3></div>
-              <p className="text-[10px] text-slate-500 mb-3">Your words replace the Chief's on save; an emptied field is cleared (POST /api/v1/business-plan/set). Each set field is marked owner-edited.</p>
-              <div className="space-y-3">
-                {OPENING.map(([k, label]) => (
-                  <label key={k} className="block">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</span>
-                    <textarea value={edit[k]} onChange={e => setEdit({ ...edit, [k]: e.target.value })} rows={k === 'vision' || k === 'mission' ? 1 : 3}
-                      className="mt-1 w-full text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300" data-testid={`plan-edit-${k}`} />
-                  </label>
-                ))}
-              </div>
-              <div className="flex gap-2 mt-4">
-                <Button onClick={saveEdit} disabled={saving} className="bg-highlight text-sovereign text-xs flex items-center gap-2" data-testid="plan-owner-edit-save">{saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />} Save</Button>
-                <Button onClick={() => setEdit(null)} disabled={saving} className="bg-slate-900 text-slate-300 text-xs">Cancel</Button>
-              </div>
+              {/* W505 (FU-074) — the shared component renders the opening, its owner-edited marks, FU-158's
+                  per-field template marks and the owner-edit form. It replaces the copy that used to live here:
+                  the Cockpit's plan tab had none, and a second copy is how the two drifted apart. */}
+              <PlanOpening plan={plan as any} scope={scope} onSaved={load} onError={setActErr} />
             </Card>
           )}
 

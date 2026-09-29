@@ -150,7 +150,18 @@ const AuditTab: React.FC = () => {
   // blocked action's policy_gate_halt rendered as a green "CHAINED".
   const flagLevel = (e: any): 'flagged' | 'review' | 'recorded' | 'unclassified' => e?.flag?.level ?? 'unclassified';
   const isFlagged = (e: any) => flagLevel(e) === 'flagged' || flagLevel(e) === 'review';
+  // W505 (FU-032) — a DECISION is not a FAULT. The Owner declining a change, or a Board refusing a
+  // ratification, was rendered red with an alert icon and counted in the same stat as genuine failures, so
+  // the page said the system had gone wrong when in fact governance had worked. `nature` comes from the
+  // backend classifier; `level` keeps the meaning its readers already had.
+  const nature = (e: any): 'decision' | 'fault' | 'hold' | 'routine' | 'unclassified' => e?.flag?.nature
+    ?? (flagLevel(e) === 'flagged' ? 'fault' : flagLevel(e) === 'review' ? 'hold'
+      : flagLevel(e) === 'recorded' ? 'routine' : 'unclassified');
+  const isDecision = (e: any) => nature(e) === 'decision';
+  const flagWhy = (e: any): string | null => (typeof e?.flag?.why === 'string' && e.flag.why) ? e.flag.why : null;
   const levelBadge = (e: any) => {
+    const n = nature(e);
+    if (n === 'decision') return { color: 'aura', text: 'DECISION' };
     const l = flagLevel(e);
     return l === 'flagged' ? { color: 'vital', text: 'FLAGGED' } : l === 'review' ? { color: 'highlight', text: 'REVIEW' }
       : l === 'recorded' ? { color: 'slate', text: 'CHAINED' } : { color: 'slate', text: 'UNCLASSIFIED' };
@@ -209,7 +220,10 @@ const AuditTab: React.FC = () => {
             : verify.outcome === 'unreadable' ? 'text-amber-400'
             : verify.valid ? (verify.anchor_checked ? 'text-emerald-500' : 'text-amber-400')
             : 'text-vital'} />
-        <AuditStatCard label="Flagged (last loaded)" value={events.filter(e => flagLevel(e) === 'flagged').length} icon={XCircle} color="text-vital" />
+        {/* W505 (FU-032) — faults and decisions counted apart. One "Flagged" number that added them
+            together made every recorded refusal look like a defect in the platform. */}
+        <AuditStatCard label="Faults (last loaded)" value={events.filter(e => nature(e) === 'fault').length} icon={XCircle} color="text-vital" />
+        <AuditStatCard label="Decisions recorded" value={events.filter(isDecision).length} icon={ShieldCheck} color="text-aura" />
         <AuditStatCard label="Root Hash"
           value={verify?.root_hash ? `${String(verify.root_hash).slice(0, 10)}…` : '—'}
           icon={AlertCircle} color="text-highlight" />
@@ -263,12 +277,16 @@ const AuditTab: React.FC = () => {
                 <motion.div key={ev.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                   className="p-5 rounded-2xl bg-slate-950 border border-slate-900 flex items-center justify-between group hover:border-aura/30 transition-all">
                   <div className="flex items-center gap-5">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${flagLevel(ev) === 'flagged' ? 'bg-vital/10 text-vital' : flagLevel(ev) === 'review' ? 'bg-highlight/10 text-highlight' : 'bg-slate-800 text-slate-500'}`}>
-                      {isFlagged(ev) ? <AlertCircle size={20} /> : <Activity size={20} />}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDecision(ev) ? 'bg-aura/10 text-aura' : flagLevel(ev) === 'flagged' ? 'bg-vital/10 text-vital' : flagLevel(ev) === 'review' ? 'bg-highlight/10 text-highlight' : 'bg-slate-800 text-slate-500'}`}>
+                      {isDecision(ev) ? <ShieldCheck size={20} /> : isFlagged(ev) ? <AlertCircle size={20} /> : <Activity size={20} />}
                     </div>
                     <div>
                       <p className="text-sm font-black text-white uppercase tracking-widest">{String(ev.data?.type ?? 'event')} · {ev.id}</p>
                       <p className="text-[10px] text-slate-500 font-bold uppercase">{fmtTs(ev.timestamp)}</p>
+                      {/* W505 (FU-032) — the backend computed this sentence and the page discarded it. */}
+                      {flagWhy(ev) && (
+                        <p className={`text-[10px] font-bold mt-0.5 ${isDecision(ev) ? 'text-aura' : 'text-slate-400'}`} data-testid="event-flag-why">{flagWhy(ev)}</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

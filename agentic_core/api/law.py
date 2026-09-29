@@ -77,6 +77,7 @@ class AnalyseRequest(BaseModel):
     document_type: str = "contract"
     jurisdiction: str = "England & Wales"
     analysis_focus: str = "general"  # general | risk | compliance | negotiation
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/analyse")
@@ -110,7 +111,7 @@ async def analyse_document(req: AnalyseRequest):
         "Be specific, cite clause numbers where present. Use plain English where possible."
     )
 
-    analysis, provenance = await ai_text(prompt, "law_analyst")
+    analysis, provenance = await ai_text(prompt, "law_analyst", realm=req.realm)
 
     return {
         "analysis_id": uuid.uuid4().hex[:10],
@@ -132,6 +133,7 @@ class ResearchRequest(BaseModel):
     jurisdiction: str = "England & Wales"
     area_of_law: str = "general"   # contract | employment | IP | data protection | dispute | company | ...
     context: str = ""
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/research")
@@ -156,7 +158,7 @@ async def legal_research(req: ResearchRequest):
         "or fact-dependent, say so honestly rather than overstating certainty."
     )
 
-    analysis, provenance = await ai_text(prompt, "law_researcher")
+    analysis, provenance = await ai_text(prompt, "law_researcher", realm=req.realm)
 
     return {
         "research_id": uuid.uuid4().hex[:10],
@@ -179,6 +181,7 @@ class GenerateRequest(BaseModel):
     parties: dict = {}
     custom_instructions: str = ""
     jurisdiction: str = "England & Wales"
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/generate")
@@ -205,7 +208,7 @@ async def generate_document(req: GenerateRequest):
         + "\nGenerate the complete legal document now in Markdown format with proper headings and clause numbering."
     )
 
-    document, provenance = await ai_text(prompt, "law_generator")
+    document, provenance = await ai_text(prompt, "law_generator", realm=req.realm)
 
     template_name = next(
         (t["name"] for t in _TEMPLATES if t["id"] == req.template_id),

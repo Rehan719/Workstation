@@ -45,6 +45,15 @@ interface CCADetail extends CCARow {
   decision_source?: string | null;
   hold_reason?: string | null;
   recommendation?: { verdict?: string; source?: string } | null;
+  // W505 (FU-157) — S1.10: what implementing it actually DID; S1.18: why the tier is not the one the form
+  // showed before submitting.
+  implementation_effect?: 'applied' | 'recorded_only' | null;
+  implementation_effect_basis?: string | null;
+  impact_tier_raised_by?: string | null;
+  impact_tier_raised_from?: string | null;
+  impact_tier_raised_because?: string | null;
+  health_gate?: { decided_on?: string | null; measured_health?: number | null;
+                  measured_weight?: number | null; verdict?: string; basis?: string } | null;
 }
 
 interface CCAStats {
@@ -203,13 +212,33 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                 </div>
               )}
 
+              {/* W505 (FU-157, S1.10) — WHAT IMPLEMENTING IT DID. A change with no config_change payload
+                  applies nothing, and every change submitted from this page's own form is one, yet the record
+                  read IMPLEMENTED and counted in the Implemented stat. */}
+              {detail?.implementation_effect && (
+                <div className="flex items-start gap-2 text-xs" data-testid="cca-implementation-effect">
+                  <Shield size={12} className="mt-0.5 shrink-0 text-white/40" />
+                  <span className={detail.implementation_effect === 'applied' ? 'text-green-400' : 'text-amber-400/80'}>
+                    {detail.implementation_effect === 'applied'
+                      ? 'applied — platform behaviour changed'
+                      : 'recorded only — nothing was applied to the platform'}
+                    {detail.implementation_effect_basis && (
+                      <span className="text-white/40"> · {detail.implementation_effect_basis}</span>
+                    )}
+                  </span>
+                </div>
+              )}
               {detail?.twin_prevalidation?.verdict && (
                 <p className="text-xs font-mono text-white/40" data-testid="cca-twin-line">
                   §17.5 pre-validation:{' '}
                   {/* W494 (FU-107 refutation) - the twin fallback returns 'not_assessable' when too
                       little of the composite is measured to decide. A two-colour ternary painted that
                       RED, which reads as a failed pre-validation: the opposite of "nothing assessed". */}
-                  <span className={detail.twin_prevalidation.verdict === 'pass' ? 'text-green-400'
+                  {/* W505 (FU-157, S1.13) — green only for a TWIN verdict. A 'pass' that came from the
+                      organism health gate is not a simulation result, and rendering it in the same green as
+                      one read as a validated change. */}
+                  <span className={detail.twin_prevalidation.verdict === 'pass'
+                      ? (detail.twin_prevalidation.source === 'twin_marker' ? 'text-green-400' : 'text-amber-400')
                     : detail.twin_prevalidation.verdict === 'fail' ? 'text-red-400' : 'text-slate-400'}
                         title={detail.twin_prevalidation.method} data-testid="cca-twin-verdict">
                     {detail.twin_prevalidation.verdict.replace(/_/g, ' ').toUpperCase()}
@@ -330,9 +359,21 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
         title, description: desc, change_type: type, submitted_by: 'workstation-ui'
       });
       // Auto-approval is signalled by the returned status (the backend sends no auto_approved key).
-      setMsg(res.data.status === 'approved'
-        ? '✓ Change auto-approved (LOW tier + healthy organism)'
-        : '✓ Change submitted — awaiting review');
+      // W505 (FU-157) — S1.11: "healthy organism" was this page's own words. The gate decides on the
+      // MEASURED part of the composite and returns that figure with the share of the weight it covers; the
+      // blended composite is 40% a defaulted 1.0 and 20% simulated ATP, which is why the backend stopped
+      // deciding on it and why this page must stop describing it as health.
+      // S1.18: a phrase in the DESCRIPTION can raise the tier above the one the form showed, so say so.
+      const hg = res.data.health_gate ?? null;
+      const measured = typeof hg?.measured_health === 'number'
+        ? `${Math.round(hg.measured_health * 100)}% measured health over ${Math.round((hg.measured_weight ?? 0) * 100)}% of the composite's weight`
+        : 'the health gate returned no measurement';
+      const raised = res.data.impact_tier_raised_by
+        ? ` — tier raised to ${res.data.impact_tier} (from ${res.data.impact_tier_raised_from}) because the description names "${res.data.impact_tier_raised_by}"`
+        : '';
+      setMsg((res.data.status === 'approved'
+        ? `✓ Auto-approved: LOW tier, ${measured}, immune threat ${res.data.immune_threat_at_submit ?? 'unknown'}`
+        : '✓ Change submitted — awaiting review') + raised);
       setTitle(''); setDesc(''); setType('config_minor');
       setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
     } catch (e: any) {
@@ -399,7 +440,12 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
                 <span>Tier: <span className={`font-semibold ${TIER_COLORS[CHANGE_TYPES.find(c=>c.value===type)?.tier as Tier ?? 'LOW'].split(' ')[0]}`}>
                   {CHANGE_TYPES.find(c => c.value === type)?.tier}
                 </span></span>
-                <span>— LOW tier changes are auto-approved when organism health ≥ 60% and immune threat is NOMINAL or ELEVATED</span>
+                {/* W505 (FU-157, S1.18) — this is the TYPE's tier. A description naming something
+                    constitutional or organism-wide raises it to CRITICAL on submit, which made the page
+                    appear to contradict itself. */}
+                <span>— this is the type's tier; naming something constitutional or organism-wide in the
+                  description raises it to CRITICAL. A LOW change is auto-approved when the measured part of
+                  the organism composite is ≥ 60% and immune threat is NOMINAL or ELEVATED</span>
               </div>
 
               {msg && (

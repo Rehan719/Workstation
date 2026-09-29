@@ -959,7 +959,12 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                       backend now derives the status from those facts and sends its basis. */}
                   <p className="text-[10px] text-slate-500 font-mono" data-testid="genesis-vsb-status"
                      title={vsb.status_basis || 'the response did not say what this status was derived from'}>
-                    {vsb.vsb_id} · {vsb.status ?? 'status not reported'} · governance {vsb.governance?.status ?? 'not reported'}
+                    {/* W505 (FU-158, S3.19) — the gate screened the establish INTENT and domain, never the
+                        enterprise's content, so a bare "governance allowed" sat beside a failed compliance
+                        screen and read as a clearance. The strip above this page's result already says so;
+                        this line did not. */}
+                    {vsb.vsb_id} · {vsb.status ?? 'status not reported'} · intent gate {vsb.governance?.status ?? 'not reported'}
+                    {vsb.governance?.content_screened === false ? ' (the intent only — not this enterprise\'s content)' : ''}
                   </p>
                   {vsb.status_basis && (
                     <p className="text-[9px] text-slate-500 mt-1" data-testid="genesis-vsb-status-basis">{vsb.status_basis}</p>

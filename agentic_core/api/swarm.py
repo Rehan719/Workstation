@@ -18,7 +18,9 @@ import uuid
 from pathlib import Path
 from agentic_core.config import data_path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+# W505 (P2.6) - owner scoping on the cascade: a scope naming a VSB must belong to the principal.
+from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -341,7 +343,8 @@ async def cascade_runs(limit: int = 10):
 
 
 @router.post("/cascade")
-async def cascade_orchestration(req: CascadeRequest):
+async def cascade_orchestration(req: CascadeRequest,
+                               user: dict | None = Depends(get_current_user)):
     """
     Full VSB org cascade, apex → operational delivery, every tier run on Workstation's OWN native
     fabric with proven in-house provenance:
@@ -358,6 +361,19 @@ async def cascade_orchestration(req: CascadeRequest):
         _gated_vsb = _gate_load(req.scope)
         if _gated_vsb:
             _refuse_gated(_gated_vsb, "cascade")
+            # W505 (P2.6) — OWNER SCOPING. The gate above refuses a VSB whose human review is pending; it
+            # says nothing about WHOSE VSB this is. A cascade writes objectives into this scope's living
+            # business plan and records revenue and cost against it, so a client-supplied scope let an
+            # authenticated caller drive another tenant's plan and ledger. Inert in single-user mode, where
+            # there is no principal to compare against.
+            from agentic_core.auth.core import auth_enabled as _ae
+            if _ae():
+                _owner = (user or {}).get("username")
+                _vsb_owner = _gated_vsb.get("owner_id") or _gated_vsb.get("owner")
+                if _vsb_owner and _owner and _vsb_owner != _owner:
+                    raise HTTPException(status_code=403, detail=(
+                        f"the scope '{req.scope}' belongs to {_vsb_owner}; a cascade writes objectives into "
+                        f"its business plan and records revenue against it, so it runs only for its owner."))
 
     biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 
@@ -942,13 +958,39 @@ async def cascade_orchestration(req: CascadeRequest):
         from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
         _gov_engine = UnifiedConstitutionalInterceptorV16Omega("org-cascade-node", UEGLogger())
 
-        async def _attest() -> str:
-            return "Org cascade (Chief → Build-to-Order) attested under v16-Omega constitutional supervision."
-        _gov = await _gov_engine.intercept({"intent": "org_cascade", "domain": req.domain}, _attest)
-        # W494 (FU-130) — this verdict was rendered as governance over the whole cascade; the gate
-        # saw only the intent label and a constant sentence, never any tier's output.
+        # W505 (FU-006) — THE DELIVERY, not a sentence about it. This action used to return a fixed
+        # attestation string, so the interceptor's post gate screened 96 characters of the platform's own
+        # boilerplate while five tiers of delivered content went past unread. W494 labelled that gap
+        # (`content_screened: false`); this closes it by handing the gate what was actually produced.
+        _tiers = [("Chief", chief_mandate), ("Board of Directors", board_resolution), ("AI CEO", ceo_directive)]
+        _tiers += [(f"C-Suite: {_r}", _t) for _r, _t in csuite_responses.items()]
+        _tiers += [(f"CoE: {_r}", _t) for _r, _t in coe_responses.items()]
+        _tiers += [("Business Transformation Office", bto_programme), ("Build-to-Order", build_to_order)]
+        _tiers = tuple(_tiers)
+        _delivered = "\n\n".join(f"## {name}\n{str(text or '')}" for name, text in _tiers)
+
+        async def _deliver() -> str:
+            return _delivered
+        _gov = await _gov_engine.intercept({"intent": "org_cascade", "domain": req.domain}, _deliver)
         from agentic_core.gaas.v5 import intent_gate_result
+        # the interceptor's post gate read `_delivered`; `partial` is its verdict that the content matched a
+        # prohibited pattern. The delivery is NOT discarded - a transformation programme discussing a database
+        # migration must not be deleted by its own audit trail - it is named, and the interceptor chains it.
+        _post_ok = _gov.status != "partial"
         governance = intent_gate_result(_gov.status, _gov.checkpoint_id, _gov.node, arms_length=True)
+        governance.update({
+            "screened": "intent + domain + the delivered content of every tier",
+            "content_screened": True,
+            "content_chars": len(_delivered),
+            "tiers_screened": [name for name, _ in _tiers],
+            "content_compliant": _post_ok,
+            # the ACTUAL violations, not the fixed warning sentence: the interceptor carries them now
+            # (before this they were logged to the ledger and dropped from the result).
+            "content_violations": list(getattr(_gov, "violations", None) or []),
+            "content_screen_basis": ("the gaas.v5 post gate is a deterministic pattern screen over the "
+                                     "delivered text. A clean result means no listed pattern matched - it is "
+                                     "not a judgement that the delivery is correct or constitutional."),
+        })
     except Exception as exc:
         governance = {"status": "ungoverned", "arms_length": True, "error": str(exc)}
 

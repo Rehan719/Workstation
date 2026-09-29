@@ -136,8 +136,19 @@ class EconomicMetabolism:
         except StoreUnavailable as e:
             # W472 (refutation) — the portfolio could not be read whole: no returns entered, and the report says so
             returns_recycled, venture_store_note = 0.0, f"venture returns not consumed: {e}"
-        except Exception:
+        except Exception as e:
+            # W505 (FU-040) — NOT SILENT. This was a bare `except Exception: returns_recycled = 0.0`, so any
+            # failure other than an unreadable store reported 0.0 recycled — indistinguishable from a portfolio
+            # that simply had no returns — and the cycle then ran its whole waterfall on revenue that should
+            # have been higher. Its neighbour (the inter-VSB receipts intake, W465) already reports and logs;
+            # this now matches it.
             returns_recycled = 0.0
+            venture_store_note = (f"venture returns not consumed ({type(e).__name__}: {str(e)[:160]}); this "
+                                  f"cycle ran WITHOUT them, so its revenue is lower than the portfolio's "
+                                  f"pending returns would have made it. Nothing was consumed, so they are "
+                                  f"still pending for the next cycle.")
+            logger.warning("venture returns intake FAILED for %s: %s — the cycle ran without them",
+                           self.vsb_id, f"{type(e).__name__}: {e}")
 
         # federation — inter-VSB RECEIPTS enter this cycle's waterfall the same way (W262).
         transfers_received = 0.0
@@ -210,6 +221,17 @@ class EconomicMetabolism:
         # W465 (FU-016) — a failed accrual used to vanish (`except: pass`) while the ledger above already showed
         # the owner stage as distributed; it is now said in the report and on the UEG.
         owner_accrual: Dict[str, Any] = {"accrued": False, "amount_wst": splits.get("owner", 0.0)}
+        # W505 (FU-036) — REPAIR FIRST. A cycle whose accrual failed left the Owner permanently short: the
+        # entity's ledger showed the owner stage distributed and the owner-payments store never received it,
+        # and nothing re-applied the difference. Every cycle now applies what earlier cycles could not, before
+        # accruing its own share, so a working cycle repairs a broken one.
+        try:
+            from .owner_payments import reconcile_missed as _reconcile_owner
+            _rec = _reconcile_owner(self.vsb_id)
+            if _rec.get("applied") or _rec.get("already_applied") or _rec.get("still_pending"):
+                owner_accrual["reconciled_missed"] = _rec
+        except Exception as _rec_err:
+            owner_accrual["reconcile_failed"] = f"{type(_rec_err).__name__}: {str(_rec_err)[:160]}"
         if splits.get("owner", 0.0) > 0:
             try:
                 from .owner_payments import accrue as _accrue_owner
@@ -217,6 +239,21 @@ class EconomicMetabolism:
                 owner_accrual["accrued"] = True
             except Exception as _acc_err:
                 owner_accrual["error"] = f"{type(_acc_err).__name__}: {str(_acc_err)[:160]}"
+                # W505 (FU-036) — a DURABLE CLAIM on the amount, so the next cycle or heartbeat can apply it.
+                # Saying so (W465) was the right first step; it left the Owner short for ever.
+                try:
+                    from .owner_payments import record_missed as _park_owner
+                    _parked = _park_owner(self.vsb_id, splits["owner"], self.owner,
+                                          "cycle owner share (§4 waterfall)", owner_accrual["error"])
+                    if isinstance(_parked, dict) and _parked.get("parked") is False:
+                        owner_accrual["recoverable"] = False
+                        owner_accrual["not_recoverable_because"] = _parked.get("why")
+                    else:
+                        owner_accrual["recoverable"] = True
+                        owner_accrual["pending_accrual_id"] = (_parked or {}).get("id")
+                except Exception as _park_err:
+                    owner_accrual["recoverable"] = False
+                    owner_accrual["not_recoverable_because"] = f"{type(_park_err).__name__}: {_park_err}"
                 try:
                     from agentic_core.gaas.v5 import UEGLogger
                     UEGLogger().log({"type": "economy.owner_accrual_failed", "vsb_id": self.vsb_id,

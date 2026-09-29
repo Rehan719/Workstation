@@ -45,6 +45,32 @@ def _sections(prompt: str) -> List[str]:
     return out[:14]
 
 
+# W505 (P2.1) — CARRIED CONTEXT IS NOT THE SUBJECT. A stage's output becomes the next stage's input, so
+# this engine's own framing came back as the thing it was asked about: a live cascade produced
+# "Structured go-to-market frame for: Your officer's plan: _[Workstation native structured engine — owned,
+# no external dependency]_ · _Acting as: Chief Legal Officer._ · ## Intent & Values …" at level 3. Three
+# shapes do it, and all three are emitted by this platform's own code (the marker below; the `lead` line in
+# generate(); and orchestrator.py:565/854, which append "## {role} output" to a carried task):
+_CARRIED_MARKER_RE = re.compile(r"^[ \t]*" + re.escape(_MARKER) + r"[ \t]*$", re.M)
+_CARRIED_ACTING_RE = re.compile(r"^[ \t]*_Acting as:.*?_[ \t]*$", re.M)
+# a "<role> output" header, not any header ending in the word output: a role name then the bare word
+_CARRIED_ROLE_OUTPUT_RE = re.compile(r"^[ \t]*##[ \t]+[A-Za-z][A-Za-z0-9 &/\-]{1,60}[ \t]+output[ \t]*$",
+                                     re.M | re.I)
+
+
+def _strip_carried(prompt: str) -> str:
+    """Remove this engine's OWN framing from a prompt before anything is read out of it.
+
+    Applied once, to the whole prompt, before `_subject`/`_keywords`/`_role`/`_content`/`_phrases`/
+    `_sections` — one point rather than six, so a new extractor cannot forget it. It removes only shapes
+    this platform emits; a user who writes "## Design output" in their own brief loses that header, which
+    is the accepted cost of not letting a previous stage's header choose this stage's sections."""
+    out = _CARRIED_MARKER_RE.sub("", prompt)
+    out = _CARRIED_ACTING_RE.sub("", out)
+    out = _CARRIED_ROLE_OUTPUT_RE.sub("", out)
+    return re.sub(r"\n{3,}", "\n\n", out).strip()
+
+
 def _keywords(prompt: str, n: int = 12) -> List[str]:
     words = re.findall(r"[A-Za-z][A-Za-z\-]{3,}", prompt.lower())
     freq: dict[str, int] = {}
@@ -98,8 +124,18 @@ def _subject(prompt: str) -> str:
     §3A (W336) — the label set covers the labels the domain routers ACTUALLY use, so the floor's
     output grounds in the user's own input instead of the prompt scaffolding (the audit found
     Offering-1 floor outputs that never contained the user's input at all)."""
-    field = _field(prompt, "User", "Problem", "Challenge", "Objective", "Concept", "Topic",
-                   "Research question", "Question", "Task / question", "Hypothesis",
+    # W505 (P2.1) — "Task" and "Mission" join the subject labels. "Objective" and "Challenge" were
+    # already here; bare "Task" was not, and only "Task / question" was, which cannot match the "Task:"
+    # that orchestrator.py:854 emits for every delegated instruction. It is listed AFTER "Task / question"
+    # so the more specific label still wins where both could apply.
+    #   "Mission" was the MEASURED cause of a live cascade's level 3 still carrying its predecessor's text
+    # after the stripping above fixed level 2: swarm.py builds the CoE prompt with the user's subject under
+    # `Mission:`, this list did not contain it, so `_subject` fell through to "the longest sentence" and the
+    # longest sentence was inside the carried `Your officer's plan: …` blob. Note that `_CONTENT_LABELS`
+    # below DOES list "Mission" - the two lists disagreed about whether a mission is substantive, and the
+    # content list was the right one.
+    field = _field(prompt, "User", "Problem", "Challenge", "Objective", "Mission", "Concept", "Topic",
+                   "Research question", "Question", "Task / question", "Task", "Hypothesis",
                    "Target role", "Current situation", "Concern", "Subject", "Search query")
     if len(field) > 8:
         return field[:220]
@@ -136,6 +172,11 @@ class NativeReasoningEngine:
     is_model = False  # honest: this is structured reasoning, not an LLM
 
     def generate(self, prompt: str, agent: str = "native") -> str:
+        # W505 (P2.1) — strip this engine's own framing ONCE, before anything is read out of the prompt.
+        # A stage's output is the next stage's input, so without this the marker line, the "_Acting as:"
+        # lead and a carried "## <role> output" header became the subject, the keywords and the section
+        # list of the stage that followed.
+        prompt = _strip_carried(prompt)
         subject = _subject(prompt)
         domain = _field(prompt, "Domain") or "the stated domain"
         role = _role(prompt)

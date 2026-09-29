@@ -680,7 +680,10 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
 
     # side-effect-free validation FIRST → clean HTTP codes, nothing posted on refusal
     try:
-        validate_transfer(req.from_vsb, req.to_vsb, req.amount)
+        # W505 (FU-286) — OFF THE LOOP. This reads the sender ledger and the living roster through the strict
+        # read, whose retries sleep up to 0.50s on a lasting sharing violation. to_thread re-raises, so every
+        # handler below still answers on the same exception.
+        await asyncio.to_thread(validate_transfer, req.from_vsb, req.to_vsb, req.amount)
     except SenderLedgerUnavailable as e:
         # W468 (register FU-041) — an unreadable sender ledger read as empty books and answered 400 "insufficient funds"
         why = str(e).replace("; nothing was debited", "")
@@ -851,7 +854,8 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
 
     async def _action():
         posted["started"] = True
-        out = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+        out = await asyncio.to_thread(record_transfer, req.from_vsb, req.to_vsb, req.amount, req.memo,
+                                                transfer_id=_xfer_id)
         posted["done"], posted["out"] = True, out
         _mark_action_ran(consumed, req.from_vsb, "transfer posted inside the gate")
         return out
@@ -893,7 +897,8 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
                 # receiver queue's lock timed out after the debit). That is not a gate outage: the idempotent replay
                 # completes it (repairing the receiver leg), and the record says what happened — the post-execution
                 # check and checkpoint did not run for the retry.
-                transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+                transfer = await asyncio.to_thread(record_transfer, req.from_vsb, req.to_vsb, req.amount, req.memo,
+                                                transfer_id=_xfer_id)
                 posted["done"], posted["out"] = True, transfer
                 _mark_action_ran(consumed, req.from_vsb, "transfer posted on an idempotent retry")
                 _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
@@ -902,7 +907,8 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
                                   "outside the gate's post-execution check and checkpoint (logged loudly)."})
                 governance = {"status": "allowed_action_retried", "error": str(e)[:160]}
             else:
-                transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+                transfer = await asyncio.to_thread(record_transfer, req.from_vsb, req.to_vsb, req.amount, req.memo,
+                                                transfer_id=_xfer_id)
                 posted["done"], posted["out"] = True, transfer
                 _mark_action_ran(consumed, req.from_vsb, "transfer posted with the gate unavailable")
                 _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
@@ -1536,7 +1542,10 @@ async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_
     entity_type, et_source = _resolve_entity_type(req.vsb_id, req.entity_type)
     m = EconomicMetabolism(req.vsb_id, entity_type, req.owner)
     try:
-        result = m.ledger.close_period()
+        # W505 (FU-286) — OFF THE LOOP. close_period is a read-modify-write under store_lock, whose bound is
+        # 10s (and whose in-process RLock acquire is unbounded); measured, a 2s hold by another writer stalled
+        # the whole worker for 1.97s. to_thread re-raises here, so every handler below still answers.
+        result = await asyncio.to_thread(m.ledger.close_period)
     except LedgerUnavailable as e:
         # W468 (register FU-041) — an unreadable ledger was closed as empty books and saved over the real ones (200)
         raise HTTPException(status_code=503, detail=(

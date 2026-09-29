@@ -13,7 +13,8 @@ from agentic_core.ai.gateway import gateway
 
 
 async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
-                  owner_id: str | None = None, augment: bool = False) -> Tuple[str, Dict[str, Any]]:
+                  owner_id: str | None = None, augment: bool = False,
+                  realm: str = "") -> Tuple[str, Dict[str, Any]]:
     """Return (text, provenance) where provenance = {posture, served_by, is_external}.
 
     Every call is recorded into the operational-excellence learning loop (best-effort, non-critical)
@@ -25,6 +26,14 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     default on all four entry points, so this is belt-and-braces rather than the only thing stopping
     it; when a caller opts into recall it is tenant-scoped by `owner_id`. Domain routers thread the
     authenticated user's id."""
+    # W505 (P2.5) — THE REALM AXIS REACHES OFFERING-1. taxonomy.py states that "realm changes the DEPTH
+    # and REGISTER of what is generated", and `realm_directive` reached deliverables, ceo_generate, genesis
+    # and projects — never the six domain tools, which are the surfaces a user actually types into. This is
+    # the seam every one of them calls, so the directive is applied once here. An empty realm changes
+    # nothing, so a caller that has no realm to send behaves exactly as before.
+    if str(realm or "").strip():
+        from agentic_core.taxonomy import normalise_realm, realm_directive
+        prompt = f"{realm_directive(normalise_realm(realm))}\n\n{prompt}"
     t0 = time.monotonic()
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
                                    owner_id=owner_id, augment=augment)

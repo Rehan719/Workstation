@@ -17,6 +17,11 @@ const DOMAINS = [...CANON_DOMAINS];
 // §9 — System Settings: real preferences (display name, defaults, adaptive UI) that personalise the
 // experience. Signed in, they are saved to the user's own server-side workspace and follow them
 // across devices; in auth-off single-user mode they live in this browser only.
+// W505 (P2.3 / FU-168) — the SAME expression DictateButton uses to decide whether it can run at all.
+// Read here rather than assumed, so Settings cannot promise a capability the browser does not have.
+const dictationAvailable = typeof window !== 'undefined'
+  && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
 export const Settings: React.FC = () => {
   const [prefs, setLocal] = useState<UserPrefs>(() => getPrefs());
   const [saved, setSaved] = useState(false);
@@ -107,7 +112,24 @@ export const Settings: React.FC = () => {
               text said interface translation "depends on the external AI accelerant", which was
               inaccurate: Arabic, French, Spanish and Urdu are translated in-house today. */}
           <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed">
-            <span className="text-emerald-400 font-bold">Voice dictation works in your language.</span>{' '}
+            {/* W505 (P2.3 deliverable 5 / FU-168) — this said, in emerald, "Voice dictation works in your
+                language." unconditionally, for every language. The platform sets `rec.lang` on the
+                BROWSER's Web Speech API and nothing more; whether recognition exists at all is a property
+                of the browser (see dictationAvailable above, which reads the same constructor
+                DictateButton needs), and which languages it supports is the browser and OS's business —
+                not measured here, and not ours to promise. The identifier is deliberately not repeated in
+                this comment: a guard requiring a token can be satisfied by a comment naming it. */}
+            {dictationAvailable ? (
+              <span className="text-slate-400">
+                Voice dictation is <span className="font-bold">sent to your browser</span> in your chosen
+                language. Whether your browser recognises it is its own capability, which this platform
+                cannot check.{' '}
+              </span>
+            ) : (
+              <span className="text-amber-400 font-bold">
+                Your browser does not provide speech recognition, so voice dictation is unavailable here.{' '}
+              </span>
+            )}
             {(() => {
               const cov = coverageFor(prefs.language);
               if (cov.hasDict) return (

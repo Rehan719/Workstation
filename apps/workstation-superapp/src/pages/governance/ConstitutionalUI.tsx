@@ -309,7 +309,15 @@ export const ConstitutionalUI: React.FC = () => {
                              {ueg.map((node: any) => {
                                const d = node?.data ?? {};
                                const kind = d.type ?? 'event';
-                               const tone = kind === 'circuit_breaker_trip' || kind === 'policy_gate_halt' ? 'text-vital' : 'text-aura';
+                               // W505 (FU-032) — read the backend's CLASSIFICATION instead of naming two event
+                               // types. Keying the tone to 'circuit_breaker_trip' and 'policy_gate_halt' meant a
+                               // compliance failure and a governance bypass rendered like a routine append, while
+                               // an Owner's recorded refusal rendered as adverse. A decision is neither.
+                               const nat = node?.flag?.nature ?? (node?.flag?.level === 'flagged' ? 'fault'
+                                 : node?.flag?.level === 'review' ? 'hold' : 'routine');
+                               const tone = nat === 'fault' ? 'text-vital' : nat === 'hold' ? 'text-highlight'
+                                 : nat === 'decision' ? 'text-aura' : 'text-slate-400';
+                               const why = typeof node?.flag?.why === 'string' ? node.flag.why : null;
                                return (
                                  <div key={node.id} className="p-5 rounded-2xl bg-slate-950 border border-slate-900 flex items-start justify-between gap-4">
                                     <div className="min-w-0">
@@ -317,6 +325,8 @@ export const ConstitutionalUI: React.FC = () => {
                                        <p className="text-xs text-slate-400 font-bold mt-1 truncate">
                                           {d.action ?? d.reason ?? d.checkpoint_id ?? node.id}
                                        </p>
+                                       {/* the classifier's own reason, including "a decision, not a fault" */}
+                                       {why && <p className={`text-[10px] font-bold mt-1 ${tone}`}>{why}</p>}
                                        <p className="text-[8px] font-mono text-slate-700 mt-1 break-all">{String(node.hash ?? '').slice(0, 24)}…</p>
                                     </div>
                                     <Activity size={14} className="text-slate-700 shrink-0 mt-1" />

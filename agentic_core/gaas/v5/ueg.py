@@ -72,6 +72,32 @@ _REVIEW_TYPES = frozenset({"economy.materiality_hold_filed", "marketplace.listin
 _ADVERSE_TOKENS = ("halt", "trip", "failure", "failed", "bypass", "blocked", "breach", "refused",
                    "denied", "violation", "rejected", "error")
 
+# W505 (FU-032) — events that are somebody's DECISION, not a fault. They are adverse to the change they
+# concern and must surface; they are not adverse to the platform and must never be counted as faults or
+# rendered as breakage. A principal declining something is governance working, not governance failing.
+_DECISION_TYPES = frozenset({
+    "cca.change_rejected", "board.change_ratification_refused",
+    # W505 (corrected) — `cca.change_retired` is NOT here. I added it, and it was scope creep: FU-032 is
+    # about a PERSON declining something being rendered as a fault. A retirement is the economy tidying a
+    # hold that can never be released (it names no receiver) — nobody decided anything, and the suite
+    # pins it as routine. A decision type must name a decision somebody took.
+})
+
+
+def event_nature(data: Dict[str, Any], level: str) -> str:
+    """Whether an event is a DECISION somebody took, a FAULT, a HOLD, or ROUTINE.
+
+    Separate from `level`, which stays what its three readers already mean by it. A fault and a decision can
+    both be "flagged" — they need the same visibility and emphatically not the same colour or tally.
+    """
+    if str((data or {}).get("type") or "") in _DECISION_TYPES:
+        return "decision"
+    if level == "flagged":
+        return "fault"
+    if level == "review":
+        return "hold"
+    return "routine"
+
 
 def classify_event(data: Dict[str, Any]) -> Dict[str, Any]:
     """W460 (P1.12) — what a UEG event MEANS for the audit view: "flagged" (a refusal, failure, bypass or
@@ -82,24 +108,33 @@ def classify_event(data: Dict[str, Any]) -> Dict[str, Any]:
     data = data or {}
     t = str(data.get("type") or "")
     tl = t.lower()
+    if t in _DECISION_TYPES:
+        # W505 (FU-032) — the reason is the decision, stated: the reader needs to know a person declined
+        # this, not that something broke. It stays non-routine (`flagged`) so it surfaces in the same place.
+        _who = data.get("by") or data.get("principal") or data.get("decided_by")
+        return {"level": "flagged", "nature": "decision",
+                "why": (f"a decision, not a fault: {t}" + (f" (by {_who})" if _who else "")),
+                "decided_by": _who}
     if t == "compliance.screen":
         overall = str(data.get("overall") or "").lower()
         if overall == "fail":
-            return {"level": "flagged", "why": "§11 compliance screen failed"}
+            return {"level": "flagged", "nature": "fault", "why": "§11 compliance screen failed"}
         if overall == "pass":
-            return {"level": "recorded", "why": None}
+            return {"level": "recorded", "nature": "routine", "why": None}
         # review, error, or a screen that never produced a verdict — never a clean "recorded"
-        return {"level": "review", "why": f"§11 compliance screen {overall or 'produced no verdict'}"}
+        return {"level": "review", "nature": "hold",
+                "why": f"§11 compliance screen {overall or 'produced no verdict'}"}
     if t == "cca.change_approved" and data.get("awaiting_board_ratification"):
         # W464 (FU-012) — approved by a review, not yet ratified: nothing may act on it, so it is not a clean
         # "recorded" approval. Classification is per node: the Board's own board.change_ratified node follows it.
-        return {"level": "review", "why": "approved by a review — awaiting Board ratification"}
+        return {"level": "review", "nature": "hold",
+                "why": "approved by a review — awaiting Board ratification"}
     if (t in _ADVERSE_TYPES or data.get("decision") == "deny" or data.get("status") in ("denied", "blocked")
             or any(tok in tl for tok in _ADVERSE_TOKENS)):
-        return {"level": "flagged", "why": t or "adverse decision"}
+        return {"level": "flagged", "nature": "fault", "why": t or "adverse decision"}
     if t in _REVIEW_TYPES or "hold" in tl:
-        return {"level": "review", "why": t}
-    return {"level": "recorded", "why": None}
+        return {"level": "review", "nature": "hold", "why": t}
+    return {"level": "recorded", "nature": "routine", "why": None}
 
 
 class UEGLogger:

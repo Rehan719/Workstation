@@ -133,6 +133,82 @@ def deregister(vsb_id: str) -> bool:
     return True
 
 
+# W505 (FU-287) — how long a visit claim stands before it is treated as abandoned. A visit is one governed
+# cycle: seconds of work, with the store lock's own 10s bound inside it. Two minutes is generous enough that a
+# slow visit is never cut off and short enough that a killed process does not strand the entity.
+_VISIT_TTL = 120.0
+
+# W505 (FU-287, second pass) — visits that FINISHED in this process, whether or not their release could be
+# written. `_claim_visit` takes the claim through store_lock + _save directly while `_release_visit` goes through
+# _update_entry, so a roster write failure can leave a claim on the row for a visit that is long over: measured
+# by test_w503h, where one forced write failure locked the entity out of every visit for the full TTL and the
+# W503 hold-clearing therefore never ran. A running visit's id is never in this set, so the anti-interleaving
+# guarantee is unchanged. Bounded so a long-lived process cannot grow it without limit.
+_FINISHED_VISITS: "list[str]" = []
+_FINISHED_CAP = 512
+
+
+def _claim_visit(vsb_id: str, visit_id: str) -> Dict[str, Any]:
+    """Claim an entity for the duration of one visit. Returns {claimed, holder, broke_stale}.
+
+    W505 (FU-287) — without this, two visits of ONE entity interleave: one writes `last_hold` while the other
+    pops it, so the row's outcome fields describe whichever finished last while `operating_cycles` counts
+    both. With it there is exactly one writer of those fields per visit, which is the whole point: the row and
+    the counter then describe the same visit.
+    """
+    from agentic_core.config import store_lock
+    now = time.time()
+    with store_lock(_STORE):
+        d = _load()
+        entry = d.get(vsb_id)
+        if not entry:
+            return {"claimed": False, "holder": None, "missing": True}
+        held = entry.get("visit_claim") if isinstance(entry.get("visit_claim"), dict) else None
+        broke_stale = None
+        if held and held.get("visit_id") != visit_id:
+            age = now - float(held.get("at") or 0)
+            if held.get("visit_id") in _FINISHED_VISITS:
+                # the holder FINISHED and only its release failed to write. Refusing here would lock the
+                # entity out for the whole TTL over a bookkeeping failure, which is what test_w503h measured.
+                broke_stale = {"visit_id": held.get("visit_id"), "age_s": round(age, 1),
+                               "why": "the visit finished; its release could not be written"}
+                logger.warning("living_vsbs: overriding a claim on %s whose visit %s finished but could not "
+                               "release \u2014 the roster write failed, so its bookkeeping did not land",
+                               vsb_id, held.get("visit_id"))
+            elif age <= _VISIT_TTL:
+                return {"claimed": False, "holder": held.get("visit_id"), "held_for_s": round(age, 1)}
+            # a holder from ANOTHER process that died: the TTL is the only recourse there, because this
+            # process cannot know whether that visit finished
+            broke_stale = {"visit_id": held.get("visit_id"), "age_s": round(age, 1),
+                           "why": f"no release seen for more than {_VISIT_TTL:.0f}s"}
+            logger.warning("living_vsbs: breaking a visit claim on %s abandoned %.1fs ago by %s",
+                           vsb_id, age, held.get("visit_id"))
+        entry["visit_claim"] = {"visit_id": visit_id, "at": now}
+        d[vsb_id] = entry
+        _save(d)
+        return {"claimed": True, "holder": visit_id, "broke_stale": broke_stale}
+
+
+def _release_visit(vsb_id: str, visit_id: str) -> None:
+    """Drop the claim, but ONLY this visit's. Releasing another visit's claim would reintroduce the overlap
+    this exists to prevent (the case where a stale claim was broken while this visit still believed it held
+    one). Never raises: a visit's outcome must not be lost to its own cleanup."""
+    # recorded FIRST, and unconditionally: this visit is over whichever way the write below goes, and a
+    # later claim must not be blocked by a claim whose holder has finished.
+    _FINISHED_VISITS.append(visit_id)
+    del _FINISHED_VISITS[:-_FINISHED_CAP]
+
+    def _drop(e: Dict[str, Any]) -> None:
+        c = e.get("visit_claim")
+        if isinstance(c, dict) and c.get("visit_id") == visit_id:
+            e.pop("visit_claim", None)
+        e["last_visit_id"] = visit_id
+    try:
+        _update_entry(vsb_id, _drop)
+    except Exception as exc:
+        logger.warning("living_vsbs: the visit claim on %s could not be released: %s", vsb_id, exc)
+
+
 def _update_entry(vsb_id: str, mutate) -> Optional[Dict[str, Any]]:
     """W463 (sixth refutation) — operate_vsb held a roster snapshot across a whole governed cycle and wrote it back,
     erasing registrations made meanwhile and undoing deregistrations. Its bookkeeping now re-reads the roster under
@@ -510,6 +586,34 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     target = d.get(vsb_id)
     if not target:
         return None
+    # W505 (FU-287) — ONE visit at a time per entity. Everything below writes this entity's outcome fields
+    # (last_hold, last_error, last_operated, operating_cycles), and two visits interleaving left the row
+    # describing one of them while the counter reflected both.
+    import uuid as _uuid
+    _visit = _uuid.uuid4().hex[:12]
+    _claim = _claim_visit(vsb_id, _visit)
+    if _claim.get("missing"):
+        return None
+    if not _claim.get("claimed"):
+        return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
+                "held": "visit_in_progress", "outcome": "refused",
+                "held_by_visit": _claim.get("holder"), "held_for_s": _claim.get("held_for_s"),
+                "note": ("another visit of this entity is in progress, so this one did nothing rather than "
+                         "interleave with it — nothing was posted and no counter moved. Visit it again.")}
+    try:
+        return _operate_vsb_claimed(vsb_id, target, _visit, _claim)
+    finally:
+        _release_visit(vsb_id, _visit)
+
+
+def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
+                         _claim: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """The visit itself, with this entity claimed for its duration (see `operate_vsb`)."""
+    if _claim.get("broke_stale"):
+        # a previous visit's claim was abandoned and this one overrode it. Said, not silent: a reader of the
+        # row needs to know an earlier visit of this entity stopped without finishing.
+        logger.warning("living_vsbs: %s is being visited after an abandoned visit %s", vsb_id,
+                       _claim["broke_stale"].get("visit_id"))
     screen = _latest_screen(vsb_id)
     if screen == HISTORY_UNREADABLE:
         # W472 (FU-049) — a history that cannot be read whole means the standing is UNKNOWN: held, said, no cycle

@@ -260,12 +260,17 @@ class SynthesiseRequest(BaseModel):
 
 
 @router.post("/synthesise")
-async def synthesise(req: SynthesiseRequest) -> StreamingResponse:
+async def synthesise(req: SynthesiseRequest,
+                     user: dict | None = Depends(get_current_user)) -> StreamingResponse:
     """
     Full concept-to-commercialisation synthesis cascade (SSE streaming).
     Runs 9 AI stages, streaming results as they complete.
     """
     solution_name = req.solution_name or f"{req.domain.title()} Solution"
+    # W505 (P2.6) — the run is recorded against the PRINCIPAL where there is one, as /vsb/spawn already
+    # does. This route had no dependency at all, so nothing tied a synthesis to whoever asked for it.
+    from agentic_core.auth.core import request_owner_id as _roi
+    owner_id = _roi(user, "default")
     synthesis_id = uuid.uuid4().hex[:12]
     start = time.time()
     results: dict[str, str] = {}
@@ -296,6 +301,10 @@ async def synthesise(req: SynthesiseRequest) -> StreamingResponse:
         entity_id = f"vsb-{synthesis_id[:8]}"
         entity = {
             "entity_id": entity_id,
+            # W505 (P2.6) - a studio-born VSB had NO owner_id, while a /vsb/spawn-born one has had one since
+            # §17.5. Every owner check on a VSB reads this field, so an unowned entity was reachable by
+            # anyone once auth was on - including by the cascade scope check added this round.
+            "owner_id": owner_id,
             "synthesis_id": synthesis_id,
             "challenge": req.challenge,
             "solution_name": solution_name,
@@ -309,7 +318,7 @@ async def synthesise(req: SynthesiseRequest) -> StreamingResponse:
         # §3.3 invariant — the cascade-born VSB also carries Board + Chief + living economy + plan.
         try:
             from agentic_core.api.vsb import enrich_vsb_entity
-            enrich_vsb_entity(entity, problem=req.challenge, domain=req.domain)
+            enrich_vsb_entity(entity, owner_id=owner_id, problem=req.challenge, domain=req.domain)
         except Exception:
             pass
         _save_vsb(entity)

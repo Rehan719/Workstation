@@ -35,7 +35,7 @@ from typing import Any, Dict, List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from agentic_core.auth.core import auth_enabled, get_current_user
+from agentic_core.auth.core import auth_enabled, get_current_user, request_owner_id
 
 from agentic_core.ai.gateway import gateway
 
@@ -286,6 +286,28 @@ async def board_charter():
     }
 
 
+def _ratifying_board(vsb_id: str | None) -> Dict[str, Any]:
+    """W505 (FU-029) — which board ratifies a change: the VSB's own when it carries a vsb_id, else the apex.
+
+    The Chief of a VSB's board is the standing charter of THAT VSB's owner (a role, not a trained model),
+    which is the whole reason a VSB-scoped change must not be attributed to the workstation apex board.
+    """
+    if not vsb_id:
+        return {"scope": "workstation", "tier": "apex",
+                "represents_owner": _OWNER["name"], "vsb_id": None}
+    owner = vsb_id
+    try:
+        from agentic_core.economy.living_vsbs import _load as _vsb_roster
+        _v = (_vsb_roster() or {}).get(vsb_id) or {}
+        owner = _v.get("owner_id") or _v.get("owner") or vsb_id
+    except Exception as exc:
+        # the VSB's own record could not be read; say whose board this is as far as can be told rather
+        # than falling through to the apex, which would be the misattribution this row is about.
+        return {"scope": vsb_id, "tier": "vsb", "represents_owner": None, "vsb_id": vsb_id,
+                "owner_unresolved_because": f"{type(exc).__name__}: {exc}"}
+    return {"scope": vsb_id, "tier": "vsb", "represents_owner": owner, "vsb_id": vsb_id}
+
+
 class RatificationDecision(BaseModel):
     decision: Literal["ratify", "refuse"]
     notes: str = ""
@@ -300,9 +322,18 @@ async def ratification_queue():
     ratified yet (read from the full Change Control records, uncapped)."""
     from agentic_core.api.change_control import pending_ratifications
     rows = pending_ratifications()
+    # W505 (FU-029) — WHICH BOARD. One global queue whose rule sentence said "the Board" read as the
+    # workstation apex board deciding a change that belongs to a VSB. A change carrying a vsb_id is
+    # ratified by THAT VSB's own board, whose Chief is that VSB owner's charter, and the row says so.
+    for _r in rows:
+        _r["ratifying_board"] = _ratifying_board(_r.get("vsb_id"))
+    _vsb_scoped = sum(1 for _r in rows if _r.get("vsb_id"))
     return {"pending": rows, "total": len(rows),
-            "rule": ("A HIGH change approved by a review waits here; the Board ratifies or refuses it on the Owner's "
-                     "direction. Nothing implements it until then.")}
+            "apex_scoped": len(rows) - _vsb_scoped, "vsb_scoped": _vsb_scoped,
+            "rule": ("A HIGH change approved by a review waits here; the board named on the row ratifies or refuses "
+                     "it on that owner's direction. Nothing implements it until then."),
+            "routing": ("A change carrying a vsb_id belongs to that VSB's own board, not to the workstation apex "
+                        "board. Both queue here; `ratifying_board` on each row says which decides it.")}
 
 
 @router.post("/ratifications/{cca_id}")
@@ -318,7 +349,13 @@ async def decide_ratification(cca_id: str, req: RatificationDecision,
     if not req.on_owner_direction:
         raise HTTPException(status_code=403, detail=(
             "A ratification is the Owner's decision, recorded by the Board: resend with on_owner_direction: true."))
-    return cca.ratify_change(cca_id, req.decision, req.notes, cca._actor(user), cca._verified(user))
+    _out = cca.ratify_change(cca_id, req.decision, req.notes, cca._actor(user), cca._verified(user))
+    # W505 (FU-029) — the decision records WHICH board recorded it, so a VSB-scoped ratification is never
+    # read back as the apex board's.
+    if isinstance(_out, dict):
+        _rec = _out.get("change") if isinstance(_out.get("change"), dict) else _out
+        _out["ratifying_board"] = _ratifying_board((_rec or {}).get("vsb_id"))
+    return _out
 
 
 class ChiefInstruction(BaseModel):
@@ -329,7 +366,7 @@ class ChiefInstruction(BaseModel):
 
 
 @router.post("/chief/instruct")
-async def chief_instruct(req: ChiefInstruction):
+async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_current_user)):
     """
     The Owner instructs their Chief digital twin. The Chief interprets the instruction
     faithfully (representing the Owner), issues a board-level directive, and delegates a
@@ -367,7 +404,17 @@ async def chief_instruct(req: ChiefInstruction):
         _res = await _gov.intercept({"intent": "board_chief_instruct", "owner": req.owner,
                                      "scope": req.scope}, _directive_action)
         directive = _res.output if isinstance(_res.output, str) else await _directive_action()
-        governance = {"status": _res.status, "checkpoint": _res.checkpoint_id}
+        # W505 (FU-195) — WHAT IT SCREENED, carried with the verdict. The interceptor screens the declared
+        # intent plus the owner and scope labels; it never reads the directive's text, so "allowed" is not
+        # a clearance over the directive and must not be rendered as one.
+        governance = {"status": _res.status, "checkpoint": _res.checkpoint_id,
+                      "screened": "the declared intent, owner and scope labels of this request",
+                      "covers_directive_content": False,
+                      "basis": ("the gaas.v5 pre-gate compares the DECLARED INTENT against a fixed list of "
+                                "prohibited intents and checks whether a declared human approval is "
+                                "outstanding. It does not read the directive's prose. A status of "
+                                "'allowed' therefore means nothing on that list matched \u2014 it is not a "
+                                "judgement that the directive is constitutional.")}
     except Exception as _e:
         directive = await _directive_action()
         try:
@@ -432,9 +479,17 @@ async def chief_instruct(req: ChiefInstruction):
                 f"the directive's objectives were NOT added to the '{req.scope}' business plan "
                 f"({type(e).__name__}: {e}); the directive itself is recorded.")
 
+    # W505 (FU-029) — the owner is STAMPED, not claimed. With auth off this is the caller's own label
+    # (single-user back-compat); with auth on it is the authenticated username, server-side, so a client
+    # cannot issue a directive in the Owner's name and have it written into the Owner's business plan.
+    _owner = request_owner_id(user, req.owner)
     record = {
         "directive_id": directive_id,
-        "owner": req.owner,
+        "owner": _owner,
+        "owner_source": ("the authenticated principal (a client-supplied owner is not trusted while auth "
+                         "is enabled)" if auth_enabled() else
+                         "the caller's own label \u2014 single-user mode has no principal to stamp"),
+        "owner_as_requested": req.owner,
         "instruction": req.instruction,
         "chief_directive": directive,
         "ceo_action_plan": action_plan,
@@ -550,7 +605,7 @@ def _relevant_directors(topic: str, domain: str, k: int = 3) -> List[Dict[str, s
 
 
 @router.post("/directive")
-async def board_directive(req: BoardDirective):
+async def board_directive(req: BoardDirective, user: dict | None = Depends(get_current_user)):
     """§5 (W279) — the board deliberates as SPECIALISTS: the relevant directors are selected
     deterministically, EACH contributes through its own AI call GROUNDED in live readings of the
     systems it owns, and the Chief chairs a synthesis over the directors' ACTUAL inputs — no more

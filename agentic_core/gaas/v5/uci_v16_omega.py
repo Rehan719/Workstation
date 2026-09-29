@@ -40,6 +40,13 @@ class InterceptionResult:
     latency_ms: float = 0.0
     node: Optional[str] = None
     ueg_logged: Optional[bool] = None   # W472 (FU-054) — whether this decision reached the constitutional ledger
+    article: Optional[str] = None       # W505 (FU-007) — WHICH constitutional article refused
+    violations: Optional[list] = None   # W505 (FU-006) — the post gate's ACTUAL findings. They were
+    #                                     chained to the ledger and dropped from the result, so a caller
+    #                                     could only report the fixed `warning` sentence.
+    escalation: bool = False            # W505 (FU-007) — True when the refusal is an outstanding human
+    #                                     approval (article 7.3), not a breach. `status` stays "blocked"
+    #                                     either way, so a reader that halts on it keeps halting.
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self.__dict__)
@@ -95,8 +102,19 @@ class UnifiedConstitutionalInterceptorV16Omega:
         pre = self.policy_gate.validate(action_type, context)
         if not pre["allowed"]:
             logged = self._ueg(lambda: self.ueg.log_policy_halt(self.node_id, action_type, pre["reason"]))
-            self.circuit_breaker.record_event(success=False, is_violation=True)
-            return InterceptionResult(status="blocked", reason=pre["reason"], node=self.node_id, ueg_logged=logged)
+            # W505 (FU-007) — WHICH ARTICLE refused decides what this is. An action waiting for a human
+            # approval it declared it needs is an escalation working, not a constitutional violation; it used
+            # to be recorded as one, and the breaker then halted every later action on this node until
+            # somebody reset it by hand. A prohibited INTENT (11.1) is a real breach and still trips first.
+            _escalation = str(pre.get("article") or "") == "7.3"
+            self.circuit_breaker.record_event(success=False, is_violation=not _escalation,
+                                              severe=not _escalation, escalation=_escalation)
+            # The STATUS stays "blocked". Three readers already depend on its four values - the economy
+            # cycle halts on ("blocked", "halted"), and letting an escalation past that check would move
+            # money while an approval was still outstanding. The distinction is ADDED, not substituted.
+            return InterceptionResult(status="blocked", reason=pre["reason"], node=self.node_id,
+                                      ueg_logged=logged, article=pre.get("article"),
+                                      escalation=_escalation)
 
         # 2. Execute
         start = time.time()
@@ -119,6 +137,7 @@ class UnifiedConstitutionalInterceptorV16Omega:
                 "violations": post["violations"]}))
             return InterceptionResult(status="partial", output=output,
                                       warning="Output violates constitutional rules",
+                                      violations=list(post.get("violations") or []),
                                       latency_ms=latency, node=self.node_id, ueg_logged=logged)
 
         # 4. Checkpoint

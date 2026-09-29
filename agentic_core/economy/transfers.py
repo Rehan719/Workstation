@@ -163,7 +163,24 @@ def validate_transfer(from_vsb: str, to_vsb: str, amount: float) -> float:
         # W468 (register FU-041) — an unreadable ledger read as empty books, so this answered "insufficient funds:
         # 0.0" (a 400) for an entity whose funds are unknown
         raise SenderLedgerUnavailable(f"{sender.load_error}; nothing was debited")
-    reserve = round((sender._data.get("accounts") or {}).get("reserve_fund", 0.0), 2)
+    # W505 (FU-065) — A LEDGER THAT PREDATES DOUBLE ENTRY IS NOT AN EMPTY FUND. `accounts` is the
+    # double-entry view, added in W256. A ledger written before it carries `entries` and `balances` and no
+    # `accounts` at all, and the strict read accepts that (it refuses entries without BALANCES, not
+    # without accounts). This then read reserve_fund as 0.0 and refused every transfer with "reserve fund
+    # holds 0.0 WST" — a false statement about the entity's money, made while the legacy view showed
+    # reserves. Migrating the books here would mean synthesising postings for history nobody recorded,
+    # which in a money ledger is the worse defect, so the cause is SAID and the repair is named.
+    _accounts = sender._data.get("accounts")
+    if not isinstance(_accounts, dict) or "reserve_fund" not in _accounts:
+        _legacy = round((sender._data.get("balances") or {}).get("reserves", 0.0), 2)
+        raise SenderLedgerUnavailable(
+            f"{from_vsb}'s ledger predates double-entry bookkeeping: it has no `accounts` view, so the "
+            f"reserve fund's balance cannot be read and no transfer can be validated against it. "
+            + (f"Its legacy cumulative view shows {_legacy} WST of reserves, which is NOT the same figure "
+               f"and is not a spendable balance. " if _legacy else "")
+            + f"Nothing was debited. Repair the books first (POST /api/v1/economy/ledger/{from_vsb}/repair), "
+              f"which rebuilds the double-entry accounts from the postings.")
+    reserve = round(_accounts.get("reserve_fund", 0.0), 2)
     if reserve < amount:
         raise ValueError(f"Insufficient virtual funds: {from_vsb} reserve fund holds {reserve} WST "
                          f"< transfer {amount} WST.")

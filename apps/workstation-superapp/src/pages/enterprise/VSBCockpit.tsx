@@ -5,6 +5,7 @@ import { downloadExport } from '../../lib/download';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip, Download } from 'lucide-react';
+import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074)
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -71,6 +72,13 @@ export const VSBCockpit: React.FC = () => {
   // BLANK tab: the Owner saw nothing where the system knew the file existed and could not be read.
   // The same serverDetail helper the ledger already uses (W468) carries the reason here.
   const [planErr, setPlanErr] = useState('');
+  // W505 (FU-074) — re-read just the plan after an owner edit, so a saved field shows its mark at once.
+  const reloadPlan = () => {
+    if (!selected) return;
+    axios.get('/api/v1/business-plan', { params: { scope: selected } })
+      .then(r => { setPlan(r.data); setPlanErr(''); })
+      .catch(e => setPlanErr(serverDetail(e, 'Could not reload the business plan')));
+  };
   const serverDetail = (e: any, fallback: string): string => {
     const d = e?.response?.data?.detail;
     if (typeof d === 'string') return d;
@@ -536,7 +544,8 @@ export const VSBCockpit: React.FC = () => {
                     ai_provenance {'{'}served_by: {'{'}native: 2{'}'}{'}'} and the panel rendered none of it. */}
                 {(() => { const b = provenanceMapBadge(chiefResult.ai_provenance?.served_by, chiefResult.ai_provenance?.any_external);
                   return <span data-testid="chief-directive-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
-                <p className="text-slate-300 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · gaas: <span className={chiefResult.governance?.status === 'allowed' ? 'text-emerald-400' : chiefResult.governance?.status ? 'text-amber-400' : 'text-slate-500'}>{chiefResult.governance?.status ?? '—'}</span></p>
+                <p className="text-slate-300 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · {/* W505 (FU-158/FU-195) — what the gate screened, and no emerald: it compares the declared intent against a list and never reads the directive. */}
+                  intent gate: <span className={chiefResult.governance?.status === 'allowed' ? 'text-slate-400' : chiefResult.governance?.status ? 'text-amber-400' : 'text-slate-500'} title={chiefResult.governance?.basis ?? chiefResult.governance?.scope ?? 'the gaas.v5 pre-gate screens the declared intent, not the content'}>{chiefResult.governance?.status ?? '—'}{chiefResult.governance?.content_screened === false || chiefResult.governance?.covers_directive_content === false ? ' (intent only)' : ''}</span></p>
                 {/* W490 — W488 gave the API a reason when the directive's objectives could NOT be
                     added (an unreadable plan); the reached page showed only the bare 0. */}
                 {chiefResult.objectives_not_added_reason && (
@@ -583,33 +592,13 @@ export const VSBCockpit: React.FC = () => {
           )}
           {tab === 'plan' && plan && (
             <div className="space-y-4">
-              {/* Chief's Opening (W91/W93) — Executive Summary · Concept · Vision, seeded from the Genesis journey */}
-              {(plan.executive_summary || plan.concept || plan.vision) && (
-                <Card className="p-6 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Crown size={15} className="text-highlight" />
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white">Chief’s Opening — Executive Summary · Concept · Vision</h4>
-                    {/* W450 (P1.2) — who wrote the opening: the body's provenance, badged; pending fields named */}
-                    {(() => {
-                      const sb = plan.provenance?.served_by as Record<string, number> | null | undefined;
-                      if (!sb) return null;
-                      const keys = Object.keys(sb).filter(k => (sb[k] || 0) > 0);
-                      const b = provenanceMapBadge(sb);   // W453 — the map helper, not a hand-rolled key pick
-                      return <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>;
-                    })()}
-                    {Array.isArray(plan.provenance?.body_pending) && plan.provenance.body_pending.length > 0 && (
-                      <span className="text-[9px] text-amber-400/80" title="the deterministic floor served these; the enterprise has not composed them">pending the owned model: {plan.provenance.body_pending.join(' · ')}</span>
-                    )}
-                  </div>
-                  {([['Executive Summary', plan.executive_summary], ['Concept', plan.concept], ['Vision', plan.vision]] as [string, string][])
-                    .filter(([, v]) => v).map(([label, val]) => (
-                    <div key={label} className="mb-3 last:mb-0">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-highlight/70 mb-1">{label}</p>
-                      <p className="text-sm text-slate-300 leading-relaxed">{val}</p>
-                    </div>
-                  ))}
-                </Card>
-              )}
+              {/* W505 (FU-074) — THE SHARED COMPONENT. The founder could read the opening here and not set or
+                  clear a single field, because W471 wired the owner-edit form into BusinessPlan.tsx only; and
+                  fields they had already set carried no mark. Same component both pages now, so the two cannot
+                  drift apart again — which is how this gap opened. It also carries FU-158's per-field template
+                  marks: on the establish path these fields are code templates, not the Chief's words. */}
+              <PlanOpening plan={plan as any} scope={selected}
+                           onSaved={reloadPlan} onError={setPlanErr} />
               {[['Mission', plan.mission], ['Strategy', plan.strategy]].map(([label, val]) => (
                 <Card key={label as string} className="p-6">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">{label}</h4>
@@ -1099,7 +1088,7 @@ export const VSBCockpit: React.FC = () => {
                   {tx.digital_twin?.projection && (
                     <Card className="p-6">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Structural twin · projection (not a simulation)</h4>
-                      <p className="text-[11px] text-slate-400">API-surface coverage projected: <span className="text-highlight font-black">{String(tx.digital_twin.projection.projected ?? '—')}</span> (current {String(tx.digital_twin.projection.current ?? '—')}, {tx.digital_twin.projection.formula}) · governance: {tx.governance?.status}</p>
+                      <p className="text-[11px] text-slate-400">API-surface coverage projected: <span className="text-highlight font-black">{String(tx.digital_twin.projection.projected ?? '—')}</span> (current {String(tx.digital_twin.projection.current ?? '—')}, {tx.digital_twin.projection.formula}) · intent gate: {tx.governance?.status}{tx.governance?.content_screened === false ? ' (the intent only — not this projection)' : ''}</p>
                       <p className="text-[10px] text-amber-400/90 font-semibold mt-1.5 leading-relaxed">{tx.digital_twin.projection.note}</p>
                     </Card>
                   )}

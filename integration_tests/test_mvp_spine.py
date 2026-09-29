@@ -44,6 +44,22 @@ def client():
 
 # ── Health ───────────────────────────────────────────────────────────────────
 
+
+def _as_meta(fn):
+    """W506 — wrap a text-returning gateway stub into the `query_meta` shape.
+
+    The review path (and, after P2.2, every generation path) reads `query_meta` for provenance, and
+    `gateway.query` delegates TO it rather than the reverse — so patching `query` alone stops intercepting and
+    the real floor answers. This keeps each test's own stub behaviour and presents it where production looks.
+    `served_by` is a test marker, not a real resource: a stub must not be able to masquerade as the floor or as
+    a model, because the code under test branches on exactly that.
+    """
+    async def _qm(*a, **k):
+        out = await fn(*a, **k)
+        return {"output": out if isinstance(out, str) else str(out),
+                "served_by": "test-stub", "is_external": False}
+    return _qm
+
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
@@ -850,7 +866,7 @@ def test_genome_consequential_evolution_loop(client):
     pre = client.post(f"/api/v1/vsb/{vid}/evolution/apply").json()
     assert pre["applied"] is False and "cca_status" in str(pre.get("reason"))
     client.post(f"/api/v1/cca/{cca}/review",
-                json={"override_decision": "approved", "reviewer_notes": "w310 owner approval"})
+                json={"override_decision": "approved", "owner_decision_acknowledged": True, "reviewer_notes": "w310 owner approval"})
     ap = client.post(f"/api/v1/vsb/{vid}/evolution/apply").json()
     assert ap["applied"] is True and ap["mutations_applied"] > 0
     assert client.get(f"/api/v1/cca/{cca}").json()["status"] == "implemented"
@@ -4031,7 +4047,7 @@ def test_v191_evolution_approvals_route_through_change_control(client):
     a2 = client.post(f"/api/v191/evolution/proposals/{hi}/approve").json()
     assert a2["status"] == "under_change_control" and a2.get("cca_id")   # held for the governed decision
     client.post(f"/api/v1/cca/{a2['cca_id']}/review",
-                json={"override_decision": "approved", "reviewer_notes": "owner"})
+                json={"override_decision": "approved", "owner_decision_acknowledged": True, "reviewer_notes": "owner"})
     st = {p["id"]: p["status"] for p in client.get("/api/v191/evolution/proposals?status=all").json()}
     assert st[hi] == "approved"                                  # mirrors the CCA's governed outcome
     again = client.post(f"/api/v191/evolution/proposals/{lo}/approve").json()
@@ -4052,7 +4068,7 @@ def test_cca_twin_prevalidation_gates_major_changes(client):
     cid = sub["cca_id"]
     assert sub["impact_tier"] == "HIGH"
     ap = client.post(f"/api/v1/cca/{cid}/review",
-                     json={"override_decision": "approved", "reviewer_notes": "owner"}).json()
+                     json={"override_decision": "approved", "owner_decision_acknowledged": True, "reviewer_notes": "owner"}).json()
     assert ap["decision"] == "approved"
     rec = client.get(f"/api/v1/cca/{cid}").json()
     tp = rec.get("twin_prevalidation") or {}
@@ -4074,6 +4090,10 @@ def test_cca_twin_prevalidation_gates_major_changes(client):
     r2 = cca._load_change(cid2)
     r2["status"] = "approved"
     r2["decision_source"] = "admin_override"      # W464 — the Owner's approval: this test is the §17.5 gate, not ratification
+    # W505 (FU-030) — an override is excluded from the ratification queue only when somebody ACKNOWLEDGED it
+    # as the Owner's decision; a hand-written fixture without the mark now waits for the Board, which is the
+    # point of the backwards check. This fixture means an acknowledged decision, so it says so.
+    r2["owner_decision_acknowledged"] = True
     r2.pop("twin_prevalidation", None)
     cca._save_change(r2)
     first = client.post(f"/api/v1/cca/{cid2}/implement")
@@ -4122,7 +4142,7 @@ def test_cca_immune_reconfigurator(client):
             "submitted_by": "test_suite",
             "config_change": {"section": "organism", "key": lever, "value": False}}).json()
         if sub["status"] != "approved":
-            client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved"})
+            client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
         assert client.post(f"/api/v1/cca/{sub['cca_id']}/implement").status_code == 200
 
 
@@ -5220,7 +5240,7 @@ def test_evolution_auto_apply_loop_end_to_end(client):
     cca = ev.get("evolution_pending_cca")
     assert cca and (ev.get("proposals") or [])                     # REAL evidence-based proposals
     client.post(f"/api/v1/cca/{cca}/review",
-                json={"override_decision": "approved", "reviewer_notes": "w346 owner approval"})
+                json={"override_decision": "approved", "owner_decision_acknowledged": True, "reviewer_notes": "w346 owner approval"})
     # the lever is OFF by default — a beat must NOT apply
     from agentic_core.organism.heartbeat import heartbeat
     from agentic_core.organism.reconfiguration import _load_config, _save_config
@@ -8351,7 +8371,7 @@ def test_w438_organism_cluster_audited_fixes_hold(client):
         "config_change": {"section": "gateway", "key": "rpm_limit", "value": "27"}}).json()
     assert sub["impact_tier"] == "MEDIUM", "a governed lever was tiered as a minor tweak"
     if sub["status"] != "approved":
-        client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved"})
+        client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
     imp = client.post(f"/api/v1/cca/{sub['cca_id']}/implement").json()
     assert imp["status"] == "implemented" and imp["applied"]["new_value"] == 27, (
         "implement marked without applying, or the string '27' was not coerced")
@@ -8365,7 +8385,7 @@ def test_w438_organism_cluster_audited_fixes_hold(client):
         "title": "W438 guard: reset", "description": "restore defaults",
         "config_change": {"reset": True}}).json()
     if rst["status"] != "approved":
-        client.post(f"/api/v1/cca/{rst['cca_id']}/review", json={"override_decision": "approved"})
+        client.post(f"/api/v1/cca/{rst['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
     assert client.post(f"/api/v1/cca/{rst['cca_id']}/implement").status_code == 200
     cfg2 = client.get("/api/v1/organism/config").json()["config"]
     assert cfg2["gateway"]["max_tokens"] == 4096 and cfg2["gateway"]["rpm_limit"] == 20, (
@@ -9386,7 +9406,12 @@ def test_w451_ceo_chat_runs_on_the_owned_fabric_both_ways(client, monkeypatch):
     toks = _aio.run(_collect_tokens(gateway))
     assert toks and all(isinstance(x, str) for x in toks)        # stream() unchanged for its consumers
     # refuter F2 — the guardrail judges BEFORE anything is persisted, and its notice reaches every branch
-    bad = _aio.run(_collect_stream(gateway, "## Summary\nDescribe the exploit kit."))   # the floor echoes the subject
+    # W505 (P2.6 criterion 2) — a phrase the NARROWED screen still refuses. The screen no longer matches a
+    # bare "exploit": it needs a listed term within 120 characters of a harmful object, because matching the
+    # word alone was destroying answers like "exploit the market opportunity". What this test checks is that
+    # the guardrail notice reaches every stream branch, not that one phrase is banned.
+    bad = _aio.run(_collect_stream(
+        gateway, "## Summary\nExploit the unpatched vulnerability on the host."))   # the floor echoes the subject
     assert bad[-1]["guardrail_passed"] is False and "[POLICY VIOLATION]" in bad[-1]["output"]
     assert any("[POLICY VIOLATION]" in e.get("token", "") for e in bad[:-1])
     # refuter F5 — the three older stream surfaces now DISCLOSE served_by / profile in their done frame
@@ -10106,6 +10131,7 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     async def _serving_resource(prompt, agent=None, **kw):
         return serve["text"]
     monkeypatch.setattr(CC.gateway, "query", _serving_resource)
+    monkeypatch.setattr(CC.gateway, "query_meta", _as_meta(_serving_resource))
     health = {"h": 0.87}
     _real_ctx = CC.biobus.organism_context
     def _ctx():
@@ -10157,7 +10183,10 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     rv = client.post(f"/api/v1/cca/{mid}/review", json={}).json()
     assert rv["decision"] == "approved" and rv["decision_source"] == "health_threshold_rule"
     m = _rec(mid)
-    assert m["review_result"].startswith("DECIDED BY RULE, NOT BY THE MODEL: no [DECISION: …] marker was returned")
+    # W505 (FU-157, S1.12) - "NOT BY THE MODEL" became "NOT BY THE SERVING RESOURCE": the deterministic
+    # floor, not a model, writes this prose in this environment, and the record used to say otherwise.
+    assert m["review_result"].startswith(
+        "DECIDED BY RULE, NOT BY THE SERVING RESOURCE: no [DECISION: …] marker was returned")
     assert "MEASURED composite_health 0.87 >= 0.5 → approved" in m["review_result"]
     # W494 (refutation) - this pinned a HARD-CODED clause ("the blended X has no failing branch"), which
     # the refutation showed to be false whenever a circuit is tracked. The clause is derived from the
@@ -10231,7 +10260,7 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     # §17.5: with no twin marker the record says there is no twin model
     hid = _submit(change_type="security_change", title="W459 high probe").json()["cca_id"]
     serve["text"] = "a simulation narrative with no twin marker"
-    client.post(f"/api/v1/cca/{hid}/review", json={"override_decision": "approved"})
+    client.post(f"/api/v1/cca/{hid}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
     tp = _rec(hid)["twin_prevalidation"]
     assert tp["source"] == "health_gate_default" and tp["source_label"] == "no twin model — health gate only"
     assert "no twin model" in tp["method"] and "forward simulation" not in tp["method"]
@@ -10374,6 +10403,7 @@ def test_w459_cca_decisions_are_serialised(monkeypatch):
         await _aio.sleep(0.4)
         return "a review with no decision marker"
     monkeypatch.setattr(CC.gateway, "query", _slow)
+    monkeypatch.setattr(CC.gateway, "query_meta", _as_meta(_slow))
 
     async def _race():
         sub = await CC.submit_change(CC.SubmitChangeRequest(
@@ -10651,7 +10681,10 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
     # the colour fixes, pinned (each was a green claim on something nobody evaluated)
     pins = {
         "pages/enterprise/BoardOfDirectors.tsx": "<ShieldCheck size={12} className=\"text-slate-500\" /> {result.directive_id}",
-        "pages/enterprise/VSBCockpit.tsx": "chiefResult.governance?.status === 'allowed' ? 'text-emerald-400'",
+        # W505 (FU-158, S3.19) — the emerald was REMOVED on purpose: the gate screens a declared intent
+        # against a list and never reads the directive, so "allowed" is not a clearance and must not be
+        # rendered as one. The badge's tone must still follow the state, which is what this test is for.
+        "pages/enterprise/VSBCockpit.tsx": "chiefResult.governance?.status === 'allowed' ? 'text-slate-400'",
         "pages/enterprise/VSBEconomy.tsx": "gov === 'allowed' ? 'text-emerald-400' : gov ? 'text-amber-400' : 'text-slate-500'",
         "pages/governance/ComplianceChecker.tsx": "STATUS_ICON[v.status] ?? MinusCircle",
         "pages/synthesis/GenesisJourney.tsx": "m > 0 && n === m ? 'text-emerald-400' : m === 0 ? 'text-slate-500' : 'text-amber-400'",
@@ -10789,7 +10822,9 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
     finally:
         _vsb._gaas = _saved
     gh2 = (S / "pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
-    assert "value={events.filter(e => flagLevel(e) === 'flagged').length}" in gh2 and "'Flagged + review'" in gh2
+    # W505 (FU-032) - the stat counts FAULTS now, with decisions counted beside them: one number that added
+    # an Owner's recorded refusal to genuine failures said the system had gone wrong when governance had worked.
+    assert "value={events.filter(e => nature(e) === 'fault').length}" in gh2 and "'Flagged + review'" in gh2
     assert "{gaas?.ueg?.total_events ?? '—'}" in cui
     gj = (S / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
     assert "compliance: not screened" in gj and "not a certification" in gj
@@ -11715,13 +11750,16 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     assert rec(h1["cca_id"])["est_distributable_wst"] == 4800.0
     # …and a decision refuses if the amount moved DURING the review (defence in depth)
     real_query = cca.gateway.query
+    real_query_meta = cca.gateway.query_meta   # W506 — restored together, see _as_meta
 
     async def _query_moves_amount(*a, **k):
         cca._update_change(h1["cca_id"], lambda f: f.update(est_distributable_wst=999999.0))
         return "[DECISION: APPROVED]"
     monkeypatch.setattr(cca.gateway, "query", _query_moves_amount)
+    monkeypatch.setattr(cca.gateway, "query_meta", _as_meta(_query_moves_amount))
     moved = client.post(f"/api/v1/cca/{h1['cca_id']}/review", json={"reviewer_notes": "w463l"})
     monkeypatch.setattr(cca.gateway, "query", real_query)
+    monkeypatch.setattr(cca.gateway, "query_meta", real_query_meta)
     assert moved.status_code == 409 and "changed during the review" in moved.json()["detail"]
     assert rec(h1["cca_id"])["status"] == "under_review"
 
@@ -11737,8 +11775,10 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     async def _query_approves(*a, **k):
         return "[DECISION: APPROVED]"
     monkeypatch.setattr(cca.gateway, "query", _query_approves)
+    monkeypatch.setattr(cca.gateway, "query_meta", _as_meta(_query_approves))
     reviewed = client.post(f"/api/v1/cca/{nxt['cca_id']}/review", json={"reviewer_notes": "w463l"})
     monkeypatch.setattr(cca.gateway, "query", real_query)
+    monkeypatch.setattr(cca.gateway, "query_meta", real_query_meta)
     # W464 — every economy hold is CRITICAL: a review holds it for the Owner (the follows link is information)
     assert reviewed.status_code == 200 and reviewed.json()["hold_reason"] == "critical_requires_admin_decision"
     assert reviewed.json()["recommendation"] == {"verdict": "approved", "source": "model_decision_marker"}
@@ -12032,9 +12072,11 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     hs = cyc(s2v, 5000)["governance"]
     assert cyc(s2v, 6000)["governance"]["approved_or_filed_wst"] == 4800.0
     monkeypatch.setattr(cca.gateway, "query", _query_approves)
+    monkeypatch.setattr(cca.gateway, "query_meta", _as_meta(_query_approves))
     stale_rr = client.post(f"/api/v1/cca/{hs['cca_id']}/review",
                            json={"reviewer_notes": "w463l", "expected_est_distributable_wst": hs["est_distributable_wst"]})
     monkeypatch.setattr(cca.gateway, "query", real_query)
+    monkeypatch.setattr(cca.gateway, "query_meta", real_query_meta)
     assert stale_rr.status_code == 409 and "changed since it was read" in stale_rr.json()["detail"]
     assert rec(hs["cca_id"])["status"] == "submitted" and rec(hs["cca_id"])["est_distributable_wst"] == 4800.0
 
@@ -12390,8 +12432,10 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     async def _query_rejects(*a, **k):
         return "[DECISION: REJECTED]"
     monkeypatch.setattr(cca.gateway, "query", _query_rejects)
+    monkeypatch.setattr(cca.gateway, "query_meta", _as_meta(_query_rejects))
     by_model = client.post(f"/api/v1/cca/{hmk}/review", json={"reviewer_notes": "w463l"}).json()
     monkeypatch.setattr(cca.gateway, "query", real_query)
+    monkeypatch.setattr(cca.gateway, "query_meta", real_query_meta)
     # W464 — a model review no longer rejects an economy hold (CRITICAL): it holds it with the recommendation…
     assert by_model["decision_source"] == "held_awaiting_admin" and by_model["status"] == "under_review", by_model
     assert by_model["recommendation"] == {"verdict": "rejected", "source": "model_decision_marker"}
@@ -12695,6 +12739,7 @@ def _w464_serving(monkeypatch, CC, review="[DECISION: APPROVED]", twin="[TWIN: P
             calls.append(agent)
         return serve["twin"] if agent == "cca_twin_prevalidation" else serve["review"]
     monkeypatch.setattr(CC.gateway, "query", _q)
+    monkeypatch.setattr(CC.gateway, "query_meta", _as_meta(_q))
     return serve
 
 
@@ -12839,7 +12884,9 @@ def test_w464_board_ratifies_what_a_review_approved_before_anything_acts(client,
 
     # ── the Owner's explicit decision needs no ratification ──
     oid = submit(change_type="security_change")["cca_id"]
-    own = client.post(f"/api/v1/cca/{oid}/review", json={"override_decision": "approved", "reviewer_notes": "w464"}).json()
+    own = client.post(f"/api/v1/cca/{oid}/review", json={"override_decision": "approved",
+                                                        "owner_decision_acknowledged": True,
+                                                        "reviewer_notes": "w464"}).json()
     assert own["decision_source"] == "admin_override" and own["awaiting_board_ratification"] is False
     assert client.post(f"/api/v1/board/ratifications/{oid}", json={"decision": "ratify", "on_owner_direction": True}).status_code == 409
     assert client.post(f"/api/v1/cca/{oid}/implement").status_code == 200
@@ -12983,6 +13030,7 @@ def test_w464_change_control_decisions_are_written_to_the_ledger(client, monkeyp
         CC._update_change(moving, lambda f: f.update(status="rejected"))
         return "[DECISION: APPROVED]"
     monkeypatch.setattr(CC.gateway, "query", _moves)
+    monkeypatch.setattr(CC.gateway, "query_meta", _as_meta(_moves))
     assert client.post(f"/api/v1/cca/{moving}/review", json={"reviewer_notes": "w464"}).status_code == 409
     assert nodes(moving) == []
     _w464_serving(monkeypatch, CC, review="[DECISION: APPROVED]")
@@ -15383,7 +15431,12 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     open_slots = {i["slot"] for i in items if not i["done"]}
     routes = fu.raw_routes(reg)
     assert routes and all(rt["slot"] in open_slots for rt in routes)
-    assert {"P2.4", "P2.9"} <= {rt["slot"] for rt in routes}    # (W473: P1.16 is done; its route is handed to P2.4)
+    # W505 - P2.9 CLOSED and its route was handed to P2.4, exactly as P1.16's was in W473. Asserting that
+    # P2.9 is an open route slot could only hold until the item closed; asserting the handed route is durable,
+    # because a handed route names its origin for ever.
+    assert {"P2.4"} <= {rt["slot"] for rt in routes}
+    assert any(rt.get("handed_from") == "P2.9" for rt in routes), \
+        f"P2.9 closed but its route was not handed on: {[rt.get('handed_from') for rt in routes]}"
     assert "unreadable" in next(rt for rt in routes if rt.get("handed_from") == "P1.16")["words"]   # rides P2.4 now
     own = [rt for rt in routes if not rt.get("handed_from")]
     assert len({rt["slot"] for rt in own}) == len(own)                                        # one OWN route per item
@@ -15492,9 +15545,21 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     assert real_order[-1] == ("P2.4", "P1.16") and real_order.index(("P3.3", None)) < len(real_order) - 1
     assert real_order.index(("P2.4", None)) < len(real_order) - 1
     assert fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")["slot"] == "P2.4"
-    assert fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.9"
-    assert fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py"], "medium")["slot"] == "P2.3"
-    assert fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.9"
+    # W505 — P2.9 closed and HANDED its economy route to P2.4, the same mechanism the comment below describes
+    # for P2.3 → P3.6. The assertion follows the route rather than pinning a closed item.
+    assert fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.4"
+    # W505 — P2.3 closed and HANDED its avatars route to P3.6 (§9 depth covers the avatar surface), which
+    # is the handing mechanism working. The assertion follows the route rather than pinning a closed item.
+    _av_route = fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py"], "medium")
+    assert _av_route["slot"] == "P3.6", _av_route
+    # `handed_from` is a property of the ROUTE, not of route_row's {slot, by} answer - asserted
+    # where it lives. Verified against the register: the avatars route carries handed_from P2.3.
+    _av = [rt for rt in routes if rt.get("files") == ["agentic_core/avatars/"]]
+    assert len(_av) == 1, _av
+    assert _av[0].get("handed_from") == "P2.3", \
+        f"the avatars route lost its provenance when P2.3 closed: {_av[0]}"
+    # W505 — P2.9 closed; its economy route is P2.4's now, by the same handing the avatars route above shows
+    assert fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.4"
     # the high count is of rows riding an item (an unscheduled high row is listed on its own)
     sched_h = fu.schedule({"items": [row(severity="high"), row(id="FU-901", slot="NEXT", severity="high")]}, prompt)
     assert sched_h["counts"]["high"] == 1 and sched_h["counts"]["unscheduled"] == 1
@@ -15967,10 +16032,20 @@ def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeyp
     # ── the pages ──
     root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
     bp = (root / "enterprise/BusinessPlan.tsx").read_text(encoding="utf-8")
-    assert "fetch('/api/v1/business-plan/set'" in bp and 'data-testid="plan-owner-edit"' in bp
-    assert "provenanceMapBadge(plan.provenance.served_by" in bp and 'data-testid="plan-pending"' in bp
-    assert 'data-testid="plan-owner-edited"' in bp and 'data-testid="plan-generate-note"' in bp
-    assert "clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim()" in bp
+    # W505 (FU-074) — the owner-edit surface is ONE component shared by this page and the VSB Cockpit, which
+    # is what the row asked for: the Cockpit had no form at all because W471 wired it into this page only.
+    # These assertions follow it, and add the thing that matters now — that BOTH pages render it.
+    comp = (root.parent / "components/PlanOpening.tsx").read_text(encoding="utf-8")
+    assert "fetch('/api/v1/business-plan/set'" in comp and 'data-testid="plan-owner-edit"' in comp
+    assert "provenanceMapBadge(sb)" in comp and 'data-testid="plan-pending"' in comp
+    assert "plan-owner-edited-${k}" in comp, "the per-field owner-edited marker is gone"
+    assert "clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim()" in comp
+    assert 'data-testid="plan-generate-note"' in bp        # the Chief: AI-Generate note stays on this page
+    ck = (root / "enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    for _pg, _src in (("BusinessPlan.tsx", bp), ("VSBCockpit.tsx", ck)):
+        assert "<PlanOpening" in _src, f"{_pg} does not render the shared owner-edit surface"
+        assert "fetch('/api/v1/business-plan/set'" not in _src, \
+            f"{_pg} kept its own copy of the save — that drift is what FU-074 is about"
     gj = (root / "synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
     assert "provenanceMapBadge(pack.ai_provenance.served_by" in gj and 'data-testid="pack-version"' in gj
     assert "unchanged since ${pack.unchanged_since}" in gj
@@ -16066,7 +16141,8 @@ def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeyp
     g5 = client.post("/api/v1/business-plan/generate", json={"scope": scope, "context": "x"}).json()
     assert g5["written"] == [] and "no recognised" in g5["reason"]
     monkeypatch.undo()
-    assert "if (v && v !== ((plan as any)[k] || '')) body[k] = v;" in bp          # the page sends only what changed
+    # W505 (FU-074) - moved into components/PlanOpening.tsx with the rest of the owner-edit form
+    assert "if (v && v !== (((plan as any)[k] as string) || '')) body[k] = v;" in comp          # the page sends only what changed
     ck = (root / "enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
     assert "filter((s: any) => s && !s.error && !s.deferred).length} of {" in ck   # 'Shipped N of M surfaces'
 
@@ -18361,20 +18437,30 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     #     rate. Borrowing 1.33 would put its ten open rows at eight rounds on a record that supports
     #     no figure at all.
     mixed = {"items": []}
+    # W505 - DERIVED, NOT NAMED, and bound before the first loop that uses it. This check has broken twice by
+    # naming a specific open item (W496's comment records the first: "this used P1.18, which the same round
+    # marked DONE"), so the item is taken from the plan it was handed. The rule under test is "an item is
+    # projected at ITS OWN rate", which needs ANY open item and never a particular one.
+    _open_slots = [i["slot"] for i in fu.plan_items(prompt)
+                   if not i["done"] and i["slot"].startswith("P2.")]
+    assert _open_slots, "no open P2 item exists, so this check has nothing to project"
+    _proj = next(x for x in _open_slots if x != "P2.4")
     for i in range(6):
         rnd = f"W{800 + i}"
-        mixed["items"].append({"id": f"FU-a{i}", "status": "done", "closed_by": rnd, "slot": "P2.6",
+        mixed["items"].append({"id": f"FU-a{i}", "status": "done", "closed_by": rnd, "slot": _proj,
                                "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                "found": "2026-01-01", "owner_gated": False})
         if i < 2:
             mixed["items"].append({"id": f"FU-b{i}", "status": "done", "closed_by": rnd, "slot": "P2.4",
                                    "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                    "found": "2026-01-01", "owner_gated": False})
+    # W505 - DERIVED, NOT NAMED, because this has now broken twice for the same reason. W496's comment
+    # records the first time ("this used P1.18, which the same round marked DONE: a done item is not in
+    # `by_item`, so the check died on a KeyError") and its fix was to name P2.6 instead - which W505 closed.
+    # Naming a third item would break on the round that closes that one. The rule under test is "an item is
+    # projected at ITS OWN rate", which needs ANY open item and never a particular one.
     for j in range(9):
-        # W496 - this used P1.18, which the same round marked DONE: a done item is not in `by_item`, so
-        # the check died on a KeyError. The rule under test is "an item is projected at ITS OWN rate",
-        # which needs any OPEN item; P2.6 is one, and the synthetic rounds below give it the 1.0 rate.
-        mixed["items"].append({"id": f"FU-p{j}", "status": "open", "slot": "P2.6", "item": "P2.6",
+        mixed["items"].append({"id": f"FU-p{j}", "status": "open", "slot": _proj, "item": _proj,
                                "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                "found": "2026-01-01", "owner_gated": False})
     for j in range(10):
@@ -18385,8 +18471,8 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     assert m["assessable"] is True, m["not_assessable_because"]
     assert m["rate_used"]["closed_per_round"] == 1.33, m["rate_used"]     # 8 closed over 6 rounds
     _mi = {x["slot"]: x for x in m["by_item"]}
-    assert _mi["P2.6"]["rate_used"] == 1.0, _mi["P2.6"]
-    assert _mi["P2.6"]["rounds_projected"] == 9, _mi["P2.6"]             # 9 rows at 1.0, not 6 at 1.5
+    assert _mi[_proj]["rate_used"] == 1.0, _mi[_proj]
+    assert _mi[_proj]["rounds_projected"] == 9, _mi[_proj]               # 9 rows at 1.0, not 6 at 1.5
     assert _mi["P2.4"]["rounds_projected"] is None, _mi["P2.4"]           # 2 of 6 rounds cannot measure
     assert "not projected" in _mi["P2.4"]["basis"], _mi["P2.4"]
     # and the rendered block carries the refusal rather than a borrowed figure
@@ -23547,3 +23633,1329 @@ def test_w504c_a_development_spend_is_not_a_second_distribution(client):
         f"the legacy debit surface still posts a spend as a distribution: {a3}"
     assert round(float(a3.get("distribution_self_investment", 0.0)), 2) == 50.0, a3
     assert VirtualLedger(vid2).trial_balance()["balanced"] is True
+
+
+def test_w505_p21_cascade_grounding_every_stage_carries_the_users_subject(client):
+    """W505 (P2.1) — the item's three ACCEPT criteria, driven for the first time.
+
+    P2.1 requires engine.py to strip the marker line, "_Acting as:" lines and "## <role> output" headers
+    from carried context before _subject/_keywords/_role, and Task/Objective/Challenge to join the subject
+    labels. MEASURED ABSENT before W505: no stripping existed, and a live floor cascade produced
+    "Structured go-to-market frame for: Your officer's plan: _[marker]_ · _Acting as: Chief Legal
+    Officer._ · ## Intent & Values …" at level 3, with level 2 not containing the user's subject at all.
+
+    Criterion 1 is asserted by its MEANING. Its letter ("stage 3 … not 'external dependency'") cannot be
+    met by correct output: the floor's honest provenance line is "owned, no external dependency". What it
+    exists to prevent is carried scaffolding standing in for the user's subject."""
+    import asyncio as _aio
+    import pathlib
+    import re
+    import agentic_core.ai.native.engine as E
+    import agentic_core.api.intelligence as I
+
+    def asyncio_run_once(coro):
+        """Run one coroutine on this test's loop (the suite closes loops between tests, so
+        _ensure_loop is the established way here)."""
+        return _ensure_loop().run_until_complete(coro)
+
+    # ── the stripper removes all three shapes, and nothing else ──
+    carried = ("Prior context: an earlier stage said things\n"
+               + E._MARKER + "\n"
+               "_Acting as: Chief Legal Officer._\n"
+               "## CEO output\n"
+               "Mission: reduce paediatric medication waste on the wards\n"
+               "Domain: care\n")
+    stripped = E._strip_carried(carried)
+    assert E._MARKER not in stripped, stripped
+    assert "Acting as:" not in stripped, stripped
+    assert "CEO output" not in stripped, stripped
+    assert "Prior context: an earlier stage said things" in stripped, "it removed more than the framing"
+    assert "reduce paediatric medication waste" in stripped, stripped
+
+    # W505 — WHAT STRIPPING UNIQUELY ACHIEVES. Adding "Mission" to the subject labels alone fixes the
+    # SUBJECT, so a guard that only checks the subject cannot see the stripper being removed (blind A01 was
+    # vacuous for exactly that reason). Stripping's own contribution is that the carried framing does not
+    # reach `_sections`, `_keywords` or `_content` — driven through generate(), not asserted about source.
+    _carried_prompt = ("Mission: reduce ward medication waste" + chr(10)
+                       + E._MARKER + chr(10)
+                       + "_Acting as: Chief Legal Officer._" + chr(10)
+                       + "## CEO output" + chr(10))
+    _out = E.NativeReasoningEngine().generate(_carried_prompt, "w505_probe")
+    # a carried "## <role> output" header must not become a SECTION of the new answer
+    assert "## CEO output" not in _out, f"a carried role header became a section of the output: {_out[:200]}"
+    # and the marker's own vocabulary must not be mined as the subject's terms
+    for _w in ("workstation", "structured", "dependency"):
+        assert f"- {_w}" not in _out.lower(), f"the marker's words became terms: {_w}"
+
+    # ── the subject labels the platform's own code emits ──
+    # orchestrator.py:854 emits "Task: {instruction}"; swarm.py builds the CoE prompt with "Mission: ..."
+    assert E._subject("Task: rebuild the intake form") == "rebuild the intake form"
+    assert E._subject("Mission: reduce ward medication waste") == "reduce ward medication waste"
+    for _lab in ("Objective", "Challenge"):
+        assert E._subject(f"{_lab}: cut avoidable readmissions") == "cut avoidable readmissions", _lab
+    # and the carried blob must NOT win over a real subject label further down the prompt
+    _coe = ("You are the Head of the Centre of Excellence reporting to the Chief Legal Officer (law). "
+            "Your officer's plan:\nA long carried paragraph about frameworks and delivery, quite long.\n\n"
+            "Mission: reduce paediatric medication waste on the wards\nDomain: care\n")
+    assert E._subject(_coe) == "reduce paediatric medication waste on the wards", E._subject(_coe)
+
+    # ── criterion 2: BDP 8/8 stages mention the challenge ──
+    assert len(I._BDP_STAGES) == 8, len(I._BDP_STAGES)
+    _no_ch = [k for k, _l, _d in I._BDP_STAGES if "{challenge}" not in (I._BDP_PROMPTS.get(k) or "")]
+    assert _no_ch == [], f"BDP stages whose prompt never mentions the challenge: {_no_ch}"
+
+    # ── criterion 1, driven: a floor cascade's every level carries the user's subject ──
+    _subj = "paediatric"
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": f"reduce {_subj} medication waste on the wards", "domain": "care"}).json()
+    levels = [k for k in r if k.startswith("level_")]
+    assert len(levels) >= 3, levels
+    # The criterion names a "3-STAGE floor swarm's stage 3": the CEO -> C-Suite -> CoE chain, which is
+    # levels 1, 2 and 3. The Chief-of-Board and Board tiers sit ABOVE that chain and ground in the
+    # entity's BUSINESS PLAN, not the mission - in a shared data dir that plan is whatever earlier tests
+    # left, so requiring the mission there would be asserting about ambient state. (Found by the full
+    # suite: level_0_chief_of_board read "unreadable-plan directive" and this guard passed alone.)
+    _stages = [k for k in ("level_1_ceo_directive", "level_2_csuite", "level_3_coe") if k in r]
+    assert len(_stages) == 3, f"the three cascade stages are not all present: {sorted(levels)}"
+    for k in _stages:
+        assert _subj in str(r[k]).lower(), f"{k} does not contain the user's subject"
+    # the carried-framing check applies to EVERY level, because that must hold everywhere
+    for k in levels:
+        t = str(r[k])
+        assert "frame for: Your officer" not in t, f"{k} still frames over carried context"
+        assert "over: Your officer" not in t, f"{k} still frames over carried context"
+    # the honest provenance line is EXPECTED on the floor - this is the criterion's letter being wrong,
+    # not the output. Asserted positively so nobody "fixes" it by removing the disclosure.
+    assert any("no external dependency" in str(r[k]) for k in levels), \
+        "the floor's own provenance disclosure vanished"
+
+    # ── deliverable: intelligence.py labels the subject in EVERY stage template ──
+    # The item says "labels the challenge", and two of the four engines label it {topic} instead, which is
+    # right for an academic-publishing pipeline. What must hold is that every stage emits a label
+    # `_subject` can READ - otherwise the stage cannot ground in the user's input at all.
+    _SUBJ_LABELS = {"user", "problem", "challenge", "objective", "mission", "concept", "topic",
+                    "research question", "question", "task / question", "task", "hypothesis",
+                    "target role", "current situation", "concern", "subject", "search query"}
+    for _eng in ("_BDP", "_SPI", "_APIE", "_DDPIE"):
+        _stages, _prompts = getattr(I, _eng + "_STAGES"), getattr(I, _eng + "_PROMPTS")
+        for _k, _l, _d in _stages:
+            _p = _prompts.get(_k) or ""
+            _labs = {m.group(1).strip().lower() for m in re.finditer(r"^([A-Z][A-Za-z /]{1,24}):\s*\{", _p, re.M)}
+            assert _labs & _SUBJ_LABELS, f"{_eng}/{_k} emits no label _subject can read: {sorted(_labs)}"
+
+    # ── deliverable: the orchestrator's literal newline ──
+    # Built from chr(92) so this assertion cannot be satisfied by its own source text.
+    _BS = chr(92)
+    _orch = pathlib.Path(__import__("agentic_core.ai.native.orchestrator", fromlist=["x"]).__file__)
+    _osrc = _orch.read_text(encoding="utf-8")
+    _bad = [l.strip() for l in _osrc.split("\n")
+            if ("Overall context:" in l or "Inputs from upstream nodes:" in l) and (_BS + _BS + "n") in l]
+    assert not _bad, f"a doubled backslash-n is back in the node prompt: {_bad}"
+    # and the blocks produce REAL newlines
+    assert 'ctx_block = f"Overall context:' in _osrc, "the context block was inlined again"
+    assert "+ ctx_block" in _osrc and "+ dep_block" in _osrc, "the blocks are not concatenated in"
+
+    # ── deliverable: floor output is never STORED for recall ──
+    from agentic_core.ai.gateway import gateway as _gw
+    assert _gw._is_floor(None) is True and _gw._is_floor("native") is True
+    assert _gw._is_floor("ollama:llama3") is False and _gw._is_floor("openai:gpt-4o") is False
+    # the name comes from the engine, not a hardcoded string, so a rename cannot re-enable storing
+    import inspect as _ins
+    _isf = _ins.getsource(_gw.__class__._is_floor)
+    assert "NativeReasoningEngine" in _isf, "the floor's name is hardcoded rather than imported"
+    # and a floor answer SAYS it was not stored
+    _ans = asyncio_run_once(_gw.query_meta("Mission: ground this subject", agent="w505_probe"))
+    assert _ans.get("recall_stored") is False, _ans
+    assert "floor served this" in str(_ans.get("recall_not_stored_because") or ""), _ans
+    # W505 — and the STORE proves it: for a floor answer the user's words are kept and the floor's prose
+    # is not. Read from the store FILE, not through `query_memory`: that is a token-overlap retrieval (the
+    # gateway's own words) and returns nothing for a short phrase even for a record that is definitely
+    # there, so it cannot witness what was written.
+    import json as _json
+    from agentic_core.config import data_path as _dpath
+    _store = _dpath("memory.json")
+    assert _store.exists(), "no recall store was written at all"
+    _recs = _json.loads(_store.read_text(encoding="utf-8"))
+    _hits = [x for x in _recs if "ground this subject" in str(x.get("text", ""))]
+    assert _hits, "the user's own words were dropped along with the floor's prose"
+    assert not any("| AI:" in str(x.get("text", "")) for x in _hits), \
+        f"the floor's prose entered the recall pool: {_hits[:1]}"
+    assert any("ai_reply_withheld" in (x.get("metadata") or {}) for x in _hits), \
+        "the record does not say WHY the reply was withheld"
+
+    # ── criterion 3 as RESTATED by the Owner 2026-09-28 (FU-293) ──
+    import inspect
+    g = inspect.getsource(__import__("agentic_core.api.genesis", fromlist=["x"]))
+    # both helpers are the _meta forms, so their calls are counted in ai_provenance like every stage
+    assert "_ai_cognitive_prime_meta" in g, "the cognitive helper is not the _meta form"
+    assert "_ai_mjm_lifecycle_meta" in g, "the MJM helper is not the _meta form"
+    # their text is scrubbed at the point it is captured, not only inside a stage
+    assert "cognitive = _public_prose(cognitive)" in g, "the captured text is not scrubbed at capture"
+    # engines_used names what RAN, never a literal list
+    assert 'if not _p_cog.get("failed")' in g, "engines_used does not depend on the lens call having run"
+    assert '(["MJM"] if not _p_mjm.get("failed") else [])' in g, "MJM is listed whether or not it ran"
+
+
+def test_w505_p25_realm_drift_retired(client):
+    """W505 (P2.5) — three of the item's five deliverables, driven.
+
+    configs/realms.yaml held a THIRD vocabulary (bio, legal, climate, materials, religion, education)
+    matching neither the four canonical realms nor the six domains, and no code read it. Its only non-doc
+    mention was inside a PROMPT STRING in scripts/workflows/fidelity_audit_v3.js telling an audit agent to
+    read it — the "name inside a multi-word string" case — so deleting the file meant updating that brief
+    too rather than leaving the audit chasing a deleted path.
+
+    The projects API had never validated its `realm` field. Measured: zero of its eight REALM_PROMPTS keys
+    is a taxonomy realm and six are exactly taxonomy.DOMAINS — the axes were shifted by one, which is the
+    drift this item is named for."""
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── deliverable 1: the orphaned file is gone, and nothing still points a reader at it ──
+    assert not (root / "configs" / "realms.yaml").exists(), "the drifted realms.yaml is back"
+    _brief = (root / "scripts" / "workflows" / "fidelity_audit_v3.js").read_text(encoding="utf-8")
+    assert "configs/realms.yaml + the products catalogue" not in _brief, \
+        "the audit brief still sends an agent to read the deleted file"
+    assert "was DELETED as part of P2.5" in _brief, "the brief does not say why the file is absent"
+
+    # ── deliverable 2: MOOT, and asserted so rather than silently skipped ──
+    # The item says "sovereign_config path fixed". Measured: NO .py file anywhere references
+    # sovereign_config, and the one path it holds (config/immutable_genome.yaml) exists. There is no
+    # broken path to fix. This asserts the premise, so if a reader is ever added the guard fails and the
+    # deliverable becomes real work again.
+    # The scan covers the LIVE packages this claim is about. It deliberately does not walk the whole repo:
+    # doing so read every archived and vendored .py (ten minutes), and it matched THIS FILE, whose own
+    # assertion names the string being searched for - a guard cannot search its own file for a literal it
+    # contains. Nothing under integration_tests is production code that could give the config a reader.
+    _cfg = "sovereign" + "_config"          # split so this line is not itself a match
+    _py_readers = sorted(
+        p.relative_to(root).as_posix()
+        for d in ("agentic_core", "scripts")
+        for p in (root / d).rglob("*.py")
+        if "_archive" not in p.as_posix()
+        and _cfg in p.read_text(encoding="utf-8", errors="replace"))
+    assert _py_readers == [], f"{_cfg} now has a reader, so its path matters: {_py_readers}"
+    assert (root / "config" / "immutable_genome.yaml").exists(), \
+        "the path sovereign_config holds is now broken, so the deliverable is real again"
+
+    # ── deliverable 5: the projects API validates realm against the taxonomy ──
+    import agentic_core.projects.api as PA
+    from agentic_core.taxonomy import REALMS, DOMAINS
+    # the field receives EITHER axis depending on the entry path, and both are named for what they are
+    assert PA._valid_subject("care") == ("care", "taxonomy domain")
+    assert PA._valid_subject("enterprise") == ("enterprise", "taxonomy realm")
+    assert PA._valid_subject("technology")[1].startswith("legacy value")
+    _fell, _why = PA._valid_subject("not-an-axis")
+    assert _fell == "general" and "unrecognised" in _why, (_fell, _why)
+    # the drift itself: no REALM_PROMPTS key is a canonical realm, and six are canonical domains
+    assert set(PA.REALM_PROMPTS) & set(REALMS) == set(), "a realm crept into the domain-shaped prompts"
+    assert len(set(PA.REALM_PROMPTS) & set(DOMAINS)) == 6, sorted(set(PA.REALM_PROMPTS) & set(DOMAINS))
+
+    # driven through the API: each axis recognised, an unknown value said rather than stored
+    made = []
+    try:
+        # "scholarship" is a canonical realm that is NOT the field's default, so a seeded axis and an
+        # unseeded one give DIFFERENT answers - with "enterprise" they coincide and blind B03 walked past.
+        for sent, tax, want_src in (("scholarship", None, "taxonomy realm"),
+                                    ("care", "scholarship", "taxonomy domain"),
+                                    ("not-an-axis", None, "unrecognised")):
+            body = {"title": "w505 p25 probe", "description": "d", "realm": sent}
+            if tax:
+                body["taxonomy_realm"] = tax
+            d = client.post("/api/v1/projects/", json=body).json()
+            made.append(d["id"])
+            assert want_src in str(d.get("realm_source")), (sent, d.get("realm_source"))
+            assert d.get("taxonomy_realm") in REALMS, d.get("taxonomy_realm")
+            if sent == "scholarship":
+                # a canonical realm in `realm` SEEDS the realm axis rather than being thrown away, and
+                # "scholarship" is not the default, so this cannot pass by coincidence
+                assert d["taxonomy_realm"] == "scholarship", d
+            if tax:
+                assert d["taxonomy_realm"] == tax, d
+            if sent == "not-an-axis":
+                assert d["realm"] == "general", d
+    finally:
+        for pid in made:
+            client.delete(f"/api/v1/projects/{pid}")
+
+    # ── the CLIENT half: DomainTool sends the user's default realm, and a tool's own field still wins ──
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _dt = (_root / "apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
+    assert "{false &&" not in _dt, "DomainTool holds a dead branch"
+    assert "const prefRealm = (getPrefs().defaultRealm ?? '').trim();" in _dt, \
+        "DomainTool no longer reads the user's default realm"
+    # the GATE, not just the identifier: an empty preference must send nothing
+    assert "if (prefRealm) body.realm = prefRealm;" in _dt, \
+        "DomainTool no longer sends the realm, or sends it unconditionally"
+    # sent BEFORE the declared fields, so a tool that has its own `realm` field overrides it
+    assert _dt.index("if (prefRealm) body.realm = prefRealm;") < _dt.index("for (const f of fields) {"), \
+        "the default realm would override a tool's own realm field"
+    # and the CTA carries the canonical axis alongside the domain
+    _cta = (_root / "apps/workstation-superapp/src/components/StartProjectCTA.tsx").read_text(encoding="utf-8")
+    assert "taxonomyRealm=${encodeURIComponent(prefRealm)}" in _cta, \
+        "the hub CTA no longer carries the canonical realm"
+
+    # ── THE SEAM, OBSERVED: ai_text applies the directive, and a domain router threads its realm ──
+    # Blinds B06 and B07 both passed a source-only check ("realm_directive" appears in projects/api.py)
+    # while the seam did nothing. What must be true is that the directive ARRIVES in the prompt a model is
+    # handed, so the prompt is captured.
+    import agentic_core.ai.gateway as _gwmod
+    from agentic_core.taxonomy import realm_directive as _rdir
+
+    _seen = {}
+
+    async def _capture(prompt, agent="native", timeout=30.0, owner_id=None, augment=False, **kw):
+        _seen[agent] = prompt
+        return {"output": "captured", "served_by": "native", "is_external": False}
+
+    _real_qm = _gwmod.gateway.query_meta
+    _gwmod.gateway.query_meta = _capture
+    try:
+        # (i) the seam itself: a realm in, its directive at the head of the prompt
+        from agentic_core.api._ai_provenance import ai_text
+        _ = _ensure_loop().run_until_complete(
+            ai_text("the body of the request", "w505_seam", realm="scholarship"))
+        _got = _seen.get("w505_seam", "")
+        assert _got.startswith(_rdir("scholarship")), \
+            f"ai_text did not prepend the realm directive: {_got[:120]!r}"
+        assert "the body of the request" in _got, "ai_text lost the caller's prompt"
+        # an EMPTY realm must change nothing - a caller with no realm behaves exactly as before
+        _ = _ensure_loop().run_until_complete(ai_text("plain body", "w505_seam_none"))
+        assert _seen["w505_seam_none"] == "plain body", _seen["w505_seam_none"]
+
+        # (ii) a real domain router threads ITS request's realm through to that seam
+        r = client.post("/api/v1/science/synthesise", json={
+            "research_question": "ward medication waste", "realm": "scholarship"})
+        assert r.status_code == 200, r.text
+        _router_prompt = next((v for k, v in _seen.items() if k.startswith("science")), "")
+        assert _router_prompt, f"no science call reached the seam: {sorted(_seen)}"
+        assert _router_prompt.startswith(_rdir("scholarship")), \
+            f"the science router did not thread its realm: {_router_prompt[:120]!r}"
+    finally:
+        _gwmod.gateway.query_meta = _real_qm
+
+    # ── and the realm axis finally DOES something: taxonomy.py says it changes depth and register ──
+    import inspect
+    _src = inspect.getsource(PA)
+    assert "realm_directive as _rd" in _src, "the realm directive is not imported into the generation"
+    assert "f\"{_rd(_realm)}" in _src, "the realm directive does not reach the generation prompt"
+
+
+def test_w505_p23_avatar_and_profile_honesty(client):
+    """W505 (P2.3) — the item's five deliverables, driven.
+
+    MEASURED BEFORE: the required sentence "your language needs the owned model" existed nowhere; the
+    "profile: applied / not usable by the floor" display existed nowhere; /status reported what EXISTS
+    (online, posture, ollama, key presence) and never which tier would actually serve; and Settings claimed,
+    in emerald and unconditionally, that "Voice dictation works in your language" for every language — a
+    capability belonging to the browser's Web Speech API, which this platform does not own and had not
+    checked."""
+    import pathlib
+    import agentic_core.ai.native.engine as E
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── 1: the USER'S MESSAGE is the floor's subject, and the history cannot shadow it ──
+    _p = ("You are a helpful assistant.\n\nConversation so far:\n"
+          "user: an OLD question about something else entirely\nassistant: an old answer\n\n"
+          "User: reduce ward medication waste")
+    assert E._subject(_p) == "reduce ward medication waste", E._subject(_p)
+    # WHY it holds: stored roles are lowercase, so "User:" matches only the current message. Pinned,
+    # because a capitalised role would make an OLD question the subject of a NEW answer.
+    _av = (root / "agentic_core" / "avatars" / "api.py").read_text(encoding="utf-8")
+    assert '{"role": "user", "content": request.message}' in _av, \
+        "the stored role is no longer lowercase 'user' - the history can now shadow the current message"
+    _shadowed = E._subject(_p.replace("user: an OLD", "User: an OLD"))
+    assert _shadowed != "reduce ward medication waste", \
+        "expected a capitalised history role to shadow the subject - the fragility this pins is gone"
+
+    # ── 3: /status names the EFFECTIVE serving mode, and consults the external GATE ──
+    st = client.get("/api/v1/avatar/status").json()
+    assert st.get("effective_serving_mode") in (
+        "owned local model", "external accelerant (expected)", "deterministic floor"), st
+    assert st.get("effective_serving_mode_basis"), st
+    assert "external_use_permitted" in st, st
+    # a PRESENT key is not permission: with the gate off, the mode may not claim an external accelerant
+    if not st["external_use_permitted"]:
+        assert st["effective_serving_mode"] != "external accelerant (expected)", st
+    _src = _av
+    assert 'os.getenv("AI_ALLOW_EXTERNAL", "false")' in _src, \
+        "the effective mode no longer consults the external-allow gate"
+
+    # ── 2 + 4: a floor answer says WHY the language was not honoured, and whether the profile applied ──
+    r = client.post("/api/v1/avatar/chat", json={
+        "message": "How do I reduce ward medication waste?", "context": "general",
+        "language": "Arabic", "session_id": "w505-p23"}).json()
+    assert r.get("language") is None, "the floor cannot translate, so no language may be claimed"
+    _note = str(r.get("language_note") or "")
+    assert "your language needs the owned model" in _note, _note
+    assert "Arabic" in _note, _note
+    assert "profile_applied" in r, "the reply does not carry whether the profile applied"
+    # ...and the KEY being present proves nothing: ChatResponse declares `profile_applied: bool = False`,
+    # so removing the handler's assignment leaves the key there holding False (blind C04 was vacuous for
+    # exactly that reason). The VALUE is what carries information, so both states are driven.
+    # W505 — DRIVEN, not assumed. This asserted "no profile is stored yet" while a LATER step of this same
+    # test PUTs one, so it held on a clean store and failed on every re-run — and CI's clean checkout would
+    # have hidden that for ever. The stored profile is emptied first, so the no-profile case is a state this
+    # test creates rather than one it hopes for.
+    import json as _pj
+    from agentic_core.api import user_workspace as _uw
+    from agentic_core.ai.user_context import profile_owner as _powner
+    _wpath = _uw._path_for(_powner(None) or "default")
+    if _wpath.exists():
+        _doc = _pj.loads(_wpath.read_text(encoding="utf-8"))
+        _doc["profile"] = {}
+        _wpath.write_text(_pj.dumps(_doc), encoding="utf-8")
+    r = client.post("/api/v1/avatar/chat", json={
+        "message": "How do I reduce ward medication waste?", "context": "general",
+        "language": "Arabic", "session_id": "w505-p23"}).json()
+    assert r.get("profile_applied") is False, \
+        f"an emptied profile still reports as applied: {r.get('profile_applied')}"
+    # ProfilePut declares its five fields at the TOP level, not nested under "profile" - sent nested,
+    # every field defaults to "" and no preamble is built, which is the product behaving correctly.
+    _prof = client.put("/api/v1/user/profile", json={
+        "about_you": "a ward pharmacist", "goals": "reduce medication waste",
+        "context": "a 400-bed teaching hospital", "constraints": "",
+        "success_criteria": "measurable waste reduction"})
+    assert _prof.status_code in (200, 201), _prof.text
+    r3 = client.post("/api/v1/avatar/chat", json={
+        "message": "what should I measure first?", "context": "general", "session_id": "w505-p23c"}).json()
+    assert r3.get("profile_applied") is True, \
+        f"a stored profile shaped the answer and the reply says it did not: {r3.get('profile_applied')}"
+    # and asking in English must NOT produce the note — a reason for something that did not happen
+    r2 = client.post("/api/v1/avatar/chat", json={
+        "message": "same question", "context": "general", "session_id": "w505-p23b"}).json()
+    assert r2.get("language_note") is None, r2.get("language_note")
+
+    # ── 4 (display) + 5: the two surfaces ──
+    panel = (root / "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8")
+    assert "{false &&" not in panel, "the panel holds a dead branch"
+    assert 'data-testid="profile-applied"' in panel and 'data-testid="profile-not-usable"' in panel
+    assert "m.profileApplied === true" in panel, "the applied state is not gated on the fact"
+    assert "m.profileApplied === false && m.servedBy === 'native'" in panel, \
+        "'not usable by the floor' is claimed without checking that the FLOOR served"
+    hook = (root / "apps/workstation-superapp/src/hooks/useAvatarSession.ts").read_text(encoding="utf-8")
+    assert "profileApplied: Boolean(resp.data.profile_applied)" in hook, "the hook drops the field"
+
+    settings = (root / "apps/workstation-superapp/src/pages/Settings.tsx").read_text(encoding="utf-8")
+    assert "{false &&" not in settings, "Settings holds a dead branch"
+    assert "Voice dictation works in your language." not in settings, \
+        "the unconditional dictation claim is back"
+    assert "dictationAvailable" in settings, "the claim is not conditional on the browser's capability"
+    # the EXPRESSION, not the bare identifier: my own comment used to name the identifier, so a blind
+    # that removed the check left the guard green off the prose (W503 recorded this twice; C08 is the third)
+    assert ("!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)"
+            in settings), "Settings does not check the same constructor DictateButton needs"
+    assert "{dictationAvailable ? (" in settings, "the two dictation states are not gated"
+
+
+def test_w505_fu018_a_pool_releases_only_what_it_was_granted(client):
+    """W505 (FU-018, P2.7) — the fabric released resources a pool never consumed.
+
+    MEASURED: assemble_pool decremented only when available >= amount, and then stored the FULL
+    requirements — including the part never granted and resources not in the inventory at all.
+    disassemble_pool added every one of those back, so each failed requirement inflated `available`
+    permanently: the register recorded gpu at 1064 against a total of 64."""
+    from agentic_core.optimizer.fabric import DynamicResourceFabric
+
+    f = DynamicResourceFabric()
+    gpu_total = f.inventory["gpu"]["total"]
+    assert f.inventory["gpu"]["available"] == gpu_total
+
+    # ask for more gpu than exists, some real compute, and a resource that does not exist
+    pool = f.assemble_pool({"gpu": gpu_total + 936, "compute": 10, "nonsense": 5})
+    # the pool holds ONLY what it was granted
+    assert f.active_pools[pool] == {"compute": 10}, f.active_pools[pool]
+    # and it SAYS what it did not get, and why — reported, not only logged
+    short = f.pool_shortfalls(pool)
+    assert short["gpu"]["granted"] == 0 and "insufficient" in short["gpu"]["reason"], short
+    assert short["nonsense"]["granted"] == 0 and "no such resource" in short["nonsense"]["reason"], short
+    assert f.inventory["gpu"]["available"] == gpu_total, "an ungranted request moved the inventory"
+
+    f.disassemble_pool(pool)
+    assert f.inventory["gpu"]["available"] == gpu_total, "the release invented gpu"
+    assert f.inventory["compute"]["available"] == f.inventory["compute"]["total"]
+
+    # the shape the row measured: repeated failed cycles inflating the inventory without bound
+    for _ in range(8):
+        p = f.assemble_pool({"gpu": gpu_total + 936})
+        f.disassemble_pool(p)
+    assert f.inventory["gpu"]["available"] == gpu_total, \
+        f"eight failed cycles moved gpu to {f.inventory['gpu']['available']} of {gpu_total}"
+    # the invariant, stated: available never exceeds total for ANY resource
+    for res, inv in f.inventory.items():
+        assert inv["available"] <= inv["total"], (res, inv)
+
+    # W505 — THE DEFENCE, DRIVEN. With active_pools holding only granted amounts, releases balance takes
+    # and the clamp never binds, so behaviour alone cannot see it removed (blind D05 was vacuous for that
+    # reason). Its purpose is to catch an accounting error introduced LATER, so the error is injected: a
+    # granted amount larger than anything that was taken, written straight into the pool record.
+    bad = f.assemble_pool({"compute": 1})
+    f.active_pools[bad] = {"gpu": f.inventory["gpu"]["total"] + 500}
+    f.disassemble_pool(bad)
+    assert f.inventory["gpu"]["available"] <= f.inventory["gpu"]["total"], \
+        (f"a release invented capacity: gpu {f.inventory['gpu']['available']} of "
+         f"{f.inventory['gpu']['total']}")
+
+
+def test_w505_fu005_the_swarm_router_has_a_perimeter(client, monkeypatch):
+    """W505 (FU-005, P2.6) — the /api/v1/swarm router carried no auth dependency and swarm.py has no
+    `Depends` of its own, so with AUTH_ENABLED on the org cascade, CEO delegation, catalogue curation and
+    the run histories were callable by anyone. No router in app_mvp.py used `dependencies=[...]` at all.
+
+    Both sides of the gate are driven: a perimeter only ever exercised with auth OFF is a perimeter
+    nothing has tested. AUTH_ENABLED is set here with monkeypatch, never in a config file."""
+    # auth OFF (the default): entirely inert, single-user mode unchanged
+    r = client.get("/api/v1/swarm/cascade/runs")
+    assert r.status_code == 200, r.status_code
+
+    # W505 — asserted on the RESOLVED DEPENDENCY of a mounted route, not on a source line. The first version
+    # of this guard searched app_mvp.py for an exact `include_router(...)` string: that passes on a comment,
+    # breaks on a reformat, and says nothing about whether the dependency reaches the routes.
+    from agentic_core.app_mvp import app as _app
+    from agentic_core.auth.core import get_current_user as _gcu
+    _swarm = [r for r in _app.routes if str(getattr(r, "path", "")).startswith("/api/v1/swarm")]
+    assert _swarm, "no /api/v1/swarm routes are mounted, so this guard proved nothing"
+    for _r in _swarm:
+        _names = {getattr(getattr(d, "dependency", None), "__name__", "")
+                  for d in (getattr(_r, "dependencies", None) or [])}
+        _names |= {getattr(getattr(d, "call", None), "__name__", "")
+                   for d in (getattr(getattr(_r, "dependant", None), "dependencies", None) or [])}
+        assert _gcu.__name__ in _names, f"{_r.path} lost its perimeter (dependencies: {sorted(_names)})"
+
+    # auth ON, no token: every route in the router refuses
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    for method, path, body in (("get", "/api/v1/swarm/cascade/runs", None),
+                               ("get", "/api/v1/swarm/agents", None),
+                               ("post", "/api/v1/swarm/cascade", {"mission": "w505", "domain": "enterprise"}),
+                               ("post", "/api/v1/swarm/delegate", {"task": "w505"})):
+        resp = getattr(client, method)(path, **({"json": body} if body else {}))
+        assert resp.status_code == 401, f"{method.upper()} {path} answered {resp.status_code}, not 401"
+
+    # ...and a VALID token is admitted, so the perimeter is a gate and not a wall
+    from agentic_core.auth import core as ac
+    users = ac._load_users()
+    users["w505perim"] = {"username": "w505perim", "role": "user",
+                          "hashed_password": ac._pwd_ctx.hash("pw-w505perim")}
+    ac._save_users(users)
+    tokresp = client.post("/api/v1/auth/token",
+                          data={"username": "w505perim", "password": "pw-w505perim"})
+    assert tokresp.status_code == 200, tokresp.text
+    hdr = {"Authorization": "Bearer " + tokresp.json()["access_token"]}
+    assert client.get("/api/v1/swarm/cascade/runs", headers=hdr).status_code == 200
+
+
+def test_w505_fu065_a_pre_double_entry_ledger_says_so(client):
+    """W505 (FU-065, P2.9) — a ledger written before W256 carries `entries` and `balances` and no
+    `accounts`, and the strict read accepts it (it refuses entries without BALANCES, not without
+    accounts). `validate_transfer` read reserve_fund out of `accounts`, got 0.0, and refused EVERY
+    transfer with "reserve fund holds 0.0 WST" — a false statement about the entity's money, made while
+    its legacy view showed reserves.
+
+    A genuinely empty fund is a 400 (the request is wrong); books that cannot answer are a 503 (the
+    platform cannot serve it yet). Answering the first for the second is what made the message false."""
+    import uuid as _uuid
+    import agentic_core.economy.living_vsbs as lv
+    from agentic_core.economy import transfers as tr
+    from agentic_core.config import data_path, atomic_write_json
+
+    a = f"vsb-w505old-{_uuid.uuid4().hex[:6]}"
+    b = f"vsb-w505new-{_uuid.uuid4().hex[:6]}"
+    for v in (a, b):
+        lv.register(v, name="pre-double-entry probe", domain="care")
+
+    # a ledger in the PRE-W256 shape: entries + balances, no accounts at all
+    atomic_write_json(data_path("economy") / f"{a}_ledger.json", {
+        "vsb_id": a, "currency": "WST",
+        "entries": [{"ts": "2026-01-01T00:00:00Z", "account": "reserves", "kind": "credit",
+                     "amount": 500.0, "memo": "legacy", "balance_after": 500.0}],
+        "balances": {"reserves": 500.0}, "postings": []})
+
+    try:
+        tr.validate_transfer(a, b, 10.0)
+        raise AssertionError("a ledger with no accounts view validated a transfer")
+    except tr.SenderLedgerUnavailable as e:
+        msg = str(e)
+    assert "predates double-entry" in msg, msg
+    assert "500.0 WST of reserves" in msg and "NOT the same figure" in msg, msg
+    assert "Nothing was debited" in msg, msg
+    assert "/repair" in msg, "the refusal does not name the way out"
+    # and the FALSE claim is gone
+    assert "holds 0.0" not in msg, msg
+
+    # a ledger WITH accounts and a genuinely empty fund still answers 400-shaped ValueError
+    atomic_write_json(data_path("economy") / f"{a}_ledger.json", {
+        "vsb_id": a, "currency": "WST", "entries": [], "balances": {},
+        "accounts": {"reserve_fund": 0.0}, "postings": []})
+    try:
+        tr.validate_transfer(a, b, 10.0)
+        raise AssertionError("an empty fund validated a transfer")
+    except ValueError as e:
+        assert "Insufficient virtual funds" in str(e), str(e)
+
+
+def test_w505_fu017_a_charge_whose_sale_is_not_recorded_is_refunded(client, monkeypatch):
+    """W505 (FU-017, P2.9) — consume_tokens charges inside the money lock, then the listing save and the
+    receipt write follow. Neither was compensated: if either raised, the buyer's balance was down and
+    nothing recorded what they bought. Consume-without-compensation.
+
+    Driven by forcing the receipt write to fail, because that is the only way this path is taken."""
+    import agentic_core.api.marketplace as MK
+    from agentic_core.commercial.token_ledger import TokenLedger, UserTier
+
+    made = client.post("/api/v1/marketplace/listings", json={
+        "name": "w505 fu017 probe", "description": "d", "price_wst": 25.0, "category": "service"}).json()
+    lid = made.get("listing_id") or made.get("id")
+    assert lid, made
+
+    led = TokenLedger()
+    led.initialize_user("w505buyer", UserTier.FREE)
+    before = led.ledgers["w505buyer"]["balance"]
+    assert before >= 25.0, before
+
+    _real = MK.atomic_write_json
+
+    def _boom(path, data):
+        if "receipts" in str(path):
+            raise OSError("w505 forced receipt failure")
+        return _real(path, data)
+
+    monkeypatch.setattr(MK, "atomic_write_json", _boom)
+    r = client.post(f"/api/v1/marketplace/listings/{lid}/purchase",
+                    json={"user_id": "w505buyer", "quantity": 1})
+    monkeypatch.undo()
+
+    assert r.status_code == 503, r.status_code
+    detail = str(r.json().get("detail"))
+    # it says BOTH facts: the sale was recorded, the receipt was not
+    assert "no receipt could be written" in detail, detail
+    assert "refunded" in detail, detail
+    # and the money actually came back
+    after = TokenLedger().ledgers.get("w505buyer", {}).get("balance")
+    assert after == before, f"the charge was not refunded: {before} -> {after}"
+
+    # W505 — THE OTHER STRANDING POINT. A charge can be stranded by the LISTING SAVE (inside the money
+    # lock) as well as by the receipt write (outside it). Both are compensated and only the second was
+    # driven, so blind G04 removed the first refund and nothing noticed. "There is a refund on the other
+    # path" is not evidence about this one.
+    before2 = TokenLedger().ledgers.get("w505buyer", {}).get("balance")
+
+    def _save_boom(listing):
+        raise OSError("w505 forced listing-save failure")
+
+    monkeypatch.setattr(MK, "_save", _save_boom)
+    r2 = client.post(f"/api/v1/marketplace/listings/{lid}/purchase",
+                     json={"user_id": "w505buyer", "quantity": 1})
+    monkeypatch.undo()
+    assert r2.status_code == 503, r2.status_code
+    d2 = str(r2.json().get("detail"))
+    assert "could not be recorded" in d2, d2
+    assert "refunded" in d2, d2
+    after2 = TokenLedger().ledgers.get("w505buyer", {}).get("balance")
+    assert after2 == before2, f"a failed listing save stranded the charge: {before2} -> {after2}"
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+# W505 — P2.6 (governance perimeter + honest gate) and P2.9 (the economy's reporting truth)
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+def test_w505_p26_the_governing_routers_have_an_admin_perimeter():
+    """P2.6 criterion 1. Six routers that govern the PLATFORM carried no dependency at all, so with auth on
+    an unauthenticated caller could stop the heartbeat, mutate the genome, drive sovereign evolution and act
+    on the Board. `require_admin` returns a synthetic admin when auth is off, so this is inert in single-user
+    mode — which is checked here too, because a perimeter that changes today's behaviour would be a
+    regression rather than a fix.
+
+    Asserted on the MOUNTED dependency, not on source text: a router can be mounted twice, and a grep for
+    `require_admin` in app_mvp.py would pass on a comment."""
+    from agentic_core.app_mvp import app
+    from agentic_core.auth.core import require_admin
+
+    from agentic_core.auth.core import get_current_user as _gcu
+
+    # ADMIN: these govern the PLATFORM itself — its rhythm, its genome, its evolution, the Board.
+    admin_paths = {
+        "/api/v1/heartbeat/stop", "/api/v1/organism/genome", "/api/v1/organism/status",
+        "/api/v1/board/status", "/api/v1/sovereign-evolution/status",
+    }
+    # AUTHENTICATED, NOT ADMIN: Change Control is an INTAKE as well as a decision surface. My first cut put
+    # the whole router behind require_admin and the suite caught it — with auth on, a non-admin could no
+    # longer SUBMIT a change request, and the arms-length model is that anyone may propose while only an
+    # admin decides. The decision paths enforce that themselves; the leg below proves it, because relaxing
+    # an assertion without proving what replaces it would leave this criterion unevidenced.
+    auth_paths = {"/api/v1/cca"}
+
+    seen = {}
+    for r in app.routes:
+        p = getattr(r, "path", None)
+        if p in (admin_paths | auth_paths):
+            # a FastAPI `Depends` exposes `.dependency`; only a resolved `Dependant` has `.call`. Reading
+            # `.call` off the former raised AttributeError, which is a guard that cannot pass.
+            deps = [getattr(getattr(d, "dependency", None), "__name__", "")
+                    for d in (getattr(r, "dependencies", None) or [])]
+            flat = [getattr(getattr(d, "call", None), "__name__", "")
+                    for d in (getattr(getattr(r, "dependant", None), "dependencies", None) or [])]
+            seen[p] = set(deps) | set(flat)
+    missing = sorted(p for p in (admin_paths | auth_paths) if p not in seen)
+    assert not missing, f"these routes do not exist, so this guard proved nothing about them: {missing}"
+    unguarded = sorted(p for p in admin_paths if require_admin.__name__ not in seen[p])
+    assert not unguarded, f"no admin perimeter on: {unguarded}"
+    open_door = sorted(p for p in auth_paths
+                       if not ({require_admin.__name__, _gcu.__name__} & seen[p]))
+    assert not open_door, f"no perimeter at all on: {open_door}"
+
+    # ...and the DECISION is still closed to a non-admin, which is what makes the narrower perimeter safe.
+    # Asserted on the handler's own check rather than by standing up an auth-enabled client here, because
+    # test_w459_cca_identity_and_override_gate_both_ways already drives that end to end with real tokens.
+    import inspect
+    _rv = inspect.getsource(__import__("agentic_core.api.change_control",
+                                       fromlist=["x"]).review_change)
+    assert "Only an admin may override a Change Control decision." in _rv, \
+        "the override no longer refuses a non-admin, so dropping the router-level admin gate opened a hole"
+
+
+def test_w505_p26_the_response_screen_keeps_legitimate_answers():
+    """P2.6 criterion 2. `validate_response` matched the bare substrings "malware", "hacker" and "exploit",
+    and a False verdict makes the gateway REPLACE the answer with a policy notice — so the user lost the whole
+    answer for writing "exploit the market opportunity", which is the item's own example.
+
+    Both directions, because a screen that passes everything is not a fix either."""
+    from agentic_core.ai.guardrails import screen_reason, validate_response
+
+    keep = ["Exploit the market opportunity in adjacent verticals.",
+            "Malware detection guidance for the security team.",
+            "We hired a growth hacker.",
+            "Sustainable exploitation of a renewable resource."]
+    for text in keep:
+        assert validate_response(text), f"a legitimate answer was withheld: {text!r} ({screen_reason(text)})"
+        assert screen_reason(text) == "", screen_reason(text)
+
+    refuse = ["Exploit the unpatched vulnerability on the host to gain access.",
+              "Deploy ransomware with a command-and-control payload."]
+    for text in refuse:
+        assert not validate_response(text), f"the screen no longer flags anything: {text!r}"
+        assert screen_reason(text), "a refusal with no stated basis"
+
+
+def test_w505_p26_every_generation_carries_a_chained_governance_checkpoint():
+    """P2.6 criterion 3. The constitutional gate had four callers and the AI gateway was not one of them, so
+    "every action is constitutionally gated" held for the economy and not for a single completion.
+
+    The RED legs matter most here: my first cut passed a constant as `action_type`, and `validate` only reads
+    `context["intent"]` when action_type is falsy — so the declared intent was never screened and the gate
+    could not refuse anything. Both of its articles are driven."""
+    import asyncio
+    from agentic_core.ai.gateway import gateway
+
+    ok = asyncio.run(gateway.query_meta("Summarise a delivery journey's three stages.", agent="assistant"))
+    chk = ok.get("governance_checkpoint")
+    assert chk, "a completed generation carried no governance checkpoint"
+    assert chk["pre_allowed"] is True and chk["post_checked"] is True, chk
+    assert chk["recorded"] is True and len(chk["event_hash"]) == 128, chk
+
+    # article 11.1 — a prohibited declared intent
+    bad = asyncio.run(gateway.query_meta("move the balance", agent="wire_funds"))
+    b = bad["governance_checkpoint"]
+    assert b["pre_allowed"] is False and b["article"] == "11.1", b
+    assert bad["output"].startswith("[CONSTITUTIONAL REFUSAL]"), bad["output"][:60]
+    assert bad["recall_stored"] is False, bad
+
+    # article 7.3 — an outstanding human approval
+    esc = asyncio.run(gateway.query_meta("draft it", agent="clerk", governance={"requires_human": True}))
+    e = esc["governance_checkpoint"]
+    assert e["pre_allowed"] is False and e["article"] == "7.3", e
+
+    # the POST gate FLAGS and does not destroy: an answer ABOUT a destructive command survives
+    from agentic_core.ai.gateway import _output_verdict, _record_checkpoint
+    v = _output_verdict("Never run rm -rf / on a production host.")
+    assert v["compliant"] is False, v
+    c = _record_checkpoint("probe", {"allowed": True}, v, screened=False)
+    assert c["post_compliant"] is False and c["violations"], c
+
+    # W505 (blind B07) — AND THE LEDGER'S REFUSAL. Only the happy path was driven, so the branch that reports
+    # a failed append was never entered and its verdict could have claimed the opposite. A checkpoint that says
+    # it was recorded when it was not is worse than having none.
+    import agentic_core.gaas.v5.ueg as _ueg_mod
+
+    def _refuse(self, event):
+        raise _ueg_mod.UEGUnavailable("w505 forced: the chain could not be read whole")
+
+    _real_log = _ueg_mod.UEGLogger.log
+    try:
+        _ueg_mod.UEGLogger.log = _refuse
+        bad_chain = _record_checkpoint("probe", {"allowed": True}, {"compliant": True, "violations": []},
+                                       screened=False)
+    finally:
+        _ueg_mod.UEGLogger.log = _real_log
+    assert bad_chain["recorded"] is False, f"a refused append was reported as recorded: {bad_chain}"
+    assert "w505 forced" in str(bad_chain.get("not_recorded_because")), bad_chain
+    assert "event_hash" not in bad_chain, "a hash was reported for an append that never happened"
+
+
+def test_w505_fu007_an_outstanding_approval_does_not_halt_the_node():
+    """FU-007. `policy_gate.validate` refuses for two quite different reasons and the interceptor recorded both
+    as `is_violation=True`; the breaker tripped on the first violation and then halted EVERY later action on
+    the node. So an action correctly waiting for the Owner's approval took the platform down.
+
+    A prohibited INTENT (11.1) must still trip on the first — checked, so this is not a fix that simply
+    disarmed the breaker."""
+    import asyncio
+    from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+
+    async def _act():
+        return "done"
+
+    # 7.3 — an escalation. Recorded, not a violation; the node stays usable.
+    gov = UnifiedConstitutionalInterceptorV16Omega("w505-escalation-node", UEGLogger())
+    res = asyncio.run(gov.intercept({"intent": "ordinary_action", "requires_human": True}, _act))
+    assert res.status == "blocked", res.status          # unchanged: the economy cycle halts on this
+    assert res.escalation is True and res.article == "7.3", (res.escalation, res.article)
+    assert gov.circuit_breaker.is_tripped is False, gov.circuit_breaker.trip_reason
+    assert asyncio.run(gov.intercept({"intent": "another_action"}, _act)).status == "allowed", \
+        "one outstanding approval still halted every later action on the node"
+
+    # 11.1 — a real breach. Trips on the first, as zero tolerance intends.
+    gov2 = UnifiedConstitutionalInterceptorV16Omega("w505-breach-node", UEGLogger())
+    r2 = asyncio.run(gov2.intercept({"intent": "wire_funds"}, _act))
+    assert r2.status == "blocked" and r2.escalation is False and r2.article == "11.1", (r2.status, r2.article)
+    assert gov2.circuit_breaker.is_tripped is True, "a prohibited intent no longer trips the breaker"
+
+    # W505 (blind B10) — the ERROR RATE itself, which the state dict and the threshold tuner both read. The
+    # trip is prevented by an early return in record_event, so the exclusion inside error_rate() was not
+    # covered by anything above: an escalation must count on neither side of the rate.
+    gov3 = UnifiedConstitutionalInterceptorV16Omega("w505-rate-node", UEGLogger())
+    asyncio.run(gov3.intercept({"intent": "ordinary_action", "requires_human": True}, _act))
+    st3 = gov3.circuit_breaker.state()
+    assert st3["escalations_in_window"] == 1, st3
+    assert gov3.circuit_breaker.error_rate() == 0.0, \
+        f"an escalation counts as an error: rate {gov3.circuit_breaker.error_rate()} over {st3}"
+
+
+def test_w505_fu007_the_breaker_reset_is_an_admin_act_and_leaves_a_record():
+    """FU-007, the other half. POST /api/v1/gaas/breaker/reset cleared a tripped constitutional breaker with no
+    dependency at all, and cleared its history silently, so the reason for the trip vanished with no trace of
+    who cleared it."""
+    from fastapi.testclient import TestClient
+    from agentic_core.app_mvp import app
+    from agentic_core.api.constitutional_gaas import _INTERCEPTOR
+
+    _INTERCEPTOR.circuit_breaker.trip("w505 forced trip")
+    c = TestClient(app, raise_server_exceptions=False)
+    r = c.post("/api/v1/gaas/breaker/reset")
+    assert r.status_code == 200, (r.status_code, r.text[:200])
+    d = r.json()
+    assert d["state_before_reset"]["tripped"] is True, d["state_before_reset"]
+    assert d["state_before_reset"]["reason"] == "w505 forced trip", d["state_before_reset"]
+    # W505 (blind B12) — the MOUNTED dependency, because with auth off nothing in the response can
+    # discriminate: require_admin returns a synthetic admin, and removing it entirely leaves reset_by as the
+    # truthy fallback "unknown", which the old assertion accepted.
+    from agentic_core.auth.core import require_admin as _ra
+    _reset = [r for r in app.routes if getattr(r, "path", "") == "/api/v1/gaas/breaker/reset"]
+    assert _reset, "the reset route is not mounted, so this guard proved nothing"
+    _names = set()
+    for _rt in _reset:
+        _names |= {getattr(getattr(dp, "dependency", None), "__name__", "")
+                   for dp in (getattr(_rt, "dependencies", None) or [])}
+        _names |= {getattr(getattr(dp, "call", None), "__name__", "")
+                   for dp in (getattr(getattr(_rt, "dependant", None), "dependencies", None) or [])}
+    assert _ra.__name__ in _names, f"the reset lost its admin dependency (found: {sorted(_names)})"
+    assert d["reset_by"] and d["reset_by"] != "unknown", f"the reset records nobody: {d['reset_by']!r}"
+    assert d["recorded_in_ledger"] is True, d
+    assert d["circuit_breaker"]["tripped"] is False, d["circuit_breaker"]
+    # and the state dict now says what it would TAKE to trip, which a reader could not tell before
+    st = _INTERCEPTOR.circuit_breaker.state()
+    assert st["violation_trip_count"] >= 1 and "violations_in_window" in st, st
+
+
+def test_w505_fu006_the_cascade_gate_reads_the_delivery_not_a_constant():
+    """FU-006. The org cascade's `_attest` returned a fixed 96-character sentence, so the interceptor's post
+    gate screened the platform's own boilerplate while five tiers of delivery went past unread. Asserted on
+    the module's SOURCE ACTION rather than by running a 22-call cascade: what must be true is that the action
+    handed to the gate returns the tiers' text."""
+    import ast
+    import inspect
+    from agentic_core.api import swarm as sw
+
+    src = inspect.getsource(sw.cascade_orchestration)
+    tree = ast.parse("async def _f():\n" + "\n".join("    " + l for l in src.splitlines()[1:]))
+    # the action passed to intercept must be a function whose body returns the delivery, not a literal
+    fns = [n for n in ast.walk(tree) if isinstance(n, ast.AsyncFunctionDef) and n.name == "_deliver"]
+    assert fns, "the cascade's gated action is not `_deliver` — the constant-sentence attestation is back"
+    body = fns[0].body
+    rets = [n for n in ast.walk(fns[0]) if isinstance(n, ast.Return)]
+    assert rets, "_deliver returns nothing"
+    assert not any(isinstance(r.value, ast.Constant) for r in rets), \
+        "the gated action returns a CONSTANT again — the gate would screen boilerplate, not the delivery"
+    # and the verdict must claim content screening only where it happens
+    assert "content_screened" in src and "tiers_screened" in src, \
+        "the verdict does not say what it screened"
+
+
+def test_w505_fu032_an_owners_rejection_is_a_decision_not_a_fault():
+    """FU-032. `classify_event` puts `cca.change_rejected` and `board.change_ratification_refused` in
+    _ADVERSE_TYPES, so the Governance Hub rendered the Owner declining a change in red with an alert icon and
+    counted it in the same stat as genuine failures.
+
+    `level` is NOT re-pointed — three readers depend on its three values — so `nature` is what carries the
+    distinction, and every return must have one or a reader gets an undefined tone."""
+    from agentic_core.gaas.v5.ueg import classify_event, event_nature
+
+    dec = classify_event({"type": "cca.change_rejected", "by": "Rehan"})
+    assert dec["nature"] == "decision", dec
+    assert dec["level"] == "flagged", f"a decision must still SURFACE, not go grey: {dec}"
+    assert "decision, not a fault" in dec["why"], dec["why"]
+    assert dec["decided_by"] == "Rehan", dec
+
+    ref = classify_event({"type": "board.change_ratification_refused"})
+    assert ref["nature"] == "decision", ref
+
+    # a real fault is still a fault
+    flt = classify_event({"type": "policy_gate_halt"})
+    assert flt["level"] == "flagged" and flt["nature"] == "fault", flt
+    assert classify_event({"type": "economy.materiality_hold_filed"})["nature"] == "hold"
+    assert classify_event({"type": "ai.generation_gated"})["nature"] == "routine"
+    # the helper and the classifier must not disagree
+    for data in ({"type": "cca.change_rejected"}, {"type": "policy_gate_halt"}, {"type": "whatever"}):
+        c = classify_event(data)
+        assert event_nature(data, c["level"]) == c["nature"], (data, c)
+
+
+def test_w505_fu030_a_high_override_needs_an_acknowledgement(client):
+    """FU-030. A CRITICAL change required `admin_decision_for_critical`; a HIGH change required NOTHING. With
+    auth off any client's `override_decision` was recorded as `admin_override` — the decision class
+    `awaiting_board_ratification` deliberately excludes from the queue — so a HIGH change could be approved
+    and implemented with no acknowledgement and no Board ratification.
+
+    Both directions: forward (the flag is required) and backward (records already in the store carry no
+    acknowledgement, so they must queue)."""
+    from agentic_core.api import change_control as cc
+
+    def submit(title):
+        r = client.post("/api/v1/cca/submit", json={
+            "title": title, "description": "w505 guard", "change_type": "code_change",
+            "rationale": "x", "affected_systems": ["core"], "rollback_plan": "revert"})
+        assert r.status_code == 200, r.text[:200]
+        return r.json()["cca_id"]
+
+    cid = submit("w505 guard: high override")
+    assert cc.effective_tier(cc._load_change(cid)) == "HIGH"
+    r = client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": "approved"})
+    assert r.status_code == 403, f"a HIGH override still needs nothing: {r.status_code}"
+    assert "owner_decision_acknowledged" in str(r.json().get("detail"))
+
+    r = client.post(f"/api/v1/cca/{cid}/review",
+                    json={"override_decision": "approved", "owner_decision_acknowledged": True})
+    assert r.status_code == 200, r.text[:200]
+    rec = cc._load_change(cid)
+    assert rec["owner_decision_acknowledged"] is True, rec.get("owner_decision_acknowledged")
+    assert cc.awaiting_board_ratification(rec) is False, "an acknowledged Owner decision should not queue"
+
+    # backwards: every record written before W505 looks like this one
+    legacy = dict(rec)
+    legacy.pop("owner_decision_acknowledged", None)
+    assert cc.awaiting_board_ratification(legacy) is True, \
+        "an unacknowledged HIGH override still skips Board ratification"
+
+
+def test_w505_fu031_a_failed_ledger_write_is_marked_and_reconcilable(client, monkeypatch):
+    """FU-031. `_log_decision` returned False and logged the reason to the SERVER log; the record carried
+    nothing, so a decision with no constitutional node existed nowhere once the response was gone, and nothing
+    reconciled it.
+
+    A SUCCESSFUL write is marked too — without that, "no mark" cannot be told from "never written" and the
+    reconciliation could never come back clean, which would make it no instrument at all."""
+    from agentic_core.api import change_control as cc
+
+    def submit(title):
+        r = client.post("/api/v1/cca/submit", json={
+            "title": title, "description": "w505 guard", "change_type": "code_change",
+            "rationale": "x", "affected_systems": ["core"], "rollback_plan": "revert"})
+        return r.json()["cca_id"]
+
+    cid = submit("w505 guard: ledger gap")
+    monkeypatch.setattr(cc, "_log_decision_result",
+                        lambda event: (False, "OSError: w505 forced ledger failure"))
+    r = client.post(f"/api/v1/cca/{cid}/review",
+                    json={"override_decision": "approved", "owner_decision_acknowledged": True})
+    monkeypatch.undo()
+    assert r.status_code == 200, r.text[:200]
+    assert r.json().get("ueg_logged") is False, r.json().get("ueg_logged")
+
+    rec = cc._load_change(cid)
+    pend = rec.get("ueg_pending")
+    assert isinstance(pend, dict), "the gap left no mark on the record"
+    assert "w505 forced ledger failure" in str(pend.get("why")), pend
+    assert any(e.get("event") == "ueg_write_failed" for e in rec["audit_trail"]), rec["audit_trail"][-2:]
+
+    g = client.get("/api/v1/cca/ledger-gaps")
+    assert g.status_code == 200, g.status_code
+    assert any(x["cca_id"] == cid and x["kind"] == "marked" for x in g.json()["gaps"]), g.json()
+
+    # a decision whose write SUCCEEDED leaves a positive trace and is not reported as a gap
+    cid2 = submit("w505 guard: clean ledger write")
+    r2 = client.post(f"/api/v1/cca/{cid2}/review",
+                     json={"override_decision": "approved", "owner_decision_acknowledged": True})
+    assert r2.status_code == 200 and r2.json().get("ueg_logged") is True, r2.json().get("ueg_logged")
+    rec2 = cc._load_change(cid2)
+    assert any(e.get("event") == "ueg_written" for e in rec2["audit_trail"]), \
+        "a successful write leaves no mark, so the reconciliation can never come back clean"
+    assert not any(x["cca_id"] == cid2 for x in client.get("/api/v1/cca/ledger-gaps").json()["gaps"])
+
+
+def test_w505_fu033_a_record_missing_its_review_fields_is_reviewable(client):
+    """FU-033. `review_change` built its prompt with c['rationale'], c['affected_systems'] and
+    c['rollback_plan']; a record written without them raised KeyError — AFTER `_start` had moved it to
+    under_review, leaving the change stuck in a state no review could leave."""
+    from agentic_core.api import change_control as cc
+
+    r = client.post("/api/v1/cca/submit", json={
+        "title": "w505 guard: incomplete record", "description": "w505", "change_type": "code_change",
+        "rationale": "x", "affected_systems": ["core"], "rollback_plan": "revert"})
+    cid = r.json()["cca_id"]
+
+    def _strip(fresh):
+        for f in ("rationale", "affected_systems", "rollback_plan"):
+            fresh.pop(f, None)
+
+    cc._update_change(cid, _strip)
+    rr = client.post(f"/api/v1/cca/{cid}/review", json={})
+    assert rr.status_code == 200, f"an incomplete record still answers {rr.status_code}: {rr.text[:300]}"
+    rec = cc._load_change(cid)
+    assert rec["status"] != "under_review", f"the change was left stuck in {rec['status']}"
+    # and the absences are on the RECORD, not only in the prompt: a person reading this back needs to know
+    # the change was reviewed without a rollback plan. (The first version of this guard looked in
+    # `review_result`, where the sentence never was — it goes to the reviewing resource.)
+    assert set(rec.get("reviewed_without") or []) == {"rationale", "affected_systems", "rollback_plan"}, \
+        rec.get("reviewed_without")
+    assert "reviewed while missing" in str(rec.get("reviewed_without_note")), rec.get("reviewed_without_note")
+
+
+def test_w505_fu157_the_change_surface_says_what_it_did(client):
+    """FU-157, the five shortfalls that are checkable from the API.
+
+    S1.18 the tier raise is bounded and named · S1.11 the submit response carries the gate's own measurement
+    instead of the page inventing "healthy" · S1.12 the record names what WROTE the review prose · S1.10 a
+    change that applied nothing says so."""
+    from agentic_core.api import change_control as cc
+
+    # S1.18 — word boundaries, and the raise is reported
+    assert cc._tier_raise("deconstitutionalise the widget") is None, \
+        "a bare substring still matches inside a longer word"
+    assert cc._determine_tier("config_minor", "fix a typo in the unconstitutional clause") == "LOW"
+    r = client.post("/api/v1/cca/submit", json={
+        "title": "w505 guard: raised", "change_type": "config_minor",
+        "description": "amend the constitution wording", "rationale": "x",
+        "affected_systems": ["docs"], "rollback_plan": "revert"})
+    d = r.json()
+    assert d["impact_tier"] == "CRITICAL" and d["impact_tier_raised_by"] == "constitution", d
+    assert d["impact_tier_raised_from"] == "LOW" and d.get("impact_tier_raised_because"), d
+
+    # S1.11 — the gate's own measurement is in the response the page reads
+    r2 = client.post("/api/v1/cca/submit", json={
+        "title": "w505 guard: low", "change_type": "config_minor", "description": "bump a stored value",
+        "rationale": "x", "affected_systems": ["config"], "rollback_plan": "revert"})
+    d2 = r2.json()
+    hg = d2.get("health_gate")
+    assert hg and hg.get("decided_on") == "composite_health_measured_only", hg
+    assert d2.get("immune_threat_at_submit"), "the threat the page reports is not in the response"
+
+    # S1.12 — the record names the WRITER; the floor is not a model
+    r3 = client.post("/api/v1/cca/submit", json={
+        "title": "w505 guard: reviewable", "change_type": "code_change", "description": "a plain change",
+        "rationale": "x", "affected_systems": ["core"], "rollback_plan": "revert"})
+    cid3 = r3.json()["cca_id"]
+    assert client.post(f"/api/v1/cca/{cid3}/review", json={}).status_code == 200
+    txt = str(cc._load_change(cid3).get("review_result") or "")
+    assert "the model's" not in txt, f"the record still calls the writer a model: {txt[:200]}"
+    # W505 (blind B27) — NO OR. The first version accepted either "deterministic native engine" or "serving
+    # resource", and with the floor test disabled the text says "the serving resource 'native'" — which passed
+    # while the record had stopped identifying the floor at all. The floor serves in this environment
+    # (AI_DISABLE_LOCAL=1 and no external allowance), so the record must name it.
+    from agentic_core.ai.gateway import ModelGateway as _MG
+    assert _MG._is_floor("native"), "this environment is not floor-served, so this leg proves nothing"
+    assert "deterministic native engine" in txt, \
+        f"the floor served this review and the record does not say so: {txt[:300]}"
+
+    # S1.10 — implementing something with nothing to apply says so
+    cid4 = client.post("/api/v1/cca/submit", json={
+        "title": "w505 guard: nothing to apply", "change_type": "config_minor",
+        "description": "documentation only", "rationale": "x", "affected_systems": ["docs"],
+        "rollback_plan": "revert"}).json()["cca_id"]
+    if cc._load_change(cid4)["status"] != "approved":
+        client.post(f"/api/v1/cca/{cid4}/review",
+                    json={"override_decision": "approved", "owner_decision_acknowledged": True})
+    imp = client.post(f"/api/v1/cca/{cid4}/implement")
+    assert imp.status_code == 200, imp.text[:200]
+    assert imp.json().get("implementation_effect") == "recorded_only", imp.json()
+    assert client.get(f"/api/v1/cca/{cid4}").json().get("implementation_effect") == "recorded_only", \
+        "the detail route does not carry the effect, so the page cannot show it"
+
+
+def test_w505_fu036_a_failed_owner_accrual_is_reapplied_exactly_once():
+    """FU-036. W465 made a failed owner accrual VISIBLE and nothing re-applied it, so the entity's ledger
+    showed the owner stage distributed while the owner-payments store never received it — permanently.
+
+    The second and third legs are the ones that protect money: a reconciliation that pays twice is worse than
+    one that never runs."""
+    from agentic_core.economy import owner_payments as op
+
+    # W505 — a UNIQUE id per run. A fixed one asserted a starting balance of 0.0 and then credited it, so a
+    # second run against the same store inherited 125.0 and failed. A guard must not depend on nobody having
+    # run it before.
+    import uuid as _u
+    _tag = _u.uuid4().hex[:8]
+    vid = f"w505guard-owner-{_tag}"
+    row = op.record_missed(vid, 125.0, "Rehan", "cycle owner share", "OwnerPaymentsUnavailable: forced")
+    assert row and row.get("id"), row
+    assert op.pending_missed(vid)["total_wst"] == 125.0, op.pending_missed(vid)
+    assert op.status(vid)["balance_wst"] == 0.0, "the Owner was credited before any reconciliation"
+
+    rec = op.reconcile_missed(vid)
+    assert [x["amount_wst"] for x in rec["applied"]] == [125.0], rec
+    assert op.status(vid)["balance_wst"] == 125.0, op.status(vid)["balance_wst"]
+    assert op.pending_missed(vid)["total_wst"] == 0.0, "the pending claim was not cleared"
+
+    # never twice
+    assert not op.reconcile_missed(vid)["applied"], "a second reconciliation applied it again"
+    assert op.status(vid)["balance_wst"] == 125.0
+
+    # an attempt that applied the credit and died before clearing: dropped, not paid again
+    row2 = op.record_missed(vid, 40.0, "Rehan", "cycle owner share", "forced")
+    op.accrue(vid, 40.0, "Rehan", memo="applied by an attempt that then died", ref=row2["id"])
+    before = op.status(vid)["balance_wst"]
+    rec3 = op.reconcile_missed(vid)
+    assert [x["id"] for x in rec3["already_applied"]] == [row2["id"]], rec3
+    assert not rec3["applied"] and op.status(vid)["balance_wst"] == before, \
+        "the Owner was paid twice for one cycle"
+
+    # the scoping is not vacuous
+    other = f"w505guard-other-{_tag}"
+    op.record_missed(other, 9.0, "Rehan", "cycle owner share", "forced")
+    op.reconcile_missed(vid)
+    assert op.pending_missed(other)["total_wst"] == 9.0, \
+        "reconciling one entity applied another entity's claim"
+    # and the Owner can SEE what is owed
+    assert op.status(other)["pending_from_failed_accruals"]["total_wst"] == 9.0
+
+
+def test_w505_fu048_a_stranded_consume_gives_the_approval_back_unless_the_action_ran():
+    """FU-048. The stranded-consume pass gave the events back and left the Owner's approval spent, so the next
+    beat filed a fresh CRITICAL hold for the SAME events and the Owner decided one distribution twice.
+
+    The second leg is the money leg: an approval whose action STARTED must never be given back."""
+    import time
+    from agentic_core.api import change_control as cca
+    from agentic_core.economy import revenue as rev
+    from agentic_core.gaas.v5.ueg import UEGLogger
+
+    vid = "w505guard-stranded"
+
+    def spent(consume_id):
+        cid = f"cca-w505g-{consume_id}"
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        cca._save_change({
+            "cca_id": cid, "title": f"[economy] material distribution \u2014 {vid}",
+            "change_type": "economy_material", "description": "w505 guard", "rationale": "x",
+            "affected_systems": ["economy"], "rollback_plan": "n/a", "impact_tier": "CRITICAL",
+            "status": "implemented", "vsb_id": vid, "submitted_at": now, "reviewed_at": now,
+            "decision": "approved", "decision_source": "admin_override",
+            "owner_decision_acknowledged": True, "implemented_at": now,
+            "audit_trail": [{"event": "approved", "ts": now},
+                            {"event": "consumed_by_economy_cycle", "ts": now, "consume_id": consume_id}]})
+        return cid
+
+    cid1 = spent("w505consumeA")
+    UEGLogger().log({"type": "economy.cycle_intake_consumed", "vsb_id": vid, "token": "cyc-w505a",
+                     "cca_id": cid1, "consume_id": "w505consumeA", "event_ids": ["e1"]})
+    handle = rev._approval_for_token(vid, "cyc-w505a")
+    assert handle and handle["cca_id"] == cid1, handle
+
+    from agentic_core.economy.governance import _restore_consumed_approval
+    assert _restore_consumed_approval(handle, vsb_id=vid,
+                                      reason="w505 guard: the cycle wrote no ledger entry") == "restored"
+    assert cca._load_change(cid1)["status"] == "approved", cca._load_change(cid1)["status"]
+
+    # the action STARTED: never handed back
+    cid2 = spent("w505consumeB")
+    UEGLogger().log({"type": "economy.cycle_intake_consumed", "vsb_id": vid, "token": "cyc-w505b",
+                     "cca_id": cid2, "consume_id": "w505consumeB", "event_ids": ["e2"]})
+    cca._update_change(cid2, lambda f: f["audit_trail"].append(
+        {"event": "released_action_ran", "ts": "now", "consume_id": "w505consumeB"}))
+    assert rev._approval_for_token(vid, "cyc-w505b") is None, \
+        "an approval whose action had STARTED was offered for give-back"
+    assert cca._load_change(cid2)["status"] == "implemented"
+
+    # a token that spent no approval is not guessed at
+    assert rev._approval_for_token(vid, "cyc-w505-never-recorded") is None
+
+
+def test_w505_fu287_two_visits_of_one_entity_do_not_interleave():
+    """FU-287. `_update_entry` protects other entities' rows, but `operate_vsb` took no per-entity claim, so
+    two visits of ONE entity interleaved: one wrote `last_hold` while the other popped it, and the row's
+    outcome described whichever finished last while `operating_cycles` counted both.
+
+    The TTL must not make the claim vacuous, so a FRESH claim by someone else is checked too."""
+    import time
+    from agentic_core.economy import living_vsbs as lv
+
+    vid = "w505guard-visit"
+    lv.register(vid, name="w505 guard", owner="Rehan")
+
+    # a claim held by another visit refuses this one, honestly, without running a cycle
+    lv._claim_visit(vid, "visit-GUARD-A")
+    before = (lv._load().get(vid) or {}).get("operating_cycles", 0)
+    out = lv.operate_vsb(vid)
+    assert out["outcome"] == "refused" and out["held"] == "visit_in_progress", out
+    assert out["held_by_visit"] == "visit-GUARD-A" and out["cycle_ran"] is False, out
+    assert (lv._load().get(vid) or {}).get("operating_cycles", 0) == before, \
+        "a refused visit still moved the counter"
+
+    # a fresh claim by a third visit is respected — otherwise the claim is vacuous
+    c2 = lv._claim_visit(vid, "visit-GUARD-B")
+    assert c2["claimed"] is False and c2["holder"] == "visit-GUARD-A", c2
+
+    lv._release_visit(vid, "visit-GUARD-A")
+    e = lv._load()[vid]
+    assert "visit_claim" not in e, e.get("visit_claim")
+    assert e.get("last_visit_id") == "visit-GUARD-A", e.get("last_visit_id")
+
+    # the ordinary path still runs, and releases its own claim
+    out2 = lv.operate_vsb(vid)
+    assert out2 is not None and out2.get("held") != "visit_in_progress", out2
+    e2 = lv._load()[vid]
+    assert "visit_claim" not in e2, f"the normal path left its claim behind: {e2.get('visit_claim')}"
+    assert e2.get("last_visit_id") and e2["last_visit_id"] != "visit-GUARD-A"
+
+    # a claim whose holder died is broken, so an entity is never stranded
+    lv._update_entry(vid, lambda en: en.__setitem__(
+        "visit_claim", {"visit_id": "visit-GUARD-DEAD", "at": time.time() - (lv._VISIT_TTL + 5)}))
+    c3 = lv._claim_visit(vid, "visit-GUARD-C")
+    assert c3["claimed"] is True and c3["broke_stale"]["visit_id"] == "visit-GUARD-DEAD", c3
+    lv._release_visit(vid, "visit-GUARD-C")
+
+
+def test_w505_fu040_a_failed_venture_returns_intake_is_not_silence():
+    """FU-040. The venture-returns intake had a bare `except Exception: returns_recycled = 0.0`, so any failure
+    other than an unreadable store reported 0.0 recycled — indistinguishable from a portfolio that had no
+    returns — and the cycle ran its whole waterfall on revenue that should have been higher.
+
+    Driven through the real cycle, because the claim is about what the REPORT says."""
+    from agentic_core.economy import metabolism as mb
+    from agentic_core.economy import ventures as vt
+
+    m = mb.EconomicMetabolism("w505guard-returns", "waqf_ltd_hybrid", "Rehan")
+    real = vt.consume_pending_returns
+    try:
+        def _boom(vsb_id, max_amount=None):
+            raise RuntimeError("w505 forced venture-returns failure")
+        vt.consume_pending_returns = _boom
+        report = m.run_cycle(1000.0, 100.0)
+    finally:
+        vt.consume_pending_returns = real
+
+    note = str(report.get("venture_store_note") or "")
+    assert note, "a failed venture-returns intake still reports nothing at all"
+    assert "w505 forced venture-returns failure" in note, note
+    assert "still pending" in note, note
+    assert report.get("returns_recycled_wst", 0) in (0, 0.0, None), report.get("returns_recycled_wst")
+
+
+def test_w505_fu286_the_money_routes_do_not_hold_the_event_loop():
+    """FU-286. The strict store read and the lock acquisition sleep, and POST /cycle, /transfer and
+    /close-period are `async def`, so a contended store held the WHOLE worker. Measured before changing a
+    money path, as the row required: a 2.0s hold by another writer stalled the loop for 1.969s, against a
+    store_lock bound of 10s with an unbounded in-process acquire behind it.
+
+    This guard asserts the AST, not the timing: a wall-clock assertion on a shared runner is a flake, and what
+    must hold is that these calls are awaited off the loop."""
+    import ast
+    import inspect
+    from agentic_core.api import economy as ec
+
+    src = inspect.getsource(ec)
+    tree = ast.parse(src)
+    moved = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Await):
+            continue
+        call = node.value
+        if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "to_thread"):
+            continue
+        if call.args and isinstance(call.args[0], (ast.Name, ast.Attribute)):
+            a0 = call.args[0]
+            moved.add(a0.id if isinstance(a0, ast.Name) else a0.attr)
+    for need in ("validate_transfer", "record_transfer", "close_period"):
+        assert need in moved, (f"{need} is called on the event loop again \u2014 a contended store then holds "
+                               f"the whole worker (measured 1.97s for a 2s hold). Off-loop calls found: "
+                               f"{sorted(moved)}")
+
+
+def test_w505_fu074_one_plan_opening_component_serves_both_pages():
+    """FU-074. W471 wired the owner-edit form and the owner-edited marks into BusinessPlan.tsx only, so on the
+    VSB Cockpit's plan tab the founder could read the opening and not set or clear a single field.
+
+    Asserted as ONE shared component, not two forms: a second copy is how the two drifted apart, and a guard
+    that only checked "the Cockpit has a form" would pass on a copy."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    shared = root / "components" / "PlanOpening.tsx"
+    assert shared.exists(), "the shared plan-opening component does not exist"
+    body = shared.read_text(encoding="utf-8")
+    assert "/api/v1/business-plan/set" in body, "the shared component cannot save an owner edit"
+    assert "owner-edited" in body and "template" in body, \
+        "the shared component shows neither the owner-edited marks nor FU-158's template marks"
+
+    for page in ("pages/enterprise/BusinessPlan.tsx", "pages/enterprise/VSBCockpit.tsx"):
+        text = (root / page).read_text(encoding="utf-8")
+        # W505 (blind B43) — the ELEMENT, not the name. "PlanOpening" is in the import line, so replacing the
+        # JSX element with a <div> left the old assertion passing over a page that renders nothing.
+        assert "<PlanOpening" in text, f"{page} imports the shared component but does not render it"
+        # and neither page may keep its own copy of the save call
+        assert "/api/v1/business-plan/set" not in text, \
+            f"{page} still has its own copy of the owner-edit save \u2014 that is the drift this row is about"
+
+
+def test_w505_fu158_the_plan_opening_says_what_wrote_each_field():
+    """FU-158 (S1.24 + S3.13). `_seed_plan_from_journey` writes the executive summary, vision, mission and
+    strategy as code templates filled from the establish request — composed by neither the Chief nor a model —
+    and both pages head the block "Chief's Opening" while `provenance.served_by` (the ENTITY's serving
+    resource) is null on that path. So the badge said nothing and the heading claimed authorship."""
+    import ast
+    import inspect
+    from agentic_core.api import genesis as gn
+
+    src = inspect.getsource(gn._seed_plan_from_journey)
+    # W505 (blind B44) — the QUOTED key. "field_sources" in src is also true of "w505_not_field_sources",
+    # so renaming the key away left this passing.
+    assert '"field_sources"' in src and '"opening_written_by"' in src, \
+        "the seeding no longer records what wrote each field"
+    # W505 (blind B45) — DRIVEN, not pattern-matched. The first version asserted that some `if` in the
+    # function mentioned "concept", which any of several do; making the templated list unconditional left it
+    # passing while an Owner's own concept was labelled a template. Seeded twice instead, and the recorded
+    # source must differ.
+    from types import SimpleNamespace
+    from agentic_core.api import business_plan as _bp
+
+    def _seed(concept, scope):
+        req = SimpleNamespace(owner_id="Rehan", problem="a measured problem statement",
+                              commercialisation="", concept=concept, entity_type="waqf_ltd_hybrid",
+                              # every field the seeding reads: it swallows AttributeError, so a missing one
+                              # silently loses the provenance write this guard is about
+                              operations="")
+        gn._seed_plan_from_journey(scope, f"W505 {scope}", req,
+                                   {"ai_provenance": {}, "body_pending": {}, "name_source": "test"})
+        return (_bp._load(scope).get("provenance") or {}).get("field_sources") or {}
+
+    owner_said = _seed("the Owner's own concept, in their words", "vsb-w505-concept")
+    owner_silent = _seed("", "vsb-w505-noconcept")
+    assert owner_said.get("concept") == "owner_supplied", \
+        f"the Owner's own concept is recorded as {owner_said.get('concept')!r}"
+    assert owner_silent.get("concept") == "establish_template", \
+        f"a generated concept is recorded as {owner_silent.get('concept')!r}"
+    # and the fields nobody supplied are templates in both cases
+    for _f in ("executive_summary", "vision", "mission", "strategy"):
+        assert owner_said.get(_f) == "establish_template", (_f, owner_said.get(_f))

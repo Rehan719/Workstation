@@ -43,6 +43,7 @@ class CarePlanRequest(BaseModel):
     setting: str = "community"  # community | hospital | care_home | mental_health
     duration_weeks: int = 4
     care_model: str = "person_centred"
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/care-plan")
@@ -79,7 +80,7 @@ async def generate_care_plan(req: CarePlanRequest):
         "Mark fields needing personalisation with [PERSONALISE]."
     )
 
-    plan, provenance = await ai_text(prompt, "care_planner")
+    plan, provenance = await ai_text(prompt, "care_planner", realm=req.realm)
 
     return {
         "plan_id": uuid.uuid4().hex[:10],
@@ -99,6 +100,7 @@ class RiskAssessRequest(BaseModel):
     tool: str = "news2"
     patient_data: dict = {}
     clinical_context: str = ""
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/risk-assess")
@@ -142,7 +144,7 @@ async def risk_assessment(req: RiskAssessRequest):
         "Reference current clinical guidelines. Be specific about thresholds and actions."
     )
 
-    assessment, provenance = await ai_text(prompt, "care_risk_assess")
+    assessment, provenance = await ai_text(prompt, "care_risk_assess", realm=req.realm)
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
@@ -164,6 +166,7 @@ class SafeguardingRequest(BaseModel):
     setting: str = "community"            # community | hospital | care_home | domiciliary
     person_context: str = ""              # relevant context (adult at risk, capacity, etc.)
     jurisdiction: str = "England (Care Act 2014)"
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/safeguarding")
@@ -194,7 +197,7 @@ async def safeguarding_triage(req: SafeguardingRequest):
         "and never identify or accuse a specific individual as a conclusion."
     )
 
-    guidance, provenance = await ai_text(prompt, "care_safeguarding")
+    guidance, provenance = await ai_text(prompt, "care_safeguarding", realm=req.realm)
 
     return {
         "triage_id": uuid.uuid4().hex[:10],
@@ -218,6 +221,7 @@ class HandoverRequest(BaseModel):
     assessment: str = ""
     recommendation: str = ""
     handover_type: str = "sbar"  # sbar | isbar | nursing | medical
+    realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
 @router.post("/handover")
@@ -239,7 +243,7 @@ async def generate_handover(req: HandoverRequest):
         "Be concise — handovers should be completable in under 3 minutes verbally."
     )
 
-    handover, provenance = await ai_text(prompt, "care_handover")
+    handover, provenance = await ai_text(prompt, "care_handover", realm=req.realm)
 
     return {
         "handover_id": uuid.uuid4().hex[:10],

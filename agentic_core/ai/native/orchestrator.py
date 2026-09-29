@@ -556,13 +556,23 @@ class NativeOrchestrator:
         async def run_node(nid: str) -> tuple:
             n = by_id[nid]
             dep_ctx = "\n\n".join(f"[{d}] {results[d]['output'][:600]}" for d in n["depends_on"] if d in results)
+            # W505 (P2.1) — THE LITERAL "\n". These two blocks were written inside f-string
+            # EXPRESSIONS with a doubled backslash before the n, and in a normal string literal that is
+            # a backslash followed by the letter n, not a newline. Measured: the node's prompt ran the
+            # context, the goal and the upstream inputs together on ONE line with the escape visible as
+            # text (the exact before/after is in W505's commit message, where no guard reads it), so
+            # `_field` (which takes .splitlines()[0]) swallowed everything after a label, and `_sections`
+            # could not see a header that was never on its own line. Built as plain statements instead:
+            # a backslash in an f-string expression is what produced this, and is only legal from 3.12.
+            ctx_block = f"Overall context:\n{context[:600]}\n\n" if context else ""
+            dep_block = f"Inputs from upstream nodes:\n{dep_ctx}\n\n" if dep_ctx else ""
             prompt = (
                 f"You are the '{n['role']}' agent in Workstation's native swarm, executing node '{nid}' "
                 f"of an autonomously-planned workflow tree.\n"
-                f"{('Overall context:\\n' + context[:600] + '\\n\\n') if context else ''}"
-                f"Overall goal: {goal}\n"
-                f"{('Inputs from upstream nodes:\\n' + dep_ctx + '\\n\\n') if dep_ctx else ''}"
-                f"Your task: {n['task']}\n\n## {nid} output"
+                + ctx_block
+                + f"Overall goal: {goal}\n"
+                + dep_block
+                + f"Your task: {n['task']}\n\n## {nid} output"
             )
             res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external)
             # §6↔§7 — when a fabric resource genuinely matches this node's task, ALSO invoke its REAL

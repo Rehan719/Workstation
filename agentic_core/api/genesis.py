@@ -917,10 +917,26 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
         plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
                             "(Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.")
         # W450 (P1.2) — who wrote the opening, and which fields are still pending the owned model
+        # W505 (FU-158, S1.24 + S3.13) — WHAT WROTE EACH FIELD. Every field above is a code template filled
+        # from the establish request: an f-string with the problem statement dropped into it. Neither the Chief
+        # nor a model composed any of it, yet both pages head the block "Chief's Opening" and read
+        # `served_by`, which describes the ENTITY's serving resource and is null on this path. So the badge
+        # said nothing while the heading claimed authorship. `served_by` keeps its meaning for its existing
+        # readers; the per-field truth is ADDED beside it.
+        _templated = ["executive_summary", "vision", "mission", "strategy"]
+        if not (req.concept or "").strip():
+            _templated.append("concept")
         plan["provenance"] = {
             "served_by": (entity.get("ai_provenance") or {}).get("served_by") or None,
             "body_pending": [k for k, v in (entity.get("body_pending") or {}).items() if v],
             "name_source": entity.get("name_source"),
+            "field_sources": {f: ("establish_template" if f in _templated else "owner_supplied")
+                              for f in ("executive_summary", "concept", "vision", "mission", "strategy")},
+            "templated_fields": _templated,
+            "opening_written_by": (
+                "code templates filled from the establish request — not the Chief, and not a model. "
+                + (f"The concept is the Owner's own words. " if "concept" not in _templated else "")
+                + "Edit any field to replace it with your own; a model or the Chief has composed nothing here."),
         }
         plan.setdefault("objectives", [])
         if not plan["objectives"]:

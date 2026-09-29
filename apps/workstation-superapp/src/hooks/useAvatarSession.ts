@@ -27,6 +27,7 @@ export interface AvatarMessage {
   imageStatus?: string;   // W490 (refutation) — WHICH not-read state it was
   languageRequested?: string | null;
   languageHonoured?: string | null;
+  profileApplied?: boolean;   // W505 (P2.3)
 }
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
@@ -254,6 +255,9 @@ export function useAvatarSession() {
         imageStatus: resp.data.image_status ?? undefined,
         languageRequested: prefLanguageName() || null,
         languageHonoured: resp.data.language ?? null,
+        // W505 (P2.3) — whether the user's profile shaped this answer. Produced by the gateway since W428
+        // and shown by nothing until now.
+        profileApplied: Boolean(resp.data.profile_applied),
       }]);
       if (speakReplies) speakText(replyText);
       setAiStatus('online');
