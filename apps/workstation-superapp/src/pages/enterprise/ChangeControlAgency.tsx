@@ -30,6 +30,18 @@ interface CCARow {
   decision_source?: string | null;
   awaiting_board_ratification?: boolean;
   board_ratification?: 'ratified' | 'refused' | null;
+  // W509 — the METHOD gate (W508). `auto_approval_withheld` is present only when an automatic approval was
+  // withheld, and `method_check` carries the three-state verdict per requirement. Both were produced by the
+  // backend and read by nothing, so the platform withheld approvals silently.
+  auto_approval_withheld?: string | null;
+  method_check?: {
+    method_available?: boolean;
+    may_auto_approve?: boolean | null;
+    summary?: string | null;
+    why_not_approvable?: string | null;
+    requirements?: { requirement: string; lesson?: string; state: string; basis?: string;
+                     checkable_from?: string }[];
+  } | null;
 }
 
 interface CCADetail extends CCARow {
@@ -164,6 +176,21 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
             <p className="text-sm font-semibold text-white leading-tight">{entry.title}</p>
             <div className="flex items-center gap-2 shrink-0">
               <span className={`text-xs px-2 py-0.5 rounded border font-mono ${TIER_COLORS[entry.impact_tier] ?? TIER_COLORS.MEDIUM}`}>{entry.impact_tier}</span>
+              {/* W509 — a record whose automatic approval the method gate withheld says so on the card. A
+                  reason shown only to whoever happened to be on the submit form is not recorded anywhere a
+                  reviewer looks. */}
+              {entry.auto_approval_withheld && (
+                <p className="text-[11px] text-amber-400/90 mt-2 leading-relaxed" data-testid="cca-method-withheld">
+                  <span className="font-black uppercase tracking-widest">Automatic approval withheld · </span>
+                  {entry.auto_approval_withheld}
+                  {(entry.method_check?.requirements ?? []).some(r => r.state === 'UNMET') && (
+                    <span className="block text-white/40 mt-1">
+                      Unmet: {(entry.method_check?.requirements ?? [])
+                        .filter(r => r.state === 'UNMET').map(r => r.requirement).join(' · ')}
+                    </span>
+                  )}
+                </p>
+              )}
               {entry.decision === 'auto_approved' && (
                 <span className="text-xs px-2 py-0.5 rounded border text-green-400 bg-green-500/10 border-green-500/20">AUTO</span>
               )}
@@ -348,6 +375,10 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [type, setType] = useState('config_minor');
+  // W509 — what the method gate checks. Kept as free text and split on submit rather than a tag widget: the
+  // gate checks that something was SAID, and a widget that invents a default would satisfy it with nothing.
+  const [rationale, setRationale] = useState('');
+  const [systems, setSystems] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -356,7 +387,11 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
     setLoading(true); setMsg(null);
     try {
       const res = await axios.post('/api/v1/cca/submit', {
-        title, description: desc, change_type: type, submitted_by: 'workstation-ui'
+        title, description: desc, change_type: type, submitted_by: 'workstation-ui',
+        // W509 — sent because the method gate CHECKS them. An empty affected_systems is sent as an empty
+        // list rather than omitted, so the gate's verdict is about what the user actually supplied.
+        rationale,
+        affected_systems: systems.split(',').map(s => s.trim()).filter(Boolean),
       });
       // Auto-approval is signalled by the returned status (the backend sends no auto_approved key).
       // W505 (FU-157) — S1.11: "healthy organism" was this page's own words. The gate decides on the
@@ -371,10 +406,16 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
       const raised = res.data.impact_tier_raised_by
         ? ` — tier raised to ${res.data.impact_tier} (from ${res.data.impact_tier_raised_from}) because the description names "${res.data.impact_tier_raised_by}"`
         : '';
+      // W509 — the METHOD gate's outcome travels with the result. Before this the page said only "awaiting
+      // review" when the gate had withheld an automatic approval for a stated, checkable reason: the platform
+      // knew more than it told, and the user could not tell what to supply.
+      const withheld = res.data.auto_approval_withheld as string | undefined;
       setMsg((res.data.status === 'approved'
         ? `✓ Auto-approved: LOW tier, ${measured}, immune threat ${res.data.immune_threat_at_submit ?? 'unknown'}`
-        : '✓ Change submitted — awaiting review') + raised);
-      setTitle(''); setDesc(''); setType('config_minor');
+        : withheld
+          ? `✓ Change submitted — the automatic approval was withheld by the delivery-method gate: ${withheld}. It may still be approved by review.`
+          : '✓ Change submitted — awaiting review') + raised);
+      setTitle(''); setDesc(''); setType('config_minor'); setRationale(''); setSystems('');
       setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
     } catch (e: any) {
       setMsg(`Error: ${e?.response?.data?.detail ?? 'request failed'}`);
@@ -428,10 +469,41 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
                 <label className="text-xs text-white/40 uppercase tracking-wider font-mono">Description</label>
                 <textarea
                   value={desc} onChange={e => setDesc(e.target.value)}
-                  placeholder="Describe the change, rationale, and expected impact..."
+                  placeholder="Describe the change and its expected impact..."
                   rows={3}
                   className="bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30 resize-none"
                 />
+              </div>
+
+              {/* W509 — the METHOD gate requires both of these to AUTO-approve anything. The form did not ask
+                  for them, so every submission from this page failed two mechanically-checkable requirements
+                  and the auto-approval path the help text below describes was unreachable. The labels state
+                  the requirement rather than hiding it, because a field whose purpose is invisible gets
+                  filled with filler. */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-white/40 uppercase tracking-wider font-mono">
+                    Rationale <span className="text-amber-400/80 normal-case">— what it is FOR (20+ chars, checked)</span>
+                  </label>
+                  <textarea
+                    value={rationale} onChange={e => setRationale(e.target.value)}
+                    data-testid="cca-rationale"
+                    placeholder="Why this change is being made..."
+                    rows={2}
+                    className="bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30 resize-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-white/40 uppercase tracking-wider font-mono">
+                    Affected systems <span className="text-amber-400/80 normal-case">— comma separated, checked</span>
+                  </label>
+                  <input
+                    value={systems} onChange={e => setSystems(e.target.value)}
+                    data-testid="cca-systems"
+                    placeholder="change_control, economy"
+                    className="bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30"
+                  />
+                </div>
               </div>
 
               {/* Tier indicator */}
@@ -443,9 +515,15 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
                 {/* W505 (FU-157, S1.18) — this is the TYPE's tier. A description naming something
                     constitutional or organism-wide raises it to CRITICAL on submit, which made the page
                     appear to contradict itself. */}
+                {/* W509 — this sentence listed TWO conditions for an automatic approval and there are now
+                    three: W508 added the delivery-method gate, which withholds the automatic approval while a
+                    mechanically-checkable requirement is unmet. Leaving the old wording would have been an
+                    over-claim on the surface about the platform's own gate. */}
                 <span>— this is the type's tier; naming something constitutional or organism-wide in the
                   description raises it to CRITICAL. A LOW change is auto-approved when the measured part of
-                  the organism composite is ≥ 60% and immune threat is NOMINAL or ELEVATED</span>
+                  the organism composite is ≥ 60%, immune threat is NOMINAL or ELEVATED, <span className="text-amber-400/90">and
+                  the delivery-method gate finds no checkable requirement unmet</span> — which is why the
+                  rationale and affected systems above are asked for</span>
               </div>
 
               {msg && (

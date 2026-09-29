@@ -30,12 +30,19 @@ interface TreeSignal { input_strength: number; activation: number; supra_thresho
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
+  // W508 (P2.8(3)) — WHO planned this decomposition. The server has returned it since W283
+  // ('swarm_planned' only when a real owned model produced a valid DAG, otherwise the honest
+  // deterministic template) and this type dropped it, so the page rendered a tree without saying
+  // whether anything intelligent had planned it.
+  planner?: string | null;
   governance?: TreeGovernance | null; decision?: TreeDecision | null;
   validation?: TreeValidation | null; consensus?: TreeConsensus | null; signal_response?: TreeSignal | null;
   ueg_hash?: string | null; ueg_ledger?: string | null;
   nodes: TreeNodeResult[]; final: string; any_external: boolean;
 }
-interface SavedCascade { id: string; name: string; stages: Stage[]; usage_area: string; created_at: string; context?: string }
+// FU-010 (W508) — `vsb_id` added: the API has always returned it on a VSB-bound cascade, and the retire
+// confirmation needs it to say that deleting one also clears that entity's native_swarm pointer.
+interface SavedCascade { id: string; name: string; stages: Stage[]; usage_area: string; created_at: string; context?: string; vsb_id?: string | null }
 
 function kindIcon(kind: string) {
   if (kind === 'native') return Cpu;
@@ -79,6 +86,22 @@ function TreeView({ run }: { run: TreeRun }) {
         <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-900 text-slate-400">{levels.length} levels</span>
         <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-900 text-slate-400">{run.parallel_levels} parallel · ≤{run.max_parallel}/level</span>
         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${run.immune_threat === 'NOMINAL' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>immune: {run.immune_threat}</span>
+        {/* W508 (P2.8(3)) — THE PLANNER, named. A tree planned by the deterministic keyword template
+            and one planned by an owned model look identical on this page otherwise, and only one of
+            them is the swarm's own intelligence deciding the decomposition. */}
+        <span
+          data-testid="tree-planner"
+          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
+            run.planner === 'swarm_planned' ? 'bg-violet-500/15 text-violet-300' : 'bg-slate-900 text-amber-400'}`}
+          title={run.planner === 'swarm_planned'
+            ? 'an owned model produced this decomposition and its structure was validated (one root, no forward or unknown dependencies, at least three nodes)'
+            : run.planner === 'deterministic_template'
+              ? 'the deterministic keyword template produced this decomposition — no model planned it; the branch set adapts to words in the goal, which is not the same as reasoning about it'
+              : 'this run does not say which planner produced the decomposition'}>
+          {run.planner === 'swarm_planned' ? 'planned by the swarm'
+            : run.planner === 'deterministic_template' ? 'planned by template'
+            : 'planner not stated'}
+        </span>
         {(() => { const b = provenanceMapBadge(provenanceMapFromTrace(run.nodes), run.any_external); return <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
       </div>
       {/* dependency levels — nodes in the same level ran in PARALLEL */}
@@ -384,6 +407,10 @@ export const NativeAI: React.FC = () => {
     { role: 'synthesiser', instruction: 'Synthesise the single best recommendation.' },
   ]);
   const [cascades, setCascades] = useState<SavedCascade[]>([]);
+  // FU-010 (W508) — retiring a saved cascade. Confirmed first: a DELETE is not reversible.
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteErr, setDeleteErr] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [savedRun, setSavedRun] = useState<{ id: string; run: SwarmRun } | null>(null);
   const [runningId, setRunningId] = useState('');
@@ -943,8 +970,51 @@ export const NativeAI: React.FC = () => {
                       <Button onClick={() => runSaved(c.id)} disabled={runningId === c.id} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[11px]">
                         {runningId === c.id ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Run
                       </Button>
+                      {/* FU-010 (W508) — RETIRE. DELETE /api/v1/resources/swarm/{id} has been live since W345,
+                          owner-scoped and UEG-logged, and no page could call it — so a saved cascade could
+                          never be retired from anywhere. It is not reversible, so it confirms first and the
+                          confirmation names what ELSE it touches. */}
+                      <Button
+                        data-testid="cascade-delete"
+                        onClick={() => setConfirmDelete(confirmDelete === c.id ? null : c.id)}
+                        disabled={deletingId === c.id}
+                        className="bg-slate-900 text-slate-500 hover:text-vital text-[11px]">
+                        {deletingId === c.id ? <Loader2 size={12} className="animate-spin" /> : 'Retire'}
+                      </Button>
                     </div>
                   </div>
+                  {confirmDelete === c.id && (
+                    <div className="mt-3 p-3 rounded-xl bg-vital/5 border border-vital/30" data-testid="cascade-delete-confirm">
+                      <p className="text-[10px] font-bold text-vital">
+                        Retire &ldquo;{c.name}&rdquo;? This cannot be undone.
+                        {c.vsb_id
+                          ? ` It is bound to ${c.vsb_id}, so that entity's native_swarm pointer is cleared too — its record would otherwise name a cascade that no longer exists.`
+                          : ' It is not bound to an entity, so nothing else changes.'}
+                      </p>
+                      {deleteErr && <p role="alert" className="text-[10px] font-bold text-vital mt-1">{deleteErr}</p>}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button data-testid="cascade-delete-confirmed" className="bg-vital text-white text-[11px]"
+                                onClick={async () => {
+                                  setDeletingId(c.id); setDeleteErr('');
+                                  try {
+                                    const r = await fetch(`/api/v1/resources/swarm/${c.id}`, { method: 'DELETE' });
+                                    const b = await r.json().catch(() => ({}));
+                                    if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+                                    setCascades(prev => prev.filter(x => x.id !== c.id));
+                                    setConfirmDelete(null);
+                                    if (editingId === c.id) setEditingId(null);
+                                  } catch (e: any) { setDeleteErr(e?.message ?? String(e)); }
+                                  setDeletingId(null);
+                                }}>
+                          Retire it
+                        </Button>
+                        <button type="button" onClick={() => setConfirmDelete(null)}
+                                className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white">
+                          Keep it
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {savedRun?.id === c.id && <Trace run={savedRun.run} />}
                 </Card>
               ))}

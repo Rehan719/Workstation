@@ -294,15 +294,75 @@ async def orchestrate(req: OrchestrateRequest):
         ]
     except Exception:
         products_services_catalogue = []
+    # ── 6 · BTO → Build-to-Order: THE DELIVERY CHECK (W507, P2.8(5) / FU-232) ─────────────────────
+    #
+    # This stage used to read two lists and check nothing, and said so. That was the ONLY thing stopping a
+    # run from ever being validated: `delivery_verified` filters checks == "delivery", no stage declared it,
+    # so `validated` was never True and the §5 loop closure below - which advances a driving plan objective
+    # planned→in_progress - had never fired in production.
+    #
+    # It now DELIVERS one artefact through the living-deliverables engine and verifies THE RECORD LANDED,
+    # which is a different question from whether the call returned. A run that delivered nothing reports
+    # verified=False, which is what makes P2.8(5)'s bar real: a route that exists is not a delivery.
+    _delivered, _deliver_basis, _delivery_attempted = None, None, True
+    try:
+        from agentic_core.api.deliverables import ProduceRequest, _load as _deliv_load, produce as _produce
+        _d = await _produce(ProduceRequest(
+            type="report",
+            title=f"Transformation delivery — {objective[:60]}",
+            brief=(f"Build-to-order delivery for the transformation of «{req.scope}». Objective: {objective}. "
+                   f"State the delivered outcome and what remains."),
+            domain=getattr(req, "domain", None) or "general"))
+        _did = (_d or {}).get("id")
+        # THE RECORD, not the call's return value: a produce() that answered and persisted nothing has
+        # delivered nothing, and that is exactly the case this check exists to catch.
+        _landed = bool(_did) and any(r.get("id") == _did for r in (_deliv_load() or []))
+        _qms = (((_d or {}).get("quality_assurance") or {}).get("quality") or {}).get("qms_gate_passed")
+        # W508 — THE THREE STATES, mapped to what actually happened rather than to a boolean.
+        # The first cut set verified=False whenever the QMS gate did not pass, which lumped two different
+        # facts together: a delivery that produced NOTHING (a real failure) and a delivery that produced a
+        # record nothing assessed (not assessable). Driving it showed the difference immediately — a record
+        # landed with a QMS verdict of None and the run reported validated=False, filing a failure against a
+        # resource that had in fact delivered. This module's own stage() docstring demands three states, and
+        # M-VERIF-10 in the delivery method says the same; applying it to this new code is the point.
+        if _landed and _qms is True:
+            _delivered = True
+            _deliver_basis = (f"DELIVERED and ATTESTED: deliverable {_did} was produced through the §13 "
+                              f"living-deliverables engine for this transformation, its record is in the "
+                              f"store, and the QMS gate passed")
+        elif _landed and _qms is False:
+            _delivered = False
+            _deliver_basis = (f"delivery RAN and the gate REFUSED it: deliverable {_did} landed and its QMS "
+                              f"gate returned False, so the outcome is not attested and is not counted")
+        elif _landed:
+            _delivered = None
+            _deliver_basis = (f"NOT ASSESSABLE: deliverable {_did} landed in the store, so something WAS "
+                              f"delivered, but its QMS gate returned {_qms!r} — nothing assessed the outcome. "
+                              f"This is not a failed delivery and is not an attested one")
+        else:
+            _delivered = False
+            _deliver_basis = (f"NOTHING WAS DELIVERED: the engine answered but no record landed (id {_did!r}), "
+                              f"so whatever the call returned, this transformation delivered nothing")
+    except Exception as _de:
+        _delivered, _delivery_attempted = None, False
+        _deliver_basis = (f"not assessable — the delivery could not be attempted "
+                          f"({_de.__class__.__name__}: {_de}); no delivery is claimed either way")
+
     stage(6, "Business Transformation Office", "Build-to-Order",
-          "Coordinate delivery via BTO → Build-to-Order, assembling operational delivery resources and the products/services catalogue",
+          "Coordinate delivery via BTO → Build-to-Order, assembling operational delivery resources and the products/services catalogue, and DELIVER one artefact through the living-deliverables engine",
           {"operational_delivery_resources": operational_delivery_resources,
            "biomimetic_systems": biomimetic,
            "products_services_catalogue": [p["name"] for p in products_services_catalogue],
-           "build_to_order": "/api/v1/bto/configure", "products": "/api/v1/catalog/products"},
-          verified=None, checks="none",
-          basis=("not assessable — static delegation map — nothing is checked (the resource and catalogue "
-                 "lists are read, but no delivery through Build-to-Order is verified)"))
+           "build_to_order": "/api/v1/bto/configure", "products": "/api/v1/catalog/products",
+           "delivered": _delivered, "delivery_basis": _deliver_basis},
+          verified=_delivered,
+          # W508 — `checks` is the KIND of check, `verified` is its OUTCOME, and the first cut confused them:
+          # it set checks="none" whenever the outcome was None, so a delivery that RAN and could not attest
+          # was recorded as a stage where no check was attempted. That is a nature field reporting an outcome,
+          # the W491 class and M-MEAS-03 in the delivery method. The kind is "delivery" whenever a delivery was
+          # attempted at all; only the exception path — where it could not be attempted — is "none".
+          checks=("none" if _delivery_attempted is False else "delivery"),
+          basis=_deliver_basis)
 
     # ── 7 · Change Control (arms-length governance of the transformation) ──
     cca = {}
@@ -407,6 +467,22 @@ async def orchestrate(req: OrchestrateRequest):
     # 'halted' or 'partial' run validated, and a validated run writes onto the Owner's living plan.
     validation = summarise_validation(cascade, governance, signals, native_cognition)
 
+    # W508 (P2.10 — the weaving) — THE RUN IS CHECKED AGAINST THE METHOD IT WAS PRODUCED UNDER, from its own
+    # artefact. Four method lessons are properties of a cascade's output and are genuinely checkable here: a
+    # three-state verdict with a basis on every stage; a check that CANNOT fail never reporting success; a
+    # figure whose denominator is what was ASSESSABLE rather than what exists; and an unassessed stage saying
+    # why. The rest stay NOT_ASSESSABLE, because a cascade's output cannot show whether a blind was added.
+    #
+    # This is the learning made operative rather than merely served: the platform applies its own delivery
+    # method to its own delivery, and reports where it could not.
+    try:
+        from agentic_core.api.method import check_cascade as _check_cascade
+        _method_check = _check_cascade(cascade, validation)
+    except Exception as _mce:                       # noqa: BLE001 — recorded; never silently omitted
+        _method_check = {"method_available": False,
+                         "why": f"the method check could not run ({_mce.__class__.__name__}: {_mce})",
+                         "note": "this run is NOT reported as method-checked"}
+
     run = {
         "transformation_id": f"tx-{uuid.uuid4().hex[:10]}",
         "scope": req.scope, "objective": objective,
@@ -418,6 +494,8 @@ async def orchestrate(req: OrchestrateRequest):
         "products_services_catalogue": products_services_catalogue,
         "native_cognition": native_cognition,
         "governance": governance, "validation": validation,
+        # W508 — carried on the run, because a check computed and not reported is rendered nowhere
+        "method_check": _method_check,
         "dynamic": True, "adaptive": True, "responsive": signals > 0,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

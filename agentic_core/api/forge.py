@@ -239,10 +239,37 @@ async def forge_runs():
 
 @router.post("/runs/{run_id}/rerun")
 async def forge_rerun(run_id: str):
+    """Re-run a saved pipeline WITH THE PER-STAGE CONFIGURATION IT WAS RUN WITH. W508 (P2.8(4)).
+
+    This used to rebuild the stages as `StageConfig(type=s)` from `r["pipeline"]`, which holds the stage TYPES
+    and nothing else — so every per-stage `config` the original run carried was silently dropped and the
+    "rerun" executed a DIFFERENT pipeline while reporting itself as a rerun of that one. A stage's config
+    reaches its prompt ("Configuration: {cfg}"), so dropping it changes the work.
+
+    The config was never lost: `_execute` stores it on each stage output. It simply was not read back. The
+    response now states, per stage, whether a config was carried, so a caller can tell a faithful rerun from
+    one whose original had none.
+    """
     for r in _load():
         if r["run_id"] == run_id:
+            # the config as RUN, recovered from the stage outputs rather than from the type list
+            saved_cfg = {str(o.get("resource")): (o.get("config") or {})
+                         for o in (r.get("stage_outputs") or []) if isinstance(o, dict)}
+            stages = [StageConfig(type=sid, config=saved_cfg.get(str(sid), {})) for sid in r["pipeline"]]
             req = ForgeRunRequest(objective=r["objective"], domain=r["domain"], realm=r["realm"],
-                                  stages=[StageConfig(type=s) for s in r["pipeline"]],
+                                  stages=stages,
                                   usage_area=r.get("usage_area", "forge"), name=f"{r['name']} (rerun)")
-            return await _execute(req)
+            out = await _execute(req)
+            if isinstance(out, dict):
+                carried = {sid: bool(saved_cfg.get(str(sid))) for sid in r["pipeline"]}
+                out["rerun_of"] = run_id
+                out["config_carried"] = carried
+                out["rerun_basis"] = (
+                    ("every stage was re-run with the configuration the original carried"
+                     if all(carried.values()) else
+                     ("the original run carried no per-stage configuration, so there was none to carry"
+                      if not any(carried.values()) else
+                      "the stages whose original carried a configuration were re-run with it; "
+                      f"{sum(1 for v in carried.values() if not v)} stage(s) had none")))
+            return out
     raise HTTPException(status_code=404, detail=f"Run {run_id} not found.")

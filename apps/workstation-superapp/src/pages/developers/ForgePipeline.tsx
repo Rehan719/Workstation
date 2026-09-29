@@ -26,6 +26,26 @@ export const ForgePipeline: React.FC = () => {
   const [error, setError] = useState('');
   const [result, setResult] = useState<RunResult | null>(null);
   const [open, setOpen] = useState<string>('deliverable');
+  // W508 (P2.8(4)) — PER-STAGE CONFIG. StageConfig has carried a `config` field all along and _execute feeds
+  // it into each stage's prompt, so the reconfigurable half of a "reconfigurable resource" existed in the API
+  // and had no surface. Held as the raw text the user typed, per stage id.
+  const [stageConfig, setStageConfig] = useState<Record<string, string>>({});
+  const [rerunning, setRerunning] = useState(false);
+
+  // key=value per line. Free-form on purpose: the resource registry declares reconfigurable params per
+  // resource with no schema this page could validate against, so it passes what was typed rather than
+  // pretending to know the shape — and it REPORTS a line it could not read instead of dropping it.
+  const parseConfig = (raw: string): { config: Record<string, string>; unreadable: string[] } => {
+    const config: Record<string, string> = {};
+    const unreadable: string[] = [];
+    (raw || '').split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+      const i = line.indexOf('=');
+      if (i <= 0) { unreadable.push(line); return; }
+      config[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+    });
+    return { config, unreadable };
+  };
+  const unreadableLines = selected.flatMap(id => parseConfig(stageConfig[id] || '').unreadable);
 
   useEffect(() => { fetch('/api/v1/forge/resources').then(r => r.json()).then(d => setResources(d.resources ?? [])).catch(() => {}); }, []);
 
@@ -35,7 +55,7 @@ export const ForgePipeline: React.FC = () => {
     if (!objective.trim()) return;
     setRunning(true); setError(''); setResult(null);
     try {
-      const r = await fetch('/api/v1/forge/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ objective, stages: selected.map(t => ({ type: t })) }) });
+      const r = await fetch('/api/v1/forge/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ objective, stages: selected.map(t => ({ type: t, config: parseConfig(stageConfig[t] || '').config })) }) });
       if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
       setResult(await r.json());
     } catch (e: any) { setError(e?.message ?? String(e)); }
@@ -73,6 +93,33 @@ export const ForgePipeline: React.FC = () => {
           })}
         </div>
         {selected.length > 0 && <p className="text-[9px] font-mono text-highlight mt-3">pipeline: {selected.join(' → ')}</p>}
+        {/* W508 (P2.8(4)) — each SELECTED stage can be configured, which is what makes these resources
+            reconfigurable in practice rather than in their registry entry. */}
+        {selected.length > 0 && (
+          <div className="mt-4 space-y-2" data-testid="forge-stage-config">
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+              Per-stage configuration · one key=value per line · reaches that stage's prompt
+            </p>
+            {selected.map(id => (
+              <div key={id} className="flex gap-2 items-start">
+                <span className="text-[9px] font-mono text-slate-500 w-28 shrink-0 pt-2">{id}</span>
+                <textarea
+                  value={stageConfig[id] || ''}
+                  onChange={e => setStageConfig({ ...stageConfig, [id]: e.target.value })}
+                  rows={2}
+                  placeholder="depth=deep"
+                  className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] font-mono text-white placeholder:text-slate-700 focus:outline-none focus:border-highlight/40 resize-none"
+                />
+              </div>
+            ))}
+            {unreadableLines.length > 0 && (
+              <p className="text-[9px] font-bold text-amber-400" data-testid="forge-config-unreadable">
+                these lines have no <span className="font-mono">=</span> and are NOT sent:{' '}
+                <span className="font-mono">{unreadableLines.join(' · ')}</span>
+              </p>
+            )}
+          </div>
+        )}
       </Card>
 
       <Card className="p-8 space-y-5">
@@ -90,6 +137,29 @@ export const ForgePipeline: React.FC = () => {
         <div className="space-y-3">
           <div className="text-[9px] font-mono text-slate-500 flex items-center gap-2 flex-wrap">
             <span>{result.run_id} · {result.pipeline.join(' → ')}</span>
+          {/* W508 (P2.8(4)) — RERUN. POST /forge/runs/{id}/rerun has existed with no control to call it, and
+              its backend dropped every per-stage config when rebuilding the pipeline, so a "rerun" ran
+              something else. Both halves are fixed; the response states which stages carried a config. */}
+          <button
+            type="button"
+            data-testid="forge-rerun"
+            disabled={rerunning}
+            onClick={async () => {
+              setRerunning(true); setError('');
+              try {
+                const r = await fetch(`/api/v1/forge/runs/${result.run_id}/rerun`, { method: 'POST' });
+                const b = await r.json();
+                if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+                setResult(b);
+              } catch (e: any) { setError(e?.message ?? String(e)); }
+              setRerunning(false);
+            }}
+            className="text-[9px] font-black uppercase tracking-widest text-highlight hover:text-white transition-colors disabled:opacity-40">
+            {rerunning ? 'Rerunning…' : 'Rerun with the same configuration'}
+          </button>
+          {(result as any).rerun_basis && (
+            <span className="text-[9px] text-slate-500" data-testid="forge-rerun-basis">{(result as any).rerun_basis}</span>
+          )}
             {/* W494 — the verdict, and what it covers: the gate screens the intent label and a constant
                 attestation sentence, never the pipeline's output. */}
             <span data-testid="forge-intent-gate"

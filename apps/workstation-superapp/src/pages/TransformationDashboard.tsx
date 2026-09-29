@@ -256,6 +256,18 @@ export const TransformationDashboard: React.FC = () => {
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-black text-white truncate">{s.tier} <span className="text-slate-600 font-bold">→ {s.delegates_to}</span></p>
                       <p className="text-[10px] text-slate-500 truncate">{s.action}</p>
+                      {/* W509 — the DELIVERY stage's verdict, on the page. It was legible only in the row's
+                          `title` tooltip, and a basis that lives in a hover attribute is not on the page: not
+                          in a screenshot, not in anything a reader keeps. This is the stage P2.8 is judged on,
+                          so which of the four outcomes occurred is rendered rather than hinted. */}
+                      {s.checks === 'delivery' && s.basis && (
+                        <p data-testid="cascade-delivery-basis"
+                           className={`text-[10px] mt-1 leading-relaxed ${
+                             s.verified === true ? 'text-emerald-400'
+                               : s.verified === false ? 'text-amber-400' : 'text-slate-400'}`}>
+                          {s.basis}
+                        </p>
+                      )}
                     </div>
                     <span className="text-[9px] font-bold uppercase text-slate-700">{s.signal}</span>
                   </div>

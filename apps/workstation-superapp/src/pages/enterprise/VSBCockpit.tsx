@@ -33,6 +33,100 @@ interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_ex
   // FAILED, which reads as a served analysis.
   image_status?: string; attached_requested?: boolean; language_requested?: string | null; language_honoured?: string | null }
 
+
+// §7 (W508, P2.8(2)) — RECONFIGURE THE ENTITY'S DELIVERY CASCADE, from the Cockpit that shows it.
+//
+// The edit posts to PUT /api/v1/resources/swarm/{id}, whose own contract is that POST /swarm/run re-reads the
+// saved stages: an edit therefore applies to the NEXT run without a separate "apply" step, and the copy says
+// so rather than leaving a user to wonder whether it took.
+//
+// A blank role or instruction is refused HERE as well as by the server. W460 found that `define` refused one
+// and `PUT` let a saved cascade be edited into one; the API now refuses both, and disabling the save is the
+// honest way to say so before a request rather than after it.
+const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cascadeId, onSaved }) => {
+  const [open, setOpen] = React.useState(false);
+  const [stages, setStages] = React.useState<{ role: string; instruction: string }[] | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [msg, setMsg] = React.useState<string | null>(null);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  const start = async () => {
+    setOpen(true); setErr(null); setMsg(null);
+    try {
+      const r = await fetch(`/api/v1/resources/swarm/${cascadeId}`);
+      const b = await r.json();
+      if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '' })));
+    } catch (e: any) { setErr(e?.message ?? String(e)); }
+  };
+
+  const blank = (stages || []).some(st => !st.role.trim() || !st.instruction.trim());
+
+  const save = async () => {
+    if (!stages || blank) return;
+    setBusy(true); setErr(null); setMsg(null);
+    try {
+      const r = await fetch(`/api/v1/resources/swarm/${cascadeId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stages }),
+      });
+      const b = await r.json();
+      if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      setMsg(`Saved ${(b.stages || []).length} stages. The next run of this cascade re-reads them — nothing further to apply.`);
+      onSaved();
+    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    setBusy(false);
+  };
+
+  if (!open) {
+    return (
+      <button type="button" onClick={start} data-testid="cascade-edit-open"
+              className="mt-2 text-[10px] font-black uppercase tracking-widest text-aura hover:text-white transition-colors">
+        Edit cascade
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-900" data-testid="cascade-edit">
+      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Reconfigure the delivery cascade</p>
+      {err && <p role="alert" className="text-[10px] font-bold text-vital mb-2">{err}</p>}
+      {stages === null && !err && <Loader2 size={13} className="animate-spin text-slate-500" />}
+      {(stages || []).map((st, i) => (
+        <div key={i} className="flex gap-2 mb-2">
+          <input value={st.role} placeholder="role"
+                 onChange={e => setStages(stages!.map((x, j) => j === i ? { ...x, role: e.target.value } : x))}
+                 className="w-1/3 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-aura/30" />
+          <input value={st.instruction} placeholder="instruction"
+                 onChange={e => setStages(stages!.map((x, j) => j === i ? { ...x, instruction: e.target.value } : x))}
+                 className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-aura/30" />
+          <button type="button" aria-label="Remove this stage"
+                  onClick={() => setStages(stages!.filter((_, j) => j !== i))}
+                  className="px-2 text-slate-600 hover:text-vital">×</button>
+        </div>
+      ))}
+      {stages !== null && (
+        <div className="flex items-center gap-2 flex-wrap mt-2">
+          <button type="button" onClick={() => setStages([...(stages || []), { role: '', instruction: '' }])}
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white">+ stage</button>
+          <Button type="button" onClick={save} disabled={busy || blank || stages.length === 0}
+                  data-testid="cascade-edit-save" className="text-[10px]">
+            {busy ? <Loader2 size={12} className="animate-spin" /> : null} Save
+          </Button>
+          <button type="button" onClick={() => setOpen(false)}
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-white">Close</button>
+          {/* the refusal is stated BEFORE the request, not after it */}
+          {blank && <span className="text-[9px] text-amber-400 font-bold" data-testid="cascade-edit-blank">
+            every stage needs a role and an instruction — a cascade cannot be saved with a blank one
+          </span>}
+          {stages.length === 0 && <span className="text-[9px] text-amber-400 font-bold">a cascade needs at least one stage</span>}
+        </div>
+      )}
+      {msg && <p className="text-[10px] text-emerald-400 font-bold mt-2" data-testid="cascade-edit-saved">{msg}</p>}
+    </div>
+  );
+};
+
 export const VSBCockpit: React.FC = () => {
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
   const [vsbFilter, setVsbFilter] = useState('');
@@ -57,6 +151,7 @@ export const VSBCockpit: React.FC = () => {
     return want && TABS.some(([id]) => id === want) ? want : 'org';
   });
   const [loading, setLoading] = useState(false);
+  const [cascadeTick, setCascadeTick] = useState(0);   // W508 (P2.8(2)) — bumped when a cascade edit saves
   const [tx, setTx] = useState<Dict | null>(null);
   const [txRunning, setTxRunning] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -149,7 +244,9 @@ export const VSBCockpit: React.FC = () => {
     });
     loadDeliverables(selected);
     loadShipState(selected);
-  }, [selected]);
+    // W508 (P2.8(2)) — `cascadeTick` is in the deps so saving a cascade edit re-reads the entity and
+    // the stage count on the summary line above is not left stale after a change the user just made.
+  }, [selected, cascadeTick]);
 
   // W299 — the §13 GROWTH machinery reaches the user for THEIR entity (repo ship · repo cascade ·
   // evolve had zero UI callers); W300 — instruct THEIR Chief (apex delegation scoped to this VSB).
@@ -518,6 +615,11 @@ export const VSBCockpit: React.FC = () => {
                 {swarm.org && (
                   <p className="text-[10px] text-slate-500 mt-4">Native delivery swarm: <span className="text-aura font-bold">{swarm.name || swarm.cascade_id}</span> · {(swarm.stages || []).length} stages · posture {swarm.posture || 'in-house'}</p>
                 )}
+                {/* W508 (P2.8(2)) — EDIT CASCADE. The Cockpit showed the entity's delivery swarm and offered
+                    no way to reconfigure it, while PUT /resources/swarm/{id} has done exactly that since
+                    W267 — and POST /swarm/run re-reads the saved stages, so an edit takes effect on the next
+                    run with nothing further to do. That second half is what the criterion asks be provable. */}
+                {swarm.cascade_id && <EditCascade cascadeId={swarm.cascade_id} onSaved={() => setCascadeTick(t => t + 1)} />}
               </Card>
             </div>
           )}

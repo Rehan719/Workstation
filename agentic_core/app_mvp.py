@@ -293,6 +293,13 @@ from agentic_core.api import change_control as cca_api
 # a governed intake with an admin-only one, which is a narrower platform, not a safer one.
 app.include_router(cca_api.router, dependencies=[_Depends(_get_current_user)])
 
+# 48b. THE DELIVERY METHOD, held by the arms-length agency (W508, P2.10). Mounted beside Change
+# Control on purpose: the agency that checks a change against the method also OWNS the method, and the
+# method is amended only through a change record. Authenticated, not admin-only, for the same reason
+# the CCA is: anyone may PROPOSE a method amendment; only an admin decides one.
+from agentic_core.api import method as method_api
+app.include_router(method_api.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
+
 # 49. Constitutional GaaS v5 (v16-Omega interceptor + self-tuning breaker + UEG audit log)
 from agentic_core.api import constitutional_gaas as gaas_api
 app.include_router(gaas_api.router)

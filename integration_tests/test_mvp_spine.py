@@ -3178,7 +3178,20 @@ def test_transformation_orchestrate_end_to_end(client):
     # nothing and are now NOT ASSESSABLE. Only assessable stages can count as verified.
     stages = {s["step"]: s for s in b["cascade"]}
     assert stages[5]["verified"] is None and "static delegation map" in stages[5]["basis"]
-    assert stages[6]["verified"] is None and "static delegation map" in stages[6]["basis"]
+    # W509 — step 6 is NO LONGER the static delegation map: W508 made it DELIVER through the §13 engine and
+    # verify that the record landed. So the old assertion here was asserting a true thing about a stage that
+    # no longer exists, and replacing it with nothing would have removed a check (M-EXEC-05). The new truth is
+    # the FOUR-STATE one, and the leg below asserts the verdict and its basis AGREE — a stage whose basis says
+    # it delivered while `verified` says nothing was delivered fails this, which is the defect the four states
+    # exist to prevent.
+    _s6 = stages[6]
+    assert _s6["checks"] == "delivery", _s6            # the KIND: a delivery was attempted, whatever came of it
+    if _s6["verified"] is True:
+        assert "DELIVERED and ATTESTED" in _s6["basis"], _s6["basis"]
+    elif _s6["verified"] is None:
+        assert "NOT ASSESSABLE" in _s6["basis"] and "landed in the store" in _s6["basis"], _s6["basis"]
+    else:
+        assert ("NOTHING WAS DELIVERED" in _s6["basis"] or "gate REFUSED" in _s6["basis"]), _s6["basis"]
     assert all(s.get("basis") for s in b["cascade"])                     # every verdict says what it rests on
     assert v["assessable_stages"] == sum(1 for s in b["cascade"] if s["verified"] is not None)
     assert v["verified_stages"] == sum(1 for s in b["cascade"] if s["verified"] is True)
@@ -13001,8 +13014,15 @@ def test_w464_change_control_decisions_are_written_to_the_ledger(client, monkeyp
     serve = _w464_serving(monkeypatch, CC, review="no marker at all")
 
     def submit(change_type, **kw):
+        # W509 — the record is COMPLETE on purpose. W508 gave the method gate its one tooth: a change may not
+        # be AUTO-approved while a mechanically-checkable requirement is UNMET, and an incomplete record fails
+        # `states-a-rationale` and `names-what-it-touches`. This test probes the LEDGER, not that policy, so it
+        # submits a record that clears the gate; the policy itself is driven in its own leg at the end.
         return client.post("/api/v1/cca/submit", json={"title": f"W464L {change_type} {_uuid.uuid4().hex[:6]}",
                                                         "description": "w464 ledger probe",
+                                                        "rationale": "a ledger probe that must clear the "
+                                                                     "method gate so the decision is written",
+                                                        "affected_systems": ["change_control"],
                                                         "change_type": change_type, **kw}).json()
 
     def nodes(cid):
@@ -13014,6 +13034,25 @@ def test_w464_change_control_decisions_are_written_to_the_ledger(client, monkeyp
     ln = nodes(low["cca_id"])
     assert [n["type"] for n in ln] == ["cca.change_approved"] and ln[0]["decision_source"] == "low_tier_auto_approval"
     assert CC._load_change(low["cca_id"])["decision_source"] == "low_tier_auto_approval"
+
+    # ── W509: the METHOD gate's one tooth, driven here because health is already forced healthy, so the
+    # method check is the ONLY thing that can withhold this approval. An earlier version of this leg lived
+    # where the health gate held the change first, so `auto_approval_withheld` was never set and the leg
+    # could not fail. The same tier, the same health, and the ONLY difference is an incomplete record.
+    _thin = client.post("/api/v1/cca/submit", json={
+        "title": f"W509 incomplete record {_uuid.uuid4().hex[:6]}", "change_type": "config_minor",
+        "description": "a low-tier change whose record does not say what it is for or what it touches"}).json()
+    assert _thin["status"] == "submitted", _thin          # it would have auto-approved before W508
+    assert _thin.get("auto_approval_withheld"), _thin
+    _mc = _thin["method_check"]
+    assert _mc["may_auto_approve"] is False
+    _unmet = {q["requirement"] for q in _mc["requirements"] if q["state"] == "UNMET"}
+    assert {"states-a-rationale", "names-what-it-touches"} <= _unmet, _unmet
+    # NOT_ASSESSABLE must never block: it is the majority answer, and a gate that blocked on it would be a
+    # stop sign rather than a check
+    assert any(q["state"] == "NOT_ASSESSABLE" for q in _mc["requirements"]), _mc
+    assert nodes(_thin["cca_id"]) == [], "withholding an automatic approval is not a decision to record"
+
     # a submission that is only held writes nothing; a held review writes nothing
     med = submit("config_major")
     assert med["status"] == "submitted" and "ueg_logged" not in med and nodes(med["cca_id"]) == []
@@ -17729,13 +17768,30 @@ def test_w481_the_transformation_cascade_verifies_delivery_or_says_it_did_not(cl
     assert _s3["verified"] is None and _s3["checks"] == "presence", _s3        # seeded objectives are not a verification
     assert "seeded" in _s3["basis"] and _withobj["validation"]["validated"] is None
     assert "static label" in stages[4]["basis"] and "no integration is checked" in stages[4]["basis"]
-    assert stages[5]["checks"] == "none" and stages[6]["checks"] == "none"
+    # W508 (P2.8(5)/FU-232) — STAGE 6 NOW DECLARES A DELIVERY CHECK, and that is the point of the item.
+    # W481 asserted it was "none", which was true and was the defect: `delivery_verified` filters
+    # checks == "delivery", no stage declared it, so `validated` could never be True and the §5 loop closure
+    # that advances a plan objective had never fired in production. Stage 6 (the Build-to-Order tier) now
+    # delivers one artefact through the living-deliverables engine and verifies the RECORD LANDED.
+    # `checks` is the KIND of check attempted; it stays "delivery" whenever a delivery was attempted, and is
+    # "none" only when it could not be attempted at all — a kind field must not report an outcome (W491).
+    # `stages` is a dict KEYED BY STEP ({s["step"]: s for s in cascade}), so stages[6] is step 6.
+    assert stages[6]["checks"] == "delivery", stages[6]
+    assert stages[6]["verified"] in (True, False, None) and str(stages[6]["basis"]).strip(), stages[6]
     assert stages[7]["checks"] == "decision" and stages[8]["checks"] == "artifact"
     assert "artifact only" in stages[8]["basis"]
 
     # ── the verdict: not assessable until a DELIVERY check verifies ─────────────────────────────
     assert v["validated"] is None and "DELIVERED" in v["validated_basis"], v
-    assert v["presence_stages"] >= 3 and v["delivery_verified_stages"] == []
+    # W508 — `delivery_verified_stages` is now populated only when a delivery both landed AND was attested by
+    # the QMS gate. It is [] on a run whose deliverable landed unattested, which is a real state and not the
+    # old "no stage even declares a delivery check". Asserted as a property of the verdict rather than a
+    # constant, so the leg still holds when a run does attest.
+    assert v["presence_stages"] >= 3
+    _dv = v["delivery_verified_stages"]
+    _delivery_stages = [st for st in stages.values() if st.get("checks") == "delivery"]
+    assert _delivery_stages, "no stage declares a delivery check, so a run can never be validated"
+    assert _dv == [st["step"] for st in _delivery_stages if st.get("verified") is True], (_dv, _delivery_stages)
     assert "End-to-end transformation cascade ran From Chief To Build-to-Order" not in v["report"]
     # the arithmetic in the sentence must add up: presence stages ARE not-assessable stages
     assert f"{v['not_assessable_stages']} stage(s) were not assessable" in v["report"]
@@ -20754,9 +20810,13 @@ def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(clie
     # the reason the leg above proves, which would have read as the gate being unable to grant at all.
     monkeypatch.setattr(_bb.self_healer, "status", _real_healer)
     monkeypatch.setattr(_bb.immune, "status", _immune(1.0, "NOMINAL"))
+    # W509 — affected_systems added: W508's method gate withholds AUTO-approval while a mechanically-checkable
+    # requirement is UNMET, and a record naming nothing it touches fails `names-what-it-touches`. This leg
+    # proves the HEALTH gate can still grant, so it must not be blocked by an unrelated incomplete record.
     _sub2 = client.post("/api/v1/cca/submit", json={"change_type": "config_minor",
                                                     "title": "W494 healthy probe",
                                                     "description": "the same LOW change, health measured high",
+                                                    "affected_systems": ["change_control"],
                                                     "rationale": "the gate must still be able to grant"})
     _rec2 = client.get(f"/api/v1/cca/{_sub2.json()['cca_id']}").json()
     assert _rec2["status"] == "approved", _rec2
@@ -26482,3 +26542,448 @@ def test_w507_fu256_a_row_written_with_recall_on_is_marked_and_recall_states_its
         assert marked, (
             f"the add_memory call at gateway.py:{call.lineno} does not carry the from_augmented_prompt "
             f"marker — a row it writes can never be disclosed, which is the second-writer defect")
+
+
+def test_w508_p210_the_method_is_held_as_data_and_the_gate_says_what_it_cannot_check(client):
+    """P2.10 — THE DELIVERY METHOD, HELD BY THE ARMS-LENGTH AGENCY.
+
+    The discipline that produced this delivery lived outside the product: the lessons in an assistant's notes,
+    the mechanisms in scripts and docs, and nothing in the platform applying either to a change.
+
+    THE RISK THIS ITEM MUST NOT REALISE, in its own words: a green "METHOD COMPLIANT" badge over requirements
+    nothing evaluated — the exact class W489–W495 removed. So the hardest assertion here is not that the check
+    runs; it is that the check SAYS WHAT IT CANNOT SEE, and that most requirements are NOT_ASSESSABLE.
+    """
+    import json as _json
+    import pathlib
+    import re as _re
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── (a) THE REGISTER: every lesson carries the DEFECT that produced it ────────────────────────────
+    doc = _json.loads((root / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+    lessons, mechanisms = doc["lessons"], doc["mechanisms"]
+    assert len(lessons) >= 20, f"only {len(lessons)} lessons — the method is a stub"
+    groups = set(doc["about"]["groups"])
+    assert {"planning", "measurement", "execution", "verification", "delivery"} <= groups, groups
+
+    for l in lessons:
+        assert str(l.get("defect", "")).strip(), (
+            f"{l['id']} states a rule with NO defect behind it — a rule with no defect is an opinion")
+        assert str(l.get("rule", "")).strip() and str(l.get("apply", "")).strip(), l["id"]
+        # an enforcer, or the REASON there is none. Silence would let a reader assume enforcement.
+        assert (l.get("enforced_by") or "").strip() or (l.get("why_not_enforced") or "").strip(), (
+            f"{l['id']} names no enforcer and no reason one is absent")
+
+    # EVERY CITED INSTRUMENT MUST EXIST. A method naming a missing tool commits the defect it warns about —
+    # W499 found three external assessments citing instruments that were not there.
+    missing = []
+    for row in lessons + mechanisms:
+        for cited in _re.findall(r"([A-Za-z0-9_./]+[.](?:py|json|md))", str(row.get("enforced_by") or "")):
+            if not (root / cited).exists():
+                missing.append((row["id"], cited))
+        for ep in row.get("entry_points", []):
+            if not (root / str(ep).split()[0]).exists():
+                missing.append((row["id"], ep))
+    assert not missing, f"the method cites instruments that do not exist: {missing}"
+
+    # a mechanism with no stated limit is one nobody has tested
+    for m in mechanisms:
+        assert str(m.get("known_limit", "")).strip(), f"{m['id']} declares no known limit"
+
+    # ── the ROUTES serve it, and the enforcement share is STATED rather than implied ──────────────────
+    got = client.get("/api/v1/method")
+    assert got.status_code == 200, got.text[:200]
+    body = got.json()
+    assert len(body["lessons"]) == len(lessons)
+    enf = body["enforcement"]
+    assert enf["mechanically_enforced"] + enf["judgement_only"] == enf["lessons_total"]
+    assert enf["judgement_only"] > 0, (
+        "the method claims every lesson is mechanically enforced, which would mean the tooling catches "
+        "judgement — that claim is the defect this item exists to avoid")
+    assert client.get("/api/v1/method/lessons/M-VERIF-01").status_code == 200
+    assert client.get("/api/v1/method/lessons/NOT-A-LESSON").status_code == 404
+
+    # ── (c) THE GATE: teeth on what it can check, NOT_ASSESSABLE on what it cannot ────────────────────
+    from agentic_core.api.method import NOT_ASSESSABLE, check_change
+
+    good = {"title": "t", "change_type": "config_minor", "description": "d",
+            "rationale": "a rationale of real substance, stating why this change is being made at all",
+            "affected_systems": ["method", "change_control"], "audit_trail": []}
+    chk = check_change(good)
+    assert chk["method_available"] is True
+    assert chk["counts"]["unmet"] == 0 and chk["may_auto_approve"] is True, chk["requirements"]
+    # THE CENTRAL ASSERTION: the substance of the method is reported as NOT ASSESSABLE
+    assert chk["counts"]["not_assessable"] >= 5, (
+        "the gate reports almost everything as checkable, which would mean a change record exposes whether a "
+        "blind was added and whether a basis was computed — it does not")
+    na = [r["requirement"] for r in chk["requirements"] if r["state"] == NOT_ASSESSABLE]
+    assert any("verif" in r for r in na), f"no verification requirement is marked unassessable: {na}"
+    assert "NOT a statement that this change follows the method" in chk["limits"]
+    for r in chk["requirements"]:
+        assert str(r.get("basis", "")).strip(), f"{r['requirement']} returns a state with no basis"
+
+    # a DEFICIENT record: the checkable requirements go UNMET and the auto-approval is withheld
+    bad = {"title": "t", "change_type": "config_minor", "description": "d",
+           "rationale": "", "affected_systems": [], "audit_trail": []}
+    cb = check_change(bad)
+    assert cb["counts"]["unmet"] >= 2 and cb["may_auto_approve"] is False, cb["counts"]
+    assert cb["why_not_approvable"] and "UNMET" in cb["why_not_approvable"]
+
+    # ...and Change Control ACTS on it, and the check travels with the response
+    sub = client.post("/api/v1/cca/submit", json={
+        "title": "w508 deficient", "change_type": "config_minor", "description": "x",
+        "rationale": "", "affected_systems": [], "submitted_by": "w508-guard"})
+    assert sub.status_code == 200, sub.text[:200]
+    sb = sub.json()
+    assert sb.get("method_check"), "the submission response carries no method check"
+    assert sb["status"] != "approved", (
+        "a change with an UNMET mechanically-checkable requirement was AUTO-APPROVED — the gate has no teeth")
+    # W508 — assert the METHOD CHECK'S OWN verdict, not `auto_approval_withheld`. That field is set only when
+    # the method gate is the BINDING constraint, and another gate may hold a change first: this leg failed
+    # once because the health gate had already held it (measured_health 0.4), so the method branch never ran.
+    # A guard that depends on which gate happened to fire first is observing the ambient state (M-VERIF-02).
+    assert sb["method_check"]["may_auto_approve"] is False, sb["method_check"]["counts"]
+    assert sb["method_check"]["why_not_approvable"], "the method check refuses and does not say why"
+
+    # a WELL-FORMED one is NOT blocked: a NOT_ASSESSABLE requirement must never stop a change, or the gate
+    # becomes a stop sign rather than a check
+    ok = client.post("/api/v1/cca/submit", json={
+        "title": "w508 well formed", "change_type": "config_minor", "description": "a real description",
+        "rationale": "a rationale of real substance explaining exactly why this change is proposed",
+        "affected_systems": ["method"], "submitted_by": "w508-guard"})
+    assert ok.json()["method_check"]["may_auto_approve"] is True, ok.json()["method_check"]
+    assert not ok.json().get("auto_approval_withheld")
+
+    # ── (b) THE DERIVATION: a candidate is NOT a lesson, and an unconfirmed defect cannot produce one ──
+    openrow = client.post("/api/v1/method/derive",
+                          json={"row_id": "FU-301", "defect_class": "c", "proposed_group": "verification"})
+    assert openrow.status_code == 400, (
+        "a lesson was derived from an OPEN row — an open row may still be refuted, and two were dropped as "
+        "factually wrong in W507")
+
+    der = client.post("/api/v1/method/derive", json={
+        "row_id": "FU-239", "defect_class": "a screen that cannot clear",
+        "proposed_rule": "A screen may clear a subject only by verifying a document a body issued.",
+        "proposed_group": "verification"})
+    assert der.status_code == 200, der.text[:200]
+    cand = der.json()["candidate"]
+    assert cand["state"] == "CANDIDATE" and cand["id"].startswith("CANDIDATE-")
+    assert "FU-239" in cand["defect"], "the candidate does not carry the row's own measured defect"
+    assert der.json()["change_control"]["submitted"] is True, (
+        "the candidate did not reach Change Control — the method must be amendable only through the agency "
+        "that holds it")
+    assert not any(str(l["id"]).startswith("CANDIDATE")
+                   for l in client.get("/api/v1/method").json()["lessons"]), \
+        "a candidate entered the method register without being ratified"
+
+
+def test_w508_p210_the_platform_checks_its_own_delivery_against_its_own_method(client):
+    """P2.10, the weaving — the method APPLIED to the platform's own cascade, not merely served beside it.
+
+    The Owner's instruction is that the learning be utilised inside Workstation's own transformation
+    processes. A register the platform serves is a document; a register it checks its OWN delivery against is
+    the learning made operative.
+
+    FOUR method lessons are properties of a cascade's output and are therefore genuinely checkable:
+      M-VERIF-10  a three-state verdict WITH a basis on every stage
+      M-VERIF-01  a check that CANNOT fail never reports success
+      M-MEAS-03   the figure's denominator is what was ASSESSABLE, not what exists
+      M-DELIV-01  a stage declaring a real check kind that produced no verdict is NAMED
+    Everything else stays NOT_ASSESSABLE, for the same reason it does at the change gate.
+
+    THE FIRST VERSION OF THE FOURTH LEG WAS ITSELF THE DEFECT: it searched each basis for the phrases "not
+    assessable" or "not run" and flagged three live stages whose bases DID explain themselves in different
+    words. A word list over prose is not a check (M-VERIF-03) and it accused working code (M-EXEC-01). It now
+    reads the `checks` kind and the verdict — fields, not prose — and this test asserts that property so the
+    prose version cannot come back.
+    """
+    from agentic_core.api.method import MET, NOT_ASSESSABLE, UNMET, check_cascade
+
+    # ── a well-formed cascade passes, and the limit is stated ────────────────────────────────────────
+    good = [{"step": 1, "verified": None, "checks": "presence",
+             "basis": "presence only: the platform always creates this, so the check cannot fail"},
+            {"step": 2, "verified": True, "checks": "delivery", "basis": "DELIVERED: a record landed"}]
+    r = check_cascade(good, {"verified_stages": 1, "assessable_stages": 1})
+    assert r["counts"]["unmet"] == 0 and r["follows_the_method_where_checkable"] is True, r["requirements"]
+    assert r["counts"]["not_assessable"] >= 3, (
+        "the cascade check claims to assess almost everything, which would mean a cascade's output shows "
+        "whether a blind was added — it does not")
+    assert "not a statement that the round followed the method" in r["limits"]
+    for q in r["requirements"]:
+        assert str(q.get("basis", "")).strip(), f"{q['requirement']} returns a state with no basis"
+
+    # ── M-VERIF-01: a check that CANNOT fail must not report success ─────────────────────────────────
+    bad = check_cascade([{"step": 1, "verified": True, "checks": "presence", "basis": "it exists"}],
+                        {"verified_stages": 1, "assessable_stages": 1})
+    assert bad["follows_the_method_where_checkable"] is False
+    assert any(q["requirement"] == "a-check-that-cannot-fail-reports-nothing" and q["state"] == UNMET
+               for q in bad["requirements"]), bad["requirements"]
+
+    # ── M-VERIF-10: a verdict with no basis is not readable ──────────────────────────────────────────
+    nb = check_cascade([{"step": 1, "verified": False, "checks": "delivery", "basis": ""}],
+                       {"verified_stages": 0, "assessable_stages": 1})
+    assert any(q["requirement"] == "three-state-verdicts" and q["state"] == UNMET
+               for q in nb["requirements"]), nb["requirements"]
+
+    # ── M-DELIV-01: FIELDS, not prose. A basis that explains itself in its OWN words must PASS, and a
+    #    real-check stage with no verdict must FAIL — this is the pair the first version got backwards.
+    own_words = check_cascade(
+        [{"step": 1, "verified": None, "checks": "presence",
+          "basis": "presence only: the Owner's Board always resolves a Chief, so this check cannot fail"}],
+        {"verified_stages": 0, "assessable_stages": 0})
+    assert all(q["state"] != UNMET for q in own_words["requirements"]
+               if q["requirement"] == "every-real-check-produced-a-verdict"), (
+        "a presence stage whose basis explains itself in its own words was flagged — the leg is matching "
+        "phrases again rather than reading the checks kind")
+    real_absent = check_cascade(
+        [{"step": 1, "verified": None, "checks": "delivery", "basis": "the engine was unavailable"}],
+        {"verified_stages": 0, "assessable_stages": 0})
+    assert any(q["requirement"] == "every-real-check-produced-a-verdict" and q["state"] == UNMET
+               for q in real_absent["requirements"]), (
+        "a stage declaring a DELIVERY check that produced no verdict was not flagged")
+
+    # ── an empty cascade is refused, not passed ──────────────────────────────────────────────────────
+    empty = check_cascade([], {})
+    assert empty["follows_the_method_where_checkable"] is False, empty
+    assert empty["counts"] == {"met": 0, "unmet": 0, "not_assessable": 0}
+    # the same SHAPE as every other branch: a caller must not get a KeyError on the one answer that means
+    # "nothing was checked" (the sibling-return defect the pre-flight exists to catch)
+    for key in ("method_available", "checked_at", "requirements", "counts",
+                "follows_the_method_where_checkable", "limits"):
+        assert key in empty, f"the empty-cascade answer omits {key}, which every other branch carries"
+
+    # ── and the LIVE Transformation Office run carries its own method verdict ────────────────────────
+    run = client.post("/api/v1/transformation/orchestrate",
+                      json={"scope": "workstation", "objective": "w508 guard — the method on its own work"})
+    assert run.status_code == 200, run.text[:200]
+    body = run.json()
+    mc = body.get("method_check")
+    assert mc and mc.get("method_available") is True, (
+        "the transformation run carries no method check — a check computed and not reported is rendered "
+        "nowhere, which is the defect this method warns of")
+    assert isinstance(mc.get("counts"), dict) and mc["counts"]["not_assessable"] >= 1
+    # W508 — this leg asserts the check REPORTS, not that the platform is perfect. An earlier version
+    # asserted unmet == 0 on the live run, which would have made the guard demand that the cascade never
+    # have a finding — and the way to satisfy that is to weaken the check, not to fix the code. So: every
+    # requirement carries a basis, and any UNMET one is EXPLAINED.
+    for q in mc["requirements"]:
+        assert str(q.get("basis", "")).strip(), f"{q['requirement']} reports a state with no basis"
+    if mc["counts"]["unmet"]:
+        assert str(mc.get("why_not") or "").strip(), (
+            "the run reports UNMET requirements and says nothing about which or why")
+        assert mc["follows_the_method_where_checkable"] is False, (
+            "the run reports UNMET requirements and still claims to follow the method")
+    else:
+        assert mc["follows_the_method_where_checkable"] is True
+
+
+def test_w508_p210d_the_method_is_rendered_and_is_not_presented_as_a_badge():
+    """P2.10(d) — the method READ ON A SURFACE, and refusing to be a compliance badge there.
+
+    P2.10's ACCEPT requires the register to be served AND RENDERED, with the check's own limits stated on the
+    surface rather than implied. The item's named risk is a green "METHOD COMPLIANT" badge over requirements
+    nothing evaluated, so the surface is the place that risk would actually be realised — a reader meets the
+    page, not the JSON.
+    """
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page = (root / "apps/workstation-superapp/src/pages/governance/DeliveryMethod.tsx").read_text(
+        encoding="utf-8")
+    centre = (root / "apps/workstation-superapp/src/pages/governance/GovernanceCenter.tsx").read_text(
+        encoding="utf-8")
+
+    # it is REACHABLE — a page nobody can open is not a surface
+    assert "DeliveryMethod" in centre and "'method'" in centre, \
+        "the Method tab is not mounted on the Governance centre, so the register is served and not rendered"
+
+    def reads(field):
+        """a line that READS the field off the data, not a comment mentioning it (W503/W507)."""
+        return [ln for ln in page.splitlines()
+                if field in ln and not ln.lstrip().startswith(("//", "*", "{/*", "/*"))]
+
+    # the DEFECT behind each rule is rendered. A rule shown without its defect is an opinion on a page.
+    assert reads("l.defect"), "the page does not render the defect behind each rule"
+    assert reads("l.apply"), "the page does not render how to apply each rule"
+    # ...and whether anything enforces it, with the REASON when nothing does
+    assert reads("l.enforced_by"), "the page does not say what catches a breach"
+    assert reads("l.why_not_enforced"), \
+        "the page shows no reason where nothing enforces a lesson, so a reader assumes enforcement"
+
+    # THE HEADLINE IS THE HONEST ONE: the share that is NOT enforced is shown, not buried
+    assert "judgement_only" in page and "mechanically_enforced" in page, \
+        "the page does not show how little of the method a tool can catch"
+
+    # the item's named risk, REFUSED in the rendered copy
+    assert "not a compliance badge" in page, \
+        "the page does not refuse to be read as a compliance badge, which is this item's stated risk"
+    assert "NOT ASSESSABLE" in page, \
+        "the page never tells a reader that most requirements are not assessable"
+
+    # a mechanism's KNOWN LIMIT is rendered, not hidden — a mechanism with no stated limit is untested
+    assert reads("m.known_limit"), "the page renders mechanisms without their known limits"
+
+    # and an unreadable register is SAID, never shown as an empty method
+    assert "method-unavailable" in page and "not a statement" in page, \
+        "the page shows an unreadable method as no method, which are different statements"
+
+
+def test_w508_p28_the_cascade_can_be_edited_the_planner_is_named_and_a_rerun_reproduces_the_run(client):
+    """P2.8 (2), (3) and (4) — three criteria whose backends existed and whose surfaces did not.
+
+    Each was the same shape: a capability complete in the API with nothing reaching it.
+      (2) PUT /resources/swarm/{id} has reconfigured a cascade since W267, and its own contract is that
+          POST /swarm/run RE-READS the saved stages — so an edit applies to the next run with no apply step.
+          The Cockpit showed the entity's cascade and offered no way to change it.
+      (3) the tree route has returned `planner` since W283 ("swarm_planned" only when a real owned model
+          produced a valid DAG, else the deterministic template) and the page's own type DROPPED it.
+      (4) StageConfig has carried a `config` field all along, the page never sent one, and
+          POST /forge/runs/{id}/rerun REBUILT the pipeline from the type list — dropping every config, so a
+          "rerun" executed a different pipeline while reporting itself as a rerun of that one.
+
+    (4)'s backend half is driven here end to end, because it is the one that changes what the platform DOES.
+    """
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    def reads(text, needle):
+        """a line that READS something, not a comment mentioning it (W503/W507)."""
+        return [ln for ln in text.splitlines()
+                if needle in ln and not ln.lstrip().startswith(("//", "*", "{/*", "/*"))]
+
+    # ── (4) THE SUBSTANCE: a rerun reproduces the run it claims to rerun ──────────────────────────────
+    res = client.get("/api/v1/forge/resources").json()
+    ids = [r["id"] for r in (res.get("resources") or [])][:2]
+    assert len(ids) == 2, f"fewer than two forge resources, so this cannot drive a two-stage pipeline: {ids}"
+
+    cfg = {"depth": "deep", "tone": "formal"}
+    run = client.post("/api/v1/forge/run", json={
+        "objective": "w508 guard — a rerun must reproduce the run",
+        "stages": [{"type": ids[0], "config": cfg}, {"type": ids[1], "config": {}}]})
+    assert run.status_code == 200, run.text[:200]
+    rb = run.json()
+    as_run = {o["resource"]: (o.get("config") or {}) for o in rb["stage_outputs"]}
+    assert as_run[ids[0]] == cfg, ("the config did not reach the stage it was given for", as_run)
+
+    re_ = client.post(f"/api/v1/forge/runs/{rb['run_id']}/rerun")
+    assert re_.status_code == 200, re_.text[:200]
+    rr = re_.json()
+    on_rerun = {o["resource"]: (o.get("config") or {}) for o in rr["stage_outputs"]}
+    assert on_rerun[ids[0]] == cfg, (
+        "the RERUN dropped the per-stage configuration, so it executed a different pipeline while reporting "
+        "itself as a rerun of this one")
+    assert rr.get("rerun_of") == rb["run_id"], "the rerun does not say which run it re-ran"
+    # it also says WHICH stages carried a config, so a faithful rerun is distinguishable from one whose
+    # original had none — the two are different facts and a single boolean would conflate them
+    carried = rr.get("config_carried") or {}
+    assert carried.get(ids[0]) is True and carried.get(ids[1]) is False, carried
+    assert str(rr.get("rerun_basis") or "").strip(), "the rerun states no basis for what it carried"
+
+    # a rerun of a run that never existed must refuse
+    assert client.post("/api/v1/forge/runs/not-a-real-run/rerun").status_code == 404
+
+    # ── (4) the PAGE sends a config and offers the rerun ─────────────────────────────────────────────
+    forge = (root / "apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx").read_text(
+        encoding="utf-8")
+    assert reads(forge, "config: parseConfig"), \
+        "the Forge page still sends stages with no config, so the reconfigurable half has no surface"
+    assert reads(forge, "/rerun"), "the Forge page offers no rerun, against an endpoint that exists"
+    assert "forge-config-unreadable" in forge, \
+        "a config line the page cannot parse is dropped silently rather than reported"
+
+    # ── (3) the planner is RENDERED, and the two planners are distinguished ──────────────────────────
+    nai = (root / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    # the planner must be RENDERED, not merely referenced: it is read in a className, a title AND the
+    # chip text, so requiring any ONE reference let a blind delete the visible label and stay green.
+    assert reads(nai, "planned by the swarm") and reads(nai, "planned by template"), (
+        "the tree view does not RENDER which planner produced the decomposition, so a "
+        "template-planned tree and a swarm-planned one look identical on the page")
+    assert "swarm_planned" in nai and "deterministic_template" in nai, \
+        "the page does not distinguish the two planners, which is the only thing the field is for"
+    assert "planner not stated" in nai, \
+        "a run that names no planner is presented as one of the two, which invents a fact"
+
+    # ── (2) the Cockpit can reconfigure, and says the edit applies to the next run ───────────────────
+    cockpit = (root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(
+        encoding="utf-8")
+    assert "cascade-edit-open" in cockpit, "the Cockpit offers no way to edit the entity's cascade"
+    assert reads(cockpit, "method: 'PUT'"), "the edit does not reach the reconfigure endpoint"
+    assert "re-reads them" in cockpit, (
+        "the Cockpit does not tell the user the edit takes effect on the next run, which is the half of "
+        "P2.8(2) that makes the edit useful rather than merely possible")
+    # a blank stage is refused BEFORE the request, not after
+    assert "cascade-edit-blank" in cockpit and reads(cockpit, "blank"), \
+        "the edit lets a cascade be saved with a blank role or instruction, which W460 found PUT allowed"
+
+    # ── FU-010: a saved cascade can be RETIRED, and the confirmation names what else it touches ──────
+    # the EXACT testid, not a substring: "cascade-delete" also matches "cascade-delete-confirm", so
+    # deleting the retire button itself left this green — substring matching with no boundary.
+    assert 'data-testid="cascade-delete"' in nai, (
+        "DELETE /resources/swarm/{id} has been live since W345 and no page could call it, so a saved cascade "
+        "could never be retired from anywhere")
+    assert "cascade-delete-confirm" in nai, "an irreversible delete is offered with no confirmation"
+    assert reads(nai, "native_swarm pointer"), (
+        "the confirmation does not say that retiring a VSB-bound cascade also clears that entity's pointer")
+    assert reads(nai, "method: 'DELETE'"), "the control does not call the delete endpoint"
+
+
+def test_w509_the_method_gate_has_a_surface_and_the_form_can_clear_it(client):
+    """The gate's verdict must reach a page, and the form must be able to satisfy it.
+
+    TWO DEFECTS, both introduced by wiring the gate in W508 and both found by the round's own mechanical
+    pre-flight: the backend produced `auto_approval_withheld` and `method_check` and NO page read either, so
+    approvals were withheld silently; and the submit form posted no rationale and no affected_systems, so the
+    auto-approval path its own help text described had become unreachable from the UI.
+
+    The second defect is the one a presence check would miss, so it is DRIVEN: this test posts what the form
+    posts and asserts the gate can actually be cleared. A label over a control that cannot succeed is worse
+    than no label.
+    """
+    import re
+    from pathlib import Path
+    src = (Path(__file__).resolve().parents[1] /
+           "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+
+    # (1) the POST carries both fields the gate checks - the BINDING, not a word in a placeholder
+    assert re.search(r"rationale,\s*\n\s*affected_systems: systems\.split\(','\)", src), \
+        "the form must send the rationale and the affected systems it collects"
+    assert 'data-testid="cca-rationale"' in src and 'data-testid="cca-systems"' in src
+    # the inputs must be BOUND to the state that is sent, or the fields are decoration
+    assert "value={rationale} onChange={e => setRationale(e.target.value)}" in src
+    assert "value={systems} onChange={e => setSystems(e.target.value)}" in src
+    # and cleared on success, or the next change inherits the last one's reason
+    assert "setRationale(''); setSystems('')" in src
+
+    # (2) the withheld reason is rendered FROM THE RECORD, on the card and in the submit message
+    assert 'data-testid="cca-method-withheld"' in src
+    assert "{entry.auto_approval_withheld}" in src
+    assert "res.data.auto_approval_withheld as string | undefined" in src
+    assert "withheld by the delivery-method gate" in src
+
+    # (3) the help text states all THREE conditions; it listed two after the gate made it three
+    assert "the delivery-method gate finds no checkable requirement unmet" in src
+
+    # (4) DRIVEN: what the form now posts must be able to CLEAR the gate
+    ok = client.post("/api/v1/cca/submit", json={
+        "title": "W509 what the form posts", "change_type": "config_minor",
+        "description": "the same shape the submit form sends once the two fields are filled",
+        "rationale": "the form must be able to clear the method gate it now describes",
+        "affected_systems": ["change_control"], "submitted_by": "workstation-ui"}).json()
+    unmet = [q["requirement"] for q in ok["method_check"]["requirements"] if q["state"] == "UNMET"]
+    assert unmet == [], unmet
+    assert not ok.get("auto_approval_withheld"), ok.get("auto_approval_withheld")
+
+    # (5) the DELIVERY stage's verdict is on the page, not only in a hover attribute. The pre-flight found
+    #     `delivery_basis` produced and read by nothing, and the nearest thing was `title={s.basis}` - a
+    #     tooltip is not on the page, not in a screenshot and not in anything a reader keeps. This is the
+    #     stage P2.8's fifth clause is judged on.
+    td = (Path(__file__).resolve().parents[1] /
+          "apps/workstation-superapp/src/pages/TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="cascade-delivery-basis"' in td
+    # the GATE and the BODY: a presence check survives a conditional that is never true, so both the
+    # condition and what it renders are asserted (the W503 class)
+    assert "s.checks === 'delivery' && s.basis" in td, "the block must be gated on the delivery stage itself"
+    assert re.search(r"data-testid=\"cascade-delivery-basis\"[\s\S]{0,400}\{s\.basis\}", td), \
+        "the block must render the stage's own basis, not a sentence written on the page"

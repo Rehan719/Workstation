@@ -772,6 +772,34 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
                                           "measured_health": _measured})
         biobus.fire_signal("sensory", "cca.submit", f"Change submitted: {req.title} [{tier}] (immune: {threat})", 0.5)
 
+    # ── THE METHOD GATE, ARMS-LENGTH (W508, P2.10(c)) ────────────────────────────────────────────────────
+    # Every submission is checked against the delivery method the agency holds, from the REPO'S OWN
+    # ARTEFACTS and never from what the submitter claims about itself. Three states per requirement, and
+    # NOT_ASSESSABLE is the majority answer by design: a change record cannot show whether a blind was added
+    # or whether a basis string was computed rather than asserted, and reporting those as MET would be the
+    # exact defect the method exists to remove.
+    #
+    # THE ONE TEETH THIS GATE HAS: a change may not be AUTO-approved while a mechanically-checkable
+    # requirement is UNMET. A NOT_ASSESSABLE requirement never blocks anything, because that would block
+    # every change and turn the gate into a stop sign rather than a check.
+    try:
+        from agentic_core.api.method import check_change as _method_check
+        change["method_check"] = _method_check(change)
+    except Exception as _me:                       # noqa: BLE001 — recorded, and it does not pass by default
+        change["method_check"] = {
+            "method_available": False, "may_auto_approve": False,
+            "summary": f"the method check could not run ({_me.__class__.__name__}: {_me})",
+            "why_not_approvable": ("the method check did not run, so this change is not reported as checked; "
+                                   "refusing the auto-approval is the honest state, not passing it")}
+    if change["status"] == "approved" and change["method_check"].get("may_auto_approve") is False:
+        change["status"] = "submitted"
+        change["auto_approval_withheld"] = change["method_check"].get("why_not_approvable")
+        change["audit_trail"].append({
+            "event": "auto_approval_withheld_by_method_gate", "ts": now, "by": "method_gate",
+            "why": change["method_check"].get("why_not_approvable"),
+            "note": ("the change stands as submitted and may still be approved by review; only the AUTOMATIC "
+                     "approval is withheld, and only for a requirement the platform could actually check")})
+
     _save_change(change)
     ueg_logged = None
     if change["status"] == "approved":
@@ -797,6 +825,11 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         # is told when the description changed it, and by which phrase.
         "health_gate": change.get("health_gate"),
         "immune_threat_at_submit": change.get("immune_threat_at_submit"),
+        # W508 (P2.10(c)/(d)) — the method check TRAVELS WITH the submission. A check stored on a record and
+        # absent from the response is a fact rendered nowhere, which is the shape this whole method warns of.
+        "method_check": change.get("method_check"),
+        **({"auto_approval_withheld": change["auto_approval_withheld"]}
+           if change.get("auto_approval_withheld") else {}),
         **({"impact_tier_raised_by": change["impact_tier_raised_by"],
             "impact_tier_raised_from": change.get("impact_tier_raised_from"),
             "impact_tier_raised_because": change.get("impact_tier_raised_because")}

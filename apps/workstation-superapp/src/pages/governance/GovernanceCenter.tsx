@@ -1,9 +1,10 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Shield, FileText, ShieldCheck } from 'lucide-react';
+import { Shield, FileText, ShieldCheck, BookOpen } from 'lucide-react';
 import { GovernanceHub } from './GovernanceHub';
 import { ConstitutionalUI } from './ConstitutionalUI';
 import { ComplianceChecker } from './ComplianceChecker';
+import { DeliveryMethod } from './DeliveryMethod';
 
 // Consolidated Governance & Trust center (§11 live compliance + constitutional gaas) — folds the former
 // standalone Governance Hub · Constitution · Compliance pages into one tabbed surface (deep-linkable ?tab=).
@@ -11,6 +12,9 @@ const TABS = [
   { id: 'overview',     name: 'Governance',   icon: Shield,      El: GovernanceHub },
   { id: 'constitution', name: 'Constitution', icon: FileText,    El: ConstitutionalUI },
   { id: 'compliance',   name: 'Compliance',   icon: ShieldCheck, El: ComplianceChecker },
+  // §P2.10(d) — the delivery method, on the surface the arms-length agency already owns. Beside the
+  // constitution on purpose: both are things the platform is held to rather than features it offers.
+  { id: 'method',       name: 'Method',       icon: BookOpen,    El: DeliveryMethod },
 ] as const;
 
 export const GovernanceCenter: React.FC = () => {

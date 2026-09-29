@@ -5104,7 +5104,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.10",
+      "slot": "P2.4",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -5233,6 +5233,24 @@
       "note": "",
       "slot_source": "the rest of FU-256, which rode P2.4; the marker and the disclosure are done and this is the measurement",
       "tier": 2
+    },
+    {
+      "id": "FU-303",
+      "title": "The pre-flight's self-match check flags a test that reads ANOTHER file",
+      "why": "scripts/selfcheck_diff.py reported 6 [selfmatch] leads against test_w509_the_method_gate_has_a_surface, all false: the assertions search the CONTENT OF ChangeControlAgency.tsx and TransformationDashboard.tsx, not the test's own text, and each was proven able to fail by a blind that deleted the tsx line. The check appears to trigger on any test that resolves a path from Path(__file__).parents[1], which is how every page-reading guard in the suite is written. A screen that reports noise as findings costs the attention the real ones need (M-VERIF-12): narrow it to assertions whose search SUBJECT is the test file itself.",
+      "source": "W508 pre-flight",
+      "found": "2026-09-29",
+      "files": [
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 owns the round's own tooling; FU-262 already extends this same pre-flight",
+      "tier": 3
     }
   ],
   "routes": [

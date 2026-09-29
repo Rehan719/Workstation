@@ -1,0 +1,371 @@
+{
+  "about": {
+    "what": "The delivery method this programme learned, held as data so the platform can apply it to its own changes instead of it living in an assistant's notes. Served by /api/v1/method. Amended ONLY through Change Control (POST /api/v1/method/derive proposes a CANDIDATE; the agency ratifies it), because the agency that checks changes against the method must also own the method.",
+    "why_each_row_carries_a_defect": "A rule with no defect behind it is an opinion. Every lesson here names the round and the concrete failure that produced it, so a reader can judge the rule by the evidence rather than by its phrasing — and so a rule can be RETIRED when the defect it answers stops being possible.",
+    "what_enforced_by_means": "A real tool or guard path that would CATCH a breach, or null. Null is the common case and is stated, never implied: most of this method is judgement a change record cannot expose. A gate that reported these as MET would be the exact defect this programme spent its rounds removing — a green badge over requirements nothing evaluated.",
+    "three_states": "A method check returns MET, UNMET or NOT_ASSESSABLE with a basis. NOT_ASSESSABLE is the honest answer for any requirement whose satisfaction is not visible in the artefacts the platform holds, and it is the majority answer.",
+    "owner_ruling": "2026-09-27 — the rulings are the constitution. 2026-09-29 — measurement, acceptance-criteria bars, alignment to vision value and progress-to-completion belong in the method as a group of their own.",
+    "groups": ["planning", "measurement", "execution", "verification", "delivery"],
+    "generated": "authored W508 from the programme's own confirmed defects; amended only through Change Control"
+  },
+
+  "lessons": [
+    {
+      "id": "M-CONCEPT-01",
+      "group": "planning",
+      "rule": "A concept is not delivered until something the user reaches is different. Frame every item by the surface that changes, not by the component that gets built.",
+      "defect": "W446–W505: nine cognitive engines, a five-gate clearance chain, a reflex mechanism and a delivery-check classification all EXISTED and none of them ran. Each had been built to a component description rather than to a reachable surface, so 'built' and 'reached' diverged silently for rounds.",
+      "apply": "State the item's deliverable as a surface a person or a caller meets. If the item can be finished without any surface changing, it is a component, and the item is not done.",
+      "enforced_by": null,
+      "why_not_enforced": "No artefact distinguishes a wired component from an unwired one; reachability needs a dotted-import check AND a same-package relative check AND a runtime-scan check, and even all three missed a case (W482)."
+    },
+    {
+      "id": "M-CONCEPT-02",
+      "group": "planning",
+      "rule": "Deliver the whole of what the Owner described. Do not sample a vision and build the sample.",
+      "defect": "The Owner's mandate, recorded after a round delivered a subset of a brief and reported it as the brief. The fine-resolution vision now lives in docs/WORKSTATION_IDBO_WHOLE_VISION.md precisely so a round cannot quietly narrow it.",
+      "apply": "Before building from a brief, interrogate it into items and state what each item does NOT cover. A narrowing is a decision and belongs to the Owner.",
+      "enforced_by": null,
+      "why_not_enforced": "Scope fidelity is a judgement against a document, not a property of a diff."
+    },
+    {
+      "id": "M-PLAN-01",
+      "group": "planning",
+      "rule": "Order work by vision value, not by what is easy or recent.",
+      "defect": "Rounds were choosing rows by recency, so low-value rows closed while high-value ones aged. W478 introduced scoring by vision value.",
+      "apply": "Start a round from `python scripts/followups.py priority`, which ranks open rows by tier, area and reach from docs/PRIORITY.json.",
+      "enforced_by": "scripts/followups.py priority"
+    },
+    {
+      "id": "M-PLAN-02",
+      "group": "planning",
+      "rule": "A round's unit is a file-connected component cut by item, not a list of unrelated rows.",
+      "defect": "W503 closed ten rows and ZERO items, because the rows were scattered across items and none of them completed an item's bar. Closing rows is not progress if no item can close.",
+      "apply": "`python scripts/followups.py bundles` computes the file-connected subsystem; `batches` computes the class one mechanism closes. Take one, not a scatter.",
+      "enforced_by": "scripts/row_components.py"
+    },
+    {
+      "id": "M-PLAN-03",
+      "group": "planning",
+      "rule": "A batch generator that cannot see a row has a blind spot, and the blind spot is part of the tool.",
+      "defect": "The class-batch generator groups rows by a cited defect class and therefore cannot see a row that cites none. That limitation is declared rather than discovered later.",
+      "apply": "When a batch looks small, check whether rows without a class were simply invisible to the generator before concluding there is little to do.",
+      "enforced_by": null,
+      "why_not_enforced": "A tool cannot detect what it is structurally unable to see; only a reader comparing the batch against the full open set can."
+    },
+
+    {
+      "id": "M-MEAS-01",
+      "group": "measurement",
+      "rule": "An item closes on its ACCEPT bar. No bar means UNEXAMINED, never nearly done.",
+      "defect": "W505: no P2 item had closed in 48 rounds while 32 rows closed in six, because 17 of 48 open build items stated NO acceptance clause — there was nothing to check them against. Nothing had been forgotten; the bar did not exist.",
+      "apply": "An item whose body lists deliverables does not need a bar invented: the deliverables ARE the bar, and writing them as ACCEPT is transcription plus a guard. A round that finishes an item's work must write its bar if it has none, or the work cannot be recognised.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a bar's clauses match an item's body is a reading, not a parse. An audit can count items with no bar at all; it cannot judge a bar's fidelity."
+    },
+    {
+      "id": "M-MEAS-02",
+      "group": "measurement",
+      "rule": "Write the bar against the DEFECT, never against correct output. A criterion satisfied by the thing being fixed is not a criterion.",
+      "defect": "W505 found four acceptance criteria worded so that correct output satisfied them, so the item could be 'met' without the defect being fixed.",
+      "apply": "For each clause ask: what state of the code makes this FALSE? If nothing does, the clause is decorative.",
+      "enforced_by": null,
+      "why_not_enforced": "Judging whether a clause can fail requires reasoning about the code it describes."
+    },
+    {
+      "id": "M-MEAS-03",
+      "group": "measurement",
+      "rule": "A count states the population it covers. A figure with no stated denominator is not a measurement.",
+      "defect": "W491: a `kind` field describing what a resource IS was read by five counters to say what HAPPENED, so every failed attempt counted as a run or a read — 31 of 47 findings in one round were this shape.",
+      "apply": "Name the population in the field or beside it. 'Assessable' and 'exists' are different denominators, and a fall-through is not a reading.",
+      "enforced_by": null,
+      "why_not_enforced": "A count's intended population is not recoverable from the count."
+    },
+    {
+      "id": "M-MEAS-04",
+      "group": "measurement",
+      "rule": "Project progress in ROUNDS, never in dates. State the rate's population and name the weakest number on the page.",
+      "defect": "W486/W499: a projection was an average over a population most of which no round had measured. Stating it as a date would have invented a promise; stating it without its weakness would have hidden one.",
+      "apply": "Measure the rate from the register, project in rounds, exclude one-time sweeps by name, and refuse to project where too few rounds have closed one of an item's rows. Say which figure is weakest and why.",
+      "enforced_by": "scripts/followups.py forecast"
+    },
+    {
+      "id": "M-MEAS-05",
+      "group": "measurement",
+      "rule": "Two rates, and only one is the lever: rows closed and ITEMS closed. Report both and act on the item rate.",
+      "defect": "W503 closed ten rows and no item, and the row rate made the round look productive. The item rate is what moves the plan.",
+      "apply": "Report rows/round and items/round separately, over their own populations, and choose the next round by which items can actually close.",
+      "enforced_by": "scripts/followups.py forecast"
+    },
+    {
+      "id": "M-MEAS-06",
+      "group": "measurement",
+      "rule": "A measurement row that OVERSTATES a problem is the same defect as one that understates it.",
+      "defect": "W505: a row asserted '17 of 48 items state no bar' and used the stale figure in its own reasoning before re-checking it. Six of the seventeen had since been barred or closed.",
+      "apply": "Re-measure before citing your own earlier measurement. A figure in a register row ages.",
+      "enforced_by": null,
+      "why_not_enforced": "Staleness is only visible by re-running the measurement the row describes."
+    },
+
+    {
+      "id": "M-EXEC-01",
+      "group": "execution",
+      "rule": "Measure each row's LIVE state before building. A row may accuse working code.",
+      "defect": "W507: FU-241 and FU-244 both claimed a script walked a directory it does not walk; every traversal root was a named top-level directory. Building the 'fix' would have changed correct code on a false premise. Earlier, W502: a blind was vacuous because a two-argument constructor was called with one, the TypeError was swallowed, and the branch never ran — trusting it would have 'fixed' correct code.",
+      "apply": "Read the code the row names before writing anything. If the row's claim is false, DROP the row with the measurement that refutes it.",
+      "enforced_by": null,
+      "why_not_enforced": "A row's truth is established by reading the code it points at."
+    },
+    {
+      "id": "M-EXEC-02",
+      "group": "execution",
+      "rule": "Fix the CLASS once, at the chokepoint — and grep the CALL, not the method name.",
+      "defect": "W489: a 'repo-wide' audit checked one of four entry points and missed 29 callers. W507: the posting-source tag went on `_apply_posting` rather than `post`, because a caller reached the former directly and tagging the latter would have left every inter-VSB debit untagged.",
+      "apply": "Find every entry point before choosing where to fix. Flip the DEFAULT rather than editing call sites where the default is the defect.",
+      "enforced_by": null,
+      "why_not_enforced": "Identifying the true chokepoint is a reading of the call graph."
+    },
+    {
+      "id": "M-EXEC-03",
+      "group": "execution",
+      "rule": "Every writer, the reached surface, and an executing guard leg must all say the new truth.",
+      "defect": "W475 found 25 misses of exactly this. W507 repeated it twice in one round: a second copy of a retired control in the other render path, and a field written to a store that the reader dropped so it was rendered nowhere.",
+      "apply": "After a truth fix, enumerate the writers, the readers and the surfaces. A writer fixed without its reader just moves the lie down a layer.",
+      "enforced_by": "scripts/selfcheck_diff.py (the keys and renames checks catch a key no consumer reads, and a key removed while readers survive)"
+    },
+    {
+      "id": "M-EXEC-04",
+      "group": "execution",
+      "rule": "A field's meaning belongs to its readers. ADD a field; never re-point an existing one.",
+      "defect": "W495: re-pointing a stored `success` field at a quality verdict broke model routing, model health and a status route — six of nine suite failures. W507 followed the rule deliberately: the venture funding figures were added beside `invested_total` rather than changing what it meant.",
+      "apply": "Grep the readers before changing what a word means. If readers exist, add.",
+      "enforced_by": "scripts/selfcheck_diff.py (renames)"
+    },
+    {
+      "id": "M-EXEC-05",
+      "group": "execution",
+      "rule": "Removing a true statement is also a defect.",
+      "defect": "W502: narrowing an over-claim killed a case where the strong statement was TRUE.",
+      "apply": "When downgrading a claim, check the cases where it held, and carry its consequences across rather than deleting them.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a removed statement was true in some case is a reading of that case."
+    },
+    {
+      "id": "M-EXEC-06",
+      "group": "execution",
+      "rule": "Register every found-but-not-done task in the same commit, slotted to a plan item.",
+      "defect": "W462: work found mid-round and not written down was lost between rounds, so the same defects were rediscovered.",
+      "apply": "`python scripts/followups.py add` in the same commit. Close or reslot an item's riders BEFORE marking it done — the suite fails on a row left on a finished item.",
+      "enforced_by": "integration_tests/test_mvp_spine.py::test_w462_followup_register_is_scheduled_and_in_lockstep"
+    },
+    {
+      "id": "M-EXEC-07",
+      "group": "execution",
+      "rule": "When a row's fix reads 'do X OR Y', it is an Owner decision whatever its slot says. Surface it; do not pick.",
+      "defect": "W507: the register formally counted ONE row awaiting the Owner while three more carried embedded either/or choices slotted to build items — so decisions the Owner should have made were about to be taken by whoever happened to reach the row.",
+      "apply": "Slot such a row OWNER so the plan counts it, and state the options with the measurement behind each.",
+      "enforced_by": "integration_tests/test_mvp_spine.py (an OWNER row must carry the owner-gated flag and say why it is one)"
+    },
+
+    {
+      "id": "M-VERIF-01",
+      "group": "verification",
+      "rule": "Green is evidence only if red was reachable. Make every new instrument fail first.",
+      "defect": "W498–W500: three instruments that could not fail reported success — a watcher whose pattern pytest never prints (it slept four hours), a leak assertion over a surface designed not to propagate it, and a sweep reporting off an absent test where exit code 5 read as a pass.",
+      "apply": "Break the thing, watch the guard fail, restore. A harness must distinguish BAD BLIND (the anchor did not match) from VACUOUS (the guard stayed green with its subject broken), and must abort on a selector that matched no test.",
+      "enforced_by": null,
+      "why_not_enforced": "Only running the blind proves the guard can fail; no artefact records that it was run."
+    },
+    {
+      "id": "M-VERIF-02",
+      "group": "verification",
+      "rule": "A guard must DRIVE its precondition, never observe the ambient environment.",
+      "defect": "W493: five of seven checks were defective because they observed whatever the environment happened to be — a dirty tree, a one-outcome exit code, a negative narrowed away by split(), an `or []` that hid the case. W507: a revert leg read the lever's current value, so a revert that restored NOTHING satisfied it until the leg set the value first.",
+      "apply": "Set the state the guard needs, assert the precondition took, then assert the behaviour.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a guard drives or observes is a property of its logic, not of its text."
+    },
+    {
+      "id": "M-VERIF-03",
+      "group": "verification",
+      "rule": "Assert the CONDITION, not the message. And a guard cannot search its own file.",
+      "defect": "W491: 17 of 79 blinds were vacuous because an assertion containing the literal it forbids or requires matches itself. W503: nine of 46 vacuous, five of them one class — a JSX conditional names its field in the gate AND the body, so a presence check survives `{false && ...}`.",
+      "apply": "Check the field, the binding or the AST — never the source text. A presence check cannot see a disabled gate.",
+      "enforced_by": "scripts/selfcheck_diff.py (selfmatch: a test assertion that matches its own text)"
+    },
+    {
+      "id": "M-VERIF-04",
+      "group": "verification",
+      "rule": "A fix comment must not quote the literal its own guard forbids or requires.",
+      "defect": "W495: five red runs because the comment recording a removal quoted the phrase its guard forbids. W507 did it AGAIN, twice: a comment explaining the recall disclosure contained the literal a guard grepped for, and a comment naming two fields let a presence check pass after the real binding was deleted.",
+      "apply": "Forbid the BINDING or the RENDER, and put the old wording in the commit message. If a guard greps text, that is the guard's defect — convert it to an AST check.",
+      "enforced_by": "scripts/selfcheck_diff.py (banned: a comment quoting a literal a guard forbids)"
+    },
+    {
+      "id": "M-VERIF-05",
+      "group": "verification",
+      "rule": "A basis string is code. Compute a claim from state; never assert a universal in prose.",
+      "defect": "W494: 32 of 76 confirmed findings were basis sentences asserting universals instead of computing them — 'cannot fall below 0.6' written over a blend measured at 0.472. W507: a basis said an energy figure never depletes 'because it is floored at 0.5', and the floor never binds; the real reason is that production exceeds consumption fourfold.",
+      "apply": "Derive every basis from the values it describes, so it corrects itself when they change. A declared domain nobody enforces is not a domain.",
+      "enforced_by": null,
+      "why_not_enforced": "This is the largest unenforced class (30 of 98 in the labelled set); FU-262 proposes extending the pre-flight to it."
+    },
+    {
+      "id": "M-VERIF-06",
+      "group": "verification",
+      "rule": "Refute the round's OWN fix before shipping it, as hard as the code it changed.",
+      "defect": "W488: 25 of 29 verified findings were the round's own defect class re-committed INSIDE its own fix. W493: the round's new instrument was itself defective in five of seven checks.",
+      "apply": "Run the adversarial pass over the diff the round just produced, including its guard legs, not only over the code it touched.",
+      "enforced_by": null,
+      "why_not_enforced": "Adversarial refutation is a process; the artefacts do not record that it ran."
+    },
+    {
+      "id": "M-VERIF-07",
+      "group": "verification",
+      "rule": "A stub must not be thinner than its producer.",
+      "defect": "W506 added a `source` argument to a ledger writer; a test stub kept the old signature, so the cycle raised 'unexpected keyword argument' and the test read that as the ledger failure it was simulating.",
+      "apply": "Match the producer's signature explicitly. Do NOT absorb new arguments into **kwargs: a stub that silently swallows them stops reporting that the producer changed, and that report is worth a red run.",
+      "enforced_by": null,
+      "why_not_enforced": "A stub's fidelity to its producer is not checkable without executing both."
+    },
+    {
+      "id": "M-VERIF-08",
+      "group": "verification",
+      "rule": "A guard that cannot find its subject must FAIL, not pass.",
+      "defect": "W507: a guard leg named a handler that does not exist and wrote `if not fn: continue`, so it silently checked nothing for the one path whose lock most needed proving.",
+      "apply": "Assert the subject was found before asserting anything about it.",
+      "enforced_by": null,
+      "why_not_enforced": "A skipped branch looks identical to a satisfied one in a passing run."
+    },
+    {
+      "id": "M-VERIF-09",
+      "group": "verification",
+      "rule": "Verify a route by CALLING it. A boot is not a call.",
+      "defect": "A helper inserted between a @router decorator and its handler silently rebinds the route, which 422s only when called. W492 then had three guards stay green over it — one imported the helper, one counted source occurrences, and one checked for a 422 that passed because everything 422'd.",
+      "apply": "Never place a definition between a decorator and its handler. Assert the AST binding AND call the route.",
+      "enforced_by": "scripts/selfcheck_diff.py (routes: a route decorator bound to a private helper)"
+    },
+    {
+      "id": "M-VERIF-10",
+      "group": "verification",
+      "rule": "Three-state verdicts. NOT ASSESSABLE is an answer, and usually the honest one.",
+      "defect": "Repeatedly across W436–W494: a boolean coerced with bool() meant a check that examined nothing could only report success. A screen that can refuse and escalate but cannot clear must never report a pass.",
+      "apply": "True (a real check ran and passed) · False (a real check ran and failed) · None (nothing real was checked), each with a basis saying which.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a check is real is a property of what it examines."
+    },
+    {
+      "id": "M-VERIF-11",
+      "group": "verification",
+      "rule": "Use a FRESH store for every verification run, and never two suites at once.",
+      "defect": "Two concurrent suites once produced ~40 false failures on shared stores. W507 lost two full suite runs in one night: one to a mid-run deletion of the suite's own data directory, one to running other pytest invocations beside it (four hours of wall clock for 355 seconds of CPU).",
+      "apply": "Isolate DATA_DIR, WORKSTATION_DATA_DIR, WORKSTATION_UEG_PATH and PROJECTS_DIR per run. Touch nothing while a suite runs.",
+      "enforced_by": "integration_tests/conftest.py (per-worker store isolation) and integration_tests/test_xdist_iso.py"
+    },
+
+    {
+      "id": "M-DELIV-01",
+      "group": "delivery",
+      "rule": "A platform may only report what it did.",
+      "defect": "The founding defect of this programme, in every shape: invented citations written to a knowledge base as INGESTED; a hard-coded scripture rendering presented as a user's file content; a SHA3 digest with a built-in key stamped as a post-quantum signature; positions recorded against named entities that were never credited.",
+      "apply": "Every figure, verdict and badge names what produced it. Where nothing produced it, say that instead.",
+      "enforced_by": null,
+      "why_not_enforced": "This is the whole method's purpose, not a single checkable property."
+    },
+    {
+      "id": "M-DELIV-02",
+      "group": "delivery",
+      "rule": "The qualifier travels WITH the figure — into the download, the server export, the file on disk and the card footer.",
+      "defect": "W490: provenance was added to a page and the download still shipped unlabelled. W507: a controller published an energy figure while dropping the measured flag and basis its own source had carried since W494, so every surface below it printed a simulator as a live vital.",
+      "apply": "A badge in the DOM is not a label on the text. Follow the value to every place it is rendered or written.",
+      "enforced_by": "scripts/selfcheck_diff.py (keys: a key produced and read by no surface)"
+    },
+    {
+      "id": "M-DELIV-03",
+      "group": "delivery",
+      "rule": "A row closes only when EVERY finding in it is fixed. Partial is open.",
+      "defect": "Rows were closed on their headline while their body listed further findings, so the register reported progress the code did not have.",
+      "apply": "Read the row's whole body before closing. If part is done, close nothing and register the remainder as its own row.",
+      "enforced_by": null,
+      "why_not_enforced": "A row's completeness is a reading of its body against the diff."
+    },
+    {
+      "id": "M-DELIV-04",
+      "group": "delivery",
+      "rule": "Preserve each file's line endings, and commit with an explicit file list.",
+      "defect": "`sed -i` rewrote a CRLF file as LF on a no-match. `git add -A` swept unrelated renames into one commit and silently skipped a gitignored file CI needed. W507: a heredoc wrote an LF line into a CRLF file, leaving it mixed.",
+      "apply": "Check `git ls-files --eol` before and after. Convert every needle to the file's own ending. Name every file in the commit.",
+      "enforced_by": null,
+      "why_not_enforced": "An EOL flip is visible in `git ls-files --eol` but nothing runs it automatically; a candidate for the pre-flight."
+    },
+    {
+      "id": "M-DELIV-05",
+      "group": "delivery",
+      "rule": "Assert every scripted replacement. An unasserted edit that matches nothing ships silently.",
+      "defect": "A scripted str.replace missed on a CRLF mismatch and shipped a fabricated-success button through a whole round, because nothing checked that the replacement had happened.",
+      "apply": "Assert the anchor matches exactly once before replacing, and re-parse afterwards. Prefer an editing tool for load-bearing changes.",
+      "enforced_by": null,
+      "why_not_enforced": "The assertion lives in the patch script, which is not itself an artefact of the change."
+    },
+    {
+      "id": "M-DELIV-06",
+      "group": "delivery",
+      "rule": "Ask the archive before building. A cleanup that MOVED work is invisible to a delete-only search.",
+      "defect": "W482: 516 files had been moved into _archive/ and 3 deleted, so searches for deletions found almost nothing and work was rebuilt that already existed.",
+      "apply": "Run `python scripts/recovery_audit.py` first. Recover the SHAPE of archived work, never a simulated corpus.",
+      "enforced_by": "scripts/recovery_audit.py"
+    },
+    {
+      "id": "M-DELIV-07",
+      "group": "delivery",
+      "rule": "Correct an over-claim you made yourself, in the same round, in the record.",
+      "defect": "W507: the plan was written to say a new assessor makes the overall compliance verdict reachable. Building it showed the verdict stays unreachable until every framework has an assessor. The claim was corrected in the plan and the memory rather than left standing.",
+      "apply": "When the build contradicts the plan's own words, change the words. A stronger claim that survives because nobody re-read it is the same defect as one that was never checked.",
+      "enforced_by": null,
+      "why_not_enforced": "Only a reader comparing the plan's claim against the built behaviour can see it."
+    }
+  ],
+
+  "mechanisms": [
+    {
+      "id": "X-PLAN",
+      "group": "planning",
+      "name": "Priority scoring, per-item pace, and class batches",
+      "what": "Open rows are scored by vision value (docs/PRIORITY.json) and the schedule is ordered by it. The pace is measured from the register and projected in rounds. Rounds are proposed as a file-connected subsystem cut by item, or as the class one mechanism closes.",
+      "entry_points": ["scripts/followups.py priority", "scripts/followups.py forecast", "scripts/followups.py bundles", "scripts/followups.py batches"],
+      "known_limit": "The batch generator cannot see a row that cites no defect class."
+    },
+    {
+      "id": "X-MEAS",
+      "group": "measurement",
+      "name": "Acceptance bars, and progress measured in rounds",
+      "what": "An item closes on its ACCEPT criteria. The plan measures its own pace from the register, projects in ROUNDS and never dates, excludes one-time sweeps by name, refuses to project an item too few of whose rows have closed, and names the weakest figure on the page.",
+      "entry_points": ["scripts/followups.py forecast", "scripts/followups.py check"],
+      "known_limit": "25 of 42 build items have never been sized, so the item projection is an average over a population most of which no round has measured. It says so."
+    },
+    {
+      "id": "X-EXEC",
+      "group": "execution",
+      "name": "The round rhythm",
+      "what": "Read the batch → measure each row's LIVE state → patch → mechanical pre-flight → guard test → blind harness with asserted byte-restore → refute the round's own diff → register and render → one full suite on the final tree → commit with an explicit file list → push → check CI → update the method and the memory.",
+      "entry_points": ["docs/FABLE_DELIVERY_PROMPT.md"],
+      "known_limit": "Nothing enforces the order; a round that skips the blind sweep produces the same artefacts as one that ran it."
+    },
+    {
+      "id": "X-VERIF",
+      "group": "verification",
+      "name": "Pre-flight, blind harness, adversarial refutation, three-state verdicts",
+      "what": "A mechanical pre-flight over the diff checks the deterministic defect shapes. A blind harness breaks each guard's subject and requires it to go red, separating BAD BLIND from VACUOUS. An adversarial pass refutes the round's own fixes in isolated worktrees. Verdicts are three-state with a basis.",
+      "entry_points": ["scripts/selfcheck_diff.py"],
+      "known_limit": "The pre-flight covers seven deterministic shapes (keys, renames, routes, returns, selfmatch, banned, order). The largest labelled class — a new claim the code cannot back — is NOT covered; FU-262 proposes extending it."
+    },
+    {
+      "id": "X-DELIV",
+      "group": "delivery",
+      "name": "The follow-up register",
+      "what": "Every found-but-not-done task is a row carrying what was measured, why it matters and which plan item owns it, added in the same commit and routed to an item by file and word. A row closes only when every finding in it is fixed; an item cannot be marked done while a row rides it.",
+      "entry_points": ["scripts/followups.py", "docs/FOLLOWUPS.json"],
+      "known_limit": "A row's own text can go stale, and a row may accuse working code — two were dropped as false in W507."
+    }
+  ]
+}
