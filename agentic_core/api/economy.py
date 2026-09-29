@@ -319,6 +319,77 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
     return result
 
 
+class VentureFundingShareRequest(BaseModel):
+    vsb_id: str = "workstation-idbo"
+    share: float
+
+
+@router.get("/venture-funding-share")
+async def get_venture_funding_share(vsb_id: str = "workstation-idbo",
+                                    user: dict | None = Depends(get_current_user)):
+    """§12 (OWNER RULING 2026-09-29, FU-300) — what fraction of this entity's user_projects allocation
+    actually reaches the investees.
+
+    TWO DIFFERENT SETTINGS, and this is the second: /waterfall sets the SIZE of the user_projects stage
+    (0.05-0.15 by template); this sets whether that allocation ARRIVES. Before the ruling it always
+    arrived nowhere - positions were recorded against named entities and none was ever credited.
+    """
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.ventures import venture_funding_share
+    share, source = venture_funding_share(vsb_id)
+    return {
+        "vsb_id": vsb_id, "venture_funding_share": share, "source": source,
+        "default": 1.0,
+        "means": ("the fraction of the user_projects allocation queued as the named investees' intake. At "
+                  "1.0 the whole allocation reaches them, which is what §6 and §12 describe. At 0.0 positions "
+                  "are recorded and no investee is credited, and every figure then reads "
+                  "'recorded, unfunded'."),
+        "not_this": ("this is NOT the size of the allocation - that is the user_projects stage of the "
+                     "waterfall, set at /waterfall and bounded by the entity template"),
+        "never": ("a position naming a demo candidate is never credited whatever the share, because a demo "
+                  "candidate is not an entity; virtual/simulated WST only — no real funds move"),
+    }
+
+
+@router.post("/venture-funding-share")
+async def set_venture_funding_share_route(req: VentureFundingShareRequest,
+                                          user: dict | None = Depends(get_current_user)):
+    """Set the §12 reinvestment share for one entity (0.0-1.0, virtual). UEG-logged. FU-300."""
+    _require_economy_access(req.vsb_id, user)
+    if not isinstance(req.share, (int, float)) or req.share != req.share:      # NaN is not a share
+        raise HTTPException(status_code=400, detail="share must be a number between 0.0 and 1.0")
+    if not (0.0 <= float(req.share) <= 1.0):
+        raise HTTPException(
+            status_code=400,
+            detail=(f"share must be between 0.0 and 1.0; {req.share} was given. "
+                    + ("Above 1.0 would credit more than was allocated, which would CREATE virtual funds "
+                       "rather than move them." if float(req.share) > 1.0 else
+                       "Below 0.0 has no meaning: 0.0 already means no investee is credited, and a negative "
+                       "share would have to take WST back out of an investee's queue.")))
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.economy.ventures import set_venture_funding_share, venture_funding_share
+    _before, _before_src = venture_funding_share(req.vsb_id)
+    try:
+        out = set_venture_funding_share(req.vsb_id, float(req.share))
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503,
+                            detail=f"{e} — the reinvestment share is unchanged") from e
+    except TimeoutError as e:
+        raise HTTPException(status_code=503,
+                            detail=f"the share store is busy ({e}); nothing was written") from e
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.venture_funding_share_set", "vsb_id": req.vsb_id,
+                         "share_before": _before, "share_before_source": _before_src,
+                         "share_after": out["venture_funding_share"], "by": "owner"})
+    except Exception:
+        pass
+    return {**out, "previous": _before, "previous_source": _before_src, "applied": True,
+            "effective": ("from the next allocation this entity makes; allocations already recorded are not "
+                          "revisited, and credits already queued with an investee stay queued"),
+            "note": "virtual/simulated WST only — no real funds move"}
+
+
 @router.get("/waterfall")
 async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str | None = None,
                         user: dict | None = Depends(get_current_user)):

@@ -214,8 +214,19 @@ class ModelGateway:
             c = __import__("re").sub(r"\b(?:You are|As)\s+(?:the|a|an)\b", "[recalled role]", c)
             return c.replace("User:", "[recalled prompt]").replace("AI:", "[recalled reply]")
         recall = "\n".join(f"- {_neutral(c[:280])}" for c in ctx)
+        # W507 (FU-256b, OWNER RULING 2026-09-29) — THE DISCLOSURE THE OWNER CHOSE OVER REGENERATION.
+        # W489 found 29 generation callers inheriting the recall default as ON, so rows stored before that
+        # flip may hold
+        # another request's content. A stored row carries no timestamp, so an UNMARKED row cannot be
+        # distinguished from a clean one - and the rows marked `from_augmented_prompt` are only those written
+        # since W507. Saying the pool is clean would be false; saying it is all blended would be false too.
+        # This states which it is and why, because a recalled line is about to be read as prior knowledge.
         return ("[native memory recall — prior Workstation interactions matched by token overlap; "
-                f"use only if relevant]\n{recall}\n\nUser: {prompt}")
+                "use only if relevant. PROVENANCE LIMIT: a recalled line written before W507 carries no "
+                "marker saying whether it was itself produced from a prompt that had another request's "
+                "content prepended (the defect W489 stopped), so it MAY contain material from a different "
+                "subject. Treat a recalled line as a prior interaction, never as established fact about "
+                f"this one]\n{recall}\n\nUser: {prompt}")
 
     # ── non-streaming ───────────────────────────────────────────────────────
 
@@ -323,11 +334,17 @@ class ModelGateway:
             memory.add_memory(f"User: {prompt}",
                               metadata={"agent": agent, "ai_reply_withheld": "served by the "
                                         "deterministic floor - its structured prose is the engine's own "
-                                        "framing, not prior knowledge to recall"},
+                                        "framing, not prior knowledge to recall",
+                                        # W507 (FU-256c) — whether THIS row was produced from a prompt that
+                                        # had another request's content prepended. Only a write can know it,
+                                        # and without it no per-row disclosure is possible at all.
+                                        **({"from_augmented_prompt": True} if augment else {})},
                               owner_id=owner_id)   # W333 — tenant-stamped
         else:
             memory.add_memory(f"User: {prompt} | AI: {response}",
-                              metadata={"agent": agent}, owner_id=owner_id)   # W333 — tenant-stamped
+                              metadata={"agent": agent,
+                                        **({"from_augmented_prompt": True} if augment else {})},
+                              owner_id=owner_id)   # W333 — tenant-stamped
         # W428 — DISCLOSED, not silent. A profile that shapes output without the caller being able
         # to tell is the same opacity §10 spent this cycle removing from the quality record.
         return {"output": response, "served_by": served_by, "is_external": is_external,
@@ -488,10 +505,14 @@ class ModelGateway:
                 if self._is_floor(served_by):
                     memory.add_memory(f"User: {prompt}",
                                       metadata={"agent": agent, "ai_reply_withheld": "served by the "
-                                                "deterministic floor"}, owner_id=owner_id)
+                                                "deterministic floor",
+                                                **({"from_augmented_prompt": True} if augment else {})},
+                                      owner_id=owner_id)
                 else:
                     memory.add_memory(f"User: {prompt} | AI: {text}",
-                                      metadata={"agent": agent}, owner_id=owner_id)
+                                      metadata={"agent": agent,
+                                                **({"from_augmented_prompt": True} if augment else {})},
+                                      owner_id=owner_id)
             except Exception:
                 pass
 

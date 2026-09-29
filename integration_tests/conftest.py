@@ -23,12 +23,56 @@ os.environ["PROPOSALS_DIR"] = "data/test_proposals"
 # Set BEFORE any agentic_core import, because the stores capture their directory at import time.
 # An explicit DATA_DIR from the environment always wins, so the isolated-run recipe used for release
 # checks (DATA_DIR + WORKSTATION_DATA_DIR + WORKSTATION_UEG_PATH pointing at a temp dir) is unaffected.
-_TEST_STORE = os.path.abspath(os.path.join("data", "_test_store"))
-os.makedirs(_TEST_STORE, exist_ok=True)
+# W507 (FU-249) — EVERY XDIST WORKER GETS ITS OWN STORE, or the suite cannot run in parallel at all.
+#
+# The suite is 42-50 minutes at ~24% CPU, and a sample showed one end-to-end test taking 115s of 173s:
+# the wall time is a few tests waiting on sequential I/O, which parallel workers fix. But every test
+# shares ONE DATA_DIR, and parallel workers over one store is the documented corruption mode (two
+# concurrent suites once produced ~40 false failures on shared memory.json / UEG ledgers).
+#
+# `PYTEST_XDIST_WORKER` is set by xdist in each worker process ("gw0", "gw1", ...) and is absent on a
+# serial run, so a serial run keeps exactly the path it had.
+_XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER") or ""
+
+
+def _per_worker(path: str) -> str:
+    """The same path, made this worker's own. Unchanged when not running under xdist."""
+    if not _XDIST_WORKER:
+        return path
+    base, ext = os.path.splitext(path)
+    return f"{base}__{_XDIST_WORKER}{ext}"
+
+
+_TEST_STORE = _per_worker(os.path.abspath(os.path.join("data", "_test_store")))
+# W507 — created only if it is actually going to be USED. This ran unconditionally, so a run with an
+# explicit DATA_DIR (the recipe every verification run uses) still made the default directory it would never
+# write to — and under `-n 8` it made eight of them, leaving data/_test_store__gw0..gw7 behind in the repo.
+if not os.environ.get("DATA_DIR"):
+    os.makedirs(_TEST_STORE, exist_ok=True)
 os.environ.setdefault("DATA_DIR", _TEST_STORE)
 os.environ.setdefault("WORKSTATION_DATA_DIR", _TEST_STORE)
 os.environ.setdefault("WORKSTATION_UEG_PATH", os.path.join(_TEST_STORE, "ueg.jsonl"))
 os.environ.setdefault("LISTINGS_DIR", os.path.join(_TEST_STORE, "marketplace"))
+
+# AN EXPLICIT ROOT IS SUBDIVIDED, NOT SHARED. `setdefault` above means an explicit DATA_DIR wins, and the
+# isolated-run recipe used for every verification run sets one — so without this, `-n 8` with that recipe
+# would have pointed all eight workers at the SAME directory and corrupted them while looking isolated.
+# An explicit value defeating the isolation is W394's original defect one layer over.
+if _XDIST_WORKER:
+    for _var, _leaf in (("DATA_DIR", None), ("WORKSTATION_DATA_DIR", None),
+                        ("PROJECTS_DIR", None), ("LISTINGS_DIR", None),
+                        ("SYNTHESIS_OUTPUT_DIR", None), ("PROPOSALS_DIR", None),
+                        ("WORKSTATION_UEG_PATH", "file")):
+        _val = os.environ.get(_var)
+        if not _val or _val.endswith(f"__{_XDIST_WORKER}") or f"__{_XDIST_WORKER}" in _val:
+            continue
+        os.environ[_var] = _per_worker(_val)
+        if _leaf != "file":
+            os.makedirs(os.environ[_var], exist_ok=True)
+        else:
+            os.makedirs(os.path.dirname(os.environ[_var]) or ".", exist_ok=True)
+    # re-derive the ones computed from the store root, so a UEG path inside an explicit root follows it
+    _TEST_STORE = os.environ["DATA_DIR"]
 
 # Setting the env is NOT sufficient on its own. agentic_core.config captures the directory ONCE, when
 # its `settings` object is constructed at import time:

@@ -235,8 +235,106 @@ def _coverage_report(verdicts: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+
+# ── §11 HALAL CERTIFICATE VERIFICATION (OWNER RULING 2026-09-29, FU-239) ───────────────────────────────────
+#
+# The FIRST framework in this screen that can genuinely assess a subject — and it assesses by VERIFYING a
+# document, never by judging substance. A pass here means "a certifying body cleared this subject and the
+# certificate is in date", and the row says which body and which certificate. The platform issues no ruling.
+#
+# Everything else in this module stays a word list and keeps saying so.
+
+_CERT_STORE_NAME = "compliance_certificates.json"
+
+# A certificate record. `source` is required to USE one: a certificate whose provenance is not recorded
+# cannot clear anything, because then the platform is asserting a document it cannot point at.
+_CERT_REQUIRED = ("certificate_id", "body", "subject_id", "issued", "expires", "source")
+
+
+def _cert_store():
+    from agentic_core.config import data_path
+    return data_path(_CERT_STORE_NAME)
+
+
+def _load_certificates() -> List[Dict[str, Any]]:
+    """Every recorded certificate, WHOLE, or StoreUnavailable.
+
+    Strict on purpose: a certificate store that cannot be read must not answer "no certificates", because a
+    reader cannot tell that from "this subject has none" and the second is a statement about the subject.
+    """
+    from agentic_core.config import read_json_strict
+    return read_json_strict(_cert_store(), list, expect=list)
+
+
+def _cert_usable(c: Dict[str, Any]) -> tuple:
+    """(usable, why_not) for ONE record. A record missing any required field cannot clear anything."""
+    if not isinstance(c, dict):
+        return False, "the record is not an object"
+    missing = [k for k in _CERT_REQUIRED if not str(c.get(k) or "").strip()]
+    if missing:
+        return False, f"the record does not state {', '.join(missing)}"
+    return True, ""
+
+
+def verify_halal_certificate(subject_id: str, today: str | None = None) -> Dict[str, Any]:
+    """Whether a certifying body has cleared THIS subject, and what the record says. FU-239.
+
+    Returns a dict that always states its own basis:
+      · {"state": "cleared", ...}        a usable certificate covers this subject and is in date
+      · {"state": "expired", ...}        one covers it and has lapsed — the verification RAN and did not clear
+      · {"state": "unusable", ...}       a record exists for it but cannot be used (see `why`)
+      · {"state": "none", ...}           no record names this subject
+      · {"state": "unavailable", ...}    the store could not be read; this is NOT "none"
+
+    `today` is a parameter rather than a clock read so a guard can drive the expiry case with a date instead
+    of waiting for one — an expiry that cannot be reached in a test is an unverifiable branch.
+    """
+    import time as _t
+    from agentic_core.config import StoreUnavailable
+    day = (today or _t.strftime("%Y-%m-%d"))
+    if not str(subject_id or "").strip():
+        return {"state": "none", "why": "no subject was identified, so no certificate could be looked up"}
+    try:
+        rows = _load_certificates()
+    except StoreUnavailable as e:
+        return {"state": "unavailable", "why": str(e)}
+    except Exception as e:                       # noqa: BLE001 — any other read problem is still not "none"
+        return {"state": "unavailable", "why": f"{e.__class__.__name__}: {e}"}
+
+    mine = [c for c in rows if isinstance(c, dict) and str(c.get("subject_id")) == str(subject_id)]
+    if not mine:
+        return {"state": "none", "why": f"no recorded certificate names {subject_id}"}
+
+    unusable = []
+    for c in mine:
+        ok, why = _cert_usable(c)
+        if not ok:
+            unusable.append({"certificate_id": c.get("certificate_id"), "why": why})
+            continue
+        if str(c["expires"]) < day:
+            continue                             # lapsed; a later record may still be in date
+        return {"state": "cleared", "certificate_id": c["certificate_id"], "body": c["body"],
+                "expires": c["expires"], "source": c["source"], "checked_on": day,
+                # W507 (pre-flight) - `why` on EVERY state, so a caller can print one field whatever
+                # the answer was rather than indexing a key that exists on some branches only.
+                "why": (f"certificate {c['certificate_id']} from {c['body']} covers this subject and "
+                        f"is in date on {day}")}
+    # nothing in date: say which of the two reasons
+    in_date_failures = [c for c in mine if _cert_usable(c)[0] and str(c["expires"]) < day]
+    if in_date_failures:
+        latest = max(in_date_failures, key=lambda c: str(c["expires"]))
+        return {"state": "expired", "certificate_id": latest["certificate_id"], "body": latest["body"],
+                "expired_on": latest["expires"], "checked_on": day,
+                "why": (f"certificate {latest['certificate_id']} from {latest['body']} expired on "
+                        f"{latest['expires']}, checked {day}")}
+    return {"state": "unusable", "records": unusable,
+            "why": "a certificate is recorded for this subject and none of them can be used"}
+
+
 def screen_compliance(text: str, jurisdiction: str = "UK / London",
-                      delivery_metrics: Dict[str, Any] | None = None) -> Dict[str, Any]:
+                      delivery_metrics: Dict[str, Any] | None = None,
+                      subject_id: str | None = None,
+                      today: str | None = None) -> Dict[str, Any]:
     """Reusable, deterministic compliance screen over arbitrary delivery text — Sharia/Halal · UK Legal ·
     Regulatory · EHS · Ethical. Pure + explainable (regex rules; engines layered where present). Returns
     {overall, compliant, verdicts}. Shared by the /check endpoint AND the universal delivery gate
@@ -299,6 +397,33 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
         halal_reason += " (engine-backed)"
     except Exception:
         halal_reason += " (built-in rules)"
+    # FU-239 (OWNER RULING 2026-09-29) — A CERTIFYING BODY MAY CLEAR THIS SUBJECT; the platform may not.
+    # Consulted LAST and never over a fail: a certificate does not make a prohibited substance found in the
+    # text permissible, so a haram term still fails with one present. This is the only path in this module
+    # that produces coverage 'engine', and therefore the only one whose pass `assessed()` will honour.
+    if halal_status != "fail":
+        _cert = verify_halal_certificate(subject_id or "", today=today)
+        if _cert["state"] == "cleared":
+            halal_status, halal_cov = "pass", "engine"
+            halal_reason = (
+                f"VERIFIED against certificate {_cert['certificate_id']} issued by {_cert['body']}, valid to "
+                f"{_cert['expires']} (checked {_cert['checked_on']}; recorded source: {_cert['source']}). The "
+                f"clearance is the certifying body's, not this platform's — what is verified here is that the "
+                f"certificate exists, names this subject and is in date.")
+        elif _cert["state"] == "expired":
+            halal_status, halal_cov = "review", "engine"
+            halal_reason = (
+                f"the certificate for this subject ({_cert['certificate_id']}, {_cert['body']}) EXPIRED on "
+                f"{_cert['expired_on']} and was checked on {_cert['checked_on']}. The verification ran and did "
+                f"not clear the subject, which is not the same as a finding against it.")
+        elif _cert["state"] == "unusable":
+            halal_status, halal_cov = "review", "engine"
+            halal_reason = (f"a certificate is recorded for this subject and cannot be used: {_cert['why']}. "
+                            f"A certificate with no recorded source or missing fields clears nothing.")
+        elif _cert["state"] == "unavailable":
+            halal_reason = (f"{halal_reason} The certificate store could not be read ({_cert['why']}), so "
+                            f"whether a body has cleared this subject is UNKNOWN - not absent.")
+        # "none" leaves the keyword screen's own verdict exactly as it was: no certificate, no clearance.
     verdicts.append(_verdict("sharia_halal", halal_status, halal_reason, halal_cov))
 
     # W285 — the UK-Legal ENGINE is genuinely INVOKED: potential flags are derived from the

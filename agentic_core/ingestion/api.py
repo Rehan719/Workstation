@@ -239,10 +239,57 @@ async def list_ingested_content(category: Optional[str] = None):
 
 @router.delete("/{file_id}")
 async def delete_ingested_content(file_id: str):
-    """Removes a single ingested item from the registry."""
-    before = len(ingestion_manager.registry)
-    ingestion_manager.registry = [e for e in ingestion_manager.registry if e["file_id"] != file_id]
-    if len(ingestion_manager.registry) == before:
+    """Remove an ingested item: its registry row AND the uploaded bytes — and say what remains.
+
+    W507 (FU-167, second half) — this used to remove the registry ROW and nothing else, then answer
+    `{"status": "DELETED"}`. Two copies survived it:
+      · the uploaded bytes at DATA_DIR/uploads/{file_id}_{filename}, whose only pointer was the row just
+        removed — so they became unreachable and uncountable rather than merely kept;
+      · the extracted text in memory_v01, the store the AI CEO and the avatars read, so a "deleted" file's
+        content could still be recalled into a generation.
+
+    The bytes are now removed. The memory exchange is NOT removable by file id — memory_v01 keys its rows by
+    their own ids and holds no index from a file to them — so this response SAYS the text may still be
+    recalled instead of claiming a deletion it did not perform. Answering DELETED over a recallable copy is
+    the over-claim this whole programme exists to remove.
+    """
+    row = next((e for e in ingestion_manager.registry if e.get("file_id") == file_id), None)
+    if row is None:
         raise HTTPException(status_code=404, detail="File not found")
+
+    # the bytes first: if the row goes and this fails, the file is orphaned with no pointer to it
+    removed_bytes, bytes_note = False, None
+    try:
+        import os as _os
+        _target = ingestion_manager.upload_dir / f"{file_id}_{row.get('filename', '')}"
+        if _target.exists():
+            _os.unlink(str(_target))
+            removed_bytes = True
+        else:
+            bytes_note = "no uploaded file was found at the recorded path; nothing to remove"
+    except OSError as exc:
+        bytes_note = (f"the uploaded bytes could NOT be removed ({exc.__class__.__name__}: {exc}); the "
+                      f"registry row is kept so the file stays reachable rather than orphaned")
+        raise HTTPException(status_code=503, detail=bytes_note) from exc
+
+    ingestion_manager.registry = [e for e in ingestion_manager.registry if e.get("file_id") != file_id]
     ingestion_manager._save_registry()
-    return {"status": "DELETED", "file_id": file_id}
+
+    _recalled = bool(str(row.get("extracted_text") or "").strip())
+    return {
+        "status": "REMOVED",
+        "file_id": file_id,
+        "registry_row_removed": True,
+        "uploaded_bytes_removed": removed_bytes,
+        "uploaded_bytes_note": bytes_note,
+        # THE LIMIT, on the response rather than in a docstring nobody reads
+        "extracted_text_may_still_be_recalled": _recalled,
+        "what_remains": (
+            ("the text extracted from this file was added to the AI's long-term memory at upload and CANNOT "
+             "be removed by file id: that store keys its rows by their own ids and holds no index from a "
+             "file to them, so this deletion does not reach it. Until such an index exists, treat the "
+             "content as still recallable.") if _recalled else
+            "nothing was extracted from this file, so no text entered the AI's memory from it"),
+        "not_claimed": ("this is REMOVED, not DELETED: the registry row and the bytes are gone and the "
+                        "memory rows are not, and calling that a deletion would overstate it"),
+    }

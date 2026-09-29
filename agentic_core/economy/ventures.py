@@ -327,7 +327,75 @@ def return_pending_returns(vsb_id: str, amount: float) -> None:
         _save_portfolio(d)
 
 
-def record_positions(vsb_id: str, allocation: Dict[str, Any]) -> None:
+
+# ── §12 THE REINVESTMENT SHARE (OWNER RULING 2026-09-29, FU-300) ───────────────────────────────────────────
+#
+# What fraction of the user_projects allocation actually reaches the investee. The Owner ruled this a SETTING
+# whose default is the proportion already described: `user_projects` is a §4 waterfall stage with a
+# per-template share (0.05-0.15), already adjustable per VSB, so THAT share is the Owner's proportion and
+# this is only the question of whether it arrives. Default 1.0 - all of it does, which is what §6/§12 state.
+#
+# At 0.0 the behaviour is exactly what it was before this ruling: positions recorded, no investee credited,
+# and the "recorded, unfunded" label W506 put on every figure is then the truthful one.
+_FUNDING_SHARE_STORE_NAME = "economy_venture_funding_share.json"
+_DEFAULT_FUNDING_SHARE = 1.0
+
+
+def _share_store():
+    from agentic_core.config import data_path
+    return data_path(_FUNDING_SHARE_STORE_NAME)
+
+
+def venture_funding_share(vsb_id: str) -> tuple:
+    """(share, source) for this investor. Never raises: an unreadable store falls back to the DEFAULT and
+    says so, because refusing to fund is a decision and this function is not where it should be taken."""
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    try:
+        d = read_json_strict(_share_store(), dict, expect=dict) if _share_store().exists() else {}
+    except (StoreUnavailable, Exception):                       # noqa: B014 - any read problem, same answer
+        return _DEFAULT_FUNDING_SHARE, ("the share store could not be read, so the default "
+                                        f"{_DEFAULT_FUNDING_SHARE} applies")
+    raw = d.get(vsb_id)
+    if raw is None:
+        return _DEFAULT_FUNDING_SHARE, f"the default ({_DEFAULT_FUNDING_SHARE}) - no override is set"
+    try:
+        v = max(0.0, min(1.0, float(raw)))
+    except (TypeError, ValueError):
+        return _DEFAULT_FUNDING_SHARE, f"the stored override {raw!r} is not a number, so the default applies"
+    return v, "an Owner override for this entity"
+
+
+def set_venture_funding_share(vsb_id: str, share: float) -> dict:
+    """Persist the Owner's share for one entity, bounded to 0.0-1.0, under the store's own lock."""
+    from agentic_core.config import StoreUnavailable, atomic_write_json, read_json_strict, store_lock
+    v = max(0.0, min(1.0, float(share)))
+    with store_lock(_share_store()):
+        try:
+            d = read_json_strict(_share_store(), dict, expect=dict) if _share_store().exists() else {}
+        except StoreUnavailable as e:
+            raise                                               # refuse rather than replace an unreadable store
+        d[vsb_id] = v
+        _share_store().parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_json(_share_store(), d)
+    return {"vsb_id": vsb_id, "venture_funding_share": v,
+            "basis": ("the fraction of this entity's user_projects allocation that reaches the investees. "
+                      "The SIZE of that allocation is the user_projects waterfall stage, which is set "
+                      "separately; this is only whether it arrives. 0.0 records positions and funds nobody.")}
+
+
+def _is_live_vsb(candidate_id: str) -> bool:
+    """Whether this position names a LIVE entity. A position can name a DEMO candidate, which is not an
+    entity and must never be credited - crediting one would put WST into a namespace nothing tends."""
+    try:
+        from agentic_core.economy.living_vsbs import list_living
+        rows = (list_living() or {}).get("living_vsbs") or []
+        ids = {str(r.get("vsb_id")) for r in rows if isinstance(r, dict)}
+    except Exception:
+        return False                                            # cannot establish liveness -> do not credit
+    cid = str(candidate_id or "")
+    return cid in ids or cid.replace("vsb:", "") in ids
+
+def record_positions(vsb_id: str, allocation: Dict[str, Any], round_id: str | None = None) -> None:
     """Track an allocation's positions in the VSB's venture portfolio (virtual; best-effort).
 
     W442 refuter catch: this was the THIRD writer on the portfolio store and the only unlocked
@@ -338,6 +406,82 @@ def record_positions(vsb_id: str, allocation: Dict[str, Any]) -> None:
         return
     with store_lock(_PORTFOLIO_STORE):
         _record_positions_locked(vsb_id, positions)
+
+    # §12 (OWNER RULING 2026-09-29, FU-300) - THE INVESTEE IS CREDITED. Until this ruling the investor's
+    # holdings were the only thing written and the named entity received nothing, so a position was a record
+    # of an allocation that arrived nowhere. Credit-only: the investor's debit already happened as the
+    # user_projects distribution, and a second one would be the W504 defect.
+    #
+    # OUTSIDE the portfolio lock on purpose - the credit takes the pending-transfers store's lock, and
+    # holding both would fix a portfolio->pending order another path could deadlock against.
+    share, share_source = venture_funding_share(vsb_id)
+    # W507 (FU-300) - THE REF IDENTIFIES THE ALLOCATION, NOT THE CLOCK. A wall-clock stamp was wrong in
+    # both directions, and driving it showed both: two allocations in the SAME second produced the same
+    # ref and the second was skipped as a duplicate (measured - a 0.25 share credited 0.0), while a
+    # retry a second later produced a new ref and would have credited twice. A caller that wants a
+    # retry to be idempotent passes its own `round_id`; without one each call is a distinct investment,
+    # which is what an unidentified allocation actually is.
+    round_at = str(round_id) if round_id else uuid.uuid4().hex[:12]
+    funded, unfunded = [], []
+    for p in positions:
+        amount = round(float(p.get("amount_wst") or 0.0) * share, 2)
+        pid = str(p.get("id") or "")
+        if share <= 0:
+            unfunded.append({"id": pid, "why": f"the funding share is {share} ({share_source})"})
+            continue
+        if amount <= 0:
+            unfunded.append({"id": pid, "why": "the share leaves nothing to credit at this position's size"})
+            continue
+        if not _is_live_vsb(pid):
+            unfunded.append({"id": pid, "why": "this position does not name a live entity (a demo candidate "
+                                               "is not an entity, and crediting one would put WST where "
+                                               "nothing tends it)"})
+            continue
+        try:
+            from agentic_core.economy.transfers import credit_venture_intake
+            res = credit_venture_intake(pid.replace("vsb:", ""), amount,
+                                        ref=f"venture:{vsb_id}:{pid}:{round_at}",
+                                        memo=f"\u00a712 reinvestment from {vsb_id}")
+            (funded if res.get("credited") else unfunded).append(
+                {"id": pid, "amount_wst": amount, **({} if res.get("credited") else {"why": res.get("reason")})})
+        except Exception as exc:                                # noqa: BLE001 - recorded, never swallowed
+            unfunded.append({"id": pid, "why": f"the credit failed: {exc.__class__.__name__}: {exc}"})
+    _record_funding_outcome(vsb_id, share, share_source, funded, unfunded)
+
+
+def _record_funding_outcome(vsb_id: str, share: float, share_source: str, funded, unfunded) -> None:
+    """Persist WHAT REACHED the investees beside what was allocated. FU-300.
+
+    Two different facts, and before this ruling only the first existed: `invested_wst` is what the investor
+    set aside, `funded_wst` is what arrived. They differ whenever the share is below 1.0 or a position names
+    something that is not a live entity, and a reader who cannot see both cannot tell those cases apart.
+    """
+    from agentic_core.config import StoreUnavailable
+    try:
+        with store_lock(_PORTFOLIO_STORE):
+            d = _load_portfolio()
+            pf = d.get(vsb_id)
+            if not isinstance(pf, dict):
+                return
+            pf["funding_share"] = share
+            pf["funding_share_source"] = share_source
+            pf["funded_total_wst"] = round(pf.get("funded_total_wst", 0.0)
+                                           + sum(f.get("amount_wst", 0.0) for f in funded), 2)
+            for f in funded:
+                h = pf.get("holdings", {}).get(f["id"])
+                if isinstance(h, dict):
+                    h["funded_wst"] = round(h.get("funded_wst", 0.0) + f.get("amount_wst", 0.0), 2)
+            pf["last_funding"] = {"funded": funded, "unfunded": unfunded, "share": share,
+                                  "share_source": share_source}
+            d[vsb_id] = pf
+            _save_portfolio(d)
+    except (StoreUnavailable, TimeoutError):
+        # the credits ALREADY LANDED in the investees' queues; failing to record the summary must not
+        # pretend they did not. The investee-side queue is the authority either way.
+        import logging
+        logging.getLogger("economy.ventures").warning(
+            "venture funding summary not recorded for %s (the credits themselves landed in the investees' "
+            "queues, which are the authority either way)", vsb_id)
 
 
 def _record_positions_locked(vsb_id: str, positions) -> None:
@@ -361,6 +505,33 @@ def _record_positions_locked(vsb_id: str, positions) -> None:
     _save_portfolio(d)
 
 
+def _funding_disclosure(pf: Dict[str, Any]) -> Dict[str, Any]:
+    """The funding_state/basis pair, COMPUTED from what the last round actually funded. W507 (FU-300).
+
+    W506 hard-coded "recorded_unfunded" because nothing could ever be funded. Now that the Owner has ruled
+    the loop closed, asserting it would be false for a funded position - and deleting it would be false at
+    share 0.0, which is still a supported setting. So it is derived.
+    """
+    share = pf.get("funding_share")
+    funded_total = round(pf.get("funded_total_wst", 0.0) or 0.0, 2)
+    last = pf.get("last_funding") or {}
+    unfunded = last.get("unfunded") or []
+    if funded_total <= 0:
+        return {"funding_state": "recorded_unfunded",
+                "funding_basis": (_UNFUNDED_BASIS if share in (None, 0, 0.0) else
+                                  "recorded, unfunded - the share is above zero and nothing was credited; "
+                                  "see last_funding.unfunded for the reason against each position")}
+    if unfunded:
+        return {"funding_state": "partly_funded",
+                "funding_basis": (f"{funded_total} WST reached live investees; {len(unfunded)} position(s) "
+                                  f"were not funded (see last_funding.unfunded). A position that names a demo "
+                                  f"candidate is never credited, because it is not an entity.")}
+    return {"funding_state": "funded",
+            "funding_basis": (f"{funded_total} WST was queued as the named investees' intake at a funding "
+                              f"share of {share}. It enters each investee's §4 waterfall when that entity's "
+                              f"next metabolic cycle runs, which is not automatic unless it is being tended.")}
+
+
 def portfolio(vsb_id: str) -> Dict[str, Any]:
     # W442 refuter catch: pending_returns_wst lived in the store but never in this response, so
     # the panel's headline badge read 0 forever — the exact invisibility W442 claimed to fix.
@@ -373,6 +544,10 @@ def portfolio(vsb_id: str) -> Dict[str, Any]:
         # reads it fall through to "not stated" on the one response that shows no figures anyway.
         return {"vsb_id": vsb_id, "currency": "WST", "unavailable": str(e), "holdings": [],
                 "funding_state": "recorded_unfunded", "funding_basis": _UNFUNDED_BASIS,
+                # W507 - None, not 0.0: this store could not be READ, so what was funded is UNKNOWN. A zero
+                # here would be a figure, and the one thing this branch knows is that it has no figures.
+                "funding_share": None, "funding_share_source": None,
+                "funded_total_wst": None, "last_funding": None,
                 "note": "the venture portfolio could not be read whole — no figures are shown and nothing is written "
                         "to it until it can be read (virtual)"}
     if not pf:
@@ -380,13 +555,30 @@ def portfolio(vsb_id: str) -> Dict[str, Any]:
                 "positions_count": 0, "holdings": [], "pending_returns_wst": 0.0,
                 "returns_total": 0.0, "recycled_total_wst": 0.0,
                 "funding_state": "recorded_unfunded", "funding_basis": _UNFUNDED_BASIS,
+                # W507 (FU-300, pre-flight) - the funding figures are on EVERY branch. A caller that reads
+                # funded_total_wst on a portfolio with no holdings got undefined, which reads as "unknown"
+                # rather than "nothing has been funded because nothing has been allocated".
+                "funding_share": None, "funding_share_source": None,
+                "funded_total_wst": 0.0, "last_funding": None,
                 "note": "No venture investments yet (virtual)."}
     holdings = sorted(pf["holdings"].values(), key=lambda h: h["invested_wst"], reverse=True)
     return {"vsb_id": vsb_id, "currency": "WST", "invested_total": pf["invested_total"],
             "positions_count": pf.get("positions_count", len(holdings)), "holdings": holdings,
-            # W506 (P2.7(7)) - on the response that carries `invested_total`, because that figure is the
-            # one a reader takes for deployed capital
-            "funding_state": "recorded_unfunded", "funding_basis": _UNFUNDED_BASIS,
+            # W507 (FU-300) - WHAT REACHED the investees, beside what was allocated. Two different facts:
+            # `invested_total` is what the investor set aside, `funded_total_wst` is what arrived. They
+            # differ whenever the share is below 1.0 or a position names something that is not a live
+            # entity, and a reader who sees only the first cannot tell those cases apart. Written by
+            # _record_funding_outcome; returned here, because a field the writer stores and the reader
+            # drops is a fact rendered nowhere.
+            "funding_share": pf.get("funding_share"),
+            "funding_share_source": pf.get("funding_share_source"),
+            "funded_total_wst": round(pf.get("funded_total_wst", 0.0), 2),
+            "last_funding": pf.get("last_funding"),
+            # W506 (P2.7(7)) x W507 (FU-300) - the label is now COMPUTED from what actually happened
+            # rather than asserted: at share 0.0 nothing is funded and "recorded, unfunded" is the true
+            # statement; above it, positions that reached a live entity ARE funded and must not claim
+            # otherwise. The per-position detail is in `last_funding`.
+            **_funding_disclosure(pf),
             "pending_returns_wst": round(pf.get("pending_returns_wst", 0.0), 2),
             "returns_total": round(pf.get("returns_total", 0.0), 2),
             "recycled_total_wst": round(pf.get("recycled_total_wst", 0.0), 2),

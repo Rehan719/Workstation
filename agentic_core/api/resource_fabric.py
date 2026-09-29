@@ -1425,12 +1425,48 @@ _SWARM_STORE = data_path("swarm_cascades.json")
 
 
 def _load_swarms() -> List[Dict[str, Any]]:
-    if _SWARM_STORE.exists():
-        try:
-            return json.loads(_SWARM_STORE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return []
-    return []
+    """The saved cascades, WHOLE, or StoreUnavailable. W507 (FU-008).
+
+    This used to answer `[]` for a store that could not be read, so an unreadable store and an empty one were
+    the same answer - and `define` would then write a file holding only the new cascade, discarding every
+    saved one. A reader that cannot tell "none" from "I could not look" hands its caller a fact it does not
+    have (the W472 class).
+    """
+    from agentic_core.config import read_json_strict
+    return read_json_strict(_SWARM_STORE, list, expect=list)
+
+
+def _swarms_or_503() -> List[Dict[str, Any]]:
+    """The saved cascades, or a 503 that says why. W507 (FU-008).
+
+    `_load_swarms` became strict in this round, which is right — a store that cannot be read must not be
+    reported as empty. But a strict reader whose callers do not handle it turns a corrupt store into an
+    unhandled 500 with a traceback, which tells the caller nothing and looks like a platform fault rather
+    than an unreadable file. Every MUTATING path and every single-item read goes through here.
+
+    503, not 500: the request was well formed and the platform cannot serve it right now. The detail names
+    the store and states that nothing was written, because the first question after a failed write is
+    whether it half-happened.
+    """
+    from agentic_core.config import StoreUnavailable
+    try:
+        return _load_swarms()
+    except StoreUnavailable as e:
+        raise HTTPException(
+            status_code=503,
+            detail=(f"The saved swarm cascades could not be read: {e}. Nothing was written, and no cascade "
+                    f"was changed or removed. This is a store problem, not a problem with the request."),
+        ) from e
+
+
+def _swarm_lock():
+    """The one lock every read-modify-write on the cascade store takes. W507 (FU-008).
+
+    `atomic_write_json` makes each WRITE whole; it does not make a read-modify-write pair atomic. Two
+    concurrent defines both read N rows and both write N+1, and one cascade is lost.
+    """
+    from agentic_core.config import store_lock
+    return store_lock(_SWARM_STORE)
 
 
 def _save_swarms(rows: List[Dict[str, Any]]) -> None:
@@ -1489,9 +1525,12 @@ def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
         cascade["vsb_id"] = vsb_id
     if org:
         cascade["org"] = org
-    rows = _load_swarms()
-    rows.append(cascade)
-    _save_swarms(rows)
+    # W507 (FU-008) - read, append and write as ONE operation. Unserialised, two concurrent defines both
+    # read N rows and both wrote N+1, losing a cascade.
+    with _swarm_lock():
+        rows = _swarms_or_503()
+        rows.append(cascade)
+        _save_swarms(rows)
     try:
         from agentic_core.organism.biobus import biobus
         biobus.fire_signal("motor", "resource_fabric.swarm.register",
@@ -1557,56 +1596,77 @@ async def update_swarm(sid: str, req: UpdateSwarmRequest,
     delivery org: edit the name/stages/context/org tiers. `id`, `vsb_id` and `created_at` are
     preserved; POST /swarm/run re-reads the saved stages, so re-runs pick the edits up automatically.
     UEG-logged; the owning VSB entity's native_swarm summary stays in sync."""
-    rows = _load_swarms()
-    for c in rows:
-        if c["id"] == sid:
-            # §14 (W324) — cascade mutations are owner-scoped; this also guards the VSB
-            # write-back below (binding was validated at define time — W324).
-            _require_design_access(c, user, "Swarm cascade", sid)
-            if req.stages is not None and (not req.stages or any(
-                    not (s.role or "").strip() or not (s.instruction or "").strip() for s in req.stages)):
-                # W460 (refuter) — define refused a blank role/instruction; PUT let a saved cascade be edited into one
-                raise HTTPException(status_code=400, detail="A cascade needs at least one stage, each with a role and an instruction.")
-            if req.name is not None:
-                c["name"] = req.name
-            if req.stages is not None:
-                c["stages"] = [{"role": s.role, "instruction": s.instruction} for s in req.stages]
-            if req.context is not None:
-                c["context"] = req.context
-            if req.org is not None:
-                c["org"] = req.org
-            c["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            _save_swarms(rows)
-            # keep the owning VSB entity's native_swarm summary honest with the edited cascade
-            if c.get("vsb_id"):
-                try:
-                    from agentic_core.api.vsb import _load_vsb, _save_vsb
-                    ent = _load_vsb(c["vsb_id"])
-                    if ent and (ent.get("native_swarm") or {}).get("cascade_id") == sid:
-                        ent["native_swarm"].update({
-                            "name": c["name"], "org": c.get("org", ent["native_swarm"].get("org")),
-                            "stages": [s["role"] for s in c["stages"]],
-                            "reconfigured_at": c["updated_at"],
-                        })
-                        _save_vsb(ent)
-                except Exception:
-                    pass
-            try:
-                from agentic_core.gaas.v5 import UEGLogger
-                UEGLogger().log({"type": "resource_fabric.swarm.reconfigured", "swarm_id": sid,
-                                 "vsb_id": c.get("vsb_id"), "stages": len(c["stages"]),
-                                 "org": c.get("org")})
-            except Exception:
-                pass
-            return c
-    raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
+    # W507 (FU-008) — the find, the authorisation, the validation, the mutation and the write are ONE
+    # locked operation. Unserialised, an edit racing a define read N rows and wrote back a list that never
+    # saw the other's cascade, losing it; and authorising outside the lock would authorise against a row
+    # another writer could replace before the write.
+    #
+    # THE VSB WRITE-BACK AND THE UEG LOG STAY OUTSIDE IT, deliberately: both take other stores' locks, and
+    # holding the swarm lock across them would establish a swarm->vsb order that any path taking them the
+    # other way round would deadlock against. Only the read-modify-write needs serialising.
+    with _swarm_lock():
+        rows = _swarms_or_503()
+        c = next((r for r in rows if r["id"] == sid), None)
+        if c is None:
+            raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
+        # §14 (W324) — cascade mutations are owner-scoped; this also guards the VSB
+        # write-back below (binding was validated at define time — W324).
+        _require_design_access(c, user, "Swarm cascade", sid)
+        if req.stages is not None and (not req.stages or any(
+                not (s.role or "").strip() or not (s.instruction or "").strip() for s in req.stages)):
+            # W460 (refuter) — define refused a blank role/instruction; PUT let a saved cascade be edited into one
+            raise HTTPException(status_code=400, detail="A cascade needs at least one stage, each with a role and an instruction.")
+        if req.name is not None:
+            c["name"] = req.name
+        if req.stages is not None:
+            c["stages"] = [{"role": s.role, "instruction": s.instruction} for s in req.stages]
+        if req.context is not None:
+            c["context"] = req.context
+        if req.org is not None:
+            c["org"] = req.org
+        c["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        _save_swarms(rows)
+
+    # keep the owning VSB entity's native_swarm summary honest with the edited cascade
+    if c.get("vsb_id"):
+        try:
+            from agentic_core.api.vsb import _load_vsb, _save_vsb
+            ent = _load_vsb(c["vsb_id"])
+            if ent and (ent.get("native_swarm") or {}).get("cascade_id") == sid:
+                ent["native_swarm"].update({
+                    "name": c["name"], "org": c.get("org", ent["native_swarm"].get("org")),
+                    "stages": [s["role"] for s in c["stages"]],
+                    "reconfigured_at": c["updated_at"],
+                })
+                _save_vsb(ent)
+        except Exception:
+            pass
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "resource_fabric.swarm.reconfigured", "swarm_id": sid,
+                         "vsb_id": c.get("vsb_id"), "stages": len(c["stages"]),
+                         "org": c.get("org")})
+    except Exception:
+        pass
+    return c
 
 
 @router.get("/swarm")
 async def list_swarms(vsb_id: Optional[str] = None,
                       user: dict | None = Depends(get_current_user)):
     _u = user if isinstance(user, dict) else None
-    rows = [c for c in _load_swarms() if user_can_access(_u, c.get("owner_id"))]   # §14 (W324)
+    # W507 (FU-008) - a store that cannot be read is SAID, never shown as an empty list. An empty
+    # list reads as "you have no saved cascades", which is a different statement and the one a user
+    # would act on. Payload form rather than a 503 here so the designer can render the reason.
+    from agentic_core.config import StoreUnavailable
+    try:
+        _all = _load_swarms()
+    except StoreUnavailable as e:
+        return {"cascades": [], "total": 0, "unavailable": str(e),
+                "note": ("the saved cascades could not be read whole, so none are listed and nothing is "
+                         "written to the store until it can be read - this is not a statement that you "
+                         "have none")}
+    rows = [c for c in _all if user_can_access(_u, c.get("owner_id"))]   # §14 (W324)
     if vsb_id:
         rows = [c for c in rows if c.get("vsb_id") == vsb_id]
     return {"cascades": rows, "total": len(rows)}
@@ -1614,7 +1674,7 @@ async def list_swarms(vsb_id: Optional[str] = None,
 
 @router.get("/swarm/{sid}")
 async def get_swarm(sid: str, user: dict | None = Depends(get_current_user)):
-    for c in _load_swarms():
+    for c in _swarms_or_503():
         if c["id"] == sid:
             _require_design_access(c, user, "Swarm cascade", sid)
             return c
@@ -1626,13 +1686,17 @@ async def delete_swarm(sid: str, user: dict | None = Depends(get_current_user)):
     """§7 (W345) — complete the cascade lifecycle: saved cascades could never be retired from
     anywhere (the audit's secondary finding). Owner-scoped; UEG-logged; a VSB-bound cascade also
     clears the entity's native_swarm pointer so the record stays honest."""
-    rows = _load_swarms()
-    target = next((c for c in rows if c["id"] == sid), None)
-    if not target:
-        raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
-    _require_design_access(target, user, "Swarm cascade", sid)
-    keep = [c for c in rows if c["id"] != sid]
-    _save_swarms(keep)
+    # W507 (FU-008) - the whole find-check-filter-write runs under one lock, so a delete racing a define
+    # cannot write back a list that never saw the other's row. The access check stays INSIDE it: checking
+    # outside would authorise against a row another writer could replace before the write.
+    with _swarm_lock():
+        rows = _swarms_or_503()
+        target = next((c for c in rows if c["id"] == sid), None)
+        if not target:
+            raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
+        _require_design_access(target, user, "Swarm cascade", sid)
+        keep = [c for c in rows if c["id"] != sid]
+        _save_swarms(keep)
     if target.get("vsb_id"):
         try:
             from agentic_core.api.vsb import _load_vsb, _save_vsb
@@ -1662,7 +1726,7 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     run_vsb_id = None
     grounded_live = False
     if req.swarm_id:
-        saved = next((c for c in _load_swarms() if c["id"] == req.swarm_id), None)
+        saved = next((c for c in _swarms_or_503() if c["id"] == req.swarm_id), None)
         if not saved:
             raise HTTPException(status_code=404, detail=f"Swarm cascade {req.swarm_id} not found.")
         _require_design_access(saved, user, "Swarm cascade", req.swarm_id)   # §14 (W324)

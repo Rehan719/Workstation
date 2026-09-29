@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '@workstation/shared';
-import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Brain, Zap, Clock, TrendingUp, Cpu, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react';
+import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, Brain, Zap, Clock, TrendingUp, Cpu, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge } from './index';
 import OrganismVitals from '@superapp/components/organism/OrganismVitals';
@@ -38,8 +38,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
   const { currentMode } = useStore();
   const [open, setOpen] = useState(false);
   const [activeChannel, setActiveChannel] = useState<string | null>(null);
-  const [queryInput, setQueryInput] = useState('');
-  const [queryLog, setQueryLog] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,10 +81,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  useEffect(() => {
-    setQueryInput('');
-    setQueryLog([]);
-  }, [activeChannel]);
+  // W507 (FU-260) — the effect that cleared the retired input's state on a channel change went with it.
+  // tsc found it after the state was removed, which is what a typecheck is for: a dangling setter is not
+  // something a source search for the control's name would have shown.
 
   useEffect(() => {
     if (open) scheduleCollapse();
@@ -96,16 +93,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // W491 (refutation) - this makes NO request: it appends the text to local state and clears the input.
-  // Both branches labelled the control as sending a query and captioned the echo as a question asked, so
-  // a user typing into a channel was told it had been sent and nothing ever answered. The labels now say what
-  // the control does. Wiring it to a channel backend is separate work, not a label change.
-  const handleSendQuery = () => {
-    const text = queryInput.trim();
-    if (!text) return;
-    setQueryLog(prev => [...prev, text]);
-    setQueryInput('');
-  };
+  // W507 (FU-260, OWNER RULING 2026-09-29): THE CHANNELS INPUT IS RETIRED. It made no request - it appended
+  // the typed text to local state and cleared the field - so W491 relabelled it honestly ("your note, not
+  // sent anywhere") rather than leaving it claiming to send. The Owner ruled the remaining choice: a control
+  // that answers nothing is worse than no control, so the input, its button and the local echo are gone
+  // rather than kept behind an honest label. Wiring a real channel backend remains separate work; when it
+  // exists, the control comes back with a request behind it.
 
   // Tiled mode: fill the parent with a responsive grid of channel tiles, no trigger button.
   if (tiled) {
@@ -161,28 +154,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
                   <ChannelBoundary key={activeChannel}>
                     <ChannelContent id={activeChannel} />
                   </ChannelBoundary>
-                  {queryLog.length > 0 && (
-                    <div className="space-y-2 pt-4 border-t border-white/5">
-                      {queryLog.map((q, i) => (
-                        <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-                          <span className="text-slate-500 font-black uppercase text-[9px] tracking-widest block mb-1" data-testid="channel-note-label">Your note · not sent anywhere</span>
-                          {q}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="p-6 border-t border-white/5 bg-slate-950/50 flex gap-3">
-                  <input
-                    value={queryInput}
-                    onChange={(e) => setQueryInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSendQuery(); }}
-                    placeholder={`Note to self about the ${activeChannel} channel...`}
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 text-xs text-white focus:outline-none focus:border-aura/30"
-                  />
-                  <button type="button" onClick={handleSendQuery} disabled={!queryInput.trim()} data-testid="channel-note-keep" aria-label="Keep this note on screen" title="Keeps the note on this screen — nothing is sent and nothing answers" className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all disabled:opacity-30 disabled:hover:scale-100">
-                    <MessageCircle size={20} />
-                  </button>
                 </div>
               </motion.div>
             </div>
@@ -293,38 +264,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
                     <ChannelContent id={activeChannel} />
                   </ChannelBoundary>
 
-                  {queryLog.length > 0 && (
-                    <div className="space-y-2 pt-4 border-t border-white/5">
-                       {queryLog.map((q, i) => (
-                         <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-                            <span className="text-slate-500 font-black uppercase text-[9px] tracking-widest block mb-1" data-testid="channel-note-label">Your note · not sent anywhere</span>
-                            {q}
-                         </div>
-                       ))}
-                    </div>
-                  )}
                </div>
-
-               <div className="p-6 border-t border-white/5 bg-slate-950/50 flex gap-3">
-                  <input
-                    value={queryInput}
-                    onChange={(e) => setQueryInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSendQuery(); }}
-                    placeholder={`Note to self about the ${activeChannel} channel...`}
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 text-xs text-white focus:outline-none focus:border-aura/30"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSendQuery}
-                    disabled={!queryInput.trim()}
-                    data-testid="channel-note-keep"
-                    aria-label="Keep this note on screen"
-                    title="Keeps the note on this screen — nothing is sent and nothing answers"
-                    className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all disabled:opacity-30 disabled:hover:scale-100"
-                  >
-                     <MessageCircle size={20} />
-                  </button>
-               </div>
+               {/* W507 (FU-260) — the SECOND copy of the retired input lived here. This component has two
+                   render paths, tiled and drawer, and each carried its own input bar: retiring one would
+                   have left the other still offering a control that answers nothing. */}
             </motion.div>
          </div>
        )}

@@ -678,6 +678,51 @@ def return_pending_transfers(vsb_id: str, amount: float) -> None:
         atomic_write_json(_PENDING_STORE, d)
 
 
+
+def credit_venture_intake(investee_id: str, amount: float, ref: str, memo: str = "") -> dict:
+    """Queue an investee's intake for a venture position. CREDIT ONLY — no debit, no posting. FU-300.
+
+    The §12 reinvestment loop: the investor's debit ALREADY happened as the waterfall's user_projects
+    distribution, so this must not debit anything. `record_transfer` cannot be reused for exactly that
+    reason - it debits the sender, and a second debit for money already distributed is the W504 defect
+    ("a spend is not a second distribution").
+
+    IDEMPOTENT per `ref`: a retried cycle must not credit twice. A ref already present is reported as
+    `already_credited` and nothing is written.
+
+    Returns what it did, always, so a caller never has to infer it.
+    """
+    amount = round(float(amount), 2)
+    if amount <= 0:
+        return {"credited": False, "reason": "the amount is not positive", "amount_wst": amount,
+                "investee_id": investee_id, "ref": ref, "pending_wst": None}
+    _receiver_id_ok(investee_id, ref or "venture-0000")
+    with store_lock(_PENDING_STORE):
+        d = _read_pending()
+        rec = d.get(investee_id) or {"vsb_id": investee_id, "pending_wst": 0.0, "transfers": []}
+        credited = rec.get("credited_ids") if isinstance(rec.get("credited_ids"), list) else []
+        if ref and ref in set(credited):
+            return {"credited": False, "reason": "already_credited", "ref": ref,
+                    "investee_id": investee_id, "amount_wst": amount,
+                    "pending_wst": round(rec.get("pending_wst", 0.0), 2)}
+        rec["pending_wst"] = round(rec.get("pending_wst", 0.0) + amount, 2)
+        rec.setdefault("transfers", []).append({
+            "ref": ref, "amount_wst": amount, "at": _now(), "kind": "venture_position",
+            "memo": memo or "§12 reinvestment - a venture position funding this entity",
+            # the fact a reader needs and could not otherwise recover: this credit has NO matching debit
+            # here, because the investor's debit was the waterfall distribution that created the position.
+            "debit_side": "the investor's user_projects distribution (already posted); no second debit",
+        })
+        if ref:
+            credited.append(ref)
+            rec["credited_ids"] = credited
+        d[investee_id] = rec
+        atomic_write_json(_PENDING_STORE, d)
+    return {"credited": True, "reason": None, "investee_id": investee_id, "amount_wst": amount, "ref": ref,
+            "pending_wst": round(d[investee_id]["pending_wst"], 2),
+            "basis": ("queued as the investee's intake; it enters its §4 waterfall when its next metabolic "
+                      "cycle runs, which is not automatic unless that entity is being tended")}
+
 def consume_pending_transfers(vsb_id: str, max_amount: Optional[float] = None) -> float:
     """Drain the queued inter-VSB receipts for a VSB — called by the metabolic cycle at intake.
     Returns the consumed amount (0.0 when none pending). W463 — `max_amount` caps the drain at what the

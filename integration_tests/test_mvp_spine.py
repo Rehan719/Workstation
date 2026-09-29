@@ -5107,17 +5107,27 @@ def test_dockerfile_copies_every_boot_path_package():
     repo = pathlib.Path(__file__).resolve().parent.parent
     # exclude the test harness itself (it runs inside pytest, which imports the test module +
     # conftest + integration_tests — none of which ship in the production image)
-    _harness = {"integration_tests", "conftest", "test_mvp_spine", "tests"}
+    # W507 — the harness is excluded by LOCATION, not by an enumerated list of module names. It used to
+    # name them one by one ({"integration_tests", "conftest", "test_mvp_spine", "tests"}), so adding ANY new
+    # test file to integration_tests/ put its module name into boot_local and failed this guard for a
+    # package the production image is right not to COPY. That happened the first time a second test file
+    # was added (test_xdist_iso.py, W507). A list that must be edited whenever a test file is added is not
+    # an exclusion rule; the directory is.
+    _harness_dirs = (repo / "integration_tests", repo / "tests")
     boot_local = set()
     for m in list(sys.modules):
         top = m.split(".")[0]
-        if top == "agentic_core" or top in _harness:
+        if top == "agentic_core":
             continue
         spec = getattr(sys.modules.get(m), "__spec__", None)
         origin = getattr(spec, "origin", None) if spec else None
-        if origin and str(repo) in str(origin) and "site-packages" not in str(origin) \
-                and ("\\venv\\" not in str(origin) and "/venv/" not in str(origin)):
-            boot_local.add(top)
+        if not origin or str(repo) not in str(origin) or "site-packages" in str(origin):
+            continue
+        if "\\venv\\" in str(origin) or "/venv/" in str(origin):
+            continue
+        if any(str(d) in str(origin) for d in _harness_dirs):
+            continue                      # a test module or its conftest — it never ships
+        boot_local.add(top)
     dockerfile = (repo / "Dockerfile").read_text(encoding="utf-8")
     import re as _re
     copied = set(_re.findall(r"^COPY\s+(?:\./)?([A-Za-z_][\w]*)\b", dockerfile, _re.M))
@@ -19577,11 +19587,23 @@ def test_w490_floor_served_output_says_so_wherever_it_goes(client):
     assert 'data-testid="recall-disclosure"' in st
     assert "AI CEO chat" in st and "avatar" in st, "the two recall surfaces are not named"
     # …and the two named surfaces really are the only ones that opt in
-    import re as _re
+    import ast as _ast
+    # W507 — checked on the AST, not by grepping the source. This searched for the text "augment=True", so a
+    # COMMENT mentioning the recall default counted as a file opting in: writing the FU-256 disclosure turned
+    # this guard red by explaining the very defect it guards. A text match over source cannot tell a call
+    # from a sentence about a call (the W495 class, and the same weakness as P2.2's grep-count bar).
     optin = []
     for p in sorted((root / "agentic_core").rglob("*.py")):
-        if "augment=True" in p.read_text(encoding="utf-8"):
-            optin.append(p.name)
+        try:
+            _tree = _ast.parse(p.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        for _n in _ast.walk(_tree):
+            if isinstance(_n, _ast.Call) and any(
+                    k.arg == "augment" and isinstance(k.value, _ast.Constant) and k.value.value is True
+                    for k in _n.keywords):
+                optin.append(p.name)
+                break
     assert sorted(optin) == ["api.py", "ceo.py"], optin      # avatars/api.py and v138/ceo.py
     # …and no docstring still describes recall as the ambient default each caller must switch off
     for p, stale in ((root / "agentic_core/ai/user_context.py", "every generation-class caller passes"),
@@ -19883,8 +19905,15 @@ def test_w491_a_count_says_what_population_it_covers(client):
     assert "{uegUnreadable ? (" in cui      # the branch, not only the testid
     # the marketplace states each reason over the population it covers
     assert "listings-unpriced-count" in mkt and "priced but held" in mkt
-    # a control that sends nothing does not say it sent something
-    assert "channel-note-keep" in cc and "nothing is sent and nothing answers" in cc
+    # W507 (FU-260, OWNER RULING 2026-09-29) — the control is RETIRED, not relabelled. W491 made it honest
+    # ("your note, not sent anywhere"); the Owner then ruled that a control which answers nothing is worse
+    # than no control. So this leg flips from "the label is honest" to "the control is gone", which is the
+    # new truth — and it must check BOTH render paths, because this component has a tiled path and a drawer
+    # path and each carried its own copy of the input.
+    assert "channel-note-keep" not in cc, "the retired Channels note control is back"
+    assert "queryInput" not in cc and "queryLog" not in cc,         "the retired control's state is back in CommandCenter"
+    assert "handleSendQuery" not in cc, "the retired handler is back"
+    assert cc.count("Note to self about the") == 0,         "a Channels note input is still rendered on one of the two paths"
     assert "You asked" not in cc and "Send query" not in cc
 
     # ── the FAILURE PATH, actually exercised. The blind sweep found twelve guards vacuous for one
@@ -25503,13 +25532,30 @@ def test_w506_p27_venture_positions_are_labelled_unfunded_on_every_figure():
     # ...and the POPULATED response, which is a DIFFERENT return statement and the one a real reader hits.
     # A blind that removed the state from only this branch left this test green, because it checked the empty
     # branch alone: two returns are two writers.
-    from agentic_core.economy.ventures import record_positions
+    from agentic_core.economy.ventures import record_positions, set_venture_funding_share
     _pv = "w506-guard-portfolio"
-    record_positions(_pv, alloc)
+    # W507 (FU-300) — THIS LEG'S SUBJECT CHANGED, and the change is the Owner's ruling, not a regression.
+    # W506 asserted the basis was ALWAYS the static "no intake is queued for the named entity" sentence,
+    # because nothing could ever be funded. The Owner then ruled the §12 loop closed as an adjustable share,
+    # so that sentence is now TRUE ONLY at share 0.0 and false above it — asserting it unconditionally would
+    # make this guard demand the defect FU-300 fixed.
+    #
+    # WHAT THIS LEG STILL GUARDS, unchanged: a WST figure never appears without a statement about whether
+    # the investee was credited, and the wording comes from the server. The share is DRIVEN to 0.0 so the
+    # unfunded statement is the one under test, which is exactly the state W506's label was written for.
+    set_venture_funding_share(_pv, 0.0)
+    record_positions(_pv, alloc, round_id="w506-guard-round")
     pf2 = portfolio(_pv)
     assert pf2.get("invested_total"), f"the probe did not populate a portfolio, so the branch is untested: {pf2}"
     assert pf2["funding_state"] == "recorded_unfunded" and pf2["funding_basis"] == _UNFUNDED_BASIS, \
-        "the POPULATED portfolio prints an invested total with no statement that no investee was credited"
+        "at a funding share of 0.0 nothing is credited, and the POPULATED portfolio does not say so"
+    # ...and above 0.0 the statement must CHANGE rather than keep claiming nobody was credited
+    set_venture_funding_share(_pv, 1.0)
+    record_positions(_pv, alloc, round_id="w506-guard-round-funded")
+    pf3 = portfolio(_pv)
+    assert pf3["funding_basis"] != _UNFUNDED_BASIS or pf3["funded_total_wst"] == 0, (
+        "the portfolio still says no investee is credited after a round that funded one — the label is "
+        "asserted rather than computed from what happened")
 
     # the RESIDUAL: each share was rounded independently, so the positions did not sum to the budget
     # (measured 100.0 -> 100.01 and 33.33 -> 33.32, a cent created and a cent destroyed). Harmless while
@@ -26006,3 +26052,433 @@ def test_w506_p28_two_concepts_produce_different_derived_stage_sets():
         for section in spec["sections"]:
             assert section in spec["prompt"], \
                 f"the {sid} stage is verified against a '{section}' section its own prompt does not ask for"
+
+
+def test_w507_fu008_concurrent_cascade_writes_all_survive_and_an_unreadable_store_refuses():
+    """FU-008 — the swarm cascade store's read-modify-writes are serialised, and it reads whole or refuses.
+
+    MEASURED before this round, in agentic_core/api/resource_fabric.py:
+      · `_load_swarms` answered `[]` for a store that could not be read, so an unreadable store and an
+        empty one were the SAME answer — and `define` would then write a file holding only the new
+        cascade, silently discarding every saved one;
+      · THREE read-modify-write sequences (define, edit, delete) ran under no lock. `atomic_write_json`
+        makes each WRITE whole; it does not make a read-modify-write pair atomic, so two concurrent
+        defines both read N rows and both wrote N+1 and one cascade was LOST.
+
+    A lost update is only visible under concurrency, so this drives it. A single-threaded test would pass
+    against the defect.
+    """
+    import json as _json
+    import threading
+
+    from agentic_core.api import resource_fabric as RF
+    from agentic_core.config import StoreUnavailable
+    from fastapi.testclient import TestClient
+    from agentic_core.app_mvp import app
+
+    c = TestClient(app)
+    tag = "w507g"
+    N = 10
+    errors = []
+
+    def define(i):
+        try:
+            r = c.post("/api/v1/resources/swarm/define", json={
+                "name": f"{tag}-{i}", "stages": [{"role": f"r{i}", "instruction": f"do {i}"}]})
+            if r.status_code not in (200, 201):
+                errors.append((i, r.status_code, r.text[:100]))
+        except Exception as exc:                       # noqa: BLE001 — recorded, then asserted below
+            errors.append((i, "raised", f"{exc.__class__.__name__}: {exc}"))
+
+    threads = [threading.Thread(target=define, args=(i,)) for i in range(N)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors, f"a concurrent define failed: {errors[:3]}"
+
+    rows = _json.loads(RF._SWARM_STORE.read_text(encoding="utf-8"))
+    names = {r["name"] for r in rows if str(r.get("name", "")).startswith(tag)}
+    missing = {f"{tag}-{i}" for i in range(N)} - names
+    assert not missing, (
+        f"LOST UPDATE: {len(missing)} of {N} cascades were defined concurrently and are not in the store "
+        f"({sorted(missing)}) — the read-modify-write is not serialised")
+
+    # ── the reader is STRICT: whole, or it says it could not be read ──────────────────────────────────
+    saved = RF._SWARM_STORE.read_bytes()
+    try:
+        RF._SWARM_STORE.write_text("{ not json", encoding="utf-8")
+        try:
+            RF._load_swarms()
+            raise AssertionError("a corrupt store was read as data — an unreadable store must not answer []")
+        except StoreUnavailable:
+            pass
+
+        # a MUTATION must refuse and say nothing was written, not 500 with a traceback...
+        before = RF._SWARM_STORE.read_bytes()
+        r = c.post("/api/v1/resources/swarm/define",
+                   json={"name": f"{tag}-after", "stages": [{"role": "r", "instruction": "i"}]})
+        assert r.status_code == 503, (
+            f"a define against an unreadable store answered {r.status_code}; a strict reader whose callers "
+            f"do not handle it turns a store problem into an unhandled fault that tells the caller nothing")
+        assert "Nothing was written" in r.json()["detail"], r.json()["detail"]
+        assert RF._SWARM_STORE.read_bytes() == before, (
+            "a define against an unreadable store REWROTE it — every saved cascade would have been lost")
+
+        # ...and the LIST says it could not be read, rather than showing none
+        lst = c.get("/api/v1/resources/swarm")
+        assert lst.status_code == 200 and lst.json().get("unavailable"), (
+            f"the list did not say the store was unreadable: {lst.status_code} {str(lst.json())[:160]}")
+        assert lst.json()["cascades"] == []
+        assert "not a statement that you have none" in lst.json()["note"], (
+            "an empty list reads as 'you have no saved cascades', which is a different statement and the "
+            "one a user would act on")
+    finally:
+        RF._SWARM_STORE.write_bytes(saved)
+
+    # every read-modify-write path takes the lock — asserted on the AST, because a source count would
+    # match a comment mentioning it (W495)
+    import ast
+    import pathlib
+    src = (pathlib.Path(__file__).resolve().parents[1]
+           / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    for fname in ("register_swarm", "update_swarm", "delete_swarm"):
+        fn = [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+              and n.name == fname]
+        # a MISSING name FAILS. The first version of this leg wrote `if not fn: continue`, and it named a
+        # function that does not exist (`reconfigure_swarm`; the handler is `update_swarm`) — so the leg
+        # silently checked nothing for the edit path, which is the very path whose lock needed proving.
+        # A guard that cannot find its subject must say so, not pass.
+        assert fn, (
+            f"{fname} is not in resource_fabric.py — this leg cannot check the lock on a function it "
+            f"cannot find; update the name here when a handler is renamed")
+        withs = [w for w in ast.walk(fn[0]) if isinstance(w, ast.With)]
+        assert any(isinstance(i.context_expr, ast.Call)
+                   and getattr(i.context_expr.func, "id", "") == "_swarm_lock"
+                   for w in withs for i in w.items), \
+            f"{fname} mutates the cascade store outside _swarm_lock(), so a concurrent write can be lost"
+
+
+def test_w507_fu239_a_certifying_body_can_clear_a_subject_and_the_platform_never_does():
+    """FU-239 (OWNER RULING 2026-09-29) — §11's first real assessor, as VERIFICATION rather than judgement.
+
+    THE GAP W483 named and could not close: only coverage 'engine' may carry a pass, and NOTHING in this
+    screen earned it — sharia_halal and uk_legal are keyword/vocabulary screens, regulatory and ehs keyword
+    screens, the ethical engine's three ethical dimensions word lists. So `assessed_by` was always empty and
+    no subject could ever be cleared in any of the six areas.
+
+    THE OWNER'S ANSWER: the halal framework may assess by VERIFYING a subject against a definition and
+    against CERTIFICATIONS. The clearance is the certifying BODY'S, named on the row; the platform only
+    checks that the certificate exists, names this subject and is in date. That keeps the standing rule that
+    a halal verdict comes from a certifying body, and A.9.5's bar on an AI verdict about spiritual state.
+
+    Every state is DRIVEN, with a date rather than a wait — an expiry that cannot be reached in a test is an
+    unverifiable branch.
+    """
+    import json as _json
+
+    from agentic_core.api.compliance import (ASSESSING_COVERAGE, _cert_store, screen_compliance,
+                                             verify_halal_certificate)
+
+    subj = "vsb-w507-guard"
+    good = {"certificate_id": "GUARD-2026-1", "body": "A Certifying Body", "subject_id": subj,
+            "issued": "2026-01-01", "expires": "2027-01-01", "source": "recorded by the owner; scan on file"}
+
+    def write(rows):
+        _cert_store().parent.mkdir(parents=True, exist_ok=True)
+        _cert_store().write_text(_json.dumps(rows), encoding="utf-8")
+
+    def halal(text="a bakery serving the local community", subject=subj, today="2026-09-29"):
+        r = screen_compliance(text, subject_id=subject, today=today)
+        return r, next(x for x in r["verdicts"] if x["framework"] == "sharia_halal")
+
+    saved = _cert_store().read_bytes() if _cert_store().exists() else None
+    try:
+        # (1) NO CERTIFICATE — today's behaviour, unchanged. This is the RED this feature turns green.
+        write([])
+        r, v = halal()
+        assert v["status"] == "review" and v["coverage"] not in ASSESSING_COVERAGE, v
+        assert "sharia_halal" not in r["assessed_by"] and r["compliant"] is not True
+
+        # (2) A VALID CERTIFICATE — the first framework in this screen ever to be ASSESSED
+        write([good])
+        r, v = halal()
+        assert v["status"] == "pass" and v["coverage"] == "engine", v
+        assert "sharia_halal" in r["assessed_by"], r["assessed_by"]
+        # the row must name WHOSE clearance it is, or it reads as the platform's own verdict
+        assert good["body"] in v["reason"] and good["certificate_id"] in v["reason"], v["reason"]
+        assert "clearance is the certifying body's" in v["reason"], v["reason"]
+
+        # (3) EXPIRED — the verification RAN and did not clear it, which is not a finding against the subject
+        r, v = halal(today="2027-06-01")
+        assert v["status"] == "review" and v["coverage"] == "engine", v
+        assert "EXPIRED" in v["reason"] and good["expires"] in v["reason"], v["reason"]
+
+        # (4) ANOTHER SUBJECT is not covered by this subject's certificate
+        r, v = halal(subject="vsb-somebody-else")
+        assert v["status"] == "review" and v["coverage"] not in ASSESSING_COVERAGE, v
+
+        # (5) NO RECORDED SOURCE — a certificate the platform cannot point at clears nothing
+        write([{**good, "source": ""}])
+        r, v = halal()
+        assert v["status"] == "review" and "clears nothing" in v["reason"], v
+
+        # (6) A HARAM TERM STILL FAILS with a valid certificate present. A certificate does not make the
+        #     substance described in the text permissible, and this is the leg that keeps the feature from
+        #     becoming a way to launder a prohibited subject.
+        write([good])
+        r, v = halal(text="a bar serving beer and wine to customers")
+        assert v["status"] == "fail", ("a certificate overrode a prohibited term found in the text", v)
+        assert r["compliant"] is False
+
+        # (7) AN UNREADABLE STORE is UNKNOWN — never a pass, and never a clean absence
+        _cert_store().write_text("{ not json", encoding="utf-8")
+        assert verify_halal_certificate(subj)["state"] == "unavailable"
+        r, v = halal()
+        assert v["status"] == "review" and v["coverage"] not in ASSESSING_COVERAGE
+        assert "UNKNOWN - not absent" in v["reason"], v["reason"]
+
+        # the coverage account still PARTITIONS every framework (W506 / FU-299) with a new coverage in play
+        write([good])
+        r, _ = halal()
+        screened = {x["framework"] for x in r["verdicts"]}
+        accounted = set(r["coverage_gaps"]) | set(r["assessed_by"]) | set(r["vocabulary_only"])
+        assert screened - accounted == set(), (
+            f"a framework fell out of the coverage account once 'engine' became reachable: "
+            f"{sorted(screened - accounted)}")
+
+        # ...and ONE cleared framework does not clear the SUBJECT: the others are still word lists, so the
+        # overall compliant stays None. Claiming otherwise would overstate a real but partial change.
+        assert r["compliant"] is not True, (
+            "the overall compliant went True while four frameworks are still unassessed word lists")
+    finally:
+        if saved is None:
+            _cert_store().unlink(missing_ok=True)
+        else:
+            _cert_store().write_bytes(saved)
+
+
+def test_w507_fu300_the_investee_is_credited_at_the_owners_share_and_funds_are_conserved():
+    """FU-300 (OWNER RULING 2026-09-29) — the §12 reinvestment loop closes, as a user-adjustable share.
+
+    THE DEFECT (W446 ledger R6.4, reproduced live twice): a cycle recorded positions against NAMED living
+    VSBs and no investee was ever credited. `_record_positions_locked` wrote the INVESTOR's holdings and
+    nothing else, while `transfers.record_transfer` beside it queued the receiver's intake. A 21.26 WST
+    "investment" arrived nowhere while the board pack rendered the figure with the investees' names.
+
+    THE RULING: the share is a SETTING whose default is the proportion already described. `user_projects` is
+    a §4 waterfall stage with a per-template share, already adjustable — so THAT is the Owner's proportion,
+    and `venture_funding_share` (default 1.0) is only whether it ARRIVES. At 0.0 the behaviour is exactly
+    what it was, and W506's "recorded, unfunded" label is then the true one.
+
+    THREE CONSTRAINTS the ruling names, each driven below: no second debit; only a LIVE entity is credited;
+    funds conserved.
+    """
+    from agentic_core.economy import living_vsbs as LV
+    from agentic_core.economy import ventures as V
+    from agentic_core.economy.transfers import peek_pending_transfers
+
+    investor, a, b = "w507g300-inv", "w507g300-a", "w507g300-b"
+    demo = "w507g300-demo-not-an-entity"
+    for n in (investor, a, b):
+        LV.register(n, name=n)
+
+    def allocation(total):
+        per = round(total / 3, 2)
+        return {"budget_wst": total, "positions": [
+            {"id": a, "name": a, "amount_wst": per, "score": 0.5},
+            {"id": b, "name": b, "amount_wst": per, "score": 0.5},
+            {"id": demo, "name": "demo", "amount_wst": round(total - 2 * per, 2), "score": 0.5}]}
+
+    def q():
+        return {k: peek_pending_transfers(k) for k in (a, b, demo)}
+
+    try:
+        # (1) THE DEFAULT is 1.0 — the whole allocation reaches the LIVE investees, and the demo one never
+        share, src = V.venture_funding_share(investor)
+        assert share == 1.0 and "default" in src, (share, src)
+
+        before = q()
+        V.record_positions(investor, allocation(90.0), round_id="g300-r1")
+        after = q()
+        assert round(after[a] - before[a], 2) == 30.0, (before, after)
+        assert round(after[b] - before[b], 2) == 30.0, (before, after)
+        assert after[demo] == before[demo], (
+            "a position naming a DEMO candidate was credited — it is not an entity, and crediting one puts "
+            "WST where nothing tends it")
+
+        # the investor's own record still shows the FULL allocation, and what ARRIVED is a separate figure
+        pf = V.portfolio(investor)
+        assert pf["invested_total"] == 90.0, pf["invested_total"]
+        assert pf["funded_total_wst"] == 60.0, pf["funded_total_wst"]
+        assert pf["funding_state"] == "partly_funded", pf["funding_state"]
+        assert any("not name a live entity" in u.get("why", "") for u in pf["last_funding"]["unfunded"])
+
+        # (2) NO SECOND DEBIT: the credit carries the fact that its debit was the waterfall distribution
+        from agentic_core.economy.transfers import _read_pending
+        rec = _read_pending()[a]
+        vp = [t for t in rec["transfers"] if t.get("kind") == "venture_position"]
+        assert vp, "the credit is not recorded as a venture position"
+        assert "no second debit" in vp[-1]["debit_side"], vp[-1]
+
+        # (3) IDEMPOTENT for a caller that re-supplies its round id — a retried cycle must not credit twice
+        mid = q()
+        V.record_positions(investor, allocation(90.0), round_id="g300-r1")
+        assert q() == mid, "a retry with the same round_id credited twice"
+        V.record_positions(investor, allocation(90.0), round_id="g300-r2")
+        assert round(q()[a] - mid[a], 2) == 30.0, "a distinct round did not credit"
+
+        # (4) A DIALLED-DOWN share funds proportionally
+        V.set_venture_funding_share(investor, 0.25)
+        assert V.venture_funding_share(investor)[0] == 0.25
+        m = q()
+        V.record_positions(investor, allocation(120.0), round_id="g300-r3")   # 40 each, 25% -> 10 each
+        assert round(q()[a] - m[a], 2) == 10.0, (m, q())
+
+        # (5) ZERO funds nobody, and every position says the SHARE is why — the state W506's label describes
+        V.set_venture_funding_share(investor, 0.0)
+        m = q()
+        V.record_positions(investor, allocation(90.0), round_id="g300-r4")
+        assert q() == m, "share 0.0 credited something"
+        lf = V.portfolio(investor)["last_funding"]
+        assert lf["funded"] == [] and all("funding share is 0.0" in u["why"] for u in lf["unfunded"]), lf
+        assert V.portfolio(investor)["funding_state"] in ("partly_funded", "funded", "recorded_unfunded")
+
+        # (6) CONSERVATION: never more credited than allocated
+        V.set_venture_funding_share(investor, 1.0)
+        t0 = sum(q()[k] for k in (a, b))
+        V.record_positions(investor, allocation(100.0), round_id="g300-r5")
+        credited = round(sum(q()[k] for k in (a, b)) - t0, 2)
+        assert credited <= 100.0, f"{credited} was credited against an allocation of 100.0 — funds were created"
+    finally:
+        d = LV._load() if LV._STORE.exists() else {}
+        for n in (investor, a, b):
+            d.pop(n, None)
+        LV._save(d)
+
+
+def test_w507_fu167_a_removal_deletes_the_bytes_and_says_what_it_cannot_reach(client):
+    """FU-167 second half — the Remove answered DELETED while two copies of the file survived it.
+
+    MEASURED: the DELETE removed the registry ROW and nothing else, then answered `{"status": "DELETED"}`.
+      · the uploaded bytes at DATA_DIR/uploads/{file_id}_{filename} stayed, and the row just removed was
+        their only pointer — so they became unreachable and uncountable rather than merely kept;
+      · the extracted text stayed in memory_v01, the store the AI CEO and the avatars read, so a "deleted"
+        file's content could still be recalled into a generation.
+
+    The Owner's FU-167 ruling ("keep refusing" on URL fetching) does not cover this half; it needed fixing
+    whichever way egress was decided.
+
+    The bytes are now removed. The memory rows are NOT removable by file id, and the response says so rather
+    than claiming a deletion it did not perform — answering DELETED over a recallable copy is the same
+    over-claim one layer over.
+    """
+    from agentic_core.ingestion.api import ingestion_manager
+
+    up = client.post("/api/v1/ingest/",
+                     files={"file": ("w507_fu167.txt", b"real text the platform can read", "text/plain")})
+    assert up.status_code == 200, up.text[:200]
+    body = up.json()
+    fid = body["file_id"]
+    path = ingestion_manager.upload_dir / f"{fid}_w507_fu167.txt"
+    assert path.exists(), "the upload wrote no bytes, so this test cannot show the leak it guards"
+    assert str(body.get("extracted_text") or "").strip(), "nothing was extracted, so the memory leg is untested"
+
+    d = client.delete(f"/api/v1/ingest/{fid}")
+    assert d.status_code == 200, d.text[:200]
+    out = d.json()
+
+    # the BYTES are gone — checked on the filesystem, not from the response's own claim
+    assert out["uploaded_bytes_removed"] is True, out
+    assert not path.exists(), (
+        "the uploaded bytes survived a removal that reported success, and the registry row that pointed at "
+        "them is gone — the file is now unreachable rather than deleted")
+
+    # ...and what could NOT be reached is stated, on the response
+    assert out["status"] == "REMOVED", (
+        f"the response says {out['status']!r}; DELETED over a still-recallable copy is the over-claim this "
+        f"fixes")
+    assert out["extracted_text_may_still_be_recalled"] is True, out
+    assert "CANNOT be removed by file id" in out["what_remains"], out["what_remains"]
+    assert "overstate" in out["not_claimed"]
+
+    # the row really is gone
+    assert client.delete(f"/api/v1/ingest/{fid}").status_code == 404
+
+    # and a file with NOTHING extracted must not claim a memory copy exists
+    up2 = client.post("/api/v1/ingest/",
+                      files={"file": ("w507_fu167.bin", b"\x00\x01\x02binary", "application/octet-stream")})
+    if up2.status_code == 200 and not str(up2.json().get("extracted_text") or "").strip():
+        out2 = client.delete(f"/api/v1/ingest/{up2.json()['file_id']}").json()
+        assert out2["extracted_text_may_still_be_recalled"] is False, out2
+        assert "no text entered" in out2["what_remains"], out2["what_remains"]
+
+
+def test_w507_fu256_a_row_written_with_recall_on_is_marked_and_recall_states_its_limit():
+    """FU-256(b)+(c) (OWNER RULING 2026-09-29) — the stored pool is disclosed, not regenerated.
+
+    W489 found `query`/`stream`/`stream_meta` still inheriting `augment=True`, so 29 generation-class callers
+    had ANOTHER REQUEST'S content prepended and presented as analysis of their own subject. The flip stopped
+    it recurring; FU-256 is about what was already stored.
+
+    The Owner ruled (b): leave them with a disclosure — regenerating rewrites history, and relabelling
+    without regenerating is the honest middle.
+
+    (b) AND (c) SHIP TOGETHER because a stored row carries NO TIMESTAMP: an unmarked row cannot be
+    distinguished from a clean one, so a per-row statement needs a marker and only a write can add one.
+      · (c) a row written from an augmented prompt is marked, at EVERY writer — four of them, and W505
+        already had to correct this file once for fixing one writer and not the other (W475).
+      · (b) the recall block states the limit, where a reader actually meets it.
+    """
+    import asyncio
+
+    from agentic_core.ai.gateway import gateway
+    from agentic_core.ai.memory import memory
+
+    async def _drive():
+        # augment=False -> NOT marked. This is the discriminating half: a marker set unconditionally would
+        # be useless, and a test that only checked the marked case could not tell the difference.
+        await gateway.query_meta("a w507 question about beekeeping and varroa mites",
+                                 agent="w507g256", augment=False, owner_id="w507-t1")
+        plain = [r for r in memory._load() if "varroa" in str(r.get("text", ""))]
+        assert plain, "nothing was stored, so this test proves nothing"
+        assert not (plain[-1].get("metadata") or {}).get("from_augmented_prompt"), (
+            "a row written with recall OFF is marked as produced from an augmented prompt")
+
+        # augment=True -> marked
+        await gateway.query_meta("a w507 second beekeeping question about mites",
+                                 agent="w507g256", augment=True, owner_id="w507-t1")
+        aug = [r for r in memory._load() if "second beekeeping" in str(r.get("text", ""))]
+        assert aug, "the augmented call stored nothing"
+        assert (aug[-1].get("metadata") or {}).get("from_augmented_prompt") is True, (
+            "a row written from an augmented prompt carries no marker, so no per-row disclosure about the "
+            "W489 blending is possible for it either")
+
+    asyncio.run(_drive())
+
+    # (b) the DISCLOSURE reaches the prompt a model is given — not a docstring, not a log
+    prompt = gateway._augment("w507 beekeeping varroa mites", owner_id="w507-t1")
+    assert "PROVENANCE LIMIT" in prompt, prompt[:300]
+    assert "never as established fact" in prompt, (
+        "the recall block does not say a recalled line is not established fact about THIS subject")
+    assert "W489" in prompt, "the disclosure does not name the defect it exists because of"
+
+    # EVERY writer carries the marker. Asserted on the AST: four add_memory calls in this module store a
+    # completion, and one of them missing the marker is the second-writer defect W475 named and W505 hit.
+    import ast
+    import pathlib
+    src = (pathlib.Path(__file__).resolve().parents[1] / "agentic_core/ai/gateway.py").read_text(
+        encoding="utf-8")
+    tree = ast.parse(src)
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+             and isinstance(n.func, ast.Attribute) and n.func.attr == "add_memory"]
+    assert calls, "no add_memory call was found, so this leg checks nothing"
+    for call in calls:
+        md = next((k.value for k in call.keywords if k.arg == "metadata"), None)
+        assert md is not None, f"an add_memory call at line {call.lineno} passes no metadata at all"
+        # the marker appears as a **{...} conditional inside the metadata dict
+        marked = any(isinstance(v, ast.IfExp) or v is None for v in getattr(md, "values", []))
+        assert marked, (
+            f"the add_memory call at gateway.py:{call.lineno} does not carry the from_augmented_prompt "
+            f"marker — a row it writes can never be disclosed, which is the second-writer defect")
