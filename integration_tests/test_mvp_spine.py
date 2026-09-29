@@ -16673,12 +16673,30 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
     # ── FU-070: an open item's text may not list a row that rides another item ──
     reg = fu.load()
     assert fu.check(reg, prompt, fu.read_doc(fu.LIVING)) == []
-    victim = next(r for r in reg["items"] if r["status"] == "open" and r["slot"] != first_open)
+    # W514 — the victim must RIDE AN ITEM, and this guard used to take whichever open row came first. When
+    # FU-077 (slot OWNER) became that row the guard went red against correct code: plan_followups excludes
+    # OWNER deliberately, because a gated row rides no item, so naming one is not drift. The property the
+    # guard needs is driven and asserted here rather than inherited from whatever the register happens to
+    # hold — an ambient choice cannot keep a guard pointed at its own target.
+    _item_slots = {it["slot"] for it in fu.plan_items(prompt)}
+    victim = next(r for r in reg["items"] if r["status"] == "open"
+                  and r["slot"] not in (first_open, "OWNER") and r["slot"] in _item_slots)
+    assert victim["slot"] != "OWNER" and victim["slot"] in _item_slots, victim
     blocks = fu._item_blocks(fu.delivery_plan_body(prompt))
     assert first_open in blocks and blocks[first_open].startswith(f" {first_open}")
     drifted = prompt.replace(f"\n {first_open} [", f"\n {first_open} [rows {victim['id']} ride here] [", 1)
-    probs = fu.check(reg, fu.splice_all(drifted, reg, drifted), None)
+    # the injected drift must actually reach the checked text, or the assertion below proves nothing
+    _spliced = fu.splice_all(drifted, reg, drifted)
+    assert f"rows {victim['id']} ride here" in _spliced, "the drift did not survive into the checked body"
+    probs = fu.check(reg, _spliced, None)
     assert any(f"{first_open}'s text names {victim['id']}, which rides {victim['slot']}" in p for p in probs), probs
+    # and an OWNER-gated row named in the same place is NOT drift — the exclusion is load-bearing, so the
+    # guard proves it holds rather than leaving it to be rediscovered by a red run like the one above
+    _gated = next((r for r in reg["items"] if r["status"] == "open" and r["slot"] == "OWNER"), None)
+    if _gated:
+        _od = prompt.replace(f"\n {first_open} [", f"\n {first_open} [rows {_gated['id']} ride here] [", 1)
+        _op = fu.check(reg, fu.splice_all(_od, reg, _od), None)
+        assert not any(_gated["id"] in p and "which rides" in p for p in _op), _op
 
     # ── FU-073: a hand-off keeps the handed route's place; the taker's own route stays where it was ──
     done_slot = next(i["slot"] for i in fu.plan_items(prompt) if i["done"])
@@ -27885,3 +27903,132 @@ def test_w512_the_spine_is_held_as_a_triad_not_a_pair(client):
     page = (Path(__file__).resolve().parents[1] /
             "apps/workstation-superapp/src/pages/governance/DeliveryMethod.tsx").read_text(encoding="utf-8")
     assert "appraisal: '" in page.split("const GROUP_LABEL", 1)[1].split("};", 1)[0]
+
+
+def test_w513_vision_8_is_delivered_into_the_sections_built_for_it(client):
+    """§8 records the deficit, §16 POINTS at the measurement, §18 holds the decisions — and two items exist.
+
+    No new phase: three of the five thrusts already are Phase 3 items, and a parallel track would compete with
+    the gate that unblocks everything.
+    """
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    vision = (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+
+    # ── §8 uses the section's OWN convention, and records the three deficits with their causes ─────────
+    assert vision.count("**Recorded W512") == 1, "one note, in §8's established Recorded W### form"
+    s8 = vision.split("## 8. The Biomimetic Living-Organism Nature", 1)[1].split("\n## 9.", 1)[0]
+    assert "Recorded W512" in s8, "the note must be inside §8, not merely somewhere in the document"
+    for deficit in ("cannot regulate", "cannot turn over", "cannot select"):
+        assert deficit in s8, deficit
+    # the causes, at the resolution that makes them checkable rather than rhetorical
+    assert "cannot deplete" in s8 and "0.5 \u00d7 0.8" in s8, "the ATP arithmetic, stated"
+    assert "NOTHING in this module evaluates fitness" in s8, "the genome's own words, quoted"
+    assert "ontogeny up to birth" in s8
+
+    # ── §16 must POINT, not restate. Its own history is why. ───────────────────────────────────────────
+    s16 = vision.split("## 16. Fidelity Check", 1)[1].split("\n## 17.", 1)[0]
+    assert "pointer added W512" in s16
+    assert "agentic_core/vbs/quality.py" in s16, "it must name where the measurement lives"
+    assert "re-measure rather than trust" in s16
+    # and it must not become a second copy of the layer verdicts §16 would then own
+    assert "LAYER_STATE" in s16, "naming the structure is a pointer; copying its rows is a claim"
+    for verdict in ("engaged_with_value", "code_exists_unreached", "measurement_under_this_name"):
+        assert verdict not in s16, f"§16 restates {verdict} — that is the rot it was rewritten to stop"
+
+    # ── §18 holds the six decisions, each with a recommendation and none acted on ──────────────────────
+    s18 = vision.split("## 18. Certainty & Agreement", 1)[1]
+    assert "Six decisions the biomimetic scoping put to you" in s18
+    assert s18.count("*Recommend:*") == 6, s18.count("*Recommend:*")
+    assert "none acted on\nuntil you rule" in s18 or "none acted on" in s18
+
+    # ── the two items exist, are NOT done, and each states a bar ───────────────────────────────────────
+    from agentic_core import plan_followups as fu
+    items = {i["slot"]: i for i in fu.plan_items(prompt)}
+    for slot in ("P3.26", "P3.27"):
+        assert slot in items, sorted(k for k in items if k.startswith("P3.2"))
+        assert not items[slot]["done"] and not items[slot].get("malformed_done"), items[slot]
+    # anchored to LINE START, as plan_items does. Splitting on " P3.27 " anywhere matched a cross-reference
+    # inside another item's body and a rendered counter line, so the boundary assertions read the wrong text
+    # entirely — a needle that matches a MENTION instead of a HEADING.
+    import re as _re
+
+    def _item_body(slot: str) -> str:
+        m = _re.search(rf"(?m)^ {_re.escape(slot)} ", prompt)
+        assert m, f"{slot} heading not found at line start"
+        nxt = _re.search(r"(?m)^ (?:P[1-5]\.\d+|MILESTONE|SEQUENCING|PHASE) ", prompt[m.end():])
+        end = m.end() + (nxt.start() if nxt else len(prompt) - m.end())
+        return prompt[m.start():end]
+
+    p326, p327 = _item_body("P3.26"), _item_body("P3.27")
+    assert "ACCEPT:" in p326 and "ACCEPT:" in p327, "an item with no bar cannot be closed"
+    # turnover couples destruction with creation, and names its dependency
+    assert "DEPENDS ON P3.14" in p326, "a self-retirement nothing can refuse is not governed"
+    assert "conserves" in p326.lower() and "lineage" in p326.lower()
+    # and it defers capacity rather than absorbing it
+    assert "NOT THIS ITEM: carrying capacity" in p326
+
+    # ── THE BOUNDARY: clause one of P3.27, because it is the clause that cannot be added later ─────────
+    # The clause LABELLED (1), not merely "everything before (2)". A blind renumbered the boundary to (9)
+    # and this leg stayed green, because the slice still contained the text. The claim being checked is
+    # POSITIONAL — "clause one because it is the one that cannot be added later" — so the position is what
+    # must be asserted.
+    _clauses = _re.split(r"(?m)^\s*\((\d+)\)\s", p327.split("ACCEPT:", 1)[1])
+    _by_num = {_clauses[i]: _clauses[i + 1] for i in range(1, len(_clauses) - 1, 2)}
+    assert "1" in _by_num, sorted(_by_num)
+    assert min(int(k) for k in _by_num) == 1, sorted(_by_num)
+    first_clause = _by_num["1"]
+    assert "THE BOUNDARY FIRST" in first_clause, "the boundary must be clause ONE, not merely early"
+    assert "A.9.5" in first_clause, "the ruling must be IN the first clause"
+    assert "RATIFIED BOUNDARY" in first_clause and "never a gap to close" in first_clause
+    assert "ON THE BINDING" in first_clause, "a comment naming a forbidden field satisfies a grep"
+    for forbidden in ("Tazkiyah Score", "spectrumScores", "Da'wah Readiness"):
+        assert forbidden in first_clause, f"the refusal must NAME {forbidden} — an unnamed refusal is decoration"
+    # asserted in two parts: the plan doc wraps at ~100 columns and this phrase crosses a line break.
+    # A needle that spans a wrap is brittle against reflowing, not against the thing being checked.
+    assert "ORIENTS selection" in first_clause and "number anything raises" in first_clause
+    # and it must not reuse the funding score, which selects on POTENTIAL
+    assert "funding score is NOT reused" in p327 and "POTENTIAL" in p327
+    assert "NOT THIS ITEM: a rescue channel" in p327
+
+
+def test_w513_no_live_module_computes_a_spiritual_score(client):
+    """Ruling A.9.5, asserted on the BINDING across the live tree — the boundary P3.27 is built behind.
+
+    The inherited background specifies this system in full: a Tazkiyah Score held as an identity marker, a
+    UserFitrahProfile of per-aspect scores, a Da'wah Readiness attainment, spiritual KPI dashboards. This
+    asserts none of it is COMPUTED — an assignment, a field, a function or a returned key — rather than
+    grepping for the words, because the words appear legitimately in the background extracts and in the
+    rulings that forbid them, and a word list would either flag those or be satisfied by a comment.
+    """
+    import ast as _ast
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    FORBIDDEN = {"tazkiyah_score", "spectrum_scores", "spectrumscores", "dawah_readiness",
+                 "spiritual_kpi", "fitrah_score", "virtue_score", "barakah_score", "gratitude_score",
+                 "taqwa_score", "ihsan_score"}
+    hits, checked = [], 0
+    for p in list((root / "agentic_core").rglob("*.py")) + list((root / "products").rglob("*.py")):
+        try:
+            tree = _ast.parse(p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        checked += 1
+        for n in _ast.walk(tree):
+            # a BINDING: an assignment target, a function or class name, or a dict key that is written
+            names = []
+            if isinstance(n, _ast.Assign):
+                names = [getattr(t, "id", None) or getattr(t, "attr", None) for t in n.targets]
+            elif isinstance(n, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.ClassDef)):
+                names = [n.name]
+            elif isinstance(n, _ast.AnnAssign):
+                names = [getattr(n.target, "id", None) or getattr(n.target, "attr", None)]
+            elif isinstance(n, _ast.Dict):
+                names = [k.value for k in n.keys if isinstance(k, _ast.Constant) and isinstance(k.value, str)]
+            for nm in names:
+                if nm and str(nm).strip().lower().replace("-", "_") in FORBIDDEN:
+                    hits.append(f"{p.relative_to(root)}:{n.lineno} -> {nm}")
+    assert checked > 200, f"the sweep must have read the tree: {checked} files"
+    assert not hits, ("A.9.5: a spiritual state is COMPUTED somewhere. This is a ratified boundary, never a "
+                      f"gap to close: {hits}")

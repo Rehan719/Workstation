@@ -1243,8 +1243,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W513",
       "note": ""
     },
     {
@@ -1258,8 +1258,8 @@
         "agentic_core/reactor/domains/weaver.py"
       ],
       "severity": "medium",
-      "owner_gated": false,
-      "slot": "P2.4",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": ""
@@ -5394,11 +5394,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P3.27",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.4 owns the scatter; this needs an Owner decision on what signal is acceptable before it can be built anywhere",
+      "slot_source": "P3.27 SELECTION is the item that cannot begin until this exists: clause (2) IS this row, and clause (3) refuses while any of the four measures is unmeasured. It was slotted P2.4 as a truth-sweep row before the item existed.",
       "tier": 2
     },
     {
@@ -5413,11 +5413,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P3.27",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.4 owns retire-or-relabel; the lineage half is a precondition noted with it",
+      "slot_source": "P3.27 clause (6) is exactly this row's deletion half — the dead fitness stub returning 1.0 for every individual. Its lineage half is P3.26 clause (1).",
       "tier": 3
     }
   ],

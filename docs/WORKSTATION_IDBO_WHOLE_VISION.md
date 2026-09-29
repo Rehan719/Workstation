@@ -379,6 +379,43 @@ BEFORE any new module: this repository's cleanups moved 516 sources into `_archi
 deletion-only search misses exactly the work most worth recovering.
 
 
+**Recorded W512 — what the organism measurably cannot yet do (the biomimetic scoping, three attempts).**
+The verbs above are the test, and three of the five are not met. The organism SENSES and ACTS; it does not yet
+**regulate**, **turn over** or **select**. Each has a precise, measured cause, and none of them is large:
+
+- **It cannot regulate.** Both unreached layers are regulators. The metabolic loop is fully wired — work →
+  load → ATP → posture → admitted concurrency, with a survival instinct at `atp < 0.3` — and **cannot deplete
+  by arithmetic**: maximum consumption `0.1 × a load clamped to 1.0` against minimum production `0.5 × 0.8`, a
+  fourfold gap that `atp_depletion_state()` derives and publishes itself. The circadian intensity map
+  (1.0 · 0.7 · 0.5 · 0.3) is never passed to metabolism, so the clock gates evolution and does not touch
+  energy. And `geospheric/regulator.py` is **not a controller**: its `integral_error` is declared and never
+  accumulated, its `dt` is discarded, its corrective actions are strings. Closing the endocrine loop is
+  CONSTRUCTION, not connection — and `vbs/quality.py`, the one surface built to tell the truth about these
+  layers, currently calls that file "a real PID regulator" (registered FU-307, Tier 1).
+- **It cannot turn over.** No apoptosis, no autophagy, no mitosis, no senescence and no death. The
+  Concept→Commercialisation stages end at **launch**: that sequence is ontogeny up to birth, not a life cycle.
+  A system that cannot remove or replace its own parts cannot be said to heal. Nature couples the two —
+  subduction destroys crust and volcanism creates it — so apoptosis and mitosis are one mechanism, not two
+  features: destruction without creation is decay, creation without destruction is sprawl.
+- **It cannot select.** `organism/genome.py` has crossover (uniform · single-point · adaptive) and mutation and
+  lineage, and its own docstring states *"NOTHING in this module evaluates fitness; the fields say so instead
+  of implying selection"*. Variation yes, inheritance yes, **selection no** — so evolution is impossible by
+  construction, and the only fitness implementation in the tree returns `1.0` for every individual. Of the four
+  measures this section promises are continuously monitored, **customer/user satisfaction has no mechanism
+  anywhere**, and selection cannot honestly begin until it does (registered FU-311): a composite built from
+  the two that are measured would be selection on those two wearing a composite's clothes.
+
+What the scoping refuses to inherit: the background specifies a **spiritual scoring system** —
+`UserFitrahProfile (spectrumScores {aspect: score})`, a `Tazkiyah Score` held as an identity marker, a
+`Da'wah Readiness` attainment, and "spiritual KPI dashboards". **No live file computes any of it, and none ever
+will**: ruling A.9.5 holds that the Fitrah Spectrum is never a measurement and no AI verdict is passed on a
+person's spiritual state. The purpose ORIENTS judgement; it is never a number anything tries to raise. That is
+the one boundary a selection mechanism must be built behind, not beside.
+
+Its delivery is the existing Phase 3 gate plus two new items — not a new phase. A parallel track would compete
+with the gate that unblocks everything, and §16 already records what happens when progress claims accumulate
+in the canon.
+
 **Recorded W484 — the six biogeochemical cycles, the Sovereign Wealth Fund and the inter-agent
 communication fabric (three more outside proposals, interrogated before acceptance).** The mapping they
 share is adopted into this vision: six named operational functions, each with a natural analogue — Water
@@ -566,6 +603,14 @@ of several DOC_OVERCLAIM verdicts. A progress narrative duplicated inside the ca
 of the truth that must be kept in sync, and it was not. So this section no longer carries claims; it
 carries pointers to the places that do, each of which is verified rather than asserted. The old
 text remains in git history.
+
+**The seven layers' own state (pointer added W512, re-measure rather than trust this line).**
+`agentic_core/vbs/quality.py` holds a per-layer state table that the platform reports on its own quality
+records — `LAYER_STATE`, with a `basis` naming the file behind each verdict. Read it there; at W512 one of the
+seven contributed value, one signalled without contributing, two were implemented off the quality path, one
+was `100 − cpu_percent` under an anatomical name, and two were unreached code. **That table is itself subject
+to §16's rule**: its Endocrine basis over-claims the file it names (FU-307), which is exactly why this section
+points at the measurement instead of repeating it.
 
 **State as of 2026-09-05** (measured against HEAD `06c51109`; every figure below is reproducible —
 `python scripts/reach_audit.py` for the surface, the pytest suite for the tests, the six-region fidelity
@@ -858,6 +903,34 @@ updates (each verified in code, file:line evidence in the Round-7 audit journal)
   end-to-end (W346).
 
 ## 18. Certainty & Agreement — what I am sure of, and what I want you to confirm
+
+**Six decisions the biomimetic scoping put to you (W512), with my recommendation on each — none acted on
+until you rule.** They are here rather than in the plan because each is a choice about what the organism IS,
+not about how a round delivers it.
+
+1. **What is the metabolic budget measured in?** *Recommend:* nothing new — the loop exists; wire the real
+   circadian efficiency into `_update_atp` and raise the consumption coefficient above minimum production.
+   It ships INERT behind a setting, because making `atp < 0.3` reachable switches on a throttle that has never
+   once fired and caps all cognition to serial.
+2. **What may an entity be selected ON?** *Recommend:* build selection so it **REFUSES** while any of the four
+   measures is unmeasured, as the §11 screen refuses rather than clears; permit negative selection on a hard
+   floor meanwhile. Do NOT reuse the venture funding score — funding selects on POTENTIAL
+   (outcome-success × value × benefit × feasibility × strategic-fit), survival must select on RECORD, and
+   conflating them lets a well-pitched entity outlive a well-performing one.
+3. **May an entity create an entity?** *Recommend:* yes to **mitosis** — a mature entity creates a subsidiary
+   inheriting its constitution verbatim, funded from the parent's own waterfall share, through Change Control —
+   after a lineage field exists, which today it does not. And **meiosis produces a CANDIDATE, not a birth**: a
+   recombined constitution is a new constitution and is ratified exactly as a method lesson is.
+4. **What may a VSB retire itself over?** *Recommend:* **self-service dormancy, governed death.** Never
+   auto-retire anything holding unsettled obligations, under a governance hold, named in a ruling, the QEP
+   entity, or the last entity in its realm×domain — that last is not apoptosis but the extinction of a lineage.
+5. **Should a rescue channel exist between entities?** *Recommend:* **no.** Investment between entities is
+   already built (§4 Stage 4 and the W507 arrival share). Rescue is not investment: routing it through a stage
+   whose stated basis is competitive selection on potential would corrupt that basis, and charity has defined
+   recipients. **Rescue before selection means nothing ever fails.**
+6. **Does an entity have a carrying capacity and an end?** *Recommend:* yes to both, with capacity **derived**
+   from the metabolic budget rather than set — as ecology does it — and death conserving what the entity held
+   (its balance returns to the reservoirs) while **retaining its record**.
 
 **The spine I am certain of (please correct any line that is even slightly off):**
 1. **Purpose:** democratise AI-mediated working for *all* humanity, in *all* realms and domains, to
