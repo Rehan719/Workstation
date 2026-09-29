@@ -4,11 +4,32 @@
     "why_each_row_carries_a_defect": "A rule with no defect behind it is an opinion. Every lesson here names the round and the concrete failure that produced it, so a reader can judge the rule by the evidence rather than by its phrasing — and so a rule can be RETIRED when the defect it answers stops being possible.",
     "what_enforced_by_means": "A real tool or guard path that would CATCH a breach, or null. Null is the common case and is stated, never implied: most of this method is judgement a change record cannot expose. A gate that reported these as MET would be the exact defect this programme spent its rounds removing — a green badge over requirements nothing evaluated.",
     "three_states": "A method check returns MET, UNMET or NOT_ASSESSABLE with a basis. NOT_ASSESSABLE is the honest answer for any requirement whose satisfaction is not visible in the artefacts the platform holds, and it is the majority answer.",
-    "owner_ruling": "2026-09-27 — the rulings are the constitution. 2026-09-29 — measurement, acceptance-criteria bars, alignment to vision value and progress-to-completion belong in the method as a group of their own.",
-    "groups": ["planning", "measurement", "execution", "verification", "delivery"],
-    "generated": "authored W508 from the programme's own confirmed defects; amended only through Change Control"
+    "owner_ruling": "2026-09-27 — the rulings are the constitution. 2026-09-29 — measurement, acceptance-criteria bars, alignment to vision value and progress-to-completion belong in the method as a group of their own. 2026-09-29 (second): preparation and handover are groups of the method in their own right, and reach the Transformation Office and the Change Control Agency. 2026-09-29 (third): the written record — the knowledge operating process, the handovers and the three defect ledgers — is reviewed for methodology, and what it holds is distilled into the method rather than left in prose. 2026-09-29 (fourth): FORECASTING (how long work takes and in what order) and LEARNING (how experience, mistakes and successes become method) are groups of the method in their own right, mined from this programme's own record, and reach the Transformation Office and the Change Control Agency. 2026-09-29 (fifth): DIAGNOSING (the step between a symptom and a patch) and CORRECTING (how a wrong thing is made right without moving the defect) are groups of the method in their own right — the two steps this programme has lost the most time in, and the two the register had no rules for.",
+    "groups": [
+      "preparation",
+      "planning",
+      "forecasting",
+      "measurement",
+      "execution",
+      "diagnosing",
+      "correcting",
+      "verification",
+      "delivery",
+      "learning",
+      "handover"
+    ],
+    "generated": "authored W508 from the programme's own confirmed defects; amended only through Change Control",
+    "what_defect_classes_are": "A lesson is a rule for whoever is working; a defect class is a SHAPE a screen can look for. The classes below were distilled from this repository's own defect ledgers, where each was found by sweeping for the shape rather than by reading for the rule. Each names how to find it and what the fix is, and D-FABRICATE also names what is NOT in the class, because eleven of seventy proposals were legitimately defended.",
+    "sources_reviewed": [
+      "docs/KNOWLEDGE_OPERATING_PROCESS.md",
+      "docs/HANDOVER_W470.md",
+      "docs/HANDOVER_W475.md",
+      "docs/FABRICATION_LEDGER.md",
+      "docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md",
+      "docs/FRONTEND_DEFECT_LEDGER.md"
+    ],
+    "what_breaches_are": "A breach is an occasion on which a rule was broken AFTER it was written. Breaches are NOT recorded in this document: it is amended only through Change Control, so they live in their own operational store (data/method_breaches.json) and GET /api/v1/method joins the count in at read time. A count of zero means no breach has been RECORDED, which is not a statement that none happened — nothing observes a breach. The third recorded breach of a lesson nothing enforces raises a Change Control candidate, because a rule broken after being written needs a tool rather than a reminder (M-LEARN-02, M-LEARN-03)."
   },
-
   "lessons": [
     {
       "id": "M-CONCEPT-01",
@@ -53,7 +74,6 @@
       "enforced_by": null,
       "why_not_enforced": "A tool cannot detect what it is structurally unable to see; only a reader comparing the batch against the full open set can."
     },
-
     {
       "id": "M-MEAS-01",
       "group": "measurement",
@@ -106,7 +126,6 @@
       "enforced_by": null,
       "why_not_enforced": "Staleness is only visible by re-running the measurement the row describes."
     },
-
     {
       "id": "M-EXEC-01",
       "group": "execution",
@@ -166,7 +185,6 @@
       "apply": "Slot such a row OWNER so the plan counts it, and state the options with the measurement behind each.",
       "enforced_by": "integration_tests/test_mvp_spine.py (an OWNER row must carry the owner-gated flag and say why it is one)"
     },
-
     {
       "id": "M-VERIF-01",
       "group": "verification",
@@ -262,7 +280,6 @@
       "apply": "Isolate DATA_DIR, WORKSTATION_DATA_DIR, WORKSTATION_UEG_PATH and PROJECTS_DIR per run. Touch nothing while a suite runs.",
       "enforced_by": "integration_tests/conftest.py (per-worker store isolation) and integration_tests/test_xdist_iso.py"
     },
-
     {
       "id": "M-DELIV-01",
       "group": "delivery",
@@ -323,16 +340,389 @@
       "apply": "When the build contradicts the plan's own words, change the words. A stronger claim that survives because nobody re-read it is the same defect as one that was never checked.",
       "enforced_by": null,
       "why_not_enforced": "Only a reader comparing the plan's claim against the built behaviour can see it."
+    },
+    {
+      "id": "M-PREP-01",
+      "group": "preparation",
+      "rule": "Preparation is MEASUREMENT, not planning. Read the live state of every row before building anything from it.",
+      "defect": "W507-W508, in one session: two rows (FU-241, FU-244) claimed a script walked a directory it does not walk and were DROPPED as false; two more (FU-247, FU-261) were already satisfied and merely open; and a fifth (FU-248) was three-quarters done. Building any of them from the row's text would have changed correct code on a false premise.",
+      "apply": "For each row, read the code it names and record what is actually there. A row that is false is DROPPED with the measurement that refutes it; a row already satisfied is CLOSED. Neither is a build.",
+      "enforced_by": null,
+      "why_not_enforced": "A row's truth is established by reading the code it points at; no artefact records whether that was done."
+    },
+    {
+      "id": "M-PREP-02",
+      "group": "preparation",
+      "rule": "Prepare the BAR before the build. An item with no acceptance criteria cannot be closed however much is built.",
+      "defect": "W505: no P2 item closed in 48 rounds while 32 rows closed in six, because 17 of 48 open build items stated no acceptance clause. W508 measured the same in Phase 3: ELEVEN of 26 items state none, so eleven cannot be closed as written whatever is delivered.",
+      "apply": "An item whose body lists deliverables does not need a bar invented - the deliverables ARE the bar, and writing them as ACCEPT is transcription plus a guard. Write it before or with the work, never after.",
+      "enforced_by": null,
+      "why_not_enforced": "An audit can count items with no bar at all; whether a bar's clauses match its item's body is a reading."
+    },
+    {
+      "id": "M-PREP-03",
+      "group": "preparation",
+      "rule": "Prepare a patch as a script whose every anchor is ASSERTED, and whose needles carry the target file's own line endings.",
+      "defect": "A scripted replace missed on a CRLF mismatch and shipped a fabricated-success button through a whole round, because nothing checked the replacement happened. W507-W508 hit the line-ending half four separate times: an LF needle matches nothing in a CRLF file, silently, and one heredoc left a CRLF file MIXED.",
+      "apply": "Assert every anchor matches exactly once, convert every needle to the file's own ending, re-parse afterwards, and check `git ls-files --eol` before and after. Prefer an editing tool for load-bearing changes; a heredoc eats escapes.",
+      "enforced_by": null,
+      "why_not_enforced": "The assertion lives in the patch script, which is not an artefact of the change. An EOL flip IS visible in `git ls-files --eol` and is a candidate for the pre-flight."
+    },
+    {
+      "id": "M-PREP-04",
+      "group": "preparation",
+      "rule": "Prepare during dead time, but READ-ONLY. Never touch the tree or a running verification's store.",
+      "defect": "W507 lost TWO full 50-minute suite runs in one night: one to deleting the suite's own data directory mid-run, and one to running other pytest invocations beside it - four hours of wall clock for 355 seconds of CPU.",
+      "apply": "While a suite runs: read files, measure, and write prepared patches to a scratchpad. Apply nothing. A prepared patch applied after green costs a minute; a corrupted run costs the round.",
+      "enforced_by": null,
+      "why_not_enforced": "Nothing observes what else is running; the discipline is the operator's."
+    },
+    {
+      "id": "M-PREP-05",
+      "group": "preparation",
+      "rule": "Ask the archive before building. A cleanup that MOVED work is invisible to a delete-only search.",
+      "defect": "W482: 516 files had been moved into _archive/ and only 3 deleted, so searches for deletions found almost nothing and work was rebuilt that already existed.",
+      "apply": "Run `python scripts/recovery_audit.py` first. Recover the SHAPE of archived work, never a simulated corpus - 342 archived rows read 'Simulated content for <filename>' and were stamped EXTRACTED.",
+      "enforced_by": "scripts/recovery_audit.py"
+    },
+    {
+      "id": "M-PREP-06",
+      "group": "preparation",
+      "rule": "Name what the round will NOT do, before it starts.",
+      "defect": "The Owner's standing mandate, recorded after a round delivered a subset of a brief and reported it as the brief. W508 applied it in the other direction: P2.8's five criteria were all built and the item was NOT closed, because two rows still rode it - and saying so was the deliverable.",
+      "apply": "State the excluded scope explicitly when proposing a round, and again when reporting it. A narrowing is a decision and belongs to the Owner.",
+      "enforced_by": null,
+      "why_not_enforced": "Scope fidelity is a judgement against a document."
+    },
+    {
+      "id": "M-HAND-01",
+      "group": "handover",
+      "rule": "A WORKING CONTEXT ENDS. Only the register, the plan and the memory survive it - never the conversation.",
+      "defect": "This programme's own sessions are compacted mid-flight. Everything that carried across did so because it was written to docs/FOLLOWUPS.json, the plan, or a memory file; everything held only in the exchange was gone. A round that 'remembers' a decision has not recorded it.",
+      "apply": "Before a context ends, and continuously rather than at the end: every found-but-not-done task is a register row, every ruling is in the plan, and every durable lesson is in this method. If it matters after the context, it is in an artefact.",
+      "enforced_by": "integration_tests/test_mvp_spine.py::test_w462_followup_register_is_scheduled_and_in_lockstep"
+    },
+    {
+      "id": "M-HAND-02",
+      "group": "handover",
+      "rule": "Hand over the MEASUREMENT, not the conclusion. A figure ages; the method that produced it can be re-run.",
+      "defect": "W505: a row asserted '17 of 48 items state no bar' and used the stale figure in its own reasoning before re-checking it - six of the seventeen had since been barred or closed. W508 found a row still claiming '19 call sites' where the real count was 1.",
+      "apply": "Record HOW a figure was measured, so a successor can re-measure rather than inherit. A measurement row that overstates a problem is the same defect as one that understates it.",
+      "enforced_by": null,
+      "why_not_enforced": "Staleness is only visible by re-running the measurement the row describes."
+    },
+    {
+      "id": "M-HAND-03",
+      "group": "handover",
+      "rule": "State plainly what is UNVERIFIED, and what was left out and why.",
+      "defect": "W507 reported a 4.8x suite speedup that was real and then found it stalled one run in three with no established cause. Banking the win would have handed a successor a tool that fails silently a third of the time - the instrument-that-cannot-fail defect inverted.",
+      "apply": "A handover names: what is verified and by which guard, what is built but unverified, what is measured but unexplained, and what was deliberately not done. A green figure with an unstated caveat is worse than no figure.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a caveat was stated is a reading of the report."
+    },
+    {
+      "id": "M-HAND-04",
+      "group": "handover",
+      "rule": "Every open DECISION is slotted to the Owner so the plan counts it. 'Do X or Y' is never a build.",
+      "defect": "W507: the register formally counted ONE row awaiting the Owner while three more (FU-167, FU-260, FU-256b) carried embedded either/or choices slotted to build items - so decisions the Owner should have made were about to be taken by whoever next reached the row.",
+      "apply": "Slot such a row OWNER, state the options with the measurement behind each, and do not pick. An OWNER row must carry the owner-gated flag and say why it is one.",
+      "enforced_by": "integration_tests/test_mvp_spine.py (an OWNER-slotted row must carry the flag and a slot_source)"
+    },
+    {
+      "id": "M-HAND-05",
+      "group": "handover",
+      "rule": "Hand over the INSTRUMENTS: which guards exist, which blinds were run, and which came back vacuous and why.",
+      "defect": "W491: 17 of 79 blinds were vacuous. W503: 9 of 46, five of them one class. W508: two vacuous blinds were each a real guard weakness - a substring match with no boundary, and a check satisfied by any one of three references. A successor who is told only 'the guards pass' inherits the weakness with the guard.",
+      "apply": "Report the blind count, the red count, and every vacuous result with its cause. A vacuous blind is a finding about the guard, not a formality.",
+      "enforced_by": null,
+      "why_not_enforced": "No artefact records that a blind sweep ran or what it found."
+    },
+    {
+      "id": "M-HAND-06",
+      "group": "handover",
+      "rule": "Correct the round's own over-claims IN THE RECORD before handing over, not in the next conversation.",
+      "defect": "W507 wrote into the plan that a new assessor made the overall compliance verdict reachable. Building it showed the verdict stays unreachable until every framework has an assessor. The plan and the memory were corrected in the same round; left standing, a successor would have inherited the stronger claim as fact.",
+      "apply": "When the build contradicts the plan's own words, change the words. A claim that survives because nobody re-read it is the same defect as one that was never checked.",
+      "enforced_by": null,
+      "why_not_enforced": "Only a reader comparing the record against the built behaviour can see it."
+    },
+    {
+      "id": "M-CONCEPT-03",
+      "group": "planning",
+      "rule": "The vision PREVAILS. Where the live system differs from it, the difference is the work to do — never a redefinition of the vision down to what exists.",
+      "defect": "docs/KNOWLEDGE_OPERATING_PROCESS.md §1 records this as the rule of coherence over five layers (vision, understanding, plan, memory, code) after the layers had drifted: a plan reconciled to capability reads as coherent and has quietly deleted scope. The Owner's standing mandate names the same failure from the other side — a round that delivered a subset of a brief and reported it as the brief.",
+      "apply": "When a document and the tree disagree, change whichever one is WRONG, and a vision is wrong only when the Owner says so. Code/live state is ground truth about what EXISTS; it is never ground truth about what was asked for. A gap becomes a plan item, not an edit to the brief.",
+      "enforced_by": null,
+      "why_not_enforced": "A fidelity audit can score section-by-section coverage (scripts/workflows/fidelity_audit_v3.js), but whether a rewording narrowed intent is a reading."
+    },
+    {
+      "id": "M-PLAN-04",
+      "group": "planning",
+      "rule": "DECOMPOSE a backlog line before working it. A line that names a count rather than its contents hides what doing it would ship.",
+      "defect": "docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md: the backlog said '10 unreached native-AI routes', which reads as wiring work. Decomposing it first found that NINE of the ten carried a fabrication-class defect, so working the line as written would have shipped nine misleading surfaces in one change. The ledger's own words: decomposing the backlog before working it is what caught this.",
+      "apply": "Expand a counted line into its members and read each one before scheduling it. A line whose members have never been looked at is UNEXAMINED — the same state M-MEAS-01 names for an item with no bar, and it estimates the same way: not at all.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a line was expanded before being worked leaves no trace in an artefact."
+    },
+    {
+      "id": "M-PLAN-05",
+      "group": "planning",
+      "rule": "Order fixes by REACHABILITY. A defect in code nothing reaches is a ledger entry, not an incident — and inflating one into the other spends the attention the reachable ones need.",
+      "defect": "docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md audited one entry in depth — including measuring how badly noise outweighed its signal — before anyone asked whether it runs. It does not. docs/FABRICATION_LEDGER.md states the converse as its working order: 63 surviving findings fixed top-down by reachability, 'what a user actually sees comes first'.",
+      "apply": "Ask whether a finding is reached BEFORE auditing it deeply, and record the reach beside it. Then fix in reach order. This does not mean unreached defects are ignored: they are recorded as latent, which is what a ledger is for. Note the trap in the other direction — [[feedback-reachability-blind-spots]] — imports and a green suite do not prove a file is unreached, because infra-only references and runtime directory scans reach code no import graph shows.",
+      "enforced_by": "scripts/reach_audit.py"
+    },
+    {
+      "id": "M-VERIF-12",
+      "group": "verification",
+      "rule": "A screen states what it does NOT flag. An exclusion list is part of the instrument, and a screen without one reports noise as findings.",
+      "defect": "docs/FABRICATION_LEDGER.md: 70 findings proposed, ELEVEN successfully DEFENDED, 63 surviving. The defended eleven were configuration constants, clearly-labelled fallbacks, test fixtures, archived files, honest empty states and prompt/example text — none of which is a fabrication. Without that list written down, a re-run of the same sweep re-proposes them, and the operator re-adjudicates eleven settled cases to reach the real 63.",
+      "apply": "Every screen carries its scope AND its exclusions, and an adversarial DEFENCE pass runs before the findings are treated as findings. A proposal that is defended is recorded as defended — not deleted — so the next sweep inherits the adjudication.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether an exclusion is legitimate or a convenient escape is exactly the judgement the defence pass exists to make."
+    },
+    {
+      "id": "M-VERIF-13",
+      "group": "verification",
+      "rule": "Identical failure lines across different blinds mean the RUN was contaminated, not that the blinds were caught.",
+      "defect": "docs/HANDOVER_W470.md §3 records this as a rhythm rule after a break run reported every blind red. They were red for one shared reason — a dirty tree or a corrupted store — so the sweep proved nothing about any guard. It is the instrument-that-cannot-fail defect (M-VERIF-01) inverted: an instrument that cannot PASS is equally uninformative.",
+      "apply": "Read the failure LINES, not the red count. Distinct blinds must fail for distinct reasons, at the assertion each one targets. Byte-restore from a captured copy, never with a checkout, and separate BAD BLIND (the edit did not compile) from VACUOUS (the guard never saw it).",
+      "enforced_by": null,
+      "why_not_enforced": "No artefact records that a blind sweep ran, let alone which line each blind failed at."
+    },
+    {
+      "id": "M-DELIV-08",
+      "group": "delivery",
+      "rule": "A shared record has ONE writer, and it must add up against itself. A record that miscounts its own table is the same defect class as the code it documents.",
+      "defect": "docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md: a status section said '5 fixed + 4 open' over a table of NINE, with `entropy` in neither list — it was still open, and was found only because someone re-added the table. docs/HANDOVER_W470.md §5.4 records the writer half: the register and the plan move together and only through scripts/followups.py; editing PLAN NOW by hand fails the suite, as does an open row sitting where its routes would not send it, or a finished item still carrying a row.",
+      "apply": "Change the register and the plan through their tool, never by hand. Re-add every summary against the rows it summarises — a total, a status split and a table are three chances to disagree, and a summary nobody re-added is a claim nobody checked.",
+      "enforced_by": "integration_tests/test_mvp_spine.py (the register/plan lockstep legs) + scripts/followups.py check"
+    },
+    {
+      "id": "M-FCAST-01",
+      "group": "forecasting",
+      "rule": "Forecast the ITEM, never the row. Rows closing is motion; items closing is progress toward completion, and the two can point opposite ways.",
+      "defect": "Measured at W505: 32 rows closed across six rounds while ZERO Phase 2 items closed in FORTY-EIGHT. A row-based reading said the plan was moving at ten rows a round; the plan had not advanced by a single item. W503 is the clearest single round — ten rows closed, no item.",
+      "apply": "Report both rates and project from the item rate. The row rate sizes a ROUND; the item rate sizes the PLAN. Measure the item rate over the whole span rather than a six-round window, because a window cannot measure something that takes many rounds.",
+      "enforced_by": "agentic_core/plan_followups.py forecast() — reports both rates and projects on items"
+    },
+    {
+      "id": "M-FCAST-02",
+      "group": "forecasting",
+      "rule": "The open-row count is an UPPER BOUND on remaining work, not a measure of it. Re-read the rows before forecasting from them.",
+      "defect": "Three consecutive rounds, measured: W507 DROPPED two rows (FU-241, FU-244) as factually false — the script they accused walks no such path; W508 found two already satisfied (FU-247, FU-261) and a third three-quarters done (FU-248); W509 measured P2.8's six open rows and FIVE were already satisfied by earlier rounds and had simply never been closed. Roughly nine of the last fifteen rows examined needed no build at all, so a projection off open rows is biased HIGH by a large and unstable factor.",
+      "apply": "Re-read the rows; never apply a correction factor to the count. A row measured false is DROPPED with the measurement that refutes it, and a row already satisfied is CLOSED — both are forecasting work, and both make the projection more honest rather than shorter.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a row is still true is a reading of the code it names. A tool can surface CANDIDATES — open rows whose files a later round changed — and that instrument does not exist yet."
+    },
+    {
+      "id": "M-FCAST-03",
+      "group": "forecasting",
+      "rule": "Budget the VERIFICATION, not the patch. The cost of a round is dominated by proving the change, not by making it.",
+      "defect": "Measured on this programme: a round's patch is minutes of work, while the full suite is about fifty minutes and must run ONCE on the final tree; a blind sweep is one run per blind, and two rounds ran 79 and 46 of them; adversarial refutation took six to eight passes to converge. A forecast built from the size of the diff is wrong by an order of magnitude, and every schedule this programme has overrun was overrun here.",
+      "apply": "Size a round as: the patch, plus one full suite on the final tree, plus one run per blind, plus the refutation passes. When the verification cost exceeds the patch cost by that much, the lever is FEWER, LARGER rounds over one file-connected component — not faster patching.",
+      "enforced_by": null,
+      "why_not_enforced": "No artefact records how long a round's verification took; the commit gaps in git are wall clock and include everything else (M-FCAST-04)."
+    },
+    {
+      "id": "M-FCAST-04",
+      "group": "forecasting",
+      "rule": "Wall clock is not work. Report the VARIANCE and its cause, never the median alone — the long tail is rework, and rework is preventable in a way that work is not.",
+      "defect": "Two measurements, side by side. Git: 32 commit-to-commit gaps, median 4.5 hours per round, range 0.2 to 10.9 — a spread of fifty-fold that a median conceals entirely. And one night inside that range spent FOUR HOURS of wall clock for 355 seconds of CPU, because two full suite runs were destroyed — one by deleting the suite's own data directory mid-run, one by running other pytest invocations beside it.",
+      "apply": "Quote the range with the median, and separate rework from work when you can name it. A forecast that hides a fifty-fold spread behind a central figure is a promise. The two lost runs were self-inflicted and are governed by M-PREP-04, which is why the discipline and the forecast belong in the same register.",
+      "enforced_by": "scripts/followups.py forecast — the WALL CLOCK line reports the median with its range"
+    },
+    {
+      "id": "M-FCAST-05",
+      "group": "forecasting",
+      "rule": "Order by what UNBLOCKS, then by value. An item held behind another cannot be closed by working it, however high it scores.",
+      "defect": "Measured at W508: P2.11-P2.16 are held behind P3.12-P3.19 by the Owner's ruling, because a membrane in front of machinery that does not run can only be verified against its absence. So PHASE 2 CANNOT CLOSE BEFORE A CHUNK OF PHASE 3, and no amount of row-closing inside Phase 2 changes that. A schedule ordered purely by priority score would have worked six items that cannot complete.",
+      "apply": "Resolve the blocking order first, then order the unblocked set by vision value (docs/PRIORITY.json). State the gate in the schedule so it is visible rather than rediscovered: at W508 the gate is P3.12, and nothing above it moves first.",
+      "enforced_by": "agentic_core/plan_followups.py _gate_phase() — the gate phase bounds the schedule"
+    },
+    {
+      "id": "M-FCAST-06",
+      "group": "forecasting",
+      "rule": "The unit bounds the estimate. A round is one file-connected component cut by ONE item — not a count of rows.",
+      "defect": "W503 closed ten rows and zero items, which is the measured ceiling of what row-cutting achieves. A round spanning unrelated files pays the whole verification cost once per cluster and converges more slowly, so two rounds of seven related rows cost less than one round of fourteen unrelated ones and close more items.",
+      "apply": "Cut the round by item and by file connection, with a ceiling near fourteen rows. Ask what the round CLOSES, not how many rows it touches — and if the answer is no item, say so before starting.",
+      "enforced_by": "scripts/followups.py bundles — the file-connected subsystem, cut by item"
+    },
+    {
+      "id": "M-FCAST-07",
+      "group": "forecasting",
+      "rule": "A projection names its weakest number and refuses where it cannot measure. A figure with no stated basis is a promise.",
+      "defect": "The plan's own forecaster projects about a hundred rounds to completion from an item rate measured over items ALL of which are in Phases 1 and 2, applied to phases whose work differs, while 25 of 42 open build items have never been sized by a single row. It says all of this in its own basis line, and calls the coverage figure 'the weakest number on this page'. The defect is the earlier version that did not.",
+      "apply": "State the population, exclude one-time intakes and owner-switch items rather than counting them as rounds, refuse to project an item with too few observations, and say which figure you trust least. Never a date (M-MEAS-04).",
+      "enforced_by": "agentic_core/plan_followups.py forecast() — items_basis, not_assessable_because, and the projection-coverage sentence"
+    },
+    {
+      "id": "M-LEARN-01",
+      "group": "learning",
+      "rule": "A lesson enters the method only as a CANDIDATE, from a CONFIRMED defect, ratified by the agency that holds the method.",
+      "defect": "Without it, whoever closed a row could rewrite the discipline everything else is checked against. And a lesson from an unclosed row can be fiction: W507 dropped two rows as factually wrong, and a rule derived from either would have entered the method as truth.",
+      "apply": "POST /api/v1/method/derive carries the row's own measured text across as the DEFECT and refuses a row that is not `done`; it leaves the RULE to a proposer, because a sentence this code invented from a row's title is a rule nobody thought about. Change Control ratifies.",
+      "enforced_by": "agentic_core/api/method.py derive_lesson() — refuses a row whose status is not done"
+    },
+    {
+      "id": "M-LEARN-02",
+      "group": "learning",
+      "rule": "A lesson breached AGAIN is a MECHANISM failure, not a discipline failure. A rule that is broken after being written needs a tool, not a reminder.",
+      "defect": "Three classes, each with a written rule already in place when it recurred. Line endings: four separate breaches across two rounds, including one heredoc that left a CRLF file mixed. A comment quoting the literal its own guard forbids: twice in one night, five red runs. Vacuous blinds: 17 of 79 in one round, 9 of 46 in another, 2 in a third — and five of the nine were a single sub-class. Each breach followed a rule that said not to.",
+      "apply": "On the second breach, stop restating the rule and change the instrument: convert the check from source text to an AST or binding, move it into the pre-flight, or make the mistake impossible. Record the breach so the count can be seen (M-LEARN-03).",
+      "enforced_by": null,
+      "why_not_enforced": "Nothing observes a breach. The count exists only where someone records one, which is exactly why the loop needs POST /api/v1/method/breach."
+    },
+    {
+      "id": "M-LEARN-03",
+      "group": "learning",
+      "rule": "Count breaches ON the lesson, and escalate on the count. The third breach of a judgement-only lesson raises a change to give it an enforcer.",
+      "defect": "`why_not_enforced` was written once per lesson and never revisited, so a reason that was true when written outlived its truth — several of those reasons name tooling that has since been built. And with no count, the difference between a rule breached once and a rule breached four times is invisible, so the method cannot tell which of its own rules is failing.",
+      "apply": "Record every breach against the lesson it broke. At the third breach of a lesson nothing enforces, the platform raises a Change Control candidate: give it an enforcer, or restate why none is possible now. The escalation is automatic; the answer is the agency's.",
+      "enforced_by": "agentic_core/api/method.py record_breach() — writes data/method_breaches.json and raises a Change Control candidate at the third breach of an unenforced lesson"
+    },
+    {
+      "id": "M-LEARN-04",
+      "group": "learning",
+      "rule": "Learn from what WORKED, not only from what broke. A register that ingests only failures cannot hold a practice that reduced cost.",
+      "defect": "Adversarial refutation converged in EIGHT passes at W463, seven at W465 and six at W468 — a measured improvement caused by writing the invariant and the full state table FIRST, and deciding status rules from facts read at the time rather than from names or exception types. No defect would ever have produced that rule, so a failure-only register would have lost the single largest cost reduction this programme has measured.",
+      "apply": "When a round costs measurably less than the last comparable one, record WHAT changed as a lesson with the measurement as its evidence — the convergence count, the round count, the wall clock. The `defect` field then holds the cost that the practice removed.",
+      "enforced_by": null,
+      "why_not_enforced": "Recognising that a round went better, and why, is a judgement. Nothing compares rounds automatically, and the comparable-round question is itself a reading."
+    },
+    {
+      "id": "M-LEARN-05",
+      "group": "learning",
+      "rule": "Every instrument a lesson names must RESOLVE. An `enforced_by` path is a claim, and a claim about a tool is checkable.",
+      "defect": "Three external assessments of this repository were verified and each had inherited stale figures from the README and inferred a destination from its adjectives; the discipline they recommended was sound and several instruments they named did not exist. The same risk is internal: a lesson whose `enforced_by` names a guard that was renamed reads as enforced and catches nothing.",
+      "apply": "Resolve every named path and guard name against the tree when the method is read, and report an unresolvable one as UNENFORCED rather than as enforced. Take a lesson from an outside assessment; never take its figures or its destination.",
+      "enforced_by": "scripts/method_instruments.py",
+      "why_not_enforced": "the PATHS and NAMES are now checked by scripts/method_instruments.py. What remains judgement is the harder half: whether the guard a lesson names would actually CATCH a breach of it, which is a reading of the guard and not of its name."
+    },
+    {
+      "id": "M-LEARN-06",
+      "group": "learning",
+      "rule": "A lesson derived from an UNVERIFIED claim is worse than none. A finding is a claim until something measured it.",
+      "defect": "W502: a blind reported a defect that could not occur. `StoreUnavailable(path, problem)` takes two arguments, the resulting TypeError was swallowed, and the branch never ran — so the blind was vacuous and acting on it would have 'fixed' correct code. Two rows in W507 were the same shape at register level and were dropped.",
+      "apply": "Before deriving anything from a finding, ask whether the EDIT produced the condition the finding describes, and whether the branch runs at all. A confirmed defect is one something drove; the rest are candidates.",
+      "enforced_by": "agentic_core/api/method.py derive_lesson() — only a closed row may become a candidate"
+    },
+    {
+      "id": "M-DIAG-01",
+      "group": "diagnosing",
+      "rule": "A symptom is not a cause, and N symptoms are not N defects. REPRODUCE before diagnosing, and suspect one cause when the symptoms arrive together.",
+      "defect": "A suite run reported FIFTY-TWO failures. They were not fifty-two defects: they were one cause — the suite's own data directory had been deleted underneath it mid-run. Proven by re-running five of the fifty-two against a fresh store, where four passed immediately. Diagnosing from the failure list would have produced fifty-two 'fixes' to code that was correct.",
+      "apply": "Before reading any failure in detail, ask what the failures have in COMMON and whether the harness could have produced all of them. Re-run a small sample in a clean environment: if the sample passes, the diagnosis is about the environment and not about the code.",
+      "enforced_by": null,
+      "why_not_enforced": "Nothing correlates failures by cause. A tool COULD flag that N failures share one message or one assertion line, which is what POST /api/v1/method/diagnose now does — but whether that shared signature is the cause is a reading."
+    },
+    {
+      "id": "M-DIAG-02",
+      "group": "diagnosing",
+      "rule": "Bisect to the smallest reproducer FIRST. A diagnosis that costs a full verification run is one you will only make once.",
+      "defect": "A guard set a field, asserted it, and a route returned None one line later. The cause was an `importlib.reload` in another test rebinding the module's singleton while the route held the instance bound when the app was built. A THREE-TEST selector reproduced it in SIXTEEN SECONDS; the full suite takes about fifty minutes. The first attempt at that diagnosis was made at full-suite scale, which is why it took the rest of the round.",
+      "apply": "Find the smallest set of tests, or the smallest script, that shows the symptom, and iterate there. Measure the reproducer's cost: if it is minutes, the diagnosis will be wrong before it is right, because nobody runs a fifty-minute experiment ten times.",
+      "enforced_by": null,
+      "why_not_enforced": "Choosing the reproducer is the diagnostic skill itself; no artefact records it."
+    },
+    {
+      "id": "M-DIAG-03",
+      "group": "diagnosing",
+      "rule": "Ask what the EDIT produced, not what the error says. An error message can be entirely truthful and the conclusion it invites entirely wrong.",
+      "defect": "Two measured cases. W502: a blind reported a defect that could not occur — `StoreUnavailable(path, problem)` takes two arguments, the resulting TypeError was swallowed, and the branch never ran; trusting the report would have 'fixed' correct code. W509: a guard's `\\b` collapsed into a literal BACKSPACE character, so the check searched for a control byte and could never match — the assertion text read perfectly.",
+      "apply": "Trace the condition back to the edit that was supposed to create it, and confirm the branch RUNS. If you cannot state what a user would observe, you have a symptom and not a defect.",
+      "enforced_by": "agentic_core/api/method.py derive_lesson() — only a CLOSED row may become a lesson"
+    },
+    {
+      "id": "M-DIAG-04",
+      "group": "diagnosing",
+      "rule": "Diagnose to the CHOKEPOINT. A diagnosis that lands on a call site rather than on the default will be made again.",
+      "defect": "Recall was diagnosed at the call sites twice. W488 audited `query_meta` only; `query`, `stream` and `stream_meta` still defaulted to augment=True, so TWENTY-NINE generation callers — the live nine-stage synthesis cascade, the CEO blueprint, the digital-twin modeller — still carried another request's content as analysis of their own subject. The DEFAULT was the diagnosis. Separately, a 'repo-wide' audit grepped one of four entry points and missed 29 callers of the same method.",
+      "apply": "Ask where the behaviour is DECIDED, not where it is observed, and grep the CALL rather than the method name — including tests. Count the consumers before concluding the scope.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a site is the chokepoint or one of many is a reading of the call graph; an import graph does not show a runtime directory scan or an infra-only reference (see [[feedback-reachability-blind-spots]])."
+    },
+    {
+      "id": "M-DIAG-05",
+      "group": "diagnosing",
+      "rule": "Rule things OUT in writing, and NAME what is still unexplained. An unexplained residue stated is a diagnosis; an unexplained residue omitted is a guess.",
+      "defect": "The parallel-suite stall was measured at about one run in three, with every worker in flight at once. Four hypotheses were ruled out with the evidence for each — the store lock (bounded timeout, raises, breaks a stale file), the shared register lock (deselecting all 19 subprocess tests did not change the rate), the round's own new guards (the stalls predate them), and order dependence (scatter was green on completed runs). What all workers block on at once is STILL UNEXPLAINED, and saying so is why the 4.8x speed-up was not made the default: a tool that fails silently a third of the time is the instrument-that-cannot-fail defect inverted.",
+      "apply": "Write the hypothesis list, the evidence that killed each one, and the residue. Then decide what to do about the residue explicitly — including 'not adopted until explained', which is a decision and not a failure.",
+      "enforced_by": null,
+      "why_not_enforced": "A ruled-out hypothesis is a written argument, not a field."
+    },
+    {
+      "id": "M-DIAG-06",
+      "group": "diagnosing",
+      "rule": "Measure the RIGHT quantity. The diagnosis is often in a comparison nobody made.",
+      "defect": "A night that looked like slow tests was FOUR HOURS of wall clock for 355 SECONDS of CPU. No log line said that; the diagnosis came only from comparing the two quantities, and the cause was two destroyed runs rather than slowness at all. Git's own round measurement is the same shape: a median of 4.5 hours over a 0.2-10.9 range says almost nothing until the range is read.",
+      "apply": "When a symptom is 'slow', 'flaky' or 'intermittent', find two quantities whose ratio should be stable — wall clock against CPU, attempts against completions, writes against rows — and compare them. A single number rarely diagnoses anything.",
+      "enforced_by": "scripts/followups.py forecast — reports wall clock with its range, separately from rates"
+    },
+    {
+      "id": "M-CORR-01",
+      "group": "correcting",
+      "rule": "Correct FORWARD. Never remove a true statement to fix an over-claim — that trades one defect for another.",
+      "defect": "W502: an over-claim was narrowed, and the narrowing killed a case where the strong statement was TRUE. The record then understated what the platform does, which is the same class of defect as overstating it and is harder to find because nobody audits for modesty.",
+      "apply": "State the condition under which the strong claim holds, rather than deleting it. A claim with a stated scope is correct; a claim deleted because it was sometimes wrong is a new inaccuracy.",
+      "enforced_by": null,
+      "why_not_enforced": "Whether a narrowing removed a true case is a reading of both versions."
+    },
+    {
+      "id": "M-CORR-02",
+      "group": "correcting",
+      "rule": "A correction must REVERSE. Capture what it replaced, or it is irreversible by construction.",
+      "defect": "Before W506 a governed configuration change recorded its new value and not its old one, so nothing could undo it: `reverts_to` and `reversible` are now captured from `apply_config_change`'s own `old_value`, and `revert_immune_defence` exists because a defence the organism raises must be lowerable. A change that cannot be undone is a change nobody can afford to make, which is how a platform ends up unable to correct itself.",
+      "apply": "Record the prior value at the moment of the change, from the writer that HAS it — never reconstructed afterwards. A correction whose record says only what it set is a one-way door.",
+      "enforced_by": "agentic_core/api/change_control.py — reverts_to / reversible captured from old_value"
+    },
+    {
+      "id": "M-CORR-03",
+      "group": "correcting",
+      "rule": "Correct at the NARROWEST true scope. The smallest correct action is often to record what is already true — not to build.",
+      "defect": "W509 measured one item's six open rows and FIVE were already satisfied; the correct action for each was to CLOSE it, not to rebuild it. Two rows in W507 were factually false and the correct action was to DROP them with the measurement that refuted them. Building any of those seven would have changed working code on a false premise — seven widenings of a fix into a rewrite, avoided only by measuring first.",
+      "apply": "Ask what the smallest change is that makes the record true, and prefer it. Closing, dropping, relabelling and stating a scope are all corrections; a rewrite is the largest available and needs its own justification.",
+      "enforced_by": null,
+      "why_not_enforced": "The narrowest true scope is a judgement about the code the row names."
+    },
+    {
+      "id": "M-CORR-04",
+      "group": "correcting",
+      "rule": "NEVER correct by weakening the check. When a guard fails, decide whether the guard or the code is wrong — and decide it from the code.",
+      "defect": "W508 wrote a guard asserting that a live cascade returned ZERO findings. The cascade legitimately found something, so the guard would have pressured its own weakening at every future round; it was changed to assert that the check REPORTS, which is the thing the item actually requires. The same round had a guard that depended on ambient state — a health gate held the change first, so the field under test was never set and the leg could not fail.",
+      "apply": "A failing guard is a question, not an instruction. Answer it by reading the code: if the code is right, the guard asserted the wrong thing and is REWRITTEN to assert the right one — not loosened, not deleted, not marked expected-to-fail.",
+      "enforced_by": null,
+      "why_not_enforced": "A loosened assertion looks exactly like a corrected one in a diff. Only the reason distinguishes them, and the reason lives in the commit message."
+    },
+    {
+      "id": "M-CORR-05",
+      "group": "correcting",
+      "rule": "Apply a correction under a LOCK and atomically, or it loses the very write it is making.",
+      "defect": "Three separate incidents in this repository — the ledger, the AI memory store and the accounts store — all the same class: two writers each doing load, modify, write, and the second clobbering the first. The concurrency audit reproduced about 89% recognised-revenue loss and a marketplace oversell. And on Windows the atomic replace itself raised PermissionError on 170 of 200 writes under reader contention, so atomicity needed a bounded retry before it was actually atomic.",
+      "apply": "Serialise the whole load-modify-write section with `store_lock(path)` and write through `atomic_write_json`. Neither alone is sufficient: the atomic write stops a reader seeing half a file, the lock stops a writer erasing another's change.",
+      "enforced_by": "agentic_core/config.py store_lock + atomic_write_json (with the bounded replace retry)"
+    },
+    {
+      "id": "M-CORR-06",
+      "group": "correcting",
+      "rule": "A correction names its cause and its measurement in the RECORD, or a later reader cannot tell a fix from a rewrite.",
+      "defect": "A status section in one defect ledger said '5 fixed + 4 open' over a table of NINE, with one entry in neither list — it was still open, and was found only because someone re-added the table. A correction that does not say what it corrected leaves the next reader to re-derive the whole thing, and a summary nobody re-added is a claim nobody checked.",
+      "apply": "Every corrective change states the defect, the measurement that established it, and what the correction does NOT cover. Then re-add the summary against the rows it summarises.",
+      "enforced_by": "agentic_core/api/method.py check_change() — requires a rationale of substance and the systems the change touches, and withholds an automatic approval without them"
     }
   ],
-
   "mechanisms": [
     {
       "id": "X-PLAN",
       "group": "planning",
       "name": "Priority scoring, per-item pace, and class batches",
       "what": "Open rows are scored by vision value (docs/PRIORITY.json) and the schedule is ordered by it. The pace is measured from the register and projected in rounds. Rounds are proposed as a file-connected subsystem cut by item, or as the class one mechanism closes.",
-      "entry_points": ["scripts/followups.py priority", "scripts/followups.py forecast", "scripts/followups.py bundles", "scripts/followups.py batches"],
+      "entry_points": [
+        "scripts/followups.py priority",
+        "scripts/followups.py forecast",
+        "scripts/followups.py bundles",
+        "scripts/followups.py batches"
+      ],
       "known_limit": "The batch generator cannot see a row that cites no defect class."
     },
     {
@@ -340,7 +730,10 @@
       "group": "measurement",
       "name": "Acceptance bars, and progress measured in rounds",
       "what": "An item closes on its ACCEPT criteria. The plan measures its own pace from the register, projects in ROUNDS and never dates, excludes one-time sweeps by name, refuses to project an item too few of whose rows have closed, and names the weakest figure on the page.",
-      "entry_points": ["scripts/followups.py forecast", "scripts/followups.py check"],
+      "entry_points": [
+        "scripts/followups.py forecast",
+        "scripts/followups.py check"
+      ],
       "known_limit": "25 of 42 build items have never been sized, so the item projection is an average over a population most of which no round has measured. It says so."
     },
     {
@@ -348,7 +741,9 @@
       "group": "execution",
       "name": "The round rhythm",
       "what": "Read the batch → measure each row's LIVE state → patch → mechanical pre-flight → guard test → blind harness with asserted byte-restore → refute the round's own diff → register and render → one full suite on the final tree → commit with an explicit file list → push → check CI → update the method and the memory.",
-      "entry_points": ["docs/FABLE_DELIVERY_PROMPT.md"],
+      "entry_points": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
       "known_limit": "Nothing enforces the order; a round that skips the blind sweep produces the same artefacts as one that ran it."
     },
     {
@@ -356,7 +751,9 @@
       "group": "verification",
       "name": "Pre-flight, blind harness, adversarial refutation, three-state verdicts",
       "what": "A mechanical pre-flight over the diff checks the deterministic defect shapes. A blind harness breaks each guard's subject and requires it to go red, separating BAD BLIND from VACUOUS. An adversarial pass refutes the round's own fixes in isolated worktrees. Verdicts are three-state with a basis.",
-      "entry_points": ["scripts/selfcheck_diff.py"],
+      "entry_points": [
+        "scripts/selfcheck_diff.py"
+      ],
       "known_limit": "The pre-flight covers seven deterministic shapes (keys, renames, routes, returns, selfmatch, banned, order). The largest labelled class — a new claim the code cannot back — is NOT covered; FU-262 proposes extending it."
     },
     {
@@ -364,8 +761,139 @@
       "group": "delivery",
       "name": "The follow-up register",
       "what": "Every found-but-not-done task is a row carrying what was measured, why it matters and which plan item owns it, added in the same commit and routed to an item by file and word. A row closes only when every finding in it is fixed; an item cannot be marked done while a row rides it.",
-      "entry_points": ["scripts/followups.py", "docs/FOLLOWUPS.json"],
+      "entry_points": [
+        "scripts/followups.py",
+        "docs/FOLLOWUPS.json"
+      ],
       "known_limit": "A row's own text can go stale, and a row may accuse working code — two were dropped as false in W507."
+    },
+    {
+      "id": "X-PREP",
+      "group": "preparation",
+      "name": "Preparation: measure, then draft",
+      "what": "A round is prepared by MEASURING each candidate row's live state, drafting each patch as a script whose anchors are asserted and whose needles carry the target's line endings, writing any missing ACCEPT bar from the item's own deliverables, and naming what the round will not do. Preparation happens during another round's verification, read-only.",
+      "entry_points": [
+        "scripts/followups.py priority",
+        "scripts/followups.py bundles",
+        "scripts/recovery_audit.py"
+      ],
+      "known_limit": "Nothing enforces that a row's live state was measured, and a prepared patch can still be applied to a tree that moved under it - the anchors are what catch that."
+    },
+    {
+      "id": "X-HANDOVER",
+      "group": "handover",
+      "name": "Handover: the artefacts, not the narration",
+      "what": "What survives a context is the register (docs/FOLLOWUPS.json), the plan (docs/FABLE_DELIVERY_PROMPT.md), this method, and the memory. A handover states the verified, the unverified, the measured-but-unexplained and the deliberately-excluded, carries the measurement rather than the conclusion, and slots every open decision to the Owner. GET /api/v1/method/handover computes the current state from those artefacts rather than narrating it.",
+      "entry_points": [
+        "docs/FOLLOWUPS.json",
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "docs/DELIVERY_METHOD.json"
+      ],
+      "known_limit": "It can count what the artefacts hold; it cannot tell that something was never written down. An unrecorded decision is invisible to it by construction, which is why M-HAND-01 is a rule and not a report."
+    },
+    {
+      "id": "X-FORECAST",
+      "group": "forecasting",
+      "name": "Forecasting: two rates, measured in rounds, with the weakest number named",
+      "what": "ONE forecaster, `agentic_core/plan_followups.forecast()`, reached by `scripts/followups.py forecast` and `GET /api/v1/plan/followups`. It measures the ROW rate over build rounds (rounds that closed something — a sweep adds work, it does not burn it), the ITEM rate over the whole span because a six-round window cannot measure something that takes many rounds, excludes one-time intakes and owner-switch items rather than counting them as rounds, refuses to project an item with too few observations, and reports wall clock from git as a separate measurement with its range. `GET /api/v1/method/forecast` reads it and adds only what arithmetic cannot know: that the open-row count is an upper bound (M-FCAST-02), that verification dominates the cost (M-FCAST-03), and which items are blocked by ruling (M-FCAST-05).",
+      "entry_points": [
+        "scripts/followups.py forecast",
+        "GET /api/v1/plan/followups",
+        "GET /api/v1/method/forecast",
+        "scripts/followups.py bundles"
+      ],
+      "known_limit": "25 of 42 open build items have never been sized by a row, so the item projection is an average over a population most of which no round has measured — its own basis calls this the weakest number on the page. It is arithmetic over an observed mean in ROUNDS: never a date, and it moves every time a round closes or registers a row."
+    },
+    {
+      "id": "X-LEARN",
+      "group": "learning",
+      "name": "Learning: a defect becomes a rule, a repeat becomes a tool",
+      "what": "The loop that makes this register live. A CONFIRMED defect (a closed register row) becomes a CANDIDATE lesson through POST /api/v1/method/derive, which carries the row's own measured text as the defect and refuses an open row; Change Control ratifies, because the agency that checks changes against the method also owns it. A breach of an existing lesson is recorded through POST /api/v1/method/breach, which counts breaches on the lesson and, at the THIRD breach of a lesson nothing enforces, raises a Change Control candidate to give it an enforcer or restate why none is possible. Successes enter the same way, with the measurement as evidence (M-LEARN-04).",
+      "entry_points": [
+        "POST /api/v1/method/derive",
+        "POST /api/v1/method/breach",
+        "GET /api/v1/method/learning",
+        "POST /api/v1/cca/submit"
+      ],
+      "known_limit": "Nothing detects an UNRECORDED breach, so the loop turns only when someone records one — which is the honest reason most of this method is still judgement rather than enforcement. The escalation raises a change; it cannot write the enforcer."
+    },
+    {
+      "id": "X-DIAGNOSE",
+      "group": "diagnosing",
+      "name": "Diagnosis: reproduce small, rule out in writing, name the residue",
+      "what": "The step between a symptom and a patch, which this register had no rules for at all. Reproduce before diagnosing and suspect ONE cause when symptoms arrive together; bisect to the smallest reproducer and measure its cost; trace the condition back to the edit that was meant to create it; diagnose to the chokepoint rather than the call site; write the hypotheses you ruled out with the evidence, and name what is still unexplained. POST /api/v1/method/diagnose screens a set of observed failures for a SHARED SIGNATURE — the shape that says one cause rather than N defects — and lists what must be ruled out before anything is changed.",
+      "entry_points": [
+        "POST /api/v1/method/diagnose",
+        "scripts/selfcheck_diff.py",
+        "POST /api/v1/method/screen"
+      ],
+      "known_limit": "It can see that failures SHARE a signature; it cannot tell that the signature is the cause, and it cannot see a single failure's cause at all. A shared signature is a reason to re-run a sample in a clean environment, never a diagnosis."
+    },
+    {
+      "id": "X-CORRECT",
+      "group": "correcting",
+      "name": "Correction: forward, narrowest, reversible, and recorded",
+      "what": "Correct FORWARD by stating a scope rather than deleting a true claim; take the NARROWEST true action, which is often to close or drop a row rather than build; never weaken a failing check — rewrite it to assert the right thing; apply the change under store_lock and atomically, because both are needed; and state the cause, the measurement and what the correction does not cover. POST /api/v1/method/correct assesses a proposed correction against those five, three-state, and submits it to Change Control when asked — the agency that holds the method also owns the corrections made against it.",
+      "entry_points": [
+        "POST /api/v1/method/correct",
+        "POST /api/v1/cca/submit",
+        "POST /api/v1/cca/immune-reconfigure/{cca_id}/revert",
+        "agentic_core/config.py store_lock"
+      ],
+      "known_limit": "Four of the five are judgements. It can check that a prior value was captured and that the record states a cause; it cannot tell a loosened assertion from a corrected one, because in a diff they look identical and only the reason distinguishes them."
+    }
+  ],
+  "defect_classes": [
+    {
+      "id": "D-SELECT",
+      "name": "A result reported where nothing discriminated",
+      "also_called": "the §4.5 class",
+      "shape": "A value SELECTED or REPORTED as a result when nothing actually discriminated; a constant presented as a measurement; or a field whose NAME implies a determination the value cannot support.",
+      "how_to_find": "`max(` or `min(` over a mapping, a `sort` then `[0]`, or a loop returning the first item clearing a threshold — over data where TIES are the normal condition, such as small integer counts or dict keys inserted in a fixed order.",
+      "why_it_is_severe": "It moves real decisions. One instance credited a model for a cascade verdict, which moves routing; another decided rejected-versus-held in governance.",
+      "measured": "9 of 9 audited native-AI primitives carried it (docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md); a later sweep of the shapes above across agentic_core gave 25 candidates, 9 reachable, 7 live defects — every one the same sentence, 'the top X' resolved by insertion order.",
+      "the_fix": "Disclose the tie and carry its magnitude: name every tied leader, or return null with a `*_tied` field beside it. Where a tie must not arise, remove the SITUATION rather than resolve it — one live record per action under a lock, ordered by a real timestamp."
+    },
+    {
+      "id": "D-FABRICATE",
+      "name": "A value a reader would take as measured that nothing measures",
+      "shape": "Any value a user or API consumer would reasonably read as measured, derived or certified, that nothing measures, derives or certifies.",
+      "how_to_find": "A five-area sweep followed by an adversarial DEFENCE pass, ordered by reach.",
+      "not_this_class": "configuration constants · clearly-labelled fallbacks · test fixtures · archived files · honest empty states · prompt and example text. Eleven of 70 proposals were defended on exactly these grounds (M-VERIF-12).",
+      "measured": "63 surviving findings, 25 of them HIGH (docs/FABRICATION_LEDGER.md).",
+      "the_fix": "Report what was done, or say it was not done. Never a figure with no producer."
+    },
+    {
+      "id": "D-THEATRE",
+      "name": "A control that fabricates its own success",
+      "shape": "A handler that makes no backend call and then renders success — a setTimeout followed by a prepended PASSED row with a random hash, a vote that increments local state, a provision step that sleeps and invents an id.",
+      "how_to_find": "A handler with no fetch on its path, or one whose state update does not depend on a response. `Math.random()` or `new Date()` inside a success path is the tell.",
+      "why_it_is_severe": "It is the honesty violation in its purest form: the user is told something happened.",
+      "measured": "One of five clusters in docs/FRONTEND_DEFECT_LEDGER.md; all 47 seeded findings closed.",
+      "the_fix": "Wire it, or remove the control and say what is not available."
+    },
+    {
+      "id": "D-CONTRACT",
+      "name": "A reader reading a key the writer never sends",
+      "shape": "A surface reads `data.entries` where the handler returns `changes`; a status map keyed on uppercase where the server sends lowercase; a filter comparing against a value that never occurs; an id read from a field named differently on the wire.",
+      "how_to_find": "A METHOD-AWARE diff of every call site against every handler's method+route pair — 170 UI calls against 459 backend pairs found exactly one missing endpoint and zero method mismatches, which is the finding: the breakage was all in the shapes.",
+      "why_it_is_severe": "It renders as an empty state, so it reads as 'nothing has happened yet' rather than as a fault. One instance left the Change Control Agency page permanently empty with all four stat tiles at zero however many changes existed.",
+      "the_fix": "Lock the shape in a guard proven to fail when the shape is broken."
+    },
+    {
+      "id": "D-SILENT",
+      "name": "A failure the user never sees",
+      "shape": "No `res.ok` check, or an empty catch, on a user action; an error body rendered as a result.",
+      "how_to_find": "Every call site's response handling, and every catch block with no user-visible effect.",
+      "the_fix": "A failed action says it failed, in the place the user acted."
+    },
+    {
+      "id": "D-BEARER",
+      "name": "A raw link out of an authenticated surface",
+      "shape": "A plain anchor or new-tab navigation to a route that depends on the current user: the navigation carries no Authorization header, so the tab shows a 401 body.",
+      "how_to_find": "Every `<a href>` and `window.open` whose target is an API route — cross-checked against whether that route depends on the user.",
+      "why_it_is_severe": "It is invisible while authentication is off, and every such control dead-ends the moment it is on.",
+      "the_fix": "Fetch with the bearer and hand the user a blob, or serve the route without the dependency."
     }
   ]
 }

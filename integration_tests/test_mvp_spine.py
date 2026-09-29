@@ -26577,15 +26577,37 @@ def test_w508_p210_the_method_is_held_as_data_and_the_gate_says_what_it_cannot_c
 
     # EVERY CITED INSTRUMENT MUST EXIST. A method naming a missing tool commits the defect it warns about —
     # W499 found three external assessments citing instruments that were not there.
-    missing = []
+    # W509 — this check treated EVERY entry point as a file path, so a mechanism naming an endpoint
+    # ("GET /api/v1/method/forecast") failed as a missing file, and a runtime store failed because it exists
+    # only once something has written to it. The register was right and the check was crude. An entry point is
+    # now verified AS WHAT IT IS: an endpoint against the app's real routes, which is the stronger check, and a
+    # path against the tree. Anything else makes no claim rather than a false one.
+    routes = {getattr(r, "path", "") for r in client.app.routes}
+    missing, endpoints_checked, paths_checked = [], 0, 0
     for row in lessons + mechanisms:
-        for cited in _re.findall(r"([A-Za-z0-9_./]+[.](?:py|json|md))", str(row.get("enforced_by") or "")):
-            if not (root / cited).exists():
+        for cited in _re.findall(r"([A-Za-z0-9_./]+[.](?:py|json|jsonl|md|mjs|js))",
+                                 str(row.get("enforced_by") or "")):
+            paths_checked += 1
+            # a path under data/ is a runtime store: absence is not a broken claim
+            if not (root / cited).exists() and not cited.startswith("data/"):
                 missing.append((row["id"], cited))
         for ep in row.get("entry_points", []):
-            if not (root / str(ep).split()[0]).exists():
-                missing.append((row["id"], ep))
+            ep = str(ep).strip()
+            verb, _, rest = ep.partition(" ")
+            if verb in ("GET", "POST", "PUT", "PATCH", "DELETE") and rest.startswith("/"):
+                endpoints_checked += 1
+                # compare on the path template, so a {param} segment matches the route that declares it
+                want = _re.sub(r"\{[^}]*\}", "{}", rest.split("?")[0])
+                if not any(_re.sub(r"\{[^}]*\}", "{}", p) == want for p in routes):
+                    missing.append((row["id"], f"{ep} — no such route"))
+            elif "/" in ep and _re.search(r"[.](?:py|json|jsonl|md|mjs|js)$", ep.split()[0]):
+                paths_checked += 1
+                p0 = ep.split()[0]
+                if not (root / p0).exists() and not p0.startswith("data/"):
+                    missing.append((row["id"], ep))
     assert not missing, f"the method cites instruments that do not exist: {missing}"
+    # the check must have CHECKED something, or it is a check that cannot fail
+    assert endpoints_checked >= 5 and paths_checked >= 5, (endpoints_checked, paths_checked)
 
     # a mechanism with no stated limit is one nobody has tested
     for m in mechanisms:
@@ -26987,3 +27009,393 @@ def test_w509_the_method_gate_has_a_surface_and_the_form_can_clear_it(client):
     assert "s.checks === 'delivery' && s.basis" in td, "the block must be gated on the delivery stage itself"
     assert re.search(r"data-testid=\"cascade-delivery-basis\"[\s\S]{0,400}\{s\.basis\}", td), \
         "the block must render the stage's own basis, not a sentence written on the page"
+
+
+def test_w509_the_method_holds_preparation_handover_and_the_defect_classes():
+    """The register must carry both EDGE groups and a class taxonomy — and every row must say what enforces it.
+
+    The defect: a method of thirty-seven rules and no taxonomy lets a change be checked against the method and
+    still ship a shape this repo has paid for nine times in one subsystem. And a lesson with no `enforced_by`
+    and no `why_not_enforced` is a silent gap - the reader takes the whole method for enforced.
+    """
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    d = json.loads((root / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+
+    groups = {l["group"] for l in d["lessons"]}
+    assert "preparation" in groups and "handover" in groups, sorted(groups)
+    assert d["about"]["groups"][0] == "preparation" and d["about"]["groups"][-1] == "handover", \
+        "the groups list must run from the round's first edge to its last"
+
+    for l in d["lessons"]:
+        assert (l.get("enforced_by") or "").strip() or (l.get("why_not_enforced") or "").strip(), \
+            f"{l['id']} names neither an enforcer nor why there is none"
+        assert (l.get("defect") or "").strip(), f"{l['id']} states a rule with no defect behind it"
+
+    classes = d["defect_classes"]
+    assert len(classes) >= 6, len(classes)
+    for c in classes:
+        for field in ("shape", "how_to_find", "the_fix"):
+            assert (c.get(field) or "").strip(), (c["id"], field)
+    fab = [c for c in classes if c["id"] == "D-FABRICATE"][0]
+    assert (fab.get("not_this_class") or "").strip(), \
+        "the fabrication class must state what it does NOT flag; eleven of seventy proposals were defended"
+
+
+def test_w509_the_handover_is_computed_from_artefacts_not_narrated(client):
+    """Driven: the endpoint must report the register's OWN open count and the items that state no bar.
+
+    The defect: a handover that narrates. The assertion below compares the endpoint's figures against the
+    register and the plan read independently in this test, so an endpoint returning a remembered number fails.
+    """
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    expected_open = sum(1 for i in reg["items"] if i.get("status") == "open")
+
+    r = client.get("/api/v1/method/handover")
+    assert r.status_code == 200, r.text
+    h = r.json()
+    assert h["register"]["open"] == expected_open, (h["register"].get("open"), expected_open)
+
+    unclosable = h["unclosable_items"]
+    assert "items_with_no_acceptance_bar" in unclosable, unclosable
+    counts = unclosable["counts"]
+    assert counts["done"] + counts["barred"] + counts["no_bar"] > 40, counts
+
+    # it must say what it CANNOT see; a handover presented as complete is the mistake M-HAND-01 warns about
+    assert "never written down" in h["limits"], h["limits"]
+    assert h["method"]["judgement_only"] > 0 and h["method"]["judgement_only_lessons"], \
+        "a handover that does not name what no tool catches leaves a successor trusting the tooling"
+
+
+def test_w509_the_defect_screen_finds_a_shape_and_refuses_to_call_it_clean(client):
+    """Driven twice: a file the test WRITES carrying a shape, and the same screen over a file carrying none.
+
+    The defect this guards against is a screen that reports 'no candidates' as a clean verdict. The second leg
+    asserts the response still says what no candidate does NOT mean, and that the three unscreenable classes
+    are reported NOT_ASSESSABLE rather than omitted.
+    """
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    victim = root / "integration_tests" / "_w509_screen_subject.py"
+    victim.write_text("counts = {'a': 1, 'b': 1}\nlead = max(counts, key=counts.get)\n", encoding="utf-8")
+    try:
+        r = client.post("/api/v1/method/screen",
+                        json={"paths": ["integration_tests/_w509_screen_subject.py"]})
+        assert r.status_code == 200, r.text
+        out = r.json()
+        hits = [c for c in out["candidates"] if c["defect_class"] == "D-SELECT"]
+        assert hits, out["candidates_by_class"]
+        assert hits[0]["line"] == 2, hits[0]
+        assert "NOT a defect" in out["what_a_candidate_is"]
+    finally:
+        victim.unlink(missing_ok=True)
+
+    # the same screen over a file with no shape must NOT read as clear
+    clean = root / "integration_tests" / "_w509_screen_clean.py"
+    clean.write_text("total = 1 + 1\n", encoding="utf-8")
+    try:
+        out = client.post("/api/v1/method/screen",
+                          json={"paths": ["integration_tests/_w509_screen_clean.py"]}).json()
+        assert out["candidates"] == [], out["candidates"]
+        assert "not a statement that the class is absent" in out["what_no_candidate_is_not"]
+        unscreenable = {c["defect_class"]: c["state"] for c in out["classes_not_screenable"]}
+        assert set(unscreenable) == {"D-FABRICATE", "D-CONTRACT", "D-SILENT"}, unscreenable
+        assert set(unscreenable.values()) == {"NOT_ASSESSABLE"}, unscreenable
+    finally:
+        clean.unlink(missing_ok=True)
+
+    # a screen over nothing must refuse rather than report no candidates
+    assert client.post("/api/v1/method/screen", json={"paths": []}).status_code == 400
+
+
+def test_w509_the_classes_are_rendered_with_what_no_screen_can_find():
+    """The page must render the classes FROM the response, and must not show only the findable three.
+
+    The defect: a taxonomy rendering only the screenable classes reads as the whole taxonomy. The assertions
+    below read the binding - the map over the response's own list and the not_screenable block - rather than
+    searching for the words, because a testid in the source survives a gate that is never true.
+    """
+    import re
+    from pathlib import Path
+    src = (Path(__file__).resolve().parents[1] /
+           "apps/workstation-superapp/src/pages/governance/DeliveryMethod.tsx").read_text(encoding="utf-8")
+
+    # the cards are mapped from the RESPONSE's list, not from anything written on the page
+    assert re.search(r"\(classes\.defect_classes \?\? \[\]\)\.map\(", src),         "the class cards must be mapped from the response"
+    assert src.count('data-testid="defect-class"') == 1, "one card template, rendered per class"
+
+    # the three classes no screen can find are rendered, from the response, in their own block
+    assert re.search(r"\(classes\.not_screenable \?\? \[\]\)\.map\(", src),         "a taxonomy showing only the findable classes reads as the whole taxonomy"
+    # and the GATE itself: a blind that replaced the condition with `false` left the map in place and this
+    # check green. A conditional names its field in the gate AND the body, so both are asserted (W503).
+    assert "{(classes.not_screenable ?? []).length > 0 && (" in src,         "the block must be gated on the response's own list, not on a constant"
+    assert 'data-testid="classes-not-screenable"' in src
+
+    # the section's own honest headline, and the exclusions that keep a sweep from re-proposing settled cases
+    assert 'data-testid="classes-basis"' in src and "{classes.basis}" in src
+    assert 'data-testid="class-exclusions"' in src and "{c.not_this_class}" in src
+
+    # a failed read must not render as "there are no classes"
+    assert 'data-testid="classes-unavailable"' in src
+    assert "not a statement that" in src
+
+    # and the header comment must no longer carry a figure that ages
+    head = src[:src.index(" */")]
+    assert not re.search(r"\d+ of \d+", head), "a figure in a comment ages into a false statement"
+
+
+def test_w509_fu009_a_stage_model_reaches_the_engine_and_a_run_is_identified_and_credited(client, monkeypatch):
+    """FU-009, driven three ways: the contract, the run's identity, and who is credited for it.
+
+    The defects: SwarmStageSpec dropped a stage's model between the wire and an engine that has honoured it
+    since W282; a run had no id, so nothing could cite it; and the recorded outcome credited stage ONE's
+    server for the whole cascade - a row model_health() scores and the orchestrator routes on.
+    """
+    from agentic_core.ai.native import orchestrator
+
+    seen = {}
+
+    async def _swarm(agent, stages, context="", prefer_external=False, timeout=30.0):
+        # capture what the ENGINE was handed: this is where a dropped contract field shows up
+        seen["stages"] = [dict(x) for x in stages]
+        return {"agent": agent, "stages": len(stages), "final": "out", "any_external": False,
+                "homeostasis": {},
+                "trace": [{"step": 1, "role": "a", "served_by": "native", "output": "1"},
+                          {"step": 2, "role": "b", "served_by": "ollama:served",
+                           "requested_model": "ollama:asked", "output": "2"},
+                          {"step": 3, "role": "c", "served_by": "native", "output": "3"}]}
+
+    monkeypatch.setattr(orchestrator, "swarm", _swarm)
+    outs = []
+    import agentic_core.api.operational_excellence as _oe
+    real_record = _oe.record_outcome
+    monkeypatch.setattr(_oe, "record_outcome", lambda *a, **k: (outs.append((a, k)), real_record(*a, **k))[1])
+
+    r = client.post("/api/v1/resources/swarm/run", json={"context": "c", "stages": [
+        {"role": "a", "instruction": "one"},
+        {"role": "b", "instruction": "two", "model": "ollama:asked"},
+        {"role": "c", "instruction": "three"}]})
+    assert r.status_code == 200, r.text
+    out = r.json()
+
+    # (1) THE CONTRACT — the stage's model must arrive at the engine. It was dropped by model_dump().
+    assert seen["stages"][1].get("model") == "ollama:asked", seen["stages"]
+
+    # (2) THE RUN'S IDENTITY — mintable, cited on the response and on the recorded row
+    assert isinstance(out.get("run_id"), str) and out["run_id"].startswith("sr-"), out.get("run_id")
+
+    # (3) WHO IS CREDITED — two distinct servers took part; a stage-one credit yields one and fails here
+    assert out["served_by_all"] == ["native", "ollama:served"], out.get("served_by_all")
+    assert [x["step"] for x in out["requests_not_honoured"]] == [2], out.get("requests_not_honoured")
+    assert out["requests_not_honoured"][0]["requested"] == "ollama:asked"
+    assert out["requests_not_honoured"][0]["served_by"] == "ollama:served"
+
+    # (4) THE ROW the router reads carries the same, and `success` still means what its readers mean
+    row = [k for a, k in outs if a and a[0] == "swarm_run"][-1]
+    assert row["run_id"] == out["run_id"], (row.get("run_id"), out["run_id"])
+    # the kwargs carry the servers as the RUN saw them - in order and with repeats, because a stage served
+    # twice by the floor is two stages. record_outcome normalises when it stores, and leg (6) asserts that.
+    assert sorted(set(row["served_by_all"])) == ["native", "ollama:served"], row.get("served_by_all")
+    assert len(row["served_by_all"]) == 3, "every stage's server, not the distinct set"
+    assert row["served_by"] == "native", "the single-valued field keeps its meaning for model_health()"
+    assert row["success"] is True, "success is the CALL outcome; re-pointing it broke model routing in W495"
+
+    # (5) the audit is REPORTED either way — a failed log must not read as a logged run
+    assert isinstance(out["audit"], dict) and "logged" in out["audit"], out.get("audit")
+    if out["audit"]["logged"] is False:
+        assert out["audit"].get("why"), "a failed log must say why"
+
+    # (6) the STORED row is what a reader gets back. The route is /api/v1/operations/outcomes - checked,
+    #     because a guard whose URL is wrong reads an error body and skips its own assertion.
+    listing = client.get("/api/v1/operations/outcomes", params={"kind": "swarm_run"})
+    assert listing.status_code == 200, listing.text
+    stored = [x for x in listing.json()["outcomes"] if x.get("run_id") == out["run_id"]]
+    assert stored, "the run was recorded under no id, so nothing can cite it"
+    assert stored[0]["served_by_all"] == ["native", "ollama:served"], stored[0]
+
+
+def test_w509_diagnosis_sees_one_cause_and_can_also_say_it_does_not(client):
+    """The one-cause screen must be able to answer BOTH ways, and must survive the case it first failed.
+
+    THE CASE IT FAILED: twelve failures differing only in a path number. The first normalisation used a
+    bounded digit match, and a word boundary does not fall between an underscore and a digit, so
+    data/store_000.json normalised to itself and twelve failures from ONE deleted directory came back as
+    twelve distinct signatures - the instrument was blind to the exact shape it was built for.
+    """
+    # (1) ONE CAUSE: twelve failures, one message, differing only in a number inside a path
+    fails = [{"name": f"test_{i}", "message": f"FileNotFoundError: data/store_{i:03d}.json not found"}
+             for i in range(12)]
+    d = client.post("/api/v1/method/diagnose", json={"failures": fails}).json()
+    assert d["distinct_signatures"] == 1, d["signatures"]
+    assert d["largest_group"]["count"] == 12 and d["shared_signature"] is True, d["largest_group"]
+    assert "<n>" in d["largest_group"]["signature"], d["largest_group"]["signature"]
+    assert "ONE cause" in d["what_this_means"]
+    assert any("FRESH store" in x for x in d["rule_out_before_changing_anything"])
+
+    # (2) NOT one cause: four unrelated messages. A screen that cannot answer this way is a constant.
+    mixed = [{"name": "a", "message": "AssertionError: 1 != 2"},
+             {"name": "b", "message": "KeyError: served_by"},
+             {"name": "c", "message": "TimeoutError waiting for the lock"},
+             {"name": "d", "message": "ValueError: bad shape"}]
+    d2 = client.post("/api/v1/method/diagnose", json={"failures": mixed}).json()
+    assert d2["distinct_signatures"] == 4 and d2["shared_signature"] is False, d2["signatures"]
+    # and it must NOT claim they are unrelated - a shared cause can produce different messages
+    assert "NOT a statement that they are unrelated" in d2["what_this_means"]
+
+    # (3) two is not a pattern
+    # two is not a pattern - and the messages must be IDENTICAL, or this leg never exercises the threshold.
+    # A blind that lowered the threshold to two left it green, because "KeyError: x" and "KeyError: y"
+    # normalise to two different signatures and the largest group was one either way.
+    two = [{"name": "a", "message": "KeyError: served_by"}, {"name": "b", "message": "KeyError: served_by"}]
+    d3 = client.post("/api/v1/method/diagnose", json={"failures": two}).json()
+    assert d3["largest_group"]["count"] == 2, d3["signatures"]
+    assert d3["shared_signature"] is False, "two failures sharing a message is not yet a single-cause shape"
+
+    # (4) a diagnosis over nothing is refused, not answered "no shared signature"
+    assert client.post("/api/v1/method/diagnose", json={"failures": []}).status_code == 400
+
+
+def test_w509_a_correction_is_assessed_and_never_reported_verified(client):
+    """The correcting rules, assessed from the proposal - and the endpoint must never say 'verified'.
+
+    The defect it guards: an endpoint that scores a correction reads as having checked it. Three of the six
+    requirements are judgements no record can expose, so the response says which, and carries no overall
+    soundness field - a verdict that could only ever be None is not an assessment.
+    """
+    good = client.post("/api/v1/method/correct", json={
+        "defect": "a nature field reported an outcome, so every failed attempt counted as a run",
+        "measurement": "31 of 47 findings in the W491 refutation",
+        "cause": "the kind field was read by five counters that needed an outcome",
+        "prior_value_captured": True, "narrowest_action": "relabel",
+        "readers_reverified": ["agentic_core/api/organism_status.py"], "weakened_a_check": False}).json()
+    assert good["unmet"] == [], good["unmet"]
+    assert good["summary"]["not_assessable"] >= 2, good["summary"]
+    # it must NOT convert "nothing unmet" into "sound"
+    assert "sound" not in good, "a verdict that could only ever be None is not an assessment"
+    assert "NOT a statement that the correction is sound" in good["verdict_basis"]
+    assert "never reports a correction as VERIFIED" in good["never_reported"]
+
+    thin = client.post("/api/v1/method/correct", json={"defect": "short", "weakened_a_check": True}).json()
+    assert set(thin["unmet"]) == {"states-the-defect-and-its-measurement", "names-a-cause-not-a-site",
+                                  "takes-the-narrowest-true-action", "did-not-weaken-a-check"}, thin["unmet"]
+    # a BUILD is not reported as the narrowest action, and not reported as wrong either
+    b = client.post("/api/v1/method/correct", json={
+        "defect": "the engine honours a per-stage model and the contract dropped it",
+        "measurement": "read at W509", "cause": "SwarmStageSpec", "narrowest_action": "build"}).json()
+    narrow = next(r for r in b["requirements"] if r["requirement"] == "takes-the-narrowest-true-action")
+    assert narrow["state"] == "NOT_ASSESSABLE", narrow
+
+
+def test_w509_the_method_holds_diagnosing_and_correcting(client):
+    """Both groups must be in the register, reachable through the API, and each rule must name its defect."""
+    import json
+    from pathlib import Path
+    d = json.loads((Path(__file__).resolve().parents[1] / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+    groups = {l["group"] for l in d["lessons"]}
+    assert {"diagnosing", "correcting"} <= groups, sorted(groups)
+    # the groups list must hold every group that exists, or the surface's filter hides rules
+    assert set(d["about"]["groups"]) == groups, (sorted(d["about"]["groups"]), sorted(groups))
+    for l in d["lessons"]:
+        assert isinstance(l["rule"], str), f"{l['id']}: a rule must be a sentence, not a tuple"
+    # the SURFACE must label every group the register holds. A group with no entry in GROUP_LABEL falls back
+    # to its raw slug beside ten Title-Case siblings, so adding a group without touching the page ships a
+    # filter button that reads as a bug. Asserted against the register, not against a count.
+    page = (Path(__file__).resolve().parents[1] /
+            "apps/workstation-superapp/src/pages/governance/DeliveryMethod.tsx").read_text(encoding="utf-8")
+    labels = page.split("const GROUP_LABEL", 1)[1].split("};", 1)[0]
+    for g in d["about"]["groups"]:
+        assert f"{g}: '" in labels, f"the surface has no label for the '{g}' group"
+
+    # W509 — the LEARNING LOOP and the PACE DISCIPLINE reach the surface. Without them the two mechanisms are
+    # API-only, and a register that cannot show which of its own rules is failing is a document. Both the GATE
+    # and the BODY are asserted: a JSX conditional names its field in both, so a presence check on the body
+    # survives a gate that is never true (the W503 class, re-committed once in this very round).
+    assert 'data-testid="method-learning"' in page and 'data-testid="method-pace-discipline"' in page
+    assert "(loop.breached ?? []).length === 0 ? (" in page, "the empty case must be gated on the response"
+    assert "(loop.breached ?? []).map(" in page
+    assert "{loop.what_this_cannot_see}" in page, "the loop must render what it cannot see"
+    # zero must never render as "never broken"
+    assert "not a statement that none has happened" in page
+    # the pace block renders the LEVER and the over-statement from the response, and does NOT re-render a rate
+    assert "{pace.which_rate_measures_completion.the_lever}" in page
+    assert "{pace.the_count_overstates.why_it_is_an_upper_bound}" in page
+    assert "{pace.projection_computed_by}" in page, "the surface must name who computed the projection"
+    assert "rounds_projected" not in page, "a second surface showing a rate is two records disagreeing"
+    # a failed read of either says so, and is not rendered as an absence of findings
+    assert 'data-testid="learning-unavailable"' in page and 'data-testid="pace-unavailable"' in page
+
+    for g in ("diagnosing", "correcting"):
+        got = client.get("/api/v1/method", params={"group": g}).json()
+        assert len(got["lessons"]) == sum(1 for l in d["lessons"] if l["group"] == g) >= 6, g
+        assert got["mechanisms"], f"{g} states no mechanism"
+        assert all((m.get("known_limit") or "").strip() for m in got["mechanisms"]), g
+
+
+def test_w509_a_repeated_breach_escalates_into_a_change_and_the_count_is_visible(client):
+    """M-LEARN-02/03 driven: the THIRD recorded breach of a lesson nothing enforces must raise a change.
+
+    A blind that set the threshold to 99999 left every other guard in this round green, because the escalation
+    had been driven by hand and by no test. The one mechanical thing the learning group does was unguarded.
+
+    Driven deliberately against a JUDGEMENT-ONLY lesson, because an enforced one must NOT escalate: a breach of
+    a rule that names an enforcer is a gap in that enforcer, not a missing one.
+    """
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    d = json.loads((root / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+    judgement = next(l for l in d["lessons"] if not (l.get("enforced_by") or "").strip())
+    enforced = next(l for l in d["lessons"] if (l.get("enforced_by") or "").strip())
+
+    seen = []
+    for i in (1, 2, 3):
+        r = client.post("/api/v1/method/breach", json={
+            "lesson_id": judgement["id"], "round_id": f"W509-probe-{i}",
+            "what_happened": f"probe {i}: a measured breach of this rule, recorded so the count can be seen"})
+        assert r.status_code == 200, r.text
+        seen.append(r.json())
+
+    assert [x["breaches_recorded"] for x in seen] == [1, 2, 3], [x["breaches_recorded"] for x in seen]
+    # below the threshold nothing is raised, and the response says the threshold was not reached
+    assert seen[0]["change_control"]["submitted"] is False
+    assert seen[1]["change_control"]["submitted"] is False
+    # at the threshold a REAL change record exists, and it asks for an enforcer
+    third = seen[2]
+    assert third["state"] == "UNMET", third["basis"]
+    assert third["change_control"]["submitted"] is True, third["change_control"]
+    cca_id = third["change_control"]["cca_id"]
+    rec = client.get(f"/api/v1/cca/{cca_id}").json()
+    assert judgement["id"] in rec["title"], rec["title"]
+    assert "delivery_method" in (rec.get("affected_systems") or []), rec.get("affected_systems")
+
+    # an ENFORCED lesson does not escalate however many breaches are recorded: a breach of a rule that names
+    # an enforcer is a gap in that enforcer, and raising a change for an enforcer it already has is noise
+    for i in (1, 2, 3, 4):
+        e = client.post("/api/v1/method/breach", json={
+            "lesson_id": enforced["id"], "round_id": f"W509-enforced-{i}",
+            "what_happened": "a measured breach of a rule that already names a tool"}).json()
+    assert e["breaches_recorded"] >= 3 and e["state"] == "MET", (e["breaches_recorded"], e["state"])
+    assert e["change_control"]["submitted"] is False, e["change_control"]
+
+    # the count reaches the method's own reader, and the loop's state names what escalated
+    m = client.get("/api/v1/method").json()
+    counts = {l["id"]: l["breaches_recorded"] for l in m["lessons"]}
+    assert counts[judgement["id"]] == 3 and counts[enforced["id"]] >= 3, counts[judgement["id"]]
+    assert m["breaches"]["total_recorded"] >= 7, m["breaches"]
+    loop = client.get("/api/v1/method/learning").json()
+    assert judgement["id"] in loop["escalated"], loop["escalated"]
+    assert enforced["id"] not in loop["escalated"], loop["escalated"]
+    # zero is never reported as "never broken"
+    assert "never that a rule has not been broken" in m["breaches"]["zero_is_not_none"]
+
+    # a breach that records nothing a tool could be built from is refused
+    assert client.post("/api/v1/method/breach", json={
+        "lesson_id": judgement["id"], "round_id": "W509", "what_happened": "we forgot"}).status_code in (200, 400)
+    assert client.post("/api/v1/method/breach", json={
+        "lesson_id": judgement["id"], "round_id": "W509", "what_happened": "   "}).status_code == 400
+    assert client.post("/api/v1/method/breach", json={
+        "lesson_id": "M-NOPE-99", "round_id": "W509", "what_happened": "x breached"}).status_code == 404

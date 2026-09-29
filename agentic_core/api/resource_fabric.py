@@ -1051,9 +1051,13 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                 stages = [{"role": "synthesist", "instruction": f"Advance the objective: {objective}"}]
             res = await orchestrator.swarm(str(cfg.get("agent") or "fabric-swarm"), stages,
                                            context=str(cfg.get("context") or objective))
-            served = res["trace"][0]["served_by"] if res.get("trace") else "native"
+            # W509 (FU-009) — third site of the same credit: stage one stood for the whole nested
+            # cascade, and this return feeds the fabric_resource outcome row that routing reads.
+            _sb = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]
             return {"resource": "native_swarm", "ran": "/api/v1/resources/swarm/run",
-                    "stages_run": len(stages), "served_by": served, "output": (res.get("final") or "")[:600]}
+                    "stages_run": len(stages), "served_by": (_sb[0] if _sb else "native"),
+                    "served_by_all": sorted(set(_sb)) or None,
+                    "output": (res.get("final") or "")[:600]}
     except Exception as e:
         return {"resource": rid, "error": str(e)[:160]}
     return None
@@ -1220,8 +1224,14 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                served_by=[t.get("served_by") for t in (res.get("trace") or [])] or None)
     try:
         from agentic_core.api.operational_excellence import record_outcome
-        served = res["trace"][0]["served_by"] if res.get("trace") else "native"
+        # W509 (FU-009) — stage ONE's server stood for the whole cascade. model_health() scores a model on
+        # this row and the orchestrator ROUTES on that score, so a floor stage at position two was
+        # improving the record of whatever ran first. `served_by` keeps its single-value meaning for those
+        # readers; every server that took part is recorded beside it.
+        _all = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]
+        served = _all[0] if _all else "native"
         record_outcome("composition_run", f"composition:{comp['name']}", served_by=served,
+                       served_by_all=_all or None,
                        is_external=bool(res.get("any_external")),
                        duration_ms=int((time.time() - _t0) * 1000),
                        # W495 (FU-125, S7.3) — a non-empty trace is not a quality verdict
@@ -1319,6 +1329,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             _ro("fabric_resource", f"fabric:{rr['resource']}",
                 served_by=str(rr.get("served_by") or ("real-engine" if _ok and not _calls else "none")),
                 is_external=bool(rr.get("is_external")),
+                served_by_all=rr.get("served_by_all"),
                 duration_ms=rr.get("duration_ms", 0), success=_ok, ref=cid)
     except Exception:
         pass
@@ -1543,6 +1554,11 @@ def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
 class SwarmStageSpec(BaseModel):
     role: str
     instruction: str
+    # W509 (FU-009) — the OWNED resource this stage asks for: "auto" (in-house-first), "native" (the
+    # deterministic floor), "local", or "ollama:<name>". The engine has honoured stage["model"] since
+    # W282 and this contract dropped it, so every caller's choice died between the wire and the engine.
+    # Unset stays "auto": the field is additive and no existing caller changes behaviour.
+    model: Optional[str] = None
 
 
 class DefineSwarmRequest(BaseModel):
@@ -1752,22 +1768,51 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
                                                      else "Provide stages or a saved swarm_id to run."))
     from agentic_core.ai.native import orchestrator
     _t0 = time.time()
+    # W509 (FU-009) — the run's own identity, minted BEFORE the run so the outcome row, the ledger entry
+    # and the response all cite the same one. Without it a cascade run could not be referred to at all.
+    swarm_run_id = f"sr-{uuid.uuid4().hex[:8]}"
     res = await orchestrator.swarm(req.agent, stages, context=context,
                                    prefer_external=req.prefer_external, timeout=req.timeout)
+    _ms = int((time.time() - _t0) * 1000)
+    # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose
+    # request was not honoured is visible here rather than silently served by something else.
+    _servers = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]
+    _unhonoured = [{"step": t.get("step"), "requested": t.get("requested_model"),
+                    "served_by": t.get("served_by")}
+                   for t in (res.get("trace") or [])
+                   if t.get("requested_model") and t.get("requested_model") != t.get("served_by")]
     # operational-excellence learning loop: record the real outcome of this run (VSB-attributed)
     try:
         from agentic_core.api.operational_excellence import record_outcome
-        served = res["trace"][0]["served_by"] if res.get("trace") else "native"
-        record_outcome("swarm_run", f"swarm:{name}", served_by=served,
+        record_outcome("swarm_run", f"swarm:{name}", served_by=(_servers[0] if _servers else "native"),
+                       served_by_all=_servers or None, run_id=swarm_run_id,
                        is_external=bool(res.get("any_external")),
-                       duration_ms=int((time.time() - _t0) * 1000),
+                       duration_ms=_ms,
                        success=bool(res.get("trace")),
                        quality_gate=(res.get("quality") or {}).get("qms_gate_passed"),
                        ref=req.swarm_id, vsb_id=run_vsb_id)
     except Exception:
         pass
-    return {"name": name, "swarm_id": req.swarm_id, "vsb_id": run_vsb_id,
-            "grounded_in_live_vsb": grounded_live, "posture": "in-house-first", **res}
+    # W509 (FU-009) — the run joins the tamper-evident trail, as define/update/retire already do. A run
+    # that changes nothing is still a governed action: it spends metabolic ATP and it routes future work
+    # through what it records. Best-effort, and its failure is reported on the response rather than
+    # swallowed into a claim that the run was logged.
+    ledger = {"logged": False, "why": "not attempted"}
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        _e = UEGLogger().log({"type": "resource_fabric.swarm.run", "run_id": swarm_run_id,
+                              "swarm_id": req.swarm_id, "name": name, "vsb_id": run_vsb_id,
+                              "stages": len(stages), "served_by": sorted(set(_servers)),
+                              "any_external": bool(res.get("any_external")), "duration_ms": _ms})
+        # UEGLogger.log returns the new root HASH (a string), not an event dict
+        ledger = {"logged": True, "ueg_hash": _e if isinstance(_e, str) else None}
+    except Exception as e:                                   # noqa: BLE001 — said, never implied
+        ledger = {"logged": False, "why": f"{e.__class__.__name__}: {e}"}
+    return {"run_id": swarm_run_id, "name": name, "swarm_id": req.swarm_id, "vsb_id": run_vsb_id,
+            "grounded_in_live_vsb": grounded_live, "posture": "in-house-first",
+            "served_by_all": sorted(set(_servers)) or None,
+            "requests_not_honoured": _unhonoured,
+            "duration_ms": _ms, "audit": ledger, **res}
 
 
 @router.get("/{resource_id}")

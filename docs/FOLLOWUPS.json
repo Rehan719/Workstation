@@ -128,8 +128,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": ""
     },
     {
@@ -144,8 +144,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": ""
     },
     {
@@ -160,8 +160,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": ""
     },
     {
@@ -3134,8 +3134,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": ""
     },
     {
@@ -3954,8 +3954,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": "",
       "tier": 3,
       "area": "organisation",
@@ -4245,8 +4245,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": "",
       "tier": 2,
       "area": "domains_ux",
@@ -4507,8 +4507,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": "",
       "tier": 3
     },
@@ -4583,8 +4583,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.8",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W509",
       "note": "",
       "tier": 2
     },
@@ -5251,6 +5251,61 @@
       "note": "",
       "slot_source": "P2.17 owns the round's own tooling; FU-262 already extends this same pre-flight",
       "tier": 3
+    },
+    {
+      "id": "FU-304",
+      "title": "The three defect-class screens have never been run over the current tree",
+      "why": "docs/DELIVERY_METHOD.json now names six defect classes and POST /api/v1/method/screen can find three of them mechanically (D-SELECT, D-THEATRE, D-BEARER). The ledgers those classes came from were swept in August and early September; the tree has grown by tens of thousands of lines since, and nothing has re-run the sweep. The screen exists and its population has never included the whole repository. THE WORK: run it over agentic_core and the superapp src, adjudicate every candidate against the class's own exclusions, and record each defended candidate as defended rather than deleting it (M-VERIF-12). A first call over agentic_core/api/method.py alone returned 2 D-SELECT candidates, so the population is not empty.",
+      "source": "W509 documentation review",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/api/method.py",
+        "docs/DELIVERY_METHOD.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.4 is the truth-sweep item; this is a sweep whose instrument was built in W509",
+      "tier": 2
+    },
+    {
+      "id": "FU-305",
+      "title": "The fabrication ledger records 11 defended proposals as a count, not as rows",
+      "why": "docs/FABRICATION_LEDGER.md states '70 proposed, 11 successfully defended, 63 surviving' and lists only the 63. The eleven adjudications are therefore lost: a re-run of the same sweep re-proposes them and an operator re-adjudicates eleven settled cases to reach the real findings. M-VERIF-12 says an exclusion list is part of the instrument. THE WORK: record the eleven with the ground each was defended on (configuration constants, clearly-labelled fallbacks, test fixtures, archived files, honest empty states, prompt and example text are the grounds the ledger names), so the next sweep inherits the adjudication instead of repeating it.",
+      "source": "W509 documentation review",
+      "found": "2026-09-29",
+      "files": [
+        "docs/FABRICATION_LEDGER.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "rides the sweep item alongside FU-304",
+      "tier": 3
+    },
+    {
+      "id": "FU-306",
+      "title": "Nothing detects an open row the tree has already satisfied",
+      "why": "W509 measured P2.8's six open rows and FIVE were already satisfied - FU-008 by W507, FU-010 and FU-232 by W508, FU-186 by W479, FU-265 by W506 - each left open only because no round re-read it. A satisfied row left open holds its item shut, and the item rate is the plan's own lever (M-MEAS-05). W507 dropped two rows as false and W508 found two more satisfied, so this is the third occurrence of one pattern and it is now M-FCAST-02 in the method: the open-row count is an UPPER BOUND on work, not a measure of it. THE WORK: a scripts/followups.py command listing open rows whose named files were changed by a round LATER than the row's source, as CANDIDATES for re-reading - never as automatic closes, because whether a row is satisfied is a reading of the code and not a diff.",
+      "source": "W509 P2.8 measurement",
+      "found": "2026-09-29",
+      "files": [
+        "scripts/followups.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 owns the register's own tooling",
+      "tier": 2
     }
   ],
   "routes": [
@@ -5350,7 +5405,7 @@
       "handed_from": "P2.6"
     },
     {
-      "slot": "P2.8",
+      "slot": "P2.4",
       "files": [
         "agentic_core/api/resource_fabric.py",
         "agentic_core/api/swarm.py",
@@ -5361,7 +5416,8 @@
         "assess a subject",
         "form-only"
       ],
-      "note": "bespoke swarms; W482 — the cascade's missing delivery measurement; W483 — and what the §11 screen can actually assess (the capability, not the honesty)"
+      "note": "handed from P2.8; bespoke swarms; W482 — the cascade's missing delivery measurement; W483 — and what the §11 screen can actually assess (the capability, not the honesty)",
+      "handed_from": "P2.8"
     },
     {
       "slot": "P2.4",

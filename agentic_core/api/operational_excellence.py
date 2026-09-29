@@ -50,7 +50,9 @@ def _save(rows: List[Dict[str, Any]]) -> None:
 def record_outcome(kind: str, resource: str, *, served_by: str = "native",
                    is_external: bool = False, duration_ms: int = 0, success: bool = True,
                    quality_gate: Optional[bool] = None,
-                   ref: Optional[str] = None, vsb_id: Optional[str] = None) -> Dict[str, Any]:
+                   ref: Optional[str] = None, vsb_id: Optional[str] = None,
+                   run_id: Optional[str] = None,
+                   served_by_all: Optional[List[str]] = None) -> Dict[str, Any]:
     """Append one real run outcome. Reusable in-process (the run paths call this best-effort)
     and via the /record endpoint. Never raises into a caller — recording is non-critical.
 
@@ -97,6 +99,14 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
                           + ("output" if _produced else "nothing")),
         "ref": ref,
         "vsb_id": vsb_id,
+        # W509 (FU-009) — the run this row came from, so an outcome can be cited by whatever produced it.
+        # None means the caller recorded no run identity, which is different from a run with no id.
+        "run_id": run_id,
+        # W509 (FU-009) — EVERY server that took part, because `served_by` above names only one and a
+        # multi-stage run is not served by one thing. model_health() and the router read `served_by`, so
+        # that field keeps its meaning (M-EXEC-04) and this one is added beside it. None means the caller
+        # did not say; a single-server run lists that one server.
+        "served_by_all": sorted(set(served_by_all)) if served_by_all else None,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     try:
