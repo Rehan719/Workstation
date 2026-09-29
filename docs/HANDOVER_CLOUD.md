@@ -37,9 +37,26 @@ Five modified files: `docs/FABLE_DELIVERY_PROMPT.md` (adds P3.26 TURNOVER, P3.27
 `docs/FOLLOWUPS.json`, `docs/WORKSTATION_IDBO_LIVING_PLAN.md`, `docs/WORKSTATION_IDBO_WHOLE_VISION.md`
 (§8 `Recorded W512`, §16 pointer, §18 six Owner decisions), `integration_tests/test_mvp_spine.py` (two guards).
 
-**The W513 suite was still running at handover and had ONE failure at ~78%.** It is not diagnosed. Do not
-commit W513 until you have read `/c/tmp/w513ser.log`, named the failing test, and either fixed it or recorded
-why it is unrelated. **A red suite is not a state you may build on top of.**
+**W513's suite: 1 failed, 488 passed, 15 skipped (54m 34s). DIAGNOSED AND FIXED — the fix is test-only.**
+
+`test_w473_canon_and_suite_hygiene_before_m1`, on its FU-070 leg. The guard injects drift into an open item's
+text and expects `plan_followups.check` to report it. **Production code was correct.** The guard chose its
+victim row as *"the first open row not slotted to the first open item"* — an ambient choice — and that row is
+now **FU-077, slotted `OWNER`**. `plan_followups.py:1495` excludes `OWNER` **deliberately**, commented *"a gated
+row rides no item"*, because naming a gated row is not drift. So the guard went red against code doing exactly
+what it should.
+
+Fixed by driving the property instead of inheriting it: the victim must ride a real plan item, asserted; the
+injected drift is asserted to survive into the checked body; and a **second leg now proves the `OWNER`
+exclusion holds**, since that exclusion was load-bearing and undefended. Removing `"OWNER"` from the tuple takes
+the new leg red (verified, with a byte-restore and a checked SHA) — so it is not a guard that cannot fail.
+
+**The lesson, because it is a new variant of one already in the register:** M-VERIF-02 says a guard must drive
+its precondition. This guard *did* drive its condition and still degraded, because it selected its **subject**
+from ambient data. Driving the condition is not enough if the thing the condition is applied to is whatever the
+register happens to hold that day.
+
+A full re-run on the final tree is required before W513 commits — a single passing selector is not a suite.
 
 ---
 
