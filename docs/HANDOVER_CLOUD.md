@@ -248,7 +248,12 @@ starting the next round). Thresholds:
 | weekly **70–85 %** | refresh §1 of this document only — the state table and the in-flight paragraph. Two minutes |
 | weekly **> 85 %** | refresh §1 **and commit it**, then start no round you cannot finish |
 | weekly **= 100 %** | stop starting work. Commit what is green, record what is not, and leave the tree clean |
-| a separate per-model weekly window still near 0 % | that allowance is **unspent capacity**. Say so rather than stopping — the choice of model belongs to the Owner, but the fact is yours to surface |
+| a separate per-model weekly window still near 0 % | **OWNER RULING 2026-09-29: switch to that model rather than idling until the reset.** The allowance expires unspent otherwise. Surface it the moment the all-models window is spent — "just before the limit" is already too late, because by then the limit is reached |
+
+**You cannot switch your own session's model.** `set_session_model` refuses the current session by design — a
+session must not silently re-price its own turns — so it only switches *other* sessions. The action is to ask
+the Owner to pick it in the app's model picker (Fable 5.1 is `claude-fable-5-1`); a turn already in flight
+finishes on the old model. Do not promise a self-switch you cannot perform.
 
 ### What a refresh actually changes
 
