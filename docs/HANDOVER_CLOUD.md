@@ -37,7 +37,11 @@ Five modified files: `docs/FABLE_DELIVERY_PROMPT.md` (adds P3.26 TURNOVER, P3.27
 `docs/FOLLOWUPS.json`, `docs/WORKSTATION_IDBO_LIVING_PLAN.md`, `docs/WORKSTATION_IDBO_WHOLE_VISION.md`
 (§8 `Recorded W512`, §16 pointer, §18 six Owner decisions), `integration_tests/test_mvp_spine.py` (two guards).
 
-**W513's suite: 1 failed, 488 passed, 15 skipped (54m 34s). DIAGNOSED AND FIXED — the fix is test-only.**
+**W513 IS LANDED — `23f81ec0`, 489 passed / 15 skipped in 53m20s, `PYTEST_EXIT=0` captured explicitly.**
+The tree is clean. The failure below was diagnosed and fixed test-only; it is kept here because the lesson
+is a new variant of one already in the register.
+
+**W513's suite had been: 1 failed, 488 passed, 15 skipped (54m 34s).**
 
 `test_w473_canon_and_suite_hygiene_before_m1`, on its FU-070 leg. The guard injects drift into an open item's
 text and expects `plan_followups.check` to report it. **Production code was correct.** The guard chose its
