@@ -2,7 +2,7 @@ import logging
 import json
 from typing import Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
-from agentic_core.security.pqc_hardening import pqc_service
+from agentic_core.security.pqc_hardening import content_integrity
 from .legal.legal_precision_minimiser import LegalPrecisionMinimiser
 
 logger = logging.getLogger(__name__)
@@ -25,12 +25,16 @@ class GaaS:
         alignment_score = profile.get("alignment_score", 0.0)
         if alignment_score >= self.alignment_threshold:
             status = "CERTIFIED"
-            cert_data = json.dumps({"partner_id": partner_id, "alignment": alignment_score}).encode()
-            pqc_signature = pqc_service.sign_dilithium5(cert_data)
+            # W506 (FU-076) - a content digest, named as one. The retired field claimed a post-quantum
+            # signature over what was in fact a SHA3 digest
+            # keyed with a literal in the source and padded with 4000 zeros to match a Dilithium-5
+            # signature length. It never proved origin; the field name said it did.
+            integrity = content_integrity.digest(
+                {"partner_id": partner_id, "alignment": alignment_score})
         else:
             status = "REJECTED"
-            pqc_signature = None
-        return {"partner_id": partner_id, "status": status, "pqc_signature": pqc_signature}
+            integrity = None
+        return {"partner_id": partner_id, "status": status, "content_integrity": integrity}
 
     def process_liability_allocation(self, revenue: float) -> float:
         return revenue * self.liability_fund_ratio

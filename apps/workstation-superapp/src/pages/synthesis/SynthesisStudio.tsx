@@ -173,8 +173,15 @@ export const SynthesisStudio: React.FC = () => {
       setSelectedIds(prev => [...prev, resp.data.file_id]);
       setIngestUrl('');
       setShowUrlBar(false);
-    } catch (e) {
-      setErrorMsg('URL ingestion failed. Check the URL and try again.');
+    } catch (e: any) {
+      // W506 (P2.4/FU-167) - this told the user to check their URL for a capability that does not
+      // exist: nothing was ever fetched, one hard-coded link returned fabricated medical content, and
+      // every other URL answered 500. The backend now refuses with 501 and explains; show what it said
+      // rather than blaming the input.
+      const detail = e?.response?.data?.detail;
+      setErrorMsg(typeof detail === 'string' && detail
+        ? detail
+        : 'URL ingestion is not available and nothing was ingested. Upload the file directly instead.');
     } finally {
       setIngesting(false);
     }

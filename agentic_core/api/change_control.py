@@ -821,23 +821,28 @@ class ImmuneReconfigureRequest(BaseModel):
     simulate_threat: str | None = None
 
 
-@router.post("/immune-reconfigure")
-async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRequest(),
-                             user: dict = Depends(require_admin)):
-    """Immune-system reconfigurator, governed arms-length by the CCA.
+def engage_immune_defence(threat: str | None = None, requested_by: str = "immune_system",
+                         requested_by_verified: bool = False) -> dict:
+    """The immune reconfigurator's UNGATED core. W506 (P2.7(3)).
 
-    Biomimetic defence: when the immune system is under threat it proposes a SAFE, REVERSIBLE
-    defensive reconfiguration (tighten generation → throttle load → quarantine failing endpoints).
-    The CCA records it as a change-controlled, audited action and — because these are low-risk,
-    reversible defensive levers — auto-approves and APPLIES it via the reconfiguration engine (a fast
-    innate-immune reflex that is nonetheless governed). Admin-only: it applies governed live levers.
-    This wires the arms-length CCA to the Immune system and the Reconfiguration engine.
+    Extracted from the HTTP route so the organism can engage its own defence without crossing an admin
+    perimeter, while the governed path and the reflex path stay ONE body of code - a second copy would
+    drift the first time either changed (W475). The heartbeat calls this at threat >= HIGH; the route
+    calls it on behalf of an admin and passes that admin as the REQUESTER, never as the decider.
+
+    Everything here was already true of the route except the reversal: the prior value is now captured
+    from the write path's own `old_value`, so `revert_immune_defence` has something to restore.
     """
-    threat = (req.simulate_threat or _immune_threat()).upper()
+    threat = (threat or _immune_threat()).upper()
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     plan = _IMMUNE_DEFENCE.get(threat)
     if plan is None:
+        # W506 (pre-flight) - the reversibility fields are carried here too. A caller that reads
+        # `reversible` on every response got undefined from this branch, which reads as "not stated"
+        # rather than "nothing was applied, so there is nothing to revert".
         return {"threat_level": threat, "action": "none", "governed_by": "Change Control Agency (arms-length)",
+                "reversible": False, "reverts_to": None,
+                "revert_with": "nothing to revert - no reconfiguration was applied",
                 "reason": "Immune state nominal — no defensive reconfiguration required."}
 
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
@@ -857,10 +862,16 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
         # "flagged for Board ratification" while marking itself implemented in the same request.
         # The flag is gone. W464: Board ratification now exists (awaiting_board_ratification), for HIGH
         # changes a review approved; this reflex is LOW/MEDIUM and decided by the mechanism, so it is outside it.
-        "rollback_plan": f"Revert {plan['section']}.{plan['key']} to its prior value via /config/update.",
+        # W506 (P2.7(3)) - this said "revert to its prior value" and no prior value was stored. Now the
+        # plan names the mechanism that exists, and `reversible` below is set only when the prior value was
+        # actually captured, so a failed apply does not leave a record promising a rollback.
+        "rollback_plan": f"revert_immune_defence({cca_id!r}) restores {plan['section']}.{plan['key']} to "
+                         f"the value captured when this change was applied",
+        "reversible": False,
+        "reverts_to": None,
         "review_result": None, "decision": None, "reviewed_at": None, "implemented_at": None,
         "audit_trail": [{"event": "submitted", "ts": now, "by": "immune_system", "immune_threat": threat,
-                         "requested_by": _actor(user), "by_verified": _verified(user)}],
+                         "requested_by": requested_by, "by_verified": requested_by_verified}],
     }
     biobus.fire_signal("sensory", "cca.immune_reconfigure", f"Immune defence proposed [{threat}]", 0.6)
 
@@ -884,6 +895,14 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
             plan["section"], plan["key"], plan["value"],
             reason=f"Immune reconfigurator (threat={threat}, cca={cca_id})",
             updated_by="cca-immune")
+        # W506 (P2.7(3)) - THE REVERSAL, captured. `rollback_plan` was a sentence saying to revert the
+        # lever "to its prior value" while nothing stored that value: the record asserted reversibility in
+        # three places and no mechanism could revert it. apply_config_change already returns `old_value`,
+        # so the prior value was in hand and being discarded.
+        if isinstance(applied, dict):
+            change["reverts_to"] = {"section": plan["section"], "key": plan["key"],
+                                    "value": applied.get("old_value")}
+            change["reversible"] = True
         _consumer = _LEVER_CONSUMERS.get(plan["key"])
         if _consumer:
             change["status"] = "implemented"
@@ -906,8 +925,8 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
     # the reconfiguration engine wrote precedes it in the chain.
     ueg_logged = _log_decision({"type": "cca.change_approved", **_decision_fields(change), "decision": "approved",
                                 "decision_source": "immune_defence_reflex", "decided_by": "auto_approve_immune_defence",
-                                "by": "cca", "by_verified": False, "requested_by": _actor(user),
-                                "requested_by_verified": _verified(user), "immune_threat": threat,
+                                "by": "cca", "by_verified": False, "requested_by": requested_by,
+                                "requested_by_verified": requested_by_verified, "immune_threat": threat,
                                 "implemented": change["status"] == "implemented"})
     return {
         "cca_id": cca_id,
@@ -917,9 +936,94 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
         "ueg_logged": ueg_logged,
         "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": plan["why"]},
         "applied": applied,
+        # W506 (P2.7(3)) - computed from whether the prior value was captured, never asserted
+        "reversible": change["reversible"],
+        "reverts_to": change["reverts_to"],
+        "revert_with": (f"POST /api/v1/cca/immune-reconfigure/{cca_id}/revert" if change["reversible"]
+                        else "nothing to revert - the lever was not applied, so no prior value was captured"),
         "governed_by": "Change Control Agency (arms-length)",
         "message": f"Immune reconfigurator: {threat} → {plan['section']}.{plan['key']}={plan['value']} ({change['status']}).",
     }
+
+
+def revert_immune_defence(cca_id: str, reason: str = "") -> dict:
+    """Restore the lever an immune defence moved, to the value captured when it was applied.
+
+    W506 (P2.7(3)) - the mechanism the record used to describe in prose. It refuses rather than
+    guesses: a change with no captured prior value cannot be reverted, and saying so is the honest
+    answer where restoring a default would silently invent one.
+    """
+    change = _load_change(cca_id)
+    if change is None:
+        return {"cca_id": cca_id, "reverted": False, "reason": "no such change record"}
+    if change.get("change_type") != "immune_reconfiguration":
+        return {"cca_id": cca_id, "reverted": False,
+                "reason": f"this path reverts immune reconfigurations; that record is a "
+                          f"{change.get('change_type')}"}
+    target = change.get("reverts_to")
+    if not isinstance(target, dict) or not change.get("reversible"):
+        return {"cca_id": cca_id, "reverted": False,
+                "reason": "no prior value was captured for this change, so there is nothing to restore - "
+                          "the lever was never applied, or it was applied before the capture existed"}
+    if change.get("reverted_at"):
+        return {"cca_id": cca_id, "reverted": False, "reason": "already reverted",
+                "reverted_at": change["reverted_at"]}
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    try:
+        from agentic_core.organism.reconfiguration import apply_config_change
+        applied = apply_config_change(
+            target["section"], target["key"], target["value"],
+            reason=f"Reverting immune defence {cca_id}" + (f": {reason}" if reason else ""),
+            updated_by="cca-immune-revert")
+    except Exception as exc:
+        change["audit_trail"].append({"event": "revert_failed", "ts": now,
+                                     "error": f"{exc.__class__.__name__}: {exc}"})
+        _save_change(change)
+        return {"cca_id": cca_id, "reverted": False,
+                "reason": f"the write path refused the restore: {exc.__class__.__name__}: {exc}"}
+    change["reverted_at"] = now
+    change["status"] = "reverted"
+    change["audit_trail"].append({"event": "reverted", "ts": now, "by": "cca-immune-revert",
+                                 "restored": target, "applied": applied, "reason": reason})
+    _save_change(change)
+    ueg_logged = _log_decision({"type": "cca.change_reverted", **_decision_fields(change),
+                                "decision": "reverted", "decision_source": "immune_defence_revert",
+                                "decided_by": "revert_immune_defence", "by": "cca",
+                                "by_verified": False, "restored": target})
+    biobus.fire_signal("motor", "cca.immune_reconfigure.revert",
+                       f"Reverted {target['section']}.{target['key']} to {target['value']}", 0.6)
+    return {"cca_id": cca_id, "reverted": True, "restored": target, "applied": applied,
+            "ueg_logged": ueg_logged, "status": change["status"],
+            "message": f"Immune defence {cca_id} reverted: {target['section']}.{target['key']} "
+                       f"restored to {target['value']}."}
+
+
+@router.post("/immune-reconfigure")
+async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRequest(),
+                             user: dict = Depends(require_admin)):
+    """Immune-system reconfigurator, governed arms-length by the CCA.
+
+    Biomimetic defence: when the immune system is under threat it proposes a SAFE, REVERSIBLE
+    defensive reconfiguration (tighten generation -> throttle load -> quarantine failing endpoints).
+    The CCA records it as a change-controlled, audited action and - because these are low-risk,
+    reversible defensive levers - auto-approves and APPLIES it via the reconfiguration engine (a fast
+    innate-immune reflex that is nonetheless governed). Admin-only: it applies governed live levers.
+
+    W506 (P2.7(3)) - the body moved to `engage_immune_defence`, which the heartbeat also calls at
+    threat >= HIGH. One body of code, two callers: the reflex is no longer a button nobody presses.
+    The admin is recorded as the REQUESTER; the reflex remains the decider.
+    """
+    return engage_immune_defence(req.simulate_threat, _actor(user), _verified(user))
+
+
+@router.post("/immune-reconfigure/{cca_id}/revert")
+async def immune_reconfigure_revert(cca_id: str, user: dict = Depends(require_admin)):
+    """Revert an immune defence to the lever value captured when it was applied. W506 (P2.7(3)).
+
+    P2.7(3) requires the reversal to be DRIVEN rather than asserted, and before this the record
+    carried a rollback SENTENCE over a prior value nothing had stored.
+    """
+    return revert_immune_defence(cca_id, reason=f"requested by {_actor(user)}")
 
 
 @router.get("/ledger-gaps")
@@ -1000,7 +1104,11 @@ async def _twin_prevalidate(change: dict) -> dict:
         "## Verdict — end with exactly one of: [TWIN: PASS] or [TWIN: FAIL]"
     )
     try:
-        sim = await gateway.query(prompt, agent="cca_twin_prevalidation", timeout=25)
+        # W506 (P2.2) - the pre-validation names the resource that ran it, beside the source label W459
+        # already records. A verdict whose origin is unnamed is what the 17.5 invariant reads as holding.
+        _tr = await gateway.query_meta(prompt, agent="cca_twin_prevalidation", timeout=25, augment=False)
+        sim = _tr.get("output", "")
+        _twin_served = _tr.get("served_by")
     except Exception as e:
         sim = f"[twin simulation unavailable: {e}]"
     up = (sim or "").upper()
@@ -1687,7 +1795,9 @@ async def impact_assessment(cca_id: str):
         f"## Estimated Recovery Time (if something goes wrong)\n"
         f"## Recommended Implementation Window (best time relative to circadian cycle)\n"
     )
-    assessment = await gateway.query(prompt, agent="cca_impact")
+    # W506 (P2.2)
+    _ia = await gateway.query_meta(prompt, agent="cca_impact", augment=False)
+    assessment = _ia.get("output", "")
     biobus.fire_signal("cognitive", "cca.impact", f"Impact assessed: {c['title']}", 0.4)
     return {"cca_id": cca_id, "assessment": assessment, "organism_mode": ctx["mode"]}
 

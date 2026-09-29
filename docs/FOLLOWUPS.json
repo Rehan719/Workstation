@@ -1276,8 +1276,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W506",
       "note": ""
     },
     {
@@ -5143,6 +5143,59 @@
       "status": "dropped",
       "closed_by": null,
       "note": "W505 correction: this row is WRONG. P2.16 DOES state a bar - 'ACCEPT: the not-compressed and no-escalation states are reachable on the page and asserted by a guard' - and the row was registered on a pattern that required ACCEPT at line start while P2.16's sits mid-line. Dropped rather than closed, because nothing was done and nothing needed doing. A register row built on a mis-measurement sends a later round to fix nothing, which is worse than having no row."
+    },
+    {
+      "id": "FU-298",
+      "title": "Thirteen tolerant readers still LOG rather than surface their store's incompleteness",
+      "why": "W506 delivered FU-075's substance: load_json_tolerant now delegates to the new read_json_reported and LOGS the store, the calling site and exactly what is missing, so a corrupt store is attributable everywhere instead of silent. FOUR readers were fully converted and carry the reason in their own answers - revenue's pending_summary (store_incomplete + counts_are_incomplete), charity's approved signals, the heartbeat's screening rotation, and the avatar's compliance line, which now says a screen is UNKNOWN rather than omitting it. THIRTEEN callers remain on the logging path: ai/native/model_resource.py, api/agent_hub.py, api/board.py (x2), api/capital_fund.py, api/integration_surface.py, api/operational_excellence.py, api/resource_fabric.py, api/swarm.py (x2), api/user_workspace.py, vbs/dcms.py, vbs/qms.py. THE WORK: give each caller the reason in its own response, as the four converted ones do - a log line is a weaker remedy than a field on the answer, because the person reading the number never sees the log. THEN delete load_json_tolerant, which is what the original row asked for and which cannot honestly be done while thirteen callers use it. WHY IT WAS NOT DONE IN ONE PASS: each of the thirteen is a different caller shape, and a careless conversion turns a working list endpoint into a 500 or drops a field a page reads; rewriting thirteen heterogeneous sites in one unattended batch is how a round ships a regression it cannot attribute.",
+      "source": "W506 (FU-075, the part not done)",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/config.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-299",
+      "title": "A framework covered only by a word list appears in neither coverage_gaps nor assessed_by",
+      "why": "_coverage_report (agentic_core/api/compliance.py:197-203) builds coverage_gaps from coverage in ('none','screen') and assessed_by from assessed(), which requires coverage=='engine'. A row with coverage 'vocabulary' and status 'review' therefore lands in NEITHER list. Measured W506: a probe entity screened 5 frameworks; coverage_gaps named 4 and assessed_by named 0, so sharia_halal fell out of the account entirely. A reader taking the two lists as a partition of the frameworks concludes that framework was neither missing nor assessed -- the word-list pass is silently invisible, which is the shortfall the three-state 'compliant' field was added to prevent. The fix must either name a third list or widen coverage_gaps, and coverage_gaps has many readers, so its meaning cannot be changed without grepping them (the W495 lesson).",
+      "source": "W506 measurement of P2.7(6)",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/api/compliance.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.7",
+      "status": "done",
+      "closed_by": "W506",
+      "note": "",
+      "slot_source": "found while aligning the living-VSB compliance writer and reader for P2.7(6); it is the same coverage statement that criterion made the roster carry",
+      "tier": 2
+    },
+    {
+      "id": "FU-300",
+      "title": "OWNER DECISION: close the §12 reinvestment loop by crediting venture investees, or leave positions recorded-unfunded",
+      "why": "W506 took P2.7(7)'s LABEL arm and left the funding arm for the Owner, because funding changes WHERE the economy's virtual money flows and the waterfall's proportions are the Owner's (template-bounded, UEG-logged). THE FACTS. A cycle posts to distribution_user_projects and records positions against named living VSBs; no investee is ever credited (_record_positions_locked writes the investor's holdings only, while transfers.record_transfer beside it does queue the receiver's intake). W446's refuter reproduced it twice: a 21.26 WST position arrived nowhere. As of W506 every figure a reader sees says 'recorded, unfunded' and the wording comes from one server constant, so nothing now overstates it. WHAT FUNDING WOULD TAKE, measured: record_transfer cannot be reused, because the investor's debit has ALREADY happened as the waterfall distribution and a second debit is the W504 'a spend is not a second distribution' defect; it needs a NEW credit-only primitive, idempotent per position, queueing intake only for ids that resolve to a live VSB (positions can name demo candidates, which are not entities and must stay unfunded and labelled). W506 also fixed the precondition: allocate() rounded each share independently so positions did not sum to the budget (100.0 -> 100.01, 33.33 -> 33.32), which would have created and destroyed virtual money the moment anything was funded; the residual now lands on the largest position and the sum is exact. THE DECISION is whether distribution_user_projects is capital that should reach the investee's waterfall (closing §6/§12 as the model describes) or a notional allocation that should stay on the investor's books. Virtual WST either way; no real-money rail is involved.",
+      "source": "W506 P2.7(7)",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/economy/ventures.py",
+        "agentic_core/economy/transfers.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner set the waterfall proportions and this changes where its money goes; P2.7(7) is closed either way because the label arm is delivered",
+      "tier": 2
     }
   ],
   "routes": [
@@ -5280,13 +5333,14 @@
       "handed_from": "P2.3"
     },
     {
-      "slot": "P2.7",
+      "slot": "P3.2",
       "files": [
         "agentic_core/organism/",
         "agentic_core/optimizer/"
       ],
       "words": [],
-      "note": "the organism and its heartbeat"
+      "note": "handed from P2.7; the organism and its heartbeat",
+      "handed_from": "P2.7"
     },
     {
       "slot": "P2.4",

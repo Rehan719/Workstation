@@ -8,8 +8,12 @@ interface StudioPoint { label: string; value: number; z?: number | null }
 interface StudioResult {
   title: string; domain: string; chart_type: string; dimensions: number;
   series: StudioPoint[];
+  // W506 (FU-170, sweep S5.9) - `tied_with` has been sent since W433 and this interface dropped it,
+  // so the renderer named one leader over a tie. A type that omits a field strips it before any
+  // renderer can see it, which is the same trap as a response model with an undeclared key.
   analytics: { count: number; total: number; mean: number; range: number;
-    min: { label: string; value: number }; max: { label: string; value: number } };
+    min: { label: string; value: number; tied_with?: string[] };
+    max: { label: string; value: number; tied_with?: string[] } };
   insight: string;
   ai_provenance: { any_external: boolean; served_by: Record<string, number> };
   quality_assurance?: { quality?: { qms_gate_passed?: boolean | null; qms_basis?: string; document_controlled?: boolean;
@@ -92,6 +96,17 @@ const Chart: React.FC<{ result: StudioResult }> = ({ result }) => {
 };
 
 // ── Page ──────────────────────────────────────────────────────────────────────
+/**
+ * W506 (FU-170, sweep S5.9) - an extremum, with any tie named.
+ *
+ * The backend has sent `tied_with` since W433; this page's type dropped it, so "Max Q1 (240)" named one
+ * leader when Q3 held the same value. An empty `tied_with` renders exactly as before.
+ */
+const extremum = (e: { label: string; value: number; tied_with?: string[] }): string =>
+  e.tied_with && e.tied_with.length
+    ? `${[e.label, ...e.tied_with].join(' = ')} (${e.value}) - tied`
+    : `${e.label} (${e.value})`;
+
 export const ReactorStudio: React.FC = () => {
   const [title, setTitle] = useState('Quarterly halal-meal signups');
   const [domain, setDomain] = useState('enterprise');
@@ -180,8 +195,10 @@ export const ReactorStudio: React.FC = () => {
               <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Analytics</h4>
               <dl className="space-y-1.5 text-[11px]">
                 {[['Points', result.analytics.count], ['Total', result.analytics.total], ['Mean', result.analytics.mean],
-                  ['Max', `${result.analytics.max.label} (${result.analytics.max.value})`],
-                  ['Min', `${result.analytics.min.label} (${result.analytics.min.value})`],
+                  // W506 (FU-170) - a tie is NAMED. `tied_with` is empty in the ordinary case, so a
+                  // real winner still reads as a winner and nothing is invented.
+                  ['Max', extremum(result.analytics.max)],
+                  ['Min', extremum(result.analytics.min)],
                   ['Range', result.analytics.range]].map(([k, v]) => (
                   <div key={String(k)} className="flex justify-between"><dt className="text-slate-500">{k}</dt><dd className="text-white font-bold">{v}</dd></div>
                 ))}

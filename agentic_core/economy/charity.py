@@ -145,8 +145,16 @@ def set_directives(priorities: Optional[List[str]] = None, exclusions: Optional[
 def approved_signals() -> List[Dict[str, Any]]:
     """Owner-approved live signals (the gated ingestion seam) — persisted candidates that mirror the
     curated dict shape. Empty until the Owner enables + supplies sources."""
-    rows = load_json_tolerant(_SIGNALS_STORE, []) or []
-    return [r for r in rows if isinstance(r, dict) and r.get("id") and r.get("cause")]
+    # W506 (FU-075) - a partial read dropped Owner-approved causes silently. The reason is logged so the
+    # absence is attributable; the value stays tolerant so the seam never takes a caller down.
+    from agentic_core.config import read_json_reported
+    rows, why = read_json_reported(_SIGNALS_STORE, [])
+    if why:
+        import logging
+        logging.getLogger("economy.charity").error(
+            "the approved-signals store could not be read whole, so this list may be missing "
+            "Owner-approved causes: %s", why)
+    return [r for r in (rows or []) if isinstance(r, dict) and r.get("id") and r.get("cause")]
 
 
 class CharityIntelligence:

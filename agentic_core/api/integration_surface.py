@@ -72,11 +72,19 @@ class AIQuery(BaseModel):
 @router.post("/api/v1/ai/completion")
 async def ai_completion(req: AIQuery):
     prompt = req.prompt or req.query
+    # W506 (P2.2) - the completion says what served it. `served_by` is None on the failure path, which is
+    # a different statement from the floor having served it, so the two cases stay distinguishable.
+    _served, _ext = None, False
     try:
-        out = await gateway.query(prompt, agent=req.agent, timeout=30)
+        _ir = await gateway.query_meta(prompt, agent=req.agent, timeout=30, augment=False)
+        out = _ir.get("output", "")
+        _served, _ext = _ir.get("served_by"), bool(_ir.get("is_external"))
     except Exception as e:
         out = f"[unavailable: {e}]"
-    return {"completion": out, "prompt": prompt[:120]}
+    return {"completion": out, "prompt": prompt[:120],
+            "served_by": _served, "is_external": _ext,
+            "served_by_basis": ("null means no call completed - the gateway raised - which is not the "
+                                "same as the deterministic floor serving this")}
 
 
 @router.post("/api/v1/ai/query")
@@ -502,7 +510,14 @@ async def iot_telemetry(device_id: str):
     atp = None
     try:
         from agentic_core.molecular.atp_simulator import ATPSimulator
-        atp = round(ATPSimulator().ratio / 15.0, 3)
+        from agentic_core.organism.biobus import atp_depletion_state as _atp_depletion_state
+        # W506 (P2.7(4), FU-265b) — THE SHARED SINGLETON. ATPSimulator() built a FRESH model on every
+        # request, so this published a constant 0.333 for ever, under a comment calling it real and beside
+        # values the same payload marked simulated. metabolism.py's docstring says callers must read the
+        # shared organism ATP the heartbeat restores, not a new simulator.
+        from agentic_core.organism.biobus import _get_atp as _shared_atp
+        _a = _shared_atp()
+        atp = round(max(0.0, min(1.0, float(_a.ratio) / 15.0)), 3) if _a else None
     except Exception:
         pass
     sim_bpm = int(58 + min(signal_rate, 5.0) * 6 + (12 if arousal not in ("DORMANT", "") else 0))
@@ -511,7 +526,16 @@ async def iot_telemetry(device_id: str):
         "source": "derived from live organism state — no physical wearable connected",
         "telemetry": {
             "organism_resonance": imm.get("health", 0.9),   # real — immune health 0–1
-            "metabolic_atp_ratio": atp,                       # real — ATP simulator
+            # W506 (P2.7(4), FU-265b) — it was never real. Labelled beside the figure a reader sees.
+            "metabolic_atp_ratio": atp,
+            "metabolic_atp_measured": False,
+            # W506 (FU-265b, corrected) - this said the figure never depletes because it is "floored
+            # at 0.5 of 15". That floor NEVER BINDS: production exceeds consumption fourfold at the
+            # worst efficiency this code passes, so the ratio only rises. The same wrong reason was
+            # corrected in app_mvp earlier this round and left standing here - one fix, one writer.
+            "metabolic_atp_basis": ("simulated — the shared ATPSimulator on a constant metabolic_load. "
+                                   + _atp_depletion_state()["basis"]
+                                   + " It is not a measurement of this platform."),
             "arousal_state": arousal,                         # real — central nervous system
             "simulated_bpm": sim_bpm,                         # SIMULATED — tracks arousal, not a sensor
         },

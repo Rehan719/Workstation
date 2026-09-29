@@ -80,8 +80,16 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     entries = (rec.get("history") or [])[-19:]
     entries.append({"overall": screen["overall"],
                     "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    # W506 (P2.7(6)) - the latest screen's VERDICTS are persisted, with the coverage statement that
+    # qualifies them. `screen_compliance` returns all three and this writer kept only `overall`, so the
+    # roster's `verdicts` field could never be filled and every row showed an empty list for an entity
+    # that had been screened. Latest only and capped, so the store does not grow with every beat.
+    _verdicts = [v for v in (screen.get("verdicts") or []) if isinstance(v, dict)][:12]
     hist[vsb_id] = {"overall": screen["overall"], "last_at": entries[-1]["at"],
-                    "regression": regression, "history": entries}
+                    "regression": regression, "verdicts": _verdicts,
+                    "coverage_gaps": screen.get("coverage_gaps"),
+                    "assessed_by": screen.get("assessed_by"),
+                    "history": entries}
     atomic_write_json(store_path, hist)
     if regression:
         try:
@@ -138,6 +146,15 @@ class OrganismHeartbeat:
         self.last_transfer_reconcile: Optional[Dict[str, Any]] = None   # W466 — last stranded-transfer pass
         self.last_intake_reconcile: Optional[Dict[str, Any]] = None     # W467 — last stranded-consume pass
         self.last_vsb_evolved: Optional[Dict[str, Any]] = None   # §8×§3 (W309) — last child VSB evolved on the tick
+        # W506 (P2.7(2)) - a reaction that happened BETWEEN beats. `reflex_arcs_registered` was 0
+        # for the platform's whole life, so these were structurally always empty.
+        self.last_reflex = None                 # {arc, at, trigger, result} of the last arc that fired
+        self.reflex_reactions = 0               # how many times an arc has driven a check off-beat
+        # §8 (W506, P2.7(3)) - the last immune defence THIS organism engaged, and the beat it was
+        # engaged on. Both None on a platform that has never been under threat, which is different
+        # from one that could not defend itself - and until this round it was always the latter.
+        self.last_immune_defence: Optional[Dict[str, Any]] = None
+        self._last_defence_beat: Optional[int] = None
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
@@ -185,45 +202,27 @@ class OrganismHeartbeat:
         # 2. Homeostasis check + AUTONOMOUS self-regulation (cheap, no AI) — the §8 survival instinct on the
         #    beat: the organism reads its own state and, when energy is depleted, actively RESTS to restore it
         #    (self-healing without manual trigger — §3 "runs, maintains, defends, heals itself").
-        health = None
-        try:
-            from agentic_core.organism.immune import immune
-            health = immune.status().get("health")
-            if health is not None and health < 0.5:
-                from agentic_core.organism.biobus import biobus
-                biobus.fire_signal("reflex", "organism.heartbeat.alert", f"health {health}", 0.9)
+        # W506 (P2.7(2)) — the check itself lives in `respond_to_health`, which a REGISTERED reflex arc
+        # also drives between beats. One function, two callers: a second copy of the threshold here
+        # would drift from the arc's copy the first time either changed.
+        _h = self.respond_to_health()
+        health = _h.get("health")     # read ONCE and carried to the beat record below
+        if _h.get("read"):
             actions.append("homeostasis")
-        except Exception:
-            pass
-        try:
-            from agentic_core.organism.biobus import biobus
-            atp = (biobus.organism_context().get("metabolic", {}) or {}).get("atp_ratio", 1.0)
-            if atp < 0.3:                       # energy depleted → autonomously rest & recover
-                from agentic_core.ai.native.homeostasis import homeostasis
-                rec = homeostasis.recover(cycles=3)
-                if rec.get("recovered"):
-                    self.last_recovery = f"{rec['atp_before']:.0%}->{rec['atp_after']:.0%}"
-                    actions.append("self_recovery")
-        except Exception:
-            pass
+        if self.respond_to_energy().get("recovered"):
+            actions.append("self_recovery")
 
         # 2c. Self-healing reflex (immune → self-healing on the beat): read the circuit-breaker health and,
         #     when circuits are OPEN past their recovery window, the organism ACTIVELY probes them for
         #     recovery (proactive self-healing, not just passive timeout) — §3 "defends and heals itself".
-        try:
-            from agentic_core.organism.self_healing import self_healer
-            sh = self_healer.status()
-            self.last_self_healing = sh.get("overall_health")
-            if sh.get("open_circuits", 0) > 0:
-                heal = self_healer.attempt_heal()
-                if heal.get("count"):
-                    self.last_heal = ",".join(heal["probed"])[:80]
-                    actions.append("self_heal")
-                    from agentic_core.organism.biobus import biobus
-                    biobus.fire_signal("reflex", "organism.heartbeat.self_heal",
-                                       f"probed {heal['count']} circuit(s): {self.last_heal}", 0.8)
-        except Exception:
-            pass
+        # W506 (P2.7(2)) — same extraction: a registered arc drives this between beats.
+        if self.respond_to_circuits().get("probed"):
+            actions.append("self_heal")
+
+        # §8 (W506, P2.7(3)) — the organism ENGAGES its own immune defence at ≥HIGH. The CCA route that
+        # does this was built and had no caller, so a HIGH threat waited for an admin to press a button.
+        if self.respond_to_threat().get("engaged"):
+            actions.append("immune_defence")
 
         # 2d. Genome vital sign — read the organism's genome-population genetics (count, mean fitness,
         #     generational depth) as part of its self-monitoring, so the genome subsystem joins the living
@@ -551,10 +550,198 @@ class OrganismHeartbeat:
             factor = 1.0 / _INTENSITY.get(phase, 0.5)
             await asyncio.sleep(self.interval_seconds * factor)
 
+    # ── §3 reflex arcs — W506 (P2.7(2)) ───────────────────────────────────────────
+    #
+    # Each responder is ONE check, driven from two places: `beat()` on the rhythm, and a reflex arc
+    # registered on the nervous system when a burst of signals accumulates between beats. The arc is the
+    # wake-up, never a second copy of the threshold - `register_reflex` accumulates signals of a TYPE, which
+    # cannot express "health below 0.5", so the callback re-reads the real state and the real threshold
+    # decides. Every responder returns WHAT IT DID, so a caller never has to infer it.
+
+    def respond_to_health(self) -> Dict[str, Any]:
+        """Read the immune health and alert when it is below the homeostasis threshold."""
+        out: Dict[str, Any] = {"read": False, "health": None, "alerted": False}
+        try:
+            from agentic_core.organism.immune import immune
+            health = immune.status().get("health")
+            out["read"], out["health"] = True, health
+            if health is not None and health < 0.5:
+                from agentic_core.organism.biobus import biobus
+                biobus.fire_signal("reflex", "organism.heartbeat.alert", f"health {health}", 0.9)
+                out["alerted"] = True
+        except Exception as exc:
+            out["error"] = f"{exc.__class__.__name__}: {exc}"
+        return out
+
+    def respond_to_energy(self) -> Dict[str, Any]:
+        """Rest and recover when the energy ratio is depleted (§8 survival instinct on the beat)."""
+        out: Dict[str, Any] = {"read": False, "atp": None, "recovered": False}
+        try:
+            from agentic_core.organism.biobus import atp_depletion_state, biobus
+            atp = (biobus.organism_context().get("metabolic", {}) or {}).get("atp_ratio", 1.0)
+            out["read"], out["atp"] = True, atp
+            # §8 (W506, P2.7(4)) - this threshold is UNREACHABLE on the current model, and said so rather
+            # than silently never firing. Measured from the arithmetic: consumption is at most 0.1 per tick
+            # and production at least 0.4 at the lowest efficiency this code passes, so the ratio only rises
+            # to its ceiling. P2.7(4)'s label arm requires the survival copy be removed "until the branch can
+            # fire"; DERIVING it means the branch starts working by itself if the constants ever change,
+            # instead of being deleted and forgotten.
+            _dep = atp_depletion_state()
+            out["threshold"] = self.ENERGY_THRESHOLD
+            out["can_deplete"] = _dep["can_deplete"]
+            if not _dep["can_deplete"]:
+                out["why_not"] = ("the energy figure cannot fall to the threshold on this model, so no "
+                                  "recovery can be triggered by it: " + _dep["basis"])
+                return out
+            if atp < self.ENERGY_THRESHOLD:     # energy depleted → autonomously rest & recover
+                from agentic_core.ai.native.homeostasis import homeostasis
+                rec = homeostasis.recover(cycles=3)
+                if rec.get("recovered"):
+                    self.last_recovery = f"{rec['atp_before']:.0%}->{rec['atp_after']:.0%}"
+                    out["recovered"] = True
+        except Exception as exc:
+            out["error"] = f"{exc.__class__.__name__}: {exc}"
+        return out
+
+    def respond_to_circuits(self) -> Dict[str, Any]:
+        """Probe circuits that are OPEN past their recovery window (proactive self-healing)."""
+        out: Dict[str, Any] = {"read": False, "open_circuits": None, "probed": 0}
+        try:
+            from agentic_core.organism.self_healing import self_healer
+            sh = self_healer.status()
+            self.last_self_healing = sh.get("overall_health")
+            out["read"], out["open_circuits"] = True, sh.get("open_circuits", 0)
+            if sh.get("open_circuits", 0) > 0:
+                heal = self_healer.attempt_heal()
+                if heal.get("count"):
+                    self.last_heal = ",".join(heal["probed"])[:80]
+                    out["probed"] = heal["count"]
+                    from agentic_core.organism.biobus import biobus
+                    biobus.fire_signal("reflex", "organism.heartbeat.self_heal",
+                                       f"probed {heal['count']} circuit(s): {self.last_heal}", 0.8)
+        except Exception as exc:
+            out["error"] = f"{exc.__class__.__name__}: {exc}"
+        return out
+
+    # The arcs, declared ONCE. `responder` names a method above; `threshold` is how many signals of
+    # `trigger` inside the nervous system's 60s window wake the check. The thresholds are deliberately
+    # above the resting rate: one beat fires a single "reflex" pulse, so an arc at 8 cannot be tripped by
+    # the rhythm alone - it takes a real burst (errors, regressions, heal probes) to reach it.
+    #
+    # ONLY THE CHEAP, ACTING CHECKS GET AN ARC. W506 first registered all four and that was wrong twice
+    # over, which measuring the suite showed (it ran about twice as slow, because an arc fires inside
+    # `nervous.fire` on any caller's stack):
+    #   · `respond_to_energy` reads the whole organism context, which touches the config file and advances
+    #     the ATP simulator - and its threshold is UNREACHABLE on the current model (P2.7(4)), so the arc
+    #     would do that work to react to nothing. An arc whose responder can never act is the dead-branch
+    #     class one layer up.
+    #   · `respond_to_threat` SUBMITS A GOVERNED CHANGE RECORD and moves a live config lever. A burst of
+    #     ordinary error signals would have done that from inside an arbitrary caller, and P2.7(3) asks
+    #     only that the HEARTBEAT engage the defence - which it does, on the beat, where a governed change
+    #     belongs. The arc was scope I added beyond the criterion and it carried a real hazard.
+    # Both still run on the beat. What is left here reads in-memory state and acts on it.
+    REFLEX_ARCS = (
+        {"name": "organism.reflex.health", "trigger": "reflex", "threshold": 8,
+         "responder": "respond_to_health"},
+        {"name": "organism.reflex.circuits", "trigger": "reflex", "threshold": 8,
+         "responder": "respond_to_circuits"},
+    )
+
+    # §8 (W506, P2.7(3)) — the threat scale, ORDERED. A string comparison would put "HIGH" above
+    # "CRITICAL" alphabetically and so skip the worst case, silently.
+    THREAT_ORDER = ("NOMINAL", "ELEVATED", "HIGH", "CRITICAL")
+    DEFEND_AT = "HIGH"
+    # §8 (W506, P2.7(4)) - named, because a threshold buried in a comparison cannot be reported and a
+    # reader could not see that it is unreachable on the current energy model.
+    ENERGY_THRESHOLD = 0.3
+    _DEFENCE_COOLDOWN_BEATS = 30     # engage_immune_defence writes a record and moves a live lever
+
+    def respond_to_threat(self) -> Dict[str, Any]:
+        """Engage the immune defence when the threat reaches DEFEND_AT. W506 (P2.7(3)).
+
+        The CCA's `immune_reconfigure` route was fully built and had NO caller anywhere, so the organism
+        never defended itself: a HIGH threat sat until an admin pressed a button. This calls the ungated
+        core, which is the same body the route calls - the reflex is governed and recorded exactly as an
+        admin-submitted change is, and the change it creates is revertible through `revert_immune_defence`.
+        """
+        out: Dict[str, Any] = {"read": False, "threat": None, "engaged": False, "why_not": None}
+        try:
+            from agentic_core.api.change_control import _immune_threat
+            threat = (_immune_threat() or "NOMINAL").upper()
+            out["read"], out["threat"] = True, threat
+            order = self.THREAT_ORDER
+            if threat not in order:
+                out["why_not"] = f"the threat level {threat!r} is not on the scale {order}"
+                return out
+            if order.index(threat) < order.index(self.DEFEND_AT):
+                out["why_not"] = f"{threat} is below {self.DEFEND_AT}"
+                return out
+            # `or` here was a falsy-ZERO defect: a defence engaged on beat 0 stored 0, and
+            # `0 or -10**9` is the sentinel, so the cooldown never applied and a sustained threat
+            # submitted a change on every beat. The guard caught it; a probe that had already beaten
+            # once could not, because beats was then non-zero.
+            last = self._last_defence_beat
+            since = None if last is None else self.beats - last
+            if since is not None and since < self._DEFENCE_COOLDOWN_BEATS:
+                out["why_not"] = (f"a defence was engaged {since} beat(s) ago and the cooldown is "
+                                  f"{self._DEFENCE_COOLDOWN_BEATS} — a sustained threat must not submit a "
+                                  f"change every beat")
+                return out
+            from agentic_core.api.change_control import engage_immune_defence
+            res = engage_immune_defence(threat, requested_by="organism.heartbeat",
+                                        requested_by_verified=False)
+            self._last_defence_beat = self.beats
+            self.last_immune_defence = {
+                "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "threat": threat, "cca_id": res.get("cca_id"), "status": res.get("status"),
+                "reconfiguration": res.get("reconfiguration"),
+                # carried so a reader can undo it without first fetching the record — the reversal being
+                # available is the difference between a defence and a one-way switch
+                "reversible": res.get("reversible"), "revert_with": res.get("revert_with"),
+            }
+            out["engaged"], out["result"] = True, self.last_immune_defence
+        except Exception as exc:
+            out["error"] = f"{exc.__class__.__name__}: {exc}"
+        return out
+
+    def register_reflexes(self) -> Dict[str, Any]:
+        """Register this organism's reflex arcs on the nervous system. Idempotent by name.
+
+        W506 (P2.7(2)) - `register_reflex` had been implemented and never called, so
+        `reflex_arcs_registered` was 0 and the heartbeat's three threshold checks ran only on the beat:
+        a burst at the start of an interval waited out the whole interval. Idempotent because `start()`
+        may be called more than once, and an arc registered twice responds twice to one burst.
+        """
+        from agentic_core.organism.nervous import nervous
+        registered, already = [], []
+        existing = {a.get("name") for a in getattr(nervous, "_reflex_arcs", [])}
+        for arc in self.REFLEX_ARCS:
+            if arc["name"] in existing:
+                already.append(arc["name"])
+                continue
+            responder = getattr(self, arc["responder"])
+
+            def _fire(signal, _responder=responder, _name=arc["name"]) -> None:
+                # The reaction is recorded on THIS instance, which is the one `/status` reads - a
+                # between-beat response that left no trace would be indistinguishable from none.
+                result = _responder()
+                self.last_reflex = {"arc": _name, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                    "trigger": getattr(signal, "source", None), "result": result}
+                self.reflex_reactions += 1
+
+            nervous.register_reflex(arc["name"], arc["trigger"], arc["threshold"], _fire)
+            registered.append(arc["name"])
+        return {"registered": registered, "already_registered": already,
+                "arcs_on_the_bus": len(getattr(nervous, "_reflex_arcs", []))}
+
     def start(self) -> None:
         if self._task and not self._task.done():
             return
         self.running = True
+        try:            # W506 (P2.7(2)) - the arcs go on the bus before the rhythm does, so a burst in the
+            self.register_reflexes()   # first interval is already answered. Idempotent, so a restart is safe.
+        except Exception as exc:
+            logger.debug("reflex registration deferred: %s", exc)
         try:
             self._task = asyncio.create_task(self.run())
         except RuntimeError:
@@ -571,7 +758,15 @@ class OrganismHeartbeat:
         living = (list_living() or {}).get("living_vsbs") or []
         if not living:
             return None
-        hist: Dict[str, Any] = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
+        # W506 (FU-075) - a partial read makes entries look ABSENT, so their last_at reads "" and they
+        # sort first. That is fail-safe for this rotation (a lost history is re-screened soonest) and the
+        # behaviour is unchanged; the incompleteness is logged so it is attributable rather than invisible.
+        from agentic_core.config import read_json_reported
+        hist, _hist_why = read_json_reported(data_path("vsb_compliance_history.json"), {})
+        hist = hist or {}
+        if _hist_why:
+            logger.error("the VSB compliance history could not be read whole, so this rotation may be "
+                         "choosing on incomplete timestamps: %s", _hist_why)
         target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
         return screen_living_vsb(target.get("vsb_id"))
 
@@ -654,6 +849,19 @@ class OrganismHeartbeat:
             self.auto_ship = bool(auto_ship)
         self._save_autonomy()
 
+    def _reflex_arc_count(self):
+        """How many arcs are actually ON the bus, or None when the bus cannot be read. W506 (P2.7(2)).
+
+        Read from the nervous system rather than from `REFLEX_ARCS`, because the declaration says what this
+        organism INTENDS to register and only the bus says what is registered - a registration that failed
+        must not be reported as one that succeeded.
+        """
+        try:
+            from agentic_core.organism.nervous import nervous
+            return len(getattr(nervous, "_reflex_arcs", []))
+        except Exception:
+            return None
+
     def status(self) -> Dict[str, Any]:
         return {
             "running": self.running,
@@ -693,6 +901,19 @@ class OrganismHeartbeat:
             # switch here would route around the arms-length approval it exists behind.
             "evolution_auto_apply": self._evolution_auto_apply(),
             "last_compliance": self.last_compliance,
+            # W506 (P2.7(2)) - the REFLEX ARCS, said rather than implied. `reflex_arcs_registered`
+            # was 0 for the platform's whole life because register_reflex had no caller, so the
+            # three threshold checks below ran only on the beat. `reflex_reactions` counts the times
+            # an arc drove one BETWEEN beats; 0 with arcs registered means no burst has occurred,
+            # which is different from no arcs being on the bus, so both are reported.
+            "reflex_arcs_registered": self._reflex_arc_count(),
+            "reflex_arcs": [a["name"] for a in self.REFLEX_ARCS],
+            "reflex_reactions": self.reflex_reactions,
+            "last_reflex": self.last_reflex,
+            # §8 (W506, P2.7(3)) - the defence the organism engaged ITSELF, with the way back. Before
+            # this round nothing called the reconfigurator, so this was structurally always absent.
+            "last_immune_defence": self.last_immune_defence,
+            "defends_at": self.DEFEND_AT,
             "recent": self._log[-10:],
             "integrations": ["circadian", "central_nervous_system", "immune", "self_healing",
                              "metabolic_atp", "genome", "UEG_audit", "constitutional_arms_length"],

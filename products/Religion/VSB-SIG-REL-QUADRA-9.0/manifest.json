@@ -6,8 +6,8 @@
   "release_date": "2026-04-10",
   "veritas_framework": "Quadra-Veritas",
   "outputs_path": "outputs/",
-  "status": "PRODUCTION_READY",
-  "octo_veritas_integrated": true,
+  "status": "LEGACY_ARCHIVE_NOT_SERVED",
+  "octo_veritas_integrated": false,
   "injection_formats": [
     "PDF",
     "DOCX",
@@ -22,5 +22,8 @@
   "constitutional_rules": "assets/religion_rules.json",
   "fallback_level": 2,
   "accessibility_level": "WCAG_2.2_AAA",
-  "oam_anchored": true
+  "oam_anchored": true,
+  "status_corrected": "W506 (P2.4/FU-072): this manifest declared PRODUCTION_READY. Nothing reads it and the catalogue routes nothing here, so the declaration was a claim about the platform that the platform did not support.",
+  "injection_formats_basis": "declared by this legacy manifest and NOT served by the platform. Nothing reads this file; the catalogue routes nothing to this directory. MP4 and MP3 in particular are a not-yet catalogue in this repository's canon.",
+  "octo_veritas_integrated_basis": "set false in W506: no integration is wired from this directory. It was true in a file nothing reads."
 }

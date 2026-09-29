@@ -265,3 +265,115 @@ export const qmsChip = (q: QmsQuality, prefix = 'QMS') => {
   return { verdict: 'fail' as const, label: `${prefix} fail${cov}${doc}`, cls: 'bg-vital/15 text-vital',
     title: q.qms_basis || 'living-QMS gate failed on real coverage/stub metrics' };
 };
+
+/**
+ * W506 (FU-160 S3.8) — what the biomimetic record actually SAYS about the layers.
+ *
+ * Both tooltips read `7 biomimetic layers · {self}` — a flat count of what is DECLARED, over a chip reporting
+ * one layer's health. The record says how many CONTRIBUTED, and since W506 it also says which layers hold code
+ * that nothing calls. Two readers asserting a claim its writer has stopped making is how an untruth survives a
+ * fix, so both now read the same fields through this one helper.
+ */
+export const layerTitle = (bio: {
+  layers?: string[];
+  layers_declared?: string[];
+  layer_states?: Record<string, string>;
+  self?: string;
+} | null | undefined): string => {
+  if (!bio) return 'no biomimetic record was returned for this run';
+  const declared = bio.layers_declared?.length ?? 0;
+  const contributed = bio.layers ?? [];
+  const states = bio.layer_states ?? {};
+  const unreached = Object.keys(states).filter(k => states[k] === 'code_exists_unreached');
+  const parts = [
+    declared
+      ? `${contributed.length} of ${declared} declared layers contributed a value${contributed.length ? `: ${contributed.join(', ')}` : ''}`
+      : `${contributed.length} layer(s) contributed a value`,
+  ];
+  if (unreached.length) {
+    parts.push(`code exists but nothing calls it: ${unreached.join(', ')}`);
+  }
+  if (bio.self) parts.push(bio.self);
+  return parts.join(' · ');
+};
+
+/**
+ * W506 (P2.4/FU-248) — the provenance line, rendered so the TARGET FORMAT can carry it.
+ *
+ * `provenanceLine` emits a markdown blockquote, which is right for a .md or .txt download and wrong for
+ * everything else: prepending `> Provenance: ...` to a .py file is a syntax error and to a .json file is
+ * corruption. Generator.tsx exports eight formats and CreatorStudio saves a canvas as JSON, so both were left
+ * unlabelled rather than broken — an understandable choice, and still a file leaving the platform with no
+ * statement of what produced it.
+ *
+ * Returns '' for formats with no comment syntax (json). Those callers must put the provenance IN the document —
+ * a key on the object — because a corrupted download is worse than an unlabelled one.
+ */
+const COMMENT_SYNTAX: Record<string, [string, string]> = {
+  python: ['# ', ''],
+  yaml: ['# ', ''],
+  toml: ['# ', ''],
+  typescript: ['// ', ''],
+  javascript: ['// ', ''],
+  sql: ['-- ', ''],
+  html: ['<!-- ', ' -->'],
+  markdown: ['> ', ''],
+  text: ['# ', ''],
+};
+
+export const provenanceComment = (
+  format: string,
+  servedBy: string | Record<string, number> | null | undefined,
+  isExternal?: boolean,
+): string => {
+  const syntax = COMMENT_SYNTAX[(format || '').toLowerCase()];
+  if (!syntax) return '';            // json and anything else with no comment form — the caller adds a key
+  const [open, close] = syntax;
+  // reuse provenanceLine's RULES, not its punctuation: strip its markdown and its blank lines
+  const body = provenanceLine(servedBy, isExternal).replace(/^>\s*/gm, '').trim();
+  return body.split('\n').map(l => `${open}${l}${close}`).join('\n') + '\n\n';
+};
+
+/**
+ * W506 (P2.4/FU-248) — the provenance as a VALUE, for formats that cannot hold a comment.
+ * A caller merges this into the object it is about to stringify.
+ */
+export const provenanceField = (
+  servedBy: string | Record<string, number> | null | undefined,
+  isExternal?: boolean,
+): Record<string, string> => ({
+  _provenance: provenanceLine(servedBy, isExternal).replace(/^>\s*/gm, '').trim(),
+});
+
+/**
+ * W506 (P2.7(7)) — what a venture "position" actually is, for the figure beside it.
+ *
+ * MEASURED: a cycle records positions against NAMED living VSBs and no investee is ever credited —
+ * `_record_positions_locked` writes the investor's holdings and nothing else, while the board pack rendered
+ * "Venture portfolio (§6) 105 WST · 5 positions" with those names, as if capital had been deployed. The
+ * criterion P2.7(7) is explicit that the label belongs on the figure a reader sees, not only in the payload.
+ *
+ * The wording is the SERVER's (`funding_basis`), never restated here: a helper that mirrors a rule instead of
+ * carrying it becomes the second writer that drifts. When the server says nothing, this says that — it does
+ * not assume the funded case, because an older response that predates the field is not evidence of funding.
+ */
+export const fundingLabel = (
+  fundingState: string | null | undefined,
+  fundingBasis?: string | null,
+): { short: string; full: string; unfunded: boolean } => {
+  if (fundingState === 'recorded_unfunded') {
+    return {
+      short: 'recorded, unfunded',
+      full: fundingBasis || 'recorded, unfunded — the investee is not credited.',
+      unfunded: true,
+    };
+  }
+  if (!fundingState) {
+    return {
+      short: 'funding not stated',
+      full: 'this response does not say whether the investee was credited, so nothing here establishes that it was.',
+      unfunded: false,
+    };
+  }
+  return { short: fundingState, full: fundingBasis || fundingState, unfunded: false };
+};

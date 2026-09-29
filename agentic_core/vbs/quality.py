@@ -28,6 +28,41 @@ SOLUTION_QUALITY_BAR: List[str] = [
 BIOMIMETIC_LAYERS: List[str] = ["Genome", "Nervous", "Immune", "Cardiovascular", "Respiratory",
                                 "Musculoskeletal", "Endocrine"]
 
+# W506 (P2.7(1)) — what each declared layer actually IS, measured against the tree rather than asserted.
+# FOUR states, because two could not tell "a file exists" from "the code runs":
+#   engaged_with_value            contributed a measured value to the record in hand
+#   engaged_no_value              ran on this path and contributed no value (a different thing from doing nothing)
+#   implemented_not_on_this_path  real, reachable code that this path does not exercise
+#   measurement_under_this_name   a genuine measurement published under an anatomical name — not an organ
+#   code_exists_unreached         a module exists and NOTHING IMPORTS IT, so the layer does not run anywhere
+# `test_w506_p27_layers` asserts the reachability claims against the tree, so none of this can rot the way
+# the W434 sentence did.
+LAYER_STATE: Dict[str, Dict[str, str]] = {
+    "Immune": {"state": "engaged_with_value",
+               "basis": "agentic_core/organism/immune.py — immune.status() is read into this record"},
+    "Nervous": {"state": "engaged_no_value",
+                "basis": "agentic_core/organism/nervous.py — the fire_signal below routes into the "
+                         "NervousSystem; it contributes no value to this record"},
+    "Genome": {"state": "implemented_not_on_this_path",
+               "basis": "agentic_core/organism/genome.py — encode/crossover/mutate, mounted under "
+                        "/api/v1/organism/genome; a quality record does not exercise it"},
+    "Musculoskeletal": {"state": "implemented_not_on_this_path",
+                        "basis": "agentic_core/api/resource_fabric.py — composable facilities that run real "
+                                 "engines; a quality record does not exercise them"},
+    "Cardiovascular": {"state": "measurement_under_this_name",
+                       "basis": "agentic_core/app_mvp.py serves resource_flow = 100 - cpu_percent as "
+                                "'cardiovascular'. That is host CPU headroom, honestly measured, under an "
+                                "anatomical name — there is no circulatory subsystem"},
+    "Endocrine": {"state": "code_exists_unreached",
+                  "basis": "agentic_core/biomimicry/geospheric/regulator.py holds a real HomeostaticRegulator "
+                           "with an integral term and NOTHING IMPORTS IT; a second copy of the same class sits "
+                           "in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and "
+                           "W446 measured that vouching as the overclaim"},
+    "Respiratory": {"state": "code_exists_unreached",
+                    "basis": "agentic_core/molecular/triad_integration.py holds a real TriadIntegrator and "
+                             "NOTHING IMPORTS IT"},
+}
+
 _STUB_RE = re.compile(r"\b(TODO|TBD|FIXME|lorem ipsum|placeholder|coming soon|as an ai)\b", re.I)
 _MIN_SUBSTANTIVE = 200  # chars — below this a "delivery" is treated as an empty / stub shell.
 
@@ -481,11 +516,29 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     # participation from a list that names all seven whatever happened.
     biomimetic["layers_not_contributing"] = [l for l in BIOMIMETIC_LAYERS
                                              if l not in biomimetic["layers"]]
+    # W506 (P2.7(1), FU-160 S3.8) — PER LAYER, and the W434 sentence is gone. That sentence said Endocrine,
+    # Musculoskeletal and Respiratory were vouched for as implemented elsewhere, which W446 measured as an
+    # overclaim and this round reproduced: the Endocrine regulator has NO importer and exists in two copies,
+    # and the Respiratory TriadIntegrator has no importer either. A file is not an implementation if nothing
+    # calls it. Four states, because two cannot tell those cases apart.
+    biomimetic["layer_states"] = {l: LAYER_STATE[l]["state"] for l in BIOMIMETIC_LAYERS}
+    biomimetic["layer_basis"] = {l: LAYER_STATE[l]["basis"] for l in BIOMIMETIC_LAYERS}
+    _engaged = [l for l in BIOMIMETIC_LAYERS if l in biomimetic["layers"]]
+    _reachable = [l for l in BIOMIMETIC_LAYERS
+                  if LAYER_STATE[l]["state"] == "implemented_not_on_this_path"]
+    _unreached = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "code_exists_unreached"]
+    _relabelled = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "measurement_under_this_name"]
     biomimetic["layers_note"] = (
-        f"{len(biomimetic['layers'])} of {len(BIOMIMETIC_LAYERS)} declared biomimetic layers "
-        f"contributed a value to this record. The rest are named by §8/§17.2 and contributed "
-        f"nothing HERE — a statement about this record, not about whether they are implemented. "
-        f"(W434: Endocrine, Musculoskeletal and Respiratory all have real implementations "
-        f"elsewhere, and Nervous is engaged on this path without contributing a value.)")
+        f"{len(biomimetic['layers'])} of {len(BIOMIMETIC_LAYERS)} declared layers contributed a value to this "
+        f"record: {', '.join(_engaged) or 'none'}. "
+        + (f"Engaged on this path without contributing a value: "
+           f"{', '.join(l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]['state'] == 'engaged_no_value')}. "
+           if any(LAYER_STATE[l]['state'] == 'engaged_no_value' for l in BIOMIMETIC_LAYERS) else "")
+        + (f"Implemented and reachable, but not on this path: {', '.join(_reachable)}. " if _reachable else "")
+        + (f"A measurement published under this anatomical name, not an organ: {', '.join(_relabelled)}. "
+           if _relabelled else "")
+        + (f"CODE EXISTS BUT NOTHING CALLS IT — so the layer does not run anywhere: {', '.join(_unreached)}. "
+           if _unreached else "")
+        + "`layer_basis` names the module behind each claim.")
 
     return {"quality": quality, "biomimetic": biomimetic}

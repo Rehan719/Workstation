@@ -42,13 +42,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
-from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
-from agentic_core.mjm.mjm import MJMOrchestratorV4
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["intelligence-engines"])
 
-_cascade = UltimateCognitiveCascade()
-_mjm = MJMOrchestratorV4()
 
 # ── BDP Engine stages ─────────────────────────────────────────────────────────
 
@@ -949,6 +945,11 @@ async def synthesis_nexus(req: NexusRequest):
 async def intelligence_status():
     return {
         "engines_available": ["BDP", "SPI", "APIE", "DDPIE", "Solve", "Nexus"],
+# W506 (P2.4/FU-228, and P3.12 names this too) - the UltimateCognitiveCascade and MJMOrchestratorV4
+# singletons that were constructed at import here are GONE. W479 removed their last caller and left
+# the objects behind; nothing in this file read either name afterwards, and the comment at the route
+# table below already recorded that these routes call neither. api/cognitive.py keeps its own pair
+# and USES them - those are untouched.
         # W479 (refutation) — what these routes actually run. They do not call UltimateCognitiveCascade,
         # MJMOrchestratorV4 or a GaaS gate; the old entry advertised all three.
         "cognitive_stack": {

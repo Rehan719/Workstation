@@ -38,8 +38,21 @@ SIM_DELIVERY_TARIFF_WST = 250.0     # earned per QMS-passed, VSB-scoped cascade 
 
 
 def _load() -> list:
-    """Tolerant read — READ-ONLY summaries only (pending_summary). Writers and the governed peek use _read_rows."""
-    return load_json_tolerant(_STORE, []) or []
+    """Tolerant read - READ-ONLY summaries only (pending_summary). Writers and the governed peek use _read_rows."""
+    return _load_reported()[0]
+
+
+def _load_reported() -> tuple:
+    """W506 (FU-075) - the rows AND whether the store could be read whole.
+
+    `pending_summary` is built on this. A truncated revenue store returned a recoverable prefix and the
+    summary reported FEWER pending events with nothing said - money-shaped silence. The value still keeps
+    the tolerant behaviour so a summary endpoint never goes down; the reason lets it say the count is
+    incomplete.
+    """
+    from agentic_core.config import read_json_reported
+    rows, why = read_json_reported(_STORE, [])
+    return (rows or []), why
 
 
 def _event_ok(ev: Any) -> bool:
@@ -339,10 +352,18 @@ def reconcile_stranded_consumes(min_age_s: float = 900.0) -> Dict[str, Any]:
 
 
 def pending_summary(vsb_id: str | None = None) -> Dict[str, Any]:
-    """Read-only view of unconsumed events (all VSBs, or one)."""
-    rows = [e for e in _load() if not e.get("consumed")
+    """Read-only view of unconsumed events (all VSBs, or one).
+
+    W506 (FU-075) - the counts say whether the store could be read WHOLE. A truncated revenue store used
+    to yield a recoverable prefix and this summary reported fewer pending events with nothing said, so a
+    reader could not tell a small number from an incomplete one.
+    """
+    _all, _why = _load_reported()
+    rows = [e for e in _all if not e.get("consumed")
             and (vsb_id is None or e.get("vsb_id") == vsb_id)]
     return {"pending_events": len(rows),
+            **({"store_incomplete": _why,
+                "counts_are_incomplete": True} if _why else {}),
             "pending_revenue_wst": round(sum(e["amount_wst"] for e in rows if e["kind"] == "revenue"), 6),
             "pending_cost_wst": round(sum(e["amount_wst"] for e in rows if e["kind"] == "cost"), 6),
             "events": rows[-50:]}

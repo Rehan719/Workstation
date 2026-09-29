@@ -36,7 +36,9 @@ async def generate_business_plan(req: PlanRequest) -> Dict[str, Any]:
         f"Base projections on the ${req.funding_goal:,.0f} funding goal. Be realistic but optimistic. Output ONLY the JSON."
     )
 
-    raw = await gateway.query(prompt, agent="business_planner")
+    # W506 (P2.2) - mounted at /api/v310; converted, not retired.
+    _br = await gateway.query_meta(prompt, agent="business_planner", augment=False)
+    raw = _br.get("output", "")
 
     try:
         cleaned = raw.strip()

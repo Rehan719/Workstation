@@ -166,12 +166,30 @@ class EconomicMetabolism:
 
         # §8→§12 ECONOMIC SURVIVAL INSTINCT — when the LIVING ORGANISM's metabolic energy is depleted, the
         # economic organism conserves more (raises reserves), mirroring the §8 homeostatic survival instinct.
+        # W506 (P2.7(4), FU-265c) — THE RESERVE IS NO LONGER DECIDED ON THIS TERM, and that is a
+        # deliberate behaviour change. The term is an ATPSimulator on a constant load, floored at 0.5 of
+        # 15, so `metabolic_energy < 0.3` can never be true and energy_state could only ever read
+        # "healthy" — yet every VSB cycle recorded a reserve rate as though a living organism's energy
+        # had been consulted, in the economy that writes the virtual ledger. A reserve decided on a
+        # simulator is not a decision.
+        #
+        # THREE states so the record says which happened: adjusted (the term fell, once it can),
+        # not_adjusted_term_unmeasured (today's answer), or unavailable (it could not be read at all).
+        # The §8→§12 survival instinct returns the moment the term can actually fall — see P2.7(4).
         metabolic_energy = self._atp_ratio()
         effective_reserve = float(reserve_rate)
-        energy_state = "healthy"
-        if metabolic_energy is not None and metabolic_energy < 0.3:
+        _atp_measured = False      # W494 measured this; the qualifier lives on the organism context
+        if metabolic_energy is None:
+            energy_state = "unavailable (the organism's metabolic term could not be read)"
+        elif not _atp_measured:
+            energy_state = ("not_adjusted_term_unmeasured — the reserve was NOT adjusted: the metabolic "
+                            "term is a simulator on a constant load, floored so it cannot deplete, so it "
+                            "carries no evidence about this entity's energy")
+        elif metabolic_energy < 0.3:
             effective_reserve = round(min(0.6, reserve_rate + 0.15), 3)
             energy_state = "conserving (low organism energy)"
+        else:
+            energy_state = "healthy"
 
         if progress is not None:
             progress["returns_drained_wst"], progress["receipts_drained_wst"] = returns_recycled, transfers_received
@@ -183,6 +201,7 @@ class EconomicMetabolism:
         # events it consumed, and the released action counts as run only once it has written.
         try:
             self.ledger.record("revenue", revenue, memo="cycle intake (revenue)",
+                               source="cycle_intake",
                                ref=(progress or {}).get("cycle_token"))
         except BaseException:
             given = self._give_back_drained(returns_recycled, transfers_received)
@@ -202,9 +221,11 @@ class EconomicMetabolism:
         # W475 (ledger v4 R6.1) — declared costs are an EXPENSE (Dr operating_costs / Cr cash), never a reserve:
         # the P&L used to show no cost and the balance sheet a reserve that included spent money.
         if costs > 0:
-            self.ledger.record("costs", costs, memo="declared operating costs")
+            self.ledger.record("costs", costs, memo="declared operating costs",
+                               source="cycle_costs")
         reserves = round(revenue * effective_reserve, 2)
-        self.ledger.record("reserves", reserves, memo="homeostasis (prudential reserve)")
+        self.ledger.record("reserves", reserves, memo="homeostasis (prudential reserve)",
+                           source="cycle_reserve")
 
         # 3. Distributable profit — what remains after costs and the reserve (the same total as before)
         distributable = round(max(0.0, revenue - costs - reserves), 2)
@@ -215,7 +236,8 @@ class EconomicMetabolism:
             amount = round(distributable * frac, 2)
             splits[stage] = amount
             if amount > 0:
-                self.ledger.record(stage, amount, memo=f"circulation → {_CYCLE_ROLE.get(stage, stage)}")
+                self.ledger.record(stage, amount, memo=f"circulation → {_CYCLE_ROLE.get(stage, stage)}",
+                                   source="cycle_distribution")
 
         # 4b. §7 — the Owner's share accrues to the Owner-Payments ledger (virtual WST; real rails gated).
         # W465 (FU-016) — a failed accrual used to vanish (`except: pass`) while the ledger above already showed

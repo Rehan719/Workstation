@@ -349,8 +349,18 @@ def list_living() -> Dict[str, Any]:
             # None means NOT YET SCREENED — never rendered as a pass. An entity established before
             # auto_compliance was switched on has no verdict, and that is different from a clean one.
             "verdict": verdict,
-            "screened_at": h.get("screened_at") or h.get("at"),
+            # W506 (P2.7(6)) - THE KEY THE WRITER ACTUALLY USES. This asked the top-level entry for
+            # "screened_at", which is never written, then for "at", which exists only inside a history
+            # item. The heartbeat persists the timestamp as "last_at", so every screened entity reported
+            # a null here and a reader could not tell it from one never screened. The older names stay as
+            # fallbacks: a history written before this round is not migrated by this change.
+            "screened_at": h.get("last_at") or h.get("screened_at") or h.get("at"),
+            # ...and the writer now persists these, having had them and dropped them. The COVERAGE
+            # statement travels with the verdicts: these screens can refuse and escalate but cannot
+            # clear, so a per-framework list without a statement of what was assessed overstates itself.
             "verdicts": h.get("verdicts") or [],
+            "coverage_gaps": h.get("coverage_gaps"),
+            "assessed_by": h.get("assessed_by"),
             "never_screened": (not bool(verdict)) if not hist_error else None,
             # W472 (FU-049) — a history that cannot be read whole: the standing is UNKNOWN, not clean
             "history_unavailable": hist_error,
@@ -502,6 +512,7 @@ def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_W
         # concurrent spends both saw the whole balance and both drew it, taking the fund negative.
         try:
             _drawn = m.ledger.spend_from("self_investment", float(amount),
+                                         source="self_investment",
                                          memo=f"reinvestment: {purpose[:120]}")
         except Exception as _err:
             from agentic_core.economy.ledger import LedgerUnavailable as _LU, LedgerWriteRefused as _LWR

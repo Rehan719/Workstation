@@ -530,7 +530,9 @@ export const ResourceFabric: React.FC = () => {
               )}
               {sim.model.organism_capacity && (
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.model.organism_capacity.fits_current_capacity ? 'bg-violet-500/15 text-violet-300' : 'bg-amber-500/15 text-amber-400'}`}
-                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, ATP ${Math.round((sim.model.organism_capacity.organism?.atp_ratio ?? 0) * 100)}%, ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
+                  /* W506 (FU-265d) — the ATP figure is simulated and this tooltip presented it as
+                     capacity 'now'. The immune and circadian terms are live; that one is not. */
+                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, ATP ${Math.round((sim.model.organism_capacity.organism?.atp_ratio ?? 0) * 100)}% (simulated — it does not fall, so it never limits a run), ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
                   §8 capacity: {sim.model.organism_capacity.projected_posture} · admits {sim.model.organism_capacity.admitted_max_parallel} {sim.model.organism_capacity.fits_current_capacity ? '· fits' : '· over capacity'}
                 </span>
               )}

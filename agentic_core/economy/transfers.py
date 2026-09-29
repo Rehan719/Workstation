@@ -248,6 +248,7 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
                 raise ValueError(f"Insufficient virtual funds: {from_vsb} reserve fund holds "
                                  f"{reserve} WST < transfer {amount} WST.")
             posting = sender._apply_posting("transfer_out", "reserve_fund", amount,
+                                            source="inter_vsb_transfer",
                                             memo=f"inter-VSB transfer → {to_vsb} ({transfer_id})"
                                                  + (f" — {memo}" if memo else ""))
             posting["transfer"] = {"id": transfer_id, "to_vsb": to_vsb, "amount_wst": amount}

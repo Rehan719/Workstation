@@ -141,10 +141,25 @@ class JourneyRequest(BaseModel):
     ship_output: bool = True
 
 
-async def _q(prompt: str, agent: str) -> str:
-    """Gateway query with graceful degradation (never raises)."""
+async def _q_meta(prompt: str, agent: str) -> tuple:
+    """W506 (P2.2) - the PROVENANCE form. `query` returns bare text, so every caller of this helper
+    dropped which resource served it. P2.2 requires that no bare text-only gateway call remains in
+    agentic_core/api. `augment=False` is STATED rather than inherited: a repo-wide guard requires it at
+    every call site, because W489 found 29 callers that had inherited recall and prepended another
+    request's content as analysis of their own subject.
+    """
     try:
-        return await gateway.query(prompt, agent=agent, augment=False)   # W332 — journey copy persists/ships
+        # W332 — journey copy persists and ships, so it carries no cross-request recall
+        r = await gateway.query_meta(prompt, agent=agent, augment=False)
+        return r.get("output", ""), r.get("served_by"), bool(r.get("is_external"))
+    except Exception as e:
+        return f"[AI unavailable: {e}]", None, False
+
+
+async def _q(prompt: str, agent: str) -> str:
+    """Text only, never raises. Delegates to `_q_meta`."""
+    try:
+        return (await _q_meta(prompt, agent))[0]
     except Exception as e:
         return f"[{agent} unavailable: {e}]"
 
@@ -556,6 +571,25 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "genesis_commercial",
     )
 
+    # ── W506 (P2.8(1)) — the stages this CONCEPT calls for ────────────────────────────────
+    #
+    # The journey ran six FIXED stages, so a concept never changed the work done on it - while the keyword
+    # rules that decide exactly this already existed in the swarm planner and were unreachable from here.
+    # Derived from the problem AND the concept: the problem is the user's own words and the concept is what
+    # the platform made of them, so taking only one would miss a risk the other names.
+    from agentic_core.ai.native.orchestrator import derived_branches as _derived_branches
+    _derived = [d for d in _derived_branches(f"{req.problem} {concept}")
+                if d["id"] in _DERIVED_STAGE_SPECS]
+    derived_stages: Dict[str, Any] = {}
+    for _d in _derived:
+        _spec = _DERIVED_STAGE_SPECS[_d["id"]]
+        _body = _blocked_body if _blocked else await _q(
+            _spec["prompt"] + f"\n\nConcept: {concept[:600]}\nDesign: {design[:500]}\nDomain: {req.domain}",
+            _spec["agent"])
+        derived_stages[_d["id"]] = {"body": _body, "role": _d["role"], "matched": _d["matched"],
+                                    "basis": _d["basis"], "agent": _spec["agent"],
+                                    "sections": _spec["sections"]}
+
     # ── Constitutional governance attestation (logged to the UEG) ──
     async def _attest() -> str:
         return "Sovereign Journey synthesised under v16-Omega constitutional supervision."
@@ -583,6 +617,14 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "operations": (dict(_NOT_RUN) if _blocked else _verify_stage(operations, ["Operations Delivery", "Compliance", "Operational Excellence"], floor_served=_floor("genesis_operations"))),
         "commercialisation": (dict(_NOT_RUN) if _blocked else _verify_stage(commercial, ["Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"], floor_served=_floor("genesis_commercial"))),
     }
+    # W506 (P2.8(1)) — a derived stage is verified on the SAME proxies as a fixed one, against the sections
+    # its own spec declares. Verifying only the fixed six would have made the derived work invisible to every
+    # figure that counts stages.
+    for _sid, _s in derived_stages.items():
+        stage_verifications[_sid] = (dict(_NOT_RUN) if _blocked else
+                                     _verify_stage(_s["body"], _s["sections"],
+                                                   floor_served=_floor(_s["agent"])))
+        stage_verifications[_sid]["derived_from"] = _s["basis"]
     stages_verified = sum(1 for v in stage_verifications.values() if v["verified"])
     stages_assessable = sum(1 for v in stage_verifications.values() if v["verified"] is not None)
 
@@ -671,6 +713,15 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # not the content; the journey verdict did not, so the same verdict meant different things on
         # two surfaces. One shared wording now, from gaas.v5.
         "governance": _intent_gate_result(gov.status, gov.checkpoint_id, gov.node),
+        # W506 (P2.8(1)) — the stages THIS concept called for, each saying which keywords derived it. An
+        # empty map means the concept matched none of the rules, which is a fact about the concept and not a
+        # journey that skipped work.
+        "derived_stages": {k: {kk: vv for kk, vv in v.items() if kk != "body"}
+                           for k, v in derived_stages.items()},
+        "derived_stage_bodies": {k: v["body"] for k, v in derived_stages.items()},
+        "derived_stages_basis": ("the extra stages are selected from the problem and the concept by the same "
+                                 "keyword rules the swarm planner uses (ai/native/orchestrator."
+                                 "DERIVED_BRANCH_RULES); an empty map means none matched"),
         "stage_verifications": stage_verifications,       # §5 — each stage verified/tested/validated (measured)
         # W436 (v10 item 1) — the denominator is what was ASSESSABLE, not what exists. "5/5" on a
         # fully floor-served run certified checks that cannot fail by construction; "0/0 assessable"
@@ -842,6 +893,32 @@ def body_served_by(prov: dict, agents: tuple = JOURNEY_BODY_AGENTS) -> dict:
             out[s] = out.get(s, 0) + 1
     return out
 
+
+
+# W506 (P2.8(1)) - how the journey renders a DERIVED branch as a stage. The keyword rules live in
+# ai/native/orchestrator (shared with the swarm tree, so the two cannot drift); what belongs here is the
+# stage's own prompt and the section structure `_verify_stage` measures it against, which is properly
+# different from a swarm node's task.
+_DERIVED_STAGE_SPECS = {
+    "risk": {
+        "agent": "genesis_risk",
+        "sections": ["Risks", "Compliance & Assurance", "Mitigations"],
+        "prompt": ("You are the IDBO Risk & Assurance engine. Assess THIS solution's risks and what assurance "
+                   "it needs.\n\n## Risks\n## Compliance & Assurance\n## Mitigations"),
+    },
+    "economics": {
+        "agent": "genesis_economics",
+        "sections": ["Costs", "Value", "Economic Viability"],
+        "prompt": ("You are the IDBO Economics engine. Assess this solution's costs, the value it creates and "
+                   "whether it is economically viable.\n\n## Costs\n## Value\n## Economic Viability"),
+    },
+    "implementation": {
+        "agent": "genesis_implementation",
+        "sections": ["Milestones", "Sequence", "Dependencies"],
+        "prompt": ("You are the IDBO Delivery Planner. Produce a concrete, sequenced plan to implement this "
+                   "solution.\n\n## Milestones\n## Sequence\n## Dependencies"),
+    },
+}
 
 _BODY_AGENTS = (("concept", "genesis_concept", "concept"),
                 ("design", "genesis_design", "design"),

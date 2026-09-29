@@ -16,6 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Sprout, Loader2, AlertCircle, ShieldCheck, ArrowRightLeft, Recycle } from 'lucide-react';
+import { fundingLabel } from '../../lib/api';
 
 // ── §6 Venture Portfolio ──────────────────────────────────────────────────────
 
@@ -74,8 +75,15 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
           <Sprout size={14} /> Venture Portfolio (§6) · returns recycle
         </h3>
-        {pf && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-          invested {(pf.invested_total ?? 0).toLocaleString()} WST · pending returns {(pf.pending_returns_wst ?? 0).toLocaleString()} WST
+        {/* W506 (P2.7(7)) — the label is ON the figure. "invested … WST" reads as capital deployed to the
+            named investees below, and no investee is ever credited: the position is the investor's own
+            record and nothing queues intake for the entity it names. The wording comes from the server's
+            funding_basis so this cannot drift from the API. */}
+        {pf && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400"
+                     title={fundingLabel(pf.funding_state, pf.funding_basis).full}>
+          invested {(pf.invested_total ?? 0).toLocaleString()} WST
+          <span className="text-amber-400"> ({fundingLabel(pf.funding_state, pf.funding_basis).short})</span>
+          {' · '}pending returns {(pf.pending_returns_wst ?? 0).toLocaleString()} WST
         </span>}
       </div>
       <p className="text-[10px] text-slate-500 font-bold mb-4">

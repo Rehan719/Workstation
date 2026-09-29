@@ -14519,10 +14519,16 @@ def test_w467_a_heartbeat_cycle_distributes_its_recognised_events_once(client, m
     real_record = VirtualLedger.record
 
     def _fails_at(account_name):
-        def _record(self, account, amount, memo="", kind="credit", ref=None):
+        # W506 — `source` added to match the producer. VirtualLedger.record gained it (P2.7(8): every
+        # posting names what moved the money) and this stub did not, so the cycle raised
+        # "unexpected keyword argument 'source'" and the test read that as the ledger write it was
+        # simulating — a stub thinner than its producer tests the stub. Kept EXPLICIT rather than
+        # absorbed into **kw on purpose: a stub that silently swallows a new argument stops reporting
+        # that the producer changed, and that report is worth a red run.
+        def _record(self, account, amount, memo="", kind="credit", ref=None, source=None):
             if account == account_name:
                 raise OSError(f"w467 the ledger write for {account_name} failed")
-            return real_record(self, account, amount, memo, kind, ref)
+            return real_record(self, account, amount, memo, kind, ref, source)
         return _record
     monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
     failed3 = lv.operate_vsb(h3)
@@ -15450,6 +15456,18 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     # outrank a stated reason; the row is still checked, against the stronger rule below.
     _ruled = [r for r in open_rows if (r.get("slot_source") or "").strip()]
     for _r in _ruled:
+        # W506 — the OWNER slot is exempt, because it is not an item: `followups.py add --slot OWNER` is the
+        # register's own way of saying "this waits on an Owner decision and is never scheduled", and the plan
+        # counts such rows separately ("1 awaiting the Owner"). Eight rows have used it; FU-300 is the first
+        # OPEN one since this guard was written, which is why the case had never been exercised.
+        # The rule's PURPOSE is kept rather than dropped: an OWNER row must still be flagged owner-gated and
+        # still say why it is there, so the slot cannot be used to park a row nobody will look at again.
+        if _r["slot"] == "OWNER":
+            assert _r.get("owner_gated") is True, (
+                _r["id"], "slotted OWNER without the owner-gated flag, so the plan will not count it as "
+                          "awaiting a decision")
+            assert (_r.get("slot_source") or "").strip(), (_r["id"], "an OWNER row must say why it is one")
+            continue
         assert _r["slot"] in open_slots, (_r["id"], _r["slot"], "a ruled slot must be an open item")
         assert (_r.get("note") or "").strip() or (_r.get("slot_source") or "").strip(), (
             _r["id"], "a deliberately placed row records why it is there")
@@ -16730,7 +16748,14 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
     paths.ensure_dirs()
     assert (tmp_path / "dirs" / "data_dir").is_dir() and sorted(p.name for p in (tmp_path / "dirs").iterdir()) == ["data_dir"]
     from agentic_core.reactor.domains.ontology_engine import OntologyEngine
-    assert OntologyEngine(str(tmp_path / "ont")).get_ontology("law") == {"nodes": [], "links": []}
+    # W506 (FU-077) — this asserted the exact dict {"nodes": [], "links": []}. The engine now also says
+    # WHY the graph is empty (`available: False` plus a basis naming the path it read), because an empty
+    # graph and an absent ontology were previously indistinguishable to every caller. The leg's own point
+    # is unchanged and checked below: a READER must not create the directory it reads.
+    _ont = OntologyEngine(str(tmp_path / "ont")).get_ontology("law")
+    assert _ont["nodes"] == [] and _ont["links"] == []
+    assert _ont["available"] is False and _ont.get("basis"), \
+        f"an absent ontology is served as an empty graph with no statement that it is absent: {_ont}"
     assert not (tmp_path / "ont").exists()
     gi = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert "genome/" in gi and "models/" in gi and "logs/" in gi
@@ -16777,14 +16802,24 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
     assert w and "cannot be compared" in w and "3 entries" in w, w                          # an unreadable store here never masks the legacy one
     monkeypatch.undo()
 
-    # ── (refutation 2) the one writer under models/ makes its directory and never reports a file that is not there ──
-    from agentic_core.biomimicry.geospheric.resilience import ResilienceManager
-    rm = ResilienceManager(model_path=str(tmp_path / "models" / "deep" / "resilience_lstm.json"))
-    assert rm._save_model() is True and (tmp_path / "models" / "deep" / "resilience_lstm.json").exists()
-    rm2 = ResilienceManager(model_path=str(tmp_path / "models" / "deep" / "resilience_lstm.json" / "x.json"))   # a file in the way
-    rm2.metric_history = [[0.1, 0.01, 0.2, 0.0, 1.0, 0.1]] * 12
-    out = rm2.train_model()
-    assert out["status"] == "TRAINED_NOT_SAVED" and out["model_path"] is None and out["saved"] is False, out
+    # ── (refutation 2) the one writer under models/ ──
+    # W506 (FU-078) — THIS LEG IS RETIRED WITH ITS SUBJECT. It guarded ResilienceManager's save behaviour in
+    # agentic_core/biomimicry/geospheric/resilience.py, which W506 deleted as unwired dead code: the row asked
+    # for exactly that, and reachability was established three ways before removing it — no dotted import, no
+    # same-package relative import, and no runtime name scan referenced it. This TEST was its only consumer,
+    # which is the shape of a module nothing in production reaches.
+    #
+    # The leg is removed rather than rewritten because its subject no longer exists. What it actually
+    # established — that a writer under models/ creates its directory and never reports a file it did not
+    # write — is kept below against a writer that IS reachable, so the property survives the module.
+    assert not (root / "agentic_core/biomimicry/geospheric/resilience.py").exists(), \
+        "resilience.py is back in the tree; restore its guard leg with it rather than leaving it unguarded"
+    _mp = tmp_path / "models" / "deep" / "w506_probe.json"
+    _mp.parent.mkdir(parents=True, exist_ok=True)
+    from agentic_core.config import atomic_write_json as _awj
+    _awj(_mp, {"probe": True})
+    assert _mp.exists() and json.loads(_mp.read_text(encoding="utf-8")) == {"probe": True}, \
+        "the shared atomic writer did not write the file it reported writing"
 
 def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkeypatch):
     """W475 — P1.17 The second truth pass (register FU-080…FU-093; ledger v4 R1.0, R1.1, R1.2, R2.0, R2.1, R3.0, R3.1,
@@ -24959,3 +24994,1015 @@ def test_w505_fu158_the_plan_opening_says_what_wrote_each_field():
     # and the fields nobody supplied are templates in both cases
     for _f in ("executive_summary", "vision", "mission", "strategy"):
         assert owner_said.get(_f) == "establish_template", (_f, owner_said.get(_f))
+
+
+def test_w506_p27_layers_state_per_layer_and_the_reachability_is_checked():
+    """P2.7(1) + P2.4/FU-160 (S3.8) — the biomimetic layers, per layer, with every claim checkable.
+
+    FOUR ROUNDS DISAGREED. W422 said three layers had no implementation system-wide; W434 called that false,
+    named three files and wrote a note vouching for them; W446 measured that vouching as the overclaim
+    ("Endocrine = an unimported PID file"); P2.7's body says "Cardiovascular and Endocrine not implemented".
+
+    W446 holds. The Endocrine regulator is real code with NO importer (and exists in two copies), the
+    Respiratory TriadIntegrator likewise, and "Cardiovascular" is `100 - cpu_percent` published under an
+    anatomical name. A FILE IS NOT AN IMPLEMENTATION IF NOTHING CALLS IT.
+
+    This guard exists because the W434 sentence was PROSE and nothing checked it. Here the reachability claim
+    is asserted against the tree: if a later round wires the Endocrine regulator, this test FAILS and the note
+    must be updated — which is exactly what the old sentence could not do.
+    """
+    import asyncio
+    import re
+    from pathlib import Path
+    from agentic_core.vbs import quality as Q
+
+    root = Path(__file__).resolve().parents[1]
+
+    # (1) every declared layer has a state, and no state is invented
+    assert set(Q.LAYER_STATE) == set(Q.BIOMIMETIC_LAYERS), (
+        sorted(set(Q.LAYER_STATE) ^ set(Q.BIOMIMETIC_LAYERS)))
+    allowed = {"engaged_with_value", "engaged_no_value", "implemented_not_on_this_path",
+               "measurement_under_this_name", "code_exists_unreached"}
+    bad = {l: v["state"] for l, v in Q.LAYER_STATE.items() if v["state"] not in allowed}
+    assert not bad, bad
+    for l, v in Q.LAYER_STATE.items():
+        assert v["basis"].strip(), f"{l} states no basis"
+
+    def _module_paths(basis):
+        return [m for m in re.findall(r"agentic_core/[\w/]+\.py", basis)]
+
+    def _importers(mod_path):
+        """Files that import THIS module — by its dotted path, or relatively from its own package.
+
+        W506 — the first version matched a bare STEM anywhere in an import line, and reported
+        change_control/regulator.py's importers as importers of biomimicry/geospheric/regulator.py. Two
+        different Regulator classes, one stem. Matching a name instead of a module is the trap my notes
+        call "grep the call, not the method name", and it appeared inside the guard written to stop a
+        claim rotting — an instrument that OVER-reports would have had me relabel an unreached layer as
+        wired.
+        """
+        dotted = mod_path.replace("/", ".")[: -len(".py")]
+        stem = Path(mod_path).stem
+        pkg = Path(mod_path).parent.as_posix()
+        rel_pat = re.compile(r"from\s+\.+\s*" + re.escape(stem) + r"\s+import\b"
+                             r"|from\s+\.+\s+import\s+(?:[^\n]*,\s*)?" + re.escape(stem) + r"\b")
+        hits = []
+        for p in root.joinpath("agentic_core").rglob("*.py"):
+            rel = p.relative_to(root).as_posix()
+            if rel == mod_path or "_archive" in rel:
+                continue
+            text = p.read_text(encoding="utf-8", errors="replace")
+            if dotted in text:
+                hits.append(rel)
+                continue
+            # a relative import counts ONLY from a file in the module's own package
+            if Path(rel).parent.as_posix() == pkg and rel_pat.search(text):
+                hits.append(rel)
+        return hits
+
+    # (2) a layer declared UNREACHED must have its module present and NO importer.
+    #     This is the leg that makes the claim falsifiable rather than decorative.
+    for layer, v in Q.LAYER_STATE.items():
+        if v["state"] != "code_exists_unreached":
+            continue
+        mods = _module_paths(v["basis"])
+        assert mods, f"{layer} claims code exists and names no module: {v['basis'][:90]}"
+        for m in mods:
+            assert (root / m).exists(), f"{layer} names {m}, which does not exist"
+        primary = mods[0]
+        imps = _importers(primary)
+        assert imps == [], (
+            f"{layer} is declared unreached and {primary} now HAS importers {imps} — if it was wired, "
+            f"quality.py's LAYER_STATE must say so instead of claiming nothing calls it")
+
+    # (3) a layer declared REACHABLE must have its module present and an importer
+    for layer, v in Q.LAYER_STATE.items():
+        if v["state"] != "implemented_not_on_this_path":
+            continue
+        mods = _module_paths(v["basis"])
+        assert mods, f"{layer} claims an implementation and names no module"
+        primary = mods[0]
+        assert (root / primary).exists(), f"{layer} names {primary}, which does not exist"
+        assert _importers(primary), (
+            f"{layer} is declared reachable but nothing imports {primary} — that is the "
+            f"code_exists_unreached state, not this one")
+
+    # (4) the W434 sentence is gone, and the note is BUILT from the states rather than written as prose
+    qsrc = (root / "agentic_core/vbs/quality.py").read_text(encoding="utf-8")
+    assert "all have real implementations" not in qsrc, "the vouching sentence survives"
+
+    out = asyncio.get_event_loop_policy().new_event_loop().run_until_complete(
+        Q.assure_delivery("## Summary\nA delivery with enough substance to be assessed at all, repeated "
+                          "so it clears the substantive floor. " * 6, ["Summary"], label="w506"))
+    bio = out["biomimetic"]
+    assert set(bio["layer_states"]) == set(Q.BIOMIMETIC_LAYERS), sorted(bio["layer_states"])
+    note = bio["layers_note"]
+    # the unreached layers must be NAMED in the note a reader sees, not only in a side field
+    for layer, v in Q.LAYER_STATE.items():
+        if v["state"] == "code_exists_unreached":
+            assert layer in note, f"{layer} is unreached and the note does not say so: {note[:200]}"
+    assert "NOTHING CALLS IT" in note, note[:200]
+    assert bio["layer_basis"]["Endocrine"].strip(), "the basis field is empty for Endocrine"
+
+    # (5) FU-160 S3.8 — the two TOOLTIPS are the same claim's other writers. Both said
+    # "7 biomimetic layers · {self}", a flat count of what is DECLARED, over a chip reporting one layer's
+    # health. A claim fixed in the writer while its readers assert the old one moves the untruth to the
+    # surface a person actually hovers.
+    app = root / "apps/workstation-superapp/src"
+    for rel in ("components/organism/SwarmIntelligence.tsx", "pages/synthesis/GenesisJourney.tsx"):
+        text = (app / rel).read_text(encoding="utf-8")
+        assert "7 biomimetic layers" not in text, f"{rel} still claims seven layers in its tooltip"
+        # the CALL, not the name: `layerTitle` is in the import line, so a bare-name check would pass over a
+        # page that imports the helper and never uses it (W505's blind B43 was exactly that shape)
+        assert "layerTitle(" in text, f"{rel} imports the shared helper but does not call it"
+    lib = (app / "lib/api.ts").read_text(encoding="utf-8")
+    assert "export const layerTitle" in lib, "the shared helper is gone"
+    assert "code_exists_unreached" in lib, \
+        "the tooltip helper no longer reports the layers whose code nothing calls"
+
+
+def test_w506_p22_no_bare_gateway_query_remains_and_every_call_states_its_recall():
+    """P2.2 — provenance to every surface. The bar is a COUNT, and it is counted by PARSING, not grepping.
+
+    The item states its bar as the `.query(` occurrences in agentic_core/api reaching zero. While converting the
+    eighteen sites I wrote that literal into three helper docstrings explaining the bar, and a text count read 3
+    over a tree with no such calls left. A text count over source files counts its own explanation, so this
+    guard walks the AST: a comment, a docstring or a string literal cannot satisfy it.
+
+    The second and third legs are what make the conversion worth anything. `augment` must be STATED at every
+    call — W489 found 29 generation callers that had inherited recall and prepended another request's content as
+    analysis of their own subject, and an inherited default is exactly what let that go unnoticed. And the
+    provenance must REACH a response, or the conversion only moved a value into a local nobody reads.
+    """
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    api = root / "agentic_core" / "api"
+
+    bare, unstated = [], []
+    for p in sorted(api.rglob("*.py")):
+        tree = ast.parse(p.read_text(encoding="utf-8"))
+        for n in ast.walk(tree):
+            if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)):
+                continue
+            target = ast.dump(n.func.value)
+            if "gateway" not in target:
+                continue
+            rel = p.relative_to(root).as_posix()
+            if n.func.attr == "query":
+                bare.append(f"{rel}:{n.lineno}")
+            elif n.func.attr == "query_meta":
+                if not any(k.arg == "augment" for k in n.keywords):
+                    unstated.append(f"{rel}:{n.lineno}")
+
+    assert bare == [], (
+        f"P2.2's bar is that no bare text-only gateway call remains in agentic_core/api; these are calls, "
+        f"parsed from the AST rather than grepped: {bare}")
+    assert unstated == [], (
+        f"these provenance calls do not STATE their recall decision, so they inherit a default — the condition "
+        f"that let 29 callers prepend another request's content unnoticed (W489): {unstated}")
+
+    # the conversion must reach a RESPONSE, not just a local. Four of the surfaces P2.2 names, by their fields.
+    reaches = {
+        "agentic_core/api/ai_query.py": '"served_by": _r.get("served_by")',
+        "agentic_core/api/products.py": '"served_by": _fr.get("served_by")',
+        "agentic_core/api/integration_surface.py": '"served_by": _served',
+        "agentic_core/api/sovereign_evolution.py": "def _prov_snapshot",
+    }
+    for rel, needle in reaches.items():
+        text = (root / rel).read_text(encoding="utf-8")
+        assert needle in text, f"{rel} converted the call and the provenance reaches no response"
+
+    # sovereign_evolution kept NO provenance before this round, and P2.2 names its badge surface. Its snapshot
+    # must distinguish "no call was made" from "the floor served it" — a fall-through is not a reading.
+    se = (root / "agentic_core/api/sovereign_evolution.py").read_text(encoding="utf-8")
+    assert "an empty map means no AI call was made" in se, \
+        "the provenance snapshot does not say what an empty map means"
+
+
+def test_w506_p27_a_burst_reacts_between_beats_and_the_arcs_are_registered():
+    """P2.7(2) — reflexes REGISTERED from the heartbeat's checks, driven by firing one.
+
+    The criterion says the bar is a guard that FIRES one, not the registration existing, because
+    `NervousSystem.register_reflex` had been fully implemented since it was written and had zero callers:
+    `reflex_arcs_registered` was 0 for the platform's whole life, so the heartbeat's three threshold checks
+    ran only inside beat() and a burst at the start of an interval waited out the interval.
+
+    This test never calls beat(). It asserts the reaction happened off the rhythm.
+    """
+    from agentic_core.organism.heartbeat import heartbeat
+    from agentic_core.organism.nervous import nervous
+
+    # DRIVEN, not observed: the arcs are cleared so the registration under test is the one that runs, and
+    # the reaction counted is the one this test caused. Restored in the finally.
+    saved_arcs = list(getattr(nervous, "_reflex_arcs", []))
+    saved_reactions, saved_last = heartbeat.reflex_reactions, heartbeat.last_reflex
+    nervous._reflex_arcs = []
+    heartbeat.reflex_reactions, heartbeat.last_reflex = 0, None
+    try:
+        # RED, and it is REACHABLE: with nothing registered a burst reacts to nothing. This is not the
+        # ambient environment — the line above put the bus in this state.
+        for i in range(20):
+            nervous.fire("reflex", f"guard.w506.unregistered.{i}", "", 0.9)
+        assert heartbeat.reflex_reactions == 0, \
+            "a reaction occurred with no arc on the bus, so this test cannot show the red"
+
+        reg = heartbeat.register_reflexes()
+        assert len(reg["registered"]) == len(heartbeat.REFLEX_ARCS), ("not every declared arc registered", reg)
+        # the count is read from the BUS, not from the declaration: a registration that failed must not be
+        # reported as one that succeeded.
+        assert heartbeat.status()["reflex_arcs_registered"] == len(heartbeat.REFLEX_ARCS)
+
+        # idempotent — start() may be called more than once, and a duplicated arc responds twice to one burst
+        again = heartbeat.register_reflexes()
+        assert not again["registered"] and len(again["already_registered"]) == len(heartbeat.REFLEX_ARCS), \
+            f"register_reflexes is not idempotent, so a restart would duplicate the arcs: {again}"
+        assert heartbeat.status()["reflex_arcs_registered"] == len(heartbeat.REFLEX_ARCS)
+
+        beats_before = heartbeat.beats
+        for i in range(20):
+            nervous.fire("reflex", f"guard.w506.registered.{i}", "", 0.9)
+
+        assert heartbeat.beats == beats_before, \
+            "a beat ran during this test, so it no longer proves the BETWEEN-beats path"
+        assert heartbeat.reflex_reactions > 0, (
+            "the burst crossed the arc threshold and nothing reacted — the registration exists and does not "
+            "drive the check, which is the state P2.7(2) exists to end")
+        assert heartbeat.last_reflex, "a reaction was counted and left no trace"
+        # the responder RAN, rather than an arc firing an empty callback: `read` is set by the responder
+        # only after it has read the real state.
+        assert heartbeat.last_reflex["result"].get("read") is True, \
+            f"the arc fired but its responder read nothing: {heartbeat.last_reflex}"
+
+        # ...and the instance the SURFACE reads is the one that reacted (W503: a reload splits a singleton)
+        st = heartbeat.status()
+        assert st["reflex_reactions"] == heartbeat.reflex_reactions
+        assert st["last_reflex"] == heartbeat.last_reflex, \
+            "the reaction is on the instance and /status reports a different one"
+    finally:
+        nervous._reflex_arcs = saved_arcs
+        heartbeat.reflex_reactions, heartbeat.last_reflex = saved_reactions, saved_last
+
+    # every declared arc names a responder that EXISTS and is callable — a declaration naming a missing
+    # method would register an arc that raises into register_reflex's swallowed except
+    for arc in heartbeat.REFLEX_ARCS:
+        assert callable(getattr(heartbeat, arc["responder"], None)), \
+            f"the arc {arc['name']} declares a responder that is not callable: {arc['responder']}"
+
+    # the threshold must sit ABOVE the resting rate: one beat fires a single "reflex" pulse, so an arc at 1
+    # would be tripped by the rhythm itself and the count would measure beats rather than bursts.
+    for arc in heartbeat.REFLEX_ARCS:
+        assert arc["threshold"] > 1, f"the arc {arc['name']} would be tripped by the heartbeat's own pulse"
+
+
+def test_w506_p27_the_compliance_roster_reports_what_the_heartbeat_wrote():
+    """P2.7(6) — living-VSB compliance keys align across their writers and readers.
+
+    MEASURED: the roster asked each history entry for `screened_at` (never written) then `at` (written only
+    INSIDE a history item), while the heartbeat persists the timestamp as `last_at`; and it asked for
+    `verdicts`, which the writer had in hand from screen_compliance and dropped. So every screened entity
+    reported screened_at=null and verdicts=[], indistinguishable from one never screened, while
+    `never_screened` — computed from `overall`, which IS written — read correctly beside them.
+
+    Driven end to end, because both keys were PRESENT in both files and merely disagreed: no presence check
+    over either side could see this.
+    """
+    import json as _json
+    from agentic_core.economy import living_vsbs as LV
+    from agentic_core.organism.heartbeat import screen_living_vsb
+
+    vsb_id = "guard-w506-p276"
+    d = LV._load() if LV._STORE.exists() else {}
+    d[vsb_id] = {"vsb_id": vsb_id, "name": "Guard Bakery", "registered_at": "2026-09-29T00:00:00Z",
+                 "challenge": "a bakery serving the local community"}
+    LV._save(d)
+    try:
+        screened = screen_living_vsb(vsb_id)
+        assert screened and screened.get("overall"), ("the screen did not run", screened)
+
+        row = [r for r in LV.list_living()["living_vsbs"] if r.get("vsb_id") == vsb_id][0]
+        c = row["compliance"]
+        assert c["verdict"], "the roster lost the overall the screen recorded"
+        assert c["screened_at"], (
+            "screened_at is empty for an entity just screened — the reader and the writer do not agree on "
+            "the timestamp key, which is the defect P2.7(6) names")
+        assert c["verdicts"], (
+            "verdicts is empty for an entity just screened — the writer does not persist what the reader asks "
+            "for, so the field could never be filled")
+        assert all(isinstance(v, dict) and v.get("framework") for v in c["verdicts"]), \
+            f"a persisted verdict carries no framework: {c['verdicts']}"
+        assert c["never_screened"] is False, \
+            f"never_screened disagrees with a verdict that is present: {c['never_screened']}"
+
+        # the coverage statement TRAVELS with the verdicts. A per-framework status list rendered without a
+        # statement of what was actually assessed overstates itself: these screens can refuse and escalate
+        # but cannot clear, so `assessed_by` is the field that says whether anything cleared anything.
+        assert c["coverage_gaps"] is not None, "the verdicts arrive with no coverage statement"
+        assert c["assessed_by"] is not None, "the verdicts arrive with no statement of what assessed them"
+
+        # ...and it is in the STORE, not computed on the way out — read raw, so this is not the same helper
+        # that produced it answering for itself.
+        raw = _json.loads(LV._HISTORY.read_text(encoding="utf-8"))[vsb_id]
+        assert raw.get("last_at"), f"the store holds no timestamp under the key the reader uses: {sorted(raw)}"
+        assert raw.get("verdicts"), f"the store holds no verdicts: {sorted(raw)}"
+        # the OLD reader expression must still come up empty against the new store — otherwise the red this
+        # criterion describes was never reachable and the alignment proves nothing.
+        assert (raw.get("screened_at") or raw.get("at")) is None, (
+            "the old key is present in the store, so the misalignment this asserts was never the condition")
+    finally:
+        d = LV._load() if LV._STORE.exists() else {}
+        d.pop(vsb_id, None)
+        LV._save(d)
+
+
+def test_w506_p27_the_organism_engages_its_own_defence_and_the_reversal_is_driven():
+    """P2.7(3) — immune_reconfigure engages at >=HIGH through Change Control and is REVERSIBLE, driven.
+
+    TWO defects, both measured before this round:
+
+    (a) `POST /api/v1/cca/immune-reconfigure` was fully built and had NO caller in the tree, so the organism's
+        innate defence was a button: a HIGH threat sat until an admin pressed it.
+    (b) the record carried `"rollback_plan": "Revert {section}.{key} to its prior value via /config/update."`
+        and NOTHING stored that prior value. A sentence describing a rollback is not a rollback — the record
+        asserted "defensive, reversible" in three places while no mechanism could revert it.
+
+    So the criterion says the reversal must be DRIVEN. This reads the real config store three times: before,
+    after the defence, and after the revert. A test that only asserted `reversible is True` would have passed
+    against the sentence.
+    """
+    from agentic_core.organism.heartbeat import heartbeat
+    from agentic_core.organism.immune import immune
+    from agentic_core.api.change_control import _immune_threat, engage_immune_defence, revert_immune_defence
+    from agentic_core.organism.reconfiguration import _load_config
+
+    def lever(section, key):
+        return (_load_config().get(section) or {}).get(key)
+
+    # the scale is ORDERED, not compared as words: "HIGH" > "CRITICAL" alphabetically, so a string
+    # comparison would engage at HIGH and skip the worst case, silently and in the direction that matters.
+    assert heartbeat.THREAT_ORDER.index("CRITICAL") > heartbeat.THREAT_ORDER.index("HIGH")
+    assert heartbeat.DEFEND_AT in heartbeat.THREAT_ORDER
+
+    # RED, and DRIVEN into being: below the threshold nothing engages, and the responder says why rather
+    # than returning a bare False a caller would have to interpret.
+    below = heartbeat.respond_to_threat()
+    if below["threat"] and heartbeat.THREAT_ORDER.index(below["threat"]) < heartbeat.THREAT_ORDER.index("HIGH"):
+        assert below["engaged"] is False and "below" in (below["why_not"] or ""), \
+            f"a sub-threshold threat engaged a defence, or gave no reason: {below}"
+
+    # ── the reversal, against the real store ─────────────────────────────────────────────────────────────
+    # DRIVEN to a known value first. Reading whatever the store happens to hold makes this leg vacuous when
+    # the lever is already where the defence would put it: `before` would equal the defended value and a
+    # revert that restored NOTHING would satisfy the assert below. A blind proved exactly that.
+    from agentic_core.organism.reconfiguration import apply_config_change as _apply
+    _apply("organism", "metabolic_throttle", False, reason="w506 guard precondition", updated_by="guard.w506")
+    before = lever("organism", "metabolic_throttle")
+    assert before is False, f"the precondition did not take, so the revert leg cannot discriminate: {before}"
+    res = engage_immune_defence("HIGH", requested_by="guard.w506", requested_by_verified=False)
+    assert res["threat_level"] == "HIGH"
+    assert res["reversible"] is True, \
+        f"the prior value was not captured, so nothing can revert this — the rollback is still prose: {res}"
+    assert res["reverts_to"]["value"] == before, \
+        f"the captured value is not what the store held: {res['reverts_to']} vs {before}"
+    assert lever("organism", "metabolic_throttle") is True, "the defence did not move the lever"
+
+    rev = revert_immune_defence(res["cca_id"], reason="guard")
+    assert rev["reverted"] is True, f"the revert refused: {rev}"
+    assert lever("organism", "metabolic_throttle") == before, (
+        "the lever did NOT return to its prior value — the reversal is still a sentence, which is exactly "
+        "what P2.7(3) requires be driven")
+
+    # reverting twice must REFUSE rather than re-apply a stale value over whatever is there now
+    again = revert_immune_defence(res["cca_id"])
+    assert again["reverted"] is False and "already reverted" in (again["reason"] or ""), \
+        f"a second revert was not refused: {again}"
+    # ...and an unknown record refuses rather than guessing a default
+    assert revert_immune_defence("cca-w506-does-not-exist")["reverted"] is False
+
+    # ── the heartbeat engages on its OWN reading, not on a simulate_threat argument ───────────────────────
+    # A guard that passed simulate_threat would prove the route works, which was never in doubt. The threat
+    # is driven up through the immune system's own recording so the organism READS it.
+    saved_defence, saved_beat = heartbeat.last_immune_defence, heartbeat._last_defence_beat
+    heartbeat.last_immune_defence, heartbeat._last_defence_beat = None, None
+    try:
+        reached = None
+        for i in range(300):
+            immune.record(f"guard.w506.threat.{i % 7}", "ai_failure")
+            t = _immune_threat()
+            if heartbeat.THREAT_ORDER.index(t) >= heartbeat.THREAT_ORDER.index(heartbeat.DEFEND_AT):
+                reached = t
+                break
+        assert reached, \
+            "the immune system never reached the defence threshold, so this cannot drive the case"
+
+        # driven here too, for the same reason
+        _apply("organism", "metabolic_throttle", False, reason="w506 guard precondition",
+               updated_by="guard.w506")
+        before2 = lever("organism", "metabolic_throttle")
+        assert before2 is False, f"the precondition did not take: {before2}"
+        out = heartbeat.respond_to_threat()
+        assert out["engaged"] is True, \
+            f"the organism read {reached} and did not engage its defence: {out}"
+        d = heartbeat.last_immune_defence
+        assert d and d["threat"] == reached and d["cca_id"], f"the engagement left no record: {d}"
+        assert d["reversible"] is True and d["revert_with"], \
+            f"the organism engaged a defence it cannot undo: {d}"
+        assert lever("organism", d["reconfiguration"]["key"]) == d["reconfiguration"]["value"], \
+            "the reported reconfiguration is not what the store holds"
+
+        # the surface reports it, on the instance that reacted (W503: a reload splits a singleton)
+        st = heartbeat.status()
+        assert st["last_immune_defence"] == d and st["defends_at"] == heartbeat.DEFEND_AT
+
+        # the COOLDOWN holds: engage_immune_defence writes a record and moves a live lever, so a sustained
+        # threat must not submit one per beat.
+        second = heartbeat.respond_to_threat()
+        assert second["engaged"] is False and "cooldown" in (second["why_not"] or ""), \
+            f"a sustained threat would submit a change every beat: {second}"
+
+        # ...and the organism can undo what it did to itself
+        assert revert_immune_defence(d["cca_id"], reason="guard")["reverted"] is True
+        assert lever("organism", d["reconfiguration"]["key"]) == before2, \
+            "the organism's own defence could not be undone"
+    finally:
+        heartbeat.last_immune_defence, heartbeat._last_defence_beat = saved_defence, saved_beat
+
+    # CRITICAL must engage too, and this leg is why the scale is a list rather than a comparison: under
+    # `threat >= DEFEND_AT` the words compare as "CRITICAL" < "HIGH", so the WORST case would be the one
+    # silently skipped. Driven by patching the reading, because the immune system cannot be pushed to
+    # CRITICAL reliably inside a test and the subject here is the comparison, not the immune thresholds.
+    import agentic_core.api.change_control as _cc
+    _real = _cc._immune_threat
+    saved_defence2, saved_beat2 = heartbeat.last_immune_defence, heartbeat._last_defence_beat
+    _cc._immune_threat = lambda: "CRITICAL"
+    heartbeat.last_immune_defence, heartbeat._last_defence_beat = None, None
+    try:
+        crit = heartbeat.respond_to_threat()
+        assert crit["engaged"] is True, (
+            f"CRITICAL did not engage a defence while HIGH did — the threat test is comparing WORDS, and "
+            f"'CRITICAL' sorts below 'HIGH', so the worst case is the one being skipped: {crit}")
+        assert crit["threat"] == "CRITICAL"
+        _cid = heartbeat.last_immune_defence["cca_id"]
+    finally:
+        _cc._immune_threat = _real
+        revert_immune_defence(_cid, reason="guard")
+        heartbeat.last_immune_defence, heartbeat._last_defence_beat = saved_defence2, saved_beat2
+
+    # the reflex path and the governed path are ONE body of code: the route must DELEGATE to the core, or
+    # the two drift the first time either changes (W475). Asserted on the AST, not on the source text.
+    import ast
+    import pathlib
+    src = (pathlib.Path(__file__).resolve().parents[1] / "agentic_core/api/change_control.py").read_text(
+        encoding="utf-8")
+    tree = ast.parse(src)
+    route = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+             and n.name == "immune_reconfigure"][0]
+    calls = [c.func.id for c in ast.walk(route) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]
+    assert "engage_immune_defence" in calls, \
+        "the route no longer delegates to the core the heartbeat calls, so the two paths can diverge"
+    # and the route body is a delegation, not a second copy: the levers table is read in ONE place
+    assert len([n for n in ast.walk(route) if isinstance(n, ast.Subscript)
+                and isinstance(n.value, ast.Name) and n.value.id == "_IMMUNE_DEFENCE"]) == 0, \
+        "the route reads the defence table itself again — that is the second writer P2.7(3) removed"
+
+
+def test_w506_p27_venture_positions_are_labelled_unfunded_on_every_figure():
+    """P2.7(7) — venture positions are labelled "recorded, unfunded", on the figure a reader sees.
+
+    MEASURED (W446 ledger R6.4, reproduced live twice): a cycle records positions against NAMED living VSBs
+    and no investee is ever credited — `_record_positions_locked` writes the investor's holdings and nothing
+    else, while `transfers.record_transfer` beside it queues the receiver's intake. A 21.26 WST position
+    arrived nowhere. The board pack meanwhile rendered "Venture portfolio (§6) 105 WST · 5 positions" with
+    those names, as if capital had been deployed.
+
+    P2.7(7) allows either arm; W506 took the LABEL arm and registered the funding arm as FU-300 for the Owner,
+    because funding needs a credit-only money path that does not exist and changes where the economy's virtual
+    money flows. This guard therefore checks the label, and checks it on the FIGURE — which is the part the
+    criterion spells out and the part a payload-only check would miss.
+    """
+    import json as _json
+    import pathlib
+    from agentic_core.economy.ventures import VentureIntelligence, portfolio, _UNFUNDED_BASIS
+
+    # the statement exists ONCE, server-side, and says the thing that matters: not "no real funds" (which was
+    # already there and was not the gap) but that the named investee is not credited.
+    assert "not credited" in _UNFUNDED_BASIS.lower() or "NOT credited" in _UNFUNDED_BASIS, _UNFUNDED_BASIS
+
+    # every surface that carries a WST figure carries the state, and takes its WORDING from the server
+    alloc = VentureIntelligence().allocate(105.0)
+    assert alloc["funding_state"] == "recorded_unfunded"
+    assert alloc["funding_basis"] == _UNFUNDED_BASIS
+    # ...and on every POSITION, because a position travels away from this response
+    assert alloc["positions"] and all(p["funding_state"] == "recorded_unfunded" for p in alloc["positions"]), \
+        "a position can be read on its own and does not say it funds nobody"
+
+    pf = portfolio("w506-guard-no-such-vsb")
+    assert pf["funding_state"] == "recorded_unfunded" and pf["funding_basis"] == _UNFUNDED_BASIS, \
+        "the empty portfolio does not say it — the state must not depend on there being holdings"
+
+    # ...and the POPULATED response, which is a DIFFERENT return statement and the one a real reader hits.
+    # A blind that removed the state from only this branch left this test green, because it checked the empty
+    # branch alone: two returns are two writers.
+    from agentic_core.economy.ventures import record_positions
+    _pv = "w506-guard-portfolio"
+    record_positions(_pv, alloc)
+    pf2 = portfolio(_pv)
+    assert pf2.get("invested_total"), f"the probe did not populate a portfolio, so the branch is untested: {pf2}"
+    assert pf2["funding_state"] == "recorded_unfunded" and pf2["funding_basis"] == _UNFUNDED_BASIS, \
+        "the POPULATED portfolio prints an invested total with no statement that no investee was credited"
+
+    # the RESIDUAL: each share was rounded independently, so the positions did not sum to the budget
+    # (measured 100.0 -> 100.01 and 33.33 -> 33.32, a cent created and a cent destroyed). Harmless while
+    # nothing is funded and money the moment anything is, so it is checked now.
+    for budget in (105.0, 100.0, 33.33, 0.07, 7.77, 1.0):
+        a = VentureIntelligence().allocate(budget)
+        got = round(sum(p["amount_wst"] for p in a["positions"]), 2)
+        assert got == a["budget_wst"], \
+            f"the positions sum to {got} against a budget of {a['budget_wst']} — virtual money is being " \
+            f"created or destroyed by rounding, which becomes real the moment the funding arm is taken"
+
+    # the FIGURE. Both surfaces that print a WST total must print the state beside it, and must take the
+    # wording from the server rather than restating it — a mirrored rule is the second writer that drifts.
+    root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    panel = (root / "pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
+    pack = (root / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    api = (root / "lib/api.ts").read_text(encoding="utf-8")
+
+    assert "export const fundingLabel" in api, "the shared helper is gone, so each surface words it itself"
+    # the helper must PASS THROUGH the server's basis, not hold its own copy of the sentence
+    assert "fundingBasis ||" in api, \
+        "fundingLabel does not carry the server's own wording, so the two can drift"
+    # ...and it must have a state for "the server said nothing", which is not the funded case
+    assert "funding not stated" in api, \
+        "fundingLabel invents an answer when the server states none — an older response that predates the " \
+        "field is not evidence that the investee was funded"
+
+    for name, text in (("the portfolio panel", panel), ("the board pack", pack)):
+        assert "fundingLabel(" in text, f"{name} prints a WST total with no funding state on it"
+        # RENDERED, not a tooltip. Both surfaces also pass `.full` to a `title=` attribute, and a blind that
+        # deleted the visible span left this test green on that attribute alone — a badge in the DOM is not a
+        # label on the text, and a title nobody hovers is not a disclosure. So a `.short` call must appear on
+        # a line that is NOT an attribute assignment.
+        rendered = [l for l in text.splitlines()
+                    if "fundingLabel(" in l and ".short" in l and "title=" not in l]
+        assert rendered, (
+            f"{name} passes the funding state only to a title attribute — the label must be RENDERED beside "
+            f"the figure, which is what P2.7(7) means by 'on the figure a reader sees'")
+        # the call must read the data, not a literal: fundingLabel('recorded_unfunded') would print the
+        # label whatever the server said
+        assert "fundingLabel('" not in text and 'fundingLabel("' not in text, \
+            f"{name} passes a LITERAL to fundingLabel, so the label no longer reports the server's answer"
+        assert "funding_state" in text, f"{name} does not read the server's funding_state"
+
+
+def test_w506_p27_every_posting_names_what_moved_the_money():
+    """P2.7(8) — ledger postings are tagged by source and the board pack splits them by that tag.
+
+    MEASURED: a posting was `{ts, debit, credit, amount, memo}`. A cycle's intake, its costs, its reserve,
+    each waterfall stage, an inter-VSB transfer and a period close were indistinguishable except by reading
+    the memo PROSE, which is a sentence written per call site — so a reader could not ask how much of a
+    figure came from transfers rather than from cycles.
+
+    The tag went on `_apply_posting`, NOT on `post`: transfers.py calls `_apply_posting` directly, and
+    tagging `post` alone would have left every inter-VSB debit untagged. This drives a real cycle AND a real
+    transfer for exactly that reason (W489: grep the call, not the method name).
+    """
+    from fastapi.testclient import TestClient
+    from agentic_core.app_mvp import app
+    from agentic_core.economy import living_vsbs as LV
+    from agentic_core.economy.ledger import VirtualLedger
+
+    a, b = "w506g-alpha", "w506g-beta"
+    for n in (a, b):
+        LV.register(n, name=n)
+    try:
+        c = TestClient(app)
+        assert c.post("/api/v1/economy/cycle",
+                      json={"vsb_id": a, "revenue": 1000.0, "costs": 100.0}).status_code == 200
+        tr = c.post("/api/v1/economy/transfer",
+                    json={"from_vsb": a, "to_vsb": b, "amount": 25.0, "memo": "w506 guard"})
+        assert tr.status_code == 200, f"the transfer did not run, so the bypass path is untested: {tr.text[:200]}"
+
+        pack = c.get(f"/api/v1/economy/board-pack?vsb_id={a}")
+        assert pack.status_code == 200, pack.text[:200]
+        split = pack.json()["ledger"]["by_source"]
+        assert "unavailable" not in split, f"the books could not be read: {split}"
+
+        srcs = {r["source"]: r for r in split["by_source"]}
+        for want, amount in (("cycle_intake", 1000.0), ("cycle_costs", 100.0)):
+            assert want in srcs, f"the cycle did not tag {want}: {sorted(srcs)}"
+            assert srcs[want]["total_wst"] == amount, (want, srcs[want])
+        for want in ("cycle_reserve", "cycle_distribution"):
+            assert want in srcs, f"the cycle did not tag {want}: {sorted(srcs)}"
+        # THE POINT OF THE CHOKEPOINT: this path calls _apply_posting directly and would be untagged if the
+        # tag had gone on post()
+        assert "inter_vsb_transfer" in srcs, \
+            f"the transfer posted without a source — the tag is not at the chokepoint: {sorted(srcs)}"
+        assert srcs["inter_vsb_transfer"]["total_wst"] == 25.0, srcs["inter_vsb_transfer"]
+
+        assert split["unknown_sources"] == [], \
+            f"a caller used a source outside POSTING_SOURCES: {split['unknown_sources']}"
+        assert all(r["declared"] for r in split["by_source"])
+
+        # UNTAGGED is reported as untagged, never attributed. Driven: a posting is written with no source,
+        # and the split must count it under not_stated rather than under any real one.
+        led = VirtualLedger(a)
+        before = led.postings_by_source()["not_stated"]["count"]
+        led.post("cash", "reserve_fund", 3.0, memo="w506 guard: a caller that states no source")
+        after = led.postings_by_source()
+        assert after["not_stated"]["count"] == before + 1, \
+            "an untagged posting was not counted as untagged — it has been attributed to some source"
+        assert after["not_stated"]["total_wst"] >= 3.0
+        assert after["tagged_share"] is not None and after["tagged_share"] < 1.0, \
+            "tagged_share still reads as fully tagged with an untagged posting in the books"
+
+        # the split must RECONCILE — checked HERE, with an untagged posting present. Asserted before this
+        # point it was vacuous: with nothing untagged, a total that omitted the untagged group agreed anyway.
+        tot = round(sum(r["total_wst"] for r in after["by_source"]) + after["not_stated"]["total_wst"], 2)
+        assert tot == after["total_wst"], \
+            f"the split does not sum to its own total: {tot} vs {after['total_wst']} — the untagged group is " \
+            f"counted and then left out of the figure that claims to cover everything"
+
+        # every value the ledger DECLARES must be one something can emit: a declared source with no producer
+        # tells a reader a source exists that cannot appear. "transfer_repair" was removed for exactly this.
+        assert "transfer_repair" not in VirtualLedger.POSTING_SOURCES, \
+            "transfer_repair is declared and nothing emits it — a repaired leg credits the pending queue, " \
+            "not the books"
+    finally:
+        d = LV._load() if LV._STORE.exists() else {}
+        for n in (a, b):
+            d.pop(n, None)
+        LV._save(d)
+
+
+def test_w506_p27_the_platform_boots_with_torch_absent():
+    """P2.7(5) — the torch import is lazy, proven by a boot test with sys.modules['torch'] = None.
+
+    MEASURED BEFORE THE FIX:
+        python -c "import sys; sys.modules['torch']=None; import agentic_core.app_mvp"
+        -> ModuleNotFoundError: import of torch halted; None in sys.modules
+
+    Two top-level `import torch` statements, both in WIRED modules:
+        governance/gaas/adapters/entropy_regularised_gaas -> biomimicry/.../optimal_transport
+        avatars/__init__ -> recirculation_orchestrator -> uci_interceptor -> recursive_meta_learner
+                         -> mjm/hd_omni_learner
+    (hd_omni_learner's importer is a RELATIVE import, so a dotted-path search alone reported it unimported.)
+
+    The state is FORCED rather than observed. torch happens to be absent in some environments, and a test that
+    merely imported the app there would pass for the wrong reason and go green in an environment where the
+    regression it guards is live. A SUBPROCESS is used because setting sys.modules['torch'] = None in-process
+    would poison every later test in this file.
+    """
+    import ast
+    import subprocess
+    import sys
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    # `None` in sys.modules makes `import torch` raise ModuleNotFoundError even when torch IS installed —
+    # that is what makes this drive the case rather than depend on the environment.
+    script = (
+        "import sys\n"
+        "sys.modules['torch'] = None\n"
+        "import agentic_core.app_mvp as m\n"
+        "assert m.app is not None\n"
+        # the two modules the chain runs through must import too, not merely be skipped
+        "import agentic_core.biomimicry.minimisation.core.optimal_transport as ot\n"
+        "import agentic_core.mjm.hd_omni_learner as hd\n"
+        "assert callable(ot._torch) and callable(hd._torch)\n"
+        # ...and the refusal, when the one function that needs torch is reached, must NAME what is missing
+        "try:\n"
+        "    ot._torch()\n"
+        "    raise SystemExit('_torch() returned a module while torch was blocked')\n"
+        "except RuntimeError as e:\n"
+        "    assert 'PyTorch' in str(e), str(e)\n"
+        "print('BOOTED')\n"
+    )
+    p = subprocess.run([sys.executable, "-c", script], cwd=str(root), capture_output=True, text=True,
+                       timeout=600)
+    assert "BOOTED" in (p.stdout or ""), (
+        "the platform does not boot with torch absent, which breaks the §17.5 torch-optionality invariant:\n"
+        f"stdout={p.stdout[-800:]}\nstderr={p.stderr[-1600:]}")
+
+    # and no module may reintroduce a TOP-LEVEL torch import. Checked on the AST, because a source search for
+    # "import torch" matches the lazy import inside `_torch()` too — which is the whole point of it.
+    offenders = []
+    for path in (root / "agentic_core").rglob("*.py"):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        for node in tree.body:          # TOP LEVEL only — a function-body import is the lazy pattern
+            if isinstance(node, ast.Import) and any(a.name.split(".")[0] == "torch" for a in node.names):
+                offenders.append(f"{path.relative_to(root).as_posix()}:{node.lineno}")
+            elif isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] == "torch":
+                offenders.append(f"{path.relative_to(root).as_posix()}:{node.lineno}")
+            elif isinstance(node, ast.Try):
+                # a guarded top-level import is acceptable: it cannot stop the module loading
+                continue
+    assert offenders == [], (
+        f"these modules import torch at the TOP LEVEL, so importing the platform requires it: {offenders}")
+
+
+def test_w506_p27_the_atp_figure_is_labelled_and_its_dead_branch_says_so():
+    """P2.7(4) — the ATP arm, taken WHOLLY: every figure is labelled, and the survival branch says it cannot fire.
+
+    P2.7(4) offers two arms and forbids half of each. MEASURED FROM THE ARITHMETIC, which is what decided it:
+
+        ATPSimulator.update:  consumption = 0.1 * metabolic_load   (load clamped 0-1 -> at most 0.1)
+                              production  = 0.5 * circadian_efficiency
+        biobus._update_atp:   efficiency = 1.0 if ACTIVE_FOCUS else 0.8   <- nothing lower exists
+
+    So production is at least 0.4 against a consumption of at most 0.1: the ratio only RISES to its ceiling.
+    Consumption cannot exceed production, so the first arm is not the state of this code, and the label arm is
+    the honest one.
+
+    TWO defects that followed, both fixed this round:
+      · the basis said the figure never depletes because it is "floored at 0.5 of 15". The floor NEVER BINDS.
+        A basis naming a mechanism that never operates is the W494 class — and it is the reason this test
+        checks the COMPUTED state rather than the sentence.
+      · the heartbeat's energy branch fires below 0.3 and the figure cannot reach 0.3 — a dead branch, which
+        P2.7(4) says must be removed "until the branch can fire". It now reports that, derived, so it starts
+        working by itself if the constants change.
+    """
+    from agentic_core.organism.biobus import atp_depletion_state
+    from agentic_core.organism.heartbeat import heartbeat
+
+    dep = atp_depletion_state()
+    # the arithmetic, asserted as arithmetic — not the words about it
+    assert dep["max_consumption_per_tick"] == 0.1
+    assert dep["min_production_per_tick"] == round(0.5 * min(dep["efficiencies_this_code_passes"]), 4)
+    assert dep["can_deplete"] is (dep["max_consumption_per_tick"] > dep["min_production_per_tick"]), \
+        "can_deplete is asserted rather than computed from the two rates beside it"
+    assert dep["can_deplete"] is False, \
+        "consumption can now exceed production, so P2.7(4)'s FIRST arm is available — the label arm's copy " \
+        "about not depleting must then be revisited rather than left standing"
+
+    # the branch, DRIVEN: it must refuse and say why, rather than silently never firing
+    out = heartbeat.respond_to_energy()
+    assert out["read"] is True
+    assert out["threshold"] == heartbeat.ENERGY_THRESHOLD
+    assert out["can_deplete"] is False and out["recovered"] is False
+    assert out["why_not"] and "cannot fall" in out["why_not"], \
+        f"the dead branch does not say it cannot fire: {out}"
+    # the reason travels from the one place that computes it, so the two cannot disagree
+    assert dep["basis"] in out["why_not"], "the branch states its own version of the reason"
+
+    # and the FIGURE on the surface carries the basis, with `atp_measured` COMPUTED, not asserted
+    from fastapi.testclient import TestClient
+    from agentic_core.app_mvp import app
+    m = TestClient(app).get("/api/v1/biometrics/status").json()["metabolic"]
+    assert m["atp_basis"], "the ATP figure travels with no basis"
+    assert m["atp_measured"] is m["atp_basis"].startswith("measured"), \
+        "atp_measured disagrees with the basis beside it"
+    assert m["atp_measured"] is False, "the simulated path is reporting itself as measured"
+    # the figure must not be presentable as a live vital, and the qualifier must reach `efficiency` too —
+    # a mean of a labelled figure and another is not a measurement either
+    assert "not a live vital" in m["atp_basis"]
+    assert m["efficiency_basis"] and "atp_ratio" in m["efficiency_basis"], \
+        "metabolic_efficiency is derived from atp_ratio and does not say so"
+    # the stale reason must be gone: the floor never binds, so naming it as the reason is the defect
+    assert "never binds" in m["atp_basis"] or "floored at 0.5 of 15, so it never depletes" not in m["atp_basis"], \
+        "the basis still gives the 0.5 floor as the reason the figure does not deplete"
+
+
+def test_w506_fu299_every_screened_framework_is_in_exactly_one_coverage_list():
+    """FU-299 — a framework covered only by a word list was in NEITHER coverage_gaps nor assessed_by.
+
+    MEASURED W506: `coverage_gaps` takes coverage 'none'/'screen' and `assessed_by` takes coverage 'engine',
+    so a row with coverage 'vocabulary' fell out of the account. On a five-framework screen, coverage_gaps
+    named four and assessed_by none — sharia_halal appeared in neither, and a reader taking the two lists as a
+    partition concluded it was neither missing nor assessed. That is the invisibility the three-state
+    `compliant` field was added to prevent, one field over.
+
+    Fixed by ADDING `vocabulary_only`, never by widening coverage_gaps: that field has many readers and
+    changing what a word means breaks them silently (W495).
+    """
+    from agentic_core.api.compliance import screen_compliance
+
+    # three subjects, deliberately different: one with halal vocabulary (the row that went missing), one with
+    # nothing at all, one with a prohibited term. The partition must hold for each.
+    for text in ("a halal bakery serving the local community",
+                 "a general enterprise",
+                 "a business selling alcohol"):
+        r = screen_compliance(text)
+        # the truth about what was screened comes from the VERDICTS, which are the primary data — not from
+        # `frameworks_screened`. A blind that derived that field from the union of the three lists left this
+        # test green, because the partition then held by construction and proved nothing.
+        screened = {v["framework"] for v in r["verdicts"]}
+        assert screened, f"the screen produced no verdicts for {text!r}"
+        assert set(r["frameworks_screened"]) == screened, (
+            f"frameworks_screened does not name what the verdicts name — it is being derived from the lists "
+            f"it is supposed to check: {sorted(r['frameworks_screened'])} vs {sorted(screened)}")
+        accounted = set(r["coverage_gaps"]) | set(r["assessed_by"]) | set(r["vocabulary_only"])
+        missing = screened - accounted
+        assert not missing, (
+            f"these frameworks were screened and appear in none of the three coverage lists, so a reader "
+            f"cannot tell they were looked at: {sorted(missing)} (subject: {text!r})")
+        # the lists must be disjoint too, or a framework is counted twice and the account is not a partition
+        assert not (set(r["coverage_gaps"]) & set(r["assessed_by"])), r
+        assert not (set(r["vocabulary_only"]) & set(r["assessed_by"])), r
+        assert not (set(r["vocabulary_only"]) & set(r["coverage_gaps"])), r
+        # and a word-list match must never be presentable as a clearance
+        if r["vocabulary_only"]:
+            assert r["compliant"] is not True, (
+                "a subject whose only positive signal is its own vocabulary is being reported compliant")
+            assert "word list" in r["basis"], "the basis does not say these established nothing"
+
+
+def test_w506_fu299_every_coverage_and_status_combination_lands_in_exactly_one_list():
+    """FU-299, second pass — the coverage lists PARTITION the frameworks, over every combination.
+
+    The first version of this guard used three sample subjects, and blinding it showed why that was not
+    enough: with the fix in place the union of the three lists equalled the verdict set, so a blind that
+    derived `frameworks_screened` from that union changed nothing observable. Looking for a blind that COULD
+    discriminate found a real hole instead — a row with coverage 'engine' and status 'error' was in NONE of
+    the three lists (not a gap, because its coverage is 'engine'; not assessed, because `assessed()` excludes
+    'error'; not vocabulary-only, because its coverage is not 'vocabulary'). An engine that RAISED disappeared
+    from the account, which is the same invisibility as the vocabulary rows one case over.
+
+    So this drives the WHOLE grid instead of samples: every coverage x status combination must land in
+    exactly one list. Not zero (the framework goes missing) and not two (it is double-counted, and a reader
+    summing them overstates the coverage).
+    """
+    from agentic_core.api.compliance import _coverage_report, ASSESSING_COVERAGE, COLOURING_COVERAGE
+
+    coverages = sorted(set(COLOURING_COVERAGE) | set(ASSESSING_COVERAGE) | {"screen", "none"})
+    statuses = ("pass", "review", "fail", "error", "not_assessed", "not_checked")
+    for cov in coverages:
+        for st in statuses:
+            r = _coverage_report([{"framework": "f", "status": st, "reason": "x", "coverage": cov}])
+            where = [n for n, lst in (("coverage_gaps", r["coverage_gaps"]),
+                                      ("assessed_by", r["assessed_by"]),
+                                      ("vocabulary_only", r["vocabulary_only"])) if "f" in lst]
+            assert len(where) == 1, (
+                f"coverage={cov!r} status={st!r} appears in {len(where)} coverage lists ({where}) — it must "
+                f"be in exactly one, or a screened framework either goes missing from the account or is "
+                f"counted twice")
+            # an 'error' or an unassessed status may never be the one that carries a clearance
+            if st in ("error", "not_assessed", "not_checked"):
+                assert where == ["coverage_gaps"], (
+                    f"coverage={cov!r} status={st!r} is filed under {where[0]} — a screen that did not run, "
+                    f"or raised, established nothing and is a gap")
+            assert "f" in r["frameworks_screened"]
+
+
+def test_w506_fu265_every_atp_reader_carries_the_qualifier_and_no_reader_claims_it_is_live():
+    """FU-265 — the four readers of the metabolic (ATP) term, each carrying the qualifier the source provides.
+
+    FU-265 named four readers that printed the ATP figure as a live vital. `biobus.organism_context` has
+    carried `metabolic.measured=False` and a basis since W494, so the qualifier EXISTED and each of these
+    readers dropped it — which is the second-writer class (W475): one fix, four places that needed it.
+
+    This guard covers all four together on purpose. Fixing them one at a time is how (b) came to be repaired
+    earlier in this same round with the WRONG reason — it said the figure never depletes because it is
+    "floored at 0.5 of 15", the exact sentence corrected in (a) an hour before, over a floor that never binds.
+    """
+    from agentic_core.ai.native.homeostasis import homeostasis, _ATP_CONSERVE_AT
+    from agentic_core.organism.biobus import atp_depletion_state
+    from fastapi.testclient import TestClient
+    from agentic_core.app_mvp import app
+
+    dep = atp_depletion_state()
+    c = TestClient(app)
+
+    # (a) biometrics — the figure is normalised and the basis is the computed one
+    m = c.get("/api/v1/biometrics/status").json()["metabolic"]
+    assert 0.0 <= m["atp_ratio"] <= 1.0, f"the raw simulator ratio is being served unnormalised: {m['atp_ratio']}"
+    assert m["atp_measured"] is False and dep["basis"] in m["atp_basis"], \
+        "the biometrics basis is not the one atp_depletion_state computes"
+
+    # (d) the homeostatic controller — the qualifier travels WITH the figure it publishes
+    snap = homeostasis.snapshot()
+    org = snap["organism"]
+    assert org["atp_ratio"] is not None
+    assert org["atp_measured"] is False, "the controller publishes the simulated figure as measured"
+    assert org["atp_basis"], "the controller publishes the figure with no basis, so every surface below it must guess"
+    assert org["atp_can_fall"] is dep["can_deplete"]
+    # the posture the ATP term selects is unreachable, and the controller SAYS so rather than never choosing it
+    assert org["conserving_posture_reachable"] is dep["can_deplete"]
+    if not dep["can_deplete"]:
+        assert org["conserving_posture_basis"] and str(_ATP_CONSERVE_AT) in org["conserving_posture_basis"], \
+            f"the unreachable posture does not name its threshold: {org['conserving_posture_basis']}"
+    # ...and `governed_by` no longer covers the simulated term with a blanket claim about live state
+    assert "real state" not in snap["governed_by"], (
+        "governed_by still says 'real state' over a block whose metabolic term is a simulator — the claim "
+        "covered all four terms and is true of three")
+    assert "simulated" in snap["governed_by"]
+
+    # NO READER may restate the wrong reason. The 0.5 floor never binds, so naming it as the reason the
+    # figure does not deplete is the defect, and it appeared in TWO readers this round.
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    for rel in ("agentic_core/app_mvp.py", "agentic_core/api/integration_surface.py",
+                "agentic_core/ai/native/homeostasis.py", "agentic_core/organism/biobus.py"):
+        text = (root / rel).read_text(encoding="utf-8")
+        # the BINDING, not a comment: a string assigned into a basis field. The phrase is allowed in a
+        # comment that records its removal — forbidding it everywhere is how W495 turned five runs red.
+        for node in ast.walk(ast.parse(text)):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                assert "floored at 0.5 of 15, so it never depletes" not in node.value, (
+                    f"{rel} still states the 0.5 floor as the reason the ATP figure does not deplete — that "
+                    f"floor never binds, and the real reason is that production exceeds consumption")
+
+    # (d) the two SURFACES print the qualifier beside the figure, and take the wording from the server
+    src = root / "apps/workstation-superapp/src"
+    native = (src / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    fabric = (src / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+
+    # the BINDING, not a presence in the file. A blind that deleted the real reference left this green on a
+    # COMMENT that happened to name the same field — the presence-check-cannot-see-a-disabled-gate class
+    # (W503). So the reference must appear on a line that reads it off the server's object.
+    def _reads(text, field):
+        return [l for l in text.splitlines()
+                if f"organism.{field}" in l and not l.lstrip().startswith(("//", "*", "{/*"))]
+    assert _reads(native, "atp_basis"), \
+        "NativeAI does not READ the server's basis for the ATP figure (a mention in a comment is not a read)"
+    assert _reads(native, "atp_measured"), \
+        "NativeAI does not READ whether the figure is measured"
+    # the strong claims this row was registered for must be gone from the RENDERED copy
+    assert "Real organism state, never fabricated" not in native, (
+        "NativeAI still claims the whole homeostasis block is real organism state, over a simulated ATP term")
+    assert "each run expends ATP, which recovers on the circadian cycle" not in native, (
+        "NativeAI still asserts a metabolic mechanism that cannot operate: production exceeds consumption at "
+        "every efficiency the code passes, so the figure only rises")
+    # ...and the fabric tooltip says the term does not fall
+    assert "atp_ratio" in fabric and "does not fall" in fabric, \
+        "the ResourceFabric tooltip still presents the ATP figure as live capacity"
+
+
+def test_w506_p28_two_concepts_produce_different_derived_stage_sets():
+    """P2.8(1) — genesis derives its extra stages from the CONCEPT, by the same keyword rules _plan_tree uses.
+
+    The criterion says the bar is "two different concepts producing different stage sets, not the code path
+    existing" — because the path existing was never the question. MEASURED before this round: the journey ran
+    six FIXED stages and no concept could change them, while `_plan_tree` already held exactly these rules
+    inline in its own body, unreachable from the journey.
+
+    So this test asserts a DIFFERENCE between two runs, which a single-concept test could not do.
+    """
+    from agentic_core.ai.native.orchestrator import DERIVED_BRANCH_RULES, derived_branches
+
+    # a concept that calls for every extra stage, and one that calls for none
+    everything = "build and launch a halal financial product, assessing legal risk and revenue"
+    nothing = "a quiet contemplative garden"
+
+    rich = {d["id"] for d in derived_branches(everything)}
+    bare = {d["id"] for d in derived_branches(nothing)}
+    assert rich != bare, (
+        "two very different texts derived the SAME stage set, so nothing is being derived from the text")
+    assert rich == {r["id"] for r in DERIVED_BRANCH_RULES}, \
+        f"a text naming building, risk and revenue did not select every rule: {sorted(rich)}"
+    assert bare == set(), f"a text naming none of the keywords still selected stages: {sorted(bare)}"
+
+    # each derived branch SAYS what derived it — a derived set that cannot name its trigger is
+    # indistinguishable from an arbitrary one
+    for d in derived_branches(everything):
+        assert d["matched"], f"{d['id']} was selected and names no keyword"
+        assert all(k in everything.lower() for k in d["matched"]), \
+            f"{d['id']} claims keywords that are not in the text: {d['matched']}"
+        assert d["basis"] and any(repr(k) in d["basis"] for k in d["matched"])
+
+    # ORDER is stable: the same text twice must give the same sequence, or two runs of one goal look like
+    # two different decompositions
+    assert [d["id"] for d in derived_branches(everything)] == [d["id"] for d in derived_branches(everything)]
+
+    # ONE set of rules, shared. The swarm planner must CALL the helper rather than hold its own copy: a
+    # second copy of a keyword list drifts the first time either is edited (W475). Asserted on the AST.
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = (root / "agentic_core/ai/native/orchestrator.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    fn = [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+          and n.name == "_plan_tree"][0]
+    calls = [c.func.id for c in ast.walk(fn) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]
+    assert "derived_branches" in calls, \
+        "_plan_tree no longer calls derived_branches, so the planner and the journey apply different rules"
+    # ...and it must not have kept its own literal copy of the keywords
+    for rule in DERIVED_BRANCH_RULES:
+        inline = [n for n in ast.walk(fn) if isinstance(n, ast.Constant) and n.value in rule["keywords"]]
+        assert not inline, (
+            f"_plan_tree still holds keyword literals for {rule['id']} ({[n.value for n in inline]}) — that is "
+            f"the second copy P2.8(1) removed")
+
+    # and the JOURNEY reaches the same helper for the same purpose
+    gsrc = (root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    gtree = ast.parse(gsrc)
+    imports_it = any(isinstance(n, ast.ImportFrom)
+                     and (n.module or "").endswith("native.orchestrator")
+                     and any(a.name == "derived_branches" for a in n.names)
+                     for n in ast.walk(gtree))
+    assert imports_it, "the journey does not import the shared rules, so it is deriving nothing or copying them"
+    # every spec the journey can render must be a rule that exists, or it declares a stage nothing selects
+    from agentic_core.api.genesis import _DERIVED_STAGE_SPECS
+    rule_ids = {r["id"] for r in DERIVED_BRANCH_RULES}
+    assert set(_DERIVED_STAGE_SPECS) <= rule_ids, (
+        f"the journey declares stage specs no rule can select: {sorted(set(_DERIVED_STAGE_SPECS) - rule_ids)}")
+    # ...and each spec's prompt must actually ask for the sections it will be VERIFIED against, or the
+    # verification measures a structure the prompt never requested and scores it down for it
+    for sid, spec in _DERIVED_STAGE_SPECS.items():
+        for section in spec["sections"]:
+            assert section in spec["prompt"], \
+                f"the {sid} stage is verified against a '{section}' section its own prompt does not ask for"

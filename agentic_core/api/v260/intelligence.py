@@ -21,7 +21,13 @@ async def get_civilization_recommendations(user_id: str):
     }
 @router.post("/assistant/query")
 async def assistant_query(query: str):
-    ai_response = await gateway.query(query)
+    # W506 (P2.2 + FU-276) - this was `gateway.query(query)`: NO agent and NO owner_id, on a router
+    # mounted at /api itself. So every completion it served was attributed to the default agent and
+    # landed in no account's namespace. An agent label is given here; the owner stays unset because this
+    # legacy route takes no principal, and W496 made an unattributed completion land in a namespace
+    # recall never reads - so it is unattributed on purpose and says so, rather than silently.
+    _ar = await gateway.query_meta(query, agent="v260_assistant", augment=False)
+    ai_response = _ar.get("output", "")
     return {
         "response": ai_response,
         "confidence": 0.99,

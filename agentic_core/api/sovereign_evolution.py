@@ -120,9 +120,47 @@ def _state_text(state: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-async def _q(prompt: str, agent: str) -> str:
+# W506 (P2.2) — this module kept NO provenance at all, and P2.2 names SovereignEvolution among the
+# surfaces that must carry a badge. `_PROV` accumulates what served each call of a cycle so the
+# response can report it; it is reset per cycle by `_prov_reset`.
+_PROV: dict = {"served_by": {}, "any_external": False}
+
+
+def _prov_reset() -> None:
+    _PROV["served_by"], _PROV["any_external"] = {}, False
+
+
+def _prov_snapshot() -> dict:
+    """What served this cycle. An EMPTY map means no call was made - which is not the same as the
+    floor serving it, so a reader must be able to tell those apart."""
+    return {"served_by": dict(_PROV["served_by"]), "any_external": _PROV["any_external"],
+            "calls": sum(_PROV["served_by"].values()),
+            "basis": ("counted per call as the cycle ran; an empty map means no AI call was made, "
+                      "which is not the same as the deterministic floor serving one")}
+
+
+async def _q_meta(prompt: str, agent: str) -> tuple:
+    """W506 (P2.2) - the PROVENANCE form. `query` returns bare text, so every caller of this helper
+    dropped which resource served it. P2.2 requires that no bare text-only gateway call remains in
+    agentic_core/api. `augment=False` is STATED rather than inherited: a repo-wide guard requires it at
+    every call site, because W489 found 29 callers that had inherited recall and prepended another
+    request's content as analysis of their own subject.
+    """
     try:
-        return await gateway.query(prompt, agent=agent)
+        r = await gateway.query_meta(prompt, agent=agent, augment=False)
+        _served = r.get("served_by") or "unknown"
+        _PROV["served_by"][_served] = _PROV["served_by"].get(_served, 0) + 1
+        if r.get("is_external"):
+            _PROV["any_external"] = True
+        return r.get("output", ""), _served, bool(r.get("is_external"))
+    except Exception as e:
+        return f"[AI unavailable: {e}]", None, False
+
+
+async def _q(prompt: str, agent: str) -> str:
+    """Text only. Delegates to `_q_meta`, so a call is counted even when the caller ignores it."""
+    try:
+        return (await _q_meta(prompt, agent))[0]
     except Exception as e:
         return f"[{agent} unavailable: {e}]"
 
@@ -333,7 +371,34 @@ async def run_cycle(req: CycleRequest):
                     })
         except Exception as e:
             submitted.append({"error": str(e)})
+    # W506 (P2.4/FU-187, sweep S13.5) - AN EMPTY LIST IS NOT AN ANSWER. The hand-off rule selects only a P1
+    # or a self-correction, and on the floor the single directive is a defaulted P2 maintenance item - so a
+    # user who ticked the box saw an empty list with no reason, which reads as a failure rather than as a
+    # rule that matched nothing. The rule is NOT widened (routing every maintenance item into the Owner's
+    # governance queue would bury it); it is stated.
+    _eligible = [d for d in proceed if d["priority"] == "P1" or d["function"] == "correction"]
+    _prios = sorted({str(d.get("priority")) for d in proceed})
+    _funcs = sorted({str(d.get("function")) for d in proceed})
     roadmap["change_control_submissions"] = submitted
+    roadmap["change_control_handoff"] = {
+        "requested": bool(req.submit_to_change_control),
+        "directives_considered": len(proceed),
+        "met_the_rule": len(_eligible),
+        "submitted": len([x for x in submitted if x.get("cca_id")]),
+        "rule": ("a directive is handed to Change Control automatically only when its priority is P1 or its "
+                 "function is correction - a maintenance or development item at P2/P3 is recorded on the "
+                 "roadmap and not queued, so the Owner's governance queue stays readable"),
+        "priorities_present": _prios,
+        "functions_present": _funcs,
+        "why_nothing_was_submitted": (
+            None if not req.submit_to_change_control or _eligible else
+            (f"nothing was submitted: {len(proceed)} directive(s) were considered and none met the rule. "
+             f"Priorities present: {', '.join(_prios) or 'none'}; functions present: "
+             f"{', '.join(_funcs) or 'none'}. This is the rule matching nothing, not a submission "
+             f"failing.")),
+        "why_not_requested": (None if req.submit_to_change_control else
+                              "the run did not ask for a Change Control hand-off"),
+    }
 
     _save_roadmap(roadmap)
 

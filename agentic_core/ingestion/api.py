@@ -203,51 +203,32 @@ async def upload_content(file: UploadFile = File(...), category: Optional[str] =
         logger.error(f"Ingestion Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/url", response_model=IngestedFile)
+@router.post("/url")
 async def ingest_url(request: IngestURLRequest):
-    """v1.0: Ingest content from a URL (DeepSeek/Web)."""
-    # High-fidelity simulation for the requested DeepSeek URL
-    if "deepseek.com/share/1cvw4z5qz50js3mrom" in request.url:
-        dossier_text = """
-        PATIENT SAFETY DOSSIER: ADVANCED THERAPIES (AAV, CAR-T, mRNA, ADCs)
+    """URL ingestion is NOT AVAILABLE in this deployment, and says so.
 
-        Executive Summary:
-        This dossier outlines critical gaps in patient safety monitoring for next-generation advanced therapies.
-        Recent data (Wu et al. 2025) suggests that AAV germline integration risks are higher than previously estimated.
-        Autoimmune risks in CAR-T patients (Chazarin et al. 2026) require new longitudinal tracking frameworks.
-        Gifford et al. 2025 identifies regulatory lag in EU legislation regarding mRNA long-term stability markers.
+    W506 (P2.4/FU-167) - what this used to do:
 
-        Proposed Five-Point Framework:
-        1. Pre-emptive Genomic Screening (PGS)
-        2. Real-time Cytokine Monitoring (RCM)
-        3. Standardized Long-term Follow-up (SLF)
-        4. Cross-border Adverse Event Harmonization (CAEH)
-        5. Ethical AI Oversight for Dose Escalation (EAIDE)
+      · a hard-coded branch for one specific share link returned a "patient safety dossier" on gene therapies
+        containing INVENTED ACADEMIC CITATIONS attached to patient-safety claims, wrote it into the
+        knowledge-base registry as `status: "INGESTED"`, and pushed it into the AI's recall pool - where a later
+        generation could retrieve it and present it as ingested source material;
+      · every other url fell through to a "generic web ingestion simulation" that constructed an UploadFile
+        with no file, raised, and answered HTTP 500;
+      · no http client call existed anywhere in the function. Nothing was ever fetched.
 
-        Business Model:
-        The market for Long-Term Safety Assurance (LTSA) is projected to reach $4.2B by 2030.
-        ROI for early adopters of these safety modules includes 30% reduction in clinical trial attrition.
-        """
+    So the capability did not exist, one url produced fabricated medical content, and the surface blamed the
+    caller's url for the failure. The fabrication is gone. Whether to BUILD real fetching is the Owner's
+    decision - it is a new server-side egress capability - and until it is made, this refuses plainly rather
+    than pretending either way.
+    """
+    raise HTTPException(
+        status_code=501,
+        detail=("This deployment does not fetch URLs. Nothing was ingested, and nothing about the URL you "
+                "supplied is wrong - the platform has no web-fetching capability, so no URL would work. "
+                "Upload the file directly (POST /api/v1/ingestion/upload) and its text enters the knowledge "
+                "base through the normal path, with its provenance recorded."))
 
-        # Simulate ingestion process
-        file_id = str(uuid.uuid4())
-        memory_v01.add_exchange(f"INGEST URL: {request.url}", dossier_text)
-
-        entry = {
-            "file_id": file_id,
-            "filename": "deepseek_dossier_1cvw4.txt",
-            "content_type": "text/plain",
-            "size": len(dossier_text),
-            "timestamp": datetime.datetime.utcnow().isoformat(),
-            "extracted_text": dossier_text,
-            "status": "INGESTED"
-        }
-        ingestion_manager.registry.append(entry)
-        ingestion_manager._save_registry()
-        return entry
-    else:
-        # Generic web ingestion simulation
-        return await ingestion_manager.ingest_file(UploadFile(filename="web_extract.txt"))
 
 @router.get("/list", response_model=List[IngestedFile])
 async def list_ingested_content(category: Optional[str] = None):

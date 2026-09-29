@@ -23,6 +23,11 @@ interface ProductionLine {
   domain: string;
   description: string;
   status: 'idle' | 'running' | 'done' | 'error';
+  // W506 (FU-164, sweep S8.11) - the done event carries served_by and is_external
+  // (products.py:133 and :209) and this type had nowhere to put them, so the page showed no
+  // provenance chip and its export header carried none. Same shape as FU-170's dropped tied_with.
+  served_by?: string | null;
+  is_external?: boolean;
   output: string;
   run_id: string;
 }
@@ -101,7 +106,9 @@ export const Factory: React.FC = () => {
               accumulated += ev.token.replace(/\\n/g, '\n');
               updateLine(id, { output: accumulated });
             } else if (ev.done) {
-              updateLine(id, { status: 'done', run_id: ev.run_id ?? '' });
+              updateLine(id, { status: 'done', run_id: ev.run_id ?? '',
+                              served_by: ev.served_by ?? null,
+                              is_external: !!ev.is_external });
             } else if (ev.error) {
               updateLine(id, { status: 'error', output: accumulated + `\n\n[ERROR] ${ev.error}` });
             }

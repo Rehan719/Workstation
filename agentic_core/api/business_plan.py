@@ -115,9 +115,25 @@ def _save(plan: Dict[str, Any]) -> None:
     atomic_write_json(_path(plan["scope"]), plan)
 
 
-async def _q(prompt: str, agent: str) -> str:
+async def _q_meta(prompt: str, agent: str) -> tuple:
+    """W506 (P2.2) - the PROVENANCE form. The text-only gateway call returns no served_by, so every
+    caller of this helper dropped which resource served it. augment=False is STATED rather than
+    inherited: a repo-wide guard requires the recall decision at every call site, because W489 found 29
+    callers that had inherited recall and prepended another request's content as analysis of their own
+    subject. Written in plain ASCII: a double-escaped em dash leaked the literal text backslash-u-2014
+    into this docstring, and the first version also quoted the very string P2.2 counts.
+    """
     try:
-        return await gateway.query(prompt, agent=agent)
+        r = await gateway.query_meta(prompt, agent=agent, augment=False)
+        return r.get("output", ""), r.get("served_by"), bool(r.get("is_external"))
+    except Exception as e:
+        return f"[AI unavailable: {e}]", None, False
+
+
+async def _q(prompt: str, agent: str) -> str:
+    """Text only - for callers that do not record provenance. Delegates to `_q_meta`."""
+    try:
+        return (await _q_meta(prompt, agent))[0]
     except Exception as e:
         return f"[{agent} unavailable: {e}]"
 

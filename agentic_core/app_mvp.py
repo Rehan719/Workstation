@@ -454,9 +454,22 @@ async def biometrics_status():
         circadian_efficiency = 1.0 if _circadian_cycle() == "ACTIVE_FOCUS" else 0.8
         metabolic_load = cpu / 100.0
         biometrics_status._atp.update(dt=1.0, metabolic_load=metabolic_load, circadian_efficiency=circadian_efficiency)
-        atp_ratio = round(max(0.0, min(1.0, biometrics_status._atp.ratio)), 3)
+        # W506 (P2.7(4), FU-265a) — /15.0, WHICH THIS READER ALONE WAS MISSING. `ratio` is clamped to
+        # 0.5-15.0, so min(1.0, ratio) published a CONSTANT 1.0 and the Introspection surface printed
+        # "Metabolic (ATP 100%)" as a live vital that could not come out otherwise.
+        atp_ratio = round(max(0.0, min(1.0, biometrics_status._atp.ratio / 15.0)), 3)
+        # W506 (P2.7(4)) - the basis is COMPUTED. It used to say the figure never depletes because it is
+        # "floored at 0.5 of 15"; measured from the arithmetic, that floor NEVER BINDS - production
+        # exceeds consumption fourfold at the worst efficiency this code passes, so the ratio only
+        # rises. A basis naming a mechanism that never operates is the W494 class.
+        from agentic_core.organism.biobus import atp_depletion_state as _atp_state
+        _dep = _atp_state()
+        atp_basis = ("simulated — an ATP production/consumption model on a load derived from CPU. "
+                     + _dep["basis"] + " It is not a live vital.")
     except Exception:
+        # the fallback is a REAL cpu measurement, so it must not inherit the simulator's disclaimer
         atp_ratio = round(resource_flow / 100.0, 3)
+        atp_basis = "measured — (100 - cpu_percent) / 100 from psutil; the ATP simulator was unavailable, so this is host CPU headroom rather than a metabolic model"
 
     # Cognition degrades under immune stress
     immune_health = imm["health"]
@@ -505,7 +518,14 @@ async def biometrics_status():
         "cognition":      {"state": cognition_state, "primary_drive": primary_drive},
         "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0},
         "immune":         imm,
-        "metabolic":      {"efficiency": metabolic_efficiency, "atp_ratio": atp_ratio, "concept_projects": concept_count, "total_projects": total_projects},
+        # W506 (P2.7(4), FU-265a) — the qualifier travels WITH the figure: atp_basis set above and not
+        # returned would label nothing, and the Introspection surface reads this dict.
+        "metabolic":      {"efficiency": metabolic_efficiency, "atp_ratio": atp_ratio,
+                           "atp_measured": atp_basis.startswith("measured"),
+                           "atp_basis": atp_basis,
+                           "efficiency_basis": ("the mean of atp_ratio and stage_efficiency, so it "
+                                                "inherits atp_ratio's basis and is not a measured vital"),
+                           "concept_projects": concept_count, "total_projects": total_projects},
         "nervous":        {"arousal_state": nervous_status["arousal_state"], "signal_rate": nervous_status["signal_rate_per_second"]},
     }
 

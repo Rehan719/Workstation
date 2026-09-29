@@ -65,6 +65,23 @@ interface DomainToolProps {
  * the result with the in-house provenance badge (and any disclaimer). Used to make the solid
  * domain backends (Science/Care/Education/Law…) genuinely reachable by users — DRY across hubs.
  */
+/**
+ * W506 (P2.4/FU-161, sweep S9.2 + S9.8) - the output WITH every disclosure the response carries.
+ *
+ * The save path composed score + output + floor note + disclaimer; the copy and download paths composed
+ * score + output and dropped the other two. So the text a person keeps lost the very statements that
+ * qualify it: a fatwa research output left without "It is NOT a fatwa and does not constitute a religious
+ * ruling", a care or legal output without its review requirement. A disclosure that does not travel with
+ * the text is a decoration on a screen the reader has already left.
+ *
+ * One function now, used by the save, the copy and every download format.
+ */
+const withDisclosures = (body: string, data: any): string =>
+  (data?.score_summary ? `${data.score_summary}\n\n` : '')
+  + body
+  + (data?.floor_note ? `\n\n[${data.floor_note}]` : '')
+  + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
+
 export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState<Record<string, string>>(() =>
@@ -120,10 +137,12 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         // W456 — the §11 disclosures (a floor note, a disclaimer) travel WITH the saved text, so My Work
         // never shows floor study notes under a title with the disclosures dropped
         // W457 — a computed score block (Care) is persisted WITH the narrative it interprets
-        const text = (r.data?.score_summary ? `${r.data.score_summary}\n\n` : '')
-          + String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2))
-          + (r.data?.floor_note ? `\n\n[${r.data.floor_note}]` : '')
-          + (r.data?.disclaimer ? `\n\n_${r.data.disclaimer}_` : '');
+        // W506 (FU-161) - ONE composition for the save, the copy and every download. The export used to
+        // build its own without the floor note or the disclaimer, so a downloaded fatwa research lost
+        // "It is NOT a fatwa", and a care or legal output lost its review requirement.
+        const text = withDisclosures(
+          String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2)),
+          r.data);
         const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
           input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
         setHistoryId(rec.id);   // W337 — refines update THIS record in place
@@ -138,8 +157,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const resultText = result ? String(result[resultKey] ?? result.deliverable ?? JSON.stringify(result, null, 2)) : '';
   // Iterative refinement: each refine builds on the currently-displayed text (in-house /api/v1/refine).
   const displayText = refinedText ?? resultText;
-  // W457 — copy/download carry the computed score line (the on-screen block is rendered separately)
-  const exportText = (result?.score_summary ? `${result.score_summary}\n\n` : '') + displayText;
+  // W457 - copy/download carry the computed score line (the on-screen block is rendered separately)
+  // W506 (FU-161) - ...AND the disclosures, through the same composition the save uses. `displayText` is
+  // the refined text when a refine has run, so a refine no longer strips them either (S9.8).
+  const exportText = withDisclosures(displayText, result);
   const effectiveProv = refineProv ?? prov;
 
   const refine = async () => {

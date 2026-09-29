@@ -1574,6 +1574,21 @@ async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_
             "ueg_logged": ueg_logged, **result}
 
 
+def _postings_split(ledger) -> dict:
+    """The board pack's posting split, or why it is absent. W506 (P2.7(8)).
+
+    Wrapped because the pack must still render when the books cannot be read whole: a split that raised would
+    take the whole pack down, and a split silently replaced by {} would read as "no postings" - which is a
+    different statement from "the books could not be read".
+    """
+    try:
+        return ledger.postings_by_source()
+    except Exception as exc:
+        return {"unavailable": f"{exc.__class__.__name__}: {exc}",
+                "basis": "the postings could not be read whole, so no split is shown - this is not a "
+                         "statement that there are no postings"}
+
+
 @router.get("/board-pack")
 async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None = None,
                      user: dict | None = Depends(get_current_user)):
@@ -1664,12 +1679,24 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
         "owner_payments": owner_section,
         "venture_portfolio": {"invested_total_wst": ventures["invested_total"],
                               "positions": ventures.get("positions_count", 0),
+                              # W506 (P2.7(7)) - this block rendered a WST figure and a position
+                              # count beside named investees, and no investee was ever credited.
+                              # Read from the portfolio rather than restated here, so the pack
+                              # cannot word it differently from the API.
+                              "funding_state": ventures.get("funding_state"),
+                              "funding_basis": ventures.get("funding_basis"),
                               "holdings": ventures.get("holdings", [])[:5]},
         "charitable_giving": {"total_given_wst": round(bal.get("charity", 0.0), 2)},
         "organism_posture": organism,
         # §9.1 — the CFO's three statements (current period, from the REAL double-entry postings)
         "statements": m.ledger.statements(),
-        "ledger": {"entry_count": stmt["entry_count"], "recent": stmt["recent"]},
+        # W506 (P2.7(8)) - the pack SPLITS the books by what moved the money. It carried an entry count
+        # and the latest few rows, so a reader could not ask how much of any figure came from transfers
+        # rather than from cycles: a posting was {ts, debit, credit, amount, memo} and the memo is prose
+        # written per call site. Postings from before the tag existed are reported as NOT STATED and
+        # attributed to nothing, because the books held no source then.
+        "ledger": {"entry_count": stmt["entry_count"], "recent": stmt["recent"],
+                   "by_source": _postings_split(m.ledger)},
         "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
         "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner "
                       "authorises them AND a compliance review passes.",

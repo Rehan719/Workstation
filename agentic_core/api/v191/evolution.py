@@ -137,7 +137,11 @@ async def generate_proposals(req: GenerateRequest):
         "Output only the 4 PROPOSAL lines, no other text."
     )
 
-    raw = await gateway.query(prompt, agent="evolution_engine")
+    # W506 (P2.2) - a LEGACY namespace, but a MOUNTED one (/api/v191), so it is converted rather than
+    # retired: removing a mounted route is an API-surface change and P2.4's bar requires that to be
+    # stated explicitly by the round that does it.
+    _er = await gateway.query_meta(prompt, agent="evolution_engine", augment=False)
+    raw = _er.get("output", "")
 
     proposals = _load()
     new_proposals = []

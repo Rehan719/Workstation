@@ -189,25 +189,77 @@ def read_json_strict(path, missing, expect=None):
 
 
 def load_json_tolerant(path, default):
-    """Corruption-tolerant JSON load: a partial/interleaved/truncated store returns the recoverable
-    JSON prefix when one exists, else the caller's default — never raises into the caller (a corrupt
-    cache must never take a live subsystem down; see ai/memory.py W241)."""
+    """Corruption-tolerant JSON load, and NO LONGER SILENT.
+
+    A partial, interleaved or truncated store yields its recoverable JSON prefix when one exists, else the
+    caller's default, and never raises - a corrupt cache must not take a live subsystem down
+    (ai/memory.py, W241). That behaviour is unchanged.
+
+    W506 (P2.4/FU-075) - what changed is that it SAYS SO. This returned the default or a prefix and told
+    nobody, so a summary built on a truncated store reported a smaller number with no indication, and a
+    reader could not tell "empty" from "unreadable". Four readers now carry the reason in their own
+    responses (revenue's pending summary, charity's approved signals, the heartbeat's screening rotation,
+    the avatar's compliance line). The rest log it here, naming the store and the module that asked, so
+    the incompleteness is attributable everywhere rather than invisible.
+
+    Prefer `read_json_reported`, which hands the reason to the caller so a response can state it. A log
+    line is a weaker remedy than a field on the answer, and this exists for the callers that have not been
+    converted yet.
+    """
+    value, why = read_json_reported(path, default)
+    if why:
+        import inspect
+        import logging
+        _who = "unknown"
+        try:
+            _f = inspect.stack()[1]
+            _who = f"{_f.filename.split(chr(92))[-1].split(chr(47))[-1]}:{_f.lineno}"
+        except Exception:
+            pass
+        logging.getLogger("config.store").error(
+            "a TOLERANT read returned incomplete data and the caller was not told: store=%s asked_by=%s "
+            "reason=%s", path, _who, why)
+    return value
+
+
+def read_json_reported(path, default):
+    """Read a store TOLERANTLY and report whether it could be read whole: `(value, unreadable_reason)`.
+
+    W506 (P2.4/FU-075) - the read-only readers used `load_json_tolerant`, which returns the recoverable prefix
+    of a truncated store or the caller's default and says NOTHING. So a summary built on a partial store
+    reported a smaller number and nobody was told, and the reader could not tell "empty" from "unreadable".
+
+    Making those readers STRICT was the obvious move and the wrong one: 18 call sites, mostly list and summary
+    endpoints, would answer 500 whenever a store was truncated - a silent wrong answer traded for an outage.
+
+    So the VALUE keeps the tolerant behaviour (nothing goes down) and the REASON travels with it, so a caller
+    can state that the figure it just printed is incomplete. `reason` is None when the store was read whole or
+    is simply absent; a missing store is not an error.
+
+    The same shape as this repo's existing `roster_unavailable` and the ledger's `load_error`, deliberately.
+    """
     import json as _json
     from pathlib import Path as _Path
     p = _Path(path)
     if not p.exists():
-        return default
+        return default, None
     try:
-        return _json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError):
-        return default
-    except _json.JSONDecodeError:
+        return _json.loads(p.read_text(encoding="utf-8")), None
+    except OSError as e:
+        return default, f"the store could not be opened ({e.__class__.__name__}: {e})"
+    except UnicodeDecodeError as e:
+        return default, f"the store is not valid UTF-8 ({e})"
+    except _json.JSONDecodeError as e:
         try:
             raw = p.read_text(encoding="utf-8", errors="replace")
-            val, _ = _json.JSONDecoder().raw_decode(raw.lstrip())
-            return val
+            val, end = _json.JSONDecoder().raw_decode(raw.lstrip())
+            return val, (f"the store is not valid JSON ({e.msg} at line {e.lineno}); a recoverable prefix of "
+                         f"{end} of {len(raw)} characters was used, so anything after it is MISSING from this "
+                         f"result")
         except Exception:
-            return default
+            return default, (f"the store is not valid JSON ({e.msg} at line {e.lineno}) and no prefix could be "
+                             f"recovered, so this result is the caller's default and holds none of the stored "
+                             f"data")
 
 
 _STORE_THREAD_LOCKS: dict = {}

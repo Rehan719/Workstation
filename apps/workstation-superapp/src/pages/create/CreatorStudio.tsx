@@ -16,7 +16,7 @@ import {
   Wand2, Database, Plus, Save, Play, Sparkles,
   Download, X, ChevronRight, Loader2, CheckCircle2
 } from 'lucide-react';
-import { provenanceBadge, provenanceLine } from '../../lib/api';
+import { provenanceBadge, provenanceLine, provenanceField } from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import componentRegistry from '@workstation/shared/data/component_registry.json';
 
@@ -146,7 +146,10 @@ export const CreatorStudio: React.FC = () => {
   };
 
   const handleSaveCanvas = () => {
-    const data = { nodes, edges, blueprint: blueprint?.name, generated_at: Date.now() };
+    // W506 (P2.4/FU-248) - the canvas save carried no provenance. JSON has no comment syntax, so a
+    // markdown line would corrupt the download; the provenance goes in as a KEY instead.
+    const data = { nodes, edges, blueprint: blueprint?.name, generated_at: Date.now(),
+                   ...provenanceField(blueprint?.ai_provenance?.served_by) };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

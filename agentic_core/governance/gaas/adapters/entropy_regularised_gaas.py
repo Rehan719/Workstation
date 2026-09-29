@@ -1,3 +1,9 @@
+# W506 (P2.7(5)) - ANNOTATIONS MUST NOT EVALUATE. The try/except below already guarded the IMPORT, and
+# the module still failed to load without torch: `def _compute_semantic_cost(self, profile: torch.Tensor)`
+# evaluates its annotation at class-definition time, so `torch = None` became `None.Tensor`. A guarded
+# import is not enough on its own - the annotations have to be lazy too.
+from __future__ import annotations
+
 import logging
 from typing import Dict, Any, Optional, List
 

@@ -594,8 +594,12 @@ export const NativeAI: React.FC = () => {
             </div>
           </Card>
 
-          {/* §8 → §6 — the living organism's homeostasis governs how much cognition the fabric admits;
-              cognitive work expends ATP (closed loop). Real organism state, never fabricated. */}
+          {/* §8 → §6 — the living organism's homeostasis governs how much cognition the fabric admits.
+              W506 (FU-265d): a blanket claim that this whole block is live, unfabricated organism state was
+              removed from here. The immune, self-healing and circadian terms ARE read from live state; the
+              metabolic (ATP) term is a simulator, so the badge below carries the server's own basis for it
+              instead. The removed wording is recorded in the commit message, not quoted here: a comment that
+              reproduces the phrase its own guard forbids turns the guard red on its own fix (W495). */}
           {homeo?.organism && (
             <Card className="p-6 border-violet-500/30 bg-violet-500/5">
               <div className="flex items-center justify-between mb-3">
@@ -608,14 +612,35 @@ export const NativeAI: React.FC = () => {
                   : 'bg-vital/20 text-vital'}`}>{homeo.posture}</span>
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                The living organism (§8) modulates the native AI fabric (§6): immune, circadian rhythm and metabolic ATP
-                set how many swarm agents run in parallel — and each run expends ATP, which recovers on the circadian cycle.
+                The living organism (§8) modulates the native AI fabric (§6): the immune, self-healing and
+                circadian terms set how many swarm agents run in parallel.
+                {/* W506 (FU-265d) — a claim that the metabolic term also sets the parallelism, and that each
+                    cognitive run draws that energy down and recovers it on the circadian cycle, was removed
+                    from here; the removed wording is in the commit message rather than quoted, so this comment
+                    cannot turn its own guard red (W495). The term is a simulator whose production exceeds its
+                    consumption at every efficiency the code passes, so it only rises: it cannot lower the cap,
+                    and the posture it would select is unreachable. Stated from the server below rather than
+                    asserted here, so it corrects itself if the model ever changes. */}
+                {homeo.organism.atp_can_fall
+                  ? <> The metabolic (ATP) term can fall and contributes to that cap.</>
+                  : <span className="text-amber-400"> The metabolic (ATP) term is simulated and cannot fall,
+                      so it never lowers the cap{homeo.organism.conserving_posture_basis ? ' — ' : ''}
+                      {homeo.organism.conserving_posture_basis}</span>}
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-violet-500/10 text-violet-300">max parallel: {homeo.max_parallel}</span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">mode: {homeo.organism.mode}</span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">circadian: {homeo.organism.circadian}{homeo.organism.is_peak_focus ? ' · peak' : ''}</span>
-                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">ATP: {Math.round((homeo.organism.atp_ratio ?? 0) * 100)}%</span>
+                {/* W506 (FU-265d) — the qualifier is ON the badge. A bare percentage reads as a live vital,
+                    and the server has carried both the measured flag and the basis for this figure since
+                    W494. The field names are deliberately NOT written in this comment: a guard that checks
+                    for them would otherwise pass on the comment after the real binding below was deleted,
+                    which is how a presence check comes to see nothing (W503). */}
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400"
+                      title={homeo.organism.atp_basis ?? 'this response states no basis for the ATP figure'}>
+                  ATP: {Math.round((homeo.organism.atp_ratio ?? 0) * 100)}%
+                  <span className="text-amber-400">{homeo.organism.atp_measured ? '' : ' · simulated'}</span>
+                </span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">immune: {homeo.organism.immune_threat}</span>
                 {/* W491 (refutation) - the same part-simulated blend, named as such */}
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400"

@@ -29,6 +29,11 @@ def _fire(signal_type: str, source: str, msg: str, intensity: float = 0.4) -> No
         pass
 
 
+# W506 (FU-265d) — the ATP threshold, named once. It was a bare 0.3 in two comparisons, so no surface
+# could report it and no reader could see that the figure cannot reach it.
+_ATP_CONSERVE_AT = 0.3
+
+
 class HomeostaticController:
     """Admits native-AI cognitive work as a function of the whole living-organism state, and feeds the
     cognitive demand back into the metabolic loop. In-house, real organism state — best-effort and
@@ -54,7 +59,11 @@ class HomeostaticController:
         rec = ctx.get("recommended", {}) or {}
         immune_threat = (ctx.get("immune", {}) or {}).get("threat_level", "NOMINAL")
         cycle = (ctx.get("circadian", {}) or {}).get("cycle", "")
-        _atp_raw = (ctx.get("metabolic", {}) or {}).get("atp_ratio")
+        # W506 (FU-265d) — the metabolic block WHOLE, so its qualifier can travel with its figure
+        _met = ctx.get("metabolic", {}) or {}
+        from agentic_core.organism.biobus import atp_depletion_state
+        _dep = atp_depletion_state()
+        _atp_raw = _met.get("atp_ratio")
         atp = float(_atp_raw) if _atp_raw is not None else 1.0   # W438: the biobus fallback carries None
 
         # Cap concurrency by the WHOLE-organism recommendation (composite health: immune·self-healing·
@@ -64,11 +73,11 @@ class HomeostaticController:
             cap = 1
         elif immune_threat == "ELEVATED":
             cap = min(cap, 2)
-        if atp < 0.3:                       # metabolic survival instinct: protect remaining energy
+        if atp < _ATP_CONSERVE_AT:          # metabolic survival instinct: protect remaining energy
             cap = 1
         cap = max(1, cap)
 
-        if bool(rec.get("should_throttle")) or cap == 1 or atp < 0.3:
+        if bool(rec.get("should_throttle")) or cap == 1 or atp < _ATP_CONSERVE_AT:
             posture = "protected"           # organism is defending itself — minimal cognitive load
         elif cycle != "ACTIVE_FOCUS" or cap < int(requested_parallel):
             posture = "reduced"             # off-peak circadian / partial headroom — measured load
@@ -89,10 +98,29 @@ class HomeostaticController:
                 "circadian": cycle,
                 "is_peak_focus": cycle == "ACTIVE_FOCUS",
                 "atp_ratio": round(atp, 3),
+                # W506 (FU-265d) — the qualifier TRAVELS WITH THE FIGURE. biobus has carried
+                # metabolic.measured=False and a basis since W494 and this reader dropped both, so every
+                # surface downstream printed the number as a live vital. A figure whose qualifier is
+                # available and omitted is the badge-in-the-DOM defect at the API layer.
+                "atp_measured": bool(_met.get("measured")),
+                "atp_basis": _met.get("basis"),
+                "atp_can_fall": _dep["can_deplete"],
+                # ...and the posture the ATP term selects is UNREACHABLE on the current model, said rather
+                # than silently never chosen (the same dead branch P2.7(4) found in the heartbeat).
+                "conserving_posture_reachable": _dep["can_deplete"],
+                "conserving_posture_basis": (
+                    None if _dep["can_deplete"] else
+                    "the 'conserving' posture is selected below an ATP of "
+                    f"{_ATP_CONSERVE_AT} and the figure cannot fall to it: " + _dep["basis"]),
                 "immune_threat": immune_threat,
                 "should_throttle": bool(rec.get("should_throttle")),
             },
-            "governed_by": "homeostatic controller (§8 organism → §6 cognition; real state)",
+            # W506 (FU-265d) — "real state" was doing the work of a claim. The immune, self-healing and
+            # circadian terms ARE read from live state; the metabolic one is a simulator, and the sentence
+            # covered all of them.
+            "governed_by": ("homeostatic controller (§8 organism → §6 cognition). The immune, self-healing and "
+                            "circadian terms are read from live state; the metabolic (ATP) term is simulated "
+                            "and says so in organism.atp_basis"),
         }
 
     def recover(self, cycles: int = 4) -> Dict[str, Any]:

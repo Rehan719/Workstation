@@ -1,4 +1,22 @@
-import torch
+from __future__ import annotations
+
+
+def _torch():
+    """The torch module, or a refusal naming what is missing. W506 (P2.7(5)).
+
+    torch is OPTIONAL by the 17.5 invariant: importing the platform must never require it. A top-level
+    import here meant `import agentic_core.app_mvp` raised ModuleNotFoundError without it, so only the one
+    function body that needs the module asks for it.
+    """
+    try:
+        import torch
+        return torch
+    except Exception as exc:
+        raise RuntimeError(
+            "this operation needs PyTorch and it is not installed in this deployment: "
+            f"{exc.__class__.__name__}: {exc}. Nothing was computed."
+        ) from exc
+
 try:
     import ot
 except ImportError:
@@ -50,7 +68,7 @@ class OptimalTransportRouter:
         wasserstein = float(np.sum(plan * C_stable))
 
         return (
-            torch.from_numpy(plan).float(),
+            _torch().from_numpy(plan).float(),
             wasserstein,
             {
                 "iterations": self.max_iter, # POT doesn't always return iter count in base sinkhorn

@@ -163,7 +163,24 @@ class VentureIntelligence:
         for w in winners:
             amount = round(max(0.0, budget) * (w["score"] / weight_sum), 2)
             positions.append({"id": w["id"], "name": w.get("name", w["id"]), "domain": w.get("domain", ""),
-                              "score": w["score"], "amount_wst": amount})
+                              "score": w["score"], "amount_wst": amount,
+                              # W506 (P2.7(7)) - carried on EVERY position, because a position travels
+                              # away from this response and the statement has to travel with it
+                              "funding_state": "recorded_unfunded",
+                              "funding_basis": _UNFUNDED_BASIS})
+        # W506 (P2.7(7)) - the RESIDUAL. Each share was rounded to 2dp independently, so the positions did
+        # not sum to the budget: measured 100.0 -> 100.01 and 33.33 -> 33.32, a cent created and a cent
+        # destroyed. Harmless while nothing is funded and real money the moment anything is, so it is fixed
+        # now rather than left for whoever takes the funding arm. The residual lands on the largest position.
+        _budget = round(max(0.0, budget), 2)
+        _sum = round(sum(p["amount_wst"] for p in positions), 2)
+        _residual = round(_budget - _sum, 2)
+        if positions and _residual:
+            _biggest = max(positions, key=lambda p: p["amount_wst"])
+            _biggest["amount_wst"] = round(_biggest["amount_wst"] + _residual, 2)
+            _biggest["absorbed_rounding_wst"] = _residual
+        assert round(sum(p["amount_wst"] for p in positions), 2) == _budget or not positions, (
+            "the positions do not sum to the budget after the residual correction")
         return {
             "budget_wst": round(max(0.0, budget), 2),
             # W489 — it is a weighted SUM of policy constants, and it was described as a product of
@@ -175,11 +192,22 @@ class VentureIntelligence:
                              "entities in the same bucket tie, and tied positions split the budget evenly"),
             "using_demo_candidates": self.using_demo,
             "positions": positions,
-            "disclaimer": "Virtual/simulated investment — no real funds moved.",
+            # W506 (P2.7(7)) - "no real funds moved" was true and was not the thing a reader needed to
+            # know: no VIRTUAL funds reach the investee either. The board pack rendered these positions with
+            # named investees as if capital had been deployed.
+            "disclaimer": "Virtual/simulated investment \u2014 no real funds moved.",
+            "funding_state": "recorded_unfunded",
+            "funding_basis": _UNFUNDED_BASIS,
         }
 
 
 # ── Portfolio persistence (§6: tracked as portfolio positions; returns recycle into the waterfall) ─────────
+
+# W506 (P2.7(7)) \u2014 ONE statement, so the API, the portfolio and the board pack cannot each word it
+# differently (the W475 second-writer lesson applied to a disclosure).
+_UNFUNDED_BASIS = (
+    "recorded, unfunded — the investee is NOT credited. The position is the investor's own record of an allocation; no intake is queued for the named entity and its waterfall never receives this amount. Virtual WST throughout.")
+
 
 def _load_portfolio() -> Dict[str, Any]:
     """W472 (register FU-052) — whole or StoreUnavailable. W442's tolerant load still read a corrupt file as {} when
@@ -340,17 +368,25 @@ def portfolio(vsb_id: str) -> Dict[str, Any]:
         pf = _load_portfolio().get(vsb_id)
     except StoreUnavailable as e:
         # W472 — never zero holdings for a portfolio that could not be read
+        # W506 (pre-flight) - the funding state holds whether or not the store can be read: it is a fact
+        # about what a position IS, not about this response. Omitting it here made a reader that always
+        # reads it fall through to "not stated" on the one response that shows no figures anyway.
         return {"vsb_id": vsb_id, "currency": "WST", "unavailable": str(e), "holdings": [],
+                "funding_state": "recorded_unfunded", "funding_basis": _UNFUNDED_BASIS,
                 "note": "the venture portfolio could not be read whole — no figures are shown and nothing is written "
                         "to it until it can be read (virtual)"}
     if not pf:
         return {"vsb_id": vsb_id, "currency": "WST", "invested_total": 0.0,
                 "positions_count": 0, "holdings": [], "pending_returns_wst": 0.0,
                 "returns_total": 0.0, "recycled_total_wst": 0.0,
+                "funding_state": "recorded_unfunded", "funding_basis": _UNFUNDED_BASIS,
                 "note": "No venture investments yet (virtual)."}
     holdings = sorted(pf["holdings"].values(), key=lambda h: h["invested_wst"], reverse=True)
     return {"vsb_id": vsb_id, "currency": "WST", "invested_total": pf["invested_total"],
             "positions_count": pf.get("positions_count", len(holdings)), "holdings": holdings,
+            # W506 (P2.7(7)) - on the response that carries `invested_total`, because that figure is the
+            # one a reader takes for deployed capital
+            "funding_state": "recorded_unfunded", "funding_basis": _UNFUNDED_BASIS,
             "pending_returns_wst": round(pf.get("pending_returns_wst", 0.0), 2),
             "returns_total": round(pf.get("returns_total", 0.0), 2),
             "recycled_total_wst": round(pf.get("recycled_total_wst", 0.0), 2),

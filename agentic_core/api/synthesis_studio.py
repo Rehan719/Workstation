@@ -292,8 +292,13 @@ async def synthesise(req: SynthesiseRequest,
                 solution=results.get("solution_concept", "")[:200],
             )
 
-            stage_content = await gateway.query(prompt, agent=f"studio_{stage_key}")
+            # W506 (P2.2) - an SSE engine carries provenance on EVERY stage event, which the item names
+            # explicitly; a reader watching the stream must not have to wait for the final record.
+            _st = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False)
+            stage_content = _st.get("output", "")
             results[stage_key] = stage_content
+            _stage_served = _st.get("served_by")
+            _stage_ext = bool(_st.get("is_external"))
 
             yield f'data: {json.dumps({"stage": "complete", "stage_key": stage_key, "stage_label": stage_label, "content": stage_content, "stage_num": i + 1})}\n\n'
 
@@ -387,7 +392,8 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
         "## 30-Day Priority Actions (numbered list of 5)"
     )
 
-    structure = await gateway.query(prompt, agent="vsb_spawner")
+    _vs = await gateway.query_meta(prompt, agent="vsb_spawner", augment=False)
+    structure = _vs.get("output", "")
 
     entity = {
         "entity_id": entity_id,

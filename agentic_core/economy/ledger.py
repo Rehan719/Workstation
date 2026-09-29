@@ -399,17 +399,26 @@ class VirtualLedger:
 
     # ── double-entry core ─────────────────────────────────────────────────────
     def post(self, debit: str, credit: str, amount: float, memo: str = "",
-             save: bool = True) -> Dict[str, Any]:
+             save: bool = True, source: Optional[str] = None) -> Dict[str, Any]:
         """One BALANCED posting (VSB_ECONOMIC_LEGAL_MODEL §3): every movement debits one account and
         credits another for the same amount, so the books always balance (trial_balance).
         save=True runs under the store lock; save=False assumes the CALLER holds the lock
         (record/close_period batch postings inside one locked mutation)."""
         if save:
             with self._locked():
-                return self._apply_posting(debit, credit, amount, memo)
-        return self._apply_posting(debit, credit, amount, memo)
+                return self._apply_posting(debit, credit, amount, memo, source=source)
+        return self._apply_posting(debit, credit, amount, memo, source=source)
 
-    def _apply_posting(self, debit: str, credit: str, amount: float, memo: str = "") -> Dict[str, Any]:
+    def _apply_posting(self, debit: str, credit: str, amount: float, memo: str = "",
+                       source: Optional[str] = None) -> Dict[str, Any]:
+        """W506 (P2.7(8)) - `source` names WHAT MOVED THE MONEY, on the one function every posting passes
+        through. `post` is not that function: transfers calls this directly, so tagging `post` alone would
+        have left every inter-VSB debit untagged.
+
+        None is recorded as ABSENT, never as a default source: the postings already in the store predate this
+        field and are genuinely not stated, and a default of "cycle" would have had each of them claim to be
+        one. `postings_by_source` names that group rather than attributing it.
+        """
         amount = round(float(amount), 2)
         accts = self._data.setdefault("accounts", {})
         for name, side in ((debit, "debit"), (credit, "credit")):
@@ -420,12 +429,15 @@ class VirtualLedger:
         posting = {
             "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "debit": debit, "credit": credit, "amount": amount, "memo": memo,
+            # W506 (P2.7(8)) - omitted entirely when not stated, so a reader can tell an untagged posting
+            # from one tagged with an unknown source
+            **({"source": source} if source else {}),
         }
         self._data.setdefault("postings", []).append(posting)
         return posting
 
     def record(self, account: str, amount: float, memo: str = "", kind: str = "credit",
-               ref: Optional[str] = None) -> Dict[str, Any]:
+               ref: Optional[str] = None, source: Optional[str] = None) -> Dict[str, Any]:
         """Record an entry (LEGACY single-sided surface — kept intact for existing readers). Also
         makes the corresponding BALANCED double-entry posting, so the real books stay double-entry
         while the legacy balances/statement remain byte-compatible."""
@@ -446,10 +458,11 @@ class VirtualLedger:
             dr, cr = (_COMPAT_POSTING_DEBIT.get(account) if kind == "debit" else None) \
                 or _COMPAT_POSTING.get(account) \
                 or ((account, "cash") if kind == "debit" else ("cash", account))
-            self.post(dr, cr, amount, memo=memo or f"legacy:{account}", save=False)
+            self.post(dr, cr, amount, memo=memo or f"legacy:{account}", save=False, source=source)
             return entry
 
-    def spend_from(self, account: str, amount: float, memo: str = "") -> Dict[str, Any]:
+    def spend_from(self, account: str, amount: float, memo: str = "",
+                   source: Optional[str] = None) -> Dict[str, Any]:
         """W504 (FU-060) — draw from a legacy fund balance, CHECKING AND WRITING UNDER ONE LOCK.
 
         The caller used to read the balance from `statement()` and then call `record()`, which takes the lock
@@ -475,9 +488,56 @@ class VirtualLedger:
             self._data["entries"].append(entry)
             dr, cr = (_COMPAT_POSTING_DEBIT.get(account) or _COMPAT_POSTING.get(account)
                       or (account, "cash"))
-            self.post(dr, cr, spend, memo=memo or f"spend:{account}", save=False)
+            self.post(dr, cr, spend, memo=memo or f"spend:{account}", save=False, source=source)
             return {"account": account, "requested_wst": round(float(amount), 6), "spent_wst": spend,
                     "balance_before_wst": available, "balance_after_wst": bals[account], "entry": entry}
+
+    # W506 (P2.7(8)) — the sources a posting may declare. A tag outside this set is reported as it was
+    # written rather than corrected, because inventing a bucket for it would hide that a caller went its own
+    # way; `postings_by_source` counts it under its own name and `unknown_sources` names it.
+    # "transfer_repair" was in this list and NOTHING emits it: a repaired transfer leg credits the
+    # receiver's PENDING QUEUE, not the books, so no posting is written for it. A declared value with
+    # no producer is the same defect one layer over - it tells a reader a source exists that cannot
+    # appear - so it is out rather than aspirational.
+    POSTING_SOURCES = ("cycle_intake", "cycle_costs", "cycle_reserve", "cycle_distribution",
+                       "inter_vsb_transfer", "self_investment", "period_close")
+
+    def postings_by_source(self) -> Dict[str, Any]:
+        """Every posting split by WHAT MOVED THE MONEY. W506 (P2.7(8)).
+
+        Before this the books held totals and prose memos, so a reader could not ask how much of a figure
+        came from transfers rather than from cycles. The postings written before the tag existed are
+        genuinely NOT STATED and are reported as such - never folded into a source they might not have had.
+        """
+        self.require_readable()
+        by: Dict[str, Dict[str, Any]] = {}
+        not_stated = {"source": None, "count": 0, "total_wst": 0.0,
+                      "basis": "written before postings carried a source, or by a caller that states none - "
+                               "these are NOT attributed to any source"}
+        for p in self._data.get("postings", []) or []:
+            src = p.get("source")
+            amt = round(float(p.get("amount") or 0.0), 2)
+            if not src:
+                not_stated["count"] += 1
+                not_stated["total_wst"] = round(not_stated["total_wst"] + amt, 2)
+                continue
+            row = by.setdefault(src, {"source": src, "count": 0, "total_wst": 0.0,
+                                      "declared": src in self.POSTING_SOURCES})
+            row["count"] += 1
+            row["total_wst"] = round(row["total_wst"] + amt, 2)
+        rows = sorted(by.values(), key=lambda r: r["total_wst"], reverse=True)
+        unknown = [r["source"] for r in rows if not r["declared"]]
+        total = round(sum(r["total_wst"] for r in rows) + not_stated["total_wst"], 2)
+        return {
+            "by_source": rows,
+            "not_stated": not_stated,
+            "unknown_sources": unknown,
+            "total_wst": total,
+            "tagged_share": (round(round(total - not_stated["total_wst"], 2) / total, 4) if total else None),
+            "basis": ("split from each posting's own `source` tag, which names what moved the money. A "
+                      "posting with no tag is counted under `not_stated` and attributed to nothing - the "
+                      "books held no source before this, so an untagged posting is not evidence of any."),
+        }
 
     def trial_balance(self) -> Dict[str, Any]:
         """The double-entry invariant, GENUINELY verified: the sum of debit-normal account balances
@@ -577,9 +637,11 @@ class VirtualLedger:
                     continue
                 if atype == "income":
                     self.post(name, "retained_earnings", bal, memo="period close — income → retained earnings",
+                              source="period_close",
                               save=False)
                 elif atype == "expense":
                     self.post("retained_earnings", name, bal, memo="period close — expenses → retained earnings",
+                              source="period_close",
                               save=False)
             close = {
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

@@ -2218,7 +2218,11 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
     biobus.fire_signal("cognitive", "vsb.evolve",
                        f"Evolution cycle {int(vsb.get('evolution_cycles_run', 0)) + 1} for {vsb_id} "
                        f"(generation stays {int(vsb.get('generation', 0))} until an apply lands)", 0.7)
-    raw = await gateway.query(prompt, agent=f"vsb_evolution_{vsb_id}", augment=False)   # W332 — drives persisted mutations
+    # W506 (P2.2) - what proposed these mutations is recorded. augment=False stays: W332 established that
+    # this output drives PERSISTED mutations, so it must carry no cross-request recall.
+    _vr = await gateway.query_meta(prompt, agent=f"vsb_evolution_{vsb_id}", augment=False)
+    raw = _vr.get("output", "")
+    _evo_served, _evo_ext = _vr.get("served_by"), bool(_vr.get("is_external"))
     proposals = []
     for line in raw.splitlines():
         if line.upper().startswith("EVOLVE"):

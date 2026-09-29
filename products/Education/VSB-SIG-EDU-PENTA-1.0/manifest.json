@@ -4,5 +4,12 @@
   "domain": "Education",
   "framework": "PENTA",
   "pipeline_integration": true,
-  "modes_supported": ["mushahida", "jaiza", "muaina", "real_time_support", "synthesis", "continuous_operation"]
+  "modes_supported": [
+    "mushahida",
+    "jaiza",
+    "muaina",
+    "real_time_support",
+    "synthesis",
+    "continuous_operation"
+  ]
 }

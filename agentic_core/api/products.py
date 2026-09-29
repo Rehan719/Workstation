@@ -800,12 +800,23 @@ async def intelligence_insights() -> dict:
                          if len(_rtop) == 1 else
                          f"{len(_rtop)} realms tied at the top — {top_realm} "
                          f"({_rmax} project{'' if _rmax == 1 else 's'} each)")
+        # W506 (FU-164) - the statuses actually present, so a title can name them instead of calling
+        # every project "active". Counted from the records, never assumed.
+        _by_status: dict[str, int] = {}   # builtin generic: Dict is not imported in this module
+        for _p in projects:
+            #  holds Project MODELS, not dicts - the loop above reads p.stage the same way.
+            _st = str(getattr(_p, "status", None) or "unknown")
+            _by_status[_st] = _by_status.get(_st, 0) + 1
+        by_status_phrase = ", ".join(f"{n} {st}" for st, n in sorted(_by_status.items()))
         insights = []
         if projects:
             insights.append({
                 "id": "i-1",
                 "type": "Portfolio",
-                "title": f"{len(projects)} active projects across {len(by_realm)} realm(s)",
+                # W506 (FU-164, sweep S13.9) - "active" counted EVERY project whatever its status, and
+                # the live statuses are idle and done. The title now says what was counted.
+                "title": (f"{len(projects)} project(s) across {len(by_realm)} realm(s)"
+                          + (f" - {by_status_phrase}" if by_status_phrase else "")),
                 "detail": f"{_realm_phrase}. {total_outputs} deliverables generated.",
                 "score": min(1.0, 0.5 + len(projects) * 0.05),
                 "score_basis": ("salience weight: 0.5 rising 0.05 per active project (capped at 1.0) "
@@ -815,7 +826,9 @@ async def intelligence_insights() -> dict:
             insights.append({
                 "id": "i-2",
                 "type": "Opportunity",
-                "title": f"{by_stage['concept']} concept-stage project(s) ready to run",
+                # W506 (FU-164, sweep S13.9) - "ready to run" was the concept STAGE and nothing else;
+                # no check established that a run could start. The title names the stage.
+                "title": f"{by_stage['concept']} project(s) at the concept stage",
                 "detail": "Run the AI workflow to generate a Concept Document and advance to prototype.",
                 "score": 0.82,
                 "score_basis": "salience weight: a fixed constant for this insight type, not a measurement",
@@ -885,10 +898,15 @@ async def intelligence_forecasts() -> dict:
         "3. RECOMMENDED ACTIONS (top 3 priorities): numbered list\n\n"
         "Be specific to the portfolio state. If no projects exist, write a getting-started forecast."
     )
-    forecast_text = await gateway.query(prompt, agent="intelligence")
+    # W506 (P2.2) - the forecast says what wrote it. FU-164 (S8.11) is the same claim on the export side:
+    # a dropped served_by leaves the page with no provenance chip and the file with no header.
+    _fr = await gateway.query_meta(prompt, agent="intelligence", augment=False)
+    forecast_text = _fr.get("output", "")
 
     result = {
         "forecast": forecast_text,
+        "served_by": _fr.get("served_by"),
+        "is_external": bool(_fr.get("is_external")),
         "generated_at": time.time(),
         "portfolio_size": len(projects) if 'projects' in dir() else 0,
         "valid_until": time.time() + 3600,

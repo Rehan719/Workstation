@@ -205,6 +205,46 @@ def _reorder_by_health(order: List[str]) -> List[str]:
     return head + tail + bad
 
 
+# ── W506 (P2.8(1)) — which EXTRA branches a goal or concept calls for ─────────────────────────
+#
+# These rules were inline in `_plan_tree` and the Genesis journey, which runs six FIXED stages, could not
+# reach them - so a concept never changed the work done on it. They are here, at module level, so the swarm
+# tree and the journey apply ONE set: a copy in each would drift the first time either was edited (W475).
+#
+# Each rule names the keywords that select it, and `derived_branches` returns the ones that MATCHED, so a
+# caller can tell a reader why their goal grew a risk branch and another's did not. A derived set that cannot
+# say what derived it is indistinguishable from an arbitrary one.
+DERIVED_BRANCH_RULES = (
+    {"id": "implementation", "role": "delivery planner",
+     "task": "Produce a concrete, sequenced implementation plan with milestones.",
+     "keywords": ("build", "implement", "deliver", "ship", "develop", "create", "launch", "make")},
+    {"id": "risk", "role": "risk & assurance",
+     "task": "Identify risks, compliance/assurance needs, and concrete mitigations.",
+     "keywords": ("risk", "complian", "legal", "safe", "secur", "govern", "ethic", "halal", "assur")},
+    {"id": "economics", "role": "economics analyst",
+     "task": "Assess costs, value, and economic viability.",
+     "keywords": ("cost", "budget", "econom", "price", "fund", "invest", "revenue", "profit")},
+)
+
+
+def derived_branches(text: str) -> list:
+    """The extra branches `text` calls for, each with the keywords that selected it. W506 (P2.8(1)).
+
+    Order follows DERIVED_BRANCH_RULES, so the same text always yields the same sequence - a set that
+    reordered itself between two runs would look like a different decomposition of the same goal.
+    """
+    t = (text or "").lower()
+    out = []
+    for rule in DERIVED_BRANCH_RULES:
+        hits = [k for k in rule["keywords"] if k in t]
+        if hits:
+            out.append({"id": rule["id"], "role": rule["role"], "task": rule["task"],
+                        "matched": hits,
+                        "basis": (f"derived from the text: it contains "
+                                  f"{', '.join(repr(h) for h in hits)}")})
+    return out
+
+
 class NativeOrchestrator:
     """In-house-first orchestration over owned + local + (optional) external model resources."""
 
@@ -475,12 +515,11 @@ class NativeOrchestrator:
             ("research", "research analyst", "Gather the key facts, prior art, and constraints relevant to the goal."),
             ("design", "solution designer", "Design the approach and the main options to achieve the goal."),
         ]
-        if any(k in g for k in ("build", "implement", "deliver", "ship", "develop", "create", "launch", "make")):
-            branches.append(("implementation", "delivery planner", "Produce a concrete, sequenced implementation plan with milestones."))
-        if any(k in g for k in ("risk", "complian", "legal", "safe", "secur", "govern", "ethic", "halal", "assur")):
-            branches.append(("risk", "risk & assurance", "Identify risks, compliance/assurance needs, and concrete mitigations."))
-        if any(k in g for k in ("cost", "budget", "econom", "price", "fund", "invest", "revenue", "profit")):
-            branches.append(("economics", "economics analyst", "Assess costs, value, and economic viability."))
+        # W506 (P2.8(1)) — the rules moved to `derived_branches` at module level, because the Genesis
+        # journey needs the SAME ones and a second copy of a keyword list drifts the first time either is
+        # edited. This is the only place they are applied to a swarm tree.
+        for _d in derived_branches(goal):
+            branches.append((_d["id"], _d["role"], _d["task"]))
         for bid, role, task in branches:
             nodes.append({"id": bid, "role": role, "depends_on": ["frame"], "task": task})
         nodes.append({"id": "synthesise", "role": "chief synthesiser", "depends_on": [b[0] for b in branches],

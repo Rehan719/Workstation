@@ -12,7 +12,7 @@ from pathlib import Path
 # Here we implement the backend logic that would support them.
 
 from config.paths import DATA_DIR
-from agentic_core.security.pqc_hardening import pqc_service
+from agentic_core.security.pqc_hardening import content_integrity
 
 logger = logging.getLogger(__name__)
 
@@ -315,16 +315,19 @@ class QEPFlagshipService:
             "evidence": {"completed_at": progress.get("completed_at"),
                          "source": "user progress record"},
         }
-        signature = pqc_service.sign_dilithium5(json.dumps(cert_data).encode())
+        # W506 (FU-076) - a LEARNER'S CERTIFICATE carried a field named for post-quantum cryptography
+        # the platform does not perform. The digest is real and detects alteration of this record; it is
+        # not a signature and does not prove who issued it, and the value says both.
+        integrity = content_integrity.digest(cert_data)
         cert_entry = cert_data.copy()
-        cert_entry["signature"] = signature
+        cert_entry["content_integrity"] = integrity
         self.data["certificates"].append(cert_entry)
         self._save_data(self.data)
 
         return {
             "certificate_id": cert_id,
             "status": "ISSUED",
-            "pqc_signature": signature,
+            "content_integrity": integrity,
             "evidence": cert_data["evidence"],
             "verify_url": f"/verify/{cert_id}",
         }

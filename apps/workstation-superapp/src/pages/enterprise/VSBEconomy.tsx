@@ -8,7 +8,7 @@ import {
 import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
-import { complianceChip } from '../../lib/api';
+import { complianceChip, fundingLabel } from '../../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -637,6 +637,14 @@ export const VSBEconomy: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Venture portfolio (§6)</p>
               <p className="text-sm font-black text-white">{(bp.venture_portfolio?.invested_total_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">· {bp.venture_portfolio?.positions ?? 0} positions</span></p>
+              {/* W506 (P2.7(7)) — this block is the one the W446 ledger named: a WST figure and a position
+                  count above NAMED investees, read as capital deployed, when no investee is ever credited.
+                  The statement sits on the figure and above the names, because a reader who stops at the
+                  names has already been told the wrong thing. Wording from the server. */}
+              <p className="text-[8px] font-black uppercase tracking-widest text-amber-400 mt-0.5"
+                 title={fundingLabel(bp.venture_portfolio?.funding_state, bp.venture_portfolio?.funding_basis).full}>
+                {fundingLabel(bp.venture_portfolio?.funding_state, bp.venture_portfolio?.funding_basis).short}
+              </p>
               {(bp.venture_portfolio?.holdings ?? []).slice(0, 3).map((h: any) => (
                 <p key={h.id} className="text-[9px] text-slate-500 truncate mt-0.5">{h.name} · {h.invested_wst.toLocaleString()} WST</p>
               ))}

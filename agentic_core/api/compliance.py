@@ -194,13 +194,31 @@ def _verdict(framework: str, status: str, reason: str, coverage: str = "vocabula
 def _coverage_report(verdicts: List[Dict[str, Any]]) -> Dict[str, Any]:
     """The same coverage statement on every response, so no consumer has to derive it (and no two
     consumers derive it differently — the W475 second-writer lesson)."""
+    # W506 (FU-299, second pass) - "error" joins this list. An ENGINE row whose status is `error` was in
+    # NONE of the three lists: not a gap (its coverage is 'engine'), not assessed (`assessed()` excludes
+    # status 'error'), not vocabulary-only (its coverage is not 'vocabulary'). So an engine that RAISED
+    # disappeared from the account entirely - the same invisibility as the vocabulary rows, one case over,
+    # found by blinding the first fix. An engine that errored established nothing, which is what a gap is.
     gaps = [v["framework"] for v in verdicts if v.get("coverage") in ("none", "screen")
-            or v.get("status") in ("not_assessed", "not_checked")]
+            or v.get("status") in ("not_assessed", "not_checked", "error")]
     can = [v["framework"] for v in verdicts if assessed(v)]
     overall = _overall(verdicts)
+    # W506 (FU-299) - the THIRD state, which was in neither list. `gaps` takes coverage 'none'/'screen' and
+    # `assessed_by` takes coverage 'engine', so a row with coverage 'vocabulary' fell out of the account
+    # entirely: measured on a five-framework screen, coverage_gaps named four and assessed_by none, so
+    # sharia_halal appeared in neither and a reader taking the two as a partition concluded it was fine.
+    # ADDED rather than folded into coverage_gaps, because that field has many readers and changing what a
+    # word means breaks them silently (W495).
+    vocabulary_only = [v["framework"] for v in verdicts
+                       if v.get("coverage") in COLOURING_COVERAGE
+                       and v.get("coverage") not in ASSESSING_COVERAGE
+                       and v.get("status") not in ("not_assessed", "not_checked", "error")]
     return {
         "coverage_gaps": sorted(set(gaps)),
         "assessed_by": sorted(set(can)),
+        "vocabulary_only": sorted(set(vocabulary_only)),
+        # the three lists together must account for every framework screened, so no row can go missing again
+        "frameworks_screened": sorted({v["framework"] for v in verdicts}),
         # W483 — `compliant` was `overall != 'fail'`, so a subject nothing had assessed was reported
         # compliant. Three states: False (a row refused it), True (every area was assessed and
         # passed), None (not established — the ordinary case while the screens are word lists).
@@ -209,6 +227,8 @@ def _coverage_report(verdicts: List[Dict[str, Any]]) -> Dict[str, Any]:
         "basis": ("keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and "
                   "can escalate; it cannot clear — so only a row with coverage 'engine' can carry a "
                   "pass, and `coverage_gaps` names every area nothing here assessed"
+                  + (f". Matched only by a word list, which establishes nothing either way: "
+                     f"{', '.join(sorted(set(vocabulary_only)))}" if vocabulary_only else "")
                   + (f" (assessed here: {', '.join(sorted(set(can)))})" if can else
                      " — NOTHING here assessed this subject, so the overall is 'review' and no part of "
                      "it may be reported as compliant")),

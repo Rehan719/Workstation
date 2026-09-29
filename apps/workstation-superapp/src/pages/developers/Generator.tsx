@@ -3,7 +3,7 @@ import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Badge } from '@workstation/ui';
 import { Wand2, Play, Download, Copy, Check, Loader2, Code2, Braces, Settings, FileText, Boxes, Cpu } from 'lucide-react';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, provenanceComment, provenanceField } from '../../lib/api';
 
 const ARTEFACT_TYPES = [
   { id: 'code',       label: 'Code',        icon: Code2,    fmt: 'python'   },
@@ -88,7 +88,24 @@ export const Generator: React.FC = () => {
   const handleExport = () => {
     if (!result) return;
     const ext = ({ python: 'py', typescript: 'ts', json: 'json', yaml: 'yaml', markdown: 'md', sql: 'sql', html: 'html', toml: 'toml' } as Record<string, string>)[result.format] ?? 'txt';
-    const blob = new Blob([result.output], { type: 'text/plain' });
+    // W506 (P2.4/FU-248) - the file states what produced it, in a form the FORMAT can carry. A markdown
+    // blockquote (provenanceLine) would be a syntax error in .py and corruption in .json, which is why this
+    // export was left unlabelled; provenanceComment renders the same rule as the target language's comment.
+    // For json there is no comment syntax, so the provenance goes in as a key rather than corrupting the file.
+    let exported = result.output;
+    if (result.format === 'json') {
+      try {
+        const parsed = JSON.parse(result.output);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          exported = JSON.stringify({ ...parsed, ...provenanceField(result.served_by) }, null, 2);
+        }
+      } catch {
+        // not parseable as an object - leave the payload untouched rather than damage the download
+      }
+    } else {
+      exported = provenanceComment(result.format, result.served_by) + result.output;
+    }
+    const blob = new Blob([exported], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

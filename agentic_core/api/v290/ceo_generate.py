@@ -256,7 +256,9 @@ async def debug_creation(blueprint: dict) -> dict:
         "For each suggestion include: which component it applies to, what to change, and why.\n\n"
         f"Blueprint:\n{summary}"
     )
-    analysis = await gateway.query(prompt, agent="ceo_debug")
+    # W506 (P2.2) - mounted at /api/v290; converted, not retired.
+    _cr = await gateway.query_meta(prompt, agent="ceo_debug", augment=False)
+    analysis = _cr.get("output", "")
     return {
         "analysis": analysis,
         # W413 — "fidelity_score": 0.95 was returned on EVERY call, whatever blueprint was

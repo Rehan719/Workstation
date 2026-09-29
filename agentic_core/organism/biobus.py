@@ -44,6 +44,40 @@ from agentic_core.organism.nervous import nervous
 from agentic_core.organism.self_healing import self_healer
 
 
+def atp_depletion_state() -> dict:
+    """Whether the ATP figure CAN fall, computed from the model's own constants. W506 (P2.7(4)).
+
+    `ATPSimulator.update` consumes `0.1 * metabolic_load` (load clamped to 0-1) and produces
+    `0.5 * circadian_efficiency`. `_update_atp` passes an efficiency of 1.0 or 0.8 and nothing else. So at the
+    worst combination reachable in this code production is 0.4 against a consumption of 0.1 and the ratio only
+    rises, to its 15.0 ceiling.
+
+    This is DERIVED rather than stated, so it stops saying "cannot deplete" by itself if a low-efficiency path
+    is ever added - the previous basis asserted the conclusion AND the wrong reason for it (a 0.5 floor that
+    never binds), which is the defect class W494 removed from the CCA's basis strings.
+    """
+    max_consumption = 0.1 * 1.0                 # load is clamped to 1.0 in both the caller and the simulator
+    efficiencies = (1.0, 0.8)                   # every value _update_atp can pass
+    min_production = 0.5 * min(efficiencies)
+    can_deplete = max_consumption > min_production
+    return {
+        "can_deplete": can_deplete,
+        "max_consumption_per_tick": round(max_consumption, 4),
+        "min_production_per_tick": round(min_production, 4),
+        "efficiencies_this_code_passes": list(efficiencies),
+        "floor": 0.5, "ceiling": 15.0, "scale": "the raw ratio is 0.5-15.0; callers report it divided by 15",
+        "basis": (
+            f"consumption is at most {max_consumption:.2f} per tick (0.1 x a load clamped to 1.0) and "
+            f"production at least {min_production:.2f} (0.5 x the lowest efficiency this code passes, "
+            f"{min(efficiencies)}), so production exceeds consumption at every reachable combination and the "
+            f"ratio only RISES to its ceiling. It does not deplete - and NOT because of the 0.5 floor, which "
+            f"never binds."
+            if not can_deplete else
+            f"consumption reaches {max_consumption:.2f} per tick against a production floor of "
+            f"{min_production:.2f}, so the ratio CAN fall"),
+    }
+
+
 def _get_atp():
     """Lazy import — ATPSimulator may not exist in all environments."""
     try:

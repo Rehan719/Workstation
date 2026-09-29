@@ -109,7 +109,10 @@ async def generate_twin_model(req: ModelRequest):
     )
 
     biobus.fire_signal("cognitive", "twin.model", f"Digital twin: {req.system_name}", 0.6)
-    model_spec = await gateway.query(prompt, agent="digital_twin_modeller")
+    # W506 (P2.2) - this module kept NO provenance, and §17.5's twin pre-validation invariant holds in
+    # form only (/twin/models is empty), so a reader of a twin model could not tell what produced it.
+    _mr = await gateway.query_meta(prompt, agent="digital_twin_modeller", augment=False)
+    model_spec = _mr.get("output", "")
 
     model_id = f"twin-{uuid.uuid4().hex[:10]}"
     model = {
@@ -170,7 +173,8 @@ async def run_simulation(req: SimulateRequest):
     )
 
     biobus.fire_signal("cognitive", "twin.simulate", f"Simulation: {req.scenario_name}", 0.7)
-    simulation_result = await gateway.query(prompt, agent="digital_twin_simulator")
+    _sr = await gateway.query_meta(prompt, agent="digital_twin_simulator", augment=False)
+    simulation_result = _sr.get("output", "")
 
     sim_id = uuid.uuid4().hex[:8]
     simulation = {
@@ -225,7 +229,8 @@ async def optimise_model(req: OptimiseRequest):
     )
 
     biobus.fire_signal("cognitive", "twin.optimise", f"Optimise: {req.optimisation_objective[:60]}", 0.7)
-    result = await gateway.query(prompt, agent="digital_twin_optimiser")
+    _or_ = await gateway.query_meta(prompt, agent="digital_twin_optimiser", augment=False)
+    result = _or_.get("output", "")
     biobus.record_operation("twin_optimise", "twin.optimise", success=True, payload=model["system_name"])
 
     return {

@@ -220,11 +220,19 @@ def _vsb_grounding(vsb_id: str) -> str:
         except Exception:
             pass
         try:
-            from agentic_core.config import data_path, load_json_tolerant
-            comp = (load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}).get(vsb_id) or {}
+            # W506 (FU-075) - a partial read made an entry look ABSENT, so this silently omitted a screen
+            # result, including a FAIL. A person asking their enterprise about compliance must not be told
+            # nothing when the answer is "the record is damaged".
+            from agentic_core.config import data_path, read_json_reported
+            _all_comp, _comp_why = read_json_reported(data_path("vsb_compliance_history.json"), {})
+            comp = (_all_comp or {}).get(vsb_id) or {}
             if comp.get("overall"):
                 live.append(f"- Latest §11 compliance screen: {comp['overall']}"
                             + (" (REGRESSION)" if comp.get("regression") else ""))
+            elif _comp_why:
+                live.append("- Latest §11 compliance screen: NOT AVAILABLE - the compliance history could "
+                            "not be read whole, so this enterprise's latest screen is unknown rather than "
+                            "absent. It is not a pass.")
         except Exception:
             pass
         return (
