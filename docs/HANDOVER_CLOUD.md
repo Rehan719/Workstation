@@ -24,7 +24,7 @@ and that surface disagree, **the surface is right and this document is out of da
 
 | | figure | method |
 |---|---|---|
-| branch | `main` at `9faea607` | `git log` |
+| branch | `main` at the commit that added this file (`9faea607` was its parent) | `git log --oneline -3` — read it rather than trusting this cell, which staled the moment this file was committed |
 | plan | **27 of 73 items** — P1 18/18 · P2 9/17 · P3 0/27 · P4 0/6 · P5 0/5 | distinct `P<n>.<n>` ids in the prompt. **`P3.0` is excluded deliberately**: it is not a build item but the slot for an OWNER RULING inside Phase 3 (the §10 bar-wording half sits there). Counting it as an item would inflate Phase 3 to 28 and put a number on the plan that no one can build down |
 | register | 312 rows — **54 open**, 247 done, 11 dropped | `docs/FOLLOWUPS.json` |
 | where the open rows sit | P2.4 **15** · P3.12 8 · P2.17 7 · P3.17 5 · P3.15/P3.16/P3.19/P3.23/P3.27 2 each · P2.13/P3.2/P3.14/P3.18/P3.20/P3.24/P3.25/P4.4 1 each · **OWNER 1** | grouped by `slot` |
