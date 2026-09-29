@@ -800,6 +800,34 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
             "note": ("the change stands as submitted and may still be approved by review; only the AUTOMATIC "
                      "approval is withheld, and only for a requirement the platform could actually check")})
 
+    # ── THE APPRAISAL CELL (W510) — the change against its SCOPE's real state ────────────────────────────
+    # A reviewer sees the change against what is actually finished, blocked and moved-under in the scope it
+    # declares, rather than against the change's own description of itself. Best-effort and NEVER a gate: an
+    # appraisal is eight readings and two of its faculties are largely judgement, so gating on it would be a
+    # judgement wearing a gate's clothes. Its absence is SAID, never a silent omission.
+    try:
+        from agentic_core.api.method import appraise_scope_for
+        _sc = appraise_scope_for(change.get("affected_systems") or [])
+        if _sc.get("slot"):
+            # AWAITED, not asyncio.run: this function is async and inside a running loop, where asyncio.run
+            # raises. The cell's Depends default is resolved only by FastAPI, so user=None is right in-process.
+            from agentic_core.api.method import appraise as _appraise_cell
+            _ap = await _appraise_cell(scope=_sc["slot"], user=None)
+            change["scope_appraisal"] = {
+                "scope": _sc["slot"], "why_this_scope": _sc.get("why"),
+                "faculties": {k: _ap["faculties"][k] for k in ("reflection", "reasoning", "extrospection")
+                              if k in _ap["faculties"]},
+                "full": f"GET /api/v1/method/appraise?scope={_sc['slot']}",
+                "not_a_gate": ("eight readings, not a verdict. Nothing here refuses or approves a change, and "
+                               "two of the cell's faculties are largely judgement."),
+            }
+        else:
+            change["scope_appraisal"] = {"scope": None, "why_this_scope": _sc.get("why"),
+                                         "not_a_gate": "no scope was inferred, so none is appraised"}
+    except Exception as _ae:                     # noqa: BLE001 — said, never a silent omission
+        change["scope_appraisal"] = {"scope": None, "unavailable": f"{_ae.__class__.__name__}: {_ae}",
+                                     "not_a_gate": "an appraisal never gates a change"}
+
     _save_change(change)
     ueg_logged = None
     if change["status"] == "approved":
@@ -828,6 +856,12 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         # W508 (P2.10(c)/(d)) — the method check TRAVELS WITH the submission. A check stored on a record and
         # absent from the response is a fact rendered nowhere, which is the shape this whole method warns of.
         "method_check": change.get("method_check"),
+        # W512 — the SCOPE APPRAISAL travels with the submission too, for exactly the reason the line above
+        # gives. It was written onto the record and omitted from this projection, and the omission was found by
+        # reading a real submission's response and seeing "scope: None" for an appraisal that had in fact run
+        # and found P3.12 with twelve matching rows. A fact stored on a record and absent from the response is
+        # rendered nowhere — the writer-without-its-reader class this method exists to catch.
+        "scope_appraisal": change.get("scope_appraisal"),
         **({"auto_approval_withheld": change["auto_approval_withheld"]}
            if change.get("auto_approval_withheld") else {}),
         **({"impact_tier_raised_by": change["impact_tier_raised_by"],

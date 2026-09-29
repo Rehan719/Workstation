@@ -1,4 +1,8 @@
 import React from 'react';
+// P2.2 (W511) — this is a props CHILD, not a page: it makes no fetch by design, and its parent
+// SynthesisStudio already carries provenance. So the badge travels in on the `data` prop it already
+// receives and is read from the server's own field, never composed here.
+import { provenanceBadge } from '../../lib/api';
 import { Card, Badge, Button, toast } from '@workstation/ui';
 import { BarChart3, TrendingUp, Users, Zap, PieChart, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -40,8 +44,17 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
       ].filter(d => typeof d.value === "number")
     : [];
 
+  // P2.2 (W511) — read from the SERVER's field on the same payload the figures come from, so a model
+  // result and a floor-composed one are distinguishable on the page that shows their numbers.
+  const prov = provenanceBadge(data?.served_by, data?.is_external);
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex items-center gap-2">
+        <span data-testid="model-provenance" title={prov.title}
+              className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${prov.cls}`}>
+          {prov.label}
+        </span>
+      </div>
       {(data?.sim_results_note || data?.projections_note || data?.generated === false) && (
         <p role="status" className="text-[10px] font-bold text-amber-400 leading-relaxed">
           {data?.detail || data?.sim_results_note || data?.projections_note}

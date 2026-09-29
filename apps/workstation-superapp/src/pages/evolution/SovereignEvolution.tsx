@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
+import { provenanceMapBadge } from '../../lib/api';
 import {
   Dna, Loader2, AlertCircle, Crown, Briefcase, Award, GitBranch,
   Wrench, Sparkles, Rocket, Bug, ShieldCheck, Activity,
@@ -19,6 +20,10 @@ interface Roadmap {
   curated_by: string[]; items_proceeding: number; change_control_submissions: any[];
   // W496 (FU-120) — the three verdict states, and what each count covers
   curated_by_basis?: string; items_rejected?: number; items_unevaluated?: number; items_basis?: string;
+  // P2.2 (W511) — sovereign_evolution.py accumulates {served_by: {name: count}, any_external, calls}
+  // across the cycle's own calls and returns it. The page never read it, so a cycle curated by the
+  // deterministic floor was indistinguishable from one a model served.
+  served_by?: Record<string, number> | null; any_external?: boolean; calls?: number;
 }
 
 const FN_ICON: Record<string, React.ComponentType<any>> = {
@@ -180,6 +185,18 @@ export const SovereignEvolution: React.FC = () => {
               <span className="text-[9px] font-mono text-slate-600 ml-auto" data-testid="introspection-as-of">
                 cycle {roadmap.cycle_id} · {roadmap.duration_ms}ms · {roadmap.created_at ? `run ${roadmap.created_at}` : 'run time not recorded'}
               </span>
+              {/* P2.2 (W511) — what served THIS cycle, read from the server's own count map. The helper
+                  handles all three states, including an absent provenance, which is why the value is passed
+                  through rather than defaulted here. */}
+              {(() => {
+                const b = provenanceMapBadge(roadmap.served_by, roadmap.any_external);
+                return (
+                  <span data-testid="cycle-provenance" title={b.title}
+                        className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`}>
+                    {b.label}
+                  </span>
+                );
+              })()}
             </div>
             <p className="text-[9px] text-slate-600 font-bold mb-3" data-testid="introspection-staleness">
               These are the readings that cycle took, not live values. Run a cycle to refresh them.

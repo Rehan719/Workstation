@@ -456,7 +456,9 @@ async def run_project(project_id: str,
         try:
             fin: dict = {}
             # W451 — stream_meta: the done frame discloses who served it and whether the profile shaped it
-            async for ev in gateway.stream_meta(full_prompt, agent="projects"):
+            # P2.2 (W511) — stated, not inherited: the prompt is already composed from this project's
+            # own record, so no cross-request recall is wanted here.
+            async for ev in gateway.stream_meta(full_prompt, agent="projects", augment=False):
                 if "token" in ev:
                     accumulated += ev["token"]
                     safe = ev["token"].replace("\n", "\\n")

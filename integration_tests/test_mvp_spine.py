@@ -27399,3 +27399,489 @@ def test_w509_a_repeated_breach_escalates_into_a_change_and_the_count_is_visible
         "lesson_id": judgement["id"], "round_id": "W509", "what_happened": "   "}).status_code == 400
     assert client.post("/api/v1/method/breach", json={
         "lesson_id": "M-NOPE-99", "round_id": "W509", "what_happened": "x breached"}).status_code == 404
+
+
+def test_w510_the_appraisal_cell_takes_eight_readings_and_reconciles_them(client):
+    """The cell must COMPUTE its figures from the artefacts, and must never call a scope sound.
+
+    Each leg below compares what the cell returned against the same fact read independently here, so a cell
+    that returned a remembered number fails. The two faculties with an environment assumption - git history
+    and the length of the item span - are asserted to REPORT a state, never to have found something, because
+    CI clones shallow and a guard that requires history has broken CI before.
+    """
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    method = json.loads((root / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+
+    r = client.get("/api/v1/method/appraise", params={"scope": "P2"})
+    assert r.status_code == 200, r.text
+    a = r.json()
+    f = a["faculties"]
+
+    # the FOUR AXES, each with exactly two ends, and every end present
+    assert [x["axis"] for x in a["axes"]] == ["reflection → reasoning", "attribution → recognition",
+                                             "foresight → hindsight",
+                                             "introspection → extrospection"], a["axes"]
+    # the eight AXIS faculties must all be present. Asserted as a SUBSET and paired with the declared
+    # structure count, not as an exact set: W512 added a temporal spine of three, and an exact-set assertion
+    # would have to be edited every time the cell grows — which makes it a guard that resists the thing it
+    # should be checking. The count check below is what catches a faculty silently disappearing.
+    assert {"reflection", "reasoning", "attribution", "recognition",
+            "foresight", "hindsight", "introspection", "extrospection"} <= set(f), sorted(f)
+    assert len(f) == a["structures"]["faculties"], (len(f), a["structures"])
+    assert a["structures"]["axes"] * 2 + a["structures"]["spine"] * 3 == len(f), a["structures"]
+
+    # ── REFLECTION: computed from the register's own statuses, for THIS scope ──────────────────────────
+    p2_open = [x for x in reg["items"]
+               if x.get("status") == "open" and str(x.get("slot") or "").startswith("P2.")]
+    assert f["reflection"]["rows_open"] == len(p2_open), (f["reflection"]["rows_open"], len(p2_open))
+    assert f["reflection"]["items_done"] >= 8, f["reflection"]      # P2 stood at 8 of 17 when this was written
+    assert "ITEMS closed is progress" in f["reflection"]["basis"]
+
+    # ── REASONING: the blocked set, and a ceiling that is LOWER than the item count ────────────────────
+    assert set(f["reasoning"]["blocked_by_ruling"]) >= {"P2.11", "P2.16"}, f["reasoning"]["blocked_by_ruling"]
+    assert "P2.11" not in f["reasoning"]["closable_by_working_them"], f["reasoning"]
+    ceiling = f["reasoning"]["ceiling_without_clearing_the_gate"]
+    p2_items = f["reflection"]["items_done"] + f["reflection"]["items_open"]
+    # the ceiling must be BELOW the scope's item count, because some of its items are held behind others.
+    # Equal would mean the gate costs nothing, which is the claim this faculty exists to refuse.
+    assert isinstance(ceiling, int), ceiling
+    assert f["reflection"]["items_done"] <= ceiling < p2_items, (ceiling, p2_items)
+    assert ceiling == p2_items - len(f["reasoning"]["blocked_by_ruling"]), (ceiling, f["reasoning"])
+    assert "FU-253" in f["reasoning"]["the_one_lever"], "the lever must be named, not implied"
+
+    # ── ATTRIBUTION: a share computed from the rows, and the judgement half stated ─────────────────────
+    assert 0.0 <= f["attribution"]["share_attributed"] <= 1.0, f["attribution"]
+    assert (f["attribution"]["rows_naming_their_source_round"]
+            + len(f["attribution"]["rows_with_no_source_round"]) == len(p2_open)), f["attribution"]
+    assert "reading of the body" in f["attribution"]["limits"]
+
+    # ── RECOGNITION: clusters are rows that SHARE a file, and the classes are the register's own ───────
+    for c in f["recognition"]["rows_sharing_a_file"]:
+        assert len(c["rows"]) > 1, c
+    assert f["recognition"]["defect_classes_available"] == [c["id"] for c in method["defect_classes"]]
+    assert "by mechanism" in f["recognition"]["how_to_cut_a_round"]
+
+    # ── FORESIGHT: read from the ONE forecaster, in rounds, naming its weakest input ───────────────────
+    assert f["foresight"].get("computed_by", "").startswith("agentic_core.plan_followups.forecast")
+    assert "never a date" in f["foresight"]["basis"]
+    assert f["foresight"]["weakest_number"], "a projection with no stated weakest input is a promise"
+
+    # ── HINDSIGHT: a STATE either way. It may legitimately be NOT_ASSESSABLE on a short span. ─────────
+    h = f["hindsight"]
+    assert h["state"] in ("MET", "UNMET", "NOT_ASSESSABLE"), h
+    # DRIVEN from the data: a blind that made the comparison unreachable left this leg green, because
+    # NOT_ASSESSABLE was accepted unconditionally. It is an honest answer only when too few items carry a
+    # round — so when enough of them do, a NOT_ASSESSABLE is a broken comparison and must fail.
+    if h.get("items_with_a_round") is None or h["items_with_a_round"] >= 6:
+        assert h["state"] != "NOT_ASSESSABLE", h
+    if h["state"] != "NOT_ASSESSABLE":
+        assert h["earlier_half"]["rate"] > 0 and h["later_half"]["rate"] > 0, h
+        assert h["later_over_earlier"] is not None
+        assert "and_ask_why" in h, "beating a projection is a finding before it is velocity"
+    assert h["basis"]
+
+    # ── INTROSPECTION: the unenforced share, matching the register read here ──────────────────────────
+    judgement = sum(1 for l in method["lessons"] if not (l.get("enforced_by") or "").strip())
+    assert f["introspection"]["method_rules_nothing_enforces"] == judgement, f["introspection"]
+    assert f["introspection"]["method_rules_total"] == len(method["lessons"])
+    assert "cannot be trusted alone" in f["introspection"]["limits"]
+
+    # ── EXTROSPECTION: a STATE either way, and it must never close a row ──────────────────────────────
+    e = f["extrospection"]
+    assert e["state"] in ("MET", "NOT_ASSESSABLE"), e
+    assert "candidates" in e and isinstance(e["candidates"], list)
+    if e["state"] == "NOT_ASSESSABLE":
+        # a shallow clone must SAY so, not return an empty list that reads as "nothing to re-read"
+        assert "NOT a statement that every row is current" in e["basis"], e["basis"]
+    else:
+        assert "not a diff" in e["basis"], e["basis"]
+        for c in e["candidates"]:
+            assert c["files_changed_since"] and all(
+                v > c["found_in_round"] for v in c["files_changed_since"].values()), c
+
+    # ── the RECONCILIATION, and the thing the cell may never say ──────────────────────────────────────
+    for phrase in ("without REASONING is a diary", "without HINDSIGHT is a promise",
+                   "grading its own homework"):
+        assert phrase in a["reconciliation"], phrase
+    assert "sound, ready, or on track" in a["this_cell_never_says"], a["this_cell_never_says"]
+    assert "made to fail first" in a["this_cell_never_says"], "the evidence for a delivery is a guard"
+
+    # a scope nothing matches is refused, not answered with an empty appraisal
+    assert client.get("/api/v1/method/appraise", params={"scope": "P9"}).status_code == 404
+    # and the whole plan is a valid scope
+    whole = client.get("/api/v1/method/appraise").json()
+    assert whole["scope"] == "the whole plan"
+    assert whole["faculties"]["reflection"]["rows_open"] >= f["reflection"]["rows_open"]
+
+
+def test_w510_the_method_holds_the_appraisal_cell_as_four_paired_axes(client):
+    """The register must hold the cell as PAIRS. An axis with one end is not an axis."""
+    import collections
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    d = json.loads((root / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+
+    cell = [l for l in d["lessons"] if l["group"] == "appraisal"]
+    # the AXES are counted over the faculties that declare one. W512 added a temporal SPINE of three to this
+    # same group, so counting every appraisal lesson as an axis end was only ever right while the group held
+    # dyads alone — and a guard that must be edited to permit a correct extension is checking the wrong thing.
+    on_axis = [l for l in cell if l.get("axis")]
+    axes = collections.Counter(l["axis"] for l in on_axis)
+    assert len(axes) == 4 and set(axes.values()) == {2}, dict(axes)
+    assert len(on_axis) == 8, len(on_axis)
+    assert len({l["faculty"] for l in cell}) == len(cell), "each faculty appears once"
+    for l in cell:
+        assert l["defect"].strip() and l["apply"].strip(), l["id"]
+        assert l.get("enforced_by") or l.get("why_not_enforced"), l["id"]
+    assert "appraisal" in d["about"]["groups"]
+    assert (d["about"].get("what_a_cell_is") or "").strip(), "the register must say what a CELL is"
+
+    # reachable through the API, and the mechanism states what the cell cannot do
+    got = client.get("/api/v1/method", params={"group": "appraisal"}).json()
+    assert len(got["lessons"]) == len(cell)
+    mech = got["mechanisms"]
+    assert len(mech) == 1 and mech[0]["id"] == "X-APPRAISAL", mech
+    for phrase in ("CANDIDATES", "not a diff", "judgement"):
+        assert phrase in mech[0]["known_limit"], phrase
+
+    # the surface labels the group, or its filter button reads as a slug beside ten Title-Case siblings
+    page = (root / "apps/workstation-superapp/src/pages/governance/DeliveryMethod.tsx").read_text(encoding="utf-8")
+    labels = page.split("const GROUP_LABEL", 1)[1].split("};", 1)[0]
+    assert "appraisal: '" in labels, "the surface has no label for the appraisal group"
+
+
+def test_w511_p22_provenance_travels_on_the_stream_and_on_every_named_surface(client):
+    """P2.2, clause by clause. The stream is READ, not inferred from a final payload.
+
+    The defect the stream leg guards: an event that runs a model and reports no provenance at the level its
+    readers use. `engine_selected` nested it under `decision` while every sibling carried it at top level, so
+    a page doing `ev.served_by` got nothing for that one event and nothing failed.
+    """
+    import ast as _ast
+    import json as _json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+
+    # ── clause (1): NO bare text-only gateway call in agentic_core/api — counted on the AST ────────────
+    # Counted on the AST and not by grepping source, because the one remaining text occurrence is inside a
+    # COMMENT and a text count is defeated by any honest note about the conversion.
+    bare = []
+    for p in (root / "agentic_core/api").rglob("*.py"):
+        try:
+            tree = _ast.parse(p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for n in _ast.walk(tree):
+            if (isinstance(n, _ast.Call) and isinstance(n.func, _ast.Attribute)
+                    and n.func.attr == "query"
+                    and (getattr(n.func.value, "id", None) == "gateway"
+                         or getattr(n.func.value, "attr", None) == "gateway")):
+                bare.append(f"{p.name}:{n.lineno}")
+    assert bare == [], bare
+
+    # ── clause (2): every provenance call STATES its recall decision ───────────────────────────────────
+    # Counted on the AST across all of agentic_core, not just agentic_core/api: W489's defect was a DEFAULT,
+    # and a call that does not say inherits whatever the default currently is. It has changed once already.
+    calls = silent = 0
+    for p in root.joinpath("agentic_core").rglob("*.py"):
+        try:
+            tr = _ast.parse(p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for n in _ast.walk(tr):
+            if not (isinstance(n, _ast.Call) and isinstance(n.func, _ast.Attribute)):
+                continue
+            if n.func.attr not in ("query", "query_meta", "stream", "stream_meta"):
+                continue
+            if (getattr(n.func.value, "id", None) or getattr(n.func.value, "attr", None)) != "gateway":
+                continue
+            calls += 1
+            if "augment" not in {k.arg for k in n.keywords}:
+                silent += 1
+    assert calls >= 40, calls          # the check must have found the population, or it checks nothing
+    assert silent == 0, f"{silent} of {calls} gateway calls do not state their recall decision"
+
+    # ── clause (3): the STREAM. Every event that reports a SERVER must carry it where readers look. ───
+    r = client.post("/api/v1/intelligence/nexus", json={"challenge": "a probe challenge", "engines": ["spi"]})
+    assert r.status_code == 200, r.text
+    events = []
+    for line in r.text.splitlines():
+        if line.startswith("data: "):
+            events.append(_json.loads(line[6:]))
+    assert len(events) >= 6, len(events)
+
+    # A RESULT event is one that reports a gateway call, and the platform's own discriminator is the presence
+    # of `failed` in its data — `_collect_stream` uses exactly that to decide what enters the per-stage
+    # provenance list. So this leg uses the SAME discriminator rather than a name list of its own.
+    #
+    # Why that matters, learned the hard way: a first version classified by stage NAME and concluded that
+    # `engine_selected` was missing its provenance. Hoisting provenance onto that event reclassified a FRAMING
+    # event as a result and DOUBLE-COUNTED the routing call (12 reported where 11 ran), because the routing
+    # provenance is already appended to `provs` at the call site. Announcement events — init, config,
+    # *_start, routing, engine_selected — carry none because nothing has run, or because it is counted
+    # elsewhere; that is correct, not a gap.
+    results = [e for e in events if isinstance(e.get("data"), dict) and "failed" in e["data"]]
+    assert len(results) >= 3, [e["stage"] for e in events]
+
+    # every RESULT event carries provenance where its readers read it
+    for e in results:
+        d = e["data"]
+        assert "served_by" in d, (e["stage"], sorted(d))
+        assert "is_external" in d or "any_external" in d, (e["stage"], sorted(d))
+        # and a result event's top-level served_by is THIS stage's server, never the run's count map —
+        # putting a map there is what broke _provenance_summary with "unhashable type: 'dict'"
+        assert not isinstance(d["served_by"], dict), (e["stage"], d["served_by"])
+
+    # and the COMPLETE event carries the run's aggregate — where the code actually puts it.
+    # The first version of this leg required the aggregate at TOP LEVEL, and satisfying it broke the suite:
+    # `nexus_complete` is itself a RESULT event, so `_collect_stream` appends its top-level `served_by` to the
+    # per-stage provenance list, and an aggregate COUNT MAP there raises "unhashable type: 'dict'". A framing
+    # `complete` event may spread the aggregate; a result event may not. So the leg asserts the aggregate is
+    # REACHABLE, either spread (framing) or nested under `run` (result) — which is what _collect_stream reads.
+    done = [e for e in events if e["stage"] in ("complete", "nexus_complete")]
+    assert done, [e["stage"] for e in events]
+    dd = done[-1].get("data") or {}
+    agg = dd["run"] if isinstance(dd.get("run"), dict) else dd
+    assert "served_by" in agg and "calls" in agg, (sorted(dd), sorted(agg))
+    assert isinstance(agg["served_by"], dict), "the run's aggregate is a count map, not one server"
+    # and on a RESULT-shaped complete event the top-level served_by stays the STAGE's own server
+    if isinstance(dd.get("run"), dict) and "failed" in dd:
+        assert not isinstance(dd.get("served_by"), dict),             "top-level served_by on a result event must be this stage's server, not the run's map"
+
+    # ── clause (4): the named surfaces read the SERVER's field, never a label of their own ─────────────
+    pages = root / "apps/workstation-superapp/src/pages"
+    se = (pages / "evolution/SovereignEvolution.tsx").read_text(encoding="utf-8")
+    assert "provenanceMapBadge(roadmap.served_by, roadmap.any_external)" in se, "the cycle's own map"
+    assert 'data-testid="cycle-provenance"' in se
+    bmd = (pages / "synthesis/BusinessModelDashboard.tsx").read_text(encoding="utf-8")
+    assert "provenanceBadge(data?.served_by, data?.is_external)" in bmd, "from the prop it already receives"
+    assert 'data-testid="model-provenance"' in bmd
+    bto = (pages / "BTOCatalog.tsx").read_text(encoding="utf-8")
+    assert "provenanceMapBadge(btoResult.served_by, btoResult.any_external)" in bto
+    assert "provenanceBadge(b.served_by, b.is_external)" in bto, "per built entry, not only per run"
+    assert 'data-testid="bto-run-provenance"' in bto
+
+    # ── clause (5): a surface whose response states no provenance SAYS so, and the server declares it ──
+    cfg = client.post("/api/v1/bto/configure",
+                      json={"entity_name": "w511 probe", "components": ["governance"],
+                            "product_resources": []}).json()
+    assert cfg["served_by"] is None, cfg.get("served_by")
+    prov = cfg["ai_provenance"]
+    assert prov["posture"] == "deterministic", prov
+    # the DISTINCTION: an absent provenance and an unrecorded one are different facts, and the server says
+    # which this is rather than leaving a page to infer it from a missing key
+    assert "absence of one" in prov["basis"], prov["basis"]
+
+
+def test_w511_p22_a_built_product_says_what_served_it(client):
+    """Driven: /bto/build must carry each deliverable's own provenance and a run aggregate.
+
+    The defect: the §13 engine returns ai_provenance per deliverable and this handler took the id, the gate
+    verdict and the status and DROPPED the provenance — so a build served entirely by the deterministic floor
+    was indistinguishable from one a model served, on the page that reports what was delivered.
+    """
+    live = [p["slug"] for p in (client.get("/api/v1/catalog/products").json().get("products") or [])
+            if p.get("live")][:1]
+    if not live:
+        import pytest
+        pytest.skip("no live catalogue product to build in this environment")
+    b = client.post("/api/v1/bto/build",
+                    json={"entity_name": "w511 probe", "product_resources": live, "domain": "general"}).json()
+
+    # the RUN's aggregate is a COUNT MAP, never a single name: a build of five products is not served by one
+    # thing, and naming the first would be the §4.5 class
+    assert isinstance(b["served_by"], dict) and b["served_by"], b.get("served_by")
+    assert b["any_external"] is False, b.get("any_external")
+    assert "counted from each deliverable" in b["ai_provenance"]["basis"]
+    # an entry with no server is counted APART, never folded into a total
+    assert "entries_with_no_server" in b["ai_provenance"]
+
+    # and every entry carries its own
+    for e in b["built"]:
+        assert "served_by" in e, e
+
+    # DRIVEN: a produce that RAISES must record no server and say why. This leg used to be conditional on a
+    # FAILED status the environment never produces, so it never ran at all — a check that cannot fire.
+    import agentic_core.catalog.bto as _bto
+
+    async def _boom(*a, **k):
+        raise RuntimeError("w511 forced failure")
+
+    _real = _bto.__dict__.get("produce")
+    try:
+        import agentic_core.api.deliverables as _dl
+        _orig = _dl.produce
+        _dl.produce = _boom
+        fb = client.post("/api/v1/bto/build",
+                         json={"entity_name": "w511 fail", "product_resources": live,
+                               "domain": "general"}).json()
+    finally:
+        _dl.produce = _orig
+    failed = [e for e in fb["built"] if e["status"] == "FAILED"]
+    assert failed, [e["status"] for e in fb["built"]]
+    for e in failed:
+        assert e["served_by"] is None, e
+        assert "raised" in e["served_by_basis"], e
+    # a run where nothing served is counted apart, never folded into a total
+    assert fb["ai_provenance"]["entries_with_no_server"] >= 1, fb["ai_provenance"]
+    assert fb["served_by"] is None, fb.get("served_by")
+
+
+def test_w512_the_cell_has_a_temporal_spine_whose_middle_is_the_present(client):
+    """Retrospection, observation and prospection — each computing, each refusing what it cannot do.
+
+    The cell was built with four dyads and no PRESENT term, and the cost of that absence is recorded as
+    M-APPR-10's defect: five proposals in one session that a single reading of the live state would have
+    prevented. This asserts the middle term exists, reads the live organism, and says when it is stale.
+    """
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+
+    a = client.get("/api/v1/method/appraise", params={"scope": "P2"}).json()
+    f = a["faculties"]
+
+    # the STRUCTURES: four dyads and one triad, and every faculty accounted for
+    assert a["structures"] == {"axes": 4, "spine": 1, "faculties": 11}, a["structures"]
+    assert len(f) == 11, sorted(f)
+    assert a["spine"]["spine"] == "retrospection → observation → prospection", a["spine"]
+    for phrase in ("nostalgia", "fantasy", "drift"):
+        assert phrase in a["spine"]["neither_end_alone"], phrase
+    # the reconciliation must name the spine too, or a reader takes the cell for four axes
+    assert "nostalgia" in a["reconciliation"], a["reconciliation"]
+
+    # ── RETROSPECTION: computed from the register's own statuses ───────────────────────────────────────
+    r = f["retrospection"]
+    # scoped the SAME way the faculty is — it receives only the rows in scope, and counting the whole
+    # register here compared two different populations (4 in P2 against 11 overall). A check whose population
+    # differs from the thing it checks is M-MEAS-03's own defect, committed in the guard.
+    def _in_p2(x):
+        return str(x.get("slot") or "").startswith("P2.")
+    dropped = sum(1 for x in reg["items"] if x.get("status") == "dropped" and _in_p2(x))
+    done = sum(1 for x in reg["items"] if x.get("status") == "done" and _in_p2(x))
+    assert r["rows_dropped_as_refuted"] == dropped, (r["rows_dropped_as_refuted"], dropped)
+    assert r["rows_built_or_satisfied"] == done, (r["rows_built_or_satisfied"], done)
+    assert r["refutation_share"] == round(dropped / (done + dropped), 3), r["refutation_share"]
+    assert isinstance(r["backlog_growing"], bool), r["backlog_growing"]
+    # the LIMIT that keeps it honest: it cannot tell a built close from a satisfied one
+    assert "already satisfied" in r["limits"], r["limits"]
+    assert "upper bound" in r["what_the_pattern_means"], r["what_the_pattern_means"]
+
+    # ── OBSERVATION: driven BOTH ways, because the test environment only ever produces one of them ─────
+    # The first version of this leg was gated on `if o.get("beating") is False` and noted that the test env
+    # "always has one stopped". It does the opposite: the `client` fixture enters TestClient as a context
+    # manager, which fires startup, which STARTS the heartbeat. So the stopped branch never ran and three
+    # assertions inside it were dead — a leg conditional on a state the environment never produces, which is
+    # the same defect this round already fixed once in the BTO guard. Both states are now DRIVEN.
+    o = f["observation"]
+    assert o["read_at"], "a reading of now must say when it was taken"
+    assert "stale the moment it is taken" in o["limits"], o["limits"]
+    # NOTHING is asserted here about WHICH state the beat is in. Two earlier versions of this leg did, and each
+    # was wrong in a different direction: the first assumed the test env always has a STOPPED beat (it does
+    # not - the `client` fixture enters TestClient as a context manager, which fires startup and starts it),
+    # and the second then asserted it is RUNNING, which failed in the full suite because an earlier test hits
+    # /api/v1/heartbeat/stop and the module-scoped app persists (beating False at beats 2). A guard must DRIVE
+    # its precondition, never observe the ambient environment (M-VERIF-02) - so both states are driven below
+    # and neither depends on what any other test did.
+    import agentic_core.organism.heartbeat as _hb
+    _real_status = _hb.heartbeat.status
+
+    def _drive(running: bool):
+        try:
+            _hb.heartbeat.status = lambda: {"running": running, "beats": 7 if running else 0,
+                                            "circadian_phase": "MAINTENANCE_REST", "phase_intensity": 0.3,
+                                            "last_beat": "2026-09-29T00:00:00Z" if running else None}
+            return client.get("/api/v1/method/appraise",
+                              params={"scope": "P2"}).json()["faculties"]["observation"]
+        finally:
+            _hb.heartbeat.status = _real_status
+
+    beating = _drive(True)
+    assert beating["beating"] is True and beating["state"] == "MET", beating
+    assert "live system" in beating["basis"], beating["basis"]
+    assert beating["beats"] == 7, beating
+
+    stopped = _drive(False)
+    assert stopped["beating"] is False, stopped
+    assert stopped["state"] == "UNMET", stopped["state"]
+    assert "STOPPED" in stopped["basis"], stopped["basis"]
+    assert "not a healthy zero" in stopped["basis"], stopped["basis"]
+    assert stopped["state"] != "MET", "a stopped organism is never MET, however many zeros it holds"
+
+    # ── PROSPECTION: branches with assumptions, and NOTHING ranked ─────────────────────────────────────
+    p = f["prospection"]
+    assert p["count"] == len(p["branches"])
+    assert p["branches"], "P2 has blocked items and unsized items; both are readable branches"
+    for b in p["branches"]:
+        assert b.get("branch") and b.get("assumption"), b
+        # the thing that would turn a possibility into a prediction
+        for banned in ("probability", "likelihood", "confidence", "weight", "rank", "score"):
+            assert banned not in b, (b["branch"], banned)
+    assert "ONE forecaster" in p["never"], p["never"]
+    assert "not a claim that they will be" in json.dumps(p["branches"]), p["branches"]
+    # both directions of the gate are enumerated — a single branch is a prediction wearing a branch's clothes
+    names = [b["branch"] for b in p["branches"]]
+    assert "the gate clears" in names and "the gate does not clear" in names, names
+
+    # the cell still refuses to call a scope sound, with three more faculties than before
+    assert "sound, ready, or on track" in a["this_cell_never_says"]
+
+    # ── the cell reaches the AGENCY: a change carries the appraisal of the scope it declares, on the
+    # RESPONSE as well as the record. It was written to the record and omitted from the response, and the
+    # omission was invisible until a real submission was read — a fact stored and not rendered is rendered
+    # nowhere, which is the class this whole method exists to catch.
+    sub = client.post("/api/v1/cca/submit", json={
+        "title": "w512 scope appraisal probe", "change_type": "config_minor",
+        "description": "a change whose affected systems map to an item with open rows",
+        "rationale": "the appraisal of the scope a change declares must travel with the change",
+        "affected_systems": ["agentic_core/cognitive"], "submitted_by": "w512_probe"}).json()
+    sa = sub["scope_appraisal"]
+    assert sa is not None, "the appraisal must be on the RESPONSE, not only the stored record"
+    assert sa["scope"] and str(sa["scope"]).startswith("P"), sa
+    assert "open row(s) on" in sa["why_this_scope"], sa["why_this_scope"]
+    # three faculties travel with it, and it NEVER gates
+    assert sorted(sa["faculties"]) == ["extrospection", "reasoning", "reflection"], sorted(sa["faculties"])
+    assert "not a verdict" in sa["not_a_gate"], sa["not_a_gate"]
+    assert sub["status"] in ("approved", "submitted"), sub["status"]
+    # and the same appraisal is on the record a reviewer reads
+    rec = client.get(f"/api/v1/cca/{sub['cca_id']}").json()
+    assert (rec.get("scope_appraisal") or {}).get("scope") == sa["scope"], rec.get("scope_appraisal")
+
+
+def test_w512_the_spine_is_held_as_a_triad_not_a_pair(client):
+    """The register must hold the spine as THREE, and no faculty may sit on both a spine and an axis."""
+    import collections
+    import json
+    from pathlib import Path
+    d = json.loads((Path(__file__).resolve().parents[1] / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+    cell = [l for l in d["lessons"] if l["group"] == "appraisal"]
+    assert len(cell) == 11, len(cell)
+
+    axes = collections.Counter(l["axis"] for l in cell if l.get("axis"))
+    assert len(axes) == 4 and set(axes.values()) == {2}, dict(axes)
+    spine = [l for l in cell if l.get("spine")]
+    assert len(spine) == 3, len(spine)
+    assert len({l["spine"] for l in spine}) == 1, "one spine"
+    assert {l["faculty"] for l in spine} == {"retrospection", "observation", "prospection"}, spine
+    # a faculty belongs to a dyad OR a triad, never both — the shapes mean different things
+    assert not any(l.get("axis") and l.get("spine") for l in cell)
+    assert len({l["faculty"] for l in cell}) == 11
+
+    for l in spine:
+        assert isinstance(l["rule"], str) and l["defect"].strip() and l["apply"].strip(), l["id"]
+        assert (l.get("enforced_by") or "").strip(), f"{l['id']} names no enforcer"
+
+    # the mechanism must state the spine's own limit, not only the axes'
+    mech = next(m for m in d["mechanisms"] if m["id"] == "X-APPRAISAL")
+    assert "PROSPECTION is the most easily abused" in mech["known_limit"], mech["known_limit"]
+    assert "stale the instant it is read" in mech["known_limit"]
+
+    # and the surface labels the group the spine lives in
+    page = (Path(__file__).resolve().parents[1] /
+            "apps/workstation-superapp/src/pages/governance/DeliveryMethod.tsx").read_text(encoding="utf-8")
+    assert "appraisal: '" in page.split("const GROUP_LABEL", 1)[1].split("};", 1)[0]

@@ -93,7 +93,9 @@ async def generate_business_plan_stream(req: PlanRequest) -> StreamingResponse:
         try:
             fin: dict = {}
             # W451 — stream_meta: the done frame DISCLOSES who served it and whether the §4.2 profile shaped it
-            async for ev in gateway.stream_meta(prompt, agent="business_planner"):
+            # P2.2 (W511) — stated, not inherited: a business plan must not carry another request's
+            # subject, which is exactly what the old default did here.
+            async for ev in gateway.stream_meta(prompt, agent="business_planner", augment=False):
                 if "token" in ev:
                     safe = ev["token"].replace("\n", "\\n")
                     yield f'data: {{"token": {json.dumps(safe)}}}\n\n'

@@ -4,11 +4,12 @@
     "why_each_row_carries_a_defect": "A rule with no defect behind it is an opinion. Every lesson here names the round and the concrete failure that produced it, so a reader can judge the rule by the evidence rather than by its phrasing — and so a rule can be RETIRED when the defect it answers stops being possible.",
     "what_enforced_by_means": "A real tool or guard path that would CATCH a breach, or null. Null is the common case and is stated, never implied: most of this method is judgement a change record cannot expose. A gate that reported these as MET would be the exact defect this programme spent its rounds removing — a green badge over requirements nothing evaluated.",
     "three_states": "A method check returns MET, UNMET or NOT_ASSESSABLE with a basis. NOT_ASSESSABLE is the honest answer for any requirement whose satisfaction is not visible in the artefacts the platform holds, and it is the majority answer.",
-    "owner_ruling": "2026-09-27 — the rulings are the constitution. 2026-09-29 — measurement, acceptance-criteria bars, alignment to vision value and progress-to-completion belong in the method as a group of their own. 2026-09-29 (second): preparation and handover are groups of the method in their own right, and reach the Transformation Office and the Change Control Agency. 2026-09-29 (third): the written record — the knowledge operating process, the handovers and the three defect ledgers — is reviewed for methodology, and what it holds is distilled into the method rather than left in prose. 2026-09-29 (fourth): FORECASTING (how long work takes and in what order) and LEARNING (how experience, mistakes and successes become method) are groups of the method in their own right, mined from this programme's own record, and reach the Transformation Office and the Change Control Agency. 2026-09-29 (fifth): DIAGNOSING (the step between a symptom and a patch) and CORRECTING (how a wrong thing is made right without moving the defect) are groups of the method in their own right — the two steps this programme has lost the most time in, and the two the register had no rules for.",
+    "owner_ruling": "2026-09-27 — the rulings are the constitution. 2026-09-29 — measurement, acceptance-criteria bars, alignment to vision value and progress-to-completion belong in the method as a group of their own. 2026-09-29 (second): preparation and handover are groups of the method in their own right, and reach the Transformation Office and the Change Control Agency. 2026-09-29 (third): the written record — the knowledge operating process, the handovers and the three defect ledgers — is reviewed for methodology, and what it holds is distilled into the method rather than left in prose. 2026-09-29 (fourth): FORECASTING (how long work takes and in what order) and LEARNING (how experience, mistakes and successes become method) are groups of the method in their own right, mined from this programme's own record, and reach the Transformation Office and the Change Control Agency. 2026-09-29 (fifth): DIAGNOSING (the step between a symptom and a patch) and CORRECTING (how a wrong thing is made right without moving the defect) are groups of the method in their own right — the two steps this programme has lost the most time in, and the two the register had no rules for. 2026-09-29 (sixth): the appraisal talent — reflection to reasoning, attribution to recognition, foresight to hindsight, introspection to extrospection — is captured as a CELL, usable as diagnosis and correction are, within Workstation and reaching the Transformation Office and the Change Control Agency. 2026-09-29 (seventh): the Appraisal Cell carries a temporal SPINE — retrospection, observation, prospection — because the cognitive time-axis has a middle and the cell was built without it.",
     "groups": [
       "preparation",
       "planning",
       "forecasting",
+      "appraisal",
       "measurement",
       "execution",
       "diagnosing",
@@ -28,7 +29,8 @@
       "docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md",
       "docs/FRONTEND_DEFECT_LEDGER.md"
     ],
-    "what_breaches_are": "A breach is an occasion on which a rule was broken AFTER it was written. Breaches are NOT recorded in this document: it is amended only through Change Control, so they live in their own operational store (data/method_breaches.json) and GET /api/v1/method joins the count in at read time. A count of zero means no breach has been RECORDED, which is not a statement that none happened — nothing observes a breach. The third recorded breach of a lesson nothing enforces raises a Change Control candidate, because a rule broken after being written needs a tool rather than a reminder (M-LEARN-02, M-LEARN-03)."
+    "what_breaches_are": "A breach is an occasion on which a rule was broken AFTER it was written. Breaches are NOT recorded in this document: it is amended only through Change Control, so they live in their own operational store (data/method_breaches.json) and GET /api/v1/method joins the count in at read time. A count of zero means no breach has been RECORDED, which is not a statement that none happened — nothing observes a breach. The third recorded breach of a lesson nothing enforces raises a Change Control candidate, because a rule broken after being written needs a tool rather than a reminder (M-LEARN-02, M-LEARN-03).",
+    "what_a_cell_is": "Most groups in this register are lists of rules an operator follows. APPRAISAL is a CELL: a reusable unit that takes a scope and produces eight readings over it, in four paired axes, where neither end of an axis is sufficient alone. It is named for the organism's functional unit because that is what it is — the faculties are its organelles, and it can be run by the Transformation Office over a transformation's scope or by Change Control over a change's, as well as over the delivery plan itself. Its structures are FOUR AXES of two ends each and ONE SPINE of three: an axis is a dyad whose ends check each other, a spine is a triad whose middle is the present. The Owner's cognitive map is the source of the spine — Past ↔ Present ↔ Future, Memory ↔ Perception ↔ Imagination, Learning ↔ Orientation ↔ Planning."
   },
   "lessons": [
     {
@@ -709,6 +711,117 @@
       "defect": "A status section in one defect ledger said '5 fixed + 4 open' over a table of NINE, with one entry in neither list — it was still open, and was found only because someone re-added the table. A correction that does not say what it corrected leaves the next reader to re-derive the whole thing, and a summary nobody re-added is a claim nobody checked.",
       "apply": "Every corrective change states the defect, the measurement that established it, and what the correction does NOT cover. Then re-add the summary against the rows it summarises.",
       "enforced_by": "agentic_core/api/method.py check_change() — requires a rationale of substance and the systems the change touches, and withholds an automatic approval without them"
+    },
+    {
+      "id": "M-APPR-01",
+      "group": "appraisal",
+      "axis": "reflection → reasoning",
+      "faculty": "reflection",
+      "rule": "REFLECTION: read the record of what was actually DONE before forming any view of where things stand. A view formed from activity is not a view of progress.",
+      "defect": "For forty-eight rounds this programme reported ten rows closed per round and read it as motion. Reflection on the record showed ZERO Phase 2 items had closed in those rounds — the activity was real and the progress was not. A reflection that counts what was TOUCHED rather than what was FINISHED produces exactly that error.",
+      "apply": "Read the DONE markers, the closed rows and the rounds that produced them, from the artefacts. Separate what was touched from what was closed, and say which you are reporting.",
+      "enforced_by": "agentic_core/api/method.py appraise() — the reflection faculty, read from the register and the plan"
+    },
+    {
+      "id": "M-APPR-02",
+      "group": "appraisal",
+      "axis": "reflection → reasoning",
+      "faculty": "reasoning",
+      "rule": "REASONING: derive the ORDER from constraints, never from priority alone. An item held behind another cannot be closed by working it, however high it scores.",
+      "defect": "Six Phase 2 items are held behind Phase 3 by ruling, because a membrane in front of machinery that does not run can only be verified against its absence. A schedule ordered purely by priority score would have worked all six — months of effort on items that cannot complete. And the reverse: the five-gate clearance chain was read as 'cannot refuse' when it contains five refusal branches that are UNREACHABLE because every gate consults an engine that cannot fail. Reasoning found that; reflection alone could not.",
+      "apply": "Resolve the blocking order first and state it, then order the unblocked set by vision value. Name the ONE change that would move the sequence materially — for this programme, measured: a worktree per blind, because verification dominates a round's cost.",
+      "enforced_by": "agentic_core/plan_followups.py _gate_phase() — the gate phase bounds the schedule"
+    },
+    {
+      "id": "M-APPR-03",
+      "group": "appraisal",
+      "axis": "attribution → recognition",
+      "faculty": "attribution",
+      "rule": "ATTRIBUTION: every claim names its PRODUCER and the round that made it. A figure with no attribution cannot be re-measured, only believed.",
+      "defect": "A register row asserted '19 call sites' with no record of how it was counted; the real figure at measurement was ZERO, and the one text occurrence was inside a comment. Another asserted '52 of 61' and another '524 orphan files' where the count is now 150. Three external assessments of this repository inherited stale figures from the README and presented them as findings. None of these was dishonest; each was unattributed, so nothing could age it.",
+      "apply": "Record HOW a figure was produced beside the figure — the command, the round, the tree. Then a successor re-measures instead of inheriting (M-HAND-02), and a stale figure is visible as stale rather than as false.",
+      "enforced_by": null,
+      "why_not_enforced": "A register row can be required to name its source round, and is. Whether the figure in its body was measured that way is a reading of the body."
+    },
+    {
+      "id": "M-APPR-04",
+      "group": "appraisal",
+      "axis": "attribution → recognition",
+      "faculty": "recognition",
+      "rule": "RECOGNITION: name the CLASS a finding belongs to before acting on it. A finding treated as unique is fixed at its site, and a site fix is made again.",
+      "defect": "Recall was fixed at the call sites TWICE before anyone recognised the class: the DEFAULT was the defect, and twenty-nine callers carried another request's content until it was recognised. A sweep for one sentence — 'the top X' resolved by insertion order — found 25 candidate sites, 9 reachable and 7 live, all one class. Recognition is what turned nineteen separate rows into seven mechanisms in the Phase 2 appraisal, which is the difference between twenty rounds and four.",
+      "apply": "Ask which of the register's defect classes a finding is, and whether the mechanism that would fix it fixes others. Cut a round by MECHANISM, not by row count. Where a finding fits no class, that is a candidate for a new one — through Change Control.",
+      "enforced_by": "agentic_core/api/method.py screen_for_defect_shapes() — the six classes, as shapes"
+    },
+    {
+      "id": "M-APPR-05",
+      "group": "appraisal",
+      "axis": "foresight → hindsight",
+      "faculty": "foresight",
+      "rule": "FORESIGHT: project in ROUNDS, from one forecaster, and name the projection's weakest input in the same breath as the number.",
+      "defect": "The plan projects about a hundred rounds to completion from an item rate measured over items ALL of which are in Phases 1 and 2, applied to phases whose work differs, while twenty-five of forty-two open build items have never been sized by a single row. The defect is not the projection — it is the earlier version that reported the number without the sentence that says which figure to trust least.",
+      "apply": "One forecaster, never two. State the population, exclude one-time intakes and owner switches, refuse to project what too few observations cover, and never a date.",
+      "enforced_by": "agentic_core/plan_followups.py forecast() — items_basis and not_assessable_because"
+    },
+    {
+      "id": "M-APPR-06",
+      "group": "appraisal",
+      "axis": "foresight → hindsight",
+      "faculty": "hindsight",
+      "rule": "HINDSIGHT: check the projection's own BASIS against what happened. A rate measured on one population and applied to another is an assumption, and the assumption is testable.",
+      "defect": "The item rate is computed over the whole span and applied forward — but the rate rose sharply once acceptance bars were written, because the blocker had never been the work. A projection that does not look back at whether its own rate is stable reports a smooth average over a discontinuity. Hindsight is also what catches a forecast that was right for the wrong reason: five of one item's six rows were already satisfied, so the round that 'closed' them on schedule had not done the work the schedule assumed.",
+      "apply": "Compare the rate over the earlier half of the span against the later half and say whether it is stable. When a round beats its projection, ask WHY before banking it — a round that closed rows nobody had to build is a measurement finding, not velocity.",
+      "enforced_by": "agentic_core/api/method.py appraise() — the hindsight faculty compares the two halves of the span"
+    },
+    {
+      "id": "M-APPR-07",
+      "group": "appraisal",
+      "axis": "introspection → extrospection",
+      "faculty": "introspection",
+      "rule": "INTROSPECTION: state what the platform's own record CANNOT see. A platform that reports only what it holds is grading its own homework.",
+      "defect": "Forty-six of seventy-nine method rules are enforced by nothing and each had to be made to SAY so, because a method presented as enforced is a compliance badge. Twenty-five of forty-two open build items have never been sized. A breach count of zero means no breach was RECORDED, and nothing observes a breach. Every one of those was, at some point, reported as a clean figure.",
+      "apply": "Report the unenforced share, the unsized share and the unobserved share as first-class figures beside the confident ones. 'Not assessable' is an answer and usually the honest one (M-VERIF-10).",
+      "enforced_by": "agentic_core/api/method.py _enforcement_summary() — the enforced share, stated"
+    },
+    {
+      "id": "M-APPR-08",
+      "group": "appraisal",
+      "axis": "introspection → extrospection",
+      "faculty": "extrospection",
+      "rule": "EXTROSPECTION: read the TREE, not the record, before believing the record. The record is a claim about the world; the world is checkable.",
+      "defect": "Three consecutive rounds of measured evidence. W507 DROPPED two rows as factually false — the script they accused walks no such path. W508 found two already satisfied and one three-quarters done. W509 measured one item's six open rows and FIVE were already satisfied by earlier rounds. The following appraisal found four more, one of which was the BLOCKING row of the item it rode. Roughly nine of every fifteen rows examined needed no build at all — and every one of them was believed until the tree was read.",
+      "apply": "Before scheduling a row, read the code it names and record what is there. A row measured false is DROPPED with the measurement that refutes it; a row already satisfied is CLOSED. Both are appraisal work. Where the tree has moved under a row since the round that found it, that row is a CANDIDATE for re-reading — never an automatic close, because whether a row is satisfied is a reading of code and not a diff.",
+      "enforced_by": "agentic_core/api/method.py appraise() — the extrospection faculty lists rows whose files the tree changed after the round that found them"
+    },
+    {
+      "id": "M-APPR-09",
+      "group": "appraisal",
+      "spine": "retrospection → observation → prospection",
+      "faculty": "retrospection",
+      "rule": "RETROSPECTION: read the record for its PATTERN, not its totals. A count says what happened; a pattern says what keeps happening.",
+      "defect": "The register's totals said 'rows are closing steadily'. The pattern said something else entirely: across three consecutive rounds, roughly NINE of the fifteen rows examined needed no build at all — two were factually false, seven were already satisfied by an earlier round and had never been closed. The totals could not show that, because a row closed because it was satisfied and a row closed because it was built are the same increment. The pattern is computable — dropped and already-satisfied closes against built ones — and nobody computed it for forty-eight rounds.",
+      "apply": "Compute the shape of the record: the refutation share (rows DROPPED as false against rows closed), rounds that only FOUND against rounds that CLOSED, and whether the found rate is outrunning the closed rate. Then say what it means — a high refutation share means the register OVER-STATES the work (M-FCAST-02), and that is a finding about the register, not about the code.",
+      "enforced_by": "agentic_core/api/method.py appraise() — the retrospection faculty"
+    },
+    {
+      "id": "M-APPR-10",
+      "group": "appraisal",
+      "spine": "retrospection → observation → prospection",
+      "faculty": "observation",
+      "rule": "OBSERVATION: read what is happening NOW, from the live system, before inferring anything about it. Inference without observation is the most expensive habit available.",
+      "defect": "THIS SESSION, five times. (1) I proposed building a metabolic budget; the mechanism already existed, fully wired, and two coefficients made it inert. (2) I proposed a mutual-aid channel; investment between entities was already built and a rescue channel would have corrupted the stage it reused. (3) I proposed importing 'the real HomeostaticRegulator'; it is not a controller — its integral term is never accumulated. (4) and (5) I 'fixed' two event shapes that were not broken, and both fixes failed the suite: one re-pointed a field's type and raised `unhashable type: 'dict'`, the other reclassified a framing event and double-counted a call. Every one was a surface read, a gap inferred, a build proposed. In not one case was the live state read first.",
+      "apply": "Before proposing anything: read the live state — is the beat running, what did it last do, what is in flight, what does the surface actually return when called. A reading of NOW is stale the moment it is taken, and it says so; that is still infinitely better than an inference with no reading behind it.",
+      "enforced_by": "agentic_core/api/method.py appraise() — the observation faculty"
+    },
+    {
+      "id": "M-APPR-11",
+      "group": "appraisal",
+      "spine": "retrospection → observation → prospection",
+      "faculty": "prospection",
+      "rule": "PROSPECTION: enumerate what COULD happen and refuse to rank it. A possibility given a probability has been turned into a prediction, and this platform has exactly one forecaster.",
+      "defect": "The plan could say how many rounds its measured rate projects, and could say nothing at all about what would become possible if the gate cleared, or what either answer to an Owner decision opens. Six Phase 2 items are held behind eight Phase 3 items and that branch was readable the whole time — but only as prose in an item body, never as a structure anything could compute. A plan that can extrapolate one line and cannot enumerate its branches presents a single future as the only one.",
+      "apply": "List the branches with the ASSUMPTION each rests on: what unblocks if a gate clears, what each answer to an open decision makes possible. Label every one a POSSIBILITY. Never a probability, never a ranking, never a date — those belong to the one forecaster, and a second voice on the same question is two records disagreeing (M-DELIV-08).",
+      "enforced_by": "agentic_core/api/method.py appraise() — the prospection faculty"
     }
   ],
   "mechanisms": [
@@ -841,6 +954,19 @@
         "agentic_core/config.py store_lock"
       ],
       "known_limit": "Four of the five are judgements. It can check that a prior value was captured and that the record states a cause; it cannot tell a loosened assertion from a corrected one, because in a diff they look identical and only the reason distinguishes them."
+    },
+    {
+      "id": "X-APPRAISAL",
+      "group": "appraisal",
+      "name": "The Appraisal Cell: eight faculties, four paired axes",
+      "what": "A reusable UNIT rather than a list of rules. Given a scope — a phase, an item, a set of rows — the cell takes eight readings and reconciles them: REFLECTION on what was actually finished and REASONING about what follows from the constraints; ATTRIBUTION of every figure to its producer and RECOGNITION of the class it belongs to; FORESIGHT in rounds from the one forecaster and HINDSIGHT on whether that forecaster's own rate is stable; INTROSPECTION on what the record cannot see and EXTROSPECTION on what only the tree can tell us. Neither end of any axis is sufficient alone: reflection without reasoning is a diary, foresight without hindsight is a promise, and introspection without extrospection is a platform grading its own homework. GET /api/v1/method/appraise runs the cell; the Transformation Office may appraise a transformation's scope with it, and Change Control may appraise a change's before deciding. W512 — the cell also carries a TEMPORAL SPINE of three, because time is not a dyad: RETROSPECTION reads the record for its pattern, OBSERVATION reads the live state now, and PROSPECTION enumerates branches without ranking them. The middle term is the one the cell was built without, and the cost of its absence is recorded in M-APPR-10's defect: five proposals in one session that a single reading of the live state would have prevented. Retrospection without observation is nostalgia; prospection without observation is fantasy; observation without either is drift.",
+      "entry_points": [
+        "GET /api/v1/method/appraise",
+        "GET /api/v1/method/forecast",
+        "POST /api/v1/method/screen",
+        "scripts/followups.py priority"
+      ],
+      "known_limit": "Two of the eight faculties are largely judgement and say so: ATTRIBUTION can require a row to name its source round but cannot tell whether the figure in its body was measured that way, and REASONING can report the blocking order the plan states but cannot discover a constraint nobody wrote down. EXTROSPECTION reports CANDIDATES for re-reading and never closes a row: whether a row is satisfied is a reading of code, not a diff — and where git history is unavailable it reports that rather than an empty list. PROSPECTION is the most easily abused faculty in the cell: it enumerates branches and must never rank them or attach a likelihood, because that is the forecaster's job and there is only one forecaster. OBSERVATION is stale the instant it is read, and says so."
     }
   ],
   "defect_classes": [

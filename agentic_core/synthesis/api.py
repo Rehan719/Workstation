@@ -441,7 +441,9 @@ async def stream_synthesis(request: SynthesisRequest):
     async def event_stream() -> AsyncIterator[str]:
         fin: dict = {}
         # W451 — stream_meta: the done frame discloses who served it and whether the profile shaped it
-        async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}"):
+        # P2.2 (W511) — stated, not inherited. This was one of the 29 call sites W489 found carrying
+        # another request's content when the default was True.
+        async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}", augment=False):
             if "token" in ev:
                 collected.append(ev["token"])
                 safe = ev["token"].replace("\n", "\\n").replace("\r", "")

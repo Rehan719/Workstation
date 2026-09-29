@@ -1242,3 +1242,511 @@ async def assess_a_correction(req: CorrectRequest, user: dict | None = Depends(g
             submitted = {"submitted": False, "why": f"{e.__class__.__name__}: {e}"}
     out["change_control"] = submitted
     return out
+
+
+# ── (j) THE APPRAISAL CELL (W510) — eight faculties, four paired axes ───────────────────────────────────────
+#
+# A CELL, not a list of rules: given a scope it takes eight readings and reconciles them. Neither end of an
+# axis is sufficient alone — reflection without reasoning is a diary, foresight without hindsight is a
+# promise, introspection without extrospection is a platform grading its own homework.
+
+_AXES = (("reflection", "reasoning"), ("attribution", "recognition"),
+         ("foresight", "hindsight"), ("introspection", "extrospection"))
+
+
+def _git(*args: str) -> Optional[str]:
+    """Run a read-only git command, or None. Never raises: git may be absent or the clone shallow."""
+    import subprocess
+    try:
+        p = subprocess.run(["git", *args], cwd=str(_repo_root()), capture_output=True, text=True, timeout=25)
+        return p.stdout if p.returncode == 0 else None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _round_of(message: str) -> Optional[int]:
+    """The round a commit subject declares, e.g. 'feat(W509): ...' -> 509. None when it declares none."""
+    m = re.search(r"\bW(\d{2,4})\b", message or "")
+    return int(m.group(1)) if m else None
+
+
+def _rows_the_tree_moved_under(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """EXTROSPECTION: open rows whose files a LATER round changed than the round that found them.
+
+    This is FU-306's instrument. It reports CANDIDATES and closes nothing: whether a row is satisfied is a
+    reading of the code it names, never a diff. Measured motivation - three consecutive rounds found rows
+    already satisfied or factually false, and roughly nine of fifteen rows examined needed no build at all.
+    """
+    log = _git("log", "--format=%H%x1f%s", "--name-only", "-n", "400")
+    if not log:
+        return {"state": NOT_ASSESSABLE,
+                "basis": ("git history could not be read (git absent, or a shallow clone as CI uses), so no "
+                          "row is reported as a candidate. This is NOT a statement that every row is current."),
+                "candidates": [], "candidate_count": 0, "history_commits": None,
+                "limits": ("nothing was read, so nothing is claimed. The limits of a successful read do not "
+                           "apply here because no read succeeded.")}
+    # W510 — parsed SEQUENTIALLY, not by splitting on blank lines. `--name-only` prints the files AFTER a
+    # blank line, so splitting on "\n\n" separated every commit header from its own file list: one block held
+    # the header with no files, the next held files whose first line was read as a header and skipped for
+    # naming no round. The faculty therefore returned zero candidates over the whole plan across 401 commits
+    # and COULD NOT have returned anything else — a check that cannot fire, committed inside the cell built to
+    # catch that class, and found only by asking whether it could fire at all (M-VERIF-01).
+    # A header is identifiable: it is the only line containing the \x1f separator the format asks for.
+    touched: Dict[str, int] = {}                     # file -> the highest round that changed it
+    commits, current = 0, None
+    for line in log.splitlines():
+        if not line.strip():
+            continue
+        if "\x1f" in line:
+            commits += 1
+            current = _round_of(line.split("\x1f", 1)[1])
+            continue
+        if current is not None and line > "" and current > touched.get(line, 0):
+            touched[line] = current
+    candidates = []
+    for r in rows:
+        src = _round_of(str(r.get("source") or ""))
+        if src is None:
+            continue
+        later = {f: touched[f] for f in (r.get("files") or []) if f in touched and touched[f] > src}
+        if later:
+            candidates.append({"id": r.get("id"), "title": r.get("title"), "found_in_round": src,
+                               "files_changed_since": later,
+                               "why": (f"the tree moved under this row: {len(later)} of its file(s) were "
+                                       f"changed in a later round than W{src}, which found it")})
+    return {
+        "state": MET if candidates else NOT_ASSESSABLE,
+        "candidates": sorted(candidates, key=lambda c: -max(c["files_changed_since"].values()))[:40],
+        "candidate_count": len(candidates),
+        # counted by the SAME parse that found the candidates, not by a second expression that could agree
+        # with it by coincidence — which the blank-line split did, at 401, while finding nothing
+        "history_commits": commits,
+        "basis": (f"{len(candidates)} open row(s) name a file that a later round changed. Each is a CANDIDATE "
+                  f"for re-reading and none is closed here: whether a row is satisfied is a reading of the "
+                  f"code it names, not a diff."
+                  if candidates else
+                  "no open row names a file changed by a later round, within the history read. A row whose "
+                  "files nobody touched can still be false - two were dropped as factually wrong in W507."),
+        "limits": ("It reads the last 400 commits and only commits whose subject declares a round. A row "
+                   "carrying no files, or found by a round the subject does not name, is invisible to it."),
+    }
+
+
+def _rate_stability(reg: Any, prompt: str) -> Dict[str, Any]:
+    """HINDSIGHT: is the item rate the forecaster projects from actually STABLE across the span?
+
+    A projection applied forward from a smooth average over a discontinuity is a promise. This splits the
+    rounds that closed an item into an earlier and a later half and compares.
+    """
+    try:
+        from agentic_core import plan_followups as _fu
+        items = _fu.plan_items(prompt)
+    except Exception as e:                                # noqa: BLE001
+        return {"state": NOT_ASSESSABLE, "items_with_a_round": None,
+                "basis": f"the plan's items could not be read ({e.__class__.__name__})"}
+    done = sorted(r for r in (_round_of(str(i.get("done_by") or i.get("done") or "")) for i in items)
+                  if r is not None)
+    if len(done) < 6:
+        return {"state": NOT_ASSESSABLE, "items_with_a_round": len(done),
+                "basis": (f"only {len(done)} item(s) carry a readable round, and a split needs at least six. "
+                          f"No stability is claimed either way.")}
+    mid = len(done) // 2
+    early, late = done[:mid], done[mid:]
+    er = round(len(early) / max(1, early[-1] - early[0] + 1), 3)
+    lr = round(len(late) / max(1, late[-1] - late[0] + 1), 3)
+    ratio = round(lr / er, 2) if er else None
+    stable = ratio is not None and 0.5 <= ratio <= 2.0
+    return {
+        "state": MET if stable else UNMET,
+        # the same key the refusal branch carries: sibling returns share a shape, and a reader that keys on it
+        # to decide whether NOT_ASSESSABLE is honest must be able to read it in both cases
+        "items_with_a_round": len(done),
+        "earlier_half": {"rounds": f"W{early[0]}-W{early[-1]}", "items": len(early), "rate": er},
+        "later_half": {"rounds": f"W{late[0]}-W{late[-1]}", "items": len(late), "rate": lr},
+        "later_over_earlier": ratio,
+        "basis": (f"the item rate is {er} per round over W{early[0]}-W{early[-1]} and {lr} over "
+                  f"W{late[0]}-W{late[-1]} — a ratio of {ratio}. "
+                  + ("Within a factor of two, so projecting from the span's average is defensible."
+                     if stable else
+                     "OUTSIDE a factor of two, so the span's average is a smooth line over a discontinuity "
+                     "and a projection from it will be wrong in a knowable direction.")),
+        "and_ask_why": ("a round that beats its projection is a finding before it is velocity: five of one "
+                        "item's six rows were already satisfied in W509, so the round closed them without "
+                        "doing the work the schedule assumed."),
+    }
+
+
+def appraise_scope_for(systems: List[str]) -> Dict[str, Any]:
+    """The SLOT a set of affected systems points at, if any — for callers that hold systems, not a slot.
+
+    Used by Change Control so a change record can carry the appraisal of the scope it declares. Returns None
+    rather than guessing: a change whose systems match no item is not appraised against an item chosen for it.
+    """
+    try:
+        from agentic_core import plan_followups as _fu
+        reg = _fu.load()
+    except Exception:                                    # noqa: BLE001 — no scope rather than a wrong one
+        return {"slot": None, "why": "the register could not be read, so no scope is inferred"}
+    want = {str(x).strip().lower() for x in (systems or []) if str(x).strip()}
+    if not want:
+        return {"slot": None, "why": "the change names no affected system, so there is no scope to appraise"}
+    hits: Dict[str, int] = {}
+    for r in (reg.get("items") or []):
+        if not isinstance(r, dict) or r.get("status") != "open":
+            continue
+        slot = str(r.get("slot") or "")
+        for f in (r.get("files") or []):
+            low = str(f).lower()
+            if any(w in low or low.endswith(w) for w in want):
+                hits[slot] = hits.get(slot, 0) + 1
+    if not hits:
+        return {"slot": None,
+                "why": ("no open row names a file matching this change's affected systems, so it is not "
+                        "appraised against an item chosen for it")}
+    best = max(hits.items(), key=lambda kv: kv[1])
+    return {"slot": best[0], "matched_rows": best[1],
+            "why": f"{best[1]} open row(s) on {best[0]} name a file matching this change's affected systems",
+            "other_candidates": {k: v for k, v in sorted(hits.items(), key=lambda kv: -kv[1])[1:5]}}
+
+
+@router.get("/appraise")
+async def appraise(scope: Optional[str] = None, user: dict | None = Depends(get_current_user)):
+    """Run the Appraisal Cell over a scope — a phase prefix ("P2"), an item ("P2.4"), or the whole plan."""
+    method = _load_method()
+    lessons = [l for l in method["lessons"] if l.get("group") == "appraisal"]
+    out: Dict[str, Any] = {
+        "scope": scope or "the whole plan",
+        "axes": [{"axis": f"{a} → {b}", "neither_end_alone": True} for a, b in _AXES],
+        "structures": {"axes": len(_AXES), "spine": 1,
+                       "faculties": len(_AXES) * 2 + len(_SPINE)},
+        "faculties": {},
+        "what_a_cell_is": method["about"].get("what_a_cell_is"),
+    }
+
+    try:
+        from agentic_core import plan_followups as _fu
+        reg = _fu.load()
+        prompt = (_repo_root() / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+        items = _fu.plan_items(prompt)
+        rows = [r for r in (reg.get("items") or []) if isinstance(r, dict)]
+    except Exception as e:                                # noqa: BLE001 — said, never a confident empty cell
+        raise HTTPException(status_code=503,
+                            detail=(f"the plan and the register could not be read ({e.__class__.__name__}: "
+                                    f"{e}); no appraisal is made, because an appraisal of nothing reads as "
+                                    f"an appraisal of something sound.")) from e
+
+    def in_scope(slot: Any) -> bool:
+        s = str(slot or "")
+        return True if not scope else (s == scope or s.startswith(scope + "."))
+
+    scoped_items = [i for i in items if in_scope(i.get("slot"))]
+    open_rows = [r for r in rows if r.get("status") == "open" and in_scope(r.get("slot"))]
+    if scope and not scoped_items:
+        raise HTTPException(status_code=404, detail=f"No plan item matches scope '{scope}'.")
+
+    # ── 1 REFLECTION — what was FINISHED, separated from what was touched ─────────────────────────────
+    closed_rows = [r for r in rows if r.get("status") == "done" and in_scope(r.get("slot"))]
+    out["faculties"]["reflection"] = {
+        "items_done": sum(1 for i in scoped_items if i.get("done")),
+        "items_open": sum(1 for i in scoped_items if not i.get("done")),
+        "rows_closed": len(closed_rows),
+        "rows_open": len(open_rows),
+        "rows_dropped": sum(1 for r in rows if r.get("status") == "dropped" and in_scope(r.get("slot"))),
+        "basis": ("read from the register's statuses and the plan's DONE markers. ITEMS closed is progress; "
+                  "ROWS closed is motion — 32 rows closed across six rounds while zero Phase 2 items closed "
+                  "in forty-eight, and reading the second as the first is the error this faculty exists for."),
+    }
+
+    # ── 2 REASONING — the order the constraints imply, and the one lever ──────────────────────────────
+    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items() if in_scope(k)}
+    unblocked = [i["slot"] for i in scoped_items if not i.get("done") and i["slot"] not in blocked]
+    out["faculties"]["reasoning"] = {
+        "blocked_by_ruling": blocked,
+        "closable_by_working_them": unblocked,
+        "ceiling_without_clearing_the_gate": (len([i for i in scoped_items if i.get("done")]) + len(unblocked)
+                                             if blocked else None),
+        "basis": (f"{len(blocked)} item(s) in this scope are held behind other items by ruling, so they cannot "
+                  f"be closed by working them however high they score. The ceiling above is what this scope "
+                  f"can reach WITHOUT clearing its gate."
+                  if blocked else
+                  "no item in this scope is recorded as held behind another, so the order is free and should "
+                  "follow vision value. A constraint nobody wrote down is invisible here."),
+        "the_one_lever": ("verification dominates a round's cost — the suite is one full run per round, a "
+                          "blind sweep is one run per blind, refutation takes six to eight passes. The single "
+                          "measured lever is a worktree per blind (FU-253), because it is the only one that "
+                          "reduces the dominant term rather than the small one."),
+        "limits": "it reports the blocking order the plan STATES; it cannot discover a constraint nobody wrote.",
+    }
+
+    # ── 3 ATTRIBUTION — which rows can be re-measured, and which can only be believed ─────────────────
+    unattributed = [r["id"] for r in open_rows if not _round_of(str(r.get("source") or ""))]
+    out["faculties"]["attribution"] = {
+        "rows_naming_their_source_round": len(open_rows) - len(unattributed),
+        "rows_with_no_source_round": unattributed,
+        "share_attributed": (round((len(open_rows) - len(unattributed)) / len(open_rows), 3)
+                             if open_rows else None),
+        "basis": ("a row that names the round which found it can be re-measured; one that does not can only "
+                  "be believed. A row asserted '19 call sites' and the measured figure was ZERO — not "
+                  "dishonest, unattributed, so nothing could age it."),
+        "limits": ("it checks that a source round is NAMED. Whether the figures in a row's body were measured "
+                   "that way is a reading of the body, and is the judgement half of this faculty."),
+    }
+
+    # ── 4 RECOGNITION — the mechanisms, so a round is cut by class and not by row count ───────────────
+    by_file: Dict[str, List[str]] = {}
+    for r in open_rows:
+        for f in (r.get("files") or []):
+            by_file.setdefault(f, []).append(str(r.get("id")))
+    clusters = sorted(({"files": [f], "rows": ids} for f, ids in by_file.items() if len(ids) > 1),
+                      key=lambda c: -len(c["rows"]))
+    out["faculties"]["recognition"] = {
+        "rows_sharing_a_file": clusters[:12],
+        "rows_citing_no_file": [r["id"] for r in open_rows if not (r.get("files") or [])],
+        "defect_classes_available": [c["id"] for c in (method.get("defect_classes") or [])],
+        "basis": ("rows that share a file are candidates for ONE mechanism. Recognition is what turned twenty "
+                  "Phase 2 rows into seven mechanisms — the difference between twenty rounds and four — and "
+                  "what found that 25 sites of one sentence were a single class."),
+        "how_to_cut_a_round": "by mechanism and file connection under ONE item, never by row count",
+        "limits": ("a shared file is a hint, not a class. A row citing no file is invisible to this and is "
+                   "listed above for that reason."),
+    }
+
+    # ── 5 FORESIGHT — read the ONE forecaster; compute no rate here ───────────────────────────────────
+    try:
+        f = _fu.forecast(reg, prompt)
+        out["faculties"]["foresight"] = {
+            "rounds_for_the_open_rows": f.get("all_rows_rounds_projected"),
+            "rounds_for_the_open_items": f.get("items_rounds_projected"),
+            "item_rate_per_round": f.get("item_rate_per_round"),
+            "items_never_sized": f.get("items_with_no_row"),
+            "weakest_number": f.get("items_basis"),
+            "computed_by": "agentic_core.plan_followups.forecast() — the ONE forecaster",
+            "basis": ("rounds, never a date, and no rate is computed in this cell: a second forecaster would "
+                      "be two records disagreeing about one fact."),
+        }
+    except Exception as e:                                # noqa: BLE001
+        out["faculties"]["foresight"] = {"state": NOT_ASSESSABLE,
+                                         "basis": f"the forecaster could not run ({e.__class__.__name__}: {e});"
+                                                  f" no projection is substituted."}
+
+    # ── 6 HINDSIGHT — did the rate the projection rests on actually hold ─────────────────────────────
+    out["faculties"]["hindsight"] = _rate_stability(reg, prompt)
+
+    # ── 7 INTROSPECTION — what the record cannot see about itself ─────────────────────────────────────
+    enf = _enforcement_summary(method["lessons"])
+    counts = breach_counts()
+    out["faculties"]["introspection"] = {
+        "method_rules_nothing_enforces": enf["judgement_only"],
+        "method_rules_total": enf["lessons_total"],
+        "items_in_scope_with_no_row": [i["slot"] for i in scoped_items
+                                       if not i.get("done") and not any(
+                                           str(r.get("slot")) == i["slot"] for r in open_rows)],
+        "breaches_recorded": sum(counts.values()),
+        "basis": ("the unenforced share, the unsized items and the unobserved breaches, as first-class "
+                  "figures. A breach count of zero means none was RECORDED - nothing observes a breach - and "
+                  "an item with no row has never been sized by anything."),
+        "limits": "this is the platform reading its own record. It is the half that cannot be trusted alone.",
+    }
+
+    # ── 8 EXTROSPECTION — what only the tree can tell us ─────────────────────────────────────────────
+    out["faculties"]["extrospection"] = _rows_the_tree_moved_under(open_rows)
+
+    # ── THE TEMPORAL SPINE (W512) — 9 retrospection · 10 observation · 11 prospection ─────────────────
+    out["faculties"]["retrospection"] = _retrospect(
+        [r for r in rows if in_scope(r.get("slot"))], reg)
+    out["faculties"]["observation"] = _observe()
+    out["faculties"]["prospection"] = _prospect(scoped_items, rows)
+    out["spine"] = {
+        "spine": " → ".join(_SPINE),
+        "why_a_spine_and_not_an_axis": ("time has a MIDDLE. The four axes are dyads whose ends check each "
+                                        "other; this is a triad, and its middle is the present — the faculty "
+                                        "this cell was built without."),
+        "neither_end_alone": ("retrospection without observation is nostalgia; prospection without observation "
+                              "is fantasy; observation without either is drift."),
+    }
+
+    out["reconciliation"] = (
+        "Neither end of an axis is sufficient alone. REFLECTION without REASONING is a diary and reasoning "
+        "without reflection is invention; ATTRIBUTION without RECOGNITION is a list of sources and recognition "
+        "without attribution is a pattern nobody can check; FORESIGHT without HINDSIGHT is a promise and "
+        "hindsight without foresight is regret; INTROSPECTION without EXTROSPECTION is a platform grading its "
+        "own homework and extrospection without introspection is a platform that cannot say what it does not "
+        "know. Read the pairs together or the cell has not run. And the SPINE is read as a whole for the same "
+        "reason: RETROSPECTION without OBSERVATION is nostalgia, PROSPECTION without OBSERVATION is fantasy, "
+        "and observation without either is drift.")
+    out["this_cell_never_says"] = (
+        "that a scope is sound, ready, or on track. Two of its eight faculties are largely judgement and say "
+        "so, and the evidence for a delivery is a guard that was made to fail first.")
+    out["lessons"] = [{"id": l["id"], "axis": l.get("axis"), "faculty": l.get("faculty"), "rule": l["rule"]}
+                      for l in lessons]
+    return out
+
+
+# ── THE TEMPORAL SPINE (W512) — retrospection ↔ observation ↔ prospection ───────────────────────────────────
+#
+# Time is not a dyad. The cell's four axes each have two ends that check each other; this has a MIDDLE, and the
+# middle is the one the cell was built without. Retrospection without observation is nostalgia; prospection
+# without observation is fantasy; observation without either is drift.
+
+_SPINE = ("retrospection", "observation", "prospection")
+
+
+def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
+    """RETROSPECTION: the record's PATTERN, not its totals — and what the pattern means.
+
+    A row closed because it was already SATISFIED and a row closed because it was BUILT are the same increment
+    in a total, which is why forty-eight rounds of totals could not show that roughly nine of fifteen rows
+    examined needed no build at all.
+    """
+    try:
+        from agentic_core import plan_followups as _fu
+        act = _fu._round_activity(reg)
+    except Exception as e:                                # noqa: BLE001 — said, never an invented pattern
+        # the SAME key set as the answer below: a refusal that omits the answer's keys makes every reader
+        # raise KeyError exactly when the record is already unreadable (the W508 shape).
+        return {"state": NOT_ASSESSABLE,
+                "basis": f"the register's round record could not be read ({e.__class__.__name__}: {e})",
+                "refutation_share": None, "rounds": None,
+                "rows_built_or_satisfied": None, "rows_dropped_as_refuted": None,
+                "rounds_that_closed_something": None, "rounds_that_only_found": None,
+                "closed_total": None, "found_total": None, "backlog_growing": None,
+                "what_the_pattern_means": "not measured: the round record could not be read",
+                "limits": "nothing was read, so nothing is claimed about the pattern"}
+
+    done = [r for r in rows if r.get("status") == "done"]
+    dropped = [r for r in rows if r.get("status") == "dropped"]
+    resolved = len(done) + len(dropped)
+    share = round(len(dropped) / resolved, 3) if resolved else None
+
+    closing = sorted(r for r, a in act.items() if a.get("closed", 0) > 0)
+    finding_only = sorted(r for r, a in act.items() if a.get("closed", 0) == 0 and a.get("found", 0) > 0)
+    closed_total = sum(a.get("closed", 0) for a in act.values())
+    found_total = sum(a.get("found", 0) for a in act.values())
+
+    return {
+        "state": MET if resolved else NOT_ASSESSABLE,
+        "basis": None,                 # the answer's meaning is in what_the_pattern_means; `basis` is the
+        "rounds": None,                # refusal branch's field, carried here so the shapes match
+        "rows_built_or_satisfied": len(done),
+        "rows_dropped_as_refuted": len(dropped),
+        "refutation_share": share,
+        "rounds_that_closed_something": len(closing),
+        "rounds_that_only_found": finding_only,
+        "closed_total": closed_total,
+        "found_total": found_total,
+        "backlog_growing": (found_total > closed_total) if (closed_total or found_total) else None,
+        "what_the_pattern_means": (
+            (f"{len(dropped)} of {resolved} resolved rows were DROPPED as refuted rather than built, a "
+             f"refutation share of {share}. A row dropped as false and a row closed because it was already "
+             f"satisfied are both work the register ASKED FOR and did not need — which is why the open count "
+             f"is an upper bound on the work and not a measure of it (M-FCAST-02). The totals cannot show "
+             f"this, because closing a satisfied row and closing a built one are the same increment."
+             if resolved else "no row has been resolved, so there is no pattern to read yet.")
+            + (f" {len(finding_only)} round(s) closed nothing and only registered findings: those add work "
+               f"rather than burning it, and counting them as build rounds would understate the rate."
+               if finding_only else "")),
+        "limits": ("this reads STATUS, not cause. It cannot tell a row closed because it was built from one "
+                   "closed because it was already satisfied — that distinction lives in the closing round's "
+                   "own words, and recording it is what would make this faculty sharper."),
+    }
+
+
+def _observe() -> Dict[str, Any]:
+    """OBSERVATION: the live organism, now. The faculty the cell was built without.
+
+    Every reading of NOW is stale the instant it is taken. And a STOPPED heartbeat is not a healthy zero: it
+    means there is no organism state to read, which is a different fact and is said as one.
+    """
+    out: Dict[str, Any] = {"read_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    try:
+        from agentic_core.organism.heartbeat import heartbeat
+        st = heartbeat.status()
+    except Exception as e:                                 # noqa: BLE001
+        return dict(out, state=NOT_ASSESSABLE,
+                    basis=(f"the organism could not be read ({e.__class__.__name__}: {e}). This is NOT a "
+                           f"statement that it is idle."))
+    running = bool(st.get("running"))
+    out.update({
+        "state": MET if running else UNMET,
+        "beating": running,
+        "beats": st.get("beats"),
+        "circadian_phase": st.get("circadian_phase"),
+        "phase_intensity": st.get("phase_intensity"),
+        "last_beat": st.get("last_beat"),
+        "last_actions": {k: st.get(k) for k in
+                         ("last_realisation", "last_self_healing", "last_recovery", "last_heal", "last_genome")
+                         if st.get(k) is not None},
+        "basis": ("the organism is beating, so this is a reading of a live system" if running else
+                  "THE HEARTBEAT IS STOPPED. Nothing is being operated, nothing is being screened, and the "
+                  "figures above are the last ones it recorded rather than current ones. A stopped beat is not "
+                  "a healthy zero."),
+        "limits": ("a reading of NOW is stale the moment it is taken, and this one does not re-read. It says "
+                   "when it was taken so a reader can judge that, which is the only honest thing available."),
+    })
+    return out
+
+
+def _prospect(scoped_items: List[Dict[str, Any]], rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """PROSPECTION: the branches, each with its assumption. Ranked by nothing, ever.
+
+    A possibility given a probability has been turned into a prediction, and this platform has exactly one
+    forecaster. So this enumerates and refuses to order.
+    """
+    branches: List[Dict[str, Any]] = []
+
+    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items()
+               if any(str(i.get("slot")) == k and not i.get("done") for i in scoped_items)}
+    if blocked:
+        branches.append({
+            "branch": "the gate clears",
+            "assumption": f"the items named in the ruling are delivered: {sorted(set(blocked.values()))}",
+            "what_becomes_possible": sorted(blocked),
+            "what_this_is_not": "not a claim that they will be, and not an estimate of when",
+        })
+        branches.append({
+            "branch": "the gate does not clear",
+            "assumption": "the blocking items stay open",
+            "what_becomes_possible": [],
+            "consequence": (f"{len(blocked)} item(s) cannot be closed by working them, so the phase's ceiling "
+                            f"stands wherever the unblocked work reaches"),
+        })
+
+    owner = [r for r in rows if r.get("status") == "open"
+             and (r.get("owner_gated") or str(r.get("slot")) == "OWNER")]
+    for r in owner:
+        branches.append({
+            "branch": f"the Owner decides {r.get('id')}",
+            "assumption": "a decision is recorded either way",
+            "what_becomes_possible": [str(r.get("slot") or "OWNER")],
+            "why_it_is_the_owners": r.get("slot_source") or "no reason recorded, which is itself a gap",
+            "what_this_is_not": "not a recommendation, and not a guess at which way it goes",
+        })
+
+    unsized = [i["slot"] for i in scoped_items
+               if not i.get("done") and not any(str(x.get("slot")) == i["slot"] and x.get("status") == "open"
+                                                for x in rows)]
+    if unsized:
+        branches.append({
+            "branch": "an unsized item turns out larger than the average",
+            "assumption": f"{len(unsized)} item(s) in scope carry no registered row, so nothing has measured them",
+            "what_becomes_possible": [],
+            "consequence": ("the projection is an average over a population most of which no round has "
+                            "opened — this branch is why the forecaster calls that its weakest number"),
+        })
+
+    return {
+        "state": MET if branches else NOT_ASSESSABLE,
+        "branches": branches,
+        "count": len(branches),
+        "basis": ("each branch names the ASSUMPTION it rests on. They are possibilities, not predictions."
+                  if branches else
+                  "no branch is readable for this scope: nothing is recorded as blocked, no decision is "
+                  "awaiting the Owner, and every item carries a row. That is not a statement that the future "
+                  "is certain."),
+        "never": ("ranked, weighted, given a probability, or given a date. A possibility with a likelihood is "
+                  "a prediction, and this platform has ONE forecaster "
+                  "(agentic_core.plan_followups.forecast) — a second voice on the same question is two "
+                  "records disagreeing about one fact (M-DELIV-08)."),
+        "limits": ("it enumerates the branches the ARTEFACTS record — a ruling, an owner-gated row, an unsized "
+                   "item. A future nobody wrote down is invisible to it, which is most of them."),
+    }

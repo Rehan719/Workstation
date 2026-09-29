@@ -154,8 +154,14 @@ async def build_to_order(request: BTOBuildRequest):
                 _status = ("BUILT" if qms is True else
                            "COMPOSED_GATE_FAILED" if qms is False else
                            "COMPOSED_NOT_ASSESSED")
+                # P2.2 (W511) — the §13 engine returns ai_provenance {posture, served_by, is_external} and
+                # this handler dropped it, so a build carried no record of what served it. The provenance
+                # existed one layer up and died here.
+                _prov = (d.get("ai_provenance") or {}) if isinstance(d, dict) else {}
                 built.append({"slug": p["slug"], "name": p["name"],
                               "deliverable_id": d.get("id") if isinstance(d, dict) else None,
+                              "served_by": _prov.get("served_by"),
+                              "is_external": bool(_prov.get("is_external")),
                               "qms_gate_passed": qms, "status": _status,
                               "status_basis": (
                                   "the living-QMS gate passed on this deliverable" if qms is True else
@@ -164,13 +170,34 @@ async def build_to_order(request: BTOBuildRequest):
                                   "(floor-served: the floor emits the requested headings, so coverage "
                                   "cannot be measured). Composed is not built.")})
             except Exception as e:
-                built.append({"slug": p["slug"], "name": p["name"], "status": "FAILED", "error": str(e)[:160]})
+                # a build that raised was served by nothing: stated, not left absent (a missing key reads as
+                # "not recorded", and "the call raised" is a different and stronger fact)
+                built.append({"slug": p["slug"], "name": p["name"], "status": "FAILED",
+                              "served_by": None, "is_external": False,
+                              "served_by_basis": "the produce call raised, so nothing served this entry",
+                              "error": str(e)[:160]})
     _built_n = sum(1 for b in built if b["status"] == "BUILT")
     # W494 (refutation) - startswith("COMPOSED") also matched COMPOSED_GATE_FAILED, so a product whose
     # quality gate FAILED was counted and printed as "composed, not assessed". A gate that ran and said
     # no is the opposite of a gate that could not say anything. Counted apart.
     _composed_n = sum(1 for b in built if b["status"] == "COMPOSED_NOT_ASSESSED")
     _gate_failed_n = sum(1 for b in built if b["status"] == "COMPOSED_GATE_FAILED")
+    # P2.2 (W511) — what served this RUN, counted per server. A count map, not a single name: a build of five
+    # products is not served by one thing, and naming the first would be the §4.5 class (D-SELECT).
+    _served_map: Dict[str, int] = {}
+    for b in built:
+        _sb = b.get("served_by")
+        if _sb:
+            _served_map[str(_sb)] = _served_map.get(str(_sb), 0) + 1
+    _bto_provenance = {
+        "served_by": _served_map or None,
+        "any_external": any(b.get("is_external") for b in built),
+        "entries_with_no_server": sum(1 for b in built if not b.get("served_by")),
+        "basis": (("counted from each deliverable's own ai_provenance, as the §13 engine reported it"
+                   if _served_map else
+                   "no entry records a server: nothing was produced, or every produce call raised")
+                  + ". An entry with no server is counted separately and is never folded into a total."),
+    }
     try:
         from agentic_core.organism.biobus import biobus
         biobus.fire_signal("motor", "bto.build",
@@ -192,6 +219,10 @@ async def build_to_order(request: BTOBuildRequest):
                 f"{_gate_failed_n} had a document composed that the gate FAILED. Neither of the last "
                 "two is a delivery, and they are not the same outcome"),
             "posture": "in-house-first",
+            # P2.2 (W511) — the run's provenance, read from each deliverable's own ai_provenance
+            "ai_provenance": _bto_provenance,
+            "served_by": _bto_provenance["served_by"],
+            "any_external": _bto_provenance["any_external"],
             "note": ("Build-to-order via the §13 living-deliverables engine. A product counts as BUILT "
                      "only when the living-QMS gate PASSED on its deliverable; a composed document the "
                      "gate could not assess is reported as composed, not delivered.")}
@@ -228,6 +259,20 @@ async def configure_bto(request: BTOConfigureRequest):
         "resource_count": len(integrated),
         "component_count": len(request.components),
         "provisioned": False,
+        # P2.2 (W511) — DECLARED deterministic rather than left silent. This handler resolves catalog slugs
+        # and builds a dict; no model is called, so `served_by` is None and the reason is given. The
+        # distinction matters: a reader shown "provenance not recorded" would take it for a missing record,
+        # when the provenance is perfectly well known — there is none, because nothing served this.
+        "served_by": None,
+        "is_external": False,
+        "ai_provenance": {
+            "posture": "deterministic",
+            "served_by": None,
+            "is_external": False,
+            "basis": ("no model is called by this endpoint: it resolves catalog slugs and assembles a "
+                      "blueprint dict. This is not an unrecorded provenance — it is the absence of one, "
+                      "and the two are different facts."),
+        },
         "note": ("Design blueprint only — this endpoint provisions, activates and integrates "
                  "nothing. POST /bto/build genuinely produces the selected products via the §13 "
                  "living-deliverables engine and reports BUILT/FAILED per item."),

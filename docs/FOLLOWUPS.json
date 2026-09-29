@@ -2697,8 +2697,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W511",
       "note": ""
     },
     {
@@ -2856,8 +2856,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W511",
       "note": ""
     },
     {
@@ -3712,8 +3712,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W511",
       "note": ""
     },
     {
@@ -4264,8 +4264,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W511",
       "note": "",
       "tier": 2,
       "area": "domains_ux",
@@ -5024,9 +5024,9 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.2",
-      "status": "open",
+      "status": "dropped",
       "closed_by": null,
-      "note": "",
+      "note": "MEASURED FALSE W511. The row asserts 'gateway.query( still has 19 call sites in agentic_core/api'. Counted on the AST over every .py under agentic_core/api (ast.walk for a Call whose func is an Attribute named 'query' on a name or attribute 'gateway'): ZERO call sites. A text grep for 'gateway.query(' returns exactly ONE hit and it is inside a COMMENT, which is why P2.2's bar was written in W508 to count on the AST rather than on source text. Clause (1) of P2.2 is therefore MET and this row blocked the item on a figure that does not hold. The 19 was never attributed to a measurement (M-APPR-03), so nothing could age it.",
       "slot_source": "the row sizes this item's own remaining gap",
       "tier": 2
     },
@@ -5088,8 +5088,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.2",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W511",
       "note": "",
       "tier": 1
     },
@@ -5306,6 +5306,119 @@
       "note": "",
       "slot_source": "P2.17 owns the register's own tooling",
       "tier": 2
+    },
+    {
+      "id": "FU-307",
+      "title": "The Endocrine layer's own basis over-claims the code it names",
+      "why": "vbs/quality.py describes agentic_core/biomimicry/geospheric/regulator.py as 'a real HomeostaticRegulator with an integral term' and, at line 491, as 'a real PID regulator'. MEASURED: integral_error is declared on line 19 and NEVER accumulated; dt is computed on line 31 and discarded; _compute_corrective_action returns STRINGS ('THROTTLE_NON_CRITICAL_JOBS'); its own comment says 'Simple proportional adjustment logic for simulation'. It is a 61-line proportional threshold check. W434 vouched for this layer, W446 measured that vouching as an over-claim, and the correction REPLACED ONE OVER-CLAIM WITH A SMALLER ONE. Neither regulator file is imported by anything - the two apparent references are comment text. TIER 1: this is a false statement on the one surface built to be true about the layers. FIX: say what the file is (a proportional threshold check that returns labels), and state that closing the Endocrine loop requires CONSTRUCTING an integral controller, not connecting this one.",
+      "source": "W512 scoping re-review",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/vbs/quality.py",
+        "agentic_core/biomimicry/geospheric/regulator.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.4 owns the truth sweep; this is a truth defect on the layer-state surface",
+      "tier": 1
+    },
+    {
+      "id": "FU-308",
+      "title": "The circadian intensity map never reaches metabolism, so the clock cannot modulate energy",
+      "why": "heartbeat.py computes a circadian intensity of 1.0/0.7/0.5/0.3 by phase and uses it to gate auto_evolve. But biobus._update_atp passes ATPSimulator.update a circadian_efficiency of only 1.0 or 0.8 and nothing else, so the real map never reaches metabolism at all. atp_depletion_state() derives the consequence itself: min production 0.5*0.8 = 0.4 against max consumption 0.1*1.0 = 0.1, so can_deplete is False - a 4x gap. THE ORGANISM CANNOT DEPLETE BY ARITHMETIC, not by labelling. FIX (two parts): feed the real phase intensity into _update_atp, which drops min production to 0.15; and raise the consumption coefficient so sustained load can exceed it. CAUTION: this makes atp < _ATP_CONSERVE_AT (0.3) reachable for the FIRST time, which caps all cognition to max_parallel 1 - a live behaviour change on a path everything flows through. Ramp it.",
+      "source": "W512 scoping re-review",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/organism/biobus.py",
+        "agentic_core/molecular/atp_simulator.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.2 is the organism-and-heartbeat item; this is the metabolic loop's own arithmetic",
+      "tier": 2
+    },
+    {
+      "id": "FU-309",
+      "title": "The recirculation orchestrator wires live mocks into its production constructor",
+      "why": "agentic_core/avatars/core/recirculation_orchestrator.py __init__ builds EpigeneticMemoryEngine with regulator=type('Mock',(),{'validate_mutation': mock_validate}) where 'async def mock_validate(*args): return {approved: True, confidence: 0.95}', and lob_fixpoint=type('Mock',(),{'verify': lambda *a: True}). A mutation regulator that always approves at a fixed 0.95 and a fixpoint verifier that always returns True, in the real constructor - two verdicts that cannot come out otherwise (D-SELECT). Also measured: _assert_latency computes elapsed and only logs a warning, records nothing, and every call passes the CYCLE's start_time, so SENSE<100ms / INTEND<200ms / ANALYZE<500ms / ACT<500ms are cumulative checkpoints and NO STAGE'S OWN DURATION IS EVER MEASURED. FIX: a real regulator or an honest refusal; per-stage durations recorded, not logged.",
+      "source": "W512 scoping",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/avatars/core/recirculation_orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.16 owns the recirculation loop and its stage latencies",
+      "tier": 3
+    },
+    {
+      "id": "FU-310",
+      "title": "The consultation contract forces an engine to fabricate, and cannot carry provenance",
+      "why": "agentic_core/consultation/interface.py, measured: (a) ConsultationResponse.confidence is a REQUIRED float with ge=0/le=1 and no three-state option, so an engine that cannot judge its own confidence MUST invent a number - build six honest engines against this and you get six fabricated confidences, which is the defect P3.12 exists to remove, recreated by its own interface; (b) ValidationResult.passed is a bare bool, so a validation nothing performed must claim True or False, and all six engines currently pass passed=True; (c) there is NO provenance field at all - no served_by, no is_external - so once an engine calls a model the contract cannot say what served it, making the cognitive layer the one place twenty rounds of provenance work would stop; (d) the engine Literal lists SEVEN engines while registry.EngineType declares NINE. FIX THE CONTRACT BEFORE ANY ENGINE COMPUTES.",
+      "source": "W512 scoping",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/consultation/interface.py",
+        "agentic_core/cognitive/registry.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.12 builds the engines; the contract is changed there anyway and adding the field later means changing every engine twice",
+      "tier": 2
+    },
+    {
+      "id": "FU-311",
+      "title": "Customer/user satisfaction has no mechanism anywhere, and it gates selection",
+      "why": "One of the four measures the vision states are continuously monitored, evaluated and improved. MEASURED across the whole codebase: exactly two occurrences of 'satisfaction' - a section HEADING in a generated management-systems document, and a hardcoded 'user_satisfaction: 1.0' in biomimicry/geospheric/drad.py whose monitor() updates it only from telemetry nothing ever passes. Nothing measures it and no plan item covers it. It is honest today only because nothing claims otherwise. WHY IT MATTERS BEYOND THE GAP: selection between entities cannot honestly turn on until all four measures exist, because a composite built from the two that ARE measured (profitability, compliance) is selection on those two wearing a composite's clothes - and selection on the wrong measure creates optimisation pressure toward the proxy. So this row gates the whole of evolution. FIX: a real signal from real users, however small, and refuse to synthesise one.",
+      "source": "W512 scoping",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/api/management_systems.py",
+        "agentic_core/biomimicry/geospheric/drad.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.4 owns the scatter; this needs an Owner decision on what signal is acceptable before it can be built anywhere",
+      "tier": 2
+    },
+    {
+      "id": "FU-312",
+      "title": "Three dead genome stubs should be deleted, and a VSB records no lineage",
+      "why": "MEASURED: agentic_core/genetic_immune/genome/fitness.py holds 'class FitnessFunction: def evaluate(self, individual): return 1.0' - a fitness that cannot discriminate; evolution.py holds 'def evolve(self, population): return population' - unchanged; population.py is a list wrapper. All three are labelled 'Stub' and ALL THREE ARE IMPORTED BY NOTHING (the live path uses incubator/population and its own mutation operators). Latent, not live - a ledger entry and not an incident - but a fitness returning 1.0 is a landmine the moment anyone imports it. DELETE them. SEPARATELY and in the same area: a VSB record carries NO parent and NO lineage field at all (genomes carry _derived_trait_provenance(parents, derivation); entities carry nothing), which is the precondition for any form of entity reproduction.",
+      "source": "W512 scoping",
+      "found": "2026-09-29",
+      "files": [
+        "agentic_core/genetic_immune/genome/fitness.py",
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.4 owns retire-or-relabel; the lineage half is a precondition noted with it",
+      "tier": 3
     }
   ],
   "routes": [

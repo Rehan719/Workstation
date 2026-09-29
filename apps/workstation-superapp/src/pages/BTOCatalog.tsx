@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { qmsChip } from '../lib/api';
+import { qmsChip, provenanceMapBadge, provenanceBadge } from '../lib/api';
 import {
   Settings2, Fingerprint, Dna, Building2, Users, Award, Globe,
   ShoppingBag, Wrench, Box, Cpu, CheckSquare, Square,
@@ -280,6 +280,25 @@ export const BTOCatalog: React.FC = () => {
                         {btoResult.delivered_basis}
                       </p>
                     )}
+                    {/* P2.2 (W511) — what served the RUN, read from the server's own count map. The §13
+                        engine reported it per deliverable and this handler used to drop it, so a build
+                        served entirely by the deterministic floor looked identical to one a model served. */}
+                    {(() => {
+                      const rb = provenanceMapBadge(btoResult.served_by, btoResult.any_external);
+                      return (
+                        <p className="flex items-center gap-2" data-testid="bto-run-provenance">
+                          <span title={rb.title}
+                                className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rb.cls}`}>
+                            {rb.label}
+                          </span>
+                          {btoResult.ai_provenance?.basis && (
+                            <span className="text-[9px] text-slate-500 leading-relaxed">
+                              {btoResult.ai_provenance.basis}
+                            </span>
+                          )}
+                        </p>
+                      );
+                    })()}
                     {(btoResult.built || []).map((b: any, i: number) => (
                       <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950 border border-slate-900">
                         {/* a composed-but-unassessed product is neither a pass nor a failure: neutral */}
@@ -288,6 +307,17 @@ export const BTOCatalog: React.FC = () => {
                           : b.status === 'COMPOSED_NOT_ASSESSED' ? 'bg-slate-800 text-slate-400'
                           : 'bg-vital/15 text-vital'}`} title={b.status_basis}
                               data-testid={`bto-status-${b.slug ?? i}`}>{String(b.status).replace(/_/g, ' ').toLowerCase()}</span>
+                        {/* P2.2 (W511) — per-entry provenance, from the deliverable's own ai_provenance.
+                            An entry that raised carries served_by null and the helper says so rather than
+                            claiming the floor served it. */}
+                        {(() => {
+                          const eb = provenanceBadge(b.served_by, b.is_external);
+                          return <span title={eb.title}
+                                       data-testid={`bto-prov-${b.slug ?? i}`}
+                                       className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${eb.cls}`}>
+                            {eb.label}
+                          </span>;
+                        })()}
                         <span className="text-xs font-bold text-white truncate flex-1">{b.name}</span>
                         {(() => { const c = qmsChip({ qms_gate_passed: b.qms_gate_passed }); return c && (
                           <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>

@@ -849,6 +849,14 @@ async def _run_nexus_stream(req: NexusRequest):
         sel_text = f"Primary engine: {selected_engine.upper()} ({decision['reason']})"
     else:
         sel_text = f"Not selected: defaulted to {selected_engine.upper()}, because {decision['reason']}"
+    # W511 — the routing call's provenance stays NESTED under `decision`, deliberately, and this comment
+    # exists because a first cut hoisted it to the top level and broke the suite.
+    #
+    # `_collect_stream` classifies an event as a RESULT purely by `"failed" in d`. Putting provenance at this
+    # event's top level therefore reclassified a FRAMING event as a result, and the routing call — which line
+    # ~847 above already appends to `provs` — was counted TWICE: the run reported 12 calls where 11 ran.
+    # So placement here is load-bearing for classification, not cosmetic. The provenance is already counted
+    # in the run summary, and a page that wants it reads `decision.served_by`, which is where it lives.
     yield _ev("engine_selected", "Engine Selected" if decision.get("decided") else "Engine not selected",
               sel_text, {"engine": selected_engine, "layer": 3, "decision": decision})
 
@@ -918,6 +926,17 @@ async def _run_nexus_stream(req: NexusRequest):
         "mjm_phases": 3,
         "layer": 4,
         **p_syn,
+        # W511 — REVERTED, and the reason is worth keeping. A first cut spread `**summary` here to make this
+        # event's shape match the `complete` event of the other three generators. That BROKE a working
+        # contract: `nexus_complete` is itself a RESULT event (it carries `failed` from `**p_syn`), so
+        # `_collect_stream` appends its top-level `served_by` to the per-stage `provs` list — and the
+        # aggregate is a COUNT MAP, so `_provenance_summary` then did `counts[{...}]` and raised
+        # "unhashable type: 'dict'". The other three `complete` events are FRAMING events (no `failed`), which
+        # is exactly why they may spread the aggregate and this one may not.
+        # `_collect_stream` already reads the aggregate from `run` (line ~705). There was no inconsistency to
+        # fix: top-level `served_by` means "what served THIS stage" on every result event, and the run's
+        # aggregate is nested. Re-pointing a field's type to satisfy a guard written in the same round is the
+        # M-EXEC-04 class, and it cost two suite failures.
         "run": summary,
     })
 
