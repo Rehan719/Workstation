@@ -18,7 +18,10 @@ Measured on this repository at W514:
   · continuous round duration, W490+ : n=8,  median 2.15h  (p25 1.82, p75 2.63, max 3.72)
   · continuous round duration, W460+ : n=28, median 2.21h  (p25 1.63, p75 3.72, max 4.87)
   · the full serial suite            : 3274s = 0.91h
-Two independent windows agreeing within 0.06h is the reason this is usable at all.
+The two windows below are NESTED (W490+ is a subset of W460+), so their agreement corroborates nothing --
+W514's audit confirmed that is false by construction, not by data. The figure IS corroborated, but by a
+DISJOINT test run afterwards: first half W449-486 median 1.97h against second half W487+ median 2.43h,
+differing by 0.46h.
 
 THE FINDING THAT SHOULD CHANGE HOW A NIGHT IS PLANNED. The suite is a FIXED 0.91h per round and is 41% of a
 median round. Round boundaries, not typing, are what an 8-hour session spends itself on: 5 rounds pay 4.55h of
@@ -26,13 +29,23 @@ suite and 3 rounds pay 2.73h, so choosing fewer, larger rounds converts ~1.8h of
 working time — about one extra round's worth of actual work, for free. This is the quantified case for batching.
 """
 import re
+import pathlib
 import statistics
 import subprocess
+import importlib.util as _ilu
+
+
+def _consts():
+    _s = _ilu.spec_from_file_location("_sm", pathlib.Path(__file__).resolve().parent / "_session_measured.py")
+    _m = _ilu.module_from_spec(_s); _s.loader.exec_module(_m); return _m
+
+
+K = _consts()
 from typing import Any, Dict, List, Optional
 
-IDLE_CAP_H = 5.0        # a gap longer than this is treated as containing idle, not work
-SUITE_H = 3274 / 3600   # measured, W513 full serial run — replace only with another measured run
-MIN_SAMPLE = 5          # below this, refuse rather than project
+IDLE_CAP_H = K.IDLE_CAP_H
+SUITE_H = K.SUITE_H        # one home, loaded from _session_measured.py
+          # below this, refuse rather than project
 
 
 def _round_ends(limit: int = 400) -> Dict[int, int]:
@@ -50,35 +63,32 @@ def _round_ends(limit: int = 400) -> Dict[int, int]:
     return {r: max(ts) for r, ts in out.items()}
 
 
-def round_durations(since: int = 0) -> Dict[str, Any]:
-    ends = _round_ends()
-    rs = sorted(ends)
-    kept: List[float] = []
-    excluded = 0
-    for a, b in zip(rs, rs[1:]):
-        if b - a != 1 or b < since:      # consecutive rounds only
-            continue
-        g = (ends[b] - ends[a]) / 3600.0
-        if g <= 0:
-            continue
-        if g > IDLE_CAP_H:
-            excluded += 1                # contains idle: an interval, not a duration
-            continue
-        kept.append(g)
-    kept.sort()
-    if len(kept) < MIN_SAMPLE:
+def round_durations(since: int = 449) -> Dict[str, Any]:
+    """Delegates to night_sim.classify() so there is ONE filter, not two.
+
+    W514 audit: this function had its own cap-5h filter with no lower bound and no daytime retention, so the
+    same generated plan printed n=30/median 2.14h here and n=39/median 2.51h from the simulator. Two filters
+    for one quantity is the defect the constants module exists to remove, one level up.
+    """
+    import importlib.util as _il
+    _spec = _il.spec_from_file_location("_ns", pathlib.Path(__file__).resolve().parent / "night_sim.py")
+    _ns = _il.module_from_spec(_spec)
+    _spec.loader.exec_module(_ns)
+    kept, dropped = _ns.classify(since)
+    if len(kept) < K.MIN_SAMPLE:
         return {"assessable": False,
-                "why": (f"only {len(kept)} continuous round(s) measured at or below the {IDLE_CAP_H}h idle cap; "
-                        "no rate is substituted, because a projection from two rounds is a guess wearing a "
-                        "number")}
+                "why": (f"only {len(kept)} round(s) survived the stated filters; no rate is substituted, "
+                        "because a projection from a handful of rounds is a guess wearing a number")}
     return {"assessable": True, "n": len(kept),
-            "excluded_as_containing_idle": excluded,
             "median_h": round(statistics.median(kept), 2),
             "p25_h": round(kept[len(kept) // 4], 2),
             "p75_h": round(kept[3 * len(kept) // 4], 2),
             "max_h": round(kept[-1], 2),
-            "basis": (f"gap between consecutive rounds' final commits, over the newest 400 commits; "
-                      f"{excluded} gap(s) above {IDLE_CAP_H}h excluded as containing idle rather than work")}
+            "excluded": {k: len(v) for k, v in dropped.items() if v},
+            "excluded_detail": {k: v for k, v in dropped.items() if v},
+            "basis": ("gap between consecutive rounds' final commits; a gap shorter than one full suite is a "
+                      "follow-up commit not a round, a gap spanning the sleeping hours is idle, and a long "
+                      "DAYTIME gap is kept as a long round")}
 
 
 def forecast_session(hours: float, since: int = 460,
@@ -103,7 +113,7 @@ def forecast_session(hours: float, since: int = 460,
         "if_rounds_run_fast": band(d["p25_h"]),
         "if_rounds_run_slow": band(d["p75_h"]),
         "worst_observed": band(d["max_h"]),
-        "plan_for": int(usable // d["p75_h"]),     # commit to the p75 count, not the median
+        "worst_case_round_count": int(usable // d["p75_h"]),   # NOT the commitment: night_sim owns that
         "why_p75": ("a night is planned on the SLOW band, because an unfinished round leaves a tree someone "
                     "else has to untangle, while an early finish only means pulling the next item forward"),
     }
@@ -112,7 +122,7 @@ def forecast_session(hours: float, since: int = 460,
     out["round_boundaries_cost"] = {
         "suite_h_per_round": round(SUITE_H, 2),
         "share_of_a_median_round": f"{round(100 * SUITE_H / d['median_h'])}%",
-        "at_this_plan": {f"{n} rounds": round(n * SUITE_H, 2) for n in (n_med, n_med + 2)},
+        "suite_cost_at_n_rounds": {f"{n} rounds": round(n * SUITE_H, 2) for n in (n_med, n_med + 2)},
         "implication": ("the suite is FIXED per round, so fewer and larger rounds convert verification "
                         "overhead into working time; two extra round boundaries cost about one round's work"),
     }
@@ -128,11 +138,11 @@ def forecast_session(hours: float, since: int = 460,
             "note": ("the recent regime is tighter and more representative of today's round size, but n is "
                      "small; the wider window has n=28 and a longer tail"),
         }
-        out["projection"]["committed_round_count"] = min(
+        out["projection"]["worst_case_both_windows"] = min(
             int(usable // d["p75_h"]), int(usable // alt["p75_h"]))
-        out["projection"]["committed_basis"] = (
-            "the LOWER of the two windows' slow bands; the difference between them is reported rather than "
-            "resolved, because nothing measured here says which regime tonight belongs to")
+        out["projection"]["worst_case_basis"] = (
+            "the LOWER of two NESTED windows' slow bands -- a worst case, NOT the commitment. The committed and "
+            "expected counts come from night_sim.committed_and_expected(), which is the one rule that decides them")
 
     out["what_this_cannot_know"] = [
         "a round that turns out to be a DECISION rather than a build finishes in minutes and skews the rate",

@@ -45,6 +45,7 @@ const GROUP_LABEL: Record<string, string> = {
   preparation: 'Preparation',
   planning: 'Planning',
   forecasting: 'Forecasting',
+  session: 'Session',
   appraisal: 'Appraisal',
   measurement: 'Measurement',
   execution: 'Execution',

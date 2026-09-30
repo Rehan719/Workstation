@@ -1,215 +1,153 @@
-# The unattended-session method — forecast, simulate, engineer, align
+# The unattended-session method
 
-Written W514 (2026-09-30) for an ~8-hour unattended run, and kept as the reusable method for any future one.
-Every figure here is measured from this repository or marked as an assumption. **Section 0 is the repeatable
-procedure — start there.** Four scripts hold the mechanism: `plan_night.py` (the plan itself),
-`session_forecast.py` (wall-clock capacity), `night_sim.py` (completion probability) and `coupling.py` (which
-readers a change must not forget).
+For working a long stretch — a night, a weekend — with no Owner in the loop, and for generating that plan
+repeatably rather than improvising it each time.
+
+**This document contains no measured figures, deliberately.** W514's adversarial audit confirmed 43 findings
+against an earlier version of these artefacts, and the largest single class was a figure typed into prose in more
+than one place: the suite cost carried at two different values by two scripts, its share of a round stated two
+ways in two documents, a best-case selector ratio presented as typical, and a confidence restated as the wrong
+odds. A constant with two homes has no home. (The specific values are in the commit that removed them, not here —
+a document must not quote the literal its own rule forbids.) **So every number lives in code and is printed by running the instrument.**
+
+Where this document and the instruments disagree, the instruments are right and this document is out of date.
 
 ---
 
-## 0 · RUN IT AGAIN — the repeatable procedure
+## 0 · Run it — four steps, only the first is yours
 
-Four steps, and only the first is yours.
+1. **Tell Claude the hours available and that you are going to sleep.** Capacity is readable only in the host
+   app, never from a script, so it is an INPUT to the plan; if the hours are wrong everything below is void, and
+   the generated plan says so at the top.
+2. **Claude runs `python scripts/plan_night.py <hours>`.** That regenerates the plan from live state: measured
+   round cost with every exclusion itemised, the simulated probability of each round completing, the committed
+   and expected round counts, where the open work sits, the ordering and batching rules, the pre-round checks,
+   the stop rules, and how the night routes through Workstation.
+3. **Claude reads it back with the committed count and what each round holds**, and you approve or redirect.
+   The counts are computed; the batching is judgement; the judgement is stated so you can overrule it.
+4. **You invoke `/loop` with that plan and sleep.**
 
-1. **Tell Claude how many hours and that you are going to sleep.** Capacity is readable only in the app
-   (`get_usage`), so it is an INPUT to the plan; if the hours are wrong, everything downstream is wrong.
-2. **Claude runs `python scripts/plan_night.py <hours>`.** That regenerates this whole plan from live state —
-   measured round cost, the simulated probability of each round completing, where the open work sits, the
-   ordering and batching rules, the pre-round checks and the stop rules. It refuses to project at all below a
-   five-round history rather than substituting a rate.
-3. **Claude reads the generated plan back to you with the committed round count and what each round holds**,
-   and you approve or redirect. This is the alignment step: the numbers are computed, the batching is judgement,
-   and the judgement is stated so you can overrule it.
-4. **You invoke `/loop` with that plan and go to sleep.** Claude self-paces, refreshes the handover's state
-   section at every round boundary, and writes the night report at the start of the last affordable round.
+**In the morning:** `git log --oneline` is the report, `docs/NIGHT_STATE.json` the machine-readable status,
+`docs/NIGHT_REPORT.md` what was left and why. Nothing needs the conversation you slept through.
 
-**In the morning:** `git log --oneline` is the report, `docs/NIGHT_STATE.json` is the machine-readable status, and
-`docs/NIGHT_REPORT.md` says what was left and why. Nothing needs the conversation you slept through.
-
-**The one thing no mechanism covers:** keep-awake prevents idle sleep, never a closed lid. Leave the machine open.
-
-**It runs THROUGH Workstation, not beside it** — the canon's own instruction
-(`WORKSTATION_IDBO_WHOLE_VISION.md` line 347: *"the organism delivers its own transformation through its own org:
-dogfood is the design, not an afterthought"*). Each round submits its change to `POST /api/v1/cca/submit` and
-carries the returned `cca_id` in its commit message, so the round is governed by the platform's own arms-length
-agency rather than by a convention in a document. The verified cascade, the measured evidence of what already
-works, and the one gap that blocks full integration are in **`docs/CAPACITY_FACULTY_MODEL.md` §8–§9** — not
-repeated here, because two copies of a structure drift.
-
-**The bootstrap, and it is the point.** Workstation cannot yet hold this plan: no commitment, confidence,
-variance, budget or capacity field exists anywhere in the change record (**FU-313**). So the night's FIRST round
-builds that field, and from the second round the plan lives in Workstation instead of in a markdown file. The
-process's first act is to make the platform able to host it — which is what "advance and perfect Workstation as
-it proceeds" means concretely rather than aspirationally.
+**The one risk no mechanism covers:** keep-awake prevents idle sleep, never a closed lid. Leave the machine open.
 
 ### The instruments, and what each refuses to do
+
 | script | answers | refuses |
 |---|---|---|
-| `scripts/plan_night.py <hours>` | the whole plan, from live state | to choose the work — it orders candidates and states the batching rule |
-| `scripts/session_forecast.py <hours>` | how many rounds fit the hours | to project below a 5-round sample; to pick between two disagreeing history windows |
-| `scripts/night_sim.py` | P(≥k rounds complete) | to state one red-suite rate it cannot measure — it shows a range |
-| `scripts/coupling.py <paths>` | which files historically change together | to assert coupling for a file with fewer than 4 commits |
+| `plan_night.py <hours>` | the whole plan, from live state | to choose the work — it orders candidates and states the rule |
+| `night_sim.py` | P(≥k rounds complete), and the committed/expected counts | to state one red-suite rate it cannot measure; to hide what its filters excluded |
+| `session_forecast.py <hours>` | wall-clock capacity and the cost of round boundaries | to project below a minimum sample; to let a worst case be read as the commitment |
+| `coupling.py <paths>` | which files historically change together | to assert coupling for a file with too few commits |
+| `_session_measured.py` | the measured constants, with each one's basis | — it is data, and it is the only home for these numbers |
 
-Each refusal is the point. An instrument that always answers is the one that reports a false clean — which
+**Each refusal is the point.** An instrument that always answers is the one that reports a false clean — which
 happened twice on the night this was written.
 
-## 1 · Measured: what a round of this project actually costs
+---
 
-| quantity | value | how |
-|---|---|---|
-| round duration, **W490+** | n=8, median **2.05–2.15h**, p75 2.63h, max 3.72h | gap between consecutive rounds' final commits |
-| round duration, **W460+** | n=28, median **2.14–2.21h**, p75 3.72h, max 4.87h | same |
-| full serial suite | **0.90h** (two runs: 3274s, 3200s) | measured |
-| suite share of a median round | **41%** | derived |
-| single-test selector | **49.6s** | measured, same tree |
+## 1 · It runs THROUGH Workstation, not beside it
 
-**The correction that makes this honest.** Raw round-to-round gaps read a median of **5.08h** because most gaps
-contain the Owner asleep. *An interval is not a duration.* Gaps above a 5h cap are excluded as idle, and the
-**19 exclusions are reported, not dropped** — a filtered population that does not say what it filtered is how a
-rate becomes a wish. Two independent windows agreeing on the median within 0.06h is why any of this is usable.
+The canon's own instruction (`WORKSTATION_IDBO_WHOLE_VISION.md`): *"the organism delivers its own transformation
+through its own org: dogfood is the design, not an afterthought."* So each round submits its change to
+`POST /api/v1/cca/submit` and carries the returned `cca_id` in its commit message, putting the round under the
+platform's arms-length agency rather than under a convention in a document.
 
-## 2 · Simulated: the probability each planned round completes
+The verified cascade, what was measured to work, and the one gap that blocks full integration are in
+**`docs/CAPACITY_FACULTY_MODEL.md` §8–§9** — pointed at, not repeated, because two copies of a structure drift.
 
-Empirical bootstrap, 20,000 trials, fixed seed, resampling observed durations with replacement — because round
-durations are right-skewed (median 2.14h, max 4.87h) and a normal assumption would understate exactly the tail
-that ruins an unattended night. `p_red` is the chance a round needs a second full suite; it is an **assumption,
-not a measurement**, so the result is shown across a range rather than at one indefensible value.
+**The bootstrap, and it is the point.** Workstation cannot yet hold this plan: no commitment, confidence,
+variance, budget or capacity field exists anywhere in the change record, at any depth (**FU-313**, verified by
+recursive search). So the first round builds that field, and from the second the plan lives in Workstation
+instead of in a file. The process's first act is to make the platform able to host it.
 
-| window | p_red | P(≥1) | P(≥2) | P(≥3) | P(≥4) |
-|---|---|---|---|---|---|
-| W460+ (conservative) | 0.25 | 100% | **90%** | **55%** | 23% |
-| W490+ (recent) | 0.25 | 100% | **99%** | **77%** | 29% |
-| W460+ | 0.50 | 100% | 87% | 45% | 16% |
+---
 
-**So: commit to 2 rounds (90–99%), expect 3 (55–77%), treat 4 as unlikely (23–29%).** This supersedes
-`session_forecast.py`'s `committed_round_count`, which returns 1 by taking the lower of two slow bands and so
-compounds two conservative estimates — the simulation shows 2 is safe on either window.
+## 2 · The method's rules live in the register, not here
 
-**Biased pessimistic by construction, deliberately:** it does not model a round that turns out to be a decision
-(finishes in minutes), and the sample includes the Owner's reply time, so an unattended night may run faster
-than its own history.
+The rules earned by this work are lessons in **`docs/DELIVERY_METHOD.json`**, group `session`. That is not
+filing: a lesson there reaches `GET /api/v1/method`, `POST /api/v1/method/check` (so a change is checked *before*
+it is made), the breach counter that escalates a third breach to Change Control, and the `method_check` that
+`/transformation/orchestrate` already returns. **A rule in the register is enforced by the organisation; a rule
+in a markdown file is decoration.**
 
-**The outside view.** My own judgement said "3 rounds, possibly 4". Measured and simulated, that is the
-optimistic tail — P(≥4) is 23–29%. Reference-class forecasting against this repo's own record beat the inside
-view, and the gap is the size of the optimism bias to expect next time.
+Read them with `GET /api/v1/method` or from the register directly. In summary, each earned by a defect recorded
+beside it: a claim that the method is trustworthy must itself be tested · no figure is restated in prose · an
+exclusion must justify itself against what it excluded · one rule owns the committed figure · a probability about
+self is a measurement but a probability about another's decision is a fabrication · capacity is an input ·
+amortise one verification over coherent changes, bounded by the attribution test · one red-suite error budget ·
+never start a round that cannot finish · a commitment carries its confidence and its variance.
 
-## 3 · The constraint, and how it is worked around rather than removed
+---
 
-The suite is the bottleneck: 0.90h fixed, 41% of a median round, with a **65× ratio** to a targeted selector.
+## 3 · The three loops
 
-- **Exploit:** diff-scoped selector first, one full suite last. W513's failure was reproduced and fixed in 49.6s
-  against a 53-minute run; W503 recorded the same at 16s versus 49 minutes.
-- **Subordinate:** never start a round that cannot pay one full suite plus contingency.
-- **Do NOT elevate.** Parallelising the suite is forbidden for a measured reason — two concurrent runs corrupt
-  the shared `memory.json` and UEG ledgers and produce ~40 false failures. The constraint stays.
-- **Never skip the full suite.** A selector cannot see cross-test interaction, where this project's hardest
-  defects live (an `importlib.reload` splitting a singleton so a route returned `None` one line after a guard set
-  the field). **A passing subset is a hypothesis; the full suite is the verdict.**
+1. **Inner — exists.** Defect → lesson → guard → breach counter → Change Control escalation at the third breach.
+   It has fired on this project's own repeated mistakes.
+2. **Middle — FU-313.** Commitment → delivery → **variance** → the next capacity measurement. Without it a
+   forecast can drift forever, because nothing compares promised with delivered.
+3. **Outer — the instrument audit.** Adversarial refutation of the instruments themselves, by agents that must
+   reproduce a finding before it counts. On its first run it raised findings against every artefact here and
+   refuted roughly a quarter of them, which is why the verify stage exists.
 
-### Batch size: DORA and the measurement point opposite ways
-Small batches reduce cycle time and change-failure rate; here each round boundary costs a fixed 0.90h, so two
-extra boundaries cost a round's work. **Resolution: decouple the batch of CHANGE from the batch of
-VERIFICATION** — each change small, single-purpose, independently reviewable; one suite amortised over several
-*coherent* changes. The honest bound is the **attribution test: if a red suite could not be attributed to one
-batched change within one diagnosis pass, the batch was too big.**
+The outer loop is what caught the two findings that mattered, and neither would have survived re-reading: a
+filter that discarded real rounds while reporting only a count, and a validity claim resting on two windows that
+were nested rather than independent. **Both were claims about the method's own trustworthiness, which is the
+class a method document is least able to audit in itself.**
 
-## 4 · Change coupling — predicting the second-reader miss before it happens
+---
 
-Mined from 556 commits: logical dependencies, not static imports. `vbs/quality.py` co-changes with
-`test_mvp_spine.py` 100%, **`Deliverables.tsx` 67%**, `genesis.py` 58%.
+## 4 · Engineering, in one place
 
-This found a real gap in this night's plan: the FU-160 fix named `quality.py` and `ethical_engine.py` and **not
-the page that reads them** — the "fixed one writer, not its reader" class that recurs here by name. Checked:
-`Deliverables.tsx` reads framework-level verdicts and `overall`, not the ethical engine's inner dimensions, and
-`qmsChip`'s not-assessable branch already omits coverage. **Cleared; the two-file fix stands.** The value is the
-cost asymmetry — two greps before, versus a 53-minute suite after. The instrument **refuses** below 4 commits
-(`ethical_engine.py` 2, `method.py` 3, `regulator.py` 0) rather than asserting a coupling it cannot support.
+**The constraint.** The full suite is the bottleneck and is fixed per round; a diff-scoped selector is far
+cheaper. So: selector first on the diff, one full suite last on the final tree, with the process exit code
+captured explicitly rather than read off a wrapper. The constraint is **worked around, never removed** —
+parallelising the suite is forbidden for a measured reason, because two concurrent runs corrupt the shared
+ledgers. And a selector never replaces the full run: it cannot see cross-test interaction, where this project's
+hardest defects live. **A passing subset is a hypothesis; the full suite is the verdict.**
 
-## 5 · Hazards as unsafe control actions (STPA)
+**Batch size.** Small-batch guidance and a fixed per-round verification cost point opposite ways. Decouple the
+batch of CHANGE from the batch of VERIFICATION: each change small, single-purpose and reviewable; one suite
+amortised over several *coherent* changes. The bound is the **attribution test** — if a red suite could not be
+attributed to one batched change within one diagnosis pass, the batch was too big.
 
-The controller's actions overnight are *commit*, *push*, *close-row*, *mark-item-done*. Each unsafe version and
-its constraint:
+**Hazards as unsafe control actions.** The control actions are *commit*, *push*, *close-row*, *mark-item-done*.
+A close names the state it measured, never only the change made. No commit on red. Refute a guard before the
+code it accuses. An item closes on its ACCEPT clause, not on activity. And check the readers a change must not
+forget, with `coupling.py`, before making it.
 
-| unsafe control action | constraint |
-|---|---|
-| close a row that is not satisfied | a close names **the state it measured**, never only the change made |
-| commit on red | explicit `PYTEST_EXIT=$?`, one diagnosis pass, then stop |
-| act on wrong feedback from a guard | refute the guard before the code — W513 was exactly this |
-| mark an item done on activity | the ACCEPT clause is the bar, transcribed and guarded |
-| push a change whose reader was not updated | the coupling check above, before the fix |
+**Resilience.** One round = one commit, so a crash loses at most the round in flight. Two-way doors only:
+nothing whose blast radius exceeds one revert. Atomic writes under lock, because interruption is expected rather
+than hypothetical. One red-suite error budget. A round exceeding the p75 duration is special cause — investigate,
+do not accelerate.
 
-## 6 · Resilience: checkpoint, reversibility, error budget
+**The four signals, checked at every round boundary:** the suite's own exit code · `git status --short` empty ·
+the allowance falling as expected · elapsed against p75.
 
-- **Checkpoint = one round = one commit.** A crash, a sleep or an exhausted budget loses at most the round in
-  flight. Alongside it, `docs/NIGHT_STATE.json` holds machine-readable round status
-  (`{round, status: planned|in_progress|landed|abandoned, commit, suite, left_undone}`) so resumption is
-  deterministic rather than dependent on reading prose.
-- **Two-way doors only.** Everything planned is revertible in one commit. Nothing that is not — schema change,
-  data migration, store rewrite, anything owner-gated — is in the plan.
-- **Error budget: one red suite (0.90h reserved).** A second means stop and write up, not push on.
-- **SPC:** p75 = 2.63h is the control limit. A round exceeding it is special-cause — investigate, do not
-  accelerate.
-- **Atomicity** (`store_lock` + `atomic_write_json`) and **asserted byte-restore** on every blind, because
-  interruption tonight is expected rather than hypothetical.
+**Pre-mortem.** The failure modes, with the mechanism for each, are in `CAPACITY_FACULTY_MODEL.md`. Several of
+them have actually happened here, which is what makes the list worth keeping.
 
-## 7 · Work-type routing (Cynefin) and ordering (WSJF)
+---
 
-*Clear* — the stale-document fixes: best practice applies, batch them. *Complicated* — FU-160: analysable, one
-right answer. *Complex* — the tolerant reader across 13 heterogeneous sites: its own row forbids a single
-unattended pass, hence five rounds. Applying clear-domain confidence to complex work is the classic failure and
-the row predicted it.
-
-**WSJF orders Round A:** the two stale Horizon statements are near-zero duration and unblock five items on
-paper — the highest value-over-duration in the queue, so they go first.
-
-## 8 · ETTO, named and bounded
-
-Tonight explicitly trades thoroughness for throughput; that is what batching one suite across coherent changes
-*is*. The bound is the attribution test in §3. Safety-II's four cornerstones already exist here under other
-names: **respond** = the red-suite stop rule; **monitor** = the four signals in §9; **learn** = the method
-register (90 lessons, 43 guarded, third breach auto-escalates to Change Control); **anticipate** = the pre-mortem
-in §10.
-
-## 9 · The four signals, with decision rules
-
-| signal | healthy | else |
-|---|---|---|
-| suite exit code, captured explicitly | `0` | one diagnosis pass, then stop and write up |
-| `git status --short` | empty after each round | never start a round on a dirty tree |
-| weekly allowance (`get_usage`) | falling as expected | write the night report while capacity remains |
-| round elapsed vs p75 (2.63h) | under | do not start a round that cannot finish |
-
-## 10 · Pre-mortem — three of these happened within 24 hours of writing
-
-| how the night fails | mechanism | status |
-|---|---|---|
-| the lid closes; nothing runs | keep-awake covers **idle** sleep only, never a closed lid — disclosed, not claimed | **unguardable** |
-| two suites at once corrupt shared stores (~40 false failures) | WIP limit of 1; fresh isolated store per run | hard rule |
-| the tree is edited while a suite reads it (two 50-min runs lost in W507) | measurement only while a run is live | **happened** |
-| a guard goes red against correct code | refute the guard first; ask whether the *edit* produced the condition | **happened tonight** |
-| a new guard cannot fail | driven red before trusted, restored with an asserted SHA | standing |
-| a wrapper masks the exit code | `PYTEST_EXIT=$?` captured, never the wrapper's status | **happened tonight** |
-| capacity ends mid-round with no record | night report written at the *start* of the last affordable round | designed in |
-| a measurement instrument is vacuous | driven against a known-positive before its zero is believed | **happened twice tonight** |
-
-## 11 · Alignment: three commitments checkable cold in two minutes
+## 5 · Alignment — three commitments, checkable cold in two minutes
 
 1. **`git log --oneline` is the report.** Every round is one commit stating what was measured, what changed, what
    was left. No round exists that is not a commit; nothing is "nearly done".
-2. **`HANDOVER_CLOUD.md` §1 refreshed at every round boundary — and only §1**, so a refresh does not burn the
-   capacity it exists to protect.
-3. **`NIGHT_REPORT.md` written before capacity runs out**, at the start of the last affordable round: what
-   landed · what was already satisfied on measurement · what was left and exactly why · what now awaits a ruling.
+2. **The handover's state section is refreshed at every round boundary — and only that section**, so a refresh
+   does not burn the capacity it exists to protect.
+3. **The night report is written BEFORE capacity runs out**, at the start of the last affordable round. A report
+   written after the budget is gone is the one report that cannot be written.
 
-**Escalation fixed in advance, so it needs no judgement at 04:00:** red suite → one diagnosis pass → stop and
-write up, tree clean. Anything whose honest answer is a ruling → parked in `P3.0`, never decided. The six §18
-decisions, the OWNER-slotted row and every owner-gated switch → untouched. A round that cannot finish in the
-remaining time → not started.
+**Escalation, fixed in advance so nothing needs judgement at 04:00:** red suite → one diagnosis pass → stop,
+write up, tree clean. A second red suite → stop. Anything whose honest answer is a ruling → parked, never
+decided. Owner-gated switches and Owner-reserved decisions → untouched. A round that cannot finish → not started.
 
-## 12 · What is deliberately NOT done unattended
+---
 
-No suite parallelisation or sharding, no CI changes, no dependency beyond the ruled `pypdf` line, no refactor
-whose blast radius exceeds one commit, and no agent fan-out — refuter worktrees cost 162 MB each and once filled
-the disk, killing 27 of 45 agents silently. **An unattended night optimises throughput of the existing method,
+## 6 · What is deliberately NOT done unattended
+
+No suite parallelisation or sharding, no CI changes, no new dependency beyond one already ruled, no refactor whose
+blast radius exceeds a single commit, and no agent fan-out — refuter worktrees are expensive and have filled the
+disk before, killing most of a fleet silently. **An unattended night optimises throughput of the existing method,
 never the method itself.**

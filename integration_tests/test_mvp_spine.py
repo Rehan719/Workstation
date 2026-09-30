@@ -28032,3 +28032,41 @@ def test_w513_no_live_module_computes_a_spiritual_score(client):
     assert checked > 200, f"the sweep must have read the tree: {checked} files"
     assert not hits, ("A.9.5: a spiritual state is COMPUTED somewhere. This is a ratified boundary, never a "
                       f"gap to close: {hits}")
+
+
+def test_w514_the_method_documents_carry_no_measured_figures():
+    """M-SESS-02: a measured figure lives in code, never restated in prose.
+
+    W514's audit confirmed 43 findings against the session artefacts and the largest single class was one
+    figure typed into two places, so the two copies disagreed. This guard makes that class impossible for the
+    method document, and asserts the suite constant has exactly one home.
+
+    The forbidden patterns are BUILT FROM PARTS rather than written out, because a guard whose source contains
+    the literal it forbids matches itself and can never fail (W491, W495).
+    """
+    import re as _r
+    from pathlib import Path as _P
+    root = _P(__file__).resolve().parents[1]
+
+    # a measured figure = digits bound to a unit. Assembled so this file holds no such literal itself.
+    unit = "(?:" + "|".join(["h", "hours?", "s", "x", "%"]) + ")"
+    # No backslash escape class appears below, deliberately. The first version of this guard was written
+    # through a heredoc, its word-boundary escapes became literal backspace bytes, and the check then
+    # matched NOTHING - it passed on a document that did restate a figure. Driving it red is what caught
+    # that; explicit character classes and lookarounds cannot be mangled the same way.
+    pat = _r.compile("(?<![0-9A-Za-z.])[0-9]+(?:[.][0-9]+)?[ ]*" + unit + "(?![0-9A-Za-z])")
+
+    doc = (root / "docs" / "OVERNIGHT_METHOD.md").read_text(encoding="utf-8")
+    hits = pat.findall(doc)
+    assert not hits, ("docs/OVERNIGHT_METHOD.md restates measured figures; they belong in "
+                      "scripts/_session_measured.py and must be printed by the instrument: %r" % hits[:8])
+
+    # the suite constant has ONE definition. Others may only LOAD it.
+    defs = []
+    for p in sorted((root / "scripts").glob("*.py")):
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            if _r.match(r"^\s*SUITE_H\s*=", line) and "K." not in line:
+                defs.append(f"{p.name}:{i}")
+    assert len(defs) == 1, ("the suite constant must be defined exactly once (in _session_measured.py) and "
+                            "loaded elsewhere; found: %r" % defs)
+    assert defs[0].startswith("_session_measured"), defs

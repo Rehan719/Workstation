@@ -48,7 +48,7 @@ def main(hours: float) -> None:
     print("**Capacity is an INPUT here, not a measurement.** Read it in the app (`get_usage`) before trusting "
           "this plan; if the hours are wrong, everything below is wrong.\n")
 
-    cap = sf.forecast_session(hours)
+    cap = sf.forecast_session(hours, since=449)
     dur = cap.get("round_durations", {})
     if not dur.get("assessable"):
         print("## Refused\n\n" + dur.get("why", "insufficient history") +
@@ -57,13 +57,15 @@ def main(hours: float) -> None:
 
     print("## 1 · Measured round cost\n")
     print(f"- round duration: n={dur['n']}, median **{dur['median_h']}h**, p75 {dur['p75_h']}h, max {dur['max_h']}h")
-    print(f"- excluded as containing idle (an interval is not a duration): **{dur['excluded_as_containing_idle']}**")
+    for _reason, _n in (dur.get("excluded") or {}).items():
+        print(f"- excluded — {_reason.replace('_', ' ')}: **{_n}**"
+              f" {dur['excluded_detail'][_reason]}")
     print(f"- full suite: **{cap['suite_h']}h** — {round(100 * cap['suite_h'] / dur['median_h'])}% of a median round\n")
 
     print("## 2 · Simulated completion probability\n")
     print("Empirical bootstrap, 20,000 trials, fixed seed. `p_red` (a round needing a second full suite) is an "
           "ASSUMPTION, so a range is shown rather than one indefensible value.\n")
-    sample = ns.observed(460)
+    sample, dropped = ns.classify(449)
     committed = None
     if len(sample) >= 5:
         print("| p_red | " + " | ".join(f"P(>={k})" for k in (1, 2, 3, 4)) + " |")
@@ -71,11 +73,8 @@ def main(hours: float) -> None:
         for p_red in (0.0, 0.25, 0.5):
             r = ns.simulate(sample, budget_h=hours, p_red=p_red)
             print(f"| {p_red:.2f} | " + " | ".join(f"{r[k]:.0%}" for k in (1, 2, 3, 4)) + " |")
-        mid = ns.simulate(sample, budget_h=hours, p_red=0.25)
-        # commit to the largest round count still at or above 85% — high enough that an unfinished round,
-        # which leaves a tree someone else must untangle, is the exception rather than the plan
-        committed = max([k for k, v in mid.items() if v >= 0.85] or [1])
-        expected = max([k for k, v in mid.items() if v >= 0.50] or [1])
+        # ONE rule decides both counts, in code, so no prose has to override a number (W514 audit).
+        committed, expected, mid = ns.committed_and_expected(sample, budget_h=hours, p_red=0.25)
         print(f"\n**Commit to {committed} round(s)** (>=85% at p_red 0.25). **Expect {expected}.** "
               f"Anything beyond {expected} is a stretch, taken whole or not at all.")
         print(f"\n**Do not start a round below {dur['p75_h']}h remaining** — the p75 duration. "

@@ -113,8 +113,9 @@ before merging, so a branch is what that instruction expects to find.
 
 ## 3. The method is machine-readable — use it, don't re-derive it
 
-`docs/DELIVERY_METHOD.json` holds 90 lessons in 12 groups, 43 of them enforced by a named guard. It is served
-and checkable:
+`docs/DELIVERY_METHOD.json` holds the method as data — lessons in groups, a stated share of them enforced by a
+named guard. **The counts are not written here on purpose:** W514's audit found that restated figures drift, so
+read them from `GET /api/v1/method`, whose `enforcement` block computes them live. It is served and checkable:
 
 | call | what it gives you |
 |---|---|

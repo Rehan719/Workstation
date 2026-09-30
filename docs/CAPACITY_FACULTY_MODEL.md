@@ -158,7 +158,11 @@ to the Owner. It is recorded here and parked, not proposed as settled.
 ## 8 · VERIFIED against `WORKSTATION_IDBO_WHOLE_VISION.md` — and my earlier chain was wrong
 
 I had written the chain as *VSB Entity → Business Transformation Office → Build-to-Order → catalogue → CCA →
-growing tip*. The Owner questioned it. It is wrong in three ways, and the canon states it twice (lines 101, 345):
+growing tip*. The Owner questioned it. It is wrong in three ways.
+
+The canon states the chain in two places, and **not identically** — W514's audit confirmed that "states it
+twice" was imprecise. Line 101 gives it **through Build-to-Order and stops there**, omitting the terminal link;
+line 345 gives it in full, including Change Control. The full form:
 
 > **Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order → Change Control**
 
@@ -193,12 +197,18 @@ through its own org: **dogfood is the design, not an afterthought**."*
 | `POST /api/v1/transformation/orchestrate` | **200** with a `method_check` citing lesson ids and MET/basis/checkable_from per requirement, a governance verdict that states its own limit (*"intent + domain only … the delivery's content was NOT screened"*), `outcome_not_recorded`, and the live `products_services_catalogue` |
 | `GET /api/v1/method{,/appraise,/forecast,/handover}`, `/plan/followups`, `/catalog/products` | all **200** |
 
-**So the plan CAN run through Workstation today.** Governance, method check, catalogue, queue and Board
-ratification are real, not scaffolding.
+**So a round's change can be SUBMITTED and GOVERNED through Workstation today** — that is what the calls above
+measured, and no more. Governance, method check, catalogue, queue and Board ratification returned real records
+rather than scaffolding. What is *not* claimed: that anything enforces the routing (a round that skipped
+`/cca/submit` would not be refused), and that the queue's `awaiting_board_ratification` flag means a Board
+actually acted — the flag was present, its downstream effect was not exercised.
 
 **The one measured gap — registered as FU-313.** `committed_rounds` and `confidence` passed to
-`/transformation/orchestrate` were **silently dropped** (a response model strips undeclared keys), and no
-`commitment` / `confidence` / `variance` / `budget` / `capacity` field exists in the CCA record, the queue, or
-`GET /cca/{id}`. Workstation can govern a change but **cannot record what scope was promised, at what confidence,
+`/transformation/orchestrate` **did not appear anywhere in the response**. The earlier wording here blamed "a
+response model stripping undeclared keys" and W514's audit found that FALSE: a field passed *in* is discarded by
+the **request** model, which ignores undeclared input by default, so the value never reaches the handler at all.
+The gap itself is verified by **recursive** search at every depth — no `commitment` / `confidence` / `variance` /
+`budget` / `capacity` field exists in the CCA record, the queue, or `GET /cca/{id}`; the only match anywhere in
+the platform is a git-commit count on the appraisal surface. Workstation can govern a change but **cannot record what scope was promised, at what confidence,
 against what capacity, nor what the variance turned out to be** — which is exactly what an entity working
 unattended between Owner reviews must carry, and exactly what this mechanism produces.

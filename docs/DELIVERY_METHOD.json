@@ -9,6 +9,7 @@
       "preparation",
       "planning",
       "forecasting",
+      "session",
       "appraisal",
       "measurement",
       "execution",
@@ -822,6 +823,96 @@
       "defect": "The plan could say how many rounds its measured rate projects, and could say nothing at all about what would become possible if the gate cleared, or what either answer to an Owner decision opens. Six Phase 2 items are held behind eight Phase 3 items and that branch was readable the whole time — but only as prose in an item body, never as a structure anything could compute. A plan that can extrapolate one line and cannot enumerate its branches presents a single future as the only one.",
       "apply": "List the branches with the ASSUMPTION each rests on: what unblocks if a gate clears, what each answer to an open decision makes possible. Label every one a POSSIBILITY. Never a probability, never a ranking, never a date — those belong to the one forecaster, and a second voice on the same question is two records disagreeing (M-DELIV-08).",
       "enforced_by": "agentic_core/api/method.py appraise() — the prospection faculty"
+    },
+    {
+      "id": "M-SESS-01",
+      "group": "session",
+      "rule": "A claim that the method itself is trustworthy must be tested, or not made. Corroboration requires DISJOINT samples; two nested windows agreeing is evidence of nothing.",
+      "defect": "W514: session_forecast.py and OVERNIGHT_METHOD.md both stated 'two independent windows agreeing within 0.06h is the reason this is usable at all'. W490+ is a SUBSET of W460+ (10 of 30 samples are the same data), so the windows were neither independent nor corroborating, and the agreement was near-tautological. The claim was load-bearing: it was offered as the reason to trust the figure a commitment was then built on.",
+      "apply": "State the estimator and its sample once. To corroborate, split the history into DISJOINT halves and compare; report the difference. Run that test before citing agreement as evidence. (Run afterwards for W449+: first half median 1.97h, second half 2.43h, differing by 0.46h — the figure IS corroborated, but by this test and not by the nested one originally cited.)",
+      "enforced_by": null,
+      "why_not_enforced": "a guard can assert that two compared windows do not overlap, but it cannot tell whether a prose sentence is claiming corroboration; the durable fix is that no figure is restated in prose at all (M-SESS-02)"
+    },
+    {
+      "id": "M-SESS-02",
+      "group": "session",
+      "rule": "A measured figure appears in exactly one place — the code that computes it. It is never typed into prose, and a document that needs it prints it by running the instrument.",
+      "defect": "W514: the suite cost was written as both 0.90h and 0.91h (two scripts holding the same constant differently: 3274/3600 against (3274+3200)/2/3600); its share of a round as both 41% and 43%; the selector ratio as 65x when a realistic 2-4 test selector measures 19-24x; and 'one night in seven' where the committed band was 90% (one in ten). Four of nine self-audit findings and several audit findings were this single class, in documents that themselves state 'import the constant, never restate it'.",
+      "apply": "One shared constants module, imported. Method documents carry zero numbers and point at the generator. If a figure must appear in prose, it is generated into that prose at render time or it does not appear.",
+      "enforced_by": "integration_tests/test_mvp_spine.py::test_w514_the_method_documents_carry_no_measured_figures",
+      "why_not_enforced": null
+    },
+    {
+      "id": "M-SESS-03",
+      "group": "session",
+      "rule": "An exclusion must justify itself against the population it excluded — not merely state its rule. Report what was dropped and why each dropped item qualifies.",
+      "defect": "W514: the capacity instruments dropped every round-to-round gap over 5h as 'containing idle', justified by the true principle that an interval is not a duration, and reported only the COUNT (19). Tested afterwards, 6 of those 19 were daytime gaps — plausibly long rounds, not sleep. Restoring them moved P(>=2 rounds) from 91% to 75% and the committed count from 2 to 1. The filter could not report that it had discarded real rounds, because nothing looked: an instrument that cannot fail, one level up from the test.",
+      "apply": "Every filter reports its excluded items individually with the property that justified exclusion (here: whether the gap spans 03-06 UTC). A filtered population stated as a bare count is not an honest population.",
+      "enforced_by": null,
+      "why_not_enforced": "NOT YET ENFORCED — the guard described here is not written, and naming an absent instrument is the defect this register warns about. It would assert: a guard driving a filter with a known-misclassifiable item and asserting the report names it and its reason"
+    },
+    {
+      "id": "M-SESS-04",
+      "group": "session",
+      "rule": "The committed figure comes from ONE rule, in code. A mechanism whose headline output is routinely overridden in prose is not a mechanism.",
+      "defect": "W514: session_forecast.py returned committed_round_count = 1 by taking the minimum of two windows' p75 bands, and the documents said 'I am overriding it to 2 as a judgement call'. Compounding two conservative estimates produced a number nobody used, while the prose figure carried the authority of having been 'measured'.",
+      "apply": "One rule decides the commitment — the simulation's >=85% band. Any other computed count is named for what it is (worst_case_round_count) so it cannot be read as the commitment. If judgement overrides the rule, the override is recorded as a variance with its reason, not as the figure.",
+      "enforced_by": null,
+      "why_not_enforced": "NOT YET ENFORCED — the guard described here is not written, and naming an absent instrument is the defect this register warns about. It would assert: a guard asserting exactly one field in the capacity output is named as the commitment"
+    },
+    {
+      "id": "M-SESS-05",
+      "group": "session",
+      "rule": "A probability about SELF is a measurement; a probability about another's decision is a fabrication. Never rank branches that turn on what the Owner or another agent will choose.",
+      "defect": "W514: the capacity mechanism attaches probabilities to possibilities, which is exactly what api/method.py _prospect() refuses to do — 'ranked by nothing, ever; a possibility given a probability has been turned into a prediction'. Bolting the simulation into prospection would have broken a designed invariant QUIETLY, because the function would still have returned branches.",
+      "apply": "Capacity is a separate faculty answering only about this system's own throughput. Prospection may consume it as a stated assumption while continuing to enumerate rather than rank.",
+      "enforced_by": null,
+      "why_not_enforced": "NOT YET ENFORCED — the guard described here is not written, and naming an absent instrument is the defect this register warns about. It would assert: the existing prospection guard, plus a guard asserting the capacity faculty's output contains no branch about an Owner decision"
+    },
+    {
+      "id": "M-SESS-06",
+      "group": "session",
+      "rule": "Capacity is an INPUT to a plan, not something the plan measures. Say so where the plan is read.",
+      "defect": "W514: remaining allowance is readable only through the host application, never from a script, so an unattended plan rests on a number it cannot verify. A plan that buried that assumption would be confidently wrong whenever the hours were wrong.",
+      "apply": "The generated plan states at the top that capacity is an input and that everything below is void if the hours are wrong.",
+      "enforced_by": null,
+      "why_not_enforced": "the value arrives from outside the repository; the guard can only assert the disclosure sentence is present, which is prose-checking and therefore weak"
+    },
+    {
+      "id": "M-SESS-07",
+      "group": "session",
+      "rule": "Amortise one full verification over several COHERENT changes, bounded by the attribution test: if a red suite could not be attributed to one batched change within one diagnosis pass, the batch was too big.",
+      "defect": "W514 measured the full suite at a fixed ~0.9h and 42% of a median round, with a realistic diff-scoped selector 19-24x faster. Small-batch guidance (DORA) and that fixed cost point opposite ways, and collapsing one into the other loses either attribution or throughput.",
+      "apply": "Selector first on the diff, one full suite last on the final tree, with the process exit code captured explicitly. Batch only changes in one subsystem or one defect class.",
+      "enforced_by": null,
+      "why_not_enforced": "NOT YET ENFORCED — the guard described here is not written, and naming an absent instrument is the defect this register warns about. It would assert: the existing round rhythm plus the requirement that a round's commit lists its files explicitly"
+    },
+    {
+      "id": "M-SESS-08",
+      "group": "session",
+      "rule": "An unattended session spends one error budget: a single red-suite re-run. A second red suite stops the session; it does not buy a third attempt.",
+      "defect": "W514: a red suite cost a full 53-minute re-verification, which is 11% of an 8-hour night. Without a stated budget an unattended session can spend the whole night re-running the same failure, and W498-W500 record three instruments that reported success while doing nothing for hours.",
+      "apply": "Reserve one suite duration as contingency. On a red suite take one diagnosis pass; if it does not resolve, stop, write it up, leave the tree clean.",
+      "enforced_by": null,
+      "why_not_enforced": "the budget governs the session's own conduct rather than a code property; it is checkable only in the night report, which is why the report is written before capacity ends"
+    },
+    {
+      "id": "M-SESS-09",
+      "group": "session",
+      "rule": "Do not start a round that cannot finish in the time remaining. A half-built round leaves a tree someone else must untangle; an early finish only means pulling the next item forward.",
+      "defect": "W514: the p75 round duration is materially longer than the median (4.10h against 2.09h), so a plan sized on the median starts rounds it cannot land roughly a quarter of the time.",
+      "apply": "Compare time remaining against p75, not the median, before starting. Checkpoint granularity is one round to one commit, so an abandoned round costs at most itself.",
+      "enforced_by": null,
+      "why_not_enforced": "NOT YET ENFORCED — the guard described here is not written, and naming an absent instrument is the defect this register warns about. It would assert: a guard asserting the generated plan states a p75-based do-not-start threshold"
+    },
+    {
+      "id": "M-SESS-10",
+      "group": "session",
+      "rule": "A commitment is recorded with its confidence where a reader meets it, and its variance is recorded when the session ends. A promise with no variance cannot improve.",
+      "defect": "W514 measured (recursively, at every depth) that no commitment, confidence, variance, budget or capacity field exists in the Change Control record, the queue, GET /cca/{id} or the transformation cycle — so Workstation can govern a change but cannot record what scope was promised, at what confidence, against what capacity, nor what actually happened. Registered as FU-313.",
+      "apply": "The transformation cycle carries a commitment; the session's variance feeds the next capacity measurement. Until FU-313 lands, the commitment lives in the generated plan and the variance in the night report, and both say they are not yet held by the platform.",
+      "enforced_by": null,
+      "why_not_enforced": "the field does not exist yet; FU-313 is the build, and the guard belongs with it"
     }
   ],
   "mechanisms": [
