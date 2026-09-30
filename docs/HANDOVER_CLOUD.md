@@ -37,7 +37,9 @@ Five modified files: `docs/FABLE_DELIVERY_PROMPT.md` (adds P3.26 TURNOVER, P3.27
 `docs/FOLLOWUPS.json`, `docs/WORKSTATION_IDBO_LIVING_PLAN.md`, `docs/WORKSTATION_IDBO_WHOLE_VISION.md`
 (§8 `Recorded W512`, §16 pointer, §18 six Owner decisions), `integration_tests/test_mvp_spine.py` (two guards).
 
-**ROUND B (W516) IS LANDED — `eb14f3b9`, 493 passed / 15 skipped in 51m24s, `PYTEST_EXIT=0` captured explicitly; pre-flight 0 leads over 11 files; `tsc --noEmit` clean.** The tree is clean. Closes FU-295 (a 33-article constitution, each article naming how it is checked, three recording their own breach, and the page showing both), FU-305 (the defended count is read live from the ledger, and the ledger states that the eleven instances were never written down and cannot be recovered) and FU-307 (nothing now claims the geospheric regulator is PID — fixed in all three writers).
+**ROUND C (W517) IS LANDED — `cb075956`, 494 passed / 15 skipped in 50m42s, `PYTEST_EXIT=0`, pre-flight 0 leads.** Three rounds landed overnight against a committed one. Closes FU-317 (the D-SELECT screen narrowed: 224 candidates to 108, literal clamps 106 to 12) and DROPS FU-303 as refuted — its defect does not reproduce, and the fix drafted for it was reverted because a driven comparison showed 0 leads before and 0 after.
+
+**ROUND B (W516) landed — `eb14f3b9`, 493 passed / 15 skipped in 51m24s, `PYTEST_EXIT=0` captured explicitly; pre-flight 0 leads over 11 files; `tsc --noEmit` clean.** The tree is clean. Closes FU-295 (a 33-article constitution, each article naming how it is checked, three recording their own breach, and the page showing both), FU-305 (the defended count is read live from the ledger, and the ledger states that the eleven instances were never written down and cannot be recovered) and FU-307 (nothing now claims the geospheric regulator is PID — fixed in all three writers).
 
 **See `docs/NIGHT_REPORT.md` for the night's account**, including the two findings that corrected this plan's own headline number and the hour lost to running an agent fleet beside a suite (M-SESS-11).
 

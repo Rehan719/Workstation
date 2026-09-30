@@ -3,7 +3,7 @@
 Written at 05:52 UTC, **before** capacity ran out rather than after, which is the point of writing it at all.
 `git log --oneline` is the authoritative record; this says what it means and what was left.
 
-**Committed to 1 round. Expected 2. Delivered 2, plus the method regeneration and the Vision 8.0 update.**
+**Committed to 1 round. Expected 2. Delivered 3, plus the method regeneration and the Vision 8.0 update** — the top of the measured range, not a beaten estimate.
 
 ---
 
@@ -16,6 +16,8 @@ Written at 05:52 UTC, **before** capacity ran out rather than after, which is th
 | `adcf22aa` | **Round A** — a floor-served coverage figure stops becoming an ethical verdict; Horizon stops claiming it is blocked |
 | `2f55a20d` | the third external biomimetic brief, interrogated — 21 of 72 assessments were a rename |
 | `eb14f3b9` | **Round B** — a constitution that names how each article is checked and records its own breaches |
+| `8cde45bc` | this night report, written before capacity ran out |
+| `cb075956` | **Round C** — the select screen stops spending half its report on shapes its own definition excludes |
 
 **Suites:** Round A 491 passed / 15 skipped (52m33s); Round B 493 passed / 15 skipped (51m24s). Exit codes
 captured explicitly both times. Pre-flight at Round B: **0 leads over 11 files**. `tsc --noEmit` clean.
@@ -72,7 +74,9 @@ thrusts that already existed. **No new thrust, no new phase, no parallel `src/id
 
 ## What was left undone, and why
 
-- **Round C was not started at the time of writing.** About 4.5 hours of the eight remained against a p75 round
+- **Round C went ahead and landed** (`cb075956`, 494 passed). A ROUND D was not started: about 3.5 hours of the eight remained against a p75 round of 4.29 hours, so the rule held.
+- **Round C's lesson is worth more than its fix.** Three of its four problems were in my own CHECKING, not the code: a plausible FU-303 fix that a driven comparison showed changed nothing (reverted, and the row dropped as refuted); a guard fixture rejected by a path filter in the screen it was testing; and a guard that searched a LINE rather than the matched OCCURRENCE and so flagged eleven correct reports.
+- *(superseded)* At the time of first writing, Round C had not been started. About 4.5 hours of the eight remained against a p75 round
   of 4.29 hours, which is inside the rule but only just. If a Round C commit appears above this file's own
   commit, it went ahead; if not, the rule held and it did not.
 - **FU-305's literal ask is impossible and is recorded as such.** The eleven defended proposals were never
