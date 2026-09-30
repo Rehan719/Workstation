@@ -18,7 +18,12 @@ class AqalEngine:
         return ConsultationResponse(
             engine="aqal",
             answer=f"Plan: {res.get('plan', 'unknown')}",
-            confidence=0.95,
-            constitutional_validation=ValidationResult(passed=True),
+            # P3.12 - the bar permits a REFUSAL instead of a computed value, and a required numeric
+            # field is what forced the invention. None means nothing computed it.
+            confidence=None,
+            confidence_basis=("not computed: this engine has no path to a model (measured: no gateway, orchestrator or generate call is imported anywhere in agentic_core/cognitive), so it returns a fixed marker and says so rather than inventing a number (P3.12)"),
+            served_by="native-fixed-marker",
+            is_external=False,
+            constitutional_validation=ValidationResult(passed=None, basis="no constitutional check ran: this engine performs none, so neither a pass nor a failure is claimed"),
             reasoning_trace="Formal logic reasoning via Aqal Engine."
         )

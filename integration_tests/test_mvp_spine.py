@@ -28332,3 +28332,214 @@ def test_w519_a_query_subcommand_never_writes_the_watched_documents():
     assert "BUNDLE" in r.stdout.upper(), (
         "`bundles` printed nothing - its handler is unreachable again, which is how this defect began",
         r.stdout[:300])
+
+
+def test_w520_the_cognitive_engines_refuse_instead_of_fabricating():
+    """P3.12 — an engine says assessable:false with a reason rather than inventing a confidence.
+
+    Seven constructors carried GRADED literals chosen to look differentiated — aqal 0.95, hoshiyari 0.98,
+    iman 0.99, inkashaf 0.92, samajh 0.90, soch 0.88, mjm 0.96 — over a constitutional check that never ran.
+    A REQUIRED numeric field made that the only expressible answer. The bar's first criterion is a
+    disjunction, so a stated refusal satisfies it; this does not claim any engine computes.
+    """
+    import asyncio as _aio
+    import ast
+    import importlib
+    from agentic_core.consultation.interface import ConsultationRequest
+
+    NAMES = {"aqal": "AqalEngine", "hoshiyari": "HoshiyariEngine", "iman": "ImanEngine",
+             "inkashaf": "InkashafEngine", "samajh": "SamajhEngine", "soch": "SochEngine"}
+
+    # LEG 1 + 2 - every engine is CALLABLE, refuses with a reason, and carries what served it.
+    # Callable matters: before this round the engines RAISED, because a decorator's
+    # `getattr(self, 'ueg', VSBUEGLogger())` fallback was defeated by `__init__(self, ueg=None)` setting the
+    # attribute to None. An engine that raises satisfies NEITHER branch of the bar.
+    for name, cls in NAMES.items():
+        eng = getattr(importlib.import_module(f"agentic_core.cognitive.{name}_engine"), cls)()
+        r = _aio.run(eng.consult(ConsultationRequest(engine=name, query="a query with some content")))
+        assert r.confidence is None, (name, "still returns a number it did not compute", r.confidence)
+        assert (r.confidence_basis or "").strip(), (name, "refuses with no reason given")
+        assert (r.served_by or "").strip(), (name, "carries no provenance")
+        assert r.is_external is False, (name, r.is_external)
+        assert r.constitutional_validation.passed is None, (
+            name, "claims a constitutional verdict over a check that did not run")
+        assert (r.constitutional_validation.basis or "").strip(), (name, "no basis for the non-verdict")
+
+    # LEG 3 - ON THE AST, so a later engine cannot quietly reintroduce a literal. This is the leg that
+    # keeps the fix, because a prose rule would not have stopped the first seven.
+    from pathlib import Path as _P
+    root = _P(__file__).resolve().parents[1]
+    offenders = []
+    for f in sorted((root / "agentic_core" / "cognitive").glob("*_engine.py")) + \
+            [root / "agentic_core" / "mjm" / "mjm.py"]:
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "ConsultationResponse":
+                for kw in node.keywords:
+                    if kw.arg == "confidence" and isinstance(kw.value, ast.Constant) \
+                            and isinstance(kw.value.value, (int, float)):
+                        offenders.append(f"{f.name}:{node.lineno}={kw.value.value}")
+    assert not offenders, f"a numeric confidence literal is back in a constructor: {offenders}"
+
+    # LEG 4 - the registry is populated, and says what is declared but absent rather than implying nine
+    from agentic_core.cognitive import register_all
+    from agentic_core.cognitive.registry import CognitiveEngineRegistry as _Reg
+    out = register_all()
+    # ASSERT THE REGISTRY, NOT ITS REPORT. An earlier version of this leg checked out["registered_count"]
+    # and was VACUOUS: replacing the register() call with `pass` left the report saying six while the
+    # registry stayed empty, and the leg passed. A report is a claim; _engines is the state.
+    assert len(_Reg._engines) == 6, (f"the registry holds {len(_Reg._engines)} engines, not six", out)
+    assert out["registered_count"] == len(_Reg._engines), (
+        "the report disagrees with the registry it describes", out, len(_Reg._engines))
+    assert sorted(out["declared_but_absent"]) == ["niyyah", "tafakkur", "tawazun"], out
+    assert not out["unavailable"], out["unavailable"]
+
+
+def test_w520_a_fresh_backend_also_refuses(tmp_path):
+    """The fresh-backend probe P3.12's bar names: a NEW interpreter, not this one.
+
+    An in-process assertion can pass on state this session happens to hold. This starts a separate Python,
+    imports the engine there and calls it, so the refusal is a property of the code rather than of the run.
+    """
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parents[1]
+    script = tmp_path / "probe.py"
+    script.write_text(
+        "import asyncio, json\n"
+        "from agentic_core.consultation.interface import ConsultationRequest\n"
+        "from agentic_core.cognitive.soch_engine import SochEngine\n"
+        "from agentic_core.cognitive import register_all\n"
+        "r = asyncio.run(SochEngine().consult(ConsultationRequest(engine='soch', query='fresh probe')))\n"
+        "print(json.dumps({'confidence': r.confidence, 'basis': bool((r.confidence_basis or '').strip()),\n"
+        "                  'served_by': r.served_by, 'passed': r.constitutional_validation.passed,\n"
+        "                  'registered': register_all()['registered_count']}))\n",
+        encoding="utf-8")
+    env = {**__import__("os").environ, "DATA_DIR": str(tmp_path / "d"),
+           "WORKSTATION_DATA_DIR": str(tmp_path / "d"),
+           "WORKSTATION_UEG_PATH": str(tmp_path / "d" / "ueg.json"),
+           "PROJECTS_DIR": str(tmp_path / "d" / "projects"), "AI_DISABLE_LOCAL": "1"}
+    r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
+                       cwd=str(root), env=env)
+    assert r.returncode == 0, ("the fresh backend could not even call an engine", r.stderr[-600:])
+    out = json.loads([ln for ln in r.stdout.splitlines() if ln.startswith("{")][-1])
+    assert out["confidence"] is None, out
+    assert out["basis"] is True, out
+    assert out["served_by"], out
+    assert out["passed"] is None, out
+    assert out["registered"] == 6, out
+
+
+def test_w520_a_live_reader_finds_the_engines_without_a_test_registering_them(tmp_path):
+    """FU-221 is only fixed if a CONSUMER gets a populated registry. Fresh interpreter, no register_all call.
+
+    W520's first attempt failed this without noticing: the populator existed and the guard called it, so the
+    assertion passed while `CognitiveEngineRegistry._engines` stayed `{}` on every live path. A guard that
+    performs the setup it is checking for cannot fail. So this probe imports the registry ONLY, resolves an
+    engine through `get()`, and asserts the absent ones still refuse WITH THE REASON rather than silently
+    resolving - because a bootstrap that made all nine appear would be a worse defect than the empty one.
+    """
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parents[1]
+    script = tmp_path / "live.py"
+    # NOTE: `register_all` is deliberately NOT imported here. If this probe ever needs it, the fix regressed.
+    script.write_text(
+        "import json\n"
+        "from agentic_core.cognitive.registry import CognitiveEngineRegistry as R, EngineType as E\n"
+        "before = len(R._engines)\n"
+        "eng = R.get(E.SOCH)\n"
+        "absent = {}\n"
+        "for name in ('TAWAZUN', 'NIYYAH', 'TAFAKKUR'):\n"
+        "    try:\n"
+        "        R.get(getattr(E, name)); absent[name] = None\n"
+        "    except ValueError as exc:\n"
+        "        absent[name] = str(exc)\n"
+        "print(json.dumps({'before': before, 'after': len(R._engines),\n"
+        "                  'resolved': type(eng).__name__, 'consultable': hasattr(eng, 'consult'),\n"
+        "                  'absent': absent}))\n",
+        encoding="utf-8")
+    env = {**__import__("os").environ, "DATA_DIR": str(tmp_path / "d"),
+           "WORKSTATION_DATA_DIR": str(tmp_path / "d"),
+           "WORKSTATION_UEG_PATH": str(tmp_path / "d" / "ueg.json"),
+           "PROJECTS_DIR": str(tmp_path / "d" / "projects"), "AI_DISABLE_LOCAL": "1"}
+    r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
+                       cwd=str(root), env=env)
+    assert r.returncode == 0, ("a live reader could not resolve an engine", r.stderr[-800:])
+    out = json.loads([ln for ln in r.stdout.splitlines() if ln.startswith("{")][-1])
+
+    # The registry started EMPTY in this interpreter - so the population happened on the reader's own path.
+    assert out["before"] == 0, ("something populated the registry at import; this probe proves nothing", out)
+    assert out["after"] == 6, out
+    assert out["resolved"] == "SochEngine", out
+    assert out["consultable"] is True, out
+
+    # And the three declared-but-absent engines still refuse, each SAYING it has no module. A bootstrap that
+    # resolved nine would have hidden the very gap the registry is supposed to expose.
+    for name, msg in out["absent"].items():
+        assert msg, (name, "resolved an engine that has no module")
+        assert "no module" in msg.lower() or "NO module" in msg, (name, msg)
+
+
+def test_w520_the_engines_route_reports_the_registry_not_its_own_table(client):
+    """The counts are computed and the registry's own answer travels with them.
+
+    FU-221 was invisible because this route kept a hand-written table saying six while
+    CognitiveEngineRegistry held zero, and nothing ever compared the two. The route now carries the
+    registry's report, so the same request that states a count also states what a caller would actually get.
+    """
+    r = client.get("/api/v1/cognitive/engines")
+    assert r.status_code == 200, (r.status_code, r.text[:400])
+    body = r.json()
+
+    # The counts are no longer literals: they follow the table, and the table has nine with six built.
+    assert body["total"] == 9, body["total"]
+    assert body["implemented_total"] == 6, body["implemented_total"]
+    assert body["layers"] == {"foundational": 6, "meta": 3}, body["layers"]
+    assert body["layers_implemented"] == {"foundational": 6, "meta": 0}, body["layers_implemented"]
+
+    # The registry's own answer is present, and it AGREES with the page. If it ever stops agreeing, the
+    # route must say so rather than print whichever number is nicer.
+    reg = body["registry"]
+    assert reg["registered_count"] == 6, reg
+    assert sorted(reg["registered"]) == ["aqal", "hoshiyari", "iman", "inkashaf", "samajh", "soch"], reg
+    assert reg["engine_type_declares"] == 9, reg
+    assert sorted(reg["declared_but_absent"]) == ["niyyah", "tafakkur", "tawazun"], reg
+    assert reg["this_pages_list_agrees"] is True, reg
+    assert reg["disagreement"] == [], reg
+    assert not reg["unavailable"], reg["unavailable"]
+    assert reg["bootstrap_failed"] is None, reg["bootstrap_failed"]
+
+    # And the route does not let a reader mistake registration for computation. (`engines_compute` belongs to
+    # the cascade response, not this one, so asserting it here would be a check that cannot fail.)
+    assert "does not make an engine compute" in (reg["what_registration_does_not_mean"] or ""), reg
+    assert "fixed marker" in body["basis"], body["basis"]
+
+
+def test_w520_the_engines_route_states_a_disagreement_rather_than_hiding_it(client, monkeypatch):
+    """Drive the two lists apart and assert the route REPORTS it — the leg that makes the check non-vacuous.
+
+    Agreement is the easy case and it is what the tree is in. The value of comparing two lists is entirely
+    in what happens when they differ, so that case is produced here rather than waited for.
+    """
+    import agentic_core.api.cognitive as _c
+
+    monkeypatch.setitem(_c._ENGINE_REGISTRY, "tawazun",
+                        {**_c._ENGINE_REGISTRY["tawazun"], "implemented": True})
+    monkeypatch.setattr(_c, "_IMPLEMENTED",
+                        [e for e, i in _c._ENGINE_REGISTRY.items() if i["implemented"]])
+
+    body = client.get("/api/v1/cognitive/engines").json()
+    reg = body["registry"]
+    assert reg["this_pages_list_agrees"] is False, reg
+    assert reg["disagreement"] == ["tawazun"], reg
+    assert "Trust NEITHER count" in reg["disagreement_basis"], reg["disagreement_basis"]
+    # the page's own count moved with its table; the registry's did NOT, which is the point
+    assert body["implemented_total"] == 7, body["implemented_total"]
+    assert reg["registered_count"] == 6, reg

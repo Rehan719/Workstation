@@ -43,7 +43,12 @@ class MJMOrchestratorV4:
         return ConsultationResponse(
             engine="mjm",
             answer=f"MJM Lifecycle Result: {res.get('result', 'unknown')}",
-            confidence=0.96,
-            constitutional_validation=ValidationResult(passed=True),
+            # P3.12 - a stated refusal, not a fabricated figure. MJM is a lifecycle, not a cognitive
+            # engine, and it computed no confidence either.
+            confidence=None,
+            confidence_basis=("not computed: the MJM lifecycle returns a fixed marker and does not score its own judgement (P3.12)"),
+            served_by="native-fixed-marker",
+            is_external=False,
+            constitutional_validation=ValidationResult(passed=None, basis="no constitutional check ran: this engine performs none, so neither a pass nor a failure is claimed"),
             reasoning_trace="Recursive MJM v4.0 (Mushahida-Jaiza-Muaina) lifecycle execution."
         )

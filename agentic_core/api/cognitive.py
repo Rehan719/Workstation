@@ -71,6 +71,25 @@ _IMPLEMENTED = [e for e, i in _ENGINE_REGISTRY.items() if i["implemented"]]
 
 @router.get("/engines")
 async def list_engines():
+    # W520 — THIS PAGE'S OWN LIST IS NOT EVIDENCE ABOUT THE ENGINES. `_ENGINE_REGISTRY` above is a table kept
+    # by hand; the object a consumer actually resolves an engine through is CognitiveEngineRegistry. That is
+    # not a hypothetical divergence: FU-221 was exactly this gap, with the registry holding ZERO engines while
+    # this route reported six, for as long as nobody compared them. So the counts below are COMPUTED from the
+    # table rather than written as literals, the registry is asked for its own report, and a disagreement
+    # between the two is reported rather than resolved silently in favour of whichever is cheaper to read.
+    from agentic_core.cognitive.registry import CognitiveEngineRegistry as _Reg
+
+    _layers: dict[str, int] = {}
+    _layers_impl: dict[str, int] = {}
+    for _eid, _i in _ENGINE_REGISTRY.items():
+        _layers[_i["layer"]] = _layers.get(_i["layer"], 0) + 1
+        if _i["implemented"]:
+            _layers_impl[_i["layer"]] = _layers_impl.get(_i["layer"], 0) + 1
+
+    _rep = _Reg.report()
+    _registered = _rep.get("registered") or []
+    _disagree = sorted(set(_IMPLEMENTED) ^ set(_registered))
+
     return {
         "engines": [
             {**info, "engine_id": eid}
@@ -78,11 +97,32 @@ async def list_engines():
         ],
         "total": len(_ENGINE_REGISTRY),
         "implemented_total": len(_IMPLEMENTED),
-        "layers": {"foundational": 6, "meta": 3},
-        "layers_implemented": {"foundational": 6, "meta": 0},
-        "basis": ("6 of the 9 engines exist as modules and run; the 3 meta engines are PLANNED (no "
-                  "module yet — the delivery plan builds them under P3.13). No engine computes yet: "
-                  "each of the six returns a fixed marker, which P3.12 also carries."),
+        "layers": {k: _layers.get(k, 0) for k in ("foundational", "meta")},
+        "layers_implemented": {k: _layers_impl.get(k, 0) for k in ("foundational", "meta")},
+        "basis": (f"{len(_IMPLEMENTED)} of the {len(_ENGINE_REGISTRY)} engines exist as modules and run; the "
+                  f"{len(_ENGINE_REGISTRY) - len(_IMPLEMENTED)} meta engines are PLANNED (no module yet — the "
+                  "delivery plan builds them under P3.13). No engine computes yet: each of the "
+                  f"{len(_IMPLEMENTED)} returns a fixed marker, which P3.12 also carries."),
+        # The registry's own answer, so this route stops being the only witness to its own claim.
+        "registry": {
+            "registered": _registered,
+            "registered_count": len(_registered),
+            "engine_type_declares": _rep.get("engine_type_declares"),
+            "declared_but_absent": _rep.get("declared_but_absent") or [],
+            "declared_but_absent_basis": _rep.get("declared_but_absent_basis") or {},
+            "unavailable": _rep.get("unavailable") or {},
+            "bootstrap_failed": _rep.get("bootstrap_failed"),
+            "basis": _rep.get("basis"),
+            "what_registration_does_not_mean": _rep.get("what_registration_does_not_mean"),
+            "this_pages_list_agrees": not _disagree,
+            "disagreement": _disagree,
+            "disagreement_basis": (
+                "this page's hand-kept table and the registry name different engines: "
+                f"{_disagree}. Trust NEITHER count until they are reconciled — a consumer resolves engines "
+                "through the registry, so the registry is what a caller will actually get"
+                if _disagree else
+                "this page's hand-kept table and the registry name the same engines"),
+        },
     }
 
 

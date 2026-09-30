@@ -3729,8 +3729,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W520",
       "note": "",
       "tier": 3,
       "area": "native_ai",
@@ -3773,8 +3773,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W520",
       "note": "",
       "tier": 2,
       "area": "native_ai",
@@ -3792,8 +3792,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W520",
       "note": "",
       "tier": 3,
       "area": "native_ai",
@@ -3895,8 +3895,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W520",
       "note": "",
       "tier": 2,
       "area": "native_ai",
@@ -4435,8 +4435,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W520",
       "note": "",
       "tier": 2
     },
@@ -4740,8 +4740,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W520",
       "note": ""
     },
     {
@@ -4756,10 +4756,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.12",
+      "slot": "P3.13",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "",
+      "slot_source": "P3.12's ACCEPT is a DISJUNCTION - an engine may say assessable:false with a reason instead of computing - so a path to a model is NOT in P3.12's bar. Making the engines compute belongs with P3.13, which builds the meta engines"
     },
     {
       "id": "FU-276",
@@ -5376,8 +5377,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W520",
       "note": "",
       "slot_source": "P3.12 builds the engines; the contract is changed there anyway and adding the field later means changing every engine twice",
       "tier": 2
@@ -5556,11 +5557,64 @@
       "slot_source": "FU-262 already owns the pre-flight's coverage in cluster (d); this is its precision, in the same file",
       "tier": 3,
       "reach": "internal"
+    },
+    {
+      "id": "FU-320",
+      "title": "EngineRegistry9 calls engine.process(); the six engines only expose consult() - the live reader raises AttributeError",
+      "why": "Found W520 while fixing FU-221's reachability. With the registry now populated on the live path, agentic_core/avatars/cognition/nine_engine_registry.py:get_engine_response resolves an engine and then calls 'await engine.process(input_data, context, self.enforcement)'. MEASURED: none of the six engine modules defines process - soch_engine.py exposes __init__, reflect and consult only, and the consultation contract's entry point is consult(ConsultationRequest). So the 9-engine orchestration reader swaps one failure for another: it no longer raises 'Engine X not found', it raises AttributeError on the first call. The same file's own map lists nine engines while only six have modules, so three of its ids can never resolve at all (now with a stated reason, per this round). THE WORK: decide which contract is the real one - either the reader calls consult and adapts the request/response, or the engines grow a process adapter - then a guard drives get_engine_response end to end for one engine rather than asserting the lookup alone. NOT in P3.12's bar, which is the engines refusing instead of fabricating plus a populated registry; this is the consumer above it.",
+      "source": "W520 (found while fixing FU-221's reachability lead from the pre-flight)",
+      "found": "2026-09-30",
+      "files": [
+        "agentic_core/avatars/cognition/nine_engine_registry.py",
+        "agentic_core/cognitive/soch_engine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-321",
+      "title": "FU-303 was dropped on a wrong basis and its fix is reinstated - the drop stands in the register as a false note",
+      "why": "W520 correction. FU-303 was dropped as a false lead after I measured 0 [selfmatch] leads at two revisions and concluded it did not reproduce. That was wrong: the check needs a COLLIDING NAME to fire, and neither revision had one. It then fired for real on a new line using the variable 'd', because 'd = json.loads((Path(__file__)...' at selfcheck_diff.py lines 27315/27879 poisons the name file-wide - the very shape FU-303 described. The skip for a read of a DIFFERENT file is reinstated at scripts/selfcheck_diff.py:381 and the lead count went 1 to 0. THE LESSON, which is the part worth keeping: 'could not reproduce over two revisions' is not 'does not reproduce' when the trigger needs a name collision; a non-reproduction has to name the condition it searched for and confirm that condition was present. The register now carries this row because FU-303 itself cannot be reopened - a dropped row is closed by a note - and leaving only the drop would make the register say the fix is absent while the tree has it.",
+      "source": "W520 (self-correction, caught by the pre-flight firing on the reinstated check)",
+      "found": "2026-09-30",
+      "files": [
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "done",
+      "closed_by": "W520",
+      "note": "",
+      "slot_source": "the row it corrects, FU-303, rides P2.17",
+      "tier": 3
+    },
+    {
+      "id": "FU-322",
+      "title": "POST /api/v1/cognitive/cascade reports engines_run as the literal 6 - it counts nothing the cascade did",
+      "why": "Found W520 while wiring /engines to the registry. cognitive.py's cascade response carries 'engines_run': 6 as a hard literal with a basis string reading 'the six implemented engines'. FU-223 was closed by adding that basis, but a basis beside a literal does not make the literal a measurement: the number is identical whether the cascade ran six engines, four, or none that produced anything. The cascade result itself is the only record of what happened and it is not consulted for this count. CONSEQUENCE: an engine that fails inside execute_cascade without raising still reads as having run, on a reached public route - the same shape as the nature-field-reporting-an-outcome class already recorded twice in this repo. THE WORK: derive engines_run from the cascade result's own per-engine entries, and where the result cannot say, report the count as not recorded rather than as six; a guard drives a cascade in which one engine yields nothing and asserts the reported count drops. NOTE the neighbouring literal already fixed this round: /engines' layer counts were the same shape and are now computed from the table, with the registry's own answer carried beside them.",
+      "source": "W520 (found while wiring /engines to the cognitive registry)",
+      "found": "2026-09-30",
+      "files": [
+        "agentic_core/api/cognitive.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 1
     }
   ],
   "routes": [
     {
-      "slot": "P3.12",
+      "slot": "P3.13",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -5568,7 +5622,8 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "the cognitive engine contract and the six foundational engines (W480 review)"
+      "note": "handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "handed_from": "P3.12"
     },
     {
       "slot": "P3.14",

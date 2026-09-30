@@ -10,7 +10,13 @@ def constitutional_guard(func: Callable):
     """
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
-        ueg = getattr(self, 'ueg', VSBUEGLogger())
+        # P3.12 (W520) - the fallback was DEFEATED by the caller's own default. Every cognitive engine
+        # is `__init__(self, ueg=None)`, so the attribute EXISTS and is None; getattr then returns the
+        # value rather than the default, and None.log_minimisation_event raised AttributeError. The
+        # engines were UNCALLABLE as constructed - they did not return a constant, they THREW. An engine
+        # that raises satisfies neither branch of P3.12's bar, so `or` is the fix. BOTH decorators in
+        # this file had it; fixing one would have left the other raising.
+        ueg = getattr(self, 'ueg', None) or VSBUEGLogger()
 
         # Pre-execution audit
         await ueg.log_minimisation_event(f"constitutional_pre_audit_{func.__name__}", {
@@ -38,7 +44,13 @@ def divine_calibration(func: Callable):
     @functools.wraps(func)
     async def async_wrapper(self, *args, **kwargs):
         engine = getattr(self, 'niyyah', getattr(self, 'divine', None))
-        ueg = getattr(self, 'ueg', VSBUEGLogger())
+        # P3.12 (W520) - the fallback was DEFEATED by the caller's own default. Every cognitive engine
+        # is `__init__(self, ueg=None)`, so the attribute EXISTS and is None; getattr then returns the
+        # value rather than the default, and None.log_minimisation_event raised AttributeError. The
+        # engines were UNCALLABLE as constructed - they did not return a constant, they THREW. An engine
+        # that raises satisfies neither branch of P3.12's bar, so `or` is the fix. BOTH decorators in
+        # this file had it; fixing one would have left the other raising.
+        ueg = getattr(self, 'ueg', None) or VSBUEGLogger()
 
         if engine:
             intent = kwargs.get('intent', f"geospheric_{func.__name__}")
