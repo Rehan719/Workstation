@@ -29,6 +29,20 @@ Four steps, and only the first is yours.
 
 **The one thing no mechanism covers:** keep-awake prevents idle sleep, never a closed lid. Leave the machine open.
 
+**It runs THROUGH Workstation, not beside it** — the canon's own instruction
+(`WORKSTATION_IDBO_WHOLE_VISION.md` line 347: *"the organism delivers its own transformation through its own org:
+dogfood is the design, not an afterthought"*). Each round submits its change to `POST /api/v1/cca/submit` and
+carries the returned `cca_id` in its commit message, so the round is governed by the platform's own arms-length
+agency rather than by a convention in a document. The verified cascade, the measured evidence of what already
+works, and the one gap that blocks full integration are in **`docs/CAPACITY_FACULTY_MODEL.md` §8–§9** — not
+repeated here, because two copies of a structure drift.
+
+**The bootstrap, and it is the point.** Workstation cannot yet hold this plan: no commitment, confidence,
+variance, budget or capacity field exists anywhere in the change record (**FU-313**). So the night's FIRST round
+builds that field, and from the second round the plan lives in Workstation instead of in a markdown file. The
+process's first act is to make the platform able to host it — which is what "advance and perfect Workstation as
+it proceeds" means concretely rather than aspirationally.
+
 ### The instruments, and what each refuses to do
 | script | answers | refuses |
 |---|---|---|
