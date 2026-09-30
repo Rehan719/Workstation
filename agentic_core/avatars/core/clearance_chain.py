@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import time
 import logging
 from agentic_core.cognitive.registry import EngineType
+from agentic_core.attestation import attest as _attest
 from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
 
 logger = logging.getLogger(__name__)
@@ -21,9 +22,16 @@ class ClearanceResult:
     """
     passed: bool
     reason: Optional[str] = None
-    attestations: Dict[str, str] = None
+    #  P3.15 — records, not literals. Each value is an attestation record from agentic_core.attestation:
+    #  either a real HMAC-SHA3-512 signature over the gate's canonical verdict, or a stated refusal naming
+    #  the missing key. The type widened from Dict[str, str] and its only reader is updated with it.
+    attestations: Dict[str, Any] = None
     gates: Optional[List[Dict[str, Any]]] = None
-    attestations_are_placeholders: bool = True
+    #  P3.15 — replaces `attestations_are_placeholders`. Nothing writes a placeholder now, so a field whose
+    #  name asserted that they were placeholders would itself be the untrue claim this item removes. False
+    #  here means the platform has no attestation key configured, NOT that a placeholder was written.
+    attestations_signed: bool = False
+    attestations_basis: Optional[str] = None
 
 class ConstitutionalClearanceChain:
     """
@@ -53,6 +61,34 @@ class ConstitutionalClearanceChain:
     def _record(key: str, name: str, subject: str, verdict: str, basis: str) -> Dict[str, Any]:
         return {"gate": key, "name": name, "subject": subject, "verdict": verdict, "basis": basis}
 
+    @staticmethod
+    def _attest_gate(emission: Dict[str, Any], record: Dict[str, Any]) -> Dict[str, Any]:
+        """Attest a gate's OWN verdict, rather than passing through whatever string the engine offered.
+
+        The five literals this replaces were DEFAULTS on the engine's own field, so an engine that returned
+        nothing produced an attestation indistinguishable from one that had signed — which is what made them
+        decoration rather than evidence. What is signed here is the verdict this chain itself reached. The
+        replaced expressions are in the commit message, not here, because a guard forbids them in source.
+        """
+        return _attest({"gate": record["gate"],
+                        "emission_id": emission.get("id"),
+                        "verdict": record["verdict"],
+                        "basis": record["basis"]})
+
+    @staticmethod
+    def _attestation_state(attestations: Dict[str, Any]) -> tuple:
+        """Whether EVERY attestation is signed, and a basis a reader can act on."""
+        if not attestations:
+            return False, "no gate was attested, because no gate cleared"
+        unsigned = sorted(k for k, v in attestations.items()
+                          if not (isinstance(v, dict) and v.get("signed")))
+        if unsigned:
+            return False, (f"{len(unsigned)} of {len(attestations)} gate attestation(s) are NOT SIGNED "
+                           f"({', '.join(unsigned)}): no attestation key is configured, so the chain "
+                           "recorded a stated refusal rather than a placeholder signature")
+        return True, (f"all {len(attestations)} gate attestation(s) carry an HMAC-SHA3-512 signature over "
+                      "the gate's canonical verdict, under the configured key")
+
     def _blocked(self, gates: List[Dict[str, Any]], attestations: Dict[str, str],
                  idx: int, reason: str) -> ClearanceResult:
         """Return a block that keeps what the earlier gates decided and says the rest never ran."""
@@ -60,7 +96,9 @@ class ConstitutionalClearanceChain:
             gates.append(self._record(key, name, subject, "not_evaluated",
                                       "the chain returned at an earlier gate, so this gate never ran - "
                                       "which is not the same as approving"))
-        return ClearanceResult(False, reason, attestations=dict(attestations), gates=gates)
+        _signed, _basis = self._attestation_state(attestations)
+        return ClearanceResult(False, reason, attestations=dict(attestations), gates=gates,
+                               attestations_signed=_signed, attestations_basis=_basis)
 
     async def validate_emission(self, emission: Dict[str, Any], context: Dict[str, Any]) -> ClearanceResult:
         """Run the five-gate clearance chain. A gate with no input BLOCKS.
@@ -103,8 +141,9 @@ class ConstitutionalClearanceChain:
                 # while a precise reason had already been worked out one line earlier.
                 f"Gate 1 ({name}) Block: "
                 f"{(mushawara_res.get('reason') if isinstance(mushawara_res, dict) else None) or _basis}")
-        attestations[key] = mushawara_res.get("attestation", "SIG_MUSHAWARA_v1")
-        gates.append(self._record(key, name, subject, "cleared", "deliberation returned status APPROVED"))
+        _rec = self._record(key, name, subject, "cleared", "deliberation returned status APPROVED")
+        attestations[key] = self._attest_gate(emission, _rec)
+        gates.append(_rec)
 
         # ── GATE 2: Niyyah — intent ratification ───────────────────────────────────────────────
         #  This gate was ALREADY correct before P3.14: its default was negative, so a missing field
@@ -119,8 +158,9 @@ class ConstitutionalClearanceChain:
                                       _missing("ratified", niyyah_res) if _rat is None else
                                       "intent was not ratified: the quorum of signatures was not met")],
                 attestations, 1, f"Gate 2 ({name}) Block: Intent failed ratification")
-        attestations[key] = niyyah_res.get("signature", "SIG_NIYYAH_v1")
-        gates.append(self._record(key, name, subject, "cleared", "intent ratified against a stated quorum"))
+        _rec = self._record(key, name, subject, "cleared", "intent ratified against a stated quorum")
+        attestations[key] = self._attest_gate(emission, _rec)
+        gates.append(_rec)
 
         # ── GATE 3: Tawazun — balance between depth and cognitive load ─────────────────────────
         key, name, subject = self._GATES[2]
@@ -132,8 +172,9 @@ class ConstitutionalClearanceChain:
                                       _missing("balanced", tawazun_res) if _bal is None else
                                       "the emission was assessed as unbalanced for its audience")],
                 attestations, 2, f"Gate 3 ({name}) Block: Cognitive load imbalance")
-        attestations[key] = tawazun_res.get("proof", "SIG_TAWAZUN_v1")
-        gates.append(self._record(key, name, subject, "cleared", "balance affirmed by the engine"))
+        _rec = self._record(key, name, subject, "cleared", "balance affirmed by the engine")
+        attestations[key] = self._attest_gate(emission, _rec)
+        gates.append(_rec)
 
         # ── GATE 4: Tafakkur — reflection on downstream effects ────────────────────────────────
         key, name, subject = self._GATES[3]
@@ -157,10 +198,11 @@ class ConstitutionalClearanceChain:
                 gates + [self._record(key, name, subject, "blocked",
                                       f"downstream risk {_risk} exceeds the threshold 0.15")],
                 attestations, 3, f"Gate 4 ({name}) Block: Downstream risk threshold exceeded")
-        attestations[key] = tafakkur_res.get("audit_hash", "SIG_TAFAKKUR_v1")
-        gates.append(self._record(key, name, subject, "cleared",
-                                  f"downstream risk {_risk} is within the threshold 0.15, which is a "
-                                  f"DEFAULT this repository has not tuned against its own history"))
+        _rec = self._record(key, name, subject, "cleared",
+                            f"downstream risk {_risk} is within the threshold 0.15, which is a "
+                            f"DEFAULT this repository has not tuned against its own history")
+        attestations[key] = self._attest_gate(emission, _rec)
+        gates.append(_rec)
 
         # ── GATE 5: Tahqeeq — output verification ──────────────────────────────────────────────
         key, name, subject = self._GATES[4]
@@ -175,17 +217,21 @@ class ConstitutionalClearanceChain:
                 attestations, 4,
                 f"Gate 5 ({name}) Block: "
                 f"{(tahqeeq_res.get('reason') if isinstance(tahqeeq_res, dict) else None) or _missing('verified', tahqeeq_res)}")
-        attestations[key] = tahqeeq_res.get("merkle_proof", "SIG_TAHQEEQ_v1")
-        gates.append(self._record(key, name, subject, "cleared", "output verified against hard constraints"))
+        _rec = self._record(key, name, subject, "cleared", "output verified against hard constraints")
+        attestations[key] = self._attest_gate(emission, _rec)
+        gates.append(_rec)
 
         # Log completion of the clearance cycle to UEG. `gates_passed` is COUNTED from the records rather
         # than written as 5, so a chain that grows a gate cannot keep reporting the old number.
+        _signed, _basis = self._attestation_state(attestations)
         await self.ueg.log_event("CONSTITUTIONAL_CLEARANCE_CONVERGED", {
             "emission_id": emission.get("id"),
             "gates_passed": sum(1 for g in gates if g["verdict"] == "cleared"),
             "gates_declared": len(self._GATES),
             "attestations": attestations,
-            "attestations_are_placeholders": True,
+            "attestations_signed": _signed,
+            "attestations_basis": _basis,
         })
 
-        return ClearanceResult(True, attestations=attestations, gates=gates)
+        return ClearanceResult(True, attestations=attestations, gates=gates,
+                               attestations_signed=_signed, attestations_basis=_basis)

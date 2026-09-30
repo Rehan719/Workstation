@@ -21,8 +21,10 @@ class HighLatencySyncProtocol:
         msg_id = f"st-msg-{int(time.time())}"
         logger.info(f"Interstellar: Queuing telemetry {msg_id} from {self.planet}")
 
-        # Enforce PQC Kyber-1024 for interstellar traffic
-        encrypted_data = self._encrypt_pqc(data)
+        # W526 (P3.15) — this said it ENFORCED a post-quantum cipher. It wraps the payload in a
+        # label; the data is fully readable inside it. Named for what it is, and nothing downstream
+        # may treat it as protected.
+        encrypted_data = self._label_envelope(data)
 
         self.sync_queue.append({
             "id": msg_id,
@@ -32,9 +34,15 @@ class HighLatencySyncProtocol:
             "status": "QUEUED_FOR_ORBITAL_LINK"
         })
 
-    def _encrypt_pqc(self, data: Any) -> str:
-        """Simulates Kyber-1024 encryption for high-latency links."""
-        return f"PQC-KYBER-1024-ENC({str(data)})"
+    def _label_envelope(self, data: Any) -> str:
+        """Wrap the payload in a LABEL. This is not encryption and never was.
+
+        W526 (P3.15, found W521). The previous version returned an f-string naming a post-quantum
+        cipher around the plaintext, so anything inspecting it saw a protected-looking envelope
+        whose contents were entirely legible. No key, no cipher, no operation. This transport has
+        no confidentiality and the label now says so, so that a caller cannot mistake it for one.
+        """
+        return f"UNENCRYPTED-LABELLED-ENVELOPE({str(data)})"
 
     async def process_incoming_sync(self, remote_node: str, sync_batch: List[Dict[str, Any]]):
         """

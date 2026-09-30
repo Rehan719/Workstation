@@ -101,7 +101,20 @@ class AutonomyPipelines:
         suggested_updates = []
         for trend in external_data:
             if "pqc" in trend.lower():
-                suggested_updates.append("Upgrade SCS to hybrid Dilithium-7/Falcon mode.")
+                # W526 (P3.15, found W521) — this recommended a signature parameter set that DOES
+                # NOT EXIST in the family it named (the real ones are 2, 3 and 5; it asked for 7).
+                # The algorithm name is in the commit message, not here, because a guard forbids it
+                # in source. Of the four over-claims this round fixed it
+                # was the worst: the others described work that was not happening, while this told
+                # a user to do something impossible, from the CEO surface. The suggestion now names
+                # what this platform actually has and what adopting a real scheme would require.
+                suggested_updates.append(
+                    "Post-quantum signing is NOT implemented here: clearance verdicts are attested "
+                    "with a keyed MAC (HMAC-SHA3-512) under a configured key, which proves the key "
+                    "holder produced a payload and does not identify a signer to a third party. "
+                    "Adopting a post-quantum signature would need a vetted library and a key "
+                    "custody decision, neither of which exists yet - so this is a decision to "
+                    "take, not an upgrade to apply.")
             if "religion" in trend.lower() or "interfaith" in trend.lower():
                 suggested_updates.append("Extend QEP-Religion with interfaith-dialogue datasets.")
 

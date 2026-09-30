@@ -3832,8 +3832,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W526",
       "note": "",
       "tier": 2,
       "area": "compliance",
@@ -4226,8 +4226,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W526",
       "note": "",
       "tier": 3,
       "area": "native_ai",
@@ -5662,8 +5662,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W526",
       "note": "",
       "slot_source": "the row it extends, FU-226, and the item whose bar covers attestations",
       "tier": 1
@@ -5771,11 +5771,29 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W526",
       "note": "",
       "slot_source": "the attestations are P3.15's own bar; FU-230's first half was P3.14's",
       "tier": 2
+    },
+    {
+      "id": "FU-332",
+      "title": "products/capital_fund multisig CANNOT BE IMPORTED and claims a Dilithium verification over a module that does not exist",
+      "why": "Found W526 by the new post-quantum guard, which searched wider than I had. MEASURED: products/capital_fund/core/multisig_protocol.py line 8 does 'from agentic_core.crypto import pqc' and agentic_core/crypto/ contains only __init__.py and entropy_pool.py - there is NO pqc module. Driven: importing the module raises ImportError: cannot import name 'pqc' from 'agentic_core.crypto'. So the whole module is unloadable, and products/capital_fund/core/vault.py imports it. Its line 47 comment reads 'We use the actual core pqc module' and line 46 'Verify PQC signature (Dilithium)' over a call that cannot resolve. SECOND SITE: products/capital_fund/adapters/crypto_gateway.py:78-82 is headed 'PQC Transaction Signing / Sign the withdrawal intent using Dilithium', reads VSB_SOVEREIGN_PQC_ID from the environment and raises if it is absent - so a WITHDRAWAL path gates on a 'sovereign PQC identity' while no post-quantum operation exists anywhere in this repository. WHY THIS WAS MISSED: my earlier audit for FU-226 and FU-325 grepped agentic_core/ and core/ and never looked in products/ - the grep-one-entry-point class, third occurrence recorded. NOT FIXED IN W526 ON PURPOSE: this is a capital-fund withdrawal and multisig approval path, and real-money rails are owner-gated; a round about clearance attestations must not reshape a money path in passing. The new guard therefore EXCLUDES products/ and names this row as the reason, so the exclusion is declared rather than silent. THE WORK: decide whether the multisig protocol is live work or retired (it cannot run today either way), and have every claim there name the operation actually performed - the platform's real capability is a keyed MAC (agentic_core.attestation), which is not post-quantum.",
+      "source": "W526 (the post-quantum guard built in P3.15, searching wider than the FU-226/FU-325 audits)",
+      "found": "2026-09-30",
+      "files": [
+        "products/capital_fund/core/multisig_protocol.py",
+        "products/capital_fund/adapters/crypto_gateway.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 1
     }
   ],
   "routes": [
@@ -5792,12 +5810,12 @@
       "handed_from": "P3.12"
     },
     {
-      "slot": "P3.15",
+      "slot": "P3.16",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "handed from P3.14; the five-gate clearance chain",
+      "note": "handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
       "handed_from": "P3.14"
     },
     {
@@ -5810,13 +5828,14 @@
       "note": "the recirculation loop and the auxiliary engines"
     },
     {
-      "slot": "P3.15",
+      "slot": "P3.16",
       "files": [],
       "words": [
         "attestation",
         "post-quantum"
       ],
-      "note": "attestations that are attestations"
+      "note": "handed from P3.15; attestations that are attestations",
+      "handed_from": "P3.15"
     },
     {
       "slot": "P3.17",

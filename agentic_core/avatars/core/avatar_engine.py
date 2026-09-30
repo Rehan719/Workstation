@@ -58,8 +58,13 @@ class AvatarState:
 
 class AvatarIdentityManager:
     """
-    Manages avatar identity lifecycle with cryptographic attestation.
-    Uses NIST-standard PQC primitives (Dilithium-5 / Kyber-1024).
+    Manages avatar identity lifecycle with a CONTENT DIGEST, not a signature.
+
+    W526 (P3.15, FU-226) — this docstring claimed NIST-standard post-quantum primitives. No such operation
+    happens anywhere in this class: what it computes is a SHA-256 digest over a fixed input, so the
+    "public key" below is byte-identical for every avatar. The claim is removed rather than the code
+    renamed around it, and the digest is named as a digest. Real attestation, where it is needed, is the
+    keyed MAC in agentic_core.attestation, which is also not post-quantum and says so.
     """
     def __init__(self, ueg_logger: Any):
         self.ueg = ueg_logger
@@ -88,8 +93,14 @@ class AvatarIdentityManager:
         return state
 
     def _generate_pqc_keypair(self) -> Dict[str, str]:
-        """Generate PQC keypair (mocked for sandbox, production uses liboqs)."""
-        logger.info("PQC: Initializing Kyber-1024/Dilithium-5 keypair.")
+        """Return a FIXED content digest, not a keypair. Named by its caller, kept for compatibility.
+
+        W526 (P3.15) — this logged the initialisation of a post-quantum keypair and returned a digest of
+        the literal b"genesis", so no key was ever generated and every avatar received the same value. The
+        log line is gone because it announced work that did not happen; the return is unchanged so no
+        caller breaks, and it now says what it is. Giving avatars real identity keys is not this item.
+        """
+        logger.info("Avatar identity: deriving a fixed content digest (NOT a keypair, NOT post-quantum).")
         return {
             "public_key": "PQC_PUB_V1_" + hashlib.sha256(b"genesis").hexdigest(),
             "private_key": "PQC_PRIV_V1_" + hashlib.sha256(b"sovereign").hexdigest()
@@ -117,9 +128,34 @@ class AvatarIdentityManager:
         return json.dumps(attestation)
 
     async def generate_halo2_proof(self, data: Dict[str, Any]) -> str:
-        """Recursive Halo2 Provenance Proof (Architectural interface)."""
-        # ARTICLE 1135: Trillion-token provenance linkage
-        data_json = json.dumps(data, sort_keys=True)
-        proof_hash = hashlib.sha3_512(f"HALO2_V1:{data_json}".encode()).hexdigest()
+        """Return a CONTENT DIGEST over `data`. No proof is computed, and the value says so.
 
-        return f"halo2:v1:{proof_hash}"
+        W526 (P3.15, FU-246). This returned a SHA3-512 digest prefixed with the name of a recursive
+        zero-knowledge proof system. No proof was involved at any point: there is no circuit, no witness, no
+        verifier, and nothing here could ever fail — which is what made the name a claim rather than a
+        label. FU-246 asked this item to carry the rule that a surrogate is never named as the thing it
+        stands in for.
+
+        MEASURED: nothing in this repository calls this method. So the name is kept for an interface the
+        architecture may still intend, and the RETURN stops asserting a proof. A digest binds content to a
+        value; it does not demonstrate a computation to anybody, which is the whole difference.
+        """
+        # ARTICLE 1135: provenance linkage by content digest
+        data_json = json.dumps(data, sort_keys=True)
+        digest = hashlib.sha3_512(f"PROVENANCE_DIGEST_V1:{data_json}".encode()).hexdigest()
+
+        return f"content-digest:sha3-512:v1:{digest}"
+
+    @staticmethod
+    def what_the_provenance_digest_is_not() -> Dict[str, Any]:
+        """Said on a surface rather than only in a docstring, for a reader who arrives at the value."""
+        return {
+            "is": "a SHA3-512 digest over the canonical JSON of the data",
+            "is_not": ("a zero-knowledge proof, a recursive proof, or any proof at all. It demonstrates "
+                       "nothing to a verifier: anyone holding the data can recompute it, and nobody "
+                       "without the data can check it"),
+            "proof_system": None,
+            "proof_system_basis": ("no proof system is implemented on this platform. The strongest thing "
+                                   "it can do is attest a payload with a keyed MAC "
+                                   "(agentic_core.attestation), which is also not a proof"),
+        }

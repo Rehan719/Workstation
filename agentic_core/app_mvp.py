@@ -253,6 +253,8 @@ app.include_router(vsb_api.router)
 # 41. Nine Cognitive Engines + MJM HTTP surface
 from agentic_core.api import cognitive as cognitive_api
 app.include_router(cognitive_api.router)
+from agentic_core.api import attestation as attestation_api
+app.include_router(attestation_api.router)
 
 # 42. Business Development Process + Scientific Process Intelligence Engines
 from agentic_core.api import intelligence as intelligence_api

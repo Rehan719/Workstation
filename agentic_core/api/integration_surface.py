@@ -132,7 +132,31 @@ async def v154_security_status():
     return {"posture": "hardened", "immune_health": imm.get("health"),
             "threat_level": imm.get("threat_level"), "gaas": "active",
             "audit_events": ueg.get("total_events", 0),
-            "pqc": "Dilithium-5 / Kyber-1024 (configured)"}
+            # W526 (P3.15, FU-226) — this reported a configured post-quantum posture as a flat
+            # string over nothing at all. It now reports what this platform ACTUALLY has: a keyed MAC
+            # used to attest clearance verdicts, which is not a post-quantum signature and does not
+            # claim to be. `signing_available` is false when no key is configured, which is the common
+            # case and is a fact rather than a failure.
+            "attestation": _attestation_posture()}
+
+
+def _attestation_posture() -> dict:
+    """What this platform can actually attest with. No secret is returned, and no algorithm is implied.
+
+    W526 (P3.15). Placed at module scope rather than beside the route, because a helper defined between a
+    decorator and its handler rebinds the route and turns every call into a 422.
+    """
+    from agentic_core import attestation as _att
+    probe = _att.attest({"probe": "posture"})
+    return {
+        "signing_available": bool(probe.get("signed")),
+        "algorithm": _att.ALGORITHM,
+        "key_source": f"env:{_att.KEY_ENV}",
+        "post_quantum": False,
+        "basis": (probe.get("basis") if not probe.get("signed") else
+                  "clearance verdicts are attested with a keyed MAC under the configured key"),
+        "what_this_is_not": _att.WHAT_THIS_IS_NOT,
+    }
 
 
 @router.get("/api/v154/constitution/articles")

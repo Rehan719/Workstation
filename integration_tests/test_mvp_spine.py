@@ -28960,13 +28960,21 @@ def test_w525_a_gate_with_no_input_blocks_and_the_chain_records_every_verdict():
     assert ok.passed is True, ok.reason
     assert [g["verdict"] for g in ok.gates] == ["cleared"] * 5, ok.gates
     assert sorted(ok.attestations) == ["mushawara", "niyyah", "tafakkur", "tahqeeq", "tawazun"], ok.attestations
-    # the attestations are PLACEHOLDERS and the result says so — real signing is P3.15, not this item
-    assert ok.attestations_are_placeholders is True, ok
-    assert all(v.startswith("SIG_") for v in ok.attestations.values()), ok.attestations
+    # W526 (P3.15) — the five placeholder literals are gone. Each attestation is now a RECORD: a real
+    # HMAC-SHA3-512 signature over the gate's canonical verdict, or a stated refusal naming the missing key.
+    # This suite configures no attestation key, so the honest outcome here is an unsigned record WITH a
+    # reason — never a placeholder, which is the distinction P3.15 exists to make.
+    assert ok.attestations_signed is False, ok.attestations_basis
+    assert "NOT SIGNED" in (ok.attestations_basis or ""), ok.attestations_basis
+    assert all(isinstance(v, dict) for v in ok.attestations.values()), ok.attestations
+    assert all(v.get("signed") is False and (v.get("basis") or "").strip()
+               for v in ok.attestations.values()), ok.attestations
+    assert not any("SIG_" in str(v) for v in ok.attestations.values()), ok.attestations
     kind, payload = ueg.events[-1]
     assert kind == "CONSTITUTIONAL_CLEARANCE_CONVERGED", kind
     assert payload["gates_passed"] == 5 and payload["gates_declared"] == 5, payload
-    assert payload["attestations_are_placeholders"] is True, payload
+    assert payload["attestations_signed"] is False, payload
+    assert "NOT SIGNED" in payload["attestations_basis"], payload
 
     # ── 2. EACH gate blocks on its own missing field — driven one at a time ─────────────────────
     order = ["mushawara", "niyyah", "tawazun", "tafakkur", "tahqeeq"]
@@ -29011,3 +29019,142 @@ def test_w525_a_gate_with_no_input_blocks_and_the_chain_records_every_verdict():
     r = _aio.run(_Chain(_UEG(), _Boom()).validate_emission({"id": "e-boom"}, {}))
     assert r.passed is False, "a raising engine did not block"
     assert "RuntimeError" in next(g for g in r.gates if g["gate"] == "mushawara")["basis"], r.gates
+
+
+def test_w526_attestations_are_attestations(client, monkeypatch):
+    """P3.15 — a tampered payload fails verification, and no placeholder signature is written.
+
+    The chain wrote five literal strings into the UEG as signatures, each a DEFAULT on the engine's own
+    field, so an engine that returned nothing produced an attestation indistinguishable from one that had
+    signed. And five modules named post-quantum algorithms over operations that never happened, the sharpest
+    being a retired module that keyed its "signature" with a constant in the source and padded the output to
+    look the part.
+    """
+    import os
+    from pathlib import Path as _P
+    from agentic_core import attestation as _att
+
+    root = _P(__file__).resolve().parents[1]
+
+    # ── 1. WITH NO KEY: a refusal, never a placeholder ─────────────────────────────────────────
+    monkeypatch.delenv(_att.KEY_ENV, raising=False)
+    unsigned = _att.attest({"a": 1})
+    assert unsigned["signed"] is False, unsigned
+    assert "signature" not in unsigned, "an unsigned attestation carries a signature field"
+    assert "NOT SIGNED" in unsigned["basis"], unsigned["basis"]
+    # unverifiable is NOT invalid — reporting a missing key as tampering sends an operator after the wrong fault
+    assert _att.verify({"a": 1}, unsigned)["verified"] is None, "an unsigned payload reported a verdict"
+
+    # ── 2. WITH A KEY: a real MAC that recomputes, and a TAMPERED payload FAILS ─────────────────
+    monkeypatch.setenv(_att.KEY_ENV, "w526-guard-key")
+    payload = {"gate": "niyyah", "emission_id": "e1", "verdict": "cleared"}
+    a = _att.attest(payload)
+    assert a["signed"] is True and a["algorithm"] == "HMAC-SHA3-512", a
+    assert len(a["signature"]) == 128, len(a["signature"])          # SHA3-512 hex
+    assert _att.verify(payload, a)["verified"] is True, _att.verify(payload, a)
+    for field, altered in (("verdict", "blocked"), ("gate", "tawazun"), ("emission_id", "e2")):
+        bad = {**payload, field: altered}
+        v = _att.verify(bad, a)
+        assert v["verified"] is False, (field, "a tampered payload verified")
+        assert v["payload_digest_matches"] is False, (field, v)
+    # a signature altered by ONE character fails too
+    flipped = {**a, "signature": ("0" if a["signature"][0] != "0" else "1") + a["signature"][1:]}
+    assert _att.verify(payload, flipped)["verified"] is False, "a flipped signature verified"
+    # a DIFFERENT key is unverifiable rather than invalid
+    monkeypatch.setenv(_att.KEY_ENV, "a-different-key")
+    assert _att.verify(payload, a)["verified"] is None, "another key's signature was called invalid"
+
+    # ── 3. THE ROUTE RECOMPUTES — a stored verdict would satisfy neither half of the bar ───────
+    monkeypatch.setenv(_att.KEY_ENV, "w526-guard-key")
+    st = client.get("/api/v1/attestation/status").json()
+    assert st["can_sign"] is True and st["post_quantum"] is False, st
+    signed = client.post("/api/v1/attestation/sign", json={"payload": payload}).json()["attestation"]
+    assert client.post("/api/v1/attestation/verify",
+                       json={"payload": payload, "attestation": signed}).json()["verified"] is True
+    tampered = client.post("/api/v1/attestation/verify",
+                           json={"payload": {**payload, "verdict": "blocked"},
+                                 "attestation": signed}).json()
+    assert tampered["verified"] is False, tampered
+    assert tampered["recomputed"] is True, tampered
+
+    # ── 4. THE CHAIN WRITES NO PLACEHOLDER — asserted on the source, since the literals are the defect
+    chain = (root / "agentic_core/avatars/core/clearance_chain.py").read_text(encoding="utf-8")
+    for gate in ("MUSHAWARA", "NIYYAH", "TAWAZUN", "TAFAKKUR", "TAHQEEQ"):
+        assert f"SIG_{gate}_v1" not in chain, f"the {gate} placeholder signature is back"
+    assert chain.count("self._attest_gate(emission, _rec)") == 5, "a gate stopped attesting its verdict"
+
+    # ── 5. THE GUARD TWO MODULES CLAIMED AND NOBODY BUILT ──────────────────────────────────────
+    #  pqc_hardening.py has said since W506 that "a guard forbids" these words as descriptions of what it
+    #  computes. No such guard existed. Here it is. Permitted files are those RECORDING a retired claim, and
+    #  each occurrence in them must sit on a line that also carries a retirement marker — otherwise a fresh
+    #  over-claim could be added to a permitted file and nothing would notice.
+    WORDS = ("Dilithium", "Kyber")
+    MARKERS = ("W506", "W526", "W521", "retired", "not post-quantum", "NOT post-quantum",
+               "once named", "do not appear", "simulation", "does not exist", "no such operation",
+               "which made it worse", "had claimed", "claimed a post-quantum")
+    RECORDING = {
+        "agentic_core/security/pqc_hardening.py",
+        "agentic_core/governance/gaas/gaas.py",
+        "agentic_core/reactor/religion/qep_flagship.py",
+        "agentic_core/attestation/__init__.py",
+        "agentic_core/api/attestation.py",
+    }
+    #  EXCLUSIONS, each justified against what it excludes rather than left as a quiet skip:
+    #    _archive/   — retired trees; recovering their SHAPE is the plan's work, their claims are not live
+    #    core/       — top-level, holds the real Landauer meter; its claims are FU-329's subject
+    #    integration_tests/, scripts/ — this file names the words in order to forbid them
+    #    products/   — EXCLUDED FOR A NAMED REASON: FU-332. products/capital_fund holds two live claims
+    #                  (a multisig protocol that cannot even be imported, and a withdrawal path gating on
+    #                  a "sovereign PQC identity"), and it is a money path where real-money rails are
+    #                  owner-gated. A round about clearance attestations must not reshape it in passing, so
+    #                  the scope gap is declared here and carried by a registered row.
+    EXCLUDED = ("_archive/", "core/", "integration_tests/", "scripts/", "products/")
+    offenders = []
+    scanned = 0
+    for py in sorted(root.rglob("*.py")):
+        rel = py.relative_to(root).as_posix()
+        if rel.startswith(EXCLUDED) or "site-packages" in rel:
+            continue
+        try:
+            text = py.read_text(encoding="utf-8")
+        except Exception:                                  # noqa: BLE001
+            continue
+        scanned += 1
+        lines = text.splitlines()
+        for lineno, line in enumerate(lines, 1):
+            if not any(w in line for w in WORDS):
+                continue
+            #  a marker may sit a line or two away, because these explanations run to several lines. The
+            #  WINDOW keeps the check real — a fresh claim added far from any retirement note still fails —
+            #  while not demanding that every line of a paragraph repeat the round id.
+            window = chr(10).join(lines[max(0, lineno - 4):lineno + 3])
+            if rel in RECORDING and any(m in window for m in MARKERS):
+                continue
+            offenders.append(f"{rel}:{lineno}")
+    #  and the scan must actually have read the tree: a path typo would otherwise scan nothing and pass
+    assert scanned > 200, f"the scan only read {scanned} modules, so finding nothing proves nothing"
+    assert not offenders, ("a post-quantum algorithm is named outside a line that records its retirement: "
+                           f"{offenders}")
+
+    # and the four live over-claims W521 measured are each gone, named individually so a partial fix shows
+    surf = (root / "agentic_core/api/integration_surface.py").read_text(encoding="utf-8")
+    assert "(configured)" not in surf, "the surface still reports a configured post-quantum posture"
+    assert "_attestation_posture()" in surf, "the surface no longer reports its real attestation state"
+    inter = (root / "agentic_core/network/interstellar.py").read_text(encoding="utf-8")
+    assert "UNENCRYPTED-LABELLED-ENVELOPE(" in inter, "the envelope no longer says it is unencrypted"
+    assert "_encrypt_pqc" not in inter, "a labelling function is still named as encryption"
+    ceo = (root / "agentic_core/ai/ceo/autonomy_pipelines.py").read_text(encoding="utf-8")
+    assert "Falcon mode" not in ceo, "the CEO surface still recommends a parameter set that does not exist"
+    avatar = (root / "agentic_core/avatars/core/avatar_engine.py").read_text(encoding="utf-8")
+    assert "NIST-standard PQC primitives" not in avatar, "the avatar class still claims NIST primitives"
+    assert "NOT a keypair" in avatar, "the fixed digest is not named as one"
+    # FU-246, the live half: a SHA3 digest was returned prefixed with the name of a recursive
+    # zero-knowledge proof system. Nothing calls it, so the name is kept and the VALUE stops
+    # asserting a proof.
+    assert "content-digest:sha3-512:v1:" in avatar, "the digest is not named as a digest"
+    assert "proof at all" in avatar, "nothing says a proof is not computed"
+    from agentic_core.avatars.core.avatar_engine import AvatarIdentityManager as _AIM
+    _not = _AIM.what_the_provenance_digest_is_not()
+    assert _not["proof_system"] is None and _not["proof_system_basis"], _not
+
+    os.environ.pop(_att.KEY_ENV, None)

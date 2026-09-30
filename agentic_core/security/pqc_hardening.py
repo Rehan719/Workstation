@@ -14,7 +14,8 @@ Three separate problems, and the third is the one that made it more than a stub:
   1. it is a SHA3-512 digest, not a lattice signature;
   2. the default key was the LITERAL "PQC_SECRET", present in this file, so anyone holding the source can
      recompute any "signature" — it proved nothing about origin;
-  3. it PADDED WITH 4000 ZEROS to match a Dilithium-5 signature's length. That padding has no function except
+  3. (retired) it PADDED WITH 4000 ZEROS to match a Dilithium-5 signature's length — this module performs no
+     such operation now. That padding had no function except
      to make the output resemble a post-quantum signature to anything that inspects it.
 
 Two callers published the result as `pqc_signature` — `governance/gaas/gaas.py` on a partner certification and
