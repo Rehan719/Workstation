@@ -28409,6 +28409,17 @@ def test_w520_a_fresh_backend_also_refuses(tmp_path):
     root = _P(__file__).resolve().parents[1]
     script = tmp_path / "probe.py"
     script.write_text(
+        "import sys, os\n"
+        # CI (W520): this script lives in tmp_path, so sys.path[0] is tmp_path and the repo root is on
+        # no path at all. Pinned from the env rather than inherited, because this machine has a stray
+        # .pth putting the root on every interpreter's path, which hid the assumption completely.
+        "sys.path.insert(0, os.environ['WS_ROOT'])\n"
+        # and it must be THIS repository's module: with the root absent, `import agentic_core` still
+        # succeeds as an empty NAMESPACE package whose __file__ is None, so a probe that only checks
+        # that the import did not raise can pass having exercised nothing.
+        "import agentic_core as _ac\n"
+        "assert _ac.__file__ and os.path.realpath(_ac.__file__).startswith("
+        "       os.path.realpath(os.environ['WS_ROOT'])), ('wrong agentic_core', _ac.__file__)\n"
         "import asyncio, json\n"
         "from agentic_core.consultation.interface import ConsultationRequest\n"
         "from agentic_core.cognitive.soch_engine import SochEngine\n"
@@ -28421,7 +28432,11 @@ def test_w520_a_fresh_backend_also_refuses(tmp_path):
     env = {**__import__("os").environ, "DATA_DIR": str(tmp_path / "d"),
            "WORKSTATION_DATA_DIR": str(tmp_path / "d"),
            "WORKSTATION_UEG_PATH": str(tmp_path / "d" / "ueg.json"),
-           "PROJECTS_DIR": str(tmp_path / "d" / "projects"), "AI_DISABLE_LOCAL": "1"}
+           "PROJECTS_DIR": str(tmp_path / "d" / "projects"), "AI_DISABLE_LOCAL": "1",
+           # two mechanisms on purpose: WS_ROOT is what the script pins itself with, PYTHONPATH
+           # covers anything the child re-execs. The env cannot show me CI's missing-path case
+           # locally, so the mechanism is pinned instead of trusted.
+           "WS_ROOT": str(root), "PYTHONPATH": str(root)}
     r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
                        cwd=str(root), env=env)
     assert r.returncode == 0, ("the fresh backend could not even call an engine", r.stderr[-600:])
@@ -28451,6 +28466,17 @@ def test_w520_a_live_reader_finds_the_engines_without_a_test_registering_them(tm
     script = tmp_path / "live.py"
     # NOTE: `register_all` is deliberately NOT imported here. If this probe ever needs it, the fix regressed.
     script.write_text(
+        "import sys, os\n"
+        # CI (W520): this script lives in tmp_path, so sys.path[0] is tmp_path and the repo root is on
+        # no path at all. Pinned from the env rather than inherited, because this machine has a stray
+        # .pth putting the root on every interpreter's path, which hid the assumption completely.
+        "sys.path.insert(0, os.environ['WS_ROOT'])\n"
+        # and it must be THIS repository's module: with the root absent, `import agentic_core` still
+        # succeeds as an empty NAMESPACE package whose __file__ is None, so a probe that only checks
+        # that the import did not raise can pass having exercised nothing.
+        "import agentic_core as _ac\n"
+        "assert _ac.__file__ and os.path.realpath(_ac.__file__).startswith("
+        "       os.path.realpath(os.environ['WS_ROOT'])), ('wrong agentic_core', _ac.__file__)\n"
         "import json\n"
         "from agentic_core.cognitive.registry import CognitiveEngineRegistry as R, EngineType as E\n"
         "before = len(R._engines)\n"
@@ -28468,7 +28494,11 @@ def test_w520_a_live_reader_finds_the_engines_without_a_test_registering_them(tm
     env = {**__import__("os").environ, "DATA_DIR": str(tmp_path / "d"),
            "WORKSTATION_DATA_DIR": str(tmp_path / "d"),
            "WORKSTATION_UEG_PATH": str(tmp_path / "d" / "ueg.json"),
-           "PROJECTS_DIR": str(tmp_path / "d" / "projects"), "AI_DISABLE_LOCAL": "1"}
+           "PROJECTS_DIR": str(tmp_path / "d" / "projects"), "AI_DISABLE_LOCAL": "1",
+           # two mechanisms on purpose: WS_ROOT is what the script pins itself with, PYTHONPATH
+           # covers anything the child re-execs. The env cannot show me CI's missing-path case
+           # locally, so the mechanism is pinned instead of trusted.
+           "WS_ROOT": str(root), "PYTHONPATH": str(root)}
     r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
                        cwd=str(root), env=env)
     assert r.returncode == 0, ("a live reader could not resolve an engine", r.stderr[-800:])
