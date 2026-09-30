@@ -13,9 +13,17 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ClearanceResult:
+    """P3.14 — a verdict that says what every gate decided, not only whether the chain cleared.
+
+    `gates` carries one record per gate: cleared, blocked, or NOT_EVALUATED. The chain returns on the first
+    block, so without that third state a reader could not tell a gate that approved from one that never ran,
+    and a blocked result used to discard the gates that had already cleared.
+    """
     passed: bool
     reason: Optional[str] = None
     attestations: Dict[str, str] = None
+    gates: Optional[List[Dict[str, Any]]] = None
+    attestations_are_placeholders: bool = True
 
 class ConstitutionalClearanceChain:
     """
@@ -31,50 +39,153 @@ class ConstitutionalClearanceChain:
             {"task": "avatar_clearance_omega"}
         )
 
+    #  The five gates in order, with the FIELD each one reads and the placeholder attestation key.
+    #  Named as data so the chain cannot silently grow a sixth gate that nothing records.
+    _GATES = (
+        ("mushawara", "Mushāwara", "deliberative consensus across cognitive perspectives"),
+        ("niyyah", "Niyyah", "intent ratification"),
+        ("tawazun", "Tawazun", "balance between depth and cognitive load"),
+        ("tafakkur", "Tafakkur", "reflection on downstream effects"),
+        ("tahqeeq", "Tahqeeq", "output verification against hard constraints"),
+    )
+
+    @staticmethod
+    def _record(key: str, name: str, subject: str, verdict: str, basis: str) -> Dict[str, Any]:
+        return {"gate": key, "name": name, "subject": subject, "verdict": verdict, "basis": basis}
+
+    def _blocked(self, gates: List[Dict[str, Any]], attestations: Dict[str, str],
+                 idx: int, reason: str) -> ClearanceResult:
+        """Return a block that keeps what the earlier gates decided and says the rest never ran."""
+        for key, name, subject in self._GATES[idx + 1:]:
+            gates.append(self._record(key, name, subject, "not_evaluated",
+                                      "the chain returned at an earlier gate, so this gate never ran - "
+                                      "which is not the same as approving"))
+        return ClearanceResult(False, reason, attestations=dict(attestations), gates=gates)
+
     async def validate_emission(self, emission: Dict[str, Any], context: Dict[str, Any]) -> ClearanceResult:
-        """Runs the 5-gate clearance chain for every avatar instructional emission."""
-        attestations = {}
+        """Run the five-gate clearance chain. A gate with no input BLOCKS.
 
-        # GATE 1: Mushāwara — Deliberative consensus (≥3 engines)
-        # Validates pedagogical strategy across cognitive perspectives.
-        mushawara_res = await self.orchestrator.consult(emission, ["inkashaf", "aqal", "samajh"])
-        if mushawara_res["status"] != "APPROVED":
-            return ClearanceResult(False, f"Gate 1 (Mushāwara) Block: {mushawara_res.get('reason')}")
-        attestations["mushawara"] = mushawara_res.get("attestation", "SIG_MUSHAWARA_v1")
+        P3.14. THREE of the five gates read their field with a default that meant APPROVAL, so an engine
+        returning an empty dict cleared them. Gate 1 indexed its field directly and RAISED instead, which is
+        not clearing but is not a refusal either. Gate 2 was already correct. Every gate now requires its
+        field to be PRESENT and affirmative, and says so when it is not. The replaced expressions are
+        recorded in the commit message rather than quoted here, where a guard reads.
+        """
+        attestations: Dict[str, str] = {}
+        gates: List[Dict[str, Any]] = []
 
-        # GATE 2: Niyyah — Intent ratification
-        # Validates that the instruction is truly helpful and aligns with user goals.
+        def _missing(field: str, res: Any) -> str:
+            return (f"the engine returned no '{field}' field, so nothing affirms this gate. A missing "
+                    f"answer is not approval - it is an engine that did not answer "
+                    f"(received: {type(res).__name__} with "
+                    f"{sorted(res)[:6] if isinstance(res, dict) else 'no fields'})")
+
+        # ── GATE 1: Mushāwara — deliberative consensus (≥3 engines) ─────────────────────────────
+        key, name, subject = self._GATES[0]
+        try:
+            mushawara_res = await self.orchestrator.consult(emission, ["inkashaf", "aqal", "samajh"])
+        except Exception as exc:                          # noqa: BLE001 — a crash is a BLOCK with a reason
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked",
+                                      f"the deliberation call itself failed: "
+                                      f"{exc.__class__.__name__}: {exc}")],
+                attestations, 0, f"Gate 1 ({name}) Block: the deliberation call failed")
+        # This gate raised KeyError before P3.14 — a crash rather than a verdict.
+        _status = mushawara_res.get("status") if isinstance(mushawara_res, dict) else None
+        if _status != "APPROVED":
+            _basis = (_missing("status", mushawara_res) if _status is None else
+                      f"deliberation returned status {_status!r}, not APPROVED")
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked", _basis)],
+                attestations, 0,
+                # the engine's own reason when it gave one, otherwise the basis computed above. Falling
+                # straight through to `.get('reason')` printed "Block: None", which tells a caller nothing
+                # while a precise reason had already been worked out one line earlier.
+                f"Gate 1 ({name}) Block: "
+                f"{(mushawara_res.get('reason') if isinstance(mushawara_res, dict) else None) or _basis}")
+        attestations[key] = mushawara_res.get("attestation", "SIG_MUSHAWARA_v1")
+        gates.append(self._record(key, name, subject, "cleared", "deliberation returned status APPROVED"))
+
+        # ── GATE 2: Niyyah — intent ratification ───────────────────────────────────────────────
+        #  This gate was ALREADY correct before P3.14: its default was negative, so a missing field
+        #  blocked. Its behaviour is unchanged, and that is recorded here because a round claiming to have
+        #  fixed all five gates would be reporting work it did not do.
+        key, name, subject = self._GATES[1]
         niyyah_res = await self.orchestrator.process_engine("niyyah", emission, context)
-        if not niyyah_res.get("ratified", False):
-            return ClearanceResult(False, "Gate 2 (Niyyah) Block: Intent failed ratification")
-        attestations["niyyah"] = niyyah_res.get("signature", "SIG_NIYYAH_v1")
+        _rat = niyyah_res.get("ratified") if isinstance(niyyah_res, dict) else None
+        if _rat is not True:
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked",
+                                      _missing("ratified", niyyah_res) if _rat is None else
+                                      "intent was not ratified: the quorum of signatures was not met")],
+                attestations, 1, f"Gate 2 ({name}) Block: Intent failed ratification")
+        attestations[key] = niyyah_res.get("signature", "SIG_NIYYAH_v1")
+        gates.append(self._record(key, name, subject, "cleared", "intent ratified against a stated quorum"))
 
-        # GATE 3: Tawazun — Balance (Depth vs Cognitive Load)
-        # Enforces homeostatic pacing and prevents user overwhelm.
+        # ── GATE 3: Tawazun — balance between depth and cognitive load ─────────────────────────
+        key, name, subject = self._GATES[2]
         tawazun_res = await self.orchestrator.process_engine("tawazun", emission, context)
-        if not tawazun_res.get("balanced", True):
-            return ClearanceResult(False, "Gate 3 (Tawazun) Block: Cognitive load imbalance")
-        attestations["tawazun"] = tawazun_res.get("proof", "SIG_TAWAZUN_v1")
+        _bal = tawazun_res.get("balanced") if isinstance(tawazun_res, dict) else None
+        if _bal is not True:                              # the old default here approved on absence
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked",
+                                      _missing("balanced", tawazun_res) if _bal is None else
+                                      "the emission was assessed as unbalanced for its audience")],
+                attestations, 2, f"Gate 3 ({name}) Block: Cognitive load imbalance")
+        attestations[key] = tawazun_res.get("proof", "SIG_TAWAZUN_v1")
+        gates.append(self._record(key, name, subject, "cleared", "balance affirmed by the engine"))
 
-        # GATE 4: Tafakkur — Reflection on downstream effects
-        # Meta-cognitive audit for potential drift or pedagogical errors.
+        # ── GATE 4: Tafakkur — reflection on downstream effects ────────────────────────────────
+        key, name, subject = self._GATES[3]
         tafakkur_res = await self.orchestrator.process_engine("tafakkur", emission, context)
-        if tafakkur_res.get("risk_score", 0) > 0.15:
-            return ClearanceResult(False, "Gate 4 (Tafakkur) Block: Downstream risk threshold exceeded")
-        attestations["tafakkur"] = tafakkur_res.get("audit_hash", "SIG_TAFAKKUR_v1")
+        _risk = tafakkur_res.get("risk_score") if isinstance(tafakkur_res, dict) else None
+        if _risk is None:                                 # the old default read absence as NO RISK
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked",
+                                      "the engine reported no 'risk_score', and an unmeasured risk is not "
+                                      "a zero risk. This gate previously read a missing score as 0.0, "
+                                      "which is the strongest possible pass")],
+                attestations, 3, f"Gate 4 ({name}) Block: downstream risk not assessed")
+        if not isinstance(_risk, (int, float)) or isinstance(_risk, bool):
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked",
+                                      f"'risk_score' is not a number but a {type(_risk).__name__}, so it "
+                                      f"cannot be compared with the threshold")],
+                attestations, 3, f"Gate 4 ({name}) Block: risk score is not a number")
+        if _risk > 0.15:
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked",
+                                      f"downstream risk {_risk} exceeds the threshold 0.15")],
+                attestations, 3, f"Gate 4 ({name}) Block: Downstream risk threshold exceeded")
+        attestations[key] = tafakkur_res.get("audit_hash", "SIG_TAFAKKUR_v1")
+        gates.append(self._record(key, name, subject, "cleared",
+                                  f"downstream risk {_risk} is within the threshold 0.15, which is a "
+                                  f"DEFAULT this repository has not tuned against its own history"))
 
-        # GATE 5: Tahqeeq — Output verification (Hard Constraints)
-        # Final AST-level check for zero-placeholders and compliance.
+        # ── GATE 5: Tahqeeq — output verification ──────────────────────────────────────────────
+        key, name, subject = self._GATES[4]
         tahqeeq_res = await self.orchestrator.verify_output(emission)
-        if not tahqeeq_res.get("verified", True):
-            return ClearanceResult(False, f"Gate 5 (Tahqeeq) Block: {tahqeeq_res.get('reason')}")
-        attestations["tahqeeq"] = tahqeeq_res.get("merkle_proof", "SIG_TAHQEEQ_v1")
+        _ver = tahqeeq_res.get("verified") if isinstance(tahqeeq_res, dict) else None
+        if _ver is not True:                              # the old default here approved on absence
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked",
+                                      _missing("verified", tahqeeq_res) if _ver is None else
+                                      f"verification failed: "
+                                      f"{tahqeeq_res.get('reason') if isinstance(tahqeeq_res, dict) else 'no reason given'}")],
+                attestations, 4,
+                f"Gate 5 ({name}) Block: "
+                f"{(tahqeeq_res.get('reason') if isinstance(tahqeeq_res, dict) else None) or _missing('verified', tahqeeq_res)}")
+        attestations[key] = tahqeeq_res.get("merkle_proof", "SIG_TAHQEEQ_v1")
+        gates.append(self._record(key, name, subject, "cleared", "output verified against hard constraints"))
 
-        # Log completion of the clearance cycle to UEG
+        # Log completion of the clearance cycle to UEG. `gates_passed` is COUNTED from the records rather
+        # than written as 5, so a chain that grows a gate cannot keep reporting the old number.
         await self.ueg.log_event("CONSTITUTIONAL_CLEARANCE_CONVERGED", {
             "emission_id": emission.get("id"),
-            "gates_passed": 5,
-            "attestations": attestations
+            "gates_passed": sum(1 for g in gates if g["verdict"] == "cleared"),
+            "gates_declared": len(self._GATES),
+            "attestations": attestations,
+            "attestations_are_placeholders": True,
         })
 
-        return ClearanceResult(True, attestations=attestations)
+        return ClearanceResult(True, attestations=attestations, gates=gates)

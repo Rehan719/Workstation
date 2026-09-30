@@ -3914,8 +3914,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.14",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W525",
       "note": "",
       "tier": 3,
       "area": "compliance",
@@ -5758,6 +5758,24 @@
       "note": "",
       "slot_source": "the item that builds the six-stage loop, where the overlap has to be settled",
       "tier": 3
+    },
+    {
+      "id": "FU-331",
+      "title": "The clearance chain still writes five literal SIG_*_v1 strings into the UEG as signatures - the second half of FU-230",
+      "why": "Split out of FU-230 in W525 so that closing the half P3.14 delivered cannot lose the half it did not. FU-230 read 'the five-gate clearance chain cannot refuse, AND writes literal strings as signatures'. P3.14 fixed the refusal: three gates that approved on a missing field now block, gate 1 blocks with a basis instead of raising KeyError, and every gate's verdict is recorded with cleared/blocked/not_evaluated. THE SIGNATURES ARE UNTOUCHED AND DELIBERATELY SO - they are P3.15's bar, not P3.14's. MEASURED: agentic_core/avatars/core/clearance_chain.py writes attestations[gate] = res.get(<field>, 'SIG_MUSHAWARA_v1' | 'SIG_NIYYAH_v1' | 'SIG_TAWAZUN_v1' | 'SIG_TAFAKKUR_v1' | 'SIG_TAHQEEQ_v1') for the five gates, and logs them to the UEG under CONSTITUTIONAL_CLEARANCE_CONVERGED. W525 made the result state this rather than imply otherwise: ClearanceResult carries attestations_are_placeholders=True and the UEG payload carries the same flag, so nothing reads them as signatures while they are not. THE WORK with P3.15: sign a canonical payload with a named algorithm and a stated key source, append it to the UEG's hash chain, expose a route that re-computes and verifies it, and use the word post-quantum only where the operation is - and then the placeholder flag comes off. A guard drives a tampered payload and asserts verification fails.",
+      "source": "W525 (split from FU-230 when P3.14 delivered its first half)",
+      "found": "2026-09-30",
+      "files": [
+        "agentic_core/avatars/core/clearance_chain.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the attestations are P3.15's own bar; FU-230's first half was P3.14's",
+      "tier": 2
     }
   ],
   "routes": [
@@ -5774,12 +5792,13 @@
       "handed_from": "P3.12"
     },
     {
-      "slot": "P3.14",
+      "slot": "P3.15",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "the five-gate clearance chain"
+      "note": "handed from P3.14; the five-gate clearance chain",
+      "handed_from": "P3.14"
     },
     {
       "slot": "P3.16",

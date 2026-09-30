@@ -28912,3 +28912,102 @@ def test_w524_the_three_meta_engines_compute_or_refuse_with_a_basis():
     for et in (EngineType.TAWAZUN, EngineType.NIYYAH, EngineType.TAFAKKUR):
         assert ENGINE_TIERS[et] == EngineTier.META, et
         assert hasattr(Reg.get(et), "consult"), et
+
+
+def test_w525_a_gate_with_no_input_blocks_and_the_chain_records_every_verdict():
+    """P3.14 — three gates defaulted to APPROVAL on a missing field, and one raised instead of refusing.
+
+    Measured before building: of the five gates, THREE read their field with a default that meant approval,
+    so an engine returning an empty dict cleared them; gate 1 indexed its field directly and raised
+    KeyError, which is neither clearing nor refusing; and gate 2 was ALREADY correct. The item's own text
+    said all five defaulted to pass — corrected in the same round, because a bar that mis-states its subject
+    is how a criterion comes to be written against correct output.
+    """
+    import asyncio as _aio
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain as _Chain
+
+    class _UEG:
+        def __init__(self):
+            self.events = []
+
+        async def log_event(self, kind, payload):
+            self.events.append((kind, payload))
+
+    #  An orchestrator whose gates all affirm, with one field removable so each gate can be driven alone.
+    class _Orch:
+        def __init__(self, drop=None, risk=0.05):
+            self.drop, self.risk = drop, risk
+
+        def _maybe(self, gate, payload):
+            return {} if self.drop == gate else payload
+
+        async def consult(self, emission, engines):
+            return self._maybe("mushawara", {"status": "APPROVED"})
+
+        async def process_engine(self, name, emission, context):
+            if name == "niyyah":
+                return self._maybe("niyyah", {"ratified": True})
+            if name == "tawazun":
+                return self._maybe("tawazun", {"balanced": True})
+            return self._maybe("tafakkur", {"risk_score": self.risk})
+
+        async def verify_output(self, emission):
+            return self._maybe("tahqeeq", {"verified": True})
+
+    # ── 1. everything affirms: the chain clears, and gates_passed is COUNTED ────────────────────
+    ueg = _UEG()
+    ok = _aio.run(_Chain(ueg, _Orch()).validate_emission({"id": "e-ok"}, {}))
+    assert ok.passed is True, ok.reason
+    assert [g["verdict"] for g in ok.gates] == ["cleared"] * 5, ok.gates
+    assert sorted(ok.attestations) == ["mushawara", "niyyah", "tafakkur", "tahqeeq", "tawazun"], ok.attestations
+    # the attestations are PLACEHOLDERS and the result says so — real signing is P3.15, not this item
+    assert ok.attestations_are_placeholders is True, ok
+    assert all(v.startswith("SIG_") for v in ok.attestations.values()), ok.attestations
+    kind, payload = ueg.events[-1]
+    assert kind == "CONSTITUTIONAL_CLEARANCE_CONVERGED", kind
+    assert payload["gates_passed"] == 5 and payload["gates_declared"] == 5, payload
+    assert payload["attestations_are_placeholders"] is True, payload
+
+    # ── 2. EACH gate blocks on its own missing field — driven one at a time ─────────────────────
+    order = ["mushawara", "niyyah", "tawazun", "tafakkur", "tahqeeq"]
+    for i, gate in enumerate(order):
+        r = _aio.run(_Chain(_UEG(), _Orch(drop=gate)).validate_emission({"id": f"e-{gate}"}, {}))
+        assert r.passed is False, (gate, "a gate with no input CLEARED the chain")
+        verdicts = {g["gate"]: g["verdict"] for g in r.gates}
+        assert verdicts[gate] == "blocked", (gate, verdicts)
+        # the gates BEFORE it cleared and are still recorded — a block used to discard them
+        for earlier in order[:i]:
+            assert verdicts[earlier] == "cleared", (gate, earlier, verdicts)
+        # the gates AFTER it are NOT_EVALUATED, not silently absent and not reported as approving
+        for later in order[i + 1:]:
+            assert verdicts[later] == "not_evaluated", (gate, later, verdicts)
+        # the block names a reason, and never the bare word None
+        assert r.reason and "None" not in r.reason, (gate, r.reason)
+        assert (next(g for g in r.gates if g["gate"] == gate)["basis"] or "").strip(), (gate, r.gates)
+        # an earlier gate's attestation survives the block
+        assert sorted(r.attestations) == sorted(order[:i]), (gate, r.attestations)
+
+    # ── 3. A MISSING RISK IS NOT A ZERO RISK — the sharpest of the three defaults ───────────────
+    #  This gate read an absent score as 0.0, which is the strongest possible pass. Asserted separately
+    #  from the loop above because the wording matters: the basis must say the risk was not measured.
+    r = _aio.run(_Chain(_UEG(), _Orch(drop="tafakkur")).validate_emission({"id": "e-risk"}, {}))
+    tf = next(g for g in r.gates if g["gate"] == "tafakkur")
+    assert "unmeasured risk is not" in tf["basis"], tf["basis"]
+
+    # ── 4. a non-numeric risk cannot be compared, and does not slip through ─────────────────────
+    r = _aio.run(_Chain(_UEG(), _Orch(risk="low")).validate_emission({"id": "e-str"}, {}))
+    assert r.passed is False, "a non-numeric risk score cleared the chain"
+    assert "not a number" in r.reason, r.reason
+
+    # ── 5. a high risk still blocks, so the threshold itself is live ────────────────────────────
+    r = _aio.run(_Chain(_UEG(), _Orch(risk=0.9)).validate_emission({"id": "e-high"}, {}))
+    assert r.passed is False and "threshold" in r.reason.lower(), r.reason
+
+    # ── 6. AN ENGINE THAT RAISES BLOCKS WITH A REASON, rather than propagating a crash ──────────
+    class _Boom(_Orch):
+        async def consult(self, emission, engines):
+            raise RuntimeError("the deliberation backend is down")
+
+    r = _aio.run(_Chain(_UEG(), _Boom()).validate_emission({"id": "e-boom"}, {}))
+    assert r.passed is False, "a raising engine did not block"
+    assert "RuntimeError" in next(g for g in r.gates if g["gate"] == "mushawara")["basis"], r.gates
