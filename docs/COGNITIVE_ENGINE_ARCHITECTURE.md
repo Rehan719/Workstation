@@ -19,6 +19,49 @@ recirculation loop (Sense, Intend, Analyse, Act, Learn, Reflect) with latency bu
 cryptographically attested into the Unified Event Graph. New code would live under
 `agentic_core/ai/cognitive_engines/` behind a `FEATURE_FLAG_COGNITIVE_ENGINES_V1` flag.
 
+### 1a. OWNER RULINGS 2026-09-30 — the inventory is TWENTY-THREE, in five tiers
+
+The paragraph above records what the PROPOSAL asked for and is left as written. The Owner then ruled on two
+further groups, and the ruling is the constitution:
+
+- **The MJM engines — Mushāhida, Jaiza, Mu'āina.** Asked whether they are three registered engines or one
+  orchestrator with three stages, the Owner ruled **both**: three individually registered, addressable
+  engines, AND `MJMOrchestratorV4` kept as the lifecycle that composes them.
+- **The Biomimetic Minimisation Engine.** Ruled **both** as well: its terms are registered engines in their
+  own right AND a minimisation layer the other engines use. Part II line 179 names eight.
+
+So the inventory is **6 foundational + 3 meta-regulative + 3 auxiliary + 3 MJM + 8 BME = 23**, and the
+composers follow the same shape the cascade already had — engines that exist, plus something that orders them:
+the cascade (the six), `MJMOrchestratorV4` (the MJM three), the clearance chain (five gates over meta and
+auxiliary), the Ω-functional (five of the BME terms) and the recirculation loop (six stages). The Ω-functional
+is itself both the eighth BME engine and a composer of five others, so "both" was already in this document
+before it was ruled.
+
+**WHAT THIS FIXED, and it is the reason the ruling mattered.** `EngineType` declared **nine** — the
+foundational and meta tiers only. The entire auxiliary tier was absent from the enum, so three engines this
+document names were invisible to `register_all()`, the instrument built in W520 to report engines that have
+no module. It answered honestly against a denominator of nine and read as near-complete coverage of a set
+that is really twenty-three. **An instrument cannot report a gap its own vocabulary cannot express.** W523
+grew the enum to all twenty-three with `ENGINE_TIERS` naming each engine's tier, and the registration report
+now answers per tier (`by_tier`) with a distinct reason for each unbuilt tier — the four are in four different
+situations, and the single shared basis string it replaced was false for three of them.
+
+**Two cautions carried into every later round.**
+1. **Mushāhida is not Mushāwara.** Mushāhida is observation, MJM's first stage. Mushāwara is deliberation,
+   an auxiliary engine, and gate 1 of the clearance chain. One letter apart in transliteration, different
+   tiers, different work — and both tiers have the same size, so a count cannot catch the confusion. A guard
+   asserts the two tier assignments by name for exactly that reason.
+2. **Eight BME engines, five weighted terms.** The Ω-functional weights `free_energy`, `optimal_transport`,
+   `schrodinger_bridge`, `entropy_export` and `murray_law`. The diffusion process, least action and the
+   Landauer meter are NOT in its weighted sum, so "eight engines combined by the functional" is not what the
+   code does — three of the eight sit outside it.
+
+**Declaring is not building.** Seventeen of the twenty-three have no module and the registry says so per
+tier. The BME tier's state is mixed rather than absent: entropic optimal transport has live code with no
+solver (POT is not installed), the Ω-functional and Schrödinger bridge are archived, the diffusion process
+needs `torchsde` which is not installed, and the Landauer meter already exists at
+`core/transcendent_subsystems/tfel.py` computing correct physics over hardcoded bit counts.
+
 The **direction is right and is already this platform's direction.** The reconnaissance behind it is materially wrong
 about the starting point, and the sample code would re-commit the exact defect class this delivery phase is closing.
 

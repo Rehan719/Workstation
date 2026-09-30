@@ -16,7 +16,8 @@ P3.12's bar.
 """
 from typing import Any, Dict, List
 
-from agentic_core.cognitive.registry import CognitiveEngineRegistry, EngineType
+from agentic_core.cognitive.registry import (CognitiveEngineRegistry, ENGINE_TIERS, EngineTier,
+                                             EngineType)
 
 # EngineType value -> (module, class). Only engines with a module appear here.
 _IMPLEMENTED = {
@@ -28,8 +29,26 @@ _IMPLEMENTED = {
     EngineType.SOCH: ("agentic_core.cognitive.soch_engine", "SochEngine"),
 }
 
-_ABSENT_BASIS = ("declared in EngineType and has NO module: its package holds only an __init__.py. Planned "
-                 "under P3.13 and registered nowhere, so nothing can consult it")
+#  One reason per TIER, because the four unbuilt tiers are in four different situations and a single
+#  sentence across all of them would be false for three. Each says what exists today, not just what is planned.
+_ABSENT_BASIS_BY_TIER = {
+    EngineTier.META: ("declared in EngineType and has NO module: agentic_core/cognitive/meta/ holds only an "
+                      "__init__.py. Built by P3.13 as a refusal by default. The archived version at "
+                      "_archive/jules-unwired/ is NOT recovered: all three fabricate (a graded balance score, "
+                      "three invented signatories, a hardcoded drift with its formula in a comment)"),
+    EngineTier.AUXILIARY: ("declared in EngineType and has NO module. Built by P3.16. Mushawara is gate 1 of "
+                           "the clearance chain, which currently calls it through an orchestrator the avatar "
+                           "API bypasses, so nothing consults it even where it is named"),
+    EngineTier.MJM: ("declared in EngineType and has no engine module: Mushahida, Jaiza and Muaina exist "
+                     "today as METHODS on MJMOrchestratorV4, which the Owner ruled stays as their composer "
+                     "(2026-09-30). Two of the three fabricate as methods - a hardcoded entropy and a "
+                     "compliance of 1.0 - so registering them is not the same as making them honest"),
+    EngineTier.BME: ("declared in EngineType and has no registered module. Built by P3.17. Its state is "
+                     "mixed rather than absent: entropic optimal transport has LIVE code with no solver "
+                     "(POT is not installed), the Omega-functional and Schrodinger bridge are archived, the "
+                     "diffusion process needs torchsde which is not installed, and the Landauer meter "
+                     "already exists at core/transcendent_subsystems/tfel.py fed hardcoded bit counts"),
+}
 
 
 def register_all() -> Dict[str, Any]:
@@ -50,17 +69,44 @@ def register_all() -> Dict[str, Any]:
         except Exception as exc:                     # noqa: BLE001 — said, never silently skipped
             unavailable[et.value] = f"{exc.__class__.__name__}: {exc}"
 
-    declared_absent = sorted(e.value for e in EngineType if e not in _IMPLEMENTED)
+    absent = [e for e in EngineType if e not in _IMPLEMENTED]
+    declared_absent = sorted(e.value for e in absent)
+
+    #  Per tier, so a reader can see WHERE the gap is rather than only how big it is. Before the Owner's
+    #  2026-09-30 rulings this enum declared nine of twenty-three and the whole auxiliary tier was missing,
+    #  so "6 of 9" read as near-complete coverage of a set it could not describe.
+    by_tier = {}
+    for _t in EngineTier:
+        _members = [e for e in EngineType if ENGINE_TIERS.get(e) == _t]
+        _reg = [e.value for e in _members if e.value in registered]
+        by_tier[_t.value] = {
+            "declared": len(_members),
+            "registered": len(_reg),
+            "registered_names": sorted(_reg),
+            "absent": sorted(e.value for e in _members if e.value not in registered),
+        }
+
     return {
         "registered": sorted(registered),
         "registered_count": len(registered),
         "unavailable": unavailable,
         "declared_but_absent": declared_absent,
-        "declared_but_absent_basis": {name: _ABSENT_BASIS for name in declared_absent},
+        "declared_but_absent_basis": {
+            e.value: _ABSENT_BASIS_BY_TIER.get(
+                ENGINE_TIERS.get(e),
+                "declared in EngineType, absent, and in no tier - which is itself a defect: see ENGINE_TIERS")
+            for e in absent},
         "engine_type_declares": len(list(EngineType)),
+        "by_tier": by_tier,
+        "tiers_declared": [t.value for t in EngineTier],
         "basis": (f"{len(registered)} of {len(list(EngineType))} declared engines have a module and are "
-                  f"registered; {len(declared_absent)} are declared and absent"
+                  f"registered; {len(declared_absent)} are declared and absent, across "
+                  f"{sum(1 for v in by_tier.values() if v['absent'])} of {len(by_tier)} tiers"
                   + (f"; {len(unavailable)} failed to import" if unavailable else "")),
+        "what_the_denominator_means": (
+            f"{len(list(EngineType))} is what the ARCHITECTURE declares, not what works. Only the "
+            f"{by_tier[EngineTier.FOUNDATIONAL.value]['registered']} foundational engines have modules, and "
+            "each of those returns a fixed marker with confidence=None rather than computing"),
         "what_registration_does_not_mean": ("a registered engine still returns a fixed marker with "
                                             "confidence=None and a basis saying nothing computed it. "
                                             "Registration makes the absence visible; it does not make an "

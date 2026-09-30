@@ -24,10 +24,10 @@ and that surface disagree, **the surface is right and this document is out of da
 
 | | figure | method |
 |---|---|---|
-| branch | `main` at the commit that added this file (`9faea607` was its parent) | `git log --oneline -3` — read it rather than trusting this cell, which staled the moment this file was committed |
-| plan | **27 of 73 items** — P1 18/18 · P2 9/17 · P3 0/27 · P4 0/6 · P5 0/5 | distinct `P<n>.<n>` ids in the prompt. **`P3.0` is excluded deliberately**: it is not a build item but the slot for an OWNER RULING inside Phase 3 (the §10 bar-wording half sits there). Counting it as an item would inflate Phase 3 to 28 and put a number on the plan that no one can build down |
-| register | 312 rows — **54 open**, 247 done, 11 dropped | `docs/FOLLOWUPS.json` |
-| where the open rows sit | P2.4 **15** · P3.12 8 · P2.17 7 · P3.17 5 · P3.15/P3.16/P3.19/P3.23/P3.27 2 each · P2.13/P3.2/P3.14/P3.18/P3.20/P3.24/P3.25/P4.4 1 each · **OWNER 1** | grouped by `slot` |
+| branch | `main` at **`c16cdf2a`** (W522) | `git log --oneline -3` — read it rather than trusting this cell, which staled the moment this file was committed |
+| plan | **28 of 74 items** — P1 18/18 · P2 9/17 · **P3 1/28** · P4 0/6 · P5 0/5. P3.12 closed in W520 and is the FIRST Phase 3 item. | the generated `plannow` block, which counts P3.0 and so reads 74 where the cell below reads 73 — the generated figure is the one to quote. The original note on P3.0 stands: **`P3.0` is excluded deliberately**: it is not a build item but the slot for an OWNER RULING inside Phase 3 (the §10 bar-wording half sits there). Counting it as an item would inflate Phase 3 to 28 and put a number on the plan that no one can build down |
+| register | **327 rows — 43 open**, 271 done, 13 dropped | `docs/FOLLOWUPS.json`, counted directly. Open FELL from 54 to 43 across W515-W522 while 15 rows were ADDED, so the net is the measure, not the closes |
+| where the open rows sit | P2.4 **10** · P3.17 4 · P3.13/P3.15/P3.19/P2.17 3 each · P3.16/P3.18/P3.23/P2.13/P3.27 2 each · P3.2/P3.14/P3.20/P3.24/P3.25/P4.4 1 each · **OWNER 1** (FU-077) | grouped by `slot`. **P3.12's eight are gone** — the item closed. P2.4 fell 15 to 10 and its cluster (c) is COMPLETE |
 
 **A dropped row is one measured and REFUTED**, not one abandoned — two were dropped in W507 because the code
 they accused did not do what they claimed. Dropping a row is a legitimate outcome; abandoning one is not.
@@ -37,9 +37,57 @@ Five modified files: `docs/FABLE_DELIVERY_PROMPT.md` (adds P3.26 TURNOVER, P3.27
 `docs/FOLLOWUPS.json`, `docs/WORKSTATION_IDBO_LIVING_PLAN.md`, `docs/WORKSTATION_IDBO_WHOLE_VISION.md`
 (§8 `Recorded W512`, §16 pointer, §18 six Owner decisions), `integration_tests/test_mvp_spine.py` (two guards).
 
-**ROUND C (W517) IS LANDED — `cb075956`, 494 passed / 15 skipped in 50m42s, `PYTEST_EXIT=0`, pre-flight 0 leads.** Three rounds landed overnight against a committed one. Closes FU-317 (the D-SELECT screen narrowed: 224 candidates to 108, literal clamps 106 to 12) and DROPS FU-303 as refuted — its defect does not reproduce, and the fix drafted for it was reverted because a driven comparison showed 0 leads before and 0 after.
+**ROUND C (W517) IS LANDED — `cb075956`, 494 passed / 15 skipped in 50m42s, `PYTEST_EXIT=0`, pre-flight 0 leads.** Three rounds landed overnight against a committed one. Closes FU-317 (the D-SELECT screen narrowed: 224 candidates to 108, literal clamps 106 to 12). **IT ALSO DROPPED FU-303, AND THAT WAS WRONG — corrected in W521 (FU-321).** The drop reasoned from 0 leads before and 0 after at two revisions; the check needs a COLLIDING NAME to fire and neither revision had one. It then fired for real on a line using `d`, poisoned file-wide by a `d = json.loads(...)` read of a different file. The fix is reinstated at `scripts/selfcheck_diff.py:381` and the lead count went 1 to 0. The lesson is the part to carry: *'could not reproduce over two revisions' is not 'does not reproduce'* when the trigger needs a name collision — a non-reproduction must name the condition it searched for and confirm that condition was present.
 
 **ROUND B (W516) landed — `eb14f3b9`, 493 passed / 15 skipped in 51m24s, `PYTEST_EXIT=0` captured explicitly; pre-flight 0 leads over 11 files; `tsc --noEmit` clean.** The tree is clean. Closes FU-295 (a 33-article constitution, each article naming how it is checked, three recording their own breach, and the page showing both), FU-305 (the defended count is read live from the ledger, and the ledger states that the eleven instances were never written down and cannot be recovered) and FU-307 (nothing now claims the geospheric regulator is PID — fixed in all three writers).
+
+### Landed since (W518-W522), newest first
+
+**W522 — `c16cdf2a`, a CI HOTFIX, and read this before writing any subprocess test.** W520's Spine CI failed
+after 48m03s (2 failed / 498 passed) with `ModuleNotFoundError: No module named 'agentic_core'` on both
+fresh-backend probes, while the same tree was green locally at 501. The probe writes its script into
+`tmp_path`, so the child's `sys.path[0]` is tmp_path and the repo root is on no path at all; in-process pytest
+inserts the rootdir, the child gets nothing. **It passed locally only because this machine carries a stray
+`jules_ai.pth` containing `C:/Users/rehan/Workstation`, which puts the repo root on `sys.path` for EVERY
+python process on the box.** Worse: with that path removed, `import agentic_core` does not raise — it resolves
+to an empty NAMESPACE package with `__file__ = None`, so a probe that only checks the import did not throw can
+pass having executed nothing. The fix pins the mechanism: the child does
+`sys.path.insert(0, os.environ['WS_ROOT'])` as its first statement, `WS_ROOT` and `PYTHONPATH` both travel in
+its env, and it ASSERTS the resolved `__file__` lives under the root. Pushed without a local full suite
+DELIBERATELY — this environment cannot reproduce the missing-path condition, so a local run would have tested
+nothing the fix is about while main stayed red.
+
+**W521 — `93907238`, 505 passed / 15 skipped, `PYTEST_EXIT=0`. FU-164 CLOSED, which COMPLETES P2.4 cluster
+(c)** (FU-160, 161, 164, 167, 170, 187). The row was two shortfalls and its own text said so: the Factory
+export now prepends the shared `provenanceLine`, and C10's THIRD counter stopped asserting a readiness for
+commercialisation that no gate, score or approval establishes — W506 had fixed two of its three and left the
+third. **The suite went RED first**, on `test_w501`: closing FU-164 closed the last row citing a W477 sweep
+class, `batches()` legitimately returned zero, and the forecast emitted its batch line only `if _b:` so the
+line VANISHED. The real defect was that three states rendered as two — a batch exists, none exists, and the
+computation CRASHED — because the `except Exception: _b = []` above it produced the same empty list as
+success. Both lines are now always emitted, an absence states its reason, and a failure says NOT KNOWN with
+its exception. Registered: FU-323 (a crash in the insights route renders to the user as "no projects yet"),
+FU-325 (FU-226 names two live PQC over-claims; there are FOUR — `interstellar.py:36` returns an f-string as
+ciphertext, and `autonomy_pipelines.py:104` recommends **Dilithium-7, which does not exist**), FU-326 (FU-242's
+premise is FALSE — there is no PID anywhere in `geospheric/`), FU-327 (FU-238 omits `sla_monitor.py`, which
+COMPUTES a 100% resolution rate over tickets it invents itself).
+
+**W520 — `905ed790`, 501 passed / 15 skipped. P3.12 DONE, the first Phase 3 item.** Eight constructors carried
+GRADED confidence literals (0.88-0.99) over a constitutional check that never ran; the contract forced it, and
+the bar permits a stated refusal. **And I nearly closed the item on a fixture:** `register_all()`'s only caller
+in the whole repository was its own guard, so the guard created the condition it then asserted while production
+kept an empty registry. The mechanical pre-flight caught it, not me. `registry.py` now bootstraps lazily on the
+first miss, and the guard probes a FRESH interpreter that never calls `register_all`.
+
+### OWNER RULINGS 2026-09-30, second set — THE ENGINE INVENTORY IS TWENTY-THREE
+The Owner named the MJM engines (Mushāhida · Jaiza · Mu'āina) and the Biomimetic Minimisation Engine, and ruled
+**"both"** for each: each is a registered engine tier in its own right AND a composed layer. So the inventory
+is **6 foundational + 3 meta + 3 auxiliary + 3 MJM + 8 BME = 23**, in five tiers, while **`EngineType`
+declares only NINE** — the whole auxiliary tier (Tahqeeq, Mushāwara, Mudrik) is absent from the enum, which is
+why W520's `declared_but_absent` reported three absent engines and looked complete. **Grow `EngineType` FIRST:
+every count downstream reads from it.** Do not conflate **Mushāhida** (observation, MJM) with **Mushāwara**
+(deliberation, auxiliary tier, gate 1 of the clearance chain). Full detail and the measured state of every
+tier is in the session memory note `project-owner-ruling-2026-09-30-mjm-fifteen-engines`.
 
 **See `docs/NIGHT_REPORT.md` for the night's account**, including the two findings that corrected this plan's own headline number and the hour lost to running an agent fleet beside a suite (M-SESS-11).
 

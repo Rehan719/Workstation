@@ -113,6 +113,18 @@ async def list_engines():
             "unavailable": _rep.get("unavailable") or {},
             "bootstrap_failed": _rep.get("bootstrap_failed"),
             "basis": _rep.get("basis"),
+            # W523 (Owner ruling 2026-09-30) — the denominator is 23 in five tiers. This page's own table
+            # lists NINE because it was written against the twelve-engine architecture's first two tiers,
+            # so `total: 9` below is this table's size and NOT a claim about how many engines exist. The
+            # two are different questions and the page now answers both rather than letting one stand in
+            # for the other.
+            "by_tier": _rep.get("by_tier") or {},
+            "tiers_declared": _rep.get("tiers_declared") or [],
+            "what_the_denominator_means": _rep.get("what_the_denominator_means"),
+            "why_this_pages_total_is_smaller": (
+                "`total` is the size of this page's hand-kept table (the foundational and meta tiers). "
+                "`registry.engine_type_declares` is what the architecture declares across all five tiers. "
+                "A reader comparing them is comparing a table to an architecture, not finding a defect"),
             "what_registration_does_not_mean": _rep.get("what_registration_does_not_mean"),
             "this_pages_list_agrees": not _disagree,
             "disagreement": _disagree,

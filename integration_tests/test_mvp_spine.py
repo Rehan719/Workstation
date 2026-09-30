@@ -28349,6 +28349,8 @@ def test_w520_the_cognitive_engines_refuse_instead_of_fabricating():
 
     NAMES = {"aqal": "AqalEngine", "hoshiyari": "HoshiyariEngine", "iman": "ImanEngine",
              "inkashaf": "InkashafEngine", "samajh": "SamajhEngine", "soch": "SochEngine"}
+    from agentic_core.cognitive.registry import EngineType as _EngineType
+    _ET_ALL = {e.value: e for e in _EngineType}
 
     # LEG 1 + 2 - every engine is CALLABLE, refuses with a reason, and carries what served it.
     # Callable matters: before this round the engines RAISED, because a decorator's
@@ -28391,7 +28393,30 @@ def test_w520_the_cognitive_engines_refuse_instead_of_fabricating():
     assert len(_Reg._engines) == 6, (f"the registry holds {len(_Reg._engines)} engines, not six", out)
     assert out["registered_count"] == len(_Reg._engines), (
         "the report disagrees with the registry it describes", out, len(_Reg._engines))
-    assert sorted(out["declared_but_absent"]) == ["niyyah", "tafakkur", "tawazun"], out
+    # W523 (Owner ruling 2026-09-30) — the enum declares TWENTY-THREE in five tiers, not nine. Asserted as
+    # the STRUCTURE rather than a name list: this enum was nine while the architecture declared twelve, so
+    # the whole auxiliary tier was invisible to the very instrument built to find missing engines, and a
+    # count cannot express a gap its own vocabulary lacks.
+    from agentic_core.cognitive.registry import ENGINE_TIERS, EngineTier
+    assert set(ENGINE_TIERS) == set(_ET_ALL), "the tier map does not cover every declared engine exactly once"
+    assert out["engine_type_declares"] == 23, out["engine_type_declares"]
+    assert len(out["declared_but_absent"]) == 17, out["declared_but_absent"]
+    tiers = out["by_tier"]
+    assert {t: v["declared"] for t, v in tiers.items()} == {
+        "foundational": 6, "meta": 3, "auxiliary": 3, "mjm": 3, "bme": 8}, tiers
+    # foundational is the ONLY tier with modules — per tier, so one tier gaining a module cannot hide inside
+    # a total that still adds up
+    assert tiers["foundational"]["registered"] == 6, tiers["foundational"]
+    for name in ("meta", "auxiliary", "mjm", "bme"):
+        assert tiers[name]["registered"] == 0, (name, tiers[name])
+    # and each absence names a reason belonging to ITS tier: four unbuilt tiers, four DISTINCT reasons. One
+    # shared sentence would pass a name-list check while being false for three of them.
+    assert len(set(out["declared_but_absent_basis"].values())) == 4, \
+        sorted(set(out["declared_but_absent_basis"].values()))
+    # Mushahida (MJM, observation) is not Mushawara (auxiliary, deliberation, gate 1) — one letter apart in
+    # transliteration, and wiring the wrong one into a gate is the mistake this pins against
+    assert ENGINE_TIERS[_ET_ALL["mushahida"]] == EngineTier.MJM
+    assert ENGINE_TIERS[_ET_ALL["mushawara"]] == EngineTier.AUXILIARY
     assert not out["unavailable"], out["unavailable"]
 
 
@@ -28510,8 +28535,11 @@ def test_w520_a_live_reader_finds_the_engines_without_a_test_registering_them(tm
     assert out["resolved"] == "SochEngine", out
     assert out["consultable"] is True, out
 
-    # And the three declared-but-absent engines still refuse, each SAYING it has no module. A bootstrap that
-    # resolved nine would have hidden the very gap the registry is supposed to expose.
+    # And the declared-but-absent engines still refuse, each SAYING it has no module. A bootstrap that
+    # resolved all twenty-three would have hidden the very gap the registry exists to expose.
+    # THE LOOP IS ASSERTED NON-EMPTY FIRST: with nothing absent this iterates zero times and the leg checks
+    # nothing while still passing — an empty blind. The count is what keeps it honest.
+    assert len(out["absent"]) == 3, out["absent"]
     for name, msg in out["absent"].items():
         assert msg, (name, "resolved an engine that has no module")
         assert "no module" in msg.lower() or "NO module" in msg, (name, msg)
@@ -28539,8 +28567,14 @@ def test_w520_the_engines_route_reports_the_registry_not_its_own_table(client):
     reg = body["registry"]
     assert reg["registered_count"] == 6, reg
     assert sorted(reg["registered"]) == ["aqal", "hoshiyari", "iman", "inkashaf", "samajh", "soch"], reg
-    assert reg["engine_type_declares"] == 9, reg
-    assert sorted(reg["declared_but_absent"]) == ["niyyah", "tafakkur", "tawazun"], reg
+    # W523 — the route reports against the TRUE denominator. Its own hand-kept table still lists nine
+    # (the twelve-engine architecture's first two tiers), so `total` stays 9 while the registry says 23:
+    # that is not a disagreement about which engines are BUILT, which is what this_pages_list_agrees means.
+    assert reg["engine_type_declares"] == 23, reg
+    assert len(reg["declared_but_absent"]) == 17, reg["declared_but_absent"]
+    assert reg["by_tier"]["foundational"]["registered"] == 6, reg["by_tier"]
+    assert reg["by_tier"]["bme"]["declared"] == 8, reg["by_tier"]
+    assert "23 is what the ARCHITECTURE declares" in reg["what_the_denominator_means"], reg
     assert reg["this_pages_list_agrees"] is True, reg
     assert reg["disagreement"] == [], reg
     assert not reg["unavailable"], reg["unavailable"]
