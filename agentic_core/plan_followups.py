@@ -872,24 +872,35 @@ def render_forecast(register: Any, prompt_text: str) -> str:
                                  for x in rest))
     # W487 — the pace says how fast; the batch says what to run next to make it faster. A reader who
     # sees only the projection has no lever; naming the largest closable batch beside it gives one.
+    _b_failed = None
     try:
         _b = batches(register, prompt_text)["batches"]
-    except Exception:
-        _b = []
+    except Exception as exc:                              # noqa: BLE001 — said, never swallowed
+        _b, _b_failed = [], f"{exc.__class__.__name__}: {exc}"
     if _b:
         _t = _b[0]
         out.append(f"  BIGGEST BATCH: {_t['class']} ({_t['what']}) — one mechanism closes "
                    f"{_t['closes_count']} row(s) across {_t['files_count']} file(s)"
                    + (f", advancing {_t['partial_count']} more" if _t["partial_count"] else "")
                    + f". Items: {', '.join(_t['slots'])}.")
+    else:
+        # W521 — THE LINE IS ALWAYS EMITTED. It used to appear only when a batch existed, so when the
+        # last row citing a sweep class closed, the line simply vanished and a reader could not tell
+        # that from a generator that had stopped working. And the except branch above turned a crash
+        # into the same empty list as success, so a failure and an absence rendered identically.
+        out.append("  BIGGEST BATCH: none — " + (
+            f"the batch computation FAILED ({_b_failed}), so whether a batch exists is NOT KNOWN"
+            if _b_failed else
+            "no sweep class has an open row left; every row citing one of them is closed"))
     # W501 (P2.17a) — the BUNDLE beside the BATCH. A batch is one mechanism across its consumers;
     # a bundle is one subsystem's worth of reading, which is what a round actually costs. Only the
     # batch reached this page, so the round that measured components was still being offered two
     # rows across nine files.
+    _u_failed = None
     try:
         _u = bundles(register, prompt_text)
-    except Exception:
-        _u = {"bundles": [], "ceiling": {}}
+    except Exception as exc:                              # noqa: BLE001 — said, never swallowed
+        _u, _u_failed = {"bundles": [], "ceiling": {}}, f"{exc.__class__.__name__}: {exc}"
     if _u["bundles"]:
         _v = _u["bundles"][0]
         _ceil = _u["ceiling"].get("rows")
@@ -902,6 +913,13 @@ def render_forecast(register: Any, prompt_text: str) -> str:
                       f"{', '.join(_u['ceiling'].get('rounds') or [])})"
                       if _v["above_measured_ceiling"] else "")
                    + ". It advances those items; only their own ACCEPT criteria close them.")
+    else:
+        # W521 — the same class as the batch above, fixed in the same place rather than waiting for the
+        # day the last bundle closes and this line disappears too.
+        out.append("  BIGGEST BUNDLE: none — " + (
+            f"the bundle computation FAILED ({_u_failed}), so whether a bundle exists is NOT KNOWN"
+            if _u_failed else
+            "no open row rides a plan item, so there is no subsystem to cut"))
     out.append("  This is arithmetic over an observed mean, in rounds. It is not a date and not a promise;")
     out.append("  it moves every time a round closes or registers a row.")
     return "\n".join(out)

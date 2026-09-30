@@ -28543,3 +28543,163 @@ def test_w520_the_engines_route_states_a_disagreement_rather_than_hiding_it(clie
     # the page's own count moved with its table; the registry's did NOT, which is the point
     assert body["implemented_total"] == 7, body["implemented_total"]
     assert reg["registered_count"] == 6, reg
+
+
+def test_w520_the_factory_export_carries_the_provenance_it_already_captured():
+    """FU-164's remaining half — and every export surface counted, so a new one cannot ship bare.
+
+    W506 closed the SERVER half: products.py's done event carries served_by and is_external, and this page
+    was taught to store them. The chip rendered them; the exported `.md` did not, which is the defect the
+    shared helper exists for - a download carries no DOM, so a badge beside the text is not a label on it.
+
+    Asserted as the PREFIX EXPRESSION, not as the helper's name appearing in the file. A presence check
+    passes on a call in a dead branch or one whose result is discarded, which is how this half stayed open
+    while the page already imported everything it needed.
+    """
+    from pathlib import Path as _P
+    root = _P(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+
+    fac = (src / "pages/developers/Factory.tsx").read_text(encoding="utf-8")
+    assert "import { provenanceLine } from '../../lib/api';" in fac, "the shared helper is not imported"
+    # the exported content is PREFIXED by it — beside it, or after it, is the same defect
+    assert ("const content = provenanceLine(line.served_by, line.is_external)\n      + `# ${line.name}"
+            in fac), "the exported .md does not begin with the provenance line"
+    # and the page still captures what it labels: a label over a field nobody fills reports nothing
+    assert "served_by: ev.served_by ?? null" in fac, "the done event's served_by is dropped again"
+
+    # NO LOCAL RE-IMPLEMENTATION. Two surfaces that word the same fact differently is how the empty-map
+    # case came to be handled on one page and not another.
+    assert "'> Provenance:" not in fac and '"> Provenance:' not in fac, \
+        "Factory writes its own provenance wording instead of using the shared helper"
+
+    # EVERY export surface, counted. The helper's own rule says 'every export surface prepends this'; a
+    # count is what makes a NEW surface shipping bare a failure rather than an omission nobody notices.
+    surfaces = [
+        "pages/developers/Factory.tsx",
+        "pages/MyWork.tsx",
+        "components/DomainTool.tsx",
+    ]
+    for rel in surfaces:
+        txt = (src / rel).read_text(encoding="utf-8")
+        assert "provenanceLine(" in txt, (rel, "no provenance helper at all")
+
+    # the helper is defined once, in one place, and still distinguishes an unknown producer from the floor
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    assert api.count("export const provenanceLine") == 1, "the helper is defined more than once"
+    assert "not recorded for this output" in api, "an unknown producer would be given a name"
+
+
+def test_w521_the_portfolio_insights_name_what_they_counted(client, monkeypatch):
+    """FU-164 C10, all three claims — driven, because two of three were fixed and nobody noticed the third.
+
+    The three quoted claims the W477 sweep found were a count of "active" projects over every project
+    whatever its status, a concept-stage count asserting runnability, and a prototype-stage count asserting
+    readiness for commercialisation. W506 corrected the first two. The third was derived from
+    `by_stage['prototype'] > 0` and nothing else: measured, there is no gate, score or approval a prototype
+    passes, so the word asserted a check that never ran.
+
+    The portfolio is BUILT here rather than read from the store, because an insight that does not render
+    cannot be checked, and an empty store renders none of them.
+    """
+    from types import SimpleNamespace as _NS
+    import agentic_core.projects.api as _papi
+
+    portfolio = [
+        _NS(stage="prototype", realm="build", outputs=["a"], status="idle"),
+        _NS(stage="prototype", realm="build", outputs=[], status="done"),
+        _NS(stage="concept", realm="learn", outputs=[], status="idle"),
+    ]
+    monkeypatch.setattr(_papi, "_all_projects", lambda: portfolio)
+
+    rows = client.get("/api/v1/intelligence/insights").json()["insights"]
+    by_id = {r["id"]: r for r in rows}
+    assert {"i-1", "i-2", "i-3"} <= set(by_id), sorted(by_id)
+
+    # i-1 — the count is of every project, and the title SAYS which statuses it counted.
+    one = by_id["i-1"]
+    assert one["title"].startswith("3 project(s) across 2 realm(s)"), one["title"]
+    assert "2 idle" in one["title"] and "1 done" in one["title"], one["title"]
+    assert "active" not in one["title"].lower(), one["title"]
+    # and the BASIS names the population the arithmetic uses. A basis that narrows to a status while the
+    # score runs over every project is the same defect one layer down, which is where it survived.
+    assert "any status" in one["score_basis"], one["score_basis"]
+    assert "per active project" not in one["score_basis"], one["score_basis"]
+
+    # i-2 — names the stage, does not assert that a run could start.
+    two = by_id["i-2"]
+    assert two["title"] == "1 project(s) at the concept stage", two["title"]
+    assert "ready to run" not in two["title"], two["title"]
+
+    # i-3 — THE ONE LEFT BEHIND. Names the stage; the detail states that nothing established readiness.
+    three = by_id["i-3"]
+    assert three["title"] == "2 project(s) at the prototype stage", three["title"]
+    assert "eligible" not in three["title"].lower(), three["title"]
+    assert "No eligibility check has been performed" in three["detail"], three["detail"]
+    assert "counts the stage, not readiness" in three["detail"], three["detail"]
+
+
+def test_w521_the_insight_counts_move_with_the_portfolio(client, monkeypatch):
+    """The counts are computed, not written — a second portfolio, different numbers.
+
+    Asserting one portfolio's output cannot tell a computed count from a literal that happens to match it.
+    """
+    from types import SimpleNamespace as _NS
+    import agentic_core.projects.api as _papi
+
+    monkeypatch.setattr(_papi, "_all_projects", lambda: [
+        _NS(stage="prototype", realm="serve", outputs=[], status="running"),
+    ])
+    rows = {r["id"]: r for r in client.get("/api/v1/intelligence/insights").json()["insights"]}
+    assert rows["i-3"]["title"] == "1 project(s) at the prototype stage", rows["i-3"]["title"]
+    assert "1 running" in rows["i-1"]["title"], rows["i-1"]["title"]
+    # a stage with no projects produces no insight, rather than an insight reporting zero as an opportunity
+    assert "i-2" not in rows, rows.get("i-2")
+
+
+def test_w521_a_failed_computation_is_not_reported_as_an_absence(monkeypatch):
+    """The forecast says NOT KNOWN when the computation raised, and 'none' only when it truly found none.
+
+    Both lines were emitted only when there was something to report, and both sat under an
+    `except Exception` that produced the same empty result as success. So three different states - a batch
+    exists, no batch exists, the batch computation crashed - rendered as two, with the crash borrowing the
+    appearance of the honest empty case. W521 separated them; this is the leg that holds them apart, because
+    the absence wording alone would pass on a generator that had silently stopped working.
+    """
+    import json
+    from pathlib import Path as _P
+    from agentic_core import plan_followups as fu
+
+    root = _P(__file__).resolve().parents[1]
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    txt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+
+    # ── 1. the honest empty case: every sweep class's rows are closed, and the line SAYS that ──────
+    live = fu.render_forecast(reg, txt)
+    assert "BIGGEST BATCH:" in live, live[-300:]
+    assert "BIGGEST BUNDLE:" in live, live[-300:]
+
+    # ── 2. the batch computation raises: the line must not claim there is no batch ─────────────────
+    def _boom(*a, **k):
+        raise RuntimeError("the register could not be grouped")
+
+    monkeypatch.setattr(fu, "batches", _boom)
+    broken = fu.render_forecast(reg, txt)
+    batch_line = [ln for ln in broken.splitlines() if "BIGGEST BATCH:" in ln]
+    assert batch_line, broken[-300:]
+    assert "NOT KNOWN" in batch_line[0], batch_line[0]
+    assert "RuntimeError" in batch_line[0], batch_line[0]      # the reason travels, not just the fact
+    # and it must NOT say the reassuring thing it says when the answer really is none
+    assert "no sweep class has an open row left" not in batch_line[0], batch_line[0]
+
+    # ── 3. the bundle computation raises: the same distinction, the same wording ───────────────────
+    monkeypatch.setattr(fu, "bundles", _boom)
+    broken2 = fu.render_forecast(reg, txt)
+    bundle_line = [ln for ln in broken2.splitlines() if "BIGGEST BUNDLE:" in ln]
+    assert bundle_line, broken2[-300:]
+    assert "NOT KNOWN" in bundle_line[0], bundle_line[0]
+    assert "RuntimeError" in bundle_line[0], bundle_line[0]
+    assert "no open row rides a plan item" not in bundle_line[0], bundle_line[0]
+
+    # ── 4. and the rest of the page still renders — one broken computation is not a blank forecast ─
+    assert "WHERE THIS IS GOING" in broken2 and "PACE," in broken2, broken2[:200]

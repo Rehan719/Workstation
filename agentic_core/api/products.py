@@ -819,7 +819,11 @@ async def intelligence_insights() -> dict:
                           + (f" - {by_status_phrase}" if by_status_phrase else "")),
                 "detail": f"{_realm_phrase}. {total_outputs} deliverables generated.",
                 "score": min(1.0, 0.5 + len(projects) * 0.05),
-                "score_basis": ("salience weight: 0.5 rising 0.05 per active project (capped at 1.0) "
+                # W521 - the basis narrowed the population to a status, over len(projects), which
+                # counts every project whatever its status. The title had that same word removed
+                # for this reason in W506; the basis beside it kept it for fifteen rounds.
+                "score_basis": ("salience weight: 0.5 rising 0.05 per project of any status (capped "
+                                "at 1.0) "
                                 "— it scales with portfolio size, it does not measure the portfolio"),
             })
         if by_stage["concept"] > 0:
@@ -837,8 +841,16 @@ async def intelligence_insights() -> dict:
             insights.append({
                 "id": "i-3",
                 "type": "Advancement",
-                "title": f"{by_stage['prototype']} prototype(s) eligible for commercialisation proposal",
-                "detail": "Propose advancement via GovernanceHub to unlock the Commercialise stage.",
+                # W521 (FU-164, sweep S13.9) - the THIRD of C10's three claims, left behind when W506
+                # fixed the other two. The old title asserted a readiness for commercialisation that was
+                # derived from the prototype STAGE and nothing else: measured, no such check exists - there
+                # is no gate, score or approval a prototype passes, so the title asserted a test that never
+                # ran. Same defect as the readiness claim W506 removed from the insight above it, and the
+                # replaced wording is recorded in the commit rather than repeated here where a guard reads.
+                # The title names the stage.
+                "title": f"{by_stage['prototype']} project(s) at the prototype stage",
+                "detail": ("Propose advancement via GovernanceHub to unlock the Commercialise stage. "
+                           "No eligibility check has been performed - this counts the stage, not readiness."),
                 "score": 0.91,
                 "score_basis": "salience weight: a fixed constant for this insight type, not a measurement",
             })

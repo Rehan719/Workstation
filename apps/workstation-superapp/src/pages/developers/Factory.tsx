@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
+import { provenanceLine } from '../../lib/api';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Badge } from '@workstation/ui';
 import { Database, Plus, Settings, Play, Square, Download, Loader2, CheckCircle2, X, FileText } from 'lucide-react';
@@ -128,8 +129,16 @@ export const Factory: React.FC = () => {
     updateLine(id, { status: 'idle' });
   };
 
+  // W520 (FU-164) - THE LABEL LEAVES WITH THE TEXT. W506 taught this page to CAPTURE served_by and
+  // is_external from the done event, and the chip shows them - but the exported .md carried neither, so
+  // the artefact left the platform saying nothing about what composed it. A badge is not a label on the
+  // text: outside this page nobody can see it. The SHARED helper is used rather than a fourth local
+  // wording, because it already answers the two cases a local version would have to rediscover - a
+  // producer the run never recorded is reported as unknown rather than given the floor's name, and a
+  // run that served nothing is never described as composed by anything.
   const handleExport = (line: ProductionLine) => {
-    const content = `# ${line.name}\n**Type:** ${line.product_type}  |  **Domain:** ${line.domain}\n\n---\n\n${line.output}`;
+    const content = provenanceLine(line.served_by, line.is_external)
+      + `# ${line.name}\n**Type:** ${line.product_type}  |  **Domain:** ${line.domain}\n\n---\n\n${line.output}`;
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
