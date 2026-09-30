@@ -11,6 +11,7 @@ export const ConstitutionalUI: React.FC = () => {
   const [articles, setArticles] = useState<any[]>([]);
   // W495 (FU-126, S10.3) - the endpoint's own report: whether a canon is present, why not, and what
   // governs in its place. A missing canon is a state, not an occasion to show one invented article.
+  const [summary, setSummary] = useState<{ breach?: string[]; noMechanism?: string[]; note?: string }>({});
   const [canon, setCanon] = useState<{ canon_present?: boolean; canon_basis?: string;
     what_governs_instead?: string[]; categories_available?: string[] } | null>(null);
   const [gaas, setGaas] = useState<any>(null);
@@ -38,6 +39,9 @@ export const ConstitutionalUI: React.FC = () => {
         // the endpoint used to return a bare array; it now returns an object carrying the basis
         if (Array.isArray(data)) { setArticles(data); setCanon(null); return; }
         setArticles(Array.isArray(data?.articles) ? data.articles : []);
+        setSummary({ breach: data?.articles_recording_a_breach ?? [],
+                     noMechanism: data?.articles_naming_no_mechanism ?? [],
+                     note: data?.verification_note });
         setCanon(data ?? null);
       })
       .catch(() => { setArticles([]); setCanon(null); });
@@ -241,6 +245,23 @@ export const ConstitutionalUI: React.FC = () => {
             <AnimatePresence mode="wait">
                {activeTab === 'articles' && (
                  <motion.div key="articles" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                    {/* W515 (FU-295) - Article 33 says this document names its own unmet articles, so a
+                        reader must see that without diffing every card. A zero here is stated as a zero, never
+                        as compliance: when no canon is present these lists are empty for that reason. */}
+                    {articles.length > 0 && (
+                      <div className="mb-8 p-6 rounded-3xl bg-slate-950/60 border border-slate-900 text-[11px] font-bold">
+                        <span className="text-slate-400">{articles.length} articles · </span>
+                        {(summary.breach?.length ?? 0) > 0 ? (
+                          <span className="text-vital">{summary.breach!.length} record their own breach (Art. {summary.breach!.join(', ')})</span>
+                        ) : (
+                          <span className="text-slate-500">none records a breach</span>
+                        )}
+                        {(summary.noMechanism?.length ?? 0) > 0 && (
+                          <span className="text-amber-500/80"> · {summary.noMechanism!.length} name no verification mechanism (Art. {summary.noMechanism!.join(', ')})</span>
+                        )}
+                        {summary.note && <span className="block mt-2 text-slate-600 font-medium">{summary.note}</span>}
+                      </div>
+                    )}
                     {filtered.map((art, i) => (
                       <div key={art.id} className="p-10 rounded-[2.5rem] bg-slate-950/80 border border-slate-900 group hover:border-aura/30 transition-all">
                          <div className="flex justify-between items-center mb-6">
@@ -251,6 +272,25 @@ export const ConstitutionalUI: React.FC = () => {
                          </div>
                          <h3 className="text-3xl font-black mb-4 text-white uppercase tracking-tight">{art.title}</h3>
                          <p className="text-lg text-slate-400 font-bold leading-relaxed">{art.content}</p>
+                         {/* W515 (FU-295) - an article without its verification mechanism cannot be audited,
+                             and a governance page that lists rules without them is the defect the document
+                             exists to remove. `verified` is null (never an empty string) when the document
+                             names no mechanism, and that case is labelled rather than left blank. */}
+                         {art.verified ? (
+                           <p className="mt-6 text-[11px] font-bold text-slate-500 leading-relaxed">
+                             <span className="text-aura uppercase tracking-widest">Verified by </span>{art.verified}
+                           </p>
+                         ) : (
+                           <p className="mt-6 text-[11px] font-bold text-amber-500/80 leading-relaxed">
+                             This article names no verification mechanism — it is a statement, not a checkable rule.
+                           </p>
+                         )}
+                         {art.unmet && (
+                           <p className="mt-3 text-[11px] font-black text-vital leading-relaxed">
+                             <span className="uppercase tracking-widest">Unmet — </span>
+                             {art.unmet_reason || 'this article records its own breach and states no reason'}
+                           </p>
+                         )}
                       </div>
                     ))}
                  </motion.div>

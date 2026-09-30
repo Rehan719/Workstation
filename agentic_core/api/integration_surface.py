@@ -148,9 +148,34 @@ async def v154_constitution_articles():
             except Exception:
                 continue
             import re
-            for m in re.finditer(r"(?im)^#{1,4}\s*(?:Article\s*)?(\d+[\w.]*)\s*[:\-—]?\s*(.+)$", text):
-                articles.append({"id": m.group(1), "title": m.group(2).strip()[:120],
-                                 "category": "CORE", "content": ""})
+            # FU-295 (Round B) - each article carries HOW IT IS VERIFIED, or the page shows a list of rules
+            # with no statement of what checks any of them. The document's own contract is that every article
+            # is checkable against this platform and names its mechanism on a `*Verified:*` line; an article
+            # that records its own breach says UNMET in its body. Both travel to the surface.
+            _heading = re.compile(r"(?im)^#{1,4}\s*(?:Article\s*)?(\d+[\w.]*)\s*[:\-—]?\s*(.+)$")
+            _matches = list(_heading.finditer(text))
+            for _i, m in enumerate(_matches):
+                _body = text[m.end():(_matches[_i + 1].start() if _i + 1 < len(_matches) else len(text))]
+                _v = re.search(r"(?im)^\*?Verified:\*?\s*(.+?)\s*$", _body)
+                articles.append({
+                    "id": m.group(1),
+                    "title": m.group(2).strip()[:120],
+                    "category": "CORE",
+                    "content": "",
+                    # None, not "", when the document states no mechanism: an article whose verification is
+                    # unstated must not read as one that is verified by nothing in particular.
+                    "verified": (_v.group(1).strip()[:400] if _v else None),
+                    "verified_basis": ("named in the article" if _v else
+                                       "THIS ARTICLE NAMES NO VERIFICATION MECHANISM - it is a statement, not "
+                                       "a checkable rule, and should be given one or removed"),
+                    # a FIELD, never a substring of prose. A substring test returned two false
+                    # positives (an article citing the MET/UNMET vocabulary, and the article that
+                    # DISCUSSES the unmet ones) and missed a third that said "NOT BUILT" instead.
+                    "unmet": bool(re.search(r"(?im)^\*?Status:\*?\s*UNMET\b", _body)),
+                    "unmet_reason": (_u.group(1).strip()[:300]
+                                     if (_u := re.search(r"(?im)^\*?Status:\*?\s*UNMET\b[\s\u2014-]*(.+?)\s*$",
+                                                         _body)) else None),
+                })
             if articles:
                 break
     if not articles:
@@ -185,9 +210,28 @@ async def v154_constitution_articles():
                 "the gaas.v5 constitutional interceptor (/api/v1/gaas) - the runtime intent gate",
             ],
             "categories_available": [],
+            # W515 pre-flight - these three are carried on BOTH branches. They used to appear only when a
+            # canon was present, so a reader indexing them got undefined precisely when none was, which is
+            # when things are already wrong. An empty list here means "no articles to report on", not
+            # "no articles have a problem".
+            "articles_recording_a_breach": [],
+            "articles_naming_no_mechanism": [],
+            "verification_note": ("no canon is present, so there is nothing to verify and these lists are "
+                                  "empty for that reason rather than because every article passed"),
         }
-    return {"articles": articles[:200], "canon_present": True,
-            "canon_basis": f"parsed {len(articles)} article heading(s) from the canonical markdown",
+    _shown = articles[:200]
+    _unverified = [a["id"] for a in _shown if not a.get("verified")]
+    _unmet = [a["id"] for a in _shown if a.get("unmet")]
+    return {"articles": _shown, "canon_present": True,
+            "canon_basis": (f"parsed {len(articles)} article heading(s) from the canonical markdown"
+                            + (f"; SHOWING {len(_shown)} - the rest are truncated by a cap and are NOT absent"
+                               if len(articles) > len(_shown) else "")),
+            # a constitution that cannot report its own breaches is a claim, not a governance instrument
+            "articles_recording_a_breach": _unmet,
+            "articles_naming_no_mechanism": _unverified,
+            "verification_note": ("every article should name how it is checked. The ids listed in "
+                                  "articles_naming_no_mechanism do not, and that is a gap in the document "
+                                  "rather than evidence that the platform complies"),
             "what_governs_instead": [],
             "categories_available": sorted({a.get("category") for a in articles if a.get("category")})}
 

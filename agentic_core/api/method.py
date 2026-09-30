@@ -716,8 +716,7 @@ def screen_for_defect_shapes(paths: List[str], only: Optional[List[str]] = None)
         "what_a_candidate_is": ("a shape occurring at a line, NOT a defect. `max(` over a collection is also "
                                "how a correct maximum is written. Each candidate is adjudicated against the "
                                "class's own exclusions, and a defended candidate is recorded as defended "
-                               "rather than deleted - eleven of seventy were defended in this repo's own "
-                               "fabrication sweep (M-VERIF-12)."),
+                               "rather than deleted \u2014 " + _defended_share() + " (M-VERIF-12)."),
         "what_no_candidate_is_not": ("finding no candidate of a shape is not a statement that the class is "
                                      "absent. Three of the six classes are not screenable at all, and the "
                                      "screened three are screened only in the paths listed above."),
@@ -741,6 +740,27 @@ async def get_defect_classes(user: dict | None = Depends(get_current_user)):
         "screen_with": "POST /api/v1/method/screen",
     }
 
+
+
+def _defended_share() -> str:
+    """The proposed/defended counts, READ FROM THE LEDGER at call time.
+
+    FU-305 (W515) — this sentence used to carry the two numbers as literals, nine lines below a figure the
+    same dict computes with len(). A count stated in prose is not a count: it does not move when the thing it
+    describes moves. It is parsed from the ledger's own header instead, and when that cannot be parsed the
+    answer says so rather than falling back to the literals this change removed.
+    """
+    try:
+        text = (_repo_root() / "docs/FABRICATION_LEDGER.md").read_text(encoding="utf-8")
+    except Exception as exc:                                  # noqa: BLE001 — said, never substituted
+        return f"the defended share is NOT ASSESSABLE: the ledger could not be read ({exc.__class__.__name__})"
+    m = re.search(r"(\d+)\s+proposed,\s*(\d+)\s+successfully defended", text)
+    if not m:
+        return ("the defended share is NOT ASSESSABLE: docs/FABRICATION_LEDGER.md holds no parseable "
+                "'N proposed, M successfully defended' header")
+    proposed, defended = int(m.group(1)), int(m.group(2))
+    return (f"{defended} of {proposed} proposals were defended on exactly these grounds in this repository's "
+            f"own fabrication sweep, read live from docs/FABRICATION_LEDGER.md")
 
 @router.post("/screen")
 async def screen_a_change(req: ScreenRequest, user: dict | None = Depends(get_current_user)):

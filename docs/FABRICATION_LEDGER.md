@@ -7,6 +7,8 @@ pass: **70 proposed, 11 successfully defended, 63 surviving**.
 This ledger exists so the set is not lost between sessions. Items are fixed top-down by
 REACHABILITY — what a user actually sees comes first. `reach` is quoted from the audit.
 
+**The defended proposals were never recorded individually, and cannot be recovered** (measured W515). The header above counts them; this document lists only the surviving findings. So a re-run of the same sweep will re-propose them and an operator will re-adjudicate settled cases. What IS inheritable is the grounds below — M-VERIF-12 holds that an exclusion list is part of the instrument, and the grounds are the instrument's exclusion list even though the instances are gone. The counts in the header are read live by `GET /api/v1/method/screen`, so they are not restated anywhere else.
+
 **Not in scope / already defended:** configuration constants, clearly-labelled fallbacks, test
 fixtures, `_archive/**`, honest empty states, and prompt/example text.
 

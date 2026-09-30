@@ -913,6 +913,15 @@
       "apply": "The transformation cycle carries a commitment; the session's variance feeds the next capacity measurement. Until FU-313 lands, the commitment lives in the generated plan and the variance in the night report, and both say they are not yet held by the platform.",
       "enforced_by": null,
       "why_not_enforced": "the field does not exist yet; FU-313 is the build, and the guard belongs with it"
+    },
+    {
+      "id": "M-SESS-11",
+      "group": "session",
+      "rule": "Nothing heavy runs beside the suite. Not a second suite, and not an agent fleet: the suite is a wall-clock instrument and contention makes its timing-sensitive tests lie.",
+      "defect": "W515: an adversarial verification workflow - 48 agents, 741 tool uses, 3.5M subagent tokens - was launched on the same machine as a running full suite. The suite took 1h48m34s against its measured 53m20s, a 2.04x slowdown, and returned RED on exactly two tests, both timing or process sensitive: test_store_lock_serialises_across_processes and test_cross_tenant_isolation_under_auth. Neither was in the round's blast radius (the round touched vbs/quality.py, compliance/ethical_engine.py, docs and the register). Re-run in isolation on a quiet machine both passed in 81s. So the round's only red was self-inflicted by the session's own concurrency, and an hour of verification had to be paid twice. The existing rule covered 'never two pytest suites at once' because two suites corrupt shared stores; it did not cover a fleet, whose damage is to TIMING rather than to data, and which therefore looks like a real defect instead of an obvious collision.",
+      "apply": "Before starting a full suite, confirm no workflow, refuter fleet, blind sweep or other multi-process work is running, and start none until it lands. If a suite returns red on a timing or process sensitive test while other work was running, the FIRST diagnosis step is to re-run those tests alone on a quiet machine - and the outcome of that re-run does not authorise a commit, because a passing subset is a hypothesis and the full suite is the verdict. Re-run the full suite clean.",
+      "enforced_by": null,
+      "why_not_enforced": "NOT YET ENFORCED - a guard would have to observe sibling processes at suite start, which is ambient-environment observation and the M-VERIF-02 class. The honest mechanism is procedural: the round's own pre-flight asks the question, and the suite's wall-clock is compared against the measured constant in scripts/_session_measured.py, where a run materially slower than SUITE_H is evidence of contention rather than of a defect."
     }
   ],
   "mechanisms": [

@@ -503,8 +503,16 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     # W434 CORRECTION. The W422 comment claimed three of the seven "have no implementation at all
     # system-wide". That was taken from an audit summary and written here as fact without being
     # checked, and it is FALSE — the exact failure this module exists to prevent. Verified:
-    #   Endocrine        biomimicry/geospheric/regulator.py — a real PID regulator modulating
-    #                    metabolic parameters. Not a stub.
+    #   Endocrine        biomimicry/geospheric/regulator.py — NOT a PID regulator, and this line used
+    #                    to say it was. FU-307 (W515) measured the module: `integral_error` is assigned
+    #                    once in __init__ as zeros and never accumulated, so there is no integral term;
+    #                    `dt` occurs exactly once, on the line that computes it, and is never read, so
+    #                    there is no derivative term; and the corrective action returns a STRING, so
+    #                    nothing actuates. It is a threshold comparison. The file EXISTS and is not a
+    #                    stub — that much was true — but naming it a controller is the same class this
+    #                    correction was written to remove, committed by the correction itself. The
+    #                    LAYER_STATE table below had it right all along (`code_exists_unreached`), so
+    #                    one file contradicted itself for eighty rounds.
     #   Musculoskeletal  resource_fabric.py:799 names composable facilities that run real engines.
     #   Respiratory      molecular/triad_integration.py — the metabolic-respiratory core.
     #   Nervous          IS engaged on THIS path: the fire_signal below routes into the

@@ -5105,8 +5105,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W516",
       "note": "",
       "slot_source": "OWNER ruling 2026-09-28 on FU-266, which rode P2.10; the authoring half stays with the item the decision rode",
       "tier": 2
@@ -5283,8 +5283,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W516",
       "note": "",
       "slot_source": "rides the sweep item alongside FU-304",
       "tier": 3
@@ -5320,8 +5320,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W516",
       "note": "",
       "slot_source": "P2.4 owns the truth sweep; this is a truth defect on the layer-state surface",
       "tier": 1

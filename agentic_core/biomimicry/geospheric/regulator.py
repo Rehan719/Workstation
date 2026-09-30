@@ -7,7 +7,14 @@ logger = logging.getLogger(__name__)
 class HomeostaticRegulator:
     """
     ARTICLE 1051: Homeostatic Regulation Mandate (v135.0).
-    The "Endocrine System" of the Workstation. Modulates metabolic parameters via PID control.
+    The "Endocrine System" of the Workstation. Compares metabolic parameters against setpoints.
+
+    NOT PID CONTROL, and this docstring used to say it was (FU-307, W515). Measured on this file:
+    `integral_error` is assigned once below as a dict of zeros and never accumulated, so there is no
+    integral term; `dt` is computed in regulate() and never read, so there is no derivative term; and
+    _compute_corrective_action returns a STRING, so nothing actuates. What this class does is a
+    proportional threshold comparison that NAMES an action. Nothing calls it either - the platform's
+    LAYER_STATE table records this layer as code_exists_unreached.
     """
     def __init__(self):
         self.setpoints = {
@@ -26,7 +33,11 @@ class HomeostaticRegulator:
                 self.current_state[k] = v
 
     def regulate(self) -> Dict[str, str]:
-        """Performs PID regulation and returns a list of corrective actions."""
+        """Compares each parameter against its setpoint and NAMES a corrective action as a string.
+
+        It does not perform PID regulation (FU-307): no integral accumulates, `dt` below is computed
+        and discarded, and nothing here actuates what it names.
+        """
         now = time.time()
         dt = now - self.last_check
         self.last_check = now

@@ -28128,3 +28128,63 @@ def test_w515_floor_served_coverage_never_reaches_the_ethical_screen():
     assert "quality: pass" in model_reason, model_reason
     # and the overall verdict must not read as cleared on floor-served content
     assert "quality: pass" not in floor_reason, floor_reason
+
+
+def test_w515_the_constitution_names_how_each_article_is_checked(client):
+    """FU-295 - 33 articles, each naming its verification mechanism, and the unmet flag read from a FIELD.
+
+    A governance surface listing rules with no statement of what checks them cannot be audited, which is the
+    defect the document exists to remove - so the parser carries each article's mechanism, and an article that
+    names none is reported as naming none rather than passing silently.
+    """
+    d = client.get("/api/v154/constitution/articles").json()
+    assert d["canon_present"] is True, d.get("canon_basis")
+    arts = d["articles"]
+    assert len(arts) >= 20, f"the Owner ruled for 20-40 articles; got {len(arts)}"
+
+    # every article names its mechanism, and None is distinct from an empty string
+    missing = [a["id"] for a in arts if a.get("verified") in (None, "")]
+    assert d["articles_naming_no_mechanism"] == missing, (d["articles_naming_no_mechanism"], missing)
+    assert not missing, f"articles naming no verification mechanism: {missing}"
+
+    # the document must record its OWN breaches - a constitution that cannot is a claim, not an instrument
+    unmet = d["articles_recording_a_breach"]
+    assert unmet, "no article records a breach; a document that cannot report its own failures is a claim"
+    for a in arts:
+        if a["unmet"]:
+            assert a.get("unmet_reason"), (a["id"], "flagged unmet with no reason")
+
+    # THE REGRESSION THIS ROUND CAUGHT AND FIXED: the flag comes from a Status FIELD, not from prose.
+    # An article whose body merely mentions the word - by citing the three-state vocabulary, or by
+    # discussing which articles are unmet - must NOT be flagged.
+    import re as _r
+    from pathlib import Path as _P
+    doc = (_P(__file__).resolve().parents[1] /
+           "agentic_core/constitution/CONSTITUTION_canonical.md").read_text(encoding="utf-8")
+    heads = list(_r.finditer(r"(?im)^#{1,4}\s*(?:Article\s*)?(\d+[\w.]*)\s*[:\-\u2014]?\s*(.+)$", doc))
+    mentions_only = []
+    for i, m in enumerate(heads):
+        body = doc[m.end():(heads[i + 1].start() if i + 1 < len(heads) else len(doc))]
+        says_status = _r.search(r"(?im)^\*?Status:\*?\s*UNMET\b", body)
+        if ("UNMET" in body.upper()) and not says_status:
+            mentions_only.append(m.group(1))
+    assert mentions_only, ("no article merely MENTIONS the word, so this leg proves nothing - if the document "
+                           "changed, re-point it at an article that cites the vocabulary")
+    for aid in mentions_only:
+        assert aid not in unmet, (aid, "flagged as a breach because its PROSE mentions the word; the flag must "
+                                       "come from the Status field")
+
+
+def test_w515_the_constitution_endpoint_still_refuses_when_no_canon_is_present(client, tmp_path, monkeypatch):
+    """The honest absence must survive the arrival of a real document.
+
+    The canon_present:false branch names what governs instead and refuses to invent an article. Now that a real
+    document exists nobody reads that branch, which is exactly when it rots - so it is DRIVEN here by resolving
+    the endpoint's relative candidate paths against an empty directory. The real document is not touched.
+    """
+    monkeypatch.chdir(tmp_path)
+    d = client.get("/api/v154/constitution/articles").json()
+    assert d["canon_present"] is False, d.get("canon_basis")
+    assert d["articles"] == [], d["articles"]
+    assert d.get("canon_basis"), "an absence must state its basis"
+    assert d.get("what_governs_instead"), "an absence must name what governs instead"
