@@ -332,8 +332,23 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     # the PRECOMPUTED QMS figures into the Ethical engine (no circular call back into this gate).
     try:
         from agentic_core.api.compliance import screen_compliance
-        screen = screen_compliance(content or "", delivery_metrics={
-            "delivery_coverage": coverage, "stub_found": stub})
+        # FU-160 (W515) — a figure this gate has declared unassessable is NOT threaded into the screen.
+        # `_floor` means the deterministic floor produced every part of this content, and
+        # NOT_ASSESSABLE_BASIS says why neither figure can speak for it: the floor emits the requested
+        # headings, so coverage is 1.0 by construction, and the stub regex never matches its vocabulary.
+        # Sending them anyway produced a `quality: pass` carrying a coverage percentage on a delivery whose
+        # own record said the gate could not run. The REASON travels instead of the numbers, and the basis
+        # is the imported constant rather than a second copy of the sentence.
+        # WHO READS THIS KEY (the pre-flight asks, and the answer is narrow): only
+        # compliance/ethical_engine.py, and NO page. That is deliberate and worth stating, because it bounds
+        # what this fix claims. The compliance layer flattens each verdict to framework/status/reason and
+        # discards the inner dimensions, and W483 had already removed the quality dimension from the ethical
+        # OVERALL - so the framework-level status a page renders is unchanged either way. What this corrects is
+        # the DCMS-sealed quality record and the API payload, which board packs and exports consume. It does
+        # not change a pixel, and claiming otherwise would be the badge-in-the-DOM error inverted.
+        _metrics = ({"coverage_not_assessable": NOT_ASSESSABLE_BASIS} if _floor else
+                    {"delivery_coverage": coverage, "stub_found": stub})
+        screen = screen_compliance(content or "", delivery_metrics=_metrics)
         # W483 (R1.1) — coverage_gaps and basis were dropped here, so every downstream reader (the
         # Deliverables chip, the board pack, the sealed record) saw an overall with no way to know
         # which frameworks had actually read the subject. They travel with the verdict now.

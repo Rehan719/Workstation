@@ -116,7 +116,21 @@ def evaluate_ethics(text: str,
                          "environmentally sound."))
 
     # quality — ONLY from precomputed metrics; never fabricated
-    if delivery_metrics and "delivery_coverage" in delivery_metrics:
+    #
+    # FU-160 (W515) — the NOT-ASSESSABLE state comes FIRST, because the caller may hold figures it has
+    # already declared meaningless. assure_delivery computes coverage and stub for floor-served content too,
+    # where its own basis says coverage cannot fail by construction and the stub regex never matches the
+    # floor's vocabulary. Threaded in regardless, those produced `quality: pass - QMS delivery coverage 1.00`
+    # over a figure the gate had declared unassessable, labelled as a measurement.
+    #
+    # Note what this branch does NOT do: it does not read a None coverage as zero. float(None or 0.0) is 0.0,
+    # so accepting the key with a null value would report a LOW-COVERAGE REVIEW - a fabricated failure
+    # replacing a fabricated pass. The caller therefore withholds the figures and sends the reason instead.
+    if delivery_metrics and delivery_metrics.get("coverage_not_assessable"):
+        dims.append(_dim("quality", "not_assessed",
+                         str(delivery_metrics["coverage_not_assessable"]),
+                         coverage="not_assessable"))
+    elif delivery_metrics and "delivery_coverage" in delivery_metrics:
         cov = float(delivery_metrics.get("delivery_coverage") or 0.0)
         stub = bool(delivery_metrics.get("stub_found"))
         if stub:

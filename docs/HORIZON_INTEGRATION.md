@@ -213,10 +213,17 @@ production deploy and faith-content policy are Owner-gated and are not in any ti
 
 ---
 
-## 7 · What the Owner must decide before parts of this can be built
+## 7 · The four Owner decisions — ALL FOUR ARE RULED
 
-These are design gaps, not engineering gaps. Each blocks the item beside it; the rest of Horizon
-proceeds without them.
+These were design gaps, not engineering gaps. **All four have since been ruled, and nothing in
+P2.11–P2.16 is blocked on the Owner any more** (FU-267 ruled 2026-09-27; FU-268, FU-269 and FU-270 ruled
+2026-09-28). The rulings are recorded verbatim in `docs/FABLE_DELIVERY_PROMPT.md` beside P2.11 and are
+constitution, not preference: a later round may not quietly widen the inbox, invent a route, or present an
+absent list as a filled one.
+
+Each decision is kept below with its question intact, because the question is what the ruling answers.
+**The `Blocks:` lines below are HISTORICAL** — they record what was blocked before the ruling, not what is
+blocked now.
 
 1. **The node/station taxonomy.** The brief introduces a 0–9 "cosmic blueprint" and 25 "spiritual
    stations". Neither is in this repo's canon. The canon's closest structure — the 99-aspect Fitrah
@@ -224,15 +231,31 @@ proceeds without them.
    needed: (a) ratify a taxonomy as canon, to be used only as user-chosen labels and reflection prompts;
    (b) keep Horizon taxonomy-free (domain + stakes only); (c) defer. **Blocks:** the station field and
    any Suitcase virtue vocabulary. **Default if undecided: (b).**
+   → **RULED (FU-267, 2026-09-27): (b) — Horizon stays TAXONOMY-FREE**, domain and stakes only. This
+   governs P2.11 and P2.15 whenever they are taken.
 2. **May the platform read the four desktop folders at all?** They are outside the repo, on OneDrive,
    and one of them contains a credentials file. Decision needed: read-only indexing with the exclusion
    rules of §2, per-path, plus whether the index may be committed (proposal: **no** — the index is local
    data, never committed, never sent anywhere). **Blocks:** P2.13.
+   → **RULED (FU-268, 2026-09-28): AN EXPLICIT INBOX ONLY.** The platform indexes only what the Owner
+   copies into a named inbox folder; the four archives themselves are not read. One of them holds a `.env`,
+   and a narrower claim that is true beats a wider one resting on a skip list being complete. P2.13's
+   coverage claim is over the inbox, and says so.
 3. **Is a docx/pdf extractor to be installed?** Without one, the book folder and 4 of 9 `p3` files
    contribute nothing, and Horizon will say so. Installing `pypdf` / `python-docx` is a dependency
    decision. **Blocks:** any claim of coverage over those folders.
+   → **RULED (FU-269, 2026-09-28): (a) — both are added to requirements.** `_pdf_docx_extractor()`
+   (`agentic_core/ingestion/api.py`) already probes for them, so extraction begins working with no further
+   code. **HALF-DELIVERED as measured in W514:** `python-docx` is in `requirements.txt` and **`pypdf` is
+   absent entirely**, and neither imports in the local environment. Until the install lands a `.docx`/`.pdf`
+   still answers NOT_EXTRACTED with its reason — which is the honest state the ruling said to keep, so this
+   is a completeness gap and not a false claim.
 4. **The distress-route list.** Real, current human routes for the Owner's jurisdiction, and who reviews
    them. The platform must not invent them. **Blocks:** guardrail 3 shipping as more than a refusal.
+   → **RULED (FU-270, 2026-09-28): SHIP THE REFUSAL, LEAVE THE LIST UNFILLED.** The gate refuses and
+   escalates now; the routes render as NOT SUPPLIED — never a default, never a placeholder, never a
+   plausible-looking number a person in distress might dial. **P2.12 closes on its refusal paths** with the
+   unfilled field visible on the surface; the list is supplied later with its reviewer.
 
 ---
 

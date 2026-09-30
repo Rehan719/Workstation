@@ -28070,3 +28070,61 @@ def test_w514_the_method_documents_carry_no_measured_figures():
     assert len(defs) == 1, ("the suite constant must be defined exactly once (in _session_measured.py) and "
                             "loaded elsewhere; found: %r" % defs)
     assert defs[0].startswith("_session_measured"), defs
+
+
+def test_w515_floor_served_coverage_never_reaches_the_ethical_screen():
+    """FU-160 — a figure the QMS declared unassessable must not become an ethical verdict.
+
+    quality.py computes `_floor` for floor-served content, and NOT_ASSESSABLE_BASIS states that coverage cannot
+    fail by construction there and the stub regex never matches the floor's vocabulary. Those same two figures
+    were threaded into screen_compliance REGARDLESS of `_floor`, so the ethical record reported a quality PASS
+    carrying a coverage percentage over a delivery its own gate could not assess.
+
+    METAMORPHIC PAIR: identical content, only the producer varies. One leg alone would not do — a guard that
+    checked only the refusal would stay green if the fix had disabled the dimension outright, which is the
+    M-VERIF-02 shape where a check cannot tell a correct refusal from a broken feature.
+    """
+    import asyncio as _aio
+    from agentic_core.compliance.ethical_engine import evaluate_ethics as _ee
+    from agentic_core.vbs.quality import NOT_ASSESSABLE_BASIS as _BASIS, assure_delivery as _ad
+
+    subject = "A stated method with sections and enough length to be assessable. " * 20
+
+    def _q(metrics):
+        d = next(x for x in _ee(subject, metrics)["dimensions"] if x["dimension"] == "quality")
+        return d
+
+    # ── level 1: the reader, where a coverage figure would leak ────────────────────────────────────────
+    withheld = _q({"coverage_not_assessable": _BASIS})
+    assert withheld["status"] == "not_assessed", withheld
+    assert withheld["coverage"] == "not_assessable", withheld
+    # the defect was a FIGURE reaching this reason. A digit test cannot be satisfied by rephrasing, and at
+    # THIS level it is real: the metrics branch does put a number here.
+    assert not any(c.isdigit() for c in withheld["reason"]), withheld["reason"]
+
+    supplied = _q({"delivery_coverage": 1.0, "stub_found": False})
+    assert supplied["coverage"] == "metrics", supplied
+    assert supplied["status"] == "pass", supplied
+    assert any(c.isdigit() for c in supplied["reason"]), (
+        "the metrics branch must still report its figure, or the digit test above proves nothing")
+    # the two legs must DIFFER: the fix withheld a figure, it did not disable the dimension
+    assert (withheld["status"], withheld["coverage"]) != (supplied["status"], supplied["coverage"])
+
+    # ── level 2: the writer's fix reaching a reader, end to end ────────────────────────────────────────
+    sections = ["Overview", "Method", "Evidence", "Risks"]
+    content = ("Overview\n" + ("Long enough to clear the substantive threshold. " * 12) +
+               "\nMethod\nm\nEvidence\ne\nRisks\nr\n")
+
+    def _ethical_reason(served_by):
+        out = _aio.run(_ad(content, sections, label="w515", served_by=served_by))
+        q = out["quality"]
+        v = next(x for x in (q["compliance"]["verdicts"] or []) if x["framework"] == "ethical")
+        return q["not_assessable"], v["reason"]
+
+    floor_flag, floor_reason = _ethical_reason("native")
+    model_flag, model_reason = _ethical_reason("gpt-4o-mini")
+    assert floor_flag is True and model_flag is False, (floor_flag, model_flag)
+    assert "quality: not_assessed" in floor_reason, floor_reason
+    assert "quality: pass" in model_reason, model_reason
+    # and the overall verdict must not read as cleared on floor-served content
+    assert "quality: pass" not in floor_reason, floor_reason
