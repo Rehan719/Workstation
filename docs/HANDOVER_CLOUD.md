@@ -37,7 +37,11 @@ Five modified files: `docs/FABLE_DELIVERY_PROMPT.md` (adds P3.26 TURNOVER, P3.27
 `docs/FOLLOWUPS.json`, `docs/WORKSTATION_IDBO_LIVING_PLAN.md`, `docs/WORKSTATION_IDBO_WHOLE_VISION.md`
 (§8 `Recorded W512`, §16 pointer, §18 six Owner decisions), `integration_tests/test_mvp_spine.py` (two guards).
 
-**ROUND A (W515) IS LANDED — `adcf22aa`, 491 passed / 15 skipped in 52m33s, `PYTEST_EXIT=0` captured explicitly.** The tree is clean. Closed FU-160 (the floor-served coverage figure no longer becomes an ethical verdict, two-leg metamorphic guard driven red on both legs), FU-302, FU-304 and FU-071/072/187/228 on measurement; registered FU-313 to FU-318; and removed the two stale Horizon statements that told a reader five items were Owner-blocked when all four decisions had been ruled.
+**ROUND B (W516) IS LANDED — `eb14f3b9`, 493 passed / 15 skipped in 51m24s, `PYTEST_EXIT=0` captured explicitly; pre-flight 0 leads over 11 files; `tsc --noEmit` clean.** The tree is clean. Closes FU-295 (a 33-article constitution, each article naming how it is checked, three recording their own breach, and the page showing both), FU-305 (the defended count is read live from the ledger, and the ledger states that the eleven instances were never written down and cannot be recovered) and FU-307 (nothing now claims the geospheric regulator is PID — fixed in all three writers).
+
+**See `docs/NIGHT_REPORT.md` for the night's account**, including the two findings that corrected this plan's own headline number and the hour lost to running an agent fleet beside a suite (M-SESS-11).
+
+**Round A (W515) landed earlier — `adcf22aa`, 491 passed / 15 skipped in 52m33s.** The tree is clean. Closed FU-160 (the floor-served coverage figure no longer becomes an ethical verdict, two-leg metamorphic guard driven red on both legs), FU-302, FU-304 and FU-071/072/187/228 on measurement; registered FU-313 to FU-318; and removed the two stale Horizon statements that told a reader five items were Owner-blocked when all four decisions had been ruled.
 
 **A note on that round's cost.** Its first full run came back RED in 1h48m34s against a measured 53m20s, on two timing-sensitive tests outside the diff's blast radius, because a 48-agent verification workflow was running on the same machine. Re-run alone they passed in 81s; the clean full re-run gave 491 passed. The subset passing did not authorise the commit. Prepared as M-SESS-11 for the register: nothing heavy runs beside the suite.
 
