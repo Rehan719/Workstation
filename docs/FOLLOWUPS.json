@@ -5419,6 +5419,26 @@
       "note": "",
       "slot_source": "P3.27 clause (6) is exactly this row's deletion half — the dead fitness stub returning 1.0 for every individual. Its lineage half is P3.26 clause (1).",
       "tier": 3
+    },
+    {
+      "id": "FU-313",
+      "title": "The transformation cycle and the CCA record cannot hold a COMMITMENT, so a promise has no variance",
+      "why": "Measured W514 by running the night's Round A through the real chain in an isolated store. What WORKS: POST /api/v1/cca/submit returns cca-48d92679ae at tier HIGH (per the FU-014 ruling that code_change is HIGH) with a real method_check citing lesson ids, scope_appraisal, health_gate and immune_threat_at_submit; the change appears in GET /api/v1/cca/queue - the queue the growing tip reads - carrying awaiting_board_ratification and board_ratification; POST /api/v1/transformation/orchestrate returns a method_check with MET/basis/checkable_from per requirement, an honestly scoped governance verdict ('intent + domain only ... the delivery content was NOT screened'), outcome_not_recorded, and the live products_services_catalogue. THE GAP: committed_rounds and confidence passed to /transformation/orchestrate were SILENTLY DROPPED (the response model strips undeclared keys), and neither the CCA record nor the queue nor GET /cca/{id} holds any commitment, confidence, variance, budget or capacity field. So Workstation can govern a change but cannot record what scope was promised, at what confidence, against what capacity, nor what the variance turned out to be - which is the one thing an entity working unattended between Owner reviews must carry. docs/CAPACITY_FACULTY_MODEL.md models the integration and notes the invariant it must not break: _prospect() refuses to attach probabilities to possibilities, and that refusal is correct for a branch about someone's DECISION while a measured self-throughput figure is a different class of claim.",
+      "source": "W514 dogfood run",
+      "found": "2026-09-30",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py",
+        "agentic_core/api/change_control.py",
+        "scripts/plan_night.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "reach": "internal"
     }
   ],
   "routes": [

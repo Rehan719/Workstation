@@ -65,8 +65,11 @@ rounds, never dates. This measures wall-clock against a held resource. Two quest
 restating the other — the same separation already enforced between `/method/forecast` and
 `/api/v1/plan/followups`.
 
-### 3.2 The Transformation Office — the organ that produces the bounded commitment
-The Office is the growing tip's planning organ, and `plan_night.py` is already the shape of what it should do
+### 3.2 The Business Transformation Office (BTO) — the organ that produces the bounded commitment
+**Verified against the canon (§8): the BTO "coordinates the whole; continually improves efficiency,
+effectiveness, performance and capability" and runs Build-to-Order AND the Products Catalogue.** That
+sentence is verbatim the purpose of this mechanism, so it belongs here by the canon's own words rather than
+by analogy. And `plan_night.py` is already the shape of what it should do
 per cycle: read live state, measure cost, simulate what fits, order candidates by value-over-duration, and
 **refuse to choose the work** — emitting candidates plus the rule rather than an asserted plan. Generalised, a
 transformation cycle gains a *commitment* with a confidence and a stated scope boundary, instead of an
@@ -149,3 +152,53 @@ faculty existing at all: the organism's own confident judgement was measurably w
 
 The second group is a change to how Workstation governs itself, which is precisely the class the plan reserves
 to the Owner. It is recorded here and parked, not proposed as settled.
+
+---
+
+## 8 · VERIFIED against `WORKSTATION_IDBO_WHOLE_VISION.md` — and my earlier chain was wrong
+
+I had written the chain as *VSB Entity → Business Transformation Office → Build-to-Order → catalogue → CCA →
+growing tip*. The Owner questioned it. It is wrong in three ways, and the canon states it twice (lines 101, 345):
+
+> **Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order → Change Control**
+
+1. **The VSB is the CONTAINER, not the first link.** Line 309–310: *"Enterprise/org layer: the VSB, AI CEO /
+   C-Suite / CoE / BTO, Capital Fund, Change Control, Products Catalogue, Build-to-Order."* The cascade begins at
+   **Chief** — the Owner's digital twin — then the Board, which my version omitted entirely.
+2. **The Products Catalogue is a PEER of Build-to-Order, not downstream of it.** Line 208: the BTO *"runs
+   Build-to-Order … + the Products Catalogue"*. Line 319: the fabric *"federates (does not duplicate) catalog /
+   BTO / products / studio / twin"*.
+3. **"Growing tip" does not appear in the canon** — zero occurrences. It is the Owner's term for the
+   BTO→Change-Control edge, and should not be built into a document as though it were canon.
+
+**A second cascade exists and matters more here** (line 343): *Sovereign Evolution Office introspects → AI CEO
+triage → C-Suite verdicts → CoE/BTO roadmap → Change Control*, on the circadian heartbeat. Two paths, both
+routed through the BTO, both terminating at Change Control.
+
+**BTO is Business Transformation Office in the code too**, so there is no naming collision — I wrongly inferred
+one from the `/api/v1/bto/*` route prefix. `sovereign_evolution.py:6`, `swarm.py:352` (*"Centres of Excellence →
+Business Transformation Office → Build-to-Order"*) and `resource_fabric.py:229` (*"the Business Transformation
+Office build-to-orders the delivery"*) all agree. Build-to-Order is what the BTO **does**.
+
+**And the Owner's instruction is already the canon's** (line 347): *"The organism delivers its own transformation
+through its own org: **dogfood is the design, not an afterthought**."*
+
+## 9 · The dogfood run — what already works, measured on a real isolated store
+
+| call | result |
+|---|---|
+| `POST /api/v1/cca/submit` | **200** → `cca-48d92679ae`, `impact_tier: HIGH` (matching the FU-014 ruling that `code_change` is HIGH), `status: submitted`, carrying `method_check`, `scope_appraisal`, `health_gate`, `immune_threat_at_submit` |
+| `GET /api/v1/cca/queue` | **200**, the change present, carrying `awaiting_board_ratification` and `board_ratification` — the Board tier genuinely reads it |
+| `GET /api/v1/cca/{id}` | **200** with `audit_trail`, `method_check`, `review_result` |
+| `POST /api/v1/transformation/orchestrate` | **200** with a `method_check` citing lesson ids and MET/basis/checkable_from per requirement, a governance verdict that states its own limit (*"intent + domain only … the delivery's content was NOT screened"*), `outcome_not_recorded`, and the live `products_services_catalogue` |
+| `GET /api/v1/method{,/appraise,/forecast,/handover}`, `/plan/followups`, `/catalog/products` | all **200** |
+
+**So the plan CAN run through Workstation today.** Governance, method check, catalogue, queue and Board
+ratification are real, not scaffolding.
+
+**The one measured gap — registered as FU-313.** `committed_rounds` and `confidence` passed to
+`/transformation/orchestrate` were **silently dropped** (a response model strips undeclared keys), and no
+`commitment` / `confidence` / `variance` / `budget` / `capacity` field exists in the CCA record, the queue, or
+`GET /cca/{id}`. Workstation can govern a change but **cannot record what scope was promised, at what confidence,
+against what capacity, nor what the variance turned out to be** — which is exactly what an entity working
+unattended between Owner reviews must carry, and exactly what this mechanism produces.
