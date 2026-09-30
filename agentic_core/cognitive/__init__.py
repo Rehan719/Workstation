@@ -27,6 +27,13 @@ _IMPLEMENTED = {
     EngineType.INKASHAF: ("agentic_core.cognitive.inkashaf_engine", "InkashafEngine"),
     EngineType.SAMAJH: ("agentic_core.cognitive.samajh_engine", "SamajhEngine"),
     EngineType.SOCH: ("agentic_core.cognitive.soch_engine", "SochEngine"),
+    # ── meta-regulative (P3.13). These COMPUTE — a Pareto frontier, a quorum counted from the signatures
+    #    supplied, and drift against a recorded baseline — or refuse with a stated basis. They are NOT in
+    #    the cascade: they are regulative, consumed by the clearance chain (P3.14), which is why
+    #    `engines_run` stays 6 on /cascade after this.
+    EngineType.TAWAZUN: ("agentic_core.cognitive.meta.tawazun_engine", "TawazunEngine"),
+    EngineType.NIYYAH: ("agentic_core.cognitive.meta.niyyah_engine", "NiyyahEngine"),
+    EngineType.TAFAKKUR: ("agentic_core.cognitive.meta.tafakkur_engine", "TafakkurEngine"),
 }
 
 #  One reason per TIER, because the four unbuilt tiers are in four different situations and a single
@@ -107,8 +114,12 @@ def register_all() -> Dict[str, Any]:
             f"{len(list(EngineType))} is what the ARCHITECTURE declares, not what works. Only the "
             f"{by_tier[EngineTier.FOUNDATIONAL.value]['registered']} foundational engines have modules, and "
             "each of those returns a fixed marker with confidence=None rather than computing"),
-        "what_registration_does_not_mean": ("a registered engine still returns a fixed marker with "
-                                            "confidence=None and a basis saying nothing computed it. "
-                                            "Registration makes the absence visible; it does not make an "
-                                            "engine compute (FU-275)"),
+        "what_registration_does_not_mean": ("registration is not computation, and the two registered tiers "
+                                            "differ: the six FOUNDATIONAL engines return a fixed marker with "
+                                            "confidence=None because they have no path to a model (FU-275), "
+                                            "while the three META engines (P3.13) genuinely compute their "
+                                            "named quantity - a Pareto frontier, a quorum counted from the "
+                                            "signatures supplied, drift against a recorded baseline - or "
+                                            "refuse with a stated basis. Neither reports a confidence, "
+                                            "because neither estimates"),
     }

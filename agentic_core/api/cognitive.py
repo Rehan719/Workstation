@@ -44,22 +44,26 @@ _ENGINE_REGISTRY = {
     "inkashaf":  {"name": "Inkashaf", "function": "Discovery, pattern recognition, insight generation", "layer": "foundational"},
     "samajh":    {"name": "Samajh", "function": "Deep comprehension and sense-making", "layer": "foundational"},
     "soch":      {"name": "Soch", "function": "Reflective thinking and deliberation", "layer": "foundational"},
-    # W489 — PLANNED, NOT YET BUILT. agentic_core/cognitive/meta/ holds only __init__.py; there is no
-    # niyyah, tafakkur or tawazun module, so no cascade can run them. They are REAL PLANNED WORK, not
+    # W524 (P3.13) — BUILT AND COMPUTING. agentic_core/cognitive/meta/ now holds all three modules, each
+    # computing its named quantity or refusing with a stated basis. They remain OUT of the cascade because
+    # they are regulative rather than analytic: the clearance chain consumes them (P3.14). So `engines_run`
+    # on /cascade stays SIX after this change, and that is not a stale number - bumping it to nine would
+    # report engines that did not run. The original W489 note is kept below because the reasoning it records
+    # about counting is still what protects that number. They are REAL PLANNED WORK, not
     # an abandoned claim: the delivery plan builds them under P3.13 ("The three meta-regulative
     # engines — Tawazun, Niyyah, Tafakkur — refusal by default"). P3.12 is the neighbouring item and
     # is NOT where they are built: it carries the CONTRACT that must accept their names (FU-224) and
     # the six foundational engines. They stay listed for that reason,
     # marked as planned, and are never counted among the engines that ran.
     "niyyah":    {"name": "Niyyah", "function": "Intention alignment and purpose scoring", "layer": "meta",
-                  "implemented": False, "status": "planned",
-                  "note": "planned — no engine module yet; the delivery plan builds it under P3.13"},
+                  "implemented": True, "status": "built-computes",
+                  "note": "built by P3.13: computes its named quantity or refuses with a basis. NOT in the cascade - regulative, consumed by the clearance chain"},
     "tafakkur":  {"name": "Tafakkur", "function": "Deep contemplation over complex problems", "layer": "meta",
-                  "implemented": False, "status": "planned",
-                  "note": "planned — no engine module yet; the delivery plan builds it under P3.13"},
+                  "implemented": True, "status": "built-computes",
+                  "note": "built by P3.13: computes its named quantity or refuses with a basis. NOT in the cascade - regulative, consumed by the clearance chain"},
     "tawazun":   {"name": "Tawazun", "function": "Balance and trade-off resolution", "layer": "meta",
-                  "implemented": False, "status": "planned",
-                  "note": "planned — no engine module yet; the delivery plan builds it under P3.13"},
+                  "implemented": True, "status": "built-computes",
+                  "note": "built by P3.13: computes its named quantity or refuses with a basis. NOT in the cascade - regulative, consumed by the clearance chain"},
 }
 for _e in _ENGINE_REGISTRY.values():
     _e.setdefault("implemented", True)
@@ -226,6 +230,10 @@ class SingleEngineRequest(BaseModel):
     engine_id: str
     input: Any
     domain: str = "general"
+    # W524 (P3.13) — ADDED, not repurposed. The meta engines take named inputs (objectives and candidates,
+    # signatures and a quorum, a baseline and a current state) and `input` already means six different
+    # things to the six cascade engines' six method signatures. A new need gets a new field.
+    context: dict = {}
 
 
 @router.post("/engine")
@@ -242,14 +250,52 @@ async def run_single_engine(req: SingleEngineRequest):
     # registry because the design names it and the delivery plan builds it under P3.13; a bare 404
     # ("not in cascade") told the caller nothing about which of those it was.
     if not _ENGINE_REGISTRY[eid].get("implemented", True):
-        return {"engine_id": eid, "status": "planned", "ran": False, "result": None,
-                "note": ("This engine is PLANNED, not yet built — no module exists, so nothing ran. "
-                         "The delivery plan builds the meta layer under P3.13; /cascade runs the six "
-                         "implemented engines only.")}
+        # W524 — NO LONGER REACHABLE as the table stands: all nine entries are implemented since P3.13
+        # built the meta tier. Kept because the table may regain an unbuilt entry (the auxiliary tier is
+        # P3.16, the MJM tier and the BME terms are later), and rewritten because it used to say the meta
+        # layer was unbuilt — a false message in a dead branch is a trap for whoever makes it live again.
+        return {"engine_id": eid, "status": "planned", "ran": False, "result": None, "answer": None,
+                "note": ("This engine is declared in the registry table and marked NOT implemented, so "
+                         "nothing ran. Nine of the architecture's twenty-three engines are declared here; "
+                         "the auxiliary tier is built by P3.16 and the BME terms by P3.17.")}
 
     engine_obj = getattr(_cascade, eid, None)
     if engine_obj is None:
-        raise HTTPException(status_code=404, detail=f"Engine '{eid}' not in cascade.")
+        # W524 (P3.13) — REGISTERED BUT NOT ON THE CASCADE. The meta engines compute and are registered,
+        # and they are deliberately absent from the cascade because they are regulative rather than
+        # analytic. Before this branch, marking them implemented made this route answer 404 for a built
+        # engine — worse than the planned response it replaced, because planned was at least true.
+        try:
+            from agentic_core.cognitive.registry import CognitiveEngineRegistry as _Reg
+            from agentic_core.cognitive.registry import EngineType as _ET
+            _eng = _Reg.get(_ET(eid))
+        except Exception as exc:                          # noqa: BLE001 — the reason is returned, not hidden
+            raise HTTPException(
+                status_code=404,
+                detail=(f"Engine '{eid}' is not on the cascade and could not be resolved from the "
+                        f"registry: {exc}"))
+        from agentic_core.consultation.interface import ConsultationRequest as _CReq
+        _res = await _eng.consult(_CReq(engine=eid, query=str(req.input),
+                                        domain=req.domain, context=req.context or {}))
+        return {
+            "engine_id": eid,
+            "status": "ran",
+            "ran": True,
+            "answer": _res.answer,
+            "result": _res.metadata,
+            # the provenance travels, as it does on every other output surface in this repository
+            "served_by": _res.served_by,
+            "is_external": _res.is_external,
+            "confidence": _res.confidence,
+            "confidence_basis": _res.confidence_basis,
+            "assessable": bool((_res.metadata or {}).get("assessable")),
+            "note": ("a registered engine that is not on the cascade ran through the registry and "
+                     "computed its named quantity, or refused with a stated basis"),
+            "not_on_the_cascade": (
+                "this engine is registered and it RAN, but it is not part of /cascade: the meta layer is "
+                "regulative and is consumed by the constitutional clearance chain, which is why "
+                "`engines_run` on /cascade is six rather than nine"),
+        }
 
     # Map engine → its primary method
     _METHOD_MAP = {
@@ -262,9 +308,12 @@ async def run_single_engine(req: SingleEngineRequest):
     }
 
     if eid not in _METHOD_MAP:
-        return {"engine_id": eid, "status": "planned", "ran": False,
-                "note": ("Meta engine — PLANNED, not yet built (no module). The delivery plan builds the "
-                         "meta layer under P3.13; /cascade runs the six implemented engines only.")}
+        # W524 — ALSO NO LONGER REACHABLE: a meta engine is caught one check earlier by the
+        # not-on-the-cascade branch, and every cascade engine has a method-map entry. Its old text called
+        # the meta layer unbuilt, which P3.13 made false. What its condition would now mean is stated.
+        return {"engine_id": eid, "status": "unmapped", "ran": False, "result": None, "answer": None,
+                "note": ("This engine is on the cascade but no method is mapped for it here, so nothing "
+                         "ran. That is a wiring gap in this route rather than a missing engine.")}
 
     method_name, arg1, arg2 = _METHOD_MAP[eid]
     method = getattr(engine_obj, method_name)
@@ -282,4 +331,10 @@ async def run_single_engine(req: SingleEngineRequest):
         "input": str(req.input)[:200],
         "result": result,
         "status": "complete",
+        # W524 — the four returns of this route disagreed about which keys exist, so a caller reading `ran`
+        # got undefined on this path. Every branch now carries ran, result, answer and note.
+        "ran": True,
+        "answer": None,
+        "note": ("a cascade engine ran its mapped method. It returns a fixed marker rather than computing "
+                 "(P3.12): the six foundational engines have no path to a model (FU-275)"),
     }

@@ -205,11 +205,15 @@ export const VSBSpawnStudio: React.FC = () => {
         </p>
         {/* W489 (sweep S2.0, C3) — the header claimed nine cognitive engines over a cascade that runs
             six, each returning a fixed marker, with MJM re-running the same six. The three meta engines
-            are planned work (P3.12), not a claim withdrawn — so the page names what runs today and what
-            is still to come, and the two cascade rows no longer carry a green tick for a literal. */}
+            were planned work then and were BUILT by P3.13 — they compute or refuse with a stated
+            basis. They are still not in this pipeline, because they are regulative and the spawn path
+            runs the cascade, so the page says what runs here rather than what exists. The two cascade
+            rows still carry no green tick for a literal. */}
         <p className="text-[11px] text-slate-600 font-bold mt-2 max-w-xl leading-relaxed" data-testid="spawn-pipeline-basis">
           The six engines return fixed markers rather than reading your challenge, and MJM re-runs the same six.
-          Three further meta engines (Niyyah, Tafakkur, Tawazun) are planned and do not run yet.
+          Three meta engines (Niyyah, Tafakkur, Tawazun) now compute — a quorum counted from real
+          signatures, drift against a recorded baseline, and a Pareto frontier — but this pipeline does
+          not call them: they regulate clearance, not spawning.
         </p>
       </header>
 

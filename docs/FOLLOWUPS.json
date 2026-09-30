@@ -4756,11 +4756,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.13",
+      "slot": "P3.20",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P3.12's ACCEPT is a DISJUNCTION - an engine may say assessable:false with a reason instead of computing - so a path to a model is NOT in P3.12's bar. Making the engines compute belongs with P3.13, which builds the meta engines"
+      "slot_source": "P3.13's ACCEPT is a disjunction (refuse OR compute) and the meta tier COMPUTES deterministically, so the bar is met without a model. FU-275 is the six foundational engines' missing model path, which is the native AI fabric's work (P3.20's tier registry and router), not this item's."
     },
     {
       "id": "FU-276",
@@ -5570,11 +5570,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.13",
+      "slot": "P3.16",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "Not in P3.13's bar: it is a CONSUMER defect. EngineRegistry9 calls engine.process() while every engine (now including the three meta engines) exposes consult(). The reader lives in the avatar/recirculation path, which P3.16 wires."
     },
     {
       "id": "FU-321",
@@ -5605,11 +5606,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.13",
+      "slot": "P3.16",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 1
+      "tier": 1,
+      "slot_source": "Not in P3.13's bar: it is a ROUTE's count, not an engine's verdict. W524 deliberately KEPT engines_run at 6 because the meta tier is regulative and not in the cascade; making that 6 computed rather than literal belongs with P3.16's recorded per-stage measurement."
     },
     {
       "id": "FU-323",
@@ -5760,7 +5762,7 @@
   ],
   "routes": [
     {
-      "slot": "P3.13",
+      "slot": "P3.16",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -5768,7 +5770,7 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "note": "handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
       "handed_from": "P3.12"
     },
     {
