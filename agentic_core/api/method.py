@@ -636,7 +636,13 @@ class ScreenRequest(BaseModel):
 # be FINDABLE, not to be conclusive: `max(` over a mapping is the ordinary way to write a correct maximum too.
 _SHAPES: Dict[str, List[tuple]] = {
     "D-SELECT": [
-        (r"\b(?:max|min)\s*\(", "a maximum or minimum taken over a collection"),
+        # FU-317 (W517) - a CLAMP is excluded by the class's own definition, not by taste. `max(0.0, x)`
+        # is a maximum over two SCALARS, which is not a selection over a collection; 106 of 224 candidates
+        # in agentic_core were clamps, so the screen spent more than half its report on shapes its own
+        # stated domain excludes. The negative lookahead drops a first argument that is a numeric literal.
+        (r"\b(?:max|min)\s*\(\s*(?!-?\d+(?:\.\d+)?\s*,)",
+         "a maximum or minimum taken over a collection (a clamp over a numeric literal is excluded: it is "
+         "a maximum over two scalars, which this class does not cover)"),
         (r"(?:sorted\s*\(|\.sort\s*\()[^\n]*\)\s*\[\s*0\s*\]", "a sort followed by taking the first"),
         (r"\.sort\s*\([^\n]*\)[^\n]*\[\s*0\s*\]", "an in-place sort then the first element"),
     ],

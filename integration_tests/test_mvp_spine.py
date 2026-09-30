@@ -28188,3 +28188,47 @@ def test_w515_the_constitution_endpoint_still_refuses_when_no_canon_is_present(c
     assert d["articles"] == [], d["articles"]
     assert d.get("canon_basis"), "an absence must state its basis"
     assert d.get("what_governs_instead"), "an absence must name what governs instead"
+
+
+def test_w517_the_select_screen_excludes_clamps_over_the_real_tree():
+    """FU-317 - D-SELECT declares its shape as a maximum taken over a COLLECTION, so a clamp is out of scope.
+
+    Measured before the fix: 224 candidates across agentic_core, of which 106 were numeric clamps - `max(0.0, x)`
+    is a maximum over two SCALARS. The screen spent more than half its report on shapes its own stated domain
+    excludes, and an instrument reporting noise as findings costs the attention the real ones need.
+
+    Asserted over the REAL corpus rather than a fixture: the screen resolves candidates against the repository
+    root and rejects paths outside it, and a property over the whole population is a stronger claim than one
+    hand-written example.
+
+    JUDGED PER OCCURRENCE, not per line. An earlier version of this guard searched each reported line for a
+    literal clamp and flagged eleven - all of them correct reports, because a line like
+    `text[max(0, a):min(len(text), b)]` holds TWO calls and the screen matched the legitimate one. A candidate
+    is an offender only when EVERY max/min on its line is a literal clamp.
+    """
+    import re as _re
+    from pathlib import Path as _P
+    from agentic_core.api.method import screen_for_defect_shapes
+
+    root = _P(__file__).resolve().parents[1]
+    paths = [str(p.relative_to(root)) for p in (root / "agentic_core").rglob("*.py")]
+    assert len(paths) > 200, f"only {len(paths)} files to screen; the corpus assumption no longer holds"
+
+    cands = screen_for_defect_shapes(paths, only=["D-SELECT"]).get("candidates") or []
+
+    # LEG 1 - the screen still finds its own shape. Without this, an empty report would pass as "precise".
+    assert len(cands) > 20, (
+        f"only {len(cands)} D-SELECT candidates over the whole tree - the pattern was narrowed until it found "
+        "almost nothing, which is precision bought by blindness")
+
+    # LEG 2 - no candidate exists ONLY because of a numeric-literal clamp
+    call = _re.compile(r"(?:max|min)\s*\(\s*([^,)]*)")
+    lit = _re.compile(r"^-?\d+(?:[.]\d+)?$")
+    offenders = []
+    for c in cands:
+        firsts = [a.strip() for a in call.findall(c["source"])]
+        if firsts and all(lit.match(a or "") for a in firsts):
+            offenders.append(f"{c['path']}:{c['line']}  {c['source'].strip()[:70]}")
+    assert not offenders, (
+        f"{len(offenders)} candidates are reported although EVERY max/min on the line is a numeric-literal "
+        f"clamp, which the class's own shape excludes: {offenders[:5]}")
