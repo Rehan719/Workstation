@@ -18749,7 +18749,17 @@ def test_w487_the_plan_proposes_the_round_not_just_the_row(client):
     assert "batches --item <the open item>" not in fp
     assert "The full suite is 46 minutes over 392 tests" in fp      # the measurement, not an impression
     assert "Never two pytest runs at once" in fp                    # the corruption rule, kept
-    assert "B3 OVERLAP WHAT DOES NOT SHARE STATE." in fp
+    # W519 — B3 was AMENDED on measured evidence, so this assertion is updated rather than deleted, and
+    # it is STRONGER than the line it replaces. The old heading, "OVERLAP WHAT DOES NOT SHARE STATE",
+    # licensed running a refutation workflow CONCURRENTLY with the full suite. W518 measured what that
+    # costs: a 48-agent fleet beside a suite took it to 1h48m34s against a measured 53m20s and returned
+    # red on two timing-sensitive tests that both passed in 81s alone. Isolation of STATE is not
+    # isolation of TIMING. The rule now says the opposite, and this pins both the new instruction and
+    # the measurement behind it, so neither can be quietly dropped.
+    assert "B3 NOTHING HEAVY RUNS BESIDE THE SUITE" in fp
+    assert "OVERLAP WHAT DOES NOT SHARE STATE." not in fp, (
+        "the falsified instruction is back in the plan")
+    assert "2.04x slowdown" in fp, "B3 states its rule without the measurement that produced it"
 
 
 def test_w488_the_page_and_the_api_say_the_same_thing(client):
@@ -28283,3 +28293,42 @@ def test_w518_the_work_budget_measures_real_work_and_can_run_down(monkeypatch):
     assert d["the_figure_that_can_deplete"]["unit"].strip(), d["the_figure_that_can_deplete"]
     assert "second" in d["the_figure_that_can_deplete"]["unit"], d["the_figure_that_can_deplete"]["unit"]
     assert len(d["ratio_is_a_label_not_a_measurement"]) > 40, d["ratio_is_a_label_not_a_measurement"]
+
+
+def test_w519_a_query_subcommand_never_writes_the_watched_documents():
+    """A read-only followups subcommand must not re-render the plan. Driven, not inspected.
+
+    `bundles` was missing from the read-only dispatch while its handler sat inside that block: the handler was
+    unreachable, the command printed nothing, and it fell through to the mutating path that re-renders both
+    watched documents. A query that writes is a trap for any round that runs it during a suite.
+
+    Asserted on the BYTES of the documents rather than on the shape of the dispatch, so rearranging the code
+    cannot satisfy it.
+    """
+    import hashlib
+    import subprocess
+    import sys
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parents[1]
+    watched = [root / "docs" / "FABLE_DELIVERY_PROMPT.md",
+               root / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md"]
+    before = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
+
+    # every subcommand that reads and must not write
+    for cmd in ("check", "list", "routes", "priority", "forecast", "batches", "bundles"):
+        r = subprocess.run([sys.executable, str(root / "scripts" / "followups.py"), cmd],
+                           capture_output=True, text=True, cwd=str(root))
+        assert r.returncode in (0, 1), (cmd, r.returncode, r.stderr[-400:])
+        after = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
+        changed = [n for n in before if before[n] != after[n]]
+        assert not changed, (
+            f"`followups.py {cmd}` MODIFIED {changed} - a query subcommand must not write. If it needs to "
+            f"render, it is not a query.")
+
+    # and the one that is expected to print something actually does, so this is not a guard over silence
+    r = subprocess.run([sys.executable, str(root / "scripts" / "followups.py"), "bundles"],
+                       capture_output=True, text=True, cwd=str(root))
+    assert "BUNDLE" in r.stdout.upper(), (
+        "`bundles` printed nothing - its handler is unreachable again, which is how this defect began",
+        r.stdout[:300])

@@ -195,13 +195,19 @@ def main() -> int:
     fc = sub.add_parser("forecast", help="the pace the plan is moving at, and what it projects")
     bd = sub.add_parser("bundles", help="which ROUND to run: the file-connected subsystem, cut by item")
     bd.add_argument("--top", type=int, default=6)
+    sub.add_parser("satisfied", help="open rows a LATER round may already have satisfied - CANDIDATES "
+                                    "to re-read, never automatic closes (FU-306)")
     bt = sub.add_parser("batches", help="which ROUND to run: the class one mechanism can close")
     bt.add_argument("--item", default=None, help="only rows riding this plan item")
     bt.add_argument("--top", type=int, default=5)
     fc.add_argument("--window", type=int, default=6, help="build rounds to measure the rate over")
     args = ap.parse_args()
 
-    if args.cmd in ("check", "list", "schedule", "routes", "priority", "forecast", "batches"):
+    # W519 (FU-255 rider) - "bundles" was MISSING from this tuple while its handler sits INSIDE the
+    # block, so the handler was unreachable: the command printed nothing and fell through to the
+    # mutating path, which RE-RENDERS both watched plan documents. A query that writes is a trap for
+    # any round that runs it during a suite, and this one also had a dead branch.
+    if args.cmd in ("check", "list", "schedule", "routes", "priority", "forecast", "batches", "bundles", "satisfied"):
         with register_lock():                      # never read the register and the docs from different moments
             reg, prompt, living = _texts()
         if args.cmd == "priority":
@@ -224,6 +230,26 @@ def main() -> int:
                 for ph, d in comp["by_phase"].items()) + f" · all {comp['overall_weighted_pct']}%")
             print("open items by total open priority (a suggestion beside the plan's order): " + " · ".join(pr_["suggested_order"]))
             return 1 if pr_["config_problems"] else 0
+        if args.cmd == "satisfied":
+            # FU-306 - the ALIAS, not a second implementation. The rule lives in the Appraisal Cell's
+            # extrospection faculty and is reported here. Candidates only: whether a row is satisfied
+            # is a READING of the code its files name, never a diff, so nothing is closed from this.
+            from agentic_core.api.method import _rows_the_tree_moved_under
+            _open = [r for r in reg["items"] if r.get("status") == "open"]
+            _out = _rows_the_tree_moved_under(_open)
+            _by = {r["id"]: r for r in reg["items"]}
+            _c = _out.get("candidates") or []
+            print(f"ROWS A LATER ROUND MAY ALREADY HAVE SATISFIED ({len(_c)} candidate(s) of "
+                  f"{len(_open)} open) - RE-READ them; this closes nothing")
+            for _x in _c:
+                _r = _by.get(_x["id"], {})
+                print(f"  {_x['id']:<8} {str(_r.get('slot')):<7} found W{_x.get('found_in_round')}"
+                      f"  {str(_r.get('title'))[:66]}")
+            print()
+            print(_out.get("basis") or "")
+            for _k, _v in (_out.get("limits") or {}).items():
+                print(f"  LIMIT {_k}: {_v}")
+            return 0
         if args.cmd == "bundles":
             print(fu.render_bundles(reg, prompt, args.top))
             return 0

@@ -4053,9 +4053,9 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.17",
-      "status": "open",
+      "status": "dropped",
       "closed_by": null,
-      "note": "",
+      "note": "REFUTED W519 by three measurements, not abandoned. (1) THE COUNT IS WRONG: 150 orphan .pyc, not 524 - a figure recorded without its method drifts (M-HAND-02). (2) NOT ONE IS TRACKED: git ls-files '*.pyc' returns 0, so none is in the repository and deleting them changes nothing for the repo or for CI. (3) NONE IS IMPORTABLE: all 150 sit inside __pycache__ and ZERO sit outside it, and in Python 3 a __pycache__ entry is only used when its source exists - the cache is validated against the source. So the row's real worry, a stale module being importable beside an archived or deleted source, CANNOT happen. This is untracked local build litter, not a repository defect. Reopen only with an orphan .pyc found OUTSIDE __pycache__, which is the legacy layout that would actually be importable.",
       "tier": 3,
       "area": "tooling",
       "reach": "internal"
@@ -4341,8 +4341,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W519",
       "note": "",
       "tier": 2,
       "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
@@ -4396,8 +4396,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W519",
       "note": "",
       "tier": 2,
       "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
@@ -5301,8 +5301,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W519",
       "note": "",
       "slot_source": "P2.17 owns the register's own tooling",
       "tier": 2
@@ -5537,6 +5537,25 @@
       "slot_source": "FU-160 rides P2.4 and this is the surface half of the same question, found by the pre-flight while fixing it",
       "tier": 3,
       "reach": "secondary"
+    },
+    {
+      "id": "FU-319",
+      "title": "The pre-flight's key screen reads a comparison as a dict key: any 'if x == \"name\":' fires it",
+      "why": "W519 measured. scripts/selfcheck_diff.py:156 KEY_RE is '\"([a-z_][a-z0-9_]{2,})\"\\s*:' - a quoted lowercase word followed by a colon. It cannot distinguish a dict key ('\"satisfied\": value') from an EQUALITY COMPARISON whose line ends in the statement colon ('if args.cmd == \"satisfied\":'). W519 added such a line and the screen reported the CLI subcommand name as 'a key produced but read by no surface', asking which page shows it. No page shows a subcommand name, and none should. The pattern fires on any 'if x == \"some_word\":' or 'elif'/'while'/'case' of the same shape, which is common in every dispatcher in this repository. THE WORK: require the colon not to be a statement terminator - either something non-empty must follow it on the same line, or the line must not begin with if/elif/while/case/match - and drive the fix with one dict key and one comparison so the exclusion cannot be vacuous. THIS IS THE THIRD PRECISION DEFECT IN THE SAME SCREEN FAMILY: FU-303 (selfmatch flagged a path-joined read of another file, reinstated W518 after a wrong revert) and FU-317 (D-SELECT counted 106 scalar clamps of 224 as selections over a collection). An instrument reporting noise as findings costs the attention the real ones need (M-VERIF-12), and a round that learns to ignore its pre-flight has lost the pre-flight.",
+      "source": "W519 pre-flight",
+      "found": "2026-09-30",
+      "files": [
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "FU-262 already owns the pre-flight's coverage in cluster (d); this is its precision, in the same file",
+      "tier": 3,
+      "reach": "internal"
     }
   ],
   "routes": [
