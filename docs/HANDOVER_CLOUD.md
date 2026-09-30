@@ -37,7 +37,11 @@ Five modified files: `docs/FABLE_DELIVERY_PROMPT.md` (adds P3.26 TURNOVER, P3.27
 `docs/FOLLOWUPS.json`, `docs/WORKSTATION_IDBO_LIVING_PLAN.md`, `docs/WORKSTATION_IDBO_WHOLE_VISION.md`
 (§8 `Recorded W512`, §16 pointer, §18 six Owner decisions), `integration_tests/test_mvp_spine.py` (two guards).
 
-**W513 IS LANDED — `23f81ec0`, 489 passed / 15 skipped in 53m20s, `PYTEST_EXIT=0` captured explicitly.**
+**ROUND A (W515) IS LANDED — `adcf22aa`, 491 passed / 15 skipped in 52m33s, `PYTEST_EXIT=0` captured explicitly.** The tree is clean. Closed FU-160 (the floor-served coverage figure no longer becomes an ethical verdict, two-leg metamorphic guard driven red on both legs), FU-302, FU-304 and FU-071/072/187/228 on measurement; registered FU-313 to FU-318; and removed the two stale Horizon statements that told a reader five items were Owner-blocked when all four decisions had been ruled.
+
+**A note on that round's cost.** Its first full run came back RED in 1h48m34s against a measured 53m20s, on two timing-sensitive tests outside the diff's blast radius, because a 48-agent verification workflow was running on the same machine. Re-run alone they passed in 81s; the clean full re-run gave 491 passed. The subset passing did not authorise the commit. Prepared as M-SESS-11 for the register: nothing heavy runs beside the suite.
+
+**W513 landed earlier — `23f81ec0`, 489 passed / 15 skipped in 53m20s.**
 The tree is clean. The failure below was diagnosed and fixed test-only; it is kept here because the lesson
 is a new variant of one already in the register.
 
