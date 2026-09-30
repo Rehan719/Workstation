@@ -365,7 +365,21 @@ def check_selfmatch(rev: str, files: list[str]) -> list[str]:
         src = (ROOT / f).read_text(encoding="utf-8")
         # which locals hold this file's own text?
         selfvars = set(re.findall(r"(\w+)\s*=\s*\(?root\s*/\s*['\"]" + re.escape(f) + r"['\"]\)?\.read_text", src))
-        selfvars |= set(re.findall(r"(\w+)\s*=\s*.*__file__.*read_text", src))
+        # FU-303 (W518) - a path JOIN after `__file__` means the variable holds ANOTHER file. Every
+        # page-reading guard in the suite is written that way, and so is
+        #     d = json.loads((Path(__file__).resolve().parents[1] / "docs/...").read_text())
+        # which poisoned the name `d` FILE-WIDE: every later assertion using a local of that name was
+        # reported as matching its own text. W517 reverted this fix after measuring 0 leads before and
+        # after - but this check only reports ADDED lines, so it reproduces only when a round adds an
+        # assertion using a poisoned name. W518 added one and it fired at once.
+        #
+        # STILL OPEN, registered: selfvars is computed over the WHOLE file and applied to added lines
+        # anywhere in it, so two functions sharing a local name still collide. Scoping the variable to
+        # its enclosing function is the complete fix.
+        for _m in re.finditer(r"(\w+)\s*=\s*([^\n]*__file__[^\n]*read_text[^\n]*)", src):
+            if re.search(r"__file__.*?/\s*[\"']", _m.group(2)):
+                continue                 # reads a DIFFERENT file, so a literal in it is a real claim
+            selfvars.add(_m.group(1))
         for ln, line in added_removed(rev, f)[0]:
             m = ASSERT_IN_RE.search(line)
             if m and m.group("var") in selfvars:

@@ -473,6 +473,18 @@ async def biometrics_status():
         _dep = _atp_state()
         atp_basis = ("simulated — an ATP production/consumption model on a load derived from CPU. "
                      + _dep["basis"] + " It is not a live vital.")
+        # OWNER RULING 2026-09-30 (18.1) - the figure that CAN run down, named beside the one that
+        # cannot, on the channel that already reaches a reader. Without this the budget would be an
+        # API-only key and the surface would still imply the ratio is the energy figure.
+        _wb = _dep.get("the_figure_that_can_deplete") or {}
+        if _wb.get("unit"):
+            atp_basis += (f" THE REAL BUDGET, measured in {_wb['unit']}: "
+                          f"{_wb.get('seconds_spent')}s of {_wb.get('capacity_seconds')}s spent "
+                          f"({round((_wb.get('fraction_spent') or 0) * 100)}%) over "
+                          f"{_wb.get('calls_recorded')} recorded run(s)"
+                          + ("" if _wb.get("gates_anything") else " — and it gates nothing yet, by ruling"))
+        elif _wb.get("unavailable"):
+            atp_basis += f" The work budget could not be read: {_wb['unavailable']}."
     except Exception:
         # the fallback is a REAL cpu measurement, so it must not inherit the simulator's disclaimer
         atp_ratio = round(resource_flow / 100.0, 3)

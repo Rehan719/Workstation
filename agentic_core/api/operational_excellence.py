@@ -78,6 +78,15 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
     A rate computed over rows whose `quality_verdict` is None is a rate over a population nothing
     measured, so `summary()` and `_rankings()` count assessed rows only and say how many they left out.
     """
+    # OWNER RULING 2026-09-30 (18.1) - the work budget is measured in wall-clock seconds actually
+    # spent, and this is the ONE place every run path already reports its duration. Feeding it here
+    # makes the budget measure real work; without a producer it would be a declared capability nothing
+    # reaches. Best-effort: accounting never breaks the work it accounts for.
+    try:
+        from agentic_core.molecular import work_budget as _wb
+        _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0)
+    except Exception:                                    # noqa: BLE001
+        pass
     _produced = bool(success)
     _verdict = None if quality_gate is None else bool(quality_gate)
     outcome = {

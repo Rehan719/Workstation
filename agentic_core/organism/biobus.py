@@ -75,7 +75,32 @@ def atp_depletion_state() -> dict:
             if not can_deplete else
             f"consumption reaches {max_consumption:.2f} per tick against a production floor of "
             f"{min_production:.2f}, so the ratio CAN fall"),
+        # OWNER RULING 2026-09-30 (18.1) - the budget that CAN run down, reported beside the one that
+        # cannot. `can_deplete` above is UNCHANGED and still describes the SIMULATOR: re-pointing it
+        # would break every reader who takes it to mean exactly that. What this adds is the honest
+        # instrument and its unit, so no reader has to infer that a ratio between 0.5 and 15.0 measures
+        # anything.
+        # WHICH SURFACE SHOWS THIS (the pre-flight asks, and the answer is indirect but real):
+        # app_mvp.py appends the budget - its unit, seconds spent, capacity and whether it gates
+        # anything - onto `atp_basis`, which already reaches the viewer (ResourceFabric.tsx renders the
+        # organism tooltip that carries it). No page reads THIS key by name, and that is deliberate:
+        # adding a second channel for one claim is how two surfaces come to disagree.
+        "the_figure_that_can_deplete": _work_budget_state(),
+        "ratio_is_a_label_not_a_measurement": (
+            "the ATP ratio names no unit and cannot fall; the work budget beside it is measured in "
+            "wall-clock seconds actually spent and reaches its capacity. Where a threshold needs a real "
+            "energy figure, read the budget"),
     }
+
+
+def _work_budget_state() -> dict:
+    """The work budget, or the reason it could not be read. Never raises into a status call."""
+    try:
+        from agentic_core.molecular import work_budget
+        return work_budget.state()
+    except Exception as exc:                                  # noqa: BLE001 - said, never substituted
+        return {"unavailable": f"{exc.__class__.__name__}: {exc}",
+                "note": "no budget figure is substituted; an unreadable budget is not a full one"}
 
 
 def _get_atp():

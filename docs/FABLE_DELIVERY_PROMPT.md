@@ -1620,6 +1620,64 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; delivered_by: build; ESTIMATED ~9 rou
       asserted by a guard; and the check's own limits are stated on the surface, not implied. THE RISK
       THIS ITEM MUST NOT REALISE: a green "METHOD COMPLIANT" badge over requirements nothing evaluated —
       the exact class W489–W495 removed. Every unverifiable requirement reads NOT ASSESSABLE.
+ OWNER RULINGS 2026-09-30 (TWELVE, ratified in full; several sharpened by re-examination before ruling).
+      These are constitution, not preference: a later round may not widen, soften or reinterpret them.
+      · THE BIOMIMETIC BRIEFS - three refusals, ratified. (a) NO PARALLEL SOURCE TREE beside agentic_core:
+        one organism, one home. (b) NEVER GRADE A PERSON - grading the REQUEST (domain, stakes, privacy,
+        urgency, evidence density) is admissible and useful; a cognitive-load signal, a confidence score
+        about a user, or an intention/value-alignment figure computed about someone is ruling A.9.5 and is
+        refused. The test is one question: IS THE SUBJECT A PERSON? (c) NO NUMERIC ROUTE SCORE. Ruled to
+        REPLACE rather than merely refuse: routing is HARD CONSTRAINTS plus a stated tie-break ORDER
+        (privacy fit, then risk fit, then domain match, then resource headroom). Calibration-free,
+        auditable, and it cannot emit a fabricated number. No numeric route score is ever published.
+      · S18.1 THE METABOLIC BUDGET'S UNIT - ruled: MEASURE IT IN TOKENS AND WALL-CLOCK SECONDS, the two
+        things actually spent and already recorded. This REVISES the earlier recommendation (raise the
+        consumption coefficient), which would have left a unitless number: a figure may only carry the name
+        of what it measured, and "ATP" measures nothing. Consumption binds to measured work, any displayed
+        ratio is DERIVED from it, the throttle ships INERT behind a setting because making atp < 0.3
+        reachable switches on behaviour that has never once fired, and the ATP name is retired or relabelled.
+        Highest priority of the twelve: it unblocks Vision 8.0's Thrust A and makes a RUNNING instrument
+        honest rather than adding a new one.
+      · S18.2 WHAT AN ENTITY MAY BE SELECTED ON - ruled: ON RECORD, THROUGH THE GATE THAT ALREADY EXISTS.
+        shadow -> canary -> acceptance gate -> promote-or-roll-back IS a fitness function, and genome.py has
+        variation and inheritance and no selection. So selection asks whether delivered work passed its own
+        acceptance gates over a stated window. It REFUSES while any measure is unmeasured, as the §11 screen
+        refuses rather than clears; negative selection on a hard floor meanwhile. The venture funding score
+        is NOT reused: funding selects on POTENTIAL, survival must select on RECORD, and conflating them
+        lets a well-pitched entity outlive a well-performing one.
+      · S18.3 MAY AN ENTITY CREATE AN ENTITY - ruled: YES TO MITOSIS, SEQUENCED AFTER S18.2. Reproduction
+        without selection is unbounded growth - the cancer anti-pattern - so the ORDER is binding: a lineage
+        field first, selection working second, mitosis third. A subsidiary inherits its parent's constitution
+        verbatim, is funded from the parent's own waterfall share, and is created through Change Control.
+        MEIOSIS PRODUCES A CANDIDATE, NOT A BIRTH: a recombined constitution is a new constitution and is
+        ratified exactly as a method lesson is.
+      · S18.4 WHAT A VSB MAY RETIRE ITSELF OVER - ruled: ONE MECHANISM, NOT TWO - retirement IS selection's
+        negative leg, not a separate subsystem. Self-service DORMANCY is reversible; DEATH is not; both are
+        recorded. Never auto-retire anything holding unsettled obligations, under a governance hold, named in
+        a ruling, the QEP entity, or THE LAST ENTITY IN ITS REALM x DOMAIN - that last is not apoptosis but
+        the extinction of a lineage.
+      · S18.5 A RESCUE CHANNEL BETWEEN ENTITIES - ruled: NO AUTOMATIC CHANNEL. The Owner may intervene
+        explicitly, and such an intervention is recorded as an OWNER ACT, never as a system mechanism. That
+        preserves the Owner's authority without corrupting the selection basis. Rescue before selection means
+        nothing ever fails.
+      · S18.6 CARRYING CAPACITY AND AN END - ruled: YES TO BOTH. Capacity is DERIVED from the metabolic
+        budget rather than set, so it moves when the budget moves; death conserves what the entity held (its
+        balance returns to the reservoirs) while RETAINING ITS RECORD.
+      · FU-077 THE ONTOLOGY ENGINE - ruled: RETIRE THE ENGINE, KEEP THE ASSET, RECLASSIFY IT HONESTLY. This
+        REVISES both arms the row offered, on a measurement taken before ruling: NEITHER candidate file is a
+        graph. knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json holds 494 REAL UK
+        employment-law concepts plus rules and ZERO relations; unified_assimilated_graph.json holds 293 nodes
+        that are FILE PATHS over the Owner's own documents, blanket-stamped ASSIMILATED, with ZERO edges,
+        from the simulated-assimilation era. So the engine serves graphs and no graph exists. The 494-concept
+        vocabulary and its rules are KEPT as a Law domain resource for P3.23's stakes-scaled gate, where they
+        pair with FU-278's requirement that a legal artefact cite a page and a line. The 293-node manifest is
+        NEVER loaded as an ontology.
+      · NAMING - ruled: the "Constitution" hazard is resolved (W516 named a DOCUMENT, not a competing
+        object). "Mechanical" is not used for the pressure concept, because throughout this repository it
+        means MECHANICALLY CHECKABLE - the change-control gate's one tooth. The pressure concept is
+        PressureState / load pressure.
+      · ORDER OF WORK ruled with the decisions: S18.1, then S18.2, then S18.4, then FU-077. S18.3, S18.5 and
+        S18.6 need nothing built until S18.2 lands.
  OWNER RULINGS 2026-09-29 (four decisions; three answered, one deliberately left open):
       · FU-239 THE §11 SCREEN'S FIRST REAL ASSESSOR — ruled: NEITHER ARM THE ROW OFFERED. The halal
         framework may assess a subject by VERIFYING it against a definition and against CERTIFICATIONS. The

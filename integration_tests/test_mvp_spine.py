@@ -28232,3 +28232,54 @@ def test_w517_the_select_screen_excludes_clamps_over_the_real_tree():
     assert not offenders, (
         f"{len(offenders)} candidates are reported although EVERY max/min on the line is a numeric-literal "
         f"clamp, which the class's own shape excludes: {offenders[:5]}")
+
+
+def test_w518_the_work_budget_measures_real_work_and_can_run_down(monkeypatch):
+    """OWNER RULING 2026-09-30 (18.1) - the metabolic budget is measured in what is actually spent.
+
+    The figure it stands beside cannot deplete: atp_depletion_state() computes can_deplete and gets False,
+    so the economy's reserve raise and the heartbeat's self_recovery and metabolic_throttle were unreachable
+    for the whole life of the process. A budget that cannot run down is not a budget.
+    """
+    from agentic_core.api.operational_excellence import record_outcome
+    from agentic_core.molecular import work_budget as wb
+    from agentic_core.organism.biobus import atp_depletion_state
+
+    # LEG 1 - it ships INERT, which the ruling requires: making a throttle reachable switches on behaviour
+    # that has never once fired.
+    assert wb.enabled() is False, "the budget must ship inert unless the setting is on"
+    assert wb.state()["gates_anything"] is False, wb.state()
+
+    # LEG 2 - it measures REAL work, through the one producer that already records a duration
+    before = wb.state()["seconds_spent"]
+    for ms in (1500, 2500, 900):
+        record_outcome("engine", "w518-probe", duration_ms=ms, success=True)
+    after = wb.state()
+    assert round(after["seconds_spent"] - before, 1) == 4.9, (before, after["seconds_spent"])
+    assert after["calls_recorded"] >= 3, after
+    assert "second" in after["unit"], after["unit"]
+
+    # LEG 3 - IT CAN RUN DOWN. This is the leg the ATP ratio could never pass.
+    record_outcome("engine", "w518-capacity", duration_ms=int(wb.CAPACITY_SECONDS * 1000), success=True)
+    spent = wb.state()
+    assert spent["fraction_spent"] >= 1.0, (
+        "the budget did not reach its capacity even after spending it whole - it cannot deplete, which is "
+        "the exact defect this replaces", spent)
+
+    # LEG 4 - an unmeasured quantity is None with a reason, never 0. Zero would read as "none were used".
+    assert spent["tokens_spent"] is None, spent["tokens_spent"]
+    assert "NOT RECORDED" in spent["tokens_basis"], spent["tokens_basis"]
+    assert "STATED ASSUMPTION" in spent["capacity_basis"], spent["capacity_basis"]
+
+    # LEG 5 - nothing was re-pointed. can_deplete still describes the SIMULATOR, which is what its readers
+    # take it to mean; the budget is reported BESIDE it, not in place of it.
+    d = atp_depletion_state()
+    assert d["can_deplete"] is False, (
+        "can_deplete changed meaning - it describes the simulator's constants, and thirty-four readers "
+        "consume this area", d)
+    assert d["the_figure_that_can_deplete"]["fraction_spent"] >= 1.0, d["the_figure_that_can_deplete"]
+    # asserted on FIELDS, not on wording: the budget names its unit and the note is present and says
+    # something. An earlier version of this line searched the note for a word that was only in its KEY.
+    assert d["the_figure_that_can_deplete"]["unit"].strip(), d["the_figure_that_can_deplete"]
+    assert "second" in d["the_figure_that_can_deplete"]["unit"], d["the_figure_that_can_deplete"]["unit"]
+    assert len(d["ratio_is_a_label_not_a_measurement"]) > 40, d["ratio_is_a_label_not_a_measurement"]
