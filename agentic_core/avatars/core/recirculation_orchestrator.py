@@ -34,6 +34,38 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+class _RefusingRegulator:
+    """Refuses every mutation, and says why. W530 (FU-333).
+
+    This replaces an always-approving stand-in. It reports NO confidence key at all: a regulator that
+    approved nothing has no confidence to report, and emitting one was how a fabricated 0.95 reached a
+    stored marker. When a real mutation regulator exists it replaces this object; until then, every
+    adaptation is refused and the refusal is recorded, which is the honest state rather than a failure.
+    """
+
+    BASIS = ("no mutation regulator is configured, so no adaptation is approved. This is a REFUSAL, not an "
+             "error: a gate with no implementation must block, and the always-approving stand-in that was "
+             "here until W530 meant a self-modifying avatar whose only safety gate could not say no")
+
+    async def validate_mutation(self, adaptation_type, before, after):
+        return {"approved": False, "basis": self.BASIS, "adaptation_type": adaptation_type}
+
+
+class _RefusingFixpoint:
+    """Fails the stability constraint, and says why. W530 (FU-333).
+
+    The stand-in it replaces always returned True, so the constraint passed vacuously. There is no
+    fixpoint checker on this platform; claiming stability without one is the defect W526 removed from a
+    digest that was named after a proof.
+    """
+
+    BASIS = ("no fixpoint checker is implemented, so recursive stability is NOT established and the "
+             "constraint fails closed rather than passing on a constant")
+
+    def verify(self, adaptation_type, before, after):
+        return False
+
+
 class AvatarRecirculationOrchestrator:
     """
     IDBO Layer 9/10/11: Orchestration & Evolution.
@@ -76,12 +108,16 @@ class AvatarRecirculationOrchestrator:
         self.vrpr = VRPRPipeline(self.ueg, self.enforcement)
         self.sil = SILPersonaliser()
 
-        # Epigenetic gates (vΩ∞-AVATAR-OMNISYNTHESIS)
-        async def mock_validate(*args): return {'approved': True, 'confidence': 0.95}
+        # Epigenetic gates. W530 (FU-333) — these were a regulator that ALWAYS returned approved:True
+        # with a confidence of 0.95 and a verifier that always returned True, both named Mock, in this
+        # constructor, behind no flag. EpigeneticMemoryEngine already refuses correctly — its
+        # `approved` default is False, so a regulator returning nothing blocks — and that fail-closed
+        # default was being bypassed by handing it something that cannot say no. A gate with no
+        # implementation must BLOCK, so what is injected now refuses and says why.
         self.epigenetic_memory = EpigeneticMemoryEngine(
             ueg_logger,
-            regulator=type('Mock', (), {'validate_mutation': mock_validate}),
-            lob_fixpoint=type('Mock', (), {'verify': lambda *a: True})
+            regulator=_RefusingRegulator(),
+            lob_fixpoint=_RefusingFixpoint(),
         )
 
         self.override_active = False
@@ -231,16 +267,37 @@ class AvatarRecirculationOrchestrator:
         """Update epigenetic memory via Merkle-linked mutation."""
         self.tfel.meter_operation("metabolic_learn", bits=5e4)
 
-        success = ctx["user_context"].get("success", True)
-        await self.skill_profiler.update_skill(ctx["user_id"], ctx["domain"], success)
+        # W530 — A MISSING OUTCOME IS NOT A WIN. This read `.get("success", True)`, so a cycle whose
+        # caller recorded no outcome was written into the user's skill profile as a success. Measured:
+        # update_skill runs Bayesian Knowledge Tracing over a strict bool, so True inflates p_known and
+        # False deflates it — there is no "not recorded" value to pass. A BKT update needs an
+        # OBSERVATION, so with none we do not update at all and say so. This one accumulated: every
+        # unmeasured cycle distorted a stored profile that later decisions read.
+        recorded = ctx["user_context"].get("success")
+        if isinstance(recorded, bool):
+            await self.skill_profiler.update_skill(ctx["user_id"], ctx["domain"], recorded)
+            skill_note = f"skill profile updated from a recorded outcome (success={recorded})"
+        else:
+            skill_note = ("skill profile NOT updated: this cycle recorded no outcome, and a Bayesian "
+                          "update needs an observation. Counting an unmeasured cycle as either a success "
+                          "or a failure would move a stored profile on no evidence")
 
-        return await self.epigenetic_memory.propose_adaptation(
-            user_id=ctx["user_id"],
-            trigger_event="metabolic_cycle_completion",
-            adaptation_type="strategy_tuning",
-            before={"weights": self.mode_manager.get_current_config().cognitive_weights},
-            after={"weights": "REFINED_BY_EPIGENETIC_ENGINE"}
-        )
+        # W530 — NO PLACEHOLDER ADAPTATION IS PROPOSED. The `after` state it passed was a LITERAL
+        # STRING where refined weights belong (the replaced wording is in the commit message, not here,
+        # because a guard forbids it in source). The engine computes marker_id from sha256 of `after`,
+        # so over that constant it was THE SAME MARKER
+        # ID on every cycle for every user: a content hash that looked like content-addressing and bound
+        # every marker to one placeholder. Nothing here computes refined weights, so nothing is proposed,
+        # and the stage says that rather than submitting a mutation in name only.
+        return {
+            "skill": skill_note,
+            "adaptation_proposed": False,
+            "adaptation_basis": ("no adaptation was proposed: this stage has no mechanism that computes "
+                                 "refined cognitive weights, and proposing a mutation whose new state is a "
+                                 "placeholder is a mutation proposal in name only. Its marker id would be "
+                                 "a hash of that placeholder, identical for every user and every cycle"),
+            "regulator": _RefusingRegulator.BASIS,
+        }
 
     async def _stage_reflect(self, ctx: Dict):
         """Post-instructional meta-audit."""

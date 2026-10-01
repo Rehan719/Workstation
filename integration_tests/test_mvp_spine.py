@@ -29360,3 +29360,121 @@ def test_w528_the_three_auxiliary_engines_compute_or_refuse():
         assert hasattr(Reg.get(et), "consult"), et
     #  Mushawara is NOT Mushahida, and they are in different tiers
     assert ENGINE_TIERS[EngineType.MUSHAHIDA] == EngineTier.MJM
+
+
+def test_w530_the_mutation_gate_refuses_instead_of_rubber_stamping(tmp_path):
+    """FU-333 — the avatar orchestrator handed its epigenetic engine gates that could not say no.
+
+    Measured before building: `regulator=type('Mock', (), {'validate_mutation': mock_validate})` where
+    mock_validate returned `{'approved': True, 'confidence': 0.95}`, and
+    `lob_fixpoint=type('Mock', (), {'verify': lambda *a: True})` — both in the live constructor, behind no
+    flag and no except. The ENGINE was never the defect: its `approved` default is already False, so a
+    regulator returning nothing blocks. Its fail-closed default was being bypassed by injecting something
+    that always said yes.
+    """
+    import ast
+    import asyncio as _aio
+    from agentic_core.avatars.core.recirculation_orchestrator import (_RefusingFixpoint, _RefusingRegulator)
+    from agentic_core.avatars.memory.epigenetic_engine import EpigeneticMemoryEngine
+
+    class _UEG:
+        def __init__(self):
+            self.events = []
+
+        async def log_event(self, kind, payload):
+            self.events.append((kind, payload))
+
+    # ── 1. the injected regulator REFUSES, and the refusal is recorded ─────────────────────────
+    ueg = _UEG()
+    eng = EpigeneticMemoryEngine(ueg, _RefusingRegulator(), _RefusingFixpoint())
+    marker = _aio.run(eng.propose_adaptation("u1", "cycle", "strategy_tuning", {"w": 1}, {"w": 2}))
+    assert marker is None, "an unconfigured mutation gate approved an adaptation"
+    assert [k for k, _ in ueg.events] == ["EPIGENETIC_REJECTION"], ueg.events
+    assert ueg.events[0][1]["reason"] == "REGULATOR_VETO", ueg.events[0][1]
+    #  it reports NO confidence: a regulator that approved nothing has none, and emitting one is how a
+    #  fabricated 0.95 reached a stored marker
+    verdict = _aio.run(_RefusingRegulator().validate_mutation("t", {}, {}))
+    assert verdict["approved"] is False, verdict
+    assert "confidence" not in verdict, "a refusal is reporting a confidence"
+    assert "REFUSAL, not an error" in verdict["basis"], verdict["basis"]
+    assert _RefusingFixpoint().verify("t", {}, {}) is False, "the stability constraint passes vacuously"
+
+    # ── 2. THE NON-VACUOUS LEG: a gate that always blocks is as useless as one that always approves ──
+    class _Approve:
+        async def validate_mutation(self, t, b, a):
+            return {"approved": True, "proof": "sig-xyz"}
+
+    class _Stable:
+        def verify(self, t, b, a):
+            return True
+
+    ueg2 = _UEG()
+    eng2 = EpigeneticMemoryEngine(ueg2, _Approve(), _Stable())
+    m2 = _aio.run(eng2.propose_adaptation("u1", "cycle", "strategy_tuning", {"w": 1}, {"w": 2}))
+    assert m2 is not None, "a genuinely approved adaptation was refused — the gate is shut, not refusing"
+    assert m2.constitutional_validation == "sig-xyz", m2.constitutional_validation
+    assert m2.lob_fixpoint_stable is True, m2.lob_fixpoint_stable
+
+    # ── 3. NO PROOF is said, never defaulted to a literal that looks like a signature ───────────
+    class _ApproveNoProof:
+        async def validate_mutation(self, t, b, a):
+            return {"approved": True}
+
+    m3 = _aio.run(EpigeneticMemoryEngine(_UEG(), _ApproveNoProof(), _Stable())
+                  .propose_adaptation("u1", "cycle", "strategy_tuning", {"w": 1}, {"w": 2}))
+    assert m3.constitutional_validation.startswith("NOT ATTESTED:"), m3.constitutional_validation
+    assert "MOCK" not in m3.constitutional_validation, m3.constitutional_validation
+
+    # ── 4. no Mock is constructed in the orchestrator's __init__ — on the AST, because this is about a
+    #      BINDING and a source search would pass on one in a comment ────────────────────────────
+    from pathlib import Path as _P
+    root = _P(__file__).resolve().parents[1]
+    src = (root / "agentic_core/avatars/core/recirculation_orchestrator.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    init = next((n for n in ast.walk(tree)
+                 if isinstance(n, ast.FunctionDef) and n.name == "__init__"), None)
+    assert init is not None, "__init__ not found — the class was renamed"
+    type_calls = [n for n in ast.walk(init)
+                  if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "type" and len(n.args) == 3]
+    assert not type_calls, f"a type(...) stand-in is being constructed in __init__: {len(type_calls)}"
+    assert "mock_validate" not in src, "the always-approving validator is back"
+    #  and the marker's stability flag is no longer a constant
+    eng_src = (root / "agentic_core/avatars/memory/epigenetic_engine.py").read_text(encoding="utf-8")
+    assert "lob_fixpoint_stable=True," not in eng_src, "the stability flag is a literal again"
+
+    # ── 5. A MISSING OUTCOME IS NOT A WIN. update_skill is not called at all without an observation ──
+    from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator as _O
+    orch = object.__new__(_O)
+
+    class _Profiler:
+        def __init__(self):
+            self.calls = []
+
+        async def update_skill(self, user_id, domain, success):
+            self.calls.append((user_id, domain, success))
+
+    class _TFEL:
+        def meter_operation(self, name, bits):
+            return {}
+
+    orch.skill_profiler = _Profiler()
+    orch.tfel = _TFEL()
+    orch.epigenetic_memory = None          # unreached: the stage proposes nothing
+
+    ctx_missing = {"user_id": "u1", "domain": "d", "user_context": {}}
+    out = _aio.run(orch._stage_learn(ctx_missing))
+    assert orch.skill_profiler.calls == [], "an unmeasured cycle updated a stored skill profile"
+    assert "NOT updated" in out["skill"], out["skill"]
+    assert "needs an observation" in out["skill"], out["skill"]
+
+    #  a RECORDED outcome does update it — so leg 5 is not merely asserting that nothing happens
+    orch.skill_profiler = _Profiler()
+    out_ok = _aio.run(orch._stage_learn({"user_id": "u1", "domain": "d",
+                                         "user_context": {"success": False}}))
+    assert orch.skill_profiler.calls == [("u1", "d", False)], orch.skill_profiler.calls
+    assert "recorded outcome" in out_ok["skill"], out_ok["skill"]
+
+    # ── 6. NO PLACEHOLDER ADAPTATION, and the reason names the constant hash ───────────────────
+    assert out["adaptation_proposed"] is False, out
+    assert "identical for every user and every cycle" in out["adaptation_basis"], out["adaptation_basis"]
+    assert "REFINED_BY_EPIGENETIC_ENGINE" not in src, "the placeholder new-state literal is back"

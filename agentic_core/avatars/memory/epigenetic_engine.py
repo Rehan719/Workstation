@@ -61,8 +61,16 @@ class EpigeneticMemoryEngine:
             before_state=before,
             after_state=after,
             confidence=validation_res.get("confidence", 0.0),
-            constitutional_validation=validation_res.get("proof", "MOCK_REGULATOR_SIG"),
-            lob_fixpoint_stable=True,
+            # W530 — this defaulted to a literal that LOOKED like a signature, so a regulator returning no
+            # proof produced a marker indistinguishable from an attested one. Same shape as the five
+            # placeholder signatures P3.15 removed from the clearance chain. Real attestation, when this
+            # needs it, is the keyed MAC in agentic_core.attestation — which is not post-quantum and says so.
+            constitutional_validation=validation_res.get(
+                "proof", "NOT ATTESTED: the regulator returned no proof, so nothing signed this marker"),
+            # W530 — was the literal True. It is reached only when verify() returned True, so the constant
+            # was accurate on this path; recording the verifier's own answer means a later refactor that
+            # moves the check cannot turn it into a lie.
+            lob_fixpoint_stable=bool(self.lob_fixpoint.verify(adaptation_type, before, after)),
             applied_at=datetime.now(timezone.utc)
         )
 

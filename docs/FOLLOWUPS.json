@@ -3851,8 +3851,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W527",
       "note": "",
       "tier": 3,
       "area": "organism",
@@ -5358,8 +5358,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W530",
       "note": "",
       "slot_source": "P3.16 owns the recirculation loop and its stage latencies",
       "tier": 3
@@ -5807,8 +5807,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W530",
       "note": "",
       "slot_source": "it is the avatar path P3.16 wires, and its bar gates that wiring on the refusal chain holding",
       "tier": 1
@@ -5904,6 +5904,25 @@
       "note": "",
       "slot_source": "the item whose ACCEPT clause reuses this helper",
       "tier": 3
+    },
+    {
+      "id": "FU-339",
+      "title": "Three defects beside FU-333, all delivered W530: a placeholder attestation, a missing outcome counted as a win, and a marker hash that is constant for every user",
+      "why": "Found W528-W530 while checking FU-333's blast radius - specifically whether any caller of propose_adaptation treats a None refusal as an error (none does: the single caller puts it straight into ctx['state']['learn']). None of the three was in FU-333's body or FU-309's, so they are recorded here rather than folded silently into a closure. ALL THREE ARE FIXED IN W530. (1) epigenetic_engine.py built its marker with constitutional_validation=validation_res.get('proof', <a literal that looked like a signature>) - so a regulator returning no proof produced a marker indistinguishable from an attested one, the identical shape to the five placeholder signatures P3.15 removed from the clearance chain. It now says NOT ATTESTED with the reason. (2) _stage_learn read the cycle outcome with a default of True, so a cycle whose caller recorded NO outcome was written into the user's skill profile as a SUCCESS. MEASURED: skill_profiler.update_skill runs Bayesian Knowledge Tracing over a strict bool, so True inflates p_known and False deflates it - there is no 'not recorded' value to pass, and a BKT update needs an OBSERVATION. It now does not call update_skill at all without one, and says so. This defect ACCUMULATED: every unmeasured cycle moved a stored profile that later decisions read. (3) _stage_learn proposed an adaptation whose AFTER state was a literal string where refined weights belong, and epigenetic_engine computes marker_id = sha256(json.dumps(after))[:16] - so over that constant it was THE SAME MARKER ID ON EVERY CYCLE FOR EVERY USER. A content hash that looked like content-addressing and bound every marker to one placeholder; the BEFORE state was real, which is what made the asymmetry easy to miss, and it was invisible from either file alone. The stage now proposes nothing and states that nothing here computes refined weights. ALSO RECORDED, because it is a process defect of mine: FU-333 DUPLICATED FU-309's first half. FU-309 already named both the Mock regulator and the cumulative latency, and I registered FU-333 in W527 without checking the register for an existing row. I check for duplicates before writing a memory file and did not do the same for a row.",
+      "source": "W530 (found while checking FU-333's blast radius; all three fixed in the same round)",
+      "found": "2026-10-01",
+      "files": [
+        "agentic_core/avatars/memory/epigenetic_engine.py",
+        "agentic_core/avatars/core/recirculation_orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the item FU-333 and FU-309 ride; these are the same subsystem",
+      "tier": 1
     }
   ],
   "routes": [
