@@ -2193,10 +2193,16 @@ def test_cognitive_engines_list(client):
     assert r.status_code == 200
     body = r.json()
     assert "engines" in body
-    assert body["total"] == 9
+    # W528 (P3.16) — twelve: the six foundational, the three meta (P3.13) and the three auxiliary built
+    # this round. Asserted with the TIER SET rather than as a bare total, so a tier added without its
+    # engines being listed fails here instead of passing a bigger number.
+    assert body["total"] == 12, body["total"]
     layers = {e["layer"] for e in body["engines"]}
-    assert "foundational" in layers
-    assert "meta" in layers
+    assert layers == {"foundational", "meta", "auxiliary"}, layers
+    by_layer = {}
+    for e in body["engines"]:
+        by_layer[e["layer"]] = by_layer.get(e["layer"], 0) + 1
+    assert by_layer == {"foundational": 6, "meta": 3, "auxiliary": 3}, by_layer
 
 
 def test_cognitive_cascade(client):
@@ -19140,8 +19146,8 @@ def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
     assert body["engines_compute"] is False, body
     assert "does not add engines" in body["engines_run_basis"], body["engines_run_basis"]
     eng = client.get("/api/v1/cognitive/engines").json()
-    assert eng["total"] == 9 and eng["implemented_total"] == 9, eng
-    assert eng["layers_implemented"] == {"foundational": 6, "meta": 3}, eng
+    assert eng["total"] == 12 and eng["implemented_total"] == 12, eng
+    assert eng["layers_implemented"] == {"foundational": 6, "meta": 3, "auxiliary": 3}, eng
     # W524 — NOTHING on this page is planned any more, so the old pair of assertions over `planned`
     # would be one failure and one VACUOUS TRUTH: `all(...)` over an empty list passes while checking
     # nothing. Asserted as the positive state instead, over a list that is non-empty by construction.
@@ -28421,7 +28427,7 @@ def test_w520_the_cognitive_engines_refuse_instead_of_fabricating():
     # ASSERT THE REGISTRY, NOT ITS REPORT. An earlier version of this leg checked out["registered_count"]
     # and was VACUOUS: replacing the register() call with `pass` left the report saying six while the
     # registry stayed empty, and the leg passed. A report is a claim; _engines is the state.
-    assert len(_Reg._engines) == 9, (f"the registry holds {len(_Reg._engines)} engines, not nine", out)
+    assert len(_Reg._engines) == 12, (f"the registry holds {len(_Reg._engines)} engines, not twelve", out)
     assert out["registered_count"] == len(_Reg._engines), (
         "the report disagrees with the registry it describes", out, len(_Reg._engines))
     # W523 (Owner ruling 2026-09-30) — the enum declares TWENTY-THREE in five tiers, not nine. Asserted as
@@ -28431,19 +28437,20 @@ def test_w520_the_cognitive_engines_refuse_instead_of_fabricating():
     from agentic_core.cognitive.registry import ENGINE_TIERS, EngineTier
     assert set(ENGINE_TIERS) == set(_ET_ALL), "the tier map does not cover every declared engine exactly once"
     assert out["engine_type_declares"] == 23, out["engine_type_declares"]
-    assert len(out["declared_but_absent"]) == 14, out["declared_but_absent"]
+    assert len(out["declared_but_absent"]) == 11, out["declared_but_absent"]
     tiers = out["by_tier"]
     assert {t: v["declared"] for t, v in tiers.items()} == {
         "foundational": 6, "meta": 3, "auxiliary": 3, "mjm": 3, "bme": 8}, tiers
     # foundational is the ONLY tier with modules — per tier, so one tier gaining a module cannot hide inside
     # a total that still adds up
     assert tiers["foundational"]["registered"] == 6, tiers["foundational"]
-    assert tiers["meta"]["registered"] == 3, tiers["meta"]      # W524 (P3.13) — built and computing
-    for name in ("auxiliary", "mjm", "bme"):
+    assert tiers["meta"]["registered"] == 3, tiers["meta"]           # W524 (P3.13)
+    assert tiers["auxiliary"]["registered"] == 3, tiers["auxiliary"]  # W528 (P3.16)
+    for name in ("mjm", "bme"):
         assert tiers[name]["registered"] == 0, (name, tiers[name])
     # and each absence names a reason belonging to ITS tier: four unbuilt tiers, four DISTINCT reasons. One
     # shared sentence would pass a name-list check while being false for three of them.
-    assert len(set(out["declared_but_absent_basis"].values())) == 3, \
+    assert len(set(out["declared_but_absent_basis"].values())) == 2, \
         sorted(set(out["declared_but_absent_basis"].values()))
     # Mushahida (MJM, observation) is not Mushawara (auxiliary, deliberation, gate 1) — one letter apart in
     # transliteration, and wiring the wrong one into a gate is the mistake this pins against
@@ -28502,7 +28509,7 @@ def test_w520_a_fresh_backend_also_refuses(tmp_path):
     assert out["basis"] is True, out
     assert out["served_by"], out
     assert out["passed"] is None, out
-    assert out["registered"] == 9, out
+    assert out["registered"] == 12, out
 
 
 def test_w520_a_live_reader_finds_the_engines_without_a_test_registering_them(tmp_path):
@@ -28543,7 +28550,10 @@ def test_w520_a_live_reader_finds_the_engines_without_a_test_registering_them(tm
         # registered they RESOLVE, `absent` comes back empty, and the loop below would iterate zero times
         # while still passing. Named from tiers that are still unbuilt (auxiliary and BME) so the leg can
         # continue to fail, and the count assertion after it keeps that honest.
-        "for name in ('TAHQEEQ', 'MUDRIK', 'LEAST_ACTION'):\n"
+        # W528 — TAHQEEQ and MUDRIK were named here until P3.16 built them. Renamed to engines from
+        # tiers that are still unbuilt (MJM and BME), so this leg keeps being able to fail; the count
+        # assertion after the loop is what stops it quietly becoming empty.
+        "for name in ('MUSHAHIDA', 'JAIZA', 'LEAST_ACTION'):\n"
         "    try:\n"
         "        R.get(getattr(E, name)); absent[name] = None\n"
         "    except ValueError as exc:\n"
@@ -28567,7 +28577,7 @@ def test_w520_a_live_reader_finds_the_engines_without_a_test_registering_them(tm
 
     # The registry started EMPTY in this interpreter - so the population happened on the reader's own path.
     assert out["before"] == 0, ("something populated the registry at import; this probe proves nothing", out)
-    assert out["after"] == 9, out
+    assert out["after"] == 12, out
     assert out["resolved"] == "SochEngine", out
     assert out["consultable"] is True, out
 
@@ -28593,24 +28603,27 @@ def test_w520_the_engines_route_reports_the_registry_not_its_own_table(client):
     body = r.json()
 
     # The counts are no longer literals: they follow the table, which has nine with all nine built (P3.13).
-    assert body["total"] == 9, body["total"]
-    assert body["implemented_total"] == 9, body["implemented_total"]
-    assert body["layers"] == {"foundational": 6, "meta": 3}, body["layers"]
-    assert body["layers_implemented"] == {"foundational": 6, "meta": 3}, body["layers_implemented"]
+    assert body["total"] == 12, body["total"]
+    assert body["implemented_total"] == 12, body["implemented_total"]
+    assert body["layers"] == {"foundational": 6, "meta": 3, "auxiliary": 3}, body["layers"]
+    assert body["layers_implemented"] == {"foundational": 6, "meta": 3, "auxiliary": 3}, \
+        body["layers_implemented"]
 
     # The registry's own answer is present, and it AGREES with the page. If it ever stops agreeing, the
     # route must say so rather than print whichever number is nicer.
     reg = body["registry"]
-    assert reg["registered_count"] == 9, reg
-    assert sorted(reg["registered"]) == ["aqal", "hoshiyari", "iman", "inkashaf", "niyyah", "samajh",
-                                         "soch", "tafakkur", "tawazun"], reg
+    assert reg["registered_count"] == 12, reg
+    assert sorted(reg["registered"]) == ["aqal", "hoshiyari", "iman", "inkashaf", "mudrik", "mushawara",
+                                         "niyyah", "samajh", "soch", "tafakkur", "tahqeeq",
+                                         "tawazun"], reg
     # W523 — the route reports against the TRUE denominator. Its own hand-kept table still lists nine
     # (the twelve-engine architecture's first two tiers), so `total` stays 9 while the registry says 23:
     # that is not a disagreement about which engines are BUILT, which is what this_pages_list_agrees means.
     assert reg["engine_type_declares"] == 23, reg
-    assert len(reg["declared_but_absent"]) == 14, reg["declared_but_absent"]
+    assert len(reg["declared_but_absent"]) == 11, reg["declared_but_absent"]
     assert reg["by_tier"]["foundational"]["registered"] == 6, reg["by_tier"]
     assert reg["by_tier"]["meta"]["registered"] == 3, reg["by_tier"]
+    assert reg["by_tier"]["auxiliary"]["registered"] == 3, reg["by_tier"]
     assert reg["by_tier"]["bme"]["declared"] == 8, reg["by_tier"]
     assert "23 is what the ARCHITECTURE declares" in reg["what_the_denominator_means"], reg
     assert reg["this_pages_list_agrees"] is True, reg
@@ -28652,8 +28665,8 @@ def test_w520_the_engines_route_states_a_disagreement_rather_than_hiding_it(clie
     assert reg["disagreement"] == ["tawazun"], reg
     assert "Trust NEITHER count" in reg["disagreement_basis"], reg["disagreement_basis"]
     # the page's own count moved with its table; the registry's did NOT, which is the point
-    assert body["implemented_total"] == 8, body["implemented_total"]
-    assert reg["registered_count"] == 9, reg
+    assert body["implemented_total"] == 11, body["implemented_total"]
+    assert reg["registered_count"] == 12, reg
 
 
 def test_w520_the_factory_export_carries_the_provenance_it_already_captured():
@@ -29244,3 +29257,106 @@ def test_w527_every_stage_is_timed_on_its_own_clock_and_a_breach_is_a_fact():
     assert "Target p95 latency: <500ms (SENSE -> ACT)." not in src, "the p95 claim is back as a statement"
     assert "AN ASPIRATION, NOT A RESULT" in src, "the aspiration is not named as one"
     assert "needs many runs ranked against one another" in src, "nothing says why a p95 cannot be computed"
+
+
+def test_w528_the_three_auxiliary_engines_compute_or_refuse():
+    """P3.16 (part) — Tahqeeq, Mushawara and Mudrik, which were declared in EngineType with no module.
+
+    Two of the three sit behind clearance-chain gates W525 taught to refuse: Mushawara is gate 1, which
+    previously RAISED on a missing field, and Tahqeeq is gate 5, which approved on one. The gates were fixed
+    before the engines existed; this is the other half.
+    """
+    import asyncio as _aio
+    from agentic_core.consultation.interface import ConsultationRequest as R
+    from agentic_core.cognitive.auxiliary.mudrik_engine import MudrikEngine
+    from agentic_core.cognitive.auxiliary.mushawara_engine import MushawaraEngine
+    from agentic_core.cognitive.auxiliary.tahqeeq_engine import TahqeeqEngine
+
+    # ── 1. each refuses on absent input, with a basis and a refusal provenance ──────────────────
+    for name, cls in (("tahqeeq", TahqeeqEngine), ("mushawara", MushawaraEngine), ("mudrik", MudrikEngine)):
+        r = _aio.run(cls().consult(R(engine=name, query="q")))
+        assert r.metadata.get("assessable") is False, (name, r.metadata)
+        assert r.answer.startswith("Not assessable:"), (name, r.answer)
+        assert (r.metadata.get("basis") or "").strip(), (name, "refused with no reason")
+        assert r.confidence is None and r.served_by == "native-refused", (name, r.served_by)
+
+    # ── 2. TAHQEEQ verifies the constraints it is given, per constraint ─────────────────────────
+    ok = _aio.run(TahqeeqEngine().consult(R(engine="tahqeeq", query="q", context={
+        "output": "a real answer",
+        "constraints": [{"kind": "non_empty"}, {"kind": "forbidden_text", "text": "TODO"},
+                        {"kind": "min_chars", "limit": 5}]})))
+    assert ok.metadata["verified"] is True and ok.metadata["constraints_checked"] == 3, ok.metadata
+    bad = _aio.run(TahqeeqEngine().consult(R(engine="tahqeeq", query="q", context={
+        "output": "TODO", "constraints": [{"kind": "forbidden_text", "text": "TODO"}]})))
+    assert bad.metadata["verified"] is False, bad.metadata
+    assert bad.metadata["constraints_failed"] == 1, bad.metadata
+    #  AN UNKNOWN KIND IS A REFUSAL, NOT A SKIP: skipping reports a pass over a check that never ran
+    unk = _aio.run(TahqeeqEngine().consult(R(engine="tahqeeq", query="q", context={
+        "output": "x", "constraints": [{"kind": "no_such_check"}]})))
+    assert unk.metadata["assessable"] is False, unk.metadata
+    assert "not implemented" in unk.metadata["basis"], unk.metadata["basis"]
+    #  and it does not claim more than it checked
+    assert "not 'this output is correct'" in ok.metadata["what_this_does_not_establish"], ok.metadata
+
+    # ── 3. MUSHAWARA counts positions, and ABSTENTIONS ARE NOT AGREEMENT ───────────────────────
+    appr = _aio.run(MushawaraEngine().consult(R(engine="mushawara", query="q", context={"opinions": [
+        {"engine": "inkashaf", "verdict": "approve"}, {"engine": "aqal", "verdict": "approve"},
+        {"engine": "samajh", "verdict": "approve"}]})))
+    assert appr.metadata["status"] == "APPROVED", appr.metadata
+    assert appr.metadata["minimum_engines"] == 3, appr.metadata
+    #  THE LEG THAT MATTERS: three engines that all abstained did not approve anything
+    absts = _aio.run(MushawaraEngine().consult(R(engine="mushawara", query="q", context={"opinions": [
+        {"engine": "a", "verdict": "abstain"}, {"engine": "b", "verdict": "abstain"},
+        {"engine": "c", "verdict": "abstain"}]})))
+    assert absts.metadata["status"] == "BLOCKED", ("three abstentions cleared the gate", absts.metadata)
+    assert absts.metadata["abstentions"] == ["a", "b", "c"], absts.metadata
+    #  one objection blocks, however many approve
+    obj = _aio.run(MushawaraEngine().consult(R(engine="mushawara", query="q", context={"opinions": [
+        {"engine": "a", "verdict": "approve"}, {"engine": "b", "verdict": "approve"},
+        {"engine": "c", "verdict": "object"}]})))
+    assert obj.metadata["status"] == "BLOCKED" and obj.metadata["objections"] == ["c"], obj.metadata
+    #  too few engines blocks, even unanimously
+    few = _aio.run(MushawaraEngine().consult(R(engine="mushawara", query="q", context={"opinions": [
+        {"engine": "a", "verdict": "approve"}, {"engine": "b", "verdict": "approve"}]})))
+    assert few.metadata["status"] == "BLOCKED", few.metadata
+    #  an opinion naming no engine cannot be counted
+    anon = _aio.run(MushawaraEngine().consult(R(engine="mushawara", query="q", context={
+        "opinions": [{"verdict": "approve"}]})))
+    assert anon.metadata["assessable"] is False and "names no engine" in anon.metadata["basis"], anon.metadata
+
+    # ── 4. MUDRIK carries only a CLEARED emission, and never submits ───────────────────────────
+    cleared = {"passed": True,
+               "gates": [{"gate": "mushawara", "verdict": "cleared"}, {"gate": "tahqeeq", "verdict": "cleared"}],
+               "attestations": {"mushawara": {"signed": False}}, "attestations_signed": False}
+    car = _aio.run(MudrikEngine().consult(R(engine="mudrik", query="q", context={
+        "emission": {"id": "e1", "summary": "a change"}, "clearance": cleared})))
+    assert car.metadata["carried"] is True, car.metadata
+    assert car.metadata["proposal"]["target_surface"] == "change_control_agency", car.metadata
+    assert car.metadata["proposal"]["cleared_by_gates"] == ["mushawara", "tahqeeq"], car.metadata
+    #  IT SHAPES, IT DOES NOT SUBMIT — said on the result, not only in a docstring
+    assert car.metadata["submitted"] is False, car.metadata
+    assert "belongs to the caller" in car.metadata["submission_basis"], car.metadata
+    #  the unsigned attestations are carried THROUGH rather than hidden, so governance sees what it gets
+    assert car.metadata["proposal"]["attestations_signed"] is False, car.metadata
+    #  AN UNCLEARED EMISSION IS NOT CARRIED
+    blocked = _aio.run(MudrikEngine().consult(R(engine="mudrik", query="q", context={
+        "emission": {"id": "e2"},
+        "clearance": {"passed": False, "reason": "Gate 3 block",
+                      "gates": [{"gate": "tawazun", "verdict": "blocked"}]}})))
+    assert blocked.metadata["carried"] is False, blocked.metadata
+    assert "NOT cleared" in blocked.metadata["basis"], blocked.metadata
+    #  AND NEITHER IS ONE WHOSE CLEARANCE HAS NO GATE RECORDS: passed:true with nothing behind it did not
+    #  come from the chain P3.14 built
+    hollow = _aio.run(MudrikEngine().consult(R(engine="mudrik", query="q", context={
+        "emission": {"id": "e3"}, "clearance": {"passed": True}})))
+    assert hollow.metadata["assessable"] is False, hollow.metadata
+    assert "nothing behind it" in hollow.metadata["basis"], hollow.metadata["basis"]
+
+    # ── 5. all three are REGISTERED in the auxiliary tier and reachable through the registry ───
+    from agentic_core.cognitive.registry import (CognitiveEngineRegistry as Reg, ENGINE_TIERS,
+                                                 EngineTier, EngineType)
+    for et in (EngineType.TAHQEEQ, EngineType.MUSHAWARA, EngineType.MUDRIK):
+        assert ENGINE_TIERS[et] == EngineTier.AUXILIARY, et
+        assert hasattr(Reg.get(et), "consult"), et
+    #  Mushawara is NOT Mushahida, and they are in different tiers
+    assert ENGINE_TIERS[EngineType.MUSHAHIDA] == EngineTier.MJM

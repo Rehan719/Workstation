@@ -34,6 +34,14 @@ _IMPLEMENTED = {
     EngineType.TAWAZUN: ("agentic_core.cognitive.meta.tawazun_engine", "TawazunEngine"),
     EngineType.NIYYAH: ("agentic_core.cognitive.meta.niyyah_engine", "NiyyahEngine"),
     EngineType.TAFAKKUR: ("agentic_core.cognitive.meta.tafakkur_engine", "TafakkurEngine"),
+    # ── auxiliary (P3.16, architecture doc C6). Two of the three sit behind clearance-chain gates that
+    #    W525 taught to refuse: Mushawara is gate 1, which previously RAISED on a missing field, and
+    #    Tahqeeq is gate 5, which approved on one. Mudrik bridges a cleared emission to Change Control and
+    #    refuses to carry an uncleared one. NOT in the cascade: the cascade runs the six foundational
+    #    engines, which is why engines_run stays 6.
+    EngineType.TAHQEEQ: ("agentic_core.cognitive.auxiliary.tahqeeq_engine", "TahqeeqEngine"),
+    EngineType.MUSHAWARA: ("agentic_core.cognitive.auxiliary.mushawara_engine", "MushawaraEngine"),
+    EngineType.MUDRIK: ("agentic_core.cognitive.auxiliary.mudrik_engine", "MudrikEngine"),
 }
 
 #  One reason per TIER, because the four unbuilt tiers are in four different situations and a single
@@ -120,6 +128,9 @@ def register_all() -> Dict[str, Any]:
                                             "while the three META engines (P3.13) genuinely compute their "
                                             "named quantity - a Pareto frontier, a quorum counted from the "
                                             "signatures supplied, drift against a recorded baseline - or "
-                                            "refuse with a stated basis. Neither reports a confidence, "
-                                            "because neither estimates"),
+                                            "refuse with a stated basis, and so do the three AUXILIARY "
+                                            "engines (P3.16). None of them reports a confidence, because "
+                                            "none of them estimates: a frontier, a quorum, a drift, a "
+                                            "constraint check and a consensus are all computations over "
+                                            "the inputs supplied"),
     }

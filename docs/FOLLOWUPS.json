@@ -5830,6 +5830,80 @@
       "note": "",
       "slot_source": "a sibling-returns defect on a reached CEO surface; P2.4 is the scatter that carries this class (FU-323 is the same shape)",
       "tier": 3
+    },
+    {
+      "id": "FU-335",
+      "title": "P2.14's body names a risk-tier mapping onto change_control that does not exist, and the mapping the spec DOES name cannot escalate",
+      "why": "Measured W529 in the plan-item sizing pass (full detail in docs/PLAN_ITEM_SIZING.md, P2.14). The item body says its risk tiers 'map onto change_control's existing classes'. MEASURED: there is NO 0-5 tier scale anywhere in change_control. agentic_core/api/change_control.py:271 _TIER_MAP holds 14 change_type strings over a FOUR-rank impact scale, so the mapping the body assumes is not there to map onto. WORSE, AND THIS IS THE TRAP: docs/HORIZON_INTEGRATION.md section 6 routes tier 2 to 'config_minor', _TIER_MAP puts config_minor at LOW, and change_control.py:365 awaiting_board_ratification() is reached only by an APPROVED change - so a tier-2 lesson routed as the spec directs lands on a path that cannot escalate to the board. A round building P2.14 from its own body would wire an escalation that silently does not escalate. THE WORK: settle the tier-to-change_type mapping in the item body against the four ranks that exist, and re-check every tier's destination against what awaiting_board_ratification actually requires. This is an edit to the BAR, and an item closes on its bar - so it belongs before the round, not inside it.",
+      "source": "W529 plan-item sizing pass (18 items measured, each estimate adversarially verified)",
+      "found": "2026-10-01",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "docs/HORIZON_INTEGRATION.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.14",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the item whose own body carries the wrong mapping",
+      "tier": 2
+    },
+    {
+      "id": "FU-336",
+      "title": "An Owner ruling recorded in the register never reached the spec: FU-267's user-written reflection tag is absent from HORIZON_INTEGRATION.md",
+      "why": "Measured W529 in the plan-item sizing pass (docs/PLAN_ITEM_SIZING.md, P2.11). FU-267 is closed by W505 and its ruling ADDS a field to the Horizon kernel: 'an optional reflection tag the USER selects and can clear, stored as the user's own words'. MEASURED: grep finds NO mention of a reflection tag anywhere in docs/HORIZON_INTEGRATION.md. So an Owner ruling was recorded in the register, the row was closed, and the SPEC a round builds from never learned about it - anyone working from section 4 step 2 would omit an Owner-ruled field. It also changes the work: the field needs a WRITE route (the user selects and clears it), where every sizing of P2.11 had budgeted only a read route, and it is the sharpest instance of that item's 'no field is filled by inference' leg, because its guard must prove no AI ever writes it. SECOND, SMALLER FINDING IN THE SAME PLACE: the living plan renders 'P2.11 0' counting OPEN riders only, so a reader checking whether P2.11 has ever been examined sees zero and concludes UNEXAMINED when a closed row with a live ruling rides it. THE WORK: propagate FU-267's ruling into HORIZON_INTEGRATION.md section 4 and into P2.11's body, and consider whether the plan's per-item row count should distinguish 'no rows ever' from 'no OPEN rows'. THE CLASS: a ruling that lives in only one of the two places a builder reads is a ruling that will be missed.",
+      "source": "W529 plan-item sizing pass",
+      "found": "2026-10-01",
+      "files": [
+        "docs/HORIZON_INTEGRATION.md",
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.11",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the item whose spec is missing the ruled field",
+      "tier": 2
+    },
+    {
+      "id": "FU-337",
+      "title": "A dropped row's correction note mis-quotes the bar it corrected: FU-297 renders P2.16's probe as a guard",
+      "why": "Measured W529 in the plan-item sizing pass (docs/PLAN_ITEM_SIZING.md, P2.16). FU-297 claimed 'P2.16 states no ACCEPT bar, so the Horizon companion surface cannot be closed as written' and was DROPPED because the item does state one. But the correction note that dropped it MIS-QUOTES the bar it was correcting: it renders the clause as '...asserted by a guard' where the live prompt text says '...asserted by a PROBE'. A guard and a probe are different instruments here - a probe runs in a FRESH backend, which is exactly the leg that caught W520's registry fix passing on a fixture. So the register's copy of P2.16's bar is wrong in the one word that changes what must be built, and a round reading the register rather than the prompt would build the cheaper instrument and believe it had met the bar. CONTEXT WORTH KEEPING: this is the second time in two days that a DROP has been found unsound (FU-303 was dropped on a wrong basis and reinstated in W521 as FU-321). A drop is a verdict and deserves the same scrutiny as a close - the register's own text calls a dropped row 'one measured and REFUTED', which is a strong claim. THE WORK: correct the quotation, and consider whether a drop note that quotes a bar should be checked against the prompt mechanically, since both failures were a misreading of a document that was right there.",
+      "source": "W529 plan-item sizing pass",
+      "found": "2026-10-01",
+      "files": [
+        "docs/FOLLOWUPS.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the item whose bar is mis-quoted in the register",
+      "tier": 3
+    },
+    {
+      "id": "FU-338",
+      "title": "PLAUSIBLE, not confirmed: _provenance_summary returns calls=0 for an empty list, and nothing distinguishes zero calls from unrecorded calls",
+      "why": "Raised W529 by the plan-item sizing pass against P2.15, and VERIFIED BY ME RATHER THAN TAKEN ON TRUST - an agent reported it and I executed the helper myself. MEASURED: agentic_core/api/intelligence.py:344 _provenance_summary([]) returns {'served_by': {}, 'calls': 0, 'floor_calls': 0, 'failed_calls': 0, 'model_calls': 0, 'any_external': False, 'external_models': []}. REGISTERED AS PLAUSIBLE AND NOT CONFIRMED, deliberately: calls = len(provs), so for a genuinely empty list zero is a TRUE statement, and this programme has already had one case where a finding would have 'fixed' correct code. THE OPEN QUESTION, which is the actual work: can provs be empty because a WRITER failed to append, rather than because no call was made? If yes, the zero is ambiguous and a consumer cannot tell a measured zero from an unrecorded one - _run_summary_data then reports stages_completed = 0 for a run whose stages did execute. If no, the helper is correct and this row closes as refuted. DO NOT 'fix' this before answering that question: the frontend's provenanceLine already handles the empty-map case honestly (it says no call is recorded as having served the output rather than naming the floor), which suggests the ambiguity was recognised at the render layer and may simply be absent at this one. NOTE P2.15's bar reuses this helper, so the answer changes that item's work.",
+      "source": "W529 sizing pass, claim re-executed by me before registering",
+      "found": "2026-10-01",
+      "files": [
+        "agentic_core/api/intelligence.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the item whose ACCEPT clause reuses this helper",
+      "tier": 3
     }
   ],
   "routes": [

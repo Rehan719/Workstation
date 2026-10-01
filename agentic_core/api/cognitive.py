@@ -61,6 +61,21 @@ _ENGINE_REGISTRY = {
     "tafakkur":  {"name": "Tafakkur", "function": "Deep contemplation over complex problems", "layer": "meta",
                   "implemented": True, "status": "built-computes",
                   "note": "built by P3.13: computes its named quantity or refuses with a basis. NOT in the cascade - regulative, consumed by the clearance chain"},
+    # ── W528 (P3.16) — the AUXILIARY tier. Added here so this page lists the engines that exist: the
+    #    registry registers twelve, and a page still listing nine would make the route truthfully report a
+    #    disagreement with itself. Not in the cascade, so `engines_run` stays six.
+    "tahqeeq":   {"name": "Tahqeeq", "function": "Output verification against supplied hard constraints",
+                  "layer": "auxiliary", "status": "built-computes",
+                  "note": "built by P3.16: gate 5 of the clearance chain. Verifies the constraints it is "
+                          "given, or refuses - NOT in the cascade"},
+    "mushawara": {"name": "Mushawara", "function": "Deliberative consensus counted across distinct engines",
+                  "layer": "auxiliary", "status": "built-computes",
+                  "note": "built by P3.16: gate 1 of the clearance chain. Abstentions are counted and are "
+                          "never treated as agreement. NOT Mushahida, which is MJM's observation stage"},
+    "mudrik":    {"name": "Mudrik", "function": "Bridge to the transformation surface (Change Control)",
+                  "layer": "auxiliary", "status": "built-computes",
+                  "note": "built by P3.16: shapes a handover from a CLEARED emission and refuses an "
+                          "uncleared one. It shapes; it does not submit"},
     "tawazun":   {"name": "Tawazun", "function": "Balance and trade-off resolution", "layer": "meta",
                   "implemented": True, "status": "built-computes",
                   "note": "built by P3.13: computes its named quantity or refuses with a basis. NOT in the cascade - regulative, consumed by the clearance chain"},
@@ -101,8 +116,10 @@ async def list_engines():
         ],
         "total": len(_ENGINE_REGISTRY),
         "implemented_total": len(_IMPLEMENTED),
-        "layers": {k: _layers.get(k, 0) for k in ("foundational", "meta")},
-        "layers_implemented": {k: _layers_impl.get(k, 0) for k in ("foundational", "meta")},
+        # W528 — the auxiliary tier is listed now, so the layer counts name three tiers
+        "layers": {k: _layers.get(k, 0) for k in ("foundational", "meta", "auxiliary")},
+        "layers_implemented": {k: _layers_impl.get(k, 0)
+                               for k in ("foundational", "meta", "auxiliary")},
         "basis": (f"{len(_IMPLEMENTED)} of the {len(_ENGINE_REGISTRY)} engines exist as modules and run; the "
                   f"{len(_ENGINE_REGISTRY) - len(_IMPLEMENTED)} meta engines are PLANNED (no module yet — the "
                   "delivery plan builds them under P3.13). No engine computes yet: each of the "
