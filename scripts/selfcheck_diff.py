@@ -355,6 +355,49 @@ ASSERT_IN_RE = re.compile(r"""assert\s+(?P<neg>not\s+)?['"](?P<lit>[^'"]{6,})['"
 ASSERT_NOTIN_RE = re.compile(r"""assert\s+['"](?P<lit>[^'"]{6,})['"]\s+not\s+in\s+(?P<var>\w+)""")
 
 
+def _selfvars_by_scope(src: str, f: str) -> tuple:
+    """Which locals hold THIS file's own text, per enclosing function.
+
+    Returns (module_level, by_function) where by_function maps a function's (start, end) line range to the
+    names assigned inside it. W527 — previously one set was computed over the whole file and applied to every
+    added line in it, so a function reading ANOTHER file into a common name like `src` inherited the self-read
+    of a different function entirely. The code carried that as a known-open limitation; this closes it.
+    """
+    import ast as _ast
+
+    own = (r"(\w+)\s*=\s*\(?root\s*/\s*['\"]" + re.escape(f) + r"['\"]\)?\.read_text")
+
+    def _names(text: str) -> set:
+        found = set(re.findall(own, text))
+        for _m in re.finditer(r"(\w+)\s*=\s*([^\n]*__file__[^\n]*read_text[^\n]*)", text):
+            rhs = _m.group(2)
+            if re.search(r"__file__.*?/\s*[\"']", rhs):
+                continue                 # a path JOIN after __file__ means ANOTHER file
+            # W527 — `Path(other.__file__)` is another MODULE's file. Only a BARE __file__ is this one.
+            if re.search(r"[\w\]\)]\s*\.\s*__file__", rhs):
+                continue
+            found.add(_m.group(1))
+        return found
+
+    try:
+        tree = _ast.parse(src)
+    except SyntaxError:
+        # a file that does not parse: fall back to the whole-file set rather than screening nothing
+        return _names(src), {}
+
+    lines = src.splitlines()
+    by_func = {}
+    covered = set()
+    for node in tree.body:
+        if isinstance(node, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
+            start, end = node.lineno, getattr(node, "end_lineno", node.lineno)
+            by_func[(start, end)] = _names(chr(10).join(lines[start - 1:end]))
+            covered.update(range(start, end + 1))
+    module_level = _names(chr(10).join(
+        ln for i, ln in enumerate(lines, 1) if i not in covered))
+    return module_level, by_func
+
+
 def check_selfmatch(rev: str, files: list[str]) -> list[str]:
     """A test assertion searching its OWN file for a literal the assertion itself contains: it matches
     itself and can never fail. Hit twice in W491, in both directions."""
@@ -377,12 +420,28 @@ def check_selfmatch(rev: str, files: list[str]) -> list[str]:
         # anywhere in it, so two functions sharing a local name still collide. Scoping the variable to
         # its enclosing function is the complete fix.
         for _m in re.finditer(r"(\w+)\s*=\s*([^\n]*__file__[^\n]*read_text[^\n]*)", src):
-            if re.search(r"__file__.*?/\s*[\"']", _m.group(2)):
+            _rhs = _m.group(2)
+            if re.search(r"__file__.*?/\s*[\"']", _rhs):
                 continue                 # reads a DIFFERENT file, so a literal in it is a real claim
+            # W527 (FU-303's class, different trigger) — `Path(ge.__file__).read_text()` reads the GENOME
+            # ENGINE's file, not this one. Only a BARE __file__ names the file doing the reading, so an
+            # attribute access on another object is a read of a different file. Missing this registered the
+            # name `src` file-wide from one line and reported five sound assertions in a later function as
+            # self-matching. A screen right about a class and wrong about its triggers teaches a reader to
+            # stop reading it.
+            if re.search(r"[\w\]\)]\s*\.\s*__file__", _rhs):
+                continue
             selfvars.add(_m.group(1))
+        # W527 — the variables are scoped to the function containing the added line. A module-level read
+        # of this file is in scope everywhere, so those names stay global.
+        _module_vars, _by_func = _selfvars_by_scope(src, f)
         for ln, line in added_removed(rev, f)[0]:
             m = ASSERT_IN_RE.search(line)
-            if m and m.group("var") in selfvars:
+            _scope = set(_module_vars)
+            for (_a, _b), _names_in in _by_func.items():
+                if _a <= ln <= _b:
+                    _scope |= _names_in
+            if m and m.group("var") in _scope:
                 out.append(f"{f}:{ln}  this assertion reads its OWN file and searches for a literal the "
                            f"line itself contains — it matches itself and cannot fail. Assert the "
                            f"contract against a live response instead.")

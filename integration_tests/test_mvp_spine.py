@@ -29158,3 +29158,89 @@ def test_w526_attestations_are_attestations(client, monkeypatch):
     assert _not["proof_system"] is None and _not["proof_system_basis"], _not
 
     os.environ.pop(_att.KEY_ENV, None)
+
+
+def test_w527_every_stage_is_timed_on_its_own_clock_and_a_breach_is_a_fact():
+    """P3.16 (part) — per-stage latencies, all six of them, and breaches recorded rather than logged.
+
+    Three defects measured before building. The four timed stages all passed the cycle's ORIGINAL start
+    time, so each figure after the first was the sum of itself and everything before it — a figure carrying
+    the name of one stage while measuring several. A breach went to `logger.warning` and nowhere else. And
+    only FOUR OF SIX stages were timed at all: LEARN and REFLECT had no check, so the loop reported on two
+    thirds of itself.
+    """
+    import ast
+    import asyncio as _aio
+    from pathlib import Path as _P
+    from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator as _O
+
+    #  built without __init__: this exercises the stopwatch, not five collaborators
+    orch = object.__new__(_O)
+
+    async def _slow(seconds):
+        await _aio.sleep(seconds)
+        return "done"
+
+    # ── 1. a stage's figure is ITS OWN, not cumulative ─────────────────────────────────────────
+    async def _drive():
+        first = await orch._measure_stage("SENSE", _slow(0.12))
+        second = await orch._measure_stage("INTEND", _slow(0.0))
+        return first, second
+
+    (r1, rec1), (r2, rec2) = _aio.run(_drive())
+    assert r1 == "done" and r2 == "done", (r1, r2)
+    assert rec1["ms"] >= 100, rec1                      # the slow stage is seen as slow
+    #  THE LEG THAT MATTERS: the fast stage that FOLLOWS it is not charged for it. Under the cumulative
+    #  version this figure was ~120ms and INTEND breached its 200ms budget on SENSE's work.
+    assert rec2["ms"] < 50, ("a later stage is being charged for an earlier one", rec2)
+    assert rec2["breached"] is False, rec2
+    assert "not cumulative" in rec1["measured"], rec1
+
+    # ── 2. a breach is IN THE RECORD, with its budget beside it ────────────────────────────────
+    _res, rec = _aio.run(orch._measure_stage("SENSE", _slow(0.15)))
+    assert rec["breached"] is True, rec
+    assert rec["budget_ms"] == 100 and rec["ms"] > 100, rec
+    #  and the budget is declared an UNTUNED DEFAULT in the same record as the verdict
+    assert rec["budget_is_a_default"] is True, rec
+    assert "untuned DEFAULT" in _O._BUDGETS_ARE_DEFAULTS, _O._BUDGETS_ARE_DEFAULTS
+
+    # ── 3. a stage that RAISES is recorded and re-raised, not swallowed into a timing ───────────
+    async def _boom():
+        raise ValueError("stage exploded")
+
+    try:
+        _aio.run(orch._measure_stage("ACT", _boom()))
+        raise AssertionError("a failing stage did not propagate")
+    except RuntimeError as exc:
+        assert "ACT" in str(exc) and "ValueError" in str(exc), str(exc)
+
+    # ── 4. ALL SIX stages are declared, and ALL SIX are timed — asserted on the AST, because this is a
+    #      reachability question and a source count would pass on a call in a branch that never runs ──
+    assert sorted(_O._STAGE_BUDGETS_MS) == sorted(
+        ["ACT", "ANALYZE", "INTEND", "LEARN", "REFLECT", "SENSE"]), _O._STAGE_BUDGETS_MS
+    src = (_P(__file__).resolve().parents[1]
+           / "agentic_core/avatars/core/recirculation_orchestrator.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    #  the method is `execute_cycle`. Asserted non-None BEFORE walking it: with a wrong name and an
+    #  `if cycle:` instead, this whole leg would skip and the test would pass having checked nothing.
+    cycle = next((n for n in ast.walk(tree)
+                  if isinstance(n, ast.AsyncFunctionDef) and n.name == "execute_cycle"), None)
+    assert cycle is not None, "execute_cycle not found — the method was renamed"
+    timed = []
+    for node in ast.walk(cycle):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
+                and node.func.attr == "_measure_stage" and node.args:
+            first = node.args[0]
+            if isinstance(first, ast.Constant):
+                timed.append(first.value)
+    assert sorted(timed) == sorted(
+        ["ACT", "ANALYZE", "INTEND", "LEARN", "REFLECT", "SENSE"]), ("not every stage is timed", timed)
+    #  the misnamed warner is gone: it was called _assert_latency and it asserted nothing, it warned
+    assert "_assert_latency" not in src, "the method that asserted nothing is back"
+    #  and no call passes the cycle's start time into a per-stage measurement any more
+    assert "_measure_stage(start_time" not in src, "a cumulative start time is back"
+
+    # ── 5. the p95 claim is named an aspiration, because nothing retains a series to compute one ─
+    assert "Target p95 latency: <500ms (SENSE -> ACT)." not in src, "the p95 claim is back as a statement"
+    assert "AN ASPIRATION, NOT A RESULT" in src, "the aspiration is not named as one"
+    assert "needs many runs ranked against one another" in src, "nothing says why a p95 cannot be computed"

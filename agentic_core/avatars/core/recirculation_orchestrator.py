@@ -38,7 +38,17 @@ class AvatarRecirculationOrchestrator:
     """
     IDBO Layer 9/10/11: Orchestration & Evolution.
     Executes the 6-stage metabolic loop: SENSE → INTEND → ANALYZE → ACT → LEARN → REFLECT.
-    Target p95 latency: <500ms (SENSE -> ACT).
+
+    W527 (P3.16) — this said "Target p95 latency: <500ms (SENSE -> ACT)". A p95 is a claim about a
+    DISTRIBUTION: it needs many runs ranked against one another. This class measures one cycle at a time and
+    keeps no history of previous cycles, so there was nothing a p95 could be computed from — a statistic's
+    name attached to something that never computed it.
+
+    WHAT IS MEASURED NOW: each of the six stages on its own clock, recorded per cycle with its budget and
+    whether it breached, in the AVATAR_CYCLE_METABOLIC event. Every budget is an untuned DEFAULT.
+    AN ASPIRATION, NOT A RESULT: <500ms from SENSE to ACT remains the design intent. Reporting a p95 would
+    need a retained series of cycle timings, which nothing here stores; until that exists, the honest figure
+    is the single-cycle measurement beside the budget it was compared against.
     """
 
     def __init__(self, ueg_logger: Any, state: AvatarState):
@@ -98,35 +108,45 @@ class AvatarRecirculationOrchestrator:
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+        #  W527 (P3.16) — ALL SIX stages are measured, each on its own clock. Before this, four were timed
+        #  cumulatively and LEARN and REFLECT were not timed at all, so the loop reported on two thirds of
+        #  itself. The records travel out of this method; they are not only logged.
+        stage_records = []
         try:
-            # 1. STAGE: SENSE (<100ms)
-            ctx["state"]["observation"] = await self._stage_sense(ctx)
-            self._assert_latency(start_time, limit_ms=100, stage="SENSE")
+            ctx["state"]["observation"], _r = await self._measure_stage("SENSE", self._stage_sense(ctx))
+            stage_records.append(_r)
 
-            # 2. STAGE: INTEND (<200ms)
-            ctx["state"]["intent"] = await self._stage_intend(ctx)
-            self._assert_latency(start_time, limit_ms=200, stage="INTEND")
+            ctx["state"]["intent"], _r = await self._measure_stage("INTEND", self._stage_intend(ctx))
+            stage_records.append(_r)
 
-            # 3. STAGE: ANALYZE (<500ms)
-            ctx["state"]["strategy"] = await self._stage_analyze(ctx)
-            self._assert_latency(start_time, limit_ms=500, stage="ANALYZE")
+            ctx["state"]["strategy"], _r = await self._measure_stage("ANALYZE", self._stage_analyze(ctx))
+            stage_records.append(_r)
 
-            # 4. STAGE: ACT (<500ms e2e)
-            ctx["state"]["act"] = await self._stage_act(ctx)
-            self._assert_latency(start_time, limit_ms=500, stage="ACT")
+            ctx["state"]["act"], _r = await self._measure_stage("ACT", self._stage_act(ctx))
+            stage_records.append(_r)
 
-            # 5. STAGE: LEARN (async <1s)
-            ctx["state"]["learn"] = await self._stage_learn(ctx)
+            ctx["state"]["learn"], _r = await self._measure_stage("LEARN", self._stage_learn(ctx))
+            stage_records.append(_r)
 
-            # 6. STAGE: REFLECT (macro <60s)
-            ctx["state"]["reflect"] = await self._stage_reflect(ctx)
+            ctx["state"]["reflect"], _r = await self._measure_stage("REFLECT", self._stage_reflect(ctx))
+            stage_records.append(_r)
 
             total_duration = time.time() - start_time
+            _breached = [r["stage"] for r in stage_records if r["breached"]]
+            ctx["stages"] = stage_records
             await self.ueg.log_event("AVATAR_CYCLE_METABOLIC", {
                 "id": ctx["cycle_id"],
                 "duration_s": total_duration,
                 "mode": self.mode_manager.current_mode.value,
-                "domain_p_known": self.skill_profiler.get_skill_level(ctx["user_id"], ctx["domain"])
+                "domain_p_known": self.skill_profiler.get_skill_level(ctx["user_id"], ctx["domain"]),
+                # W527 (P3.16) — the breaches are FACTS HERE, not a line in a log file. `stages_measured`
+                # is counted rather than written as 6, so a stage added without timing cannot hide.
+                "stages": stage_records,
+                "stages_measured": len(stage_records),
+                "stages_declared": len(self._STAGE_BUDGETS_MS),
+                "breached_stages": _breached,
+                "breach_count": len(_breached),
+                "budgets_are_defaults": self._BUDGETS_ARE_DEFAULTS,
             })
 
             return {
@@ -227,7 +247,44 @@ class AvatarRecirculationOrchestrator:
         self.tfel.meter_operation("metabolic_reflect", bits=1e5)
         return await self.cognitive_orchestrator.process_engine("tafakkur", ctx["state"]["act"], ctx)
 
-    def _assert_latency(self, start_time: float, limit_ms: float, stage: str):
-        elapsed = (time.time() - start_time) * 1000
-        if elapsed > limit_ms:
-            logger.warning(f"LATENCY ASSERTION BREACH in stage {stage}: {elapsed:.2f}ms > {limit_ms}ms")
+    #  Per-stage budgets, every one a DEFAULT. Nothing in this repository has calibrated a stage budget
+    #  against its own measured history, so a figure below one of these is within an aspiration rather
+    #  than within a tuned limit — and each record says so rather than implying otherwise.
+    _STAGE_BUDGETS_MS = {"SENSE": 100, "INTEND": 200, "ANALYZE": 500, "ACT": 500,
+                         "LEARN": 1000, "REFLECT": 60000}
+    _BUDGETS_ARE_DEFAULTS = ("every budget here is an untuned DEFAULT: no measurement of this platform's "
+                             "own stage timings has set any of them, so 'within budget' is an aspiration "
+                             "met, not a performance result")
+
+    async def _measure_stage(self, stage: str, coro):
+        """Await one stage, time IT ALONE, and return (result, record).
+
+        W527 (P3.16). The four checks this replaces each passed the cycle's ORIGINAL start time, so every
+        stage after the first reported the sum of itself and everything before it. A per-stage figure has to
+        start when the stage does, or it carries the name of one stage while measuring several.
+        """
+        began = time.perf_counter()
+        try:
+            result = await coro
+            failed = None
+        except Exception as exc:                          # noqa: BLE001 — the stage's failure is recorded
+            result, failed = None, f"{exc.__class__.__name__}: {exc}"
+        ms = (time.perf_counter() - began) * 1000.0
+        limit = self._STAGE_BUDGETS_MS.get(stage)
+        record = {
+            "stage": stage,
+            "ms": round(ms, 3),
+            "budget_ms": limit,
+            "budget_is_a_default": True,
+            "breached": (limit is not None and ms > limit),
+            "measured": "this stage alone, from its own start (not cumulative from the cycle's start)",
+        }
+        if failed:
+            record["failed"] = failed
+        if record["breached"]:
+            #  kept, because an operator watching logs should still see it — but the log is no longer the
+            #  only place it exists
+            logger.warning("LATENCY BREACH in stage %s: %.2fms > %sms (untuned default)", stage, ms, limit)
+        if failed:
+            raise RuntimeError(f"stage {stage} failed: {failed}")
+        return result, record

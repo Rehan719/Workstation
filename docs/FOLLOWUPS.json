@@ -5794,6 +5794,42 @@
       "closed_by": null,
       "note": "",
       "tier": 1
+    },
+    {
+      "id": "FU-333",
+      "title": "The avatar orchestrator wires EpigeneticMemoryEngine to a Mock regulator that ALWAYS approves with confidence 0.95, unconditionally",
+      "why": "Found W527 while fixing the loop's per-stage latencies. agentic_core/avatars/core/recirculation_orchestrator.py lines 80-84, in __init__ and NOT behind any try/except or feature flag: 'async def mock_validate(*args): return {\"approved\": True, \"confidence\": 0.95}' is passed as EpigeneticMemoryEngine's regulator via type('Mock', (), {'validate_mutation': mock_validate}), and its lob_fixpoint is type('Mock', (), {'verify': lambda *a: True}). So the mutation-approval gate CANNOT REFUSE and reports a graded confidence nothing computed, and the fixpoint verifier CANNOT FAIL - both in the live constructor, named Mock, on every instantiation. This is the same class P3.14 removed from the clearance chain (three gates that approved on absence) and P3.12 removed from eight engines (a graded literal over a check that never ran), in a third place. WHY IT MATTERS FOR P3.16: that item's bar says the avatar path is wired to the loop only once P3.12-P3.15 hold. Wiring it to a loop whose mutation regulator always approves would satisfy the letter and lose the point - the chain of refusals would end at a gate that has none. THE WORK: either a real regulator that can refuse with a basis (and a fixpoint verifier that can fail, or an honest statement that no fixpoint check is performed - see the halo2 precedent in W526), or EpigeneticMemoryEngine constructed to require one and refuse without it. NOT fixed in W527: the round was carrying the six-stage timing work, and this needs the epigenetic engine's own contract decided rather than a fourth mock swapped for a third.",
+      "source": "W527 (found while building P3.16's per-stage latency measurement)",
+      "found": "2026-10-01",
+      "files": [
+        "agentic_core/avatars/core/recirculation_orchestrator.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is the avatar path P3.16 wires, and its bar gates that wiring on the refusal chain holding",
+      "tier": 1
+    },
+    {
+      "id": "FU-334",
+      "title": "run_extrospection's sibling returns disagree: one omits status and detail, so a caller indexing them gets undefined",
+      "why": "Found W526 by the pre-flight while P3.15 touched this file for an unrelated reason. PRE-EXISTING and confirmed by diffing: W526 changed only a suggestion string and its comments, not the returns. agentic_core/ai/ceo/autonomy_pipelines.py's run_extrospection has sibling returns whose key sets differ - one carries timestamp, external_signals_analyzed and suggested_actions; a sibling carries status and detail. A caller reading 'status' gets undefined depending on which path ran, the same class W524 fixed in cognitive.py's run_single_engine (four returns, three key sets). THE WORK: every branch carries the same load-bearing keys, and a guard calls the surface on both paths rather than reading source. TWO MECHANICAL LESSONS, recorded because they are the reason this row is late: (1) the W526 add was REFUSED by the router for lack of a matching route, and W526's commit message nevertheless states 'FU-333 registered' - a false claim in a commit message, the same defect class this programme keeps removing from code; (2) the reason the failure went unnoticed is that the command was piped into tail, so the PIPELINE's exit status was tail's zero and the following '&& suite launch' ran anyway. A register write must never be chained into a backgrounded call, and never piped into tail when an && depends on it.",
+      "source": "W526 pre-flight, re-registered in W527 after finding the W526 add was refused and masked by a pipe",
+      "found": "2026-10-01",
+      "files": [
+        "agentic_core/ai/ceo/autonomy_pipelines.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a sibling-returns defect on a reached CEO surface; P2.4 is the scatter that carries this class (FU-323 is the same shape)",
+      "tier": 3
     }
   ],
   "routes": [
