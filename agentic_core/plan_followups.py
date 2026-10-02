@@ -468,23 +468,45 @@ def _route_matches(rt: Dict[str, Any], title: str, files: List[str]) -> Optional
 
 def route_row(register: Any, prompt_text: str, title: str, files: List[str], severity: str,
               exclude: Optional[Set[str]] = None) -> Dict[str, Any]:
-    """The plan item a new or moved row rides: a HIGH row rides the next open item (it must not wait for its area's
-    turn); otherwise the first route (in the register's order) that matches and points at an open item. A route
-    pointing at a finished item is skipped here (check() reports it). {slot: None, reason} when nothing matches."""
+    """The plan item a new or moved row rides: the first route (in the register's order) that matches and points
+    at an open item. A route pointing at a finished item is skipped here (check() reports it).
+    {slot: None, reason} when nothing matches.
+
+    W535 (Owner ruling 2026-10-02) — a HIGH row used to SHORT-CIRCUIT to open_items[0]["slot"] before any route
+    was consulted. The next open item has been P2.4 throughout, so every high-severity row in the repository
+    landed there and P2.4 refilled as fast as it drained: nine of its eleven open rows arrived after its bar was
+    written, and no P2 item has closed in 23 rounds. The urgency rule answered a real worry — a row must not
+    wait for its area's turn — but it made one item the destination for everything urgent.
+
+    So severity no longer decides the SLOT; it decides the FALLBACK. A high row routes by its files like any
+    other, and rides the next open item only when no route claims it at all, which is the genuinely
+    cross-cutting case the rule was written for. A row whose placement was deliberate is unaffected either way:
+    it carries `slot_source`, and the plan's currency guard exempts such a row because a stated reason outranks
+    a filename heuristic.
+    """
     exclude = exclude or set()
     open_items = [it for it in _open_items(plan_items(prompt_text)) if it["slot"] not in exclude]
     open_slots = {it["slot"] for it in open_items}
     if severity == "high":
+        for rt in _routes(register):
+            if rt["slot"] not in open_slots:
+                continue
+            how = _route_matches(rt, title, [normalise_path(f) for f in files])
+            if how:
+                return {"slot": rt["slot"], "by": f"high severity, routed by area: {how}"}
         if open_items:
-            return {"slot": open_items[0]["slot"], "by": "high severity rides the next open plan item"}
-        return {"slot": None, "reason": "a high-severity row rides the next open plan item, and none is open"}
+            return {"slot": open_items[0]["slot"],
+                    "by": ("high severity and NO route claims its files, so it rides the next open item "
+                           "rather than waiting for an area it has none of")}
+        return {"slot": None, "by": None,
+                "reason": "a high-severity row rides the next open plan item, and none is open"}
     for rt in _routes(register):
         if rt["slot"] not in open_slots:
             continue
         how = _route_matches(rt, title, [normalise_path(f) for f in files])
         if how:
             return {"slot": rt["slot"], "by": how}
-    return {"slot": None,
+    return {"slot": None, "by": None,
             "reason": "no route matches its files or title — name the plan item with --slot (or add a route: "
                       "python scripts/followups.py route --slot P… --files … --words …)"}
 

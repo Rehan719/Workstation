@@ -29112,6 +29112,11 @@ def test_w526_attestations_are_attestations(client, monkeypatch):
     #  computes. No such guard existed. Here it is. Permitted files are those RECORDING a retired claim, and
     #  each occurrence in them must sit on a line that also carries a retirement marker — otherwise a fresh
     #  over-claim could be added to a permitted file and nothing would notice.
+    #  W535 — these were matched CASE-SENSITIVELY, and that blind spot had a live consequence:
+    #  products/capital_fund/reporting/regulatory_reporter.py built a manifest signature string from
+    #  a lower-cased form of the first word, so a FABRICATED signature in a report typed
+    #  FCA_QUARTERLY_MIFID_II sat in front of this screen and the screen could not see it. Matching is
+    #  now case-insensitive, done where the comparison happens rather than by listing more spellings.
     WORDS = ("Dilithium", "Kyber")
     MARKERS = ("W506", "W526", "W521", "retired", "not post-quantum", "NOT post-quantum",
                "once named", "do not appear", "simulation", "does not exist", "no such operation",
@@ -29127,12 +29132,16 @@ def test_w526_attestations_are_attestations(client, monkeypatch):
     #    _archive/   — retired trees; recovering their SHAPE is the plan's work, their claims are not live
     #    core/       — top-level, holds the real Landauer meter; its claims are FU-329's subject
     #    integration_tests/, scripts/ — this file names the words in order to forbid them
-    #    products/   — EXCLUDED FOR A NAMED REASON: FU-332. products/capital_fund holds two live claims
-    #                  (a multisig protocol that cannot even be imported, and a withdrawal path gating on
-    #                  a "sovereign PQC identity"), and it is a money path where real-money rails are
-    #                  owner-gated. A round about clearance attestations must not reshape it in passing, so
-    #                  the scope gap is declared here and carried by a registered row.
-    EXCLUDED = ("_archive/", "core/", "integration_tests/", "scripts/", "products/")
+    #    products/   — NO LONGER EXCLUDED, as of W535. The exclusion was declared in W526 against FU-332
+    #                  and named two live claims there; the Owner ruled FU-332 LIVE WORK on 2026-10-02 and
+    #                  the measurement found FIVE files claiming cryptography the platform does not
+    #                  implement, importing it from a package that is EMPTY. The three that asserted
+    #                  something untrue are fixed — the multisig verifies three-state, the on-chain
+    #                  withdrawal is money-gated and attests for real instead of returning a literal True,
+    #                  and the regulatory manifest no longer carries a fabricated signature, a hard-coded
+    #                  FINAL_CERTIFIED or a placeholder where a PDF belongs. Scanning products/ is what
+    #                  PROVES that, so the scope gap is closed rather than re-declared.
+    EXCLUDED = ("_archive/", "core/", "integration_tests/", "scripts/")
     offenders = []
     scanned = 0
     for py in sorted(root.rglob("*.py")):
@@ -29146,7 +29155,7 @@ def test_w526_attestations_are_attestations(client, monkeypatch):
         scanned += 1
         lines = text.splitlines()
         for lineno, line in enumerate(lines, 1):
-            if not any(w in line for w in WORDS):
+            if not any(w.lower() in line.lower() for w in WORDS):
                 continue
             #  a marker may sit a line or two away, because these explanations run to several lines. The
             #  WINDOW keeps the check real — a fresh claim added far from any retirement note still fails —
@@ -29919,3 +29928,185 @@ def test_w534_the_preflight_stops_reading_comparisons_as_keys_and_qms_discloses_
     #  and the TRUE statement must survive: with the store read whole and no defects, there ARE none.
     #  Removing a true statement to fix an over-claim is itself a defect.
     assert "no defects recorded" in panel,         "the honest zero-defects message was deleted along with the over-claim"
+
+
+def test_w535_the_owners_four_rulings_of_2026_10_02():
+    """The four rulings: sequencing stands, three bars corrected, HIGH routes by area, FU-332 is live work.
+
+    The two bar legs matter most, because an item closes on its ACCEPT clause: P2.12's bar demanded a list the
+    Owner had ruled it ships WITHOUT, and P2.13's declared itself blocked on two answers already given. Neither
+    item could be closed by any quality of work while its bar said that.
+    """
+    import ast as _ast
+    import asyncio as _aio
+    import os as _os
+    from pathlib import Path as _P
+
+    _root = _P(__file__).resolve().parents[1]
+    prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+
+    # ── 1. THE RULINGS ARE RECORDED, where a later round will read them ────────────────────────
+    assert prompt.count("OWNER RULINGS 2026-10-02") == 1, "the rulings of 2026-10-02 are not in the prompt"
+    #  and they sit BEFORE the older block, so the newest ruling is the first one read
+    assert prompt.index("OWNER RULINGS 2026-10-02") < prompt.index("OWNER RULINGS 2026-09-30"), \
+        "the newest rulings block is filed below an older one"
+
+    # ── 2. THE THREE BARS ARE CORRECTED — the stale demands are GONE, not merely annotated ─────
+    assert prompt.count("CORRECTED W535 by Owner ruling 2026-10-02") == 3, \
+        "three bars were ruled corrected; the prompt does not record three"
+    #  P2.12 no longer requires the Owner to hand over a route list it was ruled to ship without
+    assert "the distress routes are data with a reviewed-on date shown beside them (OWNER" not in prompt, \
+        "P2.12's bar still makes the route list a precondition"
+    assert "render as NOT SUPPLIED" in prompt, "P2.12's corrected bar does not state the visible absence"
+    #  P2.13 is no longer blocked on answers that exist
+    assert "BLOCKED BY the Owner's answers on reading" not in prompt, \
+        "P2.13's bar still declares itself blocked on answers already given"
+    #  P2.14 no longer maps onto a tier scale that does not exist, and names the four that do
+    assert "0-1 applied and logged" not in prompt, "P2.14's body still names the absent 0-5 scale"
+    assert "LOW / MEDIUM /" in prompt and "awaiting_board_ratification()" in prompt, \
+        "P2.14's corrected mapping does not name the four ranks or the gate that reads them"
+    #  and P2.4's cluster (a) records that FU-077 left the item
+    _clust_a = prompt[prompt.index("(a) DEAD AND LEGACY CODE"):][:900]
+    assert "slot OWNER" in _clust_a, "P2.4 cluster (a) does not record that FU-077 moved out of the item"
+
+    # ── 3. A HIGH ROW ROUTES BY AREA, and the urgency fallback still exists ────────────────────
+    import json as _json
+    import agentic_core.plan_followups as _fu
+    reg = _json.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    #  (a) a high row whose files belong to an area goes THERE, not to whichever item is next
+    hi = _fu.route_row(reg, prompt, "something wrong in the mjm engine", ["agentic_core/mjm/mjm.py"], "high")
+    assert hi["slot"] == "P3.16", ("a high row did not route by area", hi)
+    assert "routed by area" in hi["by"], hi
+    #  (b) and a MEDIUM row with the same files reaches the same item — severity no longer picks the slot
+    med = _fu.route_row(reg, prompt, "something wrong in the mjm engine", ["agentic_core/mjm/mjm.py"], "medium")
+    assert med["slot"] == hi["slot"], ("severity still changes the destination", hi, med)
+    #  (c) the fallback survives for the genuinely cross-cutting case the old rule was written for
+    none_claimed = _fu.route_row({"routes": []}, prompt, "a row no route claims", [], "high")
+    assert none_claimed["slot"], "a high row with no matching route now routes nowhere at all"
+    assert "NO route claims its files" in none_claimed["by"], none_claimed
+    #  (d) every branch of route_row answers with the SAME KEYS, so a caller indexing one shape does not
+    #      raise on another. The refusal branch is the one a caller is least likely to have exercised.
+    refused = _fu.route_row({"routes": []}, prompt, "a row no route claims", [], "low")
+    for _k in ("slot", "by"):
+        assert _k in hi and _k in none_claimed and _k in refused, \
+            ("route_row's branches disagree on their keys", _k, sorted(hi), sorted(refused))
+    assert refused["slot"] is None and refused["by"] is None, refused
+    assert (refused.get("reason") or "").strip(), "a refusal does not say why it could not route"
+
+    # ── 4. FU-332 — the multisig verifies THREE-STATE, and an unverifiable signature is not quorum ──
+    import products.capital_fund.core.multisig_protocol as _mp
+
+    class _U:
+        async def log_event(self, name, payload):
+            self.last = (name, payload)
+
+    def _proto(u):
+        p = _mp.RealMultiSigProtocol.__new__(_mp.RealMultiSigProtocol)
+        p.ueg, p.quorum_threshold = u, 1
+        p.proposals = {"p1": {"signatures": {}, "status": "PENDING"}}
+        return p
+
+    _key_before = _os.environ.pop("WORKSTATION_ATTESTATION_KEY", None)
+    try:
+        #  (a) NO KEY — the signature cannot be CHECKED. That is neither valid nor invalid, and the
+        #      proposal must be untouched: a quorum of unchecked signatures is not a quorum.
+        u1 = _U(); p1 = _proto(u1)
+        assert _aio.run(p1.approve_proposal("p1", "did:a", b"\x01", b"pk")) is False
+        assert u1.last[0] == "MULTISIG_SIGNATURE_UNVERIFIABLE", u1.last[0]
+        assert u1.last[1]["counted_toward_quorum"] is False, u1.last[1]
+        assert p1.proposals["p1"]["signatures"] == {}, "an unverifiable signature was recorded anyway"
+        assert p1.proposals["p1"]["status"] == "PENDING", p1.proposals["p1"]["status"]
+
+        #  (b) WITH a key and a wrong signature — that IS a rejection, and a DIFFERENT event, because
+        #      "invalid" and "could not be checked" are different facts and only one blames the signer.
+        _os.environ["WORKSTATION_ATTESTATION_KEY"] = "w535-guard-key"
+        u2 = _U(); p2 = _proto(u2)
+        assert _aio.run(p2.approve_proposal("p1", "did:a", b"\xde\xad", b"pk")) is False
+        assert u2.last[0] == "MULTISIG_INVALID_SIGNATURE", u2.last[0]
+    finally:
+        _os.environ.pop("WORKSTATION_ATTESTATION_KEY", None)
+        if _key_before is not None:
+            _os.environ["WORKSTATION_ATTESTATION_KEY"] = _key_before
+
+    # ── 5. THE REGULATORY MANIFEST stops asserting a certification nobody performed ─────────────
+    import products.capital_fund.reporting.regulatory_reporter as _rr
+
+    class _U2:
+        async def log_event(self, *a, **k): return None
+        async def get_events_in_range(self, *a, **k): return [{"e": 1}]
+        async def query_events(self, *a, **k): return [{"e": 1}]
+
+    rep = _rr.RegulatoryReporter.__new__(_rr.RegulatoryReporter)
+    rep.fund_id, rep.ueg = "f1", _U2()
+    try:
+        bundle = _aio.run(rep.generate_fca_compliance_bundle("2026-01-01", "2026-03-31"))
+    except Exception:                                     # noqa: BLE001 — see the source legs below
+        bundle = None
+    if isinstance(bundle, dict) and isinstance(bundle.get("manifest"), dict):
+        man = bundle["manifest"]
+        assert man["status"] in ("ATTESTED", "NOT ATTESTED"), ("a manifest status was invented", man["status"])
+        assert "pqc_manifest_signature" not in man, "the fabricated manifest signature is back"
+        assert "merkle_root" not in man, "a whole-set digest is still called a Merkle root"
+        assert man.get("events_digest"), man
+        assert "NOT a Merkle root" in man["events_digest_basis"], man["events_digest_basis"]
+        assert bundle.get("summary_pdf") is None, "a placeholder is back where PDF content belongs"
+    #  the source legs hold whether or not the call above could run, so an environment that cannot
+    #  reach the method still screens the three fabrications
+    rsrc = (_root / "products/capital_fund/reporting/regulatory_reporter.py").read_text(encoding="utf-8")
+    assert "FINAL_CERTIFIED" not in rsrc, "the hard-coded certification status is back"
+    assert "Base64_PDF_Content_of_" not in rsrc, "the placeholder PDF string is back"
+
+    # ── 6. THE WITHDRAWAL'S MONEY GATE COMES FIRST — on the AST, because ORDER is the property ──
+    #  Not behavioural, and the reason is recorded rather than hidden: crypto_gateway cannot be imported
+    #  at all, because products/capital_fund/core/vault.py calls firestore.client() at MODULE SCOPE. That
+    #  is a second, separate cause of FU-332's symptom and rides FU-346. A text search could see the gate
+    #  exists; only the AST can see that nothing precedes it.
+    gsrc = (_root / "products/capital_fund/adapters/crypto_gateway.py").read_text(encoding="utf-8")
+    gtree = _ast.parse(gsrc)
+    fn = next((n for n in _ast.walk(gtree)
+               if isinstance(n, (_ast.AsyncFunctionDef, _ast.FunctionDef))
+               and n.name == "execute_onchain_withdrawal"), None)
+    assert fn is not None, "the withdrawal function is gone"
+    body = [b for b in fn.body if not (isinstance(b, _ast.Expr) and isinstance(b.value, _ast.Constant))]
+    #  W535 — THIS LEG WAS VACUOUS ON ITS FIRST WRITING, caught by driving it red. It concatenated the first
+    #  TWO statements and searched the result for the flag, so inserting a statement at position 0 left the
+    #  flag still present in the haystack and the check passed. Order is an INDEX property, not a substring
+    #  one: find the gate, then assert that everything before it is only the acquisition of the flag it tests.
+    gate_at = next((i for i, b in enumerate(body)
+                    if isinstance(b, _ast.If) and "REAL_MONEY_ENABLED" in _ast.unparse(b.test)), None)
+    assert gate_at is not None, "the on-chain withdrawal has no money gate at all"
+    preamble = [_ast.unparse(b) for b in body[:gate_at]]
+    assert all("REAL_MONEY_ENABLED" in p for p in preamble), \
+        ("something runs before the money gate in an on-chain withdrawal: " + "; ".join(preamble)[:200])
+    assert any(isinstance(n, _ast.Return) for n in _ast.walk(body[gate_at])), \
+        "the money gate does not return, so execution continues past a refusal"
+    #  and the gate must REFUSE rather than raise, so a caller learns why instead of catching a ValueError
+    assert '"status": "REFUSED"' in gsrc or "'status': 'REFUSED'" in gsrc, "the gate does not refuse explicitly"
+    #  the validator must not be handed a literal in place of the attestation it is meant to establish
+    assert '"pqc_signed": True' not in gsrc, "the governance check is still fed a fabricated input"
+    assert '"pqc_verified": True' not in gsrc, "the withdrawal still returns an unconditional verification"
+
+    # ── 7. THE CLAIM SCREEN now scans products/, and sees lower-case spellings ──────────────────
+    #  W535 — BOTH HALVES OF THIS LEG WERE VACUOUS ON THEIR FIRST WRITING, caught by driving them red.
+    #  Each asserted that a literal appeared in THIS FILE, and each assertion CONTAINED that literal, so it
+    #  matched itself and could never fail. An assert cannot search its own file for its own text. The
+    #  exclusion list is now read as a VALUE off the AST, and the case-insensitivity is asserted where it
+    #  matters — on the repository, not on the screen's wording.
+    me_tree = _ast.parse(_P(__file__).read_text(encoding="utf-8"))
+    excl_nodes = [n for n in _ast.walk(me_tree)
+                  if isinstance(n, _ast.Assign)
+                  and any(isinstance(t, _ast.Name) and t.id == "EXCLUDED" for t in n.targets)]
+    assert len(excl_nodes) == 1, ("expected exactly one exclusion list in this file", len(excl_nodes))
+    excluded_values = [e.value for e in excl_nodes[0].value.elts if isinstance(e, _ast.Constant)]
+    assert "products/" not in excluded_values, \
+        ("the product tree is excluded from the claim scan again", excluded_values)
+    #  and THE SUBSTANCE the case-insensitivity was for: no file under the product tree names a forbidden
+    #  algorithm in ANY case. A lower-cased spelling is how a fabricated manifest signature hid from this
+    #  screen until W535, so the spelling is checked here rather than trusted to the other screen's wording.
+    _named = []
+    for _py in sorted((_root / "products").rglob("*.py")):
+        for _i, _line in enumerate(_py.read_text(encoding="utf-8").splitlines(), 1):
+            _low = _line.lower()
+            if "dilithium" in _low or "kyber" in _low:
+                _named.append(f"{_py.relative_to(_root).as_posix()}:{_i}")
+    assert not _named, ("the product tree names a forbidden algorithm: " + ", ".join(_named))

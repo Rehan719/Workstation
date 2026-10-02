@@ -6,7 +6,8 @@ import logging
 import hashlib
 from agentic_core.governance.gaas.gaas_validator import GaaSValidatorV4 as GaaSValidator
 from agentic_core.ueg.logger import VSBUEGLogger as UEGLogger
-from agentic_core.crypto import pqc
+# W535 (FU-332) — was an import of a module that does not exist, so this file could not be imported.
+from agentic_core import attestation
 from products.capital_fund.core.vault import CapitalVault
 
 class CryptoGateway:
@@ -69,25 +70,52 @@ class CryptoGateway:
         """
         Executes a crypto withdrawal with PQC signing and gas modelling.
         """
+        # 0. THE MONEY GATE, and it goes FIRST. W535 — this path is named an on-chain withdrawal and
+        #    consulted NO gate of any kind; it was unreachable only by accident, because the module could not
+        #    be imported. Repairing that import without this check would have turned a latent money path into
+        #    a reachable ungated one, which is a worse outcome than the broken import. REAL_MONEY_ENABLED is
+        #    False in code and only the Owner flips it; while it is False this refuses and says so, and no
+        #    virtual-WST ledger is touched here either, because this function is about a real chain.
+        from agentic_core.economy.owner_payments import REAL_MONEY_ENABLED
+        if not REAL_MONEY_ENABLED:
+            return {
+                "status": "REFUSED",
+                "executed": False,
+                "reason": ("real-money rails are disabled in code (REAL_MONEY_ENABLED is False), so no "
+                           "on-chain withdrawal is attempted. This platform's money is virtual WST; a real "
+                           "transfer needs the Owner's explicit decision, not a caller's request"),
+                "tx_hash": None,
+                "attested": None,
+                # W535 — the three branches of this function must agree on their keys, or a caller indexing
+                # the success shape raises on the refusal. This is the branch most likely to be hit.
+                "attestation_algorithm": None,
+                "verified": None,
+                "verified_basis": "nothing was attested, because no withdrawal was attempted",
+            }
+
         # 1. Gas Fee Modelling (Article 1134 requirement)
         # Simulate gas estimation
         estimated_gas_usd = Decimal("2.50")
         if estimated_gas_usd > (amount * self.gas_reserve_ratio):
              raise ValueError(f"Gas cost ({estimated_gas_usd} USD) exceeds 5% reserve limit.")
 
-        # 2. PQC Transaction Signing
-        # Sign the withdrawal intent using Dilithium
-        withdrawal_intent = f"WITHDRAW_{self.owner_uid}_{amount}_{asset_type}_{destination}".encode()
-        # Load sovereign PQC identity from environment/Secret Manager (Article 1133)
-        owner_pqc_identity = os.environ.get("VSB_SOVEREIGN_PQC_ID", "").encode()
-        if not owner_pqc_identity:
-            raise ValueError("Sovereign PQC Identity not found in secure environment.")
-        pqc_signature = pqc.sign_instruction(withdrawal_intent, owner_pqc_identity)
+        # 2. Attestation of the withdrawal intent — COMPUTED, never asserted.
+        #    W535 (FU-332) — this claimed to sign the intent with an algorithm this platform does not
+        #    implement, by calling a function absent from the package it imported. It then passed
+        #    `signed: True` INTO the constitutional validator as an input, so the governance check was being
+        #    told the thing it was meant to establish. The attestation is now computed and its real result is
+        #    what the validator receives; with no key configured, attest() refuses rather than inventing one.
+        withdrawal_intent = {"op": "WITHDRAW", "uid": self.owner_uid, "amount": str(amount),
+                             "asset": asset_type, "destination": destination}
+        signing = attestation.attest(withdrawal_intent)
 
-        # 3. Constitutional Validation
+        # 3. Constitutional Validation — fed the measured attestation state, not a literal
         validation = await self.validator.validate_action(
             "CRYPTO_WITHDRAWAL",
-            {"uid": self.owner_uid, "amount": float(amount), "dest": destination, "pqc_signed": True}
+            {"uid": self.owner_uid, "amount": float(amount), "dest": destination,
+             "attested": bool(signing.get("signed")),
+             "attestation_algorithm": signing.get("algorithm"),
+             "attestation_basis": signing.get("basis")}
         )
         if not validation.get("passed"):
             raise ValueError(f"Constitutional Violation: {validation.get('reason')}")
@@ -98,7 +126,8 @@ class CryptoGateway:
         vault_result = await self.vault.withdraw(amount)
 
         # 5. UEG Logging with SHA-3-512
-        tx_hash = hashlib.sha3_512(f"{pqc_signature}{datetime.now(UTC)}".encode()).hexdigest()
+        tx_hash = hashlib.sha3_512(
+            f"{signing.get('signature') or 'NOT ATTESTED'}{datetime.now(UTC)}".encode()).hexdigest()
 
         await self.ueg.log_event(
             "CRYPTO_WITHDRAWAL_EXECUTED",
@@ -107,12 +136,21 @@ class CryptoGateway:
                 "tx_hash": tx_hash,
                 "amount": float(amount),
                 "dest": destination,
-                "pqc_signature": pqc_signature.hex() if isinstance(pqc_signature, bytes) else str(pqc_signature)
+                "attestation": signing,
             }
         )
 
+        # W535 — this returned `verified: True` unconditionally, with nothing verified anywhere in the
+        # function. The verification is now RECOMPUTED from the record, and it is three-state: None means it
+        # could not be checked, which is not a pass.
+        _check = attestation.verify(withdrawal_intent, signing)
         return {
             "status": "SUBMITTED",
+            "executed": True,
+            "reason": None,
             "tx_hash": tx_hash,
-            "pqc_verified": True
+            "attested": bool(signing.get("signed")),
+            "attestation_algorithm": signing.get("algorithm"),
+            "verified": _check.get("verified"),
+            "verified_basis": _check.get("basis"),
         }

@@ -5715,7 +5715,7 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P3.16",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -6032,6 +6032,41 @@
       "note": "",
       "slot_source": "P2.17 owns the round machinery and the instruments the rhythm runs; this is a blind spot in the round-start step itself, not in any item's build work",
       "tier": 2
+    },
+    {
+      "id": "FU-346",
+      "title": "vault.py calls firestore.client() at module import, so capital_fund cannot be imported at all",
+      "why": "W535 measured this while fixing FU-332, and it is the SECOND reason that tree could not be imported. products/capital_fund/core/vault.py:11 executes db = firestore.client() at MODULE SCOPE, which raises ValueError('The default Firebase app does not exist') unless a Firebase app has already been initialised. So importing products.capital_fund.adapters.crypto_gateway still fails after its absent-module import was repaired, and every module that reaches vault fails with it. Two things are wrong and they are different. First, a module-level call to a managed cloud client makes importability depend on live infrastructure, so the file cannot be read, tested or type-checked without credentials, and a test suite can never reach it. Second, it reaches for MANAGED INFRASTRUCTURE, which is owner-gated on this platform: the fix is NOT to initialise Firebase. THE WORK: move the client acquisition behind a function or a lazy property so import does not touch the network, and have it REFUSE with a stated reason when no app is configured, exactly as the attestation module refuses with no key. Then confirm the adapter imports under the suite's environment. Until that lands, the honest status of crypto_gateway's money gate is UNREACHED rather than enforced, because nothing can import it to find out.",
+      "source": "W535",
+      "found": "2026-10-02",
+      "files": [
+        "products/capital_fund/core/vault.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-347",
+      "title": "Two capital_fund modules still name a post-quantum algorithm they do not implement",
+      "why": "W535 fixed the three files in products/capital_fund that ASSERTED something untrue, and these two remain because they declare themselves simulations rather than lying: qan_bridge.py:2 and :18 describe post-quantum cross-chain settlement as a Simulator, and federation_manager.py:26 says a PQC-signed handshake is Simulated. Disclosed is better than asserted, so neither is urgent. But qan_bridge.py:14 sets self.pqc_algorithm to a specific standardised algorithm name with a standards citation beside it, on a line carrying no simulation marker of its own, and that value is returned to callers at :30 — so a consumer reading the field sees a named primitive and no indication that nothing implements it. The repo-wide claim screen does not catch these, because its word list names only the two older algorithm names; widening it would flag the honest Simulator lines too, which is why this is a judgement rather than a sweep. THE WORK: decide whether the simulator keeps the algorithm name at all, and if it does, put the simulation marker on the line that carries the value and on the field it returns, not only in the class docstring.",
+      "source": "W535",
+      "found": "2026-10-02",
+      "files": [
+        "products/capital_fund/adapters/qan_bridge.py",
+        "products/capital_fund/mesh/federation_manager.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3
     }
   ],
   "routes": [
