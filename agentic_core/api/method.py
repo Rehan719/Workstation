@@ -855,13 +855,30 @@ async def method_forecast(user: dict | None = Depends(get_current_user)):
             "next_item": f.get("next_item"),
         }
         # M-FCAST-01: both rates, and which one measures completion — stated, not left to the reader
+        # W536 (P2.17 bar (c)) — the `why` here TYPED two figures, "32 rows closed across six rounds while
+        # ZERO Phase 2 items closed in forty-eight", inside the payload whose whole job is to report
+        # measurement. Both were hand-written and both had gone stale. The bar says these figures are
+        # computed from git and the register, never typed, so the sentence is now assembled from the two
+        # rates already in this payload and states what it cannot compute instead of inventing it.
+        _rows_rate = (f.get("rate_used") or {}).get("closed_per_round")
+        _item_rate = f.get("item_rate_per_round")
+        _rows_window = (f.get("rate_used") or {}).get("rounds") or (f.get("rate_used") or {}).get("window")
         out["which_rate_measures_completion"] = {
-            "rows_per_round": (f.get("rate_used") or {}).get("closed_per_round"),
-            "items_per_round": f.get("item_rate_per_round"),
+            "rows_per_round": _rows_rate,
+            "items_per_round": _item_rate,
+            "rows_closed_in_window": (round(_rows_rate * _rows_window, 1)
+                                      if isinstance(_rows_rate, (int, float))
+                                      and isinstance(_rows_window, (int, float)) else None),
+            "rows_window_rounds": _rows_window,
             "the_lever": "items",
-            "why": ("32 rows closed across six rounds while ZERO Phase 2 items closed in forty-eight. The "
-                    "row rate sizes a ROUND; the item rate sizes the PLAN, and only one of them moves toward "
-                    "completion."),
+            "why": ("the row rate sizes a ROUND; the item rate sizes the PLAN, and only one of them moves "
+                    "toward completion. "
+                    + (f"Measured now: {_rows_rate} row(s) per round against {_item_rate} item(s) per round."
+                       if isinstance(_rows_rate, (int, float)) and isinstance(_item_rate, (int, float))
+                       else "One or both rates could not be measured, so no comparison is stated.")),
+            "why_basis": ("every figure in this block is read from the generated forecast, not written here. "
+                          "A count of rows closed in the window is DERIVED from the rate and the window and "
+                          "is therefore approximate to the rate's rounding; it is not a tally of rows"),
         }
     except Exception as e:                            # noqa: BLE001 — said, never a fabricated rate
         out["projection"] = {"unavailable": f"{e.__class__.__name__}: {e}",
@@ -1309,6 +1326,13 @@ def _rows_the_tree_moved_under(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "basis": ("git history could not be read (git absent, or a shallow clone as CI uses), so no "
                           "row is reported as a candidate. This is NOT a statement that every row is current."),
                 "candidates": [], "candidate_count": 0, "history_commits": None,
+                # W536 — the same keys as the computed branch, because a caller indexing one shape must not
+                # raise on the other. None here means NOT COMPUTED, which is different from zero: with no
+                # history read, this check considered nothing at all rather than considering everything.
+                "not_considered_rows": None, "not_considered_row_count": None,
+                "commits_no_round_could_be_read_from": None,
+                "not_considered_basis": ("no history was read, so what this check could not consider is NOT "
+                                         "COMPUTED rather than nought — it considered nothing"),
                 "limits": ("nothing was read, so nothing is claimed. The limits of a successful read do not "
                            "apply here because no read succeeded.")}
     # W510 — parsed SEQUENTIALLY, not by splitting on blank lines. `--name-only` prints the files AFTER a
@@ -1340,10 +1364,30 @@ def _rows_the_tree_moved_under(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
                                "files_changed_since": later,
                                "why": (f"the tree moved under this row: {len(later)} of its file(s) were "
                                        f"changed in a later round than W{src}, which found it")})
+    # W536 (FU-345) — WHAT THIS CHECK CANNOT SEE, counted rather than left in a prose limit. Its own limits
+    # string already said it reads 400 commits and only those whose subject declares a round, so a row naming
+    # no files cannot be matched at all and a change made by an unparseable commit subject is invisible. A
+    # round reading only the candidate count would take the candidates for the whole picture. Not split by
+    # cause: a subject declaring no round and one declaring a sub-round this parser cannot read are different
+    # facts, and this counts what no round could be read FROM without claiming which.
+    _no_files = [r.get("id") for r in rows if not (r.get("files") or [])]
+    _unreadable_subjects = 0
+    for _line in log.splitlines():
+        if "\x1f" in _line and not _round_of(_line.split("\x1f", 1)[1]):
+            _unreadable_subjects += 1
     return {
         "state": MET if candidates else NOT_ASSESSABLE,
         "candidates": sorted(candidates, key=lambda c: -max(c["files_changed_since"].values()))[:40],
         "candidate_count": len(candidates),
+        "not_considered_rows": sorted(_no_files),
+        "not_considered_row_count": len(_no_files),
+        "commits_no_round_could_be_read_from": _unreadable_subjects,
+        "not_considered_basis": (
+            f"{len(_no_files)} open row(s) name NO files, so this check cannot match them against any change "
+            f"and they are neither candidates nor cleared — they are UNEXAMINED by it. A further "
+            f"{_unreadable_subjects} of {commits} commit(s) read carry a subject this parser could not read a "
+            f"round from, so whatever they changed is invisible here too. Neither number is a defect in the "
+            f"rows or the commits; both are the width of this instrument, counted instead of described"),
         # counted by the SAME parse that found the candidates, not by a second expression that could agree
         # with it by coincidence — which the blank-line split did, at 401, while finding nothing
         "history_commits": commits,

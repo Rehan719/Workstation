@@ -60,8 +60,12 @@ and `_LEXICON_NOT_A_VERDICT` states the limit in each reason.
 ## 5 — AN INSTRUMENT THAT CANNOT FAIL IS NOT EVIDENCE
 A check is admissible only if its red state is reachable. Green from an instrument that cannot go red reports
 nothing.
-*Verified:* the blind harness (`scripts/blind_sweep.py`) separates BLIND(red) from VACUOUS and BAD BLIND; every
-new guard is driven red before it is trusted.
+*Verified:* each round drives every new guard RED by hand before trusting it, naming the edit that produces the red, restoring the file and verifying the restore against a recorded sha — but THE MECHANISED HARNESS THAT WOULD SEPARATE BLIND(red) FROM VACUOUS AND BAD BLIND IS NOT IN THIS REPOSITORY, so this article is enforced by the round and not yet by a tool.
+This line once cited that harness as a committed file under scripts/. It was never committed, so the article
+against unfalsifiable evidence was itself resting on something nobody could run. Corrected W536, which also
+made every path cited in a *Verified* line machine-checked to resolve — the filename is in that round's commit
+message and is deliberately not written here as a path, because citing one that cannot resolve is now the
+defect this article screens for. P2.17's bar (b) carries building the harness.
 
 ## 6 — A GUARD DRIVES ITS PRECONDITION AND ITS SUBJECT
 A check may not rely on the ambient environment, nor on whichever record a store happens to hold, to create the

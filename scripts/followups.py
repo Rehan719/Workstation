@@ -247,6 +247,20 @@ def main() -> int:
                       f"  {str(_r.get('title'))[:66]}")
             print()
             print(_out.get("basis") or "")
+            # W536 (FU-345) — WHAT THIS STEP COULD NOT CONSIDER, printed where the round reads it. The
+            # payload carried these from W536 and this printer did not show them, which would have left the
+            # whole point of the row — that a round-start step states its own width — true of the API and
+            # false of the surface a round actually uses.
+            _nc = _out.get("not_considered_row_count")
+            _cw = _out.get("commits_no_round_could_be_read_from")
+            if _nc is None and _cw is None:
+                print("  NOT CONSIDERED: not computed (no history was read)")
+            else:
+                print(f"  NOT CONSIDERED: {_nc} open row(s) name no files, so this step cannot match them "
+                      f"against any change; {_cw} of {_out.get('history_commits')} commit(s) read carry a "
+                      f"subject no round could be read from.")
+                for _rid in (_out.get("not_considered_rows") or [])[:20]:
+                    print(f"     UNEXAMINED BY THIS STEP  {_rid}")
             #  W534 — this did `(_out.get("limits") or {}).items()` and CRASHED every round start, after
             #  printing its results, so the failure looked cosmetic while the command exited non-zero. Two
             #  things went wrong and the second is the general one. The caller invented a shape: every one of

@@ -4350,11 +4350,12 @@
     {
       "id": "FU-253",
       "title": "The blind sweep is serial only because blinds mutate one tree — one worktree per blind would cut it from 22.5 min to about 7",
-      "why": "W488 measured 36 blinds in 22.5 min (37.5s each), and most of each blind is app boot, not the assertion. Blinds cannot run in parallel IN ONE TREE because each mutates the repo and byte-restores it; they can run one-per-git-worktree, which is the pattern the refutation workflow already uses safely here (isolation: 'worktree', its own DATA_DIR per worker). FIX: extend the mk_break harness so the blind list is sharded across N worktrees (N = cpu_count - 2, measured 8 CPUs so 6), each with DATA_DIR/WORKSTATION_DATA_DIR/WORKSTATION_UEG_PATH/PROJECTS_DIR of its own, results merged, and the SAME preflight (every anchor matches exactly once) run in each shard before any mutation. Keep the contamination check: the harness must still verify the WATCHed docs are byte-identical after every blind. Expect 3-4x not 6x (8 CPUs, pytest is CPU-bound) — about 15 min per round. Verify by running the same blind set serially and sharded and comparing the caught/vacuous sets exactly, the same discipline FU-249 requires of xdist.",
+      "why": "W488 measured 36 blinds in 22.5 min (37.5s each), and most of each blind is app boot, not the assertion. Blinds cannot run in parallel IN ONE TREE because each mutates the repo and byte-restores it; they can run one-per-git-worktree, which is the pattern the refutation workflow already uses safely here (isolation: 'worktree', its own DATA_DIR per worker). FIX: extend the mk_break harness so the blind list is sharded across N worktrees (N = cpu_count - 2, measured 8 CPUs so 6), each with DATA_DIR/WORKSTATION_DATA_DIR/WORKSTATION_UEG_PATH/PROJECTS_DIR of its own, results merged, and the SAME preflight (every anchor matches exactly once) run in each shard before any mutation. Keep the contamination check: the harness must still verify the WATCHed docs are byte-identical after every blind. Expect 3-4x not 6x (8 CPUs, pytest is CPU-bound) — about 15 min per round. Verify by running the same blind set serially and sharded and comparing the caught/vacuous sets exactly, the same discipline FU-249 requires of xdist. FILES CORRECTED W536: this cited scripts/followups.py, which has nothing to do with a blind harness. Its deliverable is a NEW file under scripts/, which the register will not let a row name: check() refuses a row citing a path absent from the working tree, and that rule is correct because it keeps a row checkable. So the row names where its evidence lives TODAY - the document carrying bar (b) and the before-figure, and the conftest whose per-worker isolation any sharding depends on. P2.17's bar (b) asks for the harness's runtime measured before and after, and the W488 before-figure was taken against an ad-hoc script that was never committed, so there is nothing to compare against until this file lands. Note the consequence for the round-start check: a row naming a file that does not exist can never be matched against a change, which is exactly the width FU-345 made countable.",
       "source": "W488 measurement of where a round's wall clock goes",
       "found": "2026-09-20",
       "files": [
-        "scripts/followups.py"
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "integration_tests/conftest.py"
       ],
       "severity": "medium",
       "owner_gated": false,
@@ -6018,17 +6019,18 @@
     {
       "id": "FU-345",
       "title": "The round-start `satisfied` check cannot see a row that names no files",
-      "why": "W534 repaired a crash in scripts/followups.py satisfied - it did `(_out.get('limits') or {}).items()` while every one of the ten producers in api/method.py emits `limits` as a PROSE SENTENCE, and `or {}` cannot defend against a wrong TYPE because a non-empty string is truthy. The command printed its results and THEN raised, so the failure looked cosmetic while the command exited non-zero at every round start. Repairing it surfaced the limit statement it had been suppressing, and that limit is the actual finding: the check reads only the last 400 commits and only commits whose subject declares a round, so A ROW CARRYING NO FILES IS INVISIBLE TO IT, as is a row found by a round the commit subject does not name. The round-start step that proposes which rows a later round may already have satisfied therefore has a population it never considers, and nobody was told. THE WORK: report the rows the check COULD NOT CONSIDER alongside the candidates, with their count, so an unexaminable row is visible as unexamined rather than absent - the same distinction this programme enforces everywhere else.",
+      "why": "W534 repaired a crash in scripts/followups.py satisfied - it did `(_out.get('limits') or {}).items()` while every one of the ten producers in api/method.py emits `limits` as a PROSE SENTENCE, and `or {}` cannot defend against a wrong TYPE because a non-empty string is truthy. The command printed its results and THEN raised, so the failure looked cosmetic while the command exited non-zero at every round start. Repairing it surfaced the limit statement it had been suppressing, and that limit is the actual finding: the check reads only the last 400 commits and only commits whose subject declares a round, so A ROW CARRYING NO FILES IS INVISIBLE TO IT, as is a row found by a round the commit subject does not name. The round-start step that proposes which rows a later round may already have satisfied therefore has a population it never considers, and nobody was told. THE WORK: report the rows the check COULD NOT CONSIDER alongside the candidates, with their count, so an unexaminable row is visible as unexamined rather than absent - the same distinction this programme enforces everywhere else. FILES CORRECTED W536 and the work DONE: the row cited only scripts/followups.py, where W534 fixed the crash, while the blind spot itself lives in agentic_core/api/method.py's _rows_the_tree_moved_under. Both are now named. The check reports not_considered_rows, not_considered_row_count and commits_no_round_could_be_read_from beside its candidates, with a basis saying those rows are UNEXAMINED rather than cleared. MEASURED on the live register at close: 0 open rows name no files, and 39 of 400 commits read carry a subject the parser could not read a round from — so about a tenth of the history was invisible to the round-start step and nobody was told. The count is deliberately NOT split between a subject declaring no round and one declaring a sub-round the parser cannot read: those are different facts and this counts only what no round could be read from.",
       "source": "W534",
       "found": "2026-10-02",
       "files": [
-        "scripts/followups.py"
+        "scripts/followups.py",
+        "agentic_core/api/method.py"
       ],
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W536",
       "note": "",
       "slot_source": "P2.17 owns the round machinery and the instruments the rhythm runs; this is a blind spot in the round-start step itself, not in any item's build work",
       "tier": 2
@@ -6066,6 +6068,24 @@
       "status": "open",
       "closed_by": null,
       "note": "",
+      "tier": 3
+    },
+    {
+      "id": "FU-348",
+      "title": "The pre-flight's key screen counts only pages as surfaces, so a CLI-surfaced field reads as unsurfaced",
+      "why": "W536 measured this on its own diff. The key screen asks, for each key a round produces, whether a page reads it, and resolves readers by searching frontend files. FU-345's whole subject was that the ROUND-START STEP states its own width, and that step is a CLI: scripts/followups.py satisfied now prints not_considered_row_count and commits_no_round_could_be_read_from where a round actually reads them. The screen cannot see that, so it reported those keys as reaching no surface while they reach the only surface the row was about. This is the fourth precision defect in this screen family after FU-303, FU-317 and FU-319, with the same shape as all of them: a textual proxy standing in for a structural question. THE WORK: teach the reader-resolution to count a print or log statement in scripts/ as a surface for a key whose consumer is a round rather than a person, and say in the lead WHICH kind of surface it found, so no-page and no-surface-at-all stop being the same message. Until then a round must read the lead as no PAGE, not nobody.",
+      "source": "W536",
+      "found": "2026-10-02",
+      "files": [
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 owns the round machinery and the instruments the rhythm runs; this is a precision defect in the pre-flight itself, not in any item's build work",
       "tier": 3
     }
   ],

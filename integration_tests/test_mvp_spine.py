@@ -30110,3 +30110,110 @@ def test_w535_the_owners_four_rulings_of_2026_10_02():
             if "dilithium" in _low or "kyber" in _low:
                 _named.append(f"{_py.relative_to(_root).as_posix()}:{_i}")
     assert not _named, ("the product tree names a forbidden algorithm: " + ", ".join(_named))
+
+
+def test_w536_the_platforms_claims_about_its_own_instruments_are_true(client):
+    """P2.17 — the constitution's *Verified:* citations resolve, the forecast computes its figures, and the
+    round-start check reports what it CANNOT see.
+
+    The first leg exists because Article 5 — titled AN INSTRUMENT THAT CANNOT FAIL IS NOT EVIDENCE — cited
+    `scripts/blind_sweep.py` as its verification, and that file has never been committed. An article forbidding
+    unfalsifiable evidence resting on a file nobody can run is the most self-undermining defect available here,
+    so the citations are now machine-checked rather than trusted.
+    """
+    import os as _os
+    import re as _re
+    from pathlib import Path as _P
+
+    _root = _P(__file__).resolve().parents[1]
+
+    # ── 1. EVERY PATH THE CONSTITUTION CITES AS VERIFIED RESOLVES ──────────────────────────────
+    con = (_root / "agentic_core/constitution/CONSTITUTION_canonical.md")
+    text = con.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    _path_re = _re.compile(r"`([A-Za-z0-9_./-]+\.(?:py|tsx|ts|md|json|yaml|yml))`")
+    #  the document cites most paths relative to agentic_core/; a check ignoring that over-reports. Measured:
+    #  a naive pass called 6 of 16 absent, and exactly ONE was.
+    roots = ("", "agentic_core/", "apps/workstation-superapp/src/")
+    cited, missing = 0, []
+    for i, line in enumerate(lines, 1):
+        if "*Verified" not in line:
+            continue
+        blob = line
+        for nxt in lines[i:i + 4]:
+            if nxt.startswith("#") or "*Verified" in nxt or not nxt.strip():
+                break
+            blob += " " + nxt
+        for rel in _path_re.findall(blob):
+            cited += 1
+            if not any((_root / (pre + rel)).exists() for pre in roots):
+                missing.append(f"line {i}: {rel}")
+    assert cited >= 12, ("the citation scan found almost nothing, so it is not reading the document", cited)
+    assert not missing, ("the constitution cites a verification that does not exist: " + "; ".join(missing))
+
+    #  and Article 5 specifically must not claim a committed harness while none is committed
+    a5 = text[text.index("## 5 "):]
+    a5 = a5[:a5.index("## 6 ")]
+    assert "blind_sweep.py" not in a5 or "NOT IN THIS REPOSITORY" in a5, \
+        "Article 5 cites the blind harness without stating that it is absent"
+    assert not (_root / "scripts/blind_sweep.py").exists() or "NOT IN THIS REPOSITORY" not in a5, \
+        "the harness now exists, so Article 5's statement that it is absent is itself stale"
+    #  AND THE ABSENCE MUST SIT ON THE LINE THE API CAPTURES. Added after driving this red: the parser at
+    #  agentic_core/api/integration_surface.py:183 takes the remainder of the *Verified* line and nothing
+    #  else, so moving the caveat one line down leaves the surface reporting a mechanism while omitting that
+    #  it is not mechanised — and the legs above, which read the whole article, could not see that.
+    _cap = _re.search(r"(?im)^\*?Verified:\*?\s*(.+?)\s*$", a5)
+    assert _cap, "Article 5 has no line the API parser can read a mechanism from"
+    if not (_root / "scripts/blind_sweep.py").exists():
+        assert "NOT IN THIS REPOSITORY" in _cap.group(1), \
+            ("the API-captured mechanism omits that the harness is absent, so the surface over-claims: "
+             + _cap.group(1)[:200])
+
+    # ── 2. THE FORECAST COMPUTES ITS COMPARISON instead of typing it ───────────────────────────
+    #  Driven through the ROUTE, not read off the source: a source check cannot tell a computed figure from a
+    #  typed one once both are strings, and pinning source text is what broke two suites in W533 and W534.
+    r = client.get("/api/v1/method/forecast")
+    assert r.status_code == 200, r.status_code
+    blk = (r.json() or {}).get("which_rate_measures_completion")
+    if blk is not None:                                # absent only when the projection itself was refused
+        assert "rows_closed_in_window" in blk, ("the window count is not reported", sorted(blk))
+        assert blk.get("the_lever") == "items", blk
+        assert (blk.get("why_basis") or "").strip(), "the block does not say where its figures came from"
+        #  the typed sentence that was here named a fixed row count and a fixed round count
+        why = blk.get("why") or ""
+        assert "32 rows closed" not in why, "the typed row count is back"
+        assert "forty-eight" not in why, "the typed round count is back"
+        #  when both rates measured, the figures in the sentence must MATCH the fields beside it
+        if isinstance(blk.get("rows_per_round"), (int, float)) and isinstance(blk.get("items_per_round"), (int, float)):
+            assert str(blk["rows_per_round"]) in why and str(blk["items_per_round"]) in why, \
+                ("the sentence states figures that are not the ones reported", why[:180], blk)
+
+    # ── 3. FU-345 — A ROW NAMING NO FILES IS COUNTED AS UNEXAMINED, not silently dropped ───────
+    #  DRIVEN, because the live register currently has zero such rows: a leg asserting the count is non-zero
+    #  would be false today, and one asserting only that the FIELD exists could not fail. So the condition is
+    #  created here.
+    from agentic_core.api.method import _rows_the_tree_moved_under as _moved
+    out = _moved([{"id": "FU-TEST-NOFILES", "files": [], "found_in_round": 400, "slot": "P2.17"},
+                  {"id": "FU-TEST-HASFILES", "files": ["agentic_core/api/method.py"],
+                   "found_in_round": 1, "slot": "P2.17"}])
+    assert out["not_considered_row_count"] == 1, (out["not_considered_row_count"], out["not_considered_rows"])
+    assert out["not_considered_rows"] == ["FU-TEST-NOFILES"], out["not_considered_rows"]
+    assert (out.get("not_considered_basis") or "").strip(), "the check does not say what it could not consider"
+    assert "UNEXAMINED" in out["not_considered_basis"], out["not_considered_basis"]
+    #  and the commit-width figure is counted from the same log the candidates came from
+    assert isinstance(out.get("commits_no_round_could_be_read_from"), int), out
+    assert out["commits_no_round_could_be_read_from"] <= (out.get("history_commits") or 0), out
+
+    # ── 4. AND THE ROUND-START STEP PRINTS IT, because the row was about the step and not the payload ──
+    #  Run as a subprocess with the path PINNED from the environment: a stray .pth puts the repo root on
+    #  sys.path for every local process here, so a probe that works locally can fail on CI for a reason that
+    #  has nothing to do with the code (W520 cost a 48-minute red that way).
+    import subprocess as _sp
+    import sys as _sys
+    _env = dict(_os.environ, PYTHONPATH=str(_root), PYTHONIOENCODING="utf-8")
+    _p = _sp.run([_sys.executable, str(_root / "scripts/followups.py"), "satisfied"],
+                 capture_output=True, text=True, errors="replace", cwd=str(_root), env=_env)
+    assert _p.returncode == 0, ("the round-start step exits non-zero", _p.returncode, (_p.stderr or "")[-400:])
+    _stdout = _p.stdout or ""
+    assert "NOT CONSIDERED:" in _stdout,         ("the round-start step does not state what it could not consider", _stdout[-500:])
+    assert "LIMIT:" in _stdout, "the round-start step dropped its stated limits"
