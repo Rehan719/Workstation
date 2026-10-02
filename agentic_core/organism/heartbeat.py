@@ -168,6 +168,13 @@ class OrganismHeartbeat:
         self.last_compliance: Optional[Dict[str, Any]] = None   # last continuous-compliance reading
         self._evolve_every = 30               # beats between evolution attempts (when enabled)
         self._beats_since_evolve = 0
+        # W532 (P3.16) — the recirculation loop, paced and OFF by default. Six stages with their engine
+        # calls is expensive, so this follows section 4's idiom for expensive work rather than section 1's
+        # for cheap work. Off by default means no existing deployment changes behaviour.
+        self.auto_metabolic = False
+        self._beats_since_metabolic = 0
+        self._metabolic_every = 10
+        self.last_metabolic: Optional[Dict[str, Any]] = None
         self._log: List[Dict[str, Any]] = []
         self._task: Optional["asyncio.Task"] = None
         self._ueg = None
@@ -350,6 +357,58 @@ class OrganismHeartbeat:
                     actions.append("compliance_rescreen")
             except Exception:
                 pass
+
+        # 2g. §P3.16 (W532) — THE RECIRCULATION LOOP, DRIVEN FROM THE BEAT. Paced and opt-in, because six
+        #     stages with their engine calls is expensive. The SUBJECT IS THE ORGANISM: execute_cycle wants a
+        #     user_context and there is no avatar population store to round-robin over, so rather than
+        #     fabricate a user the platform cycles itself — which is what this loop is, its own docstring
+        #     calling it the organism's metabolic loop. The per-user case is the avatar path, a different
+        #     clause. What it records is the point: the per-stage latencies W527 measures, and any breach BY
+        #     NAME, so a breach is a fact in the beat rather than a line in a log.
+        self._beats_since_metabolic += 1
+        if self.auto_metabolic and self._beats_since_metabolic >= self._metabolic_every:
+            self._beats_since_metabolic = 0
+            try:
+                from agentic_core.avatars.core.recirculation_orchestrator import (
+                    AvatarRecirculationOrchestrator)
+                from agentic_core.avatars.core.avatar_engine import AvatarState
+                # the heartbeat resolves its logger lazily through _ueg_logger(); `self.ueg` does
+                # not exist, and asking for it was recorded as a failure rather than swallowed
+                _orch = AvatarRecirculationOrchestrator(
+                    self._ueg_logger(),
+                    AvatarState(avatar_id="platform", user_id="platform"))
+                _ctx = await _orch.execute_cycle({
+                    "user_id": "platform",
+                    "domain": "organism_self_regulation",
+                    "subject_basis": ("the ORGANISM, not a user: no avatar population is recorded for the "
+                                      "beat to round-robin over, and inventing a user to cycle would be a "
+                                      "subject nobody asked for"),
+                })
+                _stages = (_ctx or {}).get("stages") or []
+                _breached = [g["stage"] for g in _stages if g.get("breached")]
+                self.last_metabolic = {
+                    "at": self.last_beat,
+                    "stages_measured": len(_stages),
+                    "stages": _stages,
+                    "breached_stages": _breached,
+                    "breach_count": len(_breached),
+                    "subject": "platform",
+                    "basis": (f"{len(_stages)} stage(s) measured individually; "
+                              f"{len(_breached)} breached an untuned default budget"
+                              if _stages else
+                              "the cycle returned no stage record, so NOTHING was measured — this is not a "
+                              "clean run, it is an unmeasured one"),
+                }
+                actions.append("metabolic_cycle")
+            except Exception as exc:                  # noqa: BLE001 — recorded, never silently skipped
+                self.last_metabolic = {
+                    "at": self.last_beat,
+                    "stages_measured": 0,
+                    "failed": f"{exc.__class__.__name__}: {exc}",
+                    "basis": ("the metabolic cycle FAILED, so no latency was measured. A failure is not a "
+                              "clean beat and is recorded as one here"),
+                }
+                actions.append("metabolic_cycle_failed")
 
         # 3. Transformation tick — vision-realisation introspection (no AI)
         try:

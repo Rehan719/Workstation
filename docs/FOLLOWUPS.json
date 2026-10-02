@@ -5923,6 +5923,25 @@
       "note": "",
       "slot_source": "the item FU-333 and FU-309 ride; these are the same subsystem",
       "tier": 1
+    },
+    {
+      "id": "FU-340",
+      "title": "The six-stage recirculation loop CANNOT RUN: driving it from the heartbeat shows INTEND raising a TypeError",
+      "why": "Found W532 by doing what P3.16's bar asks - wiring the loop to the heartbeat - which ran it for the first time. NOTHING HAD EVER RUN IT: execute_cycle has one caller (AvatarFrontendInterface) and nothing calls that caller, so every defect below was invisible to the whole suite. Three surfaced in sequence, each recorded by the beat rather than swallowed: (1) AvatarState requires avatar_id and user_id, which the orchestrator's own construction path never supplied; (2) the heartbeat resolves its logger through _ueg_logger() returning a UEGLogger, which has NO log_event method - the orchestrator and the clearance chain both call log_event, so the two logger interfaces differ and the loop cannot log through the heartbeat's; (3) THE BLOCKER: stage INTEND raises TypeError: object str can't be used in an await expression. TRACED TWO LEVELS: _stage_intend awaits self.uci.intercept(context, ratify); uci_interceptor.intercept awaits self.divine.calibrate_niyyah(...); and divine/v2/alignment_v2.py:32 declares calibrate_niyyah as async - so the await is correct on paper. THE OPEN QUESTION, which this round did not settle: what self.divine actually IS at runtime. The likely shape is an ImportError fallback substituting a stub whose method returns a string, which is exactly the TFEL fallback pattern recorded in FU-329 and found again in W530's Mock regulator - this repository has that defect in at least three places. NEXT STEP: print type(self.divine) and type(self.uci) inside a constructed orchestrator before changing anything, because a fallback that returns a str is a different fix from a signature mismatch. CONSEQUENCE FOR P3.16: its bar says the loop runs from the heartbeat. The drive is built and correctly reports the failure as a failure, but the loop is not runnable, so that clause is NOT met and the item stays open on it.",
+      "source": "W532 (wiring the loop to the heartbeat ran it for the first time)",
+      "found": "2026-10-02",
+      "files": [
+        "agentic_core/avatars/core/recirculation_orchestrator.py",
+        "agentic_core/governance/uci_interceptor.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the item whose bar requires the loop to run",
+      "tier": 2
     }
   ],
   "routes": [

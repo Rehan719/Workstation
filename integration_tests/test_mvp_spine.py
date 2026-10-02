@@ -29551,3 +29551,74 @@ def test_w531_the_cascade_count_is_computed_and_the_nine_engine_reader_calls_con
     bad = [n for n in ast.walk(tree)
            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "process"]
     assert not bad, f"a caller is invoking .process(), which no engine implements: {len(bad)}"
+
+
+def test_w532_the_beat_drives_the_loop_and_records_a_failure_as_a_failure():
+    """P3.16 — the recirculation loop is driven from the heartbeat, paced and off by default.
+
+    Wiring it RAN THE LOOP FOR THE FIRST TIME: execute_cycle has one caller and nothing calls that caller, so
+    the loop was reached by nothing and every defect in it was invisible to this suite. It currently fails at
+    stage INTEND. This guard therefore asserts what W532 BUILT — the drive, its pacing, its default-off, and
+    that a failure is recorded with its exception — not that the loop works, which it does not.
+    """
+    import asyncio as _aio
+    from agentic_core.organism.heartbeat import OrganismHeartbeat
+
+    # ── 1. OFF BY DEFAULT, so no existing deployment changes behaviour ─────────────────────────
+    h = OrganismHeartbeat()
+    assert h.auto_metabolic is False, "the expensive loop is on by default"
+    assert h._metabolic_every == 10, h._metabolic_every
+    assert h.last_metabolic is None, h.last_metabolic
+
+    first = _aio.run(h.beat())
+    acts = first.get("actions") or []
+    assert not [a for a in acts if "metabolic" in a], ("the loop ran while switched off", acts)
+    assert h.last_metabolic is None, "a cycle was recorded while switched off"
+
+    # ── 2. PACED: on, but not yet due, still does not run ──────────────────────────────────────
+    h2 = OrganismHeartbeat()
+    h2.auto_metabolic = True
+    h2._metabolic_every = 5
+    h2._beats_since_metabolic = 0
+    _aio.run(h2.beat())
+    assert h2.last_metabolic is None, "the pacing counter is not gating the cycle"
+
+    # ── 3. DUE: it runs, and whatever happens is RECORDED on the beat ──────────────────────────
+    h3 = OrganismHeartbeat()
+    h3.auto_metabolic = True
+    h3._metabolic_every = 1
+    third = _aio.run(h3.beat())
+    acts3 = third.get("actions") or []
+    assert [a for a in acts3 if "metabolic" in a], ("the cycle did not run when due", acts3)
+    rec = h3.last_metabolic or {}
+    assert rec, "the beat ran a cycle and recorded nothing"
+    assert rec.get("at"), rec
+
+    # ── 4. THE LEG THAT MATTERS: a failure is a FAILURE, never a clean beat ────────────────────
+    #  The loop fails today. What this round owns is that the beat says so — with the exception — instead
+    #  of appending a clean action and moving on. A silent failure here would be indistinguishable from a
+    #  cycle that measured nothing, which is the defect this whole programme removes.
+    if rec.get("failed"):
+        assert "metabolic_cycle_failed" in acts3, ("a failure was reported as a clean cycle", acts3)
+        assert ":" in rec["failed"], ("the failure does not name its exception type", rec["failed"])
+        assert "not a clean beat" in rec["basis"], rec["basis"]
+        assert rec["stages_measured"] == 0, rec
+    else:
+        #  when the loop becomes runnable this branch takes over, and an empty stage list is NOT a pass
+        assert "metabolic_cycle" in acts3, acts3
+        assert rec["stages_measured"] > 0, ("the cycle reported no stages, which is unmeasured and not "
+                                            "clean", rec)
+        assert isinstance(rec.get("breached_stages"), list), rec
+        assert "measured individually" in rec["basis"], rec["basis"]
+
+    # ── 5. the subject is the ORGANISM and says why, rather than naming an invented user ───────
+    from pathlib import Path as _P
+    src = (_P(__file__).resolve().parents[1] / "agentic_core/organism/heartbeat.py").read_text(encoding="utf-8")
+    assert "subject_basis" in src, "the beat does not say whose cycle it is running"
+    #  the phrase is asserted as it appears in SOURCE: the runtime string is assembled by implicit
+    #  concatenation across three lines, so a contiguous-phrase check on the full sentence fails
+    #  even though the value is right. Source checks match source, not the assembled value.
+    assert "no avatar population is recorded for the" in src, "the subject rationale is absent"
+    assert "not a user" in src, "the beat does not say the subject is the organism"
+    #  and the section is placed with the expensive work, not the cheap work
+    assert "paced and opt-in" in src.lower() or "Paced and opt-in" in src, "the pacing rationale is absent"
