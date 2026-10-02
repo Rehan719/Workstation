@@ -5571,8 +5571,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W531",
       "note": "",
       "tier": 2,
       "slot_source": "Not in P3.13's bar: it is a CONSUMER defect. EngineRegistry9 calls engine.process() while every engine (now including the three meta engines) exposes consult(). The reader lives in the avatar/recirculation path, which P3.16 wires."
@@ -5607,8 +5607,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W531",
       "note": "",
       "tier": 1,
       "slot_source": "Not in P3.13's bar: it is a ROUTE's count, not an engine's verdict. W524 deliberately KEPT engines_run at 6 because the meta tier is regulative and not in the cascade; making that 6 computed rather than literal belongs with P3.16's recorded per-stage measurement."
@@ -5753,8 +5753,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W531",
       "note": "",
       "slot_source": "the item that builds the six-stage loop, where the overlap has to be settled",
       "tier": 3
@@ -5918,8 +5918,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W530",
       "note": "",
       "slot_source": "the item FU-333 and FU-309 ride; these are the same subsystem",
       "tier": 1

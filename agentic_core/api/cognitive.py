@@ -202,11 +202,18 @@ async def run_cascade(req: CascadeRequest):
         "domain": req.domain,
         "cascade": cascade_result,
         "mjm": mjm_result,
-        # W489 — six ran. MJM does not add three: it re-runs the SAME six (mjm.jaiza → the cascade).
-        "engines_run": 6,
-        "engines_run_basis": ("the six implemented engines"
-                              + (" — MJM re-ran the same six, it does not add engines"
-                                 if req.include_mjm else "")),
+        # W531 (FU-322) — COUNTED from the cascade's own record of which engines completed, not written as
+        # a literal. W489 was right that MJM adds no engines (mjm.jaiza re-runs the SAME cascade), and that
+        # reasoning is what protects the number; but the number itself was a 6 that would not have moved if
+        # four engines had run.
+        "engines_run": len((cascade_result or {}).get("engines_ran") or []),
+        "engines_ran": (cascade_result or {}).get("engines_ran") or [],
+        "engines_run_is_counted": True,
+        "engines_run_basis": (
+            "counted from the engines the cascade recorded as completed"
+            + (" — MJM re-ran the same cascade, it does not add engines" if req.include_mjm else "")
+            + ("; the cascade reported no engine list, so this count is 0 and means NOT RECORDED rather "
+               "than none ran" if not ((cascade_result or {}).get("engines_ran")) else "")),
         "engines_compute": False,
         "elapsed_seconds": elapsed,
         "status": "complete",

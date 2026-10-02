@@ -29478,3 +29478,76 @@ def test_w530_the_mutation_gate_refuses_instead_of_rubber_stamping(tmp_path):
     assert out["adaptation_proposed"] is False, out
     assert "identical for every user and every cycle" in out["adaptation_basis"], out["adaptation_basis"]
     assert "REFINED_BY_EPIGENETIC_ENGINE" not in src, "the placeholder new-state literal is back"
+
+
+def test_w531_the_cascade_count_is_computed_and_the_nine_engine_reader_calls_consult(client, monkeypatch):
+    """FU-322 and FU-320 — a literal count, and a consumer calling a method nothing implements.
+
+    `engines_run` was the hard literal 6 with a basis sentence beside it, and MEASURED: execute_cascade's
+    report never said which engines ran, so there was nothing to compute it from. And
+    nine_engine_registry.get_engine_response called `engine.process(...)`, which NO engine implements — once
+    W520 populated the registry it stopped failing with "Engine not found" and began failing with
+    AttributeError instead.
+    """
+    import ast
+    import asyncio as _aio
+
+    # ── 1. the cascade records what it ran, and the route COUNTS it ─────────────────────────────
+    body = client.post("/api/v1/cognitive/cascade", json={"problem": "w531", "include_mjm": False}).json()
+    assert body["engines_run_is_counted"] is True, body
+    assert body["engines_ran"] == ["inkashaf", "samajh", "soch", "aqal", "hoshiyari", "iman"], body["engines_ran"]
+    assert body["engines_run"] == 6, body["engines_run"]
+    assert "counted from the engines the cascade recorded" in body["engines_run_basis"], body
+
+    # the cascade stopped claiming integration it never measured
+    assert body["cascade"]["status"] == "completed", body["cascade"]["status"]
+    assert "nothing here measures integration" in body["cascade"]["status_basis"], body["cascade"]
+
+    # ── 2. THE LEG THAT TELLS A COUNT FROM A LITERAL: make the cascade report FEWER engines and the
+    #      route's number must MOVE. A count that happens to equal 6 looks exactly like the 6 it replaced.
+    import agentic_core.api.cognitive as _c
+
+    class _Short:
+        async def execute_cascade(self, problem):
+            return {"engines_ran": ["inkashaf", "samajh"], "engines_ran_count": 2, "status": "completed",
+                    "status_basis": "nothing here measures integration", "patterns": {}, "understanding": {},
+                    "plan": {}, "alignment": {}, "alerts": {}}
+
+    monkeypatch.setattr(_c, "_cascade", _Short())
+    short = client.post("/api/v1/cognitive/cascade", json={"problem": "w531b", "include_mjm": False}).json()
+    assert short["engines_run"] == 2, ("the count did not move — it is still a literal", short["engines_run"])
+    assert short["engines_ran"] == ["inkashaf", "samajh"], short["engines_ran"]
+
+    # and a cascade reporting NO list gives 0 that says NOT RECORDED rather than implying none ran
+    class _Silent:
+        async def execute_cascade(self, problem):
+            return {"status": "completed", "patterns": {}, "understanding": {}, "plan": {}, "alignment": {}}
+
+    monkeypatch.setattr(_c, "_cascade", _Silent())
+    silent = client.post("/api/v1/cognitive/cascade", json={"problem": "w531c", "include_mjm": False}).json()
+    assert silent["engines_run"] == 0, silent["engines_run"]
+    assert "NOT RECORDED" in silent["engines_run_basis"], silent["engines_run_basis"]
+
+    # ── 3. FU-320 — the reader is CALLED, not read. Its defect was an AttributeError at call time, so a
+    #      source search for `consult` would pass on a call that never executes.
+    from agentic_core.avatars.cognition.nine_engine_registry import EngineRegistry9
+    reg9 = EngineRegistry9(None, None)
+    out = _aio.run(reg9.get_engine_response("soch", "a query", {}))
+    assert out["engine"] == "soch", out
+    assert out["served_by"], "the reader drops the provenance the contract carries"
+    assert out["confidence"] is None, out               # the six do not compute, and say so
+    assert (out["confidence_basis"] or "").strip(), out
+    assert out["constitutional_validation"]["passed"] is None, out
+    #  and it reaches a META engine too, which is the half that only worked after P3.13
+    meta = _aio.run(reg9.get_engine_response("niyyah", "q", {}))
+    assert meta["engine"] == "niyyah", meta
+    assert meta["result"]["assessable"] is False, meta["result"]      # refuses with no signatures supplied
+
+    # ── 4. no caller invokes a method the engines do not implement — on the AST ─────────────────
+    from pathlib import Path as _P
+    src = (_P(__file__).resolve().parents[1]
+           / "agentic_core/avatars/cognition/nine_engine_registry.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    bad = [n for n in ast.walk(tree)
+           if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "process"]
+    assert not bad, f"a caller is invoking .process(), which no engine implements: {len(bad)}"
