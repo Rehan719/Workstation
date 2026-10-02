@@ -52,5 +52,23 @@
     "selector": "w539",
     "expect": "BLIND(red)",
     "why": "A declaration is a CLAIM that a difference is correct. Without its reason recorded, the next round cannot tell a considered exemption from a convenient one, and the mechanism becomes a way to make any difference disappear."
+  },
+  {
+    "tag": "the federation seed goes back to an absolute receipt assertion",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    assert _received >= 500.0, (\"the receiver's cycle took less than the transfer sent\", _received)",
+    "new": "    assert nxt[\"inter_vsb_received_wst\"] == 500.0",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "FU-349. The absolute form passed serially and failed in parallel because the test's own sender's §12 reinvestment credits the receiver when the living-VSB registry is small enough for the pair to fall inside ventures.py's cap. One node blocked a 4.5x suite speedup; the guard must notice if it returns."
+  },
+  {
+    "tag": "the rhythm adopts the parallel suite but drops its completeness gate",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "`python scripts/run_verdict.py <progress>`",
+    "new": "the fast path",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "The risk a proof creates is that its conclusion outlives its conditions. FU-301's stall is still unexplained, so adoption is only defensible while every parallel run is checked for completeness. Without the gate named in the rhythm, a later round reads 'use -n 6' and drops the half that makes it safe."
   }
 ]

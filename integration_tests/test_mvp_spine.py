@@ -6099,11 +6099,21 @@ def test_inter_vsb_transfer_federation_seed(client):
     # consumes the amount as intake revenue (enters its waterfall). gaas-gated + UEG-logged.
     import uuid as _uuid
     from agentic_core.economy.living_vsbs import register
+    from agentic_core.economy.transfers import peek_pending_transfers
     a, b = f"w262-a-{_uuid.uuid4().hex[:6]}", f"w262-b-{_uuid.uuid4().hex[:6]}"
     register(a, "Sender Co", "waqf_ltd_hybrid", "enterprise", "Rehan")
     register(b, "Receiver Co", "waqf_ltd_hybrid", "enterprise", "Rehan")
     client.post("/api/v1/economy/cycle", json={"vsb_id": a, "entity_type": "waqf_ltd_hybrid",
                                                "revenue": 10000, "costs": 0})     # funds the reserve (2000)
+    # W540 (FU-349) — MEASURE WHAT IS ALREADY QUEUED, because this test's own sender can credit this
+    # receiver. The cycle above runs a's waterfall, and §12's reinvestment fans out to living VSBs through
+    # ventures.py:90 `list(_living().items())[:cap]`; b was just registered, so it is eligible. Measured: b
+    # received "§12 reinvestment from <a>" of 231.82, which is exactly why the absolute assertion below used
+    # to read 731.82 rather than 500. It passed in a SERIAL suite only because earlier tests had registered
+    # enough VSBs to push this pair beyond the cap — a reason unrelated to what the test asserts. Under
+    # xdist each worker's registry is small, the pair falls inside the cap, and the test failed. W539's proof
+    # found it; this is the only node that stood between the suite and a 4.5x speedup.
+    _queued_before = peek_pending_transfers(b)
     t = client.post("/api/v1/economy/transfer",
                     json={"from_vsb": a, "to_vsb": b, "amount": 500, "memo": "services"}).json()
     tr = t["transfer"]
@@ -6112,9 +6122,20 @@ def test_inter_vsb_transfer_federation_seed(client):
     st = client.get(f"/api/v1/economy/board-pack?vsb_id={a}").json()["statements"]
     assert st["profit_and_loss"]["expenses"].get("transfer_out") == 500.0          # posted in the books
     assert st["balance_sheet"]["balanced"] is True                                 # and they still balance
+    # OUR transfer queued EXACTLY 500 on top of whatever was already there — the test's own contribution,
+    # asserted as a delta so another legitimate credit cannot make it wrong.
+    assert peek_pending_transfers(b) == round(_queued_before + 500.0, 2), (
+        "the transfer did not queue 500 for the receiver", _queued_before, peek_pending_transfers(b))
     nxt = client.post("/api/v1/economy/cycle", json={"vsb_id": b, "entity_type": "waqf_ltd_hybrid",
                                                      "revenue": 1000, "costs": 0}).json()["cycle"]
-    assert nxt["inter_vsb_received_wst"] == 500.0 and nxt["intake_revenue"] == 1500.0
+    # and the receipts entered the waterfall: at least our 500, and the intake arithmetic is self-consistent
+    # with whatever the cycle actually drained. An ABSOLUTE figure here asserted that nothing else had ever
+    # credited this receiver, which is not a property of this test.
+    _received = nxt["inter_vsb_received_wst"]
+    assert _received >= 500.0, ("the receiver's cycle took less than the transfer sent", _received)
+    assert nxt["intake_revenue"] == round(1000.0 + _received, 2), (
+        "intake revenue does not equal this cycle's own revenue plus what it drained",
+        nxt["intake_revenue"], _received)
     # conservation guards: insufficient 400 · unknown receiver 404 · self-transfer 400
     assert client.post("/api/v1/economy/transfer",
                        json={"from_vsb": a, "to_vsb": b, "amount": 999999}).status_code == 400
@@ -30672,3 +30693,39 @@ def test_w539_the_pass_set_comparator_can_say_different_and_incomplete():
     assert "_xdist_ids.update(ids or ())" in _cf, _cf[:0] or "the worker ids are not unioned"
     #  and the serial hook must not clobber a total the xdist hook established
     assert "if not _xdist_ids:" in _cf,         "the serial hook overwrites the parallel denominator, turning a correct total back into zero"
+
+    # ── 9. FU-349 — the federation seed asserts its OWN contribution, not an absolute receipt ───
+    #  W539's proof found this node failing in parallel and passing serially. MEASURED cause: the test's
+    #  first cycle runs its sender's waterfall, and §12's reinvestment fans out to living VSBs through
+    #  ventures.py `list(_living().items())[:cap]` — crediting the receiver 231.82 "§12 reinvestment from"
+    #  its own sender. It passed serially only because earlier tests had registered enough VSBs to push the
+    #  pair beyond the cap, a reason unrelated to what the test asserts.
+    #  bounded by the FUNCTION'S OWN EXTENT, not an arbitrary slice: a fixed character window cut off
+    #  before the last assertion and reported it missing when it was there.
+    _spine = (_root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    _seed_at = _spine.index("def test_inter_vsb_transfer_federation_seed")
+    _seed_end = _spine.find(chr(10) + "def ", _seed_at + 10)
+    _seed = _spine[_seed_at:_seed_end if _seed_end > 0 else len(_spine)]
+    assert 'nxt["inter_vsb_received_wst"] == 500.0' not in _seed,         "the federation seed asserts an absolute receipt again, which its own sender's waterfall can inflate"
+    assert "_queued_before" in _seed, "the test does not measure what was already queued before its transfer"
+    assert "round(_queued_before + 500.0, 2)" in _seed,         "the test does not assert its own 500 as a delta on whatever was already pending"
+    assert "round(1000.0 + _received, 2)" in _seed,         "the intake arithmetic is not asserted against what the cycle actually drained"
+
+    # ── 10. THE PARALLEL SUITE'S ADOPTION STAYS GATED ──────────────────────────────────────────
+    #  W540 proved bar (b)1 on one tree: serial 52m52s and parallel 9m47s produced the SAME pass set over
+    #  539 node ids, four declared differences. The risk a proof creates is that its conclusion outlives its
+    #  conditions — FU-301's stall is still unexplained, and this run not stalling is evidence about THIS
+    #  run. So the rhythm must carry the gate (every parallel run checked for completeness) and the
+    #  re-proof rule, or a later round reads "use -n 6" and drops the half that makes it safe.
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert "PROVEN W540" in _prompt, "bar (b)1 does not record that it was proven, or with what figures"
+    _rhythm_at = _prompt.index("Per increment:")
+    _rhythm = _prompt[_rhythm_at:_rhythm_at + 3000]
+    assert "run_verdict.py" in _rhythm, \
+        "the rhythm adopts the parallel suite without naming the completeness gate, so a stall reads as a pass"
+    assert "INCOMPLETE" in _rhythm, "the rhythm does not say what an unfinished run means"
+    assert "pass_set_diff.py" in _rhythm, "the rhythm names no way to RE-PROVE the equivalence"
+    assert "every tenth round" in _rhythm, "the rhythm sets no interval for re-proving it"
+    #  and the figures in the bar must be the ones actually measured, not rounded into a claim
+    assert "52m52s" in _prompt and "9m47s" in _prompt, "the proof's own timings are not recorded"
+    assert "539 node ids" in _prompt, "the bar does not say how many nodes the comparison covered"

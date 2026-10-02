@@ -6101,10 +6101,28 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.17",
+      "status": "done",
+      "closed_by": "W540",
+      "note": "",
+      "slot_source": "P2.17 bar (b)1 owns the proof that the parallel suite produces the same pass set; this is the one node that proof found differing, so it rides the bar it blocks",
+      "tier": 2
+    },
+    {
+      "id": "FU-350",
+      "title": "Four more pending-transfer assertions use absolute figures the same reinvestment can inflate",
+      "why": "W540 fixed FU-349, whose cause was an ABSOLUTE assertion on a figure the test's own sender could credit: the first cycle runs the sender's waterfall and §12's reinvestment fans out to living VSBs via agentic_core/economy/ventures.py:90 list(_living().items())[:cap], so a freshly registered receiver inside the cap is credited. MEASURED: the receiver held 12 queued transfers, the first being a §12 reinvestment of 231.82 from the test's own sender, which is exactly the surplus that made the absolute assertion read 731.82. FOUR MORE ASSERTIONS HAVE THE SAME SHAPE: integration_tests/test_mvp_spine.py:11443 peek_pending_transfers(e_) == 1500.0, :11672 == 50000.0, :11859 == 50000.0 and :11869 == 70000.0. All four SURVIVED W539's parallel proof, so they are latent rather than broken - presumably their receivers are outside the cap or not registered as living VSBs, but that is an inference and not a measurement. THE WORK: establish for each whether its receiver is a registered living VSB and whether it can fall inside the reinvestment cap; where it can, assert the test's own delta as FU-349 now does. A test that passes because a shared registry happens to be crowded is passing for a reason unrelated to its subject, and the suite's parallel mode changes exactly that population.",
+      "source": "W540",
+      "found": "2026-10-02",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.17 bar (b)1 owns the proof that the parallel suite produces the same pass set; this is the one node that proof found differing, so it rides the bar it blocks",
+      "slot_source": "P2.17 bar (b)1 owns the serial/parallel equivalence; these are the remaining assertions of the shape that broke it",
       "tier": 2
     }
   ],
