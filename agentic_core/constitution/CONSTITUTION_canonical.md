@@ -60,12 +60,14 @@ and `_LEXICON_NOT_A_VERDICT` states the limit in each reason.
 ## 5 — AN INSTRUMENT THAT CANNOT FAIL IS NOT EVIDENCE
 A check is admissible only if its red state is reachable. Green from an instrument that cannot go red reports
 nothing.
-*Verified:* each round drives every new guard RED by hand before trusting it, naming the edit that produces the red, restoring the file and verifying the restore against a recorded sha — but THE MECHANISED HARNESS THAT WOULD SEPARATE BLIND(red) FROM VACUOUS AND BAD BLIND IS NOT IN THIS REPOSITORY, so this article is enforced by the round and not yet by a tool.
-This line once cited that harness as a committed file under scripts/. It was never committed, so the article
-against unfalsifiable evidence was itself resting on something nobody could run. Corrected W536, which also
-made every path cited in a *Verified* line machine-checked to resolve — the filename is in that round's commit
-message and is deliberately not written here as a path, because citing one that cannot resolve is now the
-defect this article screens for. P2.17's bar (b) carries building the harness.
+*Verified:* the blind harness (`scripts/blind_sweep.py`) separates BLIND(red) from VACUOUS from BAD BLIND, deciding between them on pytest's exit code and classifying exit 5 — a selector that collected nothing — as BAD BLIND rather than as a pass; and every new guard is driven red before it is trusted, with the edit named, the file restored from bytes and the restore verified against a sha taken before it.
+Committed W537, after W536 found this line citing that path while the file had never existed — the article
+against unfalsifiable evidence resting on evidence nobody could run. The harness carries its own controls
+(`scripts/blinds_core.json`) and was measured against them before this line was restored: a known defect
+reported BLIND(red), the same defect under a selector matching no test reported BAD BLIND, an anchor occurring
+twice was refused without a run, and a log message no guard asserts reported VACUOUS. Those four are the three
+verdicts plus the refusal, each reached by a control rather than claimed. What the harness does NOT measure is
+whether a guard asserts the RIGHT property, and its coverage is the blind list and not the codebase.
 
 ## 6 — A GUARD DRIVES ITS PRECONDITION AND ITS SUBJECT
 A check may not rely on the ambient environment, nor on whichever record a store happens to hold, to create the

@@ -1,0 +1,38 @@
+[
+  {
+    "tag": "a withheld metabolic cycle is logged as a clean one (expect BLIND(red))",
+    "file": "agentic_core/organism/heartbeat.py",
+    "old": "actions.append(\"metabolic_cycle_withheld\" if _withheld else \"metabolic_cycle\")",
+    "new": "actions.append(\"metabolic_cycle\")",
+    "selector": "w532 or w533 or beat",
+    "expect": "BLIND(red)",
+    "why": "W533 made the beat distinguish delivered from withheld; the guard asserts a withheld cycle is never recorded as a delivery. Driven red by hand in W533, so this is the harness's known-positive control."
+  },
+  {
+    "tag": "the same defect under a selector that matches no test (expect BAD BLIND)",
+    "file": "agentic_core/organism/heartbeat.py",
+    "old": "actions.append(\"metabolic_cycle_withheld\" if _withheld else \"metabolic_cycle\")",
+    "new": "actions.append(\"metabolic_cycle\")",
+    "selector": "no_such_test_exists_w537_control",
+    "expect": "BAD BLIND",
+    "why": "THE CONTROL THAT MATTERS. pytest exits 5 when a selector collects nothing, and a sweep reading 5 as 'nothing failed' reports off an absent test and calls a blind guard green. This repository has already paid for that mistake once, so the harness must classify it BAD BLIND and not VACUOUS."
+  },
+  {
+    "tag": "an anchor that appears more than once (expect BAD BLIND, no run)",
+    "file": "agentic_core/organism/heartbeat.py",
+    "old": "\"at\": self.last_beat,",
+    "new": "\"at\": None,",
+    "selector": "w532 or w533 or beat",
+    "expect": "BAD BLIND",
+    "why": "The anchor occurs in both the success and the failure branch of the metabolic record. A mutation applied to one of several matches measures something other than what the blind describes, so the harness refuses to apply it and says the anchor matched more than once rather than reporting a guard verdict."
+  },
+  {
+    "tag": "a log message no guard asserts (expect VACUOUS)",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "logger.error(f\"Avatar metabolic cycle failure: {e}\")",
+    "new": "logger.error(\"cycle problem\")",
+    "selector": "w532 or w533 or beat or recirc",
+    "expect": "VACUOUS",
+    "why": "A TRUE VACUOUS RESULT, included deliberately as the harness's known-negative control: no guard asserts this log's wording, and the verdict says so rather than implying the mutation was harmless. It is the honest shape of 'nothing checks this', which is the finding the harness exists to produce."
+  }
+]

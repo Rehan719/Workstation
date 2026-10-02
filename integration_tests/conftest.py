@@ -3,6 +3,7 @@ Clean conftest for integration tests.
 Does NOT mock pydantic, psutil, or other real dependencies
 that the MVP spine requires.
 """
+import json
 import os
 import pytest
 
@@ -117,3 +118,62 @@ def _assert_store_is_isolated():
         + resolved + ". agentic_core.config was probably imported before conftest ran."
     )
     yield
+
+
+# ── W537 (FU-301, P2.17 bar (b)2b) — A STALLED RUN MUST NOT READ AS A PASS ──────────────────────
+# Three of six parallel runs stalled at 74%, 89% and 57% with every worker in flight, and NOTHING
+# reported it: on a stall the session never finishes, so pytest_sessionfinish never fires and no summary
+# is printed. A reader piping to `tail` sees a truncated log and no verdict, which is how those three were
+# first read as runs still in progress. So progress is written AS IT HAPPENS here and scripts/run_verdict.py
+# pronounces COMPLETE / INCOMPLETE / NOT KNOWN from the file afterwards.
+#
+# Opt-in on WORKSTATION_RUN_PROGRESS: with the variable unset nothing is written and no existing
+# invocation changes behaviour, which is why this cannot slow or perturb the serial run a commit is
+# trusted to.
+_RUN_PROGRESS = os.environ.get("WORKSTATION_RUN_PROGRESS") or ""
+_reported_nodes = set()
+_collected_total = {"n": None}
+
+
+def _write_progress():
+    if not _RUN_PROGRESS:
+        return
+    try:
+        tmp = _RUN_PROGRESS + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump({"collected": _collected_total["n"], "reported": len(_reported_nodes)}, fh)
+        os.replace(tmp, _RUN_PROGRESS)
+    except OSError:
+        # A progress file that cannot be written must never break the run it is observing.
+        pass
+
+
+def pytest_collection_finish(session):
+    # THE CONTROLLER OWNS THE TOTAL. Each xdist worker collects only its own shard, so a worker writing
+    # here would report its shard as the whole run and a stall would read as a complete short run.
+    #
+    # AND IT MUST BE THE SELECTED SET, NOT THE COLLECTED ONE. This first used
+    # pytest_collection_modifyitems, which runs BEFORE -k deselection: a filtered run then reported 532
+    # collected against 1 reported, so every selector read as INCOMPLETE. That is a false positive on
+    # exactly the runs each round depends on, and it would have made this detector useless while
+    # appearing to work. pytest_collection_finish runs after every modifyitems hook, so session.items
+    # is what will actually RUN.
+    if _RUN_PROGRESS and not hasattr(session.config, "workerinput"):
+        _collected_total["n"] = len(session.items)
+        _write_progress()
+
+
+def pytest_runtest_logreport(report):
+    # One terminal outcome per test: the call phase, or a setup that skipped or failed without reaching one.
+    if not _RUN_PROGRESS:
+        return
+    terminal = report.when == "call" or (report.when == "setup" and report.outcome in ("skipped", "failed"))
+    if terminal:
+        _reported_nodes.add(report.nodeid)
+        if len(_reported_nodes) % 10 == 0:
+            _write_progress()
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # Writes the final count when the run DOES finish. Its ABSENCE is what the verdict reader detects.
+    _write_progress()

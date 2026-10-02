@@ -30154,9 +30154,14 @@ def test_w536_the_platforms_claims_about_its_own_instruments_are_true(client):
     #  and Article 5 specifically must not claim a committed harness while none is committed
     a5 = text[text.index("## 5 "):]
     a5 = a5[:a5.index("## 6 ")]
-    assert "blind_sweep.py" not in a5 or "NOT IN THIS REPOSITORY" in a5, \
-        "Article 5 cites the blind harness without stating that it is absent"
-    assert not (_root / "scripts/blind_sweep.py").exists() or "NOT IN THIS REPOSITORY" not in a5, \
+    #  W537 — THIS PAIR IS CONDITIONAL ON THE FILE, in both directions. W536 wrote the first half as a
+    #  near-invariant (if the article names the harness it must say it is absent), which was true while
+    #  the harness was missing and became wrong the moment it landed. The property is symmetric.
+    _harness = (_root / "scripts/blind_sweep.py").exists()
+    if not _harness:
+        assert "blind_sweep.py" not in a5 or "NOT IN THIS REPOSITORY" in a5, \
+            "Article 5 cites the blind harness while it is absent, without stating the absence"
+    assert not _harness or "NOT IN THIS REPOSITORY" not in a5, \
         "the harness now exists, so Article 5's statement that it is absent is itself stale"
     #  AND THE ABSENCE MUST SIT ON THE LINE THE API CAPTURES. Added after driving this red: the parser at
     #  agentic_core/api/integration_surface.py:183 takes the remainder of the *Verified* line and nothing
@@ -30164,7 +30169,7 @@ def test_w536_the_platforms_claims_about_its_own_instruments_are_true(client):
     #  it is not mechanised — and the legs above, which read the whole article, could not see that.
     _cap = _re.search(r"(?im)^\*?Verified:\*?\s*(.+?)\s*$", a5)
     assert _cap, "Article 5 has no line the API parser can read a mechanism from"
-    if not (_root / "scripts/blind_sweep.py").exists():
+    if not _harness:
         assert "NOT IN THIS REPOSITORY" in _cap.group(1), \
             ("the API-captured mechanism omits that the harness is absent, so the surface over-claims: "
              + _cap.group(1)[:200])
@@ -30217,3 +30222,173 @@ def test_w536_the_platforms_claims_about_its_own_instruments_are_true(client):
     _stdout = _p.stdout or ""
     assert "NOT CONSIDERED:" in _stdout,         ("the round-start step does not state what it could not consider", _stdout[-500:])
     assert "LIMIT:" in _stdout, "the round-start step dropped its stated limits"
+
+
+def test_w537_the_blind_harness_and_the_stall_detector_can_both_fail():
+    """P2.17 bar (b) — the harness Article 5 cites, and a verdict for a run that never finishes.
+
+    Both are instruments, so both are asserted on their OWN controls rather than on the happy path. The harness
+    must separate three outcomes, and the one that matters is the third: pytest exits 5 when a selector collects
+    nothing, and a sweep reading 5 as "nothing failed" reports off an absent test and calls a blind guard green.
+    The stall detector must produce a middle verdict, because a run that did not finish is neither a pass nor a
+    failure and had no verdict at all before this.
+    """
+    import ast
+    import importlib.util as _ilu
+    import json as _json
+    import os as _os
+    from pathlib import Path as _P
+
+    _root = _P(__file__).resolve().parents[1]
+
+    def _load(name, rel):
+        spec = _ilu.spec_from_file_location(name, _root / rel)
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    # ── 1. THE HARNESS exists, and classifies every exit code it can see ───────────────────────
+    sweep = _load("_bs_w537", "scripts/blind_sweep.py")
+    assert sweep._VERDICT_BY_EXIT[1] == sweep.BLIND_RED, "a failing guard is not reported as seeing the defect"
+    assert sweep._VERDICT_BY_EXIT[0] == sweep.VACUOUS, "a passing guard is not reported as blind"
+    #  THE CONTROL THAT MATTERS: exit 5 is NO TESTS COLLECTED and must never read as a pass
+    assert sweep._VERDICT_BY_EXIT[5] == sweep.BAD_BLIND, \
+        "exit 5 (no tests collected) is classified as something other than a bad blind, so a sweep could " \
+        "report off an absent test"
+    for _code in (2, 3, 4):
+        assert sweep._VERDICT_BY_EXIT[_code] == sweep.BAD_BLIND, _code
+    #  an unknown exit code must not fall through to a guard verdict
+    assert sweep._VERDICT_BY_EXIT.get(99, sweep.BAD_BLIND) == sweep.BAD_BLIND
+
+    # ── 2. ITS CONTROL SET declares what each blind should produce, and covers all three ────────
+    blinds = _json.loads((_root / "scripts/blinds_core.json").read_text(encoding="utf-8"))
+    assert len(blinds) >= 4, len(blinds)
+    expected = {b.get("expect") for b in blinds}
+    assert {sweep.BLIND_RED, sweep.VACUOUS, sweep.BAD_BLIND} <= expected, \
+        ("the control set does not cover all three verdicts, so a sweep over it could not show the harness "
+         "distinguishes them", sorted(expected))
+    for b in blinds:
+        for k in ("tag", "file", "old", "new", "selector", "expect", "why"):
+            assert (b.get(k) or "").strip(), (b.get("tag"), k)
+        assert (_root / b["file"]).exists(), ("a blind names a file that is not there", b["file"])
+
+    # ── 3. A TWICE-MATCHING ANCHOR is refused WITHOUT running anything ──────────────────────────
+    #  Driven, not read: the harness is called on a blind whose anchor is deliberately ambiguous, and must
+    #  report BAD BLIND having applied no mutation. A sweep that applies one of several matches measures
+    #  something other than what its blind describes.
+    import hashlib as _hl
+    _target = _root / "scripts/run_verdict.py"
+    _before = _hl.sha256(_target.read_bytes()).hexdigest()
+    rep = sweep.sweep([{"tag": "ambiguous anchor", "file": "scripts/run_verdict.py",
+                        "old": "return", "new": "return  # x", "selector": "w537"}],
+                      "integration_tests/test_mvp_spine.py", str(_P(_os.environ["DATA_DIR"]) / "w537sweep"))
+    assert rep["counts"][sweep.BAD_BLIND] == 1, rep["results"]
+    assert "matched" in (rep["results"][0]["why"] or ""), rep["results"][0]
+    assert rep["results"][0]["exit"] is None, "something was run despite the anchor being ambiguous"
+    assert _hl.sha256(_target.read_bytes()).hexdigest() == _before, "the harness altered a file it refused"
+
+    # ── 4. A SWEEP THAT FINDS A BLIND GUARD CANNOT EXIT ZERO ───────────────────────────────────
+    #  Otherwise a round chaining on the sweep reads "a vacuous guard was found" as success.
+    _src = (_root / "scripts/blind_sweep.py").read_text(encoding="utf-8")
+    _tree = ast.parse(_src)
+    _main = next(n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef) and n.name == "main")
+    _ret = ast.unparse(_main).split("return ")[-1]
+    assert "VACUOUS" in _ret and "BAD_BLIND" in _ret, \
+        ("the sweep's exit code does not depend on both failure kinds: " + _ret[:160])
+
+    # ── 5. THE STALL DETECTOR gives three verdicts, and the middle one is driven ────────────────
+    rv = _load("_rv_w537", "scripts/run_verdict.py")
+    _tmp = _P(_os.environ["DATA_DIR"]) / "w537_verdicts"
+    _tmp.mkdir(parents=True, exist_ok=True)
+
+    _complete = _tmp / "complete.json"
+    _complete.write_text(_json.dumps({"collected": 12, "reported": 12}), encoding="utf-8")
+    assert rv.verdict(str(_complete))["verdict"] == rv.COMPLETE
+
+    #  THE VERDICT THAT DID NOT EXIST: a run that stopped partway is not a pass and not a failure
+    _stalled = _tmp / "stalled.json"
+    _stalled.write_text(_json.dumps({"collected": 535, "reported": 404}), encoding="utf-8")
+    _v = rv.verdict(str(_stalled))
+    assert _v["verdict"] == rv.INCOMPLETE, _v
+    assert _v["unreported"] == 131, _v
+    assert "UNKNOWN rather than green" in _v["basis"], _v["basis"]
+
+    #  absence, and an unreadable file, are NOT KNOWN rather than either verdict
+    assert rv.verdict(str(_tmp / "absent.json"))["verdict"] == rv.NOT_KNOWN
+    _bad = _tmp / "bad.json"
+    _bad.write_text("{not json", encoding="utf-8")
+    assert rv.verdict(str(_bad))["verdict"] == rv.NOT_KNOWN
+    _noc = _tmp / "nocount.json"
+    _noc.write_text(_json.dumps({"reported": 5}), encoding="utf-8")
+    assert rv.verdict(str(_noc))["verdict"] == rv.NOT_KNOWN
+
+    # ── 6. THE HOOK WRITES THE SELECTED SET, not the collected one ──────────────────────────────
+    #  This was a real defect in the first version: pytest_collection_modifyitems runs BEFORE -k deselection,
+    #  so a filtered run reported 532 collected against 1 reported and read as INCOMPLETE — a false positive
+    #  on exactly the selector runs each round depends on.
+    _cf = (_root / "integration_tests/conftest.py").read_text(encoding="utf-8")
+    assert "def pytest_collection_finish(session):" in _cf, \
+        "the progress hook counts before deselection again, so every selector run reads as incomplete"
+    assert "len(session.items)" in _cf, _cf[:0] or "the hook does not count the selected set"
+    assert 'hasattr(session.config, "workerinput")' in _cf, \
+        "a worker may write the total, which would report its shard as the whole run"
+
+    # ── 7. THE ISOLATION PROBE no longer claims to detect a shared store ───────────────────────
+    _iso = (_root / "integration_tests/test_xdist_iso.py").read_text(encoding="utf-8")
+    assert "another worker overwrote this worker's file" not in _iso, \
+        "the probe claims to detect an overwrite it cannot: the filenames differ either way"
+    assert "is all this probe establishes" in _iso, "the probe does not say what it actually proves"
+    #  and the assertions that DO establish isolation are still there
+    assert _iso.count('f"__{worker}" in') == 2, "the path assertions that prove isolation were removed"
+
+    # ── 8. A SWEEP MAY NOT RUN INSIDE A SWEEP ──────────────────────────────────────────────────
+    #  Driven, because this is the condition that spawned 38 python processes in this round: the harness's own
+    #  guard calls sweep(), and a blind driven against that guard disabled the ambiguity refusal, so the inner
+    #  sweep ran `-k` on the test that had called it. Selector discipline would be a convention; the marker is
+    #  structural and cannot be defeated by a badly chosen selector.
+    assert sweep.NESTED_GUARD_ENV, "the nested-sweep marker has no name"
+    assert sweep._VERDICT_BY_EXIT[sweep.NESTED_EXIT] == sweep.BAD_BLIND, \
+        "a refused nested sweep is reported as a guard verdict, which it is not — pytest was never reached"
+    _refused = sweep._run_selector("anything", "integration_tests/test_mvp_spine.py",
+                                   {sweep.NESTED_GUARD_ENV: "1"})
+    assert _refused == sweep.NESTED_EXIT, \
+        ("a sweep ran inside a sweep instead of refusing", _refused)
+    #  and it must NOT refuse when the marker is absent — otherwise every sweep would report BAD BLIND and
+    #  the harness would be unable to measure anything while appearing to run.
+    assert sweep._run_selector("no_such_test_w537_nested_control",
+                               "integration_tests/test_mvp_spine.py",
+                               dict(_os.environ)) == 5, \
+        "the runner refuses even outside a sweep, so no blind could ever reach a verdict"
+
+    # ── 9. A KILLED SWEEP LEAVES A RECOVERABLE MARKER, and a stale one blocks the next run ──────
+    #  `finally` does not run when the process is killed, and in this round one mutation DID survive a
+    #  taskkill /F. A restore that only works on a clean exit is not a restore for a tool whose job is to
+    #  break things.
+    _store = _P(_os.environ["DATA_DIR"]) / "w537marker"
+    _store.mkdir(parents=True, exist_ok=True)
+    _marker = _store / "IN_FLIGHT.json"
+    #  a completed sweep leaves none
+    sweep.sweep([{"tag": "ambiguous anchor, no run", "file": "scripts/run_verdict.py",
+                  "old": "return", "new": "return  # x", "selector": "w537"}],
+                "integration_tests/test_mvp_spine.py", str(_store))
+    assert not _marker.exists(), "a completed sweep left an in-flight marker behind"
+    #  a stale marker makes the entry point REFUSE rather than mutate on top of an unrestored tree
+    _marker.write_text(_json.dumps({"file": "scripts/run_verdict.py", "restore_sha256": "deadbeef",
+                                    "tag": "a killed sweep", "bytes_len": 1}), encoding="utf-8")
+    import subprocess as _sp2
+    import sys as _sys2
+    _r = _sp2.run([_sys2.executable, str(_root / "scripts/blind_sweep.py"),
+                   "--blinds", str(_root / "scripts/blinds_core.json"), "--store", str(_store)],
+                  capture_output=True, text=True, errors="replace", cwd=str(_root),
+                  env=dict(_os.environ, PYTHONPATH=str(_root), PYTHONIOENCODING="utf-8"))
+    assert _r.returncode != 0, "a sweep ran on top of an unrestored tree"
+    assert "REFUSING" in (_r.stdout or ""), (_r.stdout or "")[-300:]
+    #  and --recover must say the file is STILL MUTATED when the sha does not match
+    _r2 = _sp2.run([_sys2.executable, str(_root / "scripts/blind_sweep.py"),
+                    "--blinds", str(_root / "scripts/blinds_core.json"),
+                    "--store", str(_store), "--recover"],
+                   capture_output=True, text=True, errors="replace", cwd=str(_root),
+                   env=dict(_os.environ, PYTHONPATH=str(_root), PYTHONIOENCODING="utf-8"))
+    assert "STILL MUTATED" in (_r2.stdout or ""), (_r2.stdout or "")[-300:]
+    assert _r2.returncode != 0, "--recover reported a mutated file and exited zero"
+    _marker.unlink(missing_ok=True)

@@ -29,9 +29,18 @@ def test_each_worker_owns_its_store(i, tmp_path):
     assert f"__{worker}" in ueg, (
         f"worker {worker}'s UEG path is {ueg}, shared with the other workers — the chain would interleave")
 
-    # and it is WRITABLE as its own: a file named for this worker, read back unchanged
+    # W537 — THIS PROBE PROVES WRITABILITY, AND SAYS SO. It used to assert "another worker overwrote this
+    # worker's file", which CANNOT FIRE even under the condition it names: the file is named for this worker
+    # inside a directory named for this worker, so the filenames differ whether or not the directories are
+    # shared and no overwrite is possible either way. The SHARING property is established by the two path
+    # assertions above, which do fail on a shared root. The claim is corrected rather than replaced by a
+    # cross-worker detector: that would have to race two workers against one filename, and a flaky guard is
+    # worse than an honest one.
     probe = os.path.join(data_dir, f"xdist_probe_{worker}.txt")
     with open(probe, "w", encoding="utf-8") as f:
         f.write(worker)
     with open(probe, encoding="utf-8") as f:
-        assert f.read() == worker, "another worker overwrote this worker's file"
+        assert f.read() == worker, (
+            "this worker's own store is not writable and readable as its own — which is a precondition for "
+            "every other test's result, and is all this probe establishes: isolation itself is asserted on "
+            "the PATHS above, not here")
