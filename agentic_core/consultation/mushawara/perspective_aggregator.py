@@ -2,8 +2,18 @@ import numpy as np
 from typing import List, Dict, Any
 
 class PerspectiveAggregator:
-    def __init__(self, mjm_learner):
-        self.mjm = mjm_learner
+    """Aggregate the positions a deliberation produced.
+
+    W538 (FU-343) — this took an `mjm_learner` and stored it as self.mjm. Its only constructor passed None and
+    NOTHING ever read the attribute, on any path. The seam is removed rather than wired: consulting the MJM
+    tier would import agentic_core/mjm's figures, and those were typed rather than measured until this same
+    round fixed them. A parameter that is always None and never read is not an extension point, it is a
+    statement that an extension was intended; the intent belongs in the register, where FU-343 records it.
+    """
+
+    def __init__(self, mjm_learner=None):
+        #  accepted and ignored, so no caller breaks; it is not stored, so no reader can mistake it for wired
+        self.mjm_learner_accepted_and_unused = mjm_learner is not None
 
     async def synthesize(self, responses: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Aggregate what the perspectives ACTUALLY carry, and say what is missing.

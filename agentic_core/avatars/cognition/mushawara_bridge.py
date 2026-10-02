@@ -103,5 +103,13 @@ class AvatarCognitiveOrchestrator:
             # W533 — the refusing branches carry a `reason` and this one did not, so a caller reading
             # res["reason"] raised exactly when the emission had CLEARED.
             "reason": "no placeholder token was found in the emission text",
-            "merkle_proof": hashlib.sha3_512(json.dumps(emission, sort_keys=True).encode()).hexdigest()
+            # W538 (FU-342) — this was returned as a Merkle PROOF. A digest of one object is not a proof of
+            # anything: there is no tree, no sibling path and no root, so no second party can use it to
+            # establish that this emission belongs to any log. Nothing read the key, so it is named for what
+            # it is rather than kept for compatibility. Same class as the regulatory manifest's digest in W535.
+            "emission_digest_sha3_512": hashlib.sha3_512(
+                json.dumps(emission, sort_keys=True).encode()).hexdigest(),
+            "emission_digest_basis": ("a SHA3-512 digest over this emission alone. It detects a change to "
+                                      "this object and proves no inclusion: there is no tree, no sibling "
+                                      "path and no root to verify an inclusion against"),
         }

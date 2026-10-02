@@ -1,4 +1,7 @@
 import asyncio
+import json
+import math
+from collections import Counter
 from typing import Dict, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
 from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
@@ -13,9 +16,49 @@ class MJMOrchestratorV4:
         self.ueg = ueg_logger or VSBUEGLogger()
         self.cascade = UltimateCognitiveCascade(self.ueg)
 
+    @staticmethod
+    def _signal_entropy_bits_per_byte(signal: Any):
+        """Shannon entropy of the serialised signal, in bits per byte, or None when there is nothing to measure.
+
+        W538 (FU-328) — this step returned a TYPED entropy of 0.12 on every call, reaching two public routes.
+        0.12 was not a measurement that came out low; it was the absence of one written as a number. Entropy
+        over the signal's own byte distribution IS computable, so it is computed, and the key names exactly
+        what it measures: the SIGNAL's information content, not anything about the platform's observation of
+        it. Maximum 8.0 bits per byte.
+        """
+        try:
+            blob = json.dumps(signal, sort_keys=True, default=str).encode("utf-8")
+        except Exception:                      # noqa: BLE001 — see below; this is on a public route
+            # W538 — BROADER THAN TypeError/ValueError ON PURPOSE. `default=str` makes almost anything
+            # serialisable, so the reachable failure is not a type error: a CIRCULAR REFERENCE raises
+            # ValueError (measured), and an object whose own __str__ raises propagates whatever that raises
+            # (measured: RuntimeError). This method is reached from /api/v1/cognitive, so an input that
+            # cannot be described must yield "not computed" rather than a 500.
+            return None
+        if not blob:
+            return None
+        n = len(blob)
+        bits = -sum((c / n) * math.log2(c / n) for c in Counter(blob).values())
+        # `+ 0.0` normalises NEGATIVE ZERO: a single-symbol payload computes -0.0, and a figure served as
+        # -0.0 reads like a measurement that went wrong rather than one that came out at zero. Measured on
+        # json.dumps("") -> '""', two identical bytes.
+        return round(bits + 0.0, 4)
+
     async def mushahida(self, signal: Any) -> Dict[str, Any]:
-        """Sense/Observation: Advanced Signal Acquisition"""
-        observation = {"signal_captured": signal, "entropy": 0.12}
+        """Sense/Observation: capture the signal and measure what is actually measurable about it."""
+        _entropy = self._signal_entropy_bits_per_byte(signal)
+        observation = {
+            "signal_captured": signal,
+            "shannon_entropy_bits_per_byte": _entropy,
+            "entropy_basis": ("Shannon entropy of the serialised signal over its own byte distribution, in "
+                              "bits per byte, maximum 8.0. It measures the SIGNAL's information content and "
+                              "says nothing about the quality of any observation performed on it"
+                              if _entropy is not None else
+                              "NOT COMPUTED: the signal could not be serialised, or was empty"),
+            "observation_performed": False,
+            "observation_basis": ("no observation beyond capture and a measurement of the signal itself is "
+                                 "performed here; this step records what arrived, not a judgement of it"),
+        }
         await self.ueg.log_minimisation_event("mjm_mushahida_observed", observation)
         return observation
 
@@ -26,8 +69,24 @@ class MJMOrchestratorV4:
         return analysis
 
     async def muaina(self, analysis: Dict) -> Dict[str, Any]:
-        """Act/Inspection: Verifiable Execution"""
-        action = {"result": "optimised", "compliance": 1.0, "impact": analysis.get("status", "unknown")}
+        """Act/Inspection: record the analysis reached. Nothing is executed or assessed in this step.
+
+        W538 (FU-328) — this returned a TYPED compliance of 1.0 and a result of "optimised", both reaching
+        api/cognitive.py's response as-is. A perfect compliance was the ABSENCE of a compliance assessment
+        written as its best possible outcome, and nothing in this method optimises anything: it logs and
+        returns. Both are now None with a basis, which is the honest shape and is what api/cognitive.py will
+        serve, because fixing a reader instead would have left the other caller lying.
+        """
+        action = {
+            "result": None,
+            "result_basis": ("nothing is executed or optimised in this step: it records the analysis reached "
+                             "and logs it. A result of 'optimised' claimed an action nobody took"),
+            "compliance": None,
+            "compliance_basis": ("NOT ASSESSED: no compliance check runs here, against the constitution or "
+                                 "anything else. A compliance of 1.0 was the absence of an assessment written "
+                                 "as its best possible outcome"),
+            "impact": analysis.get("status", "unknown"),
+        }
         await self.ueg.log_minimisation_event("mjm_muaina_acted", action)
         return action
 

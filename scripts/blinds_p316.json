@@ -1,0 +1,83 @@
+[
+  {
+    "tag": "MJM's entropy becomes a typed constant again",
+    "file": "agentic_core/mjm/mjm.py",
+    "old": "        return round(bits + 0.0, 4)",
+    "new": "        return 0.12",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "THE CLASS THIS ITEM EXISTS FOR. A constant satisfies every assertion about a field's presence, type and range; only a comparison across two different signals separates a measurement from a literal. The guard compares a low-variety and a high-variety signal for exactly this reason."
+  },
+  {
+    "tag": "the negative zero returns, so a measured zero reads as a broken one",
+    "file": "agentic_core/mjm/mjm.py",
+    "old": "        return round(bits + 0.0, 4)",
+    "new": "        return round(bits, 4)",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "A single-symbol payload computes -0.0. A figure served as negative zero reads like a measurement that went wrong rather than one that came out at zero."
+  },
+  {
+    "tag": "the entropy refusal narrows to TypeError and ValueError",
+    "file": "agentic_core/mjm/mjm.py",
+    "old": "        except Exception:                      # noqa: BLE001 — see below; this is on a public route",
+    "new": "        except (TypeError, ValueError):",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "`default=str` makes nearly anything serialisable, so the reachable failure is not a type error: an object whose own __str__ raises propagates whatever that raises. This method is reached from /api/v1/cognitive/cascade, so that would be a 500 on a hostile input."
+  },
+  {
+    "tag": "muaina claims a perfect compliance again",
+    "file": "agentic_core/mjm/mjm.py",
+    "old": "            \"compliance\": None,",
+    "new": "            \"compliance\": 1.0,",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "1.0 was never a measurement that came out high; it was the absence of a compliance assessment written as its best possible outcome, served raw by api/cognitive.py."
+  },
+  {
+    "tag": "a bare digest is called a Merkle proof again",
+    "file": "agentic_core/avatars/cognition/mushawara_bridge.py",
+    "old": "            \"emission_digest_sha3_512\": hashlib.sha3_512(",
+    "new": "            \"merkle_proof\": hashlib.sha3_512(",
+    "selector": "w533 or w538",
+    "expect": "BLIND(red)",
+    "why": "A digest of one object proves no inclusion: no tree, no sibling path, no root. Nothing could be checked with it and no second party could use it. SELECTOR WIDENED W538: renaming this key broke test_w533, which asserted the OLD name was present while the new guard asserted it was absent. Both readers live in one file, so a blind selecting only this round's test would have driven half the class."
+  },
+  {
+    "tag": "the unread MJM learner is stored again, implying it is consulted",
+    "file": "agentic_core/consultation/mushawara/perspective_aggregator.py",
+    "old": "        self.mjm_learner_accepted_and_unused = mjm_learner is not None",
+    "new": "        self.mjm = mjm_learner",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "A parameter that is always None and never read is not an extension point; storing it states that an extension exists. Consulting the MJM tier would also import the figures FU-328 fixed."
+  },
+  {
+    "tag": "the LEARN stage can no longer learn even with a recorded outcome",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "        if isinstance(recorded, bool):",
+    "new": "        if False:",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "FU-341 asked whether the 0.0ms LEARN stage is a declined update or an unreached branch. With this disabled it becomes genuinely unreachable, and the guard must notice — otherwise the evidence closing FU-341 proves nothing."
+  },
+  {
+    "tag": "the stale justification returns to avatars/api.py",
+    "file": "agentic_core/avatars/api.py",
+    "old": "stage: since W533 it runs all six, driven from the heartbeat, with each stage's",
+    "new": "stage: it fails on its very first execution stage, with each stage's",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "The docstring's stated reason for not routing through the orchestrator was true when written and false since W533. A stale justification is read by the next round as the reason, and either repeated or disproved at the cost of a measurement."
+  },
+  {
+    "tag": "the stale 'returns literals' disclosure comes back to vsb.py",
+    "file": "agentic_core/api/vsb.py",
+    "old": "since W538 its own figures are measured or declared NOT ASSESSED\"",
+    "new": "its result is a literal\"",
+    "selector": "w538",
+    "expect": "BLIND(red)",
+    "why": "api/vsb.py disclosed MJM's literals correctly and named the values. Fixing the producer made that disclosure false, and a stale disclosure is the same defect as a missing one: the next round reads it as the state of the code."
+  }
+]

@@ -1820,14 +1820,19 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             mjm_result = {"error": str(e)}
             mjm_summary = f"MJM note: {e}"
             _mjm_ran = False
-        # W489 — MJM re-runs the SAME six engines and returns literals ("optimised", compliance 1.0);
-        # it is not a second, independent judgement of the challenge. (refutation) And when it raises,
-        # the row says it did not run rather than describing markers nobody produced.
+        # W489 — MJM re-runs the SAME six engines, so it is not a second, independent judgement of the
+        # challenge. (refutation) And when it raises, the row says it did not run rather than
+        # describing markers nobody produced.
+        # W538 — the rest of this note was CORRECTED rather than left standing. It said MJM returns
+        # literals, naming the two values; it no longer does. mushahida now measures the Shannon
+        # entropy of the signal it was given, and muaina reports its compliance and result as NOT
+        # ASSESSED with a basis instead of as a perfect score and a claimed optimisation. What remains
+        # true is the sentence above: the same six engines, so no independent second judgement.
         yield _event("mjm_complete",
                      "MJM Evaluation Complete (fixed markers)" if _mjm_ran else "MJM FAILED — it did not run",
                      mjm_summary,
                      {"computed": False, "ran": _mjm_ran,
-                      "basis": ("MJM re-runs the same six fixed-response engines; its result is a literal"
+                      "basis": ("MJM re-runs the same six fixed-response engines, so this is not an independent second judgement; since W538 its own figures are measured or declared NOT ASSESSED"
                                 if _mjm_ran else "MJM raised; no evaluation was produced")})
 
         # ── Stage 3: GaaS Constitutional Gate ────────────────────────────────

@@ -4,9 +4,14 @@ the Workstation avatar widget.
 
 Note on scope: this module deliberately does NOT route through
 `agentic_core/avatars/core/recirculation_orchestrator.py` (the "metabolic cycle"
-architecture). That orchestrator instantiates cleanly but fails on its very first
-execution stage — its nine-engine cognitive registry was never actually populated
-with working engines — so building on it would mean shipping another broken layer.
+architecture) — and the REASON changed in W533, so the old one is corrected here
+rather than left to be repeated. That orchestrator no longer fails on its first
+stage: since W533 it runs all six, driven from the heartbeat, with each stage's
+latency measured. What it does is WITHHOLD — its clearance chain refuses the
+emission because the engines supply no constitutional verdict, for want of a model
+path. So routing live user chat through it would replace a working reply with a
+chain of correct refusals, which is why P3.16's bar holds the avatar wiring on the
+engines having a model path (P3.20–P3.24) rather than on the loop working.
 This module instead implements a smaller, genuinely functional chat/voice/vision
 pipeline, reusing the already-real `agentic_core.ai.gateway.gateway` (Ollama, with
 OpenAI used automatically the moment a valid OPENAI_API_KEY is configured) and the

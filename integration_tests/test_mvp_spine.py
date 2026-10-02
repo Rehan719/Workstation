@@ -29774,7 +29774,12 @@ def test_w533_the_loop_runs_and_a_withheld_emission_is_not_a_success():
     #  and the other half: an ordinary English word inside prose written for a user is NOT a placeholder
     ok = _aio.run(orch.verify_output({"text": "You will pass the assessment, and your progress compasses it."}))
     assert ok["verified"] is True, ("an ordinary word in prose is refused as a placeholder", ok)
-    assert ok.get("merkle_proof"), ok
+    #  W538 renamed this key: a digest of one object is not a Merkle proof, so it is now
+    #  emission_digest_sha3_512 with a basis saying it proves no inclusion. The pre-flight's rename screen
+    #  named THIS FILE as a surviving reader and I attributed the hit to the new guard asserting the key is
+    #  ABSENT — there were two occurrences, and this was the other one. When the screen names a file you are
+    #  also editing, check every occurrence in it, not the one you remember writing.
+    assert ok.get("emission_digest_sha3_512"), ok
 
     # ── 7. THE CALL SHAPE THAT RECURRED TWICE, over the WHOLE package ──────────────────────────
     #  W531 asserted this over ONE FILE and a second caller survived in the consultation package and stopped
@@ -30392,3 +30397,156 @@ def test_w537_the_blind_harness_and_the_stall_detector_can_both_fail():
     assert "STILL MUTATED" in (_r2.stdout or ""), (_r2.stdout or "")[-300:]
     assert _r2.returncode != 0, "--recover reported a mutated file and exited zero"
     _marker.unlink(missing_ok=True)
+
+
+def test_w538_mjm_measures_or_refuses_and_a_digest_is_not_a_proof(client):
+    """P3.16 Round A — FU-328, FU-342, FU-343, FU-341, and a stale reason corrected.
+
+    FU-328 reached TWO public routes with a typed entropy of 0.12 and a typed compliance of 1.0. api/vsb.py
+    already disclosed that its result was a literal; api/cognitive.py returned the dict as-is, so the producer
+    is fixed rather than one of its readers — a disclosure at one of two readers leaves the other lying.
+    """
+    import asyncio as _aio
+    import os as _os
+    from pathlib import Path as _P
+
+    _root = _P(__file__).resolve().parents[1]
+    from agentic_core.mjm.mjm import MJMOrchestratorV4 as _MJM
+
+    # ── 1. THE TYPED VALUES ARE GONE from the producer ─────────────────────────────────────────
+    _mjm_src = (_root / "agentic_core/mjm/mjm.py").read_text(encoding="utf-8")
+    assert '"entropy": 0.12' not in _mjm_src, "the typed entropy is back"
+    assert '"compliance": 1.0' not in _mjm_src, "the typed compliance is back"
+    assert '"result": "optimised"' not in _mjm_src, "the claimed optimisation is back"
+
+    # ── 2. THE LEG THAT MATTERS: the entropy DIFFERS by signal ─────────────────────────────────
+    #  A constant satisfies presence, type and range. Only a comparison across inputs separates a measurement
+    #  from a literal, which is the whole defect class here.
+    m = _MJM()
+    low = _aio.run(m.mushahida({"challenge": "aaaaaaaaaaaaaaaaaaaaaaaa"}))
+    high = _aio.run(m.mushahida({"challenge": "a7Qz9pL2Xm4Rt!#%&*()+="}))
+    lo, hi = low["shannon_entropy_bits_per_byte"], high["shannon_entropy_bits_per_byte"]
+    assert isinstance(lo, float) and isinstance(hi, float), (lo, hi)
+    assert lo != hi, ("the entropy is the same for two very different signals, so it is not measuring them",
+                      lo, hi)
+    assert hi > lo, ("a more varied signal did not measure as higher entropy", lo, hi)
+    assert 0.0 <= lo <= 8.0 and 0.0 <= hi <= 8.0, (lo, hi)
+    #  and the key NAMES what it measured, in its own units
+    assert "bits per byte" in low["entropy_basis"], low["entropy_basis"]
+    assert "signal" in low["entropy_basis"].lower(), low["entropy_basis"]
+    #  the step does not claim to have judged anything
+    assert low["observation_performed"] is False, low
+
+    # ── 3. THE REFUSAL IS REACHABLE, and does not escape as a 500 ──────────────────────────────
+    #  Measured: `default=str` makes nearly anything serialisable, so the reachable failures are a CIRCULAR
+    #  REFERENCE (ValueError) and an object whose own __str__ raises (anything). The second propagated before
+    #  this round, and this method is reached from a public route.
+    _circular = {}
+    _circular["self"] = _circular
+    assert _MJM._signal_entropy_bits_per_byte(_circular) is None, "a circular signal did not refuse"
+
+    class _Boom:
+        def __str__(self):
+            raise RuntimeError("this object cannot be described")
+
+    assert _MJM._signal_entropy_bits_per_byte(_Boom()) is None, \
+        "an object whose __str__ raises propagates instead of refusing, which would 500 a public route"
+    #  a single-symbol payload measures ZERO, not NEGATIVE zero
+    _zero = _MJM._signal_entropy_bits_per_byte("")
+    assert _zero == 0.0 and str(_zero) != "-0.0", ("a figure served as negative zero", _zero)
+
+    # ── 4. COMPLIANCE AND RESULT ARE NOT ASSESSED, and say so ──────────────────────────────────
+    act = _aio.run(m.muaina({"status": "completed"}))
+    assert act["compliance"] is None, ("a compliance verdict is claimed again", act["compliance"])
+    assert act["result"] is None, ("an optimisation is claimed again", act["result"])
+    assert "NOT ASSESSED" in act["compliance_basis"], act["compliance_basis"]
+    assert "nothing is executed" in act["result_basis"], act["result_basis"]
+
+    # ── 5. AND THE PUBLIC ROUTE SERVES THAT, not a literal ─────────────────────────────────────
+    #  The producer was fixed instead of this reader, so the route inherits the truth. Driven through the
+    #  route because that is where a caller reads it.
+    r = client.post("/api/v1/cognitive/cascade",
+                    json={"problem": "a test problem for w538", "include_mjm": True})
+    assert r.status_code == 200, (r.status_code, r.text[:200])
+    _mjm_served = (r.json() or {}).get("mjm")
+    if isinstance(_mjm_served, dict) and "compliance" in _mjm_served:
+        assert _mjm_served["compliance"] is None, \
+            ("the route serves a compliance verdict nothing assessed", _mjm_served.get("compliance"))
+        assert (_mjm_served.get("compliance_basis") or "").strip(), _mjm_served
+
+    # ── 6. FU-342 — a digest is not a proof ────────────────────────────────────────────────────
+    from agentic_core.avatars.cognition.mushawara_bridge import AvatarCognitiveOrchestrator as _ACO
+    orch = _ACO(None, None)
+    v = _aio.run(orch.verify_output({"text": "an ordinary emission for w538"}))
+    assert v["verified"] is True, v
+    assert "merkle_proof" not in v, "a bare digest is called a Merkle proof again"
+    assert len(v["emission_digest_sha3_512"]) == 128, len(v.get("emission_digest_sha3_512", ""))
+    assert "proves no inclusion" in v["emission_digest_basis"], v["emission_digest_basis"]
+
+    # ── 7. FU-343 — the dead seam is GONE, not wired ───────────────────────────────────────────
+    from agentic_core.consultation.mushawara.perspective_aggregator import PerspectiveAggregator as _PA
+    agg = _PA()                                  # constructible with no argument at all now
+    assert not hasattr(agg, "mjm"), "the unread mjm attribute is back"
+    #  a caller passing one still works, and it is still not stored as a wired learner
+    agg2 = _PA(object())
+    assert not hasattr(agg2, "mjm"), "a passed learner is stored again, implying it is consulted"
+    assert agg2.mjm_learner_accepted_and_unused is True, agg2.__dict__
+
+    # ── 8. FU-341 — 0.0ms is a DECLINED update, proven by driving the branch that does update ──
+    #  The row asks whether LEARN can learn at all. It can: the stage declines only because the platform
+    #  cycle records no outcome, which is W530's deliberate refusal to move a stored profile on no evidence.
+    from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator as _ARO
+    from agentic_core.avatars.core.avatar_engine import AvatarState as _AS
+    from agentic_core.ueg.logger import VSBUEGLogger as _UEG
+    _orch = _ARO(_UEG(), _AS(avatar_id="w538", user_id="w538user"))
+    _updates = []
+
+    async def _capture_update(uid, dom, ok):      # update_skill is awaited, so the stub must be awaitable
+        _updates.append((uid, dom, ok))
+
+    _orch.skill_profiler.update_skill = _capture_update
+
+    _declined = _aio.run(_orch._stage_learn({"user_id": "w538user", "domain": "d",
+                                             "user_context": {}, "state": {}}))
+    assert _updates == [], ("a profile was moved with no recorded outcome", _updates)
+    assert "NOT updated" in _declined["skill"], _declined["skill"]
+
+    _recorded = _aio.run(_orch._stage_learn({"user_id": "w538user", "domain": "d",
+                                             "user_context": {"success": True}, "state": {}}))
+    assert _updates == [("w538user", "d", True)], \
+        ("the stage cannot learn even when an outcome IS recorded, so 0.0ms was an unreached branch rather "
+         "than a declined update", _updates)
+    assert "updated from a recorded outcome" in _recorded["skill"], _recorded["skill"]
+
+    # ── 9. THE BREACH RECORD IS DRIVEN, because it cannot fail on its own ──────────────────────
+    #  Budgets are 100/200/500/500 and measured latencies 24/112/115/152, so no stage has ever breached and
+    #  "breach_count equals the number breached" holds trivially at zero. A budget is lowered so one fires.
+    _saved = dict(_ARO._STAGE_BUDGETS_MS)
+    try:
+        _ARO._STAGE_BUDGETS_MS["SENSE"] = 0          # any real stage exceeds nought milliseconds
+        _o2 = _ARO(_UEG(), _AS(avatar_id="w538b", user_id="w538b"))
+        _res = _aio.run(_o2.execute_cycle({"user_id": "w538b", "domain": "d"}))
+        _stages = _res.get("stages") or []
+        assert _stages, _res
+        _sense = next((g for g in _stages if g["stage"] == "SENSE"), None)
+        assert _sense and _sense["breached"] is True, \
+            ("a stage exceeding a nought-millisecond budget did not record a breach", _sense)
+    finally:
+        _ARO._STAGE_BUDGETS_MS.clear()
+        _ARO._STAGE_BUDGETS_MS.update(_saved)
+    assert _ARO._STAGE_BUDGETS_MS == _saved, "the budgets were not restored"
+
+    # ── 10. D12 — the stale justification is corrected ─────────────────────────────────────────
+    _api = (_root / "agentic_core/avatars/api.py").read_text(encoding="utf-8")
+    assert "fails on its very first" not in _api, \
+        "the docstring still says the loop fails at its first stage, which W533 made false"
+    assert "runs all six" in _api, "the docstring does not state what the loop now does"
+
+    # ── 11. AND THE OTHER READER'S NOTE, which this round's own fix made stale ──────────────────
+    #  api/vsb.py disclosed MJM's literals correctly and named the two values. Fixing the producer made that
+    #  note false, and a stale disclosure is the same defect as a missing one: the next round reads it as the
+    #  state of the code. The sentence that remains TRUE — the same six engines, so no second judgement — is
+    #  asserted still present, so the correction cannot be made by deleting the whole note.
+    _vsb = (_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert "its result is a literal" not in _vsb, "the stale claim that MJM returns a literal is back"
+    assert "not an independent" in _vsb or "not a second, independent" in _vsb,         "the note lost the part that is still true: MJM re-runs the same six engines"

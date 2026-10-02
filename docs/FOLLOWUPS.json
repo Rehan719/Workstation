@@ -5717,8 +5717,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W538",
       "note": "",
       "tier": 1
     },
@@ -5956,8 +5956,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W538",
       "note": "",
       "slot_source": "rides P3.16, whose structural clause is the loop running from the beat; this is the one stage of that loop whose execution is not yet evidenced",
       "tier": 2
@@ -5974,8 +5974,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W538",
       "note": "",
       "slot_source": "found in the same reader W533 repaired, and it is a naming over-claim on the emission path P3.16 owns",
       "tier": 2
@@ -5992,8 +5992,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W538",
       "note": "",
       "slot_source": "rides P3.16 with the rest of the deliberation path W533 opened up; it is a wiring question about the MJM tier the Owner ruled on",
       "tier": 2
