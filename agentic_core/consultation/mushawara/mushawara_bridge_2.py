@@ -31,9 +31,49 @@ class MushawaraBridge2:
         if mode == "sync": ps = await asyncio.gather(*[self._get_p(query, e) for e in engines])
         else: ps = [await self._get_p(query, e) for e in engines]
         agg = await self.agg.synthesize(ps)
-        res = {"status": "APPROVED", "outcome": agg, "duration_ms": (time.time()-start)*1000}
+        # W533 — the status was a LITERAL here, so this deliberation had exactly one possible outcome, and
+        # clearance GATE 1 clears on it: `status != "APPROVED"` in avatars/core/clearance_chain.py. W530
+        # taught that gate to refuse instead of rubber-stamping; the gate was honest and its input was not.
+        # It is now derived from the verdicts the perspectives actually returned, and an unassessed
+        # deliberation is NOT a cleared one.
+        _verdicts = [(p.get("trace") or {}).get("passed") for p in ps]
+        _unassessed = sum(1 for v in _verdicts if v is None)
+        if False in _verdicts:
+            _status = "BLOCKED"
+            _reason = (f"{_verdicts.count(False)} of {len(_verdicts)} perspective(s) returned a failing "
+                       "constitutional verdict")
+        elif _unassessed:
+            _status = "NOT ASSESSED"
+            _reason = (f"{_unassessed} of {len(_verdicts)} perspective(s) supplied no constitutional "
+                       "verdict, so this deliberation did not clear; an unassessed outcome is not an "
+                       "approval and the engines refuse for want of a model path")
+        else:
+            _status = "APPROVED"
+            _reason = f"all {len(_verdicts)} perspective(s) returned a passing constitutional verdict"
+        res = {"status": _status, "reason": _reason, "status_basis": _reason,
+               "outcome": agg, "duration_ms": (time.time()-start)*1000}
         if self.ueg: await self.ueg.log_minimisation_event("mushawara_complete", res)
         return res
     async def _get_p(self, q, et):
-        res = await self.registry.get(et).process(q.query, q.context, self.enf)
-        return {"engine": et.value, "vector": [1]*10000, "confidence": res.confidence, "trace": res.constitutional_trace}
+        # W533 (FU-320, second caller) — this called .process(), which NO engine implements; the
+        # contract is consult(ConsultationRequest). W531 fixed the caller in nine_engine_registry
+        # and its guard scanned only THAT file, so this one survived and stopped stage ANALYZE.
+        # It also read res.constitutional_trace, which ConsultationResponse does not have (the
+        # field is constitutional_validation, a three-state verdict with a basis).
+        from agentic_core.consultation.interface import ConsultationRequest as _CReq
+        res = await self.registry.get(et).consult(_CReq(
+            engine=et.value, query=str(q.query),
+            context=q.context if isinstance(q.context, dict) else {}))
+        return {
+            "engine": et.value,
+            "confidence": res.confidence,
+            "confidence_basis": res.confidence_basis,
+            "served_by": res.served_by,
+            "trace": {"passed": res.constitutional_validation.passed,
+                      "basis": res.constitutional_validation.basis},
+            # W533 — a 10000-element vector of ones used to sit here, presented as an embedding.
+            # Nothing computed it. It is reported as absent rather than fabricated; registered.
+            "vector": None,
+            "vector_basis": ("no embedding is computed for a deliberative position on this "
+                             "platform, so none is reported"),
+        }

@@ -29604,12 +29604,28 @@ def test_w532_the_beat_drives_the_loop_and_records_a_failure_as_a_failure():
         assert "not a clean beat" in rec["basis"], rec["basis"]
         assert rec["stages_measured"] == 0, rec
     else:
-        #  when the loop becomes runnable this branch takes over, and an empty stage list is NOT a pass
-        assert "metabolic_cycle" in acts3, acts3
+        #  when the loop becomes runnable this branch takes over, and an empty stage list is NOT a pass.
+        #  W533 — IT TOOK OVER, which is what it was written for, and it was wrong in one way the round
+        #  before could not have known: it asserted an EXACT action name, and making the loop runnable
+        #  revealed a THIRD beat state. The loop can now run, measure all six stages and deliberately
+        #  deliver nothing, because clearance gate 1 withholds the emission. A guard that insisted on the
+        #  delivered name would have forced that real state to be renamed away to keep a test green.
+        metab = [a for a in acts3 if a.startswith("metabolic_cycle")]
+        assert len(metab) == 1, ("a beat must record exactly one metabolic outcome", acts3)
+        assert metab[0] in ("metabolic_cycle", "metabolic_cycle_withheld"), ("unknown outcome", metab)
         assert rec["stages_measured"] > 0, ("the cycle reported no stages, which is unmeasured and not "
                                             "clean", rec)
         assert isinstance(rec.get("breached_stages"), list), rec
         assert "measured individually" in rec["basis"], rec["basis"]
+        #  and the two non-failure states must stay distinguishable: a cycle that measured everything and
+        #  emitted nothing is not a delivery, and must never be recorded as one.
+        if metab[0].endswith("withheld"):
+            assert rec["cycle_status"] == "WITHHELD", rec
+            assert rec["emitted"] is False, rec
+            assert (rec.get("withheld_reason") or "").strip(), ("nothing was emitted and the beat does "
+                                                                "not say why", rec)
+        else:
+            assert rec.get("emitted") is True, ("a delivered cycle does not say it emitted", rec)
 
     # ── 5. the subject is the ORGANISM and says why, rather than naming an invented user ───────
     from pathlib import Path as _P
@@ -29622,3 +29638,143 @@ def test_w532_the_beat_drives_the_loop_and_records_a_failure_as_a_failure():
     assert "not a user" in src, "the beat does not say the subject is the organism"
     #  and the section is placed with the expensive work, not the cheap work
     assert "paced and opt-in" in src.lower() or "Paced and opt-in" in src, "the pacing rationale is absent"
+
+
+def test_w533_the_loop_runs_and_a_withheld_emission_is_not_a_success():
+    """P3.16 — the six-stage recirculation loop RUNS from the heartbeat, and withholds honestly.
+
+    W532 wired the beat to the loop and the loop could not run. Four defects stood in the way, each hidden
+    from a source search: a stub detector that substring-matched the word every constitutional verdict
+    carries; an interceptor handing data to a method that enforces a property of code; an aggregator that
+    multiplied by a three-state confidence; and a deliberation whose status was a literal. With those gone the
+    loop reaches its last stage and clearance gate 1 WITHHOLDS the emission, because the engines supply no
+    verdict. That is the governance layer working, so it must read as neither a crash nor a clean delivery.
+    """
+    import ast as _ast
+    import asyncio as _aio
+    from pathlib import Path as _P
+
+    # ── 1. THE LOOP RUNS FROM THE BEAT, and all six stages are measured ────────────────────────
+    from agentic_core.organism.heartbeat import OrganismHeartbeat
+    h = OrganismHeartbeat()
+    h.auto_metabolic = True
+    h._metabolic_every = 1
+    beat = _aio.run(h.beat())
+    rec = h.last_metabolic or {}
+    assert rec, "the beat ran a cycle and recorded nothing"
+    assert not rec.get("failed"), ("the cycle failed: " + str(rec.get("failed")))
+    assert rec["stages_measured"] == 6, ("the loop did not run all six stages", rec["stages_measured"],
+                                         [g.get("stage") for g in (rec.get("stages") or [])])
+    assert [g["stage"] for g in rec["stages"]] == ["SENSE", "INTEND", "ANALYZE", "ACT", "LEARN", "REFLECT"], \
+        [g["stage"] for g in rec["stages"]]
+    assert all(isinstance(g["ms"], float) for g in rec["stages"]), rec["stages"]
+
+    # ── 2. AND IT EMITTED NOTHING, which must not read as a clean cycle ────────────────────────
+    #  Six measured stages and an empty mouth is this platform's normal state today. Before W533 that had
+    #  the same record as a delivered cycle, and before W532's chain it raised instead.
+    assert rec["cycle_status"] == "WITHHELD", rec["cycle_status"]
+    assert rec["emitted"] is False, rec["emitted"]
+    assert (rec.get("withheld_reason") or "").strip(), "the beat does not say WHY nothing was emitted"
+    assert "Gate 1" in rec["withheld_reason"], rec["withheld_reason"]
+    acts = [a for a in (beat.get("actions") or []) if "metabolic" in a]
+    assert acts == ["metabolic_cycle_withheld"], ("a withheld cycle is indistinguishable from a delivered "
+                                                  "one in the action list", acts)
+
+    # ── 3. THE AGGREGATE IS NOT MEAN CONFIDENCE WEARING THE NAME AGREEMENT ─────────────────────
+    from agentic_core.consultation.mushawara.perspective_aggregator import PerspectiveAggregator
+    agg = PerspectiveAggregator(None)
+
+    #  (a) a three-state confidence no longer raises — this is what stopped stage ANALYZE
+    none_conf = [{"engine": "aqal", "confidence": None, "vector": None, "trace": {"passed": None}}] * 3
+    out = _aio.run(agg.synthesize(none_conf))
+    assert out["consensus_vector"] is None, "an embedding was invented for perspectives that supplied none"
+    assert "NOT BUNDLED" in out["consensus_vector_basis"], out["consensus_vector_basis"]
+    #  (b) nothing assessed it, so agreement is UNDEFINED — never 0.0 and never 1.0
+    assert out["agreement_score"] is None, ("an unassessed deliberation reported a number", out)
+    assert "NOT COMPUTED" in out["agreement_basis"], out["agreement_basis"]
+    assert out["confidence_mean"] is None, out
+    #  (c) real disagreement is expressible, which the constant-vector bundle could not do
+    mixed = [{"confidence": 0.9, "vector": None, "trace": {"passed": True}},
+             {"confidence": 0.1, "vector": None, "trace": {"passed": True}},
+             {"confidence": None, "vector": None, "trace": {"passed": False}}]
+    out2 = _aio.run(agg.synthesize(mixed))
+    assert abs(out2["agreement_score"] - 2.0 / 3.0) < 1e-9, out2["agreement_score"]
+    assert out2["verdicts_supplied"] == 3, out2
+    #  and the mean confidence keeps its OWN name, computed over the engines that reported one
+    assert abs(out2["confidence_mean"] - 0.5) < 1e-9, out2["confidence_mean"]
+    assert "2 of 3" in out2["confidence_basis"], out2["confidence_basis"]
+    #  (d) the hyperdimensional path still works when vectors are REAL, and says it was weighted
+    real = [{"confidence": 1.0, "vector": [1.0, -1.0], "trace": {"passed": True}},
+            {"confidence": 1.0, "vector": [1.0, 1.0], "trace": {"passed": True}}]
+    out3 = _aio.run(agg.synthesize(real))
+    assert out3["consensus_vector"] == [1.0, 0.0], out3["consensus_vector"]
+    assert "weighted by each engine" in out3["consensus_vector_basis"], out3["consensus_vector_basis"]
+
+    # ── 4. THE STATUS IS DERIVED, and clearance gate 1 reads it ────────────────────────────────
+    from agentic_core.consultation.mushawara.mushawara_bridge_2 import MushawaraBridge2
+
+    class _FixedAgg:
+        async def synthesize(self, ps):
+            return {"agreement_score": None}
+
+    def _bridge(verdicts):
+        b = MushawaraBridge2(None, None)
+        b.agg = _FixedAgg()
+
+        async def _p(q, et, _v=iter(verdicts)):
+            return {"engine": "x", "confidence": None, "trace": {"passed": next(_v)}}
+        b._get_p = _p
+        return b
+
+    q = type("Q", (), {"query": "q", "context": {}})()
+    three = [None, None, None]
+    assert _aio.run(_bridge(three).deliberate(q, [0, 1, 2]))["status"] == "NOT ASSESSED", \
+        "a deliberation nothing assessed reported an approval, and gate 1 clears on that"
+    assert _aio.run(_bridge([True, False, True]).deliberate(q, [0, 1, 2]))["status"] == "BLOCKED"
+    allp = _aio.run(_bridge([True, True, True]).deliberate(q, [0, 1, 2]))
+    assert allp["status"] == "APPROVED", allp["status"]
+    assert (allp.get("reason") or "").strip(), "gate 1 reads `reason` and it is empty"
+
+    # ── 5. THE READER STOPS CLAIMING A DEFINITIVE STRATEGY off a number nothing assessed ───────
+    from agentic_core.avatars.cognition.mushawara_bridge import AvatarCognitiveOrchestrator
+    orch = AvatarCognitiveOrchestrator(None, None)
+    unassessed = orch._synthesize_text({"context": {"input": "a plan"}}, None, {"status": "NOT ASSESSED"})
+    assert "definitive" not in unassessed.lower(), unassessed
+    assert "not been able to assess" in unassessed, unassessed
+    blocked = orch._synthesize_text({"context": {"input": "a plan"}}, 1.0, {"status": "BLOCKED"})
+    assert "cannot proceed" in blocked, blocked
+
+    # ── 6. A PLACEHOLDER GATE WITH TWO UNMATCHABLE NEEDLES — both halves ───────────────────────
+    #  The test was `p in content.upper()` with lowercase needles, so against an uppercased haystack they
+    #  could never fire whatever the emission said. Proven by driving the needle that could not match:
+    cannot_before = _aio.run(orch.verify_output({"text": "the body is raise NotImplementedError here"}))
+    assert cannot_before["verified"] is False, ("a needle that could never match still cannot", cannot_before)
+    assert _aio.run(orch.verify_output({"text": "TODO: finish"}))["verified"] is False
+    assert _aio.run(orch.verify_output({"text": "a stub remains"}))["verified"] is False
+    #  and the other half: an ordinary English word inside prose written for a user is NOT a placeholder
+    ok = _aio.run(orch.verify_output({"text": "You will pass the assessment, and your progress compasses it."}))
+    assert ok["verified"] is True, ("an ordinary word in prose is refused as a placeholder", ok)
+    assert ok.get("merkle_proof"), ok
+
+    # ── 7. THE CALL SHAPE THAT RECURRED TWICE, over the WHOLE package ──────────────────────────
+    #  W531 asserted this over ONE FILE and a second caller survived in the consultation package and stopped
+    #  stage ANALYZE. The receivers below are the ones that genuinely implement the method; anything else
+    #  resolved from a registry is the defect shape.
+    root = _P(__file__).resolve().parents[1] / "agentic_core"
+    offenders, receivers = [], []
+    for path in sorted(root.rglob("*.py")):
+        if "_archive" in path.parts:
+            continue
+        try:
+            tree = _ast.parse(path.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        for n in _ast.walk(tree):
+            if isinstance(n, _ast.Call) and isinstance(n.func, _ast.Attribute) and n.func.attr == "process":
+                recv = _ast.unparse(n.func.value)
+                receivers.append((path.name, n.lineno, recv))
+                if recv not in ("self.vrpr",):
+                    offenders.append((path.name, n.lineno, recv))
+    assert not offenders, ("a caller invokes .process() on a receiver not known to implement it; the engines "
+                           "do not, and this shape has now broken the loop twice: " + repr(offenders))
+    assert receivers, "the scan found no .process calls at all, so it is not looking at the package"

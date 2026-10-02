@@ -372,10 +372,14 @@ class OrganismHeartbeat:
                 from agentic_core.avatars.core.recirculation_orchestrator import (
                     AvatarRecirculationOrchestrator)
                 from agentic_core.avatars.core.avatar_engine import AvatarState
-                # the heartbeat resolves its logger lazily through _ueg_logger(); `self.ueg` does
-                # not exist, and asking for it was recorded as a failure rather than swallowed
+                # W533 — the orchestrator requires a VSBUEGLogger-shaped logger: it calls the async
+                # log_event and log_minimisation_event. The heartbeat's own _ueg_logger() returns
+                # gaas.v5.UEGLogger, whose interface is a SYNCHRONOUS .log(dict), so handing it over
+                # made every stage fail on an await of a non-coroutine. Two logger interfaces exist
+                # in this repository and the dependency decides which one is correct here.
+                from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
                 _orch = AvatarRecirculationOrchestrator(
-                    self._ueg_logger(),
+                    _VSBUEG(),
                     AvatarState(avatar_id="platform", user_id="platform"))
                 _ctx = await _orch.execute_cycle({
                     "user_id": "platform",
@@ -386,6 +390,14 @@ class OrganismHeartbeat:
                 })
                 _stages = (_ctx or {}).get("stages") or []
                 _breached = [g["stage"] for g in _stages if g.get("breached")]
+                # W533 — THE CYCLE RAN AND EMITTED NOTHING, and that had the same record as a delivered
+                # cycle. Clearance gate 1 withholds the emission because the engines supply no
+                # constitutional verdict, so six measured stages and an empty mouth is the NORMAL state of
+                # this platform today. A beat reporting that as a clean cycle would be the same defect this
+                # programme keeps removing, one layer up: the run is honest about its latencies and silent
+                # about its outcome. Three states now, not two.
+                _status = (_ctx or {}).get("status")
+                _withheld = _status == "WITHHELD"
                 self.last_metabolic = {
                     "at": self.last_beat,
                     "stages_measured": len(_stages),
@@ -393,13 +405,19 @@ class OrganismHeartbeat:
                     "breached_stages": _breached,
                     "breach_count": len(_breached),
                     "subject": "platform",
+                    "cycle_status": _status,
+                    "emitted": (False if _withheld else None if _status is None else True),
+                    "withheld_reason": (_ctx or {}).get("withheld_reason"),
                     "basis": (f"{len(_stages)} stage(s) measured individually; "
                               f"{len(_breached)} breached an untuned default budget"
+                              + ("; the emission was WITHHELD by the clearance chain, so the cycle ran but "
+                                 "delivered nothing — measured is not the same as delivered"
+                                 if _withheld else "")
                               if _stages else
                               "the cycle returned no stage record, so NOTHING was measured — this is not a "
                               "clean run, it is an unmeasured one"),
                 }
-                actions.append("metabolic_cycle")
+                actions.append("metabolic_cycle_withheld" if _withheld else "metabolic_cycle")
             except Exception as exc:                  # noqa: BLE001 — recorded, never silently skipped
                 self.last_metabolic = {
                     "at": self.last_beat,

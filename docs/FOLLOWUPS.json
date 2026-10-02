@@ -5937,10 +5937,82 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.16",
+      "status": "done",
+      "closed_by": "W533",
+      "note": "",
+      "slot_source": "the item whose bar requires the loop to run",
+      "tier": 2
+    },
+    {
+      "id": "FU-341",
+      "title": "The LEARN stage of the recirculation loop measures 0.0ms, so prove it can learn at all",
+      "why": "W533 ran the six-stage loop from the heartbeat for the first time and every stage reported a real latency except LEARN, which measured 0.0ms. W530 correctly stopped that stage inventing an observation when the caller recorded no outcome, so a no-op is the DESIGNED behaviour for the platform-self-regulation cycle, which records none. But a stage that always costs nothing is indistinguishable from a stage that is never reached, and this one writes to a stored skill profile that later decisions read. Drive it with a cycle that DOES carry a recorded outcome and show the epigenetic write happening, so the 0.0ms is proven to be a declined update and not an unreached branch.",
+      "source": "W533 heartbeat drive",
+      "found": "2026-10-02",
+      "files": [
+        "agentic_core/avatars/core/recirculation_orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the item whose bar requires the loop to run",
+      "slot_source": "rides P3.16, whose structural clause is the loop running from the beat; this is the one stage of that loop whose execution is not yet evidenced",
+      "tier": 2
+    },
+    {
+      "id": "FU-342",
+      "title": "verify_output returns a bare SHA3-512 digest under the name merkle_proof",
+      "why": "The avatar emission verifier returns hashlib.sha3_512(json.dumps(emission)).hexdigest() as the value of a key called merkle_proof. A digest of one object is not a Merkle proof: there is no tree, no sibling path and no root to verify an inclusion against, so nothing can be checked with it and no second party can use it to confirm the emission belongs to any log. This is the same class as the HMAC that was named a post-quantum signature in W514, and the same remedy applies: either compute an inclusion proof against a real append-only log, or name the field for the digest it actually is.",
+      "source": "W533 reader audit",
+      "found": "2026-10-02",
+      "files": [
+        "agentic_core/avatars/cognition/mushawara_bridge.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in the same reader W533 repaired, and it is a naming over-claim on the emission path P3.16 owns",
+      "tier": 2
+    },
+    {
+      "id": "FU-343",
+      "title": "The MJM learner is never wired into Mushawara deliberation: the aggregator is constructed with None",
+      "why": "PerspectiveAggregator takes a mjm_learner as its only constructor argument and MushawaraBridge2 constructs it as PerspectiveAggregator(None). Nothing else constructs it, so the learner is None on every path and the attribute is never read. The Owner ruling of 2026-09-30 makes MJM both a registered engine tier and a composed layer, and deliberation across perspectives is exactly where a muaina learner would belong, so this is an unwired seam rather than a dead parameter. Decide whether the aggregator should consult the MJM tier now that those engines are registered, or whether the parameter should be removed and the seam recorded elsewhere.",
+      "source": "W533 aggregator audit",
+      "found": "2026-10-02",
+      "files": [
+        "agentic_core/consultation/mushawara/perspective_aggregator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "rides P3.16 with the rest of the deliberation path W533 opened up; it is a wiring question about the MJM tier the Owner ruled on",
+      "tier": 2
+    },
+    {
+      "id": "FU-344",
+      "title": "A withheld emission is visible only in the heartbeat record, on no API or page",
+      "why": "W533 made the recirculation loop complete and withhold its emission rather than crash, and the withholding is recorded in the beat and in an AVATAR_EMISSION_WITHHELD ledger event. Nothing serves it. The platform now has a normal operating state in which the organism runs a full metabolic cycle and deliberately delivers nothing, and that state is invisible to every reached surface: no route reports it and no page shows it. An operator reading the existing status surfaces would see a healthy heartbeat and infer the avatar is emitting. Expose the cycle status and the withholding reason on the organism status route, and show it wherever the heartbeat is already displayed.",
+      "source": "W533 heartbeat drive",
+      "found": "2026-10-02",
+      "files": [
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the surfacing half of the clause W533 just satisfied: the loop runs and reports, but only into memory",
       "tier": 2
     }
   ],

@@ -91,8 +91,13 @@ class UnifiedConstitutionalInterceptorV16Omega:
             if not h_res["passed"]:
                 output = await self.hallucination.regenerate_with_citations(output)
 
-        # 7. Reconfigulator Registry
-        await self.reconfigulator.replicate(str(output))
+        # 7. Reconfigulator Registry — REMOVED (W533). This passed `str(output)` to a method that
+        #    registers a genome and enforces "no stubs in production CODE". An intercepted action's output
+        #    is DATA, not code, so the call was a category error that no fix to the matcher could make
+        #    correct. It also never succeeded: the matcher tested `"pass" in code` as a substring, and every
+        #    output carrying a constitutional verdict contains "passed", so this raised for them all — which
+        #    is what stopped the recirculation loop running. Nothing read the registry it wrote to (an
+        #    in-memory dict on a per-request instance), so removing the call loses nothing that worked.
 
         await self.ueg.log_minimisation_event("uci_v16_converged_complete", {
             "latency_ms": latency,

@@ -128,7 +128,15 @@ class AvatarRecirculationOrchestrator:
         Enforces latency assertions and 7-layer UCI interception.
         """
         if self.override_active:
-            return {"status": "HALTED", "reason": "Constitutional override active"}
+            # W533 — this branch returned two keys while the others return seven, and it is the branch that
+            # runs when the platform has been deliberately halted: the one least likely to be exercised
+            # before it is needed. A caller indexing stages_measured here used to raise, and one using .get
+            # would read a halted cycle as nought stages measured without being told it was halted at all.
+            return {"status": "HALTED", "reason": "Constitutional override active",
+                    "cycle_id": None, "output": None, "withheld_reason": None,
+                    "stages": [], "stages_measured": 0,
+                    "stages_basis": ("no stage ran: a constitutional override is active, so this is a "
+                                     "HALTED cycle and not an unmeasured one")}
 
         start_time = time.time()
         session_id = f"sess_{self.state.avatar_id[-8:]}"
@@ -183,11 +191,25 @@ class AvatarRecirculationOrchestrator:
                 "breached_stages": _breached,
                 "breach_count": len(_breached),
                 "budgets_are_defaults": self._BUDGETS_ARE_DEFAULTS,
+                # W533 — a cycle that measured all six stages and emitted NOTHING is not the same cycle as
+                # one that delivered, so the record distinguishes them here too.
+                "emission_withheld": bool(isinstance(ctx["state"].get("act"), dict)
+                                          and ctx["state"]["act"].get("withheld")),
             })
 
+            # W533 — a withheld emission must not report SUCCESS. Before this, a refusal could not reach
+            # here at all (it raised), so there was no status for "the loop ran correctly and the gate said
+            # no" -- the only vocabulary was success or crash.
+            _act = ctx["state"]["act"] if isinstance(ctx["state"].get("act"), dict) else {}
+            _withheld = bool(_act.get("withheld"))
             return {
-                "status": "SUCCESS",
+                "status": "WITHHELD" if _withheld else "SUCCESS",
                 "cycle_id": ctx["cycle_id"],
+                "reason": _act.get("withheld_reason") if _withheld else None,
+                "withheld_reason": _act.get("withheld_reason") if _withheld else None,
+                "stages_basis": f"{len(stage_records)} stage(s) each measured on its own clock",
+                "stages": stage_records,
+                "stages_measured": len(stage_records),
                 "output": ctx["state"]["act"]
             }
 
@@ -245,7 +267,28 @@ class AvatarRecirculationOrchestrator:
         # 5-gate constitutional clearance mandatory per emission
         clearance_res = await self.clearance.validate_emission(emission, ctx)
         if not clearance_res.passed:
-            raise RuntimeError(f"Gate Breach: {clearance_res.reason}")
+            # W533 — this raised, so a gate DOING ITS JOB killed the organism's metabolic cycle: the three
+            # stages after this one went unmeasured, and the refusal was filed as a metabolic FAILURE, which
+            # files a governance decision as a malfunction. A refusal is an outcome. The emission is withheld
+            # with the gate's reason, nothing is rendered, no tool runs, and the cycle carries on and is
+            # measured. The content is moved off `text` rather than left on it, so no reader can mistake a
+            # withheld draft for something that cleared.
+            emission["withheld"] = True
+            emission["withheld_reason"] = clearance_res.reason
+            emission["withheld_draft"] = emission.pop("text", None)
+            emission["text"] = None
+            emission["gates"] = getattr(clearance_res, "gates", None)
+            emission["withheld_basis"] = (
+                "the constitutional clearance chain did not clear this emission, so it is withheld rather "
+                "than delivered. This is the gate working, not a stage failing: the cycle continues and "
+                "reports status WITHHELD, which is never SUCCESS")
+            await self.ueg.log_event("AVATAR_EMISSION_WITHHELD", {
+                "id": emission["id"],
+                "cycle_id": ctx["cycle_id"],
+                "reason": clearance_res.reason,
+                "gates": getattr(clearance_res, "gates", None),
+            })
+            return emission
 
         emission["attestations"] = clearance_res.attestations
 
