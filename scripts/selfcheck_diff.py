@@ -157,12 +157,38 @@ KEY_RE = re.compile(r'"([a-z_][a-z0-9_]{2,})"\s*:')
 # W493 — a key is also introduced and removed by SUBSCRIPT ASSIGNMENT (`vsb["last_evolved"] = now`),
 # which the first version did not match at all. A real break slipped through that gap in this round:
 # renaming such a key left two readers, one of which would have starved a round-robin.
-ASSIGN_KEY_RE = re.compile(r'\[\s*"([a-z_][a-z0-9_]{2,})"\s*\]\s*=')
+# W534 (FU-319) — the `=` here used to match the FIRST CHARACTER OF `==`, so a dict READ being compared was
+# counted as a key PRODUCED. The lookahead requires a real assignment. `!=`, `>=` and `<=` never matched,
+# because each puts another character between the bracket and the equals sign.
+ASSIGN_KEY_RE = re.compile(r'\[\s*"([a-z_][a-z0-9_]{2,})"\s*\]\s*=(?!=)')
+
+# W534 (FU-319) — a line opening with one of these ENDS in a statement colon, so a quoted word immediately
+# before that final colon belongs to a comparison or a label, not to a dict.
+_BLOCK_KW = frozenset(("if", "elif", "while", "for", "case", "match", "with", "else", "try", "except",
+                       "finally", "def", "class", "async"))
 
 
 def keys_in(line: str) -> set[str]:
-    """Every dict key this line introduces, as a literal pair OR a subscript assignment."""
-    return set(KEY_RE.findall(line)) | set(ASSIGN_KEY_RE.findall(line))
+    """Every dict key this line introduces, as a literal pair OR a subscript assignment.
+
+    W534 (FU-319) — this reported any `if x == "name":` as a produced key, because the regex sees a quoted
+    word followed by a colon and every dispatcher in this repository is built from those lines. The screen
+    then asked which page shows a CLI subcommand name. No page shows one and none should.
+
+    The test is POSITIONAL, because the distinction is: on a line that opens a block, the FINAL colon
+    terminates the statement, so a match ending at it used that colon and is not a key. A dict key whose
+    value sits on the next line still ends its line with a colon, but its line does not open a block, so it
+    is still reported — the exclusion is kept as narrow as the defect.
+    """
+    body = line.split(" #")[0].rstrip()
+    head = body.lstrip().split("(")[0].split(":")[0].split()
+    opens_block = bool(head) and head[0] in _BLOCK_KW
+    out = set()
+    for m in KEY_RE.finditer(body):
+        if opens_block and m.end() == len(body):
+            continue
+        out.add(m.group(1))
+    return out | set(ASSIGN_KEY_RE.findall(body))
 
 
 def check_keys(rev: str, files: list[str]) -> list[str]:
@@ -512,8 +538,118 @@ def check_order(rev: str, files: list[str]) -> list[str]:
     return out
 
 
+# ── claims ─────────────────────────────────────────────────────────────────────────────────────────
+# W534 (FU-262) — the markers that turn a report into an ASSERTION. Each must co-occur with a typed digit
+# in the same literal, which is what separates "0.6 is the floor" (a claim nothing checked) from
+# f"the floor is {floor}" (a report of state).
+_CLAIM_MARKERS = ("cannot", "can never", "never ", "always", "must not", "must be", "at least", "at most",
+                  "no less", "no more", "no fewer", "below", "above", "exceed", "minimum", "maximum",
+                  "guarantee", "ensures", "ensure that", "every ", "all ", "none of", "impossible")
+
+# W534 — a STANDALONE number: not preceded by a letter, digit, dot or hyphen. That one lookbehind is what
+# separates a claim from provenance, because every basis in this repository opens with a round or item id
+# (W530, P3.16, FU-310) and the first version of this screen read those digits as the subject of the claim.
+# 8 of its 9 flags over 25 rounds were that. A trailing unit is allowed, so 100ms still reads as a number.
+_STANDALONE_NUM = re.compile(r'(?<![A-Za-z0-9_.\-])\d+(?:\.\d+)?')
+_CLAIM_WINDOW = 40
+
+
+def _numeric_claim(lit: str):
+    """(number, marker) when a modal marker sits within _CLAIM_WINDOW characters of a standalone number.
+
+    The window is the whole point: a modal word 300 characters from a round id is not a statement about that
+    id, and treating it as one is what made the first version of this screen unusable.
+    """
+    low = lit.lower()
+    for m in _STANDALONE_NUM.finditer(lit):
+        lo = max(0, m.start() - _CLAIM_WINDOW)
+        hi = min(len(lit), m.end() + _CLAIM_WINDOW)
+        near = low[lo:hi]
+        for marker in _CLAIM_MARKERS:
+            if marker in near:
+                return m.group(0), marker
+    return None
+
+
+def _basis_strings(tree: ast.AST):
+    """Every string that is used AS A BASIS, with its line and whether any part of it is computed.
+
+    Yields (lineno, literal_parts, is_computed). A basis is recognised three ways, because this repository
+    writes them three ways: as a dict entry whose key contains 'basis', as a `basis=` keyword argument, and
+    as an assignment to a name containing 'basis'.
+    """
+    def parts(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return [node.value], False
+        if isinstance(node, ast.JoinedStr):
+            lit = [v.value for v in node.values
+                   if isinstance(v, ast.Constant) and isinstance(v.value, str)]
+            return lit, any(isinstance(v, ast.FormattedValue) for v in node.values)
+        return None, False
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            for k, v in zip(node.keys, node.values):
+                if (isinstance(k, ast.Constant) and isinstance(k.value, str)
+                        and "basis" in k.value.lower()):
+                    lit, comp = parts(v)
+                    if lit is not None:
+                        yield getattr(v, "lineno", node.lineno), lit, comp
+        elif isinstance(node, ast.Call):
+            for kw in node.keywords:
+                if kw.arg and "basis" in kw.arg.lower():
+                    lit, comp = parts(kw.value)
+                    if lit is not None:
+                        yield getattr(kw.value, "lineno", node.lineno), lit, comp
+        elif isinstance(node, ast.Assign):
+            names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            names += [t.attr for t in node.targets if isinstance(t, ast.Attribute)]
+            if any("basis" in n.lower() for n in names):
+                lit, comp = parts(node.value)
+                if lit is not None:
+                    yield node.lineno, lit, comp
+
+
+def check_claims(rev: str, files: list[str]) -> list[str]:
+    """A basis that ASSERTS a numeric bound instead of REPORTING one computed from state.
+
+    The largest group in the labelled set (30 of 98) and the one W494 found 32 times in a single round: a
+    sentence beside a number, where the sentence states a universal the code never checked. A basis is the
+    one place in this repository whose whole job is to say what was measured, so a basis that asserts is
+    worse than silence — it answers the question a reader would otherwise ask.
+    """
+    out = []
+    for f in files:
+        if not f.endswith(".py") or "test_" in Path(f).name:
+            continue
+        full = ROOT / f
+        if not full.exists():
+            continue
+        try:
+            tree = ast.parse(full.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        added = {ln for ln, _ in added_removed(rev, f)[0]}
+        if not added:
+            continue
+        for lineno, lits, computed in _basis_strings(tree):
+            if lineno not in added:
+                continue
+            for lit in lits:
+                hit = _numeric_claim(lit)
+                if not hit:
+                    continue
+                num, marker = hit
+                out.append(f"{f}:{lineno}  a basis says '{marker.strip()}' within 40 chars of the TYPED "
+                           f"number {num} ({lit[:70]!r}) — is that bound computed from state, or asserted? "
+                           + ("the f-string interpolates something, but this number is still a literal"
+                              if computed else "nothing in this string is computed"))
+    return out
+
+
 CHECKS = {
     "keys": ("a key produced but read by no surface", check_keys),
+    "claims": ("a basis asserting a numeric bound instead of reporting one", check_claims),
     "renames": ("a key removed while other files still read it", check_renames),
     "routes": ("a route decorator bound to a private helper", check_routes),
     "returns": ("sibling returns with different key sets", check_returns),

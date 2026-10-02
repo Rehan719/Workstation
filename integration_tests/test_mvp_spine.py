@@ -20586,7 +20586,18 @@ def test_w493_a_present_tense_claim_needs_the_process_running(client):
     # the walk goes through the tool's own alternatives helper (asserted on behaviour above)
     assert "for inner in _returned_dicts(sub.value):" in _scsrc
     assert "def _returned_dicts(" in _scsrc
-    assert "ASSIGN_KEY_RE.findall(line)" in _scsrc
+    # W534 — this asserted the SOURCE TEXT "ASSIGN_KEY_RE.findall(line)", so it broke when FU-319's fix
+    # renamed that function's local from `line` to `body` (the line is now stripped of its trailing comment
+    # before being scanned). The property it actually cares about is that a key introduced by SUBSCRIPT
+    # ASSIGNMENT is detected — W493 added that regex because renaming such a key had left two live readers.
+    # So the property is asserted on BEHAVIOUR, which no rename can break and no spelling can fake. This is
+    # the second guard in two rounds to pin a spelling rather than its property; the first was W532's.
+    assert _mod.keys_in('        vsb["last_evolved"] = now') == {"last_evolved"}, \
+        "a key introduced by subscript assignment is no longer detected"
+    assert "ASSIGN_KEY_RE" in _scsrc, "the subscript-assignment screen is gone entirely"
+    #  and it must not fire on an equality COMPARISON, which is a dict READ, not a key produced (FU-319)
+    assert _mod.keys_in('        if cfg["mode"] == "strict":') == set(), \
+        "a compared dict read is counted as a key produced"
     # and the scope the tool documents is the scope it reads: staged changes included
     assert 'sh("git", "diff", "--name-only", rev or "HEAD")' in _scsrc
     # a reader is live if the key is still in its content - not merely absent from the diff
@@ -29778,3 +29789,133 @@ def test_w533_the_loop_runs_and_a_withheld_emission_is_not_a_success():
     assert not offenders, ("a caller invokes .process() on a receiver not known to implement it; the engines "
                            "do not, and this shape has now broken the loop twice: " + repr(offenders))
     assert receivers, "the scan found no .process calls at all, so it is not looking at the package"
+
+
+def test_w534_the_preflight_stops_reading_comparisons_as_keys_and_qms_discloses_its_store():
+    """P2.4 — FU-319, FU-262 and the first of FU-298's thirteen readers.
+
+    The first two subjects are the pre-flight itself, which every round depends on, so each screen is driven
+    BOTH ways: it must fire on the defect it exists for and stay silent on the honest shape it kept mistaking
+    for one. Three of this instrument's screens have already needed a precision pass (FU-303, FU-317, FU-319),
+    and the claims screen needed one within this round - its first version flagged 9 things across 25 rounds
+    of real commits and 8 were noise.
+    """
+    import asyncio as _aio
+    import importlib.util as _ilu
+    from pathlib import Path as _P
+
+    _root = _P(__file__).resolve().parents[1]
+    _spec = _ilu.spec_from_file_location("_sc_w534", _root / "scripts/selfcheck_diff.py")
+    sc = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(sc)
+
+    # ── 1. FU-319 — a COMPARISON is not a produced key, and a compared dict READ is not one either ──
+    #  Every dispatcher in this repository is built from `if x == "name":` lines, so the old screen asked
+    #  which page displays a CLI subcommand name. No page displays one and none should.
+    assert sc.keys_in('        if args.cmd == "satisfied":') == set(), "a comparison still reads as a key"
+    assert sc.keys_in('    elif args.cmd == "bundles":') == set(), "an elif comparison still reads as a key"
+    assert sc.keys_in('        case "withheld":') == set(), "a match/case label still reads as a key"
+    #  the second defect, which FU-319 did not name: `\]\s*=` matched the FIRST `=` OF `==`
+    assert sc.keys_in('        if cfg["mode"] == "strict":') == set(), \
+        "a dict READ inside a comparison still counts as a key PRODUCED"
+    #  and the exclusion must be NARROW — these are all real keys and must survive it
+    assert sc.keys_in('            "agreement_score": agreement,') == {"agreement_score"}
+    assert sc.keys_in('        vsb["last_evolved"] = now') == {"last_evolved"}
+    assert sc.keys_in('                    "withheld_reason":') == {"withheld_reason"}, \
+        "a key whose value sits on the next line was excluded with the comparisons"
+    assert sc.keys_in('        if d == {"inner_key": 1}:') == {"inner_key"}, \
+        "a real key inside an if-line was excluded because the line opens a block"
+
+    # ── 2. FU-262 — the claims screen fires on an ASSERTED bound and not on a REPORTED one ─────
+    assert "claims" in sc.CHECKS, "the claims screen is not registered, so no round would run it"
+    #  (a) it fires on the shapes the labelled set is made of, including W494's own ground truth
+    for lit in ("the blend cannot fall below 0.6",
+                "at least 3 signatories are always required",
+                "the p95 never exceeds 100ms",
+                "the maximum is 240 and it must be respected"):
+        assert sc._numeric_claim(lit), ("the claims screen cannot fire on an asserted bound", lit)
+    #  (b) and it stays SILENT on honest bases — the half that made its first version unusable, because
+    #      every basis in this repository opens with a round or item id and those digits are not claims
+    for lit in ("W530 - no mutation regulator is configured, so no adaptation is approved",
+                "not computed: this engine has no path to a model (measured: no gateway) - P3.16",
+                "6 stage(s) measured individually; 0 breached an untuned default budget",
+                "FU-310 made confidence three-state so an engine must say None rather than inventing a "
+                "number, and nothing here is ever assumed",
+                #  THESE THREE ARE THE ONES THAT TEST THE STANDALONE-NUMBER RULE, and they were added
+                #  after driving this leg red exposed that the four above do not. Their modal word sits
+                #  only a few characters from a ROUND OR ITEM ID, which is the commonest sentence shape
+                #  in this repository's bases - so without the lookbehind that rejects a digit preceded
+                #  by a letter, dot or hyphen, each of these fires and the screen becomes unreadable.
+                "W494 showed that a basis cannot assert what nothing measured",
+                "P3.16 - the loop must be driven from the beat",
+                "W533 - a gate cannot clear on a literal"):
+        assert not sc._numeric_claim(lit), ("the claims screen fires on an honest basis", lit)
+
+    # ── 3. FU-298 (1 of 13) — qms figures say whether the store could be read WHOLE ─────────────
+    from agentic_core.config import data_path as _dp
+    from agentic_core.vbs.qms import QualityManagementSystem as _QMS
+
+    whole = _QMS("w534_whole")
+    _dp(whole._store_name).write_text('{"gates_run": 4, "defects_total": 2, "defects": []}',
+                                      encoding="utf-8")
+    sw = whole.defect_summary()
+    assert "store_incomplete" not in sw, "a store read WHOLE claims to be incomplete"
+    assert "counts_are_incomplete" not in sw, sw
+    assert sw["gates_run"] == 4, sw
+    assert "INCOMPLETE" not in sw["rate_basis"], sw["rate_basis"]
+
+    cut = _QMS("w534_cut")
+    _dp(cut._store_name).write_text('{"gates_run": 4, "defects_total": 2, "defe', encoding="utf-8")
+    sc2 = cut.defect_summary()
+    assert sc2.get("counts_are_incomplete") is True, ("a truncated store reports complete counts", sc2)
+    assert (sc2.get("store_incomplete") or "").strip(), "the reason for the incompleteness is empty"
+    #  and the RATE must say which way an unreadable store moves it, because it moves it in a known one
+    assert "THIS RATE IS INCOMPLETE" in sc2["rate_basis"], sc2["rate_basis"]
+    assert "may be better" in sc2["rate_basis"], ("the basis does not say which way the rate is wrong",
+                                                  sc2["rate_basis"])
+
+    # ── 4. AND THE ROUTE THAT PRINTS THE ROWS SAYS SO, because a caller may never read the summary ──
+    import agentic_core.api.vbs_systems as _vbs
+    _store = _dp(_vbs.qms._store_name)
+    _before = _store.read_text(encoding="utf-8") if _store.exists() else None
+    try:
+        _store.write_text('{"gates_run": 1, "defects_total": 1, "defe', encoding="utf-8")
+        _vbs.qms._state, _vbs.qms._store_unreadable = None, None
+        res = _aio.run(_vbs.qms_defects("", None))
+        assert res.get("listing_is_incomplete") is True, ("the rows are short and the route does not say "
+                                                          "why", {k: res.get(k) for k in res if k != "defects"})
+        assert (res.get("store_incomplete") or "").strip(), res
+    finally:
+        #  the module-level instance is shared with every other test in this run, so it is put back
+        if _before is None:
+            _store.unlink(missing_ok=True)
+        else:
+            _store.write_text(_before, encoding="utf-8")
+        _vbs.qms._state, _vbs.qms._store_unreadable = None, None
+
+    # ── 5. AND THE PAGE PRINTING THE RATE SHOWS IT, because a reason stopping at the API is not shown ──
+    #  My own pre-flight asked this of this round's work - "no page reads it; if it qualifies a claim,
+    #  which surface shows it?" - and measuring found NO frontend read store_incomplete at all, so the
+    #  readers converted in W506 do not reach a page either. The rate is the figure an unreadable store
+    #  flatters most, since the defects it cannot read are the ones missing from the numerator.
+    panel = (_root / "apps/workstation-superapp/src/components/VBSSystemsPanel.tsx").read_text(
+        encoding="utf-8")
+    assert "counts_are_incomplete?: boolean" in panel, "the page's type does not carry the disclosure"
+    #  the VISIBLE label, not only a tooltip: nobody hovers a percentage to learn it is partial
+    assert "counts incomplete — rate may be better than the truth" in panel,         "the disclosure is not rendered as visible text"
+    #  and the gate must be the FIELD, not a disabled conditional — a presence check cannot see {false && ...}
+    assert "{defects.summary.counts_are_incomplete && (" in panel,         "the chip is not gated on the field the API sends"
+    assert "{false &&" not in panel, "a disabled conditional renders nothing while naming the field"
+    #  the rate chip itself changes tone, so the number carries the warning and not just its neighbour
+    assert "tone={defects.summary.counts_are_incomplete ? 'warn' : 'dim'}" in panel,         "the rate is printed in the same tone whether or not it is complete"
+
+    # ── 6. AN EMPTY LIST IS NOT A RECORD OF ZERO — the absence class, on a reached panel ───────
+    #  This panel said "no defects recorded" whenever the list came back empty, so an unreadable store
+    #  rendered as a positive statement that there are none: a failure shown as an absence, and the most
+    #  flattering possible reading of a store nobody could read. Found by this round's own pre-flight,
+    #  which asked which surface shows listing_is_incomplete and the answer was none.
+    assert "the defect list could NOT be read" in panel,         "an unreadable defect list still renders as a record of zero defects"
+    assert "defects.listing_is_incomplete" in panel, "the branch is not gated on the route's own flag"
+    #  and the TRUE statement must survive: with the store read whole and no defects, there ARE none.
+    #  Removing a true statement to fix an over-claim is itself a defect.
+    assert "no defects recorded" in panel,         "the honest zero-defects message was deleted along with the over-claim"

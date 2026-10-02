@@ -13,7 +13,10 @@ interface SystemRow { id: string; name: string; owned: boolean; real: string[]; 
   limits?: string[]; owns?: string[]; owned_by?: string }
 interface DefectRow { id: string; label: string; status: string; opened_at: string; correction?: string | null; meta?: { coverage?: number; stubs_found?: boolean }; reverify_basis?: string }
 // W489 — rate_basis says WHAT the rate is over; what-if gates are counted apart from it
-interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number; rate_basis?: string; what_if_gates?: number; what_if_failures?: number }
+// W534 (FU-298) — store_incomplete / counts_are_incomplete are present ONLY when the QMS store
+// could not be read whole. An unreadable store drops defects from the RATE'S NUMERATOR, so the
+// figure below is flattered by exactly the rows it could not read.
+interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number; rate_basis?: string; what_if_gates?: number; what_if_failures?: number; store_incomplete?: string; counts_are_incomplete?: boolean }
 
 function Chip({ tone, children, title }: { tone: 'ok' | 'warn' | 'dim'; children: React.ReactNode; title?: string }) {
   const cls = tone === 'ok' ? 'bg-emerald-500/15 text-emerald-400' : tone === 'warn' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400';
@@ -22,7 +25,10 @@ function Chip({ tone, children, title }: { tone: 'ok' | 'warn' | 'dim'; children
 
 export const VBSSystemsPanel: React.FC = () => {
   const [systems, setSystems] = useState<SystemRow[] | null>(null);
-  const [defects, setDefects] = useState<{ summary: DefectSummary; defects: DefectRow[] } | null>(null);
+  // W534 — the ROUTE carries listing_is_incomplete beside the rows, a different claim from the
+  // summary's counts: the rows themselves are short because the store could not be read whole.
+  const [defects, setDefects] = useState<{ summary: DefectSummary; defects: DefectRow[];
+    store_incomplete?: string; listing_is_incomplete?: boolean } | null>(null);
   const [docCtl, setDocCtl] = useState<any>(null);
   const [bbHealth, setBbHealth] = useState<any>(null);
   const [err, setErr] = useState('');
@@ -180,10 +186,21 @@ export const VBSSystemsPanel: React.FC = () => {
                   this entity's deliveries. One QMS store serves the whole platform, and the Gate button
                   below fed it a coverage number the user types. The rate now says what it is over, and
                   what-if gates are counted apart from it. */}
-              <Chip tone="dim" title={defects.summary.rate_basis
+              {/* W534 — amber when the store could not be read whole, because this rate is the figure an
+                  unreadable store flatters most: the defects it cannot read are the ones missing from the
+                  numerator. The reason travels as a VISIBLE chip beside it, not only in a tooltip — nobody
+                  hovers a percentage to find out it is partial. */}
+              <Chip tone={defects.summary.counts_are_incomplete ? 'warn' : 'dim'}
+                title={defects.summary.rate_basis
                 || 'gate failures / gates run across all deliveries on this platform, 0.0 with no history'}>
                 non-conformance {Math.round(defects.summary.non_conformance_rate * 100)}% (platform-wide)
               </Chip>
+              {defects.summary.counts_are_incomplete && (
+                <Chip tone="warn" title={defects.summary.store_incomplete
+                  || 'the QMS store could not be read whole'}>
+                  counts incomplete — rate may be better than the truth
+                </Chip>
+              )}
               {(defects.summary.what_if_gates ?? 0) > 0 && (
                 <Chip tone="dim" title="gates run on typed metrics — excluded from the rate">
                   {defects.summary.what_if_gates} what-if
@@ -216,7 +233,15 @@ export const VBSSystemsPanel: React.FC = () => {
                 <span className={d.status === 'open' ? 'text-amber-400' : d.status === 'closed' ? 'text-emerald-400' : 'text-sky-300'}>{d.status}</span>
               </button>
             ))}
-            {defects && defects.defects.length === 0 && <p className="text-[10px] text-slate-600 italic">no defects recorded — a failed gate opens one, including a failed what-if</p>}
+            {/* W534 — AN EMPTY LIST IS NOT THE SAME CLAIM AS AN UNREADABLE ONE. This said "no
+                defects recorded" whenever the list came back empty, so a truncated store rendered
+                as a positive statement that there are none — a failure shown as an absence, and
+                the most flattering possible reading of a store nobody could read. */}
+            {defects && defects.defects.length === 0 && (defects.listing_is_incomplete
+              ? <p className="text-[10px] text-amber-400 italic" title={defects.store_incomplete}>
+                  the defect list could NOT be read — this is not a record of zero defects
+                </p>
+              : <p className="text-[10px] text-slate-600 italic">no defects recorded — a failed gate opens one, including a failed what-if</p>)}
           </div>
           {selRow && (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 space-y-2">

@@ -53,7 +53,12 @@ async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
             "counted_in_rate": False,
             "basis": ("a what-if gate over the coverage and stub figures you supplied — it is recorded "
                       "separately and does not move the platform non-conformance rate"),
-            "non_conformance_rate": qms.get_non_conformance_rate(), "real": True}
+            "non_conformance_rate": qms.get_non_conformance_rate(),
+            # W534 (FU-298) — the rate is printed HERE, so the disclosure has to be here. get_non_conformance_rate
+            # returns a bare float and a float cannot carry a reason, which is why this reads the summary's.
+            **({k: qms.defect_summary()[k] for k in ("store_incomplete", "counts_are_incomplete")}
+               if "store_incomplete" in qms.defect_summary() else {}),
+            "real": True}
 
 
 # ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──
@@ -67,7 +72,14 @@ async def qms_defects(status: str = "", user: dict | None = Depends(get_current_
     rows = [d for d in qms.defects if user_can_access(_u, d.get("owner_id"))]
     if status:
         rows = [d for d in rows if d.get("status") == status]
-    return {"summary": qms.defect_summary(), "defects": rows[-100:][::-1], "real": True}
+    _sum = qms.defect_summary()
+    # W534 (FU-298) — a truncated store yields FEWER defect rows, so the list is short for a reason the
+    # reader cannot see from its length. The reason is lifted beside the rows, not left inside the summary
+    # only, because a caller rendering the list may never look at the summary.
+    return {"summary": _sum, "defects": rows[-100:][::-1],
+            **({"store_incomplete": _sum["store_incomplete"], "listing_is_incomplete": True}
+               if _sum.get("store_incomplete") else {}),
+            "real": True}
 
 
 def _require_defect_access(defect_id: str, user: dict | None) -> None:

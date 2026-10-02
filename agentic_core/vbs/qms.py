@@ -35,12 +35,19 @@ class QualityManagementSystem:
         self.controlled_documents = 0
         self._store_name = f"qms_state_{config_path}.json"
         self._state: Optional[Dict[str, Any]] = None
+        # W534 (FU-298) — why the store could not be read WHOLE, or None. It travels onto defect_summary,
+        # because a truncated store makes the non-conformance rate look BETTER: the defects that cannot be
+        # read are exactly the ones missing from the numerator.
+        self._store_unreadable: Optional[str] = None
 
     # ── persistent state (lazy: data_path resolves the live DATA_DIR at first use) ──
     def _load_state(self) -> Dict[str, Any]:
         if self._state is None:
-            from agentic_core.config import load_json_tolerant, data_path
-            self._state = load_json_tolerant(
+            # W534 (FU-298) — was load_json_tolerant, which returns a truncated store's recoverable prefix
+            # and says NOTHING to the caller. read_json_reported keeps that tolerance (no listing becomes a
+            # 500) and hands back WHY, so the figures built from it can disclose that they are partial.
+            from agentic_core.config import read_json_reported, data_path
+            self._state, self._store_unreadable = read_json_reported(
                 data_path(self._store_name), {"gates_run": 0, "defects_total": 0, "defects": []})
         return self._state
 
@@ -198,6 +205,10 @@ class QualityManagementSystem:
                 "defects_total": int(st.get("defects_total", 0)),
                 "gate_failures": self._gate_failures(st), **by,
                 "non_conformance_rate": self.get_non_conformance_rate(),
+                # W534 (FU-298) — present only when the store could NOT be read whole, which is the
+                # convention the four converted readers set: absent means read whole.
+                **({"store_incomplete": self._store_unreadable,
+                    "counts_are_incomplete": True} if self._store_unreadable else {}),
                 # W489 — what the rate is OVER, and what it deliberately leaves out
                 "what_if_gates": int(st.get("what_if_gates", 0)),
                 "what_if_failures": int(st.get("what_if_failures", 0)),
@@ -206,7 +217,11 @@ class QualityManagementSystem:
                                "What-if gates run on typed metrics, and re-verifications of the defects "
                                "they open, are counted separately and excluded. A re-verification of a "
                                "DELIVERY defect does count, including one attested by its caller "
-                               "(W316: a correction that does not hold must raise the rate).")}
+                               "(W316: a correction that does not hold must raise the rate)."
+                               + (" THIS RATE IS INCOMPLETE: the store could not be read whole, and an "
+                                  "unreadable store removes defects from the numerator, so the rate shown "
+                                  "is no worse than the truth and may be better."
+                                  if self._store_unreadable else ""))}
 
     async def control_document(self, doc_id: str, content: Dict[str, Any], actor: str) -> str:
         """Place a document under QMS document control — versioned + SHA3-512 sealed via the OWNED DCMS.

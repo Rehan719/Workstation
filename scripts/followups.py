@@ -247,8 +247,24 @@ def main() -> int:
                       f"  {str(_r.get('title'))[:66]}")
             print()
             print(_out.get("basis") or "")
-            for _k, _v in (_out.get("limits") or {}).items():
-                print(f"  LIMIT {_k}: {_v}")
+            #  W534 — this did `(_out.get("limits") or {}).items()` and CRASHED every round start, after
+            #  printing its results, so the failure looked cosmetic while the command exited non-zero. Two
+            #  things went wrong and the second is the general one. The caller invented a shape: every one of
+            #  the ten producers in api/method.py emits `limits` as a PROSE SENTENCE, never a mapping. And
+            #  `or {}` could not save it, because a non-empty string is truthy — that idiom defends against
+            #  absence, never against the wrong TYPE. Both shapes are accepted here so a producer changing
+            #  its convention cannot silently drop the limits off the report.
+            _limits = _out.get("limits")
+            if isinstance(_limits, dict):
+                for _k, _v in _limits.items():
+                    print(f"  LIMIT {_k}: {_v}")
+            elif isinstance(_limits, (list, tuple)):
+                for _v in _limits:
+                    print(f"  LIMIT: {_v}")
+            elif _limits:
+                print(f"  LIMIT: {_limits}")
+            else:
+                print("  LIMIT: none stated by the check, which is not the same as none applying")
             return 0
         if args.cmd == "bundles":
             print(fu.render_bundles(reg, prompt, args.top))

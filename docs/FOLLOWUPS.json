@@ -4525,8 +4525,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W534",
       "note": "",
       "tier": 2
     },
@@ -5148,7 +5148,7 @@
     {
       "id": "FU-298",
       "title": "Thirteen tolerant readers still LOG rather than surface their store's incompleteness",
-      "why": "W506 delivered FU-075's substance: load_json_tolerant now delegates to the new read_json_reported and LOGS the store, the calling site and exactly what is missing, so a corrupt store is attributable everywhere instead of silent. FOUR readers were fully converted and carry the reason in their own answers - revenue's pending_summary (store_incomplete + counts_are_incomplete), charity's approved signals, the heartbeat's screening rotation, and the avatar's compliance line, which now says a screen is UNKNOWN rather than omitting it. THIRTEEN callers remain on the logging path: ai/native/model_resource.py, api/agent_hub.py, api/board.py (x2), api/capital_fund.py, api/integration_surface.py, api/operational_excellence.py, api/resource_fabric.py, api/swarm.py (x2), api/user_workspace.py, vbs/dcms.py, vbs/qms.py. THE WORK: give each caller the reason in its own response, as the four converted ones do - a log line is a weaker remedy than a field on the answer, because the person reading the number never sees the log. THEN delete load_json_tolerant, which is what the original row asked for and which cannot honestly be done while thirteen callers use it. WHY IT WAS NOT DONE IN ONE PASS: each of the thirteen is a different caller shape, and a careless conversion turns a working list endpoint into a 500 or drops a field a page reads; rewriting thirteen heterogeneous sites in one unattended batch is how a round ships a regression it cannot attribute.",
+      "why": "W506 delivered FU-075's substance: load_json_tolerant now delegates to the new read_json_reported and LOGS the store, the calling site and exactly what is missing, so a corrupt store is attributable everywhere instead of silent. FOUR readers were fully converted and carry the reason in their own answers - revenue's pending_summary (store_incomplete + counts_are_incomplete), charity's approved signals, the heartbeat's screening rotation, and the avatar's compliance line, which now says a screen is UNKNOWN rather than omitting it. THIRTEEN callers remain on the logging path: ai/native/model_resource.py, api/agent_hub.py, api/board.py (x2), api/capital_fund.py, api/integration_surface.py, api/operational_excellence.py, api/resource_fabric.py, api/swarm.py (x2), api/user_workspace.py, vbs/dcms.py, vbs/qms.py. THE WORK: give each caller the reason in its own response, as the four converted ones do - a log line is a weaker remedy than a field on the answer, because the person reading the number never sees the log. THEN delete load_json_tolerant, which is what the original row asked for and which cannot honestly be done while thirteen callers use it. WHY IT WAS NOT DONE IN ONE PASS: each of the thirteen is a different caller shape, and a careless conversion turns a working list endpoint into a 500 or drops a field a page reads; rewriting thirteen heterogeneous sites in one unattended batch is how a round ships a regression it cannot attribute. TRANCHE 1 of 5 DONE (W534): vbs/qms.py - qms.py now loads through read_json_reported, and defect_summary carries store_incomplete plus counts_are_incomplete on the convention economy/revenue.pending_summary set (present only when there IS a reason, so absent means read whole). The rate_basis additionally states WHICH WAY an unreadable store moves the figure: the defects it cannot read are the ones missing from the numerator, so a truncated store makes the non-conformance rate look no worse than the truth and possibly better. Both routes that print those figures disclose it too, and the defects listing carries listing_is_incomplete beside the rows, because a caller rendering a list may never read the summary. TWELVE REMAIN: ai/native/model_resource.py, api/agent_hub.py, api/board.py (x2), api/capital_fund.py, api/integration_surface.py, api/operational_excellence.py, api/resource_fabric.py, api/swarm.py (x2), api/user_workspace.py, vbs/dcms.py. load_json_tolerant cannot be deleted until they are done, which is what FU-075 waits on.",
       "source": "W506 (FU-075, the part not done)",
       "found": "2026-09-29",
       "files": [
@@ -5551,8 +5551,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W534",
       "note": "",
       "slot_source": "FU-262 already owns the pre-flight's coverage in cluster (d); this is its precision, in the same file",
       "tier": 3,
@@ -6013,6 +6013,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the surfacing half of the clause W533 just satisfied: the loop runs and reports, but only into memory",
+      "tier": 2
+    },
+    {
+      "id": "FU-345",
+      "title": "The round-start `satisfied` check cannot see a row that names no files",
+      "why": "W534 repaired a crash in scripts/followups.py satisfied - it did `(_out.get('limits') or {}).items()` while every one of the ten producers in api/method.py emits `limits` as a PROSE SENTENCE, and `or {}` cannot defend against a wrong TYPE because a non-empty string is truthy. The command printed its results and THEN raised, so the failure looked cosmetic while the command exited non-zero at every round start. Repairing it surfaced the limit statement it had been suppressing, and that limit is the actual finding: the check reads only the last 400 commits and only commits whose subject declares a round, so A ROW CARRYING NO FILES IS INVISIBLE TO IT, as is a row found by a round the commit subject does not name. The round-start step that proposes which rows a later round may already have satisfied therefore has a population it never considers, and nobody was told. THE WORK: report the rows the check COULD NOT CONSIDER alongside the candidates, with their count, so an unexaminable row is visible as unexamined rather than absent - the same distinction this programme enforces everywhere else.",
+      "source": "W534",
+      "found": "2026-10-02",
+      "files": [
+        "scripts/followups.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 owns the round machinery and the instruments the rhythm runs; this is a blind spot in the round-start step itself, not in any item's build work",
       "tier": 2
     }
   ],
