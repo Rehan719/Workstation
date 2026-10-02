@@ -1,0 +1,3 @@
+{
+  "test_xdist_iso::test_each_worker_owns_its_store": "SKIPS serially and PASSES in parallel, by design: the test asserts that each xdist worker owns its own store, and it calls pytest.skip when PYTEST_XDIST_WORKER is absent because there is then no worker to isolate from. This difference is correct, permanent, and the reason bar (b)1 needs a declaration mechanism rather than an identical-sets rule"
+}

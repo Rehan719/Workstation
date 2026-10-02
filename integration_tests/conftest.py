@@ -133,6 +133,7 @@ def _assert_store_is_isolated():
 _RUN_PROGRESS = os.environ.get("WORKSTATION_RUN_PROGRESS") or ""
 _reported_nodes = set()
 _collected_total = {"n": None}
+_xdist_ids = set()          # W539 — the union of every worker's collected ids
 
 
 def _write_progress():
@@ -148,6 +149,20 @@ def _write_progress():
         pass
 
 
+def pytest_xdist_node_collection_finished(node, ids):
+    # W539 — THE PARALLEL DENOMINATOR. Under xdist each WORKER collects its own shard, so the
+    # controller's pytest_collection_finish sees no items and `collected` stayed null: run_verdict
+    # answered NOT KNOWN for a parallel run that finished perfectly. Measured on W539's proof run.
+    # That is the mode this detector exists for — FU-301's stalls are PARALLEL stalls — so being blind
+    # here made it blind where it matters. xdist fires this on the CONTROLLER once per worker with that
+    # worker's ids; their union is the true total, and a union rather than a sum because a reruns or
+    # re-collection must not double-count.
+    if _RUN_PROGRESS:
+        _xdist_ids.update(ids or ())
+        _collected_total["n"] = len(_xdist_ids)
+        _write_progress()
+
+
 def pytest_collection_finish(session):
     # THE CONTROLLER OWNS THE TOTAL. Each xdist worker collects only its own shard, so a worker writing
     # here would report its shard as the whole run and a stall would read as a complete short run.
@@ -159,7 +174,11 @@ def pytest_collection_finish(session):
     # appearing to work. pytest_collection_finish runs after every modifyitems hook, so session.items
     # is what will actually RUN.
     if _RUN_PROGRESS and not hasattr(session.config, "workerinput"):
-        _collected_total["n"] = len(session.items)
+        # W539 — do not overwrite a total the xdist hook already established from the workers'
+        # ids. On the controller of a parallel run session.items is empty, and writing 0 here
+        # would turn a correct denominator back into a wrong one.
+        if not _xdist_ids:
+            _collected_total["n"] = len(session.items)
         _write_progress()
 
 

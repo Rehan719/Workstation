@@ -6087,6 +6087,25 @@
       "note": "",
       "slot_source": "P2.17 owns the round machinery and the instruments the rhythm runs; this is a precision defect in the pre-flight itself, not in any item's build work",
       "tier": 3
+    },
+    {
+      "id": "FU-349",
+      "title": "One test passes serially and fails in parallel, and it is the only thing blocking the 4.5x suite speedup",
+      "why": "W539 RAN P2.17 bar (b)1's proof for the first time since W507: a serial and a parallel run of the whole suite on ONE tree (db1c1860 plus this round's instruments), compared node by node. MEASURED: serial 520 passed / 19 skipped in 57m03s; parallel on six workers 523 passed / 15 skipped / 1 FAILED in 12m33s - a 4.5x saving, and it did NOT stall this time. Of five differing nodes, four are DECLARED and correct (test_xdist_iso::test_each_worker_owns_its_store[0-3] skips serially because there is no worker to isolate from, and passes in parallel). THE FIFTH IS REAL: integration_tests/test_mvp_spine.py::test_inter_vsb_transfer_federation_seed passed serially and FAILED in parallel on assert nxt['inter_vsb_received_wst'] == 500.0, which measured 732.01. WHAT I RULED OUT RATHER THAN GUESSED: the test already uses unique VSB ids (uuid4().hex[:6]), so it is not an id collision; consume_pending_transfers at agentic_core/economy/transfers.py is keyed by recipient (d.get(vsb_id)), so a receipt addressed elsewhere cannot be drained by it; and the pending store is agentic_core/economy/transfers.py:24 data_path('economy_pending_transfers.json'), which conftest subdivides per xdist worker, so the store should be isolated. I therefore do NOT know the cause and am not claiming one. WHY IT MATTERS NOW: this single node is the only undeclared difference between the two runs, so it is the only thing standing between every future round and a 55-minute to 12-minute suite. At roughly 19 rounds remaining in the active programme that is about 14 hours of wall clock. THE WORK: reproduce it (run that test under -n 6 repeatedly, and with -p no:randomly if ordering is involved), establish whether the extra 232.01 enters via another test in the same worker or via a store that is not as isolated as it reads, then either fix the leak or make the test assert a DELTA rather than an absolute. P2.17's bar already anticipates this exact outcome: 'each such test is a real defect to fix, not a reason to abandon the change.'",
+      "source": "W539 the parallel proof",
+      "found": "2026-10-02",
+      "files": [
+        "integration_tests/test_mvp_spine.py",
+        "agentic_core/economy/transfers.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 bar (b)1 owns the proof that the parallel suite produces the same pass set; this is the one node that proof found differing, so it rides the bar it blocks",
+      "tier": 2
     }
   ],
   "routes": [

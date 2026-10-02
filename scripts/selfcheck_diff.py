@@ -647,8 +647,90 @@ def check_claims(rev: str, files: list[str]) -> list[str]:
     return out
 
 
+# ── imports ────────────────────────────────────────────────────────────────────────────────────────
+# W539 — the modules a patch-written guard reaches for without importing. Six occurrences before this
+# screen existed (W527, W530, W531, W535, W536, W539): a patch script imports `ast`, the test it EMITS does
+# not, and the test raises NameError on its first run. The imports belong to the writer, not the written.
+_MODULE_NAMES = frozenset((
+    "ast", "io", "os", "re", "json", "sys", "subprocess", "hashlib", "math", "time", "asyncio",
+    "importlib", "pathlib", "shutil", "sqlite3", "random", "textwrap", "datetime", "base64", "uuid",
+))
+
+
+def _bound_names(node: ast.AST) -> set:
+    """Every name an import or an assignment binds anywhere inside `node`."""
+    out = set()
+    for n in ast.walk(node):
+        if isinstance(n, ast.Import):
+            out |= {(a.asname or a.name.split(".")[0]) for a in n.names}
+        elif isinstance(n, ast.ImportFrom):
+            out |= {(a.asname or a.name) for a in n.names}
+        elif isinstance(n, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.For, ast.With, ast.comprehension)):
+            for t in ast.walk(n):
+                if isinstance(t, ast.Name) and isinstance(t.ctx, ast.Store):
+                    out.add(t.id)
+        elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            out.add(n.name)
+            out |= {a.arg for a in n.args.args}
+    return out
+
+
+def check_imports(rev: str, files: list[str]) -> list[str]:
+    """A changed test function that USES a module it never imported — the patch-script import gap.
+
+    Cheap and exact: the writer's imports are not the written file's. This screen exists because the same
+    NameError was discovered by a selector run six times, and a selector run costs minutes a round."""
+    out = []
+    for f in files:
+        if not f.endswith(".py"):
+            continue
+        full = ROOT / f
+        if not full.exists():
+            continue
+        try:
+            tree = ast.parse(full.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        added = {ln for ln, _ in added_removed(rev, f)[0]}
+        if not added:
+            continue
+        module_scope = _bound_names_top(tree)
+        for fn in [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]:
+            #  only functions this diff actually touched
+            lines = {getattr(fn, "lineno", 0), getattr(fn, "end_lineno", 0)}
+            if not any(fn.lineno <= a <= (fn.end_lineno or fn.lineno) for a in added):
+                continue
+            local = _bound_names(fn)
+            seen = set()
+            for n in ast.walk(fn):
+                if (isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)
+                        and n.id in _MODULE_NAMES and n.id not in local and n.id not in module_scope
+                        and n.id not in seen):
+                    seen.add(n.id)
+                    out.append(f"{f}:{n.lineno}  {fn.name}() uses `{n.id}` and neither it nor this module "
+                               f"imports it — a patch script's imports are not the emitted test's, and "
+                               f"this raises NameError on the first run")
+    return out
+
+
+def _bound_names_top(tree: ast.Module) -> set:
+    """Names bound at MODULE scope only (an import inside another function does not help this one)."""
+    out = set()
+    for n in tree.body:
+        if isinstance(n, ast.Import):
+            out |= {(a.asname or a.name.split(".")[0]) for a in n.names}
+        elif isinstance(n, ast.ImportFrom):
+            out |= {(a.asname or a.name) for a in n.names}
+        elif isinstance(n, ast.Assign):
+            for t in n.targets:
+                if isinstance(t, ast.Name):
+                    out.add(t.id)
+    return out
+
+
 CHECKS = {
     "keys": ("a key produced but read by no surface", check_keys),
+    "imports": ("a changed test uses a module it never imported", check_imports),
     "claims": ("a basis asserting a numeric bound instead of reporting one", check_claims),
     "renames": ("a key removed while other files still read it", check_renames),
     "routes": ("a route decorator bound to a private helper", check_routes),

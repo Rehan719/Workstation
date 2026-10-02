@@ -30550,3 +30550,125 @@ def test_w538_mjm_measures_or_refuses_and_a_digest_is_not_a_proof(client):
     _vsb = (_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
     assert "its result is a literal" not in _vsb, "the stale claim that MJM returns a literal is back"
     assert "not an independent" in _vsb or "not a second, independent" in _vsb,         "the note lost the part that is still true: MJM re-runs the same six engines"
+
+
+def test_w539_the_pass_set_comparator_can_say_different_and_incomplete():
+    """P2.17 bar (b)1 — the instrument that makes "the same pass/fail set" checkable.
+
+    The suite costs about 55 minutes serially and W507 measured the parallel alternative at 10m35s on six
+    workers, a 4.8x saving, with the sets matching. It was never adopted because FU-301 records three of six
+    parallel runs STALLING, and until W537 a stall looked like a run still in progress. The bar asks for the
+    sets to be PROVEN equal on the same tree; this comparator is what makes that claim checkable, and the two
+    runs are the proof itself.
+
+    Driven on synthetic reports on purpose: a guard that needs an hour to run is a guard no round will run.
+    """
+    import ast
+    import importlib.util as _ilu
+    import os as _os
+    from pathlib import Path as _P
+
+    _root = _P(__file__).resolve().parents[1]
+    _spec = _ilu.spec_from_file_location("_psd_w539", _root / "scripts/pass_set_diff.py")
+    psd = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(psd)
+
+    _tmp = _P(_os.environ["DATA_DIR"]) / "w539"
+    _tmp.mkdir(parents=True, exist_ok=True)
+
+    def _report(name, cases):
+        body = "".join('<testcase classname="t" name="%s">%s</testcase>' % (n, inner) for n, inner in cases)
+        p = _tmp / name
+        p.write_text('<testsuites><testsuite name="p" tests="%d" failures="0" errors="0" skipped="0">%s'
+                     '</testsuite></testsuites>' % (len(cases), body), encoding="utf-8")
+        return str(p)
+
+    base = _report("a.xml", [("t1", ""), ("t2", ""), ("t3", "<skipped/>")])
+
+    # ── 1. SAME means every node in both runs with the same outcome ────────────────────────────
+    same = psd.compare(base, _report("b.xml", [("t1", ""), ("t2", ""), ("t3", "<skipped/>")]))
+    assert same["verdict"] == psd.SAME, same
+    assert same["shared"] == 3, same
+    #  and it must NOT claim more than two runs agreeing on one tree
+    assert "not about the parallel suite in general" in same["basis"], same["basis"]
+
+    # ── 2. DIFFERENT NAMES THE NODE, because a count hides what kind of difference it is ───────
+    diff = psd.compare(base, _report("c.xml", [("t1", ""), ("t2", "<failure/>"), ("t3", "<skipped/>")]),
+                       "serial", "parallel")
+    assert diff["verdict"] == psd.DIFFERENT, diff
+    assert diff["differing"] and diff["differing"][0]["node"].endswith("t2"), diff["differing"]
+    assert diff["differing"][0]["serial"] == "passed", diff["differing"][0]
+    assert diff["differing"][0]["parallel"] == "failure", diff["differing"][0]
+    #  a skipped test is an OUTCOME, not an absence: a run that skips where the other passes differs
+    skipdiff = psd.compare(base, _report("d.xml", [("t1", ""), ("t2", "<skipped/>"), ("t3", "<skipped/>")]))
+    assert skipdiff["verdict"] == psd.DIFFERENT, skipdiff
+
+    # ── 3. A MISSING NODE IS NAMED on the side that has it ─────────────────────────────────────
+    short = psd.compare(base, _report("e.xml", [("t1", "")]), "serial", "parallel")
+    assert short["verdict"] == psd.DIFFERENT, short
+    assert len(short["only_a"]) == 2, short["only_a"]
+    assert short["only_b"] == [], short["only_b"]
+
+    # ── 4. INCOMPLETE — an absent or truncated report is NOT a smaller set, it is no set ───────
+    #  pytest writes the junit file at the END of a run, so a STALLED run leaves nothing or a partial
+    #  document. Comparing against that would adopt the parallel suite on evidence that does not exist.
+    assert psd.compare(base, str(_tmp / "never_written.xml"))["verdict"] == psd.INCOMPLETE
+    _trunc = _tmp / "trunc.xml"
+    _trunc.write_text("<testsuites><testsuite tests=", encoding="utf-8")
+    inc = psd.compare(base, str(_trunc))
+    assert inc["verdict"] == psd.INCOMPLETE, inc
+    assert "ABSENT rather than" in inc["basis"], inc["basis"]
+    #  and an EMPTY but well-formed report is incomplete too, not a match against nothing
+    empty = _tmp / "empty.xml"
+    empty.write_text('<testsuites><testsuite name="p" tests="0"></testsuite></testsuites>', encoding="utf-8")
+    assert psd.compare(base, str(empty))["verdict"] == psd.INCOMPLETE
+
+    # ── 5. THE ENTRY POINT cannot exit zero on anything but SAME ───────────────────────────────
+    #  Otherwise a round chaining on the comparison reads DIFFERENT or INCOMPLETE as agreement.
+    _src = (_root / "scripts/pass_set_diff.py").read_text(encoding="utf-8")
+    _tree = ast.parse(_src)
+    _main = next(n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef) and n.name == "main")
+    _ret = [ast.unparse(n) for n in ast.walk(_main) if isinstance(n, ast.Return)]
+    assert any("SAME" in r and "0" in r for r in _ret), ("the exit code does not gate on SAME", _ret)
+
+    # ── 6. THE TWO INSTRUMENTS COVER DIFFERENT HALVES, and the proof needs both ────────────────
+    #  run_verdict.py answers "did the run finish"; this answers "did the sets match". A stalled run writes
+    #  no junit file at all, so neither alone is sufficient and the proof procedure runs both.
+    _rvspec = _ilu.spec_from_file_location("_rv_w539", _root / "scripts/run_verdict.py")
+    rv = _ilu.module_from_spec(_rvspec)
+    _rvspec.loader.exec_module(rv)
+    assert rv.INCOMPLETE == psd.INCOMPLETE == "INCOMPLETE", "the two instruments disagree on the word"
+    assert hasattr(rv, "verdict") and hasattr(psd, "compare"), "an instrument lost its entry point"
+
+    # ── 7. A DECLARED DIFFERENCE IS ALLOWED, AN UNDECLARED ONE IS NOT ──────────────────────────
+    #  Without this, bar (b)1 is unsatisfiable by construction: test_each_worker_owns_its_store SKIPS
+    #  serially (there is no worker to isolate from) and PASSES in parallel, correctly and permanently. A
+    #  comparator demanding identical sets would answer DIFFERENT on every tree forever.
+    decl = {"test_each_worker_owns_its_store": "skips serially by design"}
+    bydesign = _report("f.xml", [("t1", ""), ("test_each_worker_owns_its_store", "")])
+    serialish = _report("g.xml", [("t1", ""), ("test_each_worker_owns_its_store", "<skipped/>")])
+    ok = psd.compare(serialish, bydesign, "serial", "parallel", decl)
+    assert ok["verdict"] == psd.SAME, ok
+    assert len(ok["declared"]) == 1 and ok["declared"][0]["declared_because"], ok["declared"]
+    #  a declaration must NOT swallow an undeclared difference in the same run
+    mixed = _report("h.xml", [("t1", "<failure/>"), ("test_each_worker_owns_its_store", "")])
+    bad = psd.compare(serialish, mixed, "serial", "parallel", decl)
+    assert bad["verdict"] == psd.DIFFERENT, bad
+    assert [d["node"] for d in bad["differing"]] == ["t::t1"], bad["differing"]
+    assert len(bad["declared"]) == 1, "the declared difference was lost when another one appeared"
+    #  and the declaration file this repo ships must carry a REASON for every entry
+    import json as _json2
+    _decl_file = _json2.loads((_root / "scripts/parallel_expected_differences.json").read_text(encoding="utf-8"))
+    assert _decl_file, "the declaration file is empty"
+    for _k, _v in _decl_file.items():
+        assert len(_v) > 60, (_k, "a declared difference must carry its reason, not just its name")
+
+    # ── 8. THE PARALLEL DENOMINATOR — the detector must not be blind in the mode it exists for ──
+    #  MEASURED in this round's proof: the parallel run wrote {"collected": null, "reported": 539} and
+    #  run_verdict answered NOT KNOWN for a run that finished. Under xdist each WORKER collects its own
+    #  shard, so the controller's pytest_collection_finish sees nothing. FU-301's stalls are parallel stalls.
+    _cf = (_root / "integration_tests/conftest.py").read_text(encoding="utf-8")
+    assert "def pytest_xdist_node_collection_finished(node, ids):" in _cf,         "the progress hook cannot learn a parallel run's total, so it is blind where FU-301 lives"
+    assert "_xdist_ids.update(ids or ())" in _cf, _cf[:0] or "the worker ids are not unioned"
+    #  and the serial hook must not clobber a total the xdist hook established
+    assert "if not _xdist_ids:" in _cf,         "the serial hook overwrites the parallel denominator, turning a correct total back into zero"

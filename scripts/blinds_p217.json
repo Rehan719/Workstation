@@ -1,0 +1,56 @@
+[
+  {
+    "tag": "the comparator exits zero whatever the verdict",
+    "file": "scripts/pass_set_diff.py",
+    "old": "    return 0 if r[\"verdict\"] == SAME else 1",
+    "new": "    return 0",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "A round chaining on the comparison would read DIFFERENT or INCOMPLETE as agreement, which is how a parallel suite gets adopted on evidence that says the opposite."
+  },
+  {
+    "tag": "a declared difference swallows an undeclared one in the same run",
+    "file": "scripts/pass_set_diff.py",
+    "old": "            (declared_hits if why else kept).append(",
+    "new": "            (declared_hits if True else kept).append(",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "The declaration mechanism exists so bar (b)1 is satisfiable at all, and its danger is exactly this: if everything becomes declared, SAME means nothing. The guard pairs a declared difference with a real one and requires the real one to survive."
+  },
+  {
+    "tag": "a truncated report is compared instead of refused",
+    "file": "scripts/pass_set_diff.py",
+    "old": "        return {}, {\"error\": f\"the report could not be parsed ({e.__class__.__name__}): {e}\"}",
+    "new": "        return {}, {}",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "pytest writes the junit file at the END of a run, so a STALLED run leaves nothing or a partial document. Comparing against that would adopt the parallel suite on evidence that does not exist."
+  },
+  {
+    "tag": "the detector loses the parallel denominator again",
+    "file": "integration_tests/conftest.py",
+    "old": "        _xdist_ids.update(ids or ())",
+    "new": "        _xdist_ids.update(set())",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "MEASURED in W539's proof: the parallel run wrote collected=null and run_verdict answered NOT KNOWN for a run that finished. Under xdist each worker collects its own shard, so the controller sees nothing — and FU-301's stalls are PARALLEL stalls, so this is precisely where blindness costs. THE BLIND ITSELF WAS CORRECTED: renaming the hook makes pytest error on an unknown hook name (exit 3), which is a BAD BLIND and measures nothing about the guard. The body is mutated instead, which leaves pytest able to run — the same mistake W537's blind set made and the reason BAD BLIND is a verdict rather than a failure."
+  },
+  {
+    "tag": "the serial hook clobbers the parallel total",
+    "file": "integration_tests/conftest.py",
+    "old": "        if not _xdist_ids:",
+    "new": "        if True:",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "On the controller of a parallel run session.items is empty, so writing it unconditionally turns a correct denominator established from the workers' ids back into nought."
+  },
+  {
+    "tag": "a declared difference carries no reason",
+    "file": "scripts/parallel_expected_differences.json",
+    "old": "SKIPS serially and PASSES in parallel, by design: the test asserts that each xdist worker owns its own store, and it calls pytest.skip when PYTEST_XDIST_WORKER is absent because there is then no worker to isolate from. This difference is correct, permanent, and the reason bar (b)1 needs a declaration mechanism rather than an identical-sets rule",
+    "new": "by design",
+    "selector": "w539",
+    "expect": "BLIND(red)",
+    "why": "A declaration is a CLAIM that a difference is correct. Without its reason recorded, the next round cannot tell a considered exemption from a convenient one, and the mechanism becomes a way to make any difference disappear."
+  }
+]
