@@ -103,6 +103,33 @@ async def native_resources():
     return {"resources": registry.available(), "selection_order": registry.select()}
 
 
+@router.get("/tiers")
+async def native_tiers():
+    """The five declared tiers, each with whether it is RUNNABLE HERE and the MEASURED reason (P3.20).
+
+    The machine is measured at call time rather than recorded: a figure typed into a file would go stale
+    the day the hardware changes and would then be a claim about a machine nobody re-measured. A tier
+    that is not runnable carries what it needs, what this machine has, and the difference — and it holds
+    NO resources, because listing a model the machine cannot run is the same defect as a leaderboard
+    nothing scored.
+    """
+    from agentic_core.ai.native.tiers import registry as _tier_registry
+    return _tier_registry()
+
+
+@router.get("/route")
+async def native_route(domain: str = "", risk: str = "normal"):
+    """Which tier would serve this, and WHY — including every tier rejected on the way down.
+
+    The walk starts at the tier the request WANTS and descends to the deterministic floor, which always
+    terminates it. So this refuses a TIER, never the request, and the rejections are the useful half of
+    the answer: a caller can see that a grave domain was not routed to a model, or that a tier was
+    skipped because this machine is 4.31 GB short of what it needs.
+    """
+    from agentic_core.ai.native.tiers import route as _route
+    return _route(domain, risk)
+
+
 @router.get("/models")
 async def native_models():
     """The OWNED model resources, with the local models actually discovered on the Ollama server — each

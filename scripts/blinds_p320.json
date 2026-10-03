@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "this machine's memory becomes a constant in the module instead of a measurement",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        out[\"ram_gb\"] = round(psutil.virtual_memory().total / (1024 ** 3), 2)",
+    "new": "        out[\"ram_gb\"] = 7.69",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L1 — the whole reason the registry asks rather than records. A typed figure is correct the day it is written and becomes a claim about hardware nobody re-measured on every day after, which is the class FU-368 names one layer along. The leg compares against what this machine reports NOW and also reads the AST, so a constant cannot hide as prose."
+  },
+  {
+    "tag": "an unmeasurable machine is reported as unable to run a tier",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        return UNKNOWN, (\n            f\"this tier needs about {needs['ram_gb']} GB and this machine's memory was not measured. \"",
+    "new": "        return NOT_RUNNABLE, (\n            f\"this tier needs about {needs['ram_gb']} GB and this machine's memory was not measured. \"",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L3 — three states, and the middle one is the point. A machine nobody could measure is not a machine that cannot run something; folding UNKNOWN into NOT_RUNNABLE would retire a tier on the strength of psutil being absent."
+  },
+  {
+    "tag": "a tier that cannot run here still lists the models it would use",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        else:\n            res = []",
+    "new": "        else:\n            res = list(_models)",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L2, and it is the item's own sentence: a surface that lists a model the machine cannot run is the same defect as a leaderboard nothing scored. The mutation is also the plausible one - showing what the tier WOULD use looks helpful right up until someone tries to use it."
+  },
+  {
+    "tag": "a not-runnable verdict drops the arithmetic and gives only a verdict",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "            f\"({m.get('ram_basis')}) — short by {round(needs['ram_gb'] - ram, 2)} GB. \"",
+    "new": "            f\"({m.get('ram_basis')}). \"",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L2. Without the shortfall a reader cannot tell a 0.3 GB gap from a 12 GB one - the first is a machine worth upgrading and the second is a design that will never fit, and the Owner's hardware decision turns on exactly that distinction."
+  },
+  {
+    "tag": "the router returns the lowest runnable tier, so every rule below the floor is dead code",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "    order = sorted(TIERS, key=lambda k: TIERS[k][\"order\"], reverse=True)\n    order = [n for n in order if TIERS[n][\"order\"] <= TIERS[want][\"order\"]]",
+    "new": "    order = sorted(TIERS, key=lambda k: TIERS[k][\"order\"])",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L4 — the defect the first draft of this module actually had, restored. The deterministic floor is order 0 and always runnable, so a walk UPWARD returns it every time and the grave-domain rule, the high-risk rule and both not-runnable rules are never reached. The guard asserts every rejection kind IS reached by some request."
+  },
+  {
+    "tag": "a grave domain is routed to a model",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        if _grave and name != \"deterministic_logic\":",
+    "new": "        if False:",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L4 and L5. Money, legal, faith, medical and safety are the domains this platform already treats as grave, and a model's answer there is not routed to automatically. L5 drives it with a model AVAILABLE, so the rule is proven to be a rule rather than a consequence of having nothing to route to."
+  },
+  {
+    "tag": "a high-risk request is routed to a model",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        if str(risk).lower() == \"high\" and name != \"deterministic_logic\":",
+    "new": "        if str(risk).lower() == \"never\" and name != \"deterministic_logic\":",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L4. The mutation keeps the branch, the message and the shape and only changes the value it compares against - the way a rule stops applying without anyone deleting it, and the reason the guard asserts the rejection is REACHED rather than that the code exists."
+  },
+  {
+    "tag": "the router chooses a tier that holds no resource",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        if not t[\"resources\"]:",
+    "new": "        if False:",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L4. A tier can be RUNNABLE on this machine and still have nothing pulled to run - which is the live state of reflex_routing whenever the local runtime is not answering. Routing to it would hand a caller a tier with nothing behind it."
+  },
+  {
+    "tag": "a runnable tier holding a resource is still not chosen, so the floor is the only answer",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        return {\n            \"tier\": name, \"resources\": t[\"resources\"], \"domain\": domain, \"risk\": risk,\n            \"wanted\": want, \"wanted_basis\": want_why,",
+    "new": "        continue\n        return {\n            \"tier\": name, \"resources\": t[\"resources\"], \"domain\": domain, \"risk\": risk,\n            \"wanted\": want, \"wanted_basis\": want_why,",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L5, the other direction. No local model is reachable in this environment, so the walk always ends at the floor and a router that could NEVER choose anything else would look identical. L5 supplies a resource and requires the reflex tier to be chosen - otherwise the router is a constant with a basis attached."
+  },
+  {
+    "tag": "the surface stops naming the Owner decision it was built under",
+    "file": "agentic_core/ai/native/tiers.py",
+    "old": "        \"owner_decision\": (\n            \"FU-271 default (a):",
+    "new": "        \"owner_decision\": (\n            \"default (a):",
+    "selector": "w559",
+    "expect": "BLIND(red)",
+    "why": "L6. This item is BLOCKED BY the Owner's hardware decision and was built under its stated default. A surface that reports the consequence without naming the decision leaves a reader unable to find out whether the default still stands or has been superseded."
+  }
+]

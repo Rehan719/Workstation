@@ -34028,3 +34028,161 @@ def test_w558_every_consumed_figure_names_what_measured_it_and_the_owner_fields_
         "the probe's not-recorded check is not anchored on the fallback's own sentence")
     assert not re.search(r"check\('consumption renders as NOT RECORDED'", _probe), (
         "the vacuous form of the consumption check is back")
+
+
+def test_w559_a_tier_says_what_it_cannot_run_here_and_the_router_records_why_it_chose(client):
+    """P3.20: every tier reports `runnable here` with the MEASURED reason, the router's choice carries
+    its basis, and no resource claims a capability its hardware cannot serve.
+
+    Built under FU-271 default (a) — the Owner's hardware decision: design for a 1–3B local tier plus
+    the deterministic floor, and have every higher tier say it is not runnable here with the reason.
+    """
+    from agentic_core.ai.native import tiers as _T
+
+    # ── L1. THE MACHINE IS MEASURED, NOT RECORDED ────────────────────────────────────────────────
+    #  A figure typed into the module would go stale the day the hardware changes and would then be a
+    #  claim about a machine nobody re-measured — the defect FU-368 names one layer along.
+    _m = _T.machine()
+    import os as _os
+    import psutil as _ps
+    assert _m["ram_gb"] == round(_ps.virtual_memory().total / (1024 ** 3), 2), (
+        "the registry's memory figure does not match what this machine reports right now", _m["ram_gb"])
+    assert _m["cpu_count"] == _os.cpu_count(), (_m["cpu_count"], _os.cpu_count())
+    for _k in ("ram_basis", "cpu_basis", "cuda_basis"):
+        assert len(_m[_k]) > 30, (_k, "a measurement with no stated source", _m[_k])
+    #  and the module hard-codes NO machine figure
+    import pathlib as _pl
+    import re as _re
+    _src = (_pl.Path(_T.__file__)).read_text(encoding="utf-8")
+    _needs = _re.findall(r'"ram_gb":\s*([\d.]+)', _src)
+    assert _needs, "the tiers declare no memory requirement at all"
+    #  the DECLARED NEEDS are constants (they are a property of the MODELS, not of this machine); what
+    #  must never be a constant is the machine's own capacity. ASSERTED ON THE AST, not on the text: the
+    #  docstring legitimately cites the Owner's measurement of 2026-09-27 when explaining the decision
+    #  this module was built under, and a check over the source text forbade the very figure the
+    #  explanation needs in order to say where the decision came from — the same mistake a probe in
+    #  W557 made with the word "inferred".
+    import ast as _ast
+    _tree = _ast.parse(_src)
+    _nums = {n.value for n in _ast.walk(_tree)
+             if isinstance(n, _ast.Constant) and isinstance(n.value, (int, float))
+             and not isinstance(n.value, bool)}
+    assert _m["ram_gb"] not in _nums, (
+        "this machine's measured memory appears as a numeric constant in executable code, so the figure "
+        "will outlive the hardware it describes", _m["ram_gb"])
+    assert float(_os.cpu_count() or -1) not in {float(x) for x in _nums}, (
+        "this machine's core count is a constant in the module rather than a measurement", _nums)
+
+    # ── L2. FIVE TIERS, AND EACH SAYS WHETHER IT RUNS HERE AND WHY ───────────────────────────────
+    _reg = _T.registry()
+    assert set(_reg["tiers"]) == {"deterministic_logic", "reflex_routing", "domain_specialist",
+                                  "synthesis", "perception"}, sorted(_reg["tiers"])
+    for _name, _t in _reg["tiers"].items():
+        assert _t["runnable"] in (_T.RUNNABLE, _T.NOT_RUNNABLE, _T.UNKNOWN), (_name, _t["runnable"])
+        assert len(_t["runnable_basis"]) > 60, (_name, "a verdict with no reason", _t["runnable_basis"])
+    #  THE FLOOR ALWAYS RUNS — it needs nothing, and that is what makes the router terminate.
+    assert _reg["tiers"]["deterministic_logic"]["runnable"] == _T.RUNNABLE, _reg["tiers"]
+    #  A TIER THAT CANNOT RUN HOLDS NO RESOURCE. Listing a model the machine cannot run is the same
+    #  defect as a leaderboard nothing scored — the item's own words.
+    #  DRIVEN WITH MODELS PRESENT, because no local model is reachable in this environment: a blind
+    #  proved the plain form vacuous, since assigning the model list to an unrunnable tier assigns an
+    #  EMPTY list and nothing changes. The runtime is stubbed so the list is not empty.
+    from agentic_core.ai.native import model_resource as _mr
+    _real_models, _real_up = _mr.local_models, _mr.ollama_up
+    try:
+        _mr.local_models = lambda: ["llama3.2:1b", "llama3.2"]
+        _mr.ollama_up = lambda: True
+        _reg_models = _T.registry()
+        assert _reg_models["tiers"]["reflex_routing"]["resources"] == ["llama3.2:1b", "llama3.2"], (
+            "the reflex tier does not pick up the models that ARE pulled, so the leg below would pass "
+            "over an empty list again", _reg_models["tiers"]["reflex_routing"])
+        for _name, _t in _reg_models["tiers"].items():
+            if _t["runnable"] != _T.RUNNABLE:
+                assert _t["resources"] == [], (
+                    _name, "a tier this machine CANNOT run is listing models anyway — a surface naming "
+                           "a model nobody here can load", _t["resources"])
+                assert "NO RESOURCE IS ASSIGNED" in _t["resources_basis"], _t["resources_basis"]
+    finally:
+        _mr.local_models, _mr.ollama_up = _real_models, _real_up
+    #  and in the live state, where nothing is reachable, the same holds
+    for _name, _t in _reg["tiers"].items():
+        if _t["runnable"] != _T.RUNNABLE:
+            assert _t["resources"] == [], (_name, "an unrunnable tier lists resources", _t["resources"])
+            assert "NO RESOURCE IS ASSIGNED" in _t["resources_basis"], _t["resources_basis"]
+    #  AND THE NOT-RUNNABLE REASON CARRIES THE ARITHMETIC, not just a verdict
+    _short = [t for t in _reg["tiers"].values()
+              if t["runnable"] == _T.NOT_RUNNABLE and "short by" in t["runnable_basis"]]
+    assert _short, ("no tier states how far short this machine is; a reader cannot tell a 0.3 GB gap "
+                    "from a 12 GB one", {k: v["runnable_basis"][:80] for k, v in _reg["tiers"].items()})
+
+    # ── L3. UNKNOWN IS NOT NOT_RUNNABLE — a machine nobody measured is not one that cannot run ───
+    _unmeasured = {"ram_gb": None, "ram_basis": "NOT MEASURED: driven by the guard",
+                   "cpu_count": 8, "cpu_basis": "x", "cuda": False, "cuda_basis": "y"}
+    _state, _why = _T.runnable("domain_specialist", _unmeasured)
+    assert _state == _T.UNKNOWN, ("an unmeasurable machine was reported as unable to run a tier", _state)
+    assert "UNKNOWN is not NOT_RUNNABLE" in _why, _why
+    #  but the FLOOR is still runnable even unmeasured, because it needs nothing
+    assert _T.runnable("deterministic_logic", _unmeasured)[0] == _T.RUNNABLE
+    #  and a GPU tier is NOT_RUNNABLE rather than UNKNOWN, because absence of a visible device is a
+    #  measurement in itself
+    assert _T.runnable("synthesis", _unmeasured)[0] == _T.NOT_RUNNABLE
+
+    # ── L4. THE ROUTER WALKS DOWN FROM WHAT THE REQUEST WANTS, and every rejection is reachable ──
+    #  The first draft returned the LOWEST runnable tier, and the floor is order 0 and always runnable —
+    #  so it always returned the floor and every rule below it was dead code. Measured, not imagined.
+    _seen_reasons = set()
+    for _dom, _risk in (("research", "normal"), ("image intake", "normal"), ("legal matter", "normal"),
+                        ("operations", "high"), ("classification", "normal")):
+        _d = _T.route(_dom, _risk)
+        assert _d["tier"] == "deterministic_logic", (_dom, _risk, _d["tier"])
+        assert _d["considered"], (_dom, "nothing was rejected, so the walk did not happen")
+        assert _d["wanted"] and _d["wanted_basis"], _d
+        for _c in _d["considered"]:
+            assert _c["why_not"], (_dom, _c)
+            #  THE WHOLE REASON, not a truncation of it: the first version clipped to 28 characters and
+            #  cut the word "grave" off the end of "the domain 'legal matter' is one this platform
+            #  treats as grave", so a rule that WAS being reached reported as unreachable.
+            _seen_reasons.add(_c["why_not"])
+    #  ALL FOUR REJECTION KINDS ARE REACHED, which is what makes them rules rather than decoration
+    for _kind in ("grave", "risk was declared high", "NOT_RUNNABLE", "no resource is assigned"):
+        assert any(_kind in r for r in _seen_reasons), (
+            f"the {_kind!r} rejection was never reached by any request, so it is a rule nothing applies",
+            sorted(r[:60] for r in _seen_reasons))
+
+    # ── L5. AND A TIER WITH A RESOURCE IS ACTUALLY CHOSEN — otherwise the floor is the only answer ──
+    #  No local model is reachable in this environment, so the reflex tier holds nothing and the walk
+    #  always ends at the floor. That makes the CHOSEN-A-MODEL arm unreachable from live state, and a
+    #  leg that never drove it could not tell a router from a constant. The resource list is supplied.
+    _real_models = _T.registry
+    try:
+        def _with_model():
+            _r = _real_models()
+            _r["tiers"]["reflex_routing"]["resources"] = ["llama3.2:1b"]
+            _r["tiers"]["reflex_routing"]["resource_count"] = 1
+            return _r
+        _T.registry = _with_model
+        _chosen = _T.route("classification", "normal")
+        assert _chosen["tier"] == "reflex_routing", (
+            "a tier that is RUNNABLE and holds a resource was still not chosen, so the router cannot "
+            "route to anything but the floor", _chosen)
+        assert _chosen["fell_back"] is False, _chosen
+        assert "which is what this request wanted" in _chosen["basis"], _chosen["basis"]
+        #  and a GRAVE domain still refuses it even with a model available — the rule is not a
+        #  consequence of having nothing to route to
+        _grave = _T.route("legal matter", "normal")
+        assert _grave["tier"] == "deterministic_logic", (
+            "a grave domain was routed to a model as soon as one existed", _grave)
+        assert any("grave" in c["why_not"] for c in _grave["considered"]), _grave["considered"]
+    finally:
+        _T.registry = _real_models
+
+    # ── L6. THE SURFACE REPORTS BOTH, and names the Owner decision it was built under ────────────
+    _r = client.get("/api/v1/native-ai/tiers")
+    assert _r.status_code == 200, _r.text
+    _j = _r.json()
+    assert "FU-271" in _j["owner_decision"] and "default (a)" in _j["owner_decision"], _j["owner_decision"]
+    assert _j["machine"]["ram_gb"] == _m["ram_gb"], (_j["machine"], _m)
+    assert "leaderboard nothing scored" in _j["basis"], _j["basis"]
+    _rr = client.get("/api/v1/native-ai/route", params={"domain": "research", "risk": "normal"})
+    assert _rr.status_code == 200, _rr.text
+    assert _rr.json()["considered"], "the route surface reports a choice with nothing rejected"
