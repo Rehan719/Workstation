@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "the inflected verb forms are dropped again — 'ending my life' passes",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    r\"\\b(?:kill(?:s|ed|ing)?|harm(?:s|ed|ing)?|hurt(?:s|ing)?|cut(?:s|ting)?)\"\n    r\"\\s+(?:my\\s?self|myself)\\b\",\n    r\"\\b(?:end(?:s|ed|ing)?|take(?:s|n)?|taking|took)\"\n    r\"\\s+(?:(?:my|his|her|their|ones?|his\\s+or\\s+her)\\s+(?:own\\s+)?)?life\\b\",",
+    "new": "    r\"\\b(?:kill|harm|hurt|cut)\\s+(?:my\\s?self|myself)\\b\",\n    r\"\\b(?:end|take)\\s+(?:my\\s+(?:own\\s+)?|his\\s+|her\\s+|their\\s+)?life\\b\",",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L10, and this is the exact state W564 shipped before a refuter drove it. Every verb was a bare literal followed by \\s+, so the character after the lemma had to be whitespace — in \"killing\" it is \"i\". The progressive is the commonest form a person writes, and none of these is an indirect phrasing, a misspelling or another language, so the declared coverage did not cover them: they were defects, not stated limits. The round fixed the determiner slot and left this one, under a comment saying a word screen is not reviewable by eye."
+  },
+  {
+    "tag": "the screen is narrowed until it stops firing on ordinary text, losing the stated trade-off",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    r\"\\b(?:end(?:s|ed|ing)?|take(?:s|n)?|taking|took)\"\n    r\"\\s+(?:(?:my|his|her|their|ones?|his\\s+or\\s+her)\\s+(?:own\\s+)?)?life\\b\",",
+    "new": "    r\"\\b(?:end(?:s|ed|ing)?)\\s+(?:my\\s+(?:own\\s+)?)?life\\b\",",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L10's other direction. Narrowing to remove the known false positive ('take my life in a new direction') also removes 'taking my own life', 'took his own life' and 'take my life' — so a later round tidying the false positive would silently reinstate real misses. The leg asserts the KNOWN false positive still fires, so the trade-off the module states cannot be changed without the guard saying so."
+  },
+  {
+    "tag": "a dialable route is accepted as correct for every jurisdiction",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    if (record[\"jurisdiction\"].strip().upper() == JURISDICTION_ANY\n            and _looks_dialable(record[\"route\"])):",
+    "new": "    if (record[\"jurisdiction\"].strip().upper() == JURISDICTION_ANY\n            and False and _looks_dialable(record[\"route\"])):",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L9(a). A number answers in one country and nowhere else, so ANY is only honest for a route naming no specific service. Without this invariant a national helpline could be accepted as correct everywhere and then shown to someone it does not answer for — which is worse than NOT SUPPLIED, because it sends a person somewhere instead of telling them the truth."
+  },
+  {
+    "tag": "the jurisdiction stops being a required field",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "ROUTE_FIELDS: Tuple[str, ...] = (\"route\", \"reviewed_by\", \"checked_on\", \"jurisdiction\")",
+    "new": "ROUTE_FIELDS: Tuple[str, ...] = (\"route\", \"reviewed_by\", \"checked_on\")",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L9. FU-361 required this from the start — the reviewer confirms a route is \"real, current and APPROPRIATE TO THE JURISDICTION\" — and the first cut of the mechanism shipped without it. The row's own words were the specification and the field was missing from the implementation, which is why the leg asserts the field is in the closed set rather than only testing behaviour."
+  },
+  {
+    "tag": "a route for one named place reports that it covers everywhere",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "        \"covers_anywhere\": any(v[\"jurisdiction\"].upper() == JURISDICTION_ANY for _, v in kept),",
+    "new": "        \"covers_anywhere\": True,",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L9(b). A surface that believes it has global coverage will show its one national route to everybody. The leg drives a route for a named place and asserts covers_anywhere is False, because the whole purpose of the field is to let a person outside every named jurisdiction be TOLD that, rather than shown the nearest route."
+  },
+  {
+    "tag": "the coverage keys are absent when nothing is supplied, so a caller must test for them",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "            \"jurisdictions\": [],\n            \"covers_anywhere\": False,",
+    "new": "",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L9(b). A caller that has to test whether a key exists will eventually forget to, and then an unfilled field reads as full coverage. Both arms of the reader carry the same keys so a surface never has to ask which shape it got."
+  },
+  {
+    "tag": "the reader stops materialising its input, so a one-shot iterable reports NOT SUPPLIED falsely",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    _src = tuple(DISTRESS_ROUTES if records is None else records)",
+    "new": "    _src = DISTRESS_ROUTES if records is None else records",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L9(c). The function iterates _src twice — once to judge, once to zip the verdicts back — so a one-shot iterable left the second pass empty, dropped every accepted route, and returned NOT_SUPPLIED with the bare basis \"no human distress route is recorded on this platform\" about a call it had just been handed a valid, reviewed, in-horizon route. A basis asserting what it did not compute, on the distress path. No live caller passes a generator, which is why the leg exists: so none ever can."
+  },
+  {
+    "tag": "a HIGH row the ruling held in P2.4 is open on another item",
+    "file": "docs/FOLLOWUPS.json",
+    "old": "        \"products/capital_fund/adapters/crypto_gateway.py\"\n      ],\n      \"severity\": \"high\",\n      \"owner_gated\": false,\n      \"slot\": \"P2.4\",",
+    "new": "        \"products/capital_fund/adapters/crypto_gateway.py\"\n      ],\n      \"severity\": \"high\",\n      \"owner_gated\": false,\n      \"slot\": \"P2.18\",",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "This replaces a blind that came back VACUOUS TWICE, and each reason is worth recording. The first restored the fail-on-success shape (requiring the three HIGH rows to stay OPEN), which only fails once a row CLOSES — proven separately instead by marking FU-332 done and watching the corrected leg stay GREEN, because a closed row is a success. The second inserted a SECOND \"slot\" key into the record, and json.loads keeps the LAST value, so the mutation changed nothing: a duplicate key in JSON is not an override. THE PROPERTY THE LEG ASSERTS is that a HIGH row did not MOVE, so the mutation must change the slot the parser actually reads. FU-332 is one of the two rows that make products/capital_fund impossible to import, which is why the Owner held it inside P2.4 — cluster (a) is about what is dead."
+  },
+  {
+    "tag": "W562's bar needles drop the negation again, so the inversion passes",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    assert \"never only on the API beneath it\" in _flat_bar, (",
+    "new": "    assert \"only on the API beneath it\" in _flat_bar, (",
+    "selector": "w562",
+    "expect": "VACUOUS",
+    "why": "DECLARED VACUOUS DELIBERATELY, because that is the finding: dropping the negation leaves the assert GREEN while the bar could be rewritten to require the opposite of what the message names. A blind whose expected verdict is VACUOUS records a defect the harness cannot show as red — the needle matches the inverted sentence too, so no mutation of the PLAN can make this version fail. The fix is in the needle, not in a stronger mutation."
+  },
+  {
+    "tag": "W544's count scan is widened back over the W563 section and accuses a true sentence",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    _scan = _doc[_doc.index(\"## The archived biomimetic layer, read and decided\")\n                 :_doc.index(\"## The other twenty-three, read and decided\")]",
+    "new": "    _scan = _doc[_doc.index(\"## The archived biomimetic layer, read and decided\"):]",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "The slice was widened to end-of-file for the COMPLETENESS leg, which is right, and the count scan inherited it, which is not: the W563 section legitimately states figures this section is not entitled to quote, so a guard about honesty raised a false accusation against three true sentences. Restoring the wide slice should turn it red on the record as it now stands — which is the proof that the narrowing was the fix and not a weakening."
+  }
+]

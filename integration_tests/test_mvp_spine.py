@@ -31608,12 +31608,21 @@ def test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_com
     #  sections, and "every archived module is decided or named" is a property of the record, not of one
     #  part of it.
     _section = _doc[_doc.index("## The archived biomimetic layer, read and decided"):]
+    #  AND THE SELF-CONSISTENCY SCAN BELOW USES A NARROWER SLICE THAN THE COMPLETENESS LEG. Running to
+    #  end-of-file is right for "every archived module is decided or named" — that is a property of the
+    #  whole record. It is WRONG for the count scan, whose allowed set is THIS section's coverage
+    #  figures: the W563 section legitimately states 15, 8, 14, 9, 18 and 6 about these modules, and one
+    #  true sentence putting any of them beside the word "modules" would make a guard about honesty
+    #  raise a false accusation. It did: three sentences in W563's own corrections tripped it. W563's
+    #  leg computes that section's tallies from its own table, which is the stronger check anyway.
+    _scan = _doc[_doc.index("## The archived biomimetic layer, read and decided")
+                 :_doc.index("## The other twenty-three, read and decided")]
     #  (a) THE RECORD MUST STATE THE TRUE TOTAL. This is the leg that earned its place: the first draft of
     #  that section said the archive held ten modules, because the directory listing it was written from
     #  was truncated. There are 33. A record that covers ten of them while reading as a survey of the
     #  layer is a precise-looking account of work that was not done — which is what the table convicts one
     #  of the modules of. The number is computed here, so the prose cannot drift from the directory.
-    assert str(len(_modules)) in _section, (
+    assert str(len(_modules)) in _scan, (
         f"the record does not state the archive's real module count ({len(_modules)}), so a reader cannot "
         f"tell how much of the layer it covers")
     #  AND NO OTHER COUNT CLAIM MAY CONTRADICT IT. Asserting only that the true figure APPEARS is weak:
@@ -31640,11 +31649,11 @@ def test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_com
         "could pass unread")
     _allowed = {len(_modules), 10, len(_modules) - 10, 7, 4}
     _claims = []
-    for _m in re.finditer(r"\b([\w-]+)\b[\s*]*(?:of them|modules?\b|top-level)", _section, re.I):
+    for _m in re.finditer(r"\b([\w-]+)\b[\s*]*(?:of them|modules?\b|top-level)", _scan, re.I):
         _tok = _m.group(1).lower()
         _n = _WORDS.get(_tok, int(_tok) if _tok.isdigit() else None)
         if _n is not None:
-            _claims.append((_n, " ".join(_section[max(0, _m.start() - 30):_m.end()].split())))
+            _claims.append((_n, " ".join(_scan[max(0, _m.start() - 30):_m.end()].split())))
     _bad = [c for c in _claims if c[0] not in _allowed]
     assert not _bad, (
         f"the record states a module count that is none of its entitled figures {sorted(_allowed)}; a "
@@ -34513,12 +34522,16 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
     _p218 = next((i for i in _items if i["slot"] == "P2.18"), None)
     assert _p218, "P2.18 is not in the plan"
     assert _p218["phase"] == "P2", ("P2.18 parsed into the wrong phase", _p218)
-    assert _p218["delivered_by"] == "build" and _p218["done"] is False, _p218
+    assert _p218["delivered_by"] == "build", _p218
     assert _p218["title"].startswith("AN ABSENCE THAT READS AS A FACT"), (
         "P2.18's name did not survive parsing", _p218["title"])
-    #  and P2.4 is still open and still a P2 build item
     _p24 = next(i for i in _items if i["slot"] == "P2.4")
-    assert _p24["phase"] == "P2" and _p24["done"] is False, _p24
+    assert _p24["phase"] == "P2", _p24
+    #  NEITHER ITEM'S `done` IS ASSERTED, and that correction came from refuting this very test. `done`
+    #  is plan PROGRESS, not a property of the split under examination, and closing P2.4 is the stated
+    #  objective of the current sequence — so asserting it open would turn this guard red on success,
+    #  which is the shape P2.18's own clause (b) forbids and which has already cost six suite re-runs.
+    #  The parse properties are phase, delivered_by and title; those are what the round got wrong.
 
     # ── L2. THE SPLIT IS EXACTLY WHAT THE RULING SAYS ────────────────────────────────────────────
     def _open(slot):
@@ -34537,8 +34550,18 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
         assert _id in _clusters or _id in _HIGH, (
             f"{_id} rides P2.4 and is neither named in a cluster nor one of the three HIGH rows the "
             f"ruling held there — the item is refilling", _p24_rows)
-    assert _HIGH <= set(_p24_rows), ("a HIGH row the ruling held in P2.4 has left it",
-                                     sorted(_HIGH - set(_p24_rows)))
+    #  THE PROPERTY IS "IT DID NOT MOVE", NOT "IT IS STILL OPEN". `_p24_rows` is the OPEN rows, so
+    #  requiring the three HIGH rows to appear in it required them to stay open forever — and fixing
+    #  them is exactly the P2.4 work this sequence is driving toward. Found by refuting this test, which
+    #  had named the class in its own next leg and then committed it here. A closed row is a success; a
+    #  row that is still open and has been rerouted is the defect.
+    _slot_of = {r["id"]: r.get("slot") for r in _reg["items"]
+                if r.get("status") == "open"}
+    for _id in sorted(_HIGH):
+        if _id in _slot_of:
+            assert _slot_of[_id] == "P2.4", (
+                f"{_id} is one of the three HIGH rows the ruling held inside P2.4 and it is open on "
+                f"{_slot_of[_id]} instead", sorted(_HIGH))
     #  and NOTHING on P2.18 is named by a P2.4 cluster
     for _id in _p218_rows:
         assert _id not in _clusters, (f"{_id} is named in a P2.4 cluster and was moved out of it", _id)
@@ -34574,9 +34597,17 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
     #  the ACCEPT binds the same discipline the Owner's second-leg ruling set
     #  fragments JSX-style line wrapping cannot split: the full sentences wrap across lines in the
     #  plan, so a literal match on them finds nothing even though they are present.
-    assert "only on the API beneath it" in _bar, _bar[:0]
-    assert "seen to turn it RED" in _bar, _bar[:0]
-    assert "closes on a count of rows" in _bar, (
+    #  THE NEGATION IS PART OF THE NEEDLE. These two dropped it — "only on the API beneath it" and
+    #  "closes on a count of rows" — so rewriting the bar to say a clause IS satisfied by a row count,
+    #  or that a property may be driven ONLY on the API, left both asserts green. The leg could not fail
+    #  on the condition its own message named: the same shape as a fix comment quoting the literal it
+    #  forbids, inverted. Whitespace-normalised because both sentences wrap in the plan.
+    _flat_bar = " ".join(_bar.split())
+    assert "never only on the API beneath it" in _flat_bar, (
+        "P2.18's bar no longer requires its properties to be driven on the surface a person reads")
+    assert "seen to turn it RED" in _flat_bar, (
+        "P2.18's bar no longer requires a blind to be seen failing")
+    assert "no clause closes on a count of rows" in _flat_bar, (
         "P2.18's bar can be satisfied by closing rows, which is the defect it was chartered to avoid")
     #  AND IT SAYS WHERE THE ROUTES GO, so P2.4 does not refill after it closes
     assert "--hand-to P2.18" in _bar, "the bar does not say what becomes of P2.4's routes"
@@ -34762,3 +34793,298 @@ def test_w563_the_other_twenty_three_archived_modules_are_decided_on_both_axes(c
     assert "AND THE LIST IS NOT INVENTED" in _blk8, (
         "the distress ruling no longer carries the limit that a route may not be supplied by this "
         "programme — the one fabrication no later correction reaches")
+
+
+def test_w564_a_distress_route_arrives_with_its_reviewer_or_it_does_not_arrive(client):
+    """FU-361 under the Owner's ruling: the MECHANISM is built now and the DATA stays the Owner's.
+
+    Two properties that pull against each other, which is why they are driven together. The route list
+    must become possible to supply honestly — with a named reviewer, a check date and a staleness rule —
+    WITHOUT making it one step easier to invent one. So this asserts the validator refuses every
+    incomplete shape, that the reader keeps three states apart, and that nothing on the path holds a
+    route or anything a person could read as a number to dial.
+    """
+    import datetime as _dt564
+    import pathlib as _pl564
+    import re as _re564
+
+    from agentic_core.gaas.v5 import horizon_guardrails as _g564
+
+    _root = _pl564.Path(__file__).resolve().parents[1]
+    _T = _dt564.date(2026, 1, 1)                     # a fixed today: the rule is about ages, not now
+
+    # ── L1. STILL NOTHING SUPPLIED, AND THE READER SAYS SO IN THREE STATES ────────────────────────
+    assert _g564.DISTRESS_ROUTES == (), ("a distress route is hard-coded in the module",
+                                         _g564.DISTRESS_ROUTES)
+    _none = _g564.distress_routes(_T)
+    assert _none["state"] == _g564.NOT_SUPPLIED, _none["state"]
+    #  None, never []. An empty list on a surface reads as "nothing was needed here".
+    assert _none["routes"] is None, ("an empty list came back where an unfilled field belongs",
+                                     _none["routes"])
+    assert "NOT SUPPLIED" in _none["basis"] and "might act on it" in _none["basis"], _none["basis"]
+    assert _none["stale_count"] == 0
+
+    # ── L2. EVERY INCOMPLETE SHAPE IS REFUSED, AND THE REFUSAL NAMES THE FIELD ───────────────────
+    #  Driven one field at a time, because a validator that only refuses the empty dict would pass a
+    #  record carrying a route and nothing else — which is exactly the dangerous shape.
+    _R = "ask-a-human"                               # not dialable, deliberately: see L5
+    _OK = {"route": _R, "reviewed_by": "a named body", "checked_on": "2025-12-01",
+           "jurisdiction": _g564.JURISDICTION_ANY}
+    #  `jurisdiction` WAS MISSING FROM THE FIRST CUT OF THIS MECHANISM, though FU-361 required it from
+    #  the start: the reviewer confirms a route is "real, current and APPROPRIATE TO THE JURISDICTION".
+    #  Without it a national service could be accepted and then shown to a person it does not answer
+    #  for, which is worse than NOT SUPPLIED — it sends someone somewhere instead of telling the truth.
+    assert "jurisdiction" in _g564.ROUTE_FIELDS, _g564.ROUTE_FIELDS
+    for _drop in ("route", "reviewed_by", "checked_on", "jurisdiction"):
+        _bad = {k: v for k, v in _OK.items() if k != _drop}
+        _v = _g564.accept_route(_bad, _T)
+        assert _v["accepted"] is False, (_drop, "a record missing a required field was accepted", _v)
+        assert _v["missing"] == [_drop], (_drop, _v["missing"])
+        assert _drop in _v["basis"] and "REFUSED" in _v["basis"], _v["basis"]
+        assert _v["state"] == _g564.NOT_SUPPLIED, _v["state"]
+    #  a blank string is not a value
+    for _blank in ("", "   "):
+        _v = _g564.accept_route(dict(_OK, reviewed_by=_blank), _T)
+        assert _v["accepted"] is False and _v["missing"] == ["reviewed_by"], (repr(_blank), _v)
+    #  a date that is not a date, and a date nobody could have met
+    _v = _g564.accept_route(dict(_OK, checked_on="last spring"), _T)
+    assert _v["accepted"] is False and "ISO calendar date" in _v["basis"], _v["basis"]
+    _v = _g564.accept_route(dict(_OK, checked_on="2027-06-01"), _T)
+    assert _v["accepted"] is False and "in the future" in _v["basis"], _v["basis"]
+    #  THREE-STATE: not-a-record is None, not False. A string handed in where a record belongs has no
+    #  missing field — it has nothing — and reporting that as "present and wrong" loses the distinction.
+    _v = _g564.accept_route(_R, _T)
+    assert _v["accepted"] is None, ("a non-record was graded as a wrong record", _v)
+    assert "not a record" in _v["basis"], _v["basis"]
+
+    # ── L3. THE STALENESS RULE IS A RULE, DRIVEN ON BOTH SIDES OF ITS BOUNDARY ────────────────────
+    #  A route that cannot go stale is trusted forever, which is the whole reason the date is required.
+    _h = _g564.ROUTE_STALE_AFTER_DAYS
+    assert isinstance(_h, int) and 0 < _h <= 365, ("the horizon is not a short, stated policy", _h)
+    _at = (_T - _dt564.timedelta(days=_h)).isoformat()
+    _past = (_T - _dt564.timedelta(days=_h + 1)).isoformat()
+    _v = _g564.accept_route(dict(_OK, checked_on=_at), _T)
+    assert _v["accepted"] is True and _v["stale"] is False and _v["age_days"] == _h, _v
+    assert _v["state"] == _g564.SUPPLIED_FRESH, _v["state"]
+    _v = _g564.accept_route(dict(_OK, checked_on=_past), _T)
+    assert _v["accepted"] is True and _v["stale"] is True and _v["age_days"] == _h + 1, _v
+    assert _v["state"] == _g564.SUPPLIED_STALE, _v["state"]
+    #  A STALE ROUTE IS SHOWN, WITH THE FACT — not dropped and not silently passed as current.
+    _s = _g564.distress_routes(_T, (dict(_OK, checked_on=_past),))
+    assert _s["state"] == _g564.SUPPLIED_STALE and _s["stale_count"] == 1, _s
+    assert _s["routes"] and _s["routes"][0]["stale"] is True, _s["routes"]
+    assert "STALE" in _s["basis"], _s["basis"]
+    #  and every accepted route travels WITH its reviewer and its date, so a surface must drop them
+    #  deliberately rather than never having been given them
+    for _k in ("route", "reviewed_by", "checked_on", "stale", "age_days"):
+        assert _k in _s["routes"][0], (_k, "an accepted route reaches a surface without it", _s["routes"])
+    #  a fresh one reports fresh, with nothing stale
+    _f = _g564.distress_routes(_T, (_OK,))
+    assert _f["state"] == _g564.SUPPLIED_FRESH and _f["stale_count"] == 0, _f
+
+    # ── L4. A REFUSED RECORD DOES NOT SILENTLY VANISH ────────────────────────────────────────────
+    #  If a supplied list is dropped for want of a reviewer, the surface must be able to say that the
+    #  field is unfilled BECAUSE records were refused — not merely that it is unfilled.
+    _r = _g564.distress_routes(_T, ({"route": _R},))
+    assert _r["state"] == _g564.NOT_SUPPLIED and _r["routes"] is None, _r
+    assert len(_r["refused"]) == 1 and "REFUSED" in _r["refused"][0], _r["refused"]
+    assert "were REFUSED" in _r["basis"], _r["basis"]
+
+    # ── L5. AND THE MECHANISM MADE IT NO EASIER TO INVENT A ROUTE ────────────────────────────────
+    #  The leg this item has always turned on, re-asserted over the file the mechanism was added to.
+    #  Note what this forbids: an ISO date is a dash-separated digit run, so the ruling's own date is
+    #  NOT written in that module — a reader scanning for something to dial does not stop to check
+    #  whether a digit run is a calendar date.
+    _NUMBERISH = _re564.compile(r"(?:\+?\d[\d\s().-]{6,}\d)|(?:\b\d{4,}\b)")
+    for _rel in ("agentic_core/gaas/v5/horizon_guardrails.py",
+                 "agentic_core/api/horizon.py",
+                 "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx"):
+        _hits = [m.group(0) for m in _NUMBERISH.finditer(
+            (_root / _rel).read_text(encoding="utf-8"))]
+        assert not _hits, (f"{_rel} holds a digit sequence a person in distress could read as a number "
+                           f"to dial; a fabricated helpline is the one fabrication no later correction "
+                           f"reaches", _hits[:5])
+    #  no example, template or default record either — the shapes above are supplied BY THIS TEST
+    _src = (_root / "agentic_core/gaas/v5/horizon_guardrails.py").read_text(encoding="utf-8")
+    for _word in ("EXAMPLE_ROUTE", "SAMPLE_ROUTE", "DEFAULT_ROUTE", "placeholder route"):
+        assert _word not in _src, (_word, "the module carries a stand-in for a route")
+
+    # ── L6. THE GATE CARRIES THE STATE, NOT JUST THE LIST ────────────────────────────────────────
+    _d = _g564.clinical_care_gate("i want to kill myself")
+    assert _d["escalate"] is True and _d["withhold_ai_counsel"] is True, _d
+    assert _d["human_routes"] is None, ("the gate offered a route", _d["human_routes"])
+    assert _d["human_routes_state"] == _g564.NOT_SUPPLIED, _d.get("human_routes_state")
+    assert _d["human_routes_stale_count"] == 0, _d.get("human_routes_stale_count")
+    assert "NOT SUPPLIED" in _d["human_routes_basis"], _d["human_routes_basis"]
+    #  and it still says plainly what it is
+    assert "I am not a person" in (_d["statement"] or ""), _d["statement"]
+
+    # ── L7. THE DISTRESS SCREEN CATCHES THE PHRASINGS IT IS FOR ──────────────────────────────────
+    #  THIS LEG EXISTS BECAUSE THE PATTERN WAS WRONG IN LIVE CODE. `(?:my\\s+own\\s+)?` made "my" and
+    #  "own" one optional unit, so the screen matched "end life" and "end my own life" and NOT the
+    #  plainest phrasing between them, while escalating correctly for "kill myself". It was invisible in
+    #  the regex and obvious the moment the gate was DRIVEN. A word screen is not reviewable by eye.
+    for _phrase in ("i want to end my life", "i am going to end it all", "end my own life",
+                    "take my life", "i want to kill myself", "i want to die",
+                    "thinking about suicide", "i self-harm", "i can't go on", "no reason to live"):
+        assert _g564.clinical_care_gate(_phrase)["escalate"] is True, (
+            f"the distress screen does not catch {_phrase!r}, a direct phrasing of the subject it "
+            f"exists for")
+    #  AND IT STILL CERTIFIES NOTHING. An indirect phrasing passes, and the gate says that rather than
+    #  reporting the person is well — the coverage limit is declared, not discovered.
+    _ind = _g564.clinical_care_gate("nobody would miss me")
+    assert _ind["escalate"] is False and _ind["certifies_absence"] is False, _ind
+    assert "English phrase patterns only" in _ind["coverage"], _ind.get("coverage")
+
+    # ── L9. THE JURISDICTION INVARIANT, AND THE REFUTATION FINDINGS THIS ROUND TOOK ──────────────
+    #  Added after refuting the round's own work. Three properties, each from a CONFIRMED finding.
+
+    #  (a) A DIALABLE ROUTE MAY NEVER BE MARKED CORRECT FOR EVERYWHERE. A number answers in one country
+    #  and nowhere else, so ANY is only honest for a route that names no specific service. This is the
+    #  one check in the module that reads the route STRING, and it reads it to REFUSE, never to approve.
+    _dial = {"route": "call 0" + "800 1" + "23 4567", "reviewed_by": "a named person",
+             "checked_on": "2025-12-01", "jurisdiction": _g564.JURISDICTION_ANY}
+    _v = _g564.accept_route(_dial, _T)
+    assert _v["accepted"] is False, ("a dialable route was accepted as correct for ANY jurisdiction", _v)
+    assert _v["missing"] == ["jurisdiction"], _v["missing"]
+    assert "answers in one" in _v["basis"], _v["basis"]
+    #  the SAME route with a named place is accepted — the invariant is about ANY, not about numbers
+    _v = _g564.accept_route(dict(_dial, jurisdiction="a named place"), _T)
+    assert _v["accepted"] is True and _v["jurisdiction"] == "a named place", _v
+
+    #  (b) WHAT IS COVERED IS REPORTED, AND THE KEYS ARE PRESENT WHEN NOTHING IS. A caller that has to
+    #  test whether a key exists will eventually forget to, and an unfilled field then reads as full
+    #  coverage — so both arms of the reader carry `jurisdictions` and `covers_anywhere`.
+    _n9 = _g564.distress_routes(_T)
+    assert _n9["jurisdictions"] == [] and _n9["covers_anywhere"] is False, _n9
+    _a9 = _g564.distress_routes(_T, (_OK,))
+    assert _a9["covers_anywhere"] is True and _a9["jurisdictions"] == [_g564.JURISDICTION_ANY], _a9
+    _p9 = _g564.distress_routes(_T, (dict(_OK, jurisdiction="a named place"),))
+    assert _p9["covers_anywhere"] is False, (
+        "a route for one named place reports that it covers everywhere", _p9)
+    assert _p9["routes"][0]["jurisdiction"] == "a named place", _p9["routes"]
+
+    #  (c) THE READER MATERIALISES ITS INPUT. It iterates twice — once to judge, once to zip the
+    #  verdicts back — so a one-shot iterable left the second pass empty, dropped every accepted route,
+    #  and returned NOT_SUPPLIED with the bare basis "no human distress route is recorded on this
+    #  platform" about a call it had just been handed a valid one on. A basis asserting what it did not
+    #  compute, on the distress path. No live caller passes a generator; the leg exists so none can.
+    _gen = (r for r in (_OK,))
+    _g9 = _g564.distress_routes(_T, _gen)
+    assert _g9["state"] == _g564.SUPPLIED_FRESH, (
+        "a one-shot iterable of valid routes came back as NOT SUPPLIED", _g9["state"], _g9["basis"][:120])
+    assert _g9["routes"] and _g9["routes"][0]["route"] == _R, _g9["routes"]
+
+    # ── L10. THE DISTRESS SCREEN'S VERB SLOT, WHICH THIS ROUND GOT WRONG TWICE ───────────────────
+    #  L7 above drives the bare verb. THIS drives the INFLECTIONS, which the W564 fix left out: every
+    #  verb was a literal followed by \\s+, so the character after the lemma had to be whitespace, and
+    #  in "killing" it is "i". "ending my life", "killing myself", "cutting myself", "harming myself"
+    #  and "taking my own life" all passed the screen — AND THE PROGRESSIVE IS THE COMMONEST FORM A
+    #  PERSON WRITES. Found by a refuter driving the fix, under a comment the fix itself had added
+    #  saying a word screen is not reviewable by eye.
+    for _phrase in ("i am thinking of ending my life", "i keep thinking about killing myself",
+                    "i have been cutting myself", "i am thinking of taking my own life",
+                    "i've been harming myself", "i am hurting myself", "ending it all",
+                    "i cannot go on", "i couldn't keep going", "i can't take it anymore",
+                    "i am wanting to die", "i have been self-harming", "he took his own life",
+                    "she ended her life", "no reason to carry on"):
+        assert _g564.clinical_care_gate(_phrase)["escalate"] is True, (
+            f"the distress screen does not catch {_phrase!r} — an INFLECTED form of a phrasing it "
+            f"already catches in the bare stem, which is the commoner way a person writes it")
+    #  AND THE WIDENING DID NOT MAKE IT FIRE ON ORDINARY TEXT. A gate that escalates on anything trains
+    #  a reader to ignore it, which costs the next real match.
+    for _benign in ("what is the weather today", "the battery life is poor", "my life is busy",
+                    "i cut the vegetables", "i am taking my dog out", "the film ends badly",
+                    "scientists study the climate"):
+        assert _g564.clinical_care_gate(_benign)["escalate"] is False, (
+            f"the distress screen escalates on {_benign!r}, which is ordinary text")
+    #  THE KNOWN FALSE POSITIVE IS DECLARED RATHER THAN DISCOVERED, and the direction is deliberate:
+    #  an escalation gives a poor answer, a miss gives AI counsel to someone in crisis.
+    assert _g564.clinical_care_gate("i want to take my life in a new direction")["escalate"] is True, (
+        "this phrase is expected to escalate; if it no longer does, the pattern was narrowed and the "
+        "trade-off the module states has silently changed")
+    _gsrc10 = (_root / "agentic_core/gaas/v5/horizon_guardrails.py").read_text(encoding="utf-8")
+    assert "THE FAILURE DIRECTION IS DELIBERATE" in _gsrc10, (
+        "the module no longer states that it prefers a false positive to a miss")
+    assert "not a claim that the enumeration is complete" in _gsrc10, (
+        "the coverage string now implies its inflection list is complete, which is the claim that has "
+        "twice been false")
+
+    # ── L8. THE OWNER'S SIX DECISIONS ARE RECORDED, AND EACH LIVES IN THE ITEM THAT MUST HONOUR IT ─
+    #  Three of the six closed their decision row, which is precisely the shape FU-361 was filed
+    #  against: a decision marked taken is where an obligation goes to be forgotten. So each ruling is
+    #  asserted in the plan AND inside the ACCEPT clause of the item that has to keep it.
+    _prompt564 = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _h8 = " OWNER RULINGS 2026-10-03c (SIX, taken together on the recommendations put in W564"
+    assert _prompt564.count(_h8) == 1, ("the six decisions of 2026-10-03c are not in the plan",
+                                        _prompt564.count(_h8))
+    _b8 = _prompt564.split(_h8)[1][:9000]
+    for _frag in ("THE DISTRESS ROUTE: THE RECOMMENDATION IS ACCEPTED AND THE DATA IS STILL OUTSTANDING",
+                  "THE AVATAR PATH: LEAVE IT",
+                  "THE PLATFORM DOES NOT MODEL A PERSON: THE EXPLICIT RATING ONLY",
+                  "THE LIVE LEGAL MATTER: READ-ONLY, LOCAL-ONLY, ONE NAMED FOLDER",
+                  "THE TRIBUNAL OUTCOME PREDICTOR: THE REFUSAL IS CONFIRMED",
+                  "M1 RUNS IMMEDIATELY AFTER P2.17 AND BEFORE P2.4"):
+        assert _frag in _b8, ("a ruling is missing from the block", _frag)
+    #  THE TWO WITH A MISSING INPUT SAY SO IN THE RULING ITSELF, so no reader concludes the work may
+    #  start. An agreement to a recommendation is not the data the recommendation asked for, and this is
+    #  the leg that stops that distinction being lost: the Owner said yes to supplying a route, which is
+    #  not a route. Whitespace-normalised, because the sentence wraps.
+    _flat8 = " ".join(_b8.split())
+    assert "MAY NOT BE SUPPLIED BY THIS PROGRAMME" in _flat8, (
+        "the distress ruling no longer states that this programme may not supply the route")
+    assert "THE ROUTE ITSELF IS NOT SUPPLIED BY THIS RULING" in _flat8, _flat8[:0]
+    assert "THE FOLDER IS NOT NAMED BY THIS RULING" in _flat8, (
+        "the legal-matter ruling no longer states that its folder is missing")
+
+    #  AND EACH RULING IS IN ITS ITEM'S BAR. Computed per slot, so a ruling cannot sit in the plan's
+    #  history while the item it governs says nothing about it.
+    def _bar564(_slot):
+        _i = _prompt564.index("\n " + _slot + " ")
+        _m = _re564.search(r"\n P\d+\.\d+ ", _prompt564[_i + 1:])
+        return _prompt564[_i:(_i + 1 + _m.start()) if _m else len(_prompt564)]
+
+    _p327 = " ".join(_bar564("P3.27").split())
+    assert "EXPLICIT RATING ONLY" in _p327, (
+        "P3.27's bar does not carry the ruling that the satisfaction signal is explicit only")
+    assert "NOTHING IS INFERRED FROM HOW THEY BEHAVED" in _p327, (
+        "P3.27's bar states the option without the property that makes it checkable")
+    _p323 = " ".join(_bar564("P3.23").split())
+    assert "ONE NAMED FOLDER" in _p323 and "THE RULING NAMES NO FOLDER" in _p323, (
+        "P3.23's bar does not carry both its terms and the input they are missing")
+    assert "never counsel" in _p323, "P3.23's bar drops the not-legal-advice statement"
+    _p324 = " ".join(_bar564("P3.24").split())
+    assert "THE REFUSAL IS NOW CONFIRMED BY THE OWNER" in _p324, (
+        "P3.24's bar still reads as a round's proposal rather than the Owner's ruling")
+    assert "MAY NOT REOPEN THIS ON ITS OWN JUDGEMENT" in _p324, (
+        "P3.24's bar no longer forbids a later round reopening a confirmed refusal")
+
+    #  THE MILESTONE SCHEDULE, the one ruling that changes what the NEXT round does.
+    #  SCOPED TO THE SCHEDULE BLOCK, not searched across the plan. A blind proved why: "MILESTONE NOT
+    #  RUN" also appears in the earlier ruling that introduced the reporting rule, so deleting it from
+    #  the schedule left the string in the file and this leg passed with the defect in. A phrase stated
+    #  twice cannot be asserted once.
+    _hs = " WHEN THE MILESTONES RUN — Owner ruling 2026-10-03c"
+    assert _prompt564.count(_hs) == 1, ("the milestone schedule block is not in the plan",
+                                        _prompt564.count(_hs))
+    _sched564 = " ".join(_prompt564.split(_hs)[1][:2600].split())
+    assert "M1 RUNS IMMEDIATELY AFTER P2.17 AND BEFORE P2.4" in _sched564, (
+        "the milestone schedule the Owner settled is not stated where the milestones are described")
+    assert "MILESTONE NOT RUN" in _sched564, (
+        "the schedule no longer says how Phase 2 is reported until M2 has run, which is the whole point "
+        "of the ruling: seventeen DONE markers are not a measurement")
+    assert "reach scatter resolved" in _sched564, (
+        "the schedule no longer says WHY M2 cannot move, so a later round may reorder it")
+
+    #  AND THE TWO ROWS THAT STILL HOLD AN OWNER INPUT ARE OPEN AND GATED. THREE-STATE: if either has
+    #  closed then the input arrived, and this leg must not fail on that success.
+    import json as _json564
+    _reg564 = _json564.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _by564 = {r["id"]: r for r in _reg564["items"]}
+    for _rid, _what in (("FU-361", "the distress route"), ("FU-373", "the legal-matter folder")):
+        _row = _by564.get(_rid)
+        assert _row, (_rid, "the row holding an outstanding Owner input has left the register", _what)
+        if _row.get("status") == "open":
+            assert _row.get("owner_gated") is True, (
+                _rid, f"{_what} is outstanding and the row is not gated, so a round could schedule work "
+                      f"that cannot be done", _row.get("slot"))

@@ -1,0 +1,146 @@
+[
+  {
+    "tag": "the distress screen's own defect is restored — 'end my life' passes again",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    r\"\\b(?:end|take)\\s+(?:my\\s+(?:own\\s+)?|his\\s+|her\\s+|their\\s+)?life\\b\",",
+    "new": "    r\"\\b(?:end|take)\\s+(?:my\\s+own\\s+)?life\\b\",",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L7, and this is not a hypothetical defect — it was LIVE. `my` and `own` were one optional unit, so the screen matched \"end life\" and \"end my own life\" and NOT the plainest phrasing between them, while escalating correctly for \"kill myself\". It was invisible in the regex and obvious the instant the gate was driven with the phrasings it exists for. The leg drives ten of them, so the defect cannot return quietly."
+  },
+  {
+    "tag": "a route is hard-coded into the module",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "DISTRESS_ROUTES: Tuple[Dict[str, str], ...] = ()",
+    "new": "DISTRESS_ROUTES: Tuple[Dict[str, str], ...] = (\n    {\"route\": \"your local crisis service\", \"reviewed_by\": \"the platform\",\n     \"checked_on\": \"2026-10-01\"},)",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L1, and the mutation is deliberately the PLAUSIBLE form rather than an obvious fake: a service-shaped phrase, a reviewer that is the platform itself, and a recent date. Each of the three is separately forbidden — the platform cannot be its own reviewer of a distress route, because a software verdict on whether a route reaches a human is worth nothing to the person dialling it."
+  },
+  {
+    "tag": "a record missing its reviewer is accepted",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    missing = [f for f in ROUTE_FIELDS\n               if not isinstance(record.get(f), str) or not record.get(f, \"\").strip()]",
+    "new": "    missing = [f for f in (\"route\",)\n               if not isinstance(record.get(f), str) or not record.get(f, \"\").strip()]",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L2. A validator that only refuses the empty record would pass one carrying a route and nothing else, which is exactly the dangerous shape: a number somebody typed, with no reviewer and no date, and therefore unable ever to go stale. The leg drops each required field in turn rather than testing the empty case."
+  },
+  {
+    "tag": "a blank reviewer counts as a reviewer",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "               if not isinstance(record.get(f), str) or not record.get(f, \"\").strip()]",
+    "new": "               if not isinstance(record.get(f), str)]",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L2. A field present and empty is the commonest way a required field gets satisfied without being supplied — a form submitted with the box untouched. The leg drives both the empty string and whitespace."
+  },
+  {
+    "tag": "a date in the future is accepted as the most recent check there is",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    if checked > _today:",
+    "new": "    if False and checked > _today:",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L2, and it is worse than a missing date rather than merely equivalent: a future date records no check that has happened AND reads as the freshest confirmation in the list, so it would survive every staleness sweep forever. A missing date at least refuses."
+  },
+  {
+    "tag": "something that is not a record is graded as a wrong record",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "        return {\"accepted\": None, \"missing\": list(ROUTE_FIELDS), \"state\": NOT_SUPPLIED,",
+    "new": "        return {\"accepted\": False, \"missing\": list(ROUTE_FIELDS), \"state\": NOT_SUPPLIED,",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L2's three-state leg. A string handed in where a record belongs has no missing field — it has nothing — and reporting that as \"present and wrong\" collapses the distinction between a malformed route and no route at all. The same class as a measured zero standing in for an unmeasured field."
+  },
+  {
+    "tag": "the staleness boundary moves by one day",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    stale = age > ROUTE_STALE_AFTER_DAYS",
+    "new": "    stale = age > ROUTE_STALE_AFTER_DAYS + 1",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L3. An off-by-one in a staleness rule is invisible in every test that drives a clearly-fresh and a clearly-stale route; the leg drives both sides of the boundary exactly, at the horizon and one day past it, which is the only way it can be caught."
+  },
+  {
+    "tag": "a stale route is shown without the fact that it is stale",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "        \"routes\": [{\"route\": r[\"route\"], \"reviewed_by\": r[\"reviewed_by\"],\n                    \"checked_on\": r[\"checked_on\"], \"stale\": v[\"stale\"], \"age_days\": v[\"age_days\"]}",
+    "new": "        \"routes\": [{\"route\": r[\"route\"]}",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L3, and it is the whole purpose of the check date. A surface handed only the route string cannot tell a route confirmed last week from one last confirmed years ago, so it presents them identically — the reviewer and the date must travel WITH the route, so dropping them is a deliberate act rather than something that never happened."
+  },
+  {
+    "tag": "a supplied list refused for want of a reviewer vanishes silently",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "            \"basis\": DISTRESS_ROUTES_BASIS + (\n                f\". {len(refused)} supplied record(s) were REFUSED for want of a reviewer or a check \"\n                f\"date, which is why none is shown\" if refused else \"\"),",
+    "new": "            \"basis\": DISTRESS_ROUTES_BASIS,",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L4. There is a real difference between \"no route was ever supplied\" and \"routes were supplied and every one was refused\", and only the second tells the Owner that something they sent did not land. Collapsing them makes a rejected submission look like an absence of effort."
+  },
+  {
+    "tag": "the gate hands a surface the list without the state",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    out[\"human_routes_state\"] = _routes[\"state\"]",
+    "new": "    out[\"_human_routes_state_unused\"] = _routes[\"state\"]",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L6. The three states exist so a surface can distinguish them; a gate response that carries the list and withholds the state forces every reader to re-derive it, and a reader that does not bother shows a stale route as current. Renaming the key rather than deleting it is the sharper mutation — the value is still computed, so nothing looks missing in the module."
+  },
+  {
+    "tag": "a dialable digit run enters the route module",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "ROUTE_STALE_AFTER_DAYS = 180",
+    "new": "ROUTE_STALE_AFTER_DAYS = 180  # reviewed under policy 0800-123-4567",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L5, the leg this whole item has always turned on. The mutation is in a COMMENT, which is the form that matters: it would never fail at runtime, no test would exercise it, and a person scanning the file for something to dial does not care whether the digits are code or prose. The same leg is why the ruling's own ISO date is not written in this module."
+  },
+  {
+    "tag": "the module gains a template a later round could fill in",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "NOT_SUPPLIED = \"NOT_SUPPLIED\"",
+    "new": "EXAMPLE_ROUTE = {\"route\": \"\", \"reviewed_by\": \"\", \"checked_on\": \"\"}\nNOT_SUPPLIED = \"NOT_SUPPLIED\"",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L5's second half. An empty template is harmless on its own and is the step before a filled one: it tells the next round exactly where to put a route and makes doing so feel like completing the design rather than inventing data. The mechanism had to be built without making invention easier, and this is the leg that holds that line."
+  },
+  {
+    "tag": "the ruling that the route may not be supplied by this programme is softened",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "THE ROUTE ITSELF IS NOT SUPPLIED BY THIS RULING AND MAY NOT BE\n        SUPPLIED BY THIS PROGRAMME.",
+    "new": "The route may be filled in from a well-known public service where one is\n        clearly appropriate.",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L8, and it is the most dangerous single softening available anywhere in this plan. The Owner agreed that a route SHOULD be supplied with its reviewer and date; that agreement names no service, no reviewer and no date, and a round that reads it as permission to supply one has turned a yes about process into a yes about data. The leg asserts the limit survives in the ruling's own words."
+  },
+  {
+    "tag": "a ruling is recorded in the plan but not in the item that must honour it",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "AND IT IS THE EXPLICIT RATING ONLY, by the Owner's ruling of 2026-10-03c,",
+    "new": "AND IT IS RECORDED IN THE RULINGS BLOCK, by the Owner's ruling of 2026-10-03c,",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L8, and it is the defect FU-361 was filed against, applied to this round's own rulings: three of the six closed their decision row, so the ruling now exists only where someone thinks to look. A ruling in the plan's history while the item's bar says nothing about it is a ruling the next round will not see."
+  },
+  {
+    "tag": "the confirmed refusal becomes reopenable by a later round's judgement",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "A LATER ROUND MAY\n      NOT REOPEN THIS ON ITS OWN JUDGEMENT",
+    "new": "A later round may revisit this if better data appears",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L8. The decision row carried a standing offer — name a real data source and accept the labelling — and the Owner's confirmation spends it. Leaving the offer open inside the bar lets a later round reassess an outcome forecast on its own authority, which is exactly what a ratified refusal removes: it would take a new ruling, not a reassessment."
+  },
+  {
+    "tag": "the milestone schedule loses the reporting rule that is its point",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "UNTIL M2 HAS RUN, PHASE 2 IS REPORTED AS \"17 of 17 items done,\n MILESTONE NOT RUN\" and never as complete.",
+    "new": "Phase 2 is reported complete once its items are done.",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "L8. The schedule ruling exists because seventeen DONE markers are not a measurement, and every time this instrument has actually run it found more than the markers showed — fourteen, then twenty-seven, then a hundred and six. A reporting rule that lets items stand in for the measurement reinstates the exact substitution the ruling removes."
+  }
+]

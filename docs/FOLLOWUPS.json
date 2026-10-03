@@ -4707,10 +4707,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W564",
       "note": "OWNER RULED 2026-09-27: an EXPLICIT LOCAL INBOX the Owner copies documents into - not a folder scan. Read-only, never sent to any external service, provenance per document and line, a human-approval gate on every filing-shaped artefact, the index never committed, and the surface stating that the platform is not counsel. See also the archive audit: the previous corpus was simulated.",
-      "slot_source": "owner_ruling 2026-09-27"
+      "slot_source": "owner_ruling 2026-09-27",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-03c, option (a) with every term held: read-only, local-only, one named folder, never sent externally, provenance per document, a human-approval gate on every filing-shaped artefact, index in data/ and never committed, and the surface states that nothing it produces is legal advice. THE FOLDER IS NOT NAMED BY THE RULING - a successor row holds that input so the item does not quietly wait for it."
     },
     {
       "id": "FU-273",
@@ -4724,10 +4727,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W564",
       "note": "OWNER RULED 2026-09-27: the tribunal outcome predictor is REFUSED and stays refused. What is built instead: the procedural timeline (deadlines and windows computed from published rules and the case's own dates - a schedule, not a forecast) and an evidence-completeness checklist (what the claim's elements require against what the bundle contains). No probability of a legal outcome, ever.",
-      "slot_source": "owner_ruling 2026-09-27"
+      "slot_source": "owner_ruling 2026-09-27",
+      "because": "refuted",
+      "because_means": "the row's premise was measured and did not hold; nothing needed building",
+      "close_note": "Owner ruling 2026-10-03c, option (a): the refusal is CONFIRMED. The platform computes schedules and assembles evidence and never forecasts an outcome. The row's premise was that a decision was outstanding; it is now taken, and the procedural half already built is the whole of that item's scope."
     },
     {
       "id": "FU-274",
@@ -6510,6 +6516,62 @@
       "note": "",
       "slot_source": "it is clause (b): an instrument that would catch a defect but instead reports one that was never committed - the guard fails on an arrival the router chose, not on a regression",
       "tier": 2
+    },
+    {
+      "id": "FU-371",
+      "title": "OWNER DECISION: may the platform hold a behavioural model of an individual, to build the user-satisfaction signal the vision requires",
+      "why": "W563 assessed the archived biomimetic layer and found the only user-satisfaction mechanism that exists anywhere in this repository or its archive. Its explicit half is a rating channel and is buildable now. ITS OTHER HALF IS THE QUESTION: it collects IMPLICIT feedback - a person's dwell time - and fits a per-user preference model to that person's own behaviour. It passes Ruling A.9.5 as it stands, because it forms no verdict on anyone's spiritual state and no verdict on a person at all; it is a preference, not a judgement. THAT IS PRECISELY WHY IT MUST BE ASKED BEFORE A REBUILD RATHER THAN AFTER: the one-question test is whether the SUBJECT IS A PERSON, and here it is - the model is of an individual, fitted from their behaviour, held by the platform. A ruling permitting it would be the first time this platform models a person at all, and that is a constitutional step, not an engineering choice. THE DECISION: (a) the explicit rating only - a person says what they think and nothing is inferred from how they behaved (the default, and what is built today); (b) explicit plus implicit signals used only in AGGREGATE, never attributed to an individual and never stored per person, so the platform learns about the product and not about anyone; (c) a per-individual model, which needs its own terms - what is collected, what it is used for, whether the person can see it, correct it and delete it, and whether it is ever used to decide anything about them. The vision names customer/user satisfaction as one of four continuous measures and the selection item refuses while any of the four is unmeasured, so (a) does unblock the measure. Nothing beyond (a) is written while this is open, and a guard leg greps the live tree for the behavioural signal rather than trusting the sentence.",
+      "source": "W563 (the archive assessment, axis two)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/support/tickets.py",
+        "agentic_core/api/v200/contribute.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "done",
+      "closed_by": "W564",
+      "note": "",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-03c, option (a): the EXPLICIT RATING ONLY. No dwell time, no implicit signal, no per-individual preference model, and no aggregate behavioural signal either since option (b) was not taken. The satisfaction measure is unblocked, because an explicit rating from real users is what the clause requires."
+    },
+    {
+      "id": "FU-372",
+      "title": "Every other word-and-phrase screen on the platform is unaudited by the method that just found a live miss in the distress gate",
+      "why": "W564 drove ten direct phrasings through the clinical-care gate and found that the plainest one - 'end my life' - PASSED the screen, while 'kill myself' escalated correctly. The pattern was `(?:end|take)\\s+(?:my\\s+own\\s+)?life` : 'my' and 'own' were one optional unit, so it matched 'end life' and 'end my own life' and not the phrasing in between. It is fixed and guarded. THE LESSON IS THE METHOD, AND IT HAS NOT BEEN APPLIED ANYWHERE ELSE: a word screen is not reviewable by eye - the defect was invisible in the regex and obvious the moment the gate was driven with the phrasings it exists to catch. UNAUDITED BY THAT METHOD: _RULING_PATTERNS and _PROOF_PATTERNS in the same module, and - much larger - the three-regex keyword filter that the whole-vision document records as the ONLY screen on 49 of 57 API modules ('GaaS gate on every output: true for 8 of 57'). THE FIX: for each screen, enumerate the phrasings it is FOR, drive them, and record which pass - then either widen the pattern or move the phrasing into the declared coverage limit, because a screen that misses a phrasing it was written for is a defect while a screen that misses one it never claimed is a stated limit. Do not merely add patterns: the deliverable is the DRIVEN LIST, so the next round can tell the two apart.",
+      "source": "W564 (found by driving the gate, not by reading it)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/gaas/v5/horizon_guardrails.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 1,
+      "slot_source": "the router sent it to P2.4, whose bar the Owner's ruling of 2026-10-03 closed to arrivals; it is clause (b) - an instrument that would catch a defect and did not, found by driving it rather than reading it. This is the SECOND arrival the router mis-sent in one round, which is the subject of the registered route-versus-closed-bar row"
+    },
+    {
+      "id": "FU-373",
+      "title": "The legal-matter terms are ruled and the folder is not named, so the work cannot start",
+      "why": "Owner ruling 2026-10-03c settled every term for indexing the live legal matter: read-only, local-only, ONE NAMED FOLDER, never sent to any external service, provenance per document, a human-approval gate on every filing-shaped artefact, the index in data/ and never committed, and the surface stating that nothing produced is legal advice - a meticulous clerk and never counsel. THE RULING NAMES NO FOLDER. This row exists because the decision row closed and an item marked done, or a term marked settled, is where a missing input goes to be forgotten - the same discipline the distress-route row was filed under. WHAT ARRIVING LOOKS LIKE: the Owner names one absolute path, confirms that everything under it is theirs to index, and confirms the jurisdiction so the published-rules half has a source. WHAT MUST NOT HAPPEN MEANWHILE: no folder is guessed, no desktop location is inferred, and no document is read - this is sensitive personal data about real people in a live dispute, and a wrong folder reads something nobody consented to. Until the path arrives the item's scope is the published-rules arithmetic that needs no bundle.",
+      "source": "W564 (filed as the decision row closes, so the missing input is recorded rather than assumed)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/legal/__init__.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3
     }
   ],
   "routes": [
