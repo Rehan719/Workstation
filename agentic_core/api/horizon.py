@@ -256,6 +256,94 @@ async def horizon_states(user: dict | None = Depends(get_current_user)) -> Dict[
     }
 
 
+class LessonRequest(BaseModel):
+    trigger: str = Field(description="raised_handler | refused_gate | owner_correction")
+    evidence: Dict[str, Any] = Field(default_factory=dict)
+    subject: Optional[str] = None
+    disposition: str = Field(default="APPLIED_AND_LOGGED")
+    candidate_cause: Optional[str] = None
+    cause_basis: Optional[str] = None
+    proposed_change: Optional[str] = None
+    title: Optional[str] = None
+
+
+@router.post("/lessons")
+async def horizon_lesson(req: LessonRequest,
+                         user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """Write a LessonRecord, route it, and FILE IT THROUGH THE AGENCY if its disposition files a change.
+
+    The three steps stay separate on purpose — observe, route, enact — because collapsing any two of them
+    is how an observation becomes an unreviewed change. The refusal that matters is enforced here: a
+    SUBMIT_ONLY lesson is submitted and NOT applied, and the response says so in the field a caller reads
+    rather than only in prose.
+    """
+    from agentic_core.horizon import muhasabah
+
+    _uid = (user or {}).get("username") or "system"
+    rec = muhasabah.observe(req.trigger, req.evidence, subject=req.subject,
+                            candidate_cause=req.candidate_cause, cause_basis=req.cause_basis,
+                            proposed_change=req.proposed_change)
+    routing = muhasabah.route(rec, req.disposition)
+    may_apply, apply_basis = muhasabah.may_self_apply(routing)
+
+    filed = None
+    file_error = None
+    if routing.get("files_change"):
+        #  ONE REGISTER: the same submit_change every other governed change goes through. A second
+        #  approval path here would be the fork this item's bar forbids.
+        from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+        try:
+            filed = await submit_change(SubmitChangeRequest(
+                title=(req.title or f"[horizon] lesson from {rec['trigger']}")[:200],
+                change_type=routing["change_type"],
+                description=(req.proposed_change or "")
+                or f"A lesson recorded by Horizon from {rec['trigger']}. Evidence: {rec['evidence']}",
+                rationale=(f"candidate cause: {rec['candidate_cause']}"
+                           + (f" — basis: {rec['cause_basis']}" if rec.get("cause_basis") else
+                              ". Nothing in this repository infers a root cause, so none is asserted.")),
+                submitted_by=f"horizon:{_uid}",
+            ), principal=f"horizon:{_uid}")
+        except HTTPException as e:               # a refusal by the Agency is an OUTCOME, not a crash
+            file_error = {"status": e.status_code, "detail": e.detail}
+        except Exception as e:                   # noqa: BLE001
+            file_error = {"status": None, "detail": f"{e.__class__.__name__}: {e}"}
+
+    row = muhasabah.save(rec, routing, filed if isinstance(filed, dict) else None)
+    return {
+        "lesson": row,
+        "routing": routing,
+        "may_self_apply": may_apply,
+        "may_self_apply_basis": apply_basis,
+        "filed": filed,
+        "file_error": file_error,
+        "file_error_basis": (
+            "the Change Control Agency REFUSED this filing, and that refusal is an outcome rather than an "
+            "error in Horizon: the lesson is kept with the refusal recorded on it" if file_error else None),
+    }
+
+
+@router.get("/lessons")
+async def horizon_lessons(limit: int = 50,
+                          user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    from agentic_core.horizon import muhasabah
+    rows = muhasabah.listing(limit)
+    _filed = sum(1 for r in rows if isinstance(r.get("filed"), dict) and r["filed"].get("cca_id"))
+    _board = sum(1 for r in rows if r.get("reaches_board"))
+    return {
+        "lessons": rows,
+        "total": len(rows),
+        "filed_with_the_agency": _filed,
+        "reaching_the_board": _board,
+        "basis": (
+            f"{_filed} of {len(rows)} lesson(s) were filed as a change with the Change Control Agency, and "
+            f"{_board} of them reach the Board. THE DIFFERENCE IS THE POINT: a config_minor filing is "
+            f"reviewable after the fact and never reaches the Board, so a count of filings is not a count "
+            f"of escalations" if rows else
+            "no lesson has been recorded yet, which is not the same as no friction having occurred"),
+        "states": muhasabah.states(),
+    }
+
+
 @router.get("/seam")
 async def horizon_seam(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
     """What the Horizon seam watches, what it EXCLUDES, and what it has recorded (W554, P2.11).

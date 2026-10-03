@@ -166,6 +166,21 @@ def observe_request(method: str, path: str, status: Optional[int] = None,
     if not ok:
         return None
     _served = raised is None and isinstance(status, int) and status < 400
+    #  W556 (P2.14) — A RAISED HANDLER is the first of the three triggers that writes a LessonRecord.
+    #  OBSERVATION ONLY: the lesson is APPLIED_AND_LOGGED, so no change is filed. A 500 storm must not
+    #  become a governance storm, and filing is a deliberate act taken afterwards through the route.
+    if raised:
+        try:
+            from agentic_core.horizon import muhasabah
+            _rec = muhasabah.observe(
+                "raised_handler",
+                {"method": str(method).upper(), "path": path, "exception": raised,
+                 "route_domain": domain_of(path)},
+                subject=None)
+            muhasabah.save(_rec, muhasabah.route(_rec, "APPLIED_AND_LOGGED"), None)
+        except Exception as _exc:                # noqa: BLE001 — counted, never raised into the request
+            _errors.append(f"lesson: {_exc.__class__.__name__}: {_exc}")
+            del _errors[:-20]
     return _record(
         source="domain_route", surface=f"{str(method).upper()} {path}",
         raw_text=f"{str(method).upper()} {path}",

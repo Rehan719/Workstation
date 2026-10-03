@@ -224,12 +224,26 @@ ranks **HIGH or above**, and was approved by a REVIEW rather than by the Owner. 
 a tier-2 record is reviewable after the fact and **never reaches the Board** — which is correct for tier 2
 and was never stated, so the old table read as an escalation that silently does not escalate.
 
-| Horizon tier | Example | `change_type` filed | Agency rank | Reaches the Board? |
-| :-- | :-- | :-- | :-- | :-- |
-| 0–1 | a wording fix in Horizon's own output, a new exclusion pattern | **none** — no change is filed | — | no |
-| 2 | a routing weight, a new escalation trigger | `config_minor` | LOW | **no, by design** — reviewable after the fact, and the surface must not imply otherwise |
-| 3–4 | a guardrail, a gate, a routing policy | `policy_amendment` | HIGH | **yes**, once a review approves it |
-| 5 | faith content, the law domains, anything constitutional | `constitutional` | CRITICAL | a review may never approve it at all; the Owner decides |
+**NAMED W556 (P2.14 built).** The table below used the 0–5 numbering throughout, which is the scale
+W549's own note says change_control does not have — the mapping was corrected and the VOCABULARY was
+left, so the item body (corrected W535 to dispositions) and this table described the same bands in two
+languages. That is how they drifted the first time. The DISPOSITION column is the name the code uses:
+`agentic_core/horizon/muhasabah.py` DISPOSITIONS, which is what a round builds from. The tier column is
+kept so an older reading still lands somewhere, and it is not the authority.
+
+| Disposition (the code's name) | old tier | Example | `change_type` filed | Agency rank | Reaches the Board? |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| `APPLIED_AND_LOGGED` | 0–1 | a wording fix in Horizon's own output, a new exclusion pattern | **none** — no change is filed | — (no change, so no rank) | no |
+| `APPLIED_AND_RECORDED` | 2 | a routing weight, a new escalation trigger | `config_minor` | LOW | **no, by design** — reviewable after the fact, and the surface must not imply otherwise |
+| `SUBMIT_ONLY` | 3–4 | a guardrail, a gate, a routing policy | `policy_amendment` | HIGH | **yes**, once a review approves it — and it may NOT be self-applied |
+| `REFUSED` | 5 | faith content, the law domains, anything constitutional | **none** — surfaced to the Owner | — | no; Horizon may not reach for it at all |
+
+**ONE ROW OF THAT TABLE CHANGED MEANING, and it is recorded rather than quietly swapped.** Tier 5 read
+"`constitutional` / CRITICAL / a review may never approve it at all; the Owner decides". Horizon does not
+file it: a CRITICAL change is never approved by a review, so filing one would put a record into the queue
+that the mechanism Horizon has cannot resolve. The subject is REFUSED and surfaced to the Owner instead —
+which is what the item body already said ("Horizon may not apply a guardrail, a gate, a schema, money,
+faith content or the law domains") and what `FORBIDDEN_SUBJECTS` enforces.
 
 **TWO FENCES THAT ARE NOT OPTIONAL, both measured against the code rather than inferred:**
 

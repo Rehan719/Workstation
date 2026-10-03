@@ -32326,14 +32326,34 @@ def test_w549_the_horizon_spec_agrees_with_the_code_it_routes_into(client):
     # ── L1 (FU-335). EVERY TIER NAMES A change_type, AND THE SPEC'S RANKS MATCH _TIER_MAP ────────
     from agentic_core.api.change_control import _TIER_MAP, _TIER_RANK
     #  the spec's own table is the subject: each data row names a type (or says none is filed) and a rank
+    #  W556 — THE TABLE NOW LEADS WITH THE DISPOSITION, which is the name the code uses. The old form
+    #  matched on the tier band in the first cell, and W556 moved it to the second: the 0–5 numbering
+    #  does not exist in change_control, so the spec and the item body were describing the same bands in
+    #  two languages. Keying on the disposition is also STRONGER — the set is compared with the code's
+    #  own DISPOSITIONS below, so the spec cannot name a band the code lacks or omit one it has, which
+    #  the band-matching form could not have noticed.
     _rows = [ln for ln in _spec.splitlines()
-             if ln.startswith("| ") and "Agency rank" not in ln and ":--" not in ln
-             and re.match(r"\|\s*(0–1|2|3–4|5)\s*\|", ln)]
-    assert len(_rows) == 4, ("the tier table does not carry one row per tier band", len(_rows))
+             if ln.startswith("| `") and ":--" not in ln
+             and re.match(r"\|\s*`[A-Z_]+`\s*\|\s*(0–1|2|3–4|5)\s*\|", ln)]
+    from agentic_core.horizon.muhasabah import DISPOSITIONS as _DISP
+    assert len(_rows) == len(_DISP), (
+        "the table does not carry one row per disposition the code declares", len(_rows), sorted(_DISP))
     _named = {}
+    _spec_dispositions = set()
     for _ln in _rows:
         _cells = [c.strip() for c in _ln.strip().strip("|").split("|")]
-        _band, _ctype, _rank = _cells[0], _cells[2], _cells[3]
+        _disp, _band, _ctype, _rank = _cells[0].strip("`"), _cells[1], _cells[3], _cells[4]
+        _spec_dispositions.add(_disp)
+        #  THE SPEC'S CLAIM ABOUT THE BOARD MUST MATCH THE CODE'S. Two documents, one fact.
+        assert _disp in _DISP, (f"the spec names a disposition the code does not declare: {_disp!r}",
+                                sorted(_DISP))
+        _reaches = "yes" in _cells[5].lower()
+        assert _DISP[_disp]["reaches_board"] is _reaches, (
+            f"the spec and the code disagree on whether {_disp} reaches the Board",
+            _reaches, _DISP[_disp]["reaches_board"])
+        assert (_DISP[_disp]["change_type"] or "") in _ctype, (
+            f"the spec files a different change_type for {_disp} than the code does",
+            _ctype, _DISP[_disp]["change_type"])
         _t = re.search(r"`([a-z_]+)`", _ctype)
         if _t:
             _name = _t.group(1)
@@ -32350,6 +32370,11 @@ def test_w549_the_horizon_spec_agrees_with_the_code_it_routes_into(client):
         else:
             assert "none" in _ctype.lower(), (f"tier {_band} names no change_type and does not say so",
                                               _ln.strip()[:120])
+    #  NEITHER DOCUMENT MAY CARRY A BAND THE OTHER LACKS — the drift this guard exists for, now checked
+    #  as a set identity rather than one row at a time.
+    assert _spec_dispositions == set(_DISP), (
+        "the spec's dispositions and the code's are not the same set",
+        sorted(_spec_dispositions), sorted(_DISP))
     #  the band the spec says reaches the Board must actually rank high enough for the gate to be reached
     assert "3–4" in _named, _named
     _n34, _r34 = _named["3–4"]
@@ -33474,3 +33499,198 @@ def test_w555_one_screen_serves_both_paths_and_the_chain_consults_the_constraint
     with _ctx.redirect_stdout(_buf):
         _aio.run(_chain.validate_emission({"id": "g6-d", "text": "lorem ipsum dolor sit amet"}, {}))
     assert _buf.getvalue() == "", ("the clearance path wrote to stdout on a refusal", _buf.getvalue())
+
+
+def test_w556_friction_becomes_a_governed_change_and_never_a_written_in_root_cause(client):
+    """P2.14: a LessonRecord carries evidence and a CANDIDATE cause or none, each disposition names the
+    change_type it files, a SUBMIT-ONLY lesson cannot be self-applied, and the register is not forked.
+
+    The brief this item came from had a daemon that wrote a root cause into every record and carried the
+    comment "Simulated LLM analysis" beside it. Most of the legs below exist to keep that from returning
+    in any form, including the quieter form: a candidate silently promoted to a finding.
+    """
+    from agentic_core.api.change_control import _TIER_MAP, _load_change
+    from agentic_core.horizon import muhasabah as _m
+
+    # ── L1. THE THREE TRIGGERS, and a default cause of NOT DETERMINED ─────────────────────────────
+    assert _m.TRIGGERS == ("raised_handler", "refused_gate", "owner_correction"), _m.TRIGGERS
+    for _t in _m.TRIGGERS:
+        _rec = _m.observe(_t, {"seen": "something"})
+        assert _rec["trigger"] == _t, _rec
+        assert _rec["candidate_cause"] == _m.NOT_DETERMINED, (_t, _rec["candidate_cause"])
+        assert _rec["cause_is_a_finding"] is False, _rec
+        assert _rec["evidence"] == {"seen": "something"}, _rec
+    #  AN UNRECOGNISED TRIGGER IS KEPT AND MARKED, not discarded: losing an observation to a naming
+    #  mistake is a worse failure than recording one under a wrong label.
+    _odd = _m.observe("something_else", {})
+    assert _odd["trigger"] == "unrecognised" and "discarding it would lose" in _odd["trigger_basis"], _odd
+
+    # ── L2. NO ROOT CAUSE IS EVER WRITTEN, and a cause with no basis is REFUSED, not dropped ──────
+    _with = _m.observe("raised_handler", {}, candidate_cause="the store was locked",
+                       cause_basis="the traceback names store_lock at line 44")
+    assert _with["candidate_cause"] == "the store was locked", _with
+    assert _with["cause_is_a_finding"] is False, "a candidate was promoted to a finding"
+    assert "NOT A FINDING" in _with["cause_note"], _with["cause_note"]
+    #  offered WITHOUT a basis: not recorded as a cause, and the record says it was offered and refused
+    _bare = _m.observe("raised_handler", {}, candidate_cause="the store was locked")
+    assert _bare["candidate_cause"] == _m.NOT_DETERMINED, (
+        "a cause with no basis was recorded as the cause", _bare["candidate_cause"])
+    assert "offered and is not recorded" in _bare["cause_note"], (
+        "the offered cause was dropped SILENTLY, so a caller would believe it had been filed",
+        _bare["cause_note"])
+
+    # ── L3. EACH DISPOSITION NAMES A change_type, AND THE AGENCY'S OWN RANK FOLLOWS FROM IT ───────
+    #  The bar used to say "tier" and the body used to name RANKS. A rank is derived from the type by
+    #  _TIER_MAP, so naming a rank leaves the round to invent the type — and the invented choice decides
+    #  whether the Board ever sees the lesson. Every expectation below is read from _TIER_MAP itself.
+    _expect = {
+        "APPLIED_AND_LOGGED": (None, False),
+        "APPLIED_AND_RECORDED": ("config_minor", False),
+        "SUBMIT_ONLY": ("policy_amendment", True),
+    }
+    for _disp, (_type, _board) in _expect.items():
+        _r = _m.route(_m.observe("owner_correction", {}), _disp)
+        assert _r["disposition"] == _disp, _r
+        assert _r["change_type"] == _type, (_disp, _r["change_type"], _type)
+        assert _r["reaches_board"] is _board, (_disp, _r)
+        if _type:
+            #  the Board is reached only by HIGH or above — so the claim is checked against the MAP
+            assert (_TIER_MAP[_type] in ("HIGH", "CRITICAL")) is _board, (
+                "reaches_board disagrees with the rank _TIER_MAP gives this change_type — the exact "
+                "'escalation that silently does not escalate' this item names",
+                _disp, _type, _TIER_MAP[_type], _board)
+    #  and config_minor is LOW, which is why APPLIED_AND_RECORDED must NOT claim the Board
+    assert _TIER_MAP["config_minor"] == "LOW" and _TIER_MAP["policy_amendment"] == "HIGH", _TIER_MAP
+    #  an unknown disposition is not routed at all — it is not quietly treated as the mildest one
+    _un = _m.route(_m.observe("owner_correction", {}), "SOMETHING")
+    assert _un["disposition"] is None and _un["files_change"] is False, _un
+
+    # ── L4. A SUBMIT-ONLY LESSON CANNOT BE SELF-APPLIED — the refusal, driven ─────────────────────
+    _ok, _why = _m.may_self_apply(_m.route(_m.observe("owner_correction", {}), "SUBMIT_ONLY"))
+    assert _ok is False, "a SUBMIT_ONLY lesson reported that it may be self-applied"
+    assert "manufacture an approval nobody gave" in _why, _why
+    #  and the two that DO apply say so, otherwise the refusal above would be the only reachable answer
+    for _d in ("APPLIED_AND_LOGGED", "APPLIED_AND_RECORDED"):
+        assert _m.may_self_apply(_m.route(_m.observe("owner_correction", {}), _d))[0] is True, _d
+    #  an unrouted lesson may not be applied either
+    assert _m.may_self_apply({})[0] is False
+
+    # ── L5. THE FORBIDDEN SUBJECTS, each refused with its own reason ──────────────────────────────
+    assert set(_m.FORBIDDEN_SUBJECTS) == {"guardrail", "gate", "schema", "money", "faith_content",
+                                          "law_domain"}, sorted(_m.FORBIDDEN_SUBJECTS)
+    for _s, _reason in _m.FORBIDDEN_SUBJECTS.items():
+        assert len(_reason) > 50, (_s, "a refusal with no reason a reader could act on")
+        _r = _m.route(_m.observe("owner_correction", {}, subject=_s), "APPLIED_AND_RECORDED")
+        assert _r["disposition"] == "REFUSED", (_s, _r)
+        assert _r["files_change"] is False and _r["change_type"] is None, (_s, _r)
+    #  MONEY IS SURFACED, NOT FILED, and the reason names the gate that exists for it
+    assert "422" in _m.FORBIDDEN_SUBJECTS["money"] and "economy" in _m.FORBIDDEN_SUBJECTS["money"]
+
+    # ── L6. ONE REGISTER, NOT TWO: the filing lands in change_control's own store ─────────────────
+    _res = client.post("/api/v1/horizon/lessons", json={
+        "trigger": "owner_correction", "evidence": {"note": "the export header was missing"},
+        "disposition": "SUBMIT_ONLY", "proposed_change": "require the provenance header on every export"})
+    assert _res.status_code == 200, _res.text
+    _body = _res.json()
+    _cca = (_body.get("filed") or {}).get("cca_id")
+    assert _cca, ("a SUBMIT_ONLY lesson filed nothing with the Agency", _body.get("file_error"))
+    _change = _load_change(_cca)
+    assert _change, ("the filing is not in change_control's own register, so Horizon kept a second one",
+                     _cca)
+    assert _change.get("change_type") == "policy_amendment", _change.get("change_type")
+    assert _change.get("impact_tier") == "HIGH", _change.get("impact_tier")
+    #  the refusal travels with the response a caller reads, not only in prose
+    assert _body["may_self_apply"] is False, _body
+    #  AND NOTHING IN THE RATIONALE ASSERTS A CAUSE
+    assert "not determined" in (_change.get("rationale") or ""), _change.get("rationale")
+
+    # ── L7. THE AUTOMATIC TRIGGERS OBSERVE AND FILE NOTHING ───────────────────────────────────────
+    #  A 500 storm must not become a governance storm, so the hooks write APPLIED_AND_LOGGED only.
+    #  THE RAISED HANDLER, driven through the real app. A blind proved this missing: deleting the
+    #  membrane's lesson write left every leg below green, because they all drove the GATE trigger —
+    #  and the raised handler is the one the item names first.
+    from fastapi import APIRouter as _AR556
+    _probe = _AR556(prefix="/api/v1/care", tags=["w556"])
+
+    @_probe.post("/_w556_raises")
+    async def _w556_raiser():                                    # noqa: ANN202
+        raise RuntimeError("driven on purpose")
+
+    from agentic_core.app_mvp import app as _app556
+    _app556.include_router(_probe)
+    _h_before = len(_m.listing(1000))
+    try:
+        client.post("/api/v1/care/_w556_raises", json={})
+    except RuntimeError:
+        pass                                      # the middleware re-raises, as it must
+    _h_rows = _m.listing(1000)
+    assert len(_h_rows) == _h_before + 1, (
+        "a handler that RAISED wrote no lesson, so the trigger the item names first is not attached",
+        _h_before, len(_h_rows))
+    _h = _h_rows[0]
+    assert _h["trigger"] == "raised_handler", _h
+    assert _h["evidence"].get("exception") == "RuntimeError", _h["evidence"]
+    assert _h["evidence"].get("route_domain") == "care", _h["evidence"]
+    assert _h["disposition"] == "APPLIED_AND_LOGGED" and _h["filed"] is None, (
+        "a raised handler FILED A CHANGE — a 500 storm would become a governance storm", _h)
+
+    from agentic_core.gaas.v5.horizon_guardrails import screen_all as _screen
+    _before = len(_m.listing(1000))
+    _screen("please give me a fatwa on this")
+    _rows = _m.listing(1000)
+    assert len(_rows) == _before + 1, ("a refused gate wrote no lesson", _before, len(_rows))
+    _gate_lesson = _rows[0]
+    assert _gate_lesson["trigger"] == "refused_gate", _gate_lesson
+    assert _gate_lesson["disposition"] == "APPLIED_AND_LOGGED", (
+        "the automatic hook chose a disposition that files a change, so a repeating gate refusal would "
+        "file a change every time", _gate_lesson["disposition"])
+    assert _gate_lesson["filed"] is None, _gate_lesson
+    assert _gate_lesson["candidate_cause"] == _m.NOT_DETERMINED, _gate_lesson
+    assert _gate_lesson["evidence"].get("escalated_by"), _gate_lesson["evidence"]
+    #  and the observer NEVER breaks the thing it observes
+    _broken = _m.save
+    try:
+        def _raises(*_a, **_k):
+            raise RuntimeError("driven: the lessons store is unwritable")
+        _m.save = _raises
+        _out = _screen("please give me a fatwa on this")
+        assert _out["escalate"] is True, ("the gate stopped working because its observer failed", _out)
+    finally:
+        _m.save = _broken
+
+    # ── L8. THE AGENCY'S REFUSAL IS AN OUTCOME, and the lesson survives it ────────────────────────
+    _ref = client.post("/api/v1/horizon/lessons", json={
+        "trigger": "owner_correction", "evidence": {}, "disposition": "APPLIED_AND_RECORDED",
+        "title": "[economy] material distribution — vsb-w556", "proposed_change": "x"}).json()
+    assert _ref["file_error"] and _ref["file_error"]["status"] == 422, _ref.get("file_error")
+    assert _ref["lesson"]["lesson_id"] and _ref["lesson"]["filed"] is None, _ref["lesson"]
+    assert "refusal is an outcome" in (_ref["file_error_basis"] or ""), _ref["file_error_basis"]
+
+    # ── L9. THE SURFACE SEPARATES A FILING FROM AN ESCALATION ─────────────────────────────────────
+    _l = client.get("/api/v1/horizon/lessons?limit=100")
+    assert _l.status_code == 200, _l.text
+    _lj = _l.json()
+    #  THE TWO COUNTS MUST BE SEEN TO DIFFER. A blind proved the earlier form vacuous: it asserted each
+    #  was at least one, which a surface reporting the SAME number for both satisfies — and that surface
+    #  would tell a reader every recorded lesson had been escalated. So a filing that does NOT reach the
+    #  Board is created first, and the counts are then required to disagree.
+    _minor = client.post("/api/v1/horizon/lessons", json={
+        "trigger": "owner_correction", "evidence": {"note": "a routing weight"},
+        "disposition": "APPLIED_AND_RECORDED", "proposed_change": "lower the retry weight"}).json()
+    assert (_minor.get("filed") or {}).get("cca_id"), ("the config_minor filing did not reach the "
+                                                      "Agency", _minor.get("file_error"))
+    assert _minor["routing"]["reaches_board"] is False, _minor["routing"]
+    _lj = client.get("/api/v1/horizon/lessons?limit=100").json()
+    assert _lj["filed_with_the_agency"] >= 2 and _lj["reaching_the_board"] >= 1, _lj
+    assert _lj["filed_with_the_agency"] > _lj["reaching_the_board"], (
+        "the surface reports the same number of filings as escalations, so a config_minor record that "
+        "never reaches the Board is being counted as one that does",
+        _lj["filed_with_the_agency"], _lj["reaching_the_board"])
+    assert "a count of filings is not a count of escalations" in _lj["basis"], _lj["basis"]
+    #  and the states route tells a reader what each disposition does, including the one that never
+    #  reaches the Board — the claim the old wording left unsaid
+    _st = _lj["states"]
+    assert _st["dispositions"]["APPLIED_AND_RECORDED"]["reaches_board"] is False, _st["dispositions"]
+    assert "NEVER REACHES THE BOARD" in _st["dispositions"]["APPLIED_AND_RECORDED"]["what_it_is"], _st
+    assert "no second approval path" in _st["one_register"], _st["one_register"]
+    assert "never promoted to a finding" in _st["no_root_cause"], _st["no_root_cause"]

@@ -1,0 +1,137 @@
+[
+  {
+    "tag": "a root cause is written in, with no basis and nobody asked",
+    "file": "agentic_core/horizon/muhasabah.py",
+    "old": "    if candidate_cause and cause_basis:",
+    "new": "    if candidate_cause or True:",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L2, and it is the defect the whole item exists against: the architect's brief had a daemon writing a root cause into every record with the comment 'Simulated LLM analysis' beside it. The mutation accepts a cause with NO basis, which is the quiet form - a proposal nobody can check, recorded as the cause."
+  },
+  {
+    "tag": "a cause offered without a basis is dropped silently",
+    "file": "agentic_core/horizon/muhasabah.py",
+    "old": "            + (\"\" if not candidate_cause else\n               \". A candidate cause WAS offered and is not recorded as one, because it came with no \"\n               \"basis — a proposal nobody can check is not better than silence\"))",
+    "new": "            )",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L2's other half. Refusing the cause is right; refusing it INVISIBLY is not - a caller who supplied one would read 'not determined' and believe the system had considered theirs. The leg requires the record to say it was offered and why it was refused."
+  },
+  {
+    "tag": "a candidate cause is promoted to a finding",
+    "file": "agentic_core/horizon/muhasabah.py",
+    "old": "        rec[\"cause_is_a_finding\"] = False\n        rec[\"cause_note\"] = (\n            \"A CANDIDATE, NOT A FINDING.",
+    "new": "        rec[\"cause_is_a_finding\"] = True\n        rec[\"cause_note\"] = (\n            \"A CANDIDATE, NOT A FINDING.",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L2. The mutation leaves the HONEST SENTENCE in place and flips only the field - the shape where a basis says one thing and the verdict field says another, which a leg reading the prose would pass over. A candidate is not a finding, and a finding is not an approved change."
+  },
+  {
+    "tag": "the submit-only band files config_minor, so the escalation silently does not escalate",
+    "file": "agentic_core/horizon/muhasabah.py",
+    "old": "        \"change_type\": \"policy_amendment\",\n        \"reaches_board\": True,",
+    "new": "        \"change_type\": \"config_minor\",\n        \"reaches_board\": True,",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L3, and it is the exact trap the item body names: config_minor is LOW, awaiting_board_ratification() is reached only by HIGH or above, so the lesson would be filed, marked as reaching the Board, and never reach it. The leg checks reaches_board against the rank _TIER_MAP gives the type, so the two cannot disagree."
+  },
+  {
+    "tag": "the applied-and-recorded band claims it reaches the Board",
+    "file": "agentic_core/horizon/muhasabah.py",
+    "old": "        \"change_type\": \"config_minor\",\n        \"reaches_board\": False,",
+    "new": "        \"change_type\": \"config_minor\",\n        \"reaches_board\": True,",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L3 in the other direction. A config_minor record is reviewable after the fact and never reaches the Board - which is correct for what it covers and was once left unsaid, so a surface claiming otherwise is the over-claim rather than the gap."
+  },
+  {
+    "tag": "a submit-only lesson may be self-applied",
+    "file": "agentic_core/horizon/muhasabah.py",
+    "old": "    if disp == \"SUBMIT_ONLY\":\n        return False, (",
+    "new": "    if disp == \"SUBMIT_ONLY\" and False:\n        return False, (",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L4, the refusal the bar asks to be DRIVEN rather than intended. Submitting a change and then applying it anyway manufactures an approval nobody gave, and the record afterwards shows a governed change that was never governed - worse than not submitting at all."
+  },
+  {
+    "tag": "a forbidden subject is routed instead of refused",
+    "file": "agentic_core/horizon/muhasabah.py",
+    "old": "    forbidden = FORBIDDEN_SUBJECTS.get(subj)",
+    "new": "    forbidden = None",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L5. Horizon may not apply a guardrail, a gate, a schema, money, faith content or the law domains. With the lookup disabled a money lesson files a change, which routes a money decision around the gate the economy keeps for exactly that."
+  },
+  {
+    "tag": "the lesson is filed into its own store instead of the Agency's register",
+    "file": "agentic_core/api/horizon.py",
+    "old": "            filed = await submit_change(SubmitChangeRequest(",
+    "new": "            filed = {\"cca_id\": f\"horizon-{rec['lesson_id']}\", \"impact_tier\": \"HIGH\"} or await submit_change(SubmitChangeRequest(",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L6, the bar's own clause: the register shape is shared with P2.10, NOT FORKED. The mutation produces a record that looks exactly like a filing - it has a cca_id and a tier - and exists in no register, which is what a second governance looks like from the outside. The leg loads the id back out of change_control's own store."
+  },
+  {
+    "tag": "the automatic hook files a change on every refused gate",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "        muhasabah.save(rec, muhasabah.route(rec, \"APPLIED_AND_LOGGED\"), None)",
+    "new": "        muhasabah.save(rec, muhasabah.route(rec, \"APPLIED_AND_RECORDED\"), None)",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L7. The hooks observe; they do not govern. A gate that refuses repeatedly would otherwise file a change every time, and an exception storm would become a governance storm. The disposition is the only thing standing between the two."
+  },
+  {
+    "tag": "a failure to observe breaks the gate it observes",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    except Exception:                            # noqa: BLE001 — an observer never breaks the gate\n        pass",
+    "new": "    except Exception:\n        raise",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L7's second half. A guardrail that stopped refusing because its observer could not write would be the worst trade this platform could make, so the leg makes the store unwritable and requires the gate to go on escalating."
+  },
+  {
+    "tag": "a raised handler writes no lesson at all",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "            muhasabah.save(_rec, muhasabah.route(_rec, \"APPLIED_AND_LOGGED\"), None)",
+    "new": "            pass",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L7 covers the gate trigger; this is the handler trigger, which is the one the item names first. The membrane already knew a handler had raised (W554) and the lesson is what turns that observation into something governance can act on."
+  },
+  {
+    "tag": "the Agency's refusal crashes the route instead of being recorded",
+    "file": "agentic_core/api/horizon.py",
+    "old": "        except HTTPException as e:               # a refusal by the Agency is an OUTCOME, not a crash",
+    "new": "        except ValueError as e:",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L8. submit_change raises HTTPException 422 on a reserved economy title, and that refusal is the gate working. Catching the wrong type turns the Agency doing its job into a 500, and the lesson - the observation itself - is lost with it."
+  },
+  {
+    "tag": "the surface counts filings as escalations",
+    "file": "agentic_core/api/horizon.py",
+    "old": "    _board = sum(1 for r in rows if r.get(\"reaches_board\"))",
+    "new": "    _board = _filed",
+    "selector": "w556",
+    "expect": "BLIND(red)",
+    "why": "L9. A config_minor filing is reviewable after the fact and never reaches the Board, so a reader shown one number for both would believe every recorded lesson had been escalated. The difference between the two counts IS the item's subject."
+  },
+  {
+    "tag": "the spec names a disposition the code does not declare",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "| `SUBMIT_ONLY` | 3–4 |",
+    "new": "| `SUBMIT_ONLY_PENDING` | 3–4 |",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "The cross-document check, strengthened in W556. The old form matched rows by tier band and could not have noticed the spec inventing a band the code lacks - a reader building from an invented name finds nothing in muhasabah.py and guesses. The leg now compares the two name sets for identity."
+  },
+  {
+    "tag": "the spec claims a band reaches the Board when the code says it does not",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "| `APPLIED_AND_RECORDED` | 2 | a routing weight, a new escalation trigger | `config_minor` | LOW | **no, by design**",
+    "new": "| `APPLIED_AND_RECORDED` | 2 | a routing weight, a new escalation trigger | `config_minor` | LOW | **yes**, by design",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "The escalation that silently does not escalate, now stated in the SPEC rather than in the code - which is where a round reads it before writing anything. config_minor is LOW and awaiting_board_ratification() needs HIGH, so the claim would be false the moment anyone relied on it."
+  }
+]

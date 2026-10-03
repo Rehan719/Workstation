@@ -181,10 +181,37 @@ def clinical_care_gate(text: Any) -> Dict[str, Any]:
 GATES = (religious_ruling_gate, theological_proof_gate, clinical_care_gate)
 
 
+def _record_refused_gate(escalated_by: List[str], results: List[Dict[str, Any]]) -> None:
+    """W556 (P2.14) — a REFUSED GATE is one of the three triggers that writes a LessonRecord.
+
+    OBSERVATION ONLY, and that is a design decision rather than a limitation. The lesson is written with
+    disposition APPLIED_AND_LOGGED, so NO CHANGE IS FILED: a gate that refuses many times in a row would
+    otherwise file many changes, and an exception storm must not become a governance storm. Filing is a
+    deliberate act someone takes afterwards, through POST /api/v1/horizon/lessons, which is the same
+    separation the module keeps everywhere — an observation is not a finding and a finding is not an
+    approved change.
+
+    It never raises into the screen. A gate that failed because its observer failed would be the worst
+    possible trade.
+    """
+    try:
+        from agentic_core.horizon import muhasabah
+        rec = muhasabah.observe(
+            "refused_gate",
+            {"escalated_by": list(escalated_by),
+             "gates": {r["gate"]: r.get("verdict") for r in results}},
+            subject=None)
+        muhasabah.save(rec, muhasabah.route(rec, "APPLIED_AND_LOGGED"), None)
+    except Exception:                            # noqa: BLE001 — an observer never breaks the gate
+        pass
+
+
 def screen_all(text: Any) -> Dict[str, Any]:
     """Every gate, with the aggregate escalation and what none of them looked at."""
     results = [g(text) for g in GATES]
     _esc = [r["gate"] for r in results if r["escalate"]]
+    if _esc:
+        _record_refused_gate(_esc, results)
     return {
         "gates": {r["gate"]: r for r in results},
         "escalate": bool(_esc),
