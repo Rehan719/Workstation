@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "an unconfirmed ticket counts as resolved",
+    "file": "agentic_core/support/tickets.py",
+    "old": "    resolved = sum(1 for r in rows if r.get(\"confirmed\") is True)",
+    "new": "    resolved = sum(1 for r in rows if r.get(\"confirmed\") is not False)",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "THE DEFECT THIS ITEM EXISTS FOR. The archived agent had ONE boolean for answered and resolved, which is how an answer became a resolution. Counting an unconfirmed ticket as resolved invents the user's verdict."
+  },
+  {
+    "tag": "the rate reports 0.0 instead of refusing when nothing is confirmed",
+    "file": "agentic_core/support/tickets.py",
+    "old": "        \"rate\": (round(resolved / denom, 4) if denom else None),",
+    "new": "        \"rate\": (round(resolved / denom, 4) if denom else 0.0),",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "0.0 reads as 'we resolve nothing' and 1.0 as the archived monitor's 100%. With no denominator there is no rate, and saying so is the only honest answer."
+  },
+  {
+    "tag": "answering a ticket also resolves it",
+    "file": "agentic_core/support/tickets.py",
+    "old": "            r[\"answered_at\"] = time.time()",
+    "new": "            r[\"answered_at\"] = time.time()\n            r[\"confirmed\"] = True",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "The single most important separation in the package: a confirmation is the only writer of resolved, and nothing on this platform confirms a resolution on a user's behalf."
+  },
+  {
+    "tag": "a failed call counts as an answer",
+    "file": "agentic_core/support/tickets.py",
+    "old": "    answered = sum(1 for r in rows if (r.get(\"answer\") or {}).get(\"text\") is not None\n                   and not (r.get(\"answer\") or {}).get(\"failed\"))",
+    "new": "    answered = sum(1 for r in rows if r.get(\"answer\") is not None)",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "A call that failed and a call that answered are different facts. The archived agent returned a formatted string whatever happened, which is exactly why its success field could be a literal."
+  },
+  {
+    "tag": "the answer route sleeps to imitate a tier-shaped latency",
+    "file": "agentic_core/api/support.py",
+    "old": "    started = time.monotonic()",
+    "new": "    import asyncio as _a\n    await _a.sleep(0.1 if req.tier == 'advanced' else 0.5)\n    started = time.monotonic()",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "This is the archived agent's own mechanism, restored: it slept 0.1s for an advanced tier and 0.5s otherwise, which made its latency figures look plausible while measuring nothing."
+  },
+  {
+    "tag": "the route reports a confidence nothing computes",
+    "file": "agentic_core/api/support.py",
+    "old": "        \"escalated\": failed,",
+    "new": "        \"escalated\": failed,\n        \"confidence\": 0.96,",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "0.96 is the archived agent's own figure. Nothing in this package computes a confidence, so producing the key at all is the claim."
+  },
+  {
+    "tag": "the route resolves a ticket by answering it",
+    "file": "agentic_core/api/support.py",
+    "old": "        \"resolved\": None,",
+    "new": "        \"resolved\": not failed,",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "The route is the surface a user meets, so this is where the answered/resolved collapse would actually mislead someone. The bar requires resolving to come from a confirmation only."
+  },
+  {
+    "tag": "the SLA view stops saying how it differs from the archived monitor",
+    "file": "agentic_core/api/support.py",
+    "old": "                   \"the difference between this figure and the archived monitor's 100%: that one divided \"\n                   \"over tickets it had invented, against a success field that was an unconditional literal\")",
+    "new": "                   \"a resolution rate\")",
+    "selector": "w541",
+    "expect": "BLIND(red)",
+    "why": "A rate served without its method is a number a reader must trust. The archived monitor's 100% was arithmetically sound over invented inputs, so the method is the only thing that distinguishes this figure from that one."
+  }
+]

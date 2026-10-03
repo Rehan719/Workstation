@@ -30729,3 +30729,135 @@ def test_w539_the_pass_set_comparator_can_say_different_and_incomplete():
     #  and the figures in the bar must be the ones actually measured, not rounded into a claim
     assert "52m52s" in _prompt and "9m47s" in _prompt, "the proof's own timings are not recorded"
     assert "539 node ids" in _prompt, "the bar does not say how many nodes the comparison covered"
+
+
+def test_w541_support_answers_carry_provenance_and_nothing_resolves_itself(client):
+    """P3.18 Round A — the archived support simulation's shape recovered without its claims.
+
+    What is being refused: _archive/agentic_core/support/ slept a tier-shaped latency, returned
+    "Simulated resolution for query: {query}" with a confidence of 0.96 and success=True unconditionally, and
+    an archived sla_monitor divided over tickets it had INVENTED against that literal to compute 100%. Every
+    step of that division is real arithmetic, which is why the leg that matters is not "the rate is right" but
+    "the rate cannot exist without a confirmation".
+    """
+    import ast
+    import asyncio as _aio
+    import os as _os
+    from pathlib import Path as _P
+
+    _root = _P(__file__).resolve().parents[1]
+    from agentic_core.support import tickets as T
+
+    # ── 1. A RATE CANNOT BE PRODUCED WITHOUT A CONFIRMATION ────────────────────────────────────
+    #  Three states, and the middle one is what the simulation collapsed: answered is not resolved.
+    r0 = T.rate()
+    assert r0["rate"] is None, ("a rate was reported with nothing confirmed", r0)
+    assert "NOT COMPUTED" in r0["basis"], r0["basis"]
+    #  and the basis must say what it is NOT, because 0.0 and 1.0 are the two tempting wrong answers
+    assert "not 0.0" in r0["basis"] and "not 1.0" in r0["basis"], r0["basis"]
+
+    t = T.create_ticket("w541-user", "my build fails with a lock timeout", "standard")
+    assert t["confirmed"] is None, t
+    T.record_answer(t["id"], "clear the lock file", served_by="native", is_external=False,
+                    failed=False, latency_ms=123.4, next_step="reply if it still fails")
+    r1 = T.rate()
+    assert r1["rate"] is None, ("an ANSWER produced a resolution rate", r1)
+    assert r1["answered"] == 1 and r1["unconfirmed"] == 1, r1
+    assert "an answer alone" in r1["basis"] or "different thing from a resolution" in r1["basis"], r1["basis"]
+
+    # ── 2. ONLY A CONFIRMATION WRITES `resolved`, and it must name its source ──────────────────
+    rec = T.confirm(t["id"], True, by="user:w541-user")
+    assert rec["confirmed"] is True and rec["confirmed_by"] == "user:w541-user", rec
+    r2 = T.rate()
+    assert r2["rate"] == 1.0 and r2["confirmed_resolved"] == 1, r2
+    #  a confirmation is True or False; "nobody has said" is not a third value you may PASS
+    try:
+        T.confirm(t["id"], None, by="x")
+        raise AssertionError("confirming with None was accepted, so absence can be written as a verdict")
+    except TypeError:
+        pass
+
+    # ── 3. UNCONFIRMED IS EXCLUDED FROM BOTH SIDES, not counted as a win ───────────────────────
+    t2 = T.create_ticket("w541-user", "second problem")
+    T.record_answer(t2["id"], "try the other thing", served_by="native", is_external=False,
+                    failed=False, latency_ms=99.9, next_step="reply if it still fails")
+    r3 = T.rate()
+    assert r3["rate"] == 1.0, ("an unconfirmed ticket changed the rate", r3)
+    assert r3["unconfirmed"] == 1, r3
+    T.confirm(t2["id"], False, by="user:w541-user")
+    r4 = T.rate()
+    assert r4["rate"] == 0.5, ("a confirmed failure did not enter the denominator", r4)
+
+    # ── 4. A FAILED CALL IS NOT AN ANSWER, and it escalates with a next step ───────────────────
+    t3 = T.create_ticket("w541-user", "third problem")
+    T.record_answer(t3["id"], "", served_by=None, is_external=False, failed=True,
+                    latency_ms=30000.0, next_step="escalated: a human reviewer picks this up")
+    r5 = T.rate()
+    assert r5["answered"] == 2, ("a failed call counted as an answer", r5["answered"])
+    _rec3 = T.get(t3["id"])
+    assert _rec3["answer"]["failed"] is True, _rec3
+    assert "THE CALL FAILED" in _rec3["answer"]["provenance_basis"], _rec3["answer"]["provenance_basis"]
+    assert (_rec3["next_step"] or "").strip(), "an unresolved ticket carries no next step"
+
+    # ── 5. NOTHING SLEEPS TO IMITATE WORK ──────────────────────────────────────────────────────
+    #  The archived agent's tier difference WAS a sleep (0.1s vs 0.5s), which is how its latency looked
+    #  plausible. Asserted on the AST of the whole package, not on a word search.
+    for _f in sorted((_root / "agentic_core/support").rglob("*.py")):
+        _tree = ast.parse(_f.read_text(encoding="utf-8"))
+        for _n in ast.walk(_tree):
+            if isinstance(_n, ast.Call):
+                _src = ast.unparse(_n.func)
+                assert not _src.endswith("sleep"), (
+                    f"{_f.name}:{_n.lineno} sleeps, which is how the archived agent imitated work")
+    _api_src = (_root / "agentic_core/api/support.py").read_text(encoding="utf-8")
+    _api_tree = ast.parse(_api_src)
+    for _n in ast.walk(_api_tree):
+        if isinstance(_n, ast.Call) and ast.unparse(_n.func).endswith("sleep"):
+            raise AssertionError(f"api/support.py:{_n.lineno} sleeps")
+
+    # ── 6. NO CONFIDENCE FLOAT, AND NO SECOND GOVERNANCE PATH ──────────────────────────────────
+    #  The archive reported a confidence of 0.96 that nothing computed; the item's body forbids a second
+    #  governance path, so an approval or gate field invented here would be exactly what it names.
+    #  Forbidden as a PRODUCED KEY, on the AST, not as a word: this module's own docstring explains that the
+    #  archive reported one and that nothing here does, so a word search forbids the explanation along with
+    #  the defect. That is the banned-literal trap, and it has cost six red runs across this programme.
+    for _d in [n for n in ast.walk(_api_tree) if isinstance(_d_t := n, ast.Dict)]:
+        for _k in _d.keys:
+            if isinstance(_k, ast.Constant) and isinstance(_k.value, str):
+                assert "confidence" not in _k.value.lower(), (
+                    f"api/support.py:{_d.lineno} produces a {_k.value!r} key; nothing computes a confidence "
+                    f"here and the archive's 0.96 was a literal")
+    for _word in ("def approve", "approved=True", '"approved": True', "gate_passed"):
+        assert _word not in _api_src, (f"api/support.py invents its own governance ({_word}); the item's body "
+                                       f"routes support logic changes through the existing Change Control "
+                                       f"Agency and forbids a second path")
+
+    # ── 7. THE ARCHIVED SIMULATION IS NOT IMPORTED by anything live ────────────────────────────
+    for _f in sorted((_root / "agentic_core").rglob("*.py")):
+        _txt = _f.read_text(encoding="utf-8")
+        assert "autonomous_support_agent" not in _txt, (f"{_f} imports the archived simulation")
+        assert "Simulated resolution for query" not in _txt, (f"{_f} carries the archived marker string")
+
+    # ── 8. AND THE ROUTES SERVE IT — the item is reached, not a library nobody calls ────────────
+    a = client.post("/api/v1/support/ask", json={"query": "w541 probe: a lock timeout on build"})
+    assert a.status_code == 200, (a.status_code, a.text[:200])
+    d = a.json()
+    assert d["resolved"] is None, ("the route resolved a ticket by answering it", d["resolved"])
+    assert "only from a confirmation" in d["resolved_basis"], d["resolved_basis"]
+    assert (d["next_step"] or "").strip(), d
+    _p = d["provenance"]
+    assert "served_by" in _p and "failed" in _p and "latency_ms" in _p, _p
+    assert isinstance(_p["latency_ms"], float) and _p["latency_ms"] >= 0.0, _p
+    assert "measured, not simulated" in _p["provenance_basis"], _p["provenance_basis"]
+    #  an answer that failed is returned as ABSENT, not as an empty string a page would render as blank
+    if d["answered"] is False:
+        assert d["answer"] is None and d["escalated"] is True, d
+
+    sla = client.get("/api/v1/support/sla")
+    assert sla.status_code == 200, sla.status_code
+    _s = sla.json()
+    assert _s["simulated"] is False, _s
+    assert "invented" in _s["method"], ("the SLA view does not say how it differs from the archived "
+                                        "monitor's 100%", _s["method"])
+    #  and whatever the rate is, it was computed over confirmations: the denominator is reported
+    assert _s["confirmed_resolved"] is not None and _s["confirmed_unresolved"] is not None, _s

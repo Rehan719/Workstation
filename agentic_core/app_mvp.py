@@ -384,6 +384,13 @@ app.include_router(native_ai_api.router)
 from agentic_core.api import vbs_systems as vbs_systems_api
 app.include_router(vbs_systems_api.router)
 
+# P3.18 — autonomous technical support, told truthfully. The archived version of this surface
+# slept a tier-shaped latency and returned a formatted 'Simulated resolution' with success=True
+# always; this one records what served each answer, never resolves itself, and reports a rate
+# only over confirmations.
+from agentic_core.api import support as support_api
+app.include_router(support_api.router)
+
 from agentic_core.api import ueg as ueg_api
 app.include_router(ueg_api.router)
 
