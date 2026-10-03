@@ -5157,10 +5157,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "",
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-299",
@@ -5435,12 +5436,13 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 2,
-      "reach": "internal"
+      "reach": "internal",
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-314",
@@ -5497,12 +5499,13 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 2,
-      "reach": "core"
+      "reach": "core",
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-317",
@@ -5535,11 +5538,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "FU-160 rides P2.4 and this is the surface half of the same question, found by the pre-flight while fixing it",
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
       "tier": 3,
       "reach": "secondary"
     },
@@ -5629,11 +5632,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 1
+      "tier": 1,
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-324",
@@ -5828,11 +5832,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "a sibling-returns defect on a reached CEO surface; P2.4 is the scatter that carries this class (FU-323 is the same shape)",
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
       "tier": 3
     },
     {
@@ -6159,11 +6163,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-353",
@@ -6177,11 +6182,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-354",
@@ -6230,11 +6236,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-357",
@@ -6285,11 +6292,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
     },
     {
       "id": "FU-360",
@@ -6397,11 +6405,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "integration_tests/ and scripts/ are P2.4's route 15 (suite hygiene and the register's own tooling)",
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
       "tier": 2
     },
     {
@@ -6473,11 +6481,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.4",
+      "slot": "P2.18",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "agentic_core/api/intelligence.py is P2.4's route 13 (the scatter: exact files no other route owns)",
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it; its subject is an absence that reads as a fact",
       "tier": 2
     }
   ],

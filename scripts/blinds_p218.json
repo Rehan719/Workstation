@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "P2.18 is placed after the next PHASE heading and parses as P3 work",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": " P2.18 [Owner ruling 2026-10-03, chartered out of P2.4 whose bar covered 2 of its 17 open rows] AN ABSENCE THAT READS AS A FACT, AND THE INSTRUMENTS THAT WOULD CATCH ONE.\n",
+    "new": "",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L1, and both halves of this were REAL on the first attempt. A phase comes from the running PHASE heading and never from the slot number, so an item placed one line too late is P3 work wearing a P2 number — and nothing in the file looks wrong. Removing the heading line entirely is the sharpest form: the item's body survives and the parser sees no item at all."
+  },
+  {
+    "tag": "a row the clusters do not name stays on P2.4, so the item refills",
+    "file": "docs/FOLLOWUPS.json",
+    "old": "\n        \"agentic_core/config.py\"\n      ],\n      \"severity\": \"medium\",\n      \"owner_gated\": false,\n      \"slot\": \"P2.18\"",
+    "new": "\n        \"agentic_core/config.py\"\n      ],\n      \"severity\": \"medium\",\n      \"owner_gated\": false,\n      \"slot\": \"P2.4\"",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L2 — the whole point of the ruling. P2.4's bar covers 2 of 17 open rows and every arrival that stays makes that worse; the leg asserts each remaining row is either named in a cluster or one of the three HIGH the Owner held there, so a single arrival drifting back is caught."
+  },
+  {
+    "tag": "a HIGH row the ruling held inside P2.4 leaves it",
+    "file": "docs/FOLLOWUPS.json",
+    "old": "\n        \"products/capital_fund/core/vault.py\"\n      ],\n      \"severity\": \"high\",\n      \"owner_gated\": false,\n      \"slot\": \"P2.4\"",
+    "new": "\n        \"products/capital_fund/core/vault.py\"\n      ],\n      \"severity\": \"high\",\n      \"owner_gated\": false,\n      \"slot\": \"P2.18\"",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L2, the other direction, and it matters more than it looks: FU-346 is one of the two rows that make products/capital_fund IMPOSSIBLE TO IMPORT. The Owner ruled those stay inside P2.4 because cluster (a) is about owning or retiring what is dead, and a module nothing can import is exactly that. Rerouting it would hide a HIGH defect under a newly chartered item."
+  },
+  {
+    "tag": "a moved row carries no reason for having moved",
+    "file": "docs/FOLLOWUPS.json",
+    "old": "\"slot_source\": \"chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it; its subject is an absence that reads as a fact\"",
+    "new": "\"slot_source\": \"\"",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L3. A reslot with no stated reason is how a row ends up somewhere nobody can justify later — and the currency guard exempts a row that carries a slot_source, so an empty one both loses the reason AND changes how the register treats it."
+  },
+  {
+    "tag": "P2.18's bar can be satisfied by closing rows",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "(3) no clause\n      closes on a count of rows — the clause closes when its property holds, and a row left open under a\n      closed clause is named with the reason it was left.",
+    "new": "(3) every row under a clause is closed.",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L4, and it is the exact defect P2.18 was chartered to avoid. P2.4's bar was derived from the rows open when it was written and drifted until it covered 2 of 17; a new item whose clauses close on a row count would repeat that in one round. An item closes on its ACCEPT clause, and zero rows means unexamined."
+  },
+  {
+    "tag": "the new bar lists row ids, so a row cannot be moved without rewriting the bar",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "          most expensive moment in a round. THREE ROWS prompted this: the absent frontend test runner,",
+    "new": "          most expensive moment in a round. (FU-352, FU-359, FU-365.) The absent frontend test runner,",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L4. The register's guard only refuses an id belonging to ANOTHER item, so a bar listing its OWN rows passes it — and this round paid the cost: FU-369 could not be moved out of P2.4 until a sentence naming it was rewritten. A bar of deliverables should not care which rows sit under it today."
+  },
+  {
+    "tag": "the bar does not say where P2.4's routes go, so the sink refills after it closes",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "ALL SEVEN OF P2.4's ROUTES COME HERE WHEN\n      IT CLOSES, through `done --hand-to P2.18`",
+    "new": "The routes stay where they are",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L4. Five of P2.4's seven routes were themselves handed in when other items closed, which is how it became a sink; leaving them behind would hand the sink to whichever item inherits them next and reproduce the whole problem one slot along."
+  },
+  {
+    "tag": "the ruling block stops naming the item the split creates",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "the sixteen arrivals become P2.18 with their own ACCEPT",
+    "new": "the arrivals are chartered separately",
+    "selector": "w562",
+    "expect": "BLIND(red)",
+    "why": "L5. A ruling that does not name what it created cannot be checked against what exists — and these rulings are constitution, which a later round may not widen, soften or reinterpret. It can only hold to them if it can tell what they produced."
+  }
+]

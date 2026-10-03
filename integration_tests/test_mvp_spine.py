@@ -34461,3 +34461,97 @@ def test_w561_a_closure_records_why_and_can_carry_the_check_that_established_rea
     #  silent — twelve questions were surfaced and five were put to the Owner.
     assert "WHAT WAS DECIDED WITHOUT ASKING" in _prompt, (
         "the questions settled without the Owner are not recorded, so the filtering cannot be checked")
+
+
+def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(client):
+    """Owner ruling 2026-10-03 (1): P2.4 closes on its WRITTEN bar; the arrivals become P2.18.
+
+    THE MEASUREMENT THAT PROMPTED IT: P2.4's four clusters name 20 rows, 18 of which were already
+    closed, so exactly TWO of its 17 open rows were in its bar at all. The other fifteen arrived after
+    the bar was written — ten through routes handed in when other items closed. Widening the bar to
+    cover them would be a round reinterpreting the Owner's own derivation.
+    """
+    import json as _json562
+    import pathlib as _pl562
+    import re as _re562
+
+    import agentic_core.plan_followups as _fu562
+
+    _root = _pl562.Path(__file__).resolve().parents[1]
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _reg = _json562.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+
+    # ── L1. P2.18 EXISTS AND THE PARSER READS IT AS P2 BUILD WORK ────────────────────────────────
+    #  Driven because both failed on the first attempt and looked right in the file: the item was
+    #  placed after the PHASE P3 heading and parsed as P3 (a phase comes from the running heading, never
+    #  from the slot number), and its name wrapped to a second line so the title parsed as the single
+    #  word "AN".
+    _items = _fu562.plan_items(_prompt)
+    _p218 = next((i for i in _items if i["slot"] == "P2.18"), None)
+    assert _p218, "P2.18 is not in the plan"
+    assert _p218["phase"] == "P2", ("P2.18 parsed into the wrong phase", _p218)
+    assert _p218["delivered_by"] == "build" and _p218["done"] is False, _p218
+    assert _p218["title"].startswith("AN ABSENCE THAT READS AS A FACT"), (
+        "P2.18's name did not survive parsing", _p218["title"])
+    #  and P2.4 is still open and still a P2 build item
+    _p24 = next(i for i in _items if i["slot"] == "P2.4")
+    assert _p24["phase"] == "P2" and _p24["done"] is False, _p24
+
+    # ── L2. THE SPLIT IS EXACTLY WHAT THE RULING SAYS ────────────────────────────────────────────
+    def _open(slot):
+        return sorted(r["id"] for r in _reg["items"]
+                      if r.get("status") == "open" and r.get("slot") == slot)
+    _p24_rows, _p218_rows = _open("P2.4"), _open("P2.18")
+    #  P2.4 keeps ONLY rows its clusters name, plus the three HIGH the ruling held there.
+    _clusters = set()
+    _i, _j = _prompt.index("\n P2.4 "), _prompt.index("\n P2.5 ")
+    for _ln in _prompt[_i:_j].split("\n"):
+        if _re562.match(r"\s*\([a-d]\) [A-Z]", _ln):
+            _clusters |= set(_re562.findall(r"FU-\d+", _ln))
+    assert len(_clusters) >= 20, ("the four clusters name fewer rows than the bar states", len(_clusters))
+    _HIGH = {"FU-332", "FU-346", "FU-354"}
+    for _id in _p24_rows:
+        assert _id in _clusters or _id in _HIGH, (
+            f"{_id} rides P2.4 and is neither named in a cluster nor one of the three HIGH rows the "
+            f"ruling held there — the item is refilling", _p24_rows)
+    assert _HIGH <= set(_p24_rows), ("a HIGH row the ruling held in P2.4 has left it",
+                                     sorted(_HIGH - set(_p24_rows)))
+    #  and NOTHING on P2.18 is named by a P2.4 cluster
+    for _id in _p218_rows:
+        assert _id not in _clusters, (f"{_id} is named in a P2.4 cluster and was moved out of it", _id)
+    assert len(_p218_rows) >= 10, ("the arrivals did not move", _p218_rows)
+
+    # ── L3. EVERY MOVED ROW SAYS WHY IT MOVED ────────────────────────────────────────────────────
+    #  A reslot with no stated reason is how a row ends up somewhere nobody can justify later.
+    for _r in _reg["items"]:
+        if _r.get("status") == "open" and _r.get("slot") == "P2.18":
+            _src = _r.get("slot_source") or ""
+            assert "2026-10-03" in _src, (_r["id"], "no slot_source naming the ruling", _src)
+
+    # ── L4. P2.18's BAR IS DELIVERABLES, AND CARRIES NO ROW ID AT ALL ────────────────────────────
+    #  The register's own guard only refuses an id belonging to ANOTHER item, so listing its own would
+    #  have passed. It carries none anyway, and the reason was paid for in this round: FU-369 could not
+    #  be moved out of P2.4 until a sentence naming it was rewritten. An id baked into a bar makes the
+    #  row harder to move, and a bar of deliverables should not care which rows sit under it today.
+    _k, _l = _prompt.index("\n P2.18 "), _prompt.index("\n MILESTONE M2")
+    _bar = _prompt[_k:_l]
+    assert not _re562.findall(r"FU-\d+", _bar), (
+        "a row id survives inside P2.18's bar", _re562.findall(r"FU-\d+", _bar))
+    for _clause in ("(a) AN ABSENCE REACHES THE READER",
+                    "(b) THE SUITE'S INSTRUMENTS PROVE WHAT THEY CLAIM",
+                    "(c) TWO NAMED SINGLES"):
+        assert _clause in _bar, ("a clause is missing from P2.18", _clause)
+    #  the ACCEPT binds the same discipline the Owner's second-leg ruling set
+    #  fragments JSX-style line wrapping cannot split: the full sentences wrap across lines in the
+    #  plan, so a literal match on them finds nothing even though they are present.
+    assert "only on the API beneath it" in _bar, _bar[:0]
+    assert "seen to turn it RED" in _bar, _bar[:0]
+    assert "closes on a count of rows" in _bar, (
+        "P2.18's bar can be satisfied by closing rows, which is the defect it was chartered to avoid")
+    #  AND IT SAYS WHERE THE ROUTES GO, so P2.4 does not refill after it closes
+    assert "--hand-to P2.18" in _bar, "the bar does not say what becomes of P2.4's routes"
+
+    # ── L5. THE RULING IT IMPLEMENTS IS RECORDED AS CONSTITUTION ─────────────────────────────────
+    assert "P2.4 IS TWO ITEMS" in _prompt, "the ruling this item implements is not in the plan"
+    assert "P2.18" in _prompt.split("OWNER RULINGS 2026-10-03")[1][:3000], (
+        "the ruling block does not name the item the split creates")
