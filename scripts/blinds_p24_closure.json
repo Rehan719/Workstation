@@ -1,0 +1,101 @@
+[
+  {
+    "tag": "the closure vocabulary becomes free text, so a rate over it is invisible to every projection",
+    "file": "scripts/followups.py",
+    "old": "    c.add_argument(\"--because\", choices=sorted(CLOSE_KINDS),",
+    "new": "    c.add_argument(\"--because\",",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L2(f). The vocabulary is closed for the same reason --by refuses anything that is not a round id: a rate computed over prose is invisible to every projection, which is exactly how the register came to record five closures of three different kinds identically."
+  },
+  {
+    "tag": "a closure does not record why it closed",
+    "file": "scripts/followups.py",
+    "old": "            if args.because:\n                r[\"because\"] = args.because",
+    "new": "            if False:\n                r[\"because\"] = args.because",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L2(a) — FU-314 itself. Without the field, retrospection cannot tell a round that BUILT from a round that MEASURED, and both the item rate and the row rate read a measurement close as if it were a build."
+  },
+  {
+    "tag": "the kind is stored without its meaning, so a reader must know the vocabulary",
+    "file": "scripts/followups.py",
+    "old": "                r[\"because_means\"] = CLOSE_KINDS[args.because]",
+    "new": "                pass",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L2(a). A four-word token in a register is a category a later reader guesses at; the meaning travels with it so the row explains itself without the CLI that wrote it."
+  },
+  {
+    "tag": "a closure with no reason passes silently",
+    "file": "scripts/followups.py",
+    "old": "            said.append(\"closed\" + (f\" as {args.because}\" if args.because else\n                                    \" with NO --because, so retrospection cannot tell what kind of \"\n                                    \"closure this was\"))",
+    "new": "            said.append(\"closed\")",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L2(b). Omitting --because is ALLOWED - refusing would make every historical closure unrepeatable - but it must never be invisible, or the field will simply go unused and the defect returns with the mechanism in place."
+  },
+  {
+    "tag": "a row records both the reachability check and that the check cannot be recovered",
+    "file": "scripts/followups.py",
+    "old": "            if args.check and args.unaudited:",
+    "new": "            if False:",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L2(e). They are alternatives: recording HOW reachability was established and that it CANNOT BE RECOVERED is a contradiction, and whichever a later reader believed would be a coin toss. The Owner's ruling of 2026-10-03 turns on which rows are auditable."
+  },
+  {
+    "tag": "the reachability check is accepted and never stored",
+    "file": "scripts/followups.py",
+    "old": "            if args.check:\n                r[\"reachability_check\"] = _one_line(args.check)",
+    "new": "            if False:\n                r[\"reachability_check\"] = _one_line(args.check)",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L2(c), and it is the worst shape available here: the CLI would accept --check, print success, and record nothing - so a round would believe it had satisfied P2.4's second leg while leaving the register exactly as empty as before."
+  },
+  {
+    "tag": "an unrecoverable check is silently absent instead of named",
+    "file": "scripts/followups.py",
+    "old": "                r[\"reachability_unaudited\"] = _one_line(args.unaudited)",
+    "new": "                pass",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L2(d), and the Owner's ruling says it in as many words: every row whose check cannot be recovered is marked UNAUDITED BY NAME rather than passed over. An absent field reads as a row nobody looked at."
+  },
+  {
+    "tag": "retrospection counts the unrecorded closures as builds",
+    "file": "agentic_core/api/method.py",
+    "old": "        _kinds[str(_r.get(\"because\") or \"not_recorded\")] = _kinds.get(\n            str(_r.get(\"because\") or \"not_recorded\"), 0) + 1",
+    "new": "        _kinds[str(_r.get(\"because\") or \"built\")] = _kinds.get(\n            str(_r.get(\"because\") or \"built\"), 0) + 1",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L3, and it is the subtlest defect in this round. Every row closed before W561 carries no kind; attributing them to 'built' would INVENT the very distinction the field exists to stop inventing, and it would do so in the direction that flatters the programme - 200-odd closures all reading as work done."
+  },
+  {
+    "tag": "the mix is not reported at all, so the faculty still cannot see kind",
+    "file": "agentic_core/api/method.py",
+    "old": "        \"closure_kinds\": _kinds,",
+    "new": "",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L3. FU-314's own words: '_retrospect then reports the mix'. A field written into the register that no faculty reads is the stored-and-not-rendered shape this method exists to catch."
+  },
+  {
+    "tag": "a ruling is missing from the Owner's block",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "      · -n 6 IS WHAT A COMMIT IS TRUSTED TO",
+    "new": "      · -n 6 is the usual command",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L4. The rulings are constitution and a later round may not widen, soften or reinterpret them - which requires that they are all actually there to be read. The mutation softens a ruling into a preference, which is the exact failure mode the constitution clause names."
+  },
+  {
+    "tag": "the questions decided WITHOUT the Owner are not recorded, so the filtering cannot be audited",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "      WHAT WAS DECIDED WITHOUT ASKING, recorded so the filtering is auditable:",
+    "new": "      Also:",
+    "selector": "w561",
+    "expect": "BLIND(red)",
+    "why": "L4. Twelve questions were surfaced and five were put to the Owner; the other seven were decided. Recording WHICH is what lets the Owner check that the filtering was reasonable - without it, the five look like the whole set and the judgement behind the other seven is invisible."
+  }
+]

@@ -5456,11 +5456,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W561",
       "note": "",
       "tier": 2,
-      "reach": "internal"
+      "reach": "internal",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the --because vocabulary, the reachability check and its unaudited alternative, and the mix reported by retrospection"
     },
     {
       "id": "FU-315",

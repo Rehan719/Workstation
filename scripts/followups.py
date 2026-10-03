@@ -93,6 +93,22 @@ def _one_line(value: str) -> str:
     return " ".join(value.split())
 
 
+#  W561 (FU-314) — THE KINDS A CLOSURE CAN BE. Measured W515: five rows closed in one round were of
+#  three different kinds and the register recorded all five identically, so the Appraisal Cell's
+#  retrospection could not tell a round that BUILT from a round that MEASURED, and both the item rate
+#  and the row rate read a measurement close as if it were a build.
+#
+#  A CLOSED VOCABULARY, not free text, because a rate computed over prose is invisible to every
+#  projection — the same reason `--by` refuses anything that is not a round id. The free text goes
+#  beside it in --note, where it carries detail without becoming a category nobody can count.
+CLOSE_KINDS = {
+    "built": "the work this row asked for was done in this round, not found already done",
+    "already_satisfied": "measured as satisfied by an earlier round; nothing was built for it here",
+    "performed_not_assessable": "the work was performed and its answer is NOT ASSESSABLE, with a basis",
+    "refuted": "the row's premise was measured and did not hold; nothing needed building",
+}
+
+
 def _find(reg, fid):
     matches = [r for r in fu.raw_items(reg) if isinstance(r, dict) and r.get("id") == fid]
     if len(matches) != 1:
@@ -164,6 +180,19 @@ def main() -> int:
     c = sub.add_parser("close")
     c.add_argument("id")
     c.add_argument("--by", required=True)
+    #  W561 (FU-314) — WHY a row closed, which the register could not record at all. A round that closes
+    #  six rows by MEASURING them already-satisfied is not the round that closes six by BUILDING, and
+    #  retrospection read them identically.
+    c.add_argument("--because", choices=sorted(CLOSE_KINDS),
+                   help="why it closed: " + " | ".join(f"{k} ({v[:38]}…)" for k, v in
+                                                       sorted(CLOSE_KINDS.items())))
+    c.add_argument("--note", default="", help="free text beside --because; the detail the kind cannot carry")
+    #  W561 (Owner ruling 2026-10-03) — P2.4's second leg: a closure that REMOVED a code artefact must
+    #  carry the check that established reachability, or say it cannot be recovered. One of the two.
+    c.add_argument("--check", default="",
+                   help="the check that established reachability for an artefact this row REMOVED")
+    c.add_argument("--unaudited", default="",
+                   help="why that check cannot be recovered; the row is then marked unaudited BY NAME")
     d = sub.add_parser("drop")
     d.add_argument("id")
     d.add_argument("--note", required=True)
@@ -411,7 +440,27 @@ def main() -> int:
             r = _find(reg, args.id)
             if r.get("status") != "open":            # W473 (FU-067) — a closed row's round is history, never rewritten
                 sys.exit(f"REFUSED — {args.id} is {r.get('status')} (closed by {r.get('closed_by') or 'a note'}); only an open row closes")
+            #  W561 (Owner ruling 2026-10-03) — A CHECK AND AN UNAUDITED REASON ARE ALTERNATIVES, never
+            #  both: recording how reachability was established AND that it cannot be recovered is a
+            #  contradiction, and whichever a later reader believed would be a coin toss.
+            if args.check and args.unaudited:
+                sys.exit("REFUSED — --check and --unaudited are alternatives: a row either carries the "
+                         "check that established reachability, or says why it cannot be recovered.")
             r["status"], r["closed_by"] = "done", args.by.strip()
+            if args.because:
+                r["because"] = args.because
+                r["because_means"] = CLOSE_KINDS[args.because]
+            if args.note:
+                r["close_note"] = _one_line(args.note)
+            if args.check:
+                r["reachability_check"] = _one_line(args.check)
+            if args.unaudited:
+                #  NAMED, not silently absent. The ruling's words: every row whose check cannot be
+                #  recovered is marked UNAUDITED BY NAME rather than passed over.
+                r["reachability_unaudited"] = _one_line(args.unaudited)
+            said.append("closed" + (f" as {args.because}" if args.because else
+                                    " with NO --because, so retrospection cannot tell what kind of "
+                                    "closure this was"))
         elif args.cmd == "drop":
             r = _find(reg, args.id)
             if r.get("status") != "open":            # W473 (FU-067)

@@ -1711,10 +1711,31 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
     closed_total = sum(a.get("closed", 0) for a in act.values())
     found_total = sum(a.get("found", 0) for a in act.values())
 
+    #  W561 (FU-314) — THE MIX, which is the thing this faculty was built to see and could not. A row
+    #  closed because it was BUILT and a row closed because an earlier round had already SATISFIED it
+    #  were the same increment, so neither the item rate nor the row rate could tell a round that built
+    #  from a round that measured. `because` is a closed vocabulary written by scripts/followups.py;
+    #  rows closed BEFORE it existed carry none, and are counted as unrecorded rather than as built —
+    #  attributing them would be inventing the very distinction this field exists to stop inventing.
+    _kinds: Dict[str, int] = {}
+    for _r in done:
+        _kinds[str(_r.get("because") or "not_recorded")] = _kinds.get(
+            str(_r.get("because") or "not_recorded"), 0) + 1
+    _recorded = sum(v for k, v in _kinds.items() if k != "not_recorded")
+
     return {
         "state": MET if resolved else NOT_ASSESSABLE,
         "basis": None,                 # the answer's meaning is in what_the_pattern_means; `basis` is the
         "rounds": None,                # refusal branch's field, carried here so the shapes match
+        "closure_kinds": _kinds,
+        "closures_with_a_kind": _recorded,
+        "closure_kind_basis": (
+            f"{_recorded} of {len(done)} closed row(s) record WHY they closed. The rest predate the "
+            f"field (W561) and are counted as not_recorded rather than as built — a round that closed "
+            f"six rows by measuring them already-satisfied is not the round that closed six by "
+            f"building, and guessing which is which would invent the distinction this field exists to "
+            f"stop inventing"
+            if len(done) else "no row has closed, so there is no mix to report"),
         "rows_built_or_satisfied": len(done),
         "rows_dropped_as_refuted": len(dropped),
         "refutation_share": share,

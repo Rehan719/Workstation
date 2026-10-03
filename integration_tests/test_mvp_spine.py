@@ -34328,3 +34328,136 @@ def test_w560_the_six_engines_have_a_model_path_and_say_where_it_ended(client):
     for _name, _dom in _MP.ENGINE_DOMAIN.items():
         _want, _why = _T.wanted_tier(_dom)
         assert _want in _T.TIERS, (_name, _dom, _want)
+
+
+def test_w561_a_closure_records_why_and_can_carry_the_check_that_established_reachability(client, tmp_path):
+    """FU-314 and the Owner ruling of 2026-10-03: a closure records WHY, and a removal carries its check.
+
+    MEASURED W515: five rows closed in one round were of three different kinds and the register recorded
+    all five identically, so the Appraisal Cell's retrospection could not tell a round that BUILT from a
+    round that MEASURED — and both the item rate and the row rate read a measurement close as if it were
+    a build. There was nowhere in the register to put the answer.
+    """
+    import json as _json561
+    import os as _os561
+    import pathlib as _pl561
+    import subprocess as _sp561
+    import sys as _sys561
+
+    import agentic_core.plan_followups as _fu561
+
+    # ── L1. A CLOSED VOCABULARY, not free text ───────────────────────────────────────────────────
+    #  The same reason --by refuses anything that is not a round id: a rate computed over prose is
+    #  invisible to every projection.
+    #  READ FROM THE AST, not executed: the module head touches __file__, and a guard should not need
+    #  to run a CLI's import side effects to read one constant out of it.
+    import ast as _ast561
+    _cli_src = (_pl561.Path(__file__).resolve().parents[1] / "scripts/followups.py").read_text(
+        encoding="utf-8")
+    _KINDS = next(
+        (_ast561.literal_eval(n.value) for n in _ast561.walk(_ast561.parse(_cli_src))
+         if isinstance(n, _ast561.Assign)
+         and any(getattr(t, "id", "") == "CLOSE_KINDS" for t in n.targets)), None)
+    assert isinstance(_KINDS, dict), "scripts/followups.py declares no CLOSE_KINDS vocabulary"
+    assert set(_KINDS) == {"built", "already_satisfied", "performed_not_assessable", "refuted"}, (
+        sorted(_KINDS))
+    for _k, _meaning in _KINDS.items():
+        assert len(_meaning) > 30, (_k, "a kind with no stated meaning", _meaning)
+
+    # ── L2. DRIVEN THROUGH THE CLI, in a SCRATCH REGISTER — never against the repo ───────────────
+    _root = _pl561.Path(__file__).resolve().parents[1]
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _living = (_root / "docs/WORKSTATION_IDBO_LIVING_PLAN.md").read_text(encoding="utf-8")
+    _first_open = next(i["slot"] for i in _fu561.plan_items(_prompt) if not i["done"])
+    _scratch = tmp_path / "w561root"
+    (_scratch / "docs").mkdir(parents=True)
+    (_scratch / "agentic_core" / "api").mkdir(parents=True)
+    (_scratch / "agentic_core" / "api" / "living_plan.py").write_bytes(b"# stand-in\n")
+    _empty = {"items": []}
+    (_scratch / "docs/FABLE_DELIVERY_PROMPT.md").write_bytes(
+        _fu561.splice_all(_prompt, _empty, _prompt).encode("utf-8"))
+    (_scratch / "docs/WORKSTATION_IDBO_LIVING_PLAN.md").write_bytes(
+        _fu561.splice_all(_living, _empty, _prompt).encode("utf-8"))
+    (_scratch / "docs/FOLLOWUPS.json").write_bytes(b'{"items": []}\n')
+    _env = dict(_os561.environ, WORKSTATION_FOLLOWUPS_ROOT=str(_scratch), PYTHONIOENCODING="utf-8")
+    _script = str((_root / "scripts/followups.py").resolve())
+
+    def _cli(*argv):
+        return _sp561.run([_sys561.executable, _script, *argv], env=_env, capture_output=True,
+                          text=True, encoding="utf-8")
+
+    def _rows():
+        return _json561.loads((_scratch / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+
+    for _n in range(4):
+        assert _cli("add", "--title", f"w561 row {_n}", "--why", "w", "--source", "test",
+                    "--slot", _first_open, "--files", "agentic_core/api/living_plan.py").returncode == 0
+
+    #  (a) --because is RECORDED, with its meaning, so a reader need not know the vocabulary
+    _r = _cli("close", "FU-001", "--by", "W561", "--because", "already_satisfied")
+    assert _r.returncode == 0, _r.stderr
+    assert "closed as already_satisfied" in _r.stdout, _r.stdout
+    _row = next(x for x in _rows() if x["id"] == "FU-001")
+    assert _row["because"] == "already_satisfied", _row
+    assert _row["because_means"] == _KINDS["already_satisfied"], _row
+
+    #  (b) A CLOSE WITHOUT --because SAYS SO rather than passing silently. Omitting it is allowed —
+    #      refusing would make every historical closure unrepeatable — but it is never invisible.
+    _r2 = _cli("close", "FU-002", "--by", "W561")
+    assert _r2.returncode == 0, _r2.stderr
+    assert "NO --because" in _r2.stdout and "cannot tell what kind" in _r2.stdout, _r2.stdout
+    assert "because" not in next(x for x in _rows() if x["id"] == "FU-002"), _rows()
+
+    #  (c) THE REACHABILITY CHECK, which is what the Owner's ruling of 2026-10-03 needs: a closure that
+    #      removed a code artefact carries the check that established reachability.
+    _r3 = _cli("close", "FU-003", "--by", "W561", "--because", "built",
+               "--check", "called the route and read a 404; no import search was used")
+    assert _r3.returncode == 0, _r3.stderr
+    _row3 = next(x for x in _rows() if x["id"] == "FU-003")
+    assert _row3["reachability_check"].startswith("called the route"), _row3
+
+    #  (d) OR IT SAYS THE CHECK CANNOT BE RECOVERED — named, never silently absent
+    _r4 = _cli("close", "FU-004", "--by", "W561", "--because", "built",
+               "--unaudited", "the round that removed it left no commit in git")
+    assert _r4.returncode == 0, _r4.stderr
+    _row4 = next(x for x in _rows() if x["id"] == "FU-004")
+    assert "left no commit" in _row4["reachability_unaudited"], _row4
+    assert "reachability_check" not in _row4, _row4
+
+    #  (e) AND THE TWO ARE ALTERNATIVES. Recording how reachability was established AND that it cannot
+    #      be recovered is a contradiction, and whichever a later reader believed would be a coin toss.
+    assert _cli("add", "--title", "w561 both", "--why", "w", "--source", "test", "--slot",
+                _first_open).returncode == 0
+    _r5 = _cli("close", "FU-005", "--by", "W561", "--check", "x", "--unaudited", "y")
+    assert _r5.returncode != 0, ("a row recorded BOTH a check and that the check is unrecoverable",
+                                 _r5.stdout)
+    assert "alternatives" in (_r5.stdout + _r5.stderr), (_r5.stdout, _r5.stderr)
+    assert next(x for x in _rows() if x["id"] == "FU-005")["status"] == "open", "the refusal still wrote"
+
+    #  (f) AN UNKNOWN KIND IS REFUSED BY THE PARSER — the vocabulary is closed, not advisory
+    _r6 = _cli("close", "FU-005", "--by", "W561", "--because", "finished")
+    assert _r6.returncode != 0 and "invalid choice" in (_r6.stderr + _r6.stdout), _r6.stderr[:200]
+
+    # ── L3. RETROSPECTION REPORTS THE MIX, and does NOT attribute the unrecorded ones ────────────
+    _a = client.get("/api/v1/method/appraise", params={"scope": "P2"})
+    assert _a.status_code == 200, _a.text
+    _retro = _a.json()["faculties"]["retrospection"]
+    assert isinstance(_retro["closure_kinds"], dict), _retro
+    assert _retro["closure_kinds"], "the mix is empty, so the faculty reports nothing about kind"
+    #  rows closed before the field existed are not_recorded — NEVER counted as built, because
+    #  attributing them would invent the very distinction the field exists to stop inventing
+    assert "not_recorded" in _retro["closure_kinds"], _retro["closure_kinds"]
+    assert _retro["closures_with_a_kind"] + _retro["closure_kinds"]["not_recorded"] == \
+        _retro["rows_built_or_satisfied"], (_retro["closure_kinds"], _retro["rows_built_or_satisfied"])
+    assert "stop inventing" in _retro["closure_kind_basis"], _retro["closure_kind_basis"]
+
+    # ── L4. THE OWNER'S FIVE RULINGS OF 2026-10-03 ARE RECORDED AS CONSTITUTION ──────────────────
+    assert "OWNER RULINGS 2026-10-03 (FIVE" in _prompt, "the rulings are not in the plan"
+    for _ruled in ("P2.4 IS TWO ITEMS", "P2.4's SECOND LEG IS PROSPECTIVE", "P2.17(b)3 IS MET",
+                   "-n 6 IS WHAT A COMMIT IS TRUSTED TO",
+                   "THE VSB LEDGER'S DOUBLE-ENTRY ACCOUNTS ARE AUTHORITATIVE"):
+        assert _ruled in _prompt, ("a ruling is missing from the block", _ruled)
+    #  AND WHAT WAS DECIDED WITHOUT ASKING IS RECORDED TOO, so the filtering is auditable rather than
+    #  silent — twelve questions were surfaced and five were put to the Owner.
+    assert "WHAT WAS DECIDED WITHOUT ASKING" in _prompt, (
+        "the questions settled without the Owner are not recorded, so the filtering cannot be checked")
