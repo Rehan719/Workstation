@@ -171,6 +171,34 @@ async def horizon_guardrails(user: dict | None = Depends(get_current_user)) -> D
     }
 
 
+@router.post("/archive/scan")
+async def horizon_archive_scan(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """Index the explicit inbox. Three states per file, the counts published, the bounds stated."""
+    from agentic_core.horizon import archive
+    return archive.scan()
+
+
+@router.get("/archive")
+async def horizon_archive(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """The manifest WITH a re-count of its own file list beside its published counts.
+
+    P2.13's bar: the manifest's counts match a re-count. A count written beside the thing it counts is a
+    claim; a count derived again from the list is a check, so both travel together and a reader does not
+    have to take either on trust.
+    """
+    from agentic_core.horizon import archive
+    _m = archive._read_index().get("manifest") or {}
+    return {"manifest": _m, "recount": archive.recount()}
+
+
+@router.get("/archive/search")
+async def horizon_archive_search(term: str, limit: int = 20,
+                                 user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """Exact lexical search over the INDEXED files only, naming what it could not look inside."""
+    from agentic_core.horizon import archive
+    return archive.search(term, limit)
+
+
 @router.get("/states")
 async def horizon_states(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
     """Every state this kernel can report and what produces it — the limits, stated not implied."""

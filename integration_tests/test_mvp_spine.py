@@ -32695,3 +32695,160 @@ def test_w551_three_gates_refuse_state_their_limits_and_name_no_number(client):
     _side = (_root / "apps/workstation-superapp/src/components/layout/Sidebar.tsx").read_text(
         encoding="utf-8")
     assert _uncommented(_side, "id: 'horizon-guardrails'"), "the page is routed but in no navigation"
+
+
+def test_w552_the_asset_index_counts_match_a_recount_and_no_secret_is_indexed(client, tmp_path,
+                                                                              monkeypatch):
+    """P2.13's bar: the manifest's counts match a re-count; every state is asserted; nothing unread is in
+    the knowledge base; no secret is indexed.
+
+    The inbox is a REAL directory this test fills, so all three states come from files on disk rather
+    than from a constructed manifest — a count over a dict this test built would prove nothing about the
+    scan that produces one.
+    """
+    import pathlib
+    from agentic_core.horizon import archive as _A
+
+    _root2b = pathlib.Path(__file__).resolve().parents[1]
+    _inbox = pathlib.Path(_A._inbox())
+    _inbox.mkdir(parents=True, exist_ok=True)
+
+    #  one of each state, plus every secret rule the item names
+    (_inbox / "w552_notes.md").write_text("The halal bakery plan mentions ovens and flour.",
+                                          encoding="utf-8")
+    (_inbox / "w552_report.pdf").write_bytes(b"%PDF-1.4 not really a pdf")
+    (_inbox / ".env").write_text("SECRET_TOKEN=w552shouldnotbeindexed", encoding="utf-8")
+    (_inbox / "w552_api_key.txt").write_text("w552keyleak", encoding="utf-8")
+    (_inbox / "w552_secret.txt").write_text("w552secretleak", encoding="utf-8")
+    #  no nested quoting: the marker is all this file needs to carry, and a JSON literal here only
+    #  invites an escaping mistake in the patch that writes it
+    (_inbox / "credentials.json").write_text("w552credleak", encoding="utf-8")
+    (_inbox / "id_rsa").write_text("w552rsaleak", encoding="utf-8")
+    (_inbox / "w552_cert.pem").write_text("w552pemleak", encoding="utf-8")
+
+    _m = _A.scan()
+
+    # ── L1. EVERY STATE IS ASSERTED, and each file carries exactly one ───────────────────────────
+    _by = {f["path"]: f for f in _m["files"]}
+    assert _by["w552_notes.md"]["state"] == _A.INDEXED, _by["w552_notes.md"]
+    assert _by["w552_report.pdf"]["state"] == _A.NOT_READ, _by["w552_report.pdf"]
+    #  the missing extractor is NAMED, not merely implied
+    assert _by["w552_report.pdf"].get("needs") == "pypdf", _by["w552_report.pdf"]
+    assert "pypdf" in _by["w552_report.pdf"]["basis"], _by["w552_report.pdf"]["basis"]
+    for _f in _m["files"]:
+        assert _f["state"] in (_A.INDEXED, _A.NOT_READ, _A.EXCLUDED), (_f["path"], _f["state"])
+        assert (_f.get("basis") or "").strip(), (_f["path"], "a state with no basis")
+
+    # ── L2. THE COUNTS MATCH A RE-COUNT — derived again, not read back ──────────────────────────
+    _rc = _A.recount()
+    assert _rc["agrees"] is True, ("the published counts disagree with a re-count of the same list",
+                                   _rc["stated"], _rc["recounted"])
+    #  AND THE RE-COUNT CAN DISAGREE, which asserting agreement alone does not establish. A sweep proved
+    #  it: a recount that simply returns the stored counts agrees every time, so the check could not
+    #  fail. The stored counts are corrupted here and the recount must notice — an instrument that has
+    #  never been seen to disagree is not evidence that two things match.
+    import json as _json
+    _idx_path = _A._store()
+    _saved_bytes = pathlib.Path(_idx_path).read_bytes()
+    try:
+        _doc = _json.loads(_saved_bytes.decode("utf-8"))
+        _doc["manifest"]["counts"][_A.INDEXED] = _doc["manifest"]["counts"][_A.INDEXED] + 7
+        pathlib.Path(_idx_path).write_bytes(_json.dumps(_doc).encode("utf-8"))
+        _bad = _A.recount()
+        assert _bad["agrees"] is False, (
+            "the re-count agreed with counts this test had just corrupted, so it is reading them back "
+            "rather than deriving them from the file list", _bad)
+        assert "DISAGREE" in _bad["basis"], _bad["basis"]
+    finally:
+        pathlib.Path(_idx_path).write_bytes(_saved_bytes)
+    assert _A.recount()["agrees"] is True, "the restore did not put the manifest back"
+    #  and the three states partition the list: a file in no state is a file the manifest lost
+    assert sum(_m["counts"].values()) == _m["total"] == len(_m["files"]), (_m["counts"], _m["total"])
+    #  the counts are recomputed HERE too, so the module's own recount cannot be the only witness
+    for _s in (_A.INDEXED, _A.NOT_READ, _A.EXCLUDED):
+        assert _m["counts"][_s] == sum(1 for f in _m["files"] if f["state"] == _s), (_s, _m["counts"])
+
+    # ── L3. NO SECRET IS INDEXED, and every exclusion names its rule ────────────────────────────
+    _secrets = {".env": "w552shouldnotbeindexed", "w552_api_key.txt": "w552keyleak",
+                "w552_secret.txt": "w552secretleak", "credentials.json": "w552credleak",
+                "id_rsa": "w552rsaleak", "w552_cert.pem": "w552pemleak"}
+    for _name, _marker in _secrets.items():
+        assert _name in _by, (_name, "a secret file is not even LISTED, so its exclusion is invisible")
+        assert _by[_name]["state"] == _A.EXCLUDED, (_name, _by[_name]["state"])
+        assert (_by[_name].get("rule") or "").strip(), (_name, "excluded with no rule recorded")
+        #  AND ITS CONTENT IS NOWHERE IN THE INDEX. Driven through search, which is what a reader uses.
+        _hit = _A.search(_marker)
+        assert _hit["hits"] == [], (
+            f"{_name}'s content is searchable, so a secret reached the index", _marker, _hit["hits"])
+    #  the stored token map holds no entry for any excluded file at all
+    _stored = _A._read_index().get("tokens") or {}
+    for _name in _secrets:
+        assert _name not in _stored, (f"{_name} has tokens in the index", _name)
+
+    # ── L4. NOTHING UNREAD IS IN THE KNOWLEDGE BASE (the FU-124 rule) ───────────────────────────
+    assert "w552_report.pdf" not in _stored, (
+        "an unread file has tokens in the index; nothing unread may be in the knowledge base")
+    _s = _A.search("halal")
+    assert _s["hits"] == ["w552_notes.md"], _s["hits"]
+    #  and the search NAMES what it could not look inside, rather than leaving the gap silent
+    assert "w552_report.pdf" in _s["not_searched"], _s["not_searched"]
+    for _name in _secrets:
+        assert _name in _s["not_searched"], (_name, _s["not_searched"])
+    assert "nothing unread is in the knowledge base" in _s["basis"], _s["basis"]
+
+    # ── L5. THE SCAN STATES ITS OWN BOUNDS, and a file over the cap is listed not truncated ─────
+    _b = _m["bounds"]
+    assert _b["max_files"] and _b["max_bytes"], _b
+    assert _b["exclusion_rules"] and len(_b["exclusion_rules"]) >= 5, _b["exclusion_rules"]
+    assert "not silently truncated" in _b["basis"], _b["basis"]
+    _big = _inbox / "w552_big.txt"
+    _big.write_text("w552bigmarker " * 200000, encoding="utf-8")   # comfortably over the 2 MiB cap
+    _m2 = _A.scan()
+    _bigrec = {f["path"]: f for f in _m2["files"]}["w552_big.txt"]
+    assert _bigrec["state"] == _A.NOT_READ, (_bigrec["state"], "an oversized file was read anyway")
+    assert str(_A.MAX_BYTES) in _bigrec["basis"], _bigrec["basis"]
+    assert _A.search("w552bigmarker")["hits"] == [], (
+        "an oversized file's text reached the index, so a half-read document is answering questions")
+
+    # ── L6. SEARCH IS LEXICAL AND SAYS SO — it does not imply semantic recall ───────────────────
+    assert _m2["embedding_backend"] is None, _m2["embedding_backend"]
+    assert "no embedding" in _m2["search_basis"].lower(), _m2["search_basis"]
+    assert _A.search("halal")["embedding_backend"] is None
+    #  a document ABOUT the subject that never uses the word does not match, and the basis says so
+    assert "not semantic recall" in _A.search("halal")["basis"], _A.search("halal")["basis"]
+
+    # ── L7. THE OWNER'S RULING IS DECLARED: both extractors in requirements ─────────────────────
+    _req = (pathlib.Path(__file__).resolve().parents[1] / "requirements.txt").read_text(encoding="utf-8")
+    for _pkg in ("pypdf", "python-docx"):
+        assert any(ln.strip().startswith(_pkg + "==") for ln in _req.splitlines()), (
+            f"{_pkg} is not declared in requirements.txt; the Owner's ruling (FU-269) is both extractors")
+    #  and the manifest reports their LOCAL state honestly, which is not the same as being declared
+    assert set(_m2["extractors"]) >= {"pypdf", "python-docx"}, _m2["extractors"]
+    for _pkg, _avail in _m2["extractors"].items():
+        assert _avail is _A.extractor_available(_pkg), (_pkg, "the manifest disagrees with the import")
+
+    # ── L8. AND IT IS REACHED, with the re-count beside the published counts ────────────────────
+    assert client.post("/api/v1/horizon/archive/scan").status_code == 200
+    _resp = client.get("/api/v1/horizon/archive")
+    assert _resp.status_code == 200, _resp.status_code
+    _j = _resp.json()
+    assert _j["recount"]["agrees"] is True, _j["recount"]
+    assert _j["manifest"]["counts"] == _j["recount"]["recounted"], _j
+    assert "never committed" in _j["manifest"]["locality_basis"], _j["manifest"]["locality_basis"]
+    #  AND THE CLAIM IS ENFORCED, not merely stated. "never committed" is a basis string, and a basis
+    #  string nothing enforces is the defect class this plan keeps removing — so git itself is asked.
+    #  (Checked while writing this: a first look at .gitignore missed the blanket rule because the grep
+    #  was truncated, and `git check-ignore` is what settled it. Ask the tool that decides.)
+    import subprocess as _sp
+    _rel = "data/horizon/asset_index.json"
+    try:
+        _ci = _sp.run(["git", "check-ignore", "-q", _rel], cwd=str(_root2b), capture_output=True)
+        _git_ran = _ci.returncode in (0, 1)
+    except (OSError, FileNotFoundError):
+        _git_ran = False
+    if _git_ran:
+        assert _ci.returncode == 0, (
+            f"{_rel} is NOT ignored by git, so the manifest's 'never committed' claim is a sentence "
+            f"nothing enforces and one `git add -A` would publish the index")
+    _sr = client.get("/api/v1/horizon/archive/search", params={"term": "halal"})
+    assert _sr.status_code == 200 and "not_searched" in _sr.json(), _sr.json()

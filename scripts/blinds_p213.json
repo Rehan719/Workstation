@@ -1,0 +1,83 @@
+[
+  {
+    "tag": "a secret is read before the rule that excludes it is applied",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "            rule = _excluded_by(name, rel)\n            if rule:",
+    "new": "            rule = _excluded_by(name, rel)\n            if rule and False:",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "THE ORDER IS THE PROTECTION. With the exclusion disabled a .env, an id_rsa and a .pem are read and tokenised, so their contents become searchable. The leg drives search for a marker inside each secret file and asserts no hit — the check a reader actually performs."
+  },
+  {
+    "tag": "an excluded file is dropped from the manifest instead of listed",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "                files.append({\"path\": rel, \"state\": EXCLUDED, \"rule\": rule, \"ext\": ext,",
+    "new": "                continue\n                files.append({\"path\": rel, \"state\": EXCLUDED, \"rule\": rule, \"ext\": ext,",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "The item's own sentence: an exclusion nobody can see looks exactly like a file that was not there. Dropping the row hides the exclusion, and a reader checking whether their file was indexed finds no trace of it either way."
+  },
+  {
+    "tag": "an exclusion is recorded without the rule that caused it",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "    (r\"^credentials\", \"the name begins 'credentials'\"),",
+    "new": "    (r\"^credentials\", \"\"),",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "A state with no basis is the shape this whole programme removes: a file reported EXCLUDED with no rule tells a reader their document is missing and not why, and they cannot tell a deliberate exclusion from a failure."
+  },
+  {
+    "tag": "an unreadable format is reported as indexed",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "                    files.append({\"path\": rel, \"state\": NOT_READ, \"ext\": ext, \"needs\": pkg,\n                                  \"basis\": (f\"NOT_READ: no extractor for {ext} in this deployment — \"",
+    "new": "                    files.append({\"path\": rel, \"state\": INDEXED, \"ext\": ext, \"needs\": pkg,\n                                  \"basis\": (f\"NOT_READ: no extractor for {ext} in this deployment — \"",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "This is the brief's ingestor restored: it would have reported ASSIMILATED over folders holding only formats it could not read. Neither extractor is installed here, so NOT_READ naming the missing package is the honest answer and the item says it must never be replaced by an optimistic one."
+  },
+  {
+    "tag": "an unread file's text reaches the search index",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "            tokens[rel] = _tokens(text)",
+    "new": "            tokens[rel] = _tokens(text)\n            tokens.setdefault(rel.rsplit('.', 1)[0] + '.pdf', _tokens(text))",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "THE FU-124 RULE: nothing unread is in the knowledge base. A token entry for a file whose state is NOT_READ means search answers from a document nobody extracted — and the leg checks the stored token map directly, not just the search result."
+  },
+  {
+    "tag": "an oversized file is truncated and indexed anyway",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "            if size > MAX_BYTES:",
+    "new": "            if False and size > MAX_BYTES:",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "A half-read file in a search index answers questions about a document nobody has. The leg writes a file comfortably over the cap and asserts its marker is unsearchable, so the cap has to be enforced rather than merely published."
+  },
+  {
+    "tag": "the published counts are read back instead of recounted",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "    fresh = {s: sum(1 for f in files if f.get(\"state\") == s) for s in (INDEXED, NOT_READ, EXCLUDED)}",
+    "new": "    fresh = dict(man.get(\"counts\") or {})",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "The bar's words are that the counts MATCH A RE-COUNT. Returning the stored counts as the re-count makes the comparison trivially true — a check that cannot disagree with what it checks. The leg also recomputes the counts independently in the test, so the module's own recount is not the only witness."
+  },
+  {
+    "tag": "the index claims semantic recall",
+    "file": "agentic_core/horizon/archive.py",
+    "old": "        \"embedding_backend\": None,\n        \"search_basis\": (\"search is this platform's OWN LEXICAL index",
+    "new": "        \"embedding_backend\": \"local-embeddings-v1\",\n        \"search_basis\": (\"semantic search over document embeddings\\\" if False else (\"search is this platform's OWN LEXICAL index",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "No embedding backend is installed. A surface promising semantic recall over a token index sets a user up to conclude their file was never indexed when a search misses it — the gap between the two promises is invisible until it matters."
+  },
+  {
+    "tag": "the Owner's extractor ruling is undeclared again",
+    "file": "requirements.txt",
+    "old": "pypdf==6.19.0 ; python_version >= \"3.11\" and python_version < \"3.13\"",
+    "new": "# pypdf removed by the W552 blind",
+    "selector": "w552",
+    "expect": "BLIND(red)",
+    "why": "FU-269 ruled BOTH extractors into requirements and python-docx was already there, so pypdf's absence was the ruling half-executed. The leg reads requirements.txt for both, because a ruling delivered halfway reads as delivered in a register that only records the row."
+  }
+]

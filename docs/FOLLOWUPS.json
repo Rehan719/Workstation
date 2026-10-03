@@ -5125,8 +5125,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W552",
       "note": "Placed on P2.13 because the extractor exists for that item's coverage claim.",
       "slot_source": "W505 OWNER RULING 2026-09-28 (FU-269 answered (a)): the install is P2.13's own prerequisite - that item's coverage claim over the Owner's inbox is the thing the extractor makes possible. Placed deliberately, not routed: the row names a dependency file, which no routing rule owns."
     },
@@ -5475,8 +5475,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W552",
       "note": "",
       "slot_source": "FU-269 itself rides P2.13, and this is the undelivered half of that same ruling",
       "tier": 3,
@@ -6323,6 +6323,25 @@
       "status": "open",
       "closed_by": null,
       "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-362",
+      "title": "The parallel-suite stall RECURRED and was measured live: six idle workers at 91 percent, and the progress instrument undercounted by a factor of six",
+      "why": "FU-301 has recorded an unexplained stall since W507 and asked for a stack from a live stalled worker. W552's suite stalled and was caught ALIVE, so these are the first measurements taken from one rather than inferred afterwards. (a) TIMING: started 08:40:20, still alive at 09:33:43 - 53 minutes against a mean of 10.6 minutes measured over the fourteen completed runs of this night (range 9m36s to 11m16s). (b) POSITION: the terminal had emitted 544 progress characters of an expected 549, i.e. it stalled at about 91 percent with no F and no E - matching W507's observed 74/89/57 percent stalls. (c) STATE: seven processes alive (one controller, six workers). CPU time sampled twice eight seconds apart was FROZEN for six of the seven; the seventh moved 0.08s, which is a controller poll and not work. So every worker is idle simultaneously - W507's description confirmed exactly, and still not a single slow test. (d) RATE: ONE STALL IN FIFTEEN RUNS tonight, where W507 measured three in six. So it is far rarer than when the row was written and it is NOT fixed, which means the -n 6 cadence remains sound only because the completeness gate catches it. (e) A NEW FINDING ABOUT THE INSTRUMENT, not the stall: the progress file read {collected: null, reported: 93} while 544 tests had produced a terminal character. So in a stalled run the hook reports no collected total and undercounts the reported set roughly six-fold. run_verdict therefore answered NOT KNOWN, which is the correct verdict - but it reached it because no collected count existed, NOT because a short reported count was compared against a known total, which is how it was designed to detect this. A gate that returns the right answer by the wrong route will return the wrong answer when the route changes. (f) NO STACK WAS OBTAINED: py-spy is not installed and is not on PATH, so the row's stated next step is still open - and the next live stall should be used for it before killing, since this is evidently a once-in-fifteen opportunity. FIX: install py-spy so the next stall yields a stack; and separately, make the progress hook's collected count survive a stalled xdist run, since that is the figure the completeness gate is supposed to compare against.",
+      "source": "W552 (the stall caught alive and measured, rather than inferred after a kill)",
+      "found": "2026-10-03",
+      "files": [
+        "integration_tests/conftest.py",
+        "scripts/run_verdict.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is FU-301's own subject, which rides P2.17",
       "tier": 2
     }
   ],
