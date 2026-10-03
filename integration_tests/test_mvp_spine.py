@@ -27562,28 +27562,55 @@ def test_w510_the_appraisal_cell_takes_eight_readings_and_reconciles_them(client
     _plan510 = _pf510.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))
     _done510 = {i["slot"] for i in _plan510 if i["done"] and str(i["slot"]).startswith("P2.")}
     _expected_blocked = {k for k in _BBR if str(k).startswith("P2.") and k not in _done510}
-    assert _expected_blocked, ("the ruling holds nothing open in this scope, so the three assertions "
-                               "below would pass over empty sets and measure nothing")
-    assert set(f["reasoning"]["blocked_by_ruling"]) == _expected_blocked, (
-        "the cell's blocked set disagrees with the ruling minus the done markers",
-        sorted(f["reasoning"]["blocked_by_ruling"]), sorted(_expected_blocked))
-    #  A DONE ITEM IS NOT BLOCKED, IT IS CLOSED — W551's correction, asserted rather than assumed, and
-    #  it only has force because at least one P2 item the ruling names is now done.
+    #  A DONE ITEM IS NOT BLOCKED, IT IS CLOSED — W551's correction, and it only has force because at
+    #  least one P2 item the ruling names has closed. That is true and stays true: items never un-close.
     assert _done510 & set(_BBR), ("no item the ruling holds has closed yet, so the double-count this "
                                   "leg guards against is not reachable from the current register")
     assert not (_done510 & set(f["reasoning"]["blocked_by_ruling"])), (
         "a closed item is still being reported as held behind a gate it has already passed",
         sorted(_done510 & set(f["reasoning"]["blocked_by_ruling"])))
-    #  and no item is both held and offered as closable by working it
-    assert not (set(f["reasoning"]["blocked_by_ruling"]) & set(f["reasoning"]["closable_by_working_them"])), (
-        f["reasoning"]["blocked_by_ruling"], f["reasoning"]["closable_by_working_them"])
+    assert set(f["reasoning"]["blocked_by_ruling"]) == _expected_blocked, (
+        "the cell's blocked set disagrees with the ruling minus the done markers",
+        sorted(f["reasoning"]["blocked_by_ruling"]), sorted(_expected_blocked))
+    if _expected_blocked:
+        #  THE GATE STILL HOLDS SOMETHING: nothing may be both held and offered as closable by working it.
+        assert not (set(f["reasoning"]["blocked_by_ruling"])
+                    & set(f["reasoning"]["closable_by_working_them"])), (
+            f["reasoning"]["blocked_by_ruling"], f["reasoning"]["closable_by_working_them"])
+    else:
+        #  THE GATE IS DISCHARGED, which is the state P2 reached in W558 when the last of the six items
+        #  the Owner's sequencing ruling named (P2.11–P2.16) closed. This arm exists because the first
+        #  version of this leg REQUIRED a non-empty blocked set and fired the moment the programme
+        #  succeeded — correctly refusing to pass over an empty set, and with no way to say that empty
+        #  was now the right answer. A discharged gate must be REPORTED, not merely absent.
+        assert f["reasoning"]["blocked_by_ruling"] == {}, f["reasoning"]["blocked_by_ruling"]
+        assert f["reasoning"]["ceiling_without_clearing_the_gate"] is None, (
+            "the cell reports a ceiling for a gate that no longer holds anything, so a reader is told "
+            "this scope is capped by a constraint that has been satisfied",
+            f["reasoning"]["ceiling_without_clearing_the_gate"])
+        assert "no item in this scope is recorded as held behind another" in f["reasoning"]["basis"], (
+            f["reasoning"]["basis"])
+        #  and every open item in scope is now offered as closable by working it — there is nothing else
+        #  left to be waiting for.
+        _open_p2 = {i["slot"] for i in _plan510 if not i["done"] and str(i["slot"]).startswith("P2.")}
+        assert set(f["reasoning"]["closable_by_working_them"]) == _open_p2, (
+            sorted(f["reasoning"]["closable_by_working_them"]), sorted(_open_p2))
     ceiling = f["reasoning"]["ceiling_without_clearing_the_gate"]
     p2_items = f["reflection"]["items_done"] + f["reflection"]["items_open"]
-    # the ceiling must be BELOW the scope's item count, because some of its items are held behind others.
-    # Equal would mean the gate costs nothing, which is the claim this faculty exists to refuse.
-    assert isinstance(ceiling, int), ceiling
-    assert f["reflection"]["items_done"] <= ceiling < p2_items, (ceiling, p2_items)
-    assert ceiling == p2_items - len(f["reasoning"]["blocked_by_ruling"]), (ceiling, f["reasoning"])
+    if _expected_blocked:
+        # the ceiling must be BELOW the scope's item count, because some of its items are held behind
+        # others. Equal would mean the gate costs nothing, which is the claim this faculty exists to
+        # refuse.
+        assert isinstance(ceiling, int), ceiling
+        assert f["reflection"]["items_done"] <= ceiling < p2_items, (ceiling, p2_items)
+        assert ceiling == p2_items - len(f["reasoning"]["blocked_by_ruling"]), (ceiling, f["reasoning"])
+    else:
+        # A DISCHARGED GATE HAS NO CEILING. Reporting one would tell a reader this scope is capped by a
+        # constraint that has been satisfied — and the arithmetic above would then read ceiling ==
+        # p2_items, which is precisely the "the gate costs nothing" claim the faculty refuses to make.
+        # None is the honest answer: there is no gate, so there is no ceiling imposed by one.
+        assert ceiling is None, (
+            "the cell reports a ceiling for a gate that no longer holds anything", ceiling, p2_items)
     assert "FU-253" in f["reasoning"]["the_one_lever"], "the lever must be named, not implied"
 
     # ── ATTRIBUTION: a share computed from the rows, and the judgement half stated ─────────────────────
@@ -27957,10 +27984,33 @@ def test_w512_the_cell_has_a_temporal_spine_whose_middle_is_the_present(client):
         for banned in ("probability", "likelihood", "confidence", "weight", "rank", "score"):
             assert banned not in b, (b["branch"], banned)
     assert "ONE forecaster" in p["never"], p["never"]
-    assert "not a claim that they will be" in json.dumps(p["branches"]), p["branches"]
-    # both directions of the gate are enumerated — a single branch is a prediction wearing a branch's clothes
+    #  THE INVARIANT THAT SURVIVES THE PLAN MOVING: every branch says what it is NOT, so none of them
+    #  can be read as a prediction. The earlier form required one particular branch's disclaimer by its
+    #  wording, and the gate branches stopped being generated the moment the gate was discharged — a
+    #  true statement about the plan turning a guard red.
     names = [b["branch"] for b in p["branches"]]
-    assert "the gate clears" in names and "the gate does not clear" in names, names
+    for b in p["branches"]:
+        _not = b.get("what_this_is_not") or b.get("consequence")
+        assert _not, ("a branch states no limit, so it reads as a forecast", b)
+    import pathlib as _pl512
+    from agentic_core.api.method import _BLOCKED_BY_RULING as _BBR512
+    from agentic_core import plan_followups as _pf512
+    _plan512 = _pf512.plan_items(
+        (_pl512.Path(__file__).resolve().parents[1] / "docs/FABLE_DELIVERY_PROMPT.md")
+        .read_text(encoding="utf-8"))
+    _blocked_now = {k for k in _BBR512
+                    if any(str(i["slot"]) == k and not i["done"] for i in _plan512)}
+    if _blocked_now:
+        #  BOTH DIRECTIONS OF THE GATE — a single branch is a prediction wearing a branch's clothes.
+        assert "the gate clears" in names and "the gate does not clear" in names, names
+        assert "not a claim that they will be" in json.dumps(p["branches"]), p["branches"]
+    else:
+        #  DISCHARGED (W558: P2.11–P2.16 all closed). There is no gate to enumerate either side of, and
+        #  inventing one would be a branch about a constraint that no longer exists.
+        assert "the gate clears" not in names and "the gate does not clear" not in names, (
+            "the cell enumerates a gate that no longer holds anything", names)
+        assert p["branches"], (
+            "every branch vanished with the gate, so prospection now says nothing at all", p)
 
     # the cell still refuses to call a scope sound, with three more faculties than before
     assert "sound, ready, or on track" in a["this_cell_never_says"]
@@ -33781,14 +33831,27 @@ def test_w557_the_companion_surface_shows_three_states_and_claims_no_alignment_n
         "exactly like one it evaluated and cleared — the item's third clause")
     #  CONSUMPTION, read from ITS OWN BLOCK rather than from anywhere in the file: "Not recorded" also
     #  appears in the asked-text fallback, so a file-wide check survived a zero being put here.
+    #  W558 BUILT THE CONSUMPTION RECORD, so this block grew two arms and the old slice — up to the
+    #  FIRST </div> — now cut inside the field map, before the fallback it was looking for. The block is
+    #  read to its own closing comment instead, and the fallback is matched on the sentence only it can
+    #  produce rather than on "Not recorded", which also appears inside the served_by basis.
     _consume = _src[_src.index('data-testid="companion-consumption"'):]
-    _consume = _consume[:_consume.index("</div>")]
-    assert ">Not recorded</p>" in _consume, (
-        "the consumption block does not say the cost was not recorded", _consume[-300:])
+    _consume = _consume[:_consume.index("{/* THE OWNER'S OWN ENTRY")]
+    assert "No ConsumptionRecord was joined to this run" in _consume, (
+        "the consumption block has no arm for a run nothing accounted for", _consume[-300:])
+    assert "{m.measured ? (" in _consume, (
+        "the consumption block does not branch on whether a figure was measured", _consume[-300:])
     assert not re.search(r">\s*0(\.\d+)?\s*(ms|s|tokens|wst)\b", _consume), (
         "a zero stands in for an unmeasured cost on the surface a user reads to learn what their "
         "request consumed", _consume[-300:])
-    assert "P2.15" in _consume and "A zero here would be a figure nobody computed" in _consume, _consume[:0]
+    #  W558 — the "(P2.15)" citation is gone from this block ON PURPOSE and the assertion for it with
+    #  it: the page used to say "no ConsumptionRecord exists on this platform yet (P2.15)", and one now
+    #  does. What must survive is the REASON, which is true in either world: the fallback appears when a
+    #  run was not accounted for, and a zero there would still be a figure nobody computed.
+    #  matched on a fragment JSX cannot line-wrap through: the full sentence starts "A" at the end of
+    #  one line and continues on the next, so the literal does not exist in the source at all.
+    assert "zero here would be a figure nobody computed" in _consume, (
+        "the fallback no longer says why a zero would be worse than the gap", _consume[-300:])
     #  the Owner's entry, in the item body's own words
     assert "No station assigned" in _src, "the page does not render the item's own absent-tag wording"
     #  AND THE PAGE IS REACHED — asserted on an UNCOMMENTED line, because a commented-out route contains
@@ -33823,3 +33886,145 @@ def test_w557_the_companion_surface_shows_three_states_and_claims_no_alignment_n
     assert "assert esc[0] is None and esc[1] == [] and esc[2]" in _st, (
         "the seed does not assert its own premise — three identical rows would make the probe pass over "
         "a page that renders one state three times")
+
+
+def test_w558_every_consumed_figure_names_what_measured_it_and_the_owner_fields_stay_empty(client):
+    """P2.15: a ConsumptionRecord joined to each run — every figure traces, an unfilled Owner field
+    renders as unfilled, and nothing about a person is inferred (A.9.5).
+
+    The bar's own note says the three claims were unfalsifiable as written, and the shape it names is
+    the one these legs avoid: "every figure traces to a measured fact" is a claim ABOUT claims. Each leg
+    below drives a figure and reads what the record says measured it.
+    """
+    import pathlib
+    import re
+    from agentic_core.horizon import consumption as _c
+
+    # ── L1. A MEASURED ZERO AND AN UNMEASURED FIELD ARE DIFFERENT STATES ─────────────────────────
+    #  The bar's own words: "a guard drives a run whose provenance map is EMPTY and asserts the record
+    #  says so rather than reporting 0 — a zero that means 'not measured' is the defect".
+    _empty = _c.build(provenance={})
+    assert _empty["calls"]["value"] == 0 and _empty["calls"]["measured"] is True, (
+        "a run whose provenance map was present and EMPTY did not report a measured nought", _empty["calls"])
+    _absent = _c.build(provenance=None)
+    assert _absent["calls"]["value"] is None and _absent["calls"]["measured"] is False, (
+        "a run nothing instrumented reported a number", _absent["calls"])
+    assert "NOT MEASURED" in _absent["calls"]["basis"] and "This is not zero" in _absent["calls"]["basis"], (
+        _absent["calls"]["basis"])
+    #  and the two are DISTINGUISHABLE by a reader, not only by a key
+    assert _empty["calls"]["basis"] != _absent["calls"]["basis"], (
+        "a measured nought and an unmeasured field carry the same sentence")
+
+    # ── L2. EVERY COMPUTED FIELD NAMES ITS SOURCE, and the set is CLOSED ─────────────────────────
+    _rec = _c.build(wall_ms=12.5, provenance={"a": {"served_by": "native"}},
+                    stores_read=["projects.json"], whose_data="user:rehan")
+    for _f, _src in _c.FIELDS.items():
+        assert isinstance(_rec[_f], dict), (_f, "a computed field is a bare value with no source")
+        assert _rec[_f]["basis"], (_f, "a field names no source")
+        assert len(_src) > 60, (_f, "a source description too thin to act on", _src)
+    assert _rec["calls"]["value"] == 1 and _rec["served_by"]["value"] == {"a": "native"}, _rec
+    #  THE CLOSURE is what makes L4 a check on the binding: a record carries no computed field that is
+    #  not declared in FIELDS.
+    _computed = {k for k, v in _rec.items() if isinstance(v, dict) and "measured" in v}
+    assert _computed == set(_c.FIELDS), ("a record computed a field FIELDS does not declare, so the "
+                                        "closed set is not closed", sorted(_computed ^ set(_c.FIELDS)))
+    assert _rec["computed_fields"] == sorted(_c.FIELDS), _rec["computed_fields"]
+
+    # ── L3. THE OWNER'S FIELDS ARE EMPTY, AND NOTHING BUT THE OWNER MAY WRITE THEM ───────────────
+    for _f in _c.OWNER_FIELDS:
+        assert _rec[_f] is None, (_f, "an Owner field was given a value by something that computed it")
+        assert "NOT FILLED" in _rec[f"{_f}_basis"], _rec[f"{_f}_basis"]
+        assert "nothing is inferred" in _rec[f"{_f}_basis"], _rec[f"{_f}_basis"]
+        #  it is NOT in the computed set — that is the structural half of the claim
+        assert _f not in _c.FIELDS, (_f, "an Owner field is declared as something the platform computes")
+    _saved = _c.save(_c.build(intent_id="w558-intent"))
+    _cid = _saved["consumption_id"]
+    #  AN AGENT MAY NOT WRITE ONE, driven rather than stated
+    _ref = _c.set_owner_field(_cid, "used_well", "it went well", "agent:summariser")
+    assert _ref["ok"] is False and "does not name a user" in _ref["reason"], _ref
+    assert "A.9.5" in _ref["reason"], ("the refusal does not cite the ruling it rests on", _ref["reason"])
+    #  A USER MAY — otherwise the field is unwritable and the refusal above is the only reachable state
+    _ok = _c.set_owner_field(_cid, "used_well", "the draft saved me an afternoon", "user:rehan")
+    assert _ok["ok"] is True and _ok["record"]["used_well"] == "the draft saved me an afternoon", _ok
+    assert _ok["record"]["used_well_by"] == "user:rehan", _ok["record"]
+    #  AND CLEARING RETURNS IT TO UNFILLED, with the basis back — not to an empty string
+    _cl = _c.set_owner_field(_cid, "used_well", "", "user:rehan")
+    assert _cl["record"]["used_well"] is None and _cl["record"]["used_well_by"] is None, _cl["record"]
+    assert "NOT FILLED" in _cl["record"]["used_well_basis"], _cl["record"]["used_well_basis"]
+
+    # ── L4. NOTHING ABOUT A PERSON IS COMPUTED — asserted on the BINDING (A.9.5) ─────────────────
+    #  Not a word list over the source: a comment naming a forbidden field would satisfy a grep. The
+    #  record's computed set is CLOSED to FIELDS (L2), so this checks what FIELDS may contain.
+    for _f, _src in _c.FIELDS.items():
+        _blob = f"{_f} {_src}".lower()
+        for _never in _c.NEVER_COMPUTED:
+            assert _never not in _blob, (
+                f"a computed field concerns {_never!r}, which Ruling A.9.5 forbids this platform from "
+                f"computing about anyone", _f, _src)
+    assert set(_c.NEVER_COMPUTED) >= {"virtue", "gratitude", "barakah", "spiritual"}, _c.NEVER_COMPUTED
+
+    # ── L5. IT IS JOINED TO A RUN ON THE LIVE PATH, not only buildable ───────────────────────────
+    from agentic_core.horizon import membrane as _mem
+    _before = len(_c.listing(1000))
+    _mem.observe_request("POST", "/api/v1/law/analyse", status=200, wall_ms=7.5)
+    _after = _c.listing(1000)
+    assert len(_after) == _before + 1, ("the seam observed a run and accounted for nothing", _before,
+                                       len(_after))
+    _joined = _after[0]
+    assert _joined["wall_ms"]["measured"] is True and _joined["wall_ms"]["value"] == 7.5, _joined["wall_ms"]
+    assert _joined["intent_id"], "the consumption record is joined to no intent, so nothing can show it"
+    #  AND THE MIDDLEWARE ITSELF MUST SUPPLY THE CLOCK. A blind proved the leg above insufficient: it
+    #  hands observe_request a wall time directly, so deleting the timer in app_mvp.py left it green
+    #  while nothing on the live path measured anything. A REAL request is driven through the app.
+    _n = len(_c.listing(1000))
+    _resp = client.post("/api/v1/law/analyse", json={"document_text": "A short agreement, two parties."})
+    assert _resp.status_code == 200, _resp.text
+    _live = _c.listing(1000)
+    assert len(_live) == _n + 1, ("a real request through the app accounted for nothing", _n, len(_live))
+    assert _live[0]["wall_ms"]["measured"] is True, (
+        "the middleware did not time the handler, so nothing on the live path measures wall time at all",
+        _live[0]["wall_ms"])
+    assert isinstance(_live[0]["wall_ms"]["value"], (int, float)) and _live[0]["wall_ms"]["value"] >= 0, (
+        _live[0]["wall_ms"])
+    #  and what the seam CANNOT measure says so rather than reporting zero
+    assert _joined["calls"]["measured"] is False, (
+        "the seam claimed to have measured a call count it has no provenance map for", _joined["calls"])
+
+    # ── L6. THE SURFACE, and the page renders the unfilled field as UNFILLED ─────────────────────
+    _api = client.get("/api/v1/horizon/consumption?limit=50")
+    assert _api.status_code == 200, _api.text
+    _j = _api.json()
+    assert _j["total"] >= 1 and "DIFFERENT STATES" in _j["basis"], _j["basis"]
+    assert _j["states"]["never_computed_basis"].count("A.9.5") >= 1, _j["states"]["never_computed_basis"]
+    #  the route refuses an agent too — the module's refusal must survive being exposed
+    _bad = client.post("/api/v1/horizon/consumption/owner-field",
+                       json={"consumption_id": _cid, "field": "not_a_field", "text": "x"})
+    assert _bad.status_code == 422, _bad.status_code
+    _page = (pathlib.Path(__file__).resolve().parents[1]
+             / "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx")
+    _src = _page.read_text(encoding="utf-8")
+    #  the RENDER forms and the PREDICATE, not a field name an interface also carries
+    assert "{m.measured ? (" in _src, "the page does not branch on whether a figure was measured"
+    assert ">Not measured</dd>" in _src, "the page has no words for an unmeasured figure"
+    assert ">Not filled</dd>" in _src, "the page has no words for an unfilled Owner field"
+    assert "{o.value ? (" in _src, "the page does not branch on whether the Owner has written one"
+    #  and the unfilled arm carries the backend's own reason rather than a second wording
+    assert "{o.basis}" in _src, _src[:0]
+    for _forbidden in ("nothing but the Owner may write it", "NOT FILLED:"):
+        assert _forbidden not in _src, (
+            "the page hard-codes a sentence the backend owns, so the two can drift", _forbidden)
+
+    # ── L7. THE PROBE DRIVES BOTH ARMS ON THE RENDERED PAGE ──────────────────────────────────────
+    _probe = (pathlib.Path(__file__).resolve().parents[1] / "scripts/_w557_probe.mjs").read_text(
+        encoding="utf-8")
+    for _needed in ("an unfilled Owner field renders as NOT FILLED",
+                    "an unmeasured figure renders as NOT MEASURED, never as a zero",
+                    "a run WITH a consumption record renders its figures",
+                    "a run WITHOUT one says the cost was not accounted for"):
+        assert _needed in _probe, ("the probe does not drive a clause of the bar", _needed)
+    #  AND IT DOES NOT TEST FOR A PHRASE THAT APPEARS IN A BASIS. Two checks in this probe were caught
+    #  that way; the anchor must be a sentence only the fallback can produce.
+    assert "const FALLBACK = 'No ConsumptionRecord was joined to this run';" in _probe, (
+        "the probe's not-recorded check is not anchored on the fallback's own sentence")
+    assert not re.search(r"check\('consumption renders as NOT RECORDED'", _probe), (
+        "the vacuous form of the consumption check is back")

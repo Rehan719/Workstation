@@ -97,8 +97,33 @@ const TextField: React.FC<{ label: string; value?: string }> = ({ label, value }
   </div>
 );
 
+interface Measured { value: unknown; measured: boolean; basis: string }
+interface OwnerField { value: string | null; basis: string }
+interface Consumption { computed: Record<string, Measured>; owner: Record<string, OwnerField> }
+
+/** Reshape a ConsumptionRecord into the two groups the card renders, keyed by intent. */
+const byIntent = (rows: Record<string, unknown>[]): Record<string, Consumption> => {
+  const out: Record<string, Consumption> = {};
+  for (const row of rows) {
+    const id = row.intent_id as string | null;
+    if (!id) continue;
+    const computed: Record<string, Measured> = {};
+    for (const f of (row.computed_fields as string[]) || []) {
+      const m = row[f] as Measured | undefined;
+      if (m) computed[f] = m;
+    }
+    const owner: Record<string, OwnerField> = {};
+    for (const f of (row.owner_fields as string[]) || []) {
+      owner[f] = { value: (row[f] as string | null) ?? null, basis: (row[`${f}_basis`] as string) || '' };
+    }
+    out[id] = { computed, owner };
+  }
+  return out;
+};
+
 export const HorizonCompanion: React.FC = () => {
   const [d, setD] = useState<Records | null>(null);
+  const [consumption, setConsumption] = useState<Record<string, Consumption>>({});
   const [err, setErr] = useState('');
 
   useEffect(() => {
@@ -108,6 +133,12 @@ export const HorizonCompanion: React.FC = () => {
         else { setD(null); setErr(`The records are not reporting (HTTP ${r.status}).`); }
       })
       .catch(() => { setD(null); setErr('The records could not be reached.'); });
+    // Fetched SEPARATELY and failing separately: a consumption store that cannot be read must leave
+    // the card saying "not recorded", which is true, rather than blanking the record above it.
+    axios.get<{ records: Record<string, unknown>[] }>('/api/v1/horizon/consumption?limit=100',
+      { validateStatus: () => true })
+      .then(r => { if (r.status === 200 && r.data?.records) setConsumption(byIntent(r.data.records)); })
+      .catch(() => { /* leaves the card at "Not recorded", which is what is true */ });
   }, []);
 
   return (
@@ -192,17 +223,57 @@ export const HorizonCompanion: React.FC = () => {
             )}
           </div>
 
-          {/* WHAT THE RUN CONSUMED — not built, and said so rather than shown as zero. */}
+          {/* WHAT THE RUN CONSUMED (P2.15). Every figure carries what measured it, or says nothing
+              did — and an unmeasured field is never a zero. */}
           <div data-testid="companion-consumption"
-               className="rounded-xl p-4 border border-amber-500/30 bg-amber-500/5">
+               className="rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 space-y-2">
             <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-400/90 flex items-center gap-2">
               <HelpCircle className="w-3 h-3" /> What this run consumed
             </h3>
-            <p className="text-slate-300 font-bold mt-1">Not recorded</p>
-            <p className="text-slate-500 text-[11px] font-bold leading-relaxed mt-1">
-              No ConsumptionRecord exists on this platform yet (P2.15), so nothing measured what this run
-              cost. A zero here would be a figure nobody computed, which is worse than the gap.
-            </p>
+            {consumption[r.intent_id] ? (
+              <>
+                <dl className="grid gap-2 @[640px]:grid-cols-2">
+                  {Object.entries(consumption[r.intent_id].computed).map(([f, m]) => (
+                    <div key={f} data-testid="consumption-field">
+                      <dt className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                        {f.replace(/_/g, ' ')}
+                      </dt>
+                      {m.measured ? (
+                        <dd className="text-slate-200 font-bold">{JSON.stringify(m.value)}</dd>
+                      ) : (
+                        // NOT A ZERO. An unmeasured field and a measured nought are different facts.
+                        <dd className="text-slate-500 font-bold">Not measured</dd>
+                      )}
+                      <dd className="text-slate-600 text-[10px] font-bold leading-relaxed">{m.basis}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {/* THE OWNER'S OWN FIELDS, unfilled, rendered as unfilled — the item's clause (2). */}
+                <div className="pt-2 border-t border-amber-500/20 space-y-2">
+                  {Object.entries(consumption[r.intent_id].owner).map(([f, o]) => (
+                    <div key={f} data-testid="consumption-owner-field">
+                      <dt className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                        {f.replace(/_/g, ' ')}
+                      </dt>
+                      {o.value ? (
+                        <dd className="text-slate-200 font-bold italic">“{o.value}”</dd>
+                      ) : (
+                        <dd className="text-amber-400 font-black uppercase tracking-wide">Not filled</dd>
+                      )}
+                      <dd className="text-slate-600 text-[10px] font-bold leading-relaxed">{o.basis}</dd>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-slate-300 font-bold">Not recorded</p>
+                <p className="text-slate-500 text-[11px] font-bold leading-relaxed">
+                  No ConsumptionRecord was joined to this run, so nothing accounted for what it cost. A
+                  zero here would be a figure nobody computed, which is worse than the gap.
+                </p>
+              </>
+            )}
           </div>
 
           {/* THE OWNER'S OWN ENTRY. Absent renders as the item's own words. */}

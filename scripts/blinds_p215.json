@@ -1,0 +1,146 @@
+[
+  {
+    "tag": "a run nothing instrumented reports nought calls instead of saying nothing measured it",
+    "file": "agentic_core/horizon/consumption.py",
+    "old": "    if isinstance(provenance, dict):",
+    "new": "    if True:\n        provenance = provenance or {}",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L1, and the bar names it in as many words: 'a zero that means not measured is the defect, not the absence of a number'. With the mutation an absent provenance map becomes an empty one, so a run nobody instrumented reports calls=0 — indistinguishable from a run that genuinely made none."
+  },
+  {
+    "tag": "a measured zero and an unmeasured field carry the same sentence",
+    "file": "agentic_core/horizon/consumption.py",
+    "old": "    if value is None:\n        return {\"value\": None, \"measured\": False,",
+    "new": "    if value is None:\n        return {\"value\": None, \"measured\": True,",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L1's other half. The mutation leaves the NOT MEASURED sentence in place and flips only the field a reader's code branches on — the shape where a basis says one thing and the verdict says another, which a leg reading the prose would pass over."
+  },
+  {
+    "tag": "a computed field carries no source",
+    "file": "agentic_core/horizon/consumption.py",
+    "old": "    return {\"value\": value, \"measured\": True, \"basis\": FIELDS[field]}",
+    "new": "    return {\"value\": value, \"measured\": True, \"basis\": \"\"}",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L2 — the bar's first clause is that each field NAMES ITS SOURCE. A figure with no source is the thing this item exists to prevent: a number on a surface that nobody can trace to the thing that produced it."
+  },
+  {
+    "tag": "an Owner field is declared as something the platform computes",
+    "file": "agentic_core/horizon/consumption.py",
+    "old": "    \"whose_data\": (",
+    "new": "    \"used_well\": \"inferred from how long the run took and whether it escalated\",\n    \"whose_data\": (",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L2 and L3 together, and it is the A.9.5 breach in its most plausible disguise — not a 'barakah score' but a reasonable-sounding inference about whether a person's run went well. The closed computed set is what makes this catchable: adding it here is the only way to add it at all, and the guard reads the set."
+  },
+  {
+    "tag": "a field about a person's state is computed",
+    "file": "agentic_core/horizon/consumption.py",
+    "old": "    \"stores_read\": (",
+    "new": "    \"gratitude_expressed\": \"counted from the words the user used about the result\",\n    \"stores_read\": (",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L4 — Ruling A.9.5, asserted on the BINDING rather than on a word list. A grep over the source would be satisfied by a comment; this leg reads what FIELDS actually declares, so a field can only be added by declaring it where the check looks."
+  },
+  {
+    "tag": "an agent may write the Owner's own field",
+    "file": "agentic_core/horizon/consumption.py",
+    "old": "    if not str(by or \"\").startswith(\"user:\"):",
+    "new": "    if False:",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L3. A value written here by an agent is the platform's account of what a person formed, asserted in their own field — the same identity check the reflection tag keeps, for the same reason and under the same ruling."
+  },
+  {
+    "tag": "clearing an Owner field leaves an empty string rather than returning it to unfilled",
+    "file": "agentic_core/horizon/consumption.py",
+    "old": "    _text = (text or \"\").strip() or None",
+    "new": "    _text = (text or \"\").strip()",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L3. An empty string is a VALUE: the field would read as written-and-blank rather than never written, and the basis would stop saying NOT FILLED. The bar forbids 0, \"\" and a default by name."
+  },
+  {
+    "tag": "the seam accounts for nothing, so no record is joined to a run",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "            _consumption.save(_consumption.build(",
+    "new": "            _ = (lambda *a, **k: None)(",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L5 — the item's own words are 'a ConsumptionRecord JOINED TO EACH RUN'. A module that can build one and never does is the reach failure this plan keeps finding, and the companion surface would show 'not recorded' for every run forever while the code looked complete."
+  },
+  {
+    "tag": "the seam claims to have measured a call count it has no map for",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "                run_id=None, wall_ms=wall_ms, provenance=None, stores_read=None, whose_data=None,",
+    "new": "                run_id=None, wall_ms=wall_ms, provenance={}, stores_read=[], whose_data=\"unknown\",",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L5. The seam has no provenance map, reads no stores and knows no account — passing empties would turn three honest NOT MEASURED fields into three measured zeros, which is the defect one layer up from where the module guards against it."
+  },
+  {
+    "tag": "the clock is not started, so wall time is never measured",
+    "file": "agentic_core/app_mvp.py",
+    "old": "                                      wall_ms=round((_t.monotonic() - _t0) * 1000, 3))",
+    "new": "                                      wall_ms=None)",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L5. The seam is the only layer that brackets the handler, so if it does not time the run nothing does — and the record would honestly say so, which is why only a leg asserting the MEASURED arm catches it. An honest absence is not a substitute for a measurement that was available."
+  },
+  {
+    "tag": "the page renders an unmeasured figure as a value",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx",
+    "old": "                      {m.measured ? (",
+    "new": "                      {true ? (",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L6. JSON.stringify(null) renders the string 'null' where a figure belongs — a surface showing a value for something nothing measured. The predicate is the only thing that cannot survive the defect, which is why the leg names it rather than the branch."
+  },
+  {
+    "tag": "the page renders an unfilled Owner field as blank instead of NOT FILLED",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx",
+    "old": "                        <dd className=\"text-amber-400 font-black uppercase tracking-wide\">Not filled</dd>",
+    "new": "                        <dd className=\"text-amber-400 font-black uppercase tracking-wide\"></dd>",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L6 is the bar's clause (2) verbatim — 'a guard reads a record the Owner has not touched and asserts the surface shows not filled, never 0, \"\" or a default — driven on the PAGE, not only on the API, because a writer fixed without its reader moves the untruth down a layer'."
+  },
+  {
+    "tag": "the page keeps its own wording of the reason nothing may write an Owner field",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx",
+    "old": "                      <dd className=\"text-slate-600 text-[10px] font-bold leading-relaxed\">{o.basis}</dd>",
+    "new": "                      <dd className=\"text-slate-600 text-[10px] font-bold leading-relaxed\">NOT FILLED: nothing but the Owner may write it.</dd>",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L6. Two wordings of a load-bearing claim drift, and the page is the copy nobody updates. The leg requires the render form AND forbids the backend's sentences appearing as literals, so neither half can be satisfied alone."
+  },
+  {
+    "tag": "the probe's not-recorded check goes back to the phrase that appears in a basis",
+    "file": "scripts/_w557_probe.mjs",
+    "old": "const FALLBACK = 'No ConsumptionRecord was joined to this run';",
+    "new": "const FALLBACK = 'Not recorded';",
+    "selector": "w558",
+    "expect": "BLIND(red)",
+    "why": "L7, and this is the defect as it actually happened: the first version tested /Not recorded/i and passed in BOTH states, because the served_by basis reads 'A call whose server was not recorded appears as null'. The anchor must be a sentence only the fallback can produce."
+  },
+  {
+    "tag": "a discharged gate still reports a ceiling, so a scope reads as capped by a satisfied constraint",
+    "file": "agentic_core/api/method.py",
+    "old": "        \"ceiling_without_clearing_the_gate\": (len([i for i in scoped_items if i.get(\"done\")]) + len(unblocked)\n                                             if blocked else None),",
+    "new": "        \"ceiling_without_clearing_the_gate\": len([i for i in scoped_items if i.get(\"done\")]) + len(unblocked),",
+    "selector": "w510",
+    "expect": "BLIND(red)",
+    "why": "The discharged-gate arm, added W558 when the last of the six items the Owner sequencing ruling named (P2.11-P2.16) closed. With the conditional gone the cell reports a ceiling equal to the whole scope - which is arithmetically the claim THE GATE COSTS NOTHING, the exact claim this faculty exists to refuse, now made about a gate that no longer exists."
+  },
+  {
+    "tag": "the cell enumerates a gate that no longer holds anything",
+    "file": "agentic_core/api/method.py",
+    "old": "    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items()\n               if any(str(i.get(\"slot\")) == k and not i.get(\"done\") for i in scoped_items)}\n    if blocked:\n        branches.append({\n            \"branch\": \"the gate clears\",",
+    "new": "    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items()\n               if any(str(i.get(\"slot\")) == k for i in scoped_items)}\n    if blocked:\n        branches.append({\n            \"branch\": \"the gate clears\",",
+    "selector": "w512",
+    "expect": "BLIND(red)",
+    "why": "Prospection, discharged arm. Dropping the done check makes every item the ruling ever named count as still blocking, so the cell offers a reader both directions of a gate that was satisfied in W558 - a branch about a constraint that no longer exists, which is a forecast about nothing."
+  }
+]

@@ -344,6 +344,59 @@ async def horizon_lessons(limit: int = 50,
     }
 
 
+class OwnerFieldRequest(BaseModel):
+    consumption_id: str
+    field: str = Field(description="used_well | what_was_formed")
+    text: Optional[str] = None       # None or "" CLEARS it back to unfilled
+
+
+@router.get("/consumption")
+async def horizon_consumption(limit: int = 50,
+                              user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """What runs consumed, with WHAT MEASURED each figure — or that nothing did."""
+    from agentic_core.horizon import consumption
+    rows = consumption.listing(limit)
+    _fields = len(consumption.FIELDS)
+    _measured = sum(1 for r in rows for f in consumption.FIELDS
+                    if isinstance(r.get(f), dict) and r[f].get("measured"))
+    _filled = sum(1 for r in rows for f in consumption.OWNER_FIELDS if r.get(f))
+    return {
+        "records": rows,
+        "total": len(rows),
+        "measured_fields": _measured,
+        "possible_fields": len(rows) * _fields,
+        "owner_fields_filled": _filled,
+        "basis": (
+            f"{_measured} of {len(rows) * _fields} computed field(s) across {len(rows)} record(s) were "
+            f"measured; the rest name what did not measure them rather than reporting zero. A MEASURED "
+            f"ZERO AND AN UNMEASURED FIELD ARE DIFFERENT STATES and are reported differently — calls=0 "
+            f"is a run whose provenance map was present and empty, calls=null is a run nothing "
+            f"instrumented. {_filled} Owner field(s) are filled; the rest are the Owner's to write and "
+            f"are computed by nothing"
+            if rows else
+            "no run has been accounted for yet, which is not the same as no run having happened"),
+        "states": consumption.states(),
+    }
+
+
+@router.post("/consumption/owner-field")
+async def horizon_consumption_owner_field(req: OwnerFieldRequest,
+                                          user: dict | None = Depends(get_current_user)
+                                          ) -> Dict[str, Any]:
+    """Set or CLEAR one of the Owner's own fields. USERS ONLY.
+
+    The identity check is the same one the reflection tag uses and for the same reason: a value written
+    here by an agent would be the platform's account of what a person formed, asserted in their field.
+    """
+    from agentic_core.horizon import consumption
+    _uid = (user or {}).get("username")
+    res = consumption.set_owner_field(req.consumption_id, req.field, req.text,
+                                      f"user:{_uid}" if _uid else "anonymous")
+    if not res.get("ok"):
+        raise HTTPException(status_code=422, detail=res.get("reason"))
+    return res
+
+
 @router.get("/seam")
 async def horizon_seam(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
     """What the Horizon seam watches, what it EXCLUDES, and what it has recorded (W554, P2.11).

@@ -79,11 +79,47 @@ check('an unset tag renders no value at all — the quoted form appears only whe
 check('and the page carries the kernel\'s own statement that no AI writes this field',
   /no AI ever writes it/i.test(reflection));
 
-// ── 6. CONSUMPTION IS NOT BUILT, AND THE PAGE SAYS SO RATHER THAN SHOWING A ZERO ────────────────
-const consumption = await page.locator('[data-testid="companion-consumption"]').first().innerText();
-check('consumption renders as NOT RECORDED', /Not recorded/i.test(consumption));
-check('and no zero stands in for an unmeasured cost',
-  !/\b0(\.0+)?\s*(ms|s|tokens|wst)?\b/i.test(consumption.replace(/P2\.15/g, '')));
+// ── 6. CONSUMPTION — BOTH ARMS, ANCHORED ON THE FALLBACK'S OWN SENTENCE ─────────────────────────
+// The first version of these checks tested the block for /Not recorded/i and passed in BOTH states,
+// because the served_by basis contains "A call whose server was not recorded appears as null". A short
+// phrase matched against a page of carefully worded bases is not an anchor — this is the SECOND check
+// in this probe caught that way, after the one that forbade the words an honest sentence needs in
+// order to deny something. Anchor on a sentence only the fallback can produce.
+const blocks = page.locator('[data-testid="companion-consumption"]');
+const blockCount = await blocks.count();
+const blockTexts = [];
+for (let i = 0; i < blockCount; i++) blockTexts.push(await blocks.nth(i).innerText());
+const FALLBACK = 'No ConsumptionRecord was joined to this run';
+const joined = blockTexts.filter(t => !t.includes(FALLBACK));
+const unjoined = blockTexts.filter(t => t.includes(FALLBACK));
+check('a run WITH a consumption record renders its figures', joined.length >= 1);
+check('a run WITHOUT one says the cost was not accounted for, in its own words', unjoined.length >= 1);
+check('and no zero stands in for an unmeasured cost, in either arm',
+  !blockTexts.some(t => /(^|[^\d.])0(\.0+)?\s*(ms|tokens|wst)\b/i.test(t)));
+
+// ── 7. W558 (P2.15) — WHAT THE RUN CONSUMED, three-state, and the Owner's fields UNFILLED ───────
+const fields = page.locator('[data-testid="consumption-field"]');
+const fieldCount = await fields.count();
+check('the consumption record renders its computed fields', fieldCount >= 5);
+const fieldTexts = [];
+for (let i = 0; i < fieldCount; i++) fieldTexts.push(await fields.nth(i).innerText());
+check('an unmeasured figure renders as NOT MEASURED, never as a zero',
+  fieldTexts.some(t => /Not measured/i.test(t))
+  && !fieldTexts.some(t => /Not measured/i.test(t) && /0/.test(t.split('Not measured')[0])));
+check('and every figure names what measured it, or what did not',
+  fieldTexts.every(t => /measured|NOT MEASURED/i.test(t)));
+
+const ownerFields = page.locator('[data-testid="consumption-owner-field"]');
+const ownerCount = await ownerFields.count();
+const ownerTexts = [];
+for (let i = 0; i < ownerCount; i++) ownerTexts.push(await ownerFields.nth(i).innerText());
+check('the Owner fields render on the page', ownerCount >= 2);
+check('an unfilled Owner field renders as NOT FILLED — never 0, never blank',
+  ownerTexts.every(t => /Not filled/i.test(t)));
+check('and no value stands in for one the Owner has not written',
+  !ownerTexts.some(t => /[“"].+[”"]/.test(t)));
+check('the page carries the reason nothing may write them',
+  ownerTexts.some(t => /nothing but the Owner may write it/i.test(t)));
 
 await browser.close();
 

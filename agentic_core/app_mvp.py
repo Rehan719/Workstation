@@ -86,7 +86,11 @@ async def _validation_error_survives_its_input(request, exc):
 # P2.11's body most wants in this store ("a request, a run failure or an Owner note").
 @app.middleware("http")
 async def _horizon_observe(request, call_next):
+    import time as _t
     _status, _raised = None, None
+    # W558 (P2.15) — the clock is here because this is the only layer that brackets the handler. A
+    # monotonic clock, not a wall clock, so a system time change cannot produce a negative duration.
+    _t0 = _t.monotonic()
     try:
         _response = await call_next(request)
         _status = getattr(_response, "status_code", None)
@@ -98,7 +102,8 @@ async def _horizon_observe(request, call_next):
         try:
             from agentic_core.horizon import membrane as _membrane
             _membrane.observe_request(request.method, request.url.path,
-                                      status=_status, raised=_raised)
+                                      status=_status, raised=_raised,
+                                      wall_ms=round((_t.monotonic() - _t0) * 1000, 3))
         except Exception:             # noqa: BLE001 — a failure to OBSERVE is never a failure to SERVE
             pass                      # (membrane._record counts its own failures; this guards the import)
 

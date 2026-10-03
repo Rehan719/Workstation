@@ -19,7 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agentic_core.horizon import kernel  # noqa: E402
+from agentic_core.horizon import consumption, kernel  # noqa: E402
 
 #  What a provisioned model returns, in the format _COMPRESS_PROMPT asks for. The second one is the
 #  state the bar names: a compression that ANSWERED the escalation question, and the answer was none.
@@ -50,6 +50,10 @@ def main() -> int:
         rec = kernel.build_record(obs, served_by, is_external, False, text)
         dec = kernel.decide(rec)
         row = kernel.save(rec, dec)
+        #  W558 (P2.15) — a ConsumptionRecord joined to the run, so the companion surface has one to
+        #  render. Nothing here measures: every figure is supplied as None and the record says what did
+        #  not measure it, which is the state the page must show honestly.
+        consumption.save(consumption.build(intent_id=row["intent_id"], wall_ms=None, provenance=None))
         made.append((label, row))
         print(f"SEEDED {row['intent_id']}  {row['compression']:<16} {dec['decision']:<14} {label}")
         print(f"       escalations={row.get('escalations', '<absent>')!r} "

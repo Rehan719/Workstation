@@ -152,7 +152,8 @@ _errors: List[str] = []
 
 
 def observe_request(method: str, path: str, status: Optional[int] = None,
-                    raised: Optional[str] = None) -> Optional[Dict[str, Any]]:
+                    raised: Optional[str] = None,
+                    wall_ms: Optional[float] = None) -> Optional[Dict[str, Any]]:
     """The middleware's half: one observed row for a mutating domain request.
 
     THE OUTCOME IS PART OF THE OBSERVATION, and the first draft of this seam left it out. Observing
@@ -181,7 +182,7 @@ def observe_request(method: str, path: str, status: Optional[int] = None,
         except Exception as _exc:                # noqa: BLE001 — counted, never raised into the request
             _errors.append(f"lesson: {_exc.__class__.__name__}: {_exc}")
             del _errors[:-20]
-    return _record(
+    _row = _record(
         source="domain_route", surface=f"{str(method).upper()} {path}",
         raw_text=f"{str(method).upper()} {path}",
         #  route_domain, NOT `domain`. See ROUTE_DOMAIN_BASIS — writing it into the kernel's own field
@@ -198,6 +199,20 @@ def observe_request(method: str, path: str, status: Optional[int] = None,
                    if isinstance(status, int) else
                    "NOT KNOWN: no status was supplied to this observation, so whether the request was "
                    "served cannot be stated")})
+    #  W558 (P2.15) — A CONSUMPTION RECORD JOINED TO THE RUN. The seam is the only place that holds a
+    #  clock around the handler, so wall time is measured here and nowhere else. Everything it cannot
+    #  measure is reported as NOT MEASURED rather than as zero: no provenance map reaches this layer, so
+    #  `calls` is null and says why — a run nobody instrumented is not a run that made no calls.
+    if _row is not None:
+        try:
+            from agentic_core.horizon import consumption as _consumption
+            _consumption.save(_consumption.build(
+                run_id=None, wall_ms=wall_ms, provenance=None, stores_read=None, whose_data=None,
+                intent_id=_row.get("intent_id")))
+        except Exception as _exc:                # noqa: BLE001 — counted, never raised into the request
+            _errors.append(f"consumption: {_exc.__class__.__name__}: {_exc}")
+            del _errors[:-20]
+    return _row
 
 
 def observe_outcome(kind: str, resource: str, *, served_by: Optional[str] = None,
