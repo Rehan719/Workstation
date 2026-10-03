@@ -28019,15 +28019,40 @@ def test_w512_the_cell_has_a_temporal_spine_whose_middle_is_the_present(client):
     # RESPONSE as well as the record. It was written to the record and omitted from the response, and the
     # omission was invisible until a real submission was read — a fact stored and not rendered is rendered
     # nowhere, which is the class this whole method exists to catch.
+    #  THE PATH IS TAKEN FROM A ROW THAT IS OPEN NOW, not pinned. This probe named
+    #  "agentic_core/cognitive", which exactly one open row cited — and W560 closed that row, so the
+    #  guard went red because the work succeeded. A fixture that depends on a particular row staying
+    #  open fails on progress, which is the class FU-365 names; here it was the FIXTURE rather than the
+    #  assertion, and it fails the same way.
+    import json as _json512b
+    import pathlib as _pl512b
+    _reg512 = _json512b.loads(
+        (_pl512b.Path(__file__).resolve().parents[1] / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _cited = next((f for r in _reg512["items"] if r.get("status") == "open"
+                   for f in (r.get("files") or []) if str(f).startswith("agentic_core/")), None)
+    assert _cited, ("no open row cites a file under agentic_core/, so the appraisal has nothing to "
+                    "appraise and this leg would measure nothing")
     sub = client.post("/api/v1/cca/submit", json={
         "title": "w512 scope appraisal probe", "change_type": "config_minor",
         "description": "a change whose affected systems map to an item with open rows",
         "rationale": "the appraisal of the scope a change declares must travel with the change",
-        "affected_systems": ["agentic_core/cognitive"], "submitted_by": "w512_probe"}).json()
+        "affected_systems": [_cited], "submitted_by": "w512_probe"}).json()
     sa = sub["scope_appraisal"]
     assert sa is not None, "the appraisal must be on the RESPONSE, not only the stored record"
-    assert sa["scope"] and str(sa["scope"]).startswith("P"), sa
+    assert sa["scope"] and str(sa["scope"]).startswith("P"), (sa, _cited)
     assert "open row(s) on" in sa["why_this_scope"], sa["why_this_scope"]
+    #  AND THE OTHER ARM: a path NO open row names must report no scope, WITH the reason — never a
+    #  guessed one. This is the state agentic_core/cognitive is in now that FU-275 has closed.
+    _none = client.post("/api/v1/cca/submit", json={
+        "title": "w512 unscoped probe", "change_type": "config_minor",
+        "description": "a change whose affected systems no open row names",
+        "rationale": "an unappraisable scope must say so rather than being guessed",
+        "affected_systems": ["agentic_core/no_such_area_w512"], "submitted_by": "w512_probe"}).json()
+    _nsa = _none["scope_appraisal"]
+    assert _nsa is not None and _nsa["scope"] is None, (
+        "a change whose area no open row names was given a scope anyway", _nsa)
+    assert "no open row names a file" in _nsa["why_this_scope"], _nsa["why_this_scope"]
+    assert "no scope was inferred" in _nsa["not_a_gate"], _nsa["not_a_gate"]
     # three faculties travel with it, and it NEVER gates
     assert sorted(sa["faculties"]) == ["extrospection", "reasoning", "reflection"], sorted(sa["faculties"])
     assert "not a verdict" in sa["not_a_gate"], sa["not_a_gate"]
@@ -34186,3 +34211,120 @@ def test_w559_a_tier_says_what_it_cannot_run_here_and_the_router_records_why_it_
     _rr = client.get("/api/v1/native-ai/route", params={"domain": "research", "risk": "normal"})
     assert _rr.status_code == 200, _rr.text
     assert _rr.json()["considered"], "the route surface reports a choice with nothing rejected"
+
+
+def test_w560_the_six_engines_have_a_model_path_and_say_where_it_ended(client):
+    """FU-275: the cognitive engines reach a model through the tier router, and carry what served them.
+
+    MEASURED BEFORE THIS ROUND: a grep for gateway|orchestrator|complete( across all six engine modules
+    returned ZERO for every one — no disabled call, no injection point. The only occurrence of the word
+    "gateway" in each was the BASIS STRING saying the engine had no path, which P3.12 wrote honestly.
+    So the architecture routed and the cognition did not compute.
+    """
+    import asyncio as _aio
+    import pathlib as _pl
+    import re as _re
+    from agentic_core.ai.native import tiers as _T
+    from agentic_core.consultation.interface import ConsultationRequest
+
+    from agentic_core.cognitive.aqal_engine import AqalEngine
+    from agentic_core.cognitive.hoshiyari_engine import HoshiyariEngine
+    from agentic_core.cognitive.iman_engine import ImanEngine
+    from agentic_core.cognitive.inkashaf_engine import InkashafEngine
+    from agentic_core.cognitive.samajh_engine import SamajhEngine
+    from agentic_core.cognitive.soch_engine import SochEngine
+
+    _ENGINES = {"aqal": AqalEngine, "inkashaf": InkashafEngine, "samajh": SamajhEngine,
+                "soch": SochEngine, "hoshiyari": HoshiyariEngine, "iman": ImanEngine}
+    _req = ConsultationRequest(engine="w560-guard", query="How should we sequence the remaining work?")
+
+    # ── L1. ALL SIX ASK. None of them is left on the old never-asked marker ──────────────────────
+    _root = _pl.Path(__file__).resolve().parents[1]
+    for _name in _ENGINES:
+        _src = (_root / f"agentic_core/cognitive/{_name}_engine.py").read_text(encoding="utf-8")
+        assert _re.search(r"^\s+_text, _prov = await serve\(", _src, _re.M), (
+            _name, "this engine does not ask the router at all")
+        #  AND THE OLD SENTENCE IS GONE. It said the engine has no path to a model — true when P3.12
+        #  wrote it, false from this round, and a basis that keeps asserting a fixed absence after the
+        #  absence is gone is the stale-claim defect this programme removes everywhere else.
+        assert "has no path to a model" not in _src, (
+            _name, "the engine still asserts it has no path to a model")
+        assert "native-fixed-marker" in _src, (
+            _name, "the marker fallback is gone, so a run that reaches no model has nothing to say")
+
+    # ── L2. ON THIS MACHINE THE PATH ENDS AT THE FLOOR — and says so, which is the whole gain ────
+    for _name, _E in _ENGINES.items():
+        _r = _aio.run(_E().consult(_req))
+        assert _r.served_by == "native-floor", (
+            _name, "the engine did not record a ROUTED floor serve; 'native-fixed-marker' would mean it "
+                   "never asked at all", _r.served_by)
+        assert _r.confidence is None, (_name, "an engine invented a confidence", _r.confidence)
+        assert "NO MODEL WAS ASKED" in (_r.confidence_basis or ""), (_name, _r.confidence_basis)
+        #  the basis distinguishes HAVING a path that ends at the floor from having none
+        assert "different from having no path" in (_r.confidence_basis or ""), (
+            _name, "the basis does not distinguish a routed floor serve from never having asked",
+            _r.confidence_basis)
+        assert _r.answer, (_name, "the engine returned no answer at all")
+
+    # ── L3. AND WHEN A TIER HOLDS A MODEL, IT IS ASKED AND NAMED ─────────────────────────────────
+    #  Unreachable from live state — nothing above the floor holds a resource here — so a leg that did
+    #  not drive it could not tell a wired engine from an unwired one.
+    import agentic_core.api._ai_provenance as _P
+    _real_reg, _real_ai = _T.registry, _P.ai_text
+
+    async def _served(prompt, **kw):
+        return ("A sequenced answer from a model.", {"served_by": "llama3.2:1b", "is_external": False})
+
+    def _with_model():
+        _r = _real_reg()
+        _r["tiers"]["reflex_routing"]["resources"] = ["llama3.2:1b"]
+        return _r
+    try:
+        _T.registry, _P.ai_text = _with_model, _served
+        _r = _aio.run(AqalEngine().consult(_req))
+        assert _r.answer == "A sequenced answer from a model.", (
+            "the engine ignored the model's text and returned its own marker anyway", _r.answer)
+        assert _r.served_by == "llama3.2:1b", (
+            "the engine did not record WHAT served it — a reasoning step with no provenance cannot be "
+            "told from the floor composing headings", _r.served_by)
+        assert _r.is_external is False, _r.is_external
+        #  STILL NO CONFIDENCE. Having a path is not a reason to start inventing one.
+        assert _r.confidence is None, ("a model answered and the engine invented a confidence for it",
+                                       _r.confidence)
+        assert "was served by" in (_r.confidence_basis or ""), _r.confidence_basis
+        #  A FAILED CALL IS NOT A FLOOR SERVE, and must not read as one.
+        async def _boom(prompt, **kw):
+            raise RuntimeError("driven: the model call failed")
+        _P.ai_text = _boom
+        _r2 = _aio.run(AqalEngine().consult(_req))
+        assert _r2.served_by == "native-fixed-marker", (
+            "a FAILED model call was recorded as something serving the answer", _r2.served_by)
+        assert "THE CALL FAILED" in (_r2.confidence_basis or ""), _r2.confidence_basis
+        assert "not a floor serve" in (_r2.confidence_basis or ""), _r2.confidence_basis
+    finally:
+        _T.registry, _P.ai_text = _real_reg, _real_ai
+
+    # ── L4. THE PATH NEVER RAISES INTO AN ENGINE ─────────────────────────────────────────────────
+    #  A reasoning step must not fail because the fabric could not be consulted; a failure to consult
+    #  is a provenance fact, not an exception.
+    from agentic_core.cognitive import model_path as _MP
+    _real_route = _T.route
+    try:
+        def _explode(*_a, **_k):
+            raise RuntimeError("driven: the router is broken")
+        _T.route = _explode
+        _text, _prov = _aio.run(_MP.serve("aqal", "x"))
+        assert _text is None, _text
+        assert _prov.get("served_by") is None, _prov
+    except RuntimeError as _e:                     # the path let it through — that is the defect
+        raise AssertionError(f"the model path raised into its caller: {_e}")
+    finally:
+        _T.route = _real_route
+
+    # ── L5. EVERY ENGINE DECLARES WHAT KIND OF WORK IT DOES, so the router can choose ────────────
+    assert set(_MP.ENGINE_DOMAIN) == set(_ENGINES), (
+        "an engine has no declared domain, so the router would default it silently",
+        sorted(set(_ENGINES) ^ set(_MP.ENGINE_DOMAIN)))
+    for _name, _dom in _MP.ENGINE_DOMAIN.items():
+        _want, _why = _T.wanted_tier(_dom)
+        assert _want in _T.TIERS, (_name, _dom, _want)

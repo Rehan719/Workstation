@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "an engine never asks the router, so the architecture routes and the cognition does not compute",
+    "file": "agentic_core/cognitive/aqal_engine.py",
+    "old": "        _text, _prov = await serve(\"aqal\", request.query)",
+    "new": "        _text, _prov = (None, {})",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L1 and L2 — the state measured before this round, for one engine. A grep across all six returned ZERO references to a gateway, an orchestrator or a generate call; the only occurrence of the word was the basis string saying so. The mutation keeps every other line intact, so only driving the engine sees it."
+  },
+  {
+    "tag": "an engine reports the never-asked marker after a routed floor serve",
+    "file": "agentic_core/cognitive/model_path.py",
+    "old": "        prov[\"served_by\"] = \"native-floor\"",
+    "new": "        prov[\"served_by\"] = None",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L2. 'native-fixed-marker' means nothing was ever asked; 'native-floor' means the router walked down and the floor served. Collapsing them loses the entire gain of this round - the engine would look exactly as it did before it was wired."
+  },
+  {
+    "tag": "the basis stops distinguishing a routed floor serve from having no path at all",
+    "file": "agentic_core/cognitive/model_path.py",
+    "old": "            \"different from having no path, which is what was measured here before: a grep for a \"\n            \"gateway, an orchestrator or a generate call across all six engines returned zero\")",
+    "new": "            \"\")",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L2. Without that sentence a reader meets 'no model was asked' and cannot tell whether the platform chose not to ask or was never able to - which is the difference this whole round delivers, and the only difference, since the answers themselves do not change on this machine."
+  },
+  {
+    "tag": "an engine discards the model's text and returns its own marker anyway",
+    "file": "agentic_core/cognitive/aqal_engine.py",
+    "old": "            answer=(_text if _text else f\"Plan: {res.get('plan', 'unknown')}\"),",
+    "new": "            answer=f\"Plan: {res.get('plan', 'unknown')}\",",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L3. The engine would ask a model, record that one served it, and then ignore what it said - a provenance claim attached to text the named server never produced, which is worse than not asking. Unreachable from live state here, so L3 supplies the model."
+  },
+  {
+    "tag": "an engine does not record what served it",
+    "file": "agentic_core/cognitive/aqal_engine.py",
+    "old": "            served_by=(_prov.get(\"served_by\") or \"native-fixed-marker\"),",
+    "new": "            served_by=\"native-fixed-marker\",",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L3, and FU-275's own words: 'the engine must carry what served it, because a reasoning step with no provenance cannot be told from the floor composing headings'."
+  },
+  {
+    "tag": "a failed model call is recorded as a floor serve",
+    "file": "agentic_core/cognitive/model_path.py",
+    "old": "        prov[\"served_by\"] = None\n        prov[\"model_asked\"] = True\n        prov[\"basis\"] = (\n            f\"the router chose {decision.get('tier')} and THE CALL FAILED \"",
+    "new": "        prov[\"served_by\"] = \"native-floor\"\n        prov[\"model_asked\"] = True\n        prov[\"basis\"] = (\n            f\"the router chose {decision.get('tier')} and THE CALL FAILED \"",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L3. A call that raised produced NOTHING; attributing it to the floor would say something composed the answer when nothing did, and the absence would read as a composition. The honest sentence stays in place under the mutation, so only the field a reader branches on changes - the shape a leg reading prose would pass over."
+  },
+  {
+    "tag": "an engine invents a confidence once it has a model path",
+    "file": "agentic_core/cognitive/aqal_engine.py",
+    "old": "            confidence=None,",
+    "new": "            confidence=0.88,",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L2 and L3. 0.88 is the exact figure all eight constructors invented before P3.12 removed the requirement. Having a path to a model is not a reason to start producing a number nothing computes, and the temptation arrives precisely when the call starts working."
+  },
+  {
+    "tag": "the model path raises into the engine when the router is broken",
+    "file": "agentic_core/cognitive/model_path.py",
+    "old": "    try:\n        decision = _route(domain, risk)\n    except Exception as e:                       # noqa: BLE001",
+    "new": "    if True:\n        decision = _route(domain, risk)\n    elif False:",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L4 — the defect this module ACTUALLY HAD until the guard drove it: the import was wrapped and the call was not, while the docstring claimed it never raises into an engine. A reasoning step must not fail because the fabric could not be consulted."
+  },
+  {
+    "tag": "an engine has no declared domain, so the router defaults it silently",
+    "file": "agentic_core/cognitive/model_path.py",
+    "old": "    \"iman\": \"classification\",       # coherence against stated principles\n",
+    "new": "",
+    "selector": "w560",
+    "expect": "BLIND(red)",
+    "why": "L5. A missing declaration does not fail - it falls through to the default want, so the engine is routed as something it never said it was. The guard compares the declared set against the engines that exist."
+  },
+  {
+    "tag": "the scope appraisal picks an item for a change no open row relates to",
+    "file": "agentic_core/api/method.py",
+    "old": "    if not hits:\n        return {\"slot\": None,",
+    "new": "    if False:\n        return {\"slot\": None,",
+    "selector": "w512",
+    "expect": "BLIND(red)",
+    "why": "The arm W560 added after the pinned fixture went stale. With the branch gone, max() over an empty dict raises and the submission 500s; with it mis-wired to pick an item anyway, an appraisal would ride the record a reviewer reads attached to an item that has nothing to do with the change. A change whose area no open row names must report NO scope, with the reason."
+  }
+]
