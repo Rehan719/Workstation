@@ -6010,8 +6010,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W545",
       "note": "",
       "slot_source": "the surfacing half of the clause W533 just satisfied: the loop runs and reports, but only into memory",
       "tier": 2
@@ -6065,8 +6065,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W545",
       "note": "",
       "tier": 3
     },
@@ -6231,6 +6231,26 @@
       "status": "open",
       "closed_by": null,
       "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-357",
+      "title": "P3.16's avatar-path clause is unmet and had NO ROW standing against it, so the item read as complete with zero open rows",
+      "why": "Measured W545 after closing FU-344 and FU-347, which left P3.16 with zero open rows and an UNMET bar — the exact trap this programme has a rule for: an item closes on its ACCEPT clause, and zero rows means unexamined, not nearly done. P3.16's ACCEPT (docs/FABLE_DELIVERY_PROMPT.md) reads 'the loop runs from the heartbeat with recorded per-stage latencies, its breaches are facts in the record, and the avatar path is wired to it only once P3.12-P3.15 hold'. The first two clauses are met (W533 wired the beat; W545 surfaced the outcome on /api/v1/heartbeat/status and the HeartbeatMonitor page). THE THIRD IS NOT, and its gate is now open: P3.12 DONE W520, P3.13 DONE W524, P3.14 DONE W525, P3.15 DONE W526. MEASURED STATE: agentic_core/avatars/frontend/avatar_interface.py:29 is the only place that calls execute_cycle for a USER rather than for the organism, and NOTHING IMPORTS IT — agentic_core/avatars/__init__.py exports the orchestrator, not the interface, and no route reaches either. So a module that would wire the avatar path exists and is reached by nothing. WHY THIS WAS NOT DONE AUTONOMOUSLY: the loop currently WITHHOLDS every emission, because clearance gate 1 blocks for want of a constitutional verdict from engines that refuse by design until they have a model path (P3.20). Wiring the avatar path today would therefore turn a chat surface that answers into one that deliberately delivers nothing — more honest and a user-facing regression, which is a product decision rather than a correctness fix. THE DECISION THE OWNER NEEDS TO MAKE: (a) wire it now and let the honest refusal show, (b) hold the clause until P3.20 gives the engines a model path and record that in the item's bar, or (c) narrow the clause to the organism's own metabolic loop, which is already wired. Recorded as a rider on P3.16 so the item cannot be marked done on an empty row list.",
+      "source": "W545 (measured after FU-344 and FU-347 left the item with zero rows and an unmet clause)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/avatars/frontend/avatar_interface.py",
+        "agentic_core/avatars/__init__.py",
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it IS P3.16's own third ACCEPT clause",
       "tier": 2
     }
   ],

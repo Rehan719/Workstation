@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "the metabolic outcome is dropped from the status surface again",
+    "file": "agentic_core/organism/heartbeat.py",
+    "old": "            \"last_metabolic\": self.last_metabolic,",
+    "new": "            \"_last_metabolic_unserved\": self.last_metabolic,",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "THE DEFECT FU-344 NAMES. The record existed on the beat since W533 and reached no surface, so an operator saw a running heartbeat with no breaches and would infer the avatar was emitting. Renaming the key is how it would quietly leave again."
+  },
+  {
+    "tag": "a withheld cycle reports that it emitted",
+    "file": "agentic_core/organism/heartbeat.py",
+    "old": "                    \"emitted\": (False if _withheld else None if _status is None else True),",
+    "new": "                    \"emitted\": True,",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "Six measured stages and an empty mouth is this platform's NORMAL state. Collapsing the outcome into the measurement is the claim this row exists to stop: the stages were real, the delivery was not."
+  },
+  {
+    "tag": "the withheld reason is dropped, leaving only the status",
+    "file": "agentic_core/organism/heartbeat.py",
+    "old": "                    \"withheld_reason\": (_ctx or {}).get(\"withheld_reason\"),",
+    "new": "                    \"withheld_reason\": None,",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "A refusal with no reason is a refusal a reader cannot act on, and the gate's own sentence is the only thing that explains why a full cycle delivered nothing."
+  },
+  {
+    "tag": "the page stops distinguishing a withheld emission",
+    "file": "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx",
+    "old": "                  {s.last_metabolic.emitted === true ? (",
+    "new": "                  {s.last_metabolic.emitted !== null ? (",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "`emitted` is THREE-STATE and this is the exact collapse that loses the middle one: with this gate a withheld cycle (false) renders the delivered badge. A page that tests a three-state field for truthiness cannot tell 'withheld' from 'delivered'."
+  },
+  {
+    "tag": "the settlement receipt claims finality again",
+    "file": "products/capital_fund/adapters/qan_bridge.py",
+    "old": "            \"status\": \"SIMULATED_NOT_SETTLED\",",
+    "new": "            \"status\": \"FINALIZED\",",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "The original. What happened is a local dict entry: no chain was contacted, nothing was locked and nothing was minted. The UEG payload carried is_simulated all along — the disclosure sat where no consumer looks and was absent from the only thing a caller receives."
+  },
+  {
+    "tag": "the algorithm name returns under a field that reads as performed",
+    "file": "products/capital_fund/adapters/qan_bridge.py",
+    "old": "            \"pqc_algorithm_declared\": self.pqc_algorithm_declared,",
+    "new": "            \"pqc_algorithm\": self.pqc_algorithm_declared,",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "FU-347's precise point: the field carried a standardised algorithm name with a standards citation and no simulation marker of its own, while the only disclosure lived in the class docstring. A consumer reading it sees a named post-quantum primitive and nothing to say no code implements it."
+  },
+  {
+    "tag": "a treaty nothing signed is recorded as active",
+    "file": "products/capital_fund/mesh/federation_manager.py",
+    "old": "            \"status\": \"RECORDED_NOT_SIGNED\",",
+    "new": "            \"status\": \"ACTIVE\",",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "This record GATES a capital contribution path — contribute_to_shared_pool refuses unless a peer has a treaty — so a simulated signature was the key to a real-looking flow. ACTIVE is a claim that two parties agreed; what happened is that two parties were named."
+  },
+  {
+    "tag": "the renamed placeholder leaves a second user behind",
+    "file": "products/capital_fund/mesh/federation_manager.py",
+    "old": "            \"zk_proof_placeholder\": zk_proof_placeholder,\n            \"is_simulated\": True,",
+    "new": "            \"zk_proof\": zk_proof,\n            \"is_simulated\": True,",
+    "selector": "w545",
+    "expect": "BLIND(red)",
+    "why": "THE SECOND-WRITER CLASS, restored exactly as it occurred this round: the rename was applied to the returned record and the ledger payload still referenced the old name, which raises NameError at call time on a path no test reaches. Asserted on the AST rather than by calling, because the call site is unreached."
+  }
+]

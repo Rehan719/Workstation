@@ -994,6 +994,25 @@ class OrganismHeartbeat:
             "recent": self._log[-10:],
             "integrations": ["circadian", "central_nervous_system", "immune", "self_healing",
                              "metabolic_atp", "genome", "UEG_audit", "constitutional_arms_length"],
+            # W545 (FU-344) — THE METABOLIC CYCLE'S OUTCOME, which this surface did not carry.
+            # Section 2g has recorded `cycle_status`, `emitted` and `withheld_reason` since W533, and
+            # NOTHING SERVED ANY OF IT: not this status dict, not a route, not a page. So the platform's
+            # NORMAL state — a full six-stage cycle that measures every latency and then deliberately
+            # delivers nothing, because the clearance chain withholds the emission for want of a
+            # constitutional verdict — was visible only inside the heartbeat object. An operator reading
+            # this surface saw a running beat with no breaches and would reasonably infer the avatar was
+            # emitting. A withheld outcome that renders as a healthy beat is a delivery claim made by
+            # omission, which is the defect class this programme keeps removing one layer up.
+            # None here means the cycle has not run on this process (the lever is off by default), which
+            # is different from a cycle that ran and withheld — and the consumer can tell them apart
+            # because a cycle that ran carries `cycle_status`.
+            "last_metabolic": self.last_metabolic,
+            "metabolic_basis": (
+                "the metabolic cycle has not run on this process, so there is no outcome to report — the "
+                "loop is paced and OFF by default, and this is not a withheld emission"
+                if self.last_metabolic is None else
+                (self.last_metabolic.get("basis")
+                 or "the cycle ran but recorded no basis for its outcome")),
             "note": "Continuous circadian autonomy — cheap pulse every beat; expensive cognition opt-in + paced.",
         }
 

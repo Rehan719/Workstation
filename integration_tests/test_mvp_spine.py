@@ -31490,3 +31490,140 @@ def test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_com
     for _m_name in _modules:
         assert not (_root / "agentic_core" / "biomimicry" / f"{_m_name}.py").exists(), (
             f"{_m_name}.py now exists in the live tree, so the record's verdict for it is out of date")
+
+
+def test_w545_a_withheld_emission_is_visible_and_a_simulator_discloses_itself(client):
+    """P3.16 (FU-344) and FU-347: the platform's normal state reaches a surface, and two simulators stop
+    returning records that claim more than they did.
+
+    The heartbeat is a SINGLETON the route holds, so the lever is driven on the same instance the surface
+    reads and restored in a finally — a reload would split them and the route would answer from a
+    different object than the one the test configured.
+    """
+    import ast
+    import asyncio as _aio
+    import pathlib
+    from decimal import Decimal
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── L1. NOT-RUN AND WITHHELD ARE DIFFERENT STATES, and both reach the route ───────────────────
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    _s0 = client.get("/api/v1/heartbeat/status")
+    assert _s0.status_code == 200, _s0.status_code
+    _j0 = _s0.json()
+    assert "last_metabolic" in _j0, ("the beat's metabolic outcome reaches no route, so a full cycle that "
+                                     "delivered nothing is invisible to every surface")
+    assert "metabolic_basis" in _j0 and (_j0["metabolic_basis"] or "").strip(), _j0.get("metabolic_basis")
+
+    _saved = (_hb.auto_metabolic, _hb._metabolic_every, _hb._beats_since_metabolic, _hb.last_metabolic)
+    try:
+        _hb.auto_metabolic = True
+        _hb._metabolic_every = 1
+        _hb._beats_since_metabolic = 0
+        assert client.post("/api/v1/heartbeat/beat").status_code == 200
+        _m = client.get("/api/v1/heartbeat/status").json()["last_metabolic"]
+    finally:
+        (_hb.auto_metabolic, _hb._metabolic_every, _hb._beats_since_metabolic,
+         _hb.last_metabolic) = _saved
+
+    assert isinstance(_m, dict), ("a beat ran the cycle and the route reported nothing about it", _m)
+    assert _m.get("stages_measured", 0) >= 1, ("no stage was measured, so this is not a clean run", _m)
+    #  THE OUTCOME IS REPORTED SEPARATELY FROM THE MEASUREMENT. Six measured stages and an empty mouth
+    #  is this platform's normal state, and the two facts must not be collapsed into one.
+    assert "cycle_status" in _m and "emitted" in _m, _m
+    assert _m["emitted"] is not True or _m["cycle_status"] == "SUCCESS", (
+        "the route claims an emission was delivered without the cycle reporting success", _m)
+    if _m["cycle_status"] == "WITHHELD":
+        assert _m["emitted"] is False, ("a withheld cycle reported an emission", _m)
+        assert (_m.get("withheld_reason") or "").strip(), (
+            "a withheld emission carries no reason, so a reader cannot tell why nothing arrived", _m)
+        assert "WITHHELD" in (_m.get("basis") or ""), _m.get("basis")
+
+    # ── L2. AND THE PAGE SHOWS IT — on the page that owns the heartbeat ───────────────────────────
+    def _uncommented(text: str, needle: str) -> list:
+        return [ln for ln in text.splitlines()
+                if needle in ln and not ln.strip().startswith(("//", "{/*", "/*", "*", "{ /*"))]
+
+    _page = (_root / "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx").read_text(
+        encoding="utf-8")
+    #  ACTIVE lines, not merely present ones: a commented-out branch still contains its own field names,
+    #  which is how a presence check passes on a page that renders none of it.
+    assert _uncommented(_page, "last_metabolic"), "the heartbeat page reads nothing about the cycle"
+    assert _uncommented(_page, "emitted === false"), (
+        "the page does not distinguish a withheld emission; `emitted` is three-state and a page that "
+        "tests it for truthiness alone cannot tell 'withheld' from 'not reported'")
+    assert _uncommented(_page, "withheld_reason"), "the page shows a withheld cycle without its reason"
+    #  the outcome must not be DERIVED from the measurement: no branch may compute a delivery from the
+    #  stage count or the breach count, which is precisely the inference this row exists to stop.
+    #  UNCOMMENTED LINES ONLY, for two reasons: a comment announces nothing to a user, and this round's
+    #  own card comment explains the delivery/withholding distinction in those words — so a scan over
+    #  every line matches the explanation and reds on correct code. That is the eighth time in this
+    #  programme that a comment has tripped a screen written against its own subject.
+    #  AND THE ASSOCIATION IS STRUCTURAL, not per-line. In JSX the gate and the text it renders are on
+    #  DIFFERENT lines, so asking whether the line saying "DELIVERED" also mentions the flag is the wrong
+    #  granularity — it reds on correct code and would pass a delivery announced three lines under a
+    #  gate on something else entirely. Each active line announcing a delivery must sit within a few
+    #  lines BELOW an `emitted === true` gate, which is what being inside that branch's body means.
+    _lines = _page.splitlines()
+    _gates = [i for i, ln in enumerate(_lines) if "emitted === true" in ln
+              and not ln.strip().startswith(("//", "{/*", "/*", "*"))]
+    assert _gates, "no branch on a delivered emission exists at all"
+    for _i, _ln in enumerate(_lines):
+        if "DELIVERED" not in _ln or _ln.strip().startswith(("//", "{/*", "/*", "*")):
+            continue
+        assert any(0 <= _i - _g <= 4 for _g in _gates), (
+            "the page announces a delivery outside the branch gated on the emitted flag, so it can print "
+            "it for a cycle that delivered nothing", _i + 1, _ln.strip())
+
+    # ── L3. THE SETTLEMENT RECEIPT DISCLOSES ITSELF, where the disclosure was missing ─────────────
+    #  The UEG payload has always carried is_simulated; the RETURNED receipt said FINALIZED, named a
+    #  post-quantum algorithm and reported a finality, with nothing marked simulated. The disclosure sat
+    #  exactly where no consumer looks.
+    import sys as _sys
+    if str(_root) not in _sys.path:
+        _sys.path.insert(0, str(_root))
+    from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
+    from products.capital_fund.adapters.qan_bridge import QANBridgeSimulator
+    _r = _aio.run(QANBridgeSimulator(_VSBUEG()).settle_cross_node(Decimal("100"), "node-a", "did:t"))
+    assert _r["simulated"] is True, ("the receipt a caller receives does not say it is simulated", _r)
+    assert "FINAL" not in _r["status"].upper(), (
+        "the receipt still claims settlement finality for a local dict entry", _r["status"])
+    assert _r["pqc_implemented"] is False, _r
+    assert "NOT IMPLEMENTED" in _r["pqc_basis"], _r["pqc_basis"]
+    #  the algorithm name may be KEPT — it records what this bridge is specified against — but it must
+    #  not be returned under a field a consumer reads as a performed primitive
+    assert "pqc_algorithm" not in _r, (
+        "the bare algorithm field is back; a consumer reading it sees a named primitive and nothing to "
+        "say no code implements it", sorted(_r))
+    assert "DECLARED, NOT MEASURED" in _r["finality_basis"], _r["finality_basis"]
+
+    # ── L4. AND THE TREATY RECORD, PLUS THE GATE THAT READS IT ───────────────────────────────────
+    from products.capital_fund.mesh.federation_manager import FederationManager
+    _fm = FederationManager("fund-w545")
+    _aio.run(_fm.sign_treaty("peer-1", {"terms": "x"}))
+    _t = _fm.active_treaties["peer-1"]
+    assert _t["status"] != "ACTIVE", ("a treaty nothing signed is recorded as active", _t["status"])
+    assert _t["signature"] is None and "NOT SIGNED" in _t["signature_basis"], _t
+    _dep = _aio.run(_fm.contribute_to_shared_pool("peer-1", Decimal("50")))
+    #  the contribution carries the treaty's real state, because this record GATES a capital path
+    assert _dep["simulated"] is True and _dep["treaty_status"] == _t["status"], _dep
+    assert "NOT A PROOF" in _dep["zk_proof_basis"], _dep["zk_proof_basis"]
+    #  THE READER WAS FIXED WITH THE WRITER: the gate admits a recorded treaty, so its refusal must not
+    #  tell a caller that passing it meant an agreement existed.
+    try:
+        _aio.run(_fm.contribute_to_shared_pool("nobody", Decimal("1")))
+        raise AssertionError("the gate admitted a peer with no treaty at all")
+    except ValueError as _e:
+        assert "active" not in str(_e).lower(), (
+            "the gate still claims it required an active treaty; what it admits is one that was merely "
+            "recorded", str(_e))
+
+    # ── L5. NO SECOND USER OF THE RENAMED VALUE, asserted on the AST ─────────────────────────────
+    #  A rename that fixes one user and leaves another raises NameError at call time on a path no test
+    #  reaches. Both the returned record and the ledger payload had to change together.
+    _ft = ast.parse((_root / "products/capital_fund/mesh/federation_manager.py").read_text(
+        encoding="utf-8"))
+    _bare = [n.id for n in ast.walk(_ft) if isinstance(n, ast.Name) and n.id == "zk_proof"]
+    assert not _bare, ("a bare reference to the renamed value survives, so one caller raises NameError "
+                       "while the other reads the new field", len(_bare))

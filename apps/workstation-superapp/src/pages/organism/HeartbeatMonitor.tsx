@@ -17,6 +17,16 @@ interface Status {
   last_vsb_failed?: { vsb_id?: string; error?: string; cycle_ran?: boolean; at?: string } | null;
   last_vsb_not_operated?: { vsb_id?: string; outcome?: string; reason?: string; at?: string } | null;
   last_vsb_evolved?: { vsb_id?: string; [k: string]: any } | null;
+  // W545 (FU-344) — THE METABOLIC CYCLE'S OUTCOME. Recorded on the beat since W533 and served by
+  // nothing until now, so the platform's normal state — a full six-stage cycle that measures every
+  // latency and then deliberately delivers nothing, because the clearance chain withholds the emission
+  // for want of a constitutional verdict — was visible on no surface at all. A running beat with no
+  // breaches read as a healthy organism that was emitting. `cycle_status` present means the cycle ran;
+  // null `last_metabolic` means it has not run on this process, which is a different thing entirely.
+  last_metabolic?: { cycle_status?: string | null; emitted?: boolean | null;
+    withheld_reason?: string | null; stages_measured?: number; breach_count?: number;
+    breached_stages?: string[]; failed?: string; basis?: string } | null;
+  metabolic_basis?: string;
 }
 
 /**
@@ -172,6 +182,75 @@ export const HeartbeatMonitor: React.FC = () => {
               outcomes are kept apart: only a cycle that RAN counts as operated, a held visit names the
               decision, a refused visit says the platform could not act, and a failed visit says so
               instead of vanishing (before FU-045 it left no trace anywhere at all). */}
+          {/* W545 (FU-344) — THE METABOLIC CYCLE, AND WHETHER IT DELIVERED ANYTHING. The loop has run
+              from the beat since W533, recording six stage latencies and its outcome, and NOTHING SERVED
+              THAT OUTCOME: an operator reading this page saw a running beat with no breaches and would
+              reasonably infer the avatar was emitting. It is not. The clearance chain withholds the
+              emission because the engines supply no constitutional verdict, so a full cycle that
+              delivers nothing is this platform's normal state — and the honest rendering of that is a
+              card that says MEASURED and WITHHELD as two separate facts. There is deliberately no
+              success colour for a withheld cycle: the stages are green because they were measured, and
+              the mouth is amber because it was empty. */}
+          <Card className="p-6" data-testid="heartbeat-metabolic">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+              Metabolic cycle (six stages) — measured, and whether it delivered
+            </h3>
+            {!s.last_metabolic ? (
+              <p className="text-[11px] text-slate-500 font-bold leading-relaxed">
+                {s.metabolic_basis ?? 'The metabolic cycle has not run on this process.'}
+              </p>
+            ) : s.last_metabolic.failed ? (
+              <div role="alert" className="text-[11px] text-vital font-bold leading-relaxed">
+                The cycle FAILED: {s.last_metabolic.failed}. Nothing was measured, so this is not a clean
+                beat. {s.last_metabolic.basis}
+              </div>
+            ) : (
+              <div className="space-y-2 text-[11px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black">
+                    {s.last_metabolic.stages_measured ?? 0} stage(s) measured
+                  </span>
+                  {/* A BREACH IS A FACT, BY NAME — not a count a reader has to go looking for. */}
+                  {(s.last_metabolic.breach_count ?? 0) > 0 ? (
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-black">
+                      {s.last_metabolic.breach_count} breached: {(s.last_metabolic.breached_stages ?? []).join(', ')}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold">
+                      no stage breached its budget
+                    </span>
+                  )}
+                  {/* THE OUTCOME, NEVER INFERRED FROM THE STAGES. `emitted` is three-state and each
+                      state is drawn differently: delivered, withheld, or not reported. */}
+                  {s.last_metabolic.emitted === true ? (
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black">
+                      emission DELIVERED
+                    </span>
+                  ) : s.last_metabolic.emitted === false ? (
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-black">
+                      emission WITHHELD{s.last_metabolic.cycle_status ? ` (${s.last_metabolic.cycle_status})` : ''}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold">
+                      the cycle reported no outcome
+                    </span>
+                  )}
+                </div>
+                {s.last_metabolic.withheld_reason && (
+                  <p className="text-amber-400/90 font-bold leading-relaxed">
+                    Why nothing was delivered: {s.last_metabolic.withheld_reason}
+                  </p>
+                )}
+                {/* The backend's own sentence, not a second wording of it. */}
+                {s.last_metabolic.basis && (
+                  <p className="text-slate-500 font-bold leading-relaxed border-t border-slate-800 pt-2">
+                    {s.last_metabolic.basis}
+                  </p>
+                )}
+              </div>
+            )}
+          </Card>
+
           {(s.last_vsb_operated || s.last_vsb_failed || s.last_vsb_not_operated || s.last_vsb_evolved) && (
             <Card className="p-6" data-testid="heartbeat-vsb-visits">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Living entities the beat tended</h3>
