@@ -6357,8 +6357,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W555",
       "note": "",
       "slot_source": "it is FU-358's own subject, which rides P3.17",
       "tier": 2
@@ -6376,8 +6376,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W555",
       "note": "",
       "slot_source": "P3.16 owns agentic_core/avatars/core/clearance_chain.py by route 2, and owns agentic_core/validation/ as of W553's hand-off",
       "tier": 2
@@ -6385,7 +6385,7 @@
     {
       "id": "FU-365",
       "title": "A guard that pins a slot id or a component's rank fails the moment the plan moves, and it fails in the direction that punishes progress",
-      "why": "Measured W554: closing P2.11 and two of its rows turned TWO suite guards red WITHOUT TOUCHING THE CODE EITHER OF THEM GUARDS. (1) test_w510 asserted `set(blocked_by_ruling) >= {P2.11, P2.16}` - a static set mirroring plan state. P2.11 became DONE, and a DONE item is correctly no longer blocked (the W551 correction to the cell itself), so the guard failed for the one reason it should have celebrated. (2) test_w500b asserted that the LARGEST file-connected component crosses items. Closing rows left two components tied at size 4 and the one the sort put first sat inside P2.17, so a true statement about the bundler failed on a TIE-BREAK. Both are now computed: w510 derives the expected blocked set from _BLOCKED_BY_RULING minus the plan's done markers and asserts the RELATION (no done item blocked, no item both blocked and closable), and w500b recomputes items_advanced independently for every component and asserts the crossing property over the SET rather than over whichever component ranks first. Both rewrites are blinded (20 of 20 BLIND(red) in W554). THE CLASS, which is what this row is for: a guard may not pin an identifier or an ordinal that the plan's own progress changes. It is worse than an ordinary stale assertion because it fails ON SUCCESS - every round that closes an item pays for it, and the cost is paid at the END of the round, after the full suite, which is the most expensive moment to discover anything. FIX: a pre-flight screen in scripts/selfcheck_diff.py that flags a CHANGED test asserting a literal plan-slot id (P<digit>.<digit>) or indexing a sorted collection at [0] and asserting a property of that element, and a sweep of the EXISTING guards for the same two shapes - this round found two by being bitten, and nobody has looked for the rest.",
+      "why": "Measured W554: closing P2.11 and two of its rows turned TWO suite guards red WITHOUT TOUCHING THE CODE EITHER OF THEM GUARDS. (1) test_w510 asserted `set(blocked_by_ruling) >= {P2.11, P2.16}` - a static set mirroring plan state. P2.11 became DONE, and a DONE item is correctly no longer blocked (the W551 correction to the cell itself), so the guard failed for the one reason it should have celebrated. (2) test_w500b asserted that the LARGEST file-connected component crosses items. Closing rows left two components tied at size 4 and the one the sort put first sat inside P2.17, so a true statement about the bundler failed on a TIE-BREAK. Both are now computed: w510 derives the expected blocked set from _BLOCKED_BY_RULING minus the plan's done markers and asserts the RELATION (no done item blocked, no item both blocked and closable), and w500b recomputes items_advanced independently for every component and asserts the crossing property over the SET rather than over whichever component ranks first. Both rewrites are blinded (20 of 20 BLIND(red) in W554). THE CLASS, which is what this row is for: a guard may not pin an identifier or an ordinal that the plan's own progress changes. It is worse than an ordinary stale assertion because it fails ON SUCCESS - every round that closes an item pays for it, and the cost is paid at the END of the round, after the full suite, which is the most expensive moment to discover anything. FIX: a pre-flight screen in scripts/selfcheck_diff.py that flags a CHANGED test asserting a literal plan-slot id (P<digit>.<digit>) or indexing a sorted collection at [0] and asserting a property of that element, and a sweep of the EXISTING guards for the same two shapes - this round found two by being bitten, and nobody has looked for the rest. THE SWEEP THIS ROW ASKED FOR HAS NOW BEEN RUN (W555), and a THIRD instance had already fired before it was: test_w535 asserted route_row sends an agentic_core/mjm/ row to \"P3.16\", and W555 closed P3.16 and handed its routes to P3.20. MEASURED over integration_tests/test_mvp_spine.py: 30 assertion lines carry a quoted plan-slot id, and MOST ARE SAFE, which is the useful half of the result — plan ORDER assertions (slots.index(\"P1.1\") < slots.index(\"P1.14\")) do not move with progress; synthetic registers (P9.9, P0.1, and the constructed two-component fixture) are fixtures and not state; \"{P1.1, P1.11, P1.12} <= done\" is monotone, since an item never un-closes; a CLOSED row's slot is frozen (FU-045, FU-063 on the done P2.9); and a declared property such as P4.1's delivered_by == owner-switch is not progress-dependent. SIX ARE AT RISK and each fails the moment its slot closes or its route is handed on: test_mvp_spine.py:15641, :15644 and :15656 assert route_row(...)[\"slot\"] == \"P2.4\"; :15648 asserts an avatars route lands on \"P3.6\"; :18622 asserts P2.4's rounds_projected is None, which flips the first time P2.4 closes enough rows to be measurable; and :18713 asserts every batch slot equals \"P1.18\", an item that is already DONE. P2.4 and P3.6 are both open today, so none of the six is failing yet — which is exactly why they are worth fixing before a round pays for them at the end of a suite. THE FIX FOR EACH is the one W554 and W555 used three times: derive the expected slot from the ROUTES or the plan's own done markers and assert the RELATION (routes by area, severity does not change the destination, the claiming route points at an OPEN item) rather than the identity.",
       "source": "W554 (two guards went red on the round's own progress, neither by a code change)",
       "found": "2026-10-03",
       "files": [
@@ -6400,11 +6400,50 @@
       "note": "",
       "slot_source": "integration_tests/ and scripts/ are P2.4's route 15 (suite hygiene and the register's own tooling)",
       "tier": 2
+    },
+    {
+      "id": "FU-366",
+      "title": "The avatar path is held until the engines have a model path, and after W554 no open row held that obligation at all",
+      "why": "Found W555 by checking my own previous round. W554 closed FU-357 by amending P3.16's third ACCEPT clause: the avatar path is HELD until the engines have a model path (P3.20), on the Owner's decision, rather than wired now - because the loop WITHHOLDS every emission today, so wiring it would turn a chat surface that answers into one that deliberately delivers nothing. The amendment is right and it is recorded. WHAT WAS WRONG IS THAT NOTHING CARRIED THE DEFERRED WORK FORWARD: FU-357 was closed, no open row mentioned the avatar path or avatar_interface.py, and the obligation existed only as prose inside the bar of an item that is itself about to be marked DONE. That is the precise failure FU-361 was filed against in W551 - 'an item marked done is where a deferred obligation goes to be forgotten' - committed one round later in my own work. THE MEASURED STATE, unchanged by the hold: agentic_core/avatars/frontend/avatar_interface.py is the only caller of execute_cycle for a USER rather than for the organism; agentic_core/avatars/__init__.py exports the orchestrator and not the interface; no route reaches either. So a module that would wire the avatar path exists and is reached by nothing. WHAT RELEASES THIS ROW: P3.20 giving the engines a path to a model, after which clearance gate 1 can receive a constitutional verdict and the loop can emit rather than withhold. WHAT THE WORK IS THEN: export the interface, give it a route, and drive BOTH outcomes - an emission that clears and one that is withheld - because a chat surface wired to a loop that can still withhold must show the withholding as a refusal with its reason and never as an empty answer. UNTIL THEN THE HOLD STANDS and this row is what makes it visible rather than remembered.",
+      "source": "W555 (checking W554's own deferral for the gap FU-361 names)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/avatars/frontend/avatar_interface.py",
+        "agentic_core/avatars/__init__.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the hold's release condition IS P3.20 - the engines' model path - so the obligation belongs with the item that lifts it, not with the item that deferred it",
+      "tier": 2
+    },
+    {
+      "id": "FU-367",
+      "title": "The recirculation loop cannot be switched on from a running backend: auto_metabolic defaults off, the configure route does not expose it, and no page shows it",
+      "why": "Found W555 by the FRESH-BACKEND PROBE P3.16's bar asks for, which is what a probe is for - the suite drives this loop by setting the attribute in process and could never have found it. MEASURED on a live uvicorn at :8010: POST /api/v1/heartbeat/configure accepts interval_seconds, auto_evolve, auto_economy, auto_align, auto_compliance and auto_ship, and NOT auto_metabolic; agentic_core/organism/heartbeat.py:174 sets self.auto_metabolic = False at construction; heartbeat.py:369 gates the whole six-stage recirculation leg on it; and a POST /beat with the body {auto_metabolic: true, metabolic_every: 1} returns 200 while the field is silently ignored - the actions list comes back as pulse, homeostasis, genome_scan, transformation_tick and the metabolic cycle never runs. GET /status DOES report last_metabolic and metabolic_basis, so a reader sees a loop that never ran and no way to make it run. WHY THIS IS NOT A BUG IN W533: the loop genuinely runs from the beat and its stage latencies are genuinely recorded - that is driven, and the default being OFF is deliberate and right (six stages with their engine calls is expensive, and a surprise default that costs a second per beat would be the worse mistake). WHAT IS MISSING IS THE SWITCH: a capability nobody can turn on from outside the process is the reach class this plan keeps finding, one step short of a module nothing imports. ALREADY SCOPED, which is why this row is small: docs/CLOSURE_PREP_TWELVE.md item D7 sets out the work - add auto_metabolic to ConfigureRequest and to the heartbeat's _AUTONOMY_KEYS so it survives a restart, report it from status(), and add a sixth AUTONOMY entry plus the withheld state to HeartbeatMonitor.tsx. It also records a hazard found while scoping: adding the key to _AUTONOMY_KEYS breaks two existing guards through the shared store, so that half needs its own measurement. AND ONE BAR FOR WHOEVER TAKES IT: a leg must assert the switch GATES the run - that with auto_metabolic false the cycle does NOT happen - because a leg that only drives the enabled case cannot tell a switch from a decoration.",
+      "source": "W555 (the fresh-backend probe P3.16's ACCEPT asks for)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/api/heartbeat.py",
+        "agentic_core/organism/heartbeat.py",
+        "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "agentic_core/organism/ is P3.2's route 12 (the organism and its heartbeat); the recirculation loop is P3.16's but the SWITCH is the heartbeat's own configuration surface",
+      "tier": 2
     }
   ],
   "routes": [
     {
-      "slot": "P3.16",
+      "slot": "P3.20",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -6412,39 +6451,40 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "note": "handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
       "handed_from": "P3.12"
     },
     {
-      "slot": "P3.16",
+      "slot": "P3.20",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
+      "note": "handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
       "handed_from": "P3.14"
     },
     {
-      "slot": "P3.16",
+      "slot": "P3.20",
       "files": [
         "agentic_core/avatars/core/recirculation_orchestrator.py",
         "agentic_core/avatars/cognition/"
       ],
       "words": [],
-      "note": "the recirculation loop and the auxiliary engines"
+      "note": "handed from P3.16; the recirculation loop and the auxiliary engines",
+      "handed_from": "P3.16"
     },
     {
-      "slot": "P3.16",
+      "slot": "P3.20",
       "files": [],
       "words": [
         "attestation",
         "post-quantum"
       ],
-      "note": "handed from P3.15; attestations that are attestations",
+      "note": "handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
       "handed_from": "P3.15"
     },
     {
-      "slot": "P3.16",
+      "slot": "P3.20",
       "files": [
         "agentic_core/biomimicry/minimisation/",
         "core/transcendent_subsystems/",
@@ -6452,7 +6492,7 @@
         "agentic_core/validation/"
       ],
       "words": [],
-      "note": "handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
+      "note": "handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
       "handed_from": "P3.17"
     },
     {

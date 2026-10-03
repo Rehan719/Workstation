@@ -57,19 +57,45 @@ class ConstitutionalClearanceChain:
         #  `self.enforcement` is constructed and registered here and `validate` is never called on it.
         #  The pattern that IS consulted is the recirculation orchestrator's, which it hands to the VRPR
         #  pipeline and the cognitive orchestrator; that verdict and its basis reach a surface. So the
-        #  registration here is correct and NOT yet load-bearing, which is said plainly rather than left
-        #  for a reader to infer from a registry attribute that looks like enforcement.
+        #  registration here was correct and NOT yet load-bearing (corrected below: W555 made it so),
+        #  which was said plainly rather than left for a reader to infer from a registry attribute that
+        #  looks like enforcement.
         from agentic_core.validation.constitutional_validators import register_all as _register
         self.enforcement_registry = _register(self.enforcement)
+        #
+        #  W555 (FU-364) — AND IT IS CONSULTED NOW, as gate 6. The paragraph above said this
+        #  registration was "correct and NOT yet load-bearing"; it is load-bearing from this round, so
+        #  that sentence is corrected rather than left standing.
+        #
+        #  THE CONSEQUENCE, STATED HERE BECAUSE A READER WILL MEET IT AS A BUG OTHERWISE: this chain
+        #  CANNOT REACH A CLEARED VERDICT on this deployment. The pattern cannot clear while fifteen of
+        #  the nineteen declared constraints have no instrument in this repository, and a constraint
+        #  nobody can check is neither a pass nor a breach — so gate 6 blocks, every time, for a reason
+        #  it states in full. That is the honest state and not a defect: reading "could not check" as
+        #  "checked and fine" at the top of the stack is the certifies-an-absence defect this programme
+        #  has spent rounds removing from the screens below. Nothing the platform does changes, because
+        #  the live recirculation loop already withholds every emission at gate 1. The cleared verdict
+        #  becomes reachable when the constraints become assessable, and a guard drives it today by
+        #  registering validators that all assess and pass — because a chain that can never clear under
+        #  ANY circumstance would be as useless as one that always does.
 
-    #  The five gates in order, with the FIELD each one reads and the placeholder attestation key.
-    #  Named as data so the chain cannot silently grow a sixth gate that nothing records.
+    #  The gates in order, with the FIELD each one reads and the placeholder attestation key.
+    #  Named as data so the chain cannot silently grow a gate that nothing records — and W555 grew one,
+    #  which is what that sentence was written for. gates_declared and gates_passed are both COUNTED
+    #  from this tuple, so the figures move with it.
     _GATES = (
         ("mushawara", "Mushāwara", "deliberative consensus across cognitive perspectives"),
         ("niyyah", "Niyyah", "intent ratification"),
         ("tawazun", "Tawazun", "balance between depth and cognitive load"),
         ("tafakkur", "Tafakkur", "reflection on downstream effects"),
         ("tahqeeq", "Tahqeeq", "output verification against hard constraints"),
+        #  W555 (FU-364) — THE SIXTH, and it is why this chain holds an enforcement pattern at all.
+        #  Until this round the chain constructed one, registered nineteen validators onto it and NEVER
+        #  called validate: a constitutional clearance chain that never consulted the constitutional
+        #  constraints, with a populated `enforcement_registry` attribute that read exactly like
+        #  enforcement to anyone who found it. It consults them now, last, over the emission's own text.
+        ("enforcement", "Constitutional constraints",
+         "the nineteen declared constraints, each assessed or refusing by name"),
     )
 
     @staticmethod
@@ -116,9 +142,9 @@ class ConstitutionalClearanceChain:
                                attestations_signed=_signed, attestations_basis=_basis)
 
     async def validate_emission(self, emission: Dict[str, Any], context: Dict[str, Any]) -> ClearanceResult:
-        """Run the five-gate clearance chain. A gate with no input BLOCKS.
+        """Run the clearance chain, gate by gate. A gate with no input BLOCKS.
 
-        P3.14. THREE of the five gates read their field with a default that meant APPROVAL, so an engine
+        P3.14. THREE of the five gates that existed then read their field with a default that meant APPROVAL, so an engine
         returning an empty dict cleared them. Gate 1 indexed its field directly and RAISED instead, which is
         not clearing but is not a refusal either. Gate 2 was already correct. Every gate now requires its
         field to be PRESENT and affirmative, and says so when it is not. The replaced expressions are
@@ -163,7 +189,7 @@ class ConstitutionalClearanceChain:
         # ── GATE 2: Niyyah — intent ratification ───────────────────────────────────────────────
         #  This gate was ALREADY correct before P3.14: its default was negative, so a missing field
         #  blocked. Its behaviour is unchanged, and that is recorded here because a round claiming to have
-        #  fixed all five gates would be reporting work it did not do.
+        #  fixed all the gates would be reporting work it did not do.
         key, name, subject = self._GATES[1]
         niyyah_res = await self.orchestrator.process_engine("niyyah", emission, context)
         _rat = niyyah_res.get("ratified") if isinstance(niyyah_res, dict) else None
@@ -233,6 +259,32 @@ class ConstitutionalClearanceChain:
                 f"Gate 5 ({name}) Block: "
                 f"{(tahqeeq_res.get('reason') if isinstance(tahqeeq_res, dict) else None) or _missing('verified', tahqeeq_res)}")
         _rec = self._record(key, name, subject, "cleared", "output verified against hard constraints")
+        attestations[key] = self._attest_gate(emission, _rec)
+        gates.append(_rec)
+
+        # ── GATE 6: the declared constitutional constraints (W555, FU-364) ─────────────────────
+        #  THE PATTERN THIS CHAIN HAS ALWAYS HELD, finally consulted. Three outcomes, not two, because
+        #  the pattern itself has three: a BREACH blocks with the violated constraint named, and a
+        #  NOT-CLEARED blocks too — a constraint with no instrument is neither a pass nor a breach, and
+        #  a chain that read "could not check" as "checked and fine" would be the certifies-an-absence
+        #  defect at the top of the stack. The pattern's own sentence is carried verbatim into the
+        #  reason rather than paraphrased, so the count it reports cannot drift from the count it made.
+        key, name, subject = self._GATES[5]
+        _subject_text = emission.get("text") or emission.get("content") or ""
+        _enf = self.enforcement.validate(_subject_text)
+        _verdict = getattr(_enf, "passed", None)
+        _enf_basis = (getattr(_enf, "basis", "") or "").strip()
+        if _verdict is not True:
+            _why = (f"a declared constraint was VIOLATED: {getattr(_enf, 'violation', None)!r}. {_enf_basis}"
+                    if _verdict is False else
+                    f"the constraints could not all be assessed, so the chain did not clear. {_enf_basis}"
+                    if _enf_basis else
+                    "the enforcement pattern returned no verdict and no basis, which is itself unassessed")
+            return self._blocked(
+                gates + [self._record(key, name, subject, "blocked", _why)],
+                attestations, 5, f"Gate 6 ({name}) Block: {_why}")
+        _rec = self._record(key, name, subject, "cleared", _enf_basis or (
+            "every declared constraint was assessed and passed"))
         attestations[key] = self._attest_gate(emission, _rec)
         gates.append(_rec)
 

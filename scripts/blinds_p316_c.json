@@ -1,0 +1,101 @@
+[
+  {
+    "tag": "the screening is copied into the validator instead of shared, so two screens can drift",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "            res = HallucinationSandbox().screen(target)",
+    "new": "            res = {\"passed\": True, \"checks_run\": [\"knowledge_base_contradiction (3-term vocabulary)\", \"lexical_diversity\"], \"checks_not_run\": {}, \"hallucinations\": []}",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L3. The mutation is the shape the shortcut would really take - a second verdict reached here rather than by the sandbox - and it still returns the right keys, so only driving the breach through the validator sees it. FU-363 refused this precisely because two copies of two heuristics drift."
+  },
+  {
+    "tag": "a heuristic that could not run is reported as having passed",
+    "file": "agentic_core/governance/gaas/v5/hallucination_sandbox.py",
+    "old": "            \"passed\": (score > 0.7) if not not_run else None,",
+    "new": "            \"passed\": score > 0.7,",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L2, and it is the rule this programme states most often: a check that did not run is not a check that passed. With the mutation an output of no words scores 1.0 untouched - because the only heuristic that could have deducted is the one that could not run - and returns passed=True, the most confident possible verdict over the least possible evidence."
+  },
+  {
+    "tag": "the diversity heuristic divides by zero on an output with no words",
+    "file": "agentic_core/governance/gaas/v5/hallucination_sandbox.py",
+    "old": "        words = str(output or \"\").split()\n        if words:",
+    "new": "        words = str(output or \"\").split()\n        if True:",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L2. This is the PRE-EXISTING defect, restored: ZeroDivisionError on empty output, which uci_interceptor.py:90 did not guard. It was never reached before because the only caller passed model output; the constitutional validator reaches it with whatever the chain is given."
+  },
+  {
+    "tag": "checks_run is a constant list again, describing a run that may not have completed",
+    "file": "agentic_core/governance/gaas/v5/hallucination_sandbox.py",
+    "old": "            \"checks_run\": _s[\"checks_run\"],",
+    "new": "            \"checks_run\": [\"knowledge_base_contradiction (3-term vocabulary)\", \"lexical_diversity\"],",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L1 and L2. The constant is what was there before, and it asserted both heuristics always ran - untrue of an output with no words, which previously raised before reaching the dict at all. A list of checks is a claim about what happened, and only the screen knows."
+  },
+  {
+    "tag": "the clearance chain does not consult the enforcement pattern it constructs",
+    "file": "agentic_core/avatars/core/clearance_chain.py",
+    "old": "        _enf = self.enforcement.validate(_subject_text)",
+    "new": "        _enf = type(\"_X\", (), {\"passed\": True, \"basis\": \"\", \"violation\": None})()",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L4, the state FU-364 names: the chain held a pattern with nineteen validators registered and never called validate on it. The mutation keeps the gate in place and makes it always clear, which is the way a gate stops being a gate without anyone noticing it has gone."
+  },
+  {
+    "tag": "an unassessable set of constraints is read as a clearance at the top of the stack",
+    "file": "agentic_core/avatars/core/clearance_chain.py",
+    "old": "        if _verdict is not True:",
+    "new": "        if _verdict is False:",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L4(a). This is the certifies-an-absence defect one level above the screens: with the mutation a breach still blocks, so the gate looks like it works, and a pattern reporting that fifteen of nineteen constraints have NO INSTRUMENT clears the chain. The leg drives the ordinary input, where the verdict is None rather than False."
+  },
+  {
+    "tag": "the pattern's own count is paraphrased instead of carried into the chain's reason",
+    "file": "agentic_core/avatars/core/clearance_chain.py",
+    "old": "                    f\"the constraints could not all be assessed, so the chain did not clear. {_enf_basis}\"",
+    "new": "                    \"the constraints could not all be assessed, so the chain did not clear\"",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L4(a). A chain that restates a conclusion without the figures that produced it is a chain whose reason goes stale the moment the figures change - and the figures here are the whole content: how many of nineteen were assessed, how many have no instrument, and which lacked their input."
+  },
+  {
+    "tag": "a breach reaches the chain without the evidence for it",
+    "file": "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+    "old": "            basis=(getattr(result, \"basis\", \"\") or \"\").strip() or",
+    "new": "            basis=\"\" or",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L4(b), and this defect was live until this round: zero_placeholder names the marker it found, and _handle_violation dropped the basis, so the chain's reason said a constraint was violated and stopped. The leg requires the marker text to survive all the way into ClearanceResult.reason."
+  },
+  {
+    "tag": "the clearance path prints to stdout on a refusal",
+    "file": "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+    "old": "        logger.warning(\"constitutional constraint violated: %s\", name)",
+    "new": "        print(f\"!!! SUPREME CONSTRAINT VIOLATION: {name} !!!\")",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L5, the pre-existing line restored. It was tolerable while nothing consulted the pattern and became a line on the live clearance path the moment gate 6 existed - unroutable, unfilterable, unsilenceable, and emitted once per refusal on a path whose ordinary outcome IS a refusal."
+  },
+  {
+    "tag": "the chain's cleared verdict is unreachable, so the gate is a permanent block",
+    "file": "agentic_core/avatars/core/clearance_chain.py",
+    "old": "        _rec = self._record(key, name, subject, \"cleared\", _enf_basis or (",
+    "new": "        return self._blocked(gates, attestations, 5, \"never clears\")\n        _rec = self._record(key, name, subject, \"cleared\", _enf_basis or (",
+    "selector": "w555",
+    "expect": "BLIND(red)",
+    "why": "L4(c). A chain that can never clear under ANY circumstance is as useless as one that always does, and a guard that only drove the withholding path would not tell them apart. The leg registers validators that all assess and pass and requires the chain to clear through every declared gate."
+  },
+  {
+    "tag": "the by-area routing leg pins a slot id that the plan can move",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    _owner = next((rt[\"slot\"] for rt in _fu.raw_routes(reg)\n                   if any(\"agentic_core/mjm/\" in str(f) for f in (rt.get(\"files\") or []))), None)",
+    "new": "    _owner = \"P3.16\"",
+    "selector": "w535",
+    "expect": "BLIND(red)",
+    "why": "The FU-365 class, third instance, restored exactly as it stood before W555: the destination named as a literal. P3.16 is DONE and its routes were handed to P3.20, so the pinned form is now false - which is the point, because this blind proves the computed form is what makes the leg survive the plan moving rather than merely look tidier."
+  }
+]

@@ -212,7 +212,6 @@ class HallucinationContainment:
 
     def validate(self, target: Any, context: Any = None) -> ValidationResult:
         try:
-            import asyncio
             from agentic_core.governance.gaas.v5.hallucination_sandbox import HallucinationSandbox
         except Exception as e:                   # noqa: BLE001
             return ValidationResult(
@@ -223,40 +222,45 @@ class HallucinationContainment:
             return ValidationResult(
                 passed=None, violation=None, basis=(
                     "NOT ASSESSABLE (hallucination_containment): the subject is not readable text"))
-        #  ASK BEFORE BUILDING THE COROUTINE. Catching asyncio.run's RuntimeError afterwards was the
-        #  obvious shape and it leaked: the coroutine object had already been constructed, so every
-        #  refusal on the live path emitted "coroutine ... was never awaited" — measured, not inferred.
-        #  The refusal is decided from the loop's presence, before anything is created to abandon.
+        #  W555 (FU-363) — THE SYNC SCREEN, so this assesses on the path that matters. Until this round
+        #  the validator called asyncio.run on the sandbox's async validate_output, which raises whenever
+        #  an event loop is already running — and the live path always is, because VRPR's process() is
+        #  async and the recirculation loop drives it. So the one constraint here that HAS an instrument
+        #  could only ever assess from synchronous test code. The sandbox is async because it awaits a
+        #  UEG write, not because the screening needs to be: screen() is that same screening, extracted,
+        #  and it is the SAME implementation rather than a second copy of two heuristics that would drift.
+        #  WHAT IS LOST, and it is stated rather than quietly dropped: this path does not write the
+        #  "hallucination_scan_completed" UEG event, because writing it is the async half. The screen's
+        #  verdict travels in the chain's result instead.
         try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            pass                                 # no loop on this thread: the sandbox may be run
-        else:
-            return ValidationResult(
-                passed=None, violation=None, basis=(
-                    "NOT ASSESSABLE (hallucination_containment): an event loop is already running, so the "
-                    "sandbox was not called. It is async because it awaits a UEG write, and this validator "
-                    "interface is synchronous (FU-363). Reporting a pass here would be a verdict nobody "
-                    "computed"))
-        try:
-            res = asyncio.run(HallucinationSandbox().validate_output(
-                target, context if isinstance(context, dict) else {}))
+            res = HallucinationSandbox().screen(target)
         except Exception as e:                   # noqa: BLE001
             return ValidationResult(
                 passed=None, violation=None,
                 basis=f"NOT ASSESSABLE (hallucination_containment): the sandbox raised {e.__class__.__name__}")
+        #  A PARTIAL SCREEN IS NOT A PASS. screen() reports passed=None with the check NAMED when one of
+        #  its two heuristics could not run, and that None must travel rather than being read as a pass.
+        if res.get("passed") is None:
+            return ValidationResult(
+                passed=None, violation=None, details={"checks_not_run": res.get("checks_not_run")},
+                basis=(f"NOT ASSESSABLE (hallucination_containment): the screen could not run every "
+                       f"heuristic — {res.get('checks_not_run')}. A check that did not run is not a "
+                       f"check that passed"))
         if not res.get("passed", True):
             return ValidationResult(
                 passed=False, violation="hallucination_containment",
                 details={"flags": res.get("hallucinations")},
                 basis=f"BREACH: the sandbox's heuristics flagged {res.get('hallucinations')}")
         return ValidationResult(
-            passed=True, violation=None,
-            basis=("hallucination_containment: the sandbox's TWO HEURISTICS flagged nothing — a "
-                   "knowledge-key contradiction check over three keys, and a lexical-diversity check. "
-                   "THE LIMIT, carried from W415 which removed this module's fabricated fidelity score: "
-                   "NOTHING IN THIS REPOSITORY MEASURES FIDELITY. This means those two heuristics found "
-                   "nothing, never that the output was verified"))
+            passed=True, violation=None, details={"checks_run": res.get("checks_run")},
+            #  The checks are NAMED FROM THE SCREEN'S OWN REPORT rather than described from memory: a
+            #  sentence listing two heuristics is a claim about what ran, and only the screen knows.
+            basis=(f"hallucination_containment: {len(res.get('checks_run') or [])} heuristic(s) ran and "
+                   f"flagged nothing — {', '.join(res.get('checks_run') or []) or 'none'}. THE LIMIT, "
+                   f"carried from W415 which removed this module's fabricated fidelity score: NOTHING IN "
+                   f"THIS REPOSITORY MEASURES FIDELITY. This means those heuristics found nothing, never "
+                   f"that the output was verified. It is also the SAME screen the sandbox runs, not a "
+                   f"copy of it — the async wrapper adds the UEG write and nothing else"))
 
 
 #  name -> the validator instance that assesses it

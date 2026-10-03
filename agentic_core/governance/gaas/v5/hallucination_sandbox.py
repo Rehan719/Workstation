@@ -16,21 +16,67 @@ class HallucinationSandbox:
             "gaas-v4": "Constitutional governance middleware"
         }
 
-    async def validate_output(self, output: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Check for consistency with established knowledge and context."""
+    def screen(self, output: str) -> Dict[str, Any]:
+        """The two heuristics, SYNCHRONOUSLY. No logging, no awaiting, no side effect.
+
+        W555 (FU-363) — THIS EXISTS SO THERE IS ONE SCREEN AND NOT TWO. validate_output was async only
+        because it awaits a UEG write, and the constitutional validator interface is synchronous, so
+        hallucination_containment could never assess on the live path — the recirculation loop is always
+        inside an event loop. The alternative was to copy these two heuristics into the validator, which
+        would have created a second screen over the same subject and the two copies would have drifted.
+        The screening is extracted instead; validate_output keeps its signature, its arithmetic and its
+        threshold, and adds the log.
+
+        WHICH CHECKS RAN IS REPORTED, not assumed. The diversity check divides by the word count, so on
+        an output with no words it CANNOT RUN — and it previously raised ZeroDivisionError there, which
+        the interceptor did not guard. A check that did not run is not a check that passed, so it is
+        named in `checks_not_run` and `passed` is None rather than a verdict.
+        """
         score = 1.0
-        hallucinations = []
+        hallucinations: List[str] = []
+        ran: List[str] = []
+        not_run: Dict[str, str] = {}
 
         # Simple keyword-based verification
         for key, fact in self.knowledge_base.items():
             if key in output.lower() and fact.lower() not in output.lower():
                 score -= 0.2
                 hallucinations.append(f"Possible contradiction for {key}")
+        ran.append("knowledge_base_contradiction (3-term vocabulary)")
 
         # Entropy check: overly repetitive or gibberish detection
-        if len(set(output.split())) / len(output.split()) < 0.3:
-             score -= 0.5
-             hallucinations.append("Low diversity/Entropy violation")
+        words = str(output or "").split()
+        if words:
+            if len(set(words)) / len(words) < 0.3:
+                score -= 0.5
+                hallucinations.append("Low diversity/Entropy violation")
+            ran.append("lexical_diversity")
+        else:
+            not_run["lexical_diversity"] = (
+                "the subject has no words, so there is no diversity to measure. This previously raised "
+                "ZeroDivisionError here and the interceptor did not guard it")
+
+        return {
+            # None when a check could not run: a partial screen is not a pass. The arithmetic and the
+            # 0.7 threshold are unchanged for the case where both ran (uci_interceptor.py:91 branches
+            # on this field, and the recirculation loop reaches that branch).
+            "passed": (score > 0.7) if not not_run else None,
+            "heuristic_score": round(score, 2),
+            "hallucinations": hallucinations,
+            "checks_run": ran,
+            "checks_not_run": not_run,
+        }
+
+    async def validate_output(self, output: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Check for consistency with established knowledge and context, and LOG the scan.
+
+        The screening itself is sync and lives in screen(); this wrapper is async because it writes to
+        the UEG. Keeping the two apart is what lets the constitutional validator call the same screen on
+        the live path without a second copy of it (FU-363).
+        """
+        _s = self.screen(output)
+        score = _s["heuristic_score"]
+        hallucinations = _s["hallucinations"]
 
         # W415 — this returned {"passed": score > 0.7, "fidelity_score": score, ...} and score
         # starts at 1.0, decrementing only against the three literal keys in self.knowledge_base
@@ -44,11 +90,15 @@ class HallucinationSandbox:
         # arithmetic and threshold (uci_interceptor.py:91 branches on it) but it means "these two
         # heuristics flagged nothing", not "this output was verified".
         res = {
-            "passed": score > 0.7,
+            "passed": _s["passed"],
             "fidelity_score": None,
             "heuristic_score": round(score, 2),
             "hallucinations": hallucinations,
-            "checks_run": ["knowledge_base_contradiction (3-term vocabulary)", "lexical_diversity"],
+            #  W555 — the checks that RAN, read from the screen rather than listed as a constant. The
+            #  constant said both always ran, which was untrue of an output with no words: that case
+            #  raised before reaching this dict, so the list described a run that never completed.
+            "checks_run": _s["checks_run"],
+            "checks_not_run": _s["checks_not_run"],
             "verified_against_source": False,
             "note": ("Detection-only heuristic. No source registry or fact-check backend is "
                      "implemented, so nothing measures fidelity; 'passed' means these two checks "

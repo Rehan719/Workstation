@@ -1,6 +1,9 @@
+import logging
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from agentic_core.validation.enforcement_pattern import UniversalEnforcementPattern, ValidationResult
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class SupremeValidationResult(ValidationResult):
@@ -76,5 +79,19 @@ class OmniEnforcementPatternSupreme(UniversalEnforcementPattern):
             basis=f"all {_total} declared constraint(s) were assessed and passed")
 
     def _handle_violation(self, name: str, result: ValidationResult) -> ValidationResult:
-        print(f"!!! SUPREME CONSTRAINT VIOLATION: {name} !!!")
-        return ValidationResult(passed=False, violation=name, details=result.details)
+        """W555 — CARRY THE VALIDATOR'S OWN BASIS, and log rather than print.
+
+        Two defects, both found by consulting this pattern from the clearance chain for the first time
+        (FU-364). It DROPPED the basis: zero_placeholder returns "BREACH (zero_placeholder): 1
+        placeholder marker(s) in the output — ['TODO']...", naming what it found, and the chain received
+        a result whose basis was empty, so gate 6's reason read "a declared constraint was VIOLATED:
+        'zero_placeholder'." and stopped — the breach without the evidence for it. And it PRINTED to
+        stdout on what is now the live clearance path, where a server's every refusal would write a line
+        nothing can route, filter or silence.
+        """
+        logger.warning("constitutional constraint violated: %s", name)
+        return ValidationResult(
+            passed=False, violation=name, details=result.details,
+            basis=(getattr(result, "basis", "") or "").strip() or
+            (f"the {name} validator reported a breach and gave no basis, which is itself a defect: a "
+             f"refusal a reader cannot act on is barely better than none"))

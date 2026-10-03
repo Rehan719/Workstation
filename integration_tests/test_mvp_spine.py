@@ -29039,12 +29039,49 @@ def test_w525_a_gate_with_no_input_blocks_and_the_chain_records_every_verdict():
         async def verify_output(self, emission):
             return self._maybe("tahqeeq", {"verified": True})
 
-    # ── 1. everything affirms: the chain clears, and gates_passed is COUNTED ────────────────────
+    # ── 1. every ENGINE affirms — and the chain still does not clear, at GATE 6 ─────────────────
+    #  W555 (FU-364) added the sixth gate: the enforcement pattern this chain had always constructed,
+    #  registered nineteen validators onto, and never consulted. Consulting it changes what this leg can
+    #  assert, and the change is the honest one rather than a regression. The pattern cannot CLEAR while
+    #  fifteen declared constraints have no instrument in this repository — a constraint that cannot be
+    #  checked is neither a pass nor a breach — so a chain that consults it cannot clear either. Reading
+    #  "could not check" as "checked and fine" at the top of the stack would be the certifies-an-absence
+    #  defect this whole programme removes, one level above the screens that have it removed already.
+    #  THE OBSERVABLE PLATFORM IS UNCHANGED: the live recirculation loop already withholds every emission
+    #  at gate 1, so no path that cleared before stops clearing now.
     ueg = _UEG()
     ok = _aio.run(_Chain(ueg, _Orch()).validate_emission({"id": "e-ok"}, {}))
-    assert ok.passed is True, ok.reason
-    assert [g["verdict"] for g in ok.gates] == ["cleared"] * 5, ok.gates
+    assert ok.passed is False, ("the chain cleared while most constitutional constraints have no "
+                                "instrument", ok.reason)
+    assert "Gate 6" in (ok.reason or "") and "NOT CLEARED" in (ok.reason or ""), ok.reason
+    #  the pattern's OWN sentence is carried, not paraphrased, so its count cannot drift from the count
+    #  it made — and the two kinds of unassessable travel all the way to the chain's reason.
+    assert "of 19 declared constraint(s) were assessed" in (ok.reason or ""), ok.reason
+    assert "NO INSTRUMENT" in (ok.reason or ""), ok.reason
+    #  the first five gates DID clear and are still recorded; only the sixth blocked
+    _v = {g["gate"]: g["verdict"] for g in ok.gates}
+    assert [g["verdict"] for g in ok.gates] == ["cleared"] * 5 + ["blocked"], ok.gates
+    assert _v["enforcement"] == "blocked", _v
     assert sorted(ok.attestations) == ["mushawara", "niyyah", "tafakkur", "tahqeeq", "tawazun"], ok.attestations
+
+    # ── 1b. AND THE CLEARED STATE IS STILL REACHABLE, which is why 1 is not simply a weaker claim ──
+    #  A chain that can NEVER clear under any circumstance is as useless as one that always does, and a
+    #  leg that only ever drove the withholding path would not notice the difference. The pattern is
+    #  given validators that all assess and pass, and the chain then clears through all six gates.
+    class _Clear:
+        def validate(self, target, context=None):
+            from agentic_core.validation.enforcement_pattern import ValidationResult as _VR
+            return _VR(passed=True, basis="driven by the guard")
+    _ueg2 = _UEG()
+    _chain2 = _Chain(_ueg2, _Orch())
+    for _n in [k for ph in sorted(_chain2.enforcement.phases) for k in _chain2.enforcement.phases[ph]]:
+        _chain2.enforcement.register_validator(_n, _Clear())
+    _cleared = _aio.run(_chain2.validate_emission({"id": "e-clear", "text": "ordinary words here"}, {}))
+    assert _cleared.passed is True, ("the chain cannot clear even when every constraint assesses and "
+                                     "passes, so its cleared state is unreachable", _cleared.reason)
+    assert [g["verdict"] for g in _cleared.gates] == ["cleared"] * len(_Chain._GATES), _cleared.gates
+    ok = _cleared          # the converged-event assertions below describe a CLEARED run
+    ueg = _ueg2
     # W526 (P3.15) — the five placeholder literals are gone. Each attestation is now a RECORD: a real
     # HMAC-SHA3-512 signature over the gate's canonical verdict, or a stated refusal naming the missing key.
     # This suite configures no attestation key, so the honest outcome here is an unsigned record WITH a
@@ -29057,12 +29094,21 @@ def test_w525_a_gate_with_no_input_blocks_and_the_chain_records_every_verdict():
     assert not any("SIG_" in str(v) for v in ok.attestations.values()), ok.attestations
     kind, payload = ueg.events[-1]
     assert kind == "CONSTITUTIONAL_CLEARANCE_CONVERGED", kind
-    assert payload["gates_passed"] == 5 and payload["gates_declared"] == 5, payload
+    #  COUNTED FROM THE CHAIN, not pinned at five (FU-365). W555 added a sixth gate — the
+    #  enforcement pattern the chain had always held and never consulted — and a literal here would
+    #  have failed for the growth the chain's own comment says this tuple exists to make visible.
+    _declared = len(_Chain._GATES)
+    assert payload["gates_declared"] == _declared, (payload["gates_declared"], _declared)
+    assert payload["gates_passed"] == _declared, (
+        "a gate did not clear on the all-clear double, so the chain cannot reach its cleared state",
+        payload)
     assert payload["attestations_signed"] is False, payload
     assert "NOT SIGNED" in payload["attestations_basis"], payload
 
     # ── 2. EACH gate blocks on its own missing field — driven one at a time ─────────────────────
-    order = ["mushawara", "niyyah", "tawazun", "tafakkur", "tahqeeq"]
+    #  READ FROM THE CHAIN so a new gate is covered by this loop the moment it is declared, rather
+    #  than silently skipped by a list nobody updated.
+    order = [k for k, _n, _s in _Chain._GATES]
     for i, gate in enumerate(order):
         r = _aio.run(_Chain(_UEG(), _Orch(drop=gate)).validate_emission({"id": f"e-{gate}"}, {}))
         assert r.passed is False, (gate, "a gate with no input CLEARED the chain")
@@ -29166,7 +29212,12 @@ def test_w526_attestations_are_attestations(client, monkeypatch):
     chain = (root / "agentic_core/avatars/core/clearance_chain.py").read_text(encoding="utf-8")
     for gate in ("MUSHAWARA", "NIYYAH", "TAWAZUN", "TAFAKKUR", "TAHQEEQ"):
         assert f"SIG_{gate}_v1" not in chain, f"the {gate} placeholder signature is back"
-    assert chain.count("self._attest_gate(emission, _rec)") == 5, "a gate stopped attesting its verdict"
+    #  COUNTED FROM THE CHAIN'S OWN TUPLE, not pinned at five (FU-365): W555 declared a sixth gate, and
+    #  a literal here would have failed for exactly the growth _GATES exists to make visible.
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain as _CC526
+    assert chain.count("self._attest_gate(emission, _rec)") == len(_CC526._GATES), (
+        "a declared gate does not attest its own verdict",
+        chain.count("self._attest_gate(emission, _rec)"), len(_CC526._GATES))
 
     # ── 5. THE GUARD TWO MODULES CLAIMED AND NOBODY BUILT ──────────────────────────────────────
     #  pqc_hardening.py has said since W506 that "a guard forbids" these words as descriptions of what it
@@ -30044,8 +30095,19 @@ def test_w535_the_owners_four_rulings_of_2026_10_02():
     import agentic_core.plan_followups as _fu
     reg = _json.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
     #  (a) a high row whose files belong to an area goes THERE, not to whichever item is next
+    #  THE DESTINATION IS COMPUTED, NOT PINNED (FU-365). This named P3.16, and W555 closed P3.16 and
+    #  handed its routes on — so the literal failed for the plan MOVING, the third instance of that class
+    #  in two rounds and the reason it is now a filed row rather than three separate fixes. What the
+    #  ruling actually guarantees is that a high row goes to the item whose ROUTE claims its files,
+    #  whichever item that is, and that severity does not change the answer.
+    _owner = next((rt["slot"] for rt in _fu.raw_routes(reg)
+                   if any("agentic_core/mjm/" in str(f) for f in (rt.get("files") or []))), None)
+    assert _owner, "no route claims agentic_core/mjm/, so this leg would measure the fallback instead"
+    _open_slots = {i["slot"] for i in _fu.plan_items(prompt) if not i["done"]}
+    assert _owner in _open_slots, ("the route claiming this area points at a CLOSED item, so new rows "
+                                   "in it would be filed against something already done", _owner)
     hi = _fu.route_row(reg, prompt, "something wrong in the mjm engine", ["agentic_core/mjm/mjm.py"], "high")
-    assert hi["slot"] == "P3.16", ("a high row did not route by area", hi)
+    assert hi["slot"] == _owner, ("a high row did not route by area", hi, _owner)
     assert "routed by area" in hi["by"], hi
     #  (b) and a MEDIUM row with the same files reaches the same item — severity no longer picks the slot
     med = _fu.route_row(reg, prompt, "something wrong in the mjm engine", ["agentic_core/mjm/mjm.py"], "medium")
@@ -33272,3 +33334,143 @@ def test_w554_the_horizon_seam_observes_and_records_and_does_not_gate(client):
     #  later correction reaches: a person in distress might act on what they read there.
     assert _src.index('data-testid="horizon-distress-routes"') < _src.index('data-testid="horizon-seam"'), (
         "the seam block was placed above the distress-route field")
+
+
+def test_w555_one_screen_serves_both_paths_and_the_chain_consults_the_constraints_it_holds(client):
+    """FU-363 and FU-364: the sandbox's screening is sync so the live path can assess it, and the
+    clearance chain finally consults the enforcement pattern it has always constructed.
+
+    Both rows were found by DRIVING W553's own fix rather than by reading it, and both legs below drive
+    rather than inspect — the point of each fix is what happens on the path, not what the source says.
+    """
+    import asyncio as _aio
+    import warnings as _warn
+    from agentic_core.avatars.core.avatar_engine import AvatarState
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
+    from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator
+    from agentic_core.governance.gaas.v5.hallucination_sandbox import HallucinationSandbox
+    from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
+    from agentic_core.validation import constitutional_validators as _V
+    from agentic_core.validation.enforcement_pattern import ValidationResult as _VR
+
+    # ── L1. ONE SCREEN, NOT TWO — the sync half is the SAME implementation the async wrapper runs ──
+    _sb = HallucinationSandbox()
+    _text = "Varied ordinary prose about bakeries and ovens and the people who keep them."
+    _sync = _sb.screen(_text)
+    _async = _aio.run(_sb.validate_output(_text, {}))
+    assert _sync["passed"] is True and _async["passed"] is True, (_sync, _async)
+    for _k in ("heuristic_score", "hallucinations", "checks_run", "checks_not_run"):
+        assert _sync[_k] == _async[_k], ("the sync screen and the async wrapper disagree on " + _k,
+                                        _sync[_k], _async[_k])
+    #  the wrapper adds the UEG write AND NOTHING ELSE — that is the whole reason it is still async
+    assert "fidelity_score" in _async and _async["fidelity_score"] is None, _async
+    assert "fidelity_score" not in _sync, (
+        "the sync screen reports a fidelity field, which W415 removed because nothing measures fidelity")
+
+    # ── L2. A CHECK THAT COULD NOT RUN IS NOT A CHECK THAT PASSED, and it used to RAISE ────────────
+    #  The diversity heuristic divides by the word count. On an output with no words that was a
+    #  ZeroDivisionError, and uci_interceptor.py did not guard it.
+    _empty = _sb.screen("   ")
+    assert _empty["passed"] is None, ("a screen that could not run every heuristic reported a verdict",
+                                      _empty)
+    assert "lexical_diversity" in _empty["checks_not_run"], _empty
+    assert len(_empty["checks_not_run"]["lexical_diversity"]) > 60, _empty["checks_not_run"]
+    assert "lexical_diversity" not in _empty["checks_run"], _empty
+    #  and it no longer raises through the async wrapper either — AND the wrapper reports the SAME
+    #  partial run. A blind proved the earlier form vacuous: the wrapper's checks_run was compared with
+    #  the screen's only on text where both heuristics ran, so a hard-coded list of two matched it. The
+    #  empty subject is the input that tells a computed list from a constant one.
+    _aw = _aio.run(_sb.validate_output("", {}))
+    assert _aw["passed"] is None, _aw
+    assert _aw["checks_run"] == _empty["checks_run"], (
+        "the async wrapper reports checks the screen says did not run — a list of checks is a claim "
+        "about what happened, and only the screen knows", _aw["checks_run"], _empty["checks_run"])
+    assert "lexical_diversity" not in _aw["checks_run"], _aw["checks_run"]
+    assert _aw["checks_not_run"] == _empty["checks_not_run"], (_aw, _empty)
+    #  the heuristic that CAN still run, does — a partial screen is partial, not absent
+    assert "knowledge_base_contradiction (3-term vocabulary)" in _empty["checks_run"], _empty
+    #  and the breach path still fires: repetition trips diversity
+    _rep = _sb.screen(" ".join(["same"] * 25))
+    assert _rep["passed"] is False and _rep["hallucinations"], _rep
+
+    # ── L3. THE VALIDATOR ASSESSES ON THE LIVE PATH NOW (FU-363) ───────────────────────────────────
+    #  It could not before: it called asyncio.run on the async wrapper, which raises inside a running
+    #  loop, and the live path is always inside one. The count is the evidence.
+    _orch = AvatarRecirculationOrchestrator(_VSBUEG(), AvatarState(avatar_id="w555", user_id="w555"))
+    with _warn.catch_warnings(record=True) as _caught:
+        _warn.simplefilter("always")
+        _final = _aio.run(_orch.vrpr.process("A plainly written answer with ordinary varied words.", {}))
+    assert not [w for w in _caught if "never awaited" in str(w.message)], (
+        "a coroutine was constructed and abandoned on the live path", [str(w.message) for w in _caught])
+    _vb = getattr(_final, "verification_basis", "") or ""
+    assert "3 of 19 declared constraint(s) were assessed" in _vb, (
+        "hallucination_containment is not assessing on the live path, so the one constraint FU-363 "
+        "names is still unreachable where it matters", _vb)
+    assert "hallucination_containment" not in _vb.split("not given its input")[-1], (
+        "hallucination_containment is still reported as an instrument that was not given its input", _vb)
+    #  AND IT IS THE SANDBOX'S VERDICT, not one reached here. A blind proved the earlier form vacuous:
+    #  it asserted only that ordinary text PASSES, which a second screen copied into the validator does
+    #  too. The validator must track the sandbox across inputs where the answers DIFFER — so the breach
+    #  and the partial run are driven through it, not just the pass.
+    _hc = _V.ASSESSING["hallucination_containment"]
+    for _subject, _want in ((_text, True),
+                            (" ".join(["same"] * 25), False),     # repetition trips diversity
+                            ("one two three", None)):             # too few words: diversity cannot run
+        _screened = _sb.screen(_subject)["passed"]
+        _validated = _hc.validate(_subject).passed
+        assert _validated is _screened, (
+            "the validator disagrees with the sandbox's own screen, so there are two screens here and "
+            "they have already drifted", _subject[:30], _validated, _screened)
+        if _want is not None:
+            assert _validated is _want, (_subject[:30], _validated, _want)
+
+    # ── L4. THE CHAIN CONSULTS THE PATTERN IT HOLDS (FU-364) — gate 6, all three outcomes driven ───
+    class _Orch555:
+        async def consult(self, emission, engines):
+            return {"status": "APPROVED"}
+
+        async def process_engine(self, name, emission, context):
+            return {"ratified": True, "balanced": True, "risk_score": 0.0}
+
+        async def verify_output(self, emission):
+            return {"verified": True}
+
+    _chain = ConstitutionalClearanceChain(_VSBUEG(), _Orch555())
+    assert [k for k, _n, _s in _chain._GATES][-1] == "enforcement", (
+        "the enforcement gate is not the last declared gate", _chain._GATES)
+    #  (a) NOT CLEARED — the ordinary outcome here, and the pattern's own sentence is CARRIED
+    _nc = _aio.run(_chain.validate_emission({"id": "g6-a", "text": "ordinary varied words here"}, {}))
+    assert _nc.passed is False and "Gate 6" in (_nc.reason or ""), _nc.reason
+    assert "of 19 declared constraint(s) were assessed" in (_nc.reason or ""), (
+        "the pattern's own count does not reach the chain's reason, so the chain paraphrases a figure "
+        "it did not compute", _nc.reason)
+    assert {g["gate"]: g["verdict"] for g in _nc.gates}["enforcement"] == "blocked", _nc.gates
+    #  (b) A BREACH — named, AND carrying the validator's own basis, which _handle_violation dropped
+    _br = _aio.run(_chain.validate_emission({"id": "g6-b", "text": "this section is a TODO"}, {}))
+    assert _br.passed is False, _br.reason
+    assert "zero_placeholder" in (_br.reason or ""), _br.reason
+    assert "placeholder marker(s) in the output" in (_br.reason or ""), (
+        "the breach reaches the chain without the evidence for it: the validator named what it found "
+        "and _handle_violation discarded the basis", _br.reason)
+    #  (c) CLEARED — reachable, so the gate is not a permanent block wearing a gate's clothes
+    class _Clear555:
+        def validate(self, target, context=None):
+            return _VR(passed=True, basis="driven by the guard")
+    _chain2 = ConstitutionalClearanceChain(_VSBUEG(), _Orch555())
+    for _n in [k for ph in sorted(_chain2.enforcement.phases) for k in _chain2.enforcement.phases[ph]]:
+        _chain2.enforcement.register_validator(_n, _Clear555())
+    _cl = _aio.run(_chain2.validate_emission({"id": "g6-c", "text": "ordinary varied words here"}, {}))
+    assert _cl.passed is True, ("the chain cannot clear even when every constraint assesses and passes",
+                                _cl.reason)
+    assert [g["verdict"] for g in _cl.gates] == ["cleared"] * len(_chain2._GATES), _cl.gates
+
+    # ── L5. AND NOTHING PRINTS TO STDOUT ON A REFUSAL ─────────────────────────────────────────────
+    #  _handle_violation printed "!!! SUPREME CONSTRAINT VIOLATION !!!", which was tolerable while
+    #  nothing consulted the pattern and became a line on the live clearance path the moment gate 6
+    #  existed — unroutable, unfilterable and unsilenceable.
+    import contextlib as _ctx
+    import io as _sio
+    _buf = _sio.StringIO()
+    with _ctx.redirect_stdout(_buf):
+        _aio.run(_chain.validate_emission({"id": "g6-d", "text": "lorem ipsum dolor sit amet"}, {}))
+    assert _buf.getvalue() == "", ("the clearance path wrote to stdout on a refusal", _buf.getvalue())
