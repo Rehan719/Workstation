@@ -121,7 +121,13 @@ def grep_repo(needle: str) -> list[str]:
         base = ROOT / d
         if not base.exists():
             continue
-        out = sh("git", "grep", "-n", "--fixed-strings", needle, "--", d)
+        # W542 — `--untracked`, because without it this searched only files git already knows about, and a
+        # SURFACE ADDED IN THE SAME ROUND AS ITS KEY IS UNTRACKED. The keys screen therefore printed "NO
+        # page reads it" for fourteen keys that the page committed beside them read perfectly well, and the
+        # screen whose whole purpose is to find a field that reaches no surface was blind to the one case
+        # where the surface is new. A false absence from an instrument is worse than no instrument: it sends
+        # a round looking for a defect that is not there, and it would pass silently on the day it matters.
+        out = sh("git", "grep", "-n", "--untracked", "--fixed-strings", needle, "--", d)
         hits += [h for h in out.splitlines() if h.strip()]
     _grep_cache[needle] = hits
     return hits

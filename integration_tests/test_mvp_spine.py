@@ -30861,3 +30861,214 @@ def test_w541_support_answers_carry_provenance_and_nothing_resolves_itself(clien
                                         "monitor's 100%", _s["method"])
     #  and whatever the rate is, it was computed over confirmations: the denominator is reported
     assert _s["confirmed_resolved"] is not None and _s["confirmed_unresolved"] is not None, _s
+
+
+def test_w542_a_support_change_is_the_agencys_to_decide_and_a_ledger_miss_is_reported(client, tmp_path):
+    """P3.18 Round B: the governance path, the attested record, and the page that cannot print a percentage.
+
+    Round A built the ticket core and proved a rate cannot exist without a confirmation. This completes the
+    item's remaining body clauses. Each leg asserts a PROPERTY driven through a surface, never a spelling:
+    the one leg that reads a .tsx asserts the ABSENCE of an arithmetic path, because an absence cannot be
+    faked by a branch that never renders — which is how a presence check survives `{false && ...}`.
+    """
+    import ast
+    import json
+    import pathlib
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── L1. A SUPPORT CHANGE IS FILED WITH THE EXISTING AGENCY, AND NOTHING HERE DECIDES IT ────────
+    pc = client.post("/api/v1/support/policy-change", json={
+        "title": "Support: escalate after one failed answer",
+        "description": "Escalate on the first failed call rather than the second.",
+        "rationale": "A second failed attempt wastes the user's time.",
+        "rollback_plan": "Restore the previous threshold constant."})
+    assert pc.status_code == 200, (pc.status_code, pc.text[:300])
+    _pc = pc.json()
+    assert _pc["cca_id"].startswith("cca-"), _pc
+    #  The outcome is NOT this module's to report. A filing that rendered as a decision would be the
+    #  second governance path the item's body forbids, arrived at by accident rather than by design.
+    assert _pc["decided"] is False, ("support reported a verdict on its own change request", _pc)
+    assert _pc["status"] == "submitted", ("a filing came back already decided", _pc["status"])
+
+    #  and the AGENCY holds it — the filing reached the real store, not a support-side copy of one
+    from agentic_core.config import data_path as _dp
+    _cca_dir = pathlib.Path(_dp("change_control"))
+    _rows = ([json.loads(p.read_text(encoding="utf-8")) for p in _cca_dir.glob("*.json")]
+             if _cca_dir.is_dir() else [])
+    _mine = [r for r in _rows if r.get("cca_id") == _pc["cca_id"]]
+    assert len(_mine) == 1, (f"the change is not in the Agency's own store ({len(_mine)} found)", _pc["cca_id"])
+    assert _mine[0]["status"] == "submitted", ("support's change self-approved", _mine[0]["status"])
+    assert _mine[0]["affected_systems"] == ["agentic_core/support"], _mine[0]["affected_systems"]
+    assert str(_mine[0]["submitted_by"]).startswith("support:") or _mine[0]["submitted_by"], _mine[0]
+    #  the tier is READ from the record, never remembered here: both sides must agree
+    assert _pc["impact_tier"] == _mine[0]["impact_tier"], (_pc["impact_tier"], _mine[0]["impact_tier"])
+
+    #  NO SECOND GOVERNANCE PATH, asserted on the AST rather than on a word anywhere in the text: no
+    #  callable in this package may be an approver, and no route it mounts may be an approval path.
+    from agentic_core.api import support as _api_support
+    _paths = {r.path for r in _api_support.router.routes}
+    for _p in _paths:
+        assert not any(w in _p for w in ("approve", "ratify", "implement", "apply")), (
+            f"support mounts its own approval route {_p!r}; the Agency owns that decision")
+    for _f in sorted((_root / "agentic_core" / "support").glob("*.py")) + [
+            _root / "agentic_core" / "api" / "support.py"]:
+        _tree = ast.parse(_f.read_text(encoding="utf-8"))
+        for _n in ast.walk(_tree):
+            if isinstance(_n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                assert not any(w in _n.name.lower() for w in ("approve", "ratify", "decide")), (
+                    f"{_f.name}:{_n.lineno} defines {_n.name!r} — support decides no change of its own")
+
+    # ── L2. THE TICKET EVENTS ARE IN THE LEDGER, AND AN ALTERED RECORD IS DETECTABLE ──────────────
+    a = client.post("/api/v1/support/ask", json={"query": "w542: the export header is missing"})
+    assert a.status_code == 200, a.status_code
+    _a = a.json()
+    assert _a["ledger"]["recorded"] is True, _a["ledger"]
+    assert _a["ledger"]["ledger_entry"], ("recorded with no ledger entry to point at", _a["ledger"])
+    c = client.post("/api/v1/support/confirm",
+                    json={"ticket_id": _a["ticket_id"], "resolved": False, "by": "user:w542"})
+    assert c.status_code == 200 and c.json()["ledger"]["recorded"] is True, c.text[:300]
+
+    from agentic_core.attestation import verify as _verify
+    from agentic_core.ueg.registry import ueg_ledger as _ueg
+    _lines = [json.loads(ln) for ln in pathlib.Path(_ueg.log_path).read_text(
+        encoding="utf-8").splitlines() if ln.strip()]
+    _events = [e for e in _lines
+               if str(e["payload"]["event_type"]).startswith("support.")
+               and e["payload"]["data"].get("ticket_id") == _a["ticket_id"]]
+    assert {e["payload"]["event_type"] for e in _events} == {
+        "support.answered", "support.confirmed"}, [e["payload"]["event_type"] for e in _events]
+    for _e in _events:
+        _data = dict(_e["payload"]["data"])
+        _att = _data.pop("attestation")
+        _v = _verify(_data, _att)
+        #  THREE-STATE, and the leg asserts the part that discriminates. This deployment configures no
+        #  attestation key, so `verified` is None for every record — "unverifiable is not invalid" — and a
+        #  leg asserting `verified is True` would be red for an honest reason and tell nobody anything.
+        #  The digest comparison is what separates an intact record from an altered one either way.
+        assert _v["verified"] in (True, None), _v
+        assert _v["payload_digest_matches"] is True, ("the ledger's own record does not match its "
+                                                      "attestation", _e["payload"]["event_type"], _v)
+        _tampered = {**_data, "ticket_id": "tkt-somebody-elses"}
+        _v2 = _verify(_tampered, _att)
+        assert _v2["payload_digest_matches"] is False, (
+            "an altered record still matches its attestation, so the attestation establishes nothing", _v2)
+        assert _v2["verified"] is not True, _v2
+
+    # ── L3. A LEDGER APPEND THAT FAILED IS REPORTED, NEVER ASSUMED ────────────────────────────────
+    #  This drives the except branch, which nothing else in the suite reaches. Without it the branch is
+    #  code nobody has ever run, and "we report a failed append" is a claim about an untested path.
+    import agentic_core.api.support as _sup_mod
+
+    class _DeadLedger:
+        log_path = _ueg.log_path
+
+        async def log_event(self, *a, **k):
+            raise OSError("the ledger is not writable (driven by test_w542)")
+
+    _real = _sup_mod.ueg_ledger
+    try:
+        _sup_mod.ueg_ledger = _DeadLedger()
+        a2 = client.post("/api/v1/support/ask", json={"query": "w542: ledger down"})
+    finally:
+        _sup_mod.ueg_ledger = _real
+    assert a2.status_code == 200, ("a ledger failure took the answer down with it", a2.status_code)
+    _l = a2.json()["ledger"]
+    assert _l["recorded"] is False, ("an append that raised was reported as recorded", _l)
+    assert _l["ledger_entry"] is None, _l
+    assert "OSError" in _l["basis"] and "NOT RECORDED" in _l["basis"], _l["basis"]
+    #  and the answer itself survived: a ledger problem is not an answer problem
+    assert a2.json()["answered"] is True and a2.json()["answer"], a2.json()
+
+    # ── L4. THE PAGE HAS NO PATH TO A PERCENTAGE, AND PRINTS THE BACKEND'S REFUSAL ────────────────
+    import re as _re
+    _tsx = (_root / "apps/workstation-superapp/src/pages/support/Support.tsx").read_text(encoding="utf-8")
+    #  An ABSENCE, which is why this leg is worth having: a presence check on a rendered string survives a
+    #  branch that never renders, but a page with no arithmetic on the rate cannot compute one anywhere.
+    assert _re.search(r"rate\s*\*|\*\s*100|toFixed|Math\.round", _tsx) is None, (
+        "the page computes a figure from the rate; the archived monitor's number was arithmetically sound "
+        "too, and the page must print only what the backend computed")
+    #  no numeric fallback for a three-state rate: `?? 0` is how a refusal becomes a zero on screen
+    for _ln in _tsx.splitlines():
+        if "rate" in _ln:
+            assert "?? 0" not in _ln and "|| 0" not in _ln, ("the page defaults the rate to a number", _ln)
+    assert "sla.basis" in _tsx, "the page does not print the backend's own basis for the rate"
+    assert "provenanceBadge" in _tsx, "the page shows an answer without the shared provenance helper"
+    assert "ans.ledger.basis" in _tsx, "the page paraphrases the ledger state instead of printing it"
+    #  and it is REACHED: registered as a route and offered in the navigation. ACTIVE, not merely present —
+    #  a commented-out route still contains its own path string, so `'path="/support"' in src` passes on a
+    #  page nobody can open. That is the same hole as a JSX gate naming its field in both the condition and
+    #  the body, and it is how this leg was vacuous on its first run.
+    def _uncommented(text: str, needle: str) -> list[str]:
+        return [ln for ln in text.splitlines()
+                if needle in ln and not ln.strip().startswith(("//", "{/*", "/*", "*", "{ /*"))]
+
+    _app = (_root / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    assert _uncommented(_app, 'path="/support"'), (
+        "the support route is absent or commented out, so nothing can open the page",
+        [ln.strip()[:80] for ln in _app.splitlines() if "/support" in ln])
+    _side = (_root / "apps/workstation-superapp/src/components/layout/Sidebar.tsx").read_text(
+        encoding="utf-8")
+    assert _uncommented(_side, "id: 'support'"), (
+        "the support page is routed but offered in no navigation")
+
+
+def test_w542_a_fresh_backend_also_refuses_to_rate_what_nobody_confirmed(tmp_path):
+    """The fresh-backend probe P3.18's bar names: a NEW interpreter, on a store this session never touched.
+
+    An in-process assertion can pass on state this run happens to hold — the suite has already created
+    tickets by the time the rate is read. This starts a separate Python on an empty DATA_DIR, answers a
+    ticket there and asserts the rate is still refused, so "answered is not resolved" is a property of the
+    code rather than of the order this suite happens to run in.
+    """
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parents[1]
+    script = tmp_path / "probe.py"
+    script.write_text(
+        "import sys, os\n"
+        # pinned from the env: this script lives in tmp_path, so the repo root is on no path at all, and
+        # this machine has a stray .pth that would otherwise hide the assumption completely.
+        "sys.path.insert(0, os.environ['WS_ROOT'])\n"
+        "import agentic_core as _ac\n"
+        # and it must be THIS repository's module: with the root absent, `import agentic_core` still
+        # succeeds as an empty NAMESPACE package whose __file__ is None.
+        "assert _ac.__file__ and os.path.realpath(_ac.__file__).startswith("
+        "       os.path.realpath(os.environ['WS_ROOT'])), ('wrong agentic_core', _ac.__file__)\n"
+        "import json\n"
+        "from agentic_core.support import tickets\n"
+        "t = tickets.create_ticket('probe-user', 'why is my build failing?')\n"
+        "tickets.record_answer(t['id'], 'Because the lock file is stale.', 'native', False, False,"
+        "                      12.5, 'confirm whether this resolved it')\n"
+        "before = tickets.rate()\n"
+        "refused_none = None\n"
+        "try:\n"
+        "    tickets.confirm(t['id'], None, 'probe')\n"
+        "except TypeError as e:\n"
+        "    refused_none = str(e)\n"
+        "tickets.confirm(t['id'], True, 'probe')\n"
+        "after = tickets.rate()\n"
+        "print(json.dumps({'before': before['rate'], 'before_basis': before['basis'],\n"
+        "                  'answered': before['answered'], 'unconfirmed': before['unconfirmed'],\n"
+        "                  'refused_none': refused_none, 'after': after['rate'],\n"
+        "                  'after_denom': after['confirmed_resolved'] + after['confirmed_unresolved']}))\n",
+        encoding="utf-8")
+    d = tmp_path / "fresh"
+    env = {**__import__("os").environ, "DATA_DIR": str(d), "WORKSTATION_DATA_DIR": str(d),
+           "WORKSTATION_UEG_PATH": str(d / "ueg.json"), "PROJECTS_DIR": str(d / "projects"),
+           "AI_DISABLE_LOCAL": "1", "WS_ROOT": str(root), "PYTHONPATH": str(root)}
+    r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
+                       cwd=str(root), env=env)
+    assert r.returncode == 0, ("the fresh backend could not run the support core", r.stderr[-700:])
+    out = json.loads([ln for ln in r.stdout.splitlines() if ln.startswith("{")][-1])
+    #  ANSWERED, AND STILL NOT RATED. This is the whole item in one assertion.
+    assert out["answered"] == 1 and out["unconfirmed"] == 1, out
+    assert out["before"] is None, ("a fresh backend rated an answer nobody confirmed", out)
+    assert "NOT COMPUTED" in out["before_basis"], out["before_basis"]
+    #  and None is refused as a confirmation: absence of a verdict is not a verdict you may write
+    assert out["refused_none"] and "confirmation is True or False" in out["refused_none"], out
+    #  then one confirmation, and only then a figure — over a denominator of exactly that one record
+    assert out["after"] == 1.0 and out["after_denom"] == 1, out

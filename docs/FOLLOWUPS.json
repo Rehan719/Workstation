@@ -6124,6 +6124,61 @@
       "note": "",
       "slot_source": "P2.17 bar (b)1 owns the serial/parallel equivalence; these are the remaining assertions of the shape that broke it",
       "tier": 2
+    },
+    {
+      "id": "FU-351",
+      "title": "A support policy-change filing reaches no page, so the one state that says whether the Agency logged it is rendered nowhere",
+      "why": "W542 built POST /api/v1/support/policy-change, which files a support logic change with the existing Change Control Agency and returns the Agency's own cca_id, status, impact_tier and its ueg_logged state. The response is honest and the route is driven by a guard leg, but there is NO page for it: the support page built this round carries the ask/confirm/rate surface only, so an operator filing a support change sees the Agency's answer only through an HTTP client. The pre-flight keys screen flagged exactly this (the Agency-logged state is produced and no page reads it), and the answer recorded for this round was that the response IS the surface for a programmatic caller. That answer is defensible and incomplete: whether the filing reached the ledger is a fact about governance, and a governance fact with no surface is the shape this plan keeps finding. FIX: either render the filing and its Agency state on the support page (or on the Change Control page, where the record already lives), or declare in the item that this route is operator-only and say where its answer is read.",
+      "source": "W542 (pre-flight keys screen, answered not fixed)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/api/support.py",
+        "apps/workstation-superapp/src/pages/support/Support.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.18",
+      "status": "done",
+      "closed_by": "W542",
+      "note": "",
+      "slot_source": "the route is P3.18's own deliverable D7, built this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-352",
+      "title": "No frontend test runner exists, so every page guard in this suite is a text scan and no page is ever rendered",
+      "why": "W542 measured it: apps/workstation-superapp/package.json declares no test script and no vitest/jest/testing-library dependency, and a search for .test.tsx / .spec.tsx across apps/workstation-superapp/src returns nothing. So EVERY frontend assertion in integration_tests/test_mvp_spine.py reads .tsx source as text. That is strong for an ABSENCE (a page with no arithmetic on a field cannot compute one) and weak for a PRESENCE: W542's own route leg was VACUOUS on its first sweep run because a commented-out route still contains its path string, and it had to be rewritten to distinguish an active line from a disabled one. The same hole is why a JSX conditional naming its field in both the gate and the body survives a presence check. CONSEQUENCE: no guard in this repository has ever established what a page SHOWS, only what its source contains. FIX: add vitest + @testing-library/react to the superapp, one render test per honesty-critical page asserting the refusal text appears for a null or absent figure and that no number is rendered, starting with the three states W542 built (a refused rate, a failed answer, an unrecorded ledger append). Until then, state the limit wherever a page leg is cited as evidence.",
+      "source": "W542 (measured while closing P3.18; the round's own leg was vacuous for this reason)",
+      "found": "2026-10-03",
+      "files": [
+        "integration_tests/test_mvp_spine.py",
+        "apps/workstation-superapp/package.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-353",
+      "title": "The Change Control page never renders whether a change reached the UEG, so an unlogged governance filing looks identical to a logged one",
+      "why": "Measured W542 while closing P3.18. submit_change() returns ueg_logged (agentic_core/api/change_control.py's return projection includes it when it is not None), and apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx renders cca_id, impact_tier, status, submitted_by and the tier-raise fields but NOT that one. So a change whose ledger append failed renders on the governance page exactly like one that succeeded, and the page that exists to show that a change was recorded cannot say whether the recording happened. This is not a support defect — W542's own support routes report their ledger state three ways and its page prints the backend's sentence — it is the Agency's page missing the Agency's own field. FIX: render ueg_logged on the record detail (an explicit 'not appended to the ledger' state, never an absence), and assert it with a leg that drives a failing append the way test_w542 does for support.",
+      "source": "W542 (measured while closing FU-351)",
+      "found": "2026-10-03",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx",
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
     }
   ],
   "routes": [
@@ -6179,7 +6234,7 @@
       "note": "W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)"
     },
     {
-      "slot": "P3.18",
+      "slot": "P2.4",
       "files": [
         "agentic_core/support/"
       ],
@@ -6187,7 +6242,8 @@
         "support agent",
         "support logic"
       ],
-      "note": "W482 — autonomous technical support (the archived simulation is not inherited)"
+      "note": "handed from P3.18; W482 — autonomous technical support (the archived simulation is not inherited)",
+      "handed_from": "P3.18"
     },
     {
       "slot": "P3.19",

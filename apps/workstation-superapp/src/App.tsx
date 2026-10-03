@@ -101,6 +101,7 @@ import { CreatorStudio } from './pages/create/CreatorStudio';
 // ── Extended (wired, reachable by URL — not in primary nav) ───────────────
 // ScholarRealm archived to _archive/frontend-pages — grandiose research hub with fabricated "50+ federated nodes".
 import { Introspection as CognitiveIntrospection } from './pages/cognitive/Introspection';
+import { Support } from './pages/support/Support';
 import { Login } from './pages/Login';
 import { installAuth } from './lib/auth';
 import { syncWorkspaceFromServer } from './lib/outputHistory';
@@ -244,6 +245,7 @@ function App() {
 
           {/* ── Extended (wired, reachable by URL) ───────────────────── */}
           <Route path="/cognitive-introspection" element={<CognitiveIntrospection />} />
+          <Route path="/support" element={<Support />} />
           {/* Off-vision experimental pages (Cosmic/Reality/AR-VR/Wearables/Embodiment/Civilization)
               archived to _archive/frontend-pages — not part of the Workstation IDBO vision. */}
 

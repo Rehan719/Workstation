@@ -7,7 +7,7 @@ import {
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, History, Microscope, Gavel, Binary, Code2, Star, Archive, Eye,
   HeartPulse, Workflow, Search, Globe2, Layers, ChevronDown,
-  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes, Pin
+  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes, Pin, LifeBuoy
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 import { useT } from '../../lib/i18n';
@@ -115,6 +115,7 @@ const allNavItems: NavItem[] = [
       { name: 'Marketplace',     icon: ShoppingBag, id: 'marketplace' },
       { name: 'Creator Studio',  icon: Palette,     id: 'creator' },
       { name: 'Contribute',      icon: Plus,        id: 'contribute' },
+      { name: 'Support',         icon: LifeBuoy,    id: 'support' },
       { name: 'Entity Control',  icon: ShieldCheck, id: 'admin' },
       { name: 'Settings',        icon: Settings,    id: 'settings' },
     ]

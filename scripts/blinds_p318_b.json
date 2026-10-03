@@ -1,0 +1,65 @@
+[
+  {
+    "tag": "support files its change nowhere and answers as if it had",
+    "file": "agentic_core/api/support.py",
+    "old": "    change = await submit_change(SubmitChangeRequest(",
+    "new": "    change = {\"cca_id\": \"cca-support-own\", \"status\": \"submitted\", \"impact_tier\": \"LOW\"}\n    _unused = (SubmitChangeRequest(",
+    "selector": "w542",
+    "expect": "BLIND(red)",
+    "why": "THE SECOND GOVERNANCE PATH, built the way it actually gets built — not by writing an approver, but by keeping the shape of a filing while the Agency never hears about it. The leg reads the Agency's own store, so a filing that reached nothing cannot pass."
+  },
+  {
+    "tag": "support defines an approver of its own",
+    "file": "agentic_core/api/support.py",
+    "old": "@router.post(\"/policy-change\")",
+    "new": "async def approve_support_change(cca_id: str) -> dict:\n    return {\"cca_id\": cca_id, \"status\": \"approved\"}\n\n\n@router.post(\"/policy-change\")",
+    "selector": "w542",
+    "expect": "BLIND(red)",
+    "why": "The item's body forbids a second governance path. The leg walks the AST for a callable that decides, rather than searching for a word, so a comment mentioning an approver is fine and an actual approver is not."
+  },
+  {
+    "tag": "the ledger is attested over something other than the event",
+    "file": "agentic_core/api/support.py",
+    "old": "    att = attest(payload)",
+    "new": "    att = attest({\"event\": event})",
+    "selector": "w542",
+    "expect": "BLIND(red)",
+    "why": "An attestation over a constant is the archived simulation's trick moved one layer down: the record LOOKS signed, every field is present, and the digest establishes nothing about the record it sits on. The leg recomputes the digest from the ledger's own stored payload."
+  },
+  {
+    "tag": "a failed ledger append is reported as recorded",
+    "file": "agentic_core/api/support.py",
+    "old": "        return {\"attestation\": att, \"ledger_entry\": None, \"recorded\": False,",
+    "new": "        return {\"attestation\": att, \"ledger_entry\": None, \"recorded\": True,",
+    "selector": "w542",
+    "expect": "BLIND(red)",
+    "why": "A failure rendering as an absence is this programme's recurring defect class, and here it would render as a SUCCESS. The leg drives the except branch with a ledger that raises, so the branch is executed rather than merely present."
+  },
+  {
+    "tag": "the page computes a percentage from the rate",
+    "file": "apps/workstation-superapp/src/pages/support/Support.tsx",
+    "old": "            ) : sla.rate === null ? (",
+    "new": "            ) : sla.rate === null ? (\n              <p className=\"text-5xl font-black\">{Math.round((sla.rate ?? 0) * 100)}</p>\n            ) : sla.rate === undefined ? (",
+    "selector": "w542",
+    "expect": "BLIND(red)",
+    "why": "This is the archived SLA monitor restored to the only place it would actually be read: a page. Its 100% was arithmetically sound, so the leg forbids the ARITHMETIC PATH rather than the figure — a page that cannot compute a percentage cannot print a fabricated one."
+  },
+  {
+    "tag": "the support page is built but routed nowhere",
+    "file": "apps/workstation-superapp/src/App.tsx",
+    "old": "          <Route path=\"/support\" element={<Support />} />",
+    "new": "          {/* <Route path=\"/support\" element={<Support />} /> */}",
+    "selector": "w542",
+    "expect": "BLIND(red)",
+    "why": "A page nobody can open is the reach failure this plan keeps finding: the component exists, tsc passes, and no user ever sees it. The leg asserts the route and the navigation entry, so the page is reachable, not merely written."
+  },
+  {
+    "tag": "a confirmation accepts the absence of a confirmation",
+    "file": "agentic_core/support/tickets.py",
+    "old": "    if not isinstance(resolved, bool):",
+    "new": "    if False:",
+    "selector": "w542",
+    "expect": "BLIND(red)",
+    "why": "Proves the FRESH-BACKEND PROBE can fail, which is the clause this round adds. Accepting None as a confirmation would let 'nobody has said' be written into the field the rate divides by, which is the archived monitor's defect with the arithmetic left intact."
+  }
+]

@@ -73,6 +73,17 @@ def verdict(progress_path: str) -> Dict[str, Any]:
 
 def main() -> int:
     path = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("WORKSTATION_RUN_PROGRESS", "")
+    # W542 — A MIS-INVOCATION MUST NOT READ AS AN UNFINISHED RUN. This takes a positional path, so any
+    # flag passed to it was silently treated as a filename that does not exist, and the answer came back
+    # "NOT KNOWN - no progress file", which is this tool's wording for "the run never reported". It said
+    # exactly that about a run that had in fact completed 538 of 538, and the diagnosis that followed was
+    # wrong until the file was read by hand. An instrument that answers a question it was not asked, in
+    # the vocabulary of the question it WAS built for, is worse than one that fails.
+    if path.startswith("-"):
+        print("USAGE: run_verdict.py <progress-file>   (or set WORKSTATION_RUN_PROGRESS). "
+              "%r is a flag, not a path, and this tool takes no flags — refusing rather than reporting "
+              "NOT KNOWN, which would read as a verdict about a run." % path, file=sys.stderr)
+        return 2
     v = verdict(path)
     print("%s - %s" % (v["verdict"], v["basis"]))
     #  Non-zero unless COMPLETE, so a caller chaining on this cannot proceed past an unfinished run.
