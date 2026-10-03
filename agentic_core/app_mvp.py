@@ -398,6 +398,13 @@ app.include_router(support_api.router)
 from agentic_core.api import cycles as cycles_api
 app.include_router(cycles_api.router)
 
+# W548 (P3.17) — the Biomimetic Minimisation Engine, reported. Nothing reached any of it: the Sinkhorn
+# router was imported by no live module and could only report its missing solver by raising, and the
+# Ω-functional was in the archive defaulting every absent term to zero — which in a minimisation is the
+# optimum, so the least-measured candidate always won.
+from agentic_core.api import minimisation as minimisation_api
+app.include_router(minimisation_api.router)
+
 from agentic_core.api import ueg as ueg_api
 app.include_router(ueg_api.router)
 

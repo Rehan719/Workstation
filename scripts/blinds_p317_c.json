@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "an unmeasured term defaults to zero, the optimum of a minimisation",
+    "file": "agentic_core/biomimicry/minimisation/core/omega_functional.py",
+    "old": "            raw = policy_metrics.get(name)",
+    "new": "            raw = policy_metrics.get(name, 0.0)",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "THE ARCHIVED DEFECT IN ONE ARGUMENT, and the sharpest of this item. Zero is not a neutral default in a COST functional — it is the best possible term, so a policy supplying no metrics scored 0.0 and beat every policy that reported one. The arithmetic was correct throughout; the least-measured candidate always won."
+  },
+  {
+    "tag": "a partial sum is reported as a cost",
+    "file": "agentic_core/biomimicry/minimisation/core/omega_functional.py",
+    "old": "        if _unassessable:",
+    "new": "        if False and _unassessable:",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "Four of five terms produce a SMALLER number than the true cost, which is the wrong direction for a minimisation: an incomplete candidate outranks a fully measured one. A partial sum is not a smaller cost, it is an unknown one."
+  },
+  {
+    "tag": "the non-negotiable legal constraint passes by omission",
+    "file": "agentic_core/biomimicry/minimisation/core/omega_functional.py",
+    "old": "                 legal_compliance: Optional[float] = None) -> Dict[str, Any]:",
+    "new": "                 legal_compliance: Optional[float] = 1.0) -> Dict[str, Any]:",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "The archive's signature. The test is `legal_compliance < 1.0`, so a default of 1.0 meant a caller who measured nothing cleared the one constraint the objective itself describes as non-negotiable — the easiest constraint in the file to pass was the one declared hardest."
+  },
+  {
+    "tag": "the objective imports torch at module level",
+    "file": "agentic_core/biomimicry/minimisation/core/omega_functional.py",
+    "old": "from __future__ import annotations",
+    "new": "from __future__ import annotations\n\nimport torch",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "The archived file did this and never used the module. torch is OPTIONAL by this platform's invariant, so a top-level import makes `import agentic_core.app_mvp` fail wherever it is absent — a recovery that reintroduced it would break the application's import on every deployment without it."
+  },
+  {
+    "tag": "the router raises instead of reporting its missing solver",
+    "file": "agentic_core/biomimicry/minimisation/core/optimal_transport.py",
+    "old": "            return (None, None, self.availability())",
+    "new": "            raise RuntimeError(\"POT library (ot) not installed - cannot use OptimalTransportRouter\")",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "The original. A component that can report its own unavailability only by failing cannot be asked about itself, and P3.17's bar asks the router to REPORT. The caller got an exception where it expected a result."
+  },
+  {
+    "tag": "convergence is announced with no solver log",
+    "file": "agentic_core/biomimicry/minimisation/core/optimal_transport.py",
+    "old": "            _converged, _basis = None, (",
+    "new": "            _converged, _basis = True, (",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "`converged: True` was a literal, so a solve that exhausted its iteration budget was described in exactly the same words as one that converged — the single distinction a caller needs from a Sinkhorn run. The leg drives all three states directly, because POT is absent here and the solve path cannot reach them."
+  },
+  {
+    "tag": "the iteration cap is reported as the count that ran",
+    "file": "agentic_core/biomimicry/minimisation/core/optimal_transport.py",
+    "old": "            \"iterations\": _iters,",
+    "new": "            \"iterations\": _iters if _iters is not None else self.max_iter,",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "The original reported self.max_iter with a comment admitting the base call returns no count. A cap is a limit, not a measurement, and reporting it as one makes every run look like it used its whole budget."
+  },
+  {
+    "tag": "the surface keeps its own Landauer figure",
+    "file": "agentic_core/api/minimisation.py",
+    "old": "                 \"joules_per_bit_floor\": _led.E_min,",
+    "new": "                 \"joules_per_bit_floor\": 2.87e-21,",
+    "selector": "w548",
+    "expect": "BLIND(red)",
+    "why": "P3.17's ACCEPT forbids a second Landauer meter, and a copied figure is one: it would be right today and would not move when the ledger's temperature did. The leg recomputes k_B*T*ln2 from the reported temperature and compares."
+  }
+]

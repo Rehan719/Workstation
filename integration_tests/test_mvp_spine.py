@@ -32057,3 +32057,138 @@ def test_w547_the_refinery_reports_no_confidence_and_zero_checks_is_not_a_pass(c
             f"the mode config says the threshold is "
             f"{'enforced' if _c.vrpr_threshold_enforced else 'not enforced'} while the tree has "
             f"{len(_comparisons)} comparison(s) against it", _comparisons[:3])
+
+
+def test_w548_an_unmeasured_term_is_not_the_best_term_and_a_missing_solver_is_reported(client):
+    """P3.17's remaining bar clauses: every Ω term computes or says it cannot, and the transport router
+    reports itself unavailable rather than raising.
+
+    THE CENTRAL PROPERTY IS ABOUT A MINIMISATION. In a cost functional an absent term defaulted to zero
+    is not neutral — it is the OPTIMUM — so the archived objective made the least-measured candidate win
+    every comparison, with correct arithmetic throughout. Both the refusal and the computed path are
+    driven, and the computed J is recomputed here from the weights so the objective cannot drift from
+    the sum it claims.
+    """
+    import asyncio as _aio
+    import ast
+    import pathlib
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    from agentic_core.biomimicry.minimisation.core.omega_functional import (
+        MinimisationObjective, _DEFAULT_WEIGHTS)
+    from agentic_core.biomimicry.minimisation.core.optimal_transport import OptimalTransportRouter
+
+    _obj = MinimisationObjective()
+
+    # ── L1. AN ABSENT TERM YIELDS NO FIGURE, AND NO J ────────────────────────────────────────────
+    _none = _obj.evaluate({}, {})
+    assert _none["J"] is None, ("a cost was reported over terms nobody measured; in a minimisation the "
+                                "zero those terms used to default to is the best possible score",
+                                _none["J"])
+    assert len(_none["unassessable_terms"]) == len(_DEFAULT_WEIGHTS), _none
+    for _name, _t in _none["terms"].items():
+        assert _t["assessable"] is False, (_name, _t)
+        #  the key is ABSENT, not zero and not null: a null invites `value or 0`, and that zero is the
+        #  optimum coming straight back
+        assert "value" not in _t, (_name, "an unmeasured term carries a figure", _t)
+        assert "NOT ASSESSED" in _t["basis"], (_name, _t["basis"])
+        #  and the refusal NAMES A PRODUCER, so it is an instruction rather than a shrug
+        assert len(_t["basis"]) > 60, (_name, "a refusal with no producer named", _t["basis"])
+    assert "rewards incompleteness" in _none["basis"], _none["basis"]
+
+    # ── L2. A PARTIAL SUM IS STILL REFUSED — four of five is not a cost ──────────────────────────
+    _partial = _obj.evaluate({"free_energy": 0.4, "optimal_transport": 0.2,
+                              "schrodinger_bridge": 0.1, "entropy_export": 0.05}, {})
+    assert _partial["J"] is None, ("four of five terms produced a cost; it would be SMALLER than the "
+                                   "true one, which is exactly the wrong direction for a minimisation",
+                                   _partial["J"])
+    assert _partial["unassessable_terms"] == ["murray_law"], _partial["unassessable_terms"]
+    assert len(_partial["assessable_terms"]) == 4, _partial
+
+    # ── L3. AND THE COMPUTED PATH WORKS, recomputed here from the weights ────────────────────────
+    _metrics = {"free_energy": 0.4, "optimal_transport": 0.2, "schrodinger_bridge": 0.1,
+                "entropy_export": 0.05, "murray_law": 0.3}
+    _full = _obj.evaluate(_metrics, {})
+    _expected = sum(_DEFAULT_WEIGHTS[k] * v for k, v in _metrics.items())
+    assert _full["J"] is not None and abs(_full["J"] - _expected) < 1e-12, (_full["J"], _expected)
+    assert _full["unassessable_terms"] == [], _full
+    assert "DECLARED, NOT DERIVED" in _full["weights_basis"], _full["weights_basis"]
+    #  the weights are declared and nothing tuned them; the only property anything checks is the sum
+    assert abs(sum(_DEFAULT_WEIGHTS.values()) - 1.0) < 1e-12, sum(_DEFAULT_WEIGHTS.values())
+
+    # ── L4. THE HARD CONSTRAINT CANNOT BE PASSED BY OMISSION ─────────────────────────────────────
+    #  `legal_compliance: float = 1.0` meant a caller who measured nothing cleared the one constraint
+    #  the objective itself calls non-negotiable, because the test is `< 1.0`.
+    _legal_unmeasured = _obj.evaluate(_metrics, {"domain": "legal"})
+    assert _legal_unmeasured["J"] is None, ("a legal domain cleared with no compliance figure at all",
+                                            _legal_unmeasured["J"])
+    assert "REFUSED" in _legal_unmeasured["basis"] and "non-negotiable" in _legal_unmeasured["basis"], (
+        _legal_unmeasured["basis"])
+    #  measured and below the bar is INFINITE — the constraint still bites
+    _legal_bad = _obj.evaluate(_metrics, {"layer": "L12_Policy"}, legal_compliance=0.9)
+    assert _legal_bad["J"] == float("inf"), _legal_bad
+    #  measured and at the bar passes
+    _legal_ok = _obj.evaluate(_metrics, {"domain": "legal"}, legal_compliance=1.0)
+    assert _legal_ok["J"] is not None and _legal_ok["J"] != float("inf"), _legal_ok
+    #  and a NON-legal domain takes the declared soft penalty rather than infinity
+    _soft = _obj.evaluate(_metrics, {}, legal_compliance=0.8)
+    assert _soft["soft_penalty"] is not None and _soft["soft_penalty"] > 0, _soft
+    assert abs(_soft["J"] - (_expected + _soft["soft_penalty"])) < 1e-9, _soft
+
+    # ── L5. NO TOP-LEVEL torch IMPORT — the optional-torch invariant ─────────────────────────────
+    #  The archived objective imported torch at module level and never used it, which would have made
+    #  `import agentic_core.app_mvp` fail wherever torch is absent.
+    _ot_tree = ast.parse((_root / "agentic_core/biomimicry/minimisation/core/omega_functional.py"
+                          ).read_text(encoding="utf-8"))
+    for _n in _ot_tree.body:
+        if isinstance(_n, ast.Import):
+            assert not any(a.name.split(".")[0] == "torch" for a in _n.names), (
+                f"omega_functional imports torch at module level (line {_n.lineno}); importing this "
+                f"platform must never require it")
+        if isinstance(_n, ast.ImportFrom):
+            assert (_n.module or "").split(".")[0] != "torch", f"line {_n.lineno}"
+
+    # ── L6. THE ROUTER REPORTS ITSELF, WITHOUT BEING CALLED ──────────────────────────────────────
+    _r = OptimalTransportRouter()
+    _av = _r.availability()
+    assert isinstance(_av["available"], bool), _av
+    assert (_av["basis"] or "").strip(), "the router reports availability with no account of it"
+    if not _av["available"]:
+        assert "NOT AVAILABLE" in _av["basis"] and "nothing is estimated" in _av["basis"].lower(), (
+            _av["basis"])
+        #  AND solve() RETURNS that report rather than raising. A component that can only report its own
+        #  unavailability by failing cannot be asked about itself.
+        _plan, _w, _meta = _r.solve(None, None, None)
+        assert _plan is None and _w is None, (_plan, _w)
+        assert _meta["available"] is False, _meta
+        #  nothing is estimated in place of a plan
+        assert "converged" not in _meta or _meta.get("converged") is None, _meta
+
+    #  the convergence report is three-state and never asserts: driven directly, because POT is absent
+    #  here so the solve path cannot reach it
+    _no_log = _r._solve_meta(None)
+    assert _no_log["converged"] is None, ("convergence was claimed with no solver log", _no_log)
+    assert "NOT KNOWN" in _no_log["converged_basis"], _no_log["converged_basis"]
+    assert _no_log["iterations"] is None, ("the iteration CAP was reported as a count", _no_log)
+    assert str(_r.max_iter) in _no_log["iterations_basis"], _no_log["iterations_basis"]
+    _conv = _r._solve_meta({"err": [1.0, 0.5, _r.tol / 2]})
+    assert _conv["converged"] is True and _conv["iterations"] == 3, _conv
+    _stalled = _r._solve_meta({"err": [1.0, 0.9, 0.8]})
+    assert _stalled["converged"] is False and "NOT CONVERGED" in _stalled["converged_basis"], _stalled
+    assert _stalled["iterations"] == 3, _stalled
+
+    # ── L7. AND IT IS ALL REACHED — one route, reporting the real state ──────────────────────────
+    _resp = client.get("/api/v1/minimisation/status")
+    assert _resp.status_code == 200, (_resp.status_code, _resp.text[:200])
+    _j = _resp.json()
+    assert _j["terms_total"] == len(_DEFAULT_WEIGHTS), _j
+    assert _j["omega_functional"]["J"] is None, ("the surface reports a cost over unmeasured terms", _j)
+    assert _j["transport_router"]["available"] is _av["available"], _j["transport_router"]
+    #  NO SECOND LANDAUER METER: the surface points at the one ledger and keeps no figure of its own
+    assert _j["thermodynamic_ledger"]["available"] is True, _j["thermodynamic_ledger"]
+    import math as _math
+    _floor = 1.380649e-23 * _j["thermodynamic_ledger"]["temperature_kelvin"] * _math.log(2)
+    assert abs(_j["thermodynamic_ledger"]["joules_per_bit_floor"] - _floor) < 1e-30, (
+        "the surface's own floor disagrees with k_B*T*ln2, so it is keeping a second figure",
+        _j["thermodynamic_ledger"]["joules_per_bit_floor"], _floor)
+    assert "FLOOR" in _j["thermodynamic_ledger"]["basis"], _j["thermodynamic_ledger"]["basis"]
