@@ -6247,8 +6247,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W554",
       "note": "",
       "slot_source": "it IS P3.16's own third ACCEPT clause",
       "tier": 2
@@ -6302,8 +6302,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.11",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W554",
       "note": "",
       "slot_source": "it is P2.11's own seam sentence, named in the item body",
       "tier": 2
@@ -6380,6 +6380,25 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P3.16 owns agentic_core/avatars/core/clearance_chain.py by route 2, and owns agentic_core/validation/ as of W553's hand-off",
+      "tier": 2
+    },
+    {
+      "id": "FU-365",
+      "title": "A guard that pins a slot id or a component's rank fails the moment the plan moves, and it fails in the direction that punishes progress",
+      "why": "Measured W554: closing P2.11 and two of its rows turned TWO suite guards red WITHOUT TOUCHING THE CODE EITHER OF THEM GUARDS. (1) test_w510 asserted `set(blocked_by_ruling) >= {P2.11, P2.16}` - a static set mirroring plan state. P2.11 became DONE, and a DONE item is correctly no longer blocked (the W551 correction to the cell itself), so the guard failed for the one reason it should have celebrated. (2) test_w500b asserted that the LARGEST file-connected component crosses items. Closing rows left two components tied at size 4 and the one the sort put first sat inside P2.17, so a true statement about the bundler failed on a TIE-BREAK. Both are now computed: w510 derives the expected blocked set from _BLOCKED_BY_RULING minus the plan's done markers and asserts the RELATION (no done item blocked, no item both blocked and closable), and w500b recomputes items_advanced independently for every component and asserts the crossing property over the SET rather than over whichever component ranks first. Both rewrites are blinded (20 of 20 BLIND(red) in W554). THE CLASS, which is what this row is for: a guard may not pin an identifier or an ordinal that the plan's own progress changes. It is worse than an ordinary stale assertion because it fails ON SUCCESS - every round that closes an item pays for it, and the cost is paid at the END of the round, after the full suite, which is the most expensive moment to discover anything. FIX: a pre-flight screen in scripts/selfcheck_diff.py that flags a CHANGED test asserting a literal plan-slot id (P<digit>.<digit>) or indexing a sorted collection at [0] and asserting a property of that element, and a sweep of the EXISTING guards for the same two shapes - this round found two by being bitten, and nobody has looked for the rest.",
+      "source": "W554 (two guards went red on the round's own progress, neither by a code change)",
+      "found": "2026-10-03",
+      "files": [
+        "integration_tests/test_mvp_spine.py",
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "integration_tests/ and scripts/ are P2.4's route 15 (suite hygiene and the register's own tooling)",
       "tier": 2
     }
   ],

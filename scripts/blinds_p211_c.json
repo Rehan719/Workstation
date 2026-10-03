@@ -1,0 +1,182 @@
+[
+  {
+    "tag": "the middleware is not registered, so the seam is beside the request path",
+    "file": "agentic_core/app_mvp.py",
+    "old": "            _membrane.observe_request(request.method, request.url.path,\n                                      status=_status, raised=_raised)",
+    "new": "            pass",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L2. This is the state the item was held in: the kernel existed and nothing reached it. The leg POSTs a real domain route through the app and counts the stored rows, so a seam that exists and is never called cannot read as wired."
+  },
+  {
+    "tag": "a GET is observed, filling the store with reads",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "    if str(method or \"\").upper() not in OBSERVED_METHODS:",
+    "new": "    if False:",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L1. A read is not a request to act. The leg drives six method/path pairs including a GET on a domain route, because an exclusion that only exists in a tuple is an exclusion nobody has tested."
+  },
+  {
+    "tag": "a prefix matches across a path segment, so /api/v1/lawyers is a law request",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "        if p == pref or p.startswith(pref + \"/\"):",
+    "new": "        if p.startswith(pref):",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L1, and the mutation is the OBVIOUS implementation rather than a contrived one — startswith alone is what this would have been written as. The leg names /api/v1/lawyers/x explicitly."
+  },
+  {
+    "tag": "the row does not record that nothing gated it",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "        rec = {**rec, \"gated\": False, \"gating_basis\": NOT_A_GATE, **extra}",
+    "new": "        rec = {**rec, **extra}",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L2 is the sole witness. A stored ESCALATE nobody acted on is the most misleading row this store can hold: it looks exactly like evidence the platform stopped and reviewed a request. The leg requires gated=False AND the sentence saying the escalation escalated nothing."
+  },
+  {
+    "tag": "the seam's compression reason is the floor's reason, attributing the absence to a component that never ran",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "    if not compressor_called:",
+    "new": "    if False:",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L3. With the case gone a seam record falls through to 'the call did not produce text' — a description of a call nobody made. The leg also asserts the three NOT_COMPRESSED sentences stay DISTINCT, so they cannot be merged back into one later."
+  },
+  {
+    "tag": "a request the application refused is counted as domain activity",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "    _served = raised is None and isinstance(status, int) and status < 400",
+    "new": "    _served = True",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L4, and this is the defect the first draft actually had: observing before routing recorded a 405 as a law request. The leg POSTs to a path that takes another method and requires served=False with NOT SERVED in the basis."
+  },
+  {
+    "tag": "a handler that raises is not observed at all",
+    "file": "agentic_core/app_mvp.py",
+    "old": "    finally:\n        try:\n            from agentic_core.horizon import membrane as _membrane",
+    "new": "    else:\n        try:\n            from agentic_core.horizon import membrane as _membrane",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L4's second half. A run failure is precisely what the item body says belongs in this store, and `else` on a try runs only when nothing raised — so the one case most worth observing would be the one silently dropped. The mutation is also a plausible edit, which is why it is worth a blind."
+  },
+  {
+    "tag": "model_attempt is observed, so the count of intents stops meaning the number of requests",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "    if k not in OBSERVED_KINDS:",
+    "new": "    if False:",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L5. The orchestrator records one row per model it tries and the gateway one per stream, so a single request would write several intents. The leg drives the hook twice and requires the second call to add nothing."
+  },
+  {
+    "tag": "the run's server is used as the compression's provenance, manufacturing a COMPRESSED record",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "        rec = kernel.build_record(obs, None, False, False, \"\", compressor_called=False)",
+    "new": "        rec = kernel.build_record(obs, extra.get(\"run_served_by\"), False, False, \"x\")",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L5. Who served a RUN and who compressed the request that led to it are different facts; reading one as the other is this programme's recurring class, and with a real model name it would produce COMPRESSED for a compression that never happened. The leg asserts served_by is None while run_served_by is 'native'."
+  },
+  {
+    "tag": "the route's domain is written into the kernel's compression field, so a legal request PROCEEDS",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "               \"route_domain\": domain_of(path), \"route_domain_basis\": ROUTE_DOMAIN_BASIS,",
+    "new": "               \"domain\": domain_of(path), \"route_domain\": domain_of(path), \"route_domain_basis\": ROUTE_DOMAIN_BASIS,",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L6, the sharpest claim in the round. `domain` means 'what a model determined this to be about' and the escalation list holds legal / medical / money / faith / safety, so the string 'law' matches none of them: the record stops failing closed and reads PROCEED on a legal matter nobody compressed. The leg asserts `domain` is ABSENT, and a separate leg forges it to prove the consequence is real rather than imagined."
+  },
+  {
+    "tag": "the surface does not say the seam gates nothing",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "        \"gates\": False,\n        \"gating_basis\": NOT_A_GATE,",
+    "new": "        \"gates\": True,\n        \"gating_basis\": NOT_A_GATE,",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L7. The word membrane invites the reading that something is stopped, so the first field of the surface must contradict it. A basis sentence under a field claiming the opposite is the mismatch class this programme keeps finding."
+  },
+  {
+    "tag": "a failed observation is swallowed instead of counted",
+    "file": "agentic_core/horizon/membrane.py",
+    "old": "        _errors.append(f\"{exc.__class__.__name__}: {exc}\")",
+    "new": "        pass",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L7. The seam must never turn a failure to observe into a failure to serve, which means it swallows exceptions — and a swallowed failure nobody counts is indistinguishable from a path the seam never reached. The leg asserts error_count is 0 on a clean run, which only means anything if a failure COULD raise it."
+  },
+  {
+    "tag": "the store is uncapped while a middleware and a run hook write to it",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "        atomic_write_json(_store(), rows[-_CAP:])",
+    "new": "        atomic_write_json(_store(), rows)",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L7. An unbounded whole-file read-modify-write grows the cost of every subsequent write, and the cap only became necessary when this round added two writers. The leg reads the cap from the surface, so the surface cannot report a bound the store does not apply."
+  },
+  {
+    "tag": "the records listing does not separate what was observed from what a user asked for",
+    "file": "agentic_core/api/horizon.py",
+    "old": "    _observed = sum(1 for r in rows if r.get(\"gated\") is False)",
+    "new": "    _observed = 0",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L7. Once the seam writes rows, decisions nothing enforced sit beside decisions a user asked for and look identical in a listing. The leg requires the count AND the sentence 'is not an escalation'."
+  },
+  {
+    "tag": "the page declares the seam basis field and never renders it",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx",
+    "old": "            <p className=\"text-slate-300 font-bold leading-relaxed\">{s.gating_basis}</p>",
+    "new": "            <p className=\"text-slate-300 font-bold leading-relaxed\">Horizon guards this platform.</p>",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L9. The interface still declares gating_basis, so a presence check on the field NAME survives this edit - the defect class that has cost four rounds. The leg asserts the RENDER form, and the substituted sentence is the exact over-claim the seam exists to avoid."
+  },
+  {
+    "tag": "the page never asks the seam for its report, so the field it renders is always empty",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx",
+    "old": "    axios.get<Seam>('/api/v1/horizon/seam', { validateStatus: () => true })",
+    "new": "    axios.get<Seam>('/api/v1/horizon/guardrails', { validateStatus: () => true })",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L9. A page rendering a field nothing populates shows nothing, and renders no error either - it simply omits the denial of gating while looking complete. The mutation points at a real route, so nothing fails loudly."
+  },
+  {
+    "tag": "the page keeps its own copy of a sentence the backend owns",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx",
+    "old": "            <p className=\"text-slate-400 text-sm font-bold leading-relaxed border-t border-sky-500/20 pt-3\">\n              {s.decision_is_constant}\n            </p>",
+    "new": "            <p className=\"text-slate-400 text-sm font-bold leading-relaxed border-t border-sky-500/20 pt-3\">\n              Every observed decision is ESCALATE, BY CONSTRUCTION.\n            </p>",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L9. Two wordings of a load-bearing claim drift, and the page is the copy nobody updates (W490). The leg forbids the backend-owned phrases appearing as literals in the page AND requires the render form, so neither half can be satisfied alone."
+  },
+  {
+    "tag": "the seam block is moved back inside the guardrails conditional, so a guardrails failure hides it",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx",
+    "old": "      {g && (\n",
+    "new": "      {g && (\n      {/* THE SEAM, OUTSIDE the guardrails block. It was inside it, and loading the page while the\n          backend was still booting showed what that cost: /guardrails answered 500, the page correctly\n          said nothing was received, and the denial of gating disappeared with it — leaving the title and\n          three gate cards as the page's only statement about Horizon, which is the impression this block\n          exists to correct. Its own comment claimed it rendered \"whether or not the seam reports\", which\n          was true of the SEAM's failure and false of the guardrails'. A section that only appears when a\n          DIFFERENT request succeeds is not an unconditional statement. */}\n      <section\n        data-testid=\"horizon-seam\"\n        className=\"rounded-2xl p-6 border-2 border-sky-500/40 bg-sky-500/5 space-y-3\"\n      >\n        <h2 className=\"text-sm font-black uppercase tracking-widest text-sky-400\">\n          The seam in front of the domain routes\n        </h2>\n        {seamErr && (\n          <p role=\"alert\" className=\"text-vital font-bold\">\n            {seamErr} Nothing about the seam is shown, because nothing was received — not that it\n            observed nothing.\n          </p>\n        )}\n        {s && (\n          <>\n            <p className=\"text-3xl font-black text-sky-400 uppercase tracking-wide\">\n              {s.gates ? 'Gates requests' : 'Observes · does not gate'}\n            </p>\n            {/* The backend's own sentences, both of them. No second wording of a claim this\n                load-bearing. */}\n            <p className=\"text-slate-300 font-bold leading-relaxed\">{s.gating_basis}</p>\n            <p className=\"text-slate-400 text-sm font-bold leading-relaxed border-t border-sky-500/20 pt-3\">\n              {s.decision_is_constant}\n            </p>\n            <p className=\"text-slate-400 text-sm font-bold leading-relaxed\">{s.body_basis}</p>\n            <dl className=\"grid gap-3 @[640px]:grid-cols-3 pt-3 border-t border-sky-500/20\">\n              <div>\n                <dt className=\"text-[11px] font-black uppercase tracking-widest text-slate-500\">\n                  Observed this process\n                </dt>\n                <dd className=\"text-xl font-black text-slate-200\">{s.observed_total}</dd>\n              </div>\n              <div>\n                <dt className=\"text-[11px] font-black uppercase tracking-widest text-slate-500\">\n                  Of those, not served\n                </dt>\n                <dd className=\"text-xl font-black text-slate-200\">{s.observed_not_served}</dd>\n              </div>\n              <div>\n                <dt className=\"text-[11px] font-black uppercase tracking-widest text-slate-500\">\n                  Observations that failed\n                </dt>\n                <dd className=\"text-xl font-black text-slate-200\">{s.error_count}</dd>\n              </div>\n            </dl>\n            <p className=\"text-slate-500 text-xs font-bold leading-relaxed\">{s.basis}</p>\n            <h3 className=\"text-[11px] font-black uppercase tracking-widest text-slate-500 pt-3 border-t border-sky-500/20\">\n              Deliberately not observed\n            </h3>\n            <ul className=\"space-y-1\">\n              {Object.entries(s.not_observed_kinds).map(([k, why]) => (\n                <li key={k} className=\"text-slate-400 text-sm font-bold leading-relaxed\">\n                  · <span className=\"text-slate-300\">{k}</span> — {why}\n                </li>\n              ))}\n            </ul>\n          </>\n        )}\n      </section>\n",
+    "selector": "w554",
+    "expect": "BLIND(red)",
+    "why": "L9. MEASURED, not imagined: the block was first written inside {g && (...)}, and loading the page while the backend was still booting made /guardrails answer 500 - the page correctly said nothing was received and the denial of gating vanished with it, leaving the title and three gate cards as the only statement about Horizon. The mutation inserts a COPY inside the conditional, so the page still contains every rendered form the other legs look for and only the POSITION check can see it."
+  },
+  {
+    "tag": "a DONE item is reported as blocked behind a gate it has already passed (W551 regression)",
+    "file": "agentic_core/api/method.py",
+    "old": "    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items()\n               if in_scope(k) and k not in _done_slots}",
+    "new": "    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items()\n               if in_scope(k)}",
+    "selector": "w510",
+    "expect": "BLIND(red)",
+    "why": "The appraisal cell leg, REWRITTEN in W554 after closing P2.11 turned a hard-coded expectation red. The leg now computes the expected set from the ruling minus the done markers, and this blind restores exactly the defect W551 removed - a closed item double-counted in items_done AND in the blocked set, inflating the ceiling by one. It only has force because at least one P2 item the ruling names is now DONE, which the leg asserts before relying on it."
+  },
+  {
+    "tag": "a component's items_advanced is not derived from its own rows' slots",
+    "file": "agentic_core/plan_followups.py",
+    "old": "\"items_advanced\": sorted(by_slot), \"rows_by_item\": {k: sorted(v) for k, v in by_slot.items()},",
+    "new": "\"items_advanced\": sorted(by_slot)[:1], \"rows_by_item\": {k: sorted(v) for k, v in by_slot.items()},",
+    "selector": "w500b",
+    "expect": "BLIND(red)",
+    "why": "The bundler leg, rewritten in W554. The old leg asserted that the LARGEST component crosses items, which closing rows falsified on a tie-break without touching the instrument; the new one recomputes items_advanced independently for every component. Truncating the list to one slot is the shape a real bug would take - it still looks like a list of items and it still sorts - and only an independent recomputation sees it."
+  }
+]

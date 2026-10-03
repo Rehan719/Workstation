@@ -67,6 +67,42 @@ def _json_safe(o):
 async def _validation_error_survives_its_input(request, exc):
     return JSONResponse(status_code=422, content={"detail": _json_safe(exc.errors())})
 
+
+# W554 (P2.11) — THE HORIZON SEAM'S FIRST HALF: a middleware in front of the six domain routes that
+# OBSERVES AND RECORDS AND DOES NOT GATE. It takes no decision about the request, changes no response and
+# adds no header: the request is served exactly as it would be with this function absent. That is the
+# whole design and the reason it could be built without an Owner decision — a membrane that GATED on the
+# kernel's own verdict would refuse every request this platform serves, because nothing compresses here
+# and an uncompressed request of unknown domain fails closed. See agentic_core/horizon/membrane.py.
+#
+# IT OBSERVES THE METHOD AND PATH, NEVER THE BODY. Reading the body would mean consuming the request
+# stream and replaying it — a correctness risk — for data nobody needs, and a domain request body may hold
+# someone's medical note or legal matter. The record says the body was not read.
+#
+# AND IT OBSERVES AFTER THE HANDLER, IN A `finally`. Observing first recorded a 405 Method Not Allowed as
+# a law-domain request — measured, not imagined — and the row was indistinguishable from one the platform
+# served. The status is now part of the observation, so a request that reached no handler is not counted
+# as domain activity; the `finally` is what keeps a handler that RAISED observed, which is the case
+# P2.11's body most wants in this store ("a request, a run failure or an Owner note").
+@app.middleware("http")
+async def _horizon_observe(request, call_next):
+    _status, _raised = None, None
+    try:
+        _response = await call_next(request)
+        _status = getattr(_response, "status_code", None)
+        return _response
+    except Exception as _exc:         # noqa: BLE001 — observed, then re-raised unchanged
+        _raised = _exc.__class__.__name__
+        raise
+    finally:
+        try:
+            from agentic_core.horizon import membrane as _membrane
+            _membrane.observe_request(request.method, request.url.path,
+                                      status=_status, raised=_raised)
+        except Exception:             # noqa: BLE001 — a failure to OBSERVE is never a failure to SERVE
+            pass                      # (membrane._record counts its own failures; this guards the import)
+
+
 # ── MVP spine routers ─────────────────────────────────────────────────────────
 
 # 1. Projects (concept → commercialise lifecycle, SSE streaming, governance)

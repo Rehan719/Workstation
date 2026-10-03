@@ -23,6 +23,30 @@ interface Gate {
   certifies_absence: boolean;
 }
 
+// W554 (P2.11) — AND THE SEAM, WHICH OBSERVES AND DOES NOT GATE. This page is called Guardrails and is
+// full of gates, so a reader arriving here would reasonably take the whole of Horizon for something that
+// stops requests. The seam does not: it watches the domain routes and the run outcomes, records what it
+// saw, and nothing downstream reads it. That has to be said HERE, on the page that creates the
+// impression, and in the backend's own words — a stored ESCALATE nobody acted on is the most misleading
+// row in that store, and a page implying otherwise is how a reader comes to trust it.
+interface Seam {
+  gates: boolean;
+  gating_basis: string;
+  decision_is_constant: string;
+  domain_prefixes: string[];
+  observed_methods: string[];
+  observed_kinds: string[];
+  not_observed_kinds: Record<string, string>;
+  body_read: boolean;
+  body_basis: string;
+  observed_total: number;
+  observed_not_served: number;
+  observed_decisions: Record<string, number>;
+  error_count: number;
+  store_cap: number;
+  basis: string;
+}
+
 interface Guardrails {
   gates: Gate[];
   distress_routes: Array<Record<string, string>> | null;
@@ -42,7 +66,9 @@ const ICONS: Record<string, React.ReactNode> = {
 
 export const HorizonGuardrails: React.FC = () => {
   const [g, setG] = useState<Guardrails | null>(null);
+  const [s, setS] = useState<Seam | null>(null);
   const [err, setErr] = useState('');
+  const [seamErr, setSeamErr] = useState('');
 
   useEffect(() => {
     axios.get<Guardrails>('/api/v1/horizon/guardrails', { validateStatus: () => true })
@@ -51,6 +77,14 @@ export const HorizonGuardrails: React.FC = () => {
         else { setG(null); setErr(`The guardrails are not reporting (HTTP ${r.status}).`); }
       })
       .catch(() => { setG(null); setErr('The guardrails could not be reached.'); });
+    // The seam is fetched SEPARATELY and fails separately: a seam that cannot be read must not blank the
+    // guardrails, and — more to the point — must not leave the page silent about gating.
+    axios.get<Seam>('/api/v1/horizon/seam', { validateStatus: () => true })
+      .then(r => {
+        if (r.status === 200 && r.data) { setS(r.data); setSeamErr(''); }
+        else { setS(null); setSeamErr(`The seam is not reporting (HTTP ${r.status}).`); }
+      })
+      .catch(() => { setS(null); setSeamErr('The seam could not be reached.'); });
   }, []);
 
   return (
@@ -135,6 +169,7 @@ export const HorizonGuardrails: React.FC = () => {
             ))}
           </section>
 
+
           <section className="rounded-2xl p-6 border border-slate-800 bg-slate-900/40 space-y-3">
             <p className="text-slate-400 font-bold leading-relaxed">{g.basis}</p>
             <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 pt-3 border-t border-slate-800">
@@ -148,6 +183,73 @@ export const HorizonGuardrails: React.FC = () => {
           </section>
         </>
       )}
+
+      {/* THE SEAM, OUTSIDE the guardrails block. It was inside it, and loading the page while the
+          backend was still booting showed what that cost: /guardrails answered 500, the page correctly
+          said nothing was received, and the denial of gating disappeared with it — leaving the title and
+          three gate cards as the page's only statement about Horizon, which is the impression this block
+          exists to correct. Its own comment claimed it rendered "whether or not the seam reports", which
+          was true of the SEAM's failure and false of the guardrails'. A section that only appears when a
+          DIFFERENT request succeeds is not an unconditional statement. */}
+      <section
+        data-testid="horizon-seam"
+        className="rounded-2xl p-6 border-2 border-sky-500/40 bg-sky-500/5 space-y-3"
+      >
+        <h2 className="text-sm font-black uppercase tracking-widest text-sky-400">
+          The seam in front of the domain routes
+        </h2>
+        {seamErr && (
+          <p role="alert" className="text-vital font-bold">
+            {seamErr} Nothing about the seam is shown, because nothing was received — not that it
+            observed nothing.
+          </p>
+        )}
+        {s && (
+          <>
+            <p className="text-3xl font-black text-sky-400 uppercase tracking-wide">
+              {s.gates ? 'Gates requests' : 'Observes · does not gate'}
+            </p>
+            {/* The backend's own sentences, both of them. No second wording of a claim this
+                load-bearing. */}
+            <p className="text-slate-300 font-bold leading-relaxed">{s.gating_basis}</p>
+            <p className="text-slate-400 text-sm font-bold leading-relaxed border-t border-sky-500/20 pt-3">
+              {s.decision_is_constant}
+            </p>
+            <p className="text-slate-400 text-sm font-bold leading-relaxed">{s.body_basis}</p>
+            <dl className="grid gap-3 @[640px]:grid-cols-3 pt-3 border-t border-sky-500/20">
+              <div>
+                <dt className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                  Observed this process
+                </dt>
+                <dd className="text-xl font-black text-slate-200">{s.observed_total}</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                  Of those, not served
+                </dt>
+                <dd className="text-xl font-black text-slate-200">{s.observed_not_served}</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                  Observations that failed
+                </dt>
+                <dd className="text-xl font-black text-slate-200">{s.error_count}</dd>
+              </div>
+            </dl>
+            <p className="text-slate-500 text-xs font-bold leading-relaxed">{s.basis}</p>
+            <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-500 pt-3 border-t border-sky-500/20">
+              Deliberately not observed
+            </h3>
+            <ul className="space-y-1">
+              {Object.entries(s.not_observed_kinds).map(([k, why]) => (
+                <li key={k} className="text-slate-400 text-sm font-bold leading-relaxed">
+                  · <span className="text-slate-300">{k}</span> — {why}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
     </div>
   );
 };

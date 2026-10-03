@@ -124,6 +124,18 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
         _save(rows)
     except Exception:
         pass
+    #  W554 (P2.11) — THE HORIZON SEAM'S SECOND HALF, placed here because this is the one function the
+    #  run paths already call: thirteen call sites across the gateway, the orchestrator, the board, the
+    #  swarm, deliverables, resource_fabric and transformation, plus the /record endpoint. Hooking the
+    #  function reaches all of them; hooking the call sites would have reached the ones I remembered.
+    #  It OBSERVES AND RECORDS AND DOES NOT GATE, and it never raises: this function's own contract is
+    #  that recording is non-critical, and an observer that could break a caller would be worse than no
+    #  observer. `model_attempt` is deliberately NOT observed — see membrane.NOT_OBSERVED_KINDS.
+    try:
+        from agentic_core.horizon import membrane as _membrane
+        _membrane.observe_outcome(kind, resource, served_by=served_by, success=_produced)
+    except Exception:                            # noqa: BLE001 — guards the import; the seam counts its own
+        pass
     return outcome
 
 

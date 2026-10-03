@@ -22340,11 +22340,28 @@ def test_w500b_the_bundle_a_round_can_hold_is_a_file_connected_component(client)
     assert all(c["size"] >= 1 for c in _comps)
     assert [c["size"] for c in _comps] == sorted((c["size"] for c in _comps), reverse=True)
 
-    # ── the property that motivates the plan item: the largest bundle CROSSES items ─────────────────
+    # ── the property that motivates the plan item: a bundle CROSSES items ──────────────────────────
     assert _comps[0]["size"] > 1, _comps[0]
-    assert len(_comps[0]["items_advanced"]) > 1, ("the largest component sits inside one item, so a "
-                                                 "class-based batch would already have found it",
-                                                 _comps[0]["items_advanced"])
+    #  items_advanced is RECOMPUTED here rather than taken on trust, for every component — this is the
+    #  durable half, and it catches a derivation bug that no statement about the register's shape would.
+    _slot_of = {r["id"]: str(r.get("slot") or "") for r in _rows}
+    for _c in _comps:
+        _want = sorted({_slot_of[_i] for _i in _c["rows"] if _slot_of.get(_i)})
+        assert sorted(_c["items_advanced"]) == _want, (
+            "a component's items_advanced is not the set of its own rows' slots",
+            _c["rows"], _c["items_advanced"], _want)
+    #  AND THE MOTIVATION IS MEASURED OVER THE WHOLE SET, not over whichever component the sort happens
+    #  to put first. W554 turned this leg red WITHOUT TOUCHING THE INSTRUMENT: closing rows left two
+    #  components tied at size 4, and the one that sorted first sat inside P2.17 — so a true statement
+    #  about the bundler failed on a tie-break. The claim the plan item actually makes is that a
+    #  file-connected bundle can cross items where a class-based batch would not, and that is a property
+    #  of the SET of components.
+    _crossing = [c for c in _comps if len(c["items_advanced"]) > 1]
+    assert _crossing, (
+        "NO component crosses an item. This is a finding about the register rather than a broken test: "
+        "every bundle this instrument finds would already have been found by a class-based batch, so "
+        "the instrument is adding nothing in the current state and the plan item should say so",
+        [c["items_advanced"] for c in _comps])
     # and what a READER sees never claims to close an item - the script is run and its output
     # asserted, rather than its docstring searched for the promise
     import contextlib
@@ -27535,8 +27552,31 @@ def test_w510_the_appraisal_cell_takes_eight_readings_and_reconciles_them(client
     assert "ITEMS closed is progress" in f["reflection"]["basis"]
 
     # ── REASONING: the blocked set, and a ceiling that is LOWER than the item count ────────────────────
-    assert set(f["reasoning"]["blocked_by_ruling"]) >= {"P2.11", "P2.16"}, f["reasoning"]["blocked_by_ruling"]
-    assert "P2.11" not in f["reasoning"]["closable_by_working_them"], f["reasoning"]
+    #  COMPUTED, NOT PINNED. W554 turned this leg red by closing P2.11: it named two slots the ruling
+    #  holds, and a slot stops being blocked the moment it is DONE — which is exactly the correction W551
+    #  made to the cell itself. A STATIC SET MIRRORING PLAN STATE goes stale every time the plan moves,
+    #  and it fails in the direction that punishes progress, which is the worst way for a guard to fail.
+    #  What is worth guarding is the RELATION between the ruling, the done markers and the three lists.
+    from agentic_core.api.method import _BLOCKED_BY_RULING as _BBR
+    from agentic_core import plan_followups as _pf510
+    _plan510 = _pf510.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))
+    _done510 = {i["slot"] for i in _plan510 if i["done"] and str(i["slot"]).startswith("P2.")}
+    _expected_blocked = {k for k in _BBR if str(k).startswith("P2.") and k not in _done510}
+    assert _expected_blocked, ("the ruling holds nothing open in this scope, so the three assertions "
+                               "below would pass over empty sets and measure nothing")
+    assert set(f["reasoning"]["blocked_by_ruling"]) == _expected_blocked, (
+        "the cell's blocked set disagrees with the ruling minus the done markers",
+        sorted(f["reasoning"]["blocked_by_ruling"]), sorted(_expected_blocked))
+    #  A DONE ITEM IS NOT BLOCKED, IT IS CLOSED — W551's correction, asserted rather than assumed, and
+    #  it only has force because at least one P2 item the ruling names is now done.
+    assert _done510 & set(_BBR), ("no item the ruling holds has closed yet, so the double-count this "
+                                  "leg guards against is not reachable from the current register")
+    assert not (_done510 & set(f["reasoning"]["blocked_by_ruling"])), (
+        "a closed item is still being reported as held behind a gate it has already passed",
+        sorted(_done510 & set(f["reasoning"]["blocked_by_ruling"])))
+    #  and no item is both held and offered as closable by working it
+    assert not (set(f["reasoning"]["blocked_by_ruling"]) & set(f["reasoning"]["closable_by_working_them"])), (
+        f["reasoning"]["blocked_by_ruling"], f["reasoning"]["closable_by_working_them"])
     ceiling = f["reasoning"]["ceiling_without_clearing_the_gate"]
     p2_items = f["reflection"]["items_done"] + f["reflection"]["items_open"]
     # the ceiling must be BELOW the scope's item count, because some of its items are held behind others.
@@ -33025,3 +33065,210 @@ def test_w553_four_constraints_assess_fifteen_refuse_by_name_and_three_may_never
     assert "no validator" not in _cb, (
         "the confidence basis still explains the pass count by an absence this round removed", _cb)
     assert "cannot clear while a declared constraint has no instrument" in _cb, _cb
+
+
+def test_w554_the_horizon_seam_observes_and_records_and_does_not_gate(client):
+    """FU-360: P2.11's seam — a middleware in front of the domain routes and a hook at record_outcome.
+
+    THE WHOLE POINT IS THAT IT DOES NOT GATE, so the legs drive what it records rather than what it stops,
+    and the one thing they refuse to let drift is the sentence saying nothing acted on the decision.
+    """
+    from agentic_core.horizon import kernel as _k
+    from agentic_core.horizon import membrane as _m
+
+    def _rows(source):
+        return [r for r in _k.listing(10000) if r.get("source") == source]
+
+    # ── L1. WHAT IS OBSERVED AND WHAT IS NOT, with a reason for every exclusion ───────────────────
+    for _m_, _p, _want in (("POST", "/api/v1/law/analyse", True),
+                           ("PATCH", "/api/v1/education/plan", True),
+                           ("DELETE", "/api/v1/care/x", True),
+                           ("GET", "/api/v1/law/analyse", False),       # a read is not a request to act
+                           ("POST", "/api/v1/horizon/observe", False),  # not a domain route
+                           ("POST", "/api/v1/lawyers/x", False)):       # NOT a prefix match on a segment
+        _ok, _why = _m.observes(_m_, _p)
+        assert _ok is _want, (_m_, _p, _ok, _why)
+        assert len(_why) > 40, (_m_, _p, "an exclusion with no reason a reader could act on", _why)
+    #  THE SEGMENT BOUNDARY, named because `startswith` alone would make /api/v1/lawyers a law request
+    assert _m.domain_of("/api/v1/lawyers/x") is None, "a prefix matched across a path segment boundary"
+    assert _m.domain_of("/api/v1/law") == "law" and _m.domain_of("/api/v1/law/analyse") == "law"
+
+    # ── L2. A SERVED DOMAIN POST IS OBSERVED, AND THE ROW SAYS NOTHING ACTED ON IT ────────────────
+    _before = len(_rows("domain_route"))
+    _r = client.post("/api/v1/law/analyse", json={"document_text": "A short agreement, two parties."})
+    assert _r.status_code == 200, _r.text
+    _d = _rows("domain_route")
+    assert len(_d) == _before + 1, ("the middleware did not observe a mutating domain request, so the "
+                                   "seam is beside the path rather than on it", _before, len(_d))
+    _row = _d[0]
+    assert _row.get("gated") is False, ("the row does not record that nothing gated it", _row.get("gated"))
+    assert "did not escalate anything" in (_row.get("gating_basis") or "").lower(), _row.get("gating_basis")
+    assert _row.get("served") is True and _row.get("response_status") == 200, _row
+    #  THE BODY IS NEVER READ, and the row says so rather than leaving it to be assumed.
+    assert _row.get("body_read") is False and len(_row.get("body_basis") or "") > 80, _row
+    assert "A short agreement" not in json.dumps(_row), (
+        "the request body reached the store, which this seam states it does not read")
+
+    # ── L3. THE COMPRESSION REASON IS THE SEAM'S OWN, not the floor's and not a failed call ───────
+    assert _row.get("compression") == _k.NOT_COMPRESSED, _row.get("compression")
+    assert "NO COMPRESSOR WAS CALLED" in (_row.get("compression_basis") or ""), _row.get("compression_basis")
+    #  and the three other reasons remain distinguishable — a shared sentence would attribute the
+    #  absence to a component that never ran
+    _floor = _k._compression_of("native", False, False, "text came back")
+    _empty = _k._compression_of("llama3.2", False, True, "")
+    _real = _k._compression_of("llama3.2", False, False, "asked_for: a thing")
+    assert "NO COMPRESSOR WAS CALLED" not in _floor["compression_basis"], _floor
+    assert "NO COMPRESSOR WAS CALLED" not in _empty["compression_basis"], _empty
+    assert _real["compression"] == _k.COMPRESSED, _real
+    assert len({_floor["compression_basis"], _empty["compression_basis"],
+                _k._compression_of(None, False, False, "", compressor_called=False)["compression_basis"]
+                }) == 3, "two of the NOT_COMPRESSED reasons are the same sentence"
+
+    # ── L4. A REQUEST THE APP REFUSED IS NOT COUNTED AS DOMAIN ACTIVITY ───────────────────────────
+    #  Driven, because the first draft of this seam observed BEFORE routing and recorded a 405 as a law
+    #  request — a row indistinguishable from one the platform served.
+    _n = len(_rows("domain_route"))
+    _bad = client.post("/api/v1/law/templates", json={})
+    assert _bad.status_code in (404, 405), _bad.status_code
+    _d2 = _rows("domain_route")
+    assert len(_d2) == _n + 1, "the refused request was not observed at all"
+    _refused = [r for r in _d2 if r.get("response_status") in (404, 405)]
+    assert _refused and _refused[0].get("served") is False, _refused[:1]
+    assert "NOT SERVED" in (_refused[0].get("served_basis") or ""), _refused[0].get("served_basis")
+
+    # ── L5. THE RECORD_OUTCOME HOOK — the run kinds, and the one that is excluded ─────────────────
+    from agentic_core.api.operational_excellence import record_outcome as _ro
+    _o = len(_rows("run_outcome"))
+    _ro("ai_call", "agent:w554", served_by="native", success=True)
+    assert len(_rows("run_outcome")) == _o + 1, "a run outcome was not observed"
+    _ro("model_attempt", "model:w554", served_by="w554", success=True)
+    assert len(_rows("run_outcome")) == _o + 1, (
+        "model_attempt was observed: it is a mechanism INSIDE one run, so observing it makes the count "
+        "of observed intents stop meaning the number of requests")
+    assert "model_attempt" in _m.NOT_OBSERVED_KINDS and len(_m.NOT_OBSERVED_KINDS["model_attempt"]) > 80
+    _last = _rows("run_outcome")[0]
+    #  THE RUN'S SERVER IS NOT THE COMPRESSION'S. Reading one as the other would manufacture a
+    #  COMPRESSED record for a compression that never happened.
+    assert _last.get("run_served_by") == "native" and _last.get("served_by") is None, _last
+    assert _last.get("compression") == _k.NOT_COMPRESSED, _last.get("compression")
+
+    # ── L6. THE ROUTE'S DOMAIN IS NOT WRITTEN INTO THE KERNEL'S `domain` FIELD ────────────────────
+    #  If it were, a request on the LAW route would stop failing closed — the escalation list holds
+    #  'legal', and the string 'law' contains none of its words — so the record would read PROCEED on a
+    #  legal matter nobody compressed.
+    assert _row.get("route_domain") == "law", _row.get("route_domain")
+    assert "domain" not in _row, (
+        "the seam filled the kernel's compression field `domain` from the URL, which is a true fact "
+        "about where the request arrived and a false answer to what it was about", _row.get("domain"))
+    assert _row.get("decision") == _k.ESCALATE, _row.get("decision")
+    #  and the trap is REAL, not hypothetical: with the route name in `domain`, the kernel proceeds.
+    _forged = {**_row, "domain": "law"}
+    assert _k.decide(_forged)["decision"] == _k.PROCEED, (
+        "this leg's premise is wrong: putting the route name in `domain` did NOT flip the decision, so "
+        "the reason for keeping them apart needs re-stating from what the kernel actually does")
+
+    # ── L7. AND THE SURFACE SAYS ALL OF IT — the limits, the counts, the failures ─────────────────
+    _s = client.get("/api/v1/horizon/seam")
+    assert _s.status_code == 200, _s.text
+    _j = _s.json()
+    assert _j["gates"] is False, "the surface does not state that the seam gates nothing"
+    assert _j["observed_total"] >= 3 and _j["observed_not_served"] >= 1, _j
+    assert _j["error_count"] == 0, ("the seam failed to observe something and counted it — which is the "
+                                    "design working, but it must not be happening in a clean run", _j)
+    #  AND A FAILURE MUST BE SEEN TO BE COUNTED. A blind proved the leg above VACUOUS: deleting the line
+    #  that records an error leaves error_count at 0, which is exactly what a clean run reports, so the
+    #  assertion passed with the defect in. The seam SWALLOWS exceptions by design — it must never turn a
+    #  failure to observe into a failure to serve — and a swallowed failure nobody counts is
+    #  indistinguishable from a path the seam never reached. So the failure is driven.
+    _real_save = _k.save
+    try:
+        def _raises(*_a, **_kw):
+            raise RuntimeError("driven: the store could not be written")
+        _k.save = _raises
+        assert _m.observe_outcome("ai_call", "agent:w554_fail", served_by="native") is None, (
+            "a failed observation returned a row")
+    finally:
+        _k.save = _real_save
+    _j2 = client.get("/api/v1/horizon/seam").json()
+    assert _j2["error_count"] == 1, ("the seam swallowed a failure WITHOUT counting it, so a store it "
+                                     "cannot write to is indistinguishable from a path nothing reaches",
+                                     _j2["error_count"], _j2.get("errors"))
+    assert "RuntimeError" in _j2["errors"][0], _j2["errors"]
+    #  and serving was never affected — the whole reason it swallows
+    assert client.get("/api/v1/horizon/states").status_code == 200
+    assert "ESCALATE" in _j["observed_decisions"], _j["observed_decisions"]
+    #  THE DECISION CANNOT VARY, and the surface says so. A constant column a reader reads variation
+    #  into is worse than no column.
+    assert "BY CONSTRUCTION" in _j["decision_is_constant"], _j["decision_is_constant"]
+    #  THE CAP MUST BE APPLIED, NOT MERELY REPORTED. A blind proved this leg VACUOUS when it read
+    #  _CAP from the module and compared it to the surface: removing the slice from save() leaves the
+    #  constant in place, so both still said 2000 while the store grew without bound. The bound is now
+    #  DRIVEN against a small cap, which is also the only way to drive it at all — writing 2000 rows to
+    #  prove a 2000-row cap would make this test the slowest in the suite.
+    assert _j["store_cap"] == _k._CAP and _k._CAP > 0, (
+        "the surface does not report the store's cap at all")
+    _real_cap = _k._CAP
+    try:
+        _k._CAP = 3
+        for _i in range(6):
+            _m.observe_outcome("ai_call", f"agent:w554_cap_{_i}", served_by="native")
+        _held = _k.listing(10000)
+        assert len(_held) <= 3, (
+            "the horizon store did not apply its cap while a middleware and a run hook write to it — an "
+            "unbounded whole-file read-modify-write, and a surface reporting a bound nothing enforces",
+            len(_held), _k._CAP)
+        #  OLDEST FIRST, which is what the records route tells a reader: the newest survive.
+        assert any("w554_cap_5" in str(_r.get("run_resource")) for _r in _held), (
+            "the cap dropped the NEWEST rows, so the listing's oldest row is not the oldest thing kept",
+            [_r.get("run_resource") for _r in _held])
+    finally:
+        _k._CAP = _real_cap
+    #  and /records separates what was observed from what a user asked for
+    _rec = client.get("/api/v1/horizon/records?limit=50").json()
+    assert _rec["observed_not_enforced"] >= 3, _rec
+    assert "is not an escalation" in _rec["basis"], _rec["basis"]
+    assert _rec["history_cap"] == _k._CAP, _rec
+
+    # ── L9. THE PAGE THAT IMPLIES GATING MUST CARRY THE DENIAL ────────────────────────────────────
+    #  /horizon-guardrails is titled Guardrails and is full of gates, so a reader arriving there would
+    #  reasonably take the whole of Horizon for something that stops requests. The seam does not stop
+    #  anything, and that has to be said on the page that creates the impression — not only on a route.
+    import pathlib as _pl
+    _page = _pl.Path(__file__).resolve().parents[1] / (
+        "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx")
+    assert _page.exists(), ("the page this leg reads is not where it was, so the leg measured nothing",
+                            str(_page))
+    _src = _page.read_text(encoding="utf-8")
+    #  THE RENDER, not the interface declaration. A substring check for the field name would match the
+    #  `gating_basis: string;` line and pass over a page that never prints it — the presence-check defect
+    #  this programme has hit four times.
+    assert "{s.gating_basis}" in _src, (
+        "the page declares the seam's basis field and never renders it, so the denial of gating exists in "
+        "a type and not on the screen")
+    assert "{s.decision_is_constant}" in _src, "the page does not print why the decision cannot vary"
+    assert "{s.body_basis}" in _src, "the page does not say the request body is never read"
+    assert "'Observes · does not gate'" in _src, (
+        "the page has no rendered words for the not-gating state, so the claim depends entirely on a "
+        "backend sentence a reader may not reach")
+    #  AND IT MUST FETCH THE SEAM. A page rendering a field nothing populates shows nothing.
+    assert "'/api/v1/horizon/seam'" in _src, "the page never asks the seam for its report"
+    #  NO SECOND WORDING. The sentences are load-bearing, so the page must not keep its own copy that
+    #  could drift from the backend's — the class W490 named when a page printed a stale claim.
+    for _forbidden in ("does not escalate anything", "BY CONSTRUCTION", "OBSERVED, NOT ENFORCED"):
+        assert _forbidden not in _src, (
+            "the page hard-codes a sentence the backend owns, so the two can drift", _forbidden)
+    #  AND A SEAM THAT CANNOT BE READ MUST NOT LEAVE THE PAGE SILENT ABOUT GATING.
+    assert "{seamErr}" in _src and "not that it" in _src, (
+        "the page does not distinguish 'the seam could not be read' from 'the seam observed nothing'")
+    #  NOR MAY A **GUARDRAILS** FAILURE HIDE IT. Measured: the block was first written inside the
+    #  `{g && (...)}` fragment, and loading the page while the backend was still booting showed what that
+    #  cost — /guardrails answered 500, the page correctly said nothing was received, and the denial of
+    #  gating vanished with it, leaving the title and three gate cards as the only statement about
+    #  Horizon. A section that appears only when a DIFFERENT request succeeds is not unconditional.
+    assert _src.index('data-testid="horizon-seam"') > _src.index("        </>\n      )}\n"), (
+        "the seam block sits inside the guardrails conditional, so a guardrails failure hides the page's "
+        "only statement that Horizon does not gate")
+    #  and it must not displace the distress-route field, which W551 put first for the one reason no
+    #  later correction reaches: a person in distress might act on what they read there.
+    assert _src.index('data-testid="horizon-distress-routes"') < _src.index('data-testid="horizon-seam"'), (
+        "the seam block was placed above the distress-route field")

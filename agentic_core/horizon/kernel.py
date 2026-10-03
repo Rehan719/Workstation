@@ -68,7 +68,7 @@ def observe(source: str, raw_text: str, surface: str) -> Dict[str, Any]:
 
 
 def _compression_of(served_by: Optional[str], is_external: bool, failed: bool,
-                    text: str) -> Dict[str, Any]:
+                    text: str, compressor_called: bool = True) -> Dict[str, Any]:
     """Decide the compression STATE from the provenance of the call that was made.
 
     This is the function the whole package turns on. It reads WHO SERVED the call rather than whether a
@@ -76,6 +76,22 @@ def _compression_of(served_by: Optional[str], is_external: bool, failed: bool,
     structured output for any prompt, and treating that as a compression is exactly the defect the
     brief's hard-coded `compress_noise_to_meaning` committed.
     """
+    #  W554 — A FOURTH REASON, and it is a different fact from the other three. The observing seam
+    #  (membrane.py) records requests and run outcomes WITHOUT asking any model what they meant, so no
+    #  compressor was called at all. Collapsing that into "the floor served it" would attribute the
+    #  absence to a component that never ran, and collapsing it into "the call did not produce text"
+    #  would describe a call nobody made. The parameter defaults to True, so every existing caller is
+    #  unchanged.
+    if not compressor_called:
+        return {"compression": NOT_COMPRESSED, "served_by": None,
+                "compression_basis": (
+                    "NOT COMPRESSED: NO COMPRESSOR WAS CALLED ON THIS PATH. This record comes from the "
+                    "observing seam, which watches domain requests and run outcomes without asking a "
+                    "model what any of them meant — a model call in front of every domain request would "
+                    "make each one wait on an LLM, and the only answer available on this deployment "
+                    "would come from the deterministic floor, which composes rather than compresses. The "
+                    "absence here is the seam's design and is DISTINCT from a call that was made and "
+                    "did not compress")}
     if failed or not str(text or "").strip():
         return {"compression": NOT_COMPRESSED, "served_by": served_by,
                 "compression_basis": (
@@ -115,9 +131,9 @@ def _fields_from(text: str) -> Dict[str, Any]:
 
 
 def build_record(observation: Dict[str, Any], served_by: Optional[str], is_external: bool,
-                 failed: bool, text: str) -> Dict[str, Any]:
+                 failed: bool, text: str, compressor_called: bool = True) -> Dict[str, Any]:
     """An IntentRecord. On a NOT_COMPRESSED run the compression fields are ABSENT, not empty."""
-    comp = _compression_of(served_by, is_external, failed, text)
+    comp = _compression_of(served_by, is_external, failed, text, compressor_called)
     rec: Dict[str, Any] = {
         "intent_id": f"intent-{uuid.uuid4().hex[:12]}",
         "observation_id": observation.get("observation_id"),
@@ -220,6 +236,15 @@ def decide(record: Dict[str, Any]) -> Dict[str, Any]:
                       "above with fired=None — a term with no instrument is not a term that passed")}
 
 
+#  W554 — THE STORE IS CAPPED, and it was not before the seam existed. save() appended and rewrote every
+#  row, which was tolerable while the only writer was a user POSTing to /observe and became a liability
+#  the moment a middleware and a run-outcome hook began writing: an uncapped whole-file read-modify-write
+#  grows the cost of every subsequent write. The cap is OLDEST-FIRST, and the listing route says the
+#  history is bounded — a reader who is not told a store is capped will read its oldest row as the first
+#  thing that ever happened.
+_CAP = 2000
+
+
 def save(record: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:
     """Persist the record with its decision, under the store lock."""
     row = {**record, "decision": decision.get("decision"), "decision_terms": decision.get("terms"),
@@ -227,7 +252,7 @@ def save(record: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:
     with store_lock(_store()):
         rows = _read()
         rows.append(row)
-        atomic_write_json(_store(), rows)
+        atomic_write_json(_store(), rows[-_CAP:])
     return row
 
 

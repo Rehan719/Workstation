@@ -96,14 +96,25 @@ async def horizon_records(limit: int = 50,
                           user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
     rows = kernel.listing(limit)
     _uncompressed = sum(1 for r in rows if r.get("compression") == kernel.NOT_COMPRESSED)
+    #  W554 — HOW MANY OF THESE WERE OBSERVED RATHER THAN ACTED ON. Once the seam writes rows, the store
+    #  holds decisions nothing enforced beside decisions a user asked for, and they look identical in a
+    #  listing. An ESCALATE nobody acted on must not be countable as an escalation.
+    _observed = sum(1 for r in rows if r.get("gated") is False)
     return {
         "records": rows,
         "total": len(rows),
         "not_compressed": _uncompressed,
+        "observed_not_enforced": _observed,
+        "history_cap": kernel._CAP,
         "basis": (f"{_uncompressed} of {len(rows)} record(s) were NOT compressed. That is the expected "
                   f"proportion on a deployment with no model provisioned, and it is reported rather than "
                   f"smoothed: a membrane that claimed to compress what it did not would make every "
-                  f"decision below it rest on a sentence the platform invented"
+                  f"decision below it rest on a sentence the platform invented. "
+                  f"{_observed} of them were written by the OBSERVING SEAM and nothing acted on their "
+                  f"decision — each carries gated=False with the reason, because an ESCALATE nobody "
+                  f"enforced is not an escalation. The stored history is capped at {kernel._CAP} rows, "
+                  f"oldest dropped first, so the earliest row here is not necessarily the first thing "
+                  f"that ever happened"
                   if rows else
                   "no request has been observed yet, which is not the same as none having been refused"),
     }
@@ -217,6 +228,19 @@ async def horizon_states(user: dict | None = Depends(get_current_user)) -> Dict[
             kernel.NOT_ASSESSABLE: ("the record could not be read, so no term could be evaluated. This "
                                     "is not a quiet PROCEED"),
         },
+        #  W554 — THE FOUR REASONS A RECORD IS NOT COMPRESSED, each a different fact. One sentence
+        #  covering all of them would attribute the absence to whichever component the sentence named.
+        "not_compressed_reasons": {
+            "no_compressor_was_called": ("the OBSERVING SEAM wrote this record. No model was asked what "
+                                        "the request meant, because a model call in front of every "
+                                        "domain request would make each one wait on an LLM"),
+            "served_by_a_non_compressor": ("a call was made and the deterministic floor (or a template) "
+                                           "served it. It composes structured output from the request "
+                                           "and infers nothing. THE ORDINARY PATH for /observe here"),
+            "the_call_produced_no_text": "a call was made and came back empty, or raised",
+            "compressed": ("not a reason — listed for contrast: a model served the compression and the "
+                           "record names which one"),
+        },
         "escalation_domains": list(kernel.ESCALATION_DOMAINS),
         "compression_fields": list(kernel._COMPRESSION_FIELDS),
         "no_blended_score": True,
@@ -228,4 +252,21 @@ async def horizon_states(user: dict | None = Depends(get_current_user)) -> Dict[
         "reflection_tag": ("the user's own words, optional, user-set and user-cleared. No AI, agent or "
                            "engine may write it: the write route refuses an identity that does not name "
                            "a user"),
+        "seam": "see GET /api/v1/horizon/seam — it observes and records; it does not gate",
     }
+
+
+@router.get("/seam")
+async def horizon_seam(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """What the Horizon seam watches, what it EXCLUDES, and what it has recorded (W554, P2.11).
+
+    The seam is the item body's own sentence made real: a middleware in front of the domain routes plus a
+    hook where the run paths already call operational_excellence.record_outcome. This route exists because
+    a limit a user cannot read is a limit only its author knows — the excluded methods and the excluded
+    run kind are reported here with their reasons, beside the counts of what was observed.
+
+    IT DOES NOT GATE, and that is the first field. A stored ESCALATE that nothing acted on is the most
+    misleading row this store can hold, so every row the seam writes carries gated=False with the reason.
+    """
+    from agentic_core.horizon import membrane
+    return membrane.report()
