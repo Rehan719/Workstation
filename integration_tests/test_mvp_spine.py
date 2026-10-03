@@ -31152,8 +31152,16 @@ def test_w543_a_cycle_reports_a_measured_figure_or_says_it_cannot(client, tmp_pa
     for _n, c in rows2.items():
         assert c["setpoint_is_aspiration"] is True, (_n, "a setpoint with no unit is presented as a target", c)
         assert "deviation" not in c, (_n, "a deviation was computed across units", c)
-        assert "NO UNIT" in c["setpoint_basis"], (_n, c["setpoint_basis"])
-        assert "SAME UNIT" in c["deviation_basis"], (_n, c["deviation_basis"])
+        #  W544 — THIS ASSERTED ONE WORDING AND W544 MADE THE REFUSAL COMPUTED. The original pinned the
+        #  phrase "NO UNIT", which was true while the surface withheld every deviation under a blanket
+        #  rule; now that it compares the two units, water's refusal correctly says something else
+        #  entirely (its setpoint declares degrees, its binding measures virtual WST). The property is
+        #  that the refusal is PRESENT AND REASONED, not that it uses a particular sentence — pinning a
+        #  spelling is what cost two full suites earlier in this programme.
+        assert c["deviation_basis"].startswith("NOT COMPUTED:"), (_n, c["deviation_basis"])
+        assert len(c["deviation_basis"]) > 60, (_n, "a refusal with no reason", c["deviation_basis"])
+        assert "ASPIRATION" in c["setpoint_basis"] or "COMPARABLE" in c["setpoint_basis"], (
+            _n, c["setpoint_basis"])
 
     # ── L5. A GAIN IS A DEFAULT UNTIL TUNED, AND THE RECORD SAYS SO ───────────────────────────────
     for _n, c in rows2.items():
@@ -31311,3 +31319,174 @@ def test_w543_a_fresh_backend_also_refuses_to_bind_what_nothing_measures(tmp_pat
     assert out["bound_carry_reader"] is True, out
     #  and the reservoir literal is still not a reading, in a process that has imported nothing else
     assert out["sense_assessable"] is False and out["sense_homeostatic"] is None, out
+
+
+def test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_complete(client):
+    """P3.19 Round 2: water stops being the outlier, and FU-243's record is checked rather than read.
+
+    Two legs here are completeness checks over a DOCUMENT, which is unusual and deliberate: FU-243's
+    deliverable IS a record, so the only way it can fail is by omitting a module or by claiming a
+    recovery that did not happen. Both are computed from the archive directory and the live tree rather
+    than taken from the prose.
+    """
+    import ast
+    import asyncio as _aio
+    import pathlib
+    import re
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    # ── L1. THE COMPARABILITY RULE REACHES ALL FIVE OUTCOMES, including the one the route cannot ──
+    #  No cycle satisfies the comparable case today, so the branch that reports a deviation is
+    #  unreachable through the route. An unreachable branch is code nobody has run, which is why the
+    #  decision is a function the surface calls and this leg drives directly.
+    from agentic_core.api.cycles import comparability
+    _cases = [
+        ((False, None, None), False, "nothing measures"),
+        ((True, None, "virtual WST"), False, "NO UNIT for its setpoint"),
+        ((True, "degrees", None), False, "reports no unit"),
+        ((True, "degrees", "virtual WST"), False, "incommensurable units"),
+        ((True, "virtual WST", "virtual WST"), True, ""),
+    ]
+    for _args, _want, _needle in _cases:
+        _ok, _why = comparability(*_args)
+        assert _ok is _want, (_args, "the comparability rule disagrees", _ok, _why)
+        if _want:
+            assert _why == "", (_args, "a comparable pair carries a refusal reason", _why)
+        else:
+            assert _needle in _why, (_args, _needle, _why)
+
+    # ── L2. WATER IS ONE OF THE FIVE NOW: shared base class, shared controller, a sense() ─────────
+    from agentic_core.biomimicry.cycles import base_cycle as _bc
+    from agentic_core.biomimicry.cycles.water_cycle import HydrologicManager
+    assert issubclass(HydrologicManager, _bc.GeosphericCycle), (
+        "water still extends nothing, so it inherits none of the three-state work")
+    _w = HydrologicManager(None, None, None)
+    assert type(_w.pid) is _bc.PIDController, (
+        "water uses a controller that is not the shared one", type(_w.pid))
+    #  NO SECOND CONTROLLER IN THAT MODULE, asserted on the AST: a class definition, not a mention. The
+    #  module's own docstring describes the duplicate it removed, so a text search would match that.
+    _wt = ast.parse((_root / "agentic_core/biomimicry/cycles/water_cycle.py").read_text(encoding="utf-8"))
+    _classes = [n.name for n in ast.walk(_wt) if isinstance(n, ast.ClassDef)]
+    assert "PIDController" not in _classes, (
+        "water_cycle declares its own controller again; a second copy of control logic is a second place "
+        "it can drift", _classes)
+    assert _w.pid.gains_tuned is False and (_w.pid.gains_basis or "").strip(), (
+        "water's gains carry no provenance, which is what extending the shared controller is for")
+
+    # ── L3. ITS SETPOINT DECLARES A UNIT, AND THE SURFACE REFUSES BY NAMING BOTH ─────────────────
+    from agentic_core.economy.ledger import VirtualLedger
+    _vsb = "vsb-w544-guard"
+    VirtualLedger(_vsb).record("reserves", 512.0, memo="w544 guard", kind="credit")
+    j = client.get("/api/v1/cycles", params={"vsb_id": _vsb}).json()
+    rows = {c["name"]: c for c in j["cycles"]}
+    _wr = rows["water"]
+    assert _wr["assessable"] is True, _wr
+    assert _wr["setpoint_unit"], ("water's setpoint declares no unit, so its refusal is a rule rather "
+                                  "than a measurement", _wr)
+    assert _wr["measured_unit"], _wr
+    assert _wr["setpoint_unit"] != _wr["measured_unit"], _wr
+    #  the refusal NAMES BOTH SIDES, so a reader can see why rather than being told no
+    assert _wr["setpoint_unit"] in _wr["deviation_basis"], _wr["deviation_basis"]
+    assert _wr["measured_unit"] in _wr["deviation_basis"], _wr["deviation_basis"]
+    assert "deviation" not in _wr, ("a deviation across units came back", _wr)
+    #  and the cycles whose setpoint states no unit refuse for THAT reason, not water's
+    assert "NO UNIT for its setpoint" in rows["carbon"]["deviation_basis"], rows["carbon"]["deviation_basis"]
+
+    # ── L4. WATER'S THREE STATES, driven ──────────────────────────────────────────────────────────
+    _s = _aio.run(_w.sense())
+    assert _s["assessable"] is False and _s["homeostatic"] is None, ("water reports a reading", _s)
+    assert "literal set in __init__" in _s["basis"], _s["basis"]
+    _r = _aio.run(_w.regulate())
+    assert _r["correction"] is None and "NOT REGULATED" in _r["basis"], _r
+    #  the measured path works and is three-state, like the other five
+    _m = _aio.run(_w.regulate_homeostasis(78.0))
+    assert isinstance(_m["correction"], float) and _m["status"] in ("within_tolerance", "deviation"), _m
+    assert _w.setpoint_unit in _m["basis"], _m["basis"]
+    _n = _aio.run(_w.regulate_homeostasis(None))
+    assert _n["correction"] is None and _n["status"] == "not_assessable", _n
+
+    # ── L5. THE METAPHOR'S LITERALS TRAVEL WITH THEIR FIGURES ────────────────────────────────────
+    _e = _aio.run(_w.evaporate(40.0))
+    assert isinstance(_e, dict), ("evaporate returns a bare number again, so an untuned literal is "
+                                  "applied to it invisibly", _e)
+    assert _e["efficiency_applied"] == 0.85 and "DECLARED, NOT MEASURED" in _e["basis"], _e
+    assert _e["returned"] == 40.0 * 0.85, _e
+    _c = _aio.run(_w.condense())
+    assert isinstance(_c, dict) and "DECLARED, NOT MEASURED" in _c["basis"], _c
+
+    # ── L6. THE ARCHIVE RECORD COVERS EVERY ARCHIVED MODULE — computed, not claimed ──────────────
+    _arch = _root / "_archive/jules-unwired/agentic_core/biomimicry"
+    _modules = sorted(q.stem for q in _arch.glob("*.py") if q.stem != "__init__")
+    assert len(_modules) >= 7, ("the archive is smaller than the row describes", _modules)
+    _doc = (_root / "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md").read_text(encoding="utf-8")
+    _section = _doc.split("read and decided")[-1]
+    #  (a) THE RECORD MUST STATE THE TRUE TOTAL. This is the leg that earned its place: the first draft of
+    #  that section said the archive held ten modules, because the directory listing it was written from
+    #  was truncated. There are 33. A record that covers ten of them while reading as a survey of the
+    #  layer is a precise-looking account of work that was not done — which is what the table convicts one
+    #  of the modules of. The number is computed here, so the prose cannot drift from the directory.
+    assert str(len(_modules)) in _section, (
+        f"the record does not state the archive's real module count ({len(_modules)}), so a reader cannot "
+        f"tell how much of the layer it covers")
+    #  AND NO OTHER COUNT CLAIM MAY CONTRADICT IT. Asserting only that the true figure APPEARS is weak:
+    #  a sweep proved it, by adding "(ten of them)" beside the correct 33 and watching this leg pass. So
+    #  every count the record states about these modules is collected and checked against the figures the
+    #  record is entitled to quote — the real total, the ten it assesses, the twenty-three it names and
+    #  the seven the row named. A document that contradicts itself about how much it covers is exactly
+    #  the defect its own table convicts one of these modules of.
+    _WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+              "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "twenty-three": 23,
+              "thirty-three": 33}
+    _allowed = {len(_modules), 10, len(_modules) - 10, 7, 4}
+    _claims = []
+    for _m in re.finditer(r"\b([\w-]+)\b[\s*]*(?:of them|modules?\b|top-level)", _section, re.I):
+        _tok = _m.group(1).lower()
+        _n = _WORDS.get(_tok, int(_tok) if _tok.isdigit() else None)
+        if _n is not None:
+            _claims.append((_n, " ".join(_section[max(0, _m.start() - 30):_m.end()].split())))
+    _bad = [c for c in _claims if c[0] not in _allowed]
+    assert not _bad, (
+        f"the record states a module count that is none of its entitled figures {sorted(_allowed)}; a "
+        f"survey that contradicts itself about its own coverage reads as complete while it is not",
+        _bad[:3])
+    assert _claims, "no count claim was found at all, so this consistency check could not fail"
+    #  (b) EVERY MODULE IN THE RECORD'S DECLARED SCOPE IS DECIDED, and every module outside it is NAMED.
+    _every = [m for m in _modules if m in _section]
+    assert len(_every) == len(_modules), (
+        "the record neither decides nor names archived module(s), so the gap is invisible",
+        [m for m in _modules if m not in _section])
+    #  every row reaches a VERDICT — a reading with no decision is not a decision
+    _table = [ln for ln in _section.splitlines() if ln.startswith("| `")]
+    assert len(_table) >= 10, ("the record's table is shorter than its stated scope", len(_table))
+    for _row in _table:
+        assert re.search(r"RECOVERABLE|SUPERSEDED|DO NOT RECOVER|NEEDS AN EVENT SOURCE", _row), (
+            "the record reads a module without deciding it", _row[:160])
+
+    # ── L7. AND THE "NOT RECOVERED" CLAIM IS TRUE: no live module imports the archive at all ────
+    #  The first version of this leg collected importers and then filtered them for "_archive" in the
+    #  IMPORTING file's path — which is never true, since every live file is under agentic_core. It could
+    #  not fail. The property that matters is the opposite direction: no live module may import FROM the
+    #  archive, which is a statement about the imported module name and is read off the AST.
+    _archive_importers = []
+    for _f in (_root / "agentic_core").rglob("*.py"):
+        try:
+            _ft = ast.parse(_f.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for _n in ast.walk(_ft):
+            _mods = []
+            if isinstance(_n, ast.Import):
+                _mods = [a.name for a in _n.names]
+            elif isinstance(_n, ast.ImportFrom):
+                _mods = [_n.module or ""]
+            for _m in _mods:
+                if "_archive" in _m:
+                    _archive_importers.append(f"{_f.relative_to(_root)}:{_n.lineno} -> {_m}")
+    assert not _archive_importers, (
+        "live code imports the archive, so a module this record calls 'not recovered' is in fact running",
+        _archive_importers[:5])
+    #  and the archived modules are genuinely still only in the archive
+    for _m_name in _modules:
+        assert not (_root / "agentic_core" / "biomimicry" / f"{_m_name}.py").exists(), (
+            f"{_m_name}.py now exists in the live tree, so the record's verdict for it is out of date")

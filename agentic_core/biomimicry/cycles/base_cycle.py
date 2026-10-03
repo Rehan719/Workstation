@@ -53,10 +53,19 @@ class PIDController:
         return output
 
 class GeosphericCycle(ABC):
-    def __init__(self, name: str, setpoint: float, tolerance: float = 0.05):
+    def __init__(self, name: str, setpoint: float, tolerance: float = 0.05,
+                 setpoint_unit: Optional[str] = None):
         self.name = name
         self.setpoint = setpoint
         self.tolerance = tolerance
+        #  W544 — THE UNIT, DECLARED OR ADMITTED ABSENT. W543 found that comparing a cycle's measured
+        #  figure to its setpoint produced arithmetically sound nonsense — a liquidity of 900 virtual WST
+        #  against water's setpoint of 75.0, which water_cycle.regulate_homeostasis(current_temp) shows to
+        #  be a temperature — and refused every deviation with a blanket rule. A blanket rule is an
+        #  assertion; this field lets the surface COMPUTE the refusal instead, by comparing the unit a
+        #  setpoint declares against the unit the binding measures in. None means no unit was ever stated,
+        #  which is the honest answer for five of the six and is not the same as a mismatch.
+        self.setpoint_unit = setpoint_unit
         self.reservoirs: dict = {}
 
     @abstractmethod

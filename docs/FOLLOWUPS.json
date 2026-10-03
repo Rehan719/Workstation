@@ -4168,8 +4168,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W544",
       "note": "",
       "tier": 3,
       "area": "organism",
@@ -6210,10 +6210,27 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.19",
+      "status": "done",
+      "closed_by": "W544",
+      "note": "",
+      "slot_source": "the remaining sixth of this item's own six-cycle work, alongside FU-243",
+      "tier": 2
+    },
+    {
+      "id": "FU-356",
+      "title": "Twenty-three of the archive's thirty-three biomimetic modules are named but unassessed, and the record that names them was almost published claiming there were ten",
+      "why": "Measured W544 while writing FU-243's read-then-decide record. _archive/jules-unwired/agentic_core/biomimicry/ holds 33 top-level .py files totalling 2,693 lines, plus four subdirectories. FU-243 names seven of them and calls them 'six biomimetic layer modules'; the record assesses ten (the seven plus apoptosis, autophagy, avatar). THE FIRST DRAFT OF THAT RECORD STATED THE ARCHIVE HELD TEN, because the directory listing it was written from was truncated at fourteen entries and nobody re-counted — a precise-looking survey of a layer, covering under a third of it. The round's own completeness leg caught it by comparing the table against the directory, and the record now states the measured total and names all 23 unassessed modules: ethical_transparency, federated_learning, fitness, gaas_validator, hal, marketplace, metabolism, module_generator, module_library, moo, morphogenesis, mycelium, nas, octopus, optimizer, predictive, recombination_validator, recombiner, resilience_manager, summarizer, swarm_formation, symbiosis, tournament. SEVERAL OF THESE NAMES MATTER MORE THAN THE TEN ALREADY READ: gaas_validator, fitness, recombination_validator and predictive are names that imply verdicts about work or about entities, which is exactly where this programme keeps finding fabricated scores. FIX: extend the same table — what computes, what fabricates, verdict with a reason — over the 23, highest-risk names first (anything that scores, validates, ranks or predicts), and check each against Ruling A.9.5 (no AI verdict on a person) before any recovery.",
+      "source": "W544 (the round's own completeness leg caught the overclaim)",
+      "found": "2026-10-03",
+      "files": [
+        "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the remaining sixth of this item's own six-cycle work, alongside FU-243",
       "tier": 2
     }
   ],
@@ -6282,7 +6299,7 @@
       "handed_from": "P3.18"
     },
     {
-      "slot": "P3.19",
+      "slot": "P2.4",
       "files": [
         "agentic_core/biomimicry/geospheric/regulator.py",
         "agentic_core/biomimicry/geospheric/homeostatic_regulator.py",
@@ -6294,7 +6311,8 @@
         "cycle setpoint",
         "sovereign wealth"
       ],
-      "note": "W484 — the six cycles bound to measured flows (the geospheric regulators and the causal simulator)"
+      "note": "handed from P3.19; W484 — the six cycles bound to measured flows (the geospheric regulators and the causal simulator)",
+      "handed_from": "P3.19"
     },
     {
       "slot": "P2.4",

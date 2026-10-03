@@ -43,13 +43,20 @@ def _unassessable(reader: str, why: str) -> Dict[str, Any]:
     A None value invites `value or 0`, which is how the figure comes back. The key is simply not there,
     so a consumer that wants a number has to confront the assessable flag to get one.
     """
-    return {"assessable": False, "measured_from": None,
+    return {"assessable": False, "measured_from": None, "unit": None,
             "basis": f"NOT ASSESSED: {why} (reader consulted: {reader})"}
 
 
-def _assessed(value: float, reader: str, what: str) -> Dict[str, Any]:
-    return {"assessable": True, "value": float(value), "measured_from": reader,
-            "basis": f"{what} = {value}, read from {reader}"}
+def _assessed(value: float, reader: str, what: str, unit: str) -> Dict[str, Any]:
+    """W544 — `unit` is required, not optional.
+
+    A reading with no unit cannot be compared to anything, and W543 proved what happens when it is tried
+    anyway: a liquidity in virtual WST was divided by a setpoint that turned out to be a temperature. The
+    surface now decides whether a deviation is meaningful by comparing this unit against the one the
+    cycle's setpoint declares, which is a computation rather than a blanket rule.
+    """
+    return {"assessable": True, "value": float(value), "measured_from": reader, "unit": unit,
+            "basis": f"{what} = {value} ({unit}), read from {reader}"}
 
 
 def water(vsb_id: Optional[str] = None) -> Dict[str, Any]:
@@ -78,9 +85,10 @@ def water(vsb_id: Optional[str] = None) -> Dict[str, Any]:
     #  post(revenue, reserves, 500) leaves the pots at 750 while the chart reads -500 on both sides.
     #  Reporting one of them as "the ledger balance" without saying which would be the over-claim.
     return _assessed(total, "agentic_core/economy/ledger.py::VirtualLedger.balances",
-                     f"the sum of {len(bal)} WATERFALL POT balance(s) for {vsb_id} in virtual WST — the "
-                     f"projection `record()` maintains, NOT the double-entry account chart that `post()` "
-                     f"writes; the two are maintained separately and can disagree (see FU register)")
+                     f"the sum of {len(bal)} WATERFALL POT balance(s) for {vsb_id} — the projection "
+                     f"`record()` maintains, NOT the double-entry account chart that `post()` writes; the "
+                     f"two are maintained separately and can disagree (see the register)",
+                     unit="virtual WST")
 
 
 def carbon(vsb_id: Optional[str] = None) -> Dict[str, Any]:
@@ -102,7 +110,8 @@ def carbon(vsb_id: Optional[str] = None) -> Dict[str, Any]:
                              f"the ledger for {vsb_id} could not be read ({e.__class__.__name__}: {e})")
     return _assessed(tb.get("postings", 0), "agentic_core/economy/ledger.py::VirtualLedger.trial_balance",
                      f"the cumulative count of recorded postings for {vsb_id} — ACTIVITY, not a growth "
-                     f"rate: a rate needs two readings in time and no series of this figure is stored")
+                     f"rate: a rate needs two readings in time and no series of this figure is stored",
+                     unit="postings (a count, not a rate)")
 
 
 def oxygen(vsb_id: Optional[str] = None) -> Dict[str, Any]:
@@ -122,7 +131,8 @@ def oxygen(vsb_id: Optional[str] = None) -> Dict[str, Any]:
     #  must not be confused with "could not be measured".
     return _assessed(beats, "agentic_core/organism/heartbeat.py::OrganismHeartbeat.status",
                      f"beats completed by the organism heartbeat (running={st.get('running')}; a "
-                     f"stopped beat genuinely measures 0, which is not the same as unmeasured)")
+                     f"stopped beat genuinely measures 0, which is not the same as unmeasured)",
+                     unit="beats (a count)")
 
 
 def nitrogen(vsb_id: Optional[str] = None) -> Dict[str, Any]:

@@ -53,6 +53,32 @@ _TOLERANCE_BASIS = ("the ±5% tolerance is DECLARED by the three outside specifi
                     "(docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md), not derived from this platform's data")
 
 
+def comparability(assessable: bool, setpoint_unit: Optional[str],
+                  measured_unit: Optional[str]) -> tuple:
+    """Whether a deviation between a measurement and a setpoint means anything, and why not when it does
+    not. Returns (comparable, why_not).
+
+    W544 — THIS IS A FUNCTION RATHER THAN AN INLINE CONDITION FOR ONE REASON: no cycle satisfies it today,
+    so the branch that reports a deviation is unreachable through the route, and an unreachable branch is
+    code nobody has ever run. Pulling the decision out lets a guard drive all four outcomes — unmeasured,
+    no setpoint unit, no measured unit, units that differ — and the fifth, agreement, which is the one the
+    route cannot currently produce. The route calls this, so the test and the surface share one rule
+    instead of two copies that can drift apart.
+    """
+    if not assessable:
+        return False, "nothing measures the variable it names, so there is nothing to compare it to"
+    if not setpoint_unit:
+        return False, ("this cycle's module states NO UNIT for its setpoint, so the setpoint cannot be "
+                       f"compared with the {measured_unit} its binding measures")
+    if not measured_unit:
+        return False, "the binding reports no unit for its figure, so it cannot be compared with anything"
+    if setpoint_unit != measured_unit:
+        return False, (f"the setpoint is in {setpoint_unit} and the measurement is in {measured_unit}. "
+                       f"Comparing them would be arithmetic over incommensurable units: real inputs, real "
+                       f"division, a meaningless figure")
+    return True, ""
+
+
 async def _declared(name: str) -> Dict[str, Any]:
     """The setpoint, tolerance and gains a cycle module declares — read, not retyped.
 
@@ -90,6 +116,7 @@ async def _declared(name: str) -> Dict[str, Any]:
                       "basis": f"the cycle's own sense() raised {e.__class__.__name__}: {e}"}
         return {
             "declared_sense": _sense,
+            "setpoint_unit": getattr(obj, "setpoint_unit", None),
             "setpoint": getattr(obj, "setpoint", None) or getattr(pid, "setpoint", None),
             "tolerance": getattr(obj, "tolerance", None),
             "gains": ({"kp": pid.kp, "ki": pid.ki, "kd": pid.kd} if pid is not None else None),
@@ -100,7 +127,7 @@ async def _declared(name: str) -> Dict[str, Any]:
         }
     except Exception as e:                       # noqa: BLE001 — an unreadable declaration is reported
         #  the same key set as the success branch above, so a reader never meets a missing field
-        return {"declared_sense": None,
+        return {"declared_sense": None, "setpoint_unit": None,
                 "setpoint": None, "tolerance": None, "gains": None, "gains_tuned": False,
                 "gains_basis": (f"NOT READ: {mod_name}.{cls_name} could not be constructed "
                                 f"({e.__class__.__name__}: {e}), so its declared gains are unknown"),
@@ -116,6 +143,15 @@ async def list_cycles(vsb_id: Optional[str] = None,
     for name, b in bound.items():
         d = await _declared(name)
         assessable = bool(b.get("assessable"))
+        #  W544 — THE REFUSAL IS COMPUTED, NOT ASSERTED. W543 withheld every deviation under a blanket
+        #  rule ("no setpoint declares a unit"), which was true then and is an assertion either way: a
+        #  rule hard-coded into a surface stops being checked the moment it stops being true. The two
+        #  units are now compared. A deviation is meaningful only when the variable is measured, both
+        #  sides state a unit, and those units match — and water is the case that proves it matters: its
+        #  setpoint now declares itself a temperature while its binding measures virtual WST.
+        _su, _mu = d["setpoint_unit"], b.get("unit")
+        _comparable, _why_not = comparability(assessable, _su, _mu)
+        _aspiration = not _comparable
         row: Dict[str, Any] = {
             "name": name,
             "subject": b.get("subject"),
@@ -133,15 +169,14 @@ async def list_cycles(vsb_id: Optional[str] = None,
             #  That is this item's own defect class one level further in, and it was committed inside the
             #  fix for it. NO SETPOINT IN THESE SIX MODULES DECLARES A UNIT, so none of them is comparable
             #  to the figure its cycle is now bound to, and every one of them stays an aspiration.
-            "setpoint_is_aspiration": True,
+            "setpoint_is_aspiration": _aspiration,
+            "setpoint_unit": d["setpoint_unit"],
+            "measured_unit": b.get("unit"),
             "setpoint_basis": (
-                f"the setpoint {d['setpoint']} is a target this cycle's module declares as a bare number "
-                f"with NO UNIT stated anywhere"
-                + (f", and the figure this cycle is bound to is measured in a different quantity "
-                   f"({b.get('basis', '')[:60]}...). Comparing them would be arithmetic over "
-                   f"incommensurable units, so no deviation is reported"
-                   if assessable else
-                   ", and nothing measures the variable it names, so there is nothing to compare it to")),
+                f"the setpoint {d['setpoint']} ({_su or 'no unit declared'}) is a target this cycle's "
+                f"module declares"
+                + (f"; it is COMPARABLE to the measured figure, both being in {_su}"
+                   if _comparable else f", and it is an ASPIRATION because {_why_not}")),
             "tolerance": d["tolerance"],
             "tolerance_basis": _TOLERANCE_BASIS,
             "gains": d["gains"],
@@ -151,15 +186,21 @@ async def list_cycles(vsb_id: Optional[str] = None,
             #  the cycle class's own reading, now on a surface
             "declared_sense": d["declared_sense"],
         }
-        #  NO DEVIATION KEY ON ANY CYCLE, AND NOT A NULL EITHER — the keys are absent. Two conditions
-        #  must hold before a deviation means anything: the variable must be measured, and the setpoint
-        #  must be in the same unit as the measurement. The first holds for three cycles; the second
-        #  holds for none, because no setpoint in these modules states a unit at all. A null beside a
-        #  setpoint invites `deviation ?? 0`; an absent key forces a consumer to read the basis.
-        row["deviation_basis"] = (
-            "NOT COMPUTED: a deviation needs the measurement and the setpoint in the SAME UNIT, and none "
-            "of the six setpoints declares a unit. Binding a unit to each setpoint is the work that makes "
-            "a deviation reportable — until then the figure would be arithmetically sound and meaningless")
+        #  THE DEVIATION KEYS EXIST ONLY WHERE THE COMPARISON IS MEANINGFUL, and they are ABSENT rather
+        #  than null everywhere else: a null invites `deviation ?? 0`, and that zero is perfect
+        #  homeostasis. Today no cycle satisfies the test, so no cycle carries the keys — but the surface
+        #  reaches that answer by comparing units rather than by holding a rule, so the day a setpoint
+        #  and its binding do agree, the figure appears without anyone editing this file.
+        if _comparable and isinstance(d["setpoint"], (int, float)) and d["setpoint"]:
+            _dev = abs(float(b["value"]) - float(d["setpoint"])) / float(d["setpoint"])
+            _tol = d["tolerance"] if isinstance(d["tolerance"], (int, float)) else None
+            row["deviation"] = round(_dev, 6)
+            row["within_tolerance"] = (_dev <= _tol) if _tol is not None else None
+            row["deviation_basis"] = (
+                f"|{b['value']} - {d['setpoint']}| / {d['setpoint']}, both in {_su}; tolerance {_tol} "
+                f"({_TOLERANCE_BASIS})")
+        else:
+            row["deviation_basis"] = f"NOT COMPUTED: {_why_not}"
         out.append(row)
 
     _bound_n = sum(1 for r in out if r["assessable"])

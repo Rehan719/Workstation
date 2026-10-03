@@ -185,3 +185,62 @@ Proposal #6's protocol tier (MCP · A2A · ACP · FIPA-ACL) is a separate and al
 repository's agents talk through `agentic_core/api/agent_hub.py` (W443), not a protocol stack.
 Adopting MCP or A2A is an Owner-level architecture decision, not a recovery, and it is not planned
 here.
+
+## The archived biomimetic layer, read and decided (W544 — FU-243)
+
+FU-243 asked for a read-then-decide record over the archived biomimetic layer: read each module, recover
+what computes, delete the orphan `.pyc` for what does not, and record which was which. This is that record.
+**Nothing here is recovered into the live tree by this round** — a recovery is a build with a consumer, and
+each verdict below says what a recovery would require.
+
+**TWO OF THE ROW'S OWN PREMISES WERE WRONG, measured before anything was decided.**
+
+1. **There are no orphan `.pyc` files.** The row says "the live `agentic_core/biomimicry/` keeps an orphan
+   `.pyc` for each", which "makes the package look populated". Measured: `agentic_core/biomimicry/__pycache__/`
+   contains exactly one file, `__init__.cpython-312.pyc`. So the delete half of the FIX is already
+   satisfied — by the earlier `.pyc` sweep, not by this round — and nothing was deleted here.
+2. **The archive holds THIRTY-THREE modules, not six — and this record's first draft said ten.** The row
+   names seven files and calls them "six biomimetic layer modules". Measured:
+   `_archive/jules-unwired/agentic_core/biomimicry/` holds **33 top-level `.py` files totalling 2,693
+   lines**, plus four subdirectories (`adapters/`, `capital/`, `cascade/`, `cycles/`).
+   **The first draft of this section claimed ten, because the directory listing it was written from was
+   truncated at fourteen entries and nobody re-counted.** The completeness leg in
+   `test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_complete` caught it by
+   comparing this table against the directory, which is the whole reason that leg computes its list
+   instead of trusting this prose.
+
+   **SCOPE OF THIS RECORD, stated rather than implied:** the ten modules below are FU-243's seven named
+   files plus the three siblings adjacent to them (`apoptosis.py`, `autophagy.py`, `avatar.py`). The other
+   twenty-three are NOT assessed here and are named so that the gap is visible:
+   `ethical_transparency`, `federated_learning`, `fitness`, `gaas_validator`, `hal`, `marketplace`,
+   `metabolism`, `module_generator`, `module_library`, `moo`, `morphogenesis`, `mycelium`, `nas`,
+   `octopus`, `optimizer`, `predictive`, `recombination_validator`, `recombiner`, `resilience_manager`,
+   `summarizer`, `swarm_formation`, `symbiosis`, `tournament`. A record that quietly covered ten of
+   thirty-three while reading as a survey of the layer would be the same defect the table below convicts
+   `autophagy.py` of: a precise-looking account of work that was not done.
+
+**AND THE PACKAGE DOES NOT LOOK POPULATED FOR THE REASON THE ROW GIVES.** It looks populated because a
+sibling does real work: `agentic_core/biomimicry/cycles/utils.py` exports `constitutional_guard`, which ten
+cognitive engines import. A reachability check that greps the package therefore finds a crowd of importers
+and concludes the layer runs. That is why W543 measured reach per CLASS rather than per package.
+
+| module | lines | what COMPUTES | what is FABRICATED or DECLARED-MOCK | verdict |
+|---|---|---|---|---|
+| `ant_colony.py` | 96 | **The algorithm is real.** A pheromone table keyed subject → agent → level; `deposit_pheromone` is genuine positive feedback; `decay_pheromones` multiplies by `(1 - 0.1)` for evaporation; `allocate_task` selects by highest pheromone and broadcasts when the table is empty. | The NATS transport is a **declared** `MockNATS`, and `initialize()` logs a warning when the real connect fails — honest about itself. | **RECOVERABLE ALGORITHM, NO CONSUMER.** The stigmergy computes and is worth keeping. A recovery needs a real task-allocation consumer on this platform and a transport; NATS is not installed. Recovering it without a consumer would add a scheduler nothing schedules — the exact state the six cycles were in before W543. |
+| `homeostasis.py` | 54 | **Computes over caller-supplied input.** `monitor_vitals(current_vitals)` takes vitals from its caller rather than inventing them, and computes a real latency delta against its setpoints. | Setpoints (`cpu_target` 70.0, `latency_target_ms` 10.0) are literals with no provenance. It indexes `current_vitals["latency_ms"]` directly, so a missing key raises rather than reporting a third state. | **SUPERSEDED, NOT RECOVERED.** A live homeostasis path already exists and is better wired: `agentic_core/api/organism_status.py` computes an adjustment and **files it through the Change Control Agency**. Recovering this would be a second homeostasis with no governance path. |
+| `emergence.py` | 75 | **Counts real markers from real events.** `ingest_event` increments per-agent counters for leadership, altruism and specialisation from the event payloads it is given. | Nothing fabricated. The counters are only as good as the event source, and it has none. | **COMPUTES, NEEDS AN EVENT SOURCE.** Note on scope: it grades AGENTS, not people, so Ruling A.9.5 is not engaged — but any later recovery must keep it that way. |
+| `immune.py` | 97 | **Computes a score from supplied events** (`score_inc += 0.3` / `+= 0.1` per marker) and `_trigger_adaptive_response` zeroes a trust factor. | The increment weights are literals with no provenance, and a comment states the handoff is simulated. | **SUPERSEDED, NOT RECOVERED.** `agentic_core/genetic_immune/immune_system.py` is live and holds `evaluate_threat`. W543 declined to bind the nitrogen cycle to it for a related reason: it scores a sample a caller supplies and holds no standing figure. |
+| `economy.py` | 57 | `get_balance` reads a real token balance. | `process_yield` applies a **"0.1% daily yield (simulated)"**, and `execute_payout` returns True/False on a balance check alone. | **DO NOT RECOVER.** The live VSB economy (ledger, §4 waterfall, virtual WST) is the real one, and a simulated yield is precisely what it must never contain. |
+| `federation.py` | 78 | `find_node` genuinely sorts and returns the nearest five ids. | Its own docstring says **"Simulated Kademlia DHT"**: `put` writes to a local dict and `get` reads it back. There is no distributed hash table, no network, no peers. | **DO NOT RECOVER AS FEDERATION.** It is a dictionary with a DHT's vocabulary. The honest description of what it does is "a local dict", and recovering it under the name federation would make a single process look like a network. |
+| `communication.py` | 67 | Nothing. | `self.clients` is annotated **"Simulated connected SSE clients"**, and `push_alert` returns `True` unconditionally — reporting a delivered alert with no transport. | **DO NOT RECOVER.** Already settled by Owner ruling: Channels is retired. A notifier that reports success without delivering is a worse surface than no notifier. |
+| `avatar.py` | 68 | **One real thing worth keeping as a RULE, not as code:** `start_stream` refuses when `user_consent` is false. | `synthesize_speech` returns `{"status": "SUCCESS", "latency_ms": 150.0}` — a literal latency for speech it did not synthesise. | **DO NOT RECOVER THE CODE; KEEP THE CONSENT RULE.** A fixed latency reported as measured is the same defect W543 removed from the fabric's health, and W541 from the support answer. |
+| `apoptosis.py` | 46 | Nothing. | `reclaimed_ram_mb = 128.0 # Mock`, emitted as a completed reclamation. | **DO NOT RECOVER.** |
+| `autophagy.py` | 46 | Nothing. | `purged_items = 150`, `pruned_deps = 3`, `reclaimed_space_mb: 45.2` — all literals, emitted as a completed recycling cycle. It purges no cache and prunes no dependency. | **DO NOT RECOVER.** The most instructive of the ten: it logs "Cycle complete" and emits three precise figures for work that never happened. Nothing about the output reveals that. |
+
+**THE TALLY: three compute and have no consumer (`ant_colony`, `emergence`, and `homeostasis` which is also
+superseded), two compute but are superseded by live systems (`homeostasis`, `immune`), and five fabricate
+outright (`economy`, `federation`, `communication`, `avatar`, `apoptosis`, `autophagy` — six by file, five
+by subject, since `avatar` carries one rule worth keeping).** Not one of the ten is recovered into the live
+tree by this round, and the reason is uniform: every module that computes computes over input it is HANDED,
+and this platform has no caller to hand it any. That is the same finding W543 recorded about the six cycles,
+and it is the finding that matters about this whole layer — the algorithms were never the missing part.

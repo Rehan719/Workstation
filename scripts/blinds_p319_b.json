@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "the comparability rule clears a pair whose units differ",
+    "file": "agentic_core/api/cycles.py",
+    "old": "    if setpoint_unit != measured_unit:",
+    "new": "    if False and setpoint_unit != measured_unit:",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "THE DEFECT W543 COMMITTED INSIDE ITS OWN FIX, now expressible as one condition. With this arm gone, water's liquidity in virtual WST is divided by a setpoint in degrees and reported as a deviation: real inputs, real division, a meaningless figure."
+  },
+  {
+    "tag": "the comparability rule refuses a pair that agrees",
+    "file": "agentic_core/api/cycles.py",
+    "old": "    return True, \"\"",
+    "new": "    return False, \"units cannot be compared\"",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "The opposite failure, and just as useless: a rule that always refuses would pass every honesty leg while making the surface incapable of ever reporting a deviation. Proves the comparable branch is reachable, which the route itself cannot currently produce."
+  },
+  {
+    "tag": "water declares no unit for its setpoint",
+    "file": "agentic_core/biomimicry/cycles/water_cycle.py",
+    "old": "                         setpoint_unit=\"degrees (cooling metaphor; not a currency or a volume)\")",
+    "new": "                         setpoint_unit=None)",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "Without the declared unit the refusal collapses back into a blanket rule, and nobody can tell a setpoint that is incomparable from one nobody has described. 75.0 being a TEMPERATURE is the fact that makes water's binding incommensurable."
+  },
+  {
+    "tag": "water keeps its own second controller",
+    "file": "agentic_core/biomimicry/cycles/water_cycle.py",
+    "old": "from .base_cycle import GeosphericCycle, PIDController",
+    "new": "from .base_cycle import GeosphericCycle\n\n\nclass PIDController:\n    def __init__(self, setpoint, kp, ki, kd):\n        self.setpoint, self.kp, self.ki, self.kd = setpoint, kp, ki, kd\n        self._integral = 0.0\n        self._last_error = 0.0\n\n    def compute(self, error, dt=1.0):\n        self._integral += error * dt\n        d = (error - self._last_error) / dt if dt > 0 else 0\n        self._last_error = error\n        return self.kp * error + self.ki * self._integral + self.kd * d",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "The duplicate restored exactly as it was: same algorithm, no gains_tuned, no gains_basis. A second copy of control logic is a second place it can drift, and the provenance fields added for the other five would not exist on it. Asserted on the AST as a class definition, because this module's docstring describes the duplicate it removed."
+  },
+  {
+    "tag": "water reports its reservoir literal as a reading again",
+    "file": "agentic_core/biomimicry/cycles/water_cycle.py",
+    "old": "        return await self.sense_reservoir(\"ocean_share\", \"ocean\")",
+    "new": "        return {\"ocean_share\": self.reservoirs[\"ocean\"], \"assessable\": True,\n                \"homeostatic\": self.is_homeostatic(self.reservoirs[\"ocean\"]),\n                \"basis\": \"literal set in __init__\"}",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "97.0 is the ocean literal. Reporting it as a reading is what the other five did until W543, and water was the one cycle that could not be fixed by that round because it extended nothing."
+  },
+  {
+    "tag": "the evaporation figure hides the literal applied to it",
+    "file": "agentic_core/biomimicry/cycles/water_cycle.py",
+    "old": "        return {\"evaporated\": evap, \"returned\": evap * self.efficiency,",
+    "new": "        return evap * self.efficiency\n        return {\"evaporated\": evap, \"returned\": evap * self.efficiency,",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "The original signature: a bare float with an untuned 0.85 silently applied. A caller receiving that number has no way to know a literal multiplied it, which is how a declared constant comes to read as a measured efficiency."
+  },
+  {
+    "tag": "the archive record states a total that disagrees with the directory",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "holds **33 top-level `.py` files totalling 2,693",
+    "new": "holds **12 top-level `.py` files totalling 2,693",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "THIS ROUND'S OWN MISTAKE, in the form the guard can actually see. The record's first draft said the archive held ten modules, because the listing it was written from was truncated; there are 33. The leg computes the count from the directory, so a stated total that disagrees with what is there cannot survive. A FIRST ATTEMPT AT THIS BLIND was VACUOUS and the blind was wrong, not the guard: it added '(ten of them)' beside the correct figure, and ten is a number this record is entitled to state (it assesses ten), so no numeric consistency check could distinguish it from the legitimate sentence. Contradictory prose in the wrong place is a review problem; a stated total that does not match the directory is a test problem."
+  },
+  {
+    "tag": "a module is read without being decided",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "| **DO NOT RECOVER.** |\n| `autophagy.py`",
+    "new": "| Read; a decision will follow. |\n| `autophagy.py`",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "A read-then-DECIDE record whose rows reach no verdict is a reading list. FU-243 asked for which was which, and 'a decision will follow' is the shape that lets a record look complete while deferring the only part that commits to anything."
+  }
+]
