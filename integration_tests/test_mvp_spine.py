@@ -31601,7 +31601,13 @@ def test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_com
     _modules = sorted(q.stem for q in _arch.glob("*.py") if q.stem != "__init__")
     assert len(_modules) >= 7, ("the archive is smaller than the row describes", _modules)
     _doc = (_root / "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md").read_text(encoding="utf-8")
-    _section = _doc.split("read and decided")[-1]
+    #  ANCHORED ON ITS OWN HEADING, not on a phrase a later heading may share. It was
+    #  `split("read and decided")[-1]`, and when W563 added "## The other twenty-three, read and decided"
+    #  this leg silently began reading THAT section instead — a guard stolen by the section it was meant
+    #  to outlive. The slice runs to the end of the file on purpose: the archive record is now two
+    #  sections, and "every archived module is decided or named" is a property of the record, not of one
+    #  part of it.
+    _section = _doc[_doc.index("## The archived biomimetic layer, read and decided"):]
     #  (a) THE RECORD MUST STATE THE TRUE TOTAL. This is the leg that earned its place: the first draft of
     #  that section said the archive held ten modules, because the directory listing it was written from
     #  was truncated. There are 33. A record that covers ten of them while reading as a survey of the
@@ -31616,9 +31622,22 @@ def test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_com
     #  record is entitled to quote — the real total, the ten it assesses, the twenty-three it names and
     #  the seven the row named. A document that contradicts itself about how much it covers is exactly
     #  the defect its own table convicts one of these modules of.
-    _WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
-              "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "twenty-three": 23,
-              "thirty-three": 33}
+    #  THE WORD MAP IS GENERATED, not listed. It was listed and it stopped at thirteen before jumping to
+    #  twenty-three, so "over fourteen modules" was INVISIBLE to this scan — a blind driven in W563 came
+    #  back VACUOUS and the gap was in the map, not the mutation. A word list that silently fails to
+    #  recognise its subject does not flag and does not clear; it says nothing, which reads as consent.
+    #  Generated over the whole range this record could claim, and the coverage is asserted below.
+    _UNITS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+              "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+              "eighteen", "nineteen"]
+    _WORDS = {_w: _i for _i, _w in enumerate(_UNITS) if _w}
+    for _tens, _base in (("twenty", 20), ("thirty", 30)):
+        _WORDS[_tens] = _base
+        for _i in range(1, 10):
+            _WORDS[f"{_tens}-{_UNITS[_i]}"] = _base + _i
+    assert all(_n in _WORDS.values() for _n in range(1, 34)), (
+        "the word map no longer covers every count this record could state, so a spelled-out figure "
+        "could pass unread")
     _allowed = {len(_modules), 10, len(_modules) - 10, 7, 4}
     _claims = []
     for _m in re.finditer(r"\b([\w-]+)\b[\s*]*(?:of them|modules?\b|top-level)", _section, re.I):
@@ -31640,8 +31659,12 @@ def test_w544_the_sixth_cycle_joins_the_other_five_and_the_archive_record_is_com
     #  every row reaches a VERDICT — a reading with no decision is not a decision
     _table = [ln for ln in _section.splitlines() if ln.startswith("| `")]
     assert len(_table) >= 10, ("the record's table is shorter than its stated scope", len(_table))
+    #  The closed set grew when W563 decided the other twenty-three: those rows carry a verdict AND a
+    #  disposition, so RETIRE / WANTED_REBUILD / NOT_WANTED are decisions here too. The leg still refuses
+    #  a row that reads a module and decides nothing.
     for _row in _table:
-        assert re.search(r"RECOVERABLE|SUPERSEDED|DO NOT RECOVER|NEEDS AN EVENT SOURCE", _row), (
+        assert re.search(r"RECOVERABLE|SUPERSEDED|DO NOT RECOVER|NEEDS AN EVENT SOURCE"
+                         r"|RETIRE|WANTED_REBUILD|NOT_WANTED", _row), (
             "the record reads a module without deciding it", _row[:160])
 
     # ── L7. AND THE "NOT RECOVERED" CLAIM IS TRUE: no live module imports the archive at all ────
@@ -34523,10 +34546,17 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
 
     # ── L3. EVERY MOVED ROW SAYS WHY IT MOVED ────────────────────────────────────────────────────
     #  A reslot with no stated reason is how a row ends up somewhere nobody can justify later.
+    #  THE PROPERTY IS "IT STATES WHY IT IS HERE", NOT "IT NAMES THAT RULING". The first form pinned the
+    #  leg to the twelve rows the ruling moved, so the first row legitimately FILED here afterwards made
+    #  it fail — the FU-365 class, a guard that fails on success. A mover must keep its provenance; a
+    #  native arrival owes a reason, not a date it did not come from.
     for _r in _reg["items"]:
         if _r.get("status") == "open" and _r.get("slot") == "P2.18":
-            _src = _r.get("slot_source") or ""
-            assert "2026-10-03" in _src, (_r["id"], "no slot_source naming the ruling", _src)
+            _src = (_r.get("slot_source") or "").strip()
+            assert _src, (_r["id"], "rides P2.18 with no stated reason for being here")
+            if "P2.4" in _src:
+                assert "2026-10-03" in _src, (
+                    _r["id"], "came out of P2.4 without naming the ruling that moved it", _src)
 
     # ── L4. P2.18's BAR IS DELIVERABLES, AND CARRIES NO ROW ID AT ALL ────────────────────────────
     #  The register's own guard only refuses an id belonging to ANOTHER item, so listing its own would
@@ -34553,5 +34583,182 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
 
     # ── L5. THE RULING IT IMPLEMENTS IS RECORDED AS CONSTITUTION ─────────────────────────────────
     assert "P2.4 IS TWO ITEMS" in _prompt, "the ruling this item implements is not in the plan"
-    assert "P2.18" in _prompt.split("OWNER RULINGS 2026-10-03")[1][:3000], (
+    #  ANCHORED ON THE FULL HEADING. It was split on "OWNER RULINGS 2026-10-03", and the moment a second
+    #  block of the same date was recorded ("2026-10-03b") the slice returned THAT one instead — the same
+    #  collision that stole the W544 archive leg in this round. A date is not an identifier.
+    _r5 = " OWNER RULINGS 2026-10-03 (FIVE, on what actually closes Phase 2"
+    assert _prompt.count(_r5) == 1, ("the five-ruling block of 2026-10-03 is not where it was",
+                                     _prompt.count(_r5))
+    assert "P2.18" in _prompt.split(_r5)[1][:3000], (
         "the ruling block does not name the item the split creates")
+
+
+def test_w563_the_other_twenty_three_archived_modules_are_decided_on_both_axes(client):
+    """FU-356: the W544 record named 23 modules it did not assess. This asserts they are now decided.
+
+    ON TWO AXES, because axis one alone answers the wrong question. Axis one reads the code (verdict);
+    axis two asks whether the capability is wanted here at all (disposition). The second is the answer:
+    ZERO of the twenty-three are WANTED_RECOVER, while for eighteen the vision does call for the
+    capability — so "is it recoverable" was never the question that mattered.
+
+    The completeness leg computes its list from the DIRECTORY, never from this prose, for the reason W544
+    recorded: that section's first draft claimed ten because the listing it was written from was truncated
+    at fourteen and nobody re-counted.
+    """
+    import json as _json563
+    import pathlib as _pl563
+    import re as _re563
+
+    _root = _pl563.Path(__file__).resolve().parents[1]
+    _doc = (_root / "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md").read_text(encoding="utf-8")
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _reg = _json563.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+
+    _mark = "## The other twenty-three, read and decided (W563"
+    assert _mark in _doc, "the W563 record is not in the review doc"
+    _sec = _doc[_doc.index(_mark):]
+
+    # ── L1. EVERY UNASSESSED MODULE IS NAMED, AND THE LIST COMES FROM THE DIRECTORY ───────────────
+    _arch = _root / "_archive/jules-unwired/agentic_core/biomimicry"
+    assert _arch.is_dir(), "the archived biomimicry package has moved"
+    _all = sorted(p.stem for p in _arch.glob("*.py") if p.stem != "__init__")
+    #  the ten W544 covered: FU-243's seven named files plus the three siblings adjacent to them
+    _w544 = {"ant_colony", "homeostasis", "emergence", "immune", "economy", "federation",
+             "communication", "avatar", "apoptosis", "autophagy"}
+    assert _w544 <= set(_all), ("a module the W544 table covers has left the archive",
+                                sorted(_w544 - set(_all)))
+    _rest = [m for m in _all if m not in _w544]
+    assert len(_rest) == 23, ("the archive no longer holds 33 top-level modules", len(_all), len(_rest))
+    for _m in _rest:
+        assert f"`{_m}.py`" in _sec, (f"{_m}.py is not named in the W563 record — the same gap W544 "
+                                      f"left, one layer along")
+
+    # ── L2. EACH ONE CARRIES A VERDICT AND A DISPOSITION, AND THE TALLIES ARE COMPUTED ────────────
+    #  Not trusted from the prose: the counts come from the table rows and must equal what it claims.
+    _VERDICTS = ("RETIRE", "RECOVERABLE_WITH_REPAIR")
+    _DISPOSITIONS = ("SUPERSEDED", "WANTED_REBUILD", "NOT_WANTED", "WANTED_RECOVER")
+    _rows = [ln for ln in _sec.split("\n") if ln.startswith("| `") and ln.count("|") >= 6]
+    assert len(_rows) == 23, ("the table does not carry one row per module", len(_rows))
+    _seen, _disp = {}, {}
+    for _ln in _rows:
+        _cells = [c.strip() for c in _ln.strip().strip("|").split("|")]
+        _name = _cells[0].strip("`")
+        _vcell, _dcell = _cells[4], _cells[5]
+        _v = [x for x in _VERDICTS if x in _vcell]
+        _d = [x for x in _DISPOSITIONS if x in _dcell]
+        #  EXACTLY ONE, not at-least-one. A cell that names the verdict it was corrected FROM reads as
+        #  both, and a tally computed off it silently takes whichever the code happened to prefer —
+        #  which is how this leg first went red. The ambiguity is forbidden rather than resolved; where
+        #  a correction needs recording, the cell says so without quoting the other verdict's name.
+        assert len(_v) == 1, (_name, "names none or several verdicts in its verdict cell", _vcell[:110])
+        assert len(_d) == 1, (_name, "names none or several dispositions in its cell", _dcell[:110])
+        _seen[_name] = _v[0]
+        _disp[_name] = _d[0]
+    assert len(_seen) == 23, ("a module appears twice in the table", len(_seen))
+    #  The table is the judge of the verdict tally too: it carries the one verdict the verifier changed,
+    #  so the table reads 15/8 while the first pass read 14/9, and the prose must state both.
+    _n_ret = sum(1 for v in _seen.values() if v == "RETIRE")
+    _n_rec = sum(1 for v in _seen.values() if v == "RECOVERABLE_WITH_REPAIR")
+    assert (_n_ret, _n_rec) == (15, 8), ("the verdict tally in the table moved", _n_ret, _n_rec)
+    assert "fourteen RETIRE, nine RECOVERABLE_WITH_REPAIR" in _sec, (
+        "the record no longer states what the first pass found, so the correction becomes invisible")
+    _corrected = " ".join(_sec.split())
+    assert "fifteen and eight after the one verdict-changing correction" in _corrected, (
+        "the record no longer states the corrected tally the table actually carries")
+    _n_sup = sum(1 for d in _disp.values() if d == "SUPERSEDED")
+    _n_reb = sum(1 for d in _disp.values() if d == "WANTED_REBUILD")
+    _n_not = sum(1 for d in _disp.values() if d == "NOT_WANTED")
+    assert (_n_sup, _n_reb, _n_not) == (15, 4, 4), ("the disposition tally moved without the prose",
+                                                    _n_sup, _n_reb, _n_not)
+    assert "fifteen SUPERSEDED, four WANTED_REBUILD, four NOT_WANTED" in _sec, (
+        "the stated tally no longer matches the table it is computed from")
+
+    # ── L3. ZERO ARE WANTED_RECOVER, WHICH IS THE WHOLE FINDING ───────────────────────────────────
+    assert not any(d == "WANTED_RECOVER" for d in _disp.values()), (
+        "a module is marked WANTED_RECOVER while the record's headline says none is",
+        [k for k, v in _disp.items() if v == "WANTED_RECOVER"])
+    assert "ZERO\nWANTED_RECOVER" in _sec or "ZERO WANTED_RECOVER" in _sec, (
+        "the record no longer states that nothing is wanted as a recovery")
+
+    # ── L4. NOTHING IS RECOVERED, AND THAT IS CHECKED IN THE TREE RATHER THAN CLAIMED ─────────────
+    #  A record that says "nothing is recovered" is a sentence; this is the property.
+    _live = _root / "agentic_core/biomimicry"
+    _live_tops = {p.stem for p in _live.glob("*.py")} if _live.is_dir() else set()
+    for _m in _rest:
+        assert _m not in _live_tops, (f"agentic_core/biomimicry/{_m}.py exists — a module this record "
+                                      f"says is not recovered has been recovered")
+    _ref = _re563.compile(r"biomimicry[./\\ ]+(" + "|".join(_rest) + r")\b")
+    _offenders = []
+    for _p in list((_root / "agentic_core").rglob("*.py")) + list(_root.glob("scripts/*.py")):
+        _s = str(_p).replace("\\", "/")
+        if "/_archive/" in _s or "/__pycache__/" in _s:
+            continue
+        if _ref.search(_p.read_text(encoding="utf-8", errors="replace")):
+            _offenders.append(_s)
+    assert not _offenders, ("a live module imports one of the twenty-three", _offenders[:5])
+
+    # ── L5. THE VERIFICATION PASS IS REPORTED WITH ITS BREAKDOWN, AND IT SUMS ─────────────────────
+    #  Stated rather than smoothed, because the largest class is a MISSED fabrication: the first read
+    #  was systematically too generous, and a record that reported only the first pass would inherit it.
+    _m5 = _re563.search(r"\*\*(\d+) wrong, (\d+) a missed fabrication, (\d+)\s*\n?\s*overstated, "
+                        r"(\d+) unsupported\.\*\*", _sec)
+    assert _m5, "the verification breakdown is not stated"
+    _parts = [int(x) for x in _m5.groups()]
+    assert sum(_parts) == 46, ("the breakdown does not sum to the corrections claimed", _parts)
+    assert _parts[1] == max(_parts), ("the largest correction class is no longer the missed fabrication, "
+                                      "so the sentence drawing that conclusion is stale", _parts)
+
+    # ── L6. THE ONTOLOGY-ENGINE ROW IS UNGATED AND SITS WHERE A CLUSTER NAMES IT ──────────────────
+    #  THREE-STATE ON PURPOSE. Pinning this row to an open P2.4 would fail the moment P2.4 closes and
+    #  the row closes with it — the FU-365 class, a guard that fails on success.
+    _fu077 = next((r for r in _reg["items"] if r["id"] == "FU-077"), None)
+    assert _fu077, "the ontology-engine row has left the register"
+    if _fu077.get("status") == "open":
+        assert _fu077.get("owner_gated") is False, (
+            "the ontology-engine row is gated again, though the Owner ruled it on 2026-09-30 — retire "
+            "the engine, keep the asset, reclassify it honestly")
+        _slot = _fu077.get("slot")
+        assert _slot and _slot != "OWNER", ("an ungated row still renders as awaiting the Owner", _slot)
+        _i, _j = _prompt.index(f"\n {_slot} "), len(_prompt)
+        for _nxt in _re563.finditer(r"\n P\d+\.\d+ ", _prompt[_i + 1:]):
+            _j = _i + 1 + _nxt.start()
+            break
+        _blk = _prompt[_i:_j]
+        _named = any(_re563.match(r"\s*\([a-d]\) [A-Z]", _ln) and "FU-077" in _ln
+                     for _ln in _blk.split("\n"))
+        assert _named, (f"the ontology-engine row rides {_slot} and no cluster heading there names it, "
+                        f"so the item's bar does not cover it")
+    assert "FU-077, WHICH HAS MOVED OUT OF THIS ITEM" not in _prompt, (
+        "the W535 note still says the row has moved out, four rounds after the ruling that returned it")
+
+    # ── L7. THE OWNER QUESTION IS RECORDED, AND THE HALF IT GOVERNS IS NOT BUILT ──────────────────
+    #  fitness.py's implicit channel models a PERSON from their own behaviour. It breaches no ruling as
+    #  it stands, which is exactly why the question has to be asked before anyone rebuilds that half.
+    assert "is the subject a person?" in _sec.lower(), (
+        "the record does not put the one-question test to the Owner")
+    assert "the explicit rating only" in _sec, (
+        "the record does not state what may be built while the question is open")
+    _dwell = []
+    for _p in list((_root / "agentic_core").rglob("*.py")):
+        _s = str(_p).replace("\\", "/")
+        if "/_archive/" in _s or "/__pycache__/" in _s:
+            continue
+        if "dwell" in _p.read_text(encoding="utf-8", errors="replace").lower():
+            _dwell.append(_s)
+    assert not _dwell, ("the implicit per-person channel is being built while the question is open",
+                        _dwell[:5])
+
+    # ── L8. THE THREE FURTHER RULINGS OF 2026-10-03 ARE RECORDED AS CONSTITUTION ──────────────────
+    assert " OWNER RULINGS 2026-10-03b (THREE MORE" in _prompt, (
+        "the Owner's three further rulings of 2026-10-03 are not in the plan")
+    _blk8 = _prompt.split("OWNER RULINGS 2026-10-03b")[1][:6000]
+    for _frag in ("THE MILESTONE MUST RUN, AND M1 RUNS FIRST",
+                  "THE AVATAR PATH IS HELD",
+                  "THE DISTRESS ROUTES"):
+        assert _frag in _blk8, ("a ruling is missing from the block", _frag)
+    #  the first of them turns on a measured fact, and the fact is what makes it binding
+    assert "EXACTLY TWICE, EVER" in _blk8, (
+        "the milestone ruling no longer carries the measurement that justifies it")
+    assert "AND THE LIST IS NOT INVENTED" in _blk8, (
+        "the distress ruling no longer carries the limit that a route may not be supplied by this "
+        "programme — the one fabrication no later correction reaches")

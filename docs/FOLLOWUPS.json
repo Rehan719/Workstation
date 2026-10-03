@@ -1258,11 +1258,12 @@
         "agentic_core/reactor/domains/weaver.py"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.4",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "",
+      "slot_source": "Owner ruling 2026-09-30 ungated it — retire the engine, keep the asset, reclassify it honestly — which is cluster (a)'s own subject: dead code retired or owned. W535 had moved it out only because it sat at OWNER"
     },
     {
       "id": "FU-078",
@@ -6237,11 +6238,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W563",
       "note": "",
       "tier": 2,
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "All 23 read and recorded in docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md on two axes: the code (14 RETIRE, 9 RECOVERABLE_WITH_REPAIR, 104 fabrications, not one clean) and the capability (15 SUPERSEDED, 4 WANTED_REBUILD, 4 NOT_WANTED, ZERO WANTED_RECOVER). 46 verifier corrections folded in, breakdown stated. Nothing recovered; the salvage is five rules with line references."
     },
     {
       "id": "FU-357",
@@ -6486,6 +6490,25 @@
       "closed_by": null,
       "note": "",
       "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it; its subject is an absence that reads as a fact",
+      "tier": 2
+    },
+    {
+      "id": "FU-370",
+      "title": "P2.4 still owns seven file routes, so the router keeps sending arrivals to the item whose bar was closed to them",
+      "why": "The Owner's ruling of 2026-10-03 closed P2.4's bar to arrivals and chartered P2.18 for them, and P2.18's bar states that P2.4's seven routes follow 'when it closes', through done --hand-to P2.18. Until then the routes still resolve to P2.4: measured in W563, reslot --slot auto on the ontology-engine row routed it to P2.4 by the route agentic_core/reactor/domains/. That row genuinely belonged there, so no harm this time — but the next arrival on any of the seven will land on an item whose bar cannot cover it, and the W562 guard asserts every open row on P2.4 is named in a cluster or is one of the three HIGH, so it will go RED on a row nobody chose to put there. Either hand the routes over now and amend the bar, or make the router refuse an auto route into an item whose bar is closed and say which item to pass instead.",
+      "source": "W563",
+      "found": "2026-10-03",
+      "files": [
+        "scripts/followups.py",
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is clause (b): an instrument that would catch a defect but instead reports one that was never committed - the guard fails on an arrival the router chose, not on a regression",
       "tier": 2
     }
   ],

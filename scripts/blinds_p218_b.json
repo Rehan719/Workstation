@@ -1,0 +1,128 @@
+[
+  {
+    "tag": "a module the archive holds is not named in the record",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "| `summarizer.py` | 52 |",
+    "new": "| `summariser.py` | 52 |",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L1, and it is the W544 defect one layer along: that section's first draft claimed ten modules because the listing it was written from was truncated at fourteen and nobody re-counted. The leg computes its list from the DIRECTORY and never from this prose, so a single renamed row is caught — a one-letter spelling slip is the sharpest form, because the record still reads as covering twenty-three."
+  },
+  {
+    "tag": "a verdict cell names the verdict it was corrected from, so the tally takes whichever the code prefers",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "| **RETIRE** (verifier-corrected) |",
+    "new": "| **RETIRE — verifier-corrected from RECOVERABLE_WITH_REPAIR** |",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L2, and this is the defect that actually went red in this round rather than a hypothetical. A cell naming both verdicts reads as both, and a tally computed off it silently takes the longer match. The leg asserts EXACTLY ONE verdict literal per cell, so the ambiguity is forbidden rather than resolved — the same class as a fix comment that quotes the literal its own guard forbids."
+  },
+  {
+    "tag": "a disposition changes and the stated tally does not",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "| RETIRE | **NOT_WANTED.** Nothing is searched and nothing is selected",
+    "new": "| RETIRE | **SUPERSEDED.** Nothing is searched and nothing is selected",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L2. The tally is the record's headline and the whole justification for 'recoverable was the wrong question', so it must be computed from the rows rather than written beside them. Moving one row between dispositions leaves the prose figure intact and the table disagreeing with it."
+  },
+  {
+    "tag": "a module is marked WANTED_RECOVER while the headline says none is",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "| RECOVERABLE_WITH_REPAIR | **WANTED_REBUILD.** FU-311 and P3.27(2) want exactly this capability",
+    "new": "| RECOVERABLE_WITH_REPAIR | **WANTED_RECOVER.** FU-311 and P3.27(2) want exactly this capability",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L3, and it is the single most consequential sentence in the record: ZERO of the twenty-three are wanted as a recovery. `fitness.py` is where a later round would most plausibly reach for one, because it is the only candidate mechanism for a capability the plan says has none — and it is built from exactly the three things P3.27 forbids, so copying it would re-commit the class the item exists to prevent."
+  },
+  {
+    "tag": "a live module imports one of the twenty-three",
+    "file": "scripts/followups.py",
+    "old": "\"\"\"Follow-up register CLI — see agentic_core/plan_followups.py for the rules.",
+    "new": "\"\"\"Follow-up register CLI — see agentic_core/plan_followups.py for the rules.\n  and agentic_core/biomimicry/fitness.py for the satisfaction channel.",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L4. 'Nothing is recovered into the live tree' is a sentence; the leg is the property, checked in the tree. A mention in a docstring is the sharpest form because it would never fail at runtime — the archived package has no __init__.py at any level, so the import does not even exist — yet a reader following the pointer concludes the channel is built."
+  },
+  {
+    "tag": "the verification breakdown stops summing to the corrections claimed",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "**7 wrong, 26 a missed fabrication, 11\noverstated, 2 unsupported.**",
+    "new": "**7 wrong, 16 a missed fabrication, 11\noverstated, 2 unsupported.**",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L5. The breakdown is stated rather than smoothed for one reason: the largest class is a MISSED fabrication, which means the first read was systematically too generous, not too harsh. Shrinking that one number both breaks the sum and would make the sentence drawing that conclusion false — so the leg checks the total AND that the missed-fabrication class is still the largest."
+  },
+  {
+    "tag": "the row the Owner ruled on is gated again",
+    "file": "docs/FOLLOWUPS.json",
+    "old": "        \"agentic_core/reactor/domains/weaver.py\"\n      ],\n      \"severity\": \"medium\",\n      \"owner_gated\": false,",
+    "new": "        \"agentic_core/reactor/domains/weaver.py\"\n      ],\n      \"severity\": \"medium\",\n      \"owner_gated\": true,",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L6, and the round exists partly because this already happened: the Owner RULED this row on 2026-09-30 and for four rounds it still rendered as awaiting a decision, with the 2026-10-02 block noting it was stale and nothing acting. A gated row cannot be scheduled by any round, so re-gating it makes the ruling invisible again without changing a word of the ruling."
+  },
+  {
+    "tag": "the stale note saying the row moved out is restored",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "          THE ONTOLOGY-ENGINE ROW IS BACK IN THIS CLUSTER, SO IT IS SEVEN AND NOT SIX. W535 moved it",
+    "new": "          FU-077, WHICH HAS MOVED OUT OF THIS ITEM: it sits at slot OWNER, owner_gated. W535 moved it",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L6's second half. A bar that still says a row has moved out, after the row moved back, is a bar describing an item that no longer exists — and the register's own guard refuses an id in one item's text while the row rides another, so restoring the sentence also makes the next reslot of that row impossible to perform."
+  },
+  {
+    "tag": "the record stops saying what may be built while the Owner question is open",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "**Until the Owner rules, FU-311's channel is built from the explicit rating only**",
+    "new": "**FU-311's channel is built from the ratings and the behavioural signals**",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L7. The module breaches no ruling as it stands, which is precisely why the question has to be put before anyone rebuilds that half: a per-user preference model fitted to one person's own behaviour meets the Owner's one-question test — is the subject a person? — and that is a ruling, not an engineering choice. A record that drops the limit hands a later round permission nobody gave."
+  },
+  {
+    "tag": "the implicit per-person channel is built while the question is open",
+    "file": "agentic_core/api/method.py",
+    "old": "\"\"\"§P2.10 — THE DELIVERY METHOD, HELD BY THE ARMS-LENGTH AGENCY.",
+    "new": "\"\"\"§P2.10 — THE DELIVERY METHOD, HELD BY THE ARMS-LENGTH AGENCY.\nA reader's dwell_time feeds the satisfaction channel.",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L7's property leg. The limit is not kept by the sentence that states it; the leg greps the live tree for the signal itself, so a round that writes the behavioural channel is caught even if it never touches this record. Today the live tree contains the string nowhere, which is what makes the leg meaningful rather than decorative."
+  },
+  {
+    "tag": "the milestone ruling loses the measurement that makes it binding",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "MEASURED: the fidelity workflow has run\n        EXACTLY TWICE, EVER (W474 and W476)",
+    "new": "The fidelity workflow has run only a few times\n        in the programme's history (W474 and W476)",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L8. The ruling that Phase 2 cannot be called complete on item markers alone rests entirely on a measured figure: twice, ever, against a plan that in three places mandates a re-run before any P2–P4 item, with twenty-four such items closed since. Soften the figure to a vague phrase and the ruling reads as a preference rather than a finding — and a later round may not widen, soften or reinterpret a ruling."
+  },
+  {
+    "tag": "the distress ruling loses the limit on supplying a route",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "AND THE LIST IS NOT INVENTED.",
+    "new": "The list is populated as part of the build.",
+    "selector": "w563",
+    "expect": "BLIND(red)",
+    "why": "L8, and it is the one limit in the whole plan that no later correction can repair. The Owner's instruction to proceed on a recommendation does not extend to supplying a route: a fabricated helpline is dialled by a person before anyone reviews the record. The mechanism is built; the field renders NOT SUPPLIED until the Owner gives a real route with who checked it and when."
+  },
+  {
+    "tag": "W544's count-claim scan reaches the W563 section after the anchor change",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "**AXIS TWO — THE CAPABILITY: fifteen SUPERSEDED",
+    "new": "**AXIS TWO, over fourteen modules: fifteen SUPERSEDED",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "The first attempt at this blind renamed a table row and came back VACUOUS — correctly, because W544's leg claims every module is DECIDED OR NAMED and its own scope paragraph names all twenty-three, so the name was still there. The blind asked a question the guard never claimed. What the widened slice actually buys is that W544's self-consistency scan now reads BOTH sections, so a coverage count in the newer one that contradicts the real figures is caught. That is the property, and this is the mutation for it."
+  },
+  {
+    "tag": "W544's leg still refuses a row that decides nothing, with the widened closed set",
+    "file": "docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md",
+    "old": "| RETIRE | **NOT_WANTED.** Nothing is searched and nothing is selected",
+    "new": "| read, no decision taken | Nothing is searched and nothing is selected",
+    "selector": "w544",
+    "expect": "BLIND(red)",
+    "why": "RETIRE / WANTED_REBUILD / NOT_WANTED were added to the verdict pattern, which widens it; this proves the widened pattern still rejects a row that reads a module and decides nothing"
+  }
+]

@@ -244,3 +244,146 @@ by subject, since `avatar` carries one rule worth keeping).** Not one of the ten
 tree by this round, and the reason is uniform: every module that computes computes over input it is HANDED,
 and this platform has no caller to hand it any. That is the same finding W543 recorded about the six cycles,
 and it is the finding that matters about this whole layer — the algorithms were never the missing part.
+
+## The other twenty-three, read and decided (W563 — FU-356)
+
+The W544 section above named twenty-three modules it did **not** assess, so the gap would be visible rather
+than implied. This is that assessment, on **two axes**, because the first one alone would have answered the
+wrong question. Axis one reads the code: what computes, what fabricates, and a verdict. Axis two asks what
+the first pass never asks — **is the capability wanted here at all**, is it already live, and does the
+vision call for it. **Nothing is recovered into the live tree by this round.**
+
+### The two tallies, and the second one is the answer
+
+**AXIS ONE — THE CODE: fourteen RETIRE, nine RECOVERABLE_WITH_REPAIR** (fifteen and eight after the one
+verdict-changing correction below). **104 distinct fabrications across twenty-three files averaging 85
+lines** — a mean of 4.5 each. **All twenty-three fabricate at least one thing.**
+`morphogenesis.py` was reported as
+the exception and the verification pass found line 23 asserts the parent of every spawned node by the
+literal `"core_node_1"`.
+
+**AXIS TWO — THE CAPABILITY: fifteen SUPERSEDED, four WANTED_REBUILD, four NOT_WANTED — and ZERO
+WANTED_RECOVER.** For **eighteen of the twenty-three the vision does call for the capability**, and in **not
+one case is the archived code the route to it.** That is the whole finding. "Recoverable" was the wrong
+question: nine files can be repaired and none of the nine should be, because for fifteen a live system
+already does the job better and for four the capability is wanted but the code is an *anti*-head-start —
+built from precisely what the item that wants it forbids.
+
+**AND ZERO OF THE TWENTY-THREE JUDGE A PERSON.** Ruling A.9.5 is not engaged by any module as it stands:
+every verdict in the layer is scoped to an action, an artefact or a software agent. Two rows need naming
+anyway. `module_generator.py` mints display names in a `Religion` domain — not a person-verdict, but it
+manufactures religious-authority artefacts, which the Owner's ruling of 2026-09-29 places outside anything
+this platform may assert on its own. And **`fitness.py` carries the one half of this layer that could not be
+written without a ruling first**: see the Owner question below.
+
+**THE VERIFICATION PASS CORRECTED AXIS ONE 46 TIMES** — **7 wrong, 26 a missed fabrication, 11
+overstated, 2 unsupported.** The largest class is a *missed* fabrication, so the first read was
+systematically too generous rather than too harsh, and this record states the breakdown instead of
+reporting the first pass. Three corrections bear on a decision and all three are folded in: the
+`morphogenesis` hardcode; `module_library`'s verdict, moved to RETIRE on the ground that the same repairs
+leave the same dict wrapper `ethical_transparency` was retired for; and `federated_learning`'s basis, which
+asserted a universal ("no HTTP transport exists") where the supportable statement is narrower — no
+**peer-to-peer or federation** transport exists, since six live modules do import HTTP.
+
+| module | lines | what COMPUTES | what is FABRICATED | verdict | disposition |
+|---|---|---|---|---|---|
+| `fitness.py` | 116 | A real weighted sum, a star average, and an honest append-and-emit store with an explicit (stars) and an implicit (dwell) channel. | **The no-feedback fallback: 70% of the reported fitness becomes `0.8 + random()*0.2`.** Metric defaults meaning "not measured" become scores. The per-user model "simulates federated learning" and is never read. "(Article 1120 compliant)". | RECOVERABLE_WITH_REPAIR | **WANTED_REBUILD.** FU-311 and P3.27(2) want exactly this capability and the code is built from the three things that clause forbids — a synthesised signal in the one place it must read "not measured", defaults that make an unmeasured system look mediocre-but-measured, and undated "Phase 4" weights. Copying it would re-commit the class the item exists to prevent. |
+| `metabolism.py` | 55 | ~20 lines of honest ledger arithmetic, **both branches real and reachable**: it debits and emits `METABOLIC_EXCHANGE`, or refuses and emits `METABOLIC_STARVATION` naming required beside available. It invents no measurement — `compute_units` arrives from its caller. | The opening `wst_balance = 1000.0`, the rate `0.05` labelled "Example", and "resource burn rate" for a list nothing reads. | RECOVERABLE_WITH_REPAIR | **SUPERSEDED** by `molecular/work_budget.py` (the Owner-ruled instrument, in seconds and tokens, with `store_lock` and atomic writes) plus `atp_simulator.py` and `organism/reconfiguration.py`. `cost = compute_units * 0.05` is the exact class ruling S18.1 removed: a currency figure from an undefined unit by a coefficient with no provenance. |
+| `predictive.py` | 58 | A two-point slope — and **an explicit `INSUFFICIENT_DATA` refusal below five samples**, taken before any arithmetic. | A **strictly positive** random term added to every forecast — and the recommendation is chosen by a threshold over that number, so **the random draw can change the advice**. Timestamps recorded and discarded. `numpy` imported and unused. | RECOVERABLE_WITH_REPAIR | **SUPERSEDED, and the vision does not ask for the rest.** `plan_followups.forecast()` already projects in rounds from a measured closure rate and returns "not projected" with a basis rather than a number. The slope also divides a rise by the sample **count** rather than the time span. |
+| `octopus.py` | 92 | `OctopusCRDTManager` (L6–35) is a genuine CRDT wrapper and the only non-trivial capability in the layer: real `Y.encode_state_as_update` binary state and a convergent `Y.apply_update` merge, with no fabricated figure in those ~30 lines. | `OctopusEmbodiedIntelligence`'s branch is decided by `hal.py`'s hardcoded `0.92` against a `0.85` threshold, so **the fallback leg can never execute and the author says so at L85**. `250.0` ms reported for a central call never made. | RECOVERABLE_WITH_REPAIR (split) | **SUPERSEDED.** The half the plan wants — refuse a *tier*, never the request — shipped in `ai/native/tiers.py route()`, which walks down from the wanted tier recording a `why_not` per rejection and terminates on a floor that always runs. **`y_py` is in no requirements file**, so the module raises `ImportError` before any logic. |
+| `hal.py` | 113 | `stdp_update` is a correct bounded monotone plasticity rule, and `RealCL1SDK.connect` is **commendably honest** — it returns False and says so rather than faking hardware. | `{"confidence": 0.92}`. A latency that times its own `random.uniform(0.005, 0.015)` sleep, reported as meeting a 5–15 ms criterion. `efficiency_ratio = 250.0/1.25` with `"status": "Target Met"` — a verdict about silicon nothing measured. | RECOVERABLE_WITH_REPAIR | **NOT_WANTED.** Nothing in the vision asks for neuromorphic hardware, and nothing in this repository produces spike pairs to feed the one real function. Deleting `cl1_infer` and `power_profile` — whose outputs *are* the constants they were built from — leaves ~20 of 113 lines with no caller. |
+| `marketplace.py` | 94 | Real guarded arithmetic: `transfer` refuses on insufficient funds and mutates nothing; a listing whose SOLD state is **conditional on the transfer succeeding**; tax computed from the price. | A `100000.0` liability fund nothing computed and nothing reads. "Escrow" with no hold. "Reputation" as an empty dict. **"(ERC-20) Smart Contract on Polygon"** with no chain anywhere. No `amount > 0` guard, so a negative transfer credits the sender. | RECOVERABLE_WITH_REPAIR | **SUPERSEDED, and refused on top of that.** The live VSB economy owns settlement and money is **virtual WST** by ruling; the blockchain claim is exactly what §3 above forbids crossing into this repository. |
+| `symbiosis.py` | 91 | A real partnership ledger: a sorted-pair key, **a membership gate that genuinely refuses an unregistered pair**, and a volume accumulator. | Trust seeded at `0.5` by literal, rising with repetition and **never able to fall**, so the Article 1105 fairness gate is unreachable. **A failed payment is recorded as a completed exchange** — the Article 1110 claim inverts in exactly the case it governs. | RECOVERABLE_WITH_REPAIR | **SUPERSEDED.** Inter-entity investment is already built (§4 Stage 4), and Vision 8.0 Thrust E explicitly refuses a rescue channel between entities. |
+| `module_library.py` | 104 | A correct SHA-256 over canonically-serialised JSON, a dict store, a working substring query. | **A wall-clock timestamp inside the hashed payload, which defeats the content addressing the module claims.** A 128-dimension "embedding" whose 128 components are the same number. "Vector search" that never reads a vector. 15 seeds pointing at artefacts that do not exist. | **RETIRE** (verifier-corrected) | **SUPERSEDED.** The first pass said a repair was possible; the ground for correcting it: after its own repairs the honest remainder is ~25 lines of dict wrapper, which is what `ethical_transparency` was retired for — and a better archived candidate exists for the genuine hole (`layer_registry.py:14` declares layer 7 and the live directory is empty): `_archive/jules-unwired/agentic_core/layers/l7_module_library/registry.py`, which persists to disk. Compare the two; wire neither blind. |
+| `moo.py` | 89 | **The algorithm is genuinely present** and is deap's, correctly wired: NSGA-II, properly bounded SBX and polynomial operators, real non-dominated sorting. The only module of the twenty-three whose claimed algorithm is actually there. | **The entire objective function** — three invented formulas over a genome with no referent, emitted per generation as `best_accuracy`. "Provides Pareto-optimal swarm configurations", present tense. | RECOVERABLE_WITH_REPAIR | **SUPERSEDED.** `cognitive/meta/tawazun_engine.py` (P3.13, W524) computes the non-dominated set over named objectives with stated directions and refuses while naming what was missing. The leftover half — generating candidates — nothing asks for, and **`deap` is in no requirements file**. |
+| `tournament.py` | 84 | Generic deap wiring; its own contribution is `_evaluate_swarm`. | **70% of every fitness value is `random.random()`** under "placeholder for RLHF reward model"; the other 30% is the mean of a five-float vector mapping to nothing. "Production-grade" four lines above the RNG. | RETIRE | **WANTED_REBUILD.** Selection is ratified and sequenced (S18.3: lineage first, selection second, mitosis third), but the "evolution" here optimises noise and it ships the worst-shaped artefact in the set — a per-generation best-fitness curve that looks like learning and is order statistics on random numbers, printed as proof by its own `__main__`. |
+| `recombiner.py` | 216 | Source-hash resolution and one `None` check. **No tensor, array, weight, mask, sign or Fisher quantity is touched anywhere in 216 lines.** | TIES / DARE / Fisher are three real published method **names** implemented as `time.sleep(1.0)`, `0.8` and `1.2` — **three named algorithms are three durations.** A licence determination asserted by a literal. `crossover_points` hardcoded. | RETIRE | **WANTED_REBUILD.** Meiosis over constitutions producing a ratifiable candidate is an Owner-ruled want and is not built. This is no head start: the live Protocol of the same name requires `async merge_weights(List[Dict[str,float]])`, which this class does not implement, so **recovering it would not even fill that port.** |
+| `recombination_validator.py` | 82 | Three dict lookups and a constant. One gate tests a real property: a non-empty lineage. | `perf_score = 0.92 # Mock score` behind a `0.3`s sleep, **published as measured performance**. The licence gate refuses only the literal `INVALID`, **which the only producer never writes**. Then it logs "passed all validation gates" and emits `OFFSPRING_VALIDATED`. | RETIRE | **WANTED_REBUILD — and it is the anti-pattern this programme exists to remove.** P3.26(6) ratifies the gate; two of these three gates cannot fail. |
+| `gaas_validator.py` | 111 | `_load_articles` is a working regex parser — 42 articles against the **archived** constitution, **0 against the live one**, which uses a different heading form. | **`self.articles` is never read outside `__main__`**, so the parsed constitution never reaches the decision. `reason = "Constitutional alignment verified."` for every non-high-risk payload. Trust defaults to **maximum** for an unseen agent and is regained by **volume of allowed calls**. | RETIRE | **SUPERSEDED** by the live `gaas/v5` stack, which carries which article refused, escalation-versus-breach, and whether the decision reached the ledger. `validate_payload("a", {})` returns ALLOW with "Constitutional alignment verified." — a validator that clears empty input, breaching canon §4. |
+| `ethical_transparency.py` | 61 | An f-string template over three dict keys, plus one article lookup. | **An unconditional clearance over empty input**: `explain_decision({})` returns "Everything looks good! This action aligns with our constitutional values." A constitutional-failure claim with no article identified. **It reads the real `reason` field and discards it**, substituting generic prose. | RETIRE | **SUPERSEDED.** Breaches canon §4 and §3 directly. Repairing it leaves ~15 lines that re-print fields the caller already holds. |
+| `module_generator.py` | 67 | Nothing beyond `random.choice` and `random.randint`. | **The entire generated inventory** — 485 rows in its own demo, named e.g. `Health-Specialist-LLM-847`, `content` set to `bin://{name}.gguf` for files never created, metadata asserting int4 quantization and LoRA rank 16. A comment asserting a "Constitutional Integrity Check (Simulated)" above a call that performs none. | RETIRE | **NOT_WANTED, and of the twenty-three the one that would most damage the register.** Its volume is the point: recovering it adds hundreds of claims that quantized models exist, and no capability whatsoever. |
+| `nas.py` | 73 | A uniform draw from a 27-point grid and two closed-form formulas over the draw. | `est_accuracy = 0.6 + layers/40 + dim/10000` — **an invented formula that is not dimensionally possible and returns values above 1.0**, written into the registry **as a discovered metric**. "Pareto-optimal" with no dominance test. `time.sleep(0.2)` for search cost. | RETIRE | **NOT_WANTED.** Nothing is searched and nothing is selected: the input space is returned under the longer name "discovered architectures". |
+| `optimizer.py` | 62 | One real line: a composite reward from the passed KPIs. | **`action = random.choice([...])`** under the author's "# Policy Selection (Simulated PPO)". `reward_history` is written and **never read**. `SYSTEM_OPTIMIZED` emitted unconditionally, including on IDLE. | RETIRE | **SUPERSEDED.** Vision 8.0 Thrust A.3 already names this as the archived candidate that does not accumulate error. Wiring it adds the claim "the system reconfigures itself by reinforcement learning" and the capability of a coin flip on one integer. |
+| `morphogenesis.py` | 52 | List push/pop on an in-memory dict. The connection pruning is correct, and **it is the only module here that does not emit on a no-op.** | **Line 23 asserts the parent of every spawned node by the literal `"core_node_1"`** — found by the verification pass, not the first read. Node ids are reissued after a prune/spawn cycle. | RETIRE | **SUPERSEDED.** 52 lines of list operations wearing service-mesh vocabulary: "triggers agent spawning or migration" is `list.append` of a string, with no migration path. |
+| `swarm_formation.py` | 97 | A genuine Euclidean distance and **a correct single-rule Boids cohesion step** — about six real lines. | A trust score fixed at maximum, never computed, never read. `SWARM_FORMED` **announcing a formed swarm with a leader for a party of one.** Random velocity re-drawn every tick. Alignment and Separation are asserted in the docstring and absent. | RETIRE | **SUPERSEDED.** Everything it is named for is missing, and the gap needs the clusterer written — building, not repairing. |
+| `summarizer.py` | 52 | `len(events)`. **The events list is never iterated, never read.** | **"94% fitness" and "99.8% uptime"** as two invented metrics inside the returned digest. "using local LLMs" with no model anywhere. A latency that times a random sleep, stored as summarization latency. | RETIRE | **SUPERSEDED.** Strip the fabrications and what remains is one f-string over `len()`. Recovering it would import a sentence asserting 94% fitness into a live surface. |
+| `federated_learning.py` | 62 | **The Laplace mechanism is written correctly** (scale = sensitivity/epsilon) — the one real formula in the file. | **The averaged node updates are made by `random.uniform`**, over global weights seeded by `random.random()`. **ε=0.1 presented as a privacy guarantee for a round that transmitted nothing.** `FL_ROUND_COMPLETE` on an empty participant list. "Secure Aggregation". | RETIRE | **NOT_WANTED.** Federated averaging needs nodes, data and a model and this has none of the three. Corrected basis: **no peer-to-peer or federation transport exists** — `agentic_core/network/*.py` import only stdlib — though the live tree does import HTTP in six places, so the universal claim was too strong. |
+| `mycelium.py` | 84 | It writes to and reads from one local dict. | `"latency": random.uniform(5, 50)` on insertion, then an Article 1102 latency gate over it. `"status": "ALIVE"` stamped unconditionally. A heartbeat that **refreshes its own liveness evidence** with this process's clock. `new_path = [...]` logged as "Automatic reroute successful" and emitted as `NETWORK_REROUTE`. | RETIRE | **SUPERSEDED.** The recorded KademliaDHT shape again: a plain dict carrying a mesh's vocabulary. Three of its four methods produce a fabrication and the fourth manufactures its own evidence. |
+| `resilience_manager.py` | 94 | **Nothing of its own.** Every substantive action is a `Callable` the caller supplied; `mmr_repair` passes both states straight through with no diffing. Its sole original logic is one `>` comparison. | `recovery_success_rate = 1.0` that nothing updates, and `"status": "Homeostatic"` derived from it. Counters reported as repairs. "Global state reconciled via Raft/libp2p re-sync". | RETIRE | **SUPERSEDED.** The repository already carries this name three times, and `integration_tests/test_mvp_spine.py` records a `ResilienceManager` guard leg already "RETIRED WITH ITS SUBJECT" under W506/FU-078. It would add a fourth claim of self-healing and no self-healing. |
+
+### Where these twenty-three land on Vision 8.0's five thrusts
+
+Asked by the Owner directly: are they relevant to the biomimetic implementations planned in
+`docs/WORKSTATION_VISION_8_BIOMIMETIC.md`? **Nineteen of the twenty-three land on a thrust by subject —
+and on the four thrusts where they land hardest, the archived module fabricates at the exact point the
+thrust exists to make honest.** The subject overlap is real; it is the reason to read them, not to take them.
+
+| thrust | the honesty requirement it states | the archived module on that subject | what it does there |
+|---|---|---|---|
+| **E.1 user satisfaction** (gates all of Thrust E) | build the mechanism; §E.2 selection **refuses** while a measure is unmeasured | `fitness.py` | has the mechanism, then **falls back to a random draw** when it has no feedback — an unmeasured user scores ~0.9 |
+| **C checkpoints** | three of five live gates default to pass — flip them | `recombination_validator.py` | a gate that **cannot fail**, publishing `0.92` as measured performance |
+| **B cognition** | no engine may report a confidence it did not compute | `hal.py` | confidence hardcoded `0.92`, latency timing its own random sleep |
+| **A.3 integral control** | "neither the archived nor the live candidate accumulates error" | `optimizer.py` | **this is that archived candidate**: the policy is `random.choice` |
+| **A energy** | "not this thrust: a new budget mechanism" | `metabolism.py` | a real ledger with an invented opening balance and an undefined unit |
+| **D.5 meiosis** | a recombined constitution needs ratification | `recombiner.py` | three real method names implemented as three `time.sleep` durations |
+| **D metamorphosis** | a transformation that does not dissolve what the last stage needed is accretion | `morphogenesis.py` | **only appends and pops**, parent edge asserted by a literal |
+| **E selection** | select on **record**, not on a proxy | `tournament.py`, `moo.py` | 70% of fitness is RNG; `moo`'s algorithm is real and its objective is invented |
+| **cross-cutting truth maintenance** | a screen may flag and escalate; it may never clear | `gaas_validator.py`, `ethical_transparency.py` | **both clear empty input**, one with "Constitutional alignment verified." and one with "aligns with our constitutional values" |
+
+### What is actually worth carrying: five rules, and not one line of code
+
+Every item below is a **shape or a rule with a line reference**, to be written fresh against a live
+consumer. None is a recovery, and nothing here authorises adding a dependency.
+
+1. **A budget that can say no, and says what it was short by** — `metabolism.py:23,32–39`. The refusal
+   leg emits `required` beside `available`. This answers a **live open need**: FU-308 records that the live
+   budget's `can_deplete` is False by arithmetic with a 4× gap, so the organism currently has no way to
+   refuse. Keep the shape; discard the `0.05` coefficient, the WST unit and the minted opening balance.
+2. **Refuse before computing, on a stated minimum** — `predictive.py:25–26`, an `INSUFFICIENT_DATA`
+   return taken *before* any arithmetic. The only thing in that file which cannot lie.
+3. **Refuse an offspring that cannot name its parents, and record how deep the lineage goes** —
+   `recombination_validator.py:27–31` plus the `provenance_depth` field. It matches a measured live gap:
+   FU-312 records that a VSB record carries no parent and no lineage field at all, which is the
+   precondition for any form of entity reproduction. **Nothing else in that file.**
+4. **Record each selection round as it runs, not only its winner** — `tournament.py:63–67`. P3.27(3)
+   and (4) need exactly that record to show *which* measure was missing when selection refused and *which*
+   floor a flagged entity failed.
+5. **A collective is governed at the FLOOR of its members, never their average** —
+   `gaas_validator.py:64–66`, `effective_t_fa = min(t_fa, swarm_t_fa)`. Worth keeping as a rule if a
+   swarm is ever given a governed identity.
+
+Two further shapes are **corroboration rather than salvage**, and are recorded so no later round mistakes
+them for new work: `recombiner.py`'s pluggable-backend ABC that raises on an unknown method — which
+`genome.py`'s `_CROSSOVER_METHODS` already does — and `moo.py`'s `weights=(1.0, -1.0, -1.0)` declaring each
+objective's direction as data, which `tawazun_engine` already enforces because guessing a direction inverts
+the frontier.
+
+And **`octopus.py`'s `OctopusCRDTManager` is a shape reference only.** It is the only genuinely non-trivial
+code in the layer, and it is still not a recovery: `y_py` is in no requirements file, nothing ratified calls
+for CRDT state, and the frontend's own already-unused `yjs ^13.6.14` is where that question would be settled
+if the Owner ever asks for multi-user co-edit.
+
+### One Owner question this assessment raises, and nobody may write it meanwhile
+
+`fitness.py` lines 73–84 collect **implicit** feedback — a person's dwell time — and lines 86–95
+build a **per-user preference model** (`verbosity_pref`) from that person's own behaviour. Neither is a
+verdict on a person and neither breaches A.9.5 as written, so the module passes the ruling. But a *rebuild*
+of that half would mean the platform maintaining a behavioural model of an individual, which meets the
+Owner's one-question test — **is the subject a person?** — and that is a ruling, not an engineering
+choice. **Until the Owner rules, FU-311's channel is built from the explicit rating only**
+(`fitness.py:59–71`'s event shape: user, subject, stars, flags, type, timestamp — with the aggregate
+reading `None` rather than a default on an empty store). The implicit channel and the per-user model are not
+written.
+
+### What this record does not do, and the mechanical fact underneath it
+
+It recovers nothing, installs nothing, and adds no dependency. Every RECOVERABLE_WITH_REPAIR above says a
+repair is *possible*, not that it is scheduled — and axis two then says, for each in turn, that the
+repair should not happen.
+
+`_archive/jules-unwired/agentic_core/` has **no `__init__.py` at any level**, so it was never an importable
+package: `import agentic_core.biomimicry.<name>` resolves to the LIVE package and fails for all twenty-three.
+Loaded by file path instead, **sixteen of the twenty-three execute and seven fail outright** — four on the
+missing intra-package import of `module_library`, `moo` and `tournament` on `deap`, `octopus` on `y_py`
+— **and neither `deap` nor `y_py` is installed or listed.** There is no wire-up available for any of them;
+any use is a copy-and-repair into a live consumer, which is what the five rules above are.
