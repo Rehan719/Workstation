@@ -26,6 +26,30 @@ os.environ.setdefault("PROPOSALS_DIR", "data/test_proposals")
 # served_by stays an OWNED resource and any_external stays False.
 os.environ.setdefault("AI_DISABLE_LOCAL", "1")
 
+def _queued_amounts(tr, vsb_id):
+    """The amounts QUEUED for one VSB, read the way the cycle's intake reads them.
+
+    FU-350. Four assertions read `peek_pending_transfers(x) == <literal>` where their subject was that
+    ONE named receipt is still waiting. A total is the wrong instrument for that: §12's reinvestment
+    fans out to `list(_living().items())[:cap]` and every one of those four receivers is a registered
+    living VSB, so the total can be inflated by the test's own sender — which is what broke FU-349 and
+    what the suite's parallel mode makes likelier by changing how crowded the registry is. Asserting the
+    RECEIPT is immune to that and says more: a total of 50000 could be one receipt or five.
+    """
+    import json as _j
+    try:
+        if not tr._PENDING_STORE.exists():
+            return []
+        d = _j.loads(tr._PENDING_STORE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    rec = d.get(vsb_id) or {}
+    #  THE FIELD IS `amount_wst`, NOT `amount`. Reading the wrong key returned [None] for a queue
+    #  that held the receipt, so the first version of this helper failed on correct data — a
+    #  reader that names a field the writer does not write measures nothing.
+    return [t.get("amount_wst") for t in (rec.get("transfers") or [])]
+
+
 _AI_AVAILABLE = bool(
     os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
 )
@@ -11461,7 +11485,10 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
     fixed = with_record(_first_call_debits_then_raises, lambda: transfer(d, e_, 1500))
     assert fixed.status_code == 200 and fixed.json()["transfer"] is not None, fixed.text
     assert fixed.json()["transfer"]["idempotent_replay"] is True and fixed.json()["transfer"]["replay_repaired_receiver_leg"] is False
-    assert tr.peek_pending_transfers(e_) == 1500.0 and rec(idd)["status"] == "implemented"
+    #  FU-350: the subject is that THIS receipt queued, not that the total equals it. e_ is a
+    #  registered living VSB, so §12 reinvestment from the test's own sender can inflate the total.
+    assert 1500.0 in _queued_amounts(tr, e_), _queued_amounts(tr, e_)
+    assert rec(idd)["status"] == "implemented"
 
     # a ledger that cannot be read is never "no debit"
     broken = uid("broken")
@@ -11690,7 +11717,9 @@ def test_w463_economy_approvals_release_only_what_they_were_filed_for(client, mo
             gv._materiality_gate = real_gate
         assert out["cycle"] is not None, (label, out)
         assert out["cycle"]["inter_vsb_received_wst"] == 200.0, (label, out["cycle"].get("inter_vsb_received_wst"))
-        assert tr.peek_pending_transfers(p) == 50000.0, label                  # the late receipt still waits
+        #  FU-350: assert the late receipt WAITS, which is the comment's own claim. p is a registered
+        #  living VSB and a cycle runs between the readings, so neither a total nor a delta is safe.
+        assert 50000.0 in _queued_amounts(tr, p), (label, _queued_amounts(tr, p))
 
     # …and the venture-returns queue is capped the same way, on both paths
     from agentic_core.economy.ventures import peek_pending_returns, record_positions, record_return
@@ -11877,7 +11906,9 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     tr.record_transfer(q, v4, 50000.0, "w463l late receipt")                          # bypasses the gate on purpose
     ran4 = cyc(v4, 5000)
     assert ran4["cycle"] is not None and ran4["cycle"]["inter_vsb_received_wst"] == 0.0
-    assert tr.peek_pending_transfers(v4) == 50000.0 and rec(a4)["status"] == "implemented"
+    #  FU-350: the late receipt still waits — asserted as a receipt, not as a total.
+    assert 50000.0 in _queued_amounts(tr, v4), _queued_amounts(tr, v4)
+    assert rec(a4)["status"] == "implemented"
 
     # ── S11 + S13 (heartbeat): an approval with no revenue events is spendable, and releases only what it was filed on ──
     v5 = living("hbreceipt")
@@ -11887,7 +11918,10 @@ def test_w463_hold_lifecycle_reviews_races_and_replays_both_ways(client, monkeyp
     tr.record_transfer(q, v5, 70000.0, "w463l receipt after the approval")
     ran5 = operate_vsb(v5)
     assert "error" not in ran5 and rec(h5)["status"] == "implemented", ran5
-    assert tr.peek_pending_transfers(v5) == 70000.0, "the receipt that arrived after the approval rode along"
+    #  FU-350: the receipt that arrived after the approval is still queued. The earlier 5000 was
+    #  consumed by the first cycle, which a total silently conflated with "only 70000 is here".
+    assert 70000.0 in _queued_amounts(tr, v5), (
+        "the receipt that arrived after the approval did not ride along", _queued_amounts(tr, v5))
 
     # ── S3: a filed cost event that is no longer pending cannot enlarge the release ──
     v6 = living("vanishedcost")
@@ -28252,15 +28286,28 @@ def test_w514_the_method_documents_carry_no_measured_figures():
     assert not hits, ("docs/OVERNIGHT_METHOD.md restates measured figures; they belong in "
                       "scripts/_session_measured.py and must be printed by the instrument: %r" % hits[:8])
 
-    # the suite constant has ONE definition. Others may only LOAD it.
-    defs = []
+    # the suite constants have ONE definition each. Others may only LOAD them.
+    #  GENERALISED IN W565, when `SUITE_H` stopped existing. It was the mean of two SERIAL runs, read as
+    #  the cost of a suite, as the share a suite takes of a round AND as the floor deciding what counts
+    #  as a round — so a figure about a mode the programme no longer runs silently discarded sixteen real
+    #  rounds. A constant with one home can still be the WRONG constant, so the name now carries its
+    #  mode and this leg checks each of them rather than one mode-free name. Matching `SUITE_*_H` as a
+    #  family also means a new mode cannot be added with a second home.
+    defs = {}
     for p in sorted((root / "scripts").glob("*.py")):
         for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
-            if _r.match(r"^\s*SUITE_H\s*=", line) and "K." not in line:
-                defs.append(f"{p.name}:{i}")
-    assert len(defs) == 1, ("the suite constant must be defined exactly once (in _session_measured.py) and "
-                            "loaded elsewhere; found: %r" % defs)
-    assert defs[0].startswith("_session_measured"), defs
+            m = _r.match(r"^\s*(SUITE_[A-Z_]*H|MIN_ROUND_H)\s*=", line)
+            if m and "K." not in line:
+                defs.setdefault(m.group(1), []).append(f"{p.name}:{i}")
+    assert defs, ("no suite constant is defined anywhere, so this leg cannot fail and the figures have "
+                  "no home at all")
+    for name, where in sorted(defs.items()):
+        assert len(where) == 1, (f"{name} must be defined exactly once and loaded elsewhere; "
+                                 f"found: {where!r}")
+        assert where[0].startswith("_session_measured"), (name, where)
+    #  AND NO MODE-FREE NAME IS BACK. `SUITE_H` was the defect, not the duplication.
+    assert "SUITE_H" not in defs, (
+        "a mode-free SUITE_H is defined again; a suite figure must say WHICH suite", defs.get("SUITE_H"))
 
 
 def test_w515_floor_served_coverage_never_reaches_the_ethical_screen():
@@ -35088,3 +35135,199 @@ def test_w564_a_distress_route_arrives_with_its_reviewer_or_it_does_not_arrive(c
             assert _row.get("owner_gated") is True, (
                 _rid, f"{_what} is outstanding and the row is not gated, so a round could schedule work "
                       f"that cannot be done", _row.get("slot"))
+
+
+def test_w565_one_instrument_computes_the_round_cost_and_every_suite_figure_names_its_mode(client):
+    """P2.17 clause (c): the round-cost figures are COMPUTED, one instrument per quantity, mode named.
+
+    THREE COMPUTATIONS OF THE MEDIAN ROUND EXISTED, all labelled "from git", all disagreeing. W514 had
+    already removed this defect at the constants layer and again at the function layer, each time
+    recording that two computations of one quantity IS the defect; the third lived in the CLI, which is
+    the one a reader reads. And the surviving instrument was wrong in the same direction as the prose it
+    replaced: its floor for "did this gap contain a suite" was a SERIAL suite constant, so it classified
+    sixteen real rounds as follow-up commits and reported the suite's share as 44% against a real 16%.
+
+    A CONSTANT WITH ONE HOME CAN STILL BE THE WRONG CONSTANT. That is this test's subject.
+    """
+    import importlib.util as _il565
+    import pathlib as _pl565
+    import re as _re565
+    import subprocess as _sp565
+    import sys as _sys565
+
+    _root = _pl565.Path(__file__).resolve().parents[1]
+
+    def _load(name, rel):
+        _spec = _il565.spec_from_file_location(name, _root / rel)
+        _m = _il565.module_from_spec(_spec)
+        _spec.loader.exec_module(_m)
+        return _m
+
+    _K = _load("_w565_k", "scripts/_session_measured.py")
+
+    # ── L1. THERE IS NO MODE-FREE SUITE CONSTANT LEFT TO READ ─────────────────────────────────────
+    #  The defect was not that the constant had two homes — W514 fixed that — it was that the single
+    #  home held a figure about a mode the programme no longer runs, under a name that did not say so.
+    assert not hasattr(_K, "SUITE_H"), (
+        "a mode-free SUITE_H is back in the constants module. A suite figure must say WHICH suite: this "
+        "one was the mean of two SERIAL runs and was read as the cost, the share AND the round floor")
+    for _n in ("SUITE_SERIAL_H", "SUITE_PARALLEL_H", "SUITE_IN_USE_H", "SUITE_FASTEST_H",
+               "SUITE_MODE_IN_USE", "SUITE_SERIAL_BASIS", "SUITE_PARALLEL_BASIS", "SUITE_IN_USE_BASIS"):
+        assert hasattr(_K, _n), (_n, "the per-mode suite constants are incomplete")
+    #  each basis names its mode and its runs, so a reader cannot mistake one for the other
+    assert "SERIAL" in _K.SUITE_SERIAL_BASIS and "PARALLEL" in _K.SUITE_PARALLEL_BASIS, (
+        _K.SUITE_SERIAL_BASIS, _K.SUITE_PARALLEL_BASIS)
+    assert _K.SUITE_MODE_IN_USE in ("serial", "parallel"), _K.SUITE_MODE_IN_USE
+    assert _K.SUITE_IN_USE_H == (_K.SUITE_PARALLEL_H if _K.SUITE_MODE_IN_USE == "parallel"
+                                 else _K.SUITE_SERIAL_H), "the in-use figure disagrees with the mode"
+    #  AND THE PARALLEL FIGURE IS ACTUALLY FASTER, so `fastest` is not a label on the same number
+    assert _K.SUITE_PARALLEL_H < _K.SUITE_SERIAL_H, (
+        "the parallel suite is not measured faster than the serial one, so the two modes are not two "
+        "measurements", _K.SUITE_PARALLEL_H, _K.SUITE_SERIAL_H)
+    assert _K.SUITE_FASTEST_H == min(_K.SUITE_SERIAL_H, _K.SUITE_PARALLEL_H), _K.SUITE_FASTEST_H
+
+    # ── L2. THE ROUND FLOOR IS THE FASTEST MEASURED MODE, AND SAYS WHY ───────────────────────────
+    #  A round must contain A suite, so the floor has to be the fastest real one. The serial figure
+    #  discarded sixteen gaps that each exceeded a measured parallel suite — real rounds, filed as
+    #  follow-up commits, and the filter reported only a count.
+    assert _K.MIN_ROUND_H == _K.SUITE_FASTEST_H, (
+        "the round floor is not the fastest measured suite mode", _K.MIN_ROUND_H, _K.SUITE_FASTEST_H)
+    assert "FASTEST MODE" in _K.MIN_ROUND_BASIS, _K.MIN_ROUND_BASIS
+    assert "sixteen real rounds" in _K.MIN_ROUND_BASIS, (
+        "the floor's basis no longer records what the previous floor cost, so the next round cannot tell "
+        "that this was measured rather than preferred")
+
+    # ── L3. ONE COMPUTATION: WHAT THE CLI PRINTS IS WHAT THE INSTRUMENT COMPUTES ──────────────────
+    #  The property, driven rather than asserted from source. The CLI had its own git walk over FORTY
+    #  commits with its own filter and printed a different median beside the register's projection.
+    _sf = _load("_w565_sf", "scripts/session_forecast.py")
+    _d = _sf.round_durations()
+    assert isinstance(_d, dict) and "assessable" in _d, _d
+    if not _d.get("assessable"):
+        #  THREE-STATE: an instrument that cannot measure must say so, and the CLI must then print no
+        #  figure at all rather than falling back to one.
+        assert _d.get("why"), "the instrument is not assessable and gives no reason"
+    else:
+        for _k in ("n", "median_h", "p25_h", "p75_h", "max_h", "basis", "excluded"):
+            assert _k in _d, (_k, "the instrument's report is incomplete", sorted(_d))
+        _out = _sp565.run([_sys565.executable, "scripts/followups.py", "forecast"],
+                          cwd=str(_root), capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", timeout=300)
+        assert _out.returncode == 0, (_out.returncode, _out.stderr[-400:])
+        _wall = [l for l in _out.stdout.splitlines() if "WALL CLOCK (" in l]
+        assert len(_wall) == 1, ("the CLI printed no single wall-clock line", _wall)
+        _m = _re565.search(r"(\d+) round\(s\), median ([\d.]+) h", _wall[0])
+        assert _m, ("the CLI's wall-clock line does not carry n and the median", _wall[0])
+        assert int(_m.group(1)) == _d["n"], (
+            "the CLI and the instrument disagree on how many rounds were measured, so there are two "
+            "computations of one quantity again", _m.group(1), _d["n"])
+        assert float(_m.group(2)) == _d["median_h"], (
+            "the CLI and the instrument disagree on the median round", _m.group(2), _d["median_h"])
+        #  AND THE CLI PRINTS THE FILTER AND WHAT IT EXCLUDED. A median with an unstated filter is the
+        #  shape that let three different figures stand side by side as "a separate measurement".
+        assert any("WALL CLOCK FILTER:" in l for l in _out.stdout.splitlines()), (
+            "the CLI prints a median without the filter that produced it")
+        assert any("WALL CLOCK EXCLUDED:" in l for l in _out.stdout.splitlines()), (
+            "the CLI prints a median without saying what the filter threw away")
+        #  no independent walk survives in the CLI
+        _cli = (_root / "scripts/followups.py").read_text(encoding="utf-8")
+        _i = _cli.index("WALL CLOCK")
+        _blk = _cli[max(0, _i - 2600):_i + 1800]
+        assert "round_durations" in _blk, "the CLI no longer reads the instrument"
+        assert '"-40"' not in _blk, (
+            "the CLI's own forty-commit git walk is back, which is the third computation of one quantity")
+
+    # ── L4. EVERY SUITE FIGURE THE FORECAST REPORTS NAMES ITS MODE ────────────────────────────────
+    _f = _sf.forecast_session(8.0, since=449)
+    _cost = _f.get("round_boundaries_cost")
+    assert isinstance(_cost, dict), ("the forecast no longer reports the round-boundary cost", sorted(_f))
+    assert _cost.get("suite_mode") == _K.SUITE_MODE_IN_USE, (
+        "the forecast's suite figure does not name the mode it used", _cost.get("suite_mode"))
+    assert _cost.get("suite_basis") == _K.SUITE_IN_USE_BASIS, _cost.get("suite_basis")
+    assert "share_basis" in _cost, (
+        "the share is reported without a basis; it was a SERIAL suite over a median computed with a "
+        "SERIAL floor, which is a ratio of two different things and read as 44%")
+    assert _K.SUITE_MODE_IN_USE in _cost["share_basis"], _cost["share_basis"]
+    #  the share is arithmetic over the two figures it names, not a typed number
+    if _d.get("assessable"):
+        _expect = f"{round(100 * _K.SUITE_IN_USE_H / _d['median_h'])}%"
+        assert _cost.get("share_of_a_median_round") == _expect, (
+            "the reported share is not the quotient of the two figures beside it",
+            _cost.get("share_of_a_median_round"), _expect)
+
+    # ── L5. P2.17's BODY STAMPS ITS HISTORICAL FIGURES AND DOES NOT RESTATE THE CURRENT ONES ──────
+    #  Clause (c)'s own words. The fix is NOT retyping the numbers: that reproduces the defect with
+    #  fresher digits. A figure about a past round is stamped with the round that measured it, so it
+    #  stays a true statement about that moment.
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _i, _j = _prompt.index("\n P2.17 "), len(_prompt)
+    _m = _re565.search(r"\n P\d+\.\d+ ", _prompt[_i + 1:])
+    if _m:
+        _j = _i + 1 + _m.start()
+    _bar = " ".join(_prompt[_i:_j].split())
+    assert "KEPT AS A STATEMENT ABOUT W488 AND NOT ABOUT NOW" in _bar, (
+        "P2.17's historical figures are no longer stamped with the round that measured them")
+    assert "this paragraph may not restate them" in _bar, (
+        "P2.17's body no longer forbids restating the computed figures, which is how it went stale")
+    assert "session_forecast.round_durations()" in _bar, (
+        "P2.17's body does not name the instrument that computes its figures")
+    #  AND THE REFUTED INFERENCE IS MARKED REFUTED, with the round that refuted it. Removing it would
+    #  lose a true statement about what was believed; leaving it unmarked asserts something false.
+    assert "REFUTED BY THE PROGRAMME'S OWN HISTORY" in _bar, (
+        "P2.17's claim that a round closing an item closes EXACTLY ONE is unmarked, and it is false")
+    assert "W505" in _bar and "closed five" in _bar.lower(), (
+        "the refutation does not name the round that refutes it, so it cannot be checked")
+    #  the narrower true statement survives beside the existence proof
+    assert "has still never been run" in _bar, (
+        "the body now reads as though a bundle round has been run; W505 closed two on its own work and "
+        "three by auditing bars, which is not clause (a)'s bundle")
+
+    # ── L6. CLAUSE (c) STATES A PROPERTY A GUARD CAN DRIVE ───────────────────────────────────────
+    _ci = _bar.index("ACCEPT (c)")
+    _c = _bar[_ci:_ci + 1400]
+    for _frag in ("ONE instrument computes each quantity",
+                  "NAMES THE MODE it was measured in",
+                  "stamped with the round that measured it"):
+        assert _frag in _c, ("clause (c) no longer states a property this test can drive", _frag)
+
+    # ── L7. FU-350: A PENDING ASSERTION NAMES ITS RECEIPT, NOT A TOTAL ───────────────────────────
+    #  MEASURED FIRST, and it corrects the row's own guess. FU-350 supposed these four were latent
+    #  because "their receivers are outside the cap or not registered as living VSBs". All four are
+    #  created by the tests' own `living(...)` helper, so all four ARE registered living VSBs and all
+    #  four sit inside the population S12's reinvestment fans out to. They are latent for a reason
+    #  unrelated to their subject, as the row suspected, but not for the reason it guessed.
+    _suite = (_root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+
+    #  (a) NO ABSOLUTE TOTAL SURVIVES AT THE FOUR SUBJECTS. A delta would not have been enough either:
+    #  a S12 reinvestment can land DURING the cycle these tests run between two readings, so only the
+    #  receipt itself is a safe subject.
+    _abs = _re565.findall(r"peek_pending_transfers\([^)]*\)\s*==\s*(\d[\d_]*\.?\d*)", _suite)
+    for _lit in ("1500.0", "50000.0", "70000.0"):
+        assert _lit not in _abs, (
+            f"a pending TOTAL is asserted equal to {_lit} again. The subject at each of these sites is "
+            f"that ONE named receipt is still queued; a total can be inflated by the test's own sender, "
+            f"which is the cause FU-349 was filed for", _abs)
+    #  and the receipt-based helper is actually used, so the absence above is a change and not a deletion
+    assert _suite.count("_queued_amounts(tr, ") >= 4, (
+        "fewer than four sites read the queue by receipt", _suite.count("_queued_amounts(tr, "))
+
+    #  (b) THE HELPER READS THE FIELD THE WRITER WRITES. The first version read `amount` and returned
+    #  [None] for a queue that held the receipt — a reader naming a field the writer does not write
+    #  measures nothing, and it FAILED ON CORRECT DATA.
+    assert '"amount_wst"' in _suite[_suite.index("def _queued_amounts"):
+                                    _suite.index("def _queued_amounts") + 1400], (
+        "the queue reader no longer names amount_wst, which is the field record_transfer writes")
+
+    #  (c) AND THE NEW SUBJECT SURVIVES THE INFLATION THE OLD ONE COULD NOT. Driven on a synthetic
+    #  record rather than argued: one named receipt plus an unrelated credit. A total-based check breaks;
+    #  a receipt-based one holds. This is the whole reason for the change, so it is measured here.
+    _rec = {"vsb_id": "v", "pending_wst": 50000.0,
+            "transfers": [{"transfer_id": "t1", "amount_wst": 50000.0}]}
+    _inflated = {"vsb_id": "v", "pending_wst": 50231.82,
+                 "transfers": [{"transfer_id": "t1", "amount_wst": 50000.0},
+                               {"transfer_id": "s12", "amount_wst": 231.82}]}
+    assert _rec["pending_wst"] == 50000.0 and _inflated["pending_wst"] != 50000.0, (
+        "the synthetic case does not reproduce an inflated total, so leg (c) proves nothing")
+    _amounts = lambda r: [t["amount_wst"] for t in r["transfers"]]
+    assert 50000.0 in _amounts(_rec) and 50000.0 in _amounts(_inflated), (
+        "the receipt-based subject does not survive an unrelated credit, so this change bought nothing")

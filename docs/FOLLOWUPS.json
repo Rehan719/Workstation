@@ -6133,11 +6133,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W565",
       "note": "",
       "slot_source": "P2.17 bar (b)1 owns the serial/parallel equivalence; these are the remaining assertions of the shape that broke it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "All four assertions now name their RECEIPT rather than a total, which is each site's own stated subject. MEASURED FIRST, and it corrects the row's guess: all four receivers are created by the tests' own living() helper, so all four ARE registered living VSBs inside the population S12 reinvestment fans out to - latent for a reason unrelated to their subject, as the row suspected, but not because they sit outside the cap. A DELTA would not have been enough either: a S12 credit can land DURING the cycle these tests run between two readings. One shared reader, and it reads amount_wst - the first version read 'amount' and returned [None] for a queue that held the receipt, failing on correct data."
     },
     {
       "id": "FU-351",
@@ -6474,11 +6477,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W565",
       "note": "",
       "slot_source": "it is P2.17's own body and its part (c)",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "P2.17 clause (c) delivered. The body's figures are stamped with the round that measured them (W488) so they stay true about that moment; the current figures are COMPUTED by session_forecast.round_durations() and printed by followups.py forecast, and the body is forbidden from restating them. MEASURED W565: median 1.74h over 88 rounds, parallel suite 17 min = 16%, each figure naming its mode. AND THE INSTRUMENT WAS WRONG IN THE SAME DIRECTION: its floor was a SERIAL suite constant, so it classified sixteen real rounds as follow-up commits and reported the share as 44%. Three computations of the median existed, all from git, all disagreeing; the third lived in the CLI and now reads the one instrument, printing the filter AND what it excluded."
     },
     {
       "id": "FU-369",

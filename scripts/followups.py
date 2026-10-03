@@ -317,26 +317,38 @@ def main() -> int:
             return 0
         if args.cmd == "forecast":
             print(fu.render_forecast(reg, prompt))
-            # The register cannot know how long a round TAKES — git can, so the wall-clock is
-            # measured separately and labelled as a different measurement, never blended in.
-            import subprocess as _sp, datetime as _dt, re as _re
+            # The register cannot know how long a round TAKES — git can, so the wall-clock is a
+            # DIFFERENT SUBJECT and is labelled as one, never blended into the row projection.
+            # IT IS NOT A DIFFERENT COMPUTATION. This block walked git itself over FORTY commits with
+            # its own filter (`0.2 <= g <= 48`, which keeps gaps shorter than any suite and gaps that
+            # span the sleeping hours) and printed n=38 median 1.3h beside a figure the forecast
+            # computed as n=88 median 1.74h over 400 commits with the filters stated and their reasons
+            # given. Three computations of one quantity, all labelled "from git", all disagreeing — and
+            # this was the one with a reader. It now READS the one instrument. W514 removed this same
+            # defect at the constants layer and again at the function layer; this was the third.
             try:
-                _log = _sp.run(["git", "log", "--format=%ct %s", "-40"], capture_output=True,
-                               text=True, encoding="utf-8", errors="replace").stdout.splitlines()
-                _pts = [(int(l.split(" ", 1)[0]), _re.search(r"\(W(\d{3})\)", l))
-                        for l in _log if l.strip() and l.split(" ", 1)[0].isdigit()]
-                _b = [(t, "W" + m.group(1)) for t, m in _pts if m]
-                _gaps = [round((_b[i - 1][0] - _b[i][0]) / 3600.0, 1) for i in range(1, len(_b))]
-                _gaps = [g for g in _gaps if 0.2 <= g <= 48]
-                if len(_gaps) >= 3:
-                    _gaps_sorted = sorted(_gaps)
-                    _med = _gaps_sorted[len(_gaps_sorted) // 2]
-                    print(f"  WALL CLOCK (git, a separate measurement): {len(_gaps)} commit-to-commit gaps, "
-                          f"median {_med} h per round, range {min(_gaps)}–{max(_gaps)} h.")
+                import importlib.util as _il
+                import pathlib as _pl
+                _sfp = _pl.Path(__file__).resolve().parent / "session_forecast.py"
+                _spec = _il.spec_from_file_location("_sf_wall", _sfp)
+                _sf = _il.module_from_spec(_spec)
+                _spec.loader.exec_module(_sf)
+                _d = _sf.round_durations()
+                if _d.get("assessable"):
+                    print(f"  WALL CLOCK (git, a different SUBJECT and the same instrument the forecast "
+                          f"uses): {_d['n']} round(s), median {_d['median_h']} h, "
+                          f"p25 {_d['p25_h']} h, p75 {_d['p75_h']} h, max {_d['max_h']} h.")
+                    print(f"  WALL CLOCK FILTER: {_d['basis']}.")
+                    _exc = _d.get("excluded") or {}
+                    print("  WALL CLOCK EXCLUDED: "
+                          + (", ".join(f"{k} {v}" for k, v in _exc.items()) if _exc
+                             else "nothing was excluded, which is not the same as no filter applying")
+                          + ".")
                 else:
-                    print("  WALL CLOCK: not assessable — too few round commits on record.")
+                    print(f"  WALL CLOCK: not assessable — {_d.get('why', 'the instrument said so')}.")
             except Exception as _e:
-                print(f"  WALL CLOCK: not assessable — git could not be read ({str(_e)[:80]}).")
+                print(f"  WALL CLOCK: not assessable — the round-duration instrument could not be read "
+                      f"({str(_e)[:90]}). NO FIGURE IS SUBSTITUTED.")
             return 0
         if args.cmd == "check":
             problems = fu.check(reg, prompt, living)

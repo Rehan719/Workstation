@@ -15,7 +15,10 @@ W514 AUDIT — FOUR CORRECTIONS, each of which moved the answer:
      commits not being monotonic in round number — counted as rounds. A round cannot be shorter than the suite
      it must run (MIN_ROUND_H).
   3. The printed window labels hard-coded "n=28" and "n=8" while the real sizes were 30 and 10. n is computed.
-  4. SUITE_H lived here AND in session_forecast.py with different values. It now has one home.
+  4. SUITE_H lived here AND in session_forecast.py with different values. It now has one home — and
+     W565 found that one home can still hold the wrong constant: it was the SERIAL figure, used as the
+     floor for rounds that ran a PARALLEL suite, so sixteen real rounds were classified as follow-up
+     commits. The floor is now the FASTEST measured mode and every suite figure names its mode.
 
 WHAT IT STILL CANNOT KNOW, and does not pretend to: rounds are resampled INDEPENDENTLY, though a hard night
 plausibly stays hard; a round that turns out to be a decision finishes in minutes; and the sample includes the
@@ -45,7 +48,9 @@ def _consts():
 
 
 K = _consts()
-SUITE_H = K.SUITE_H
+#  THE MODE A ROUND ACTUALLY RUNS, not a mode-free figure: a simulated round pays the suite it would
+#  really run, and K has no mode-free constant left to read.
+SUITE_H = K.SUITE_IN_USE_H
 TRIALS = 20000
 
 
@@ -131,7 +136,8 @@ def committed_and_expected(sample: List[float], budget_h: float = 8.0,
 
 
 if __name__ == "__main__":
-    print(f"suite: {SUITE_H:.2f}h ({K.SUITE_BASIS})")
+    print(f"suite: {SUITE_H:.2f}h, mode {K.SUITE_MODE_IN_USE} ({K.SUITE_IN_USE_BASIS})")
+    print(f"round floor: {K.MIN_ROUND_H:.2f}h ({K.MIN_ROUND_BASIS})")
     for since in (449, 490):
         s, dropped = classify(since)
         if len(s) < K.MIN_SAMPLE:

@@ -44,7 +44,10 @@ K = _consts()
 from typing import Any, Dict, List, Optional
 
 IDLE_CAP_H = K.IDLE_CAP_H
-SUITE_H = K.SUITE_H        # one home, loaded from _session_measured.py
+#  THE MODE IN USE. It read a mode-free `SUITE_H` that was the SERIAL mean, so `share_of_a_median_round`
+#  reported 44% — a serial suite over a median computed with a serial floor: internally consistent,
+#  externally meaningless, and 2.75x the measured 16%.
+SUITE_H = K.SUITE_IN_USE_H
           # below this, refuse rather than project
 
 
@@ -121,7 +124,13 @@ def forecast_session(hours: float, since: int = 460,
     n_med = max(1, int(usable // d["median_h"]))
     out["round_boundaries_cost"] = {
         "suite_h_per_round": round(SUITE_H, 2),
+        "suite_mode": K.SUITE_MODE_IN_USE,
+        "suite_basis": K.SUITE_IN_USE_BASIS,
         "share_of_a_median_round": f"{round(100 * SUITE_H / d['median_h'])}%",
+        "share_basis": (f"the {K.SUITE_MODE_IN_USE} suite ({SUITE_H:.2f}h) over the median round "
+                        f"({d['median_h']}h); both sides must come from the same mode, because a "
+                        f"serial suite over a parallel-floored median is a ratio of two different "
+                        f"things"),
         "suite_cost_at_n_rounds": {f"{n} rounds": round(n * SUITE_H, 2) for n in (n_med, n_med + 2)},
         "implication": ("the suite is FIXED per round, so fewer and larger rounds convert verification "
                         "overhead into working time; two extra round boundaries cost about one round's work"),

@@ -1,0 +1,155 @@
+[
+  {
+    "tag": "a mode-free suite constant comes back",
+    "file": "scripts/_session_measured.py",
+    "old": "SUITE_FASTEST_H = min(SUITE_SERIAL_H, SUITE_PARALLEL_H)",
+    "new": "SUITE_H = SUITE_SERIAL_H\nSUITE_FASTEST_H = min(SUITE_SERIAL_H, SUITE_PARALLEL_H)",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L1, and it is the whole subject. W514 gave the suite constant ONE HOME and recorded that a constant with two homes has no home; W565 found that one home can still hold the WRONG constant. A mode-free name invites exactly the three uses that broke: the cost of a suite, the share a suite takes of a round, and the floor deciding what counts as a round at all. Re-adding the name is harmless on its own and is the step before the misuse."
+  },
+  {
+    "tag": "the two suite modes are given the same measurement, so 'fastest' labels one number",
+    "file": "scripts/_session_measured.py",
+    "old": "SUITE_RUNS_PARALLEL_SECONDS = (973.14, 1025.49)",
+    "new": "SUITE_RUNS_PARALLEL_SECONDS = (3274.26, 3200.20)",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L1. Two names for one measurement is worse than one name, because the structure then ASSERTS that two modes were measured while the figures say otherwise. The leg asserts the parallel figure is actually faster, so a copied constant cannot masquerade as a second measurement."
+  },
+  {
+    "tag": "the round floor goes back to the serial suite, discarding sixteen real rounds",
+    "file": "scripts/_session_measured.py",
+    "old": "MIN_ROUND_H = SUITE_FASTEST_H",
+    "new": "MIN_ROUND_H = SUITE_SERIAL_H",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L2, and this is the defect with the largest measured consequence in the round. A round must contain A suite, so the floor has to be the fastest real one. The serial figure classified SIXTEEN gaps as follow-up commits that each exceeded a measured parallel suite: n went 88 to 72, the median 1.74h to 2.04h, and the reported suite share 16% to 44%. Nothing looked wrong — the filter reported a count, and a count cannot say that six of its exclusions were real rounds."
+  },
+  {
+    "tag": "the floor's basis stops recording what the previous floor cost",
+    "file": "scripts/_session_measured.py",
+    "old": "                   \"classified sixteen real rounds as follow-up commits — each of those gaps was longer \"\n                   \"than a measured parallel suite, so each could and did contain one. Gaps still below \"",
+    "new": "                   \"is no longer used. Gaps still below \"",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L2. A basis that says only WHAT the floor is cannot tell a later round that the alternative was MEASURED and found wrong. Without the figure, the next person to tidy this file sees a 17-minute floor where a suite constant used to be and — reasonably — puts the suite constant back."
+  },
+  {
+    "tag": "the CLI computes its own median again instead of reading the instrument",
+    "file": "scripts/followups.py",
+    "old": "                _d = _sf.round_durations()",
+    "new": "                _d = dict(_sf.round_durations(), n=38, median_h=1.3)",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L3, driven rather than read from source. Three computations of the median round existed, all labelled 'from git', all disagreeing, and THIS was the one with a reader — it walked forty commits with a filter that kept gaps shorter than any suite and gaps spanning the sleeping hours, and printed its figure beside the forecast's as 'a separate measurement'. True of the subject, false of the method. The leg runs the CLI and compares what it PRINTS with what the instrument computes."
+  },
+  {
+    "tag": "the CLI prints a median without the filter that produced it",
+    "file": "scripts/followups.py",
+    "old": "                    print(f\"  WALL CLOCK FILTER: {_d['basis']}.\")",
+    "new": "                    pass",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L3. A median with an unstated filter is precisely the shape that let three different figures stand side by side as equals: each was defensible on its own filter, and no reader could see that the filters differed. The filter is part of the figure."
+  },
+  {
+    "tag": "the CLI stops saying what its filter threw away",
+    "file": "scripts/followups.py",
+    "old": "                    print(\"  WALL CLOCK EXCLUDED: \"",
+    "new": "                    print(\"  \".strip() + \"\" if False else \"\"\n                    print(\"  WALL CLOCK EXCLUDED: \"",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L3. W514 recorded that a filter reporting a bare count concealed that six of its exclusions were real rounds, and W565 found sixteen more hidden the same way. A filter that reports only how many it dropped cannot be audited; one that names the reasons can."
+  },
+  {
+    "tag": "the suite share is reported without naming the mode it divided",
+    "file": "scripts/session_forecast.py",
+    "old": "        \"suite_mode\": K.SUITE_MODE_IN_USE,",
+    "new": "",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L4. The share read 44% — a SERIAL suite divided by a median computed with a SERIAL floor. Both halves were real measurements and the ratio was of two different things. A share that does not name its mode cannot be checked by the reader it is shown to."
+  },
+  {
+    "tag": "the share becomes a typed figure instead of the quotient of the two numbers beside it",
+    "file": "scripts/session_forecast.py",
+    "old": "        \"share_of_a_median_round\": f\"{round(100 * SUITE_H / d['median_h'])}%\",",
+    "new": "        \"share_of_a_median_round\": \"19%\",",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L4, and 19% is the exact figure P2.17's prose carried while the real one was 16% and the instrument's was 44%. A typed share agrees with nothing and is contradicted by the two numbers printed beside it; the leg recomputes the quotient."
+  },
+  {
+    "tag": "P2.17's historical figures stop being stamped, so they read as current",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "      WHAT W488 MEASURED, KEPT AS A STATEMENT ABOUT W488 AND NOT ABOUT NOW:",
+    "new": "      THE ROUND'S COST:",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L5. Removing the figures would lose a true statement about what was measured and when, which is its own defect; leaving them unstamped asserts something false about now. The stamp is what lets both be true. Every figure in that paragraph was stale by two to four times."
+  },
+  {
+    "tag": "the body is allowed to restate the computed figures again",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "and this paragraph may not restate them. Retyping fresher digits reproduces the defect.",
+    "new": "and this paragraph keeps them up to date.",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L5, and it is the trap the clause exists to close. The obvious fix for a stale typed figure is a fresher typed figure, which is the same defect with a later date on it — and this is the item whose own bar says the figures are computed and never typed."
+  },
+  {
+    "tag": "the refuted inference is left standing as though it were still true",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "      AND ONE OF THIS ITEM'S INFERENCES IS REFUTED BY THE PROGRAMME'S OWN HISTORY.",
+    "new": "      AND THIS ITEM'S CENTRAL INFERENCE STANDS.",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L5. 'A round that closes an item closes EXACTLY ONE' was the premise for the whole item's lever, and W505 closed five. An unmarked false premise is worse than a stale figure, because the work planned on top of it is planned for a problem that is not the problem."
+  },
+  {
+    "tag": "the existence proof is overstated into a bundle round that never happened",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "existence proof looks: a BUNDLE round in clause (a)'s sense has still never been run.",
+    "new": "existence proof suggests: the bundle round clause (a) describes has been run.",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L5, and it is the opposite failure to the one above. W505 closed two items on its own work and three more by applying a bar mechanism it established that day to items already met — that refutes 'exactly one' and is NOT clause (a)'s bundle, which shares a subsystem's measurement, guard and blinds. Claiming it would close clause (a) on a round that did something else."
+  },
+  {
+    "tag": "clause (c) stops stating a property a guard can drive",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "never typed; ONE instrument computes each quantity and every other surface READS it rather",
+    "new": "never typed; the figures are kept accurate rather",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L6. 'Kept accurate' is unfalsifiable and would have been satisfied by the three disagreeing computations, each of which was accurate on its own filter. A bar must name a property a test can drive: one instrument per quantity, every other surface reading it."
+  },
+  {
+    "tag": "a pending assertion goes back to an absolute total",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    assert 50000.0 in _queued_amounts(tr, v4), _queued_amounts(tr, v4)",
+    "new": "    assert tr.peek_pending_transfers(v4) == 50000.0",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L7(a). Reverting the assertion CANNOT be caught by running it — the row's whole point is that these four are LATENT: the totals happen to match today and the test passes for a reason unrelated to its subject. So the leg greps for the absolute literal instead, which is the only instrument that can see a defect whose symptom is absent. v4 is a registered living VSB, so §12 reinvestment from the test's own sender can inflate that total at any time the registry's crowding changes — which is exactly what parallel mode changes."
+  },
+  {
+    "tag": "the queue reader names a field the writer does not write",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    return [t.get(\"amount_wst\") for t in (rec.get(\"transfers\") or [])]",
+    "new": "    return [t.get(\"amount\") for t in (rec.get(\"transfers\") or [])]",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L7(b), and this was a real mistake in this round rather than a hypothetical: the first version of the helper read `amount` and returned [None] for a queue that genuinely held the receipt, so four correct assertions failed on correct data. A reader naming a field the writer does not write measures nothing, and the failure looks like a defect in the subject rather than in the instrument."
+  },
+  {
+    "tag": "the receipt-based subject is replaced by one that cannot survive an unrelated credit",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    _amounts = lambda r: [t[\"amount_wst\"] for t in r[\"transfers\"]]",
+    "new": "    _amounts = lambda r: [r[\"pending_wst\"]]",
+    "selector": "w565",
+    "expect": "BLIND(red)",
+    "why": "L7(c). The leg proves on a synthetic record that a receipt-based subject survives an unrelated §12 credit while a total-based one does not — which is the entire justification for the change. Swapping the helper for the total makes the demonstration assert the opposite of what it claims, so the leg must fail; otherwise it is a sentence about a property nobody measured."
+  }
+]
