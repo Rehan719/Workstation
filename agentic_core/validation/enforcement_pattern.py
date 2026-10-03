@@ -3,9 +3,13 @@ from dataclasses import dataclass
 
 @dataclass
 class ValidationResult:
-    passed: bool
+    #  W547 (FU-235) — THREE-STATE. None means no check could be obtained, which is not a pass and not a
+    #  failure. Every existing reader tests `if not result.passed`, so None routes to the violation
+    #  handler — the fail-closed direction, which is the right default for a constitutional check.
+    passed: Optional[bool]
     violation: Optional[str] = None
     details: Any = None
+    basis: str = ""
 
 class UniversalEnforcementPattern:
     """
@@ -21,7 +25,26 @@ class UniversalEnforcementPattern:
         self.validators[name] = validator
 
     def validate(self, target: Any) -> ValidationResult:
-        """Validate target against all registered constraints."""
+        """Validate target against all registered constraints — and refuse to answer with none.
+
+        W547 (FU-235) — THIS RETURNED passed=True OVER AN EMPTY VALIDATOR DICT. `self.validators` starts
+        as {} and nothing in this repository calls register_validator, so the loop below iterated nothing
+        and the method reported a clean constitutional pass. ZERO CHECKS IS NOT A PASS: it is the
+        strongest possible claim resting on the least possible evidence, and it was the default state.
+
+        MEASURED CORRECTION TO THE ROW THAT ASKED FOR THIS: the defect is LATENT, not live. Nothing
+        instantiates this base class — the clearance chain and the recirculation orchestrator both use
+        OmniEnforcementPatternSupreme, whose validate() fails closed on a missing validator. So the live
+        consequence was the opposite one (every validation refuses), and this class was a trap waiting
+        for the first caller to construct it directly.
+        """
+        if not self.validators:
+            return ValidationResult(
+                passed=None, violation=None, details=[],
+                basis=("NOT ASSESSED: no validator is registered on this enforcement pattern, so nothing "
+                       "was checked. This is not a pass — a constitutional verdict over zero checks is a "
+                       "claim with no evidence behind it. Register validators, or read this None as the "
+                       "refusal it is"))
         results = []
         for name, validator in self.validators.items():
             # In a concrete implementation, validator would have a .validate method

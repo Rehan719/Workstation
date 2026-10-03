@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "the refinery reports a confidence that rises with retries",
+    "file": "agentic_core/quality/vrpr_pipeline.py",
+    "old": "            confidence_score=None,",
+    "new": "            confidence_score=0.90 + 0.05 * iterations,",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "THE DEFECT FU-233 NAMES, in its original arithmetic. It rises with the number of ATTEMPTS, which is backwards on its face, and because the enforcement refuses while no validator is registered the loop always runs its full passes — so the figure exceeded unity on every run and its pydantic field accepted it."
+  },
+  {
+    "tag": "a cleared output must still survive the retry counter",
+    "file": "agentic_core/quality/vrpr_pipeline.py",
+    "old": "            if verdict is True:",
+    "new": "            if verdict is True and it >= 1:",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "The original exit required a cleared verdict AND a confidence the retry counter alone could reach, so an output that passed every check was held back until it had been 'refined' at least once. The leg drives a clearing validator and asserts the exit happens at zero iterations."
+  },
+  {
+    "tag": "the output is certified by renaming it",
+    "file": "agentic_core/quality/vrpr_pipeline.py",
+    "old": "            content=content,",
+    "new": "            content=(content.replace(\"Action result\", \"Certified Sovereign Action Outcome\") if polished else content),",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "This is what _polish did, and the word it inserted is the strongest claim in the sentence. str.replace certifies nothing; the leg asserts both exits return the text they were given."
+  },
+  {
+    "tag": "a refinement pass appends a literal and counts as work",
+    "file": "agentic_core/quality/vrpr_pipeline.py",
+    "old": "                refined_by.append(\"none_available\")",
+    "new": "                curr = f\"{curr} (Self-Refined)\"\n                refined_by.append(\"none_available\")",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "Measured on the real pipeline before this round: three refinement iterations produced the draft followed by that phrase three times. Nothing refined anything, and the iteration count made it look like three passes of work."
+  },
+  {
+    "tag": "a generator's output is passed to the experts as a signal",
+    "file": "agentic_core/quality/vrpr_pipeline.py",
+    "old": "                        f\"Refine: {curr[:50]}\", None, context, self.enforcement)",
+    "new": "                        f\"Refine: {curr[:50]}\", __import__(\"numpy\").random.rand(6), context, self.enforcement)",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "The original call. A generator's output is not a signal and the MoE cannot tell it from one, so every expert decision downstream was conditioned on noise. Caught both by a spy on the call and on the AST, because this module's docstring names the call it removed."
+  },
+  {
+    "tag": "an enforcement pattern with no validators reports a pass",
+    "file": "agentic_core/validation/enforcement_pattern.py",
+    "old": "        if not self.validators:",
+    "new": "        if False:",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "FU-235's defect: self.validators starts empty, nothing calls register_validator, so the loop iterated nothing and the method reported a clean constitutional pass. Zero checks is the strongest possible claim resting on the least possible evidence, and it was the default state."
+  },
+  {
+    "tag": "the emission carries a null confidence with no account of it",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "            \"vrpr_confidence_basis\": vrpr_res.confidence_basis,",
+    "new": "            \"_vrpr_confidence_basis_dropped\": vrpr_res.confidence_basis,",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "A None beside a key named for a confidence is an absence a reader fills in. The writer was fixed and its reader must be too, or the claim simply moves down a layer — which is why the enforcement's real verdict travels with it now."
+  },
+  {
+    "tag": "the mode config claims its threshold is enforced",
+    "file": "agentic_core/avatars/modes/mode_controller.py",
+    "old": "    vrpr_threshold_enforced: bool = False",
+    "new": "    vrpr_threshold_enforced: bool = True",
+    "selector": "w547",
+    "expect": "BLIND(red)",
+    "why": "A declared threshold nobody reads is not a threshold: each mode sets a different value and the tree contains no comparison against any of them. The leg ties the FLAG to whether a comparison exists, so the claim cannot rot in either direction — it would also red if someone started enforcing it and left the flag false."
+  }
+]

@@ -24,9 +24,18 @@ class ModeConfig:
     tone: str
     explanation_depth: str  # simple, detailed, technical
     pacing: str  # slow, moderate, fast
+    # W547 (FU-233) — DECLARED AND ENFORCED BY NOTHING, which is worth saying where the field is rather
+    # than leaving a reader to assume. Each mode sets a different value (0.95, 0.92, 0.90…) and a
+    # repo-wide search finds no comparison against any of them anywhere: the only other occurrences are
+    # the assignments themselves. A threshold nobody reads is not a threshold, and it cannot become one
+    # until something measures a confidence to compare it against — which the refinery no longer
+    # pretends to do, because the figure it used to report was 0.90 plus 0.05 per retry and reached 1.05.
     vrpr_threshold: float
     cognitive_weights: Dict[str, float]
     interruption_policy: str # always, when_confused, never
+    # the flag belongs at the END: a defaulted field cannot precede a non-defaulted one in a
+    # dataclass, which driving the manager caught at once.
+    vrpr_threshold_enforced: bool = False
 
 class AvatarModeManager:
     """

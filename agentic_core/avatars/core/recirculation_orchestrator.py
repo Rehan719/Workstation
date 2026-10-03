@@ -335,7 +335,17 @@ class AvatarRecirculationOrchestrator:
             "id": f"emit_{ctx['cycle_id']}",
             "text": personalized_text,
             "mode": self.mode_manager.current_mode.value,
+            # W547 (FU-233) — THE READER, FIXED WITH ITS WRITER. This attached the refinery's confidence
+            # to EVERY EMISSION the loop produced, and that figure was 1.05 on every run: 0.90 plus 0.05
+            # per refinement pass, over a loop that always ran three passes because the enforcement it
+            # consults refuses while no validator is registered. It is None now, and a None beside a key
+            # named for a confidence is an absence a reader would fill in — so the basis travels with it,
+            # and the enforcement's real verdict travels too, which is the fact the figure was standing in
+            # for all along.
             "vrpr_confidence": vrpr_res.confidence_score,
+            "vrpr_confidence_basis": vrpr_res.confidence_basis,
+            "vrpr_verification_passed": vrpr_res.verification_passed,
+            "vrpr_verification_basis": vrpr_res.verification_basis,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 

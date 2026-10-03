@@ -31911,3 +31911,149 @@ def test_w546_a_fresh_backend_without_the_ledger_refuses_instead_of_inventing_a_
     for _k in ("metered", "entropy_bits", "landauer_floor_joules", "budget_remaining", "basis"):
         assert _k in out["keys"], (f"the fallback's record omits {_k}, so a reader cannot treat the two "
                                    f"ledgers alike", out["keys"])
+
+
+def test_w547_the_refinery_reports_no_confidence_and_zero_checks_is_not_a_pass(client):
+    """P3.17 (FU-233, FU-235): a confidence that rose with retries, and a verdict over zero checks.
+
+    The enforcement's three states are DRIVEN with three different validator sets rather than observed,
+    because the live subclass refuses by default and a leg that only saw that one state would prove
+    nothing about the other two.
+    """
+    import ast
+    import asyncio as _aio
+    import pathlib
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    from agentic_core.quality.vrpr_pipeline import VRPRPipeline
+    from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
+    from agentic_core.validation.enforcement_pattern import (UniversalEnforcementPattern,
+                                                             ValidationResult)
+    from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
+
+    # ── L1. NO CONFIDENCE AT ALL, AND THE RETRY COUNTER NO LONGER GATES THE EXIT ─────────────────
+    _refusing = OmniEnforcementPatternSupreme({}, None)
+    _out = _aio.run(VRPRPipeline(_VSBUEG(), _refusing).process("Action result: a reasoned outcome", {}))
+    assert _out.confidence_score is None, (
+        "the refinery reports a confidence again; the figure it used to report started at a declared "
+        "0.90 and gained a declared increment per RETRY, so it rose with the number of attempts",
+        _out.confidence_score)
+    assert (_out.confidence_basis or "").strip() and "NOT MEASURED" in _out.confidence_basis, (
+        _out.confidence_basis)
+    #  the basis must let a reader RECOMPUTE what the old figure was rather than quote it: a typed
+    #  result cannot be checked from the string and goes stale the moment the arithmetic changes
+    assert "0.90" in _out.confidence_basis and "0.05" in _out.confidence_basis, _out.confidence_basis
+
+    #  A PASS NO LONGER HAS TO SURVIVE THE RETRY COUNTER. The exit used to require a cleared verdict AND
+    #  a confidence at or above a threshold the counter alone could reach, so a cleared output was held
+    #  back until it had been "refined" at least once. Driven with a validator that clears.
+    class _Clearing:
+        def validate(self, target, context=None):
+            return ValidationResult(passed=True, basis="driven by the guard")
+
+    _clear = OmniEnforcementPatternSupreme({}, None)
+    for _phase in _clear.phases.values():
+        for _name in _phase:
+            _clear.register_validator(_name, _Clearing())
+    _ok = _aio.run(VRPRPipeline(_VSBUEG(), _clear).process("Action result: a reasoned outcome", {}))
+    assert _ok.verification_passed is True, _ok.verification_basis
+    assert _ok.refinement_iterations == 0, (
+        "a cleared output still had to be refined before it could be returned", _ok.refinement_iterations)
+
+    # ── L2. "CERTIFICATION" IS NOT str.replace ───────────────────────────────────────────────────
+    #  The cleared exit used to rewrite "Action result" to include the word Certified and "reasoned
+    #  outcome" likewise. Renaming text does not certify it, and that word is the strongest claim in the
+    #  sentence. Both exits now return the text they were given.
+    assert _ok.content == "Action result: a reasoned outcome", (
+        "the cleared exit rewrote the output's wording", _ok.content)
+    assert "Certified" not in _ok.content, ("the output was certified by renaming it", _ok.content)
+    #  and the refusing exit returns the draft unchanged too: each pass used to append a literal, so
+    #  three "refinements" produced the draft followed by the same phrase three times
+    assert _out.content == "Action result: a reasoned outcome", (
+        "a refinement pass with no refiner changed the text", _out.content)
+    assert "0 applied a real refiner" in _out.refinement_basis, _out.refinement_basis
+
+    # ── L3. NO GENERATOR OUTPUT IS PASSED AS A SIGNAL ────────────────────────────────────────────
+    _seen = {}
+
+    class _SpyMoE:
+        async def execute_moe_supreme(self, prompt, vector, context, enforcement):
+            _seen["vector"] = vector
+            return "a refinement from the experts"
+
+    _spied = _aio.run(VRPRPipeline(_VSBUEG(), _refusing, _SpyMoE()).process("draft", {}))
+    assert "vector" in _seen, "the MoE was never called, so this leg proves nothing about its arguments"
+    assert _seen["vector"] is None, (
+        "a vector is still passed to the MoE; it used to be a generator's output, which the MoE could "
+        "not tell from a real signal", _seen["vector"])
+    #  and a real refiner's output IS used, so the fix did not disable refinement
+    assert "a refinement from the experts" in _spied.content, _spied.content
+    assert "1 applied a real refiner" in _spied.refinement_basis or "moe" in _spied.refinement_basis, (
+        _spied.refinement_basis)
+    #  asserted on the AST, because this module's own docstring names the call it removed
+    _vt = ast.parse((_root / "agentic_core/quality/vrpr_pipeline.py").read_text(encoding="utf-8"))
+    _calls = [ast.unparse(n.func) for n in ast.walk(_vt) if isinstance(n, ast.Call)]
+    assert not [c for c in _calls if "random" in c], ("a generator call is back", _calls)
+
+    # ── L4. ZERO CHECKS IS NOT A PASS — three states, each driven ────────────────────────────────
+    _none = UniversalEnforcementPattern({}, None).validate("x")
+    assert _none.passed is None, (
+        "an enforcement pattern with no validator registered reported a constitutional verdict; zero "
+        "checks is the strongest claim resting on the least evidence", _none.passed)
+    assert "NOT ASSESSED" in _none.basis and "not a pass" in _none.basis, _none.basis
+
+    class _Failing:
+        def validate(self, target, context=None):
+            return ValidationResult(passed=False, violation="driven", basis="driven by the guard")
+
+    _p = UniversalEnforcementPattern({}, None)
+    _p.register_validator("driven_ok", _Clearing())
+    assert _p.validate("x").passed is True, "a registered passing validator could not produce a pass"
+    _p.register_validator("driven_bad", _Failing())
+    assert _p.validate("x").passed is False, "a registered failing validator could not produce a refusal"
+
+    # ── L5. THE EMISSION CARRIES THE VERDICT, not just the absent figure ─────────────────────────
+    #  A None beside a key named for a confidence is an absence a reader fills in, so the basis and the
+    #  enforcement's real verdict travel with it.
+    #  THE DICT'S KEYS, ON THE AST. A substring search over the source was VACUOUS: a sweep renamed the
+    #  key to `_vrpr_confidence_basis_dropped`, which CONTAINS the string being searched for, so the leg
+    #  passed with the field gone. Keys are compared exactly.
+    _ot = ast.parse((_root / "agentic_core/avatars/core/recirculation_orchestrator.py").read_text(
+        encoding="utf-8"))
+    _emission_keys = set()
+    for _n in ast.walk(_ot):
+        if isinstance(_n, ast.Dict) and any(
+                isinstance(_k, ast.Constant) and _k.value == "vrpr_confidence" for _k in _n.keys):
+            _emission_keys |= {_k.value for _k in _n.keys
+                               if isinstance(_k, ast.Constant) and isinstance(_k.value, str)}
+    assert "vrpr_confidence" in _emission_keys, "no emission dict carries the refinery's verdict at all"
+    for _needle in ("vrpr_confidence_basis", "vrpr_verification_passed", "vrpr_verification_basis"):
+        assert _needle in _emission_keys, (
+            f"the emission omits {_needle}, so a reader meets a null confidence with no account of it",
+            sorted(_emission_keys))
+
+    # ── L6. THE ENFORCED FLAG AGREES WITH WHETHER ANYTHING ENFORCES IT ──────────────────────────
+    #  A declared threshold nobody reads is not a threshold. Rather than assert that nothing compares it
+    #  — which would red the day someone correctly starts — this asserts the FLAG AND THE CODE AGREE, so
+    #  the claim cannot rot in either direction.
+    _comparisons = []
+    for _f in (_root / "agentic_core").rglob("*.py"):
+        try:
+            _ft = ast.parse(_f.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for _n in ast.walk(_ft):
+            if isinstance(_n, ast.Compare) and any(
+                    isinstance(_s, ast.Attribute) and _s.attr == "vrpr_threshold"
+                    for _s in ast.walk(_n)):
+                _comparisons.append(f"{_f.relative_to(_root)}:{_n.lineno}")
+    from agentic_core.avatars.modes.mode_controller import AvatarModeManager
+    _mm = AvatarModeManager(_VSBUEG())
+    _cfgs = list(_mm.mode_configs.values())
+    assert _cfgs, "no mode config was built"
+    for _c in _cfgs:
+        assert _c.vrpr_threshold_enforced is bool(_comparisons), (
+            f"the mode config says the threshold is "
+            f"{'enforced' if _c.vrpr_threshold_enforced else 'not enforced'} while the tree has "
+            f"{len(_comparisons)} comparison(s) against it", _comparisons[:3])

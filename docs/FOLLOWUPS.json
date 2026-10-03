@@ -3973,8 +3973,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W547",
       "note": "",
       "tier": 3,
       "area": "native_ai",
@@ -4014,8 +4014,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W547",
       "note": "",
       "tier": 3,
       "area": "native_ai",
@@ -6251,6 +6251,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "it IS P3.16's own third ACCEPT clause",
+      "tier": 2
+    },
+    {
+      "id": "FU-358",
+      "title": "No constitutional validator is registered anywhere, so every enforcement check now refuses by default and the loop can never clear",
+      "why": "Measured W547 while fixing FU-235. The always-passes defect is gone: UniversalEnforcementPattern.validate() returns passed=None over an empty validator dict with a basis, and OmniEnforcementPatternSupreme already failed closed. WHAT REMAINS IS THE OTHER HALF OF FU-235's TITLE, which closing it did not deliver: NOTHING IN THIS REPOSITORY CALLS register_validator. OmniEnforcementPatternSupreme declares 21 constraint names across five phases (zero_placeholder, edge_first_sovereignty, causal_sovereignty, thermodynamic_accountability, constitutional_compliance, biomimetic_fidelity, genetic_immune_topology_integrity, statistical_rigor, legal_precision_hard, adversarial_co_evolution, trillion_token_provenance, human_ai_constitutional_co_sovereignty, oam_qkd_software_only, federated_consensus, commercial_integrity, hallucination_containment, first_principles_grounding, sincerity_integrity_loyalty, lob_fixpoint and two more) and not one has an implementation. CONSEQUENCE, and it is the honest state rather than a regression: every constitutional validation refuses, which is why clearance gate 1 withholds every emission and the recirculation loop's normal outcome is WITHHELD (W533, W545). The platform is correctly silent because it cannot check itself, and that is now visible on /api/v1/heartbeat/status and the HeartbeatMonitor page. FIX: implement the validators, highest-value first, and keep each one's verdict three-state — a validator that cannot assess its subject must return None rather than clearing. zero_placeholder is the natural first (an executing version of the rule this whole programme enforces by hand), and statistical_rigor and first_principles_grounding are the two whose names most invite a fabricated score, so they need a refusal path before they need a score.",
+      "source": "W547 (measured while closing FU-235)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/validation/enforcement_pattern.py",
+        "agentic_core/validation/omni_enforcement_pattern_supreme.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
       "tier": 2
     }
   ],
