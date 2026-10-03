@@ -132,7 +132,7 @@ agentic_core/          — FastAPI backend (the real code)
   synthesis/ · api/intelligence.py — multi-format synthesis + cognitive/MJM/Nexus engines
 
 apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
-  src/App.tsx          — 75 routes (the only file in src/ that defines any; recomputed by scripts/readme_figures.py)
+  src/App.tsx          — 76 routes (the only file in src/ that defines any; recomputed by scripts/readme_figures.py)
   src/pages/           — Enterprise, Learner, Developer, Scholar realms
                          + domain hubs + all product pages
 ```

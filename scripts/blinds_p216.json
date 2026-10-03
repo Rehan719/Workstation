@@ -1,0 +1,101 @@
+[
+  {
+    "tag": "a compression answering \"none\" is recorded as raising an escalation named none",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "                if val.strip().lower().rstrip(\".\") in _EXPLICIT_NONE:",
+    "new": "                if False:",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L1 — the defect as it stood before this round. 'escalations: none' parsed to ['none'], a non-empty list, which ESCALATES: a compression reporting nothing to escalate was recorded as escalating, and 'missing: none' fired the missing-input term the same way. It also made the no-escalation state unreachable, which is a clause of this item's bar."
+  },
+  {
+    "tag": "a blank value is read as an answer of none",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "        if key in _COMPRESSION_FIELDS and val:",
+    "new": "        if key in _COMPRESSION_FIELDS:",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L1's other side, and the harder direction to get right. 'escalations: ' with nothing after it is AMBIGUOUS — it may be a model that answered none or one that answered nothing at all — so the key stays ABSENT. Reading a blank as 'none' would turn a non-answer into a clearance."
+  },
+  {
+    "tag": "a comma-separated list is parsed as a single escalation",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "                for _sep in _LIST_SPLIT:",
+    "new": "                for _sep in _LIST_SPLIT[:1]:",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L1. A model asked for a list writes commas as often as semicolons, and 'escalations: a, b' parsed to ONE item reading 'a, b' — which still escalates, so nothing went visibly wrong, and the page would have shown one escalation where there were two."
+  },
+  {
+    "tag": "the record does not carry what was asked, so the page's first field has no data",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "        \"asked\": observation.get(\"raw_text\"),",
+    "new": "        \"asked\": None,",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L3. The companion surface leads with 'what was asked' and the record kept only the observation's id, surface and source — so the field the page leads with had nothing behind it and the observation that held the text was stored nowhere."
+  },
+  {
+    "tag": "an absent escalation list renders as \"none raised\"",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx",
+    "old": "  const answered = Array.isArray(items);",
+    "new": "  const answered = true;",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L4, and it is the clause the whole page turns on. With the mutation a request nothing compressed renders 'None raised — the compression answered', telling a reader their request was screened and cleared when nothing read it. The three states collapse to two and the page looks entirely normal."
+  },
+  {
+    "tag": "the page drops the sentence saying an absence is not an absence of escalations",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx",
+    "old": "          <span className=\"text-amber-400/80\">Its absence is not an absence of {label.toLowerCase()}.</span>",
+    "new": "",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L4. 'Not evaluated' alone is a label a reader can take as a formality; the sentence is what stops them reading the blank as reassurance. The probe asserts it on the rendered page and the guard asserts it in source."
+  },
+  {
+    "tag": "an unevaluated decision term renders as a pass",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx",
+    "old": "                    {t.fired === true ? 'FIRED' : t.fired === false ? 'did not fire' : NOT_EVALUATED}",
+    "new": "                    {t.fired === true ? 'FIRED' : 'did not fire'}",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L4 — 'nothing on it claims an alignment the kernel did not evaluate', the item's third clause, stated as plainly as it can be. A term the kernel could not evaluate would render exactly like one it evaluated and cleared."
+  },
+  {
+    "tag": "consumption renders a zero instead of saying nothing measured it",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx",
+    "old": "            <p className=\"text-slate-300 font-bold mt-1\">Not recorded</p>",
+    "new": "            <p className=\"text-slate-300 font-bold mt-1\">0 ms · 0 tokens</p>",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L4. P2.15 is not built, so nothing measured what any run cost. A zero that means 'not measured' is the defect this programme keeps removing, and it would be at its worst here — on the surface a user reads to understand what their request consumed."
+  },
+  {
+    "tag": "the companion surface has no route, so it is a file rather than a page",
+    "file": "apps/workstation-superapp/src/App.tsx",
+    "old": "          <Route path=\"/horizon-companion\" element={<HorizonCompanion />} />",
+    "new": "          {/* <Route path=\"/horizon-companion\" element={<HorizonCompanion />} /> */}",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L4. The reach failure this plan keeps finding, in its purest form: the page exists, type-checks, and nobody can open it. The commented-out form is used deliberately because the component name still appears in the import, so a check on the NAME alone would survive it."
+  },
+  {
+    "tag": "the probe's seed hand-writes its rows instead of computing them",
+    "file": "scripts/_w557_probe_seed.py",
+    "old": "        rec = kernel.build_record(obs, served_by, is_external, False, text)",
+    "new": "        rec = {**obs, \"compression\": \"COMPRESSED\", \"escalations\": [], \"served_by\": served_by}",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L5. A seed that writes the records by hand makes the probe assert that the PAGE renders a dictionary — nothing about the kernel's parsing, its terms or its three states. The probe would stay green while the thing it exists to check was broken."
+  },
+  {
+    "tag": "the seed stops asserting that it produced three different states",
+    "file": "scripts/_w557_probe_seed.py",
+    "old": "    assert esc[0] is None and esc[1] == [] and esc[2], (",
+    "new": "    assert True or esc[0] is None and esc[1] == [] and esc[2], (",
+    "selector": "w557",
+    "expect": "BLIND(red)",
+    "why": "L5. Three identical rows would make every probe check pass over a page that renders ONE state three times — the instrument agreeing with itself. The seed asserting its own premise is what makes the probe's result mean anything."
+  }
+]

@@ -33694,3 +33694,132 @@ def test_w556_friction_becomes_a_governed_change_and_never_a_written_in_root_cau
     assert "NEVER REACHES THE BOARD" in _st["dispositions"]["APPLIED_AND_RECORDED"]["what_it_is"], _st
     assert "no second approval path" in _st["one_register"], _st["one_register"]
     assert "never promoted to a finding" in _st["no_root_cause"], _st["no_root_cause"]
+
+
+def test_w557_the_companion_surface_shows_three_states_and_claims_no_alignment_nobody_reached(client):
+    """P2.16: the not-compressed and no-escalation states are reachable and asserted, and nothing on the
+    page claims an alignment the kernel did not evaluate.
+
+    The item's BODY and its ACCEPT named different states — the body says "not compressed" and "no
+    station assigned", the ACCEPT says "not-compressed" and "no-escalation" — so one deliverable had no
+    bar and one bar clause had no sentence. By the rule that an item's deliverables ARE its bar, all
+    three are asserted here.
+    """
+    import pathlib
+    import re
+    from agentic_core.horizon import kernel as _k
+
+    # ── L1. A COMPRESSION THAT ANSWERS "NONE" MEANS NONE — it used to mean an escalation ──────────
+    #  Measured W557: "escalations: none" parsed to ["none"], a non-empty list, which ESCALATES. So a
+    #  compression reporting nothing to escalate was recorded as escalating, `missing: none` fired the
+    #  missing-input term the same way, and the no-escalation state — a clause of this item's bar — was
+    #  unreachable because nothing could produce an empty list.
+    for _neg in ("none", "None.", "nothing", "n/a", "-"):
+        _f = _k._fields_from(f"escalations: {_neg}\nmissing: {_neg}\n")
+        assert _f.get("escalations") == [], (_neg, _f)
+        assert _f.get("missing") == [], (_neg, _f)
+    #  A BLANK IS NOT AN ANSWER. An empty value after the colon is ambiguous, so the key stays ABSENT.
+    assert _k._fields_from("escalations: \n") == {}, _k._fields_from("escalations: \n")
+    #  and a real list still parses — on EITHER separator, since "a, b" used to be one item reading "a, b"
+    assert _k._fields_from("escalations: a; b\n")["escalations"] == ["a", "b"]
+    assert _k._fields_from("escalations: a, b\n")["escalations"] == ["a", "b"]
+
+    # ── L2. THE THREE STATES OF THE TERM, and the middle one is now reachable ─────────────────────
+    def _term(rec, name="guardrail_escalation"):
+        return {t["term"]: t for t in _k.decide(rec)["terms"]}[name]
+    _base = {"compression": _k.COMPRESSED, "domain": "operations"}
+    assert _term({**_base, "escalations": ["a"]})["fired"] is True
+    assert _term({**_base, "escalations": []})["fired"] is False, (
+        "a compression that ANSWERED none still cannot produce fired=False, so the no-escalation state "
+        "the bar names is unreachable")
+    assert _term(dict(_base))["fired"] is None
+    #  AND NONE IS NOT FALSE. The basis must say the absence says nothing, not that nothing was found.
+    assert "NOT AVAILABLE" in _term(dict(_base))["basis"], _term(dict(_base))["basis"]
+    assert "absence is not an absence" in _term(dict(_base))["basis"], _term(dict(_base))["basis"]
+
+    # ── L3. THE RECORD CARRIES WHAT WAS ASKED, which the page leads with ──────────────────────────
+    _obs = _k.observe("user", "Please review this supplier contract", "chat")
+    _rec = _k.build_record(_obs, None, False, False, "")
+    assert _rec["asked"] == "Please review this supplier contract", _rec.get("asked")
+    assert "never reads a request body" in _rec["asked_basis"], _rec["asked_basis"]
+    #  and the seam's own rows carry the method and path, NOT a body it never read
+    from agentic_core.horizon import membrane as _mem
+    _row = _mem.observe_request("POST", "/api/v1/law/analyse", status=200)
+    assert _row and _row["asked"] == "POST /api/v1/law/analyse", _row.get("asked")
+    assert _row.get("body_read") is False, _row
+
+    # ── L4. THE PAGE RENDERS THE THREE STATES AS THREE DIFFERENT THINGS ───────────────────────────
+    _page = (pathlib.Path(__file__).resolve().parents[1]
+             / "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx")
+    assert _page.exists(), "the companion surface does not exist"
+    _src = _page.read_text(encoding="utf-8")
+    #  the RENDER forms, not the field names — an interface declaration carries every field name, so a
+    #  presence check on one would pass over a page that never prints it.
+    assert "{r.compression_basis}" in _src, "the page does not print the kernel's compression reason"
+    assert "{r.asked ||" in _src and "{r.asked_basis}" in _src, (
+        "the page does not print what was asked, or prints it without saying where the text came from")
+    assert "None raised — the compression answered" in _src, (
+        "the page has no words for a compression that ANSWERED none, so that state cannot be told from "
+        "an absent list")
+    assert "Its absence is not an absence of" in _src, (
+        "the page does not say that an absent list is not an empty one — the clause this item turns on")
+    #  THE PREDICATE, NOT THE BRANCH. A sweep proved the earlier form vacuous: it asserted the three
+    #  branches exist, and flipping `answered` to a constant left every branch in place while making an
+    #  absent list render as "None raised". What cannot survive that defect is the predicate itself.
+    assert "const answered = Array.isArray(items);" in _src, (
+        "the answered/absent distinction is not computed from the list's PRESENCE, so a request nothing "
+        "compressed can render as one whose compression answered none")
+    assert "const raised = answered && items!.length > 0;" in _src, _src[:0]
+    assert "{raised ? (" in _src and ") : answered ? (" in _src, (
+        "the list field does not branch three ways, so two of its states render as the same thing")
+    #  NOTHING CLAIMS AN ALIGNMENT THE KERNEL DID NOT REACH. The WHOLE ternary, including its third arm:
+    #  asserting the prefix passed over a mutation that deleted exactly that arm.
+    assert "const NOT_EVALUATED = 'Not evaluated';" in _src, "the page has no unevaluated state at all"
+    assert ("{t.fired === true ? 'FIRED' : t.fired === false ? 'did not fire' : NOT_EVALUATED}"
+            in _src), (
+        "a decision term does not render its third state, so a term the kernel could not evaluate looks "
+        "exactly like one it evaluated and cleared — the item's third clause")
+    #  CONSUMPTION, read from ITS OWN BLOCK rather than from anywhere in the file: "Not recorded" also
+    #  appears in the asked-text fallback, so a file-wide check survived a zero being put here.
+    _consume = _src[_src.index('data-testid="companion-consumption"'):]
+    _consume = _consume[:_consume.index("</div>")]
+    assert ">Not recorded</p>" in _consume, (
+        "the consumption block does not say the cost was not recorded", _consume[-300:])
+    assert not re.search(r">\s*0(\.\d+)?\s*(ms|s|tokens|wst)\b", _consume), (
+        "a zero stands in for an unmeasured cost on the surface a user reads to learn what their "
+        "request consumed", _consume[-300:])
+    assert "P2.15" in _consume and "A zero here would be a figure nobody computed" in _consume, _consume[:0]
+    #  the Owner's entry, in the item body's own words
+    assert "No station assigned" in _src, "the page does not render the item's own absent-tag wording"
+    #  AND THE PAGE IS REACHED — asserted on an UNCOMMENTED line, because a commented-out route contains
+    #  its own path and its own component name, which is how the earlier form passed with the route off.
+    _app = (pathlib.Path(__file__).resolve().parents[1]
+            / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    _route_lines = [ln for ln in _app.splitlines()
+                    if "/horizon-companion" in ln and "<Route" in ln
+                    and not ln.strip().startswith(("//", "{/*", "*"))]
+    assert len(_route_lines) == 1, (
+        "the companion surface has no LIVE route, so it is a file rather than a page — a commented-out "
+        "route still contains its own path, which is why this counts uncommented lines",
+        [ln.strip()[:90] for ln in _app.splitlines() if "/horizon-companion" in ln])
+    assert "HorizonCompanion" in _route_lines[0], _route_lines[0]
+
+    # ── L5. THE PROBE THE BAR ASKS FOR EXISTS AND DRIVES ALL THREE ────────────────────────────────
+    _probe = pathlib.Path(__file__).resolve().parents[1] / "scripts/_w557_probe.mjs"
+    _seed = pathlib.Path(__file__).resolve().parents[1] / "scripts/_w557_probe_seed.py"
+    assert _probe.exists() and _seed.exists(), "the bar asks for a probe and there is none"
+    _pt = _probe.read_text(encoding="utf-8")
+    for _needed in ("the not-compressed state is reachable on the page",
+                    "the no-escalation state is reachable on the page",
+                    "an absent escalation list renders as NOT EVALUATED",
+                    "an unevaluated term renders as NOT EVALUATED and never as a pass"):
+        assert _needed in _pt, ("the probe does not assert a clause of the bar", _needed)
+    #  THE SEED COMPUTES ITS ROWS THROUGH THE KERNEL rather than hand-writing them, or the probe would
+    #  be reading a page rendering fiction.
+    _st = _seed.read_text(encoding="utf-8")
+    assert "kernel.build_record(" in _st and "kernel.decide(" in _st, (
+        "the seed hand-writes records instead of computing them, so the probe asserts nothing about the "
+        "kernel's own behaviour")
+    assert "assert esc[0] is None and esc[1] == [] and esc[2]" in _st, (
+        "the seed does not assert its own premise — three identical rows would make the probe pass over "
+        "a page that renders one state three times")

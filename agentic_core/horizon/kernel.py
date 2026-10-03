@@ -109,11 +109,28 @@ def _compression_of(served_by: Optional[str], is_external: bool, failed: bool,
                                   + (" (EXTERNAL accelerant, opt-in)" if is_external else " (in-house)"))}
 
 
+#  W557 — what a model writes when it means "I looked and there were none". Without these, an explicit
+#  negative became a LIST CONTAINING THE WORD: "escalations: none" parsed to ["none"], which is a
+#  non-empty list, which escalates. A compression reporting nothing to escalate was therefore recorded as
+#  escalating, and `missing: none` fired required_field_missing the same way. It also made the
+#  no-escalation state unreachable, which is a clause of P2.16's bar.
+_EXPLICIT_NONE = ("none", "no", "n/a", "na", "nothing", "-", "—", "no escalations", "no missing inputs")
+
+#  Both separators, because a model asked for a list writes commas as often as semicolons and
+#  "escalations: a, b" parsed to ONE item reading "a, b".
+_LIST_SPLIT = (";", ",")
+
+
 def _fields_from(text: str) -> Dict[str, Any]:
     """The compression's own fields, parsed from what the model returned.
 
     Only ever called on a COMPRESSED run. Anything it cannot find is ABSENT from the result rather than
     defaulted, so a model that answered partially cannot have the rest filled in on its behalf.
+
+    THREE STATES FOR A LIST FIELD, not two, and the middle one is the whole reason this function was
+    revisited: the key is ABSENT when the compression did not answer, an EMPTY LIST when it answered that
+    there are none, and a populated list otherwise. `decide()` already reads those three correctly —
+    None, False, True — and had no way to reach the middle one, because nothing produced an empty list.
     """
     out: Dict[str, Any] = {}
     for line in str(text or "").splitlines():
@@ -124,7 +141,15 @@ def _fields_from(text: str) -> Dict[str, Any]:
         val = val.strip()
         if key in _COMPRESSION_FIELDS and val:
             if key in ("missing", "escalations"):
-                out[key] = [p.strip() for p in val.split(";") if p.strip()]
+                if val.strip().lower().rstrip(".") in _EXPLICIT_NONE:
+                    #  ANSWERED, AND THE ANSWER IS NONE. Distinct from the key being absent, which
+                    #  means nothing was asked or nothing replied.
+                    out[key] = []
+                    continue
+                parts = [val]
+                for _sep in _LIST_SPLIT:
+                    parts = [p for chunk in parts for p in chunk.split(_sep)]
+                out[key] = [p.strip() for p in parts if p.strip()]
             else:
                 out[key] = val
     return out
@@ -139,6 +164,19 @@ def build_record(observation: Dict[str, Any], served_by: Optional[str], is_exter
         "observation_id": observation.get("observation_id"),
         "surface": observation.get("surface"),
         "source": observation.get("source"),
+        #  W557 (P2.16) — WHAT WAS ASKED, carried onto the record. The companion surface's first
+        #  deliverable is "what was asked", and until this round the record kept only the observation's
+        #  id, surface and source — so the page had nothing to show for the field it leads with, and the
+        #  observation that held the text was not stored anywhere.
+        #  WHAT THIS IS NOT: it is not the seam reading request bodies. A row the membrane writes carries
+        #  the method and the path as its text and nothing else, by the decision recorded in membrane.py;
+        #  a row from POST /observe carries what the user typed there, which is the thing they asked the
+        #  platform to record. The basis says which of the two a reader is looking at.
+        "asked": observation.get("raw_text"),
+        "asked_basis": (
+            "the text this record was made from, exactly as it arrived. For a request a user sent to "
+            "/observe that is what they typed; for a row the observing seam wrote it is the METHOD AND "
+            "PATH only, because the seam never reads a request body"),
         "created_at": time.time(),
         **comp,
         "is_external": bool(is_external),

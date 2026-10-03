@@ -103,6 +103,7 @@ import { CreatorStudio } from './pages/create/CreatorStudio';
 import { Introspection as CognitiveIntrospection } from './pages/cognitive/Introspection';
 import { Support } from './pages/support/Support';
 import { HorizonGuardrails } from './pages/governance/HorizonGuardrails';
+import { HorizonCompanion } from './pages/governance/HorizonCompanion';
 import { Login } from './pages/Login';
 import { installAuth } from './lib/auth';
 import { syncWorkspaceFromServer } from './lib/outputHistory';
@@ -248,6 +249,7 @@ function App() {
           <Route path="/cognitive-introspection" element={<CognitiveIntrospection />} />
           <Route path="/support" element={<Support />} />
           <Route path="/horizon-guardrails" element={<HorizonGuardrails />} />
+          <Route path="/horizon-companion" element={<HorizonCompanion />} />
           {/* Off-vision experimental pages (Cosmic/Reality/AR-VR/Wearables/Embodiment/Civilization)
               archived to _archive/frontend-pages — not part of the Workstation IDBO vision. */}
 
