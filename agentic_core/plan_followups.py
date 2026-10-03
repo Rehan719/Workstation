@@ -523,8 +523,24 @@ def plan_now(register: Any, prompt_text: str) -> Dict[str, Any]:
             phases.append({"phase": ph, "done": 0, "total": 0})
         phases[-1]["total"] += 1
         phases[-1]["done"] += 1 if it["done"] else 0
+    # W549 (FU-336) — HOW MANY ROWS HAVE EVER RIDDEN EACH ITEM, not just how many are open. `riding`
+    # comes from schedule(), which lists OPEN rows, so an item rendered "0" was indistinguishable
+    # between two opposite states: never examined, and examined with every row closed. That ambiguity
+    # is not academic — W545 closed P3.16's last two rows, leaving it at "0" with an UNMET bar, which
+    # reads exactly like an item nobody has looked at. Both counts are reported now.
+    # Each row is checked for being a MAPPING before it is read. The surrounding code tolerates a
+    # register whose items are not rows — `schedule()` is called defensively two lines above for exactly
+    # that reason — and a full suite paid for this one: test_w462 passes such a register, and `.get` on a
+    # string raised where the old count had simply never looked. A new reader of shared state inherits
+    # that state's existing tolerances, it does not get to assume a shape the callers never promised.
+    _ever: Dict[str, int] = {}
+    for _r in (register.get("items") or []) if isinstance(register, dict) else []:
+        _s = _r.get("slot") if isinstance(_r, dict) else None
+        if _s:
+            _ever[_s] = _ever.get(_s, 0) + 1
     open_items = [{"slot": it["slot"], "title": it["title"],
                    "followups": len(riding.get(it["slot"], [])),
+                   "ever": _ever.get(it["slot"], 0),
                    "by_severity": {sev: sum(1 for r in riding.get(it["slot"], []) if r["severity"] == sev)
                                    for sev in SEVERITIES},
                    # W478 — the rows' total open priority, and the highest-priority rows first
@@ -1261,8 +1277,17 @@ def render_plan_now(register: Any, prompt_text: str) -> str:
     else:
         riders = nxt["followups"]
         out.append(f"  Next: {nxt['slot']} {nxt['title']} — "
-                   + (f"{riders} follow-up{'s' if riders != 1 else ''} ride it." if riders else "no follow-ups ride it."))
-        rest = [f"{it['slot']} {it['followups']}" for it in p["open_items"][1:]]
+                   + (f"{riders} follow-up{'s' if riders != 1 else ''} ride it"
+                      + (f" ({nxt['ever']} ever)." if nxt["ever"] != riders else ".")
+                      if riders else
+                      (f"no OPEN follow-up rides it, and {nxt['ever']} have — every row closed, which is "
+                       f"NOT the same as the item being done: it closes on its ACCEPT clause."
+                       if nxt["ever"] else
+                       "no follow-up has ever ridden it, so it is UNEXAMINED rather than nearly done.")))
+        # W549 (FU-336) — "open/ever", so a zero says WHICH zero it is: 0/0 is an item no row has ever
+        # ridden (unexamined), and 0/4 is one whose rows all closed. An item closes on its BAR, so
+        # neither zero means done — but a reader can no longer mistake the second for the first.
+        rest = [f"{it['slot']} {it['followups']}/{it['ever']}" for it in p["open_items"][1:]]
         if rest:
             out.extend(_wrap("  Then, in order (the follow-ups riding each): ", rest))
     if nxt is not None and nxt["top"]:

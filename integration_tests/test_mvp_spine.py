@@ -31512,7 +31512,19 @@ def test_w545_a_withheld_emission_is_visible_and_a_simulator_discloses_itself(cl
     _root = pathlib.Path(__file__).resolve().parents[1]
 
     # ── L1. NOT-RUN AND WITHHELD ARE DIFFERENT STATES, and both reach the route ───────────────────
-    from agentic_core.organism.heartbeat import heartbeat as _hb
+    #  W549 — THE ROUTE'S OWN REFERENCE, not the module's. This guard took
+    #  `from agentic_core.organism.heartbeat import heartbeat`, and an earlier test in this file calls
+    #  importlib.reload on that module, which re-runs `heartbeat = OrganismHeartbeat()` and rebinds the
+    #  module attribute to a NEW object while agentic_core/api/heartbeat.py still holds the one it bound
+    #  at import. From then on the two are different heartbeats, so this guard configured one and
+    #  asserted about another: `last_metabolic` was set on the object and None in the payload.
+    #  IT PASSED ALONE AND IN FOUR CONSECUTIVE FULL RUNS, because xdist distributes dynamically and
+    #  happened to put the two tests on different workers — an ORDER-DEPENDENT flake, latent since W545.
+    #  The same trap and the same remedy are documented against test_w503 in this file; taking the
+    #  route's reference is also the truer form of the claim, since what is under test is a field
+    #  REACHING A SURFACE.
+    import agentic_core.api.heartbeat as _hbapi
+    _hb = _hbapi.heartbeat
     _s0 = client.get("/api/v1/heartbeat/status")
     assert _s0.status_code == 200, _s0.status_code
     _j0 = _s0.json()
@@ -32192,3 +32204,167 @@ def test_w548_an_unmeasured_term_is_not_the_best_term_and_a_missing_solver_is_re
         "the surface's own floor disagrees with k_B*T*ln2, so it is keeping a second figure",
         _j["thermodynamic_ledger"]["joules_per_bit_floor"], _floor)
     assert "FLOOR" in _j["thermodynamic_ledger"]["basis"], _j["thermodynamic_ledger"]["basis"]
+
+
+def test_w549_the_horizon_spec_agrees_with_the_code_it_routes_into(client):
+    """The three bar corrections the Owner ruled for, each checked against the thing it describes.
+
+    Every leg here compares a DOCUMENT against the CODE or against the prompt, because that is the whole
+    defect class these three rows found: a bar corrected in one place and not the other, a ruling
+    recorded in the register and absent from the spec, and a drop note quoting a bar it had misread.
+    """
+    import json
+    import pathlib
+    import re
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _spec = (_root / "docs/HORIZON_INTEGRATION.md").read_text(encoding="utf-8")
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+
+    # ── L1 (FU-335). EVERY TIER NAMES A change_type, AND THE SPEC'S RANKS MATCH _TIER_MAP ────────
+    from agentic_core.api.change_control import _TIER_MAP, _TIER_RANK
+    #  the spec's own table is the subject: each data row names a type (or says none is filed) and a rank
+    _rows = [ln for ln in _spec.splitlines()
+             if ln.startswith("| ") and "Agency rank" not in ln and ":--" not in ln
+             and re.match(r"\|\s*(0–1|2|3–4|5)\s*\|", ln)]
+    assert len(_rows) == 4, ("the tier table does not carry one row per tier band", len(_rows))
+    _named = {}
+    for _ln in _rows:
+        _cells = [c.strip() for c in _ln.strip().strip("|").split("|")]
+        _band, _ctype, _rank = _cells[0], _cells[2], _cells[3]
+        _t = re.search(r"`([a-z_]+)`", _ctype)
+        if _t:
+            _name = _t.group(1)
+            assert _name in _TIER_MAP, (
+                f"the spec routes tier {_band} to change_type {_name!r}, which _TIER_MAP does not define, "
+                f"so submit_change would fall through to its default rank", sorted(_TIER_MAP))
+            #  THE SPEC'S CLAIMED RANK MUST BE THE CODE'S RANK. This is the cross-document check the row
+            #  asked for: the old table named config_minor for tier 2 and said nothing about its rank,
+            #  so a reader could not tell the Board was unreachable from it.
+            assert _TIER_MAP[_name] == _rank, (
+                f"the spec says tier {_band} ({_name}) ranks {_rank}; _TIER_MAP says "
+                f"{_TIER_MAP[_name]}", _ln.strip()[:120])
+            _named[_band] = (_name, _rank)
+        else:
+            assert "none" in _ctype.lower(), (f"tier {_band} names no change_type and does not say so",
+                                              _ln.strip()[:120])
+    #  the band the spec says reaches the Board must actually rank high enough for the gate to be reached
+    assert "3–4" in _named, _named
+    _n34, _r34 = _named["3–4"]
+    assert _TIER_RANK[_r34] >= _TIER_RANK["HIGH"], (
+        f"the spec routes tier 3–4 to {_n34} at rank {_r34}, below the HIGH that "
+        f"awaiting_board_ratification requires — an escalation that silently does not escalate", _named)
+    #  and tier 2 must NOT claim to reach it
+    _n2, _r2 = _named["2"]
+    assert _TIER_RANK[_r2] < _TIER_RANK["HIGH"], (_n2, _r2)
+    assert "no, by design" in _spec, "the spec does not state that a tier-2 record stops short of the Board"
+
+    # ── L1b. AND THE MONEY FENCE IS DRIVEN, not asserted ─────────────────────────────────────────
+    #  The spec claims submit_change REFUSES economy_material, so a money-touching lesson cannot be
+    #  filed as a change at all. Driven through the route rather than taken from the prose.
+    _r = client.post("/api/v1/cca/submit", json={
+        "title": "w549 probe: a money-touching lesson", "change_type": "economy_material",
+        "description": "driven by the guard to prove the fence the Horizon spec relies on"})
+    assert _r.status_code == 422, (
+        "the spec tells a round that filing a money lesson as economy_material is refused; it was not",
+        _r.status_code, _r.text[:200])
+    assert "reserved" in _r.text.lower(), _r.text[:300]
+
+    # ── L2 (FU-336). THE OWNER-RULED FIELD REACHED THE SPEC ──────────────────────────────────────
+    #  WORD BOUNDARIES, not a substring. A sweep renamed the field to `_reflection_tag_removed`, which
+    #  CONTAINS the name being searched for, so a plain `in` check passed with the field gone. That is
+    #  the THIRD substring loss of this night's work — the same shape caught the emission's fields and
+    #  the archive record's module list — so the rule is now explicit: a field name is matched with
+    #  boundaries, and only a quoted or backticked form proves the field itself is named.
+    #  BOTH SECTIONS A BUILDER READS, each checked on its own. A sweep made two blinds vacuous at once
+    #  and the cause was the same: the field is written into §4, where the IntentRecord is defined, AND
+    #  §6, where the stores are — and a leg needing only one occurrence passed when either was deleted.
+    #  FU-336's requirement is that an Owner ruling reaches the places a round builds from, and there
+    #  are two, so neither is allowed to carry the claim alone.
+    _s4_at = _spec.index("## 4 · The loop")
+    _s6_at = _spec.index("## 6 · Storage")
+    _regions = {"§4 (the loop, where the IntentRecord is defined)": _spec[_s4_at:_s6_at],
+                "§6 (storage, where the LessonRecord is defined)": _spec[_s6_at:]}
+    for _where, _region in _regions.items():
+        _hits = [_m.start() for _m in re.finditer(r"(?<![\w])reflection_tag(?![\w])", _region)]
+        assert _hits, (
+            f"the Owner's ruling recorded as FU-267 is absent from {_where}; a round working from that "
+            f"section would omit an Owner-ruled field")
+        assert "`reflection_tag`" in _region, (
+            f"{_where} mentions the field without naming it as a field")
+        _near = _region[_hits[0]:_hits[0] + 1200]
+        #  the properties the ruling actually sets, each stated rather than implied
+        assert "user" in _near.lower() and "own words" in _near.lower(), (_where, _near[:200])
+        assert "clear" in _near.lower(), (_where, "omits that the user can CLEAR the tag")
+        assert "WRITE route" in _near, (
+            _where, "does not say the field needs a write route; every sizing budgeted a read only")
+        assert "no AI ever writes it" in _near, (
+            _where, "does not carry the rule that no AI may write this field — the sharpest case of the "
+                    "item's no-field-is-filled-by-inference leg, and the one a populated-field check "
+                    "would pass on a value an engine inferred")
+
+    # ── L3 (FU-337). A REGISTER NOTE THAT QUOTES A BAR MUST MATCH THE PROMPT ─────────────────────
+    #  The durable form of this row rather than the one-word fix: FU-337 asked whether a drop note
+    #  quoting a bar should be checked mechanically, "since both failures were a misreading of a
+    #  document that was right there". Every quoted ACCEPT fragment in the register is compared against
+    #  the prompt with whitespace normalised, because the prompt wraps its lines.
+    def _flat(s: str) -> str:
+        return " ".join(s.split())
+
+    _flat_prompt = _flat(_prompt)
+    _reg = json.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    _checked, _bad = 0, []
+    for _row in _reg:
+        for _key in ("note", "why"):
+            _text = _row.get(_key) or ""
+            #  a quoted fragment that begins with the bar's own marker word
+            for _m in re.finditer(r"'(ACCEPT: [^']{30,300})'", _text):
+                _frag = _flat(_m.group(1))
+                _checked += 1
+                if _frag not in _flat_prompt:
+                    _bad.append(f"{_row['id']}.{_key}: {_frag[:90]}")
+    assert _checked >= 1, ("no register row quotes a bar, so this consistency check could not fail",
+                           _checked)
+    assert not _bad, (
+        "a register row quotes an ACCEPT clause that does not appear in the prompt. A round reading the "
+        "register rather than the prompt would build against the wrong bar — which is how a PROBE came "
+        "to be recorded as a guard, and a probe runs in a fresh backend where a guard need not",
+        _bad[:3])
+
+    #  and the specific correction landed: FU-297 now quotes P2.16's bar as the prompt states it
+    _fu297 = next(r for r in _reg if r["id"] == "FU-297")
+    assert "asserted by a probe" in _fu297["note"], (
+        "FU-297 still renders P2.16's probe as a guard", _fu297["note"][:200])
+    assert _flat("asserted by a probe") in _flat_prompt, "the prompt itself no longer says probe"
+
+    # ── L4 (FU-336, part three). THE TWO ZEROS ARE DIFFERENT, and the plan now says which ─────────
+    #  `schedule()` lists OPEN rows, so an item rendered "0" was ambiguous between two opposite states:
+    #  never examined, and examined with every row closed. NOT ACADEMIC — W545 closed P3.16's last two
+    #  rows and left it at "0" with an UNMET bar, which reads exactly like an item nobody has looked at.
+    #  Driven with a synthetic register so both zeros are produced here rather than observed.
+    from agentic_core.plan_followups import render_plan_now
+    _synthetic = {"items": [
+        {"id": "FU-9001", "slot": "P9.1", "status": "done", "severity": "medium", "title": "t",
+         "files": [], "found": "W000"},
+        {"id": "FU-9002", "slot": "P9.1", "status": "done", "severity": "medium", "title": "t",
+         "files": [], "found": "W000"},
+    ]}
+    #  the parser requires the real section tag on a line of its own, not a prose mention of it
+    _fake_plan = "\n".join(["<delivery_plan>",
+                            " P9.1 an item every row of which has closed",
+                            " P9.2 an item no row has ever ridden",
+                            "</delivery_plan>", ""])
+    _rendered = render_plan_now(_synthetic, _fake_plan)
+    #  the item with closed rows must NOT render identically to the one with none
+    assert "P9.1" in _rendered and "P9.2" in _rendered, _rendered[:400]
+    _p91 = [ln for ln in _rendered.splitlines() if "P9.1" in ln]
+    _p92 = [ln for ln in _rendered.splitlines() if "P9.2" in ln]
+    assert _p91 and _p92, (_p91, _p92)
+    #  the all-closed item says its rows closed and that this is NOT the item being done
+    _joined = " ".join(_p91)
+    assert "2 have" in _joined or "0/2" in _joined, (
+        "an item whose rows all closed renders the same as one no row has ever ridden, so a reader "
+        "cannot tell an examined item from an unexamined one", _joined[:200])
+    assert "closes on its ACCEPT clause" in _rendered or "0/2" in _rendered, _rendered[:600]
+    #  and the never-ridden item says UNEXAMINED rather than showing a bare zero
+    assert "0/0" in " ".join(_p92) or "UNEXAMINED" in _rendered, (" ".join(_p92))[:200]

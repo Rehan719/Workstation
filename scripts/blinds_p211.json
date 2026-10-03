@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "the spec routes a tier to a change_type the Agency does not define",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "| 3–4 | a guardrail, a gate, a routing policy | `policy_amendment` | HIGH | **yes**, once a review approves it |",
+    "new": "| 3–4 | a guardrail, a gate, a routing policy | `guardrail_change` | HIGH | **yes**, once a review approves it |",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "A change_type absent from _TIER_MAP falls through to the Agency's default rank, so a round filing it would get a tier nobody chose. The leg reads the names out of the code rather than trusting the table."
+  },
+  {
+    "tag": "the spec claims a rank the code does not give that type",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "| 2 | a routing weight, a new escalation trigger | `config_minor` | LOW | **no, by design**",
+    "new": "| 2 | a routing weight, a new escalation trigger | `config_minor` | HIGH | **no, by design**",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "THE CROSS-DOCUMENT CHECK FU-335 ASKED FOR. _TIER_MAP puts config_minor at LOW; a spec claiming HIGH for it would tell a round the Board is reachable from tier 2 when awaiting_board_ratification can never see it."
+  },
+  {
+    "tag": "the escalating tier is routed below the rank the board gate requires",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "| 3–4 | a guardrail, a gate, a routing policy | `policy_amendment` | HIGH | **yes**, once a review approves it |",
+    "new": "| 3–4 | a guardrail, a gate, a routing policy | `data_schema` | MEDIUM | **yes**, once a review approves it |",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "data_schema is MEDIUM and awaiting_board_ratification requires HIGH or above, so this is the original trap restored in a new form: a tier the spec says escalates, routed to a type that cannot reach the Board. Exactly what a round building from the old table would have wired."
+  },
+  {
+    "tag": "a tier names no change_type and does not say so",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "| 0–1 | a wording fix in Horizon's own output, a new exclusion pattern | **none** — no change is filed | — | no |",
+    "new": "| 0–1 | a wording fix in Horizon's own output, a new exclusion pattern | applied and logged | — | no |",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "The old table left tiers 3–5 with no change_type at all, so a round had to invent one and that invented choice decided whether the Board ever saw the lesson. A tier that files nothing must SAY it files nothing."
+  },
+  {
+    "tag": "the Owner-ruled reflection tag leaves the spec again",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "- **`reflection_tag` — ADDED W549 (FU-336)",
+    "new": "- **`_reflection_tag_removed` — ADDED W549 (FU-336)",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "FU-336's defect: an Owner ruling was recorded in the register, its row was closed, and the SPEC a round builds from never learned about it — so anyone working from this section would omit an Owner-ruled field."
+  },
+  {
+    "tag": "the spec drops the rule that no AI may write the user's words",
+    "file": "docs/HORIZON_INTEGRATION.md",
+    "old": "its guard must prove **no AI ever writes it**",
+    "new": "its guard must prove the field is populated",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "The ruling's substance is that the tag holds THE USER'S OWN WORDS. A guard proving it is merely populated would pass on a value an engine inferred, which is the one outcome the ruling forbids."
+  },
+  {
+    "tag": "a register note quotes a bar the prompt does not state",
+    "file": "docs/FOLLOWUPS.json",
+    "old": "asserted by a probe' (CORRECTED W549, FU-337",
+    "new": "asserted by a guard' (CORRECTED W549, FU-337",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "THE DURABLE FORM OF FU-337, which asked whether a drop note quoting a bar should be checked mechanically. A guard and a probe are different instruments — a probe runs in a FRESH backend — so a round reading the register rather than the prompt would build the cheaper one and believe it had met the bar. Every quoted ACCEPT fragment in all 358 rows is now compared against the prompt with whitespace normalised."
+  },
+  {
+    "tag": "the plan renders both zeros the same way again",
+    "file": "agentic_core/plan_followups.py",
+    "old": "        rest = [f\"{it['slot']} {it['followups']}/{it['ever']}\" for it in p[\"open_items\"][1:]]",
+    "new": "        rest = [f\"{it['slot']} {it['followups']}\" for it in p[\"open_items\"][1:]]",
+    "selector": "w549",
+    "expect": "BLIND(red)",
+    "why": "FU-336's third finding, and NOT academic: schedule() lists OPEN rows, so an item rendered '0' was ambiguous between never examined and examined with every row closed. W545 closed P3.16's last two rows and left it at '0' with an UNMET bar — which reads exactly like an item nobody has looked at. The leg drives a synthetic register so both zeros are produced rather than observed."
+  }
+]

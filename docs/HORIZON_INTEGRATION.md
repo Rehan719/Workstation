@@ -136,6 +136,14 @@ source, raw text, the surface it came from, timestamp. Nothing is interpreted he
 `escalations` (a list, e.g. *a ruling was sought*, *a legal filing is implied*), and
 `compression` = `COMPRESSED` (a model served it, named) | `NOT_COMPRESSED` (with the reason).
 **Never a sentence the platform wrote about what the user "really" means when nothing compressed it.**
+Plus `reflection_tag` — **ADDED W549 (FU-336), from the Owner's ruling recorded as FU-267 and
+closed in W505, which this section never learned about.** An OPTIONAL tag the **user** selects
+and can clear, stored as **the user's own words**. It is the sharpest case of the rule in the line
+above: a compression the platform wrote is forbidden, and this field is the one place the user's
+own account of their intent is kept — so **no AI ever writes it**, there is no default, no
+suggestion is persisted as a value, and nothing infers it from the observation's text. It needs a
+**WRITE route** (the user selects and clears it), which every sizing of P2.11 missed because this
+section only ever implied a read.
 
 **3 DECIDE.** `PROCEED` | `ESCALATE` | `NOT ASSESSABLE`, from stated terms:
 a guardrail escalation present → `ESCALATE`; a required field missing → `ESCALATE`;
@@ -197,16 +205,45 @@ Three stores under `data/horizon/`, each a JSON document written through `store_
 
 - `intent.json` — `IntentRecord` + `HorizonObservation` (ids, domain, stakes, compression state, decision, terms).
 - `lessons.json` — `LessonRecord` (evidence, candidate cause + basis, proposed change, risk tier, state).
+- **`reflection_tag` — ADDED W549 (FU-336), from the Owner's ruling recorded as FU-267 and closed in W505, which this spec never learned about.** An OPTIONAL tag the **user** selects and can clear, stored as **the user's own words**. It changes the work in two ways a sizing from this section would have missed: it needs a **WRITE route** (every sizing of P2.11 had budgeted a read route only), and it is the sharpest instance of that item's *no field is filled by inference* rule — its guard must prove **no AI ever writes it**, which means no default, no suggestion persisted as a value, and no inference from the lesson's own text. A ruling recorded in the register and absent from the spec is a ruling a round silently omits, which is why it is written here rather than only in the item body.
 - `genome.json` — the asset index (path, organ, type, `INDEXED|NOT_READ|EXCLUDED` + basis, size, indexed-at)
   with the scan's bounds recorded beside it.
 
-Risk tiers map onto `change_control`, they do not replace it:
+Risk tiers map onto `change_control`, they do not replace it.
 
-| Horizon tier | Example | Route |
-| :-- | :-- | :-- |
-| 0–1 | a wording fix in Horizon's own output, a new exclusion pattern | applied, logged in `lessons.json`, visible on the surface |
-| 2 | a routing weight, a new escalation trigger | applied **and** submitted as a record of change (`config_minor`), so it is reviewable after the fact |
-| 3–5 | a guardrail, a gate, a store schema, anything touching money, faith content or the law domains | **submitted only.** `change_control` decides. Horizon may not apply it. |
+**CORRECTED W549 (FU-335), and the correction is about two scales rather than one.** This section used to
+route tier 2 to `config_minor` and leave tiers 3–5 with no `change_type` at all. Measured:
+`agentic_core/api/change_control.py` has **no 0–5 scale** to map onto. `_TIER_MAP` carries 16
+`change_type` STRINGS and the Agency derives its own **four** ranks from them — LOW / MEDIUM / HIGH /
+CRITICAL. So the mapping is tier → `change_type`, and the Agency's rank follows from the type. A round
+reading the old table would have had to invent the type for tiers 3–5, and that invented choice decides
+whether the Board ever sees the lesson.
+
+**WHY THAT MATTERED:** `awaiting_board_ratification()` is reached only by a change that is `approved`,
+ranks **HIGH or above**, and was approved by a REVIEW rather than by the Owner. `config_minor` is LOW, so
+a tier-2 record is reviewable after the fact and **never reaches the Board** — which is correct for tier 2
+and was never stated, so the old table read as an escalation that silently does not escalate.
+
+| Horizon tier | Example | `change_type` filed | Agency rank | Reaches the Board? |
+| :-- | :-- | :-- | :-- | :-- |
+| 0–1 | a wording fix in Horizon's own output, a new exclusion pattern | **none** — no change is filed | — | no |
+| 2 | a routing weight, a new escalation trigger | `config_minor` | LOW | **no, by design** — reviewable after the fact, and the surface must not imply otherwise |
+| 3–4 | a guardrail, a gate, a routing policy | `policy_amendment` | HIGH | **yes**, once a review approves it |
+| 5 | faith content, the law domains, anything constitutional | `constitutional` | CRITICAL | a review may never approve it at all; the Owner decides |
+
+**TWO FENCES THAT ARE NOT OPTIONAL, both measured against the code rather than inferred:**
+
+1. **A lesson touching money is NOT FILED AS A CHANGE.** `submit_change` REFUSES `change_type:
+   "economy_material"` and the three reserved `[economy] material …` title prefixes with HTTP 422, because
+   the economy files its own materiality holds and keeps them current (Owner ruling, W463/W502). So a
+   money-touching lesson is **surfaced to the Owner**, not submitted — a round that files it gets a 422,
+   and a round that files it under some other type has routed a money decision around the gate that
+   exists for it.
+2. **`data_schema` is MEDIUM, not HIGH.** A store-schema lesson filed under it would not reach the Board.
+   If a schema change is meant to be ratified, it is filed as `policy_amendment`; the type is chosen for
+   the rank it carries, and the rank is read from `_TIER_MAP` rather than assumed.
+
+Horizon may not apply a guardrail, a gate, a schema, money, faith content or the law domains.
 
 The boundary is the same one the Owner already set for the platform: real-money rails, live keys,
 production deploy and faith-content policy are Owner-gated and are not in any tier Horizon can apply.

@@ -5144,7 +5144,7 @@
       "slot": "P2.16",
       "status": "dropped",
       "closed_by": null,
-      "note": "W505 correction: this row is WRONG. P2.16 DOES state a bar - 'ACCEPT: the not-compressed and no-escalation states are reachable on the page and asserted by a guard' - and the row was registered on a pattern that required ACCEPT at line start while P2.16's sits mid-line. Dropped rather than closed, because nothing was done and nothing needed doing. A register row built on a mis-measurement sends a later round to fix nothing, which is worse than having no row."
+      "note": "W505 correction: this row is WRONG. P2.16 DOES state a bar - 'ACCEPT: the not-compressed and no-escalation states are reachable on the page and asserted by a probe' (CORRECTED W549, FU-337: this note rendered the clause as 'asserted by a guard', and the live prompt says PROBE. A guard and a probe are different instruments here - a probe runs in a FRESH backend, which is the leg that caught W520's registry fix passing on a fixture - so the register's copy of this bar was wrong in the one word that decides what must be built, and a round reading the register rather than the prompt would have built the cheaper instrument and believed it had met the bar. A DROP IS A VERDICT and deserves the scrutiny of a close: this is the second drop in two days found unsound - and the row was registered on a pattern that required ACCEPT at line start while P2.16's sits mid-line. Dropped rather than closed, because nothing was done and nothing needed doing. A register row built on a mis-measurement sends a later round to fix nothing, which is worse than having no row."
     },
     {
       "id": "FU-298",
@@ -5845,8 +5845,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.14",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W549",
       "note": "",
       "slot_source": "the item whose own body carries the wrong mapping",
       "tier": 2
@@ -5864,8 +5864,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.11",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W549",
       "note": "",
       "slot_source": "the item whose spec is missing the ruled field",
       "tier": 2
@@ -5882,8 +5882,8 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W549",
       "note": "",
       "slot_source": "the item whose bar is mis-quoted in the register",
       "tier": 3
@@ -6266,6 +6266,23 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-359",
+      "title": "Eight suite guards take the heartbeat module's reference where a reload splits it, and only a classification can say which of them are order-dependent flakes",
+      "why": "Measured W549 after test_w545 failed its THIRD full run on a latent order-dependent flake. THE MECHANISM: test_w420_autonomy_settings_survive_a_restart calls importlib.reload on agentic_core/organism/heartbeat.py, which re-runs 'heartbeat = OrganismHeartbeat()' and rebinds the module attribute to a NEW object, while agentic_core/api/heartbeat.py still holds the reference it bound when the app was built. From then on the module's heartbeat and the route's are two different objects, so a guard that MUTATES the module's one and ASSERTS THROUGH A ROUTE configures one object and reads another. W503 documented this against test_w503b and the remedy is one line (import agentic_core.api.heartbeat and take its .heartbeat), but it was fixed only where it had been caught. MEASURED NOW: 8 guards in integration_tests/test_mvp_spine.py import 'from agentic_core.organism.heartbeat import heartbeat' (lines 1504, 5274, 5728, 5832, 9565, 17027, 23586, 25376) and only 2 take the route's reference. THE TRAP BITES ONLY A GUARD THAT DOES BOTH — mutates the object and asserts through a route — so these must be CLASSIFIED, not mass-edited: a guard that only reads the object, or only asserts on the object directly, is correct as written and changing it would be churn. WHY IT HID SO LONG: test_w545 passed alone and in FOUR consecutive full runs, because xdist distributes dynamically and happened to put the two tests on different workers; and reproducing it needs a client-using test ordered BEFORE the reload, so the app is built against the pre-reload object. A first reproduction attempt with just the two tests passed and nearly cleared the diagnosis. FIX: classify all 8, convert only those that mutate-and-assert-through-a-route, and add a leg that fails when a guard does both while holding the module's reference. The discriminating selector costs 18 seconds ('owner_scoped or w420 or w545') against an 11-minute suite, so each candidate can be proven individually.",
+      "source": "W549 (measured after a third full run; the flake was latent since W545)",
+      "found": "2026-10-03",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.4",
       "status": "open",
       "closed_by": null,
       "note": "",
