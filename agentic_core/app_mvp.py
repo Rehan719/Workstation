@@ -405,6 +405,12 @@ app.include_router(cycles_api.router)
 from agentic_core.api import minimisation as minimisation_api
 app.include_router(minimisation_api.router)
 
+# W550 (P2.11) — HORIZON, the membrane that compresses a request before anything acts on it. Its bar
+# asks that each compression state and each decision state be REACHABLE, and a state reachable only by
+# calling an internal function is a state no user ever meets.
+from agentic_core.api import horizon as horizon_api
+app.include_router(horizon_api.router)
+
 from agentic_core.api import ueg as ueg_api
 app.include_router(ueg_api.router)
 

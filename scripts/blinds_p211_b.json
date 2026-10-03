@@ -1,0 +1,83 @@
+[
+  {
+    "tag": "the deterministic floor's run is recorded as a compression",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "    if not served_by or served_by in _NOT_A_COMPRESSOR:",
+    "new": "    if not served_by:",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "THE RISK THIS ITEM MUST NOT REALISE. A string always comes back — the floor composes structured output for any prompt — so treating a returned string as a compression is exactly the defect the brief's hard-coded compress_noise_to_meaning committed. The state turns on WHO SERVED the call, not on whether text arrived."
+  },
+  {
+    "tag": "an uncompressed record gets its fields filled in anyway",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "        rec[\"fields_present\"] = []\n        rec[\"fields_absent\"] = sorted(_COMPRESSION_FIELDS)",
+    "new": "        rec.update({\"asked_for\": \"\", \"domain\": \"\", \"stakes\": \"\", \"missing\": [], \"escalations\": []})\n        rec[\"fields_present\"] = []\n        rec[\"fields_absent\"] = sorted(_COMPRESSION_FIELDS)",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "The empty values LOOK harmless and each one is a finding: an empty escalations list says there is nothing to escalate, and an empty missing list says nothing is absent — about a request nobody read. The bar's words are 'no field is filled by inference', and a default is an inference."
+  },
+  {
+    "tag": "a model that answered partially has the rest filled in for it",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "        rec.update(_f)",
+    "new": "        rec.update({k: _f.get(k, \"\" if k not in (\"missing\", \"escalations\") else []) for k in _COMPRESSION_FIELDS})",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "The subtler half of the same rule: a real compression that omitted two lines must leave them ABSENT, not defaulted. The prompt explicitly tells the model to omit what it cannot determine, so filling those in would overwrite a deliberate refusal with a claim."
+  },
+  {
+    "tag": "a term with no instrument reports that it passed",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "    _has_esc = bool(_esc) if isinstance(_esc, list) else None",
+    "new": "    _has_esc = bool(_esc) if isinstance(_esc, list) else False",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "False says the compression looked for escalations and found none; None says there was no compression to look. Collapsing the two makes an unavailable term indistinguishable from a satisfied one, which is how a decision comes to rest on checks that never ran."
+  },
+  {
+    "tag": "an uncompressed request with an unknown domain proceeds",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "    _fail_closed = _uncompressed and (_grave or _dom is None)",
+    "new": "    _fail_closed = _uncompressed and _grave",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "On this deployment nothing compresses, so the domain is usually ABSENT — and an absent domain cannot be shown to be outside the grave set. Requiring a KNOWN grave domain makes the fail-closed rule unreachable on the only path that actually runs, so every uncompressed request would proceed."
+  },
+  {
+    "tag": "NOT ASSESSABLE becomes a quiet PROCEED",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "        return {\"decision\": NOT_ASSESSABLE, \"terms\": terms,",
+    "new": "        return {\"decision\": PROCEED, \"terms\": terms,",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "A decision over a record that could not be read is a decision about nothing. This is the same shape as a gate that clears on a missing field, which P3.14 removed from the clearance chain and W543 from the homeostasis shim."
+  },
+  {
+    "tag": "an engine may write the user's own words",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "    if not _by.startswith(\"user:\"):",
+    "new": "    if False:",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "The Owner's ruling: the reflection tag holds the USER'S OWN WORDS. An AI-written value here is the platform's account of the person replacing the person's own — the one outcome this field exists to prevent, and the sharpest case of the item's no-field-is-filled-by-inference leg."
+  },
+  {
+    "tag": "a cleared tag keeps the name of whoever set it",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "            r[\"reflection_tag_by\"] = _by if _text is not None else None",
+    "new": "            r[\"reflection_tag_by\"] = _by",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "Clearing is the user's to do and must leave no trace of what was said or that they said it. A cleared tag still naming its author records that the user wrote something and withdrew it, which is a fact about them they chose to remove."
+  },
+  {
+    "tag": "the refusal stops saying it is the ordinary path",
+    "file": "agentic_core/horizon/kernel.py",
+    "old": "f\"IS THE ORDINARY PATH on this deployment, not an edge case — no model is \"",
+    "new": "f\"is a fallback on this deployment — no model is \"",
+    "selector": "w550",
+    "expect": "BLIND(red)",
+    "why": "The bar states it explicitly: the floor's run produces NOT_COMPRESSED with a reason, and IT IS THE COMMON PATH, NOT AN EDGE CASE. A refusal presented as a fallback invites a reader to treat the compressed case as normal and this one as a fault to engineer away. The first attempt at this blind used a TWO-LINE anchor that matched nothing and the harness reported BAD BLIND rather than VACUOUS — the distinction W503 built, and the reason a zero-match is not quietly read as a guard that cannot fail."
+  }
+]

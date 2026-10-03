@@ -6287,6 +6287,26 @@
       "closed_by": null,
       "note": "",
       "tier": 2
+    },
+    {
+      "id": "FU-360",
+      "title": "Horizon's kernel is built and reached by its own routes, but the SEAM the item names is not wired: no middleware fronts the domain routes and no hook sits at record_outcome",
+      "why": "Measured W550, which built P2.11's kernel. ALL THREE ACCEPT CLAUSES ARE MET: each compression state and each decision state is reachable and asserted (NOT_COMPRESSED and ESCALATE through the route on the ordinary path, COMPRESSED and PROCEED through the route with a model-served provenance supplied, NOT ASSESSABLE from a record that cannot be read), the floor's run produces NOT_COMPRESSED with a reason that states it is the common path, and no field is filled by inference (the five compression fields are ABSENT rather than empty on an uncompressed record, and a model that answers partially does not have the rest defaulted). WHAT IS NOT BUILT is the item body's own seam sentence: a middleware in front of the domain routes plus a hook where the run paths already call operational_excellence.record_outcome. Today Horizon observes only what is POSTed to /api/v1/horizon/observe, so it is a membrane nothing passes through - the same reach gap W543 found in the six biogeochemical cycles, where the code existed and no live path reached it. record_outcome is at agentic_core/api/operational_excellence.py:50 and is called best-effort by the run paths, so the hook has a real attachment point. THE MIDDLEWARE NEEDS A DECISION, which is why it is filed rather than built: a membrane in FRONT of the domain routes that returns ESCALATE on the ordinary path would refuse every request this platform serves, because nothing compresses and the fail-closed rule escalates an unknown domain. So the middleware must either observe-and-record WITHOUT gating (honest, and the decision becomes a fact on the record rather than a block), or gate only a named list of grave routes. The first is the smaller claim and is almost certainly right, but it means the word membrane describes something that observes rather than something that stops - and that is the Owner's distinction to confirm, not mine.",
+      "source": "W550 (measured while building the kernel; the bar is met and the body's seam is not)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/api/horizon.py",
+        "agentic_core/api/operational_excellence.py",
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.11",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is P2.11's own seam sentence, named in the item body",
+      "tier": 2
     }
   ],
   "routes": [

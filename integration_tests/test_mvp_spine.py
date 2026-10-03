@@ -32368,3 +32368,138 @@ def test_w549_the_horizon_spec_agrees_with_the_code_it_routes_into(client):
     assert "closes on its ACCEPT clause" in _rendered or "0/2" in _rendered, _rendered[:600]
     #  and the never-ridden item says UNEXAMINED rather than showing a bare zero
     assert "0/0" in " ".join(_p92) or "UNEXAMINED" in _rendered, (" ".join(_p92))[:200]
+
+
+def test_w550_horizon_reaches_every_compression_and_decision_state_and_infers_no_field(client):
+    """P2.11's bar: each compression state and each decision state REACHABLE and asserted; the floor's
+    run produces NOT_COMPRESSED with a reason; no field is filled by inference.
+
+    Every state is driven THROUGH THE ROUTE, including the two this deployment cannot reach on its own —
+    a state a guard can only produce by calling an internal function is a state no user ever meets, which
+    is what the bar means by reachable. The model-served path is reached by supplying what a provisioned
+    model would supply, not by asserting what it would say.
+    """
+    import agentic_core.api.horizon as _H
+    from agentic_core.horizon import kernel
+
+    # ── L1. THE ORDINARY PATH IS A REFUSAL, AND IT CARRIES ITS REASON ────────────────────────────
+    _r = client.post("/api/v1/horizon/observe",
+                     json={"raw_text": "Can you settle the contract dispute for me?"})
+    assert _r.status_code == 200, (_r.status_code, _r.text[:200])
+    _j = _r.json()
+    _rec, _dec = _j["record"], _j["decision"]
+    assert _rec["compression"] == kernel.NOT_COMPRESSED, (
+        "the deterministic floor's run was recorded as a compression; it composes structured output from "
+        "the request and infers nothing", _rec["compression"], _rec.get("served_by"))
+    assert "ORDINARY PATH" in _rec["compression_basis"], (
+        "the refusal does not say it is the common path, so a reader meets it as an edge case",
+        _rec["compression_basis"])
+    assert _rec["served_by"], "the record does not name what served the call"
+
+    # ── L2. NO FIELD IS FILLED BY INFERENCE — the keys are ABSENT, not empty ─────────────────────
+    #  An empty string or an empty list in any of these reads as a FINDING: that nothing is missing, or
+    #  that there is nothing to escalate. The brief's own compressor wrote a sentence about what the user
+    #  "really" meant, hard-coded; absence is the only honest alternative when nothing compressed.
+    for _f in ("asked_for", "domain", "stakes", "missing", "escalations"):
+        assert _f not in _rec, (
+            f"{_f} is present on a record nothing compressed, so a field was filled by inference", _f,
+            _rec.get(_f))
+    assert _rec["fields_present"] == [], _rec["fields_present"]
+    assert sorted(_rec["fields_absent"]) == sorted(kernel._COMPRESSION_FIELDS), _rec["fields_absent"]
+    assert "would read as a finding" in _rec["fields_basis"], _rec["fields_basis"]
+
+    # ── L3. ESCALATE, FAIL CLOSED, and the unavailable terms report None rather than False ───────
+    assert _dec["decision"] == kernel.ESCALATE, (
+        "an uncompressed request with an unknown domain was allowed to proceed", _dec)
+    _terms = {t["term"]: t for t in _dec["terms"]}
+    assert _terms["uncompressed_and_grave_or_unknown_domain"]["fired"] is True, _terms
+    #  A TERM WITH NO INSTRUMENT IS NOT A TERM THAT PASSED. False would say the compression looked and
+    #  found nothing; None says there was no compression to look.
+    for _t in ("guardrail_escalation", "required_field_missing"):
+        assert _terms[_t]["fired"] is None, (
+            f"{_t} reported a verdict over a compression that never happened", _terms[_t])
+        assert "NOT AVAILABLE" in _terms[_t]["basis"], _terms[_t]["basis"]
+    #  no score anywhere: the decision is a list of terms, not a number
+    assert "fired" in _dec and isinstance(_dec["fired"], list), _dec
+    for _t in _dec["terms"]:
+        assert not any(k in _t for k in ("score", "weight", "confidence")), (
+            "a term carries a weight, so the decision is a blend after all", _t)
+
+    # ── L4. COMPRESSED AND PROCEED ARE REACHABLE THROUGH THE ROUTE ───────────────────────────────
+    #  Supplying what a provisioned model would supply, because none is provisioned here. Without this
+    #  the COMPRESSED branch would be code nobody has run, and the bar asks for it to be reachable.
+    async def _served(prompt, **kw):
+        return ("asked_for: a contract review\ndomain: operations\nstakes: a delivery date\n",
+                {"served_by": "w550-probe-model", "is_external": False})
+
+    _real = _H.ai_text
+    try:
+        _H.ai_text = _served
+        _j2 = client.post("/api/v1/horizon/observe", json={"raw_text": "review this contract"}).json()
+    finally:
+        _H.ai_text = _real
+    _rec2, _dec2 = _j2["record"], _j2["decision"]
+    assert _rec2["compression"] == kernel.COMPRESSED, (_rec2["compression"], _rec2.get("served_by"))
+    assert _rec2["served_by"] == "w550-probe-model", (
+        "the record does not name WHICH model compressed it", _rec2.get("served_by"))
+    #  the fields that came back are present and the ones that did not are still absent — a model that
+    #  answered partially must not have the rest filled in on its behalf
+    assert _rec2.get("asked_for") == "a contract review", _rec2.get("asked_for")
+    assert sorted(_rec2["fields_present"]) == ["asked_for", "domain", "stakes"], _rec2["fields_present"]
+    for _f in ("missing", "escalations"):
+        assert _f not in _rec2, (f"{_f} was filled in for a model that did not answer it", _rec2.get(_f))
+    assert _dec2["decision"] == kernel.PROCEED, (
+        "a compressed request on a non-grave domain with no missing input and no escalation did not "
+        "proceed, so PROCEED is unreachable", _dec2)
+
+    # ── L5. NOT ASSESSABLE IS NOT A QUIET PROCEED ────────────────────────────────────────────────
+    _na = kernel.decide({})
+    assert _na["decision"] == kernel.NOT_ASSESSABLE, _na
+    assert _na["terms"] and _na["terms"][0]["fired"] is None, _na["terms"]
+    assert "not a request to proceed with" in _na["basis"], _na["basis"]
+    #  and a compressed GRAVE domain with an escalation still escalates, so ESCALATE is reachable from
+    #  the stated terms and not only from the fail-closed one
+    _grave = kernel.decide({"compression": kernel.COMPRESSED, "domain": "legal",
+                            "escalations": ["a ruling is sought"], "missing": []})
+    assert _grave["decision"] == kernel.ESCALATE and "guardrail_escalation" in _grave["fired"], _grave
+    _miss = kernel.decide({"compression": kernel.COMPRESSED, "domain": "operations",
+                           "escalations": [], "missing": ["the delivery date"]})
+    assert _miss["decision"] == kernel.ESCALATE and "required_field_missing" in _miss["fired"], _miss
+
+    # ── L6. THE REFLECTION TAG IS THE USER'S, AND NO AI MAY WRITE IT ─────────────────────────────
+    _iid = _rec["intent_id"]
+    assert _rec["reflection_tag"] is None and _rec["reflection_tag_by"] is None, _rec
+    assert "no AI ever writes it" in _rec["reflection_tag_basis"], _rec["reflection_tag_basis"]
+    _set = client.post("/api/v1/horizon/reflection",
+                       json={"intent_id": _iid, "text": "I was worried about the deadline"})
+    assert _set.status_code == 200, (_set.status_code, _set.text[:200])
+    assert _set.json()["reflection_tag"] == "I was worried about the deadline", _set.json()
+    assert str(_set.json()["reflection_tag_by"]).startswith("user:"), _set.json()
+    #  CLEARING is the user's to do, and a cleared tag leaves no trace of what it said
+    _clr = client.post("/api/v1/horizon/reflection", json={"intent_id": _iid, "text": None})
+    assert _clr.status_code == 200 and _clr.json()["reflection_tag"] is None, _clr.json()
+    assert _clr.json()["reflection_tag_by"] is None, _clr.json()
+    assert "CLEARED by the user" in _clr.json()["basis"], _clr.json()["basis"]
+    #  THE REFUSAL THAT MATTERS: an identity that does not name a user cannot write the user's words
+    import pytest as _pt
+    with _pt.raises(ValueError):
+        kernel.set_reflection_tag(_iid, "an engine's guess at the intent", "agent:soch")
+    with _pt.raises(ValueError):
+        kernel.set_reflection_tag(_iid, "a system default", "system")
+    with _pt.raises(ValueError):
+        kernel.set_reflection_tag(_iid, "unattributed", "   ")
+    #  and the field is still clear after all three refusals
+    assert kernel.get(_iid)["reflection_tag"] is None, kernel.get(_iid)
+
+    # ── L7. THE SURFACE STATES ITS OWN LIMITS rather than implying them ─────────────────────────
+    _st = client.get("/api/v1/horizon/states")
+    assert _st.status_code == 200, _st.status_code
+    _s = _st.json()
+    assert set(_s["compression_states"]) == {kernel.COMPRESSED, kernel.NOT_COMPRESSED}, _s
+    assert set(_s["decision_states"]) == {kernel.PROCEED, kernel.ESCALATE, kernel.NOT_ASSESSABLE}, _s
+    assert _s["no_blended_score"] is True, _s
+    assert "no instrument" in _s["basis"], _s["basis"]
+    #  the records view reports the proportion that were NOT compressed rather than smoothing it
+    _rv = client.get("/api/v1/horizon/records").json()
+    assert _rv["not_compressed"] >= 1 and _rv["total"] >= 2, _rv
+    assert "reported rather than smoothed" in _rv["basis"], _rv["basis"]
