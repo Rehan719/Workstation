@@ -1,0 +1,101 @@
+[
+  {
+    "tag": "a stage meters an invented bit count again",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "        _bits, _bits_basis = _payload_bits(ctx[\"input\"])",
+    "new": "        _bits, _bits_basis = 1e4, \"MEASURED: driven by the stage\"",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "THE DEFECT FU-234 NAMES, with the basis string kept so only the SUBSTANCE changes \u2014 which is the hard case: the figure claims to be measured and is a literal. The leg recomputes each bit count from the payload the stage received, so a plausible constant cannot pass."
+  },
+  {
+    "tag": "an absent payload is metered as the four bytes of a null",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "    if obj is None:\n        return None, (\"NOT METERED: this stage's input payload is absent, so there is nothing to size. \"",
+    "new": "    if False:\n        return None, (\"NOT METERED: this stage's input payload is absent, so there is nothing to size. \"",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "This happened for real this round: three of the six stages were pointed at key names the module does not use, and each quietly metered 32 bits of nothing instead of failing. An absent payload is not a small one."
+  },
+  {
+    "tag": "the Landauer floor is reported as the energy consumed",
+    "file": "core/transcendent_subsystems/tfel.py",
+    "old": "            \"landauer_floor_joules\": bits * self.E_min * self.hw,",
+    "new": "            \"energy_joules\": bits * self.E_min * self.hw,",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "The arithmetic was always right and the LABEL was always wrong. k_B*T*ln2 per bit is the thermodynamic minimum to erase that many bits; real hardware exceeds it by some nine orders of magnitude. A floor presented under the name of a measurement is a claim nobody made."
+  },
+  {
+    "tag": "the hardware factor silently asserts operation at the Landauer limit",
+    "file": "core/transcendent_subsystems/tfel.py",
+    "old": "_HW_BASIS = (\"DECLARED, NOT MEASURED: the hardware factor is 1.0, which treats this platform as operating \"",
+    "new": "_HW_BASIS = (\"the hardware factor is 1.0, which treats this platform as operating \"",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "1.0 is kept so no figure changes silently, but it must be DECLARED: it is the assumption that this platform's hardware runs exactly at the physical limit, which nothing does. Removing the marker makes the assumption invisible again."
+  },
+  {
+    "tag": "an empty ledger reports compliance",
+    "file": "core/transcendent_subsystems/tfel.py",
+    "old": "            \"compliance\": (True if _ops else None),",
+    "new": "            \"compliance\": True,",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "The original: an unconditional True, returned even for a cycle in which nothing was metered at all. A compliance verdict over an empty ledger is the clearest form of a claim with no evidence \u2014 the most reassuring answer, available precisely when no work was done."
+  },
+  {
+    "tag": "the unavailable ledger invents a budget",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "                    \"energy_basis\": self.basis, \"budget_remaining\": None,",
+    "new": "                    \"energy_basis\": self.basis, \"budget_remaining\": 1e9,",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "FU-329's figure exactly: a billion bits of headroom reported by a class that meters nothing. The probe blocks the real module in a fresh interpreter so this branch is FORCED \u2014 it is importable here, so nothing in this suite would otherwise execute it, which is what made it the worst place to put a fabricated figure."
+  },
+  {
+    "tag": "the fallback stub is thinner than its producer again",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "        def export_cycle_ledger(self, cid):\n            return {\"cycle_id\": cid, \"total_entropy_bits\": None, \"metered_operations\": 0,",
+    "new": "        def _export_cycle_ledger_removed(self, cid):\n            return {\"cycle_id\": cid, \"total_entropy_bits\": None, \"metered_operations\": 0,",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "A STUB THINNER THAN ITS PRODUCER TESTS THE STUB. The original had no export_cycle_ledger at all, so a caller reaching it got a different SHAPE as well as a fabricated figure, and any test written against the fallback was testing something the real ledger does not resemble."
+  },
+  {
+    "tag": "the effector meters a standard bit cost again",
+    "file": "agentic_core/avatars/tools/tool_registry.py",
+    "old": "        _bits, _bits_basis = _payload_bits(params)",
+    "new": "        _bits, _bits_basis = 2e5, \"MEASURED: the standard bit cost\"",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "FU-234's SECOND caller, which the round's first pass missed because the row names three and only one was fixed. The leg asserts the property over the whole tree rather than over a list of files, so no caller can pass a declared cost unnoticed."
+  },
+  {
+    "tag": "the effector returns a literal entropy to its caller",
+    "file": "agentic_core/avatars/tools/tool_registry.py",
+    "old": "            entropy_cost=entropy_cost,",
+    "new": "            entropy_cost=0.5,",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "THE SAME QUANTITY WAS REPORTED AS THREE DIFFERENT INVENTED NUMBERS IN ONE FUNCTION: 2e5 metered to the ledger, 500.0 written to the UEG, and 0.5 returned to the caller. No two agreed, and each looked like a measurement on its own."
+  },
+  {
+    "tag": "the batch's cost is a real count times an invented per-task figure",
+    "file": "agentic_core/simverse/causal_simulator.py",
+    "old": "        _bits, _bits_basis = _payload_bits(task_batch)",
+    "new": "        _bits, _bits_basis = len(task_batch) * 1.5e6, \"MEASURED: per-task cost\"",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "FU-234's THIRD caller, and the hardest shape to catch: half of the figure is genuinely measured (the task count) and half is invented (1.5e6 per task), so an audit asking whether a number is a literal passes it. For a two-task batch it reports 3,000,000 bits where the measured size is 760."
+  },
+  {
+    "tag": "the simulator reports a latency nothing timed",
+    "file": "agentic_core/simverse/causal_simulator.py",
+    "old": "            \"latency_ms\": None,",
+    "new": "            \"latency_ms\": 78.5,",
+    "selector": "w546",
+    "expect": "BLIND(red)",
+    "why": "A fixed 78.5ms for a method that schedules nothing and times nothing. It sat in the same return dict as the invented bit count, which is why it was fixed with it rather than left for a later round."
+  }
+]

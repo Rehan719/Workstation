@@ -29495,7 +29495,11 @@ def test_w530_the_mutation_gate_refuses_instead_of_rubber_stamping(tmp_path):
             self.calls.append((user_id, domain, success))
 
     class _TFEL:
-        def meter_operation(self, name, bits):
+        #  W546 — `bits_basis` is part of the real signature now: the six stages stopped passing invented
+        #  bit counts and pass the account of where each measured figure came from. A test double is a
+        #  CONSUMER OF A SIGNATURE, and this one still had the old one, so the producer change raised
+        #  TypeError here while every direct caller was correct. Second-writer class, in a fake.
+        def meter_operation(self, name, bits, bits_basis: str = ""):
             return {}
 
     orch.skill_profiler = _Profiler()
@@ -31627,3 +31631,283 @@ def test_w545_a_withheld_emission_is_visible_and_a_simulator_discloses_itself(cl
     _bare = [n.id for n in ast.walk(_ft) if isinstance(n, ast.Name) and n.id == "zk_proof"]
     assert not _bare, ("a bare reference to the renamed value survives, so one caller raises NameError "
                        "while the other reads the new field", len(_bare))
+
+
+def test_w546_the_thermodynamic_ledger_meters_what_a_stage_handled_and_reports_a_floor(client):
+    """P3.17 (FU-234, FU-329): the six invented bit counts become measured payloads, and the ledger stops
+    calling a thermodynamic floor an energy.
+
+    The bit counts are checked by RECOMPUTING them in the test from the payload each stage received, so a
+    plausible constant cannot pass for a measurement. The Landauer figure is checked against k_B·T·ln2
+    computed here, so the ledger cannot drift from the physics it claims.
+    """
+    import ast
+    import asyncio as _aio
+    import json
+    import math
+
+    # ── L1. EVERY STAGE METERS A MEASURED PAYLOAD, AND NONE OF THE SIX LITERALS SURVIVES ─────────
+    from agentic_core.avatars.core.avatar_engine import AvatarState
+    from agentic_core.avatars.core.recirculation_orchestrator import (
+        AvatarRecirculationOrchestrator, _payload_bits)
+    from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
+
+    _o = AvatarRecirculationOrchestrator(_VSBUEG(), AvatarState(avatar_id="w546", user_id="w546"))
+    _seen = []
+    _real_meter = _o.tfel.meter_operation
+
+    def _spy(name, bits, bits_basis=""):
+        _seen.append({"op": name, "bits": bits, "basis": bits_basis})
+        return _real_meter(name, bits, bits_basis)
+
+    _o.tfel.meter_operation = _spy
+    _ctx = _aio.run(_o.execute_cycle({"user_id": "w546", "domain": "w546_guard"}))
+    assert len(_seen) == 6, ("the six stages did not each meter their cost", [s["op"] for s in _seen])
+
+    #  THE SIX LITERALS THIS ROUND REMOVED. Each was recorded BEFORE its stage did any work, so it could
+    #  not have described what the stage processed even in principle.
+    _INVENTED = {"metabolic_sense": 1e4, "metabolic_intend": 5e4, "metabolic_analyze": 5e5,
+                 "metabolic_act": 2e5, "metabolic_learn": 5e4, "metabolic_reflect": 1e5}
+    for _s in _seen:
+        assert _s["bits"] is not None, (_s["op"], "a stage metered nothing at all", _s)
+        assert _s["bits"] != _INVENTED[_s["op"]], (
+            _s["op"], "the invented bit count is back", _s["bits"])
+        assert "MEASURED" in (_s["basis"] or ""), (_s["op"], "a bit count with no account of its origin",
+                                                   _s["basis"])
+        #  and the figure is a real size: a multiple of 8, because it counts bytes
+        assert float(_s["bits"]) > 0 and float(_s["bits"]) % 8 == 0, (_s["op"], _s["bits"])
+    #  the measured total is far below the invented one, which is the substance of the correction
+    assert sum(s["bits"] for s in _seen) < sum(_INVENTED.values()) / 2, (
+        "the measured total is close to the invented one, which suggests it is not measured",
+        sum(s["bits"] for s in _seen), sum(_INVENTED.values()))
+
+    #  RECOMPUTED INDEPENDENTLY: the helper's figure is the serialised size of what it is given.
+    _probe_payload = {"a": "x" * 10, "b": [1, 2, 3]}
+    _bits, _basis = _payload_bits(_probe_payload)
+    assert _bits == len(json.dumps(_probe_payload, default=str).encode("utf-8")) * 8, (_bits,)
+    assert "not the number of bits it erased" in _basis, _basis
+
+    # ── L2. AN ABSENT PAYLOAD IS NOT A SMALL ONE ─────────────────────────────────────────────────
+    #  Serialising None gives the four bytes of "null", so an absent input would meter 32 bits — a figure
+    #  saying four bytes were handled when nothing was. Three of the six stages hit this for real during
+    #  this round, having been pointed at key names the module does not use.
+    _none_bits, _none_basis = _payload_bits(None)
+    assert _none_bits is None, ("an absent payload was given a size", _none_bits)
+    assert "NOT METERED" in _none_basis, _none_basis
+    _unmetered = _o.tfel.meter_operation("w546_absent", None, _none_basis)
+    assert _unmetered["metered"] is False and _unmetered["entropy_bits"] is None, _unmetered
+    assert _unmetered["landauer_floor_joules"] is None, ("an unmetered operation got an energy figure",
+                                                         _unmetered)
+
+    # ── L3. THE FIGURE IS A FLOOR, AND IT IS NAMED AS ONE ────────────────────────────────────────
+    _rec = _o.tfel.meter_operation("w546_check", 8000.0, "MEASURED: driven by the guard")
+    assert "energy_joules" not in _rec, (
+        "the bare energy field is back; it reads as the energy a computation used, and nothing here "
+        "measures power", sorted(_rec))
+    #  the physics, recomputed here so the ledger cannot drift from what it claims
+    _expected = 8000.0 * (1.380649e-23 * _o.tfel.temperature * math.log(2)) * _o.tfel.hw
+    assert abs(_rec["landauer_floor_joules"] - _expected) < 1e-30, (_rec["landauer_floor_joules"],
+                                                                     _expected)
+    assert "FLOOR" in _rec["energy_basis"] and "not a measurement of energy drawn" in _rec["energy_basis"], (
+        _rec["energy_basis"])
+    #  the hardware factor states that it is not measured
+    assert "DECLARED, NOT MEASURED" in _rec["energy_basis"], _rec["energy_basis"]
+
+    # ── L4. COMPLIANCE IS THREE-STATE: an empty ledger is not a compliant one ────────────────────
+    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _TFEL
+    _fresh = _TFEL()
+    _empty = _fresh.export_cycle_ledger("w546-empty")
+    assert _empty["compliance"] is None, ("a cycle that metered nothing reported compliance",
+                                          _empty["compliance"])
+    assert "NOT ASSESSED" in _empty["compliance_basis"] and "empty ledger" in _empty["compliance_basis"], (
+        _empty["compliance_basis"])
+    assert _empty["metered_operations"] == 0, _empty
+    _fresh.meter_operation("w546_one", 1000.0, "MEASURED: driven by the guard")
+    _used = _fresh.export_cycle_ledger("w546-used")
+    assert _used["compliance"] is True and _used["metered_operations"] == 1, _used
+    assert "1 operation(s) were metered" in _used["compliance_basis"], _used["compliance_basis"]
+    #  and the budget declares that it is a literal rather than a derived capacity
+    assert "DECLARED, NOT DERIVED" in _used["compliance_basis"], _used["compliance_basis"]
+
+    # ── L5. NO CALLER ANYWHERE PASSES A LITERAL BIT COUNT — the class, not the three instances ────
+    #  FU-234 named THREE callers and the first pass fixed one. This asserts the property over the whole
+    #  tree instead of over a list of files, so the fourth caller cannot be added without being noticed.
+    import pathlib as _pl
+    _root2 = _pl.Path(__file__).resolve().parents[1]
+    def _is_declared_cost(node):
+        """A bit count that no measurement produced: a bare number, int()/float() of one, or an
+        expression multiplying by a large constant (`len(batch) * 1.5e6` is HALF measured, which is the
+        shape that survives an audit asking only whether a figure is a literal)."""
+        if node is None:
+            return False
+        _inner = (node.args[0] if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                                   and node.func.id in ("int", "float") and node.args) else node)
+        if isinstance(_inner, ast.Constant) and isinstance(_inner.value, (int, float)):
+            return True
+        if isinstance(_inner, ast.BinOp):
+            return any(isinstance(_s, ast.Constant) and isinstance(_s.value, (int, float))
+                       and _s.value >= 1000 for _s in ast.walk(_inner))
+        return False
+
+    _literal_callers = []
+    for _f in list((_root2 / "agentic_core").rglob("*.py")) + list((_root2 / "core").rglob("*.py")):
+        try:
+            _tree2 = ast.parse(_f.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for _fn in [n for n in ast.walk(_tree2)
+                    if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Module))]:
+            #  FOLLOW THE VALUE BACK TO ITS ASSIGNMENT. A sweep proved a call-site check insufficient:
+            #  moving the literal one line up, into `_bits, _bits_basis = 2e5, "..."`, left the call
+            #  reading a Name and the leg passing with the defect in. Tuple targets included, because
+            #  that is the form the measured helper returns and therefore the form a shortcut imitates.
+            _assigned = {}
+            for _st in ast.walk(_fn):
+                if not isinstance(_st, ast.Assign):
+                    continue
+                for _tgt in _st.targets:
+                    if isinstance(_tgt, ast.Name):
+                        _assigned.setdefault(_tgt.id, []).append(_st.value)
+                    elif isinstance(_tgt, ast.Tuple):
+                        _vals = (_st.value.elts if isinstance(_st.value, ast.Tuple)
+                                 else [None] * len(_tgt.elts))
+                        for _el, _v in zip(_tgt.elts, _vals):
+                            if isinstance(_el, ast.Name):
+                                _assigned.setdefault(_el.id, []).append(_v)
+            for _n2 in ast.walk(_fn):
+                if not (isinstance(_n2, ast.Call) and isinstance(_n2.func, ast.Attribute)
+                        and _n2.func.attr == "meter_operation"):
+                    continue
+                _args = list(_n2.args[1:2]) + [k.value for k in _n2.keywords if k.arg == "bits"]
+                for _a in _args:
+                    _candidates = [_a]
+                    if isinstance(_a, ast.Name):
+                        _candidates = _assigned.get(_a.id, [])
+                    for _c in _candidates:
+                        if _is_declared_cost(_c):
+                            _literal_callers.append(
+                                f"{_f.relative_to(_root2)}:{_n2.lineno}"
+                                + ("" if _c is _a else f" (via {_a.id})"))
+    assert not _literal_callers, (
+        "a thermodynamic bit count is a declared constant rather than a measurement, so the joules "
+        "computed from it are arithmetic over an invented input", _literal_callers)
+
+    #  AND EVERY TEST DOUBLE OF THAT METHOD MATCHES THE REAL SIGNATURE. A double is a CONSUMER of a
+    #  signature: this round changed meter_operation to take the account of where its bit count came
+    #  from, and a fake in this very file still had the old two-parameter form — so the producer change
+    #  raised TypeError in a test while every direct caller was correct. The real parameters are read
+    #  from the module rather than typed here, so this cannot drift from them.
+    import inspect as _insp
+    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _RealTFEL
+    _real_params = set(_insp.signature(_RealTFEL.meter_operation).parameters) - {"self"}
+    _suite_src = _pl.Path(__file__).read_text(encoding="utf-8")
+    _suite_tree = ast.parse(_suite_src)
+    for _cls in [n for n in ast.walk(_suite_tree) if isinstance(n, ast.ClassDef)]:
+        for _meth in [m for m in _cls.body
+                      if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))
+                      and m.name == "meter_operation"]:
+            _have = {a.arg for a in _meth.args.args} - {"self"}
+            assert _real_params <= _have, (
+                f"the double {_cls.name}.meter_operation at line {_meth.lineno} accepts {sorted(_have)} "
+                f"but the real ledger takes {sorted(_real_params)}, so a caller correct against the real "
+                f"one raises TypeError against this fake")
+
+    #  and the effector's own entropy figure is not a literal either: the same quantity was reported as
+    #  2e5, 500.0 and 0.5 in one function, and no two of them agreed
+    _tr = ast.parse((_root2 / "agentic_core/avatars/tools/tool_registry.py").read_text(encoding="utf-8"))
+    for _n3 in ast.walk(_tr):
+        if isinstance(_n3, ast.keyword) and _n3.arg == "entropy_cost":
+            assert not (isinstance(_n3.value, ast.Constant)
+                        and isinstance(_n3.value.value, (int, float))), (
+                f"tool_registry:{getattr(_n3.value, 'lineno', '?')} returns a literal entropy to its "
+                f"caller")
+
+    # ── L6. THE CAUSAL SIMULATOR METERS ITS REAL BATCH, and drops three more invented figures ────
+    from agentic_core.simverse.causal_simulator import DynamoInference
+    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _TFEL2
+    _batch = [{"task": "a", "payload": "x" * 50}, {"task": "b"}]
+    _d = _aio.run(DynamoInference(_TFEL2()).schedule_disaggregated(_batch))
+    _independent, _ = _payload_bits(_batch)
+    assert _d["metering"]["entropy_bits"] == _independent, (
+        "the batch's metered cost is not its measured size", _d["metering"]["entropy_bits"], _independent)
+    #  the figure it replaced multiplied a real count by an invented per-task cost — half-measured, which
+    #  is the shape that survives an audit asking only whether a number is a literal
+    assert _d["metering"]["entropy_bits"] != len(_batch) * 1.5e6, _d["metering"]
+    assert "SUCCESS" not in _d["status"], ("a method that schedules nothing reports success", _d["status"])
+    assert _d["causal_isolation"] is None and "NOT ASSESSED" in _d["causal_isolation_basis"], _d
+    assert _d["latency_ms"] is None and "NOT MEASURED" in _d["latency_basis"], _d
+    assert _d["tasks"] == len(_batch), _d
+
+
+def test_w546_a_fresh_backend_without_the_ledger_refuses_instead_of_inventing_a_budget(tmp_path):
+    """The fresh-backend probe P3.17's bar names — and the only way to reach the fallback at all.
+
+    The import of core.transcendent_subsystems.tfel SUCCEEDS here, so the except branch in
+    recirculation_orchestrator is never executed by this suite: it is the branch most likely to run on a
+    deployment whose path differs and least likely to be tested, and what it returned was
+    `{"budget_remaining": 1e9}` — a billion bits of headroom from a class that meters nothing. This probe
+    blocks that one module in a fresh interpreter so the fallback is FORCED, and asserts it refuses.
+    """
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parents[1]
+    script = tmp_path / "probe.py"
+    script.write_text(
+        "import sys, os\n"
+        "sys.path.insert(0, os.environ['WS_ROOT'])\n"
+        "import agentic_core as _ac\n"
+        "assert _ac.__file__ and os.path.realpath(_ac.__file__).startswith("
+        "       os.path.realpath(os.environ['WS_ROOT'])), ('wrong agentic_core', _ac.__file__)\n"
+        # BLOCK the one module, so the orchestrator takes its ImportError branch. A finder that raises
+        # ImportError for exactly this name is the only honest way to reach it: the module is importable
+        # on this machine, so no amount of in-process arrangement exercises the fallback.
+        "import importlib.abc, importlib.machinery, json\n"
+        "class _Block(importlib.abc.MetaPathFinder):\n"
+        "    def find_spec(self, name, path=None, target=None):\n"
+        "        if name == 'core.transcendent_subsystems.tfel':\n"
+        "            raise ImportError('blocked by the W546 probe')\n"
+        "        return None\n"
+        "sys.meta_path.insert(0, _Block())\n"
+        "from agentic_core.avatars.core.recirculation_orchestrator import "
+        "ThermodynamicFreeEnergyLedger as T\n"
+        "t = T()\n"
+        "m = t.meter_operation('probe', 1234.0)\n"
+        "c = t.export_cycle_ledger('probe-cycle')\n"
+        "print(json.dumps({'is_fallback': T.__module__.endswith('recirculation_orchestrator'),\n"
+        "                  'available': getattr(t, 'available', None),\n"
+        "                  'metered': m.get('metered'), 'bits': m.get('entropy_bits'),\n"
+        "                  'budget_remaining': m.get('budget_remaining'),\n"
+        "                  'floor': m.get('landauer_floor_joules'),\n"
+        "                  'meter_basis': bool((m.get('basis') or '').strip()),\n"
+        "                  'compliance': c.get('compliance'),\n"
+        "                  'has_export': hasattr(t, 'export_cycle_ledger'),\n"
+        "                  'keys': sorted(m.keys())}))\n",
+        encoding="utf-8")
+    d = tmp_path / "fresh"
+    env = {**__import__("os").environ, "DATA_DIR": str(d), "WORKSTATION_DATA_DIR": str(d),
+           "WORKSTATION_UEG_PATH": str(d / "ueg.json"), "PROJECTS_DIR": str(d / "projects"),
+           "AI_DISABLE_LOCAL": "1", "WS_ROOT": str(root), "PYTHONPATH": str(root)}
+    r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
+                       cwd=str(root), env=env)
+    assert r.returncode == 0, ("the fresh backend could not reach the fallback ledger", r.stderr[-700:])
+    out = json.loads([ln for ln in r.stdout.splitlines() if ln.startswith("{")][-1])
+
+    #  the probe really did force the fallback — otherwise everything below would describe the real one
+    assert out["is_fallback"] is True, ("the probe did not reach the fallback branch, so it proves "
+                                        "nothing about it", out)
+    assert out["available"] is False, out
+    #  AND IT INVENTS NOTHING. The figure it used to return was 1e9.
+    assert out["budget_remaining"] is None, ("the unavailable ledger reports a budget it does not have",
+                                             out)
+    assert out["metered"] is False and out["bits"] is None and out["floor"] is None, out
+    assert out["meter_basis"] is True, "the refusal carries no reason"
+    assert out["compliance"] is None, ("an unavailable ledger reported compliance", out)
+    #  A STUB THINNER THAN ITS PRODUCER TESTS THE STUB: the old one had no export_cycle_ledger at all, so
+    #  a caller reaching it got a different SHAPE as well as a fabricated figure.
+    assert out["has_export"] is True, "the fallback is missing a method the real ledger has"
+    for _k in ("metered", "entropy_bits", "landauer_floor_joules", "budget_remaining", "basis"):
+        assert _k in out["keys"], (f"the fallback's record omits {_k}, so a reader cannot treat the two "
+                                   f"ledgers alike", out["keys"])

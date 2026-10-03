@@ -20,7 +20,9 @@ class ToolResult:
     tool_name: str
     success: bool
     output: Any
-    entropy_cost: float
+    # W546 (FU-234) — Optional, because an effector whose parameters could not be sized has no
+    # entropy figure, and 0.0 would read as a thermodynamically free action.
+    entropy_cost: Optional[float]
     constitutional_attestation: str
     causal_proof: Optional[str]
 
@@ -90,9 +92,16 @@ class AvatarToolRegistry:
                 raise RuntimeError("Pearl-do verification failed: Unidentifiable causal path.")
 
         # Phase 3: Physical (Thermodynamic Metering)
-        # Metering bits for the effector operation
-        metering = self.tfel.meter_operation(f"effector_{tool_name}", bits=2e5)
-        entropy_cost = 500.0 # Standard bit cost
+        # W546 (FU-234) — THE SECOND OF THREE CALLERS THAT PASSED A CONSTANT. `bits=2e5` was annotated
+        # "standard bit cost" and described nothing: the same figure for a one-field call and a megabyte
+        # one. And `entropy_cost = 500.0` was a SEPARATE literal returned to callers below as "entropy",
+        # so a consumer read 500.0 as a measured quantity. Both now come from the size of the parameters
+        # this effector was actually given.
+        from agentic_core.avatars.core.recirculation_orchestrator import _payload_bits
+        _bits, _bits_basis = _payload_bits(params)
+        metering = self.tfel.meter_operation(f"effector_{tool_name}", bits=_bits,
+                                             bits_basis=_bits_basis)
+        entropy_cost = _bits if _bits is not None else None
 
         # Phase 4: Execution (Sovereign Dispatch through OpenClaw)
         logger.info(f"Avatar Effector: {tool_name} requested by {user_id}")
@@ -130,7 +139,10 @@ class AvatarToolRegistry:
             tool_name=tool_name,
             success=success,
             output=output,
-            entropy_cost=0.5,
+            # W546 (FU-234) — THE SAME QUANTITY WAS REPORTED AS THREE DIFFERENT INVENTED NUMBERS IN
+            # THIS ONE FUNCTION: 2e5 metered to the ledger, 500.0 written to the UEG as "entropy",
+            # and 0.5 returned here to the caller. None of them measured anything and no two agreed.
+            entropy_cost=entropy_cost,
             constitutional_attestation=attestation,
             causal_proof=causal_proof
         )

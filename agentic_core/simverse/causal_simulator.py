@@ -76,12 +76,27 @@ class DynamoInference:
         self.tfel = tfel
 
     async def schedule_disaggregated(self, task_batch: List[Dict[str, Any]]) -> Dict[str, Any]:
-        bits = len(task_batch) * 1.5e6
-        metering = self.tfel.meter_operation("dynamo_disaggregated_inference", int(bits))
+        # W546 (FU-234) — THE THIRD OF THREE CALLERS THAT PASSED A CONSTANT. `len(task_batch) * 1.5e6`
+        # multiplied a real count by an invented per-task bit cost, which is the shape that survives an
+        # audit asking whether a figure is a literal: half of it is measured. The batch's actual size is
+        # measurable, so it is measured.
+        from agentic_core.avatars.core.recirculation_orchestrator import _payload_bits
+        _bits, _bits_basis = _payload_bits(task_batch)
+        metering = self.tfel.meter_operation("dynamo_disaggregated_inference", _bits,
+                                             bits_basis=_bits_basis)
+        # W546 — AND THREE MORE LITERALS SAT IN THIS RETURN, beside the bit count. `status: SUCCESS` was
+        # unconditional for a method that schedules nothing; `causal_isolation: True` asserted a property
+        # nothing checks; and `latency_ms: 78.5` reported a duration nothing timed. The mode at least
+        # declared itself emulated, which is why it is the one field kept as it was.
         return {
-            "status": "SUCCESS",
+            "status": "EMULATED_NOT_SCHEDULED",
             "disaggregation_mode": "layer_parallel_emulated",
-            "causal_isolation": True,
-            "latency_ms": 78.5,
+            "tasks": len(task_batch),
+            "causal_isolation": None,
+            "causal_isolation_basis": ("NOT ASSESSED: nothing here verifies that tasks are causally "
+                                       "isolated from one another. The field asserted True"),
+            "latency_ms": None,
+            "latency_basis": ("NOT MEASURED: no scheduling or inference takes place, so there is no "
+                              "duration to report. The field reported a fixed 78.5ms"),
             "metering": metering
         }

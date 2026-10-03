@@ -28,11 +28,82 @@ try:
     from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger
 except ImportError:
     class ThermodynamicFreeEnergyLedger:
+        """The ledger is UNAVAILABLE, and this says so rather than inventing a budget.
+
+        W546 (FU-329) — the stub this replaces returned `{"budget_remaining": 1e9}` from
+        meter_operation: a billion bits of headroom, reported by a class that meters nothing. It was
+        THINNER THAN ITS PRODUCER (no export_cycle_ledger, no budget, no E_min), so any caller reaching
+        it got a different shape as well as a fabricated figure — and because the real module imports
+        fine on a machine whose path includes the repository root, this branch runs on deployments where
+        it does not and is exercised by nothing here. A stub that fabricates on the path least likely to
+        be tested is the worst place to put one.
+
+        Every field is three-state and the shape matches the real ledger's, so a caller cannot tell them
+        apart by accident — only by reading `available`.
+        """
+
         def __init__(self, **kwargs):
-            """Simulated TFEL."""
-        def meter_operation(self, name, bits): return {"budget_remaining": 1e9}
+            self.available = False
+            self.basis = ("NOT AVAILABLE: core.transcendent_subsystems.tfel could not be imported in "
+                          "this deployment, so no information cost is metered and no Landauer floor is "
+                          "computed. Nothing here is a measurement")
+
+        def meter_operation(self, name, bits, bits_basis: str = ""):
+            #  the real ledger's key set, so a caller cannot tell the two apart by shape — only by
+            #  reading `available` or the basis, which is the honest discriminator
+            return {"op": name, "metered": False, "entropy_bits": None,
+                    "bits_basis": bits_basis or "not recorded: this ledger meters nothing",
+                    "landauer_floor_joules": None,
+                    "energy_basis": self.basis, "budget_remaining": None,
+                    "basis": self.basis, "timestamp": None}
+
+        def export_cycle_ledger(self, cid):
+            return {"cycle_id": cid, "total_entropy_bits": None, "metered_operations": 0,
+                    "compliance": None, "compliance_basis": self.basis}
 
 logger = logging.getLogger(__name__)
+
+
+def _payload_bits(obj: Any) -> tuple:
+    """The MEASURED size in bits of what a stage actually handled, and a basis saying what that is.
+
+    W546 (FU-234) — six stages passed hardcoded bit counts to the thermodynamic ledger (1e4 for sense,
+    5e4 for intend, 5e5 for analyse, 2e5 for act, 5e4 for learn, 1e5 for reflect), each recorded BEFORE
+    the stage did any work. So the figure could not have described what the stage processed even in
+    principle, and the ledger's joules were arithmetic over an invented input — on a path the heartbeat
+    runs every beat.
+
+    WHAT THIS MEASURES AND WHAT IT DOES NOT. It is the serialised size of the stage's payload: a real,
+    reproducible quantity. It is NOT the number of bits the computation erased, which is what Landauer's
+    bound is about, and nothing here measures that. The basis travels with the figure so the ledger's
+    floor is never read as the energy a stage drew.
+    """
+    #  EVERY LOOKUP IS DEFENSIVE, and a full suite paid for that. The six call sites read ctx["state"]
+    #  directly, where the literals they replaced touched nothing — and a stage can be driven with a
+    #  context that has no state key at all (test_w530 does exactly that), so the measurement raised
+    #  KeyError on a path the literal had always survived. An absent payload is the honest answer
+    #  there, which the None branch below already gives.
+    #  AN ABSENT PAYLOAD IS NOT A SMALL ONE. Serialising None gives the four bytes of "null", so a stage
+    #  whose input never arrived would have metered 32 bits — a figure reporting that four bytes were
+    #  handled when nothing was. The ledger's meter_operation treats a None bit count as NOT METERED,
+    #  which is the honest answer, and this is how it gets one. The first draft of this helper hit the
+    #  case for real: three of the six stages were pointed at key names this module does not use
+    #  ("analysis", "action", "learning" rather than "strategy", "act", "learn"), and each quietly
+    #  metered 32 bits of nothing instead of failing.
+    if obj is None:
+        return None, ("NOT METERED: this stage's input payload is absent, so there is nothing to size. "
+                      "Serialising it would report the four bytes of a null literal as data handled")
+    try:
+        import json
+        _n = len(json.dumps(obj, default=str).encode("utf-8"))
+        _how = "JSON-serialised"
+    except Exception:
+        _n = len(str(obj).encode("utf-8"))
+        _how = "string-rendered (the payload would not serialise)"
+    return float(_n * 8), (
+        f"MEASURED: {_n} byte(s) of {_how} payload = {_n * 8} bits. This is the SIZE OF THE DATA this "
+        f"stage handled, not the number of bits it erased — Landauer's bound concerns erasure and nothing "
+        f"here measures that, so treat the ledger's figure as a floor over a measured payload size")
 
 class _RefusingRegulator:
     """Refuses every mutation, and says why. W530 (FU-333).
@@ -223,19 +294,22 @@ class AvatarRecirculationOrchestrator:
 
     async def _stage_sense(self, ctx: Dict):
         """Observe environment via VSB + tool interception."""
-        self.tfel.meter_operation("metabolic_sense", bits=1e4)
+        _bits, _bits_basis = _payload_bits(ctx.get("input"))
+        self.tfel.meter_operation("metabolic_sense", bits=_bits, bits_basis=_bits_basis)
         return await self.cognitive_orchestrator.process_engine("hoshiyari", ctx["input"], ctx)
 
     async def _stage_intend(self, ctx: Dict):
         """Form instructional intent via Niyyah ratification."""
-        self.tfel.meter_operation("metabolic_intend", bits=5e4)
+        _bits, _bits_basis = _payload_bits((ctx.get("state") or {}).get("observation"))
+        self.tfel.meter_operation("metabolic_intend", bits=_bits, bits_basis=_bits_basis)
         async def ratify():
             return await self.cognitive_orchestrator.process_engine("niyyah", ctx["state"]["observation"], ctx)
         return await self.uci.intercept({"intent": "ratify", "context": ctx}, ratify)
 
     async def _stage_analyze(self, ctx: Dict):
         """Mushāwara Deliberation: Selecting optimal strategy."""
-        self.tfel.meter_operation("metabolic_analyze", bits=5e5)
+        _bits, _bits_basis = _payload_bits((ctx.get("state") or {}).get("intent"))
+        self.tfel.meter_operation("metabolic_analyze", bits=_bits, bits_basis=_bits_basis)
         mode_config = self.mode_manager.get_current_config()
         # Enforces ≥3 engine consensus for high-impact emissions
         return await self.cognitive_orchestrator.consult(
@@ -245,7 +319,8 @@ class AvatarRecirculationOrchestrator:
 
     async def _stage_act(self, ctx: Dict):
         """Emission refinery + Tool effector."""
-        self.tfel.meter_operation("metabolic_act", bits=2e5)
+        _bits, _bits_basis = _payload_bits((ctx.get("state") or {}).get("strategy"))
+        self.tfel.meter_operation("metabolic_act", bits=_bits, bits_basis=_bits_basis)
 
         strategy = ctx["state"]["strategy"]
         draft_text = strategy.get("outcome", {}).get("synthesized_response", "I am ready.")
@@ -308,7 +383,8 @@ class AvatarRecirculationOrchestrator:
 
     async def _stage_learn(self, ctx: Dict):
         """Update epigenetic memory via Merkle-linked mutation."""
-        self.tfel.meter_operation("metabolic_learn", bits=5e4)
+        _bits, _bits_basis = _payload_bits((ctx.get("state") or {}).get("act"))
+        self.tfel.meter_operation("metabolic_learn", bits=_bits, bits_basis=_bits_basis)
 
         # W530 — A MISSING OUTCOME IS NOT A WIN. This read `.get("success", True)`, so a cycle whose
         # caller recorded no outcome was written into the user's skill profile as a success. Measured:
@@ -344,7 +420,8 @@ class AvatarRecirculationOrchestrator:
 
     async def _stage_reflect(self, ctx: Dict):
         """Post-instructional meta-audit."""
-        self.tfel.meter_operation("metabolic_reflect", bits=1e5)
+        _bits, _bits_basis = _payload_bits((ctx.get("state") or {}).get("learn"))
+        self.tfel.meter_operation("metabolic_reflect", bits=_bits, bits_basis=_bits_basis)
         return await self.cognitive_orchestrator.process_engine("tafakkur", ctx["state"]["act"], ctx)
 
     #  Per-stage budgets, every one a DEFAULT. Nothing in this repository has calibrated a stage budget
