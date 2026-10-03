@@ -70,7 +70,15 @@ class EnrichedArchitecturalLayerManager:
         return cert_hash
 
     async def geospheric_homeostasis(self, inputs: Dict[str, Any], context: Dict[str, Any]):
-        """Layer 5: Six-cycle PID-controlled homeostasis."""
+        """Layer 5: compares a supplied drift figure against a 0.05 tolerance, or reports NOT_ASSESSED.
+
+        W543 — this said "Six-cycle PID-controlled homeostasis", and it is the sentence a reader of this
+        architecture would believe. Measured: it delegates to GeosphericHomeostaticOrchestrator.step,
+        which consults none of the six biogeochemical cycles — no live module imports any of them — and
+        runs no PID. A real PID controller does exist, in agentic_core/biomimicry/cycles/base_cycle.py,
+        accumulating an integral with anti-windup and a derivative; nothing on this path calls it. The
+        name of a layer is a claim about what runs when it runs.
+        """
         return await self.geospheric.step(inputs, context)
 
     # --- SOVEREIGN 14-LAYER API (Phase 4+ Mandate) ---

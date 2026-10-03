@@ -4149,8 +4149,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W543",
       "note": "",
       "tier": 3,
       "area": "organism",
@@ -5681,8 +5681,8 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W543",
       "note": "",
       "slot_source": "the row whose premise it corrects, FU-242, rides P3.19",
       "tier": 3
@@ -6178,6 +6178,42 @@
       "status": "open",
       "closed_by": null,
       "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-354",
+      "title": "The VSB ledger keeps TWO sets of money figures that are maintained separately and can disagree, which is the economy's own no-second-store rule broken at its centre",
+      "why": "Measured W543 while binding P3.19's water cycle to a figure the platform already measures, and the binding nearly reported a constant 0.0 because of it. VirtualLedger holds two money projections: _data['balances'] (the seven waterfall pots: revenue, reserves, owner, self_investment, capital_fund, user_projects, charity), returned by balances() and written by record() at ledger.py:445-452; and _data['accounts'] (the double-entry chart), written by _apply_posting at ledger.py:412-436 and summed by trial_balance(). DRIVEN ON A FRESH STORE: record('reserves', 750.0) leaves balances reserves=750.0 while trial_balance reports debit_side_total 0.0; a following post('revenue','reserves',500.0) leaves balances UNCHANGED at 750.0 while trial_balance reports -500.0 on both sides. So after two movements the same ledger answers 750 or -500 depending on which accessor is asked, and trial_balance still reports balanced:true because both of its sides moved together. CONSEQUENCE: any surface reading balances() misses every raw post(), and any surface reading trial_balance() misses every record(). The economy is live and reached (the §4 waterfall, the VSB cockpit, the §12 survival instinct), and P3.19's own ACCEPT forbids a second store of numbers. NOT FIXED HERE because changing what a money accessor means requires grepping every reader first (the field-meaning rule, W495). FIX: establish which projection is authoritative, make the other derive from it or state its scope in its own name, and add a leg that drives record() and post() in one ledger and asserts the two readings cannot diverge.",
+      "source": "W543 (driven on a fresh store while binding the water cycle)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 1
+    },
+    {
+      "id": "FU-355",
+      "title": "water_cycle is the outlier of the six: no base class, no sense(), and its own duplicate PIDController",
+      "why": "Measured W543 while making the six cycles report honestly. Five of the six (carbon, nitrogen, oxygen, phosphorus, sulfur) extend GeosphericCycle and define sense(), so one implementation on the base class now answers for all five. HydrologicManager in agentic_core/biomimicry/cycles/water_cycle.py does not: (a) it extends nothing, so it inherits none of the three-state deviation, is_homeostatic or sense_reservoir work; (b) it defines NO sense(), so GET /api/v1/cycles reports a stated absence for it rather than a reading; (c) it declares its OWN PIDController class at water_cycle.py:4-15, a second copy of the controller in base_cycle.py with the same algorithm and no gains provenance — so the gains_tuned/gains_basis fields added this round do not exist on it; (d) its evaporate() and condense() mutate self.reservoirs with literal rates annotated 'Simulated max rate' and 'Simulated efficiency', and self.efficiency = 0.85 is a literal; (e) its regulate_homeostasis(current_temp) shows that its setpoint of 75.0 is a TEMPERATURE, which is why the route refuses to compute any deviation — the figure water is bound to is virtual WST. CONSEQUENCE: a second controller is a second place the control logic can drift, and the one cycle most likely to be read first (liquidity) is the one with no reading method. FIX: make HydrologicManager extend GeosphericCycle, delete its duplicate PIDController in favour of the shared one, give it a sense() through sense_reservoir, and either declare a unit for its setpoint or state that it has none.",
+      "source": "W543 (measured while rewriting the six sense() methods)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/biomimicry/cycles/water_cycle.py",
+        "agentic_core/biomimicry/cycles/base_cycle.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the remaining sixth of this item's own six-cycle work, alongside FU-243",
       "tier": 2
     }
   ],

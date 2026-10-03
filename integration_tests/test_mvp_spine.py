@@ -31072,3 +31072,242 @@ def test_w542_a_fresh_backend_also_refuses_to_rate_what_nobody_confirmed(tmp_pat
     assert out["refused_none"] and "confirmation is True or False" in out["refused_none"], out
     #  then one confirmation, and only then a figure — over a denominator of exactly that one record
     assert out["after"] == 1.0 and out["after_denom"] == 1, out
+
+
+def test_w543_a_cycle_reports_a_measured_figure_or_says_it_cannot(client, tmp_path):
+    """P3.19: the six cycles as a reported control surface, and three fabricated figures removed.
+
+    Every leg drives behaviour. The two that read source read the AST, never the text, because this
+    round's own comments quote the defects they removed — including the generator calls — and a text
+    search would match the explanation instead of the code.
+    """
+    import ast
+    import asyncio as _aio
+    import pathlib
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  SEEDED AND SNAPSHOTTED BEFORE ANY ROUTE CALL. The first version of the store leg below took its
+    #  snapshot in the middle of the test, after two reads had already happened — so a surface writing a
+    #  cache on EVERY call had already written it, both snapshots matched, and the leg passed with the
+    #  defect restored. A bracket must enclose every call it means to judge.
+    from agentic_core.economy.ledger import VirtualLedger
+    _vsb = "vsb-w543-guard"
+    VirtualLedger(_vsb).record("reserves", 640.0, memo="w543 guard", kind="credit")
+    from agentic_core.config import data_path as _dp
+    _ddir = pathlib.Path(_dp(""))
+    _files_before_any_read = sorted(q.name for q in _ddir.iterdir()) if _ddir.is_dir() else None
+    assert _files_before_any_read, ("the data directory is unreadable, so this leg could not fail",
+                                    str(_ddir))
+
+    # ── L1. AN UNMEASURED CYCLE REPORTS NO FIGURE AND NO VERDICT ───────────────────────────────────
+    r = client.get("/api/v1/cycles")
+    assert r.status_code == 200, (r.status_code, r.text[:200])
+    j = r.json()
+    rows = {c["name"]: c for c in j["cycles"]}
+    assert set(rows) == {"water", "carbon", "nitrogen", "oxygen", "phosphorus", "sulfur"}, sorted(rows)
+    for _n in ("nitrogen", "phosphorus", "sulfur"):
+        c = rows[_n]
+        assert c["assessable"] is False, (_n, "claims a binding it does not have", c)
+        #  THE KEYS ARE ABSENT, not null. A null invites `value ?? 0`, and the zero is the fabrication
+        #  arriving back by another route.
+        assert "value" not in c, (_n, "an unbound cycle carries a value", c)
+        assert "deviation" not in c and "within_tolerance" not in c, (_n, "a verdict over nothing", c)
+        assert c["measured_from"] is None, (_n, c["measured_from"])
+        #  and the refusal names what WOULD bind it, so it is an instruction rather than a shrug
+        assert "NOT ASSESSED" in c["basis"] and "To bind it" in c["basis"], (_n, c["basis"])
+
+    # ── L2. A BOUND FIGURE EQUALS AN INDEPENDENT READ OF ITS OWN SOURCE ───────────────────────────
+    j2 = client.get("/api/v1/cycles", params={"vsb_id": _vsb}).json()
+    rows2 = {c["name"]: c for c in j2["cycles"]}
+    _independent = sum(v for v in VirtualLedger(_vsb).balances().values() if isinstance(v, (int, float)))
+    assert rows2["water"]["assessable"] is True, rows2["water"]
+    assert rows2["water"]["value"] == _independent, (
+        "the reported liquidity is not the ledger's own figure",
+        rows2["water"]["value"], _independent)
+    assert "ledger.py" in (rows2["water"]["measured_from"] or ""), rows2["water"]["measured_from"]
+    #  the count is the ledger's too, read independently
+    assert rows2["carbon"]["value"] == VirtualLedger(_vsb).trial_balance()["postings"], rows2["carbon"]
+
+    # ── L3. NO SECOND STORE OF NUMBERS: a full read writes nothing ────────────────────────────────
+    #  (a) THE PROPERTY, ON THE AST: neither module may resolve a store path, write one, or open a file.
+    #  This is the primary instrument, because it holds whatever order a caller reads in.
+    for _mod in ("agentic_core/api/cycles.py", "agentic_core/biomimicry/cycles/bindings.py"):
+        _mt = ast.parse((_root / _mod).read_text(encoding="utf-8"))
+        _names = {ast.unparse(n.func).split(".")[-1] for n in ast.walk(_mt) if isinstance(n, ast.Call)}
+        for _forbidden in ("data_path", "atomic_write_json", "open"):
+            assert _forbidden not in _names, (
+                f"{_mod} calls {_forbidden}; this surface reads figures from the modules that own them "
+                f"and keeps no copy, which is what 'no second store of numbers' means")
+    #  (b) AND THE BEHAVIOUR, bracketed from before the first read in this test
+    _files_after = sorted(q.name for q in _ddir.iterdir()) if _ddir.is_dir() else None
+    assert _files_after == _files_before_any_read, (
+        "reading the cycles created or removed a store file",
+        set(_files_after or []) ^ set(_files_before_any_read or []))
+
+    # ── L4. NO DEVIATION ANYWHERE, AND EVERY SETPOINT IS AN ASPIRATION ────────────────────────────
+    #  The first draft of this surface computed a deviation for the three BOUND cycles and reported 11.0
+    #  for water: 900 virtual WST against a setpoint of 75.0, which water_cycle treats as a temperature.
+    #  Real arithmetic over incommensurable units is this item's defect one level in.
+    for _n, c in rows2.items():
+        assert c["setpoint_is_aspiration"] is True, (_n, "a setpoint with no unit is presented as a target", c)
+        assert "deviation" not in c, (_n, "a deviation was computed across units", c)
+        assert "NO UNIT" in c["setpoint_basis"], (_n, c["setpoint_basis"])
+        assert "SAME UNIT" in c["deviation_basis"], (_n, c["deviation_basis"])
+
+    # ── L5. A GAIN IS A DEFAULT UNTIL TUNED, AND THE RECORD SAYS SO ───────────────────────────────
+    for _n, c in rows2.items():
+        assert c["gains_tuned"] is False, (_n, "a gain claims to be tuned; nothing has tuned one", c)
+        assert (c["gains_basis"] or "").strip(), (_n, "gains with no provenance")
+    from agentic_core.biomimicry.cycles.base_cycle import PIDController
+    assert PIDController(setpoint=1.0, kp=1.0, ki=0.0, kd=0.0).gains_tuned is False, (
+        "the controller's default claims tuning")
+
+    # ── L6a. THE FABRIC'S HEALTH IS MEASURED OR WITHHELD — IT DOES NOT VARY BY ITSELF ─────────────
+    from agentic_core.biomimicry.geospheric.drad import DynamicReactiveAdaptiveFabric
+    _f = DynamicReactiveAdaptiveFabric()
+    h1 = _f.get_fabric_health()
+    h2 = _f.get_fabric_health()
+    #  TWO IDENTICAL CALLS AGREED ON NOTHING BEFORE THIS. The score was drawn from a generator over
+    #  0.9-1.0 and the uptime from one over an hour to a day, so each call invented a new plausible past.
+    assert h1["current_health_score"] == h2["current_health_score"], (h1, h2)
+    assert h1["current_health_score"] is None, ("a health score with no telemetry", h1)
+    assert h1["telemetry_received"] is False, h1
+    assert "NOT ASSESSED" in h1["health_basis"], h1["health_basis"]
+    #  the uptime is real elapsed time, so two calls differ by about nothing rather than by hours
+    assert abs(h2["process_uptime_seconds"] - h1["process_uptime_seconds"]) < 5.0, (h1, h2)
+    #  and a reported error rate DOES produce a score — the refusal is not the only state
+    _f.monitor({"error_rate": 0.02})
+    h3 = _f.get_fabric_health()
+    assert h3["current_health_score"] == 0.98, h3
+    assert h3["telemetry_received"] is True, h3
+    #  an unmeasured fabric is neither nominal nor critical
+    assert DynamicReactiveAdaptiveFabric().monitor({})["status"] == "NOT_ASSESSED", "an unmeasured fabric cleared"
+    assert _f.monitor({"error_rate": 0.9})["status"] == "CRITICAL", "a breached fabric did not report"
+
+    # ── L6b. NO GENERATOR CALL REMAINS, ASSERTED ON THE AST ──────────────────────────────────────
+    #  On the AST because this module's own comments quote the calls they describe, and a text search
+    #  would match the explanation rather than any code.
+    _tree = ast.parse((_root / "agentic_core/biomimicry/geospheric/drad.py").read_text(encoding="utf-8"))
+    _calls = [ast.unparse(n.func) for n in ast.walk(_tree) if isinstance(n, ast.Call)]
+    assert not [c for c in _calls if c.split(".")[0] == "random"], (
+        "a generator call is back in the fabric's health", [c for c in _calls if "random" in c])
+
+    # ── L7. THE HOMEOSTASIS GATE CAN REACH ALL THREE OUTCOMES ────────────────────────────────────
+    from agentic_core.biomimicry.geospheric.orchestrator_legacy import GeosphericHomeostaticOrchestrator
+    _o = GeosphericHomeostaticOrchestrator(ueg_logger=False)
+    _none = _aio.run(_o.step({}, {}))
+    assert _none["status"] == "NOT_ASSESSED", ("a gate with no input cleared", _none)
+    assert _none["psi_score"] is None, ("a psi nothing computed", _none)
+    assert "NOT COMPUTED" in _none["psi_basis"], _none["psi_basis"]
+    assert _none["cycles_consulted"] == [], _none
+    assert _aio.run(_o.step({"drift": 0.01}, {}))["status"] == "NOMINAL", "a measured pass did not pass"
+    assert _aio.run(_o.step({"drift": 0.2}, {}))["status"] == "CONSTITUTIONAL_VIOLATION", "a breach cleared"
+
+    # ── L7b. THE READER WAS FIXED WITH ITS WRITER — no default of a perfect psi ───────────────────
+    #  Removing the fabricated 0.95 alone would have UPGRADED the lie: the consumer read the key with a
+    #  default of 1.0, so an absent psi would have been logged as perfect. Asserted on the AST: the
+    #  .get() call for that key must take exactly one argument.
+    _u = ast.parse((_root / "agentic_core/governance/uci_interceptor.py").read_text(encoding="utf-8"))
+    _psi_gets = [n for n in ast.walk(_u)
+                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                 and n.func.attr == "get" and n.args
+                 and isinstance(n.args[0], ast.Constant) and n.args[0].value == "psi_score"]
+    assert _psi_gets, "the interceptor no longer reads the homeostasis figure at all"
+    for _g in _psi_gets:
+        assert len(_g.args) == 1, (
+            f"uci_interceptor.py:{_g.lineno} defaults the psi it reads, so an absent figure is logged as "
+            f"a present one", ast.unparse(_g))
+
+    # ── L8. A RESERVOIR LITERAL YIELDS NO READING AND NO VERDICT ─────────────────────────────────
+    from agentic_core.biomimicry.cycles.carbon_cycle import DataCarbonCycle
+    from agentic_core.biomimicry.cycles.nitrogen_cycle import NitrogenFixationDaemon
+    from agentic_core.biomimicry.cycles.oxygen_cycle import MetabolicScheduler
+    from agentic_core.biomimicry.cycles.phosphorus_cycle import PhosphorusMemoryManager
+    from agentic_core.biomimicry.cycles.sulfur_cycle import SulfurErrorManager
+    for _cls in (DataCarbonCycle, NitrogenFixationDaemon, MetabolicScheduler,
+                 PhosphorusMemoryManager, SulfurErrorManager):
+        _c = _cls(None, None, None)
+        _s = _aio.run(_c.sense())
+        assert _s["assessable"] is False, (_cls.__name__, "a literal was reported as a reading", _s)
+        assert _s["homeostatic"] is None, (_cls.__name__, "a verdict over an unmeasured quantity", _s)
+        assert "metric" in _s and "value" not in _s, (_cls.__name__, _s)
+        assert "literal set in __init__" in _s["basis"], (_cls.__name__, _s["basis"])
+        #  and the three-state reaches the regulator: no correction is computed from nothing
+        _reg = _aio.run(_c.regulate())
+        assert _reg["status"] == "not_assessable", (_cls.__name__, "regulated from a literal", _reg)
+        assert _reg["correction_applied"] is None, (_cls.__name__, _reg)
+        #  THE REFUSAL AND THE SUCCESS CARRY THE SAME KEYS, so a reader of `basis` is never undefined
+        _ok = _aio.run(_c._regulate_with_val(42.0))
+        assert sorted(_reg) == sorted(_ok), (_cls.__name__, sorted(_reg), sorted(_ok))
+        #  L9. AND THE CONTROLLER STILL WORKS for a caller that measured something — the point of the
+        #  round is to stop inventing the input, not to disable the control loop.
+        assert isinstance(_ok["correction_applied"], float), (_cls.__name__, _ok)
+        assert _c.deviation(42.0) is not None and _c.is_homeostatic(42.0) in (True, False), _cls.__name__
+        assert _c.deviation(None) is None and _c.is_homeostatic(None) is None, (
+            _cls.__name__, "the third state is unreachable")
+
+    # ── L10. THE CLASS'S OWN READING IS ON THE SURFACE, for all six ──────────────────────────────
+    for _n, c in rows2.items():
+        _ds = c["declared_sense"]
+        assert isinstance(_ds, dict), (_n, "the cycle's own reading is absent from the surface", _ds)
+        assert _ds["assessable"] is False and _ds["homeostatic"] is None, (_n, _ds)
+        assert (_ds["basis"] or "").strip(), (_n, "a refusal with no reason")
+    #  and the coupling matrix is withheld while cycles are unbound, with the reason
+    assert j2["coupling_matrix"] is None, j2["coupling_matrix"]
+    assert "NOT REPORTED" in j2["coupling_basis"] and str(j2["bound"]) in j2["coupling_basis"], j2
+    assert j2["bound"] == 3 and j2["total"] == 6, (j2["bound"], j2["total"])
+
+
+def test_w543_a_fresh_backend_also_refuses_to_bind_what_nothing_measures(tmp_path):
+    """The fresh-backend probe P3.19's bar names: a NEW interpreter, on a store nothing has touched.
+
+    The suite seeds ledgers and runs a heartbeat, so an in-process reading can be true of this run
+    rather than of the code. This starts a separate Python on an empty DATA_DIR and asserts the shape
+    holds there: three cycles refuse by name, the bound ones carry their reader, and no reservoir
+    literal becomes a verdict.
+    """
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parents[1]
+    script = tmp_path / "probe.py"
+    script.write_text(
+        "import sys, os\n"
+        "sys.path.insert(0, os.environ['WS_ROOT'])\n"
+        "import agentic_core as _ac\n"
+        "assert _ac.__file__ and os.path.realpath(_ac.__file__).startswith("
+        "       os.path.realpath(os.environ['WS_ROOT'])), ('wrong agentic_core', _ac.__file__)\n"
+        "import asyncio, json\n"
+        "from agentic_core.biomimicry.cycles import bindings\n"
+        "from agentic_core.biomimicry.cycles.carbon_cycle import DataCarbonCycle\n"
+        "b = bindings.read_all()\n"
+        "s = asyncio.run(DataCarbonCycle(None, None, None).sense())\n"
+        "print(json.dumps({\n"
+        "    'unbound': sorted(k for k, v in b.items() if not v['assessable']),\n"
+        "    'bound': sorted(k for k, v in b.items() if v['assessable']),\n"
+        "    'value_on_refusal': any('value' in v for v in b.values() if not v['assessable']),\n"
+        "    'every_refusal_names_a_reader': all('reader consulted' in v['basis']\n"
+        "                                        for v in b.values() if not v['assessable']),\n"
+        "    'sense_assessable': s['assessable'], 'sense_homeostatic': s['homeostatic'],\n"
+        "    'bound_carry_reader': all(v['measured_from'] for v in b.values() if v['assessable']),\n"
+        "}))\n",
+        encoding="utf-8")
+    d = tmp_path / "fresh"
+    env = {**__import__("os").environ, "DATA_DIR": str(d), "WORKSTATION_DATA_DIR": str(d),
+           "WORKSTATION_UEG_PATH": str(d / "ueg.json"), "PROJECTS_DIR": str(d / "projects"),
+           "AI_DISABLE_LOCAL": "1", "WS_ROOT": str(root), "PYTHONPATH": str(root)}
+    r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
+                       cwd=str(root), env=env)
+    assert r.returncode == 0, ("the fresh backend could not read the cycle bindings", r.stderr[-700:])
+    out = json.loads([ln for ln in r.stdout.splitlines() if ln.startswith("{")][-1])
+    #  with no VSB named, only the organism's own beat count is readable
+    assert out["bound"] == ["oxygen"], out
+    assert out["unbound"] == ["carbon", "nitrogen", "phosphorus", "sulfur", "water"], out
+    assert out["value_on_refusal"] is False, ("a refusal carried a figure in a fresh interpreter", out)
+    assert out["every_refusal_names_a_reader"] is True, out
+    assert out["bound_carry_reader"] is True, out
+    #  and the reservoir literal is still not a reading, in a process that has imported nothing else
+    assert out["sense_assessable"] is False and out["sense_homeostatic"] is None, out

@@ -1,0 +1,110 @@
+[
+  {
+    "tag": "a refusal carries a figure anyway",
+    "file": "agentic_core/biomimicry/cycles/bindings.py",
+    "old": "    return {\"assessable\": False, \"measured_from\": None,",
+    "new": "    return {\"assessable\": False, \"measured_from\": None, \"value\": 0.0,",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "THE DEFECT THIS ITEM EXISTS FOR, in its mildest-looking form. A zero beside assessable:false is what every consumer renders, and it reads as a measurement of nothing rather than as nothing measured."
+  },
+  {
+    "tag": "the liquidity figure is a literal rather than the ledger's",
+    "file": "agentic_core/biomimicry/cycles/bindings.py",
+    "old": "    total = sum(v for v in bal.values() if isinstance(v, (int, float)))",
+    "new": "    total = 97.0",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "97.0 is water_cycle.py's own ocean reservoir literal. The leg reads the ledger independently in the test and compares, so a plausible constant cannot pass for a reading."
+  },
+  {
+    "tag": "the cycles surface opens a store of its own",
+    "file": "agentic_core/api/cycles.py",
+    "old": "    _bound_n = sum(1 for r in out if r[\"assessable\"])",
+    "new": "    from agentic_core.config import atomic_write_json, data_path as _dpw\n    atomic_write_json(_dpw(\"cycles_state.json\"), out)\n    _bound_n = sum(1 for r in out if r[\"assessable\"])",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "P3.19's ACCEPT forbids a second store of numbers. The leg snapshots the DATA_DIR file set across a full read, so a cache written 'for performance' is caught as the second copy it is."
+  },
+  {
+    "tag": "a deviation is computed across incommensurable units",
+    "file": "agentic_core/api/cycles.py",
+    "old": "        row[\"deviation_basis\"] = (",
+    "new": "        if assessable and isinstance(d[\"setpoint\"], (int, float)) and d[\"setpoint\"]:\n            row[\"deviation\"] = round(abs(float(b[\"value\"]) - float(d[\"setpoint\"])) / float(d[\"setpoint\"]), 6)\n        row[\"deviation_basis\"] = (",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "This is the round's OWN first draft restored. It produced a deviation of 11.0 for water — 900 virtual WST against a setpoint water_cycle treats as a temperature. Both inputs real, the arithmetic real, the figure meaningless: the item's defect one level in, committed inside the fix for it."
+  },
+  {
+    "tag": "a gain claims to be tuned",
+    "file": "agentic_core/biomimicry/cycles/base_cycle.py",
+    "old": "    gains_tuned: bool = False",
+    "new": "    gains_tuned: bool = True",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "The body's rule: a PID gain is a DEFAULT until tuned and the record says so. Three outside specifications each assert different immutable gains for these same six cycles, so the flag is the only thing distinguishing a starting point from a derived setting."
+  },
+  {
+    "tag": "the fabric's health score is drawn from a generator again",
+    "file": "agentic_core/biomimicry/geospheric/drad.py",
+    "old": "        _score = self.performance_metrics.get(\"error_rate\")",
+    "new": "        import random as _rnd\n        _score = 1.0 - random.uniform(0.0, 0.1) if False else self.performance_metrics.get(\"error_rate\")\n        _score = None if _score is None else _score",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "Caught on the AST, which is why the leg reads the AST and not the text: this module's own comments quote the generator calls they describe, so a text search would match the explanation. A plausible figure that VARIES survives the two checks a reader makes — not round, not constant."
+  },
+  {
+    "tag": "the homeostasis gate treats a missing drift as a measured zero",
+    "file": "agentic_core/biomimicry/geospheric/orchestrator_legacy.py",
+    "old": "        _drift = inputs.get(\"drift\")",
+    "new": "        _drift = inputs.get(\"drift\", 0)",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "One default, and the gate can no longer do anything but clear: the caller passes context.get('geospheric', {}), which is empty on every real call. The same default-to-approval shape P3.14 removed from the clearance chain, surviving one layer out."
+  },
+  {
+    "tag": "the psi reader defaults to a perfect figure",
+    "file": "agentic_core/governance/uci_interceptor.py",
+    "old": "            \"psi\": geo_res.get(\"psi_score\"),",
+    "new": "            \"psi\": geo_res.get(\"psi_score\", 1.0),",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "THE WRITER-WITHOUT-ITS-READER CLASS. Removing the fabricated 0.95 while leaving this default would UPGRADE the lie: every intercepted action would log a perfect homeostasis into the immutable ledger. Asserted on the AST as an argument count, not as a spelling."
+  },
+  {
+    "tag": "a cycle reports its reservoir literal as a reading",
+    "file": "agentic_core/biomimicry/cycles/carbon_cycle.py",
+    "old": "        return await self.sense_reservoir(\"current_load\", \"active_data\")",
+    "new": "        return {\"current_load\": self.reservoirs[\"active_data\"], \"assessable\": True,\n                \"homeostatic\": self.is_homeostatic(self.reservoirs[\"active_data\"]),\n                \"metric\": \"current_load\", \"reservoirs\": dict(self.reservoirs),\n                \"reservoir_literal\": 0.0, \"basis\": \"literal set in __init__\"}",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "The original sense(), restored with the three-state keys kept so only the SUBSTANCE changes. It reports homeostatic:False — a precise verdict of failure over a quantity nobody measured. A false negative is as much a claim as a false positive."
+  },
+  {
+    "tag": "the third state of a deviation is unreachable",
+    "file": "agentic_core/biomimicry/cycles/base_cycle.py",
+    "old": "        if not isinstance(current, (int, float)):\n            return None",
+    "new": "        if not isinstance(current, (int, float)):\n            return 0.0",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "A deviation of 0.0 for an unmeasured variable is PERFECT HOMEOSTASIS: it is within every tolerance. The most flattering possible answer, returned exactly when there is no evidence for any answer."
+  },
+  {
+    "tag": "the cycles surface is built but mounted nowhere",
+    "file": "agentic_core/app_mvp.py",
+    "old": "app.include_router(cycles_api.router)",
+    "new": "# app.include_router(cycles_api.router)",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "The reach failure this plan keeps finding: nothing imported any of the six cycle classes before this round, and a surface that is written but not mounted leaves them exactly as unreached as they were."
+  },
+  {
+    "tag": "a reader that works reports itself unbound",
+    "file": "agentic_core/biomimicry/cycles/bindings.py",
+    "old": "    beats = st.get(\"beats\")",
+    "new": "    beats = None",
+    "selector": "w543",
+    "expect": "BLIND(red)",
+    "why": "Proves the FRESH-BACKEND PROBE can fail, and proves the refusal is not the only state these bindings can reach. A binding that always refuses would pass every honesty leg while measuring nothing — the opposite failure, and just as useless."
+  }
+]

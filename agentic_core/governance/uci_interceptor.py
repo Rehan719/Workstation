@@ -102,7 +102,14 @@ class UnifiedConstitutionalInterceptorV16Omega:
         await self.ueg.log_minimisation_event("uci_v16_converged_complete", {
             "latency_ms": latency,
             "sincerity": alignment.get("sincerity", 0.0),
-            "psi": geo_res.get("psi_score", 1.0),
+            # W543 — THE READER, CHANGED IN THE SAME COMMIT AS ITS WRITER. This read psi_score with a
+            # default of 1.0, so the ledger recorded a PERFECT homeostasis figure whenever the key was
+            # absent — and the figure that was present was a literal nothing computed. Removing the
+            # writer alone would have upgraded the lie. What is recorded now is the three-state value and
+            # the producer's own reason, so a Ψ nobody computed appears in the ledger as nothing.
+            "psi": geo_res.get("psi_score"),
+            "psi_basis": geo_res.get("psi_basis") or "no basis was supplied by the homeostasis layer",
+            "homeostasis_status": geo_res.get("status"),
             "node": self.node_id
         })
 

@@ -391,6 +391,13 @@ app.include_router(vbs_systems_api.router)
 from agentic_core.api import support as support_api
 app.include_router(support_api.router)
 
+# W543 (P3.19) — the six biogeochemical cycles, reported. Nothing reached them before this: no live
+# module imports any of the six classes, while the architecture layer on the UCI interception path
+# described itself as six-cycle PID-controlled homeostasis. This surface says what each cycle is bound
+# to, and for the three bound to nothing it names the reader that would bind them.
+from agentic_core.api import cycles as cycles_api
+app.include_router(cycles_api.router)
+
 from agentic_core.api import ueg as ueg_api
 app.include_router(ueg_api.router)
 

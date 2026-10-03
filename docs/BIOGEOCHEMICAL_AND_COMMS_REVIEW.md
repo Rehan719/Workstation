@@ -177,7 +177,7 @@ over flows this repository already measures** —
 | Phosphorus — allocation | the §4 six-stage profit waterfall, Owner-adjustable within template bounds |
 | Sulfur — resilience | immune records, Change Control holds, the operational-excellence outcomes |
 
-— driven by the geospheric regulators that already exist in `agentic_core/biomimicry/geospheric/`.
+— driven by `agentic_core/biomimicry/cycles/` and `cycles/bindings.py`. CORRECTED W543: this named `agentic_core/biomimicry/geospheric/`, whose five modules contain no PID at all (regulator.py is a proportional comparator that returns an action string); the real PID is in cycles/base_cycle.py and nothing called it.
 Not a seventh store of invented numbers. That reframing, plus recovering the ant-colony scheduler and
 the rest of #6's biomimetic layer from `_archive/`, is what **P3.19** is for.
 
