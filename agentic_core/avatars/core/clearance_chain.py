@@ -46,6 +46,21 @@ class ConstitutionalClearanceChain:
             {"fail_on_missing_validator": False},
             {"task": "avatar_clearance_omega"}
         )
+        #  W553 (FU-358) — REGISTERED HERE, at construction. A validator nobody registers is a validator
+        #  that is not on the path, which is the reach failure this plan keeps finding; leaving it to a
+        #  caller to remember is how nineteen declared constraints came to have no implementation between
+        #  them. Four assess, fifteen return NOT ASSESSABLE with a named reason, and the pattern therefore
+        #  cannot CLEAR — which is the honest state and a different statement from a constraint having
+        #  been violated.
+        #
+        #  AND THIS CHAIN DOES NOT YET CONSULT IT (FU-364, measured in W553 by grepping its own body):
+        #  `self.enforcement` is constructed and registered here and `validate` is never called on it.
+        #  The pattern that IS consulted is the recirculation orchestrator's, which it hands to the VRPR
+        #  pipeline and the cognitive orchestrator; that verdict and its basis reach a surface. So the
+        #  registration here is correct and NOT yet load-bearing, which is said plainly rather than left
+        #  for a reader to infer from a registry attribute that looks like enforcement.
+        from agentic_core.validation.constitutional_validators import register_all as _register
+        self.enforcement_registry = _register(self.enforcement)
 
     #  The five gates in order, with the FIELD each one reads and the placeholder attestation key.
     #  Named as data so the chain cannot silently grow a sixth gate that nothing records.

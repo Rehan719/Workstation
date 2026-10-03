@@ -161,6 +161,10 @@ class AvatarRecirculationOrchestrator:
             {"fail_on_missing_validator": False},
             {"task": "recirculation_final"}
         )
+        #  W553 (FU-358) — registered at construction, for the reason given in clearance_chain:
+        #  a guardrail a caller has to remember to ask for is not on the path.
+        from agentic_core.validation.constitutional_validators import register_all as _register
+        self.enforcement_registry = _register(self.enforcement)
         self.uci = UnifiedConstitutionalInterceptorV16Omega(ueg_logger=self.ueg)
         self.cognitive_orchestrator = AvatarCognitiveOrchestrator(ueg_logger, self.enforcement)
         self.clearance = ConstitutionalClearanceChain(ueg_logger, self.cognitive_orchestrator)

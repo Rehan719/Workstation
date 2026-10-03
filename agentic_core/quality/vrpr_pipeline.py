@@ -58,14 +58,21 @@ class VRPRPipeline:
         verdict_reason = ""
         refined_by = []
 
+        enforcement_basis = ""
         while it <= _MAX_ITERATIONS:
             val = self.enforcement.validate(curr)
             verdict = getattr(val, "passed", None)
             verdict_reason = (getattr(val, "violation", None) or "")
+            #  W553 — CARRY THE CHAIN'S OWN SENTENCE. This paraphrased a None verdict as "no check could
+            #  be obtained", which became untrue the moment four constraints got instruments: three checks
+            #  ARE obtained and sixteen are not, and the chain already says exactly that. A paraphrase is
+            #  a second wording of a fact, and the second wording is the one that goes stale.
+            enforcement_basis = (getattr(val, "basis", "") or "")
             #  THE EARLY RETURN IS ON THE VERDICT ALONE. It used to require `conf >= 0.95` as well, so a
             #  cleared output still had to survive the retry counter before it could be returned.
             if verdict is True:
-                return self._final(curr, it, trace, verdict, verdict_reason, refined_by, polished=True)
+                return self._final(curr, it, trace, verdict, verdict_reason, refined_by, polished=True,
+                                   enforcement_basis=enforcement_basis)
             it += 1
             if it > _MAX_ITERATIONS:
                 break
@@ -88,9 +95,11 @@ class VRPRPipeline:
                 #  and count the pass as work.
                 refined_by.append("none_available")
 
-        return self._final(curr, it - 1, trace, verdict, verdict_reason, refined_by, polished=False)
+        return self._final(curr, it - 1, trace, verdict, verdict_reason, refined_by, polished=False,
+                           enforcement_basis=enforcement_basis)
 
-    def _final(self, content, iterations, trace, verdict, verdict_reason, refined_by, polished):
+    def _final(self, content, iterations, trace, verdict, verdict_reason, refined_by, polished,
+               enforcement_basis=""):
         """One constructor for both exits, so neither can carry a field the other lacks."""
         _real = [r for r in refined_by if r == "moe"]
         return FinalOutput(
@@ -102,17 +111,25 @@ class VRPRPipeline:
             #  the old arithmetic produced, which a reader cannot verify from the string and which would
             #  become wrong the moment the arithmetic described changed. The starting value, the
             #  increment and the pass count are all stated, so the figure is recomputable from here.
+            #  W553 — AND THE LAST CLAUSE OF THIS SENTENCE WENT STALE THE MOMENT THE VALIDATORS LANDED.
+            #  It said the loop runs every pass "because the enforcement it consults refuses while no
+            #  validator is registered". Nineteen are registered now. The loop still runs every pass,
+            #  but for a DIFFERENT reason — the chain cannot CLEAR while any constraint is unassessable —
+            #  and a sentence that keeps a true conclusion on a false premise is the class this
+            #  programme removes, not an acceptable approximation.
             confidence_basis=(f"NOT MEASURED: nothing in this pipeline produces a confidence. The figure "
                               f"that stood here started at a declared 0.90 and gained a declared 0.05 per "
                               f"refinement pass — so it rose with the number of RETRIES rather than with "
                               f"any evidence — over a loop that ran its full {_MAX_ITERATIONS} passes on "
-                              f"every run, because the enforcement it consults refuses while no validator "
-                              f"is registered. Multiply it out to see what it reported"),
+                              f"every run, because its early exit needs a CLEARED enforcement verdict and "
+                              f"the chain cannot clear while a declared constraint has no instrument. "
+                              f"Multiply it out to see what it reported"),
             verification_passed=verdict,
             verification_basis=(
                 f"the enforcement pattern returned passed={verdict!r}"
                 + (f" with violation {verdict_reason!r}" if verdict_reason else "")
-                + (". A None verdict means no check could be obtained, which is not a pass"
+                + (f". {enforcement_basis}" if enforcement_basis else "")
+                + (". A None verdict is NOT a pass: the chain could not clear"
                    if verdict is None else "")),
             refinement_iterations=iterations,
             refinement_basis=(

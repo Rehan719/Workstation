@@ -1,0 +1,128 @@
+[
+  {
+    "tag": "a declared constraint is left unregistered, so the chain falls through its missing-validator branch",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "            else:\n                reason = NO_INSTRUMENT.get(",
+    "new": "            elif False:\n                reason = NO_INSTRUMENT.get(",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L1. This is the state BEFORE this round: nineteen declared names and nothing registered. The leg asserts the registered set EQUALS the declared set, because a name with no validator at all is the condition that made every enforcement check refuse."
+  },
+  {
+    "tag": "a refusal carries no reason a reader could act on",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "    \"commercial_integrity\": (\n        \"money here is virtual WST and no real-money rail is enabled, so there is no commercial \"\n        \"transaction whose integrity could be assessed\"),",
+    "new": "    \"commercial_integrity\": (\"not implemented\"),",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L1. 'not implemented' is a true sentence that tells a reader nothing about what would change it. The leg requires every recorded reason to exceed sixty characters, which is a crude proxy for 'says what is missing' but a measurable one."
+  },
+  {
+    "tag": "a constraint that must never score returns a number anyway",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "            details={\"constraint\": self.name, \"no_instrument\": True},",
+    "new": "            details={\"constraint\": self.name, \"no_instrument\": True, \"score\": 0.5},",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L2 is the SOLE witness: no_instrument is still True so L1 and L6 stay green. The leg scans every details value of the three never-a-score names for anything numeric, because the failure mode is not a verdict field but a plausible number appearing somewhere alongside a refusal."
+  },
+  {
+    "tag": "a placeholder marker is dropped from the screen",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "        r\"\\blorem ipsum\\b\", r\"\\bplaceholder\\b\", r\"\\bcoming soon\\b\",",
+    "new": "        r\"\\blorem ipsum\\b\", r\"\\bplaceholder\\b\",",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L3. The leg drives six distinct placeholder phrasings rather than one, so a screen that catches TODO and misses 'coming soon' is not reported as working."
+  },
+  {
+    "tag": "an unreadable subject passes the placeholder screen instead of failing closed",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "                passed=None, violation=None, basis=(\n                    \"NOT ASSESSABLE (zero_placeholder): the subject is not readable text, so no screen \"",
+    "new": "                passed=True, violation=None, basis=(\n                    \"NOT ASSESSABLE (zero_placeholder): the subject is not readable text, so no screen \"",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L3, and note the mutation leaves the HONEST SENTENCE in place while changing the verdict — the exact shape where a basis string says NOT ASSESSABLE and the field says pass. A leg reading only the basis would miss it; this one reads the verdict."
+  },
+  {
+    "tag": "a metered record of zero bits passes as a measurement",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "        if not isinstance(bits, (int, float)) or bits <= 0:",
+    "new": "        if not isinstance(bits, (int, float)) or bits < 0:",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L4. metered=True with entropy_bits=0 is a record of nothing wearing the shape of a record, and zero is exactly the value an un-wired meter reports."
+  },
+  {
+    "tag": "the Landauer floor is reported without saying it is not an energy drawn",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "                   f\"handled). THE LIMIT: payload size is not the number of bits ERASED, which is what \"",
+    "new": "                   f\"handled). \"",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L4, carrying W546's finding forward. k_B*T*ln2 per bit is a FLOOR and the metered figure counts bits HANDLED rather than bits erased, so a pass that drops the limit reads as an energy measurement."
+  },
+  {
+    "tag": "the compliance validator reaches its own verdict instead of the gate's",
+    "file": "agentic_core/validation/constitutional_validators.py",
+    "old": "        res = ConstitutionalPolicyGate().validate_output(target)",
+    "new": "        res = {\"compliant\": True}",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L5. The leg first asserts the GATE itself flags the unsafe payload, then that the validator agrees with it — so the two cannot drift, and a second list of forbidden patterns cannot grow here unnoticed."
+  },
+  {
+    "tag": "the chain clears while most constraints have no instrument",
+    "file": "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+    "old": "        if unassessable:",
+    "new": "        if False:",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L6. This is the certifies-an-absence defect one level above the screens: fifteen constraints unassessed and the chain says cleared. The same shape W551 removed from three gates, here in the thing that reads them."
+  },
+  {
+    "tag": "the two kinds of unassessable are collapsed into one",
+    "file": "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+    "old": "                    if isinstance(getattr(res, \"details\", None), dict) and res.details.get(\"no_instrument\"):",
+    "new": "                    if True:",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L6. 'nothing can check this' and 'nothing handed this check its input' are different facts with different fixes, and the first draft of this basis called thermodynamic_accountability 'no instrument' when its ledger exists and is honest. The leg requires that name in input_absent specifically."
+  },
+  {
+    "tag": "a clearance over zero checks is reported as a pass",
+    "file": "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+    "old": "        if _total == 0:",
+    "new": "        if False:",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L6, and this branch is REACHABLE rather than defensive: the clearance chain constructs the pattern with fail_on_missing_validator False, so before this round the loop skipped all nineteen and returned True. Zero checks is the strongest claim on the least evidence."
+  },
+  {
+    "tag": "the pass state is unreachable, so every clearance is withheld",
+    "file": "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+    "old": "        return ValidationResult(\n            passed=True, violation=None, details={\"assessed\": assessed},",
+    "new": "        return ValidationResult(\n            passed=None, violation=None, details={\"assessed\": assessed},",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L6, the other direction. A chain that can never clear is as useless as one that always does, and a guard that only ever drives the withholding path would not notice. The leg registers an all-clear validator on every declared name and requires True."
+  },
+  {
+    "tag": "the clearance chain does not register the validators, so they sit beside the path",
+    "file": "agentic_core/avatars/core/clearance_chain.py",
+    "old": "        self.enforcement_registry = _register(self.enforcement)",
+    "new": "        self.enforcement_registry = None",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L7, the reach failure this plan keeps finding: a validator nobody registers is code that exists and never runs. The leg constructs the real chain and reads its OWN pattern's validator set."
+  },
+  {
+    "tag": "the recirculation orchestrator does not register the validators",
+    "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+    "old": "        self.enforcement_registry = _register(self.enforcement)",
+    "new": "        self.enforcement_registry = None",
+    "selector": "w553",
+    "expect": "BLIND(red)",
+    "why": "L7, the second construction site. One site wired and the other not is how a fix half-lands, and the orchestrator is the async path where the chain's verdict actually gates an avatar's output."
+  }
+]

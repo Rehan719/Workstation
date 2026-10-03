@@ -6256,7 +6256,7 @@
     {
       "id": "FU-358",
       "title": "No constitutional validator is registered anywhere, so every enforcement check now refuses by default and the loop can never clear",
-      "why": "Measured W547 while fixing FU-235. The always-passes defect is gone: UniversalEnforcementPattern.validate() returns passed=None over an empty validator dict with a basis, and OmniEnforcementPatternSupreme already failed closed. WHAT REMAINS IS THE OTHER HALF OF FU-235's TITLE, which closing it did not deliver: NOTHING IN THIS REPOSITORY CALLS register_validator. OmniEnforcementPatternSupreme declares 21 constraint names across five phases (zero_placeholder, edge_first_sovereignty, causal_sovereignty, thermodynamic_accountability, constitutional_compliance, biomimetic_fidelity, genetic_immune_topology_integrity, statistical_rigor, legal_precision_hard, adversarial_co_evolution, trillion_token_provenance, human_ai_constitutional_co_sovereignty, oam_qkd_software_only, federated_consensus, commercial_integrity, hallucination_containment, first_principles_grounding, sincerity_integrity_loyalty, lob_fixpoint and two more) and not one has an implementation. CONSEQUENCE, and it is the honest state rather than a regression: every constitutional validation refuses, which is why clearance gate 1 withholds every emission and the recirculation loop's normal outcome is WITHHELD (W533, W545). The platform is correctly silent because it cannot check itself, and that is now visible on /api/v1/heartbeat/status and the HeartbeatMonitor page. FIX: implement the validators, highest-value first, and keep each one's verdict three-state — a validator that cannot assess its subject must return None rather than clearing. zero_placeholder is the natural first (an executing version of the rule this whole programme enforces by hand), and statistical_rigor and first_principles_grounding are the two whose names most invite a fabricated score, so they need a refusal path before they need a score.",
+      "why": "Measured W547 while fixing FU-235. The always-passes defect is gone: UniversalEnforcementPattern.validate() returns passed=None over an empty validator dict with a basis, and OmniEnforcementPatternSupreme already failed closed. WHAT REMAINS IS THE OTHER HALF OF FU-235's TITLE, which closing it did not deliver: NOTHING IN THIS REPOSITORY CALLS register_validator. OmniEnforcementPatternSupreme declares 19 constraint names across five phases (zero_placeholder, edge_first_sovereignty, causal_sovereignty, thermodynamic_accountability, constitutional_compliance, biomimetic_fidelity, genetic_immune_topology_integrity, statistical_rigor, legal_precision_hard, adversarial_co_evolution, trillion_token_provenance, human_ai_constitutional_co_sovereignty, oam_qkd_software_only, federated_consensus, commercial_integrity, hallucination_containment, first_principles_grounding, sincerity_integrity_loyalty, lob_fixpoint) and not one has an implementation. CORRECTED W553: this row said 21 and then listed nineteen before trailing off into 'and two more' — there is no twentieth or twenty-first name, and the two were invented by the wrong total. The figure is now counted from the phases dict itself (2+2+3+11+1), and the correction matters beyond tidiness: the whole argument of this row is HOW MANY declared constraints have no instrument, so an inflated denominator overstates the gap it reports. CONSEQUENCE, and it is the honest state rather than a regression: every constitutional validation refuses, which is why clearance gate 1 withholds every emission and the recirculation loop's normal outcome is WITHHELD (W533, W545). The platform is correctly silent because it cannot check itself, and that is now visible on /api/v1/heartbeat/status and the HeartbeatMonitor page. FIX: implement the validators, highest-value first, and keep each one's verdict three-state — a validator that cannot assess its subject must return None rather than clearing. zero_placeholder is the natural first (an executing version of the rule this whole programme enforces by hand), and statistical_rigor and first_principles_grounding are the two whose names most invite a fabricated score, so they need a refusal path before they need a score.",
       "source": "W547 (measured while closing FU-235)",
       "found": "2026-10-03",
       "files": [
@@ -6266,8 +6266,8 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W553",
       "note": "",
       "tier": 2
     },
@@ -6343,6 +6343,44 @@
       "note": "",
       "slot_source": "it is FU-301's own subject, which rides P2.17",
       "tier": 2
+    },
+    {
+      "id": "FU-363",
+      "title": "The validator interface is synchronous and one of the four real checks is async, so hallucination_containment can never assess on the live path",
+      "why": "Measured W553 while giving the declared constitutional constraints their instruments. UniversalEnforcementPattern calls validator.validate(target, context) SYNCHRONOUSLY, and HallucinationSandbox.validate_output is async because it awaits a UEG log (agentic_core/governance/gaas/v5/hallucination_sandbox.py). So the validator calls asyncio.run, which raises RuntimeError whenever an event loop is already running - and the live path is always inside one, because VRPR's process() is async and is called from the recirculation loop. DRIVEN: calling the chain from inside the orchestrator reports hallucination_containment as unassessable with 'an event loop is already running, so the sandbox was not called', while calling the same validator from synchronous test code assesses it normally. So one of the four constraints that HAS an instrument can only ever assess outside the path that matters. WHAT WAS DELIBERATELY NOT DONE: replicating the sandbox's two heuristics inside the validator. That would create a SECOND screen over the same subject, which is the defect the delegation was chosen to avoid - and the two copies would drift. THE HONEST STATE IS REPORTED, which is why this is a row and not a bug: the validator says exactly why it did not run, and the chain distinguishes 'no instrument' from 'an instrument that was not given its input', so a reader sees that this one is the second kind. FIX: add an async path to the enforcement pattern (validate_async awaiting any validator that declares itself async, with the sync path unchanged for the rest) and call it from the async callers; or make the sandbox's heuristics a sync function that the async wrapper logs around, so one implementation serves both. The second is smaller and keeps a single screen.",
+      "source": "W553 (driven on both the sync and the async path)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/validation/constitutional_validators.py",
+        "agentic_core/validation/enforcement_pattern.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is FU-358's own subject, which rides P3.17",
+      "tier": 2
+    },
+    {
+      "id": "FU-364",
+      "title": "The clearance chain constructs an enforcement pattern and never calls validate on it, so its registration is not load-bearing",
+      "why": "Measured W553 by grepping the chain's own body: agentic_core/avatars/core/clearance_chain.py mentions `enforcement` three times - the import, the construction with fail_on_missing_validator False, and the register_all call - and NEVER `self.enforcement.validate(...)`. So the nineteen validators registered there are registered onto an object the chain does not consult. DRIVEN, and this is what makes the row precise rather than a reading: constructing the real chain and the real orchestrator shows both patterns holding 19 validators, and driving the orchestrator's VRPR pipeline returns a verification_basis naming the figures ('2 of 19 declared constraint(s) were assessed', 15 with no instrument, 2 lacking their input) - so the ORCHESTRATOR's pattern is live and reaches a surface, and the chain's is not consulted at all. WHY THIS IS A ROW AND NOT A DELETION: gate 5 (Tahqeeq) verifies supplied constraints and an enforcement pattern in the chain is plausibly what it was constructed for, so removing it would delete an intention rather than a defect. WHY IT IS NOT HARMLESS EITHER: `chain.enforcement_registry` is a populated dict that reads exactly like enforcement, so a later reader - or a later basis string - could cite it as evidence the chain enforces the constitution when nothing in the chain has consulted a single validator. THE CONSTRUCTION SITE NOW SAYS SO in a comment, which is the interim honesty, not the fix. FIX: decide whether the chain should consult it (and if so, as which gate, with its refusal driven and its verdict carried into ClearanceResult.reason like every other gate's), or whether the pattern belongs only to the orchestrator and the chain should hold none.",
+      "source": "W553 (grepped, then driven on both objects)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/avatars/core/clearance_chain.py",
+        "agentic_core/validation/omni_enforcement_pattern_supreme.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.16 owns agentic_core/avatars/core/clearance_chain.py by route 2, and owns agentic_core/validation/ as of W553's hand-off",
+      "tier": 2
     }
   ],
   "routes": [
@@ -6387,7 +6425,7 @@
       "handed_from": "P3.15"
     },
     {
-      "slot": "P3.17",
+      "slot": "P3.16",
       "files": [
         "agentic_core/biomimicry/minimisation/",
         "core/transcendent_subsystems/",
@@ -6395,7 +6433,8 @@
         "agentic_core/validation/"
       ],
       "words": [],
-      "note": "W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)"
+      "note": "handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
+      "handed_from": "P3.17"
     },
     {
       "slot": "P2.4",

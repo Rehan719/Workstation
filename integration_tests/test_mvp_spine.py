@@ -32852,3 +32852,176 @@ def test_w552_the_asset_index_counts_match_a_recount_and_no_secret_is_indexed(cl
             f"nothing enforces and one `git add -A` would publish the index")
     _sr = client.get("/api/v1/horizon/archive/search", params={"term": "halal"})
     assert _sr.status_code == 200 and "not_searched" in _sr.json(), _sr.json()
+
+
+def test_w553_four_constraints_assess_fifteen_refuse_by_name_and_three_may_never_score(client):
+    """FU-358: the declared constitutional constraints get instruments where one exists and a named
+    refusal where none does — and the chain gains a third state so it withholds for a reason.
+
+    Every validator's states are DRIVEN, including the breach paths, because a validator that has only
+    ever been seen to pass is a validator nobody has watched work.
+    """
+    import asyncio as _aio
+    from agentic_core.validation import constitutional_validators as _V
+    from agentic_core.validation.enforcement_pattern import ValidationResult
+    from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
+
+    # ── L1. EVERY DECLARED CONSTRAINT IS REGISTERED — four assessing, the rest refusing by name ───
+    _p = OmniEnforcementPatternSupreme({}, {"task": "w553-guard"})
+    _declared = [n for ph in sorted(_p.phases) for n in _p.phases[ph]]
+    _rep = _V.register_all(_p)
+    assert sorted(_p.validators) == sorted(_declared), (
+        "a declared constraint has no registered validator at all, so the chain falls through to its "
+        "missing-validator branch rather than reporting what cannot be checked",
+        sorted(set(_declared) - set(_p.validators)))
+    assert sorted(_rep["assessing"]) == sorted(_V.ASSESSING), _rep["assessing"]
+    assert len(_rep["refusing"]) == len(_declared) - len(_V.ASSESSING), _rep
+    #  EVERY refusal carries a REASON. "not implemented" tells a reader nothing about what would change it.
+    for _name in _rep["refusing"]:
+        _r = _p.validators[_name].validate("anything")
+        assert _r.passed is None, (_name, "a constraint with no instrument returned a verdict", _r.passed)
+        assert _name in _V.NO_INSTRUMENT, (_name, "refuses with no recorded reason")
+        assert len(_V.NO_INSTRUMENT[_name]) > 60, (_name, "the reason is too thin to act on")
+        assert _r.details.get("no_instrument") is True, (_name, _r.details)
+
+    # ── L2. THREE NAMES MAY NEVER BECOME A SCORE ─────────────────────────────────────────────────
+    #  Each is a judgement about an argument or about a PERSON, and the last engages Ruling A.9.5
+    #  directly. A number for any of them would be the most believable fabrication available, because it
+    #  would look like a measurement of method or of character.
+    assert set(_V.NEVER_A_SCORE) == {"statistical_rigor", "first_principles_grounding",
+                                     "sincerity_integrity_loyalty"}, _V.NEVER_A_SCORE
+    for _name in _V.NEVER_A_SCORE:
+        assert _name not in _V.ASSESSING, (_name, "a name that must never score has an instrument")
+        assert "MUST NEVER BECOME A SCORE" in _V.NO_INSTRUMENT[_name], _V.NO_INSTRUMENT[_name]
+        _r = _p.validators[_name].validate("any text at all")
+        assert _r.passed is None, (_name, _r.passed)
+        #  and nothing numeric comes back under any key
+        for _k, _v in (_r.details or {}).items():
+            assert not isinstance(_v, (int, float)) or isinstance(_v, bool), (_name, _k, _v)
+    assert "A.9.5" in _V.NO_INSTRUMENT["sincerity_integrity_loyalty"], (
+        "the one constraint that would grade a person's inner state does not cite the ruling forbidding it")
+
+    # ── L3. THE PLACEHOLDER VALIDATOR CATCHES A BREACH, and states its own limit ─────────────────
+    _zp = _V.ZeroPlaceholder()
+    for _bad in ("this section is a TODO", "lorem ipsum dolor sit amet", "coming soon",
+                 "not yet implemented", "a dummy value for now", "FIXME before shipping"):
+        _r = _zp.validate(_bad)
+        assert _r.passed is False, (_bad, "a placeholder passed the placeholder screen", _r.passed)
+        assert _r.violation == "zero_placeholder", _r
+    _ok = _zp.validate("A plainly written answer with ordinary varied words and no markers.")
+    assert _ok.passed is True, _ok.basis
+    #  THE LIMIT IS STATED: it catches the DECLARED placeholder, not an unlabelled stub
+    assert "not the undeclared one" in _ok.basis, _ok.basis
+    #  and it fails closed on something it cannot read
+    for _unreadable in (None, "", "   ", 42):
+        assert _zp.validate(_unreadable).passed is None, (_unreadable, "an unscreenable subject passed")
+
+    # ── L4. THE THERMODYNAMIC VALIDATOR READS THE LEDGER'S RECORD, three-state ───────────────────
+    _ta = _V.ThermodynamicAccountability()
+    assert _ta.validate("x", {}).passed is None, "no metering record should be NOT ASSESSABLE"
+    assert "nothing handed its record" in _ta.validate("x", {}).basis, _ta.validate("x", {}).basis
+    #  an action that ran WITHOUT being metered is a breach, not an absence
+    assert _ta.validate("x", {"metering": {"metered": False, "basis": "the ledger was unavailable"}}
+                        ).passed is False
+    #  metered=True with no bits is a record of nothing
+    assert _ta.validate("x", {"metering": {"metered": True, "entropy_bits": 0}}).passed is False
+    _good = _ta.validate("x", {"metering": {"metered": True, "entropy_bits": 4096.0}})
+    assert _good.passed is True, _good.basis
+    #  and the Landauer limit is carried, not dropped: a floor is not an energy drawn
+    assert "not the number of bits ERASED" in _good.basis, _good.basis
+
+    # ── L5. THE OTHER TWO DELEGATE rather than keeping a second screen ───────────────────────────
+    #  constitutional_compliance must use the SAME screen the interceptor runs, so there is no second
+    #  list of forbidden patterns to drift from it.
+    _cc = _V.ConstitutionalCompliance()
+    from agentic_core.gaas.v5.policy_gate import ConstitutionalPolicyGate as _PG
+    _unsafe = "run rm -rf / on the host"
+    assert _PG().validate_output(_unsafe)["compliant"] is False, "the gate itself does not flag this"
+    assert _cc.validate(_unsafe).passed is False, "the validator disagrees with the gate it delegates to"
+    assert _cc.validate("an ordinary sentence").passed is True
+    assert "SAME screen" in _cc.validate(_unsafe).basis, _cc.validate(_unsafe).basis
+    #  hallucination_containment carries W415's limit forward: two heuristics, and fidelity is NOT measured
+    _hc = _V.HallucinationContainment().validate("Varied ordinary prose about bakeries and ovens here.")
+    assert _hc.passed in (True, None), _hc.basis
+    if _hc.passed is True:
+        assert "NOTHING IN THIS REPOSITORY MEASURES FIDELITY" in _hc.basis, _hc.basis
+        assert "never that the output was verified" in _hc.basis, _hc.basis
+
+    # ── L6. THE CHAIN'S THIRD STATE — and it cannot clear on a subset ────────────────────────────
+    _r = _p.validate("A plainly written answer with ordinary varied words and no markers.")
+    assert _r.passed is None, ("the chain CLEARED while most constraints had no instrument, which is the "
+                               "certifies-an-absence defect one level above the screens", _r.passed)
+    assert "NOT CLEARED" in _r.basis, _r.basis
+    #  the two kinds of unassessable are reported SEPARATELY: nothing can check this, versus nothing
+    #  handed this check its input. Different facts, different fixes.
+    assert _r.details["no_instrument"] and "thermodynamic_accountability" in _r.details["input_absent"], (
+        _r.details)
+    assert "NO INSTRUMENT" in _r.basis and "not given its input" in _r.basis, _r.basis
+    #  A REAL BREACH STILL STOPS THE CHAIN, unchanged
+    _bad = _p.validate("this is a TODO placeholder")
+    assert _bad.passed is False and _bad.violation == "zero_placeholder", _bad
+    #  AND IT CAN CLEAR when everything is assessed and passes — otherwise the pass state is unreachable
+    class _Clear:
+        def validate(self, target, context=None):
+            return ValidationResult(passed=True, basis="driven by the guard")
+    _all = OmniEnforcementPatternSupreme({}, {"task": "w553-clear"})
+    for _n in [n for ph in sorted(_all.phases) for n in _all.phases[ph]]:
+        _all.register_validator(_n, _Clear())
+    assert _all.validate("anything").passed is True, "the chain can never clear, so True is unreachable"
+    #  ZERO CONSTRAINTS IS NOT A PASS — reachable, because the clearance chain disables the
+    #  missing-validator refusal, so before this round it cleared over nineteen skipped constraints
+    _empty = OmniEnforcementPatternSupreme({"fail_on_missing_validator": False}, {})
+    assert _empty.validate("anything").passed is None, (
+        "a pattern with nothing registered reported a clearance over zero checks")
+    assert "Zero checks" in _empty.validate("anything").basis, _empty.validate("anything").basis
+
+    # ── L7. BOTH CONSTRUCTION SITES REGISTER — and only one of them CONSULTS the pattern ────────
+    #  The chain registers and never calls validate (FU-364, grepped then driven). That is said here
+    #  rather than asserted away, because a leg claiming the chain enforces would be the over-claim
+    #  this round exists to remove. What IS asserted of the chain is registration; reach is L8's job.
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
+    from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
+    _chain = ConstitutionalClearanceChain(_VSBUEG(), None)
+    assert getattr(_chain, "enforcement_registry", None), (
+        "the clearance chain does not register the validators at construction, so they are beside the "
+        "path rather than on it — the reach failure this plan keeps finding")
+    assert sorted(_chain.enforcement.validators) == sorted(_declared), (
+        "the chain's own pattern is missing constraints", sorted(_chain.enforcement.validators))
+    from agentic_core.avatars.core.avatar_engine import AvatarState
+    from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator
+    _orch = AvatarRecirculationOrchestrator(_VSBUEG(), AvatarState(avatar_id="w553", user_id="w553"))
+    assert getattr(_orch, "enforcement_registry", None), (
+        "the recirculation orchestrator does not register the validators at construction")
+    assert sorted(_orch.enforcement.validators) == sorted(_declared), sorted(_orch.enforcement.validators)
+
+    # ── L8. THE LIVE PATH, DRIVEN — the verdict and its figures reach the pipeline's own surface ──
+    #  The orchestrator's pattern is the one that is consulted: it is handed to the VRPR pipeline and to
+    #  the cognitive orchestrator. A registry nobody reads proves nothing, so this leg RUNS the pipeline.
+    assert _orch.vrpr.enforcement is _orch.enforcement, (
+        "the pipeline holds a DIFFERENT enforcement pattern from the one the orchestrator registered, so "
+        "the registration is beside the path it was meant to be on")
+    import warnings as _warnings
+    with _warnings.catch_warnings(record=True) as _caught:
+        _warnings.simplefilter("always")
+        _final = _aio.run(_orch.vrpr.process("A plainly written answer with ordinary varied words.", {}))
+    #  A LEAKED COROUTINE IS A FINDING, not noise: the async refusal was first written as asyncio.run
+    #  inside a try, which built the coroutine before the call that refused it, so every refusal on this
+    #  path emitted "was never awaited". The refusal now reads the running loop BEFORE creating anything.
+    _leaked = [str(_w.message) for _w in _caught if "never awaited" in str(_w.message)]
+    assert not _leaked, ("a coroutine was constructed and abandoned on the live refusal path", _leaked)
+    _vb = getattr(_final, "verification_basis", "") or ""
+    assert getattr(_final, "verification_passed", "unset") is None, (
+        "the pipeline reported a verdict other than None while constraints are unassessable", _final)
+    assert "of 19 declared constraint(s) were assessed" in _vb, (
+        "the chain's own sentence does not reach the pipeline's surface, so the three-state verdict is a "
+        "fact in a dict rather than something a reader is told", _vb)
+    #  AND THE TWO KINDS TRAVEL, by name, all the way out: this is the field a reader acts on.
+    assert "NO INSTRUMENT" in _vb and "not given its input" in _vb, _vb
+    assert "thermodynamic_accountability" in _vb, (
+        "the constraint whose instrument exists and was handed no input is not named on the surface", _vb)
+    #  AND THE STALE PREMISE IS GONE. This sentence explained the full pass count by "no validator is
+    #  registered", which stopped being true in this round while its conclusion stayed correct.
+    _cb = getattr(_final, "confidence_basis", "") or ""
+    assert "no validator" not in _cb, (
+        "the confidence basis still explains the pass count by an absence this round removed", _cb)
+    assert "cannot clear while a declared constraint has no instrument" in _cb, _cb
