@@ -898,8 +898,18 @@ async def method_forecast(user: dict | None = Depends(get_current_user)):
                                   "of wall clock for 355 seconds of CPU because two suite runs were destroyed "
                                   "by touching their store (M-FCAST-04, M-PREP-04)"),
     }
+    # W551 — THE THIRD READER OF THIS LIST, and the one that publishes it raw. The two others derive the
+    # LIVE blocked set and must exclude items a round has since closed; one of them did and one did not,
+    # which is how a closed item came to be reported as held behind a gate it had already passed. This
+    # one is correct to show the ruling's full content — but it is RENAMED, because "items" invited a
+    # reader to treat the ruling's roster as current state, and the roster does not shrink when an item
+    # closes. Whether an item is still held is answered by the reasoning faculty, which reads the plan.
     out["blocked_by_ruling"] = {
-        "items": _BLOCKED_BY_RULING,
+        "items_the_ruling_named": _BLOCKED_BY_RULING,
+        "is_this_the_live_set": False,
+        "basis": ("this is the ROSTER the ruling named, not the set still held: it does not shrink when an "
+                  "item closes. The live set is in the reasoning faculty, which excludes items the plan "
+                  "marks done"),
         "consequence": ("Phase 2 cannot close before a chunk of Phase 3, and no amount of row-closing inside "
                         "Phase 2 changes it. Order by what UNBLOCKS, then by vision value (M-FCAST-05)."),
     }
@@ -1528,7 +1538,15 @@ async def appraise(scope: Optional[str] = None, user: dict | None = Depends(get_
     }
 
     # ── 2 REASONING — the order the constraints imply, and the one lever ──────────────────────────────
-    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items() if in_scope(k)}
+    # W551 — A DONE ITEM IS NOT BLOCKED, IT IS CLOSED. This filtered by scope and not by state, so an
+    # item the ruling had held and a round then closed was counted BOTH in items_done and in the blocked
+    # set — double-counted, which inflated the ceiling by one for every such item and broke the identity
+    # this cell's own guard asserts (ceiling == items in scope minus items blocked). Found when P2.12
+    # closed: the cell reported five items as held behind a gate the sixth had already passed, which is
+    # the opposite of what a reader needs from a list called "blocked".
+    _done_slots = {i["slot"] for i in scoped_items if i.get("done")}
+    blocked = {k: v for k, v in _BLOCKED_BY_RULING.items()
+               if in_scope(k) and k not in _done_slots}
     unblocked = [i["slot"] for i in scoped_items if not i.get("done") and i["slot"] not in blocked]
     out["faculties"]["reasoning"] = {
         "blocked_by_ruling": blocked,

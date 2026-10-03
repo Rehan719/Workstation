@@ -109,6 +109,68 @@ async def horizon_records(limit: int = 50,
     }
 
 
+class ScreenRequest(BaseModel):
+    text: str = Field(min_length=1)
+
+
+@router.post("/screen")
+async def horizon_screen(req: ScreenRequest,
+                         user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """Run the three guardrails over a text and report every gate WITH WHAT IT DID NOT LOOK AT.
+
+    P2.12's bar: each gate's stated limit is on the surface. A verdict without its coverage is the thing
+    this item exists to prevent — a screen that reads as a clearance because nothing matched.
+    """
+    from agentic_core.gaas.v5 import horizon_guardrails as _g
+    return _g.screen_all(req.text)
+
+
+@router.get("/guardrails")
+async def horizon_guardrails(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """The three gates, their coverage, and the distress route field SHOWN AS UNFILLED.
+
+    The route field is the dangerous one. An unfilled list shown as unfilled is safe; a placeholder is
+    not, because a person in distress might act on it. So the key is always present and what it carries
+    is None with the reason — never a default, never a service name, never a number.
+    """
+    from agentic_core.gaas.v5 import horizon_guardrails as _g
+    return {
+        "gates": [
+            {"gate": "religious_ruling",
+             "refuses": "issuing a religious ruling; refers to a qualified human scholar",
+             "limit": _g._COVERAGE,
+             "certifies_absence": False},
+            {"gate": "theological_proof",
+             "refuses": "a claim that science proves or disproves a theological truth, in either direction",
+             "limit": _g._COVERAGE,
+             "certifies_absence": False},
+            {"gate": "clinical_care",
+             "refuses": ("giving counsel to someone in distress; states plainly that the platform is not "
+                         "a person and shows the human route"),
+             "limit": _g._COVERAGE,
+             "certifies_absence": False},
+        ],
+        "distress_routes": list(_g.DISTRESS_ROUTES) or None,
+        "distress_routes_supplied": bool(_g.DISTRESS_ROUTES),
+        "distress_routes_basis": _g.DISTRESS_ROUTES_BASIS,
+        "not_a_person_statement": _g.NOT_A_PERSON,
+        "escalation_defaults_on_when_undecidable": True,
+        "basis": ("every gate reports a verdict AND what it did not look at. NONE OF THEM CAN CERTIFY AN "
+                  "ABSENCE: each is an English phrase screen, so a non-match means its own patterns found "
+                  "nothing rather than that the subject was not there. Where a screen cannot run at all "
+                  "the escalation defaults ON, because a screen that did not run is not a screen that "
+                  "passed"),
+        "unchanged_refusals": [
+            "Quran Arabic is never generated",
+            "Quranic text comes only from quran.com, alquran.cloud or tanzil.net, with provenance",
+            "recitation is never scored",
+            "AI content is labelled",
+            ("Ruling A.9.5 stands - the Fitrah Spectrum is never a measurement and no AI verdict is "
+             "passed on a person's spiritual state"),
+        ],
+    }
+
+
 @router.get("/states")
 async def horizon_states(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
     """Every state this kernel can report and what produces it — the limits, stated not implied."""

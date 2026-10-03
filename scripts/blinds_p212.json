@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "a non-match is reported as a clearance",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    return {\"verdict\": NOT_DETECTED, \"escalate\": False, \"matched\": False, \"patterns_matched\": [],\n            #  THE SENTENCE THIS WHOLE MODULE EXISTS FOR.\n            \"certifies_absence\": False, \"coverage\": _COVERAGE,",
+    "new": "    return {\"verdict\": NOT_DETECTED, \"escalate\": False, \"matched\": False, \"patterns_matched\": [],\n            #  THE SENTENCE THIS WHOLE MODULE EXISTS FOR.\n            \"certifies_absence\": True, \"coverage\": _COVERAGE,",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "THE RULE THE ITEM TURNS ON: a screen may ESCALATE but may never certify that nothing was sought. These are English phrase screens, so a non-match means their own patterns found nothing — not that a ruling was not sought or that a person is not in distress. A page listing three cleared gates would tell a reader the opposite of what the gates support."
+  },
+  {
+    "tag": "a screen that could not run reports that it passed",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "        return {\"verdict\": CANNOT_DECIDE, \"escalate\": True, \"matched\": None, \"patterns_matched\": [],",
+    "new": "        return {\"verdict\": CANNOT_DECIDE, \"escalate\": False, \"matched\": None, \"patterns_matched\": [],",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "The bar's words: the escalation defaults ON where the screen cannot decide, fail closed. A screen that did not run is not a screen that passed — the same default-to-approval shape P3.14 removed from the clearance chain and W543 from the homeostasis shim."
+  },
+  {
+    "tag": "a distress route is supplied with a plausible number",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "DISTRESS_ROUTES: Tuple[Dict[str, str], ...] = ()",
+    "new": "DISTRESS_ROUTES: Tuple[Dict[str, str], ...] = ({\"name\": \"Crisis Line\", \"tel\": \"0800 123 4567\"},)",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "THE MOST DANGEROUS THING THIS REPOSITORY COULD CONTAIN. A person in distress might dial it, and no later correction reaches them. The Owner's ruling is that this item closes on its refusal paths with the field VISIBLY UNFILLED and the list supplied later with its reviewer — so the leg is an ABSENCE check over the module, the route and the page, because a number introduced in any of the three reaches the same person."
+  },
+  {
+    "tag": "the distress path gives counsel instead of withholding it",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    out[\"withhold_ai_counsel\"] = bool(out[\"escalate\"])",
+    "new": "    out[\"withhold_ai_counsel\"] = False",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "A distress signal WITHHOLDS AI counsel. The platform is not a person, cannot judge how someone is, and an answer that reads like counsel is counsel whatever it is labelled."
+  },
+  {
+    "tag": "the statement stops saying the platform is not a person",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    \"I am not a person. I am software, I cannot judge how you are, and I must not give you counsel about \"",
+    "new": "    \"I understand how you are feeling, and I am here for you. Let me help you work through \"",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "The replacement is warmer and it is a lie twice over: the platform does not understand how anyone feels and must not offer to work anything through. The item requires it to say PLAINLY that it is not a person — which is the one thing it can say truthfully."
+  },
+  {
+    "tag": "a religious ruling is answered rather than referred",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "    r\"\\bis\\s+(?:it|this|that)\\s+(?:halal|haram|haraam|permissible|forbidden|sinful)\\b\",",
+    "new": "    r\"\\bXXX_NEVER_MATCHES_XXX\\b\",",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "With the pattern gone the platform answers a request for a religious ruling itself. It issues none: a ruling is referred to a qualified human scholar, and an answer that reads like one is a ruling whatever it was labelled."
+  },
+  {
+    "tag": "the gates are beside the interceptor rather than attached to it",
+    "file": "agentic_core/gaas/v5/uci_v16_omega.py",
+    "old": "        if _g_in[\"escalate\"]:",
+    "new": "        if False and _g_in[\"escalate\"]:",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "The item's own words: attached to the gaas.v5 interceptor, NOT BESIDE IT. A guardrail a caller has to remember to ask for is a guardrail that is not on the path — the reach failure W543 found in the six cycles, where the code existed and nothing reached it."
+  },
+  {
+    "tag": "the output is never screened, only the request",
+    "file": "agentic_core/gaas/v5/uci_v16_omega.py",
+    "old": "        if _g_out[\"escalate\"]:",
+    "new": "        if False and _g_out[\"escalate\"]:",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "A request can pass every screen and the ANSWER still carry a ruling, a proof claim or counsel to someone in distress. The output is text the platform wrote itself, which is the half that matters most."
+  },
+  {
+    "tag": "an allowed result carries no guardrail limits",
+    "file": "agentic_core/gaas/v5/uci_v16_omega.py",
+    "old": "                                  latency_ms=latency, node=self.node_id, ueg_logged=logged,\n                                  guardrails=_g_out)",
+    "new": "                                  latency_ms=latency, node=self.node_id, ueg_logged=logged)",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "THE HALF THIS ROUND'S FIRST DRAFT MISSED. With the report only on an escalation, its ABSENCE on a success reads as a clearance — and these screens certify nothing. A limit shown only when it fired is a limit shown exactly when nobody needs it."
+  },
+  {
+    "tag": "the page invents its own wording for the unfilled field",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx",
+    "old": "                <p className=\"text-slate-300 font-bold leading-relaxed\">{g.distress_routes_basis}</p>",
+    "new": "                <p className=\"text-slate-300 font-bold leading-relaxed\">A route will be available soon.</p>",
+    "selector": "w551",
+    "expect": "BLIND(red)",
+    "why": "A second wording of this field is a second place a placeholder can appear, and 'available soon' is a promise nobody made to someone who needs one now. The page prints the backend's own sentence precisely so there is one account of the unfilled field."
+  }
+]

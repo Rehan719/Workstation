@@ -6307,6 +6307,23 @@
       "note": "",
       "slot_source": "it is P2.11's own seam sentence, named in the item body",
       "tier": 2
+    },
+    {
+      "id": "FU-361",
+      "title": "The distress route list is the one field P2.12 closes WITHOUT, and nothing yet records that it must arrive with its reviewer",
+      "why": "W551 built P2.12's three gates and its bar is met: every refusal path is driven, each gate's limit is on the surface, and the distress routes render as NOT SUPPLIED visibly on a page as well as a route. THE BAR CLOSES ON THAT BY THE OWNER'S OWN RULING (FU-270): 'P2.12 closes on its refusal paths with the unfilled field visible on the surface, and the list is supplied later with its reviewer.' So the item is DONE and the platform still cannot name a human route to anyone in distress. THAT IS THE DELIVERY THIS ROW HOLDS OPEN, because an item marked done is where a deferred obligation goes to be forgotten. WHAT IS IN PLACE: DISTRESS_ROUTES is an empty tuple in agentic_core/gaas/v5/horizon_guardrails.py; every gate response carries human_routes None with a basis saying the field is unfilled and why; the page at /horizon-guardrails renders NOT SUPPLIED in large type with the backend's own sentence beneath it; and a guard leg asserts that NO digit sequence resembling a telephone number exists in the gate module, the route module or the page, because a fabricated helpline is the one fabrication no later correction reaches the person who dialled it. WHAT ARRIVING LOOKS LIKE: the Owner supplies the routes WITH THEIR REVIEWER - a named person or body who checked that each route is real, current and appropriate to the jurisdiction - and each entry is stored with that reviewer and the date they checked it, so a route can later be shown to be stale rather than silently trusted. The guard's no-number leg must then be narrowed to the two modules that still hold none, NOT deleted, and a new leg must assert every supplied route carries its reviewer. UNTIL THEN THE HONEST STATE IS THE CURRENT ONE: this platform withholds AI counsel, says plainly it is not a person, and cannot tell anyone where to turn.",
+      "source": "W551 (filed as the item closes, so the deferral is recorded rather than assumed)",
+      "found": "2026-10-03",
+      "files": [
+        "agentic_core/gaas/v5/horizon_guardrails.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
     }
   ],
   "routes": [

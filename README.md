@@ -116,7 +116,7 @@ vercel deploy
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 499 API operations (method+path; 475 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
+  app_mvp.py           — entrypoint; 501 API operations (method+path; 477 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
   ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
   ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log
@@ -132,7 +132,7 @@ agentic_core/          — FastAPI backend (the real code)
   synthesis/ · api/intelligence.py — multi-format synthesis + cognitive/MJM/Nexus engines
 
 apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
-  src/App.tsx          — 74 routes (the only file in src/ that defines any; recomputed by scripts/readme_figures.py)
+  src/App.tsx          — 75 routes (the only file in src/ that defines any; recomputed by scripts/readme_figures.py)
   src/pages/           — Enterprise, Learner, Developer, Scholar realms
                          + domain hubs + all product pages
 ```

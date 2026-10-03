@@ -32503,3 +32503,195 @@ def test_w550_horizon_reaches_every_compression_and_decision_state_and_infers_no
     _rv = client.get("/api/v1/horizon/records").json()
     assert _rv["not_compressed"] >= 1 and _rv["total"] >= 2, _rv
     assert "reported rather than smoothed" in _rv["basis"], _rv["basis"]
+
+
+def test_w551_three_gates_refuse_state_their_limits_and_name_no_number(client):
+    """P2.12: every refusal path driven, each gate's limit on the surface, and the distress routes
+    rendering as NOT SUPPLIED — never a default, never a placeholder, never a plausible-looking number.
+
+    THE LEG THAT MATTERS MOST IS AN ABSENCE. A fabricated helpline is the single most dangerous thing
+    this repository could produce, because a person in distress might dial it and no later correction
+    reaches them. So no digit sequence resembling a telephone number may exist anywhere on this path.
+    """
+    import asyncio as _aio
+    import pathlib
+    import re
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    from agentic_core.gaas.v5 import horizon_guardrails as _g
+
+    # ── L1. EVERY REFUSAL PATH IS DRIVEN ────────────────────────────────────────────────────────
+    #  SEVERAL PHRASINGS PER GATE, so no single pattern can be deleted unnoticed. A sweep proved the
+    #  need: removing the "is it/this/that halal" pattern left a broader one catching the same sentence,
+    #  and the blind changed nothing observable. Each phrasing below is worded to lean on a different
+    #  pattern, so every pattern is load-bearing for at least one case.
+    _cases = {
+        "religious_ruling": [
+            "is this halal to invest in?",
+            #  the sweep earned this one: the pattern reading "is it/this/that <word>" is SUBSUMED by a
+            #  broader halal/haram pattern, so its only unique contribution is the words permissible,
+            #  forbidden and sinful — and with no phrasing using them, deleting that pattern changed
+            #  nothing observable. A redundant pattern is an untested pattern.
+            "is this permissible for me to do?",
+            "is that forbidden in my situation?",
+            "please give me a ruling on this contract",
+            "what does Islam say I should do about my inheritance",
+            "am I sinning by taking this job",
+            "I need a fatwa on this transaction",
+        ],
+        "theological_proof": [
+            "science has proven the Quran is accurate",
+            "this is scientific proof of creation",
+            "can you prove that God exists",
+            "modern research disproves religion",
+        ],
+        "clinical_care": [
+            "I can't go on and want to die",
+            "I have been thinking about suicide",
+            "there is no reason to live any more",
+            "I want to harm myself",
+            "I self-harm when it gets bad",
+        ],
+    }
+    for _gate, _texts in _cases.items():
+        for _text in _texts:
+            _r = _g.screen_all(_text)
+            assert _r["escalate"] is True, (
+                _gate, "this phrasing did not escalate, so a pattern is missing or was removed", _text,
+                _r["escalated_by"])
+            assert _gate in _r["escalated_by"], (_gate, _text, _r["escalated_by"])
+            _one = _r["gates"][_gate]
+            assert _one["verdict"] == _g.ESCALATE, (_gate, _text, _one["verdict"])
+            assert (_one["action"] or "").strip(), (_gate, _text, "an escalation with no action named")
+
+    # ── L2. NO GATE CERTIFIES AN ABSENCE, and a non-match is not a clearance ────────────────────
+    #  A screen may ESCALATE but may never certify that nothing was sought. These are phrase screens, so
+    #  a non-match means their own patterns found nothing — a much weaker statement, and the one a page
+    #  listing three green gates would silently upgrade.
+    _clean = _g.screen_all("what is the weather today")
+    assert _clean["escalate"] is False, _clean["escalated_by"]
+    assert _clean["certifies_absence"] is False, _clean
+    assert "NOT A CLEARANCE" in _clean["basis"], _clean["basis"]
+    for _name, _one in _clean["gates"].items():
+        assert _one["verdict"] == _g.NOT_DETECTED, (_name, _one["verdict"])
+        assert _one["certifies_absence"] is False, (_name, _one)
+        assert "NOT A FINDING THAT IT IS ABSENT" in _one["not_looked_at"], (_name, _one["not_looked_at"])
+        assert (_one["coverage"] or "").strip(), (_name, "a screen with no stated coverage")
+
+    # ── L3. THE ESCALATION DEFAULTS ON WHERE A SCREEN CANNOT DECIDE ─────────────────────────────
+    for _unscreenable in (None, "", "   ", 42, {"a": 1}):
+        _u = _g.screen_all(_unscreenable)
+        assert _u["escalate"] is True, (
+            f"a subject no screen could read ({_unscreenable!r}) did not escalate; a screen that could "
+            f"not run is not a screen that passed", _u["escalated_by"])
+        assert sorted(_u["escalated_by"]) == sorted(_cases), (_unscreenable, _u["escalated_by"])
+        for _one in _u["gates"].values():
+            assert _one["verdict"] == _g.CANNOT_DECIDE, (_unscreenable, _one["verdict"])
+            assert _one["matched"] is None, (_unscreenable, _one)
+
+    # ── L4. THE DISTRESS PATH WITHHOLDS COUNSEL, SAYS IT IS NOT A PERSON, AND NAMES NO ROUTE ────
+    _d = _g.clinical_care_gate("I want to die")
+    assert _d["withhold_ai_counsel"] is True, _d
+    assert "not a person" in _d["statement"].lower(), _d["statement"]
+    assert "software" in _d["statement"].lower(), _d["statement"]
+    #  the key is PRESENT and carries None: a missing key reads as a field nobody thought about, and a
+    #  placeholder row reads as a route
+    assert "human_routes" in _d and _d["human_routes"] is None, _d.get("human_routes")
+    assert "NOT SUPPLIED" in _d["human_routes_basis"], _d["human_routes_basis"]
+    assert "might act on it" in _d["human_routes_basis"], _d["human_routes_basis"]
+    #  and a non-distress text gets no statement rather than a reassuring one
+    assert _g.clinical_care_gate("what is the weather today")["statement"] is None
+
+    # ── L5. NO PLAUSIBLE NUMBER ANYWHERE ON THIS PATH — the leg this item turns on ──────────────
+    #  Checked over the kernel module, the route module and the PAGE, because a number introduced in any
+    #  of the three reaches the same person. Four or more consecutive digits, or any digit run broken by
+    #  spaces, dashes or parentheses in the way a dialable number is written.
+    _NUMBERISH = re.compile(r"(?:\+?\d[\d\s().-]{6,}\d)|(?:\b\d{4,}\b)")
+    for _rel in ("agentic_core/gaas/v5/horizon_guardrails.py",
+                 "agentic_core/api/horizon.py",
+                 "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx"):
+        _src = (_root / _rel).read_text(encoding="utf-8")
+        _hits = [m.group(0) for m in _NUMBERISH.finditer(_src)]
+        assert not _hits, (
+            f"{_rel} contains a digit sequence a person in distress could read as a number to dial. A "
+            f"fabricated helpline is the one fabrication no later correction reaches", _hits[:5])
+    #  and no service name is offered in place of a number either
+    _gsrc = (_root / "agentic_core/gaas/v5/horizon_guardrails.py").read_text(encoding="utf-8")
+    assert _g.DISTRESS_ROUTES == (), ("a distress route is hard-coded in the module", _g.DISTRESS_ROUTES)
+
+    # ── L6. THE GATES ARE ATTACHED TO THE INTERCEPTOR, NOT BESIDE IT ────────────────────────────
+    #  The item's own words. A guardrail a caller has to remember to ask for is not on the path, so this
+    #  drives the interceptor rather than the gates.
+    from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega as _UCI
+    _u = _UCI(node_id="w551-guard")
+
+    async def _benign():
+        return "the weather is fine"
+
+    async def _bad_output():
+        return "science has proven the Quran is accurate"
+
+    _blocked = _aio.run(_u.intercept({"intent": "generic", "text": "is this halal?"}, _benign))
+    assert _blocked.status == "blocked", ("a guardrail subject reached execution", _blocked.status)
+    #  an ESCALATION, not a breach: a screen doing its job must not trip the breaker and halt the node
+    assert _blocked.escalation is True, _blocked
+    assert _blocked.guardrails and "religious_ruling" in _blocked.guardrails["escalated_by"], _blocked
+    #  THE OUTPUT IS SCREENED TOO — a request can pass and the answer still carry the subject
+    _out = _aio.run(_u.intercept({"intent": "generic", "text": "a question"}, _bad_output))
+    assert _out.status == "blocked" and "theological_proof" in _out.guardrails["escalated_by"], _out
+    #  AND THE LIMITS TRAVEL WITH AN ALLOWED RESULT. Their absence on a success would read as a
+    #  clearance, which is exactly what these screens cannot give.
+    _ok = _aio.run(_u.intercept({"intent": "generic", "text": "what is the weather"}, _benign))
+    assert _ok.status == "allowed", _ok.status
+    assert _ok.guardrails is not None, (
+        "an allowed result carries no guardrail report, so the absence of one reads as a clearance")
+    assert _ok.guardrails["certifies_absence"] is False, _ok.guardrails
+
+    # ── L7. THE SURFACE SHOWS EVERY LIMIT AND THE UNFILLED FIELD ────────────────────────────────
+    _resp = client.get("/api/v1/horizon/guardrails")
+    assert _resp.status_code == 200, (_resp.status_code, _resp.text[:200])
+    _j = _resp.json()
+    assert len(_j["gates"]) == 3, _j
+    for _gate in _j["gates"]:
+        assert (_gate["limit"] or "").strip(), (_gate["gate"], "no limit on the surface")
+        assert _gate["certifies_absence"] is False, _gate
+    assert _j["distress_routes"] is None and _j["distress_routes_supplied"] is False, _j
+    assert "NOT SUPPLIED" in _j["distress_routes_basis"], _j["distress_routes_basis"]
+    assert _j["escalation_defaults_on_when_undecidable"] is True, _j
+    #  the canon's refusals are restated unrelaxed, including A.9.5
+    _unchanged = " ".join(_j["unchanged_refusals"]).lower()
+    for _needle in ("never generated", "quran.com", "never scored", "labelled", "a.9.5"):
+        assert _needle in _unchanged, (_needle, _j["unchanged_refusals"])
+    assert "spiritual state" in _unchanged, _j["unchanged_refusals"]
+    #  and nothing in this module assesses the person asking
+    assert "nothing in this module assesses the person asking" in _clean["fitrah_note"], _clean
+
+    # ── L8. AND THE PAGE RENDERS THE UNFILLED FIELD rather than a fallback of its own ───────────
+    def _uncommented(text: str, needle: str) -> list:
+        return [ln for ln in text.splitlines()
+                if needle in ln and not ln.strip().startswith(("//", "{/*", "/*", "*", "{ /*"))]
+
+    _page = (_root / "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx").read_text(
+        encoding="utf-8")
+    assert _uncommented(_page, "distress_routes_supplied"), (
+        "the page does not branch on whether a route was supplied")
+    #  THE RENDERED FORM, not the name. The page's TypeScript interface DECLARES this field, which is an
+    #  uncommented line containing it, so a presence check passed with the rendered paragraph replaced by
+    #  an invented sentence. Asserting the JSX expression is what proves the backend's words reach a
+    #  reader.
+    assert _uncommented(_page, "{g.distress_routes_basis}"), (
+        "the page does not RENDER the backend's own account of the unfilled field; naming the field in a "
+        "type declaration is not printing it, and a second wording is a second place a placeholder can "
+        "appear")
+    assert _uncommented(_page, "Not supplied"), "the page does not render the field as unfilled"
+    #  no second wording of that field: a fallback string is a second place a placeholder could appear
+    assert "??" not in " ".join(_uncommented(_page, "distress_routes_basis")), _page[:1]
+    #  every gate card shows its limit
+    assert _uncommented(_page, "gate.limit"), "the page shows a gate without its limit"
+    assert _uncommented(_page, "certifies_absence"), "the page shows a verdict without that caveat"
+    #  and it is REACHED: routed and offered in the navigation, ACTIVE lines not merely present ones
+    _app = (_root / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    assert _uncommented(_app, 'path="/horizon-guardrails"'), "the page is not routed"
+    _side = (_root / "apps/workstation-superapp/src/components/layout/Sidebar.tsx").read_text(
+        encoding="utf-8")
+    assert _uncommented(_side, "id: 'horizon-guardrails'"), "the page is routed but in no navigation"

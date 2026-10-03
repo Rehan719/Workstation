@@ -7,7 +7,7 @@ import {
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, History, Microscope, Gavel, Binary, Code2, Star, Archive, Eye,
   HeartPulse, Workflow, Search, Globe2, Layers, ChevronDown,
-  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes, Pin, LifeBuoy
+  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes, Pin, LifeBuoy, ShieldAlert
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 import { useT } from '../../lib/i18n';
@@ -104,6 +104,7 @@ const allNavItems: NavItem[] = [
       { name: 'Change Control',         icon: GitBranch,   id: 'change-control' },
       { name: 'Operational Excellence', icon: Gauge,       id: 'operations' },
       { name: 'CoE Hub',                icon: Trophy,      id: 'coe' },
+      { name: 'Horizon Guardrails',    icon: ShieldAlert, id: 'horizon-guardrails' },
     ]
   },
 
