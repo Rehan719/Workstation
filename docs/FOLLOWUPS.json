@@ -4361,11 +4361,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W569",
       "note": "",
       "tier": 2,
-      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Sharding built and measured, and THE ROW'S PREMISE IS REFUTED. It said the sweep is serial only because blinds mutate one tree, and one worktree per blind would cut 22.5 min to about 7. MEASURED on a real ten-blind list with IDENTICAL verdicts every time: serial 259s wall/259s summed; 2 shards 162s/304s - THE OPTIMUM at 1.60x; 4 shards 211s/508s - WORSE than two. The copy is not the cost (5,126 files in 8s); CONTENTION is, on 6 physical cores and 8.3 GB, because each blind is a whole pytest boot. THE SINGLE TREE WAS NEVER THE LIMIT and 3.2x is unavailable here at any shard count. Built as a COPY rather than a git worktree: a worktree is a clean checkout at a commit while a blind's subject is the round's UNCOMMITTED work, and re-dirtying one does not fail loudly - it yields confident verdicts about code nobody is committing. The sharded path never mutates the real tree and checks its sha to prove it. Serial stays the default and the trusted path."
     },
     {
       "id": "FU-254",

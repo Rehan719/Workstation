@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import shutil
 import io
 import json
 import os
@@ -148,12 +149,148 @@ def sweep(blinds: List[Dict[str, Any]], test_path: str, store: str) -> Dict[str,
     }
 
 
+SHARD_PIN_ENV = "WORKSTATION_BLIND_SHARD_ROOT"
+
+
+def _tree_files(extra: List[str]) -> List[str]:
+    """Every tracked file, plus any file a blind names that git does not track.
+
+    An untracked blind target is normal in this programme — a round's new guard file or blind list may
+    not be added yet — and a copy missing it would turn that blind into a BAD BLIND for a reason that
+    has nothing to do with the guard.
+    """
+    out = subprocess.run(["git", "ls-files", "-z"], capture_output=True, text=True,
+                         encoding="utf-8", errors="replace").stdout
+    files = [f for f in out.split("\0") if f]
+    known = set(files)
+    for f in extra:
+        n = f.replace("\\", "/")
+        if n not in known and os.path.exists(n):
+            files.append(n)
+            known.add(n)
+    return files
+
+
+def _materialise(dest: str, files: List[str]) -> Dict[str, Any]:
+    """Copy the listed files into `dest`, preserving relative paths. Returns what it actually copied."""
+    copied, missing = 0, []
+    for f in files:
+        src = f
+        dst = os.path.join(dest, f.replace("/", os.sep))
+        try:
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            with io.open(src, "rb") as a, io.open(dst, "wb") as b:
+                b.write(a.read())
+            copied += 1
+        except OSError:
+            missing.append(f)
+    return {"copied": copied, "missing": missing}
+
+
+def _shard(blinds: List[Dict[str, Any]], n: int) -> List[List[Dict[str, Any]]]:
+    """Round-robin, so one long blind does not pile its shard up behind the others."""
+    buckets: List[List[Dict[str, Any]]] = [[] for _ in range(max(1, n))]
+    for i, b in enumerate(blinds):
+        buckets[i % len(buckets)].append(b)
+    return [b for b in buckets if b]
+
+
+def sweep_sharded(blinds: List[Dict[str, Any]], test_path: str, store: str,
+                  shards: int) -> Dict[str, Any]:
+    """The same sweep, N ways, each shard in its own COPY of the working tree.
+
+    THE REAL TREE IS NEVER MUTATED HERE, and its sha is checked before and after to prove it. Every
+    verdict is merged BY TAG and the merge asserts that each blind came back with exactly one: a sweep
+    that silently dropped a shard would report a smaller, greener list, which is the defect class this
+    whole harness exists to catch.
+    """
+    started = time.time()
+    targets = sorted({b["file"] for b in blinds})
+    before = {f: _sha(f) for f in targets if os.path.exists(f)}
+    files = _tree_files(targets)
+    parts = _shard(blinds, shards)
+    procs, roots = [], []
+    for i, part in enumerate(parts):
+        root = os.path.join(store, f"shard{i}")
+        shutil.rmtree(root, ignore_errors=True)
+        os.makedirs(root, exist_ok=True)
+        mat = _materialise(root, files)
+        if mat["missing"]:
+            raise RuntimeError(f"shard {i}: could not copy {len(mat['missing'])} file(s), first: "
+                               f"{mat['missing'][:3]}")
+        bl = os.path.join(root, "_shard_blinds.json")
+        io.open(bl, "w", encoding="utf-8").write(json.dumps(part, ensure_ascii=False))
+        rep = os.path.join(store, f"shard{i}.json")
+        env = dict(os.environ)
+        env.pop(NESTED_GUARD_ENV, None)
+        #  PIN THE IMPORT TO THIS SHARD. PYTHONPATH is inserted ahead of the .pth entries, so the copy
+        #  wins over the real repo root the stray jules_ai.pth puts on sys.path. The shard asserts it.
+        env["PYTHONPATH"] = root + os.pathsep + env.get("PYTHONPATH", "")
+        env[SHARD_PIN_ENV] = root
+        env["PYTHONIOENCODING"] = "utf-8"
+        procs.append(subprocess.Popen(
+            [sys.executable, os.path.join(root, "scripts", "blind_sweep.py"),
+             "--blinds", bl, "--tests", test_path,
+             "--store", os.path.join(root, "_store"), "--json", rep],
+            cwd=root, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
+        roots.append((root, rep, len(part)))
+    merged: List[Dict[str, Any]] = []
+    shard_notes = []
+    for (root, rep, n_expected), pr in zip(roots, procs):
+        out = (pr.communicate()[0] or b"").decode("utf-8", "replace")
+        if not os.path.exists(rep):
+            raise RuntimeError(f"shard at {root} wrote no report (exit {pr.returncode}); tail:\n"
+                               f"{out[-700:]}")
+        r = json.loads(io.open(rep, encoding="utf-8").read())
+        if len(r.get("results") or []) != n_expected:
+            raise RuntimeError(f"shard at {root} was given {n_expected} blind(s) and reported "
+                               f"{len(r.get('results') or [])}; a dropped blind reads as a greener sweep")
+        merged.extend(r["results"])
+        shard_notes.append({"root": root, "blinds": n_expected, "exit": pr.returncode})
+    #  EVERY BLIND CAME BACK, EXACTLY ONCE. A tag reported twice means a shard ran another's work.
+    _tags = [b["tag"] for b in blinds]
+    _got = [r["tag"] for r in merged]
+    if sorted(_tags) != sorted(_got):
+        _lost = sorted(set(_tags) - set(_got))
+        _dupe = sorted(t for t in set(_got) if _got.count(t) > 1)
+        raise RuntimeError(f"the merge does not match the blind list: {len(_lost)} missing "
+                           f"{_lost[:3]}, {len(_dupe)} duplicated {_dupe[:3]}")
+    #  AND THE REAL TREE IS UNTOUCHED, which is the sharded path's main safety claim.
+    for f, sha in before.items():
+        now = _sha(f)
+        if now != sha:
+            raise RuntimeError(f"THE REAL TREE WAS MUTATED by a sharded sweep: {f} {sha} -> {now}")
+    counts = {v: sum(1 for r in merged if r["verdict"] == v) for v in (BLIND_RED, VACUOUS, BAD_BLIND)}
+    order = {b["tag"]: i for i, b in enumerate(blinds)}
+    merged.sort(key=lambda r: order.get(r["tag"], 0))
+    return {
+        "blinds": len(blinds), "counts": counts, "results": merged,
+        "shards": shard_notes, "wall_seconds": round(time.time() - started, 1),
+        "basis": (f"{counts[BLIND_RED]} of {len(blinds)} blind(s) were SEEN by their guard; "
+                  f"{counts[VACUOUS]} were NOT, which is a guard that cannot fail on its own subject; "
+                  f"{counts[BAD_BLIND]} did not reach a verdict and say nothing about any guard"),
+        "limits": ("Run in {n} COPIES of the working tree, one per shard, so THE REAL TREE IS NEVER "
+                   "MUTATED and its sha is checked before and after to prove it. Each shard pins "
+                   "PYTHONPATH to its own copy and asserts the module under test resolves inside it, "
+                   "because a stray .pth puts the real repo root on sys.path and a shard importing the "
+                   "ORIGINAL would report confident verdicts about the wrong tree. The merge asserts "
+                   "every blind came back exactly once. What it still does NOT measure is whether a "
+                   "guard asserts the RIGHT property, and a blind nobody wrote is a defect nobody "
+                   "looked for — the sweep's coverage is the blind list, not the codebase"
+                   ).replace("{n}", str(len(shard_notes))),
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--blinds", required=True, help="a JSON file: [{file, old, new, tag, selector}]")
     ap.add_argument("--tests", default="integration_tests/test_mvp_spine.py")
     ap.add_argument("--store", default="/c/tmp/blind_sweep")
     ap.add_argument("--json", default="", help="write the report here as well as printing it")
+    ap.add_argument("--shards", type=int, default=1,
+                    help="run N shards in parallel, each in its own COPY of the working tree (the real "
+                         "tree is then never mutated). 1 keeps the serial path, which stays the trusted "
+                         "one until a sharded run is proven to give the same verdicts")
     ap.add_argument("--recover", action="store_true",
                     help="report an in-flight marker left by a killed sweep instead of running")
     a = ap.parse_args()
@@ -173,12 +310,32 @@ def main() -> int:
                                "STILL MUTATED — this file does not match the sha the sweep recorded before "
                                "mutating it, so a killed sweep left its change on disk"))
         return 0 if now == m["restore_sha256"] else 1
-    if os.path.exists(marker):
+    if os.path.exists(marker) and a.shards <= 1:
         print("REFUSING: an in-flight marker is present at %s, so a previous sweep was killed mid-mutation. "
               "Run with --recover first." % marker)
         return 1
     blinds = json.loads(io.open(a.blinds, encoding="utf-8").read())
-    rep = sweep(blinds, a.tests, a.store)
+    #  W569 — A SHARD PROVES IT IS READING ITS OWN COPY BEFORE IT MUTATES ANYTHING. A stray .pth puts
+    #  the real repo root on sys.path for every local process, so a shard could import the ORIGINAL
+    #  `agentic_core` and report confident verdicts about a tree nobody is committing. PYTHONPATH is
+    #  measured to win over the .pth — but "should win" is not a measurement, so this asserts it.
+    _pin = os.environ.get(SHARD_PIN_ENV)
+    if _pin:
+        try:
+            import agentic_core as _ac
+            _where = os.path.realpath(os.path.dirname(os.path.dirname(_ac.__file__ or "")))
+        except Exception as _e:                  # noqa: BLE001
+            print(f"REFUSING: shard pinned to {_pin} cannot import its own tree ({_e})")
+            return 1
+        if os.path.realpath(_pin) != _where:
+            print(f"REFUSING: this shard is pinned to {_pin} but imports its subject from {_where}. A "
+                  f"sweep reading a different tree than it mutates reports verdicts about code nobody "
+                  f"is committing.")
+            return 1
+    if a.shards > 1:
+        rep = sweep_sharded(blinds, a.tests, a.store, a.shards)
+    else:
+        rep = sweep(blinds, a.tests, a.store)
     for r in rep["results"]:
         print("  %-11s %-54s exit=%-4s %s" % (r["verdict"], r["tag"][:54], r.get("exit"), r.get("why") or ""))
     print("\n" + rep["basis"])

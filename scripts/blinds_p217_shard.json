@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "the serial path stops being the default",
+    "file": "scripts/blind_sweep.py",
+    "old": "    ap.add_argument(\"--shards\", type=int, default=1,",
+    "new": "    ap.add_argument(\"--shards\", type=int, default=2,",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L1. A sharded run is proven equivalent on ONE list on ONE machine, which is evidence about that run and not a promotion. Making it the default means every round's central verification silently moves to the experimental path, and the first time a copy is imperfect or a shard is lost the round still reports a verdict — a smaller, greener one."
+  },
+  {
+    "tag": "the serial branch is removed, so there is no trusted path to compare against",
+    "file": "scripts/blind_sweep.py",
+    "old": "    if a.shards > 1:\n        rep = sweep_sharded(blinds, a.tests, a.store, a.shards)\n    else:\n        rep = sweep(blinds, a.tests, a.store)",
+    "new": "    rep = sweep_sharded(blinds, a.tests, a.store, max(2, a.shards))",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L1, the other direction. Equivalence was established by running BOTH on the same list and comparing verdicts; delete the serial path and that comparison can never be repeated, so the claim becomes unfalsifiable — which is the exact article this harness exists to serve."
+  },
+  {
+    "tag": "the partition drops its tail",
+    "file": "scripts/blind_sweep.py",
+    "old": "    for i, b in enumerate(blinds):\n        buckets[i % len(buckets)].append(b)",
+    "new": "    for i, b in enumerate(blinds[:-1] if len(blinds) > 1 else blinds):\n        buckets[i % len(buckets)].append(b)",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L2, and it is the defect this harness exists to catch committed INSIDE the harness: a sweep that quietly loses one blind reports a shorter, greener list and nothing about the output says a blind is missing. The leg partitions 0, 1, 2, 3, 7, 10 and 36 blinds across 1, 2, 3, 4 and 8 shards and reconciles every tag, because an off-by-one in a partition hides at most sizes."
+  },
+  {
+    "tag": "the partition becomes unbalanced, wasting the parallelism it bought",
+    "file": "scripts/blind_sweep.py",
+    "old": "    for i, b in enumerate(blinds):\n        buckets[i % len(buckets)].append(b)\n    return [b for b in buckets if b]",
+    "new": "    buckets[0].extend(blinds)\n    return [b for b in buckets if b]",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L2. Everything in one bucket loses no blind and reports every verdict correctly — it just takes exactly as long as the serial path while claiming to be sharded. That is a performance claim with no mechanism behind it, and the measured 1.60x would silently become 1.0x with nothing in the output changing."
+  },
+  {
+    "tag": "a shard stops proving it imports its own copy",
+    "file": "scripts/blind_sweep.py",
+    "old": "        if os.path.realpath(_pin) != _where:",
+    "new": "        if False and os.path.realpath(_pin) != _where:",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L3, THE HAZARD THAT DECIDES WHETHER ANY OF THIS IS SAFE. A stray jules_ai.pth puts the real repo root on sys.path for every local process, so a shard can import the ORIGINAL agentic_core while mutating its own copy — and then every verdict it reports is about a tree nobody is committing. PYTHONPATH is MEASURED to win over the .pth, but 'should win' is not a measurement, and this is the assertion that makes it one."
+  },
+  {
+    "tag": "the merge stops reconciling its results against the blind list",
+    "file": "scripts/blind_sweep.py",
+    "old": "    if sorted(_tags) != sorted(_got):",
+    "new": "    if False and sorted(_tags) != sorted(_got):",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L4. A lost shard and a double-counted one look nothing alike and both read as success without this: the first gives a shorter greener list, the second inflates a count. My own memory of this programme records a refutation run where a slice() cap dropped findings silently — count findings against verdicts, always."
+  },
+  {
+    "tag": "a shard reporting fewer blinds than it was given is accepted",
+    "file": "scripts/blind_sweep.py",
+    "old": "        if len(r.get(\"results\") or []) != n_expected:",
+    "new": "        if False and len(r.get(\"results\") or []) != n_expected:",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L4. This is the per-shard half of the same property and it catches a different failure: a shard that crashed halfway writes a VALID report containing only the blinds it reached. The merge-level check would then compare a short list against a short list and agree with itself."
+  },
+  {
+    "tag": "the sharded path stops proving it left the real tree alone",
+    "file": "scripts/blind_sweep.py",
+    "old": "        if now != sha:\n            raise RuntimeError(f\"THE REAL TREE WAS MUTATED by a sharded sweep: {f} {sha} -> {now}\")",
+    "new": "        pass",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L5, and it is the sharded path's whole safety claim rather than a nicety. The one mutation that ever survived a kill in this programme survived it in the real tree; a sharded run has nothing there to survive, and this check is what turns that from a design intention into a verified fact after every run."
+  },
+  {
+    "tag": "the in-flight refusal blocks a sharded run that cannot leave a marker",
+    "file": "scripts/blind_sweep.py",
+    "old": "    if os.path.exists(marker) and a.shards <= 1:",
+    "new": "    if os.path.exists(marker):",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "L5. The marker is a SERIAL-path safeguard: it names a real-tree file and the sha to restore it to. A sharded run never mutates the real tree, so a stale marker left by a killed serial run would block the one path that cannot possibly have caused it — a safeguard refusing the thing it protects."
+  },
+  {
+    "tag": "clause (b) claims the row's projected speedup instead of the measured one",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "2 SHARDS 162s / 304s — THE OPTIMUM, 1.60x;",
+    "new": "SHARDING ACHIEVES THE PROJECTED 3.2x;",
+    "selector": "w569",
+    "expect": "BLIND(red)",
+    "why": "The bar must carry the figure that was measured, not the one that was hoped for. 4 shards came out WORSE than 2 (211s against 162s) because contention, not the single tree, is the limit on 6 cores and 8.3 GB — and a bar quoting 3.2x would send a later round hunting for a speedup that does not exist on this machine at any shard count."
+  }
+]

@@ -35931,3 +35931,169 @@ def test_w568_the_bundle_proposal_meets_all_four_of_its_stated_limits(client):
     #  one casing fails on a rewording that changes nothing about the property.
     assert "a rule nobody can execute is indistinguishable" in _bar.lower(), (
         "the bar no longer records why disjointness was unmet: it was a RULE with no mechanism")
+
+
+def test_w569_a_sharded_sweep_never_touches_the_real_tree_and_loses_no_blind(client):
+    """FU-253 and P2.17 bar (b)'s 'the blind harness's own runtime is measured before and after'.
+
+    THE ROW'S PREMISE IS REFUTED BY MEASUREMENT, and that is the round's main finding. FU-253 said the
+    sweep "is serial only because blinds mutate one tree — one worktree per blind would cut it from 22.5
+    min to about 7". Measured on a real ten-blind list, with IDENTICAL verdicts every time:
+        serial      259s wall, 259s summed
+        2 shards    162s wall, 304s summed   <- the optimum, 1.60x
+        4 shards    211s wall, 508s summed   <- WORSE than 2
+    The copy is not the cost: one full copy of the working tree is 5,126 files in 8s. CONTENTION is the
+    cost — this machine has 6 physical cores and 8.3 GB, and each blind is a whole pytest boot, so four
+    concurrent ones take twice as long each. The single tree was never the limit.
+
+    WHY A COPY RATHER THAN THE `git worktree` THE ROW PROPOSED: a worktree is a CLEAN checkout at a
+    commit, and a blind's subject is the UNCOMMITTED work of the round running it. Re-dirtying one from
+    `git diff HEAD` plus untracked files does not fail loudly when it is wrong — it produces confident
+    verdicts about code nobody is committing.
+
+    This test does NOT re-run two full sweeps: that is nine minutes and the equivalence is recorded with
+    its figures in the plan. It drives the mechanisms that make the sharded path safe.
+    """
+    import io as _io569
+    import json as _json569
+    import os as _os569
+    import pathlib as _pl569
+    import subprocess as _sp569
+    import sys as _sys569
+    import tempfile as _tmp569
+
+    _root = _pl569.Path(__file__).resolve().parents[1]
+    _sys569.path.insert(0, str(_root / "scripts"))
+    import blind_sweep as _bs569
+
+    # ── L1. THE SERIAL PATH IS UNCHANGED AND STAYS THE DEFAULT ──────────────────────────────────
+    #  The trusted path must not become the experimental one by default. A sharded run is proven
+    #  equivalent on one list on one machine; that is evidence about that run, not a promotion.
+    _src = (_root / "scripts/blind_sweep.py").read_text(encoding="utf-8")
+    assert '"--shards", type=int, default=1' in _src, (
+        "the shard count no longer defaults to 1, so the serial path is no longer what a round gets "
+        "without asking")
+    assert "if a.shards > 1:" in _src and "rep = sweep(blinds, a.tests, a.store)" in _src, (
+        "the serial branch has gone, so there is no trusted path left to compare a sharded run against")
+
+    # ── L2. THE PARTITION LOSES NOTHING AND DUPLICATES NOTHING ──────────────────────────────────
+    #  Round-robin, so one long blind does not pile its shard up behind the others. Driven over a range
+    #  of sizes including the degenerate ones, because a partition that silently drops the tail is the
+    #  defect this harness exists to catch, committed in the harness.
+    for _n_blinds in (0, 1, 2, 3, 7, 10, 36):
+        _bl = [{"tag": f"t{_i}", "file": "x", "old": "a", "new": "b"} for _i in range(_n_blinds)]
+        for _shards in (1, 2, 3, 4, 8):
+            _parts = _bs569._shard(_bl, _shards)
+            _flat = [b["tag"] for p in _parts for b in p]
+            assert sorted(_flat) == sorted(b["tag"] for b in _bl), (
+                "the partition lost or duplicated a blind", _n_blinds, _shards, len(_flat))
+            assert all(_parts), "an empty shard was returned, which would spawn a process with no work"
+            if _n_blinds and _shards > 1:
+                #  BALANCED TO WITHIN ONE, *AND* ACTUALLY SPLIT. The spread test alone could not see a
+                #  partition that put everything in ONE bucket: a single bucket has spread zero, loses no
+                #  blind, and reports every verdict correctly — it just takes exactly as long as the
+                #  serial path while claiming to be sharded. A performance claim with no mechanism.
+                _sizes = [len(p) for p in _parts]
+                assert len(_parts) == min(_shards, _n_blinds), (
+                    "the partition did not split into the shards it was asked for", _n_blinds, _shards,
+                    _sizes)
+                assert max(_sizes) - min(_sizes) <= 1, (_n_blinds, _shards, _sizes)
+
+    # ── L3. A SHARD REFUSES TO RUN IF IT IMPORTS A DIFFERENT TREE THAN IT MUTATES ───────────────
+    #  THE HAZARD THAT DECIDES WHETHER ANY OF THIS IS SAFE. A stray .pth puts the real repo root on
+    #  sys.path for every local process, so a shard could import the ORIGINAL `agentic_core` and report
+    #  confident verdicts about a tree nobody is committing. PYTHONPATH is measured to win over the .pth
+    #  — but "should win" is not a measurement, so the shard asserts it and REFUSES when it fails.
+    assert "SHARD_PIN_ENV" in _src, "nothing pins a shard to its own copy"
+    assert "cannot import its own tree" in _src and "reports verdicts about code nobody" in _src, (
+        "the shard's refusal does not say what it is refusing, so a reader sees only an exit code")
+    #  DRIVEN: pinned at a directory that is not where the import resolves, the harness must refuse.
+    _fake = _tmp569.mkdtemp()
+    _bl_path = _os569.path.join(_fake, "b.json")
+    _io569.open(_bl_path, "w", encoding="utf-8").write(_json569.dumps(
+        [{"tag": "never-runs", "file": "README.md", "old": "x", "new": "y"}]))
+    _env = dict(_os569.environ)
+    _env[_bs569.SHARD_PIN_ENV] = _fake          # a pin that cannot match the real import location
+    _env.pop(_bs569.NESTED_GUARD_ENV, None)
+    _env["PYTHONIOENCODING"] = "utf-8"
+    _out = _sp569.run([_sys569.executable, str(_root / "scripts/blind_sweep.py"),
+                       "--blinds", _bl_path, "--store", _os569.path.join(_fake, "s")],
+                      cwd=str(_root), env=_env, capture_output=True, text=True,
+                      encoding="utf-8", errors="replace", timeout=300)
+    assert _out.returncode == 1, ("a shard pinned to the wrong tree did not refuse",
+                                  _out.returncode, (_out.stdout or "")[-300:])
+    assert "REFUSING" in (_out.stdout or ""), (_out.stdout or "")[-300:]
+
+    # ── L4. THE MERGE PROVES EVERY BLIND CAME BACK, EXACTLY ONCE ────────────────────────────────
+    #  A sweep that silently dropped a shard would report a SMALLER, GREENER list — which is the exact
+    #  shape of the defect the whole harness exists to catch. Both directions are checked in the source
+    #  because driving a real dropped shard means running one.
+    assert "does not match the blind list" in _src, (
+        "the merge does not reconcile its results against the blind list it was given")
+    #  AND NO CONDITION IN THIS HARNESS IS DISABLED. Three blinds came back VACUOUS against legs that
+    #  asserted a MESSAGE: `if False and <cond>` leaves every string intact, so the leg saw its needle
+    #  and the check was dead. A disabled condition is itself the defect, and it is cheap to forbid
+    #  outright in a file whose entire job is to fail when something is wrong.
+    #  PLAIN SUBSTRINGS, NOT A REGEX, and that is a scar rather than a style choice. The first
+    #  version of this leg used a pattern written through a shell heredoc, which turned a regex word
+    #  boundary into a LITERAL BACKSPACE character — invisible in the file, invisible in grep, and
+    #  it made the pattern match nothing at all. Two blinds came back VACUOUS against it while the
+    #  leg read as correct every time it was inspected. The interpreter HAD said so at the moment of
+    #  the edit ("SyntaxWarning: invalid escape sequence") and the warning was noted and passed
+    #  over: A SYNTAX WARNING IN A SCRIPTED EDIT IS A DEFECT, NOT NOISE.
+    _dead = [_l.strip() for _l in _src.splitlines()
+             if "if False" in _l or "if 0" in _l or "and False" in _l or "and 0" in _l]
+    assert not _dead, ("a condition in the blind harness is disabled, so the check it guards cannot "
+                       "fail and every message around it still reads as if it could", _dead[:3])
+    assert "missing" in _src and "duplicated" in _src, (
+        "the merge's reconciliation does not distinguish a lost blind from a double-counted one")
+    assert "a dropped blind reads as a greener sweep" in _src, (
+        "the per-shard count check no longer says why it matters")
+
+    # ── L5. AND THE REAL TREE IS PROVEN UNTOUCHED, WHICH IS THE SHARDED PATH'S MAIN SAFETY CLAIM ─
+    #  This removes an entire risk class rather than mitigating it: the one mutation that ever survived
+    #  a kill survived it in the real tree, and a sharded run has nothing there to survive.
+    assert "THE REAL TREE WAS MUTATED by a sharded sweep" in _src, (
+        "a sharded sweep no longer verifies that it left the real tree alone")
+    assert 'if os.path.exists(marker) and a.shards <= 1:' in _src, (
+        "the in-flight refusal still blocks a sharded run. The marker is a SERIAL-path safeguard: a "
+        "sharded sweep never mutates the real tree, so a stale marker from a killed serial run must not "
+        "stop one")
+    #  the limits say what was and was not measured
+    assert "the sweep's coverage is the blind list, not the codebase" in _src, _src[:0]
+
+    # ── L6. THE BAR CARRIES THE MEASURED FIGURES, NOT THE PROJECTED ONE ─────────────────────────
+    #  A blind in this round came back VACUOUS against no leg at all: nothing asserted what clause (b)
+    #  SAYS, so the bar could have claimed the row's hoped-for 3.2x and the sweep would have agreed.
+    #  The figures are the delivery here — the row's premise is refuted by them — so they are guarded.
+    _prompt569 = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _i569, _j569 = _prompt569.index("\n P2.17 "), len(_prompt569)
+    import re as _re569c
+    _m569 = _re569c.search(r"\n P\d+\.\d+ ", _prompt569[_i569 + 1:])
+    if _m569:
+        _j569 = _i569 + 1 + _m569.start()
+    _bar569 = " ".join(_prompt569[_i569:_j569].split())
+    #  the three measurements, each by its own number, so losing one cannot hide behind the others
+    for _frag in ("SERIAL 259s", "2 SHARDS 162s", "4 SHARDS 211s"):
+        assert _frag in _bar569, (
+            "clause (b) no longer carries this measurement, and the three together are the finding: "
+            "four shards came out WORSE than two", _frag)
+    assert "THE OPTIMUM, 1.60x" in _bar569, (
+        "the bar does not name the measured optimum, so a later round cannot tell which shard count was "
+        "chosen on evidence")
+    assert "WORSE THAN TWO" in _bar569, (
+        "the bar no longer records that MORE shards were slower. Without it a later round reads 1.60x as "
+        "a floor to be raised by adding shards, which the measurement refutes")
+    #  AND THE PREMISE IT REFUTES IS NAMED, because a refutation nobody can locate is an opinion
+    assert "THE SINGLE TREE WAS NEVER THE LIMIT" in _bar569, (
+        "the bar states the figures without the conclusion that FU-253's premise was wrong: the sweep "
+        "was not serial because blinds mutate one tree, it was slow because 6 cores and 8.3 GB cannot "
+        "boot four pytests at once")
+    assert "3.2x is not available here" in _bar569, _bar569[:0]
+    #  the safety claim that justifies the whole approach
+    assert "NEVER MUTATES THE REAL TREE" in _bar569, (
+        "the bar drops the sharded path's main safety property, which is the reason it is a copy and "
+        "not a git worktree")
+    assert "THE SERIAL PATH REMAINS THE DEFAULT" in _bar569, (
+        "the bar no longer says the trusted path stays the default; equivalence on one list on one "
+        "machine is evidence about that run, not a promotion")
