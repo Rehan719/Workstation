@@ -6344,10 +6344,13 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W566",
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-03d: the route is supplied. 'Please speak to a person you trust, your doctor, or your local emergency service.' Reviewed by the Owner, dated, jurisdiction ANY - it names no service and carries no number, so ANY is honest and the dialable-route invariant is untouched. IT LIVES IN DATA, NOT CODE, forced by the platform's own guard: an ISO check-date is a dash-separated digit run, so a route in the module would either trip the no-number leg or arrive without the date that lets it go stale. All three files on that path still hold nothing dialable, so the leg KEEPS FULL STRENGTH rather than being narrowed as this row anticipated. The drafter and the reviewer are separate fields - the first version conflated them and the guard forbidding the platform from reviewing a route correctly refused it."
     },
     {
       "id": "FU-362",
@@ -6574,10 +6577,13 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W566",
       "note": "",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-03d: the folder is named and created EMPTY, and the jurisdiction is England and Wales with its basis in ONE home (agentic_core/legal/matter.json). The jurisdiction was INFERRED from this repository's own corpus - ACAS 26 times, Employment Tribunal not Industrial Tribunal, Equality Act 2010, all three ruling Northern Ireland out - and CONFIRMED by the Owner, not supplied by them. It was a typed literal in ten places in api/law.py plus the request default with no source anywhere, which is the class W565 removed from the suite constant. NO SUCCESSOR ROW for the folder being empty: bundle_indexing_may_start MEASURES the folder, so it cannot be forgotten the way a remembered obligation can."
     }
   ],
   "routes": [

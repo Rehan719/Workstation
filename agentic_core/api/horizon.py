@@ -145,6 +145,7 @@ async def horizon_guardrails(user: dict | None = Depends(get_current_user)) -> D
     is None with the reason — never a default, never a service name, never a number.
     """
     from agentic_core.gaas.v5 import horizon_guardrails as _g
+    _rt = _g.distress_routes()
     return {
         "gates": [
             {"gate": "religious_ruling",
@@ -161,9 +162,19 @@ async def horizon_guardrails(user: dict | None = Depends(get_current_user)) -> D
              "limit": _g._COVERAGE,
              "certifies_absence": False},
         ],
-        "distress_routes": list(_g.DISTRESS_ROUTES) or None,
-        "distress_routes_supplied": bool(_g.DISTRESS_ROUTES),
-        "distress_routes_basis": _g.DISTRESS_ROUTES_BASIS,
+        #  READ THROUGH THE VALIDATOR, NOT AROUND IT. This read `_g.DISTRESS_ROUTES` raw, so it would
+        #  have published a record that `accept_route` refuses — one with no reviewer, no check date or
+        #  no jurisdiction — and it could not tell a FRESH route from one nobody has checked in years.
+        #  The gate on the same path already reads it this way; a second reader going round the back is
+        #  how the same field comes to say two different things.
+        **{"distress_routes": _rt["routes"],
+           "distress_routes_supplied": _rt["routes"] is not None,
+           "distress_routes_basis": _rt["basis"],
+           "distress_routes_state": _rt["state"],
+           "distress_routes_stale_count": _rt["stale_count"],
+           "distress_routes_jurisdictions": _rt["jurisdictions"],
+           "distress_routes_cover_anywhere": _rt["covers_anywhere"],
+           "distress_routes_refused": _rt["refused"]},
         "not_a_person_statement": _g.NOT_A_PERSON,
         "escalation_defaults_on_when_undecidable": True,
         "basis": ("every gate reports a verdict AND what it did not look at. NONE OF THEM CAN CERTIFY AN "

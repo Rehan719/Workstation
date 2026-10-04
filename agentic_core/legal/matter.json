@@ -1,0 +1,19 @@
+{
+  "_what_this_is": "The live employment matter's jurisdiction and bundle location, in ONE home with the basis for each. Before this, 'England & Wales' was a typed literal in ten places in agentic_core/api/law.py plus the request default, with no source anywhere — which is the same class W565 removed from the suite constant: a figure with no home, and then a home holding something nobody could check.",
+  "jurisdiction": "England & Wales",
+  "jurisdiction_basis": "INFERRED FROM THIS REPOSITORY'S OWN CONTENT AND CONFIRMED BY THE OWNER on 2026-10-03, not asserted by either alone. (a) knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json declares domain UK_EMPLOYMENT_LAW and names ACAS Conciliation 26 times — ACAS covers GREAT BRITAIN, so Northern Ireland is ruled out by the content itself, as NI uses the Labour Relations Agency. (b) the same corpus says 'Employment Tribunal', not 'Industrial Tribunal', which is again GB and not NI. (c) it names the Equality Act 2010, which is GB. (d) agentic_core/api/law.py already carried 'England & Wales' in ten document templates including the ET1 claim, so this is what the deployed code already assumed. WHAT THIS DOES NOT ESTABLISH: England & Wales versus SCOTLAND. Both use the Employment Tribunal and the ACAS Code and the evidence above does not separate them; the Owner accepted England & Wales and a correction to Scotland changes procedure only, so nothing built on the tribunal or the Code is wasted either way.",
+  "jurisdiction_ruled_out": {
+    "Northern Ireland": "ruled out by this repository's own corpus: ACAS and 'Employment Tribunal' are Great Britain; NI uses the Labour Relations Agency and Industrial Tribunals"
+  },
+  "bundle_dir": "C:\\Users\\rehan\\data\\legal-matter",
+  "bundle_dir_basis": "Created EMPTY by W566 at the Owner's instruction. The Owner's ruling of 2026-10-03c set the terms — read-only, local-only, ONE named folder, never sent to any external service, provenance per document, a human-approval gate on every filing-shaped artefact, the index in data/ and never committed — and named no folder. This path was proposed and the Owner accepted it. IT IS EMPTY UNTIL THE OWNER COPIES SOMETHING IN, which is the point: the act of copying a file in is the consent for that file, so no path is guessed, no desktop location is inferred, and no document is read that was not deliberately placed here.",
+  "bundle_indexing_may_start": false,
+  "bundle_indexing_basis": "false while the folder is empty. This flag is NOT an Owner switch and must never be flipped to mean 'the Owner approved indexing' — they did, in 2026-10-03c. It means 'there is something here to index', which is a measurement of the folder and nothing else.",
+  "nothing_produced_is_legal_advice": "Every artefact this platform produces about this matter says so where the work is read. The platform may be a meticulous clerk and never counsel; it assembles, cites and cross-checks with provenance per line, and it never forecasts an outcome (Owner ruling 2026-10-03c confirming the refusal of the tribunal outcome predictor).",
+  "never": [
+    "no document outside bundle_dir is opened",
+    "nothing about this matter leaves this machine",
+    "no outcome, probability or settlement range is produced, however labelled",
+    "no filing-shaped artefact is produced without a human-approval gate"
+  ]
+}

@@ -43,6 +43,8 @@ REQUEST or an OUTPUT for a subject the platform must not answer; none of them as
 from __future__ import annotations
 
 import datetime as _dt
+import json as _json
+import pathlib as _pathlib
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -50,14 +52,54 @@ ESCALATE = "ESCALATE"
 NOT_DETECTED = "NOT_DETECTED"
 CANNOT_DECIDE = "CANNOT_DECIDE"
 
-#  THE LIST THE OWNER SUPPLIES LATER, WITH ITS REVIEWER. Empty is the honest state and the surface says
-#  so; a placeholder here would be indistinguishable from a real route to the person who needed one.
-DISTRESS_ROUTES: Tuple[Dict[str, str], ...] = ()
+#  THE LIST THE OWNER SUPPLIES, WITH ITS REVIEWER — LOADED FROM DATA, NEVER WRITTEN HERE. Empty was the
+#  honest state while nothing was supplied, and a placeholder would have been indistinguishable from a
+#  real route to the person who needed one. It is loaded rather than inlined for a reason this file
+#  enforces on itself: the leg over this module forbids any digit sequence a person could read as a
+#  number to dial, and an ISO check-date IS one — so a route written here would either trip that leg or
+#  arrive without the date that lets it go stale. In the data file it carries both, and all three files
+#  on this path stay provably free of anything dialable.
+_ROUTES_FILE = _pathlib.Path(__file__).resolve().parent / "distress_routes.json"
+_ROUTES_LOAD_BASIS = ""
+
+
+def _load_routes() -> Tuple[Tuple[Dict[str, str], ...], str]:
+    """The supplied routes and WHY that is what came back. It never raises.
+
+    A gate that failed because a configuration file was malformed would be the worst possible trade, so
+    every failure yields NO routes and a basis saying which failure it was — and an absent file, an
+    unreadable one and an empty list are three different states, not one.
+    """
+    if not _ROUTES_FILE.exists():
+        return (), (f"no route file at {_ROUTES_FILE.name}: none has been supplied. This is an unfilled "
+                    f"field, not an absence of need")
+    try:
+        _raw = _json.loads(_ROUTES_FILE.read_text(encoding="utf-8"))
+    except Exception as _e:                      # noqa: BLE001 — a malformed file must not break a gate
+        return (), (f"{_ROUTES_FILE.name} could not be read ({type(_e).__name__}), so NO route is shown. "
+                    f"A file the reader cannot parse supplies nothing, and showing a route from a file "
+                    f"nobody could validate is worse than showing none")
+    _rows = _raw.get("routes") if isinstance(_raw, dict) else _raw
+    if not isinstance(_rows, list):
+        return (), (f"{_ROUTES_FILE.name} holds no `routes` list, so NO route is shown")
+    _kept = tuple(r for r in _rows if isinstance(r, dict))
+    if not _kept:
+        return (), (f"{_ROUTES_FILE.name} exists and lists no route")
+    return _kept, (f"{len(_kept)} record(s) read from {_ROUTES_FILE.name}; each is still held to "
+                   f"accept_route, which refuses one that cannot name its reviewer, its check date or "
+                   f"the jurisdiction it answers in")
+
+
+DISTRESS_ROUTES, _ROUTES_LOAD_BASIS = _load_routes()
+#  THE BASIS FOR AN EMPTY FIELD, and it now reports WHICH empty it is. It read "no human distress route
+#  is recorded on this platform" unconditionally, which was true while nothing was supplied and would
+#  have become a false statement the moment a file existed and failed to parse.
 DISTRESS_ROUTES_BASIS = (
-    "NOT SUPPLIED: no human distress route is recorded on this platform. This is an UNFILLED FIELD shown "
-    "as unfilled, not an absence of need — the Owner supplies the list with its reviewer, and until then "
-    "the honest answer is that this platform cannot name a route. No number, service name or placeholder "
-    "stands in for one, because a person in distress might act on it")
+    "NOT SUPPLIED: no human distress route is being shown. This is an UNFILLED FIELD shown as unfilled, "
+    "not an absence of need — a route is supplied with the person or body who reviewed it, the date they "
+    "checked it and the jurisdiction it answers in, and until a record passes all four this platform "
+    "cannot name a route. No number, service name or placeholder stands in for one, because a person in "
+    "distress might act on it. WHY IT IS EMPTY: " + (_ROUTES_LOAD_BASIS or "not stated"))
 
 #  WHAT A ROUTE MUST CARRY. Every one required, and the three that are not the route itself are the
 #  point: a route with no reviewer is a number somebody typed, a route with no check date cannot go

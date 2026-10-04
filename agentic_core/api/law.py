@@ -7,6 +7,8 @@ Law Domain API — Legal document analysis and generation.
 """
 from __future__ import annotations
 
+import json as _json
+import pathlib as _pathlib
 import time
 import uuid
 from typing import Optional
@@ -69,13 +71,46 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
 @router.get("/templates")
 async def list_templates():
     """Return available legal document templates."""
-    return {"templates": _TEMPLATES, "total": len(_TEMPLATES)}
+    return {"templates": _TEMPLATES, "total": len(_TEMPLATES),
+            #  Each template's own `jurisdiction` says what that template is FOR, which is legitimately
+            #  per-template. THE MATTER's jurisdiction is a different fact with one home and a basis,
+            #  published here so a reader can see which is which and where the second came from.
+            "matter_jurisdiction": _MATTER_JURISDICTION,
+            "matter_jurisdiction_basis": _MATTER_JURISDICTION_BASIS}
+
+
+#  THE MATTER'S JURISDICTION HAS ONE HOME, WITH ITS BASIS. It was a typed literal here and in ten
+#  templates below, with no source anywhere — the same class W565 removed from the suite constant. It is
+#  now read from agentic_core/legal/matter.json, which records how it was established: inferred from this
+#  repository's own corpus (ACAS and "Employment Tribunal" rule Northern Ireland out) and confirmed by the
+#  Owner. The load never raises: a missing or malformed file leaves the previous literal as the default and
+#  says so, because a request default is not the place to discover a configuration error.
+_MATTER_FILE = _pathlib.Path(__file__).resolve().parents[1] / "legal" / "matter.json"
+
+
+def matter_jurisdiction() -> tuple:
+    """(jurisdiction, basis). Never raises, and NEVER guesses — the fallback is named as a fallback."""
+    try:
+        _m = _json.loads(_MATTER_FILE.read_text(encoding="utf-8"))
+        _j = str(_m.get("jurisdiction") or "").strip()
+        if _j:
+            return _j, str(_m.get("jurisdiction_basis") or "").strip() or "no basis recorded in matter.json"
+        return ("England & Wales",
+                "FALLBACK: matter.json records no jurisdiction. This is the historical literal, not a "
+                "measurement, and it must not be read as one")
+    except Exception as _e:                      # noqa: BLE001 — a config error is not a request error
+        return ("England & Wales",
+                f"FALLBACK: matter.json could not be read ({type(_e).__name__}). This is the historical "
+                f"literal, not a measurement, and it must not be read as one")
+
+
+_MATTER_JURISDICTION, _MATTER_JURISDICTION_BASIS = matter_jurisdiction()
 
 
 class AnalyseRequest(BaseModel):
     document_text: str
     document_type: str = "contract"
-    jurisdiction: str = "England & Wales"
+    jurisdiction: str = _MATTER_JURISDICTION
     analysis_focus: str = "general"  # general | risk | compliance | negotiation
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 

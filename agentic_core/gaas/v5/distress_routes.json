@@ -1,0 +1,16 @@
+{
+  "_what_this_is": "The human distress routes this platform may show, supplied by the Owner with the reviewer who checked each one and the date they checked it. IT IS DATA AND NOT CODE, and that is deliberate: the module that reads it is covered by a guard forbidding any digit sequence a person could read as a number to dial, and an ISO check-date is a dash-separated digit run. So the route lives here, the module stays provably free of anything dialable, and the no-number leg keeps its full strength over all three files on that path.",
+  "_the_rule_every_entry_is_held_to": "route, reviewed_by, checked_on and jurisdiction are ALL required. A route with no reviewer is a number somebody typed; a route with no check date cannot go stale, so it would be trusted forever; a route with no jurisdiction can be shown to someone it does not answer for, which is worse than NOT SUPPLIED because it sends a person somewhere instead of telling them the truth. A route containing anything dialable may never be marked ANY: a number answers in one country and nowhere else.",
+  "_who_may_review": "A person or body, named in `reviewed_by` AND NOTHING ELSE. NOT the platform and not an agent: a software verdict on whether a distress route reaches a human is worth nothing to the person acting on it. Where the platform DRAFTED the wording, that goes in `drafted_by` — a separate fact, separately recorded. The first version of this file put both in `reviewed_by` and the guard that forbids the platform reviewing a route correctly refused it: conflating the drafter with the reviewer is exactly the confusion the field exists to prevent.",
+  "routes": [
+    {
+      "route": "Please speak to a person you trust, your doctor, or your local emergency service.",
+      "reviewed_by": "Rehan (Owner)",
+      "checked_on": "2026-10-03",
+      "jurisdiction": "ANY",
+      "why_any": "It names no specific service and contains no number, so there is nothing in it that is true in one country and false in another. Every person has someone they trust, a doctor, and an emergency service; this says reach one of them and makes no claim about any of them.",
+      "what_the_reviewer_attested": "that this wording directs a person to a human being and asserts nothing the platform cannot stand behind. It is NOT an attestation that any named service exists, is open, or is appropriate to a particular case — no such service is named.",
+      "drafted_by": "the platform — three candidate wordings, none naming a service or carrying a number; the Owner read all three and chose this one"
+    }
+  ]
+}

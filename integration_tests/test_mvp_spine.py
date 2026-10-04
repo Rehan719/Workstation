@@ -32877,9 +32877,25 @@ def test_w551_three_gates_refuse_state_their_limits_and_name_no_number(client):
     assert "software" in _d["statement"].lower(), _d["statement"]
     #  the key is PRESENT and carries None: a missing key reads as a field nobody thought about, and a
     #  placeholder row reads as a route
-    assert "human_routes" in _d and _d["human_routes"] is None, _d.get("human_routes")
-    assert "NOT SUPPLIED" in _d["human_routes_basis"], _d["human_routes_basis"]
-    assert "might act on it" in _d["human_routes_basis"], _d["human_routes_basis"]
+    #  THREE-STATE SINCE W566, when the Owner supplied a route. The key is always PRESENT: a missing key
+    #  reads as a field nobody thought about. While nothing is supplied it carries None and the basis says
+    #  so; once something is, EVERY ROUTE CARRIES ITS REVIEWER, ITS DATE AND ITS JURISDICTION — which is
+    #  the leg FU-361 said would be needed on the day a route arrived.
+    assert "human_routes" in _d, _d.keys()
+    if _d["human_routes"] is None:
+        assert "NOT SUPPLIED" in _d["human_routes_basis"], _d["human_routes_basis"]
+        assert "might act on it" in _d["human_routes_basis"], _d["human_routes_basis"]
+    else:
+        assert _d["human_routes"], "an empty list where an unfilled field belongs"
+        for _r in _d["human_routes"]:
+            for _f in ("route", "reviewed_by", "checked_on", "jurisdiction"):
+                assert str(_r.get(_f) or "").strip(), (_f, "a shown route does not carry it", _r)
+            assert "stale" in _r, ("a shown route does not say whether it is stale", _r)
+            #  THE PLATFORM MAY NOT BE ITS OWN REVIEWER. A software verdict on whether a distress route
+            #  reaches a human is worth nothing to the person acting on it.
+            _by = str(_r["reviewed_by"]).lower()
+            for _bad in ("the platform", "workstation", "automated", "agent", "ai "):
+                assert _bad not in _by, ("the platform is named as the reviewer of a distress route", _by)
     #  and a non-distress text gets no statement rather than a reassuring one
     assert _g.clinical_care_gate("what is the weather today")["statement"] is None
 
@@ -32898,7 +32914,17 @@ def test_w551_three_gates_refuse_state_their_limits_and_name_no_number(client):
             f"fabricated helpline is the one fabrication no later correction reaches", _hits[:5])
     #  and no service name is offered in place of a number either
     _gsrc = (_root / "agentic_core/gaas/v5/horizon_guardrails.py").read_text(encoding="utf-8")
-    assert _g.DISTRESS_ROUTES == (), ("a distress route is hard-coded in the module", _g.DISTRESS_ROUTES)
+    #  NOT HARD-CODED — LOADED. The module may hold no route of its own: it reads them from
+    #  distress_routes.json, which is also why the digit leg above keeps its full strength over all three
+    #  files rather than being narrowed. A route written into the module would carry an ISO check-date,
+    #  which IS a dash-separated digit run, so the two requirements would have been in direct conflict.
+    _mod_src = (_root / "agentic_core/gaas/v5/horizon_guardrails.py").read_text(encoding="utf-8")
+    assert "_load_routes()" in _mod_src and "DISTRESS_ROUTES, _ROUTES_LOAD_BASIS" in _mod_src, (
+        "the module no longer loads its routes from data")
+    assert not re.search(r"DISTRESS_ROUTES\s*(?::[^=]*)?=\s*\(\s*\{", _mod_src), (
+        "a distress route is written into the module rather than loaded")
+    #  and the loader never raises: an absent file, an unreadable one and an empty list are three states
+    assert _g._load_routes()[1], "the loader returns no basis for what it found"
 
     # ── L6. THE GATES ARE ATTACHED TO THE INTERCEPTOR, NOT BESIDE IT ────────────────────────────
     #  The item's own words. A guardrail a caller has to remember to ask for is not on the path, so this
@@ -32936,8 +32962,20 @@ def test_w551_three_gates_refuse_state_their_limits_and_name_no_number(client):
     for _gate in _j["gates"]:
         assert (_gate["limit"] or "").strip(), (_gate["gate"], "no limit on the surface")
         assert _gate["certifies_absence"] is False, _gate
-    assert _j["distress_routes"] is None and _j["distress_routes_supplied"] is False, _j
-    assert "NOT SUPPLIED" in _j["distress_routes_basis"], _j["distress_routes_basis"]
+    #  THREE-STATE, and the API must agree with the gate rather than reading the constant round the back.
+    assert _j["distress_routes_supplied"] is (_j["distress_routes"] is not None), _j
+    assert _j["distress_routes_state"] in ("NOT_SUPPLIED", "SUPPLIED_STALE", "SUPPLIED_FRESH"), _j
+    if _j["distress_routes"] is None:
+        assert "NOT SUPPLIED" in _j["distress_routes_basis"], _j["distress_routes_basis"]
+        assert _j["distress_routes_state"] == "NOT_SUPPLIED", _j
+    else:
+        for _r in _j["distress_routes"]:
+            for _f in ("route", "reviewed_by", "checked_on", "jurisdiction"):
+                assert str(_r.get(_f) or "").strip(), (_f, "the API publishes a route without it", _r)
+        #  a route for one named place must not report that it covers everywhere
+        if not _j["distress_routes_cover_anywhere"]:
+            assert _j["distress_routes_jurisdictions"], (
+                "no jurisdiction is named and the route does not claim to cover everywhere", _j)
     assert _j["escalation_defaults_on_when_undecidable"] is True, _j
     #  the canon's refusals are restated unrelaxed, including A.9.5
     _unchanged = " ".join(_j["unchanged_refusals"]).lower()
@@ -34861,9 +34899,14 @@ def test_w564_a_distress_route_arrives_with_its_reviewer_or_it_does_not_arrive(c
     _T = _dt564.date(2026, 1, 1)                     # a fixed today: the rule is about ages, not now
 
     # ── L1. STILL NOTHING SUPPLIED, AND THE READER SAYS SO IN THREE STATES ────────────────────────
-    assert _g564.DISTRESS_ROUTES == (), ("a distress route is hard-coded in the module",
-                                         _g564.DISTRESS_ROUTES)
-    _none = _g564.distress_routes(_T)
+    #  THE ROUTE IS LOADED, NOT HARD-CODED — and this leg asserted it was EMPTY, so it would have gone
+    #  red the moment the Owner supplied one: a guard failing on success, which is the shape this very
+    #  test was written to police. The property is that the module writes no route of its own.
+    _msrc = (_root / "agentic_core/gaas/v5/horizon_guardrails.py").read_text(encoding="utf-8")
+    assert not _re564.search(r"DISTRESS_ROUTES\s*(?::[^=]*)?=\s*\(\s*\{", _msrc), (
+        "a distress route is written into the module rather than loaded from data")
+    #  the NOT_SUPPLIED arm is driven with an explicitly empty input, not by hoping none is supplied
+    _none = _g564.distress_routes(_T, ())
     assert _none["state"] == _g564.NOT_SUPPLIED, _none["state"]
     #  None, never []. An empty list on a surface reads as "nothing was needed here".
     assert _none["routes"] is None, ("an empty list came back where an unfilled field belongs",
@@ -34959,10 +35002,22 @@ def test_w564_a_distress_route_arrives_with_its_reviewer_or_it_does_not_arrive(c
     # ── L6. THE GATE CARRIES THE STATE, NOT JUST THE LIST ────────────────────────────────────────
     _d = _g564.clinical_care_gate("i want to kill myself")
     assert _d["escalate"] is True and _d["withhold_ai_counsel"] is True, _d
-    assert _d["human_routes"] is None, ("the gate offered a route", _d["human_routes"])
-    assert _d["human_routes_state"] == _g564.NOT_SUPPLIED, _d.get("human_routes_state")
-    assert _d["human_routes_stale_count"] == 0, _d.get("human_routes_stale_count")
-    assert "NOT SUPPLIED" in _d["human_routes_basis"], _d["human_routes_basis"]
+    #  THREE-STATE SINCE W566. This asserted the gate offered NO route, which would have failed the
+    #  moment the Owner supplied one — and supplying one is the whole point of the mechanism.
+    assert _d["human_routes_state"] in (_g564.NOT_SUPPLIED, _g564.SUPPLIED_STALE,
+                                        _g564.SUPPLIED_FRESH), _d.get("human_routes_state")
+    if _d["human_routes"] is None:
+        assert _d["human_routes_state"] == _g564.NOT_SUPPLIED, _d.get("human_routes_state")
+        assert _d["human_routes_stale_count"] == 0, _d.get("human_routes_stale_count")
+        assert "NOT SUPPLIED" in _d["human_routes_basis"], _d["human_routes_basis"]
+    else:
+        #  a route reaching a person in distress carries who checked it, when, and where it answers
+        for _r in _d["human_routes"]:
+            for _f in ("route", "reviewed_by", "checked_on", "jurisdiction"):
+                assert str(_r.get(_f) or "").strip(), (_f, "a shown route lacks it", _r)
+        assert _d["human_routes_stale_count"] == sum(
+            1 for _r in _d["human_routes"] if _r.get("stale")), (
+            "the stale count disagrees with the routes' own stale flags", _d)
     #  and it still says plainly what it is
     assert "I am not a person" in (_d["statement"] or ""), _d["statement"]
 
@@ -35097,8 +35152,16 @@ def test_w564_a_distress_route_arrives_with_its_reviewer_or_it_does_not_arrive(c
     assert "NOTHING IS INFERRED FROM HOW THEY BEHAVED" in _p327, (
         "P3.27's bar states the option without the property that makes it checkable")
     _p323 = " ".join(_bar564("P3.23").split())
-    assert "ONE NAMED FOLDER" in _p323 and "THE RULING NAMES NO FOLDER" in _p323, (
-        "P3.23's bar does not carry both its terms and the input they are missing")
+    #  THE TERMS ARE STABLE; THE FOLDER'S STATUS IS NOT. This asserted the bar said "THE RULING NAMES NO
+    #  FOLDER" — true when written and false one round later, when the Owner named it. A guard that fails
+    #  on the thing being delivered, for the fourth time in one night. The property is that the bar states
+    #  the terms AND says which state the folder is in, never that it is permanently missing.
+    assert "ONE NAMED FOLDER" in _p323, (
+        "P3.23's bar no longer states the term that scopes the whole indexing permission")
+    assert ("THE RULING NAMES NO FOLDER" in _p323
+            or "THE FOLDER IS NAMED AND CREATED EMPTY" in _p323), (
+        "P3.23's bar says neither that its folder is missing nor that it has arrived, so a reader cannot "
+        "tell whether the bundle half may start", _p323[:160])
     assert "never counsel" in _p323, "P3.23's bar drops the not-legal-advice statement"
     _p324 = " ".join(_bar564("P3.24").split())
     assert "THE REFUSAL IS NOW CONFIRMED BY THE OWNER" in _p324, (
@@ -35331,3 +35394,228 @@ def test_w565_one_instrument_computes_the_round_cost_and_every_suite_figure_name
     _amounts = lambda r: [t["amount_wst"] for t in r["transfers"]]
     assert 50000.0 in _amounts(_rec) and 50000.0 in _amounts(_inflated), (
         "the receipt-based subject does not survive an unrelated credit, so this change bought nothing")
+
+
+def test_w566_the_supplied_distress_route_carries_its_reviewer_and_the_matter_has_one_jurisdiction(client):
+    """The two inputs only the Owner could give arrived (2026-10-03d). This asserts what arrived is held.
+
+    THE ASYMMETRY THIS TEST POLICES: while nothing was supplied, every leg asserted an ABSENCE and the
+    danger was a placeholder. Now something IS supplied and the danger inverts — a route nobody has
+    checked in years rendering as current, a reviewer that is the platform itself, a route for one country
+    shown to everyone, or a jurisdiction asserted by a literal with no source. The absence legs are
+    three-state so they cannot fail on the Owner having answered.
+    """
+    import datetime as _dt566
+    import json as _json566
+    import pathlib as _pl566
+    import re as _re566
+
+    from agentic_core.gaas.v5 import horizon_guardrails as _g566
+
+    _root = _pl566.Path(__file__).resolve().parents[1]
+
+    # ── L1. THE ROUTE IS SUPPLIED, VALID, AND CARRIES ALL FOUR REQUIRED FIELDS ───────────────────
+    _rt = _g566.distress_routes()
+    assert _rt["state"] in (_g566.NOT_SUPPLIED, _g566.SUPPLIED_STALE, _g566.SUPPLIED_FRESH), _rt["state"]
+    if _rt["state"] == _g566.NOT_SUPPLIED:
+        #  THREE-STATE: if the Owner withdraws the route this must still pass, and the absence must be
+        #  visible. What it may never be is empty-and-silent.
+        assert _rt["routes"] is None and "NOT SUPPLIED" in _rt["basis"], _rt
+        assert "WHY IT IS EMPTY" in _rt["basis"], (
+            "an empty route field does not say WHICH empty it is: no file, an unreadable file and an "
+            "empty list are three different states", _rt["basis"])
+    else:
+        assert _rt["routes"], _rt
+        for _r in _rt["routes"]:
+            for _f in ("route", "reviewed_by", "checked_on", "jurisdiction"):
+                assert str(_r.get(_f) or "").strip(), (_f, "a supplied route does not carry it", _r)
+            #  THE PLATFORM MAY NOT REVIEW A DISTRESS ROUTE. A software verdict on whether a route
+            #  reaches a human is worth nothing to the person acting on it.
+            _by = str(_r["reviewed_by"]).lower()
+            for _bad in ("platform", "workstation", "automated", "agent", "assistant", "ai "):
+                assert _bad not in _by, (
+                    "the platform is named as the reviewer of a distress route", _r["reviewed_by"])
+            #  and the check date is a real past date, so staleness is computable
+            _d = _dt566.date.fromisoformat(str(_r["checked_on"]))
+            assert _d <= _dt566.date.today(), ("a route is checked in the future", _r)
+
+    # ── L2. THE ROUTE IS DATA, THE MODULE IS CODE, AND NOTHING ON THE PATH IS DIALABLE ───────────
+    #  Not tidiness: the module is covered by a leg forbidding any digit sequence a person could read as
+    #  a number to dial, and an ISO CHECK-DATE IS ONE. A route written into the module would either trip
+    #  that leg or arrive without the date that lets it go stale. In data it carries both, and the leg
+    #  keeps its FULL strength over all three files rather than being narrowed.
+    _msrc = (_root / "agentic_core/gaas/v5/horizon_guardrails.py").read_text(encoding="utf-8")
+    assert not _re566.search(r"DISTRESS_ROUTES\s*(?::[^=]*)?=\s*\(\s*\{", _msrc), (
+        "a distress route is written into the module rather than loaded from data")
+    assert "_load_routes()" in _msrc, "the module no longer loads its routes"
+    _NUMBERISH = _re566.compile(r"(?:\+?\d[\d\s().-]{6,}\d)|(?:\b\d{4,}\b)")
+    for _rel in ("agentic_core/gaas/v5/horizon_guardrails.py",
+                 "agentic_core/api/horizon.py",
+                 "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx"):
+        _hits = [m.group(0) for m in _NUMBERISH.finditer((_root / _rel).read_text(encoding="utf-8"))]
+        assert not _hits, (f"{_rel} holds a digit sequence a person in distress could read as a number to "
+                           f"dial", _hits[:5])
+    #  the data file's own shape: the DRAFTER and the REVIEWER are separate facts
+    _rf = _root / "agentic_core/gaas/v5/distress_routes.json"
+    if _rf.exists():
+        _raw = _json566.loads(_rf.read_text(encoding="utf-8"))
+        for _r in _raw.get("routes") or []:
+            assert "platform" not in str(_r.get("reviewed_by", "")).lower(), _r
+            if "drafted by the platform" in str(_r).lower() or "drafted_by" in _r:
+                assert str(_r.get("drafted_by") or "").strip(), (
+                    "the platform's drafting is implied somewhere other than `drafted_by`; conflating the "
+                    "drafter with the reviewer is what the reviewer field exists to prevent", _r)
+    #  AND EVERY RECORD THE FILE LISTS IS ACCEPTED. Added after a blind came back VACUOUS: dropping a
+    #  record's check date makes `accept_route` refuse it, the field falls to NOT_SUPPLIED, and the
+    #  three-state leg above correctly passes — so nothing asserted that a route the Owner DID supply
+    #  reaches anyone. "Nothing supplied" and "supplied, refused and silently dropped" are different
+    #  states, and the second is the one the Owner would want to hear about.
+    if _rf.exists():
+        _listed = [r for r in (_raw.get("routes") or []) if isinstance(r, dict)]
+        if _listed:
+            assert len(_rt["routes"] or []) == len(_listed), (
+                f"{len(_listed)} route(s) are supplied in the data file and "
+                f"{len(_rt['routes'] or [])} were accepted — the Owner supplied something that did not "
+                f"land, and the surface shows it as though nothing had been supplied",
+                _rt["refused"])
+            assert not _rt["refused"], ("a supplied route was refused", _rt["refused"])
+    #  AND THE LOADER NEVER RAISES. Three distinct empties, each with its own reason.
+    assert _g566._load_routes()[1], "the loader reports no basis for what it found"
+
+    # ── L3. ONE READER: THE API AND THE GATE AGREE ───────────────────────────────────────────────
+    #  The API read `DISTRESS_ROUTES` raw, so it would have published a record `accept_route` refuses and
+    #  could not tell a fresh route from one nobody has checked in years. A second reader going round the
+    #  back is how one field comes to say two different things.
+    _api = client.get("/api/v1/horizon/guardrails")
+    assert _api.status_code == 200, _api.status_code
+    _j = _api.json()
+    assert _j["distress_routes_state"] == _rt["state"], (
+        "the API and the validator disagree about the route's state", _j["distress_routes_state"],
+        _rt["state"])
+    assert _j["distress_routes_stale_count"] == _rt["stale_count"], _j
+    assert _j["distress_routes_cover_anywhere"] == _rt["covers_anywhere"], _j
+    assert _j["distress_routes_refused"] == _rt["refused"], _j["distress_routes_refused"]
+    #  AND IT IS DERIVED, NOT MERELY EQUAL. A blind that hard-coded SUPPLIED_FRESH and read the constant
+    #  raw came back VACUOUS, because today's real route IS fresh and IS in the constant — the two
+    #  agreed by luck. Comparing two values that happen to match does not test that one comes from the
+    #  other, so the call is asserted at the site and the raw read is forbidden.
+    _apisrc = (_root / "agentic_core/api/horizon.py").read_text(encoding="utf-8")
+    assert "_g.distress_routes()" in _apisrc, "the API does not call the validator"
+    assert "list(_g.DISTRESS_ROUTES)" not in _apisrc, (
+        "the API reads the route constant raw again, so it would publish a record accept_route refuses "
+        "and could not tell a fresh route from one nobody has checked in years")
+    _gate = _g566.clinical_care_gate("i want to end my life")
+    assert _gate["human_routes_state"] == _rt["state"], (
+        "the gate and the API disagree about the route's state", _gate["human_routes_state"])
+    #  the gate escalates AND still says what the platform is, route or no route
+    assert _gate["escalate"] is True and _gate["withhold_ai_counsel"] is True, _gate
+    assert "not a person" in (_gate["statement"] or "").lower(), _gate["statement"]
+
+    # ── L4. THE PAGE SHOWS THREE STATES AND MARKS A STALE ROW ────────────────────────────────────
+    #  CHECKED IN SOURCE, and the limit is stated rather than hidden: no frontend test runner exists on
+    #  this platform (a registered row holds that), so this cannot DRIVE the page. It therefore asserts
+    #  structure that a two-state render could not have — the state is read, not a boolean.
+    _page = (_root / "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx"
+             ).read_text(encoding="utf-8")
+    _flat = " ".join(_page.split())
+    assert "distress_routes_state: 'NOT_SUPPLIED' | 'SUPPLIED_STALE' | 'SUPPLIED_FRESH'" in _flat, (
+        "the page's type no longer carries three states, so a stale route renders as current")
+    #  COUNTED, NOT MERELY PRESENT. The page names its state TWICE — once in `role`, once in `className`
+    #  — so a blind that changed only the colour decision left this assert green. A needle that appears
+    #  twice cannot be removed by mutating one occurrence.
+    assert _flat.count("g.distress_routes_state === 'SUPPLIED_FRESH'") >= 2, (
+        "the page reads its three-state field in fewer than two places; both the alert role and the "
+        "colour must come from the state, or a stale route renders emerald and fine",
+        _flat.count("g.distress_routes_state === 'SUPPLIED_FRESH'"))
+    assert "${g.distress_routes_supplied" not in _flat, (
+        "the page decides a rendered class from the supplied/not boolean. A route last confirmed years "
+        "ago IS supplied, so that renders it as current — which is what the check date exists to prevent")
+    assert "data-testid=\"horizon-routes-stale\"" in _flat, "the page has no stale banner"
+    assert "horizon-route-stale-row" in _flat, "the page does not mark the stale route itself"
+    assert "data-testid=\"horizon-routes-coverage\"" in _flat, (
+        "the page does not say where the route answers, so a route for one place is shown to everyone")
+
+    # ── L5. THE MATTER'S JURISDICTION HAS ONE HOME, WITH ITS BASIS AND A NAMED FALLBACK ──────────
+    #  It was a typed literal in ten templates plus the request default with no source anywhere — the
+    #  same class W565 removed from the suite constant. Here the fix is harder to see, because the
+    #  literal was CORRECT: a right answer with no provenance is still unfalsifiable.
+    from agentic_core.api import law as _law566
+    _mf = _root / "agentic_core/legal/matter.json"
+    assert _mf.exists(), "the matter's configuration has no home"
+    _m = _json566.loads(_mf.read_text(encoding="utf-8"))
+    assert str(_m.get("jurisdiction") or "").strip(), _m
+    _basis = str(_m.get("jurisdiction_basis") or "")
+    assert len(_basis) > 200, ("the jurisdiction carries no real basis", _basis[:120])
+    for _frag in ("ACAS", "Employment Tribunal", "Northern Ireland"):
+        assert _frag in _basis, (_frag, "the basis does not say how the jurisdiction was established")
+    #  AND IT SAYS WHAT IT DOES NOT ESTABLISH. A basis that only supports its conclusion is advocacy.
+    #  THE SENTENCE, NOT THE WORD. "Scotland" appears twice in the basis, so asserting the word left a
+    #  blind that deleted the limiting sentence entirely still green.
+    assert "WHAT THIS DOES NOT ESTABLISH" in _basis, (
+        "the basis no longer says what it CANNOT establish. A basis that only supports its own "
+        "conclusion is advocacy: the corpus rules Northern Ireland out and genuinely cannot separate "
+        "England & Wales from Scotland, and saying so is what makes the inference checkable")
+    assert "SCOTLAND" in _basis.upper(), _basis[:0]
+    assert _law566._MATTER_JURISDICTION == _m["jurisdiction"], (
+        "the API's default and the one home disagree", _law566._MATTER_JURISDICTION)
+    #  ASSERTED AT THE SITE. A blind that put the literal back in `AnalyseRequest` came back VACUOUS,
+    #  because it did not touch `_MATTER_JURISDICTION` — the module-level name still matched the file
+    #  while the request default no longer read it. The property is that the REQUEST reads the one home.
+    _lawsrc = (_root / "agentic_core/api/law.py").read_text(encoding="utf-8")
+    assert "jurisdiction: str = _MATTER_JURISDICTION" in _lawsrc, (
+        "the request default is a typed literal again. The literal may even be CORRECT, and a right "
+        "answer with no provenance is still unfalsifiable: nobody can check it and a later round in "
+        "another jurisdiction cannot find what to change")
+    assert _law566._MATTER_JURISDICTION_BASIS == _basis, "the API publishes a different basis"
+    #  the fallback is NAMED as a fallback, so a config failure cannot look like a measurement
+    #  BOTH FALLBACKS, counted. There are two returns — one for a file with no jurisdiction, one for a
+    #  file that cannot be read — and a blind that stripped the word from ONE left this assert green.
+    _fb = _lawsrc.count('return ("England & Wales"')
+    assert _fb >= 2, ("law.py no longer has both fallback paths", _fb)
+    assert _lawsrc.count("FALLBACK") >= _fb, (
+        f"{_fb} fallback path(s) and only {_lawsrc.count('FALLBACK')} announce themselves. An unreadable "
+        f"config must not present its fallback as a measured jurisdiction — the word is the whole "
+        f"difference between a stated assumption and a silent one")
+    #  the templates endpoint publishes the matter's jurisdiction AND its basis
+    _tj = client.get("/api/v1/law/templates")
+    if _tj.status_code == 200:
+        _tb = _tj.json()
+        assert _tb.get("matter_jurisdiction") == _m["jurisdiction"], _tb.get("matter_jurisdiction")
+        assert (_tb.get("matter_jurisdiction_basis") or "").strip(), (
+            "the surface publishes a jurisdiction with no basis beside it")
+
+    # ── L6. THE BUNDLE GATE MEASURES THE FOLDER AND IS NOT AN OWNER SWITCH ──────────────────────
+    #  No row was opened for the folder being empty, and that is only defensible because the condition
+    #  is MEASURED rather than remembered. If this flag ever means "the Owner approved indexing", the
+    #  approval and the readiness have been conflated and an empty folder could authorise a read.
+    assert str(_m.get("bundle_dir") or "").strip(), "no bundle folder is named"
+    assert "bundle_indexing_may_start" in _m, "nothing records whether there is anything to index"
+    _bb = str(_m.get("bundle_indexing_basis") or "")
+    assert "NOT an Owner switch" in _bb, (
+        "the bundle flag does not state that it is a measurement of the folder rather than an approval",
+        _bb[:140])
+    assert "never" in _m and isinstance(_m["never"], list) and len(_m["never"]) >= 4, _m.get("never")
+    _nv = " ".join(_m["never"]).lower()
+    for _frag in ("outside bundle_dir", "leaves this machine", "settlement range"):
+        assert _frag in _nv, (_frag, "the matter's refusals are incomplete", _m["never"])
+
+    # ── L7. THE THREE DECISIONS ARE RECORDED AS CONSTITUTION ─────────────────────────────────────
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _h = " OWNER RULINGS 2026-10-03d (THREE, and they CLOSE BOTH OUTSTANDING OWNER INPUTS"
+    assert _prompt.count(_h) == 1, ("the decisions of 2026-10-03d are not in the plan", _prompt.count(_h))
+    _blk = " ".join(_prompt.split(_h)[1][:7000].split())
+    for _frag in ("THE DISTRESS ROUTE IS SUPPLIED",
+                  "THE JURISDICTION IS ENGLAND & WALES, INFERRED AND CONFIRMED",
+                  "THE BUNDLE FOLDER IS NAMED, CREATED, AND EMPTY"):
+        assert _frag in _blk, ("a decision is missing from the block", _frag)
+    #  AND THE LESSON IS RECORDED, not just the outcome: two thirds of what was asked for could have been
+    #  measured or drafted first and put as a choice.
+    assert "ASKING IS NOT THE SAME AS BEING BLOCKED" in _blk, (
+        "the block records the three answers without the lesson that two of them were not the Owner's to "
+        "supply in the first place")
+    #  no row is left waiting on the Owner, and if one is it must be gated
+    _reg = _json566.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    for _r in _reg["items"]:
+        if _r.get("status") == "open" and _r.get("slot") == "OWNER":
+            assert _r.get("owner_gated") is True, (
+                _r["id"], "a row awaits the Owner and is not gated, so a round could schedule it")

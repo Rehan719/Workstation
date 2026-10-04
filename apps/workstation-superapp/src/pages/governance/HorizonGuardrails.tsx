@@ -49,9 +49,16 @@ interface Seam {
 
 interface Guardrails {
   gates: Gate[];
-  distress_routes: Array<Record<string, string>> | null;
+  distress_routes: Array<Record<string, string | number | boolean>> | null;
   distress_routes_supplied: boolean;
   distress_routes_basis: string;
+  // THREE STATES, not two. A route last confirmed years ago is SUPPLIED, so a boolean alone renders it
+  // as current — which is exactly what the required check date exists to prevent.
+  distress_routes_state: 'NOT_SUPPLIED' | 'SUPPLIED_STALE' | 'SUPPLIED_FRESH';
+  distress_routes_stale_count: number;
+  distress_routes_jurisdictions: string[];
+  distress_routes_cover_anywhere: boolean;
+  distress_routes_refused: string[];
   not_a_person_statement: string;
   escalation_defaults_on_when_undecidable: boolean;
   basis: string;
@@ -107,19 +114,36 @@ export const HorizonGuardrails: React.FC = () => {
         <>
           {/* THE DISTRESS ROUTE FIELD, FIRST AND UNMISSABLE. Empty renders as empty. */}
           <section
-            role={g.distress_routes_supplied ? undefined : 'alert'}
+            role={g.distress_routes_state === 'SUPPLIED_FRESH' ? undefined : 'alert'}
             data-testid="horizon-distress-routes"
-            className={`rounded-2xl p-6 border-2 ${g.distress_routes_supplied
+            data-route-state={g.distress_routes_state}
+            className={`rounded-2xl p-6 border-2 ${g.distress_routes_state === 'SUPPLIED_FRESH'
               ? 'border-emerald-500/40 bg-emerald-500/5'
               : 'border-amber-500/60 bg-amber-500/10'}`}
           >
             <h2 className="text-sm font-black uppercase tracking-widest text-amber-400 mb-3">
               Human distress route
             </h2>
-            {g.distress_routes_supplied && g.distress_routes ? (
+            {g.distress_routes_state === 'SUPPLIED_STALE' && (
+              /* A STALE ROUTE IS SHOWN, AND SHOWN AS STALE. Withholding it would leave a person with
+                 nothing; showing it as current would tell them someone had checked. Both are wrong, so
+                 it is shown with the fact. */
+              <p
+                data-testid="horizon-routes-stale"
+                className="text-xl font-black text-amber-400 uppercase tracking-wide mb-3"
+              >
+                Last checked too long ago — {g.distress_routes_stale_count} of{' '}
+                {g.distress_routes?.length ?? 0} route(s) may have changed since anyone confirmed them
+              </p>
+            )}
+            {g.distress_routes && g.distress_routes.length > 0 ? (
               <ul className="space-y-2">
                 {g.distress_routes.map((r, i) => (
-                  <li key={i} className="text-slate-200 font-bold">
+                  <li
+                    key={i}
+                    data-testid={r.stale ? 'horizon-route-stale-row' : 'horizon-route-row'}
+                    className={r.stale ? 'text-amber-300 font-bold' : 'text-slate-200 font-bold'}
+                  >
                     {Object.entries(r).map(([k, v]) => `${k}: ${v}`).join(' · ')}
                   </li>
                 ))}
@@ -133,6 +157,17 @@ export const HorizonGuardrails: React.FC = () => {
                     wording of this field is a second place a placeholder could appear. */}
                 <p className="text-slate-300 font-bold leading-relaxed">{g.distress_routes_basis}</p>
               </>
+            )}
+            {g.distress_routes && g.distress_routes.length > 0 && (
+              /* WHERE IT ANSWERS. A route for one named place shown to someone outside it sends them
+                 somewhere instead of telling them the truth, so the coverage is on the surface. */
+              <p data-testid="horizon-routes-coverage" className="text-slate-400 text-xs font-bold mt-3">
+                {g.distress_routes_cover_anywhere
+                  ? 'Reviewed as correct wherever the person is: it names no specific service.'
+                  : `Reviewed for ${g.distress_routes_jurisdictions.join(', ')} only — a person outside` +
+                    ' that is not covered by this route.'}
+                {' '}{g.distress_routes_basis}
+              </p>
             )}
           </section>
 

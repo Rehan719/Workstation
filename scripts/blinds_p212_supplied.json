@@ -1,0 +1,119 @@
+[
+  {
+    "tag": "the platform becomes the reviewer of a distress route",
+    "file": "agentic_core/gaas/v5/distress_routes.json",
+    "old": "\"reviewed_by\": \"Rehan (Owner)\",",
+    "new": "\"reviewed_by\": \"the platform (automated review)\",",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L1, and it is the single most important property of the whole mechanism. A software verdict on whether a distress route reaches a human is worth nothing to the person acting on it — the reviewer field exists precisely so a HUMAN stands behind the route. This round already proved the leg is live: the first version of the data file put 'wording drafted by the platform' inside reviewed_by and the guard correctly refused it, which is why the drafter is now a separate field."
+  },
+  {
+    "tag": "a supplied route loses its check date, so it can never go stale",
+    "file": "agentic_core/gaas/v5/distress_routes.json",
+    "old": "\"checked_on\": \"2026-10-03\",",
+    "new": "",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L1. A route that cannot go stale is trusted forever, and `accept_route` refuses a record without the date — so dropping it makes the whole field read NOT SUPPLIED rather than silently publishing an undateable route. Both outcomes are caught: the field is required, and the state must agree with what was accepted."
+  },
+  {
+    "tag": "a route is written into the module, where its date is a dialable digit run",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "DISTRESS_ROUTES, _ROUTES_LOAD_BASIS = _load_routes()",
+    "new": "DISTRESS_ROUTES: Tuple[Dict[str, str], ...] = ({\"route\": \"ask a human\", \"reviewed_by\": \"a body\",\n                                                \"checked_on\": \"an old date\",\n                                                \"jurisdiction\": \"ANY\"},)\n_ROUTES_LOAD_BASIS = \"inlined\"",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L2, and the conflict is structural rather than stylistic: the module is covered by a leg forbidding any digit sequence a person could read as a number to dial, and an ISO check-date IS one. So a route written here must either trip that leg or arrive without the date that lets it go stale — which is why the mutation above has to use a FAKE date to be syntactically plausible at all. Keeping the route in data resolves both requirements and leaves the digit leg at full strength over all three files."
+  },
+  {
+    "tag": "the loader raises instead of reporting which empty it found",
+    "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+    "old": "except Exception as _e:                      # noqa: BLE001 — a malformed file must not break a gate\n        return (), (f\"{_ROUTES_FILE.name} could not be read ({type(_e).__name__}), so NO route is shown. \"",
+    "new": "except Exception as _e:\n        raise",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L2. A gate that failed because a configuration file was malformed would be the worst possible trade on this path: the person in distress gets a 500 instead of a statement that the platform is not a person. An absent file, an unreadable one and an empty list are three different states and each must yield a basis, never an exception."
+  },
+  {
+    "tag": "the API reads the constant round the back of the validator again",
+    "file": "agentic_core/api/horizon.py",
+    "old": "    _rt = _g.distress_routes()",
+    "new": "    _rt = {\"routes\": list(_g.DISTRESS_ROUTES) or None, \"basis\": _g.DISTRESS_ROUTES_BASIS,\n           \"state\": \"SUPPLIED_FRESH\", \"stale_count\": 0, \"jurisdictions\": [], \"covers_anywhere\": True,\n           \"refused\": []}",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L3, and the mutation is the exact code that was there before W566 — it publishes whatever the constant holds without passing it through `accept_route`, and hard-codes SUPPLIED_FRESH, so a route nobody has checked in years would be published as current with no jurisdiction. A second reader going round the back of the validator is how one field comes to say two different things on two surfaces. CORRECTED AFTER IT CAME BACK VACUOUS: the first version hard-coded SUPPLIED_FRESH and today's real route IS fresh and IS in the constant, so the mutated API agreed with the validator BY LUCK. The leg now asserts the CALL SITE, so this mutation removes it."
+  },
+  {
+    "tag": "the page decides its colour from a boolean again, so a stale route renders green",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx",
+    "old": "            className={`rounded-2xl p-6 border-2 ${g.distress_routes_state === 'SUPPLIED_FRESH'",
+    "new": "            className={`rounded-2xl p-6 border-2 ${g.distress_routes_supplied",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L4. A route last confirmed years ago IS supplied, so a boolean renders it emerald-and-fine beside a sentence claiming each route carries a check date. Staleness that only the API knows is staleness nobody sees, and the person reading the page is the one who would act on it."
+  },
+  {
+    "tag": "the page stops marking the stale route itself",
+    "file": "apps/workstation-superapp/src/pages/governance/HorizonGuardrails.tsx",
+    "old": "                    data-testid={r.stale ? 'horizon-route-stale-row' : 'horizon-route-row'}",
+    "new": "                    data-testid=\"horizon-route-row\"",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L4. The banner says how MANY are stale; without a per-row mark a reader cannot tell WHICH, so with two routes they must guess — and a person in distress guessing between a current route and a stale one is the failure this field exists to prevent."
+  },
+  {
+    "tag": "the jurisdiction goes back to a typed literal with no source",
+    "file": "agentic_core/api/law.py",
+    "old": "    jurisdiction: str = _MATTER_JURISDICTION",
+    "new": "    jurisdiction: str = \"England & Wales\"",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L5, and it is the hardest defect in this round to see, because THE LITERAL IS CORRECT. A right answer with no provenance is still unfalsifiable: nobody can check it, nobody can find where it came from, and a later round in a different jurisdiction has no way to know what to change. It was this literal in ten templates plus the request default with no source anywhere — the same class W565 removed from the suite constant."
+  },
+  {
+    "tag": "the jurisdiction's basis stops saying what it cannot establish",
+    "file": "agentic_core/legal/matter.json",
+    "old": "WHAT THIS DOES NOT ESTABLISH: England & Wales versus SCOTLAND.",
+    "new": "The jurisdiction is settled.",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L5. A basis that only supports its own conclusion is advocacy, not evidence. The corpus rules Northern Ireland out and genuinely CANNOT separate England & Wales from Scotland — both use the Employment Tribunal and the ACAS Code. Saying so is what makes the inference checkable and tells a later round exactly which part is an assumption."
+  },
+  {
+    "tag": "the fallback jurisdiction stops announcing itself as a fallback",
+    "file": "agentic_core/api/law.py",
+    "old": "        return (\"England & Wales\",\n                \"FALLBACK: matter.json records no jurisdiction. This is the historical literal, not a \"",
+    "new": "        return (\"England & Wales\",\n                \"matter.json records no jurisdiction. This is the historical literal, not a \"",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L5. If the config cannot be read, the surface must not present the fallback as a measured jurisdiction — that is a figure carrying the name of something it did not measure, which is this programme's central defect class. The word FALLBACK is the whole difference between a stated assumption and a silent one."
+  },
+  {
+    "tag": "the bundle flag becomes an Owner approval instead of a measurement",
+    "file": "agentic_core/legal/matter.json",
+    "old": "This flag is NOT an Owner switch and must never be flipped to mean 'the Owner approved indexing'",
+    "new": "This flag records that the Owner approved indexing",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L6, and this leg is the only thing making it defensible that NO ROW was opened for the folder being empty. The flag measures the FOLDER; the approval was given in 2026-10-03c. Conflate them and an empty folder could authorise a read, or worse, a populated folder could be read on the strength of a flag nobody set deliberately."
+  },
+  {
+    "tag": "the record of the decisions drops the lesson and keeps only the answers",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "ASKING IS NOT THE SAME AS BEING\n      BLOCKED, and a question that could have been a recommendation is a round spent.",
+    "new": "Both inputs have now arrived.",
+    "selector": "w566",
+    "expect": "BLIND(red)",
+    "why": "L7. Of the three decisions, only ONE was data the Owner alone held: the wording was drafted and chosen, the jurisdiction was inferred and confirmed, the folder was proposed and accepted. Three rounds were spent asking for input that two thirds of could have been measured or drafted first and put as a choice. A block that records the answers without that lesson teaches the next round to ask again."
+  },
+  {
+    "tag": "a bar that has been satisfied is asserted as permanently unsatisfied",
+    "file": "integration_tests/test_mvp_spine.py",
+    "old": "    assert (\"THE RULING NAMES NO FOLDER\" in _p323\n            or \"THE FOLDER IS NAMED AND CREATED EMPTY\" in _p323), (",
+    "new": "    assert \"THE RULING NAMES NO FOLDER\" in _p323, (",
+    "selector": "w564",
+    "expect": "BLIND(red)",
+    "why": "THE ROUND'S OWN RED SUITE, recorded as a blind so it cannot return. W564's leg asserted P3.23's bar said 'THE RULING NAMES NO FOLDER' — true when written and false one round later, when the Owner named the folder. A guard that fails on the thing being delivered, for the FOURTH time in one night and the second in a guard written the round before. The terms are stable and the folder's STATUS is not, so the leg now accepts either honest state and refuses only a bar that says neither."
+  }
+]
