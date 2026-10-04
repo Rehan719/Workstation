@@ -1,0 +1,83 @@
+[
+ {
+  "tag": "the key screen stops using the third surface kind",
+  "file": "scripts/selfcheck_diff.py",
+  "old": "                _resp = _route_response_surface(f, key, ln)",
+  "new": "                _resp = None",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "The helper keeps working and NOTHING CALLS IT — a guard that proves a function correct and not that anything uses it. Nine keys on page-less routes would go back to reporting as reaching no surface at all, which is a true statement about pages and a false conclusion about readers. This is why the wiring has a leg of its own, driven through check_keys."
+ },
+ {
+  "tag": "the route composition drops its mount prefix",
+  "file": "scripts/selfcheck_diff.py",
+  "old": "            return (mount + rp + own) or None",
+  "new": "            return (rp + own) or None",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "Every v310 route would resolve to /governance/treasury instead of /api/v310/governance/treasury, so the screen names a route that does not exist and the frontend grep for it finds nothing — turning every such key into a FALSE surface, which the file itself says is worse than a missed one because it makes the screen CLEAR something. Caught by comparing the static composition against the app's own route table."
+ },
+ {
+  "tag": "a route a page DOES fetch is offered as its own surface",
+  "file": "scripts/selfcheck_diff.py",
+  "old": "        if p.endswith((\".tsx\", \".mjs\")) or (p.endswith(\".ts\") and not p.endswith(\".d.ts\")):\n            return None                      # a page fetches it: the page is the surface, or nothing is",
+  "new": "        if p.endswith((\".never\",)):\n            return None                      # a page fetches it: the page is the surface, or nothing is",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "THE DANGEROUS DIRECTION. The screen would clear every key on every route, because a response always 'contains' it — a key that a real page fails to render is the actual defect and would become invisible. The discrimination is the whole safety of this surface kind."
+ },
+ {
+  "tag": "the screen stops flagging a count over OPEN rows",
+  "file": "scripts/selfcheck_diff.py",
+  "old": "_PIN_OPENCOUNT = re.compile(r\"len\\(.*?[\\\"']open[\\\"'].*?\\)\\s*(>=|==|>|<=)\\s*\\d+\")",
+  "new": "_PIN_OPENCOUNT = re.compile(r\"(?!x)x\")",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "The shape that went red in W577 for real: test_w562 required at least ten OPEN rows on P2.18, so every row the item closed pushed it toward the bound and the guard failed on the item progressing. It is the one instance of this class a round has actually paid for twice."
+ },
+ {
+  "tag": "the fixture lookback goes, so a correct assertion is flagged",
+  "file": "scripts/selfcheck_diff.py",
+  "old": "            if any(re.search(r\"\\b\" + re.escape(v) + r\"\\b\", subject) for v in fixture_vars):\n                continue",
+  "new": "            if False and fixture_vars:\n                continue",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "A slot id the test WROTE INTO ITS OWN INPUT cannot be moved by the plan. W577 measured four such assertions and a sweep acting on them would have rewritten all four; this suite has exactly this case in test_w562. A screen that flags correct code is worse than no screen, because the next round believes it. (`if False and ...` leaves the condition's text intact, so the leg must assert the BEHAVIOUR — which it does, by driving the screen.)"
+ },
+ {
+  "tag": "an ordinal settled by a size assertion is flagged anyway",
+  "file": "scripts/selfcheck_diff.py",
+  "old": "                elif _PIN_ORDINAL.search(subject) and not any(abs(ln - s) <= 3 for s in sized):",
+  "new": "                elif _PIN_ORDINAL.search(subject):",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "`assert len(_av) == 1` before `_av[0]...` leaves no ordering to lose, so there is no tie-break to break. This repo has that exact pair, and flagging it would push a round to rewrite a correct assertion in the name of a class it does not belong to."
+ },
+ {
+  "tag": "the score's meaning goes back to reaching nobody",
+  "file": "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx",
+  "old": "      {data?.score_meaning && (",
+  "new": "      {false && data?.score_meaning && (",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "W503's class, and the gate's OPENING BRACE is what a disabling prefix displaces — the leg asserts `{data?.score_meaning && (` with the brace for exactly that reason. The per-insight basis says what ONE score is; only this says the ORDER of the list is not a ranking of anything measured."
+ },
+ {
+  "tag": "the page goes back to reading a field the route has never sent",
+  "file": "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx",
+  "old": "          {data?.total_projects != null ? (",
+  "new": "          {data?.portfolio_size != null ? (",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT: `portfolio_size` is never sent, so the provenance chip gated on it had NEVER ONCE RENDERED. The class W489 fixed in this same file when it found three other fields the API never sends — it corrected three and left two."
+ },
+ {
+  "tag": "a crash stops saying that nothing was counted",
+  "file": "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx",
+  "old": "          ) : data?.error ? (\n            <span data-testid=\"insights-provenance-unknown\"",
+  "new": "          ) : data?.errorX ? (\n            <span data-testid=\"insights-provenance-absent\"",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "On the crash branch total_projects is null, and null is NOT zero: a count of 0 renders as 'you have no projects', which is the whole untruth FU-323 was about. Without this branch a reader cannot tell an unread portfolio from an empty one — the same defect arriving by a second route."
+ }
+]

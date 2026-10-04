@@ -6470,11 +6470,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W578",
       "note": "",
       "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The pre-flight screen this row asked for is built and registered as 'planpins': it flags a slot asserted ABSENT/OPEN/BLOCKED, a set of slots compared by equality, an unsettled ordinal, and a COUNT over rows filtered to open - the last being the shape that went red in W577 for real. THE SWEEP THIS ROW ALSO ASKED FOR WAS RUN AND FOUND ZERO: 25 assertions hold a plan-slot literal, 4 match a risky shape, and on reading all four are false positives, so acting on them would have rewritten four correct assertions. Every real instance to date was found by being bitten (w510, w500b, the W575 tolerant-loader guard in W577, and two in test_w562). That is why the screen reads a round's OWN ADDED LINES and why its five exemptions - plan order, a subset of done, a literal in the message, a fixture the test built, and provenance - are the measured false positives rather than caution. The fixture rule looks across the added set because the real case constructs the variable above and asserts below."
     },
     {
       "id": "FU-366",
@@ -7086,11 +7089,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W578",
       "note": "",
       "slot_source": "P2.18 clause (a) is 'an absence reaches the reader' and this is its mirror: a qualifier that reaches no reader. Found inside clause (a)'s own work.",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DECISION, which the row required be stated: RENDER. score_meaning is shown once beside the list, because it carries the AGGREGATE fact no per-insight basis states - three of four scores are fixed constants and the fourth only scales with the project count, so the ORDER of the list is not a ranking of anything measured. The row's premise was partly stale and so was my own prep: score AND its per-insight score_basis are already rendered with the basis on hover (W489 did that), so the gap was only the response-level statement. Measuring the file also found the class W489 fixed IN IT still present: the page declared generated_at and portfolio_size, the route sends computed_at and total_projects and has never sent either, so the provenance chip gated on portfolio_size had NEVER ONCE RENDERED. Declaration now checked against the route by a driven leg in both directions, error no longer read through (data as any), and the crash branch says nothing was counted rather than rendering a zero that would read as 'you have no projects'."
     },
     {
       "id": "FU-395",
@@ -7128,10 +7134,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W578",
       "note": "",
-      "slot_source": "the instrument half of the same item: clause (b) is 'the suite's instruments prove what they claim', and the pre-flight is the instrument that screens every round"
+      "slot_source": "the instrument half of the same item: clause (b) is 'the suite's instruments prove what they claim', and the pre-flight is the instrument that screens every round",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The key screen has a THIRD surface kind: a route no frontend file fetches, whose own JSON response is the surface a person reads. Resolution is static (mount + router prefix + decorator path, composed from source) because this screen runs before every commit and must mutate nothing, and a suite leg cross-checks that composition against the app's real route table over 100+ live routes, asserting the disagreement ratio rather than trusting it. The discrimination is driven BOTH WAYS - the response is offered as the surface only when no page fetches the path, and the screen stays silent when one does, because a key a page that EXISTS fails to render is the real defect. Also fixed a blind spot the screen always had for its own registry: registering a screen adds a dict entry whose key is the screen's name, and the keys screen read that as a produced field; derived from the registry so it cannot go stale."
     },
     {
       "id": "FU-397",

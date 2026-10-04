@@ -318,6 +318,105 @@ def _cli_surfaces(candidates: set[str], key: str) -> set[str]:
     return found
 
 
+# ── route responses: the THIRD kind of surface ──────────────────────────────────────────────────────
+# W578 (FU-396) — a key produced by a route NO PAGE FETCHES still reaches a reader: through the route's
+# own JSON. The screen knew two kinds, a page and a printed line, so it reported nine such keys as
+# reaching NO SURFACE AT ALL. Each of those nine was a true statement about where no page is and a false
+# conclusion about whether anybody can read the key.
+#
+# STATIC resolution, deliberately. reach_audit.py imports the app to walk `app.routes`, which is exact
+# and touches the stores; this runs before every commit and must mutate nothing. A suite guard
+# cross-checks what is composed here against the real route table, so the exactness is proven elsewhere.
+_MOUNTS: dict | None = None
+
+
+def _route_mounts() -> dict:
+    """{module stem: mount prefix} from app_mvp.py's include_router calls, plus each router's own."""
+    global _MOUNTS
+    if _MOUNTS is not None:
+        return _MOUNTS
+    mounts: dict = {}
+    app_src = ""
+    try:
+        app_src = (Path("agentic_core/app_mvp.py")).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        _MOUNTS = mounts
+        return mounts
+    #  `from agentic_core.api.v310 import payments as payments_v310` → alias to module stem
+    alias: dict = {}
+    for m in re.finditer(r"from\s+agentic_core\.api[\w.]*\s+import\s+(\w+)(?:\s+as\s+(\w+))?", app_src):
+        alias[m.group(2) or m.group(1)] = m.group(1)
+    #  `app.include_router(x.router, prefix="/api/v310")`
+    for m in re.finditer(r"include_router\(\s*(\w+)\.router\s*(?:,\s*prefix\s*=\s*[\"']([^\"']*)[\"'])?", app_src):
+        stem = alias.get(m.group(1), m.group(1))
+        mounts.setdefault(stem, m.group(2) or "")
+    _MOUNTS = mounts
+    return mounts
+
+
+def _router_prefix(path: str) -> str:
+    """The `APIRouter(prefix=...)` declared in this module, or ""."""
+    try:
+        src = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    m = re.search(r"APIRouter\((?:[^)]*?)prefix\s*=\s*[\"']([^\"']*)[\"']", src, re.S)
+    return m.group(1) if m else ""
+
+
+def _route_of(path: str, line_no: int) -> str | None:
+    """The full route path of the handler CONTAINING line_no, or None when that line is not in one.
+
+    Composed as mount + router prefix + the decorator's own path. A decorator path that already starts
+    with the mount (several routes in this repo declare the whole path on the decorator) is not
+    double-prefixed.
+    """
+    try:
+        src = Path(path).read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(src)
+    except (OSError, SyntaxError):
+        return None
+    stem = Path(path).stem
+    mount = _route_mounts().get(stem, "")
+    rp = _router_prefix(path)
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not (node.lineno <= line_no <= (node.end_lineno or node.lineno)):
+            continue
+        for d in node.decorator_list:
+            seg = ast.get_source_segment(src, d) or ""
+            m = re.search(r"router\.(get|post|put|delete|patch)\(\s*[\"']([^\"']*)[\"']", seg)
+            if not m:
+                continue
+            own = m.group(2)
+            if own.startswith("/api/"):           # the decorator carries the whole path already
+                return own
+            return (mount + rp + own) or None
+    return None
+
+
+def _route_response_surface(f: str, key: str, line_no: int) -> str | None:
+    """The route whose own response is this key's surface, or None.
+
+    Returns a path ONLY when no frontend file fetches it. When a page DOES fetch the route and still
+    does not read the key, that is the real defect and this must stay silent so the screen reports it —
+    a false surface here is worse than a missed one, because it makes the screen CLEAR something.
+    """
+    route = _route_of(f, line_no)
+    if not route:
+        return None
+    #  a path parameter matches whatever the page interpolates, so compare on the literal prefix
+    stem = route.split("{")[0].rstrip("/")
+    if not stem:
+        return None
+    for hit in grep_repo(stem):
+        p = hit.split(":", 1)[0]
+        if p.endswith((".tsx", ".mjs")) or (p.endswith(".ts") and not p.endswith(".d.ts")):
+            return None                      # a page fetches it: the page is the surface, or nothing is
+    return route
+
+
 def check_keys(rev: str, files: list[str]) -> list[str]:
     """A dict key added to a .py response, and who reads it. A key only its producer mentions is a
     qualifier that reaches no surface — 13 of the 98 labelled defects were exactly this."""
@@ -334,6 +433,13 @@ def check_keys(rev: str, files: list[str]) -> list[str]:
                 continue
             for key in keys_in(line):
                 if key in BORING_KEYS or key in removed_keys:
+                    continue
+                # W578 — THIS SCREEN'S OWN DISPATCH TABLE. Registering a new screen adds a dict entry
+                # whose key is the screen's name, and the keys screen read that as a produced field
+                # reaching no surface. It is not a response: it maps a name to a function. A blind spot
+                # this screen always had for its own registry, invisible until a round added to it.
+                # Derived from SCREENS rather than a hardcoded list, so it cannot go stale.
+                if f.endswith("selfcheck_diff.py") and key in CHECKS:
                     continue
                 hits = [h for h in (grep_repo(f'"{key}"') + grep_repo("'" + key + "'")
                                     + grep_repo("." + key)) if reads_key(h, key)]
@@ -356,6 +462,17 @@ def check_keys(rev: str, files: list[str]) -> list[str]:
                 cli = _cli_surfaces(others, key)
                 if cli:
                     continue
+                # W578 (FU-396) — THE THIRD KIND. A key produced by a route no page fetches reaches a
+                # reader through that route's own JSON, and this screen used to call that no surface at
+                # all. The label says which case it took, because "no page reads it" and "no page EXISTS
+                # to read it" are different findings and a round acts on them differently.
+                _resp = _route_response_surface(f, key, ln)
+                if _resp:
+                    out.append(f"{f}:{ln}  key '{key}' reaches no page, and NO PAGE IN THIS APP FETCHES "
+                               f"{_resp} - so that route's own response is the surface a person reads. "
+                               f"Confirm a guard asserts the key is IN that response; if a page is later "
+                               f"written for this route, it must render it.")
+                    continue
                 internal = {o for o in others if o.endswith(".py") and "test_" not in Path(o).name}
                 # AND THE TWO FINDINGS ARE NOW DIFFERENT. "No page reads it" was printed whether a CLI
                 # showed the value or nothing did, so a round could not tell NO PAGE from NOBODY.
@@ -365,6 +482,101 @@ def check_keys(rev: str, files: list[str]) -> list[str]:
                            f"page renders it and no print or log statement emits it - {where}"
                            f"{' (a guard or a register row is not a surface)' if others and not internal else ''}"
                            f". If it qualifies a claim, which surface shows it?")
+    return out
+
+
+# ── plan pins: a guard that fails when the plan ADVANCES ────────────────────────────────────────────
+# W578 (FU-365). An assertion whose truth requires an item to be INCOMPLETE goes red on success, and the
+# bill arrives after the full suite. This screens a round's OWN added lines, because a sweep over the
+# existing ones finds nothing: W577 ran it and all four candidates were false positives, so acting on
+# them would have broken four correct assertions. The exemptions below ARE those four, plus the one that
+# bit W577 for real.
+_SLOT = re.compile(r"""[\"']P[1-5]\.\d+[\"']""")
+#  shapes whose truth needs an item to be INCOMPLETE, or that pin an ordinal
+_PIN_OPEN = re.compile(r"not\s+in\b|\bnot\s+done\b|is\s+False\b|\bblocked\b|==\s*[\"']open[\"']")
+_PIN_SETEQ = re.compile(r"\}\s*==|==\s*\{")
+_PIN_ORDINAL = re.compile(r"\[\s*0\s*\]")
+#  a COUNT over a collection filtered to the OPEN rows — exactly what went red in W577
+_PIN_OPENCOUNT = re.compile(r"len\(.*?[\"']open[\"'].*?\)\s*(>=|==|>|<=)\s*\d+")
+#  EXEMPT, each one a measured false positive
+_EX_ORDER = re.compile(r"\.index\(")                 # plan ORDER: closing an item does not change it
+_EX_SUBSET = re.compile(r"<=")                        # a SUBSET of done, and done never reverts
+_EX_PROVENANCE = re.compile(r"handed_from|delivered_by|closed_by|slot_source")   # historical, immutable
+_EX_FIXTURE = re.compile(r"[\{\[]\s*[\"']id[\"']\s*:|[\"']status[\"']\s*:\s*[\"']open[\"']\s*,")
+
+
+def _assert_subject(line: str) -> str:
+    """The asserted EXPRESSION, without its message. A slot id in an assertion's MESSAGE is not pinned
+    by the assertion — one of the four false positives was exactly that."""
+    s = line.strip()
+    if not s.startswith("assert "):
+        return s
+    s = s[len("assert "):]
+    #  the message begins at the first top-level comma; track bracket depth so a comma inside a
+    #  literal or a call does not end the subject early
+    depth = 0
+    for i, ch in enumerate(s):
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            return s[:i]
+    return s
+
+
+def check_plan_pins(rev: str, files: list[str]) -> list[str]:
+    """An ADDED assertion that pins plan state, so it goes red when the plan advances."""
+    out = []
+    for f in files:
+        if not f.endswith(".py") or ("test_" not in Path(f).name and "integration_tests" not in f):
+            continue
+        added, _ = added_removed(rev, f)
+        #  a preceding `len(x) == 1` makes an ordinal unambiguous — there is no tie-break to lose
+        sized = {ln for ln, line in added if re.search(r"len\(\s*\w+\s*\)\s*==\s*1", line)}
+        #  W578 — A FIXTURE THE TEST BUILDS ITSELF. The plan moving cannot touch a slot id the test
+        #  wrote into its own input, and `_two[0]["items_advanced"] == ["P2.4", "P2.9"]` is exactly that
+        #  shape in this suite. Fixture-ness is established where the variable is ASSIGNED, not on the
+        #  asserting line, so it is collected over the whole added set — a single-line screen cannot see
+        #  it and would push a round to rewrite a correct assertion.
+        fixture_vars = set()
+        for _, line in added:
+            m = re.match(r"\s*(\w+)\s*=\s*.*[\[{]", line)
+            if m and (_SLOT.search(line) or re.search(r"[\"']id[\"']\s*:|[\"']slot[\"']\s*:", line)):
+                fixture_vars.add(m.group(1))
+        for ln, line in added:
+            code = line.split("#", 1)[0]
+            # W578 — the line must BE an assertion, not merely contain the word. The screen's own guard
+            # carries each flagged shape as a STRING in a list of examples, and `"assert" in code` read
+            # those as assertions and flagged five of them: a screen cannot tell its own test data from
+            # its subject unless it looks at the syntax. A real assertion starts with the keyword.
+            if not code.strip().startswith("assert "):
+                continue
+            subject = _assert_subject(code)
+            if _EX_ORDER.search(subject) or _EX_SUBSET.search(subject):
+                continue
+            if _EX_PROVENANCE.search(subject) or _EX_FIXTURE.search(subject):
+                continue
+            if any(re.search(r"\b" + re.escape(v) + r"\b", subject) for v in fixture_vars):
+                continue
+            why = None
+            if _SLOT.search(subject):
+                if _PIN_OPEN.search(subject):
+                    why = ("it asserts a plan slot is ABSENT, OPEN or BLOCKED, which is true only while "
+                           "that item is incomplete")
+                elif _PIN_SETEQ.search(subject):
+                    why = ("it compares a SET of plan slots by equality, so closing or adding one breaks "
+                           "it")
+                elif _PIN_ORDINAL.search(subject) and not any(abs(ln - s) <= 3 for s in sized):
+                    why = ("it indexes a collection at [0] and asserts a plan slot of that element, so a "
+                           "TIE-BREAK in the ordering breaks it (a preceding `len(x) == 1` would settle it)")
+            if why is None and _PIN_OPENCOUNT.search(subject):
+                why = ("it asserts a COUNT over rows filtered to `open`, so every row the item CLOSES "
+                       "pushes it toward the bound - count over every status instead, because closing a "
+                       "row does not un-move it")
+            if why:
+                out.append(f"{f}:{ln}  this assertion pins plan state and will go RED WHEN THE PLAN "
+                           f"ADVANCES - {why}. Derive it from state, or assert the relation.")
     return out
 
 
@@ -880,6 +1092,8 @@ CHECKS = {
     "selfmatch": ("a test assertion that matches its own text", check_selfmatch),
     "banned": ("a comment quoting a literal a guard forbids", check_banned),
     "order": ("a branch inserted ahead of an existing one", check_order),
+    "planpins": ("an assertion pinned to plan state, which goes red when the plan advances",
+                 check_plan_pins),
 }
 
 

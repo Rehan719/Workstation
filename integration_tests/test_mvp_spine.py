@@ -37472,6 +37472,220 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
             "not an error", _v577, _w577)
 
 
+def test_w578_p218_the_third_surface_the_plan_pin_screen_and_a_rendered_meaning(client):
+    """P2.18 — two instruments taught to see what they were blind to, and one qualifier reaching a page.
+
+    THE THIRD SURFACE (FU-396). The key screen counted a page and a printed line. A key produced by a
+    route NO PAGE FETCHES reaches a reader through that route's own JSON, and the screen called that no
+    surface at all - nine times in one round, every one of them a true statement about where no page is
+    and a false conclusion about whether anybody can read the key. It must also STAY SILENT where a page
+    does fetch the route, because a key unread by a page that exists is the real defect.
+
+    THE PLAN PIN (FU-365). An assertion pinned to today's plan state goes red when the plan ADVANCES,
+    after the full suite. A sweep does not find these - W577 ran one and all four candidates were false
+    positives - so the screen looks at a round's OWN added lines, and the four exempt shapes below are
+    those measured false positives rather than caution.
+
+    AND A QUALIFIER THAT REACHED NOBODY (FU-394), plus two fields the page declared that the route has
+    never sent, which is the class W489 fixed in this same file when it found three others.
+    """
+    import ast as _ast578
+    import importlib.util as _ilu578
+    import json as _json578
+    import pathlib as _pl578
+    import re as _re578
+
+    _root = _pl578.Path(__file__).resolve().parents[1]
+    _spec = _ilu578.spec_from_file_location("_sd578", _root / "scripts/selfcheck_diff.py")
+    _sd = _ilu578.module_from_spec(_spec)
+    _spec.loader.exec_module(_sd)
+
+    # ── L1. FU-396 — THE STATIC RESOLUTION IS EXACT, proven against the app's own route table ───────
+    #  The screen composes mount + router prefix + decorator path rather than importing the app, because
+    #  it runs before every commit and must mutate nothing. That trade is only safe if the composition
+    #  AGREES with the framework, so it is checked here, where the app is already built.
+    from agentic_core.app_mvp import app as _app578
+    _real578 = set()
+    for _r578 in _app578.routes:
+        _p578 = getattr(_r578, "path", None)
+        _ep578 = getattr(_r578, "endpoint", None)
+        if _p578 and _ep578 is not None and getattr(_ep578, "__module__", "").startswith("agentic_core.api"):
+            _real578.add((_ep578.__module__, _ep578.__name__, _p578))
+    assert len(_real578) >= 150, ("the route table is far smaller than this repo's route count, so this "
+                                 "leg is not comparing against the real thing", len(_real578))
+    _checked578 = _wrong578 = 0
+    for _mod578, _fn578, _path578 in sorted(_real578):
+        _rel578 = _mod578.replace(".", "/") + ".py"
+        _f578 = _root / _rel578
+        if not _f578.exists():
+            continue
+        try:
+            _t578 = _ast578.parse(_f578.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        _node578 = next((n for n in _ast578.walk(_t578)
+                         if isinstance(n, (_ast578.FunctionDef, _ast578.AsyncFunctionDef))
+                         and n.name == _fn578), None)
+        if _node578 is None or not _node578.decorator_list:
+            continue
+        _got578 = _sd._route_of(_rel578, _node578.lineno + 1)
+        if _got578 is None:
+            continue
+        _checked578 += 1
+        if _got578 != _path578:
+            _wrong578 += 1
+    assert _checked578 >= 100, (
+        "the resolver answered for too few real routes for this comparison to mean anything - it may be "
+        "returning None rather than agreeing", _checked578)
+    #  a handful of routes are mounted twice or declared on a sub-router this static pass does not model;
+    #  the property is that the composition is right for the overwhelming majority, not that it is a
+    #  reimplementation of FastAPI. A ratio is asserted, and the ratio is stated rather than assumed.
+    assert _wrong578 / _checked578 < 0.08, (
+        f"the static route composition disagrees with the app's own table on {_wrong578} of "
+        f"{_checked578} routes, so the screen would name the wrong route to a reader")
+
+    # ── L2. FU-396 — IT FINDS A PAGE-LESS ROUTE, AND STAYS SILENT WHERE A PAGE EXISTS ───────────────
+    def _line_of(rel, needle):
+        _src = (_root / rel).read_text(encoding="utf-8", errors="replace").splitlines()
+        return next((i for i, l in enumerate(_src, 1) if needle in l), None)
+
+    for _rel578, _key578, _want578 in (
+        ("agentic_core/api/v310/governance.py", '"figures_are_incomplete"', "/api/v310/governance/treasury"),
+        ("agentic_core/api/swarm.py", '"listing_is_incomplete"', "/api/v1/swarm/catalogue/proposed"),
+        ("agentic_core/api/integration_surface.py", '"total_is_incomplete"', "/api/v210/federation/twins"),
+    ):
+        _ln578 = _line_of(_rel578, _key578)
+        assert _ln578, (_rel578, _key578)
+        assert _sd._route_response_surface(_rel578, _key578.strip('"'), _ln578) == _want578, (
+            "the screen cannot see that this route's own response is the surface a person reads, so it "
+            "reports a key that DOES reach a reader as reaching none", _rel578, _key578)
+    #  and the discrimination, which is the whole safety of this kind: a page DOES fetch these two, so
+    #  the response must NOT be offered as the surface - a key a real page fails to render is the defect.
+    for _rel578, _key578 in (("agentic_core/api/user_workspace.py", "count_is_incomplete"),
+                             ("agentic_core/api/products.py", "score_meaning"),
+                             ("agentic_core/api/resource_fabric.py", "listing_is_incomplete")):
+        _ln578 = _line_of(_rel578, '"' + _key578 + '"')
+        assert _ln578, (_rel578, _key578)
+        assert _sd._route_response_surface(_rel578, _key578, _ln578) is None, (
+            "a PAGE fetches this route, so its response must not be accepted as the surface - otherwise "
+            "the screen CLEARS a key that the page which exists never renders", _rel578, _key578)
+
+    #  AND THE HELPER IS WIRED INTO THE SCREEN. The two legs above drive `_route_response_surface`
+    #  directly, so removing its CALL from check_keys would leave them both green — a guard that proves a
+    #  function works and not that anything uses it. Driven through check_keys itself.
+    _orig_ar578 = _sd.added_removed
+    try:
+        #  the REAL line number, because the screen resolves the route from the line's enclosing
+        #  handler — feeding line 1 puts the key outside every handler and the helper correctly
+        #  answers None, which would make this leg prove nothing about the wiring
+        _gln578 = _line_of("agentic_core/api/v310/governance.py", '"figures_are_incomplete"')
+        assert _gln578, "the key this leg drives is no longer in that file"
+        _sd.added_removed = lambda rev, path, _n=_gln578: (
+            [(_n, '            "figures_are_incomplete": bool(x),')], [])
+        _out578 = _sd.check_keys("HEAD", ["agentic_core/api/v310/governance.py"])
+        assert any("NO PAGE IN THIS APP FETCHES" in o for o in _out578), (
+            "the key screen does not USE the third surface kind, so a key on a page-less route still "
+            "reports as reaching no surface at all", _out578)
+        assert any("/api/v310/governance/treasury" in o for o in _out578), (
+            "the finding does not name the route whose response is the surface, so a reader cannot check "
+            "it", _out578)
+    finally:
+        _sd.added_removed = _orig_ar578
+
+    # ── L3. FU-365 — EVERY FLAG FIRES AND EVERY EXEMPTION STAYS SILENT ──────────────────────────────
+    #  driven through the real screen with its diff source replaced, so this is the function a round runs
+    _FLAG578 = [
+        ('assert "P2.11" not in blocked', "absent/open/blocked"),
+        ('assert set(blocked) == {"P2.11", "P2.16"}', "a set compared by equality"),
+        ('assert rows[0]["slot"] == "P2.4"', "an ordinal with no size assertion"),
+        ('assert len([r for r in items if r["status"] == "open"]) >= 10', "a count over OPEN rows"),
+    ]
+    _EXEMPT578 = [
+        ('assert slots.index("P1.1") < slots.index("P2.1")', "plan ORDER, which closing does not change"),
+        ('assert {"P1.1", "P1.11"} <= {i["slot"] for i in done}', "a SUBSET of done, and done never reverts"),
+        ('assert "0-1 applied" not in prompt, "P2.14\'s body still names it"',
+         "the slot id is in the MESSAGE, not in what is asserted"),
+        #  the REALISTIC shape: fixture-ness is established where the variable is built, which is a
+        #  different line from the one that asserts. A single-line screen cannot see it, and this suite
+        #  has exactly this case in test_w562 — a correct assertion a sweep would have rewritten.
+        ('    _two = _rc.components([{"id": "FU-T1", "slot": "P2.4"}, {"id": "FU-T2", "slot": "P2.9"}])\\n'
+         '    assert _two[0]["items_advanced"] == ["P2.4", "P2.9"]',
+         "a fixture the test constructs itself"),
+        ('assert _av[0].get("handed_from") == "P2.3"', "PROVENANCE, which is historical and immutable"),
+    ]
+    _orig578 = _sd.added_removed
+    try:
+        for _line578, _label578 in _FLAG578:
+            _sd.added_removed = lambda rev, path, _l=_line578: ([(1, _l)], [])
+            _hits578 = _sd.check_plan_pins("HEAD", ["integration_tests/test_w578_probe.py"])
+            assert _hits578, (
+                f"the plan-pin screen did not flag {_label578} - this is the shape that goes red when "
+                f"the plan advances, and the round that adds it pays after the full suite", _line578)
+        for _line578, _label578 in _EXEMPT578:
+            #  split, because added_removed yields ONE ENTRY PER LINE and a case whose exemption is
+            #  established on a different line is the whole point of the fixture rule
+            _sd.added_removed = lambda rev, path, _l=_line578: (
+                [(_i + 1, _s) for _i, _s in enumerate(_l.split("\\n"))], [])
+            _hits578 = _sd.check_plan_pins("HEAD", ["integration_tests/test_w578_probe.py"])
+            assert not _hits578, (
+                f"the screen flagged {_label578}, which is CORRECT as written - W577 measured four such "
+                f"assertions and a sweep acting on them would have broken all four", _line578, _hits578)
+        #  AND THE SCREEN MUST NOT FLAG ITS OWN TEST DATA. Every flagged shape appears in this file as a
+        #  STRING in the list above, and a screen that asks only whether a line CONTAINS "assert" read
+        #  those as assertions and flagged five of them — so a round that touches this guard would be
+        #  told its own examples are defects. A screen cannot tell its data from its subject without
+        #  looking at the syntax: a real assertion STARTS with the keyword.
+        _sd.added_removed = lambda rev, path: (
+            [(1, """        ('assert "P2.11" not in blocked', "absent/open/blocked"),"""),
+             (2, """        _examples = ["assert set(x) == {'P2.4'}"]""")], [])
+        assert not _sd.check_plan_pins("HEAD", ["integration_tests/test_w578_probe.py"]), (
+            "the screen flagged a line that merely QUOTES an assertion, so its own examples read as "
+            "defects and every round touching this guard pays for it")
+        #  and an ordinal SETTLED by a preceding size assertion is not a tie-break risk
+        _sd.added_removed = lambda rev, path: ([(1, '    assert len(_av) == 1, _av'),
+                                                (2, '    assert _av[0]["slot"] == "P3.6"')], [])
+        assert not _sd.check_plan_pins("HEAD", ["integration_tests/test_w578_probe.py"]), (
+            "an ordinal preceded by `len(x) == 1` has no ordering to lose, and flagging it would push a "
+            "round to rewrite a correct assertion")
+    finally:
+        _sd.added_removed = _orig578
+    assert _sd.added_removed is _orig578, "the screen's diff source was left patched"
+
+    # ── L4. FU-394 — THE QUALIFIER REACHES THE PAGE, AND THE PAGE DECLARES THE ROUTE IT READS ───────
+    _page578 = (_root / "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    _code578 = _re578.sub(r"/\*.*?\*/", " ", _page578, flags=_re578.S)
+    _code578 = _re578.sub(r"(?m)^\s*//.*$", " ", _code578)
+    assert "{data?.score_meaning && (" in _code578, (
+        "the response-level statement about what every score on this page MEANS reaches no surface - the "
+        "per-insight basis says what one score is, and nothing says the ordering is not a ranking")
+    assert 'data-testid="insights-score-meaning"' in _code578
+    #  the two fields the page declared and the route has never sent. `portfolio_size` gated a provenance
+    #  chip, so that chip had never once rendered.
+    for _phantom578 in ("portfolio_size", "generated_at"):
+        assert _phantom578 not in _code578, (
+            f"the page still reads `{_phantom578}`, which this route has never sent - it is always "
+            f"undefined, so anything gated on it cannot render", _phantom578)
+    assert "{data?.total_projects != null ?" in _code578, (
+        "the provenance chip is not gated on the key the route actually sends")
+    #  and null is NOT zero here: a count of 0 would read as "you have no projects", which is the whole
+    #  untruth FU-323 was about.
+    assert 'data-testid="insights-provenance-unknown"' in _code578, (
+        "a crash leaves total_projects null and the page says nothing - a reader cannot tell an unread "
+        "portfolio from an empty one, which is FU-323 arriving by a second route")
+    #  DRIVEN against the real route, so the declaration is checked against what is actually sent
+    _r578 = client.get("/api/v1/intelligence/insights")
+    assert _r578.status_code == 200, _r578.status_code
+    _body578 = _r578.json()
+    for _k578 in ("computed_at", "total_projects", "error", "score_meaning", "insights"):
+        assert _k578 in _body578, ("the page now declares this and the route does not send it, which is "
+                                   "the same defect in the other direction", _k578, sorted(_body578))
+    for _gone578 in ("portfolio_size", "generated_at"):
+        assert _gone578 not in _body578, (
+            f"the route started sending `{_gone578}`, so the page's declaration should follow the route "
+            f"rather than this guard being relaxed", _gone578)
+
+
 def test_w577_p218a_a_tolerant_read_is_never_a_write_base_and_a_reader_is_told(client, tmp_path):
     """P2.18 clause (a), completed — and the class found while completing it.
 

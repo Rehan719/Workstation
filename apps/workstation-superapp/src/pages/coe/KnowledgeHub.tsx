@@ -22,10 +22,19 @@ interface InsightItem {
   outputs_count?: number;
 }
 
+// W578 (FU-394) — DECLARED AGAINST THE ROUTE, measured rather than assumed. This declared
+// `generated_at` and `portfolio_size`; the route sends `computed_at` and `total_projects` and has never
+// sent either of those two. So the provenance chip below — "Derived from N projects" — was gated on a
+// field that is always undefined and HAS NEVER ONCE RENDERED, which is exactly the class W489 fixed in
+// this same file when it found three other fields the API never sends: it corrected three and left two.
+// `error` was being read through `(data as any)` even after W576 made it load-bearing, and
+// `score_meaning` had no declaration at all, which is how it reached no surface.
 interface IntelligenceInsights {
   insights: InsightItem[];
-  generated_at: number;
-  portfolio_size: number;
+  computed_at: number;
+  total_projects: number | null;     // null on the crash branch: nothing was counted
+  error: string | null;
+  score_meaning?: string;
 }
 
 const DOMAIN_META: Record<string, { icon: React.ElementType; description: string; color: string }> = {
@@ -158,15 +167,38 @@ export const KnowledgeHub: React.FC = () => {
         </AnimatePresence>
       </div>
 
+      {/* W578 (FU-394) — the route returns `score_meaning`, a response-level statement about what
+          EVERY score on this page means, and nothing read it. The per-insight `score_basis` already
+          reaches the reader on hover (above), so this is not that fact repeated: it is the AGGREGATE
+          one — that three of the four are fixed constants and the fourth only scales with the project
+          count, so the ORDER of this list is not a ranking of anything measured. A reader who hovers
+          one card learns about one score; nobody learns that without this. Rendered once, where the
+          ordering it qualifies is visible. */}
+      {data?.score_meaning && (
+        <p data-testid="insights-score-meaning"
+           className="text-[10px] font-bold text-slate-500 leading-relaxed max-w-3xl">
+          About the scores above: {data.score_meaning}
+        </p>
+      )}
+
       {/* Latest insights from intelligence API */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-white">Latest Portfolio Insights</h3>
-          {data?.portfolio_size != null && (
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              Derived from {data.portfolio_size} project{data.portfolio_size !== 1 ? 's' : ''}
+          {/* W578 (FU-394) — `total_projects` is the key the route actually sends. It is null on the
+              crash branch, where nothing was counted, and that is NOT zero: a count of 0 would read as
+              "you have no projects", which is the whole untruth FU-323 was about. So null says so. */}
+          {data?.total_projects != null ? (
+            <span data-testid="insights-provenance"
+                  className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              Derived from {data.total_projects} project{data.total_projects !== 1 ? 's' : ''}
             </span>
-          )}
+          ) : data?.error ? (
+            <span data-testid="insights-provenance-unknown"
+                  className="text-[10px] font-black text-amber-400 uppercase tracking-widest">
+              nothing was counted — the portfolio could not be read
+            </span>
+          ) : null}
         </div>
         {data?.insights?.length ? (
           data.insights.map((insight, i) => (
@@ -199,10 +231,10 @@ export const KnowledgeHub: React.FC = () => {
                   failure shown to the founder as "you have no projects". The producer now carries
                   the failure inside `insights` itself, so even this branch cannot be reached by a
                   crash — and if it ever is, the error is named here rather than hidden. */}
-              {(data as any)?.error ? (
+              {data?.error ? (
                 <p data-testid="insights-error" className="text-amber-400 font-bold text-xs leading-relaxed max-w-md mx-auto">
                   Portfolio insights could not be computed, so nothing was counted — this is not a
-                  statement that you have no projects. Reason: {String((data as any).error)}
+                  statement that you have no projects. Reason: {String(data.error)}
                 </p>
               ) : (
               <p className="text-slate-500 font-black uppercase tracking-widest text-xs">

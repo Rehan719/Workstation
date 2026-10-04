@@ -1,0 +1,11 @@
+[
+ {
+  "tag": "the screen reads its own examples as assertions",
+  "file": "scripts/selfcheck_diff.py",
+  "old": "            if not code.strip().startswith(\"assert \"):",
+  "new": "            if \"assert\" not in code:",
+  "selector": "w578_p218",
+  "expect": "BLIND(red)",
+  "why": "A screen cannot tell its own TEST DATA from its subject without looking at the syntax. Every shape this screen flags appears in its guard as a STRING in a list of examples, and asking only whether a line CONTAINS \"assert\" flagged five of them - so any round touching the guard is told its own examples are defects, which is how an instrument stops being used."
+ }
+]
