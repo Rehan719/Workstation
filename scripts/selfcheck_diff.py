@@ -197,6 +197,112 @@ def keys_in(line: str) -> set[str]:
     return out | set(ASSIGN_KEY_RE.findall(body))
 
 
+_LOG_METHODS = {"info", "warning", "warn", "error", "debug", "exception", "critical", "log"}
+
+
+def _emitting_calls(path: str) -> list[str]:
+    """The SOURCE of every call in `path` that puts text in front of someone: print, or a logger method.
+
+    ON THE AST, NOT ON THE TEXT, and that distinction is the whole point of this fix. FU-348 records
+    that its own screen family has produced four precision defects with one shape — "a textual proxy
+    standing in for a structural question" — so "a line in scripts/ mentions the key near the word
+    print" would be a fifth. The structural question is whether the key is read INSIDE an emitting
+    call, and a Call node answers it.
+
+    Returns source segments rather than nodes so the caller can ask whether a key appears in one. A
+    file that will not parse yields nothing: a screen cannot claim a surface it could not read.
+    """
+    #  `Path.read_text`, because this module does not import `io` — and the first version of this
+    #  helper used it and died with NameError on its first call. A helper added to an existing file
+    #  inherits that file's imports and nothing else.
+    try:
+        src = Path(path).read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(src)
+    except (OSError, SyntaxError, ValueError):
+        return []
+    out = []
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Call):
+            continue
+        f = n.func
+        emits = (isinstance(f, ast.Name) and f.id == "print") or (
+            isinstance(f, ast.Attribute) and f.attr in _LOG_METHODS)
+        if not emits:
+            continue
+        seg = ast.get_source_segment(src, n)
+        if seg:
+            out.append(seg)
+    return out
+
+
+def _mentions(seg: str, key: str) -> bool:
+    """Does this source segment read `key` directly — as a literal, an attribute or a subscript?"""
+    return (f'"{key}"' in seg or f"'{key}'" in seg or f".{key}" in seg)
+
+
+def _aliases_of(path: str, key: str) -> set[str]:
+    """Local names bound from an expression that reads `key`, in `path`.
+
+    ONE LEVEL. `_nc = _out.get("not_considered_row_count")` binds `_nc`, so emitting `_nc` emits the
+    key's value. Two levels (`a = d["k"]; b = a; print(b)`) are NOT followed, and a helper that returns
+    it is not followed either: this is a diff screen, not an analyser, and the honest boundary is stated
+    rather than discovered later.
+    """
+    try:
+        src = Path(path).read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(src)
+    except (OSError, SyntaxError, ValueError):
+        return set()
+    out: set[str] = set()
+    for n in ast.walk(tree):
+        if not isinstance(n, (ast.Assign, ast.AnnAssign)):
+            continue
+        val = n.value
+        if val is None:
+            continue
+        seg = ast.get_source_segment(src, val) or ""
+        if not _mentions(seg, key):
+            continue
+        targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+        for t in targets:
+            if isinstance(t, ast.Name):
+                out.add(t.id)
+    #  A ONE-CHARACTER ALIAS WOULD MATCH ALMOST ANY SEGMENT, so it is refused rather than trusted: a
+    #  false surface is worse here than a missed one, because it makes the screen CLEAR something.
+    return {a for a in out if len(a) >= 2}
+
+
+def _cli_surfaces(candidates: set[str], key: str) -> set[str]:
+    """Which candidate files EMIT this key's value — a surface for a round rather than for a page.
+
+    A key whose consumer is a round is surfaced by a CLI, and FU-345's subject was exactly that: the
+    round-start step states its own width by printing it. Counting only pages made such a key read as
+    unsurfaced by construction.
+
+    IT IS NARROW ON PURPOSE. Only .py files, only calls that actually emit, and the key must appear in
+    the emitting call's own source. A mention anywhere else in the file does not count — the W493
+    refutation already narrowed this screen once for exactly that reason, when "any other file mentions
+    it" made the printed label false.
+    """
+    found = set()
+    for c in sorted(candidates):
+        if not c.endswith(".py") or "test_" in Path(c).name:
+            continue
+        #  ONE LEVEL OF INDIRECTION, AND MEASURED ON THE REAL CASE. followups.py does
+        #  `_nc = _out.get("not_considered_row_count")` and then prints `_nc`, so the key's literal is
+        #  never inside the print — asking only "is the key in an emitting call" answered NONE for the
+        #  exact case FU-348 was filed about. That would have been a fix that did not fix it.
+        #  ONE level, not full dataflow: a key passed through two bindings or into a helper is NOT seen,
+        #  and a screen claiming more reach than it has is this family's own defect. The finding stays
+        #  a LEAD either way.
+        aliases = _aliases_of(c, key)
+        for seg in _emitting_calls(c):
+            if _mentions(seg, key) or any(re.search(rf"\b{re.escape(a)}\b", seg) for a in aliases):
+                found.add(c)
+                break
+    return found
+
+
 def check_keys(rev: str, files: list[str]) -> list[str]:
     """A dict key added to a .py response, and who reads it. A key only its producer mentions is a
     qualifier that reaches no surface — 13 of the 98 labelled defects were exactly this."""
@@ -226,10 +332,22 @@ def check_keys(rev: str, files: list[str]) -> list[str]:
                             if o.endswith((".tsx", ".mjs")) or (o.endswith(".ts") and not o.endswith(".d.ts"))}
                 if surfaces:
                     continue
+                # W570 (FU-348) - A KEY WHOSE CONSUMER IS A ROUND IS SURFACED BY A CLI. This counted
+                # only pages, so such a key reached "no surface" BY CONSTRUCTION: FU-345's whole
+                # subject was that the round-start step states its own width, and that step prints it.
+                # Asked on the AST - is the key read inside a print or a log call - because this screen
+                # family has produced four precision defects with one shape, a textual proxy standing
+                # in for a structural question, and "a line mentions the key near print" is a fifth.
+                cli = _cli_surfaces(others, key)
+                if cli:
+                    continue
                 internal = {o for o in others if o.endswith(".py") and "test_" not in Path(o).name}
-                where = (f"only {len(internal)} backend module(s) read it"
+                # AND THE TWO FINDINGS ARE NOW DIFFERENT. "No page reads it" was printed whether a CLI
+                # showed the value or nothing did, so a round could not tell NO PAGE from NOBODY.
+                where = (f"only {len(internal)} backend module(s) read it, and none of them PRINTS it"
                          if internal else "nothing outside this file reads it")
-                out.append(f"{f}:{ln}  key '{key}' is produced here and NO page reads it — {where}"
+                out.append(f"{f}:{ln}  key '{key}' is produced here and reaches NO SURFACE AT ALL - no "
+                           f"page renders it and no print or log statement emits it - {where}"
                            f"{' (a guard or a register row is not a surface)' if others and not internal else ''}"
                            f". If it qualifies a claim, which surface shows it?")
     return out
@@ -735,7 +853,10 @@ def _bound_names_top(tree: ast.Module) -> set:
 
 
 CHECKS = {
-    "keys": ("a key produced but read by no surface", check_keys),
+    # W570 (FU-348) - the label said "no surface" while the check only looked at PAGES, so a
+    # CLI-surfaced key was reported under a label that was false about it. A page and a printed line
+    # are both surfaces; a guard asserting a literal and a register row are not.
+    "keys": ("a key produced but shown by neither a page nor a printed line", check_keys),
     "imports": ("a changed test uses a module it never imported", check_imports),
     "claims": ("a basis asserting a numeric bound instead of reporting one", check_claims),
     "renames": ("a key removed while other files still read it", check_renames),

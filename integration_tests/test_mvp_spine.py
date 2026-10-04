@@ -36097,3 +36097,164 @@ def test_w569_a_sharded_sweep_never_touches_the_real_tree_and_loses_no_blind(cli
     assert "THE SERIAL PATH REMAINS THE DEFAULT" in _bar569, (
         "the bar no longer says the trusted path stays the default; equivalence on one list on one "
         "machine is evidence about that run, not a promotion")
+
+
+def test_w570_a_key_shown_only_by_a_printed_line_is_surfaced(client):
+    """FU-348 — the pre-flight's key screen counted only PAGES, so a CLI-surfaced key read as unsurfaced.
+
+    THE ROW SHAPED THE FIX BY NAMING THE FAMILY: "the fourth precision defect in this screen family after
+    FU-303, FU-317 and FU-319, with the same shape as all of them: A TEXTUAL PROXY STANDING IN FOR A
+    STRUCTURAL QUESTION". So "a line in scripts/ mentions the key near the word print" would have been a
+    fifth. The structural question is whether the key is read INSIDE an emitting call, and it is answered
+    on the AST.
+
+    AND IT HAD TO HANDLE ONE LEVEL OF INDIRECTION OR IT WOULD NOT HAVE FIXED ANYTHING. The real case does
+    `_nc = _out.get("not_considered_row_count")` and then prints `_nc`, so the key's literal never appears
+    inside the print: asking only "is the key in an emitting call" answered NONE for the exact case the
+    row was filed about. One level, stated as one, because a screen claiming more reach than it has is
+    this family's own defect.
+    """
+    import ast as _ast570
+    import os as _os570
+    import pathlib as _pl570
+    import sys as _sys570
+    import tempfile as _tmp570
+
+    _root = _pl570.Path(__file__).resolve().parents[1]
+    _sys570.path.insert(0, str(_root / "scripts"))
+    import selfcheck_diff as _sc570
+
+    # ── L1. THE REAL CASE: a key whose consumer is a ROUND is surfaced by the CLI that prints it ──
+    #  FU-345's whole subject was that the round-start step states its own width, and that step is a
+    #  CLI. Counting only pages made such a key reach "no surface" BY CONSTRUCTION.
+    for _key in ("not_considered_row_count", "commits_no_round_could_be_read_from"):
+        _cli = _sc570._cli_surfaces({"scripts/followups.py", "agentic_core/plan_followups.py"}, _key)
+        assert "scripts/followups.py" in _cli, (
+            f"{_key!r} is printed by the round-start step and the screen does not see that surface",
+            sorted(_cli))
+    #  AND THE DECISION CONSULTS IT. A blind that left `_cli_surfaces` perfect and stopped `check_keys`
+    #  from calling it came back VACUOUS against the loop above: the machinery worked and the screen had
+    #  reverted to pages-only. A leg must reach the decision, not only the helper beneath it.
+    _dec570 = _src_of_check_keys = (_root / "scripts/selfcheck_diff.py").read_text(encoding="utf-8")
+    _ci = _dec570.index("def check_keys")
+    _body570 = _dec570[_ci:_dec570.index("def check_renames", _ci)]
+    assert "cli = _cli_surfaces(others, key)" in _body570, (
+        "check_keys no longer asks whether a printed line surfaces this key, so the screen is back to "
+        "counting pages only — which is the defect FU-348 was filed for")
+    assert "if cli:" in _body570 and "continue" in _body570, (
+        "check_keys computes a CLI surface and does not act on it")
+
+    # ── L2. A MENTION IS NOT A SURFACE, which is the narrowing W493 already paid for once ────────
+    #  That refutation found "skip if ANY other file mentions it" made the printed label false. A name
+    #  that is assigned, imported or asserted but never EMITTED must not count.
+    for _key in ("BORING_KEYS", "_LOG_METHODS"):
+        assert not _sc570._cli_surfaces({"scripts/selfcheck_diff.py"}, _key), (
+            f"{_key!r} is never printed and was counted as a surface anyway", _key)
+    #  and a test file is never a surface, whatever it contains
+    assert not _sc570._cli_surfaces({"integration_tests/test_mvp_spine.py"}, "verdict"), (
+        "a test file was counted as a surface; a guard asserting a literal is not a surface")
+
+    # ── L3. THE EMITTING-CALL WALK IS STRUCTURAL, NOT TEXTUAL ───────────────────────────────────
+    #  Driven on a synthetic file so the distinction is unambiguous: the word `print` in a comment or a
+    #  string must not count, and a logger call must.
+    _d = _tmp570.mkdtemp()
+    _p = _os570.path.join(_d, "m.py")
+    _pl570.Path(_p).write_text(
+        'import logging\n'
+        'log = logging.getLogger("x")\n'
+        '# print("alpha") this is a comment, not a call\n'
+        'NOTE = \'print("beta") inside a string, not a call\'\n'
+        'def f(d):\n'
+        '    print(d["gamma"])\n'
+        '    log.info("delta is %s", d["delta"])\n'
+        '    x = d["epsilon"]\n'
+        '    helper(d["zeta"])\n'
+        '    return x\n', encoding="utf-8")
+    _segs = _sc570._emitting_calls(_p)
+    _joined = " || ".join(_segs)
+    assert "gamma" in _joined, ("a real print call was not found", _segs)
+    assert "delta" in _joined, ("a logger call was not counted as emitting", _segs)
+    assert "alpha" not in _joined, ("the word print in a COMMENT was read as a call", _segs)
+    assert "beta" not in _joined, ("the word print inside a STRING was read as a call", _segs)
+    #  epsilon is read and returned, never emitted
+    assert "epsilon" not in _joined, ("a key that is only returned was counted as emitted", _segs)
+    #  AND zeta IS PASSED TO A CALL THAT DOES NOT EMIT. This case exists because the first version of
+    #  this leg had no Call-but-not-emitting example: `print` in a comment and `print` in a string are
+    #  not calls, and a subscript is not a call, so a blind that counted EVERY call as emitting changed
+    #  nothing any assertion could see and came back VACUOUS.
+    assert "zeta" not in _joined, (
+        "a key passed to an ordinary function was counted as emitted; every call would then be a "
+        "surface, which is the textual-proxy failure in its purest form", _segs)
+    assert not _sc570._cli_surfaces({_p}, "zeta"), "a non-emitting call counted as a CLI surface"
+    assert _sc570._cli_surfaces({_p}, "gamma") == {_p}
+    assert not _sc570._cli_surfaces({_p}, "epsilon"), "a returned-but-unprinted key counted as surfaced"
+    #  a file that will not parse yields NOTHING rather than guessing
+    _bad = _os570.path.join(_d, "broken.py")
+    _pl570.Path(_bad).write_text("def f(:\n", encoding="utf-8")
+    assert _sc570._emitting_calls(_bad) == [], "an unparseable file was read as having emitting calls"
+
+    # ── L4. ONE LEVEL OF INDIRECTION, AND THE BOUNDARY IS WHERE IT SAYS IT IS ───────────────────
+    #  The real case needs one level. Two levels are deliberately NOT followed, and the guard asserts
+    #  the boundary rather than leaving a later round to discover it: a screen that claims more reach
+    #  than it has is the defect this family keeps producing.
+    _q = _os570.path.join(_d, "ind.py")
+    _pl570.Path(_q).write_text(
+        'def one(d):\n'
+        '    val = d["one_level"]\n'
+        '    print(f"{val}")\n'
+        'def short(d):\n'
+        '    a = d["short_alias"]\n'
+        '    print(f"{a}")\n'
+        'def two(d):\n'
+        '    first = d["two_levels"]\n'
+        '    second = first\n'
+        '    print(f"{second}")\n', encoding="utf-8")
+    #  ONE LEVEL IS FOLLOWED: the key is bound to a name and that name is emitted. This is the
+    #  real case — followups.py binds the key to a local and prints the local — so without it the
+    #  fix would not have fixed the thing the row was filed about.
+    assert "val" in _sc570._aliases_of(_q, "one_level"), _sc570._aliases_of(_q, "one_level")
+    assert _sc570._cli_surfaces({_q}, "one_level") == {_q}, (
+        "one level of indirection is not followed, which is the real case")
+    #  A ONE-CHARACTER ALIAS IS REFUSED, and the cost is stated rather than hidden: a single letter
+    #  would match almost any emitting call, and a FALSE surface is worse than a missed one here
+    #  because it makes the screen CLEAR something.
+    assert not _sc570._aliases_of(_q, "short_alias"), (
+        "a one-character alias was trusted", _sc570._aliases_of(_q, "short_alias"))
+    assert not _sc570._cli_surfaces({_q}, "short_alias"), (
+        "a key bound to a single-letter name was reported as surfaced; that is the stated cost "
+        "of refusing one-character aliases, and it must stay a MISS, never a false clear")
+    #  TWO LEVELS ARE NOT FOLLOWED, which the helper says and this asserts, so a later round cannot
+    #  read more reach into the screen than it has.
+    assert not _sc570._cli_surfaces({_q}, "two_levels"), (
+        "two levels of indirection were followed; the helper documents one, and a screen must not "
+        "quietly reach further than it claims")
+
+    # ── L5. THE TWO FINDINGS ARE NO LONGER ONE MESSAGE ──────────────────────────────────────────
+    #  "No page reads it" was printed whether a CLI showed the value or nothing did, so a round could
+    #  not tell NO PAGE from NOBODY. The row's closing line was: "a round must read the lead as no
+    #  PAGE, not nobody."
+    _src570 = (_root / "scripts/selfcheck_diff.py").read_text(encoding="utf-8")
+    assert "reaches NO SURFACE AT ALL" in _src570, (
+        "the finding no longer distinguishes no-page from no-surface-of-any-kind")
+    assert "no print or log statement emits it" in _src570, (
+        "the finding does not say that the CLI was checked too, so a reader cannot tell what was looked "
+        "for")
+    #  AND THE CHECK'S OWN LABEL STOPPED BEING FALSE ABOUT ITS SUBJECT
+    assert '"a key produced but shown by neither a page nor a printed line"' in _src570, (
+        "the keys label still says 'no surface' while the check looks at pages AND printed lines; the "
+        "label was false about exactly the key this row was filed for")
+    #  the structural claim is stated where the next round will read it
+    #  CASE-INSENSITIVE *AND* WHITESPACE-NORMALISED. The module quotes the row's own wording in lower
+    #  case AND the sentence WRAPS ACROSS TWO SOURCE LINES, so a contiguous match against the raw text
+    #  finds nothing though the phrase is plainly there — the line-wrapping class that bit a page guard
+    #  earlier tonight, in Python prose this time.
+    _flat570 = " ".join(_src570.split()).lower()
+    assert "textual proxy standing in for a structural question" in _flat570, (
+        "the module no longer records why this is answered on the AST rather than by pattern-matching "
+        "a line, which is the fourth defect this screen family produced")
+    #  and the helper admits what it does not follow
+    _ai = _src570.index("def _aliases_of")
+    _seg570 = _src570[_ai:_ai + 1400]
+    assert "Two levels" in _seg570 and "not followed" in _seg570, (
+        "the indirection helper no longer states its boundary", _seg570[:160])
+    _ast570.parse(_src570)

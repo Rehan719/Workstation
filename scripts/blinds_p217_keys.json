@@ -1,0 +1,83 @@
+[
+  {
+    "tag": "the key screen goes back to counting only pages",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "                cli = _cli_surfaces(others, key)\n                if cli:\n                    continue",
+    "new": "                cli = set()\n                if cli:\n                    continue",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L1, and it is the defect FU-348 was filed for. A key whose consumer is a ROUND is surfaced by the CLI that prints it, so counting only pages made such a key reach 'no surface' BY CONSTRUCTION — and FU-345's whole subject was that the round-start step states its own width, which it does by printing it. The mutation keeps the variable and the branch, so nothing reads as missing."
+  },
+  {
+    "tag": "a mere mention counts as a surface, which W493 already paid to narrow once",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "        aliases = _aliases_of(c, key)\n        for seg in _emitting_calls(c):",
+    "new": "        aliases = _aliases_of(c, key)\n        for seg in [Path(c).read_text(encoding=\"utf-8\", errors=\"replace\")]:",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L2. Treating the WHOLE FILE as one emitting segment is exactly the narrowing the W493 refutation already reversed: 'skip if ANY other file mentions it' made the printed label false, because this process requires a register row and habitually writes a source-substring guard in the same commit. A name that is assigned, imported or asserted but never EMITTED is not a surface."
+  },
+  {
+    "tag": "the word print in a comment or a string is read as a call",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "        emits = (isinstance(f, ast.Name) and f.id == \"print\") or (\n            isinstance(f, ast.Attribute) and f.attr in _LOG_METHODS)\n        if not emits:\n            continue",
+    "new": "        emits = True\n        if not emits:\n            continue",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L3. Counting EVERY call as emitting is the textual-proxy failure in its purest form: a key passed to any function at all would read as surfaced. The leg drives a synthetic file where `print` appears in a comment and inside a string literal, and where a key is read and merely RETURNED — none of which puts a value in front of anyone."
+  },
+  {
+    "tag": "an unparseable file is read as having emitting calls",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "    except (OSError, SyntaxError, ValueError):\n        return []",
+    "new": "    except (OSError, SyntaxError, ValueError):\n        return [Path(path).read_text(encoding=\"utf-8\", errors=\"replace\")]",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L3. A screen cannot claim a surface it could not read. Falling back to the raw text on a parse failure is the worst available behaviour: the files most likely to fail to parse are the ones a round is halfway through editing, so the screen would clear keys precisely when the tree is least trustworthy."
+  },
+  {
+    "tag": "two levels of indirection are followed, so the screen reaches further than it claims",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "        seg = ast.get_source_segment(src, val) or \"\"\n        if not _mentions(seg, key):\n            continue",
+    "new": "        seg = ast.get_source_segment(src, val) or \"\"\n        if not (_mentions(seg, key) or any(a in seg for a in out)):\n            continue",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L4, and the point is not that two levels would be WRONG — it is that the helper documents ONE. A screen quietly reaching further than it says is this family's own defect: a later round reading the docstring would form a false picture of what was checked. If two levels are ever wanted, the docstring changes with the code."
+  },
+  {
+    "tag": "a one-character alias is trusted, so almost any emitting call becomes a surface",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "    return {a for a in out if len(a) >= 2}",
+    "new": "    return set(out)",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L4. A single-letter binding would match a word boundary in nearly any print statement in the file, so the screen would CLEAR keys it had not seen surfaced. A false surface is worse than a missed one here for exactly that reason — the miss leaves a lead, the false clear removes one."
+  },
+  {
+    "tag": "no-page and no-surface-at-all become one message again",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "reaches NO SURFACE AT ALL - no \"\n                           f\"page renders it and no print or log statement emits it - {where}\"",
+    "new": "NO page reads it - {where}\"",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L5, and the row's closing line names it: 'Until then a round must read the lead as no PAGE, not nobody.' One message for two states meant a round could not tell a key shown only on a CLI from a key shown nowhere — and the first needs no action while the second is the finding."
+  },
+  {
+    "tag": "the check's label says 'no surface' while it checks pages and printed lines",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "    \"keys\": (\"a key produced but shown by neither a page nor a printed line\", check_keys),",
+    "new": "    \"keys\": (\"a key produced but read by no surface\", check_keys),",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L5. The old label was FALSE about the very key this row was filed for: the key had a surface, and the label said it had none. A label is the first thing a round reads and the last thing anyone checks, which is why it is guarded rather than left to care."
+  },
+  {
+    "tag": "the module stops recording why this is structural rather than textual",
+    "file": "scripts/selfcheck_diff.py",
+    "old": "that its own screen family has produced four precision defects with one shape — \"a textual proxy",
+    "new": "that this is a convenient place to look — (\"a convenient proxy",
+    "selector": "w570",
+    "expect": "BLIND(red)",
+    "why": "L5. Four precision defects in one screen family all had the same shape, and the only thing stopping a fifth is that the reason is written where the next round will read it. A fix whose rationale is lost becomes a fix someone simplifies."
+  }
+]

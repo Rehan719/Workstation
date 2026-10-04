@@ -6099,11 +6099,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W570",
       "note": "",
       "slot_source": "P2.17 owns the round machinery and the instruments the rhythm runs; this is a precision defect in the pre-flight itself, not in any item's build work",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The key screen now counts a PRINTED LINE as a surface, answered on the AST rather than by matching text - the row warned this is the fourth precision defect in its family with one shape, a textual proxy standing in for a structural question, so a fifth proxy was not an option. AND IT NEEDED ONE LEVEL OF INDIRECTION OR IT WOULD NOT HAVE FIXED ANYTHING: the real case binds the key to a local and prints the local, so asking only whether the key sits inside an emitting call answered NONE for the exact case this row names. One level, stated as one - two levels and helper returns are NOT followed, and a one-character alias is refused because a false surface is worse than a missed one when the screen can CLEAR something. The two findings are now distinct: no-page and no-surface-of-any-kind had been the same message, and the check's label said 'no surface' while it only looked at pages, which made the label false about precisely this key."
     },
     {
       "id": "FU-349",
