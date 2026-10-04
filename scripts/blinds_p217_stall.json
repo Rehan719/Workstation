@@ -1,0 +1,74 @@
+[
+  {
+    "tag": "a worker writes the shared progress file again",
+    "file": "integration_tests/conftest.py",
+    "old": "    if not _RUN_PROGRESS or _IS_WORKER[\"v\"]:\r\n        return",
+    "new": "    if not _RUN_PROGRESS:\r\n        return",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L1, and this is the exact state that produced FU-362's live-stall measurement. A worker never sets the collected total and counts only its own shard, so when a worker's write lands last the file reads {collected: null, reported: <a tenth of the truth>}. Driven both ways in W567: mid-flight the file read {collected: 564, reported: 70} because a controller write happened to be last, and the same run once dead left {collected: null, reported: 10}. Whose write is last is a race that nothing settles when the session never finishes."
+  },
+  {
+    "tag": "the collected total is dropped, so a stall reads NOT KNOWN instead of INCOMPLETE",
+    "file": "integration_tests/conftest.py",
+    "old": "            json.dump({\"collected\": _collected_total[\"n\"], \"reported\": len(_reported_nodes)}, fh)",
+    "new": "            json.dump({\"collected\": None, \"reported\": len(_reported_nodes)}, fh)",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L2, and it is FU-362(e)'s whole point. NOT KNOWN was never the WRONG answer — it was the right answer reached the wrong way, because no total existed rather than because a short count was compared against one. A gate that returns the right answer by the wrong route returns the wrong answer when the route changes, and INCOMPLETE is the only verdict that names HOW MANY tests never reported."
+  },
+  {
+    "tag": "the stall watchdog is armed with no directory set",
+    "file": "integration_tests/conftest.py",
+    "old": "    if _STALL_DIR:\r\n        try:\r\n            os.makedirs(_STALL_DIR, exist_ok=True)",
+    "new": "    if True:\r\n        try:\r\n            os.makedirs(_STALL_DIR or \".\", exist_ok=True)",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L3, RE-TARGETED after the first version came back VACUOUS — and the reason is worth keeping. That mutation removed the `not _STALL_DIR` test inside `_arm_stall_dump`, and nothing broke because that test is REDUNDANT: the file handle is None unless `pytest_configure` opened one, and the handle check already covers it. The opt-in is really enforced in `pytest_configure`, so that is where the mutation belongs. An instrument that arms itself without being asked writes files nobody expected into directories nobody chose, in every process, on every run — which is why this is opt-in exactly as the progress file is."
+  },
+  {
+    "tag": "six workers share one dump file, interleaving six tracebacks",
+    "file": "integration_tests/conftest.py",
+    "old": "            _who = \"controller\"\r\n            if _IS_WORKER[\"v\"]:\r\n                _who = str(config.workerinput.get(\"workerid\") or \"worker\")",
+    "new": "            _who = \"run\"",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L3. This is the shared-file defect of the progress instrument one layer along, and worse in effect: six concurrent tracebacks written into one handle interleave into something nobody can read, so the one artefact FU-301 has been waiting for since W507 would arrive unusable. The leg asserts a controller config and a worker config produce DIFFERENT, self-naming files."
+  },
+  {
+    "tag": "the watchdog repeats, taking hundreds of dumps during a long run",
+    "file": "integration_tests/conftest.py",
+    "old": "        faulthandler.dump_traceback_later(_STALL_AFTER_S, repeat=False, file=_STALL_FH[\"f\"])",
+    "new": "        faulthandler.dump_traceback_later(_STALL_AFTER_S, repeat=True, file=_STALL_FH[\"f\"])",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L4, and it is a SAFETY property rather than a tidiness one. Driven at a 3s threshold with repeat=True this fired about thirty times in a hundred seconds — 233 KB of tracebacks taken while the interpreter was importing and rewriting test modules — and that run also printed 'Windows fatal exception: access violation' where a control run at the same selector with the watchdog off did not. Causation was NOT established, and that is precisely the reason: one stack is what the row needs, and a watchdog that might take down the run it watches is worse than no watchdog."
+  },
+  {
+    "tag": "the watchdog is re-armed behind the controller guard, so no worker ever dumps",
+    "file": "integration_tests/conftest.py",
+    "old": "    if _terminal:\r\n        _arm_stall_dump()\r\n    if not _RUN_PROGRESS or _IS_WORKER[\"v\"]:\r\n        return",
+    "new": "    if not _RUN_PROGRESS or _IS_WORKER[\"v\"]:\r\n        return\r\n    if _terminal:\r\n        _arm_stall_dump()",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L4, and the ordering is the whole value of the watchdog. A stalled WORKER is the process FU-301 needs a stack from and only that worker can take one, so arming behind a guard that silences workers leaves the instrument pointed at the one process that is not stuck. The leg compares the two positions in the hook rather than merely checking both calls exist."
+  },
+  {
+    "tag": "a finished run leaves its watchdog armed, so it dumps after the session ended",
+    "file": "integration_tests/conftest.py",
+    "old": "            faulthandler.cancel_dump_traceback_later()",
+    "new": "            pass",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L4. A pending timer outliving its session writes tracebacks into a file after the run completed, which a reader can only interpret as a stall that never happened. An instrument reporting a defect it did not observe is worse than one that stays silent, and this is the same class as a guard that cannot fail — inverted."
+  },
+  {
+    "tag": "the closed external-profiler route stops being recorded",
+    "file": "integration_tests/conftest.py",
+    "old": "os error 31",
+    "new": "an error",
+    "selector": "w567",
+    "expect": "BLIND(red)",
+    "why": "L5. FU-301's stated next step was a stack from py-spy. MEASURED in W567: py-spy installs and cannot read a process under this Windows Store Python, failing with 'A device attached to the system is not functioning' — so it is a CLOSED route, not an unattempted one. Recording the error is the difference between a later round building the alternative and a later round spending itself discovering the same wall."
+  }
+]

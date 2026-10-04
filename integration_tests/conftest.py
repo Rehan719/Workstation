@@ -134,6 +134,70 @@ _RUN_PROGRESS = os.environ.get("WORKSTATION_RUN_PROGRESS") or ""
 _reported_nodes = set()
 _collected_total = {"n": None}
 _xdist_ids = set()          # W539 — the union of every worker's collected ids
+#  W567 — AM I A WORKER? Only the controller may write the progress file. It is a dict rather than a bare
+#  name so the hook that sets it needs no `global`, and it defaults to False so a SERIAL run writes
+#  normally. The only way a process can know is the attribute xdist attaches to a worker's config.
+_IS_WORKER = {"v": False}
+
+
+#  W567 — THE STALL WATCHDOG. FU-301 has carried an unexplained parallel stall since W507: every worker
+#  idle at once, no CPU, no slow test, and the row's stated next step was to get a stack from a live
+#  stalled worker. MEASURED THIS ROUND: py-spy installs and CANNOT WORK against this Python — the Windows
+#  Store (MSIX) install blocks process inspection ("A device attached to the system is not functioning",
+#  os error 31) — so the external-profiler route is closed, not merely unattempted, and a later round
+#  should not spend itself retrying it.
+#
+#  faulthandler works from INSIDE the process, so the sandbox is irrelevant, and it dumps EVERY thread
+#  with full stacks. The timer is RE-ARMED on each terminal report, which turns a periodic dump into a
+#  stall detector: it fires only when no test has finished for the whole timeout. The default is well
+#  above the slowest test measured on this suite (158s), so a legitimately slow test cannot trip it.
+#
+#  OPT-IN, like the progress file, and it never breaks the run it is watching.
+_STALL_DIR = os.environ.get("WORKSTATION_STALL_DUMP") or ""
+_STALL_AFTER_S = float(os.environ.get("WORKSTATION_STALL_DUMP_S") or "300")
+_STALL_FH = {"f": None}
+
+
+def _arm_stall_dump():
+    """(Re)start the countdown. Called at configure and after every terminal report."""
+    if not _STALL_DIR or _STALL_FH["f"] is None:
+        return
+    try:
+        import faulthandler
+        #  repeat=False, AND THAT IS A SAFETY DECISION RATHER THAN A PREFERENCE. Driven at a pathological
+        #  3s threshold with repeat=True, this fired about thirty times in a hundred seconds — 233 KB of
+        #  tracebacks taken while the interpreter was importing and rewriting test modules — and that run
+        #  also printed "Windows fatal exception: access violation", which a control run at the same
+        #  selector with the watchdog off did not. I could not prove the watchdog caused the crash, and
+        #  that is precisely why it does not repeat: ONE stack at the moment of a stall is what FU-301
+        #  needs, and a watchdog that might take down the run it is watching is worse than none. The timer
+        #  is re-armed after every terminal report, so a long run never accumulates pending dumps.
+        faulthandler.dump_traceback_later(_STALL_AFTER_S, repeat=False, file=_STALL_FH["f"])
+    except Exception:          # noqa: BLE001 — a watchdog must never break the run it watches
+        pass
+
+
+def pytest_configure(config):
+    #  RUNS IN EVERY PROCESS, controller and workers alike — which is exactly what is needed, because each
+    #  one must decide for itself whether it may write the shared progress file, and each must arm its own
+    #  watchdog: a stalled WORKER is the thing FU-301 needs a stack from, and only that worker can take it.
+    _IS_WORKER["v"] = hasattr(config, "workerinput")
+    if _STALL_DIR:
+        try:
+            os.makedirs(_STALL_DIR, exist_ok=True)
+            _who = "controller"
+            if _IS_WORKER["v"]:
+                _who = str(config.workerinput.get("workerid") or "worker")
+            #  ONE FILE PER PROCESS. Six workers sharing one file would interleave six tracebacks into
+            #  something nobody could read, which is the shape of defect this round is already fixing in
+            #  the progress file one layer along.
+            _STALL_FH["f"] = open(os.path.join(_STALL_DIR, f"stall-{_who}.txt"),
+                                  "w", encoding="utf-8", buffering=1)
+            _STALL_FH["f"].write(f"# {_who}: armed, dumps every thread if no test finishes for "
+                                 f"{_STALL_AFTER_S:.0f}s\n")
+            _arm_stall_dump()
+        except Exception:      # noqa: BLE001
+            _STALL_FH["f"] = None
 
 
 def _write_progress():
@@ -183,11 +247,36 @@ def pytest_collection_finish(session):
 
 
 def pytest_runtest_logreport(report):
-    # One terminal outcome per test: the call phase, or a setup that skipped or failed without reaching one.
-    if not _RUN_PROGRESS:
+    """One terminal outcome per test: the call phase, or a setup that skipped or failed without one.
+
+    THE CONTROLLER OWNS THIS FILE, and W567 measured what it cost that this hook did not say so. It had
+    no controller guard, so under xdist it fired in every worker too and all seven processes wrote the
+    same path. A worker never sets the collected total — both hooks that do are controller-only — so a
+    worker writes `collected: null`, and it counts only its OWN shard. WHOSE WRITE IS LAST IS A RACE, and
+    on a run that never finishes there is no `pytest_sessionfinish` to settle it.
+
+    DRIVEN, BEFORE AND AFTER. A parallel run sampled mid-flight read {collected: 564, reported: 70} —
+    correct, because a controller write happened to be last. The same run, once its processes were gone,
+    left {collected: null, reported: 10} on disk: a worker's shard count, at a multiple of ten from the
+    gate below, with no total. That is FU-362's live-stall measurement reproduced exactly, and the
+    consequence is the row's own words: run_verdict then answers NOT KNOWN *because no collected count
+    exists*, rather than INCOMPLETE *because a short reported count was compared against a known total*,
+    which is the route it was designed to detect a stall by. A gate that reaches the right answer by the
+    wrong route gives the wrong answer when the route changes.
+
+    xdist forwards every worker's report to the controller, so the controller sees them all: guarding the
+    write loses no counts and makes the numerator and the denominator come from one process.
+    """
+    _terminal = (report.when == "call"
+                 or (report.when == "setup" and report.outcome in ("skipped", "failed")))
+    #  THE WATCHDOG IS RE-ARMED IN EVERY PROCESS, before the controller guard below. A stalled WORKER is
+    #  what FU-301 needs a stack from and only that worker can take one, so this must not be behind a
+    #  guard that silences workers.
+    if _terminal:
+        _arm_stall_dump()
+    if not _RUN_PROGRESS or _IS_WORKER["v"]:
         return
-    terminal = report.when == "call" or (report.when == "setup" and report.outcome in ("skipped", "failed"))
-    if terminal:
+    if _terminal:
         _reported_nodes.add(report.nodeid)
         if len(_reported_nodes) % 10 == 0:
             _write_progress()
@@ -196,3 +285,15 @@ def pytest_runtest_logreport(report):
 def pytest_sessionfinish(session, exitstatus):
     # Writes the final count when the run DOES finish. Its ABSENCE is what the verdict reader detects.
     _write_progress()
+    #  AND DISARM THE WATCHDOG, in every process. A run that finished must leave no pending timer: with
+    #  repeat=True an un-cancelled one would dump tracebacks into a file after the session was over,
+    #  which reads as a stall that never happened. An instrument that reports a defect it did not observe
+    #  is worse than one that is silent.
+    if _STALL_FH["f"] is not None:
+        try:
+            import faulthandler
+            faulthandler.cancel_dump_traceback_later()
+            _STALL_FH["f"].write(f"# disarmed: the session finished with exit status {exitstatus}\n")
+            _STALL_FH["f"].flush()
+        except Exception:      # noqa: BLE001
+            pass

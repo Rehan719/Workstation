@@ -6365,11 +6365,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W567",
       "note": "",
       "slot_source": "it is FU-301's own subject, which rides P2.17",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The INSTRUMENT half is delivered; the STALL ITSELF remains unexplained and FU-301 still holds it. CAUSE OF (e), driven both ways: pytest_runtest_logreport had no controller guard, so every xdist worker wrote the same progress path - a worker never sets the collected total and counts only its own shard, and whose write lands LAST is a race nothing settles when the session never finishes. MEASURED: a parallel run sampled mid-flight read {collected 564, reported 70} (correct, a controller write was last); the same run once its processes were gone left {collected null, reported 10}, reproducing the live-stall symptom exactly. Now controller-only, so a stall reads INCOMPLETE with the unreported count named - the route run_verdict was designed for - instead of NOT KNOWN. AND FU-301's STATED NEXT STEP IS NOW POSSIBLE BY A DIFFERENT ROUTE: py-spy installs and CANNOT read a process under this Windows Store Python (os error 31), so the external profiler is a CLOSED route, not an unattempted one. A per-process faulthandler watchdog is armed instead - it dumps every thread from INSIDE the worker, re-armed after each terminal report so it fires only when nothing finishes, repeat=False because at a 3s threshold with repeat=True it took 233KB of tracebacks in 100s and coincided with a fatal access violation a control run did not show."
     },
     {
       "id": "FU-363",

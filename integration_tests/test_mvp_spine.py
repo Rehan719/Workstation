@@ -35619,3 +35619,177 @@ def test_w566_the_supplied_distress_route_carries_its_reviewer_and_the_matter_ha
         if _r.get("status") == "open" and _r.get("slot") == "OWNER":
             assert _r.get("owner_gated") is True, (
                 _r["id"], "a row awaits the Owner and is not gated, so a round could schedule it")
+
+
+def test_w567_the_controller_owns_the_progress_file_and_a_stalled_worker_can_dump_its_own_stack(client):
+    """FU-362(e) and FU-301's stated next step. Both are about an INSTRUMENT, not about the stall itself.
+
+    FU-362 caught the parallel stall alive and measured the progress file reading
+    {collected: null, reported: 93} while 544 tests had produced a terminal character. Its own words on
+    why that matters: run_verdict "answered NOT KNOWN, which is the correct verdict — but it reached it
+    because no collected count existed, NOT because a short reported count was compared against a known
+    total, which is how it was designed to detect this. A gate that returns the right answer by the wrong
+    route will return the wrong answer when the route changes."
+
+    THE CAUSE, DRIVEN BOTH WAYS IN W567. `pytest_runtest_logreport` had no controller guard, so every
+    xdist worker wrote the same path; a worker never sets the collected total and counts only its own
+    shard, and whose write lands LAST is a race that nothing settles when the session never finishes. A
+    parallel run sampled mid-flight read {collected: 564, reported: 70} — correct, a controller write had
+    happened to be last. The same run, once its processes were gone, left {collected: null, reported: 10}.
+
+    THE STALL ITSELF REMAINS UNEXPLAINED and FU-301 still holds it. What changed is that a stalled worker
+    can now be made to dump its own stack, because the external route is closed: py-spy installs and
+    CANNOT read a process under this Windows Store Python (os error 31).
+    """
+    import importlib.util as _il567
+    import io as _io567
+    import json as _json567
+    import os as _os567
+    import pathlib as _pl567
+    import sys as _sys567
+    import tempfile as _tmp567
+
+    _root = _pl567.Path(__file__).resolve().parents[1]
+
+    def _fresh_conftest(progress_path, stall_dir=None, stall_s=None):
+        """conftest loaded as its own module, so its module-level state is this leg's alone."""
+        _prev = {k: _os567.environ.get(k) for k in
+                 ("WORKSTATION_RUN_PROGRESS", "WORKSTATION_STALL_DUMP", "WORKSTATION_STALL_DUMP_S")}
+        _os567.environ["WORKSTATION_RUN_PROGRESS"] = progress_path or ""
+        if stall_dir is None:
+            _os567.environ.pop("WORKSTATION_STALL_DUMP", None)
+        else:
+            _os567.environ["WORKSTATION_STALL_DUMP"] = stall_dir
+        if stall_s is not None:
+            _os567.environ["WORKSTATION_STALL_DUMP_S"] = str(stall_s)
+        try:
+            _spec = _il567.spec_from_file_location("_w567_cf", _root / "integration_tests/conftest.py")
+            _m = _il567.module_from_spec(_spec)
+            _spec.loader.exec_module(_m)
+            return _m
+        finally:
+            for _k, _v in _prev.items():
+                if _v is None:
+                    _os567.environ.pop(_k, None)
+                else:
+                    _os567.environ[_k] = _v
+
+    class _Rep:
+        def __init__(self, nid):
+            self.when, self.outcome, self.nodeid = "call", "passed", nid
+
+    # ── L1. A WORKER WRITES NOTHING; THE CONTROLLER WRITES BOTH NUMBERS ─────────────────────────
+    _d = _tmp567.mkdtemp()
+    _p = _os567.path.join(_d, "prog.json")
+    _cf = _fresh_conftest(_p)
+    _cf._IS_WORKER["v"] = True
+    _cf._collected_total["n"] = None
+    for _i in range(25):
+        _cf.pytest_runtest_logreport(_Rep(f"w::{_i}"))
+    assert not _os567.path.exists(_p), (
+        "a WORKER wrote the shared progress file. A worker never sets the collected total and counts only "
+        "its own shard, so its write is the one that produced {collected: null} on a live stall")
+    #  and the controller writes a total AND a count that came from the same process
+    _cf._IS_WORKER["v"] = False
+    _cf._collected_total["n"] = 564
+    _cf._reported_nodes.clear()
+    for _i in range(30):
+        _cf.pytest_runtest_logreport(_Rep(f"c::{_i}"))
+    _got = _json567.loads(_io567.open(_p, encoding="utf-8").read())
+    assert _got == {"collected": 564, "reported": 30}, _got
+
+    # ── L2. A STALL THEREFORE READS INCOMPLETE, BY THE DESIGNED ROUTE ───────────────────────────
+    #  THE WHOLE POINT. NOT KNOWN was the right answer reached the wrong way; INCOMPLETE names how many
+    #  tests never reported, which is what makes a stall legible rather than merely survivable.
+    _sys567.path.insert(0, str(_root / "scripts"))
+    import run_verdict as _rv567
+    _v = _rv567.verdict(_p)
+    assert _v["verdict"] == _rv567.INCOMPLETE, (
+        "a short reported count against a known total no longer reads as INCOMPLETE", _v)
+    assert _v["unreported"] == 534, _v
+    assert "UNKNOWN rather than green" in _v["basis"], _v["basis"]
+    #  and the three-state reader still says NOT KNOWN when the total is genuinely absent
+    _io567.open(_p, "w", encoding="utf-8").write(_json567.dumps({"collected": None, "reported": 10}))
+    assert _rv567.verdict(_p)["verdict"] == _rv567.NOT_KNOWN, (
+        "an absent total must still be NOT KNOWN — that verdict was never wrong, only reached wrongly")
+
+    # ── L3. THE STALL WATCHDOG IS OPT-IN AND WRITES PER PROCESS ─────────────────────────────────
+    _cf2 = _fresh_conftest(None, stall_dir=None)
+    assert _cf2._STALL_DIR == "", "the watchdog read a directory with none set"
+
+    class _Cfg0:
+        pass
+
+    #  CONFIGURE MUST BE CALLED, not merely imported. The first version of this leg checked only the
+    #  state at import, so a blind that removed the opt-in guard inside `pytest_configure` changed
+    #  nothing it looked at and came back VACUOUS — twice, because the first mutation also happened to
+    #  target a redundant check. The property is that configuring with no directory opens NOTHING.
+    _before = set(_os567.listdir(_tmp567.gettempdir()))
+    _cf2.pytest_configure(_Cfg0())
+    assert _cf2._STALL_FH["f"] is None, (
+        "the watchdog opened a dump file with no directory set. An instrument that arms itself without "
+        "being asked writes files nobody expected, in every process, on every run")
+    assert not _os567.path.exists("stall-controller.txt"), (
+        "the watchdog wrote into the working directory when no dump directory was set")
+    del _before
+    _sd = _tmp567.mkdtemp()
+    _cf3 = _fresh_conftest(None, stall_dir=_sd, stall_s=600)
+
+    class _Cfg:
+        pass
+
+    _cfg = _Cfg()
+    _cf3.pytest_configure(_cfg)                 # no workerinput → the controller
+    assert _cf3._IS_WORKER["v"] is False, "a config without workerinput was read as a worker"
+    assert _os567.path.exists(_os567.path.join(_sd, "stall-controller.txt")), _os567.listdir(_sd)
+    #  A WORKER GETS ITS OWN FILE, named for itself. Six workers sharing one would interleave six
+    #  tracebacks into something unreadable — the same defect as the shared progress file, one layer on.
+    _cfgw = _Cfg()
+    _cfgw.workerinput = {"workerid": "gw2"}
+    _cf3.pytest_configure(_cfgw)
+    assert _cf3._IS_WORKER["v"] is True, "a config WITH workerinput was not read as a worker"
+    assert _os567.path.exists(_os567.path.join(_sd, "stall-gw2.txt")), _os567.listdir(_sd)
+
+    # ── L4. IT FIRES ONCE, NOT REPEATEDLY — AND THAT IS A SAFETY DECISION ───────────────────────
+    #  Driven at a 3s threshold with repeat=True it fired ~30 times in 100s, 233 KB of tracebacks taken
+    #  while the interpreter was importing test modules, and that run also printed "Windows fatal
+    #  exception: access violation" where a control run with the watchdog off did not. Causation was NOT
+    #  established, which is exactly why it does not repeat: one stack is what FU-301 needs, and a
+    #  watchdog that might take down the run it watches is worse than no watchdog.
+    _cfsrc = (_root / "integration_tests/conftest.py").read_text(encoding="utf-8")
+    #  ASSERTED ON THE CALL, NOT ON THE LITERAL'S ABSENCE. The first version of this leg searched the
+    #  region for the forbidden spelling and matched the COMMENT that explains why it was removed — a fix
+    #  comment quoting the literal its own guard forbids, committed inside the guard. The call lines are
+    #  extracted and checked; prose may say anything it needs to.
+    _calls = [_l for _l in _cfsrc.splitlines() if "dump_traceback_later(" in _l and "cancel" not in _l]
+    assert _calls, "nothing arms the stall watchdog any more"
+    for _l in _calls:
+        assert "repeat=False" in _l, (
+            "the stall watchdog repeats again. At a 3s threshold with repeat=True it took 233 KB of "
+            "tracebacks in 100s while the interpreter was importing, and that run also printed a fatal "
+            "access violation a control run did not. One dump per stall window is what FU-301 needs",
+            _l.strip())
+    #  THE TIMER IS RE-ARMED IN EVERY PROCESS, BEFORE the controller guard: a stalled WORKER is what
+    #  FU-301 needs a stack from, and only that worker can take one.
+    _hook = _cfsrc.split("def pytest_runtest_logreport")[1][:2600]
+    assert _hook.index("_arm_stall_dump()") < _hook.index('_IS_WORKER["v"]'), (
+        "the watchdog is re-armed behind the controller guard, so a worker would never dump — which is "
+        "the only process whose stack matters here")
+    #  AND IT IS DISARMED WHEN A RUN FINISHES. With a pending timer, a finished session would dump
+    #  tracebacks afterwards and read as a stall that never happened.
+    assert "cancel_dump_traceback_later" in _cfsrc, "a finished run leaves its watchdog armed"
+    assert _cfsrc.index("cancel_dump_traceback_later") > _cfsrc.index("def pytest_sessionfinish"), (
+        "the watchdog is cancelled somewhere other than sessionfinish")
+    #  it never raises: every faulthandler call is wrapped
+    assert _cfsrc.count("noqa: BLE001") >= 2, (
+        "the watchdog's failure paths are not all swallowed; an instrument must never break its subject")
+
+    # ── L5. THE CLOSED ROUTE IS RECORDED, SO NO LATER ROUND SPENDS ITSELF ON IT ─────────────────
+    #  FU-301's stated next step was a stack from py-spy. MEASURED: py-spy installs and cannot read a
+    #  process under this Windows Store Python ("A device attached to the system is not functioning",
+    #  os error 31). That is a closed route, not an unattempted one, and saying so is the difference
+    #  between a round that builds the alternative and a round that retries the same thing.
+    assert "os error 31" in _cfsrc, (
+        "conftest no longer records WHY the external-profiler route is closed, so a later round will "
+        "retry py-spy and find out again")
+    assert "py-spy" in _cfsrc, _cfsrc[:0]

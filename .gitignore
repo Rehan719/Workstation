@@ -80,3 +80,7 @@ docs/*.tmp
 *.anchor
 genome/
 models/
+# W567 - the stall watchdog's own artefacts: tracebacks from a parallel run that never
+# finished. Useful for one investigation, never part of the tree. A blind that removes the
+# watchdog's opt-in guard writes one into the repo root, so this is residue protection too.
+stall-*.txt
