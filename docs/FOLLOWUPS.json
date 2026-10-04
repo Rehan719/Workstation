@@ -4476,11 +4476,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W571",
       "note": "",
       "tier": 2,
-      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover."
+      "slot_source": "W505: P2.4 is 'the scatter' - a reach audit over product surfaces. This row is about the ROUND'S OWN COST (the suite's wall clock, the blind sweep, worktree accumulation, batch scoping), which is P2.17's entire subject, and P2.17's unbuilt part (b) IS the parallel suite. Riding P2.4 left P2.17 with no rows to size it and inflated P2.4 with a subsystem it does not cover.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Both fixes the row named are built as scripts/refutation_gate.py and the round rhythm now names it. (a) 'before --agents N' REFUSES when the disk cannot hold them, on the MEASURED cost of a checkout (160 MB over 5,126 files, W569) plus headroom, and 'cleanup' removes every secondary worktree and never the main one. (b) 'after --result' reconciles and refuses to call a starved run complete. AND THE ROW'S PREMISE WAS BETTER THAN IT KNEW: it said the errored count is in the tool result; measured, the task NOTIFICATION carries aggregate counts while the RESULT FILE carries one workflow_agent record per agent with its own state and a label naming its lens - so completeness is decided PER LENS from the artefact a round keeps, and a lens that lost every agent is NAMED. W490's failure was that the total looked plausible. Driven on W490's own shape (45 launched, 18 done, 27 errored -> INCOMPLETE), on a dead lens, on a missing record, and on an unrecognised state, which counts as not-done because the failure states cannot be enumerated from a successful run. Also retroactively verified tonight's own refutation: 5 lenses, 35 agents, all done, so its 30 findings were the complete set. Live state measured first: 1 worktree and 23 GB free, so the symptom was absent and only the mechanism was missing."
     },
     {
       "id": "FU-260",

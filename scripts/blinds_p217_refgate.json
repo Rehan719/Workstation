@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "the worktree cost loses its measurement and becomes a preference",
+    "file": "scripts/refutation_gate.py",
+    "old": "BYTES_PER_WORKTREE_BASIS = (\"measured W569: `git ls-files` is 5,126 files totalling 160 MB, and a \"",
+    "new": "BYTES_PER_WORKTREE_BASIS = (\"a reasonable allowance per worktree, and a \"",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L1. A floor derived from a number with no source is exactly the class W565 removed from the suite constant — and there the figure was even CORRECT, which is what makes it hard to see. Without the measurement a later round that finds the gate inconvenient has nothing to argue with except a preference."
+  },
+  {
+    "tag": "`before` stops refusing and merely reports",
+    "file": "scripts/refutation_gate.py",
+    "old": "    ok = usage.free >= need",
+    "new": "    ok = True",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L2, and it is the whole of fix (a). W490's 27 agents died BECAUSE nothing refused the launch; a gate that observes a full disk and proceeds reproduces that exactly, and the finding list that comes back will look plausible for the same reason it did then."
+  },
+  {
+    "tag": "the refusal stops naming what it prevents",
+    "file": "scripts/refutation_gate.py",
+    "old": "               \". REFUSED — W490 lost 27 of 45 agents to a full disk and the run still returned a \"",
+    "new": "               \". REFUSED: not enough disk space. \"",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L2. 'Not enough disk space' invites a round to raise the agent count and retry; naming W490 and its 27 dead agents explains why the number is a floor and not a suggestion. A refusal a reader cannot evaluate is a refusal they will route around."
+  },
+  {
+    "tag": "a result with no counts is treated as complete",
+    "file": "scripts/refutation_gate.py",
+    "old": "        return {\"complete\": None, \"missing_fields\": missing,",
+    "new": "        return {\"complete\": True, \"missing_fields\": missing,",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L5. NOT KNOWN is not a pass, and this is the measured-zero-versus-unmeasured-field class in a boolean: a result that says too little about its agents says NOTHING about whether they finished, and W490's run is what an unexamined finding list looks like."
+  },
+  {
+    "tag": "an unrecognised agent state counts as finished",
+    "file": "scripts/refutation_gate.py",
+    "old": "        done = by_state.get(AGENT_DONE, 0)\n        not_done = {k: v for k, v in by_state.items() if k != AGENT_DONE}",
+    "new": "        done = len(recs)\n        not_done = {}",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L3. The failure states cannot be enumerated from a successful run — every record in the only real sample says 'done' — so treating anything unrecognised as benign means inventing the one thing this gate exists to detect. Only 'done' counts, and the leg drives a state nobody has seen."
+  },
+  {
+    "tag": "a lens that lost every agent is no longer named",
+    "file": "scripts/refutation_gate.py",
+    "old": "        dead_lenses = sorted(k for k, v in lenses.items() if v[\"done\"] == 0)",
+    "new": "        dead_lenses = []",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L3, and it is what the aggregate counts structurally cannot say. The difference between '13 findings' and '13 findings and one dimension unexamined' is the difference between a lead and a false sense of coverage — W490's total looked plausible precisely because nothing named which dimension had gone silent."
+  },
+  {
+    "tag": "a missing agent record is no longer an agent nobody can account for",
+    "file": "scripts/refutation_gate.py",
+    "old": "        if launched is not None and len(recs) != launched:",
+    "new": "        if False and launched is not None and len(recs) != launched:",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L3. A record that was never written is a different failure from a record that says 'error': the first means the harness itself lost the agent, which is the shape a dropped shard or a truncated result file takes. Both must be caught, and only one of them leaves evidence in a state field."
+  },
+  {
+    "tag": "the lens is read from the last label segment again",
+    "file": "scripts/refutation_gate.py",
+    "old": "            lens = _parts[1] if len(_parts) > 1 else (_parts[0] if _parts else \"?\")",
+    "new": "            lens = _parts[-1] if _parts else \"?\"",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L4, and this was a real defect in this round rather than a hypothetical. A verify agent is labelled `verify:<lens>:<finding title>`, so the last segment is a FINDING: the first version reported 35 'lenses' for a run that had five, each holding one agent, which made the dead-lens check fire on any single death and name a finding where a lens belongs."
+  },
+  {
+    "tag": "cleanup stops separating the main worktree from the rest",
+    "file": "scripts/refutation_gate.py",
+    "old": "    main, rest = wts[0], wts[1:]",
+    "new": "    main, rest = wts[0], wts",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L6, and it is the most dangerous single mutation available in this file. A cleanup that can remove the MAIN worktree is far worse than the disk filling up: the disk costs a refutation round, and this would cost the working tree a round is holding. The leg asserts the slice AND that the repository survived the call."
+  },
+  {
+    "tag": "the round rhythm stops naming the gate, so nobody runs it",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "AND A REFUTATION PASSES THROUGH `scripts/refutation_gate.py`, BOTH WAYS",
+    "new": "A refutation may optionally use a gate script",
+    "selector": "w571",
+    "expect": "BLIND(red)",
+    "why": "L7, and FU-259's fix (a) is stated as a RHYTHM requirement: 'the round rhythm must CHECK free space before launching a refutation and REMOVE the round's worktrees after it'. A script nothing invokes is a script nobody runs, and an optional gate is not a gate — W490's round would have skipped it exactly as it skipped checking the disk."
+  }
+]

@@ -36258,3 +36258,131 @@ def test_w570_a_key_shown_only_by_a_printed_line_is_surfaced(client):
     assert "Two levels" in _seg570 and "not followed" in _seg570, (
         "the indirection helper no longer states its boundary", _seg570[:160])
     _ast570.parse(_src570)
+
+
+def test_w571_a_starved_refutation_cannot_read_as_a_complete_one(client):
+    """FU-259 — W490 raised 40 findings, verified 13, and the run returned a normal-looking result.
+
+    The other 27 agents died with "No space left on device" while creating their git worktrees, because
+    56 worktrees had accumulated across every round since W479 and nothing removed them. Removing 55
+    recovered 9.6 GB. So a round read 13 verified findings as a refutation of 40 and the difference was
+    invisible — the defect class this programme removes, in the instrument used to find it.
+
+    THE ROW NAMED TWO FIXES. (a) check free space before launching and remove the worktrees after;
+    (b) a refutation whose agents died must not read as a completed one. Both are driven here.
+
+    AND THE ROW'S PREMISE WAS BETTER THAN IT KNEW. It said the errored count "is in the tool result";
+    measured, the task NOTIFICATION carries aggregate counts and the RESULT FILE carries something
+    stronger — one `workflow_agent` record per agent with its own `state` and a `label` naming its lens
+    — so completeness is decided PER LENS from the artefact a round actually keeps. W490's failure was
+    that the total looked plausible; a lens that lost every agent can now be named.
+    """
+    import json as _json571
+    import pathlib as _pl571
+    import sys as _sys571
+
+    _root = _pl571.Path(__file__).resolve().parents[1]
+    _sys571.path.insert(0, str(_root / "scripts"))
+    import refutation_gate as _rg571
+
+    # ── L1. THE COST OF A WORKTREE IS MEASURED, NOT GUESSED ─────────────────────────────────────
+    #  A floor derived from a number with no source is the class W565 removed from the suite constant.
+    assert _rg571.BYTES_PER_WORKTREE > 0
+    assert "measured W569" in _rg571.BYTES_PER_WORKTREE_BASIS, (
+        "the per-worktree cost cites no measurement, so the gate's floor is a preference",
+        _rg571.BYTES_PER_WORKTREE_BASIS)
+    assert "5,126 files" in _rg571.BYTES_PER_WORKTREE_BASIS, _rg571.BYTES_PER_WORKTREE_BASIS
+
+    # ── L2. `before` REFUSES WHEN THE DISK CANNOT HOLD THE AGENTS, AND IS THREE-STATE ───────────
+    _ok = _rg571.before(1)
+    assert _ok["may_launch"] in (True, False, None), _ok
+    assert _ok["free_bytes"] is None or isinstance(_ok["free_bytes"], int), _ok
+    #  an absurd number of agents must be refused on this machine, whatever its free space
+    _huge = _rg571.before(100000)
+    assert _huge["may_launch"] is False, (
+        "a refutation needing far more disk than exists was not refused", _huge["basis"][:140])
+    assert "REFUSED" in _huge["basis"] and "W490" in _huge["basis"], (
+        "the refusal does not say what it is preventing, so a round will raise the number and retry",
+        _huge["basis"][:160])
+    #  and the arithmetic is the two figures it names, not a typed number
+    assert _huge["needed_bytes"] == 100000 * _rg571.BYTES_PER_WORKTREE + _rg571.HEADROOM_BYTES, _huge
+    #  THE HEADROOM IS REAL: agents run pytest, which writes stores, and that is not free
+    assert _rg571.HEADROOM_BYTES > 0 and "headroom" in _huge["basis"], _huge["basis"][:120]
+
+    # ── L3. `after` DECIDES FROM THE PER-AGENT RECORDS, AND NAMES A DEAD LENS ───────────────────
+    #  W490's shape: 45 launched, 18 done, 27 errored. It must come back INCOMPLETE.
+    _w490 = _rg571.after({"agentCount": 45, "workflowProgress":
+                          [{"type": "workflow_agent", "state": "done", "label": f"refute:l{_i % 3}"}
+                           for _i in range(18)]
+                          + [{"type": "workflow_agent", "state": "error", "label": f"refute:l{_i % 3}"}
+                             for _i in range(27)]})
+    assert _w490["complete"] is False, ("W490's own shape reads as a complete refutation", _w490)
+    assert "error x27" in _w490["basis"], _w490["basis"][:160]
+    assert "W490" in _w490["basis"], (
+        "the refusal does not name the round it is preventing a repeat of", _w490["basis"][:160])
+    #  A LENS THAT LOST EVERY AGENT IS NAMED. This is what the aggregate counts cannot say, and it is
+    #  the difference between "13 findings" and "13 findings and one dimension unexamined".
+    _dead = _rg571.after({"agentCount": 5, "workflowProgress":
+                          [{"type": "workflow_agent", "state": "done", "label": "refute:alive"}] * 3
+                          + [{"type": "workflow_agent", "state": "error", "label": "refute:dead"}] * 2})
+    assert _dead["complete"] is False and "every agent died in lens(es): dead" in _dead["basis"], (
+        _dead["basis"][:200])
+    #  A MISSING RECORD IS AN AGENT NOBODY CAN ACCOUNT FOR — a different failure from a failed one.
+    _gap = _rg571.after({"agentCount": 10, "workflowProgress":
+                         [{"type": "workflow_agent", "state": "done", "label": "refute:x"}] * 7})
+    assert _gap["complete"] is False and "7 agent record(s) for 10 launched" in _gap["basis"], (
+        _gap["basis"][:160])
+    #  ONLY "done" COUNTS. A state nobody has seen yet must not be assumed benign: the failure states
+    #  cannot be enumerated from a successful run, and guessing them invents what this gate detects.
+    _odd = _rg571.after({"agentCount": 2, "workflowProgress":
+                         [{"type": "workflow_agent", "state": "done", "label": "refute:a"},
+                          {"type": "workflow_agent", "state": "some_future_state", "label": "refute:a"}]})
+    assert _odd["complete"] is False, ("an unrecognised agent state was treated as finished", _odd)
+
+    # ── L4. THE LENS IS THE SECOND LABEL SEGMENT, MEASURED ON REAL LABELS ───────────────────────
+    #  A refute agent is `refute:<lens>`; a verify agent is `verify:<lens>:<finding title>`. Taking the
+    #  LAST segment reported 35 "lenses" for a run with five, each holding one agent — which made the
+    #  dead-lens check fire on any single death and name a FINDING instead of a lens.
+    _mixed = _rg571.after({"agentCount": 4, "workflowProgress": [
+        {"type": "workflow_agent", "state": "done", "label": "refute:guards"},
+        {"type": "workflow_agent", "state": "done", "label": "verify:guards:a long finding title here"},
+        {"type": "workflow_agent", "state": "done", "label": "refute:route-mechanism"},
+        {"type": "workflow_agent", "state": "done", "label": "verify:route-mechanism:another title"}]})
+    assert sorted(_mixed["by_lens"]) == ["guards", "route-mechanism"], (
+        "the lens is not read from the second label segment, so a verify agent is counted as its own "
+        "lens and a run of five lenses reports dozens", sorted(_mixed["by_lens"]))
+    assert _mixed["by_lens"]["guards"]["total"] == 2, _mixed["by_lens"]
+
+    # ── L5. A RESULT THAT SAYS TOO LITTLE IS NOT KNOWN, AND THAT IS NOT A PASS ──────────────────
+    assert _rg571.after({"confirmed": [1, 2, 3]})["complete"] is None, (
+        "a result with neither per-agent records nor aggregate counts was decided anyway")
+    assert _rg571.after("not a mapping")["complete"] is None
+    _nk = _rg571.after({"confirmed": []})
+    assert "This is not a pass" in _nk["basis"] or "as invisible as it was then" in _nk["basis"], (
+        _nk["basis"][:160])
+
+    # ── L6. `cleanup` NEVER TOUCHES THE MAIN WORKTREE ───────────────────────────────────────────
+    #  The accumulation was the cause, so removal is the fix — but a cleanup that could remove the
+    #  working tree would be far worse than the disk filling up.
+    _src571 = (_root / "scripts/refutation_gate.py").read_text(encoding="utf-8")
+    assert "main, rest = wts[0], wts[1:]" in _src571, (
+        "cleanup no longer separates the main worktree from the rest by position")
+    assert "for w in rest:" in _src571, "cleanup iterates something other than the secondary worktrees"
+    _cl = _rg571.cleanup()
+    assert isinstance(_cl.get("removed"), list) and isinstance(_cl.get("failed"), list), _cl
+    #  it is honest when there is nothing to do, rather than claiming a recovery
+    assert "never touched" in _cl["basis"] or "nothing is claimed" in _cl["basis"], _cl["basis"][:160]
+    #  AND THIS REPOSITORY'S OWN MAIN WORKTREE SURVIVED THE CALL
+    assert (_root / ".git").exists() and (_root / "scripts" / "refutation_gate.py").exists(), (
+        "cleanup damaged the working tree it was run in")
+
+    # ── L7. THE ROUND RHYTHM NAMES THE GATE, or nobody runs it ──────────────────────────────────
+    #  FU-259's fix (a) is "the round rhythm must CHECK free space before launching a refutation and
+    #  REMOVE the round's worktrees after it". A script nothing invokes is a script nobody runs.
+    _prompt571 = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _flat571 = " ".join(_prompt571.split())
+    assert "refutation_gate.py" in _flat571, (
+        "the delivery plan's rhythm does not name the gate, so a refutation can still be launched "
+        "without checking the disk and read as complete with agents dead")
+    for _frag in ("before --agents", "after --result", "cleanup"):
+        assert _frag in _flat571, ("the rhythm does not say how to invoke the gate", _frag)
