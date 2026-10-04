@@ -292,6 +292,30 @@ _RULING_PATTERNS = (
     r"\b(?:am|are|was|were)\s+i\s+(?:sinning|sinful|a\s+sinner|committing\s+a\s+sin)\b",
     r"\bgive\s+me\s+a\s+(?:ruling|fatwa|verdict)\b",
     r"\bis\s+.{0,40}\b(?:halal|haram|haraam)\b",
+    #  W580 (FU-372) — ADDED BY THE DRIVEN LIST. Nine phrasings of the SAME REQUEST were missed, and
+    #  none of them is indirect, a paraphrase or another language: they are the ordinary words a person
+    #  reaches for. The six patterns above required a specific frame ("is it halal", "give me a
+    #  ruling"), so a question asking for exactly the same thing in a different shape went unscreened.
+    #  This is the distress screen's lesson in a second place: a pattern written from the inside matches
+    #  the phrasing an author imagines and misses the one a person types.
+    #  "is eating this permissible" · "is this allowed in Islam" · "is this forbidden for a Muslim"
+    r"\bis\s+.{0,40}\b(?:permissible|forbidden|allowed|prohibited)\b",
+    r"\b(?:allowed|permissible|forbidden|prohibited|haram|halal)\s+(?:in|under|by)\s+"
+    r"(?:islam|shariah|sharia|the\s+(?:qur\s?'?an|quran))\b",
+    #  "would this be haram" · any modal before the judgement word
+    r"\b(?:would|will|could|might)\s+(?:it|this|that)\s+be\s+"
+    r"(?:halal|haram|haraam|permissible|forbidden|sinful|a\s+sin)\b",
+    #  "what is the Islamic ruling on this" · "I need a religious verdict"
+    r"\b(?:islamic|religious|shariah|sharia|scholarly)\s+(?:ruling|verdict|opinion|judgement|judgment)\b",
+    r"\b(?:ruling|verdict|fatwa)\s+(?:on|about|regarding)\b",
+    #  "can I do this according to sharia" · "should I do this islamically"
+    r"\b(?:according\s+to|under|per)\s+(?:islam|shariah|sharia|islamic\s+law)\b",
+    r"\b(?:islamically|religiously)\s+(?:speaking|permitted|allowed|acceptable|ok|okay)\b",
+    r"\bshould\s+i\s+.{0,40}\bislamically\b",
+    #  "rule on this for me"
+    r"\brule\s+on\s+(?:this|that|it)\b",
+    #  "does this count as a sin"
+    r"\b(?:does|would|is)\s+(?:this|that|it)\s+count\s+as\s+(?:a\s+)?(?:sin|haram|sinful)\b",
 )
 
 #  A claim that science PROVES a theological truth (in either direction). The defect is the proof claim,
@@ -302,6 +326,38 @@ _PROOF_PATTERNS = (
     r"\b(?:scientific|empirical)\s+proof\s+(?:of|that)\b",
     r"\b(?:qur\s?'?an|quran)\s+(?:is\s+)?scientifically\s+(?:proven|accurate|verified)\b",
     r"\bdisprove[sdn]?\s+(?:god|allah|religion)\b",
+    #  W580 (FU-372) — ADDED BY THE DRIVEN LIST. Eight were missed and every one is the same claim with
+    #  a different VERB. The module already states the rule these follow from: "the defect is the proof
+    #  claim, not the subject", so a verb asserting the matter is settled is in scope whatever it is.
+    #  The five patterns above enumerated `prove` and its inflections and nothing else, which made the
+    #  screen a check on one word rather than on the claim.
+    #  confirms · validates · establishes · demonstrates · verifies · shows
+    #  W580 — THE INFLECTIONS ARE SPELLED OUT, and the first cut of these two patterns DERIVED them with
+    #  `(?:e[sd]?|ing|es)?`, which has no bare `s`. So "research CONFIRMS the Quran" and "physics
+    #  CONFIRMS the creator" were missed by the very patterns written to catch them — the identical
+    #  defect the distress screen above records ("A clever (?:s|ed|ing)? is the thing that failed"),
+    #  re-committed inside its own fix, in the same file that warns about it. Found by re-driving the
+    #  list after the widening rather than by reading the regex.
+    r"\b(?:scien(?:ce|tists?)|research|studies|study|evidence|physics|biology|data)\s+"
+    r"(?:ha(?:s|ve)\s+)?(?:confirms?|confirmed|confirming"
+    r"|validates?|validated|validating"
+    r"|establishes?|established|establishing"
+    r"|demonstrates?|demonstrated|demonstrating"
+    r"|verifies|verified|verifying"
+    r"|substantiates?|substantiated|substantiating)\b",
+    r"\b(?:confirms?|confirmed|validates?|validated|establishes?|established"
+    r"|demonstrates?|demonstrated|verifies|verified)\s+(?:that\s+)?(?:the\s+)?"
+    r"(?:god|allah|the\s+(?:qur\s?'?an|quran)|divine|creator)\b",
+    #  "studies show that God exists"
+    r"\b(?:studies|research|science|data)\s+show[sn]?\s+(?:that\s+)?"
+    r"(?:god|allah|the\s+(?:qur\s?'?an|quran)|divine|the\s+creator)\b",
+    #  "empirically demonstrates divine design"
+    r"\bempirical(?:ly)?\s+\w*\s*(?:demonstrat|prov|confirm|establish)\w*\b",
+    #  "it is a scientific fact that God created this"
+    r"\bscientific\s+fact\s+that\b",
+    #  the other direction, which the module says is the same defect
+    r"\b(?:science|research|evidence|studies)\s+(?:ha(?:s|ve)\s+)?"
+    r"(?:refute[sdn]?|disprove[sdn]?|debunk(?:s|ed)?)\s+(?:god|allah|religion|faith|islam)\b",
 )
 
 #  A distress signal. These patterns are deliberately broad in ONE direction only: a false match costs a

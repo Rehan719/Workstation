@@ -6622,11 +6622,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W580",
       "note": "",
       "tier": 1,
-      "slot_source": "the router sent it to P2.4, whose bar the Owner's ruling of 2026-10-03 closed to arrivals; it is clause (b) - an instrument that would catch a defect and did not, found by driving it rather than reading it. This is the SECOND arrival the router mis-sent in one round, which is the subject of the registered route-versus-closed-bar row"
+      "slot_source": "the router sent it to P2.4, whose bar the Owner's ruling of 2026-10-03 closed to arrivals; it is clause (b) - an instrument that would catch a defect and did not, found by driving it rather than reading it. This is the SECOND arrival the router mis-sent in one round, which is the subject of the registered route-versus-closed-bar row",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE DRIVEN LIST is scripts/screen_phrasings.py and it is re-runnable, which is what the row asked for rather than a probe: 61 phrasings over four screens, each labelled for/not-for BEFORE the result was known so the pattern cannot decide what it was written for, and each screen's own literals included as CONTROLS. Measured first: 28 missed. The controls are why that number is a measurement - the first driver called the PRE-execution gate for output and reported nine misses including the regex's own literals, which would have accused working code. After widening: 2 missed, 0 false positives, and both are the prose intents the gate now DECLARES it does not read, carried to the caller on every pass and onto the economy cycle's governance record beside its bare status passed. religious_ruling_gate 9 phrasings of the same request, theological_proof_gate 8 verbs other than prove, policy_gate intents normalised so a space is not a bypass plus eight destruction synonyms, policy_gate output any private-key algorithm and TRUNCATE and an unbounded DELETE. AND THE WIDENING COMMITTED THE DISTRESS SCREEN'S OWN DOCUMENTED BUG IN THE FILE THAT WARNS ABOUT IT: the first cut DERIVED the verb inflections with a suffix group having no bare s, so research confirms the Quran was missed by the pattern written to catch it. Found by RE-DRIVING the list, not by reading the regex. 7 of 7 blinds red after three were re-aimed - one had been a no-op because two adjacent patterns catch the same phrasing, and two exposed real guard gaps: a list-size floor loose enough to allow a phrasing being commented out, and a declared-limit set that could be GROWN to excuse a defect on another screen."
     },
     {
       "id": "FU-373",
@@ -7201,6 +7204,42 @@
       "closed_by": null,
       "note": "",
       "slot_source": "clause (b) continues to own it: an instrument that says what it is, now that the second instrument exists"
+    },
+    {
+      "id": "FU-400",
+      "title": "The policy gate's declared coverage limit reaches a backend reader and stops there, so a governed money cycle still reports a bare 'passed'",
+      "why": "W580 (FU-372) drove every word-and-phrase screen and found the intent gate matching tokens inside an intent LABEL, so a prose statement of intent ('transfer funds to an external account', 'turn off the constitution') passes it. Widening a label screen to prose would mean writing a language model as a regex, so the honest alternative was taken: the limit is DECLARED (_COVERAGE_LIMIT) and carried on every pass as + + , and economy/governance.py's governed_cycle_sync now puts them on the governance record beside its - which until then was a bare word reading as a clearance. THE PRE-FLIGHT'S KEY SCREEN THEN SAID, CORRECTLY, that the keys reach 'only 1 backend module and none of them PRINTS it'. So the declaration travels one layer and stops: the record a reader consults to know whether a money cycle was governed carries it, but nothing renders or prints it, and the chain from governed_cycle_sync to a route or page is of unknown depth - tracing it is a round rather than a line. THE WORK: follow governed_cycle_sync's governance record to the surface that reports a cycle as governed, and render the limit beside the word 'passed' - or, if no surface reports it at all, say so and treat the record itself as the surface the way the W577 guard does for a page-less route. NOT A DEFECT IN THE SCREEN: the limit is true, declared, asserted by a guard, and the two phrasings it covers are driven in scripts/screen_phrasings.py as stated limits rather than silently missed. This row is about the limit reaching a person.",
+      "source": "W580 (the pre-flight's key screen on this round's own new keys)",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/economy/governance.py",
+        "agentic_core/gaas/v5/policy_gate.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "dropped",
+      "closed_by": null,
+      "note": "Its text was corrupted by its own quoting: backticks inside a double-quoted shell argument were command-substituted, so three field names and a status value were eaten and the row read 'carried on every pass as + + ,'. Re-added from a file as the next id. A register row is read by later rounds as fact, so a row damaged by how it was typed is a defect in the record and is replaced rather than left.",
+      "slot_source": "clause (a)'s property applied to a gate's pass: a reader is told what was NOT screened"
+    },
+    {
+      "id": "FU-401",
+      "title": "The policy gate's declared coverage limit reaches a backend reader and stops there, so a governed money cycle still reports a bare passed",
+      "why": "W580 (FU-372) drove every word-and-phrase screen and found the intent gate matching tokens inside an intent LABEL, so a prose statement of intent (\"transfer funds to an external account\", \"turn off the constitution\") passes it. Widening a label screen to prose would mean writing a language model as a regex, so the honest alternative was taken: the limit is DECLARED (_COVERAGE_LIMIT) and carried on every pass as the three keys screened, coverage_limit and label_screened, and economy/governance.py's governed_cycle_sync now puts them on the governance record beside its status \"passed\" - which until then was a bare word reading as a clearance. THE PRE-FLIGHT'S KEY SCREEN THEN SAID, CORRECTLY, that those keys reach \"only 1 backend module and none of them PRINTS it\". So the declaration travels one layer and stops: the record a reader consults to know whether a money cycle was governed now carries it, but nothing renders or prints it, and the chain from governed_cycle_sync to a route or page is of unknown depth - tracing it is a round rather than a line. THE WORK: follow governed_cycle_sync's governance record to the surface that reports a cycle as governed, and render the limit beside the word \"passed\" - or, if no surface reports it at all, say so and treat the record itself as the surface, the way the W577 guard does for a page-less route. NOT A DEFECT IN THE SCREEN: the limit is true, declared, asserted by a guard, and the two phrasings it covers are driven in scripts/screen_phrasings.py as STATED LIMITS rather than silently missed. This row is only about the declaration reaching a person. NOTE ON THE FIRST ATTEMPT AT THIS ROW: its text was written with backticks inside a double-quoted shell argument, so bash command-substituted three field names out of it and the row read \"carried on every pass as + + ,\". It was dropped and rewritten from a file. A register row is read by later rounds as fact, so a row corrupted by its own quoting is a defect in the record.",
+      "source": "W580 (the pre-flight's key screen on this round's own new keys)",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/economy/governance.py",
+        "agentic_core/gaas/v5/policy_gate.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "clause (a)'s property applied to a gate's pass: a reader is told what was NOT screened"
     }
   ],
   "routes": [

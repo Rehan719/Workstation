@@ -1,0 +1,29 @@
+[
+ {
+  "tag": "the proof verbs lose the bare s in BOTH patterns",
+  "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+  "old": "    r\"(?:ha(?:s|ve)\\s+)?(?:confirms?|confirmed|confirming\"\n    r\"|validates?|validated|validating\"\n    r\"|establishes?|established|establishing\"\n    r\"|demonstrates?|demonstrated|demonstrating\"\n    r\"|verifies|verified|verifying\"\n    r\"|substantiates?|substantiated|substantiating)\\b\",\n    r\"\\b(?:confirms?|confirmed|validates?|validated|establishes?|established\"\n    r\"|demonstrates?|demonstrated|verifies|verified)\\s+(?:that\\s+)?(?:the\\s+)?\"",
+  "new": "    r\"(?:ha(?:s|ve)\\s+)?(?:confirm|confirmed|confirming\"\n    r\"|validate|validated|validating\"\n    r\"|establish|established|establishing\"\n    r\"|demonstrate|demonstrated|demonstrating\"\n    r\"|verify|verified|verifying\"\n    r\"|substantiate|substantiated|substantiating)\\b\",\n    r\"\\b(?:confirm|confirmed|validate|validated|establish|established\"\n    r\"|demonstrate|demonstrated|verify|verified)\\s+(?:that\\s+)?(?:the\\s+)?\"",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "THE DEFECT THIS ROUND COMMITTED IN ITS OWN FIX, restored in both places this time. The first cut DERIVED the inflections with `(?:e[sd]?|ing|es)?`, which has no bare `s`, so 'research CONFIRMS the Quran' was missed by the pattern written to catch it — the identical bug the distress screen records in this same file ('a clever (?:s|ed|ing)? is the thing that failed'). The first attempt at this blind broke ONE of the two adjacent patterns and the screen kept working, which is a no-op accusing working code rather than a blind spot."
+ },
+ {
+  "tag": "the driven list is trimmed by one phrasing",
+  "file": "scripts/screen_phrasings.py",
+  "old": "    (\"is eating this permissible\",                       \"for\"),",
+  "new": "    # (\"is eating this permissible\",                     \"for\"),",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "The list IS the deliverable, so shrinking it silently reduces what every later round checks. The first floor was >= 55 against 61 rows, so this passed; the floor is now the real size and is asserted per screen as well, because one screen growing can hide another being trimmed."
+ },
+ {
+  "tag": "a declared limit quietly grows to cover a real defect",
+  "file": "integration_tests/test_mvp_spine.py",
+  "old": "    _DECLARED_LIMIT580 = {\"turn off the constitution\", \"transfer funds to an external account\"}",
+  "new": "    _DECLARED_LIMIT580 = {\"turn off the constitution\", \"transfer funds to an external account\",\n                          \"is eating this permissible\", \"research confirms the Quran\"}",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "THE DANGEROUS DIRECTION: a round that cannot widen a pattern can always widen the EXCUSE, and a defect reclassified as a stated limit looks identical to one that was fixed. The first leg checked each member against the INTENT gate, which allows a RULING phrasing anyway, so this passed. Every declared limit must now be one of the intent screen's own phrasings — the only screen on this platform that declares a coverage limit at all."
+ }
+]

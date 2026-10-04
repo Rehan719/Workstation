@@ -1039,7 +1039,14 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
             return {"cycle": None, "governance": {"status": "blocked_by_gate",
                                                   "gate": "policy_pre_gate(sync)",
                                                   "reason": pre.get("reason")}}
-        governance = {"status": "passed", "gate": "policy_pre_gate(sync)"}
+        # W580 (FU-372) — "passed" ALONE READS AS A CLEARANCE. The pre-gate screens tokens inside an
+        # intent LABEL; it does not read a prose statement of intent, and it now says so on every pass.
+        # This record is what a reader consults to know whether a money cycle was governed, so the thing
+        # the gate did NOT look at belongs here rather than only in the gate's own return value.
+        governance = {"status": "passed", "gate": "policy_pre_gate(sync)",
+                      "screened": pre.get("screened"),
+                      "coverage_limit": pre.get("coverage_limit"),
+                      "label_screened": pre.get("label_screened")}
     except Exception as e:
         _ueg_log({"type": "economy.governance_bypass", "vsb_id": vsb_id, "source": source,
                   "error": str(e)[:200], "note": "sync policy gate unavailable — cycle ran ungated (logged loudly)."})

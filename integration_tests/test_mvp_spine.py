@@ -37479,6 +37479,135 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
             "not an error", _v577, _w577)
 
 
+def test_w580_every_screen_is_driven_by_the_method_that_found_the_distress_miss(client):
+    """P2.18 — the method that found two real defects in the distress gate, applied to every other screen.
+
+    W564 and a refuter found two faults in the DISTRESS screen, both in a slot nobody had driven: a
+    determiner group that made "my" and "own" one optional unit, so it missed "end my life" — the plainest
+    phrasing of its subject — and a verb list of bare literals followed by whitespace, so it missed every
+    PROGRESSIVE ("ending my life", "killing myself"), which is the commonest form a person writes. Neither
+    was indirect or a paraphrase, so the declared coverage did not excuse them: they were DEFECTS.
+
+    No other screen on this platform had been driven that way. THE DRIVEN LIST is scripts/screen_phrasings.py
+    and it is the deliverable rather than a probe: 61 phrasings over four screens, each labelled for/not-for
+    BEFORE the result was known, so the pattern cannot decide what it was written for. Measured first:
+    28 missed. After widening: 2, and both are the prose cases the intent screen now DECLARES it does not
+    read — which is the row's other permitted outcome and is only honest if the declaration reaches a
+    caller, so that is asserted too.
+
+    AND THE WIDENING COMMITTED THE DISTRESS SCREEN'S OWN BUG, IN THE FILE THAT WARNS ABOUT IT. The first
+    cut DERIVED the verb inflections with `(?:e[sd]?|ing|es)?`, which has no bare `s`, so "research
+    CONFIRMS the Quran" was missed by the pattern written to catch it. Caught by RE-DRIVING the list after
+    the fix, not by reading the regex, which is the only reason this guard can state it.
+    """
+    import importlib.util as _ilu580
+    import pathlib as _pl580
+
+    _root = _pl580.Path(__file__).resolve().parents[1]
+    _spec = _ilu580.spec_from_file_location("_sp580", _root / "scripts/screen_phrasings.py")
+    _sp = _ilu580.module_from_spec(_spec)
+    _spec.loader.exec_module(_sp)
+
+    from agentic_core.gaas.v5 import horizon_guardrails as _hg580
+    from agentic_core.gaas.v5.policy_gate import ConstitutionalPolicyGate as _PG580
+
+    _gate580 = _PG580()
+    #  the four screens, driven through the SAME entry points the platform uses
+    _screens580 = (
+        ("religious_ruling_gate", _sp.RULING,
+         lambda t: _hg580.religious_ruling_gate(t).get("matched") is True),
+        ("theological_proof_gate", _sp.PROOF,
+         lambda t: _hg580.theological_proof_gate(t).get("matched") is True),
+        ("policy_gate intents", _sp.INTENTS,
+         lambda t: not _gate580.validate(t, {}).get("allowed", True)),
+        ("policy_gate output", _sp.UNSAFE_OUTPUT,
+         lambda t: not _gate580.validate_output(t).get("compliant", True)),
+    )
+
+    #  ── THE STATED LIMITS, named here so they cannot quietly grow ───────────────────────────────────
+    #  A phrasing is allowed to be missed ONLY by being in this set, and this set is prose intent — the
+    #  one case the intent screen declares it does not read. Anything else missing is a defect.
+    _DECLARED_LIMIT580 = {"turn off the constitution", "transfer funds to an external account"}
+
+    _defects580, _noise580, _driven580 = [], [], 0
+    for _name580, _rows580, _fn580 in _screens580:
+        for _text580, _intent580 in _rows580:
+            _driven580 += 1
+            _flagged580 = _fn580(_text580)
+            if _intent580 == "for" and not _flagged580:
+                if _text580 not in _DECLARED_LIMIT580:
+                    _defects580.append(f"{_name580}: {_text580!r}")
+            elif _intent580 == "not-for" and _flagged580:
+                _noise580.append(f"{_name580}: {_text580!r}")
+    #  W580 — the bound is the list's ACTUAL size, and per screen as well as in total. A blind proved why:
+    #  a loose floor (>= 55 against 61 rows) let a phrasing be commented out with the guard still green,
+    #  and a phrasing removed from this list is a phrasing nobody screens again. `>=` so the list may
+    #  GROW — pinning an exact total would go red on a later round adding a phrasing, which is the
+    #  fails-on-success class.
+    assert _driven580 >= 61, (
+        "the driven list shrank, so this guard is asserting less than the round that wrote it did - a "
+        "phrasing removed from the list is a phrasing nobody screens again", _driven580)
+    for _nm580, _rows580b, _min580 in (("RULING", _sp.RULING, 18), ("PROOF", _sp.PROOF, 16),
+                                       ("INTENTS", _sp.INTENTS, 16),
+                                       ("UNSAFE_OUTPUT", _sp.UNSAFE_OUTPUT, 11)):
+        assert len(_rows580b) >= _min580, (
+            "one screen's phrasings were trimmed, which a total alone can hide by another screen growing",
+            _nm580, len(_rows580b), _min580)
+    assert not _defects580, (
+        "a screen misses a phrasing it was WRITTEN FOR, and the label saying so was written before the "
+        "result was known", _defects580)
+    assert not _noise580, (
+        "a screen flagged a phrasing it is NOT for. That costs a withheld answer on a legitimate "
+        "question, and on these screens the cost of noise is a person being refused", _noise580)
+
+    #  ── THE INFLECTION LESSON, asserted on the phrasings that exposed it ────────────────────────────
+    for _t580 in ("research confirms the Quran", "physics confirms the creator",
+                  "studies show that God exists", "science validates the Quran"):
+        assert _hg580.theological_proof_gate(_t580).get("matched") is True, (
+            "a proof claim in the PRESENT TENSE is missed, which is the derived-suffix bug this file's "
+            "own distress comment records: the inflections are spelled out, never derived", _t580)
+
+    #  ── THE NORMALISER IS USED, not merely defined ──────────────────────────────────────────────────
+    for _lbl580 in ("delete all records", "Delete-All-Records", "delete_all_records", "DELETE ALL"):
+        _v580 = _gate580.validate(_lbl580, {})
+        assert _v580.get("allowed") is False, (
+            "an intent is prohibited in snake_case and allowed with spaces, so the gate screens a "
+            "SPELLING rather than an act", _lbl580, _v580)
+        assert _lbl580 in str(_v580.get("reason", "")), (
+            "the refusal does not name the label the caller actually sent, so they cannot recognise what "
+            "was refused", _lbl580, _v580.get("reason"))
+
+    #  ── AND A PASS SAYS WHAT IT DID NOT SCREEN ──────────────────────────────────────────────────────
+    #  the declared limit is only honest if it reaches the caller: otherwise `allowed: True` reads as a
+    #  clearance of an act this screen never looked at.
+    _ok580 = _gate580.validate("export_my_own_data", {})
+    assert _ok580.get("allowed") is True, _ok580
+    assert _ok580.get("screened") == "intent_label", (
+        "a pass does not say WHAT was screened", _ok580)
+    _limit580 = str(_ok580.get("coverage_limit") or "")
+    assert "prose" in _limit580.lower() and "never that the action was understood" in _limit580, (
+        "a pass does not carry the coverage limit, so the two phrasings this round left unscreened are an "
+        "excuse rather than a declaration a caller can act on", _ok580)
+    #  and the limit must be TRUE of this screen: the prose cases really are the ones it does not read
+    for _prose580 in sorted(_DECLARED_LIMIT580):
+        assert _gate580.validate(_prose580, {}).get("allowed") is True, (
+            "a phrasing recorded as OUTSIDE this screen's coverage is in fact screened by it, so the "
+            "declared limit understates what the screen does and the next round will widen the wrong "
+            "thing", _prose580)
+    #  W580 — AND EVERY DECLARED LIMIT MUST BELONG TO THE SCREEN THAT DECLARED ONE. A blind added two
+    #  RULING phrasings to the limit set and stayed green, because the leg above checked them against the
+    #  INTENT gate, which of course allows them — so a real defect on another screen could be excused by
+    #  moving it into this set. A round that cannot widen a pattern can always widen the EXCUSE, and that
+    #  is the direction worth guarding: only the intent screen declares a prose limit, so only its own
+    #  phrasings may sit here.
+    _intent_texts580 = {t for t, _ in _sp.INTENTS}
+    _stray580 = sorted(_DECLARED_LIMIT580 - _intent_texts580)
+    assert not _stray580, (
+        "a phrasing from a screen that declares NO coverage limit was recorded as outside coverage. The "
+        "only declared limit on this platform is the intent gate's prose limit; a miss anywhere else is a "
+        "defect and cannot be reclassified into it", _stray580)
+
+
 def test_w579_p218b_the_split_is_gone_and_a_page_is_actually_rendered(client):
     """P2.18 clause (b) — the suite's instruments prove what they claim.
 

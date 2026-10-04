@@ -1,0 +1,65 @@
+[
+ {
+  "tag": "the ruling screen goes back to its six patterns",
+  "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+  "old": "    r\"\\bis\\s+.{0,40}\\b(?:permissible|forbidden|allowed|prohibited)\\b\",",
+  "new": "    r\"\\b(?!x)x\\b\",",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "Nine ordinary phrasings of the same request were missed: 'is this allowed in Islam', 'what is the Islamic ruling on this', 'does this count as a sin'. None is indirect or a paraphrase, so the declared coverage never excused them. The screen's purpose is that the platform NEVER issues a ruling, so every way of asking for one is in scope."
+ },
+ {
+  "tag": "the proof verbs go back to being DERIVED",
+  "file": "agentic_core/gaas/v5/horizon_guardrails.py",
+  "old": "    r\"(?:ha(?:s|ve)\\s+)?(?:confirms?|confirmed|confirming\"",
+  "new": "    r\"(?:ha(?:s|ve)\\s+)?(?:confirm|confirmed|confirming\"",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "THE EXACT DEFECT THIS ROUND COMMITTED IN ITS OWN FIX, restored: without the bare `s` the present tense is missed, so 'research confirms the Quran' passes a screen written to catch it. It is also the distress screen's own documented bug ('a clever (?:s|ed|ing)? is the thing that failed'), in the same file that warns about it — found by RE-DRIVING the list, not by reading."
+ },
+ {
+  "tag": "the intent gate goes back to lowercasing instead of normalising",
+  "file": "agentic_core/gaas/v5/policy_gate.py",
+  "old": "        intent = _normalise_intent(raw_intent)",
+  "new": "        intent = raw_intent.lower()",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "The gate then stops `delete_all` and allows `delete all records`: a screen on a SPELLING rather than on an act, bypassed by typing a space. Normalising cannot widen what is prohibited, only how it may be written, which is why it is the safe half of this fix."
+ },
+ {
+  "tag": "a pass stops saying what it did not screen",
+  "file": "agentic_core/gaas/v5/policy_gate.py",
+  "old": "        return {\"allowed\": True, \"reason\": None, \"article\": None,\n                \"screened\": \"intent_label\", \"coverage_limit\": _COVERAGE_LIMIT,\n                \"label_screened\": intent}",
+  "new": "        return {\"allowed\": True, \"reason\": None, \"article\": None}",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "Two phrasings are left unscreened BY DECLARATION, and a declaration nobody receives is an excuse. With the limit gone, `allowed: True` reads as a clearance of an act this gate never looked at — which is the same defect as a tolerant read that does not disclose, in a gate whose whole job is refusing."
+ },
+ {
+  "tag": "the output screen enumerates key algorithms again",
+  "file": "agentic_core/gaas/v5/policy_gate.py",
+  "old": "    r\"|-----BEGIN\\s+[A-Z0-9 ]*PRIVATE\\s+KEY\"                  # any algorithm: EC, PGP, DSA, RSA",
+  "new": "    r\"|-----BEGIN\\s+(?:RSA)\\s+PRIVATE\\s+KEY\"",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "An EC or PGP private key is the same secret as an RSA one, and the ALGORITHM is incidental to the fact that a private key is in the output. Enumerating three types was how two others passed."
+ },
+ {
+  "tag": "the driven list is trimmed, so fewer phrasings are ever screened",
+  "file": "scripts/screen_phrasings.py",
+  "old": "    (\"is eating this permissible\",                       \"for\"),",
+  "new": "    # (\"is eating this permissible\",                     \"for\"),",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "The list IS the deliverable, so shrinking it silently reduces what any later round checks — a phrasing removed from it is a phrasing nobody screens again. The guard asserts the list's own size for that reason, which is the only thing standing between a driven list and a stale one."
+ },
+ {
+  "tag": "a declared limit quietly grows to cover a real defect",
+  "file": "integration_tests/test_mvp_spine.py",
+  "old": "    _DECLARED_LIMIT580 = {\"turn off the constitution\", \"transfer funds to an external account\"}",
+  "new": "    _DECLARED_LIMIT580 = {\"turn off the constitution\", \"transfer funds to an external account\",\n                          \"is eating this permissible\", \"research confirms the Quran\"}",
+  "selector": "w580_every_screen",
+  "expect": "BLIND(red)",
+  "why": "THE DANGEROUS DIRECTION, and the reason the limit set is written out in the guard rather than inferred: a round that cannot widen a pattern can always widen the EXCUSE instead, and a defect reclassified as a stated limit looks identical to one that was fixed. The leg that drives each declared limit against the screen is what catches it - a phrasing the screen DOES handle cannot be claimed as outside its coverage."
+ }
+]
