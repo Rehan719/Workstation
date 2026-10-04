@@ -36721,7 +36721,177 @@ def test_w572_a_sweep_refuses_a_blind_it_cannot_apply(client):
     _blinds = _json572c.loads(_mine.read_text(encoding="utf-8"))
     assert len(_blinds) >= 10, ("the blind file shrank", len(_blinds))
     for _b in _blinds:
-        _hits = (_root / _b["file"]).read_text(encoding="utf-8").count(_b["old"])
+        #  BYTES, like the gate and like sweep() itself: text mode translates CRLF to a bare newline,
+        #  so a correct multi-line anchor in a CRLF file counts 0 when read as text and 1 when read
+        #  as bytes. A check that reads its subject differently from the code it checks is measuring
+        #  a different file - this very leg would have passed a blind the gate then refused.
+        _hits = (_root / _b["file"]).read_bytes().decode("utf-8").count(_b["old"])
         assert _hits == 1, (
             f"this round's own blind {_b['tag']!r} would be refused: its anchor matches {_hits} "
             "time(s) in " + _b["file"])
+
+
+def test_w573_a_completion_mark_is_read_from_the_state_not_written_beside_it(client):
+    """P2.19 clause (a) — MILESTONE M1 R2.0, R2.1, R2.3, R3.1. One mechanism, four surfaces.
+
+    Each of these wrote a completion mark NEXT TO the state instead of FROM it, and in every case the
+    honest value was already on the same payload:
+      R2.1  every entity was stamped `stage: "commercialise"` at birth, printed by the cockpit badge,
+            the shipped README and the Board Pack beside a status of "body pending" whose own basis
+            named four sections still awaiting the owned model. W496 derived the sibling `status` and
+            said so in its docstring - naming the stage literal too - then left it.
+      R3.1  `present: bool(ceo_specification)` is truthiness, so the pending-body placeholder counted
+            as a composed strategic layer; `action_plan` was counted present by a basis that itself
+            says a roster is not a plan of action; and the only route to any basis on the page was a
+            chip that renders ONLY when a layer is absent - so while the count was wrong, nothing
+            could show that it was.
+      R2.0  the journey map ticked "Operate - run, defend, improve, grow" from `!!vsb && surfaces`,
+            which says a repository was written and nothing about anything running.
+      R2.3  all six §4 tiles took their completed styling from `const done = !!result`, so a journey
+            the §11 screen vetoed after Stage 5 rendered design, operations and commercialisation as
+            complete - on a payload that says in so many words that they never ran.
+
+    DRIVEN, not read, wherever there is something to drive: the derivations are pure functions for
+    exactly that reason.
+    """
+    import pathlib as _pl573
+    import re as _re573
+
+    from agentic_core.api.vsb import (_action_plan_layer, _derived_stage, _stage_label,
+                                      _strategic_layer)
+
+    _root = _pl573.Path(__file__).resolve().parents[1]
+    _app = _root / "apps" / "workstation-superapp" / "src"
+
+    # ── L1. THE STAGE IS DERIVED, AND IT IS STRICTER THAN "THE LAST ONE COMPOSED" ───────────────
+    _all_pending = {"concept": True, "design": True, "operations": True, "commercialisation": True}
+    _s, _b = _derived_stage({"body_pending": dict(_all_pending)})
+    assert _s is None and "concept" in _b, ("an entity with every section pending reports a stage", _s, _b)
+    _s, _b = _derived_stage({"body_pending": dict(_all_pending, concept=False)})
+    assert _s == "concept", ("the first composed section is not reported as the stage reached", _s)
+    #  THE GAP CASE: a commercialisation composed while the concept is still pending does NOT carry
+    #  the entity to commercialise. Reporting "the last composed" would reproduce the defect one
+    #  section along, which is why the measurement is the contiguous prefix.
+    _s, _b = _derived_stage({"body_pending": dict(_all_pending, commercialisation=False)})
+    assert _s is None, ("a section composed out of order carried the entity past an earlier one", _s)
+    assert "out of order" in _b and "commercialisation" in _b, (
+        "the out-of-order section is not named, so a reader cannot see why the stage is behind it", _b)
+    _s, _b = _derived_stage({"body_pending": {k: False for k in _all_pending}})
+    assert _s == "commercialisation", ("a fully composed entity reports no stage", _s, _b)
+    #  AND "NOT KNOWN" IS NOT "NOTHING REACHED". A missing map is a different fact from a full one.
+    _s, _b = _derived_stage({})
+    assert _s is None and "NOT KNOWN" in _b, ("a missing body map is reported as a measured zero", _b)
+    #  the label a surface prints never renders the word None
+    assert _stage_label({"stage": None}) == "no stage reached"
+    assert "None" not in _stage_label({}), _stage_label({})
+    assert _stage_label({"stage": "design"}) == "design"
+
+    # ── L2. NO WRITER STAMPS THE LITERAL, ON EITHER ESTABLISH PATH ──────────────────────────────
+    _gen = (_root / "agentic_core" / "api" / "genesis.py").read_text(encoding="utf-8")
+    assert '"stage": "commercialise"' not in _gen, (
+        "an establish path stamps the stage as a constant again")
+    #  BOTH paths, and the count is the point: the literal survived W496 because one of two was fixed.
+    assert _gen.count('"stage": "pending derivation"') == 2, (
+        "both establish paths must defer the stage to the derivation",
+        _gen.count('"stage": "pending derivation"'))
+    #  EVERY SITE THAT DERIVES A STATUS DERIVES A STAGE. This is the second-writer class stated as a
+    #  property rather than as a list of line numbers that will drift.
+    _vsrc = (_root / "agentic_core" / "api" / "vsb.py").read_text(encoding="utf-8")
+    def _calls(name, src):
+        """Calls of exactly `name`, not mentions of it.
+
+        The first draft counted `_derived_status\\(` as a plain substring and found three in vsb.py
+        where there are two: one match was inside the longer identifier `_apply_derived_status()`,
+        AND that occurrence is in a COMMENT. Both traps at once, in the leg written to catch a fix
+        applied at some of its writers — so the leg accused the round's own correct fix.
+        """
+        body = "\\n".join(_l.split("#", 1)[0] for _l in src.splitlines())
+        return len(_re573.findall(r"(?<![A-Za-z0-9_])" + name + r"\(", body))
+
+    for _mod, _src in (("genesis.py", _gen), ("vsb.py", _vsrc)):
+        #  vsb.py holds the two definitions as well as its call sites
+        _st = _calls("_derived_status", _src) - (1 if _mod == "vsb.py" else 0)
+        _sg = _calls("_derived_stage", _src) - (1 if _mod == "vsb.py" else 0)
+        assert _st >= 1, (f"{_mod} no longer derives a status anywhere, so this leg compares two "
+                          "zeroes and cannot fail", _mod)
+        assert _st == _sg, (
+            f"{_mod} derives the status at {_st} site(s) and the stage at {_sg} - a completion mark "
+            "fixed at some of its writers is the class that produced this row", _st, _sg)
+
+    # ── L3. EVERY READER OF THE STAGE READS THE DERIVED ONE ─────────────────────────────────────
+    #  A writer fixed without its readers moves the untruth down a layer. There are three.
+    #  AT THE SITE. `_stage_label(vsb)` appears TWICE in vsb.py - the README and the Board Pack - so
+    #  a file-wide check survives either one reverting to the raw field. The blind that reverted the
+    #  README came back VACUOUS for exactly that reason.
+    assert 'f"- **Stage:** {_stage_label(vsb)}' in _vsrc, (
+        "the shipped README prints the raw stage field again rather than the derived label - and "
+        "this reader writes to DISK, into a repository the founder keeps")
+    assert 'f"- **Stage basis:**' in _vsrc, "the shipped README no longer carries the stage's basis"
+    assert '"stage_basis": vsb.get("stage_basis")' in _vsrc, (
+        "the Board Pack's operational layer no longer carries the stage's basis")
+    #  COMMENTS STRIPPED: the comment explaining why the absent-state is rendered necessarily quotes
+    #  the words it renders, so a file-wide check passed with the badge deleted.
+    _ck = (_app / "pages" / "enterprise" / "VSBCockpit.tsx").read_text(encoding="utf-8")
+    _ckc = _re573.sub(r"/\*.*?\*/", "", _ck, flags=_re573.S)
+    assert "cockpit-stage-basis" in _ckc and "no stage reached" in _ckc, (
+        "the cockpit prints a stage badge with no basis and no absent-state, so a reader cannot tell "
+        "a stage that was never reached from a field that failed to load")
+
+    # ── L4. A LAYER IS PRESENT WHEN IT HOLDS SOMETHING, AND `present` FOLLOWS `holds` ───────────
+    _PLACEHOLDER = ("content pending the owned model \u2014 this enterprise has not yet composed its "
+                    "own commercialisation")
+    for _spec, _want in (("", "empty"), ({}, "empty"), (_PLACEHOLDER, "placeholder"),
+                         ({"ceo": _PLACEHOLDER}, "placeholder"),
+                         ("Two depots, 400 households by Q3", "content")):
+        _L = _strategic_layer(_spec)
+        assert _L["holds"] == _want, ("the strategic layer's state is wrong", _spec, _L["holds"], _want)
+        assert _L["present"] is (_want == "content"), (
+            "`present` is not derived from `holds`, which is the whole fix", _L)
+    #  THE ROSTER. Its own basis has always said it is not a plan of action; now the count agrees.
+    _A = _action_plan_layer({"CEO": "a", "CFO": "b"})
+    assert _A["holds"] == "other" and _A["present"] is False, (
+        "a board roster is counted as a present action-plan layer again", _A)
+    assert "not an action plan" in _A["basis"], _A["basis"]
+    assert _action_plan_layer({})["holds"] == "empty"
+
+    # ── L5. EVERY LAYER'S BASIS IS REACHABLE, not only an absent one's ──────────────────────────
+    assert '"layers_state": layers_state' in _vsrc, (
+        "the pack no longer carries a per-layer state, so the page is back to reading a basis only "
+        "through the chip that renders when a layer is MISSING")
+    _gj = (_app / "pages" / "synthesis" / "GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "pack-layer-" in _gj and "layers_state" in _gj, (
+        "the page does not render each layer's own state and basis")
+
+    # ── L6. THE JOURNEY MAP AND THE §4 RAIL READ THE JOURNEY'S OWN FIELDS ───────────────────────
+    #  COMMENTS ARE NOT CODE, and this leg forbids two bindings that the comments recording their
+    #  removal necessarily quote. Rewording the comments would work once; stripping them is the
+    #  property. (W572 hit the mirror image: a comment holding a REQUIRED string made a presence
+    #  check pass with the code deleted.)
+    _gjc = _re573.sub(r"/\*.*?\*/", "", _gj, flags=_re573.S)
+    _gjc = "\\n".join(_l for _l in _gjc.splitlines() if not _l.lstrip().startswith("//"))
+    assert "done: !!vsb && surfaces" not in _gjc, (
+        "the Operate milestone is ticked from a repository existing again")
+    assert "vsb?.living?.autonomous_cycles" in _gjc, (
+        "the Operate milestone does not read whether anything actually tends the entity")
+    #  THE RAIL took all six tiles from a single truthiness check on the journey result.
+    assert "const done = !!result" not in _gjc, ("the §4 rail takes all six tiles from one flag again")
+    assert "railState(key, result)" in _gjc, "the rail does not resolve each stage separately"
+    #  and every §4 stage that HAS a verification key is mapped to it, by name
+    for _k in ("'concept'", "'research'", "'design'", "'operations'", "'commercialisation'"):
+        assert f"key: {_k}" in _gj, ("a §4 tile is not mapped to its verification entry", _k)
+    #  THE THREE DISTINCTIONS THE PAYLOAD MAKES, each handled: ran-false, verified-true, and the
+    #  absent `ran` that means the stage DID run.
+    _rs = _gj[_gj.index("const railState"):]
+    _rs = _rs[:_rs.index("interface BoardPack")]
+    assert "v.ran === false" in _rs, "a stage the journey never reached is not distinguished"
+    assert "v.verified === true" in _rs, "a verified stage is not distinguished from one that merely ran"
+    #  AT THE SITE AGAIN: 'not known' appears four times in this file (the type union, the no-journey
+    #  branch, this branch, and a chip elsewhere), so a file-wide check survived this branch being
+    #  turned into a pass. NOT KNOWN promoted to verified is the three-state failure this programme
+    #  keeps finding, and Model · Simulate · Rank has no verification entry, so the path is live.
+    assert "if (!v) return { done: false, label: 'not known'" in _rs, (
+        "a stage the journey recorded no verification for is reported as a measured state rather "
+        "than as unknown")
+    #  Model · Simulate · Rank has no verification entry and must say so rather than borrow one
+    assert "carries no §10 verification entry" in _rs, (
+        "the unverified stage claims a verification it does not have")

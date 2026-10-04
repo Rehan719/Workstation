@@ -6647,11 +6647,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W573",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Operate milestone now reads vsb.living.autonomous_cycles - the fact the living roster reports - instead of '!!vsb && surfaces', which said only that a repository had been written. The hint says why when it is off. Verified on the running page: a completed, established journey shows Operate UNTICKED and unlit, reading 'Not operating - the heartbeat's Self-run lever is off', where it previously showed a tick and 'Run - defend - improve - grow'."
     },
     {
       "id": "FU-377",
@@ -6667,11 +6670,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W573",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The stage literal is gone from BOTH establish paths (it was a constant one line below the status W496 derived, and that function's own docstring names the stage half of the defect it left). _derived_stage reports the furthest body section composed WITH NO GAP BEFORE IT, which is stricter than the last one composed: a commercialisation written while the concept is pending does not carry the entity past the concept, and sections composed out of order are named in the basis. None means nothing reached; a missing map reports NOT KNOWN separately. All three readers fixed in the same round - the shipped README (which writes to the founder's disk), the Board Pack's operational layer, and the cockpit badge, which now renders 'no stage reached' with its basis rather than nothing. Verified live: stored entity stage=None, README prints 'Stage: no stage reached' plus the basis, cockpit row reads BODY PENDING ... NO STAGE REACHED."
     },
     {
       "id": "FU-378",
@@ -6703,11 +6709,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W573",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each of the six §4 tiles now resolves its own state from stage_verifications rather than from 'any journey returned something'. The payload's contract was MEASURED rather than assumed: ran is present-and-false only for a stage the journey never reached, ABSENT on a complete journey (so absent means it ran), and verified:null means ran-but-not-assessable. Model-Simulate-Rank has no verification entry at all and says so instead of borrowing one. Verified on the running page with a journey the §11 screen vetoed: stages 1-3 'ran', stages 4-6 'not run' and unlit, each carrying the journey's own basis - the exact case that previously lit all six as complete."
     },
     {
       "id": "FU-380",
@@ -6777,11 +6786,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W573",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "present was bool(ceo_specification) - truthiness - so the pending-body placeholder counted as a composed strategic layer. A layer now reports what it HOLDS in four states (content, placeholder, other, empty) and present is derived from that. Four were needed: the board roster is neither a placeholder nor empty, it is real content that is not an action plan, which that layer's own basis has said since W496 while the same dict counted it present. constitutional and operational now state their basis instead of being present by key name. AND THE BASIS IS REACHABLE FOR EVERY LAYER: it previously appeared only in the 'N empty' chip's tooltip, which renders only when a layer is absent, so while the count was wrong nothing on the page could show it. Verified live: layers_present went from all four to ['constitutional','operational'], strategic=placeholder, action_plan=other, each with its own basis."
     },
     {
       "id": "FU-384",

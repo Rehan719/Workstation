@@ -596,7 +596,17 @@ export const VSBCockpit: React.FC = () => {
                     {(detail as any).status_basis && (
                       <span className="text-[9px] text-slate-500" data-testid="cockpit-status-basis">{(detail as any).status_basis}</span>
                     )}
-                    {detail.stage && <Badge color="aura">{detail.stage}</Badge>}
+                    {/* W573 (M1 R2.1) — this badge printed "commercialise" on every entity ever
+                        established, beside a status of "body pending" whose own basis named four
+                        sections still awaiting the owned model. The stage is now DERIVED, and a
+                        derived stage can be absent: rendering nothing would leave a reader unable
+                        to tell "no stage reached" from "the field did not load", so it is said. */}
+                    {detail.stage
+                      ? <Badge color="aura">{detail.stage}</Badge>
+                      : <Badge color="slate-500">no stage reached</Badge>}
+                    {(detail as any).stage_basis && (
+                      <span className="text-[9px] text-slate-500" data-testid="cockpit-stage-basis">{(detail as any).stage_basis}</span>
+                    )}
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">{detail.challenge}</p>

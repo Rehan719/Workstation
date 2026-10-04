@@ -110,7 +110,11 @@ def _build_repo_files(vsb: dict) -> dict:
     f["README.md"] = (
         f"# {name}\n\n> Living, intelligently autonomous VSB IDBO enterprise — bespoke to: {challenge}\n\n"
         f"- **Domain:** {domain} · **Realm:** {realm} · **Entity:** `{vsb.get('vsb_id')}`\n"
-        f"- **Stage:** {vsb.get('stage')} · **Status:** {vsb.get('status')}\n\n"
+        # §4 (W573, M1 R2.1) - THE README IS A READER, and it shipped "Stage: commercialise" into
+        # every repository a founder downloads. It now prints the derived stage and, where none is
+        # reached, says so and why - a repo on disk outlives the page that would have explained it.
+        f"- **Stage:** {_stage_label(vsb)} · **Status:** {vsb.get('status')}\n"
+        f"- **Stage basis:** {vsb.get('stage_basis') or 'not recorded on this entity'}\n\n"
         "This repository is the enterprise's living body — genome/identity, business plan, organisation, "
         "digital resources, AI-swarm cascades, compliance + quality record, and the integrated "
         "Website / Web app / Phone app surfaces. Generated in-house on Workstation's own AI fabric; "
@@ -1170,7 +1174,13 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
                       "values_source": ("the platform's standing values line, identical for every VSB - "
                                         "this entity has not declared its own"),
                       "genome_present": bool(vsb.get("genome_spec")), "entity": vsb_id}
-    operational = {"stage": vsb.get("stage"), "status": vsb.get("status"),
+    # §4 (W573, M1 R2.1) - the pack carries the stage's BASIS beside it, as it does the status's
+    #  `stage_basis` only. A `stage_label` was added here too and the pre-flight's key screen caught
+    #  it reaching NO surface: nothing renders the pack's operational fields individually, so a
+    #  presentation helper here qualifies nothing. The label belongs where something prints it (the
+    #  shipped README), and the BASIS belongs here, beside the null it explains.
+    operational = {"stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis"),
+                   "status": vsb.get("status"),
                    "generation": vsb.get("generation", 0), "domain": vsb.get("domain"),
                    "realm": vsb.get("realm"), "governance": (vsb.get("governance") or {}).get("status")}
 
@@ -1255,22 +1265,33 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # carries whether it holds anything and what it is.
     _ceo_spec = vsb.get("ceo_specification") or {}
     _board = vsb.get("board") or {}
+    # §17.3 (W573, M1 R3.1) - `present` WAS TRUTHINESS, so the placeholder string "content pending the
+    # owned model ..." counted as a composed strategic layer and the basis then asserted "the AI CEO
+    # specification recorded on this entity". `holds` is the measurement and `present` is derived from
+    # it, so no reader has to know the difference between a field existing and a layer holding
+    # something. FOUR states, because three were not enough: the board roster is neither a placeholder
+    # nor empty - it is real content that is not an action plan, and its own basis has always said so.
     layers = {
         "constitutional": constitutional,                                  # derived (see the sources above)
-        "strategic": {"ceo": _ceo_spec,
-                      "present": bool(_ceo_spec),
-                      "basis": ("the AI CEO specification recorded on this entity" if _ceo_spec else
-                                "EMPTY - no CEO specification was composed for this entity, so there is "
-                                "no strategic layer to read")},
-        "action_plan": {"board": _board,
-                        "present": bool(_board),
-                        "basis": ("the entity's standing board roster - a roster, not a plan of action; "
-                                  "no action items are recorded here" if _board else
-                                  "EMPTY - no board is attached to this entity")},
+        "strategic": _strategic_layer(_ceo_spec),
+        "action_plan": _action_plan_layer(_board),
         "operational": operational,                                         # live snapshot
     }
-    layers_present = sorted(k for k, v in layers.items()
-                            if k in ("constitutional", "operational") or v.get("present"))
+    # constitutional and operational are derived fresh from the entity on every pack, so they always
+    # hold something - but they say so here rather than being present by KEY NAME, which is what the
+    # old membership test did and what made the count unfalsifiable for two of the four.
+    for _k in ("constitutional", "operational"):
+        layers[_k].setdefault("holds", "content")
+        layers[_k].setdefault("present", True)
+        layers[_k].setdefault("basis", "derived fresh from this entity when the pack was assembled; "
+                                       "each field above carries its own source")
+    layers_present = sorted(k for k, v in layers.items() if v.get("present"))
+    # EVERY LAYER'S STATE, REACHABLE. The page could only reach a basis through the "N empty" chip,
+    # which renders only when a layer is absent - so with all four counted present, no basis could be
+    # read at all, including action_plan's admission that it is not a plan. The pack now carries the
+    # whole map so a reader never depends on something being wrong in order to see what is wrong.
+    layers_state = {_k: {"holds": _v.get("holds"), "basis": _v.get("basis")}
+                    for _k, _v in layers.items()}
     economy = vsb.get("economy") or {}
     # W485 (refutation) — the entity verdict is ON the pack, so it is part of what the pack SAYS:
     # excluded from the hash, a pack whose entity verdict had flipped to FAIL still reported itself
@@ -1292,6 +1313,9 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         "layers": layers,
         # W496 (FU-104) - the page chipped all four names as present; this is the measured list
         "layers_present": layers_present,
+        # W573 (M1 R3.1) - and what each layer HOLDS, so a basis is reachable for every layer
+        # rather than only for the ones that are missing
+        "layers_state": layers_state,
         "economy": economy,
         "narrative": narrative,
         "ai_provenance": prov,
@@ -1437,6 +1461,109 @@ def _derived_status(vsb: dict) -> tuple:
                 f"known ({type(e).__name__})")
     return ("operating", "review gates clear, no body section pending, and the heartbeat is tending "
                          "this entity on the circadian beat")
+
+
+#  §4 (W573, M1 R2.1 / FU-377) — THE §4 LIFECYCLE ORDER. A section is only reached once the ones
+#  before it are composed, so the order is part of the measurement and not a display preference.
+_BODY_STAGE_ORDER = ("concept", "design", "operations", "commercialisation")
+
+
+def _derived_stage(vsb: dict) -> tuple:
+    """§4 (W573, M1 R2.1) — THE STAGE REACHED, DERIVED. The sibling `_derived_status` never fixed.
+
+    Read that function's own docstring: it says every establish path stored `status: "operational"`
+    AND `stage: <the requested scope>` whatever the entity's real state. W496 derived the status and
+    left the stage, so `stage: "commercialise"` went on being written as a constant at birth — and
+    printed by three readers (the cockpit badge, the shipped README, the Board Pack's operational
+    layer) directly beside a status of "body pending" and a basis naming four sections that still
+    await the owned model. The entity said in one field that it had commercialised and in the next
+    that it had not composed its concept.
+
+    THE STAGE IS THE FURTHEST SECTION COMPOSED WITHOUT A GAP, which is stricter than "the last one
+    composed": a commercialisation written while the concept is still pending does not carry the
+    entity past the concept, and reporting it would reproduce the defect one section along. Sections
+    composed out of order are counted and named in the basis rather than silently ignored.
+
+    Returns (stage, basis). THE STAGE IS None WHEN NOTHING IS REACHED OR NOTHING IS KNOWN, and those
+    are different: the basis says which. `scope` is untouched — that is the ambition the founder
+    asked for, and it is legitimately "commercialise" on an entity that has reached nothing.
+    """
+    pend = vsb.get("body_pending")
+    if not isinstance(pend, dict) or not pend:
+        return (None, "no body-pending map is recorded on this entity, so which §4 sections it has "
+                      "composed is NOT KNOWN - which is not the same as having composed none, and "
+                      "not the same as having composed them all")
+    known = [k for k in _BODY_STAGE_ORDER if k in pend]
+    if not known:
+        return (None, "the body-pending map names no §4 lifecycle section (it holds "
+                      + ", ".join(sorted(map(str, pend))) + "), so the stage reached is NOT KNOWN")
+    reached, blocked_at = None, None
+    for k in known:
+        if pend[k]:
+            blocked_at = k
+            break
+        reached = k
+    _after = known[known.index(reached) + 1:] if reached else known
+    ahead = [k for k in _after if not pend[k]]
+    _ooo = (f", and {len(ahead)} later section(s) are composed out of order ({', '.join(ahead)}) - a "
+            f"later section does not carry this entity past an earlier one" if ahead else "")
+    if reached is None:
+        return (None, f"no §4 lifecycle stage is reached: the first section ({blocked_at}) still "
+                      f"awaits the owned model{_ooo}")
+    return (reached, f"the furthest §4 section composed with no gap before it: {reached}"
+                     + (f"; {blocked_at} still awaits the owned model" if blocked_at
+                        else " (every §4 section on this entity is composed)") + _ooo)
+
+
+#  §17.3 (W573, M1 R3.1) — WHAT A LAYER HOLDS. Pure, and lifted out of the Board Pack handler on
+#  purpose: a guard can drive these, and a guard that can only read the handler's source cannot tell
+#  a derived `present` from one that merely looks derived.
+#
+#  FOUR STATES, because three could not say what is true of the action layer:
+#    content      — holds what this layer is for
+#    placeholder  — holds only the platform's own pending-body text; the field is not empty and there
+#                   is still nothing to read
+#    other        — holds something real that is NOT what this layer is for (the board roster)
+#    empty        — holds nothing
+def _strategic_layer(ceo_spec) -> dict:
+    """§17.3 strategic layer. `present` was `bool(ceo_specification)`, and at birth that field is the
+    string "content pending the owned model - ...", which is truthy: a placeholder counted as a
+    composed strategic layer and the basis then asserted "the AI CEO specification recorded on this
+    entity"."""
+    from agentic_core.api.business_plan import _is_unset as _layer_unset
+    text = ceo_spec if isinstance(ceo_spec, str) else ""
+    if isinstance(ceo_spec, dict) and ceo_spec:
+        text = " ".join(str(v) for v in ceo_spec.values())
+    if not ceo_spec:
+        holds, basis = "empty", ("EMPTY - no CEO specification was composed for this entity, so "
+                                 "there is no strategic layer to read")
+    elif _layer_unset(text):
+        holds, basis = "placeholder", ("PLACEHOLDER - the CEO specification on this entity is the "
+                                       "platform's pending-body text, not a specification anyone "
+                                       "composed; it is stored, so the field is not empty, but there "
+                                       "is nothing here to read as strategy")
+    else:
+        holds, basis = "content", "the AI CEO specification recorded on this entity"
+    return {"ceo": ceo_spec, "holds": holds, "present": holds == "content", "basis": basis}
+
+
+def _action_plan_layer(board) -> dict:
+    """§17.3 action layer. A ROSTER IS NOT A PLAN OF ACTION — this layer's own basis has said exactly
+    that since W496, while the same dict counted it present. The pack contradicted itself one key
+    apart, and `layers_present` carried the half that was wrong."""
+    if not board:
+        return {"board": board, "holds": "empty", "present": False,
+                "basis": "EMPTY - no board is attached to this entity"}
+    return {"board": board, "holds": "other", "present": False,
+            "basis": ("OTHER - the entity's standing board roster, which is who would act and not "
+                      "what is to be done; no action items are recorded here, so this layer holds "
+                      "something real that is not an action plan")}
+
+
+def _stage_label(vsb: dict) -> str:
+    """What a surface PRINTS for the stage. A derived stage of None is a fact, not an empty string:
+    a reader who sees nothing cannot tell a missing stage from a missing field."""
+    return str(vsb.get("stage") or "no stage reached")
 
 
 def _refuse_gated(vsb: dict, mover: str) -> None:
@@ -1987,6 +2114,10 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         # the living registration exist, and it carries the facts it was decided on.
         _st, _st_basis = _derived_status(vsb_entity)
         vsb_entity["status"] = _st
+        # §4 (W573, M1 R2.1) - the stage is derived wherever the status is
+        _sg, _sg_basis = _derived_stage(vsb_entity)
+        vsb_entity["stage"] = _sg
+        vsb_entity["stage_basis"] = _sg_basis
         vsb_entity["status_basis"] = _st_basis
         vsb_entity["status_derived_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         _save_vsb(vsb_entity)

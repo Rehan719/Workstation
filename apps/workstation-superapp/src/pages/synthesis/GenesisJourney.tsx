@@ -44,7 +44,10 @@ interface JourneyResult {
   // §5 — each stage verified/tested/validated on real measured proxies.
   // W436 — `verified: null` means NOT ASSESSABLE (floor-served): the proxies cannot fail on floor
   // output, so no verdict is claimed. Null is a third state, never rendered as pass OR fail.
-  stage_verifications?: Record<string, { verified: boolean | null; score: number; sections_present: string; basis?: string }>;
+  // W573 (M1 R2.3) — `ran` is present and FALSE only for a stage the journey never reached (a §11
+  // veto stops it after Stage 5). It is ABSENT on a complete journey, so "absent" means ran, and
+  // `verified: null` means ran-but-not-assessable. Three different things, none of them "done".
+  stage_verifications?: Record<string, { verified: boolean | null; ran?: boolean; score: number; sections_present: string; basis?: string }>;
   stages_verified?: string;
   stages_floor_served?: number;
   stages_note?: string | null;
@@ -87,11 +90,49 @@ interface PwaManifest {
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
+// W573 (M1 R2.3) — THE §4 RAIL TOOK ALL SIX TILES FROM ONE FLAG: `const done = !!result`. Any journey
+// that returned anything lit every stage as complete, including a journey the §11 screen vetoed after
+// Stage 5, whose own payload says design, operations and commercialisation never ran. The page already
+// handled the blocked case correctly in two other places; this rail did not look.
+//
+// THE CONTRACT IS MEASURED, not assumed, because it is subtle in both directions:
+//   · `ran` is present and FALSE only for a stage the journey never reached.
+//   · `ran` is ABSENT on a complete journey, so absent means it ran — not that it is unknown.
+//   · `verified: null` means it ran and the floor's proxies cannot fail by construction, which is
+//     "not assessable", not "verified" and not "failed".
+//   · Model · Simulate · Rank HAS NO VERIFICATION ENTRY at all. Its evidence is the candidates it
+//     ranked, and it carries no verification — so the tile says that rather than borrowing another
+//     stage's. Key PRESENCE is not evidence: on a blocked journey `phase_2_design_development` is
+//     present and 133 characters long, holding the "no deliverable" placeholder.
+type RailState = { done: boolean; label: 'verified' | 'ran' | 'not run' | 'not known'; why: string };
+const railState = (key: string | null, r: JourneyResult | null): RailState => {
+  if (!r) return { done: false, label: 'not known', why: 'no journey has been run in this session' };
+  if (!key) {
+    const ranked = (r.stage_5_model_simulate_rank?.candidates ?? []).length;
+    return ranked
+      ? { done: true, label: 'ran',
+          why: `${ranked} candidate(s) were modelled and ranked. This stage carries no §10 verification entry, so nothing has been verified about it.` }
+      : { done: false, label: 'not run', why: 'no candidates were modelled or ranked on this journey' };
+  }
+  const v = r.stage_verifications?.[key];
+  if (!v) return { done: false, label: 'not known',
+                   why: `the journey recorded no verification entry for "${key}", so whether this stage ran is not known` };
+  if (v.ran === false) return { done: false, label: 'not run',
+                                why: v.basis || 'the journey did not reach this stage' };
+  if (v.verified === true) return { done: true, label: 'verified', why: v.basis || 'verified by the §10 gate' };
+  return { done: true, label: 'ran',
+           why: v.basis || 'this stage ran; its verification is not assessable' };
+};
+
 interface BoardPack {
   vsb_id: string; name: string; kind: string; narrative: string; dcs_registered: boolean; dcs_hash?: string;
   layers: Record<string, any>;
   // W496 (FU-104) — the measured list of layers that hold anything
   layers_present?: string[];
+  // W573 (M1 R3.1) — what each layer HOLDS (content · placeholder · other · empty) and why. The
+  // basis used to be reachable only through the "N empty" tooltip, which renders only when a layer
+  // is missing — so while the count was wrong, nothing on the page could show that it was.
+  layers_state?: Record<string, { holds?: string; basis?: string }>;
   // W471 — who composed the narrative, and whether this assembly changed anything
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
   version?: number; unchanged?: boolean; unchanged_since?: string; generated_at?: string;
@@ -163,7 +204,10 @@ export const GenesisJourney: React.FC = () => {
   const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any;
     name_pending?: boolean; name_source?: string; body_pending?: Record<string, boolean>; initial_ship?: any;
     // W496 (FU-100) — the entity's DERIVED status and the facts it was derived from
-    status?: string; status_basis?: string } | null>(null);
+    status?: string; status_basis?: string;
+    // W573 (M1 R2.0) — the entity has always said whether anything actually tends it; the page just
+    // never read it, and ticked "Operate" from the existence of a repo instead.
+    living?: { autonomous_cycles?: boolean; autonomous_operation?: string } } | null>(null);
   // W450 (P1.2) — the founder names the enterprise: optionally before the journey, or on the newborn card
   const [enterpriseName, setEnterpriseName] = useState('');
   const [naming, setNaming] = useState(false);
@@ -483,7 +527,17 @@ export const GenesisJourney: React.FC = () => {
           { id: 'explore',   label: 'Explore',      done: !!result,         hint: 'Conceptualise · Design · Commercialise' },
           { id: 'establish', label: 'Establish',    done: !!vsb,            hint: 'Your living VSB IDBO entity' },
           { id: 'deliver',   label: 'Deliver',      done: surfaces,         hint: 'Repo · Website · Web app · Phone app' },
-          { id: 'operate',   label: 'Operate',      done: !!vsb && surfaces, hint: 'Run · defend · improve · grow' },
+          // W573 (M1 R2.0) — THIS TICKED THE MOMENT A REPO EXISTED. `!!vsb && surfaces` says a VSB
+          // was established and files were generated; it says nothing about anything RUNNING, and
+          // the entity's own record on the same page says autonomous cycles are off by default. So a
+          // founder was told their enterprise was running, defending and improving itself because a
+          // repository had been written. Operating is a fact the living roster reports, and the
+          // entity carries it — the page simply never read it.
+          { id: 'operate',   label: 'Operate',      done: !!vsb?.living?.autonomous_cycles,
+            hint: vsb
+              ? (vsb.living?.autonomous_cycles ? 'Run · defend · improve · grow'
+                 : 'Not operating — the heartbeat’s Self-run lever is off')
+              : 'Run · defend · improve · grow' },
         ];
         const currentIdx = steps.findIndex(s => !s.done);
         return (
@@ -516,14 +570,15 @@ export const GenesisJourney: React.FC = () => {
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-5">Concept → Commercialisation · fine-resolution lifecycle (§4)</h3>
         <div className="grid grid-cols-1 @[560px]:grid-cols-3 @[900px]:grid-cols-6 gap-3">
           {[
-            { icon: Lightbulb,  label: 'Conceptualise',          desc: 'Cognitive cascade + MJM → optimal concept' },
-            { icon: Eye,        label: 'Innovate & Research',     desc: 'Best/latest approaches: science·tech·business·law' },
-            { icon: Brain,      label: 'Model · Simulate · Rank', desc: 'Candidate solutions scored on evidence → best' },
-            { icon: Layers,     label: 'Design & Development',    desc: 'Architecture, components, MVP scope' },
-            { icon: ShieldCheck,label: 'Operational Intelligence',desc: 'Deliverability · compliance · operability (§11 screens it)' },
-            { icon: Rocket,     label: 'Commercialise',           desc: 'GTM + revenue + living VSB blueprint' },
-          ].map(({ icon: Icon, label, desc }, i) => {
-            const done = !!result;
+            { icon: Lightbulb,  key: 'concept',           label: 'Conceptualise',          desc: 'Cognitive cascade + MJM → optimal concept' },
+            { icon: Eye,        key: 'research',          label: 'Innovate & Research',     desc: 'Best/latest approaches: science·tech·business·law' },
+            { icon: Brain,      key: null,                label: 'Model · Simulate · Rank', desc: 'Candidate solutions scored on evidence → best' },
+            { icon: Layers,     key: 'design',            label: 'Design & Development',    desc: 'Architecture, components, MVP scope' },
+            { icon: ShieldCheck,key: 'operations',        label: 'Operational Intelligence',desc: 'Deliverability · compliance · operability (§11 screens it)' },
+            { icon: Rocket,     key: 'commercialisation', label: 'Commercialise',           desc: 'GTM + revenue + living VSB blueprint' },
+          ].map(({ icon: Icon, key, label, desc }, i) => {
+            const st = railState(key, result);
+            const done = st.done;
             return (
               <div key={label} className={`p-4 rounded-2xl border transition-all ${done ? 'bg-highlight/10 border-highlight/20' : running ? 'bg-aura/10 border-aura/30 animate-pulse' : 'bg-slate-900 border-slate-800'}`}>
                 <div className="flex items-center gap-2 mb-2">
@@ -534,6 +589,18 @@ export const GenesisJourney: React.FC = () => {
                 </div>
                 <p className={`text-[11px] font-black mb-1 ${done ? 'text-white' : 'text-slate-400'}`}>{label}</p>
                 <p className="text-[9px] text-slate-600 leading-relaxed">{desc}</p>
+                {/* W573 (M1 R2.3) — what this stage actually did, with the journey's own basis behind
+                    it. "ran" and "verified" are not the same claim and neither is "complete". */}
+                {result && (
+                  <span data-testid={`rail-state-${i + 1}`} title={st.why}
+                        className={`inline-block mt-2 text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                          st.label === 'verified' ? 'bg-emerald-500/15 text-emerald-400'
+                          : st.label === 'ran' ? 'bg-sky-500/15 text-sky-300'
+                          : st.label === 'not run' ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-slate-800 text-slate-500'}`}>
+                    {st.label}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -1132,8 +1199,26 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300"
                                     data-testid="pack-layers-present"
                                     title="a layer counts as present only if it holds something; the pack says which">
-                                {(pack.layers_present ?? Object.keys(pack.layers)).join(' · ')}
+                                {(pack.layers_present ?? []).length
+                                  ? (pack.layers_present ?? []).join(' · ')
+                                  : 'none hold content'}
                               </span>
+                              {/* W573 (M1 R3.1) — EVERY LAYER'S STATE, EACH CARRYING ITS OWN BASIS.
+                                  Until now a basis could only be read from the "N empty" chip below,
+                                  which renders only when a layer is absent: with all four counted
+                                  present nothing on the page could be opened, including action_plan's
+                                  own admission that a roster is not a plan of action. */}
+                              {Object.entries(pack.layers_state ?? {}).map(([k, v]) => (
+                                <span key={k} data-testid={`pack-layer-${k}`}
+                                      title={v?.basis || 'no basis is recorded for this layer'}
+                                      className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                                        v?.holds === 'content' ? 'bg-emerald-500/15 text-emerald-400'
+                                        : v?.holds === 'placeholder' ? 'bg-amber-500/20 text-amber-400'
+                                        : v?.holds === 'other' ? 'bg-sky-500/15 text-sky-300'
+                                        : 'bg-slate-800 text-slate-500'}`}>
+                                  {k}: {v?.holds ?? 'not stated'}
+                                </span>
+                              ))}
                               {(pack.layers_present ?? []).length < Object.keys(pack.layers).length && (
                                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-500"
                                       data-testid="pack-layers-empty"

@@ -1122,7 +1122,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         # §4.8 (W496, FU-100) - derived below from the gates, the body-pending map and whether
         # anything actually tends the entity; a literal here was a claim about a state nobody checked
         "status": "pending derivation",
-        "stage": "commercialise",
+        # §4 (W573, M1 R2.1) - AND SO IS THE STAGE, which that round left behind one line below the
+        # status it fixed. "commercialise" was written here on every entity at birth and printed by
+        # three readers beside a status of "body pending". `scope` above is the ambition and stays.
+        "stage": "pending derivation",
         "genome_spec": genome_spec,
         "epigenetic_traits": {"domain": req.domain, "origin": "genesis"},
         "generation": 0,
@@ -1198,6 +1201,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     _st, _st_basis = vsb_mod._derived_status(entity)
     entity["status"] = _st
     entity["status_basis"] = _st_basis
+    # §4 (W573, M1 R2.1) - and the stage, from the same facts and in the same place
+    _sg, _sg_basis = vsb_mod._derived_stage(entity)
+    entity["stage"] = _sg
+    entity["stage_basis"] = _sg_basis
     vsb_mod._save_vsb(entity)
 
     try:
@@ -1334,8 +1341,9 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         entity = {
             "vsb_id": vsb_id, "name": name, "challenge": req.problem, "domain": req.domain,
             "realm": req.realm, "scope": "commercialise", "owner_id": req.owner_id,
-            # §4.8 (W496, FU-100) - derived after the facets attach (see below)
-            "status": "pending derivation", "stage": "commercialise", "genome_spec": genome_spec,
+            # §4.8 (W496, FU-100) - derived after the facets attach (see below); §4 (W573, M1 R2.1)
+            # the stage is derived there too, and was a literal on this path as well
+            "status": "pending derivation", "stage": "pending derivation", "genome_spec": genome_spec,
             "epigenetic_traits": {"domain": req.domain, "origin": "genesis"}, "generation": 0,
             "ceo_specification": (req.commercialisation or req.concept)[:2000],
             "genesis_blueprint": {"concept": req.concept, "design": req.design,
@@ -1384,6 +1392,11 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         _st, _st_basis = vsb_mod._derived_status(entity)
         entity["status"] = _st
         entity["status_basis"] = _st_basis
+        # §4 (W573, M1 R2.1) - the stage is derived on this path too; a fix applied to one of two
+        # establish paths is how the literal survived W496 in the first place
+        _sg, _sg_basis = vsb_mod._derived_stage(entity)
+        entity["stage"] = _sg
+        entity["stage_basis"] = _sg_basis
         vsb_mod._save_vsb(entity)
         try:
             from agentic_core.organism.biobus import biobus

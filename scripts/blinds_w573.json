@@ -1,0 +1,128 @@
+[
+ {
+  "tag": "the stage goes back to being a literal on the blocking path",
+  "file": "agentic_core/api/genesis.py",
+  "old": "        \"stage\": \"pending derivation\",",
+  "new": "        \"stage\": \"commercialise\",",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "The committed defect, restored at the writer M1 found it at. It is one word and it is printed by three readers beside a status of 'body pending' whose own basis names four sections still awaiting the owned model."
+ },
+ {
+  "tag": "only one of the two establish paths derives the stage",
+  "file": "agentic_core/api/genesis.py",
+  "old": "        _sg, _sg_basis = vsb_mod._derived_stage(entity)\n        entity[\"stage\"] = _sg\n        entity[\"stage_basis\"] = _sg_basis",
+  "new": "        pass",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "THE EXACT SHAPE THAT PRODUCED THIS ROW. W496 derived the status on both paths and the stage on neither; a round that fixed one establish path and not the other would leave the SSE path stamping a literal, and the blocking path's green would hide it. The leg counts derivation sites per module rather than naming line numbers."
+ },
+ {
+  "tag": "a section composed out of order carries the entity past an earlier one",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    reached, blocked_at = None, None\r\n    for k in known:\r\n        if pend[k]:\r\n            blocked_at = k\r\n            break\r\n        reached = k",
+  "new": "    reached, blocked_at = None, None\r\n    for k in known:\r\n        if pend[k]:\r\n            blocked_at = k\r\n            continue\r\n        reached = k",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "`break` -> `continue` turns the contiguous prefix into 'the last one composed', so a commercialisation written while the concept is still pending reports the entity as commercialised. That is this row's own defect one section along, and it is a one-word change that still reads like a loop over the lifecycle."
+ },
+ {
+  "tag": "a missing body map reads as nothing composed",
+  "file": "agentic_core/api/vsb.py",
+  "old": "        return (None, \"no body-pending map is recorded on this entity, so which §4 sections it has \"\r\n                      \"composed is NOT KNOWN - which is not the same as having composed none, and \"\r\n                      \"not the same as having composed them all\")",
+  "new": "        return (None, \"no §4 lifecycle stage is reached\")",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "NOT KNOWN collapsed into a measured zero. The stage is still None so every other assertion passes; only a leg that checks the BASIS distinguishes 'we looked and nothing is composed' from 'there is nothing to look at'. A measured zero is a finding; an unmeasured one is not."
+ },
+ {
+  "tag": "the shipped README prints the raw field again",
+  "file": "agentic_core/api/vsb.py",
+  "old": "        f\"- **Stage:** {_stage_label(vsb)} · **Status:** {vsb.get('status')}\\n\"",
+  "new": "        f\"- **Stage:** {vsb.get('stage')} · **Status:** {vsb.get('status')}\\n\"",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "A writer fixed without its readers moves the untruth down a layer - and this reader writes to DISK, into a repository the founder keeps after the page that would have explained it is gone. With the literal removed this prints the word None, which reads as a bug rather than as a state."
+ },
+ {
+  "tag": "a placeholder counts as a composed strategic layer",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    elif _layer_unset(text):",
+  "new": "    elif False and _layer_unset(text):",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "The committed defect: truthiness. Every basis string survives this edit, so a guard checking the WORDING still passes - the `if False and` shape that made four blinds vacuous two rounds ago. The leg drives the placeholder through the function and reads `holds` back."
+ },
+ {
+  "tag": "`present` stops following `holds`",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    return {\"ceo\": ceo_spec, \"holds\": holds, \"present\": holds == \"content\", \"basis\": basis}",
+  "new": "    return {\"ceo\": ceo_spec, \"holds\": holds, \"present\": bool(ceo_spec), \"basis\": basis}",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "The subtlest restoration available: `holds` is still computed correctly and still rendered, so the page shows 'placeholder' while layers_present counts the layer. A reader comparing the chip with the list would see the contradiction; a guard that only checked `holds` would not."
+ },
+ {
+  "tag": "a board roster is an action plan again",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    return {\"board\": board, \"holds\": \"other\", \"present\": False,",
+  "new": "    return {\"board\": board, \"holds\": \"other\", \"present\": True,",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "This layer's own basis has said since W496 that a roster is not a plan of action and no action items are recorded. The pack contradicted itself one key apart for 77 rounds, and the half that travelled was the wrong one."
+ },
+ {
+  "tag": "the per-layer state stops reaching the page",
+  "file": "agentic_core/api/vsb.py",
+  "old": "        \"layers_state\": layers_state,",
+  "new": "        \"_layers_state\": layers_state,",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "A renamed key is silent in JavaScript: the page maps over undefined, renders no chips and throws nothing. The basis would again be reachable only through the chip that appears when a layer is MISSING - so the one thing that could reveal a wrong count would once more be gated behind the count being wrong."
+ },
+ {
+  "tag": "Operate is ticked by a repository existing",
+  "file": "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+  "old": "          { id: 'operate',   label: 'Operate',      done: !!vsb?.living?.autonomous_cycles,",
+  "new": "          { id: 'operate',   label: 'Operate',      done: !!vsb && surfaces,",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "The committed defect: 'Run · defend · improve · grow' ticked because files were written. The hint still reads correctly off the living roster in this state, so the tile would say it is not operating AND show a tick - which is how a half-fix looks."
+ },
+ {
+  "tag": "the §4 rail goes back to one flag for six stages",
+  "file": "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+  "old": "            const st = railState(key, result);\r\n            const done = st.done;",
+  "new": "            const st = railState(key, result);\r\n            const done = !!result;",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "The nastiest of this set: railState is still called and the per-stage chip still renders 'not run', while the TILE lights as complete. The page would state both things at once, and a guard that only checked the chips would pass."
+ },
+ {
+  "tag": "a stage the journey never reached counts as done",
+  "file": "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+  "old": "  if (v.ran === false) return { done: false, label: 'not run',",
+  "new": "  if (v.ran === true) return { done: false, label: 'not run',",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "`ran` is present and FALSE only for a stage that never ran, and ABSENT on a complete journey - so testing for `=== true` matches nothing and every blocked stage falls through to 'ran'. The contract is easy to invert because absent-means-ran is the opposite of the usual reading, which is why it is measured in the comment above it."
+ },
+ {
+  "tag": "a stage with no verification borrows another's",
+  "file": "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+  "old": "  if (!v) return { done: false, label: 'not known',",
+  "new": "  if (!v) return { done: true, label: 'verified',",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "NOT KNOWN promoted to a pass, which is the three-state failure this programme keeps finding: a stage the journey recorded nothing about is reported as verified. Model · Simulate · Rank has no verification entry at all, so this is a live path and not a hypothetical."
+ },
+ {
+  "tag": "the cockpit renders nothing when no stage is reached",
+  "file": "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+  "old": "                      : <Badge color=\"slate-500\">no stage reached</Badge>}",
+  "new": "                      : null}",
+  "selector": "completion_mark_is_read_from_the_state",
+  "expect": "BLIND(red)",
+  "why": "Silence is not honesty. An absent badge leaves a reader unable to tell 'no stage reached' from a field that failed to load, and the original code was exactly this shape - `{detail.stage && <Badge>}` - which is why removing the literal alone would not have been a fix."
+ }
+]

@@ -321,10 +321,14 @@ def main() -> int:
     #  Two came back that way tonight from a double-escaped em dash in a JSON blind file. The check
     #  costs a second against twenty minutes, so it is a REFUSAL rather than a warning: the point is
     #  to fix every bad anchor in one go and then run the sweep once.
+    #  IT MUST READ THE FILE EXACTLY AS sweep() DOES — BYTES, THEN DECODE. Text mode translates CRLF
+    #  to \\n, so on a CRLF file a correct multi-line anchor counts 0 here and 1 there: the gate would
+    #  refuse a blind the sweep could apply. A check that reads its subject differently from the code
+    #  it is checking measures a different file.
     _bad = []
     for _b in blinds:
         try:
-            _hits = io.open(_b["file"], encoding="utf-8").read().count(_b["old"])
+            _hits = io.open(_b["file"], "rb").read().decode("utf-8").count(_b["old"])
         except OSError as _e:                    # noqa: BLE001
             _bad.append((_b.get("tag", "?"), _b.get("file", "?"), f"unreadable: {_e}"))
             continue
