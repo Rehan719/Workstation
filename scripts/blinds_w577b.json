@@ -1,0 +1,38 @@
+[
+ {
+  "tag": "the missed consumer goes back to taking the tuple as a dict",
+  "file": "agentic_core/ai/user_context.py",
+  "old": "        _doc, _why = _load(owner)",
+  "new": "        _doc, _why = (_load(owner), None)",
+  "selector": "w428_profile_round_trip or w505_p23_avatar",
+  "expect": "BLIND(red)",
+  "why": "THE DEFECT THAT TURNED THE SUITE RED, restored exactly: a tuple is truthy so `or {}` does not save it, `.get` raises, the `except Exception` swallows it, and every stored profile silently stops reaching generation. Two guards saw it; nothing else did. The class is the one already written down - grep the CONSUMERS of a changed signature, not the file you edited."
+ },
+ {
+  "tag": "the arrivals count goes back to counting only OPEN rows",
+  "file": "integration_tests/test_mvp_spine.py",
+  "old": "    _p218_all = sorted(r[\"id\"] for r in _reg[\"items\"] if r.get(\"slot\") == \"P2.18\")",
+  "new": "    _p218_all = sorted(r[\"id\"] for r in _reg[\"items\"] if r.get(\"slot\") == \"P2.18\" and r.get(\"status\") == \"open\")",
+  "selector": "w562_p24_is_two_items",
+  "expect": "BLIND(red)",
+  "why": "FU-365's class, which this test names in its own comments TWICE and then committed three lines later. Counting open rows means every row the item closes pushes the count toward the floor, so the guard fails on the item progressing. 'The arrivals moved' is about where a row SITS, and closing one does not un-move it. (It survived W576 only because that round's suite ran before its rows were closed - the register the commit shipped was never the register the suite saw.)"
+ },
+ {
+  "tag": "a clause goes missing from the bar",
+  "file": "docs/FABLE_DELIVERY_PROMPT.md",
+  "old": "      (c) TWO NAMED SINGLES, kept here rather than hidden in a cluster:",
+  "new": "      (c) SOME OTHER HEADING, kept here rather than hidden in a cluster:",
+  "selector": "w562_p24_is_two_items",
+  "expect": "BLIND(red)",
+  "why": "The clause check was loosened to tolerate a DELIVERED marker between the label and the title, which is the progress a clause exists to make. Loosening a guard is where a guard stops guarding, so the loosened form must still notice a clause that is actually gone."
+ },
+ {
+  "tag": "the delivered marker is no longer tolerated between label and title",
+  "file": "integration_tests/test_mvp_spine.py",
+  "old": "        assert _re562.search(r\"\\(\" + _letter + r\"\\).{0,80}?\" + _re562.escape(_clause), _bar), (",
+  "new": "        assert _re562.search(r\"\\(\" + _letter + r\"\\) \" + _re562.escape(_clause), _bar), (",
+  "selector": "w562_p24_is_two_items",
+  "expect": "BLIND(red)",
+  "why": "The ORIGINAL defect: pinned as '(a) TITLE' with nothing allowed between, so marking a clause DELIVERED broke the leg - and P2.19 already carries exactly such markers in that position. A guard asserting a clause EXISTS must not also forbid it from reporting that it closed. This blind restores the intolerant form and the leg must go red on the plan as it now stands."
+ }
+]

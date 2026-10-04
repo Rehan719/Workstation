@@ -188,50 +188,23 @@ def read_json_strict(path, missing, expect=None):
     return data
 
 
-def load_json_tolerant(path, default):
-    """Corruption-tolerant JSON load, and NO LONGER SILENT.
-
-    A partial, interleaved or truncated store yields its recoverable JSON prefix when one exists, else the
-    caller's default, and never raises - a corrupt cache must not take a live subsystem down
-    (ai/memory.py, W241). That behaviour is unchanged.
-
-    W506 (P2.4/FU-075) - what changed is that it SAYS SO. This returned the default or a prefix and told
-    nobody, so a summary built on a truncated store reported a smaller number with no indication, and a
-    reader could not tell "empty" from "unreadable". Four readers now carry the reason in their own
-    responses (revenue's pending summary, charity's approved signals, the heartbeat's screening rotation,
-    the avatar's compliance line). The rest log it here, naming the store and the module that asked, so
-    the incompleteness is attributable everywhere rather than invisible.
-
-    Prefer `read_json_reported`, which hands the reason to the caller so a response can state it. A log
-    line is a weaker remedy than a field on the answer, and this exists for the callers that have not been
-    converted yet.
-
-    W575 (FU-075) — THIS FUNCTION IS KEPT DELIBERATELY, and that is a decision rather than an omission.
-    The row asked for it to be deleted "once every writer is strict". Every writer IS strict (W472) and
-    W506 delivered the rest of that row's substance by making this non-silent. Deleting it now would
-    not make anything more honest: its purpose is that A CORRUPT CACHE MUST NOT TAKE A LIVE SUBSYSTEM
-    DOWN (ai/memory.py, W241), and the twelve readers that call it are read-only summaries and listings
-    that never write back. Removing it would convert each of them from "degrades and says so" into a
-    failure, which is a behaviour change nobody asked for and not an improvement in truth.
-    WHAT REMAINS IS NOT ABOUT THIS FUNCTION. Four of its readers carry the reason in their own answers;
-    the rest only log it, so a listing over an unreadable store still shows fewer rows without saying
-    so on the surface. That is FU-298, and it belongs where the property lives — P2.18's clause (a),
-    "an absence reaches the reader" — not here. A reader that logs is this function's caller's defect.
-    """
-    value, why = read_json_reported(path, default)
-    if why:
-        import inspect
-        import logging
-        _who = "unknown"
-        try:
-            _f = inspect.stack()[1]
-            _who = f"{_f.filename.split(chr(92))[-1].split(chr(47))[-1]}:{_f.lineno}"
-        except Exception:
-            pass
-        logging.getLogger("config.store").error(
-            "a TOLERANT read returned incomplete data and the caller was not told: store=%s asked_by=%s "
-            "reason=%s", path, _who, why)
-    return value
+#  W577 (FU-298 / FU-075) — `load_json_tolerant` WAS HERE AND IS GONE.
+#
+#  W575 kept it deliberately and wrote the reason into the function: its purpose was that a corrupt
+#  cache must not take a live subsystem down, and "the twelve readers that call it" were the stated
+#  condition for keeping it. THAT CONDITION IS WHAT THIS ROUND REMOVED, so the deletion is the
+#  retention decision being honoured rather than reversed. Nothing about the W575 reasoning was wrong
+#  except one conflation: deleting this wrapper was read as making its readers STRICT, and it never
+#  was. The function's whole body delegated to `read_json_reported` and logged. Every caller now
+#  calls that directly, which is EQUALLY TOLERANT - no subsystem goes down - and additionally hands
+#  the caller the reason, so the reader can state it instead of a log line nobody reads.
+#
+#  REACHABILITY, as P2.18 clause (2) requires of a removal: zero calls and zero imports across
+#  agentic_core (a per-line scan with comments and docstrings separated, not a bare grep), zero in
+#  scripts/ and apps/, no dynamic reference (no getattr on this module and no string naming it), and
+#  not re-exported from any package __init__. The suite's own uses were converted in the same commit,
+#  INCLUDING one inside a generated subprocess script where the name lives in a string literal and no
+#  import error would ever have surfaced it.
 
 
 def read_json_reported(path, default):

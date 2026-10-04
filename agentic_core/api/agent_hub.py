@@ -40,7 +40,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from agentic_core.auth.core import auth_enabled, get_current_user, user_can_access
-from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, load_json_tolerant, read_json_strict, store_lock
+from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict, store_lock
 from agentic_core.organism.biobus import biobus
 
 _MSG_DIR = Path((os.getenv("ACH_MESSAGES_DIR") or str(data_path("agent_messages"))))
@@ -567,17 +567,34 @@ async def update_handoff_status(handoff_id: str, req: HandoffStatusRequest,
     to do it. Stamped and history-tracked."""
     principal = _require_hub_user(user, "update a handoff")
     _safe_id(handoff_id, "handoff_id")
+    # W577 (FU-298) — the scan SKIPPED a file it could not read and then answered 404, so a handoff
+    # that exists and is unreadable was reported as a handoff that does not exist. The skipped files
+    # are counted, and the 404 below becomes a 503 naming them: "not found" is a claim about the
+    # whole directory, and a directory with an unread file in it cannot support that claim.
+    _unreadable: list[str] = []
     for f in _HANDOFF_DIR.glob("*.json"):
         try:
             rec = json.loads(f.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError) as _e:
+            _unreadable.append(f"{f.name} ({_e.__class__.__name__})")
             continue
         if rec.get("handoff_id") == handoff_id:
             now = _iso_now()
             # re-read INSIDE the lock — the scan's read is only a locator, never the write base
             # (a concurrent status update would otherwise be lost to read-modify-write)
             with store_lock(f):
-                rec = load_json_tolerant(f, None)
+                # W577 (FU-395) — this is a WRITE BASE, and it was read tolerantly. A tolerant read
+                # recovers the store's first complete JSON value and DISCARDS everything after it, so
+                # the atomic_write_json below persisted the prefix and the remainder — a handoff's
+                # whole status_history — was gone with no error and a success response. A writer reads
+                # strictly and refuses; the record is not lost and the caller is told which it was.
+                try:
+                    rec = read_json_strict(f, None, expect=dict)
+                except StoreUnavailable as _e:
+                    raise HTTPException(
+                        status_code=503,
+                        detail=f"{_e}; the handoff's status was NOT changed and nothing recorded "
+                               f"on it was overwritten") from None
                 if not isinstance(rec, dict) or rec.get("handoff_id") != handoff_id:
                     continue
                 rec["status"] = req.status
@@ -589,4 +606,10 @@ async def update_handoff_status(handoff_id: str, req: HandoffStatusRequest,
             await _broadcast({"event": "handoff_status", "data": {
                 "handoff_id": handoff_id, "status": req.status, "by": principal}})
             return {"handoff_id": handoff_id, "status": req.status, "by": principal}
+    if _unreadable:
+        raise HTTPException(
+            status_code=503,
+            detail=f"No handoff with id '{handoff_id}' was found among the handoffs that could be "
+                   f"read, and {len(_unreadable)} could NOT be read, so it may be one of them: "
+                   f"{', '.join(_unreadable[:5])}")
     raise HTTPException(status_code=404, detail=f"No handoff with id '{handoff_id}'.")

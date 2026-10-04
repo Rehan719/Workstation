@@ -327,9 +327,18 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
 async def proposed_catalogue(limit: int = 10):
     """§5 (W282) — the offerings the org cascade has PROPOSED (parsed + persisted per run; the
     cascade proposes, the Owner curates into the real shipped-product catalog)."""
-    from agentic_core.config import data_path as _dp, load_json_tolerant as _ljt
-    rows = _ljt(_dp("proposed_catalogue.json"), []) or []
-    return {"proposed": list(reversed(rows[-max(1, min(int(limit), 50)):]))}
+    from agentic_core.config import data_path as _dp, read_json_reported as _rjr
+    rows, _why = _rjr(_dp("proposed_catalogue.json"), [])
+    rows = rows if isinstance(rows, list) else []
+    return {"proposed": list(reversed(rows[-max(1, min(int(limit), 50)):])),
+            # W577 (FU-298) — a short list of what the cascade PROPOSED reads as the cascade having
+            # proposed less. The Owner curates from this list, so an absence here is an offering that
+            # silently never reaches curation.
+            "store_incomplete": _why,
+            "listing_is_incomplete": bool(_why),
+            "listing_basis": ("the proposals this store could not be read whole are MISSING from this "
+                              "list, so the cascade proposed at least these and possibly more"
+                              if _why else "every proposal the cascade has persisted")}
 
 
 @router.get("/cascade/runs")
@@ -337,9 +346,16 @@ async def cascade_runs(limit: int = 10):
     """§5 (W268) — the persisted org-cascade run history (appraisals · Development Actions · measured
     quality · governance · provenance), newest first. The appraisal/development record survives the
     response, so the next cycle can be judged against it."""
-    from agentic_core.config import data_path, load_json_tolerant
-    rows = load_json_tolerant(data_path("org_cascade_runs.json"), []) or []
-    return {"runs": list(reversed(rows[-max(1, min(limit, 50)):])), "total": len(rows)}
+    from agentic_core.config import data_path, read_json_reported
+    rows, _why = read_json_reported(data_path("org_cascade_runs.json"), [])
+    rows = rows if isinstance(rows, list) else []
+    return {"runs": list(reversed(rows[-max(1, min(limit, 50)):])), "total": len(rows),
+            # W577 (FU-298) — `total` is the figure a reader takes as "how many cascades have run".
+            "store_incomplete": _why,
+            "total_is_incomplete": bool(_why),
+            "total_basis": ("the runs this store could not be read whole are MISSING from this total, "
+                            "so at least this many have run and possibly more"
+                            if _why else "every run persisted in the cascade history")}
 
 
 @router.post("/cascade")

@@ -24,7 +24,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
+from agentic_core.config import atomic_write_json, data_path, store_lock
 
 _STORE = data_path("revenue_events.json")
 _CAP = 2000

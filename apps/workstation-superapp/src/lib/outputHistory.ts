@@ -139,9 +139,17 @@ export async function syncWorkspaceFromServer(): Promise<number | null> {
     if (doc.prefs && typeof doc.prefs === 'object' && Object.keys(doc.prefs).length) {
       setPrefs({ ...doc.prefs, ...getPrefs() });   // local edits win over the stored copy
     }
-    _lastSyncError = '';
+    // W577 (FU-298) — a 200 over a store the server could only read IN PART cleared this warning,
+    // so a short history looked like the whole of it. It matters doubly here: `serverHistory` comes
+    // back short, so the length comparison below fires and PUSHES the local copy back — which before
+    // W577's strict write would have overwritten the part the server could not read. The push now
+    // refuses server-side, and the person is told why their history looks shorter than they remember.
+    _lastSyncError = doc.count_is_incomplete
+      ? (doc.count_basis ?? 'Your saved work could not be read in full on the server, so some records '
+         + 'may be missing from this list. Nothing in this browser has been lost.')
+      : '';
     try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
-    if (merged.length !== serverHistory.length) scheduleWorkspacePush();   // push what the server lacked
+    if (merged.length !== serverHistory.length && !doc.count_is_incomplete) scheduleWorkspacePush();   // push what the server lacked
     return merged.length;
   } catch {
     _lastSyncError = 'Could not reach the server — showing the work saved in this browser.';

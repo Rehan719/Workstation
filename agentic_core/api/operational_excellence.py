@@ -191,9 +191,24 @@ def _rankings(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 _BASELINE_STORE = data_path("model_health_baselines.json")
 
 
-def _load_baselines() -> Dict[str, Dict[str, Any]]:
-    from agentic_core.config import load_json_tolerant
-    return load_json_tolerant(_BASELINE_STORE, {}) or {}
+def _load_baselines(strict: bool = False) -> tuple[Dict[str, Dict[str, Any]], str | None]:
+    """The declared health baselines and WHY they could not be read whole, as `(data, reason)`.
+
+    W577 (FU-395) — `strict=True` is for `set_health_baseline`, which writes this store back. A
+    tolerant read returns the store's first complete JSON value and discards the rest, so declaring
+    one model's baseline would have silently DELETED every other model's — and a deleted baseline
+    does not fail, it just starts scoring a model on history that predates the fix the baseline was
+    declared for. A writer refuses.
+
+    W577 (FU-298) — the reason reaches `model_health`'s readers, because a baseline that could not be
+    read does not make a model unscored; it makes it scored on rows that should not have counted, and
+    nothing on the surface said which.
+    """
+    from agentic_core.config import read_json_reported, read_json_strict
+    if strict:
+        return (read_json_strict(_BASELINE_STORE, {}, expect=dict) or {}), None
+    data, why = read_json_reported(_BASELINE_STORE, {})
+    return (data if isinstance(data, dict) else {}), why
 
 
 def set_health_baseline(model: str, reason: str, at: str | None = None) -> Dict[str, Any]:
@@ -216,7 +231,7 @@ def set_health_baseline(model: str, reason: str, at: str | None = None) -> Dict[
         raise ValueError("a reason is required — a baseline reset must say what changed")
     stamp = at or _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime())
     with _lock(_BASELINE_STORE):
-        data = _load_baselines()
+        data, _ = _load_baselines(strict=True)       # W577 (FU-395) — a writer refuses
         data[model] = {"since": stamp, "reason": reason[:400],
                        "set_at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime())}
         _awj(_BASELINE_STORE, data)
@@ -238,7 +253,7 @@ def model_health(window: int = 40) -> Dict[str, Dict[str, Any]]:
     verdict of a cascade the model served) alongside raw attempt success."""
     # W378 — rows recorded BEFORE a declared baseline are preserved but do not score the model
     # (they measured a since-fixed defect). Nothing is deleted; see set_health_baseline.
-    baselines = _load_baselines()
+    baselines, _bl_why = _load_baselines()
     rows_by_model: Dict[str, list] = {}
     for r in _load():
         if r.get("kind") not in ("model_attempt", "model_quality"):
@@ -271,6 +286,20 @@ def model_health(window: int = 40) -> Dict[str, Dict[str, Any]]:
             "success_p90_ms": p90,                                # what a budget must actually allow
             "last_at": max((r.get("created_at") or "" for r in recent), default=""),
         }
+        # W577 (FU-298) — the reason rides on EACH MODEL'S ROW, never at the top level: this mapping
+        # is keyed by model name and `board.py` reads `len(model_health())` as a resource count, so a
+        # top-level key would have become a phantom model resource. A declared baseline that could not
+        # be read does not leave a model unscored - it scores it on rows that should not have counted,
+        # which moves `success_rate` in the direction of the defect the baseline was declared for.
+        if _bl_why:
+            # W577 — the pre-flight flagged a separate `baseline_store_incomplete` key as reaching no
+            # surface. Rather than add a second render for the raw reason, or delete a true statement,
+            # the reason is folded INTO the basis the page already shows in the chip's title. One key,
+            # one surface, and the attribution is not lost.
+            out[name]["success_rate_is_incomplete"] = True
+            out[name]["success_rate_basis"] = (
+                "a declared baseline could not be read, so rows this model should NOT be scored on "
+                "may be counted here and the rate may read WORSE than the truth — " + str(_bl_why))
     return out
 
 

@@ -411,11 +411,20 @@ async def list_composition_runs(limit: int = 20, user: dict | None = Depends(get
     'rerunnable, reusable' includes the evidence of past runs, not just the design. (Declared
     before /compositions/{cid} so the static path wins over the dynamic id lookup.)
     §14 (W324): tenant-scoped under auth."""
-    from agentic_core.config import load_json_tolerant
+    from agentic_core.config import read_json_reported
     _u = user if isinstance(user, dict) else None
-    rows = [r for r in (load_json_tolerant(data_path("composition_runs.json"), []) or [])
+    _all, _why = read_json_reported(data_path("composition_runs.json"), [])
+    rows = [r for r in (_all if isinstance(_all, list) else [])
             if user_can_access(_u, r.get("owner_id"))]
-    return {"runs": list(reversed(rows[-max(1, min(int(limit), 100)):]))}
+    return {"runs": list(reversed(rows[-max(1, min(int(limit), 100)):])),
+            # W577 (FU-298) — this listing IS the evidence that past runs happened ("rerunnable,
+            # reusable includes the evidence of past runs"). A short list is a weaker claim than it
+            # looks: it reads as the full record of what has run.
+            "store_incomplete": _why,
+            "listing_is_incomplete": bool(_why),
+            "listing_basis": ("the runs this store could not be read whole are MISSING from this "
+                              "listing, so more may have run than appear here"
+                              if _why else "every run you can access in the persisted history")}
 
 
 @router.get("/compositions/{cid}")

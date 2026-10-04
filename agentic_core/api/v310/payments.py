@@ -45,12 +45,22 @@ def _stripe():
         return None
 
 
-def _wst_available():
+def _wst_available(strict: bool = False):
+    """The fund's available WST, and WHY it may be wrong: `(value, unreadable_reason)`.
+
+    W577 (FU-395/FU-298) — `available` is the one figure a partial read OVERSTATES: an unreadable
+    tail is dropped allocations, so less is spoken for than the store really records. This function
+    returned that number bare, and `create-session` compared a price against it and answered
+    "settled". A balance used to AUTHORISE something is read strictly: a payment recorded as settled
+    against a balance that may not exist is the same defect as a write over an unreadable store, and
+    virtual WST does not make the record of it any less false.
+    """
     try:
         from agentic_core.api.capital_fund import _load_fund
-        return _load_fund().get("available")
-    except Exception:
-        return None
+        fund = _load_fund(strict=strict)
+        return fund.get("available"), fund.get("store_incomplete")
+    except Exception as e:
+        return None, f"the capital fund could not be read ({e.__class__.__name__}: {e})"
 
 
 _NOTES = {
@@ -78,7 +88,8 @@ async def payments_status():
         "stripe_configured": mode in ("test", "live", "live_gated"),
         "stripe_library_installed": _stripe() is not None,
         "live_charges_enabled": mode == "live",
-        "wst_available": _wst_available(),
+        "wst_available": _wst_available()[0],
+        "wst_available_basis": _wst_available()[1],          # W577 (FU-298)
         "note": _NOTES[mode],
     }
 
@@ -89,10 +100,20 @@ async def create_checkout_session(session: CheckoutSession):
 
     # Pay from the virtual WST balance (Capital Fund) — always available, no real money.
     if session.payment_method == "wst_balance":
-        bal = _wst_available()
+        # W577 (FU-395) — strict: an unreadable fund REFUSES rather than settling against a figure
+        # that is overstated by exactly the allocations it could not read.
+        from agentic_core.config import StoreUnavailable
+        try:
+            bal, _why = _wst_available(strict=True)
+        except StoreUnavailable as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"{e}; nothing was settled, because the available balance could not be "
+                       f"established and the figure a partial read gives is OVERSTATED") from None
         ok = bal is not None and bal >= session.price_wst
         return {"mode": "wst_ledger", "status": "settled" if ok else "insufficient",
-                "wst_available": bal, "price_wst": session.price_wst, "currency": "WST (virtual)"}
+                "wst_available": bal, "price_wst": session.price_wst, "currency": "WST (virtual)",
+                "balance_basis": ("the whole recorded fund" if not _why else _why)}
 
     if mode == "live_gated":
         raise HTTPException(status_code=403,
@@ -151,7 +172,8 @@ async def get_wallet(user_id: str):
         "wst_balance": report["balance"] if known else None,
         "tier": report.get("tier") if known else None,
         "currency": "WST (virtual)",
-        "platform_capital_fund_available": _wst_available(),
+        "platform_capital_fund_available": _wst_available()[0],
+        "platform_capital_fund_incomplete": _wst_available()[1],   # W577 (FU-298)
         "payment_mode": mode,
         "stripe_configured": mode in ("test", "live", "live_gated"),
         "note": ("wst_balance is this user's own ledger balance and is null when they have no "

@@ -830,7 +830,7 @@ class OrganismHeartbeat:
     def _compliance_beat(self) -> Optional[Dict[str, Any]]:
         """§11 (W288) — re-screen the least-recently-screened LIVING VSB (round-robin).
         Returns a compact reading or None with no living VSBs."""
-        from agentic_core.config import data_path, load_json_tolerant
+        from agentic_core.config import data_path
         from agentic_core.economy.living_vsbs import list_living
         living = (list_living() or {}).get("living_vsbs") or []
         if not living:

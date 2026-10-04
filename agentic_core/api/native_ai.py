@@ -147,6 +147,8 @@ async def native_models():
             "default_local": effective_default_local() if discovered else None,
             "promoted_default": _st.get("default_local"), "retired": _st.get("retired") or [],
             "tiers": tiers,
+            "store_incomplete": _st.get("store_incomplete"),          # W577 (FU-298)
+            "retired_is_incomplete": bool(_st.get("store_incomplete")),
             "note": "Owned models. Route a completion to any with model=<id>. External providers are opt-in "
                     "accelerants (AI_ALLOW_EXTERNAL); the native floor is always available."}
 
@@ -162,6 +164,27 @@ def _ueg_lifecycle(action: str, model: str, extra: Dict[str, Any] | None = None)
         UEGLogger().log({"type": f"native_ai.model.{action}", "model": model, **(extra or {})})
     except Exception:
         pass
+
+
+def _lifecycle_for_write() -> Dict[str, Any]:
+    """The lifecycle record read STRICTLY, for the four routes that write it back.
+
+    W577 (FU-395) — all four took the TOLERANT read and handed it to `save_lifecycle`. A tolerant
+    read returns the store's first complete JSON value and discards the rest, so a write on that base
+    persists the prefix. On this particular record the consequence is sharp: `retire_model` appends to
+    `st["retired"]` and saves, so a dropped prefix would have UN-RETIRED every other model while
+    reporting that one had been retired. Refusing is the only answer that cannot lose a retirement.
+    """
+    from fastapi import HTTPException
+    from agentic_core.ai.native.model_resource import lifecycle_state
+    from agentic_core.config import StoreUnavailable
+    try:
+        return lifecycle_state(strict=True)
+    except StoreUnavailable as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{e}; the model lifecycle was NOT changed, so no promotion, retirement or "
+                   f"evaluation already recorded has been lost") from None
 
 
 def _serving_basis(effective, promoted, configured, estate) -> str:
@@ -204,7 +227,17 @@ async def model_lifecycle():
                                             configured_default_local(), _estate),
             "retired": st.get("retired") or [],
             "discovered": local_models(), "active_estate": _estate,
-            "evaluations": (st.get("evaluations") or [])[-10:]}
+            "evaluations": (st.get("evaluations") or [])[-10:],
+            # W577 (FU-298) — an empty `retired` and an UNREADABLE record of retirements render the
+            # same. That matters here more than on a listing: a reader concluding "no model has been
+            # retired" may reinstate or route to one that was. The direction is stated, because the
+            # retirements that could not be read are the ones missing from the list.
+            "store_incomplete": st.get("store_incomplete"),
+            "retired_is_incomplete": bool(st.get("store_incomplete")),
+            "retired_basis": ("the lifecycle record could not be read whole, so a model that WAS "
+                              "retired may be absent from this list"
+                              if st.get("store_incomplete")
+                              else "every retirement in the lifecycle record")}
 
 
 @router.post("/lifecycle/evaluate")
@@ -237,8 +270,8 @@ async def evaluate_model(req: LifecycleModelRequest):
     can_serve = served_target == len(probes)
     score = (round(sum(1.0 for x in results if x["structure_hit"]) / len(results), 2)
              if can_serve else None)   # honest: no score when the target never served
-    from agentic_core.ai.native.model_resource import lifecycle_state, save_lifecycle
-    st = lifecycle_state()
+    from agentic_core.ai.native.model_resource import save_lifecycle
+    st = _lifecycle_for_write()                              # W577 (FU-395)
     evaluation = {"model": req.model, "can_serve": can_serve, "score": score,
                   "probes": results, "at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ",
                                                                        __import__("time").gmtime())}
@@ -258,7 +291,7 @@ async def promote_model(req: LifecycleModelRequest):
     if req.model not in local_models():
         raise HTTPException(status_code=409, detail=f"Model '{req.model}' is not discovered on the "
                             "local server — pull it first; promotion never pretends.")
-    st = lifecycle_state()
+    st = _lifecycle_for_write()                              # W577 (FU-395)
     st["default_local"] = req.model
     st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
     save_lifecycle(st)
@@ -272,7 +305,7 @@ async def retire_model(req: LifecycleModelRequest):
     'ollama' default routing) stops drawing on it; explicit ollama:<name> routing remains the
     user's explicit choice. Reversible via /lifecycle/reinstate."""
     from agentic_core.ai.native.model_resource import lifecycle_state, save_lifecycle
-    st = lifecycle_state()
+    st = _lifecycle_for_write()                              # W577 (FU-395)
     if req.model not in (st.get("retired") or []):
         st["retired"].append(req.model)
     if st.get("default_local") == req.model:
@@ -286,7 +319,7 @@ async def retire_model(req: LifecycleModelRequest):
 async def reinstate_model(req: LifecycleModelRequest):
     """§6 (W276) — return a retired model to the active estate."""
     from agentic_core.ai.native.model_resource import lifecycle_state, save_lifecycle
-    st = lifecycle_state()
+    st = _lifecycle_for_write()                              # W577 (FU-395)
     st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
     save_lifecycle(st)
     _ueg_lifecycle("reinstated", req.model)

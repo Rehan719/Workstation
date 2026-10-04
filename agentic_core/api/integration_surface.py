@@ -497,14 +497,24 @@ async def federation_twins():
     except Exception:
         pass
     # W326 — the spawn-twin registrations are genuinely CONSUMED here (a real registry read)
+    # W577 (FU-298) — the registry read was tolerant AND wrapped in `except Exception: pass`, so a
+    # truncated registry produced a SHORT list and a `total` presented as the whole of it. Two ways to
+    # lose the same fact; both now reach the answer.
+    _why = None
     try:
-        from agentic_core.config import data_path, load_json_tolerant
-        for t in (load_json_tolerant(data_path("federation_twins.json"), []) or []):
+        from agentic_core.config import data_path, read_json_reported
+        _rows, _why = read_json_reported(data_path("federation_twins.json"), [])
+        for t in (_rows if isinstance(_rows, list) else []):
             twins.append({"id": t.get("twin_id"), "name": f"node twin ({t.get('node_id')})",
                           "domain": "federation", "status": "registered_reference"})
-    except Exception:
-        pass
-    return {"twins": twins, "total": len(twins)}
+    except Exception as _e:
+        _why = _why or f"the twin registry could not be read ({_e.__class__.__name__})"
+    return {"twins": twins, "total": len(twins),
+            "store_incomplete": _why,
+            "total_is_incomplete": bool(_why),
+            "total_basis": ("the registered twins that could not be read are MISSING from this total, "
+                            "so there are at least this many and possibly more"
+                            if _why else "every VSB twin and every registered node twin")}
 
 
 @router.post("/api/v210/federation/spawn-twin")

@@ -24,7 +24,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
-from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
+from agentic_core.config import (StoreUnavailable, atomic_write_json, data_path,
+                                 read_json_reported, read_json_strict, store_lock)
 
 router = APIRouter(prefix="/api/v1/user", tags=["user-workspace"])
 
@@ -55,16 +56,38 @@ def _empty(owner_id: str) -> dict[str, Any]:
     return {"owner_id": owner_id, "history": [], "prefs": {}, "profile": {}, "updated_at": None}
 
 
-def _load(owner_id: str) -> dict[str, Any]:
-    doc = load_json_tolerant(_path_for(owner_id), _empty(owner_id))
+def _load(owner_id: str, strict: bool = False) -> tuple[dict[str, Any], str | None]:
+    """The caller's document and WHY it could not be read whole, as `(doc, unreadable_reason)`.
+
+    W577 (FU-395) — `strict=True` is for a WRITER and it REFUSES. A tolerant read recovers the
+    store's first complete JSON value and discards everything after it, so a writer that bases
+    its update on that value hands the prefix to `atomic_write_json` and the remainder is gone.
+    Driven on this very file: a store holding two concatenated records (267 bytes, the shape an
+    interrupted overwrite of a shorter document by a longer one leaves) went through PUT /profile
+    and came back 226 bytes with `history` emptied — the user's own recorded questions destroyed,
+    with a success response. The rule capital_fund.py already states for the shared endowment is
+    the rule here: a writer asks strictly and refuses, because writing back over a store that
+    could not be read whole is how the loss becomes permanent.
+
+    W577 (FU-298) — a READER gets the reason instead of a log line, because the person looking at
+    an empty history has no way to tell "nothing saved yet" from "your history could not be read".
+    """
+    path = _path_for(owner_id)
+    if strict:
+        doc = read_json_strict(path, _empty(owner_id), expect=dict)
+        why = None
+    else:
+        doc, why = read_json_reported(path, _empty(owner_id))
+        if not isinstance(doc, dict):
+            doc, why = _empty(owner_id), why or "the store did not hold a document"
     # A record whose owner does not match its file is a corruption/migration artifact — never
     # serve it to the caller under a different identity.
     if doc.get("owner_id") not in (owner_id, None):
-        return _empty(owner_id)
+        return _empty(owner_id), why
     doc.setdefault("history", [])
     doc.setdefault("prefs", {})
     doc.setdefault("profile", {})
-    return doc
+    return doc, why
 
 
 def _trim_record(rec: dict[str, Any]) -> dict[str, Any]:
@@ -97,13 +120,21 @@ async def get_workspace(owner_id: str = "default", user: dict | None = Depends(g
     resolved = request_owner_id(user, owner_id)
     if not user_can_access(user, resolved):
         raise HTTPException(status_code=404, detail="No workspace found.")
-    doc = _load(resolved)
+    doc, _why = _load(resolved)
     return {
         "owner_id": resolved,
         "history": doc.get("history", []),
         "prefs": doc.get("prefs", {}),
         "updated_at": doc.get("updated_at"),
         "count": len(doc.get("history", [])),
+        # W577 (FU-298) — an empty history and an UNREADABLE history are the same screen without
+        # this. `count` is the figure a person reads, so the reason travels beside it and says
+        # which way it moves: the records that could not be read are the ones missing from it.
+        "store_incomplete": _why,
+        "count_is_incomplete": bool(_why),
+        "count_basis": ("the records this store could not be read whole are MISSING from this count, "
+                        "so your history is at least this long and may be longer"
+                        if _why else "every record in this store"),
         "storage": "server (follows the user across devices)",
     }
 
@@ -120,7 +151,7 @@ async def put_workspace(req: WorkspacePut, user: dict | None = Depends(get_curre
         # W371 — store_lock now RAISES on timeout rather than writing unserialised. Surface it as a
         # retryable 503 instead of a bare 500: the client's local copy is intact, so retrying is safe.
         with store_lock(path):
-            doc = _load(resolved)
+            doc, _ = _load(resolved, strict=True)     # W577 (FU-395) — a writer refuses
             history = [_trim_record(r) for r in req.history if isinstance(r, dict)][:MAX_RECORDS]
             doc.update({
                 "owner_id": resolved,
@@ -129,6 +160,13 @@ async def put_workspace(req: WorkspacePut, user: dict | None = Depends(get_curre
                 "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             })
             atomic_write_json(path, doc)
+    except StoreUnavailable as e:
+        # W577 (FU-395) — the stored document could not be read WHOLE, so nothing was written. A
+        # tolerant read would have handed its recoverable prefix to the write and the rest of the
+        # user's own history would be gone for good; driven on this file, 267 bytes -> 226.
+        raise HTTPException(
+            status_code=503,
+            detail=f"{e}; your workspace was NOT overwritten, so nothing stored was lost") from None
     except TimeoutError:
         raise HTTPException(status_code=503, detail="Workspace busy — please retry.") from None
     return {"owner_id": resolved, "count": len(doc["history"]), "updated_at": doc["updated_at"]}
@@ -184,13 +222,18 @@ async def get_profile(owner_id: str = "default", user: dict | None = Depends(get
     resolved = request_owner_id(user, owner_id)
     if not user_can_access(user, resolved):
         raise HTTPException(status_code=404, detail="No profile found.")
-    prof = (_load(resolved) or {}).get("profile") or {}
+    _doc, _why = _load(resolved)
+    prof = (_doc or {}).get("profile") or {}
     return {
         "owner_id": resolved,
         "profile": {k: prof.get(k, "") for k in PROFILE_FIELDS},
         "preamble_preview": build_preamble(prof),
         "applied_to": "generation prompts on this platform (never shared with other users)",
         "is_recall": False,
+        # W577 (FU-298) — a blank profile form is what a user sees whether they never filled one in
+        # or their stored one could not be read. Saving over the second is how the first becomes true.
+        "store_incomplete": _why,
+        "profile_is_incomplete": bool(_why),
     }
 
 
@@ -206,11 +249,16 @@ async def put_profile(req: ProfilePut, user: dict | None = Depends(get_current_u
     path = _path_for(resolved)
     try:
         with store_lock(path):
-            doc = _load(resolved)
+            doc, _ = _load(resolved, strict=True)     # W577 (FU-395) — a writer refuses
             doc["owner_id"] = resolved
             doc["profile"] = prof
             doc["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             atomic_write_json(path, doc)
+    except StoreUnavailable as e:
+        # W577 (FU-395) — as put_workspace: a writer refuses rather than persisting a prefix.
+        raise HTTPException(
+            status_code=503,
+            detail=f"{e}; your profile was NOT overwritten, so nothing stored was lost") from None
     except TimeoutError:
         raise HTTPException(status_code=503, detail="Profile busy — please retry.") from None
     return {"owner_id": resolved, "profile": prof, "preamble_preview": build_preamble(prof),
@@ -231,10 +279,15 @@ async def clear_profile(owner_id: str = "default", user: dict | None = Depends(g
     path = _path_for(resolved)
     try:
         with store_lock(path):
-            doc = _load(resolved)
+            doc, _ = _load(resolved, strict=True)     # W577 (FU-395) — a writer refuses
             doc["profile"] = {}
             doc["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             atomic_write_json(path, doc)
+    except StoreUnavailable as e:
+        # W577 (FU-395) — as put_workspace: a writer refuses rather than persisting a prefix.
+        raise HTTPException(
+            status_code=503,
+            detail=f"{e}; your profile was NOT overwritten, so nothing stored was lost") from None
     except TimeoutError:
         raise HTTPException(status_code=503, detail="Profile busy — please retry.") from None
     return {"owner_id": resolved, "cleared": True, "updated_at": doc["updated_at"]}

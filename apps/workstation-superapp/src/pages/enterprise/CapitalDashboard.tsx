@@ -39,6 +39,13 @@ interface FundStatus {
   allocation_count: number;
   fund_health: string;
   currency?: string;
+  // W577 (FU-298) — an unreadable tail is dropped ALLOCATIONS, so `allocated` and `utilisation_pct`
+  // are understated and `fund_health` is computed from them: the page can read HEALTHY of a fund
+  // that is constrained. The figures stay on screen and stop claiming to be the whole fund.
+  balances_are_incomplete?: boolean;
+  balances_basis?: string | null;
+  fund_health_is_incomplete?: boolean;
+  fund_health_incomplete_basis?: string | null;
 }
 
 // The real governance change record, as GET /api/v1/cca reports it (change_control.py:_list_changes).
@@ -205,6 +212,13 @@ export const CapitalDashboard: React.FC = () => {
                 {fund ? fund.available.toLocaleString() : "—"}
                 <span className="text-xs text-slate-500 ml-1">WST</span>
               </p>
+              {fund?.balances_are_incomplete && (
+                <span data-testid="fund-balances-incomplete"
+                      title={fund.balances_basis ?? undefined}
+                      className="inline-block mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                  may be OVERSTATED — the fund store could not be read whole
+                </span>
+              )}
             </Card>
             <Card className="p-6 bg-slate-900/50 border-slate-800">
               <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Utilisation</p>
@@ -215,6 +229,13 @@ export const CapitalDashboard: React.FC = () => {
               <p className="text-[9px] font-bold text-slate-600 mt-1">
                 {fund ? `${fund.allocation_count} allocation(s) · ${fund.fund_health}` : ""}
               </p>
+              {fund?.fund_health_is_incomplete && (
+                <span data-testid="fund-health-incomplete"
+                      title={fund.fund_health_incomplete_basis ?? undefined}
+                      className="inline-block mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                  this health reading is OPTIMISTIC — allocations are missing from it
+                </span>
+              )}
             </Card>
             <Card className="p-6 bg-aura/10 border-aura/20 flex items-center">
               <p className="text-[10px] font-bold text-slate-400 leading-relaxed">

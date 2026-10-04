@@ -29,6 +29,10 @@ export const Settings: React.FC = () => {
   // §4.2 (W428) — the explicit profile. Server-stored under the caller's owner id, so unlike the
   // browser-local prefs above it follows the person rather than the machine.
   const [profile, setProfile] = useState<UserProfile>(EMPTY_PROFILE);
+  // W577 (FU-298) — a blank form is what this page shows whether the person never filled one in or
+  // their stored profile could NOT BE READ. Saving over the second is how the first becomes true,
+  // and the save button sits right below the sentence that says nothing is saved.
+  const [profIncomplete, setProfIncomplete] = useState<string | null>(null);
   const [preamble, setPreamble] = useState('');
   const [profBusy, setProfBusy] = useState(false);
   const [profSaved, setProfSaved] = useState(false);
@@ -38,6 +42,7 @@ export const Settings: React.FC = () => {
     getProfile().then(r => {
       if (!r) return;                       // unreachable store: leave the form empty, say nothing false
       setProfile({ ...EMPTY_PROFILE, ...r.profile });
+      setProfIncomplete(r.profile_is_incomplete ? (r.store_incomplete ?? '') : null);
       setPreamble(r.preamble_preview || '');
     });
   }, []);
@@ -253,7 +258,13 @@ export const Settings: React.FC = () => {
               <pre className="text-[10px] text-slate-400 bg-slate-950 border border-slate-900 rounded-xl p-3 whitespace-pre-wrap">{preamble}</pre>
             </div>
           )
-          : <p className="text-[10px] text-slate-600 font-semibold">Nothing saved — no profile is added to your prompts.</p>}
+          : profIncomplete !== null
+            ? <p data-testid="profile-store-incomplete" title={profIncomplete || undefined}
+                 className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400">
+                Your stored profile could not be read in full, so this form may not show what you
+                saved. Saving now would replace it — reload before you edit.
+              </p>
+            : <p className="text-[10px] text-slate-600 font-semibold">Nothing saved — no profile is added to your prompts.</p>}
         <div className="flex flex-wrap gap-3">
           <Button type="button" onClick={saveProfile} disabled={profBusy}>
             {profSaved ? <><Check size={14} /> Saved</> : 'Save profile'}

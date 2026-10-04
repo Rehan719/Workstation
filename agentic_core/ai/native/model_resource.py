@@ -89,18 +89,39 @@ def _lifecycle_path():
     return data_path("model_lifecycle.json")
 
 
-def lifecycle_state() -> Dict:
-    from agentic_core.config import load_json_tolerant
-    st = load_json_tolerant(_lifecycle_path(), {}) or {}
+def lifecycle_state(strict: bool = False) -> Dict:
+    """The model lifecycle record. `strict=True` REFUSES an unreadable store, for a writer.
+
+    W577 (FU-395) — the four lifecycle writers (evaluate · promote · retire · reinstate) each took
+    this value and handed it to `save_lifecycle`. A tolerant read recovers the store's first complete
+    JSON value and discards the rest, so any of them could persist a prefix and silently drop the
+    retired list and the evaluation history — on the very record whose purpose is to say which models
+    were retired and why. A writer reads strictly and refuses; readers stay tolerant.
+    """
+    from agentic_core.config import StoreUnavailable, read_json_reported, read_json_strict
+    if strict:
+        st = read_json_strict(_lifecycle_path(), {}, expect=dict) or {}
+        _why = None
+    else:
+        st, _why = read_json_reported(_lifecycle_path(), {})
+        st = st if isinstance(st, dict) else {}
     st.setdefault("default_local", None)     # promoted default (None → the OLLAMA_MODEL env default)
     st.setdefault("retired", [])
     st.setdefault("evaluations", [])
+    # W577 (FU-298) — a reader that prints "no models retired" must be able to tell that from
+    # "the record of retirements could not be read". The reason rides on the record itself.
+    st["store_incomplete"] = _why
     return st
 
 
 def save_lifecycle(st: Dict) -> None:
     from agentic_core.config import atomic_write_json
     st["evaluations"] = (st.get("evaluations") or [])[-50:]
+    # W577 — `store_incomplete` describes THIS READ, not the record. Persisting it would store a
+    # transient fact about one request as if it were part of the lifecycle, and the next reader would
+    # take a stale reason for a live one. Popped here, at the single write point, so none of the four
+    # writers has to remember to.
+    st.pop("store_incomplete", None)
     atomic_write_json(_lifecycle_path(), st)
 
 

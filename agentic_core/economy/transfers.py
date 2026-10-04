@@ -18,7 +18,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
+from agentic_core.config import atomic_write_json, data_path, store_lock
 from agentic_core.economy.ledger import LedgerUnavailable
 
 _PENDING_STORE = data_path("economy_pending_transfers.json")

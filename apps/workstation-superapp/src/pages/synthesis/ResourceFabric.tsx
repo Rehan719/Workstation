@@ -225,6 +225,10 @@ export const ResourceFabric: React.FC = () => {
   const [savingParams, setSavingParams] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
   const [histRuns, setHistRuns] = useState<HistoryRun[]>([]);
+  // W577 (FU-298) — the route reports whether the run store could be read whole, and this page
+  // discarded it along with every other key. An unreadable history rendered as "No persisted runs
+  // yet — run a composition below", which tells the reader to re-run work that may already exist.
+  const [histBasis, setHistBasis] = useState<{ incomplete?: boolean; basis?: string } | null>(null);
 
   const load = () => {
     const qs = new URLSearchParams();
@@ -325,7 +329,10 @@ export const ResourceFabric: React.FC = () => {
 
   const loadRunsHistory = () =>
     fetch('/api/v1/resources/compositions/runs?limit=10').then(r => r.json())
-      .then(d => setHistRuns(d.runs ?? [])).catch(() => {});
+      .then(d => {
+        setHistRuns(d.runs ?? []);
+        setHistBasis({ incomplete: !!d.listing_is_incomplete, basis: d.listing_basis });
+      }).catch(() => {});
 
   const compose = async () => {
     if (!name.trim() || selected.length === 0) return;
@@ -566,7 +573,19 @@ export const ResourceFabric: React.FC = () => {
           {histOpen && (
             <Card className="p-4 space-y-2">
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Persisted composition runs (newest first)</p>
-              {histRuns.length === 0 && <p className="text-[10px] text-slate-600 italic">No persisted runs yet — run a composition below.</p>}
+              {histBasis?.incomplete && (
+                <p data-testid="fabric-runs-incomplete" title={histBasis.basis}
+                   className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                  the run history could not be read whole — runs are missing from this list
+                </p>
+              )}
+              {histRuns.length === 0 && (
+                <p className="text-[10px] text-slate-600 italic">
+                  {histBasis?.incomplete
+                    ? "None could be read — this is NOT the same as none having run, so do not treat it as an empty history."
+                    : "No persisted runs yet — run a composition below."}
+                </p>
+              )}
               {histRuns.map(h => (
                 <div key={h.run_id} className="flex flex-wrap items-center gap-1.5 border-t border-slate-800 first:border-t-0 pt-1.5 first:pt-0">
                   <span className="text-[9px] font-mono text-slate-500">{h.run_id}</span>

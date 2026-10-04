@@ -5180,10 +5180,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W577",
       "note": "",
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Twelve tolerant readers converted to read_json_reported and each now carries the reason in its own answer, stating WHICH WAY the figure moves; six pages plus one shared history lib render it, and three page-less v310 routes carry it in their own responses with the guard asserting that. load_json_tolerant IS DELETED: zero calls and zero imports repo-wide by AST, nothing in scripts/ or apps/, no dynamic reference, not re-exported, and the suite's own eighteen uses converted in the same commit including one inside a generated subprocess script where the name lived in a string literal. Four stale imports went with it. W575's keep-decision named 'the twelve readers that call it' as its condition and this round removed that condition."
     },
     {
       "id": "FU-299",
@@ -7088,6 +7091,83 @@
       "note": "",
       "slot_source": "P2.18 clause (a) is 'an absence reaches the reader' and this is its mirror: a qualifier that reaches no reader. Found inside clause (a)'s own work.",
       "tier": 3
+    },
+    {
+      "id": "FU-395",
+      "title": "Nine write paths use a TOLERANT read as their write base, so the write persists the recoverable prefix and destroys the rest",
+      "why": "DRIVEN AND PROVEN in W577 on a user's own document. read_json_reported recovers a store's first complete JSON value via raw_decode and DISCARDS everything after it; nine functions take that value and hand it straight to atomic_write_json, so the discarded remainder is overwritten and gone. Driven: a user_workspace store holding two concatenated records (267 bytes, the shape a non-atomic overwrite of a shorter document by a longer one leaves) went through PUT /profile and came back 226 bytes with history=[] and prefs={} - the user's recorded question permanently destroyed - and the response reported success with no indication of any loss. THE NINE: api/agent_hub.py update_handoff_status (inside store_lock, so it is the authoritative write), api/operational_excellence.py set_health_baseline (would drop every OTHER model's baseline), api/user_workspace.py put_workspace + put_profile + clear_profile, api/native_ai.py evaluate_model + promote_model + retire_model + reinstate_model (all four via lifecycle_state -> save_lifecycle, dropping retired models and evaluations). THIS IS NOT FU-298's CLASS and must not be closed by it: FU-298 is a reader that does not disclose a short figure, which is a truth defect; this is a WRITER that destroys data it could not read, which is a loss defect, and surfacing a reason does not fix it. The remedy is the opposite one - a write base must be read STRICTLY and the write REFUSED, which is the rule capital_fund.py already states in writing for exactly this reason ('a WRITER asks strictly and refuses, because writing back over a quarantined store is how the reset becomes permanent') and which the other five files do not follow. LATENT VS LIVE: every in-platform writer is atomic (W472), so the platform cannot currently produce the concatenated shape itself; it is reachable through any corruption of external origin (a truncated restore, a partial sync, a copy interrupted mid-write), and the correct engineering answer does not depend on which - a tolerantly-read value is never a safe write base.",
+      "source": "W577 (found while measuring FU-298's twelve call sites)",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/agent_hub.py",
+        "agentic_core/api/operational_excellence.py",
+        "agentic_core/api/user_workspace.py",
+        "agentic_core/ai/native/model_resource.py",
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "done",
+      "closed_by": "W577",
+      "note": "",
+      "slot_source": "the same twelve call sites as FU-298 and found by measuring them, but a different clause of truth: FU-298 is disclosure, this is loss",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ten write paths across six files now read their base strictly and refuse, each refusal saying that nothing stored was lost: user_workspace put_workspace/put_profile/clear_profile, native_ai evaluate/promote/retire/reinstate via one _lifecycle_for_write helper, operational_excellence set_health_baseline, agent_hub update_handoff_status, molecular/work_budget spend (found by the guard, in a file this round never opened), and v310 payments create-session which applies the same rule to a DECISION rather than a write. Driven end to end: the two-concatenated-record store that destroyed a user's history now leaves the file byte-identical at 267 bytes, and POST /lifecycle/retire answers 503 instead of un-retiring every other model. The guard asserts the class three ways - a tolerant read and a write in one function, a write base whose reason was discarded at the ASSIGNMENT, and the retire route driven - because a blind proved the first two are blind to one call of indirection."
+    },
+    {
+      "id": "FU-396",
+      "title": "The pre-flight's key screen cannot see a page-less route's own response as a surface, so nine answered leads read as unanswered",
+      "why": "W570 closed FU-348 by teaching the key screen that a PRINTED LINE is a surface as well as a page. A third kind remains and W577 hit it nine times: an HTTP route that NO page in this app reads, whose own JSON response is therefore the surface a person reads. The screen reports 'no page renders it and no print or log statement emits it' - both true - and concludes the key reaches no surface, which is false. The nine were /api/v310/governance/treasury (figures_are_incomplete, figures_basis, and the pre-existing total_capital_wst and allocated_wst) and /api/v310/payments status, wallet and create-session (wst_available_basis, platform_capital_fund_incomplete, balance_basis). Each is now asserted in the W577 guard against the ROUTE'S RESPONSE, which is the strongest available statement that the key reaches a reader - and the screen cannot represent it, so a later round reading the pre-flight sees nine open questions that have been answered. THE WORK: the screen should treat a key present in a route response as surfaced WHEN NO FRONTEND FILE FETCHES THAT ROUTE, and say which case it took, so an unsurfaced key on a route a page DOES read still reports (that is the real defect and must not be weakened). The alternative considered and rejected: adding these keys to an ignore list, which would silence the screen for every future key on those routes including a genuinely unsurfaced one. NOT A BLOCKER on P2.18 clause (a): the property the clause asks for holds and is driven; this is the instrument's ability to see that it holds.",
+      "source": "W577 (the pre-flight's own leads, nine of them, all the same kind)",
+      "found": "2026-10-04",
+      "files": [
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the instrument half of the same item: clause (b) is 'the suite's instruments prove what they claim', and the pre-flight is the instrument that screens every round"
+    },
+    {
+      "id": "FU-397",
+      "title": "An unreadable stored profile yields the same empty preamble as a person who never wrote one",
+      "why": "W577, found while repairing the red suite it caused. ai/user_context.py load_preamble documents its contract as 'a missing store, an unreadable document or no profile at all all mean the same thing: no preamble' - deliberate, so generation never fails on a convenience store. That is right about not FAILING and wrong about not SAYING: the three cases are collapsed and nothing downstream can tell them apart, so a reply shaped by no profile is indistinguishable from a reply that should have been shaped by one the person did write. W577 made the reason available (user_workspace._load returns it) and this call now LOGS it, which is the weaker remedy this very round spent itself arguing against: a log line is not a surface. THE WORK: carry the reason to the caller so a generated reply can say its author's profile could not be read, which is the only version a person reading the reply ever sees. The PUT path already refuses (FU-395) so nothing is overwritten; this is purely the read side. Note the ordering risk: load_preamble is called on the generation path, so the disclosure has to travel on the RESPONSE and must not become a second round-trip.",
+      "source": "W577 (the missed consumer that turned the suite red)",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/ai/user_context.py",
+        "agentic_core/api/user_workspace.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "clause (a)'s property on the one reader W577 reached last and could only log from"
+    },
+    {
+      "id": "FU-398",
+      "title": "Every request model on the platform silently discards a field a caller sends, so an instruction and a dropped instruction look identical",
+      "why": "MEASURED in W577 while preparing FU-313: 206 request/response models derive BaseModel across 60 files in agentic_core/api, and ZERO declare extra=forbid. Pydantic v2 ignores undeclared fields by default, so a caller can send a field, receive 200, and have it discarded with no indication - which is exactly FU-313's mechanism (committed_rounds and confidence sent to /transformation/orchestrate vanish because OrchestrateRequest declares neither) generalised to every route. The caller cannot distinguish a recorded instruction from a dropped one, and on a governance or commitment route that difference is the whole content of the request. THE REMEDY IS NOT A BLANKET FORBID and this row must not be read as asking for one: flipping 206 models would answer 422 to any caller sending an extra field, the frontend included, for no gain in truth on most of them. The work is to forbid on the models where an undeclared field means a LOST INSTRUCTION - commitments, budgets, governance inputs, anything a caller sends expecting it to be recorded - to leave the rest tolerant, and to SAY WHICH AND WHY, so the choice is auditable rather than a default nobody chose. FU-313 is the first instance and should declare its two fields regardless; this row is the class behind it.",
+      "source": "W577 (measured while preparing FU-313 for W580)",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/transformation_orchestration.py",
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the class behind clause (c)'s named single: FU-313 cannot record a commitment partly because the request model drops it, and that drop is platform-wide"
     }
   ],
   "routes": [

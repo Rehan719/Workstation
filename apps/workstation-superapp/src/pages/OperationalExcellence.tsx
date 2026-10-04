@@ -23,7 +23,11 @@ interface Outcome {
   is_external: boolean; duration_ms: number; success: boolean | null; created_at: string;
   produced?: boolean; quality_gate?: boolean | null; success_basis?: string;
 }
-interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms: number; deprioritised: boolean }
+interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms: number; deprioritised: boolean;
+  // W577 (FU-298) — a declared baseline that could not be read does not leave a model unscored: it
+  // scores it on rows the baseline was declared to EXCLUDE, so the rate reads worse than the truth
+  // and the colour below — which means "the orchestrator demoted this" — can be wrong.
+  success_rate_is_incomplete?: boolean; success_rate_basis?: string }
 
 const pct = (n: number) => `${Math.round((n ?? 0) * 100)}%`;
 
@@ -162,7 +166,13 @@ export const OperationalExcellence: React.FC = () => {
                     <td className="p-3"><span className={m.success_rate >= 0.25 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}
                       title={m.success_rate >= 0.25
                         ? 'Above the 0.25 demotion floor — this model is still preferred by the orchestrator.'
-                        : 'Below the 0.25 demotion floor — effectively dead, so it ranks behind the deterministic native floor. It earns one fresh attempt after 10 minutes untried (probation).'}>{pct(m.success_rate)}</span></td>
+                        : 'Below the 0.25 demotion floor — effectively dead, so it ranks behind the deterministic native floor. It earns one fresh attempt after 10 minutes untried (probation).'}>{pct(m.success_rate)}</span>
+                      {m.success_rate_is_incomplete && (
+                        <span data-testid="model-rate-incomplete" title={m.success_rate_basis}
+                              className="ml-1 text-[8px] font-black uppercase px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                          may read worse than the truth
+                        </span>
+                      )}</td>
                     <td className="p-3 text-slate-500">{m.avg_ms}</td>
                     <td className="p-3">{m.deprioritised
                       ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">deprioritised</span>

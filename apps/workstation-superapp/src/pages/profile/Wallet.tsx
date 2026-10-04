@@ -26,6 +26,7 @@ interface Allocation {
 export const Wallet: React.FC = () => {
   const [fund, setFund] = useState<FundStatus | null>(null);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [allocBasis, setAllocBasis] = useState<string | null>(null);   // W577 (FU-298)
   const [loading, setLoading] = useState(true);
   const [down, setDown] = useState(false);
 
@@ -37,6 +38,10 @@ export const Wallet: React.FC = () => {
       if (statusRes.status === 200) setFund(statusRes.data);
       if (portfolioRes.status === 200) {
         const allocs: Allocation[] = portfolioRes.data.allocations ?? [];
+        // W577 (FU-298) — the portfolio is where a missing allocation is most invisible: every
+        // by_domain and by_realm total is a sum over rows that may not all be here.
+        setAllocBasis(portfolioRes.data.allocations_are_incomplete
+          ? (portfolioRes.data.allocations_basis ?? '') : null);
         setAllocations(allocs.slice(-8).reverse());
       }
     }).catch(() => setDown(true)).finally(() => setLoading(false));
@@ -94,9 +99,19 @@ export const Wallet: React.FC = () => {
         {loading ? (
           <div className="flex items-center gap-2 text-slate-500 text-sm"><Loader2 size={14} className="animate-spin" /> Loading allocations…</div>
         ) : allocations.length === 0 ? (
-          <p className="text-slate-600 text-sm">No capital allocations yet. Deploy capital to a project to see transactions here.</p>
+          <p className="text-slate-600 text-sm">
+            {allocBasis !== null
+              ? "The fund store could not be read whole, so whether any capital has been allocated is unknown — this is not an empty portfolio."
+              : "No capital allocations yet. Deploy capital to a project to see transactions here."}
+          </p>
         ) : (
           <div className="space-y-4">
+            {allocBasis !== null && (
+              <p data-testid="wallet-allocations-incomplete" title={allocBasis || undefined}
+                 className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400">
+                allocations are missing from this portfolio — the fund store could not be read whole
+              </p>
+            )}
             {allocations.map((alloc) => (
               <div key={alloc.allocation_id} className="flex items-center justify-between p-6 rounded-2xl bg-slate-800/30 border border-slate-700/50">
                  <div className="flex items-center gap-4">

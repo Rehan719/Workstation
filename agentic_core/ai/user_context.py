@@ -119,6 +119,19 @@ def load_preamble(owner_id: Optional[str]) -> str:
         return ""
     try:
         from agentic_core.api.user_workspace import _load
-        return build_preamble((_load(owner) or {}).get("profile"))
+        # W577 — `_load` returns `(doc, unreadable_reason)` now. This was the ONE caller outside
+        # user_workspace.py and it was missed: a tuple is truthy, so `or {}` did not save it, `.get`
+        # raised AttributeError, the `except Exception` below swallowed it and every stored profile
+        # silently stopped reaching generation. Two guards went red on it. The lesson is the one
+        # already written down — grep the CONSUMERS of a changed signature, not the file you edited.
+        _doc, _why = _load(owner)
+        if _why:
+            # and the swallow is itself the FU-298 shape: an unreadable profile returned "" exactly as
+            # a person with no profile does. Logged so it is attributable; see FU-397.
+            import logging as _lg
+            _lg.getLogger("ai.user_context").error(
+                "the stored profile for %s could not be read whole (%s), so NO preamble was applied - "
+                "the reply will read as though this person had never written one", owner, _why)
+        return build_preamble((_doc or {}).get("profile"))
     except Exception:
         return ""

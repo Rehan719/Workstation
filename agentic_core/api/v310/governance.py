@@ -62,10 +62,22 @@ async def get_treasury_status():
         from agentic_core.api.capital_fund import _load_fund
         fund = _load_fund() or {}
     except Exception as exc:
+        # W577 — FU-334's class, found by the pre-flight in THIS ROUND'S OWN new keys. This branch
+        # omitted eight keys the branch below carries, so a caller reading `figures_are_incomplete`
+        # got undefined on the one path where the figures are certainly not to be trusted. None where
+        # this branch cannot know, because 0 would be a measured zero it never measured.
         return {"source": "capital_fund", "available_wst": None,
-                "detail": "The capital fund could not be read: " + str(exc)[:160]}
+                "detail": "The capital fund could not be read: " + str(exc)[:160],
+                "currency": "WST (virtual)",
+                "total_capital_wst": None, "allocated_wst": None, "allocation_count": None,
+                "note": "The capital fund could not be read at all, so no figure is reported.",
+                "store_incomplete": str(exc)[:160],
+                "figures_are_incomplete": True,
+                "figures_basis": ("the capital fund could not be read, so NO figure here was measured "
+                                  "- these are absent values, not zeroes")}
     return {
         "source": "capital_fund",
+        "detail": None,                 # W577 — the sibling above carries it; a reader indexes both
         "currency": "WST (virtual)",
         "total_capital_wst": fund.get("total_capital"),
         "allocated_wst": fund.get("allocated"),
@@ -73,4 +85,9 @@ async def get_treasury_status():
         "allocation_count": len(fund.get("allocations") or []),
         "note": ("These are the capital fund's real figures. No separate treasury ledger and no "
                  "inflow history exist, so none are reported."),
+        # W577 (FU-298) — "the capital fund's real figures" is a claim this note makes outright, and
+        # it cannot be made about a store that could not be read whole.
+        "store_incomplete": fund.get("store_incomplete"),
+        "figures_are_incomplete": bool(fund.get("balances_are_incomplete")),
+        "figures_basis": fund.get("balances_basis"),
     }

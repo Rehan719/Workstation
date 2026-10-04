@@ -46,9 +46,26 @@ def _load_fund(strict: bool = False) -> dict:
     # only reports (fund_status) may see the seeded pool as long as it says the store was quarantined;
     # a WRITER asks strictly and refuses, because writing back over a quarantined store is how the
     # reset becomes permanent.
-    from agentic_core.config import load_json_tolerant
-    d = load_json_tolerant(_FUND_STORE, None) if _FUND_STORE.exists() else None
+    # W577 (FU-298) — the quarantine leg above was right and had a hole beside it: a store that
+    # yields a RECOVERABLE PREFIX returns a dict, so it took this early return and was neither
+    # quarantined nor disclosed. On this store the prefix is a set of money figures - total_capital,
+    # allocated, available - and a dropped tail is dropped ALLOCATIONS, which makes the fund read as
+    # having more available than it has. A writer refuses; a reader is told, on the dict it reads.
+    from agentic_core.config import read_json_reported
+    d, _why = read_json_reported(_FUND_STORE, None) if _FUND_STORE.exists() else (None, None)
     if isinstance(d, dict):
+        if _why:
+            if strict:
+                from agentic_core.config import StoreUnavailable
+                raise StoreUnavailable(_FUND_STORE, (
+                    f"{_why}; nothing was allocated or contributed, because writing back a partial "
+                    f"fund is how a dropped allocation becomes permanent"))
+            d = dict(d)
+            d["store_incomplete"] = _why
+            d["balances_are_incomplete"] = True
+            d["balances_basis"] = (
+                "the fund store could not be read whole, so allocations recorded after the readable "
+                "part are MISSING - `allocated` may be understated and `available` OVERSTATED")
         return d
     _quarantined = None
     if _FUND_STORE.exists():
@@ -189,6 +206,20 @@ async def fund_status():
                f", and {round(float(_seed) / _total * 100)}% of that pool is the unfunded seed, so this "
                f"reading is mostly a ratio against a constant")),
         "store_quarantined": fund.get("seeded_store_quarantined"),
+        # W577 (FU-298) — the loader learned this and the route built its own dict, so the fact died
+        # one layer below the page. The consequence here is the W496 defect by another route: an
+        # unreadable tail is dropped ALLOCATIONS, so `allocated` is understated, `utilisation_pct`
+        # with it, and `fund_health` is computed FROM that ratio — which means a fund that may be
+        # depleted reports HEALTHY. That inference is named rather than left for a reader to make.
+        "store_incomplete": fund.get("store_incomplete"),
+        "balances_are_incomplete": bool(fund.get("balances_are_incomplete")),
+        "balances_basis": fund.get("balances_basis"),
+        "fund_health_is_incomplete": bool(fund.get("balances_are_incomplete")),
+        "fund_health_incomplete_basis": (
+            "the fund store could not be read whole, so allocations recorded after the readable part "
+            "are missing: `allocated` and `utilisation_pct` are both UNDERSTATED and this health "
+            "reading is therefore OPTIMISTIC - it may say HEALTHY of a fund that is constrained"
+            if fund.get("balances_are_incomplete") else None),
         "organism": _organism_posture(),
     }
 
@@ -299,6 +330,15 @@ async def fund_portfolio():
         "allocation_count": len(allocations),
         "by_domain": by_domain,
         "by_realm": by_realm,
+        # W577 (FU-298) — a PORTFOLIO is the one place a missing allocation is most invisible: every
+        # per-domain and per-realm total is a sum over rows that may not all be here.
+        "store_incomplete": fund.get("store_incomplete"),
+        "allocations_are_incomplete": bool(fund.get("balances_are_incomplete")),
+        "allocations_basis": (
+            "the fund store could not be read whole, so allocations after the readable part are "
+            "MISSING from this portfolio and from every by_domain and by_realm total in it"
+            if fund.get("balances_are_incomplete")
+            else "every allocation recorded in the fund store"),
     }
 
 

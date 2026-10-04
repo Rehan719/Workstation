@@ -92,6 +92,10 @@ const SwarmIntelligence: React.FC = () => {
   // W268/W284 — the persisted org-cascade history (appraisals · quality · fabric requisitions ·
   // plan bindings survive the response and are reviewable here)
   const [cascadeRuns, setCascadeRuns] = useState<any[]>([]);
+  // W577 (FU-298) — W493 covered the request FAILING. A 200 over a store that could only be read
+  // in part still rendered "No persisted cascade runs yet", which is the same untruth arriving by
+  // the successful path.
+  const [cascadeIncomplete, setCascadeIncomplete] = useState<string | null>(null);
 
   const loadRuns = async () => {
     // W493 (FU-202, sweep S11.2, C4) - this swallowed the error, so an UNREACHABLE backend produced the
@@ -111,6 +115,9 @@ const SwarmIntelligence: React.FC = () => {
       // function below it, so the Org Cascade panel reported an unreadable list as "no cascades".
       const res = await axios.get('/api/v1/swarm/cascade/runs');
       setCascadeRuns(res.data.runs ?? []);
+      // W577 (FU-298) — `total` is what a reader takes as "how many cascades have run", and the
+      // route says when it is short. This read .runs and dropped the rest.
+      setCascadeIncomplete(res.data.total_is_incomplete ? (res.data.total_basis ?? '') : null);
       setCascadeErr('');
     } catch (e) { setCascadeErr(errorMessage(e)); }
   };
@@ -470,8 +477,19 @@ const SwarmIntelligence: React.FC = () => {
               The cascade history could not be read ({cascadeErr}) — whether any cascade ran is unknown.
             </p>
           ) : cascadeRuns.length === 0 ? (
-            <p className="text-[10px] text-[#444]" data-testid="cascade-runs-empty">No persisted cascade runs yet.</p>
+            <p className="text-[10px] text-[#444]" data-testid="cascade-runs-empty">
+              {cascadeIncomplete !== null
+                ? "The cascade history could not be read whole, so whether any cascade ran is unknown."
+                : "No persisted cascade runs yet."}
+            </p>
           ) : (
+            <>
+            {cascadeIncomplete !== null && (
+              <p data-testid="cascade-runs-incomplete" title={cascadeIncomplete || undefined}
+                 className="text-[9px] font-bold text-amber-400 mb-1">
+                runs are missing from this history — it could not be read whole
+              </p>
+            )}
             <div className="max-h-60 overflow-y-auto space-y-2">
               {cascadeRuns.slice(0, 8).map((cr: any) => (
                 <div key={cr.run_id} className="border-t border-white/5 first:border-t-0 pt-1.5 first:pt-0">
@@ -498,6 +516,7 @@ const SwarmIntelligence: React.FC = () => {
                 </div>
               ))}
             </div>
+            </>
           )}
         </div>
       </div>

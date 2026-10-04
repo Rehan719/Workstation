@@ -72,7 +72,20 @@ def spend(seconds: float = 0.0, tokens: Optional[int] = None) -> None:
         if seconds <= 0 and not tokens:
             return
         with store_lock(_store()):
-            rec, _ = _load()
+            rec, _why = _load()
+            if _why:
+                # W577 (FU-395) — the TENTH write path of this class, found by the guard rather than by
+                # me. `_load` already returns its reason and `spend` discarded it, then wrote `rec` back:
+                # a partial read loses accumulated spend, and persisting the lower total UNDERSTATES
+                # consumption, which makes the budget look more available than it is. Accounting never
+                # raises into a caller (that contract stands), so this does not refuse - it declines to
+                # WRITE, which is the part that would have made the loss permanent, and says so.
+                import logging as _lg577
+                _lg577.getLogger("molecular.work_budget").error(
+                    "a spend of %.3fs/%s tokens was NOT recorded: the budget store could not be read "
+                    "whole (%s), and writing back the recoverable part would have discarded spend "
+                    "already accumulated and understated consumption", float(seconds), tokens, _why)
+                return
             rec["seconds_spent"] = round(float(rec.get("seconds_spent") or 0.0) + max(0.0, float(seconds)), 3)
             if tokens:
                 rec["tokens_spent"] = int(rec.get("tokens_spent") or 0) + int(tokens)

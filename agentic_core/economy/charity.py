@@ -24,7 +24,7 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List, Optional
 
-from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+from agentic_core.config import atomic_write_json, data_path
 
 _DIRECTIVES_STORE = data_path("economy_charity_directives.json")
 _SIGNALS_STORE = data_path("economy_charity_signals.json")

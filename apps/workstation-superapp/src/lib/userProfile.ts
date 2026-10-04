@@ -42,6 +42,11 @@ interface ProfileResponse {
   preamble_preview: string;
   applied_to?: string;
   is_recall?: boolean;
+  // W577 (FU-298) — the route reports when the stored document could only be read in part. Without
+  // these the page cannot tell an empty profile from an unreadable one, and it offers a Save that
+  // would overwrite what it could not show.
+  profile_is_incomplete?: boolean;
+  store_incomplete?: string | null;
 }
 
 export async function getProfile(): Promise<ProfileResponse | null> {

@@ -1,0 +1,155 @@
+[
+ {
+  "tag": "put_profile goes back to a tolerant read as its write base",
+  "file": "agentic_core/api/user_workspace.py",
+  "old": "            doc, _ = _load(resolved, strict=True)     # W577 (FU-395) — a writer refuses\r\n            doc[\"owner_id\"] = resolved",
+  "new": "            doc, _ = _load(resolved)\r\n            doc[\"owner_id\"] = resolved",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT, driven on a user's own document: 267 bytes in, 226 out, the user's recorded question gone, and a success response. A tolerant read recovers the store's first complete JSON value and discards the rest; atomic_write_json then persists the prefix."
+ },
+ {
+  "tag": "the refusal stops saying that nothing stored was lost",
+  "file": "agentic_core/api/user_workspace.py",
+  "old": "            detail=f\"{e}; your profile was NOT overwritten, so nothing stored was lost\") from None\r\n    except TimeoutError:\r\n        raise HTTPException(status_code=503, detail=\"Profile busy — please retry.\") from None\r\n    return {\"owner_id\": resolved, \"profile\": prof, \"preamble_preview\": build_preamble(prof),",
+  "new": "            detail=f\"{e}\") from None\r\n    except TimeoutError:\r\n        raise HTTPException(status_code=503, detail=\"Profile busy — please retry.\") from None\r\n    return {\"owner_id\": resolved, \"profile\": prof, \"preamble_preview\": build_preamble(prof),",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "A bare 503 reads as an outage. The one thing the person needs is that their stored data is still there — a refusal that does not say so is indistinguishable from a failure that lost it."
+ },
+ {
+  "tag": "clear_profile alone keeps the tolerant base",
+  "file": "agentic_core/api/user_workspace.py",
+  "old": "            doc, _ = _load(resolved, strict=True)     # W577 (FU-395) — a writer refuses\r\n            doc[\"profile\"] = {}",
+  "new": "            doc, _ = _load(resolved)\r\n            doc[\"profile\"] = {}",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "Three writers share this defect and the guard drives two of them separately. A fix applied to one writer and not its sibling is this repo's second-writer class, found in W475."
+ },
+ {
+  "tag": "the lifecycle writers go back to the tolerant read",
+  "file": "agentic_core/api/native_ai.py",
+  "old": "        return lifecycle_state(strict=True)",
+  "new": "        return lifecycle_state()",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "retire_model appends to st['retired'] and saves, so a dropped prefix UN-RETIRES every other model while reporting that one was retired. The AST leg of the guard catches this as a class rather than as four routes."
+ },
+ {
+  "tag": "the work budget writes back a partial read again (the tenth path, found by the guard)",
+  "file": "agentic_core/molecular/work_budget.py",
+  "old": "            rec, _why = _load()\n            if _why:",
+  "new": "            rec, _ = _load()\n            if False:",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "THE GUARD FOUND THIS ONE, NOT ME - a file this round never opened. `_load` already returned its reason and `spend` threw it away, then wrote `rec` back: a partial read loses accumulated spend and persisting the lower total UNDERSTATES consumption, so the budget reads as more available than it is. It is also why the AST leg is expressed at the ASSIGNMENT rather than by the callee's name: `_load` here takes no `strict` at all, so a name-based check was right about the defect and wrong about its reason."
+ },
+ {
+  "tag": "a tolerant read and a write back in one function, in a file nobody looked at",
+  "file": "agentic_core/vbs/dcms.py",
+  "old": "    def _persist(self) -> None:\n        try:\n            from agentic_core.config import atomic_write_json\n            atomic_write_json(self._store_path(), self.registry)",
+  "new": "    def _persist(self) -> None:\n        try:\n            from agentic_core.config import atomic_write_json, read_json_reported\n            read_json_reported(self._store_path(), {})\n            atomic_write_json(self._store_path(), self.registry)",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "The AST leg must hold REPO-WIDE, not for the five files this round happened to read. If it only catches the known sites it is a list of fixes wearing a guard's clothes."
+ },
+ {
+  "tag": "the workspace count stops saying it is incomplete",
+  "file": "agentic_core/api/user_workspace.py",
+  "old": "        \"count_is_incomplete\": bool(_why),",
+  "new": "        \"count_is_incomplete\": False,",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "An empty history and an unreadable history are the same screen without this. False is worse than a missing key: it is a positive claim that the count is whole."
+ },
+ {
+  "tag": "the basis stops saying which way the figure moves",
+  "file": "agentic_core/api/user_workspace.py",
+  "old": "        \"count_basis\": (\"the records this store could not be read whole are MISSING from this count, \"\r\n                        \"so your history is at least this long and may be longer\"",
+  "new": "        \"count_basis\": (\"the store could not be read whole\"",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "'Incomplete' alone is not actionable. The records that could not be read are the ones MISSING from the count, so the figure is a FLOOR — and a reader who does not know the direction cannot tell whether to trust it as an upper or a lower bound."
+ },
+ {
+  "tag": "an absent store is reported as an unreadable one",
+  "file": "agentic_core/config.py",
+  "old": "    p = _Path(path)\r\n    if not p.exists():\r\n        return default, None",
+  "new": "    p = _Path(path)\r\n    if not p.exists():\r\n        return default, \"the store does not exist\"",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "A missing store is not an error. If absence reads as unreadable, the disclosure appears on every empty workspace on the platform and stops meaning anything — the three-state collapses and a measured zero becomes indistinguishable from an unmeasured one."
+ },
+ {
+  "tag": "the fund's overstatement chip is rendered but switched off",
+  "file": "apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx",
+  "old": "              {fund?.balances_are_incomplete && (",
+  "new": "              {false && fund?.balances_are_incomplete && (",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "W503's class: a JSX conditional names its field in BOTH the gate and the body, so a presence check survives `{false && ...}`. The guard asserts the GATE's exact text, which this changes."
+ },
+ {
+  "tag": "the health chip's binding goes, and ONLY THE COMMENT NAMING IT REMAINS",
+  "file": "apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx",
+  "old": "              {fund?.fund_health_is_incomplete && (\r\n                <span data-testid=\"fund-health-incomplete\"",
+  "new": "              {fund?.fund_health_is_absent && (\r\n                <span data-testid=\"fund-health-absent\"",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "THE MOST IMPORTANT BLIND IN THIS SET. The interface comment above still says `fund_health_is_incomplete` in prose, so a presence check over raw source PASSES with the render gone. The guard strips comments first; if this comes back vacuous the stripper does not work and five of the six surface legs are worthless."
+ },
+ {
+  "tag": "the fabric page reads .runs and drops the disclosure again",
+  "file": "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+  "old": "        setHistBasis({ incomplete: !!d.listing_is_incomplete, basis: d.listing_basis });",
+  "new": "        setHistBasis(null);",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "The original defect in one line: the API learned the fact and the page threw it away. This is the shape FU-323 had, and the shape clause (1) of the bar exists to catch — a writer fixed without its reader moves the untruth down a layer."
+ },
+ {
+  "tag": "the cascade history keeps rendering 'No persisted cascade runs yet'",
+  "file": "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx",
+  "old": "      setCascadeIncomplete(res.data.total_is_incomplete ? (res.data.total_basis ?? '') : null);",
+  "new": "      setCascadeIncomplete(null);",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "W493 fixed the request FAILING and this is the 200 path: a partial store still rendered the empty-state sentence. The same untruth arriving by the successful route."
+ },
+ {
+  "tag": "the retire/reinstate control stops warning it may be inverted",
+  "file": "apps/workstation-superapp/src/pages/developers/NativeAI.tsx",
+  "old": "              {lifecycle.retired_is_incomplete && (",
+  "new": "              {lifecycle.retired_was_incomplete && (",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "Not merely a missing label: the button's direction is chosen by whether the model is IN the retired list, so a short list offers 'retire' for a model already retired."
+ },
+ {
+  "tag": "the model rate stops saying it may read worse than the truth",
+  "file": "apps/workstation-superapp/src/pages/OperationalExcellence.tsx",
+  "old": "                      {m.success_rate_is_incomplete && (",
+  "new": "                      {m.success_rate_was_incomplete && (",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "The colour on that cell means 'the orchestrator demoted this'. An unreadable baseline scores a model on rows the baseline was declared to exclude, so the rate — and the colour — can be wrong in the direction that condemns a working model."
+ },
+ {
+  "tag": "an unread route stops disclosing on its own response",
+  "file": "agentic_core/api/swarm.py",
+  "old": "            \"listing_is_incomplete\": bool(_why),",
+  "new": "            \"_listing_is_incomplete\": bool(_why),",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "No page in this app reads /catalogue/proposed, so its own response IS the surface a person reads. 'There is no page' is a reason to put the disclosure in the response, not a reason to skip the clause."
+ },
+ {
+  "tag": "the twin registry total stops disclosing",
+  "file": "agentic_core/api/integration_surface.py",
+  "old": "            \"total_is_incomplete\": bool(_why),",
+  "new": "            \"_total_is_incomplete\": bool(_why),",
+  "selector": "w577_p218a",
+  "expect": "BLIND(red)",
+  "why": "Same, and this one had TWO ways to lose the fact: a tolerant read and an `except Exception: pass` around it."
+ }
+]

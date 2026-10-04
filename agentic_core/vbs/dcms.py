@@ -26,11 +26,21 @@ class DocumentControlManagementSystem:
         return str(data_path("dcms_registry.json"))
 
     def _load(self) -> Dict[str, List[Dict[str, Any]]]:
+        """The registry, with `_store_incomplete` set when it could not be read whole.
+
+        W577 (FU-298) — this returned `{}` for an unreadable registry and for an empty one alike, and
+        the `except Exception: return {}` lost the reason a second time. A document-control registry
+        that reads as EMPTY when it is merely unreadable is the worst possible shape for this store:
+        the whole point of document control is knowing what is on record.
+        """
         try:
-            from agentic_core.config import load_json_tolerant
-            return load_json_tolerant(self._store_path(), {}) or {}
-        except Exception:
-            return {}
+            from agentic_core.config import read_json_reported
+            data, why = read_json_reported(self._store_path(), {})
+            data = data if isinstance(data, dict) else {}
+        except Exception as e:
+            data, why = {}, f"the registry could not be read ({e.__class__.__name__}: {e})"
+        self._store_incomplete = why
+        return data
 
     def _persist(self) -> None:
         try:

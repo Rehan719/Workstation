@@ -427,6 +427,10 @@ export const NativeAI: React.FC = () => {
   // W276/W284 — the owned-model estate's LIFECYCLE (evaluate · promote · retire · reinstate)
   const [lifecycle, setLifecycle] = useState<{
     promoted_default?: string | null; effective_default?: string | null; retired?: string[];
+    // W577 (FU-298) — the lifecycle record says when it could not be read whole. It matters more
+    // here than on a listing: the retire/reinstate button below is chosen by whether a model is IN
+    // `retired`, so a short list offers "retire" for a model that is already retired.
+    retired_is_incomplete?: boolean; retired_basis?: string | null;
     // W492 (FU-183) - `effective_default` used to be the OLLAMA_MODEL fallback NAME even with an
     // empty estate, so this card said "Serving default: llama3.2" beside the page's own
     // "Deterministic floor active". What serves and what is configured are two fields now.
@@ -845,6 +849,13 @@ export const NativeAI: React.FC = () => {
                 )}
                 {(lifecycle.retired ?? []).length > 0 && <span> · retired: {lifecycle.retired!.join(', ')}</span>}
               </p>
+              {lifecycle.retired_is_incomplete && (
+                <p data-testid="lifecycle-retired-incomplete" title={lifecycle.retired_basis ?? undefined}
+                   className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 mb-2">
+                  the retirement record could not be read whole — a model shown as active may be
+                  retired, so the retire/reinstate control below may be the wrong way round
+                </p>
+              )}
               {(lifecycle.discovered ?? []).length === 0 && (
                 <p className="text-[10px] text-slate-600 italic mb-2">No local models discovered right now — evaluation reports honestly (can_serve: false) rather than inventing scores; pull a model into the local server to manage the estate.</p>
               )}

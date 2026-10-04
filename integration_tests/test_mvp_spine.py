@@ -909,7 +909,7 @@ def test_birth_is_alive_and_consequences(client):
     # cycle run AT establishment; a FAIL-screened entity's distributions are HELD until a re-screen
     # clears it; autonomous drift AFTER a ship marks the repo honestly STALE.
     import json as _json
-    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    from agentic_core.config import atomic_write_json, data_path, read_json_reported
     e = client.post("/api/v1/genesis/establish", json={
         "problem": "w309 living birth venture", "domain": "enterprise", "name": "W309 Birth Venture",   # W450: named → ships at birth
         "concept": "A halal community textile venture with clear operations.",
@@ -932,7 +932,7 @@ def test_birth_is_alive_and_consequences(client):
     assert ship2.get("stale") is True and "cycle" in str(ship2.get("stale_reason", ""))
     # a FAIL screen HOLDS the economy — §11 teeth in §12
     hp = data_path("vsb_compliance_history.json")
-    h = load_json_tolerant(hp, {}) or {}
+    h = read_json_reported(hp, {})[0] or {}
     h[vid] = {"overall": "fail", "last_at": "2026-08-22T00:00:00Z", "history": []}
     atomic_write_json(hp, h)
     held = operate_vsb(vid)
@@ -1534,8 +1534,8 @@ def test_continuous_compliance_beat(client):
         register(vid, name="Halal community nutrition venture", domain="care")
         loop.run_until_complete(heartbeat.beat())
         assert heartbeat.last_compliance and heartbeat.last_compliance["overall"] in ("pass", "review", "fail")
-        from agentic_core.config import data_path, load_json_tolerant
-        hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {})
+        from agentic_core.config import data_path, read_json_reported
+        hist = read_json_reported(data_path("vsb_compliance_history.json"), {})[0]
         assert vid in hist and hist[vid]["history"]           # per-VSB history persisted
         r_off = loop.run_until_complete(heartbeat.beat())     # auto_economy off → no operate action
         assert "operate_vsb" not in r_off.get("actions", [])
@@ -1738,8 +1738,8 @@ def test_tier_identity_and_founder_modelled_chief(client):
     ia = r2["tier_identity_applied"]
     assert set(ia.keys()) == set(r1["appraisals"].keys())          # every tier carried its identity
     assert all(v >= 1 for v in ia.values())                        # accumulated from run 1 onward
-    from agentic_core.config import data_path, load_json_tolerant
-    store = load_json_tolerant(data_path("tier_identity.json"), {})
+    from agentic_core.config import data_path, read_json_reported
+    store = read_json_reported(data_path("tier_identity.json"), {})[0]
     assert store["bto_appraises_build"]["runs"] >= 2               # the record persists + accumulates
     assert store["bto_appraises_build"]["last_appraisal"]          # grounded in the real appraisal
 
@@ -4249,21 +4249,21 @@ def test_data_dir_configurable(client):
 
 
 def test_hot_stores_atomic_and_corruption_tolerant(tmp_path):
-    # W257 — the W241 hardening pattern is SHARED (config.atomic_write_json / load_json_tolerant)
+    # W257 — the W241 hardening pattern is SHARED (config.atomic_write_json / read_json_reported)
     # and adopted by the heartbeat-touched stores (living_vsbs · ledger · vsb entities · deliverables ·
     # forge · operational_excellence · capital_fund · marketplace · business_plan): a reader never
     # sees a half-written file; a corrupt file loads as its recoverable prefix or the default.
     import json as _json
     import inspect as _inspect
-    from agentic_core.config import atomic_write_json, load_json_tolerant
+    from agentic_core.config import atomic_write_json, read_json_reported
     p = tmp_path / "store.json"
     atomic_write_json(p, {"a": 1})
     assert _json.loads(p.read_text(encoding="utf-8")) == {"a": 1}
     # corrupt trailing garbage → the recoverable prefix, not an exception
     p.write_text('{"a": 1}][{"garbage', encoding="utf-8")
-    assert load_json_tolerant(p, {}) == {"a": 1}
+    assert read_json_reported(p, {})[0] == {"a": 1}
     p.write_text("total trash", encoding="utf-8")
-    assert load_json_tolerant(p, {"d": True}) == {"d": True}
+    assert read_json_reported(p, {"d": True})[0] == {"d": True}
     assert not [f for f in tmp_path.iterdir() if f.suffix == ".tmp"]   # no stray temp files
     # regression guard: the hot stores actually route through the shared atomic writer
     import agentic_core.economy.living_vsbs as lv
@@ -5878,8 +5878,8 @@ def test_stale_repo_loop_closes_and_records_honestly(client):
     sca = (casc.get("repo_run") or {}).get("stored_config_applied") or {}
     assert len(sca.get("csuite_roles") or []) >= 3                 # the stored swarm design ran
     assert casc.get("repo_run", {}).get("run_id")
-    from agentic_core.config import data_path, atomic_write_json, load_json_tolerant
-    hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
+    from agentic_core.config import data_path, atomic_write_json, read_json_reported
+    hist = read_json_reported(data_path("vsb_compliance_history.json"), {})[0] or {}
     hist[vid] = {"overall": "fail"}
     atomic_write_json(data_path("vsb_compliance_history.json"), hist)
     lv.operate_vsb(vid)                                            # the teeth engage...
@@ -6596,12 +6596,12 @@ def test_store_lock_serialises_across_processes(tmp_path):
     worker_src = (
         "import sys, json\n"
         f"sys.path.insert(0, {repo_root!r})\n"
-        "from agentic_core.config import store_lock, atomic_write_json, load_json_tolerant\n"
+        "from agentic_core.config import store_lock, atomic_write_json, read_json_reported\n"
         "from pathlib import Path\n"
         "store = Path(sys.argv[1]); wid = sys.argv[2]; cycles = int(sys.argv[3])\n"
         "for _ in range(cycles):\n"
         "    with store_lock(store):\n"
-        "        doc = load_json_tolerant(store, {'total': 0, 'by_worker': {}})\n"
+        "        doc = read_json_reported(store, {'total': 0, 'by_worker': {}})[0]\n"
         "        doc['total'] = doc.get('total', 0) + 1\n"
         "        doc['by_worker'][wid] = doc['by_worker'].get(wid, 0) + 1\n"
         "        atomic_write_json(store, doc)\n"
@@ -23787,9 +23787,9 @@ def test_w504_a_repair_credits_what_was_debited(client):
 
     # the receiver's queue now holds it; clear the credit marker to force the REPAIR path, which is the
     # state a first attempt that died between the debit and the queue write leaves behind
-    from agentic_core.config import data_path, load_json_tolerant, atomic_write_json
+    from agentic_core.config import data_path, read_json_reported, atomic_write_json
     pend = data_path("economy_pending_transfers.json")
-    d = load_json_tolerant(pend, {}) or {}
+    d = read_json_reported(pend, {})[0] or {}
     assert b in d, list(d)
     d[b]["credited_ids"] = [i for i in (d[b].get("credited_ids") or []) if i != xid]
     d[b]["transfers"] = [t for t in (d[b].get("transfers") or []) if t.get("transfer_id") != xid]
@@ -23808,7 +23808,7 @@ def test_w504_a_repair_credits_what_was_debited(client):
     assert repaired.get("requested_amount_wst") == 999.0 and repaired.get("requested_to_vsb") == c
 
     # the money landed in the DEBITED receiver's queue, not the requested one
-    d2 = load_json_tolerant(pend, {}) or {}
+    d2 = read_json_reported(pend, {})[0] or {}
     assert round(float((d2.get(b) or {}).get("pending_wst", 0.0)), 2) == 120.0, d2.get(b)
     assert round(float((d2.get(c) or {}).get("pending_wst", 0.0)), 2) == 0.0, d2.get(c)
 
@@ -23817,7 +23817,7 @@ def test_w504_a_repair_credits_what_was_debited(client):
     # and credits a second time, creating virtual WST. Crediting once is not evidence that the key is
     # right — blind R03 passed the single-repair assertions above untouched.
     again = tr.record_transfer(a, c, 999.0, "repair twice", transfer_id=xid)
-    d3 = load_json_tolerant(pend, {}) or {}
+    d3 = read_json_reported(pend, {})[0] or {}
     assert round(float((d3.get(b) or {}).get("pending_wst", 0.0)), 2) == 120.0, \
         f"a second repair credited the receiver again: {d3.get(b)}"
     assert round(float((d3.get(c) or {}).get("pending_wst", 0.0)), 2) == 0.0, d3.get(c)
@@ -23831,7 +23831,7 @@ def test_w504_a_repair_credits_what_was_debited(client):
     assert (d3.get(b) or {}).get("vsb_id") == b,         f"the repair replaced the receiver's row with another entity's: {d3.get(b)}"
     other = tr.record_transfer(a, b, 7.0, "an unrelated transfer to the same receiver")
     tr.record_transfer(a, c, 999.0, "repair a third time", transfer_id=xid)
-    d4 = load_json_tolerant(pend, {}) or {}
+    d4 = read_json_reported(pend, {})[0] or {}
     assert round(float((d4.get(b) or {}).get("pending_wst", 0.0)), 2) == 127.0,         f"a repair dropped an unrelated pending transfer to the same receiver: {d4.get(b)}"
     assert other["transfer_id"] in ((d4.get(b) or {}).get("credited_ids") or []), d4.get(b)
 
@@ -34751,7 +34751,15 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
     #  and NOTHING on P2.18 is named by a P2.4 cluster
     for _id in _p218_rows:
         assert _id not in _clusters, (f"{_id} is named in a P2.4 cluster and was moved out of it", _id)
-    assert len(_p218_rows) >= 10, ("the arrivals did not move", _p218_rows)
+    #  W577 — THIS LEG COMMITTED THE CLASS ITS OWN TWO COMMENTS ABOVE NAME. It counted `_p218_rows`,
+    #  which `_open` defines as the OPEN rows, so every row P2.18 CLOSED pushed the count down toward
+    #  this floor: W576 closed six of clause (a)'s seven and W577 closed the last plus FU-395, and the
+    #  guard went red on the item progressing. "The arrivals moved" is a statement about where a row
+    #  SITS, and closing one does not un-move it — so it is counted over EVERY status, which only ever
+    #  grows. (It survived W576 only because that round's suite ran BEFORE its rows were closed, so the
+    #  register the commit shipped was never the register the suite saw.)
+    _p218_all = sorted(r["id"] for r in _reg["items"] if r.get("slot") == "P2.18")
+    assert len(_p218_all) >= 10, ("the arrivals did not move", _p218_all)
 
     # ── L3. EVERY MOVED ROW SAYS WHY IT MOVED ────────────────────────────────────────────────────
     #  A reslot with no stated reason is how a row ends up somewhere nobody can justify later.
@@ -34790,10 +34798,17 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
         "text as P2.18's", len(_bar))
     assert not _re562.findall(r"FU-\d+", _bar), (
         "a row id survives inside P2.18's bar", _re562.findall(r"FU-\d+", _bar))
-    for _clause in ("(a) AN ABSENCE REACHES THE READER",
-                    "(b) THE SUITE'S INSTRUMENTS PROVE WHAT THEY CLAIM",
-                    "(c) TWO NAMED SINGLES"):
-        assert _clause in _bar, ("a clause is missing from P2.18", _clause)
+    #  W577 (FU-365) — these were pinned as "(a) TITLE" with nothing allowed between, so marking a
+    #  clause DELIVERED broke the leg: the whole point of a clause is that it eventually closes, and
+    #  P2.19 already carries "(a) DELIVERED W573" markers in exactly this position. A guard asserting a
+    #  clause EXISTS must not also forbid it from reporting progress. The label and the title are the
+    #  durable part; whatever a round writes between them is not this leg's business.
+    for _letter, _clause in (("a", "AN ABSENCE REACHES THE READER"),
+                             ("b", "THE SUITE'S INSTRUMENTS PROVE WHAT THEY CLAIM"),
+                             ("c", "TWO NAMED SINGLES")):
+        #  `.` already excludes a newline, so the clause label and its title must sit on ONE line
+        assert _re562.search(r"\(" + _letter + r"\).{0,80}?" + _re562.escape(_clause), _bar), (
+            "a clause is missing from P2.18", _letter, _clause)
     #  the ACCEPT binds the same discipline the Owner's second-leg ruling set
     #  fragments JSX-style line wrapping cannot split: the full sentences wrap across lines in the
     #  plan, so a literal match on them finds nothing even though they are present.
@@ -37385,24 +37400,340 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
     assert "path" in _uni["nodes"][0], (
         "the 293 entries are FILE PATHS, which is why this is never loaded as an ontology")
 
-    # ── FU-075 — the tolerant loader is KEPT, and says why ─────────────────────────────────────
-    #  Cluster (a) allows an artefact kept with a stated reason and a reader that uses it. The
-    #  decision must be IN the artefact, or the next round reads the open row and deletes it.
+    # ── FU-075 / FU-298 — AN ARTEFACT IS KEPT WITH READERS, OR REMOVED WITH NONE ───────────────
+    #  W577 (FU-365) — this guard used to assert that the tolerant loader EXISTS and has at least
+    #  eight readers. Both halves encoded the state of one particular round, so the guard went RED
+    #  the moment a later round did the very thing the open row asked for. A guard must not fail on
+    #  success. The durable property is the DISJUNCTION, which is what cluster (a) actually requires:
+    #  an artefact that is kept states why and genuinely has readers; an artefact that is removed has
+    #  no callers left. Whichever branch runs, the thing being checked is the same rule.
     _cfg = (_root / "agentic_core/config.py").read_text(encoding="utf-8")
-    assert "def load_json_tolerant" in _cfg, "the tolerant loader was deleted"
-    _i = _cfg.index("def load_json_tolerant")
-    _doc = _cfg[_i:_i + 2600]
-    assert "KEPT DELIBERATELY" in _doc, (
-        "the retention decision is not stated in the function, so the next round sees only an open "
-        "row asking for its deletion")
-    assert "FU-298" in _doc, "the remaining half is not pointed at the item where it belongs"
-    #  and it genuinely has readers, which is the other half of the bar's condition
-    _readers = {p.relative_to(_root).as_posix()
+    _tol = "load_json" + "_tolerant"          # built, so this line is not itself a caller to the scan
+
+    def _calls_or_imports_577(src: str, name: str) -> bool:
+        """A CALL or an IMPORT of `name` in real code — by AST, so a comment or a docstring that
+        merely mentions it does not count, and an alias (`import x as y`) still does. A plain string
+        scan got this wrong in both directions: it counted the prose explaining a removal, and it
+        missed `_ljt(...)` entirely."""
+        try:
+            _t = _ast575.parse(src)
+        except SyntaxError:
+            return False
+        _aliases = {name}
+        for _n in _ast575.walk(_t):
+            if isinstance(_n, _ast575.ImportFrom):
+                for _a in _n.names:
+                    if _a.name == name:
+                        return True                      # importing it IS a reference
+            if isinstance(_n, _ast575.Assign):
+                for _tg in _n.targets:                   # `_ljt = load_json_tolerant`
+                    if isinstance(_tg, _ast575.Name) and isinstance(_n.value, _ast575.Name)                             and _n.value.id in _aliases:
+                        _aliases.add(_tg.id)
+        for _n in _ast575.walk(_t):
+            if isinstance(_n, _ast575.Call):
+                _f = _n.func
+                if isinstance(_f, _ast575.Name) and _f.id in _aliases:
+                    return True
+                if isinstance(_f, _ast575.Attribute) and _f.attr in _aliases:
+                    return True
+        return False
+
+    _callers = {p.relative_to(_root).as_posix()
                 for p in (_root / "agentic_core").rglob("*.py")
                 if "_archive" not in p.parts
-                and "load_json_tolerant(" in p.read_text(encoding="utf-8", errors="replace")}
-    _readers.discard("agentic_core/config.py")
-    assert len(_readers) >= 8, ("the loader is kept for readers that no longer exist", sorted(_readers))
+                and _calls_or_imports_577(p.read_text(encoding="utf-8", errors="replace"), _tol)}
+    _callers.discard("agentic_core/config.py")
+    if "def " + _tol in _cfg:
+        _i = _cfg.index("def " + _tol)
+        _doc = _cfg[_i:_i + 2600]
+        assert "KEPT DELIBERATELY" in _doc, (
+            "the retention decision is not stated in the function, so the next round sees only an "
+            "open row asking for its deletion")
+        assert "FU-298" in _doc, "the remaining half is not pointed at the item where it belongs"
+        assert len(_callers) >= 8, (
+            "the loader is kept for readers that no longer exist", sorted(_callers))
+    else:
+        #  REMOVED. The bar's clause (2) requires the reachability check that justified the removal
+        #  to be recorded with it, and the only check that matters is that nothing calls it.
+        assert not _callers, (
+            "the tolerant loader was removed while these still call it", sorted(_callers))
+        assert "FU-298" in _cfg and "REACHABILITY" in _cfg, (
+            "the removal does not carry the reachability check that established it, which clause (2) "
+            "of P2.18 requires of a fix that removes a code artefact")
+        #  and the capability it existed for must still be there, or the removal was a regression:
+        #  a corrupt cache must never take a live subsystem down.
+        import agentic_core.config as _cfgmod577
+        assert hasattr(_cfgmod577, "read_json_reported"), (
+            "the tolerant READ was removed along with the wrapper, so a corrupt store can now take a "
+            "live subsystem down - which is the behaviour the deleted function existed to prevent")
+        _v577, _w577 = _cfgmod577.read_json_reported(_root / "does-not-exist-577.json", {"d": 1})
+        assert _v577 == {"d": 1} and _w577 is None, (
+            "an absent store must read as the caller's default with NO reason - a missing store is "
+            "not an error", _v577, _w577)
+
+
+def test_w577_p218a_a_tolerant_read_is_never_a_write_base_and_a_reader_is_told(client, tmp_path):
+    """P2.18 clause (a), completed — and the class found while completing it.
+
+    TWO PROPERTIES, one set of call sites. `read_json_reported` recovers a store's first complete JSON
+    value and DISCARDS everything after it, so the same tolerant read has two different consequences
+    depending on what the caller does with the value:
+
+      * A READER shows a short figure as though it were whole. That is FU-298, a truth defect, and the
+        remedy is that the figure says so ON THE SURFACE A PERSON READS.
+      * A WRITER hands the prefix to `atomic_write_json` and the discarded remainder is overwritten and
+        gone. That is FU-395, a LOSS defect, and disclosure does not fix it - the remedy is the
+        opposite one: read strictly and refuse.
+
+    Nine write paths were on the wrong side of that line. This drives the sharpest of them on a real
+    store and asserts that nothing is lost, then drives the reader half and asserts the reason reaches
+    the page rather than stopping at the API.
+    """
+    import ast as _ast577
+    import asyncio as _aio577
+    import json as _json577
+    import pathlib as _pl577
+    import re as _re577
+
+    _root = _pl577.Path(__file__).resolve().parents[1]
+    _app = _root / "apps" / "workstation-superapp" / "src"
+
+    def _tsx_code(p: _pl577.Path) -> str:
+        """TSX with comments removed. EVERY field asserted below is NAMED IN A COMMENT in these files
+        (the comments explain what each disclosure is for), so a presence check over raw source is
+        satisfied by the explanation of the fix instead of the fix."""
+        s = p.read_text(encoding="utf-8", errors="replace")
+        s = _re577.sub(r"/\*.*?\*/", " ", s, flags=_re577.S)        # /* */ and {/* */}
+        s = _re577.sub(r"(?m)^\s*//.*$", " ", s)                     # whole-line //
+        s = _re577.sub(r"(?<![:\w])//[^\n\"\']*$", " ", s, flags=_re577.M)   # trailing //
+        return s
+
+    #  ── (1) FU-395 — THE CORRUPTION SHAPE, AND A WRITER THAT REFUSES ─────────────────────────────
+    #  Two concatenated records: what an interrupted overwrite of a shorter document by a longer one
+    #  leaves behind. raw_decode returns the FIRST and drops the second, so the second holds the data.
+    from agentic_core.api import user_workspace as _uw577
+    from agentic_core.config import StoreUnavailable as _SU577
+    from fastapi import HTTPException as _HE577
+
+    _p577 = _pl577.Path(_uw577._path_for("w577-owner"))
+    _p577.parent.mkdir(parents=True, exist_ok=True)
+    _older = {"owner_id": "w577-owner", "history": [], "prefs": {}, "profile": {}, "updated_at": None}
+    _newer = {"owner_id": "w577-owner", "history": [{"q": "W577 THE USER'S OWN QUESTION"}],
+              "prefs": {"theme": "dark"}, "profile": {"about_you": "W577"},
+              "updated_at": "2026-10-04T00:00:00Z"}
+    _p577.write_text(_json577.dumps(_older) + _json577.dumps(_newer), encoding="utf-8")
+    _before577 = _p577.read_bytes()
+    assert b"W577 THE USER'S OWN QUESTION" in _before577, "the probe did not write what it meant to"
+
+    #  the tolerant read really does drop it - otherwise everything below is vacuous
+    _doc577, _why577 = _uw577._load("w577-owner")
+    assert _why577, "read_json_reported gave no reason, so this store is not the shape being tested"
+    assert _doc577.get("history") == [], (
+        "the tolerant read did NOT drop the tail, so there is no loss here to refuse and every "
+        "assertion below would pass without the fix", _doc577)
+
+    #  THE WRITER REFUSES, and the bytes are untouched. This is the whole of FU-395.
+    for _fn577, _req577 in (
+            ("put_profile", lambda: _uw577.put_profile(
+                _uw577.ProfilePut(owner_id="w577-owner"),
+                {"id": "w577-owner", "user_id": "w577-owner", "owner_id": "w577-owner"})),
+            ("clear_profile", lambda: _uw577.clear_profile(
+                "w577-owner", {"id": "w577-owner", "user_id": "w577-owner", "owner_id": "w577-owner"})),
+    ):
+        try:
+            _aio577.run(_req577())
+            raise AssertionError(
+                f"{_fn577} WROTE over a store it could not read whole - the discarded remainder of "
+                f"that store is now gone, which is the defect FU-395 names")
+        except _HE577 as _e577:
+            assert _e577.status_code == 503, (_fn577, _e577.status_code)
+            assert "NOT overwritten" in str(_e577.detail), (
+                "the refusal does not say that nothing stored was lost, which is the only part of it "
+                "a person needs", _fn577, _e577.detail)
+        assert _p577.read_bytes() == _before577, (
+            f"{_fn577} refused and still changed the file")
+
+    #  ── (1b) THE SAME THING DRIVEN ON A ROUTE, BECAUSE SOURCE ANALYSIS COULD NOT SEE IT ─────────
+    #  A blind proved both AST legs below are blind to ONE CALL OF INDIRECTION: the four lifecycle
+    #  writers get their base from a helper that only READS, so it calls no writer (leg 2 cannot see
+    #  it) and returns a dict rather than a (value, reason) pair (leg 3 cannot see it either). No
+    #  smarter source check was the answer - CALLING THE ROUTE is. retire_model is the sharpest of the
+    #  four: it APPENDS to the retired list and saves, so a dropped prefix un-retires every other
+    #  model while reporting that one was retired.
+    from agentic_core.ai.native import model_resource as _mr577
+    _lp577 = _pl577.Path(_mr577._lifecycle_path())
+    _lp577.parent.mkdir(parents=True, exist_ok=True)
+    _lp577.write_text(
+        _json577.dumps({"default_local": None, "retired": [], "evaluations": []})
+        + _json577.dumps({"default_local": "m-b", "retired": ["m-a", "m-b"],
+                          "evaluations": [{"model": "m-a", "score": 0.9}]}),
+        encoding="utf-8")
+    _lbefore577 = _lp577.read_bytes()
+    assert b'"m-a"' in _lbefore577
+    #  the tolerant read really does drop the retirements, or this proves nothing
+    assert _mr577.lifecycle_state().get("retired") == [], (
+        "the tolerant read did not drop the retired list, so this store is not the shape being tested")
+    _r577 = client.post("/api/v1/native-ai/lifecycle/retire", json={"model": "m-c"})
+    assert _r577.status_code == 503, (
+        "retiring a model against a lifecycle record that could not be read whole SUCCEEDED, which "
+        "means the write persisted the recoverable prefix and every model retired before this call is "
+        "no longer retired - while the response reports a retirement", _r577.status_code, _r577.text)
+    assert "NOT changed" in _r577.json().get("detail", ""), (
+        "the refusal does not say that nothing already recorded was lost", _r577.json())
+    assert _lp577.read_bytes() == _lbefore577, (
+        "the route refused and still rewrote the lifecycle record")
+    _lp577.unlink(missing_ok=True)
+
+    #  ── (2) THE SAME RULE, ASSERTED AS A PROPERTY OF THE CODE, NOT OF THESE TWO ROUTES ───────────
+    #  A function that reads a store tolerantly and then writes it is the defect wherever it appears.
+    #  Asserted over the AST, because the whole finding was that it appeared in five files at once.
+    _TOLERANT577 = {"read_json_reported"}
+    _WRITERS577 = {"atomic_write_json", "save_lifecycle", "_save_fund"}
+    #  W577 — THE SECOND HALF, and a blind is why it exists. The first leg only saw a tolerant read
+    #  and a write in the SAME function, so changing `lifecycle_state(strict=True)` back to
+    #  `lifecycle_state()` inside `_lifecycle_for_write` left it green: the tolerant read was one
+    #  call of indirection away. The second leg below closes that by asserting the property at the
+    #  ASSIGNMENT instead of at the callee's name.
+    _offenders577 = []
+    _lax577 = []
+    for _f577 in sorted((_root / "agentic_core").rglob("*.py")):
+        if "_archive" in _f577.parts:
+            continue
+        try:
+            _t577 = _ast577.parse(_f577.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for _n577 in _ast577.walk(_t577):
+            if not isinstance(_n577, (_ast577.FunctionDef, _ast577.AsyncFunctionDef)):
+                continue
+            _names577 = {c.func.id for c in _ast577.walk(_n577)
+                         if isinstance(c, _ast577.Call) and isinstance(c.func, _ast577.Name)}
+            #  a tolerant read whose value is written back IN THE SAME FUNCTION
+            if (_names577 & _TOLERANT577) and (_names577 & _WRITERS577):
+                _offenders577.append(f"{_f577.relative_to(_root).as_posix()}::{_n577.name}")
+            #  A WRITE BASE WHOSE REASON WAS THROWN AWAY. Expressed this way rather than as "a
+            #  loader that takes strict", because that first cut matched on the BARE NAME `_load` and
+            #  so flagged `molecular/work_budget.py::spend` for having a `_load` that takes no
+            #  `strict` at all - right about the defect, wrong about why, and a name collision away
+            #  from flagging any unrelated `_load` in the repo. The real property covers both shapes:
+            #  a function that writes a store must not take its base from a reason-returning loader
+            #  and discard the reason. `rec, _ = _load()` is the exact shape that loses it.
+            if _names577 & _WRITERS577:
+                for _a577 in _ast577.walk(_n577):
+                    if not isinstance(_a577, _ast577.Assign):
+                        continue
+                    _tg577 = _a577.targets[0] if _a577.targets else None
+                    if not (isinstance(_tg577, _ast577.Tuple) and len(_tg577.elts) == 2):
+                        continue
+                    _second = _tg577.elts[1]
+                    if not (isinstance(_second, _ast577.Name) and _second.id == "_"):
+                        continue          # the reason was bound to a name, so it is not discarded
+                    _v577 = _a577.value
+                    if not (isinstance(_v577, _ast577.Call) and isinstance(_v577.func, _ast577.Name)):
+                        continue
+                    _kw577 = {k.arg: k.value for k in _v577.keywords}
+                    _st577 = _kw577.get("strict")
+                    if isinstance(_st577, _ast577.Constant) and _st577.value is True:
+                        continue          # it REFUSES instead, which is the stronger answer
+                    _lax577.append(f"{_f577.relative_to(_root).as_posix()}::{_n577.name}"
+                                   f" -> {_v577.func.id}() with its reason discarded")
+    #  config.py defines the primitives and legitimately names both; nothing else may.
+    _offenders577 = [o for o in _offenders577 if not o.startswith("agentic_core/config.py")]
+    assert not _offenders577, (
+        "these functions read a store TOLERANTLY and write it back in the same breath, so the part of "
+        "the store the read could not recover is overwritten and lost", _offenders577)
+    _lax577 = sorted({x for x in _lax577 if not x.startswith("agentic_core/config.py")})
+    assert not _lax577, (
+        "these functions WRITE a store and reach it through a loader that can refuse an unreadable "
+        "one, without asking it to - so the write is still based on whatever prefix was recoverable",
+        _lax577)
+
+    #  ── (3) FU-298 — THE READER IS TOLERANT AND SAYS SO, THREE-STATE ─────────────────────────────
+    _out577 = _aio577.run(_uw577.get_workspace(
+        "w577-owner", {"id": "w577-owner", "user_id": "w577-owner", "owner_id": "w577-owner"}))
+    assert _out577["count"] == 0, "the reader stopped being tolerant, which was never the fix"
+    assert _out577["count_is_incomplete"] is True, (
+        "the count is short and the answer does not say so", _out577)
+    assert _out577["store_incomplete"], "the reason itself does not travel"
+    assert "at least this long" in _out577["count_basis"], (
+        "the basis does not say WHICH WAY the figure moves - a reader cannot act on 'incomplete' "
+        "alone, and the records that could not be read are the ones MISSING from the count",
+        _out577["count_basis"])
+    #  and a store that is simply absent is NOT incomplete: a measured zero is not an unmeasured one
+    _clean577 = _aio577.run(_uw577.get_workspace(
+        "w577-absent", {"id": "w577-absent", "user_id": "w577-absent", "owner_id": "w577-absent"}))
+    assert _clean577["count_is_incomplete"] is False and _clean577["store_incomplete"] is None, (
+        "an absent store was reported as unreadable, which would make the disclosure meaningless by "
+        "appearing on every empty workspace", _clean577)
+
+    #  ── (4) THE REASON REACHES THE SURFACE, ASSERTED AS A BINDING ────────────────────────────────
+    #  P2.18 clause (1): driven on the surface a person reads, never only on the API beneath it. Each
+    #  pair below is (file, the field, a RENDER BINDING that must consume it) - the binding, not the
+    #  name, because a field can be destructured, typed and never shown.
+    for _rel577, _field577, _binds577 in (
+        #  W577 — each gate carries its OPENING BRACE. The first cut of this leg asserted
+        #  `fund?.balances_are_incomplete &&` without it, and a blind proved that `{false &&
+        #  fund?.balances_are_incomplete &&` still contains that substring: the render was switched
+        #  off and the guard passed. W503's class, committed inside the guard written to catch it.
+        ("pages/enterprise/CapitalDashboard.tsx", "balances_are_incomplete",
+         ("{fund?.balances_are_incomplete &&", "data-testid=\"fund-balances-incomplete\"")),
+        ("pages/enterprise/CapitalDashboard.tsx", "fund_health_is_incomplete",
+         ("{fund?.fund_health_is_incomplete &&", "data-testid=\"fund-health-incomplete\"")),
+        ("pages/synthesis/ResourceFabric.tsx", "listing_is_incomplete",
+         ("!!d.listing_is_incomplete", "data-testid=\"fabric-runs-incomplete\"")),
+        ("components/organism/SwarmIntelligence.tsx", "total_is_incomplete",
+         ("res.data.total_is_incomplete ?", "data-testid=\"cascade-runs-incomplete\"")),
+        ("pages/developers/NativeAI.tsx", "retired_is_incomplete",
+         ("{lifecycle.retired_is_incomplete &&", "data-testid=\"lifecycle-retired-incomplete\"")),
+        ("pages/OperationalExcellence.tsx", "success_rate_is_incomplete",
+         ("{m.success_rate_is_incomplete &&", "data-testid=\"model-rate-incomplete\"")),
+        ("pages/profile/Wallet.tsx", "allocations_are_incomplete",
+         ("portfolioRes.data.allocations_are_incomplete", "data-testid=\"wallet-allocations-incomplete\"")),
+        ("pages/Settings.tsx", "profile_is_incomplete",
+         ("r.profile_is_incomplete ?", "data-testid=\"profile-store-incomplete\"")),
+        #  not a page but a LIB every page reads its history through, and the warning channel it
+        #  already owns: a 200 over a partial store used to CLEAR that warning.
+        ("lib/outputHistory.ts", "count_is_incomplete",
+         ("doc.count_is_incomplete", "count_basis")),
+    ):
+        _src577 = _tsx_code(_app / _rel577)
+        for _b577 in _binds577:
+            assert _b577 in _src577, (
+                f"{_rel577}: the disclosure for {_field577} does not reach the page - this binding is "
+                f"absent from the code (comments stripped, so an explanation of the fix does not "
+                f"count as the fix)", _b577)
+
+    #  and the ones with NO page: an unread route's own response IS its surface, and saying so is part
+    #  of the clause rather than an excuse for skipping it.
+    for _route577, _needles577 in (
+        ("/api/v1/swarm/catalogue/proposed", ("listing_is_incomplete", "listing_basis")),
+        ("/api/v210/federation/twins", ("total_is_incomplete", "total_basis")),
+        #  W577 — added after the PRE-FLIGHT flagged their keys as reaching no surface. It was right
+        #  that no page renders them and right to ask which surface does; the answer is that these
+        #  routes have no page in this app, so their own response is it. Asserting that here is what
+        #  turns "no page renders it" from an unanswered lead into a stated position.
+        ("/api/v310/governance/treasury", ("figures_are_incomplete", "figures_basis",
+                                           "total_capital_wst", "allocated_wst")),
+        ("/api/v310/payments/status", ("wst_available", "wst_available_basis")),
+        ("/api/v310/payments/wallet/w577-user", ("platform_capital_fund_available",
+                                                "platform_capital_fund_incomplete")),
+    ):
+        _r577 = client.get(_route577)
+        assert _r577.status_code == 200, (_route577, _r577.status_code)
+        for _k577 in _needles577:
+            assert _k577 in _r577.json(), (
+                f"{_route577} has no page in this app, so its own response is the surface a person "
+                f"reads and the disclosure has to be in it", _k577, sorted(_r577.json()))
+
+    #  and the one that is a POST: settling against the fund says what the balance it compared to was
+    _pay577 = client.post("/api/v310/payments/create-session",
+                          json={"item_id": "w577", "price_wst": 1.0, "payment_method": "wst_balance"})
+    assert _pay577.status_code in (200, 503), _pay577.status_code
+    if _pay577.status_code == 200:
+        assert "balance_basis" in _pay577.json(), (
+            "a session settled or refused against the capital fund's `available` and did not say what "
+            "that figure was based on - `available` is the one figure a partial read OVERSTATES",
+            sorted(_pay577.json()))
 
 
 def test_w576_p218a_an_absence_reaches_the_reader(client):

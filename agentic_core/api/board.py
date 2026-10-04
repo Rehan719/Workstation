@@ -564,21 +564,32 @@ def _director_grounding(did: str, scope: str = "workstation") -> str:
                     f"circadian {(ctx.get('circadian') or {}).get('cycle')}; "
                     f"ATP {(ctx.get('metabolic') or {}).get('atp_ratio')}")
         if did == "dir_operations":
-            from agentic_core.config import data_path, load_json_tolerant
-            runs = load_json_tolerant(data_path("org_cascade_runs.json"), []) or []
+            from agentic_core.config import data_path, read_json_reported
+            runs, _why = read_json_reported(data_path("org_cascade_runs.json"), [])
+            runs = runs if isinstance(runs, list) else []
             last = runs[-1] if runs else {}
-            return (f"org cascade runs: {len(runs)}; last quality: "
-                    f"qms={((last.get('quality') or {}).get('qms_gate_passed'))} "
-                    f"coverage={((last.get('quality') or {}).get('delivery_coverage'))}")
+            # W577 (FU-298) — this string IS the director's premise. An unreadable history read as
+            # "org cascade runs: 0", which a deliberation takes as the fact that none have run. This
+            # function's own docstring promises a system that cannot be read is reported unavailable
+            # and never fabricated; a tolerant count was fabricating one.
+            return (f"org cascade runs: {len(runs)}"
+                    + (f" (INCOMPLETE — the run history could not be read whole: {_why}; the true "
+                       f"count is at least this)" if _why else "")
+                    + f"; last quality: "
+                    + f"qms={((last.get('quality') or {}).get('qms_gate_passed'))} "
+                    + f"coverage={((last.get('quality') or {}).get('delivery_coverage'))}")
         if did == "dir_finance":
             from agentic_core.api.operational_excellence import _load as _ops
             rows = [r for r in _ops()][-100:]
             ok = sum(1 for r in rows if r.get("success"))
             return f"recent operational rows: {len(rows)}, success rate {round(ok / len(rows), 2) if rows else 'n/a'} (virtual WST economy; real-money rails DISABLED)"
         if did == "dir_evolution":
-            from agentic_core.config import data_path, load_json_tolerant
-            dev = load_json_tolerant(data_path("tier_development.json"), {}) or {}
-            return f"active Development Actions: {len(dev)} tier edges under continual improvement"
+            from agentic_core.config import data_path, read_json_reported
+            dev, _why = read_json_reported(data_path("tier_development.json"), {})
+            dev = dev if isinstance(dev, dict) else {}
+            return (f"active Development Actions: {len(dev)} tier edges under continual improvement"
+                    + (f" (INCOMPLETE — the development record could not be read whole: {_why}; the "
+                       f"true number is at least this)" if _why else ""))
     except Exception as exc:
         return f"live reading unavailable ({str(exc)[:60]})"
     return "no live reading defined"
