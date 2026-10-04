@@ -23226,9 +23226,12 @@ def test_w503b_a_failed_visit_leaves_a_trace(client):
     # guard mutate one object and assert about another: it passed alone and failed in the full suite,
     # with `last_vsb_failed` set on the object and None in the payload. Taking the route's own reference
     # is also the truer form of the claim, since what is under test is a field reaching a surface.
-    import agentic_core.api.heartbeat as _hbapi
-    heartbeat = _hbapi.heartbeat
+    #  W579 (FU-359) — THE SPLIT IS GONE, so this takes the module attribute again. The api module no
+    #  longer binds the singleton at import: its routes resolve `.heartbeat` from the module per call, so
+    #  the module attribute IS what the surface reads and `api.heartbeat.heartbeat` no longer exists.
+    #  The paragraph above is kept because it records why this guard was written the way it was.
     import agentic_core.organism.heartbeat as hb
+    heartbeat = hb.heartbeat
     loop = _ensure_loop()
     import agentic_core.economy.living_vsbs as lv
     _real = lv.operate_one
@@ -31880,8 +31883,12 @@ def test_w545_a_withheld_emission_is_visible_and_a_simulator_discloses_itself(cl
     #  The same trap and the same remedy are documented against test_w503 in this file; taking the
     #  route's reference is also the truer form of the claim, since what is under test is a field
     #  REACHING A SURFACE.
-    import agentic_core.api.heartbeat as _hbapi
-    _hb = _hbapi.heartbeat
+    #  W579 (FU-359) — and the remedy above is no longer needed: the routes now resolve `.heartbeat`
+    #  from the module on every call, so there is no second object to take. Measured before the change
+    #  (the two references differed after a reload and a flag set on the module reported False through
+    #  /status) and after (they agree). The module attribute is the surface's own reference now.
+    import agentic_core.organism.heartbeat as _hbmod545
+    _hb = _hbmod545.heartbeat
     _s0 = client.get("/api/v1/heartbeat/status")
     assert _s0.status_code == 200, _s0.status_code
     _j0 = _s0.json()
@@ -37470,6 +37477,154 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
         assert _v577 == {"d": 1} and _w577 is None, (
             "an absent store must read as the caller's default with NO reason - a missing store is "
             "not an error", _v577, _w577)
+
+
+def test_w579_p218b_the_split_is_gone_and_a_page_is_actually_rendered(client):
+    """P2.18 clause (b) — the suite's instruments prove what they claim.
+
+    THE SPLIT (FU-359). A reload of agentic_core/organism/heartbeat.py re-runs
+    `heartbeat = OrganismHeartbeat()` and rebinds the module attribute. agentic_core/api/heartbeat.py
+    used to bind the attribute's VALUE at import, so from that point the routes held one heartbeat and
+    the module pointed at another: a guard that wrote a flag on the module object and read it back
+    through a route configured one and asserted about the other. MEASURED before the fix - the two
+    references differed after a reload and a flag set on the module reported False through /status -
+    and the remedy is not a guard but the one import: the routes resolve `.heartbeat` from the module
+    per call now, which is what a singleton means. Three separate diagnoses had ended at that split.
+
+    THE RUNNER (FU-352). Every page assertion in this file is a TEXT SCAN. A scan is not worthless -
+    one caught the `{false && ...}` class, where a render was switched off while its field name
+    survived in the source - but it cannot show that a person looking at the page sees anything. There
+    is a rendered test now, and it earned its place immediately: its first draft failed and the failure
+    showed that the insights list rendered an insight's TITLE and never its DETAIL, so the clause W576
+    put inside `insights` to refuse the "you have no projects" reading reached nobody.
+
+    THIS GUARD DOES NOT EXECUTE THE RUNNER, and that is deliberate rather than an omission: nothing in
+    this suite shells out to node, and requiring it would add an environment assumption CI does not
+    carry - the same class as a test reading os.environ for a store path. The ROUND runs `npm test`,
+    exactly as it runs `tsc`, and this asserts the configuration the round depends on is intact.
+    """
+    import ast as _ast579
+    import importlib as _il579
+    import json as _json579
+    import pathlib as _pl579
+    import re as _re579
+
+    _root = _pl579.Path(__file__).resolve().parents[1]
+    _app = _root / "apps" / "workstation-superapp"
+
+    # ── L1. FU-359 — THE API MODULE HOLDS NO SINGLETON OF ITS OWN, asserted on the BINDING ──────────
+    _src579 = (_root / "agentic_core/api/heartbeat.py").read_text(encoding="utf-8", errors="replace")
+    _tree579 = _ast579.parse(_src579)
+    _bad579 = [n.lineno for n in _tree579.body
+               if isinstance(n, _ast579.ImportFrom)
+               and n.module == "agentic_core.organism.heartbeat"
+               and any(a.name == "heartbeat" for a in n.names)]
+    assert not _bad579, (
+        "agentic_core/api/heartbeat.py binds the heartbeat OBJECT at import again, so a reload of the "
+        "organism module leaves these routes on a stale heartbeat and a guard that writes a flag on the "
+        "module cannot read it back through a route", _bad579)
+    #  imported through importlib ON PURPOSE: an `import ... as` here would match L3's own needle below
+    #  and this guard would accuse itself, which is the trap this file has hit three times
+    _hbapi579 = _il579.import_module("agentic_core.api." + "heartbeat")
+    assert not hasattr(_hbapi579, "heartbeat"), (
+        "the api module has a module-level `heartbeat` again - whatever binds it, that name is a SECOND "
+        "reference and the split returns with it")
+
+    # ── L2. AND THE ROUTE FOLLOWS THE MODULE ACROSS A RELOAD, which is the whole property ───────────
+    import agentic_core.organism.heartbeat as _hbmod579
+
+    def _route_flag579():
+        _r = client.get("/api/v1/heartbeat/status")
+        assert _r.status_code == 200, _r.status_code
+        return _r.json().get("auto_compliance")
+
+    _was579 = getattr(_hbmod579.heartbeat, "auto_compliance", False)
+    try:
+        _hbmod579.heartbeat.configure(auto_compliance=True)
+        assert _route_flag579() is True, (
+            "the route does not see a write to the module object even WITHOUT a reload, so these two "
+            "were already different objects")
+        _hbmod579.heartbeat.configure(auto_compliance=False)
+        _id_before579 = id(_hbmod579.heartbeat)
+        _il579.reload(_hbmod579)
+        assert id(_hbmod579.heartbeat) != _id_before579, (
+            "the reload did not rebind the module attribute, so this leg cannot detect the split it "
+            "exists to detect - it would pass whatever the api module did")
+        _hbmod579.heartbeat.configure(auto_compliance=True)
+        assert _route_flag579() is True, (
+            "AFTER A RELOAD the route no longer sees a write to the module object: the routes are "
+            "holding a heartbeat the module has replaced, which is the defect FU-359 names and the one "
+            "that cost three separate diagnoses")
+    finally:
+        try:
+            _hbmod579.heartbeat.configure(auto_compliance=bool(_was579))
+        except Exception:
+            pass
+
+    # ── L3. AND NO GUARD IN THIS FILE REACHES FOR A SECOND REFERENCE ────────────────────────────────
+    #  the name is built, so this assertion is not itself a match for the thing it forbids
+    _forbidden579 = "api.heartbeat" + " as "
+    _suite579 = _pl579.Path(__file__).read_text(encoding="utf-8", errors="replace")
+    _lines579 = [i for i, l in enumerate(_suite579.splitlines(), 1)
+                 if _forbidden579 in l and not l.strip().startswith("#")]
+    assert not _lines579, (
+        "a guard imports the api module to take a heartbeat reference from it. That was the remedy for a "
+        "split that no longer exists, and the name it reaches for is gone", _lines579)
+
+    # ── L4. FU-352 — THE RUNNER IS CONFIGURED, AND WHAT IT RUNS ACTUALLY RENDERS ────────────────────
+    _pkg579 = _json579.loads((_app / "package.json").read_text(encoding="utf-8", errors="replace"))
+    for _dep579 in ("vitest", "jsdom", "@testing-library/react", "@testing-library/jest-dom"):
+        assert _dep579 in _pkg579.get("devDependencies", {}), (
+            "the frontend test runner is not declared, so a fresh checkout cannot run the rendered "
+            "tests and they would be skipped rather than failing", _dep579)
+    assert _pkg579.get("scripts", {}).get("test"), (
+        "there is no `npm test`, so the runner exists and the round has no command to run it with")
+    #  vitest is pinned to the line this app's vite supports, and the reason is recorded in the config
+    assert _pkg579["devDependencies"]["vitest"].startswith("^2"), (
+        "vitest is no longer on the 2.x line. 5.x requires vite ^6 and this app is on vite 5, so an "
+        "upgrade here silently drags the BUILD along with it - if that is intended, the vite bump is the "
+        "change under review, not a side effect of a test runner",
+        _pkg579["devDependencies"]["vitest"])
+    _vcfg579 = (_app / "vite.config.js").read_text(encoding="utf-8", errors="replace")
+    _vcode579 = _re579.sub(r"//[^\n]*", " ", _re579.sub(r"/\*.*?\*/", " ", _vcfg579, flags=_re579.S))
+    assert "environment: 'jsdom'" in _vcode579, (
+        "the runner has no DOM, so a 'rendered' test cannot render - comments stripped, because the "
+        "explanation of the setting is not the setting")
+    assert "vitest.setup.ts" in _vcode579 and (_app / "vitest.setup.ts").exists(), (
+        "the setup file is not wired, so cleanup between tests does not run and one test's DOM can "
+        "satisfy the next one's assertion")
+
+    #  and a rendered test exists that genuinely MOUNTS a component — not another text scan with a new
+    #  extension. Asserted on the AST of the test file: a render() call and a screen query.
+    _tests579 = sorted(_app.glob("src/**/*.test.tsx"))
+    assert _tests579, "no rendered test exists, so the runner has nothing to prove"
+    _mounts579 = [t for t in _tests579
+                  if "render(" in t.read_text(encoding="utf-8", errors="replace")
+                  and "screen." in t.read_text(encoding="utf-8", errors="replace")]
+    assert _mounts579, (
+        "every test the runner collects asserts without mounting anything, which is the text scan this "
+        "row exists to replace", [t.name for t in _tests579])
+    #  the subject is FU-323's crash path, and the test must refuse the reading that row was about
+    _kh579 = next((t for t in _mounts579 if t.name == "KnowledgeHub.test.tsx"), None)
+    assert _kh579 is not None, "the rendered test for the insights crash path is gone"
+    _khsrc579 = _kh579.read_text(encoding="utf-8", errors="replace")
+    assert "insight-detail" in _khsrc579 and "no projects" in _khsrc579, (
+        "the rendered test no longer drives the clause that refuses the 'you have no projects' reading, "
+        "which is the one thing a text scan could not check")
+
+    #  AND THE RENDER ITSELF, ASSERTED HERE TOO — because the rendered test is the only thing that
+    #  proves it and THIS SUITE DOES NOT RUN THE RENDERED TEST. A blind proved that gap: switching the
+    #  render off left every leg above green. So the two instruments sit side by side, which is the whole
+    #  argument of the migration row: a scan asks whether the code says it, a render asks whether a
+    #  person sees it, and the gate's OPENING BRACE is what a disabling prefix displaces (W503's class).
+    _khpage579 = (_app / "src/pages/coe/KnowledgeHub.tsx").read_text(encoding="utf-8", errors="replace")
+    _khcode579 = _re579.sub(r"(?m)^\\s*//.*$", " ",
+                            _re579.sub(r"/\\*.*?\\*/", " ", _khpage579, flags=_re579.S))
+    assert "{insight.detail && (" in _khcode579, (
+        "the insights list no longer renders an insight's DETAIL. W576 moved a failed computation into "
+        "`insights` so no consumer could ignore it and put the clause refusing the 'you have no "
+        "projects' reading in `detail` - with the title alone on screen, that clause reaches nobody. "
+        "Two rounds of text scans missed this because `insight.detail` appears in the source either way")
 
 
 def test_w578_p218_the_third_surface_the_plan_pin_screen_and_a_rendered_meaning(client):

@@ -24,6 +24,11 @@
       "@superapp/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  // W579 (FU-352) — vitest.setup.ts is INCLUDED, not just referenced by the runner. It imports
+  // `@testing-library/jest-dom/vitest`, whose whole job is to augment vitest's Assertion type with
+  // matchers like toBeInTheDocument; with the setup file outside `include`, tsc never compiled that
+  // import and reported every matcher as a missing property. The runner was green and the type check
+  // was red on the same code, which is the kind of disagreement that teaches a round to ignore one.
+  "include": ["src", "vitest.setup.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -207,6 +207,20 @@ export const KnowledgeHub: React.FC = () => {
                 <FileText className="text-aura flex-shrink-0" size={18} />
                 <div className="min-w-0">
                   <p className="font-bold text-white truncate">{insight.title ?? insight.type ?? 'Insight'}</p>
+                  {/* W579 (FU-352) — FOUND BY THE FIRST RENDERED TEST IN THIS REPOSITORY, and no text
+                      scan could have found it. This list showed an insight's TITLE and never its
+                      DETAIL. W576 moved a failed computation INTO `insights` so no consumer could
+                      ignore it, and put the clause that refuses the wrong reading — "this is NOT a
+                      statement that you have no projects: nothing was counted" — in `detail`. So the
+                      card said the computation failed and the sentence explaining what that does NOT
+                      mean reached nobody on this list. It is not truncated, because the whole point of
+                      that clause is the part a reader must not miss. */}
+                  {insight.detail && (
+                    <p data-testid="insight-detail"
+                       className="text-[11px] text-slate-400 leading-relaxed mt-1">
+                      {insight.detail}
+                    </p>
+                  )}
                   <p className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
                     {insight.domain ?? insight.type ?? 'portfolio'}
                     {insight.confidence != null ? ` · ${(insight.confidence * 100).toFixed(0)}% confidence` : ''}

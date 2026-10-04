@@ -6213,11 +6213,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W579",
       "note": "",
       "tier": 2,
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The frontend test runner exists and the FIRST rendered page guard in this repository runs: vitest 2.1.9 (pinned to the 2.x line because 5.x requires vite ^6 and this app is on vite 5.4 - upgrading the build to satisfy a test runner is a change nobody asked for and the one most likely to break the bundle), jsdom, @testing-library/react and jest-dom, a jsdom test block with a setup file, and npm test / npm run test:watch. My own premise needed correcting first: 317 packages are already hoisted at the repo root, so only four packages were missing, not a 35-package tree, and @vitejs/plugin-react was never needed because this app uses plugin-react-swc. THE TEST EARNED ITS PLACE IMMEDIATELY: its first draft asserted the insights-error chip, failed, and the failure showed that W576's fix - moving a failed computation INTO insights so no consumer could ignore it - delivered a card whose DETAIL was never rendered, so the clause refusing the 'you have no projects' reading reached nobody. Two rounds of text scans missed it because insight.detail appears in the source either way. The remaining 81 scan-based page guards and 295 unexercised testids are scheduled as FU-399, which states in writing that a substring scan is NOT worthless - one caught the {false && ...} class in W577 - and that the two instruments answer different questions. This suite does not EXECUTE the runner: nothing here shells out to node and requiring it would add an environment assumption CI does not carry, so the round runs npm test as it runs tsc and the guard asserts the configuration plus the render's own gate, a gap a blind exposed."
     },
     {
       "id": "FU-353",
@@ -6351,11 +6354,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W579",
       "note": "",
       "tier": 2,
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "CLOSED BY REMOVING THE CLASS, NOT BY CLASSIFYING IT. The row asked for the 8 guards to be classified and the mutate-and-assert-through-a-route ones converted. Measured at HEAD with comments and strings blanked: 12 guards reference a heartbeat in code, not 8; 10 take the module reference, 7 mutate it, 2 already took the route's. Under the row's own predicate ZERO currently suffer the split, because a store side-effect is shared and only a FLAG read back through a route is broken. But the MECHANISM was live and I drove it: after importlib.reload the two references differed and a flag set on the module object reported False through /status. The cause was a single module-level 'from agentic_core.organism.heartbeat import heartbeat' in api/heartbeat.py binding the attribute's VALUE once at import; every other import of the singleton in the repo (five) sits inside a function and already re-resolved. The routes now resolve .heartbeat from the module per call, which is what a singleton means, and the probe confirms the route follows the module across a reload. That also made the W503/W549 remedy unnecessary and its name GONE, so both consumers were converted back to the module attribute in the same commit. A first classifier accused test_w545 - the one guard already fixed - because the comment documenting the trap contains the import line; the leg blanks comments and strings for that reason."
     },
     {
       "id": "FU-360",
@@ -7177,6 +7183,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the class behind clause (c)'s named single: FU-313 cannot record a commitment partly because the request model drops it, and that drop is platform-wide"
+    },
+    {
+      "id": "FU-399",
+      "title": "81 page guards are still text scans and 295 data-testid attributes are still unexercised, now that a renderer exists",
+      "why": "W579 installed the frontend runner (vitest 2.x pinned to the vite-5 line, jsdom, @testing-library/react + jest-dom) and wrote the FIRST rendered page guard in this repository. It earned its place immediately: its first draft asserted the insights-error chip, failed, and the failure showed that the insights list rendered an insight's TITLE and never its DETAIL - so the clause W576 deliberately moved INSIDE insights to refuse the 'you have no projects' reading reached no reader at all. A text scan found the string present in the source and would have concluded the opposite. THE SCALE: 81 tests in integration_tests/test_mvp_spine.py read a .tsx file and every one asserts by substring, and 295 data-testid attributes exist across the app for a renderer that until now did not exist. THIS IS NOT A REQUEST TO DELETE THE SCANS. A substring scan is not worthless and must not be characterised as such: one caught the {false && ...} class in W577, where a render was switched OFF while its field name survived in the source, and an AST or DOM check would have missed it. The two instruments answer different questions - a scan asks whether the code says it, a render asks whether a person sees it - and a claim about what a PERSON SEES belongs to the second. THE WORK, as a scheduled migration rather than one round: convert the guards whose claim is about what is RENDERED (an empty state, a disclosure chip, a figure with its basis, a control's direction), leave the ones whose claim is about the SOURCE (a binding present, a gate not disabled, a literal absent), and record which of the 295 testids are exercised so the count stops reading as coverage. ALSO: nothing in the Python suite shells out to node, so a guard that EXECUTES the runner would add an environment assumption CI does not carry - the round runs npm test the way it runs tsc, and the W579 guard asserts only that the configuration is intact and says so in writing.",
+      "source": "W579 (FU-352's remainder, scheduled as that row required)",
+      "found": "2026-10-04",
+      "files": [
+        "integration_tests/test_mvp_spine.py",
+        "apps/workstation-superapp/vite.config.js"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "clause (b) continues to own it: an instrument that says what it is, now that the second instrument exists"
     }
   ],
   "routes": [

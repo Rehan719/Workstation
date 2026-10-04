@@ -1,0 +1,11 @@
+[
+ {
+  "tag": "the insights list stops rendering an insight's detail",
+  "file": "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx",
+  "old": "                  {insight.detail && (",
+  "new": "                  {false && insight.detail && (",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "THE DEFECT THE FIRST RENDERED TEST FOUND. W576 moved a failed computation INTO `insights` so no consumer could ignore it and put the clause refusing the 'you have no projects' reading in `detail` - and this list showed the title only, so that clause reached nobody. A text scan finds `insight.detail` in the source either way, which is why no scan found it in two rounds."
+ }
+]

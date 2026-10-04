@@ -1,0 +1,65 @@
+[
+ {
+  "tag": "the api module binds the singleton at import again",
+  "file": "agentic_core/api/heartbeat.py",
+  "old": "from agentic_core.organism import heartbeat as _hb_mod",
+  "new": "from agentic_core.organism.heartbeat import heartbeat as _hb_mod_obj\nclass _Shim:\n    heartbeat = _hb_mod_obj\n_hb_mod = _Shim()",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT, restored by a different route than the original so the leg cannot be passing on the spelling: the routes again hold the OBJECT the module pointed at when they were imported, so a reload leaves them on a stale heartbeat. Measured before the fix - the two references differed and a flag set on the module reported False through /status. Three separate diagnoses had ended at this split."
+ },
+ {
+  "tag": "a guard reaches for a second heartbeat reference again",
+  "file": "integration_tests/test_mvp_spine.py",
+  "old": "    import agentic_core.organism.heartbeat as _hbmod545\n    _hb = _hbmod545.heartbeat",
+  "new": "    import agentic_core.api.heartbeat as _hbapi545\n    _hb = _hbapi545.heartbeat",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "The W549 remedy, reinstated after the split it worked around is gone. The name no longer exists, so this is now a NameError waiting for whoever runs that guard - and a round reading the comment above it would reinstate exactly this. The leg forbids the import rather than trusting the comment."
+ },
+ {
+  "tag": "the runner loses its DOM",
+  "file": "apps/workstation-superapp/vite.config.js",
+  "old": "      environment: 'jsdom',",
+  "new": "      // environment: 'jsdom',",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "Without a DOM a 'rendered' test cannot render, so the one instrument that answers what a PERSON SEES silently becomes another way of reading source. The leg strips comments before matching, so commenting the setting out does not leave the needle behind."
+ },
+ {
+  "tag": "the runner is no longer declared, so a fresh checkout cannot run it",
+  "file": "apps/workstation-superapp/package.json",
+  "old": "    \"vitest\": \"^2",
+  "new": "    \"_vitest\": \"^2",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "A rendered test that nobody can install is a test that is SKIPPED, and a skipped test reports as an absence of failure. Declaring the four devDependencies is what makes the green mean something on a machine other than this one."
+ },
+ {
+  "tag": "vitest moves off the line this app's vite supports",
+  "file": "apps/workstation-superapp/package.json",
+  "old": "    \"vitest\": \"^2",
+  "new": "    \"vitest\": \"^5",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "vitest 5 requires vite ^6 and this app is on vite 5.4, so this does not merely bump a test runner - it drags the BUILD with it, and this repo has already lost a production bundle to a chunking change. If the vite upgrade is wanted it is the change under review, not a side effect. The pin and its reason are both asserted."
+ },
+ {
+  "tag": "the rendered test stops driving the clause a scan cannot check",
+  "file": "apps/workstation-superapp/src/pages/coe/KnowledgeHub.test.tsx",
+  "old": "    const detail = await screen.findByTestId('insight-detail');",
+  "new": "    const detail = { textContent: 'NOT a statement that you have no projects, nothing was counted' } as HTMLElement;",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "The test would still PASS while mounting nothing relevant — a rendered guard degraded into an assertion about a literal the test itself wrote. That is the text scan returning in a new extension, which is precisely what FU-352 was about."
+ },
+ {
+  "tag": "the insights list stops rendering an insight's detail",
+  "file": "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx",
+  "old": "                  {insight.detail && (",
+  "new": "                  {false && insight.detail && (",
+  "selector": "w579_p218b",
+  "expect": "BLIND(red)",
+  "why": "THE DEFECT THE FIRST RENDERED TEST FOUND. W576 moved a failed computation INTO `insights` so no consumer could ignore it and put the clause refusing the 'you have no projects' reading in `detail` - and this list showed the title only, so that clause reached nobody. A text scan finds `insight.detail` in the source either way, which is why no scan found it in two rounds."
+ }
+]

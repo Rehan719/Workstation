@@ -36,5 +36,18 @@ export default defineConfig(({ mode }) => {
       // correctly. Keep the warning limit generous since the SPA is large.
       chunkSizeWarningLimit: 1600,
     },
+    // W579 (FU-352) — the frontend test runner. vitest is pinned to the 2.x line DELIBERATELY: 5.x
+    // requires vite ^6, this app is on vite 5.4, and upgrading the build to satisfy a test runner is a
+    // change nobody asked for and the one most likely to break the bundle (see the chunking note above
+    // for what that costs). `environment: jsdom` is what makes a render real rather than a text scan.
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: ['./vitest.setup.ts'],
+      // only the rendered tests — the Python suite owns everything else, and a runner that silently
+      // collected .py or e2e files would report a green nobody asked for
+      include: ['src/**/*.test.{ts,tsx}'],
+      restoreMocks: true,
+    },
   }
 })

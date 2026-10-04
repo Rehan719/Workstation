@@ -19,32 +19,39 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.organism.heartbeat import heartbeat
+#  W579 (FU-359) — THE MODULE, NOT THE ATTRIBUTE. `from ... import heartbeat` binds the singleton
+#  OBJECT once at import, so when a test reloads agentic_core/organism/heartbeat.py (which re-runs
+#  `heartbeat = OrganismHeartbeat()`) these routes keep the OLD object while the module attribute
+#  points at a new one. Measured: after a reload the two references differ, and a flag written on the
+#  module object reports False through /status. Three separate diagnoses have ended at that split.
+#  Binding the module and resolving `.heartbeat` per call is what a singleton means, and in
+#  production - where nothing reloads - the two forms are identical.
+from agentic_core.organism import heartbeat as _hb_mod
 
 router = APIRouter(prefix="/api/v1/heartbeat", tags=["organism-heartbeat"])
 
 
 @router.get("/status")
 async def status():
-    return heartbeat.status()
+    return _hb_mod.heartbeat.status()
 
 
 @router.post("/beat")
 async def beat():
     """Fire a single heartbeat now (cheap — pulse + homeostasis + transformation tick + UEG)."""
-    return await heartbeat.beat()
+    return await _hb_mod.heartbeat.beat()
 
 
 @router.post("/start")
 async def start():
-    heartbeat.start()
-    return {"running": heartbeat.running, "status": "started"}
+    _hb_mod.heartbeat.start()
+    return {"running": _hb_mod.heartbeat.running, "status": "started"}
 
 
 @router.post("/stop")
 async def stop():
-    heartbeat.stop()
-    return {"running": heartbeat.running, "status": "stopped"}
+    _hb_mod.heartbeat.stop()
+    return {"running": _hb_mod.heartbeat.running, "status": "stopped"}
 
 
 class ConfigureRequest(BaseModel):
@@ -58,6 +65,7 @@ class ConfigureRequest(BaseModel):
 
 @router.post("/configure")
 async def configure(req: ConfigureRequest):
-    heartbeat.configure(req.interval_seconds, req.auto_evolve, req.auto_economy, req.auto_align,
-                        auto_compliance=req.auto_compliance, auto_ship=req.auto_ship)
-    return heartbeat.status()
+    _hb_mod.heartbeat.configure(req.interval_seconds, req.auto_evolve, req.auto_economy,
+                                req.auto_align, auto_compliance=req.auto_compliance,
+                                auto_ship=req.auto_ship)
+    return _hb_mod.heartbeat.status()
