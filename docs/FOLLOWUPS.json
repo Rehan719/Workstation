@@ -6596,6 +6596,386 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Owner ruling 2026-10-03d: the folder is named and created EMPTY, and the jurisdiction is England and Wales with its basis in ONE home (agentic_core/legal/matter.json). The jurisdiction was INFERRED from this repository's own corpus - ACAS 26 times, Employment Tribunal not Industrial Tribunal, Equality Act 2010, all three ruling Northern Ireland out - and CONFIRMED by the Owner, not supplied by them. It was a typed literal in ten places in api/law.py plus the request default with no source anywhere, which is the class W565 removed from the suite constant. NO SUCCESSOR ROW for the folder being empty: bundle_indexing_may_start MEASURES the folder, so it cannot be forgotten the way a remembered obligation can."
+    },
+    {
+      "id": "FU-374",
+      "title": "The halal tool promises ingredient flags; the only screen it computes, and the three sections the floor withholds, never reach it",
+      "why": "a user makes a dietary decision on a faith surface from a tool that advertises flags it never shows, and the withheld sections are not disclosed as withheld",
+      "source": "W572 MILESTONE M1 (ledger v6) · R1.1",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-375",
+      "title": "The Compliance page names four consumers of the SS11 screen; two of them never call it",
+      "why": "a governance surface tells a reader the screen is integrated into four workflows when two contain no call, which is the exact claim SS11 makes and the exact thing a reader goes there to check",
+      "source": "W572 MILESTONE M1 (ledger v6) · R1.2",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx",
+        "agentic_core/economy/charity.py",
+        "agentic_core/vbs/quality.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-376",
+      "title": "The Genesis journey ticks Operate (run, defend, improve, grow) complete the moment a repo exists, while the entity's own record says autonomous cycles are OFF",
+      "why": "a founder reads that their business is running and defending itself from a mark written next to the state rather than from it",
+      "source": "W572 MILESTONE M1 (ledger v6) · R2.0",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-377",
+      "title": "Every established VSB is stamped stage commercialise as a hardcoded literal, and the cockpit badge and shipped README both print it beside 'body pending'",
+      "why": "the lifecycle stage is the single field that says how far an entity has got, and it is a constant printed next to a field admitting the entity is unbuilt",
+      "source": "W572 MILESTONE M1 (ledger v6) · R2.1",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-378",
+      "title": "The repository card prints 9 files and 10,656 bytes with a 9-path tree for a repository holding 30 files and 87,171 bytes, omitting every Website, Web-app and Phone-app file",
+      "why": "the founder's deliverable is the repository, and the card that describes it undercounts it by two thirds while naming a complete-looking tree",
+      "source": "W572 MILESTONE M1 (ledger v6) · R2.2",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-379",
+      "title": "The SS4 lifecycle stage rail marks all six stages complete on a journey the backend stopped at stage 5",
+      "why": "the rail is the surface that answers 'is it finished', and it answers yes on a run that did not finish",
+      "source": "W572 MILESTONE M1 (ledger v6) · R2.3",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-380",
+      "title": "The shipped repository calls its Website, Web app and Phone app scaffolds that are NOT built, compiled or running, in the same manifest whose computed field calls one a generated PWA",
+      "why": "two statements about the same artefact in one file disagree, so whichever the reader believes the manifest told them the other",
+      "source": "W572 MILESTONE M1 (ledger v6) · R2.4",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-381",
+      "title": "The living-deliverable chip claims producing it expended metabolic ATP and prints a percentage the same payload states is a simulation that cannot fall",
+      "why": "a cost figure a reader could act on is rendered from a simulated value the payload itself disclaims one field away",
+      "source": "W572 MILESTONE M1 (ledger v6) · R2.5",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/pages/Deliverables.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-382",
+      "title": "The living plan attributes the platform's own placeholder sentence to the Owner, and that attribution is what keeps the heading Chief's Opening",
+      "why": "a sentence no person wrote is published under a named person, and the heading's truth rests entirely on the false attribution",
+      "source": "W572 MILESTONE M1 (ledger v6) · R3.0",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/components/PlanOpening.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-383",
+      "title": "The Board Pack reports all four SS17.3 layers PRESENT when Strategic holds only a pending placeholder and Action Plan only a roster, and the honest basis cannot be reached on the page",
+      "why": "PRESENT is computed from the key existing rather than from its content, and the page offers no way to see which it was",
+      "source": "W572 MILESTONE M1 (ledger v6) · R3.1",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-384",
+      "title": "The AI CEO surface prints a Board directives section containing three invented bullets while the same card states it was grounded in 0 directives",
+      "why": "the card discloses its own groundlessness and prints the invention anyway, so the disclosure reads as a caveat on real directives",
+      "source": "W572 MILESTONE M1 (ledger v6) · R3.2",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/v138/ceo.py",
+        "apps/workstation-superapp/src/pages/CEOChat.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-385",
+      "title": "The Strategic and Action-Plan cadence layers of the Living Business System do not exist: nothing refreshes them quarterly, weekly, on market signal or on a KPI",
+      "why": "the cadence IS the layer, and naming a layer whose refresh nothing performs makes the living system read as running",
+      "source": "W572 MILESTONE M1 (ledger v6) · R3.4",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/management_systems.py",
+        "agentic_core/organism/heartbeat.py",
+        "agentic_core/api/board.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-386",
+      "title": "SS17.4 Mode 2, the Expert to Digital-Twin human node, is not built: the twin store is empty and the Chief is a standing charter plus stored instructions",
+      "why": "Mode 2 is one of the three integration modes the vision names, and the surface presents a charter as the node",
+      "source": "W572 MILESTONE M1 (ledger v6) · R3.7",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/digital_twin.py",
+        "agentic_core/api/board.py",
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-387",
+      "title": "The Self Vision introspection page publishes a fabricated architecture version, immune health relabelled as whole-system health, and the simulated ATP figure as a live vital",
+      "why": "the page whose whole purpose is the platform telling the truth about itself carries three untrue vitals",
+      "source": "W572 MILESTONE M1 (ledger v6) · R4.0",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/pages/cognitive/Introspection.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-388",
+      "title": "User design control over the VSB organisation structure does not exist: the officer roster is a module literal and the Cockpit's organisational hierarchy a hardcoded seven-tier array",
+      "why": "the surface presents a structure as the user's own design when no input of theirs can change it",
+      "source": "W572 MILESTONE M1 (ledger v6) · R4.4",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-389",
+      "title": "The Respiratory layer has no implementation on any running path: the module the product names for it has no importer, and the Agent Hub the vision names instead subscribes no executor",
+      "why": "one of the seven biomimetic layers is named on a reached surface with nothing behind it on either candidate path",
+      "source": "W572 MILESTONE M1 (ledger v6) · R4.6",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/molecular/triad_integration.py",
+        "agentic_core/vbs/quality.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-390",
+      "title": "Both global navigation surfaces advertise eight named capabilities that resolve to Page Not Found",
+      "why": "the command palette and the search mesh are how a user discovers the platform, and eight of their entries lead nowhere",
+      "source": "W572 MILESTONE M1 (ledger v6) · R5.0",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/components/SearchMeshModal.tsx",
+        "apps/workstation-superapp/src/components/layout/CommandPalette.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-391",
+      "title": "The Employment Application Studio renders the prompt's own JSON placeholder as a job listing and reports Synthesised 1 illustrative listing",
+      "why": "a person acts on a job listing, and this one is the scaffolding of the request that asked for it",
+      "source": "W572 MILESTONE M1 (ledger v6) · R5.1",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/career.py",
+        "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
+    },
+    {
+      "id": "FU-392",
+      "title": "The Religion flagship's coach surface showed hard-coded Quranic text under a reference that is not its own, with no source",
+      "why": "scripture displayed under a citation that does not match it, from a literal in a .tsx with no provenance, on the surface where the constitution is strictest",
+      "source": "W572 MILESTONE M1 (ledger v6) · R5.3",
+      "found": "2026-10-04",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "done",
+      "closed_by": "W572",
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Arabic literal was REMOVED rather than corrected (this programme does not type scripture) and TajwidCoach made a consumer of GET /api/v1/qep/ayah/{s}/{a}, which serves alquran.cloud with provenance and separates a prepended Basmala with a stated basis. Every label - surah name, ref, source - is derived from the response, so a reference cannot drift from the text beside it. There is deliberately no fallback copy. Both paths driven on the running surface: 2:1 rendered under its own ref with the Basmala separated and its basis shown, and the refusal path showing no scripture and saying why. 0 Arabic codepoints remain in the file; tsc 0 errors."
+    },
+    {
+      "id": "FU-393",
+      "title": "The Cognition page prints API-surface coverage as realisation 97 percent, a consumer dropping the producer's own caveat",
+      "why": "the naming invariant is broken on a reached surface: coverage of an API surface is reported as how much of the capability is real",
+      "source": "W572 MILESTONE M1 (ledger v6) · R6.0",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/cognition.py",
+        "agentic_core/api/transformation.py",
+        "apps/workstation-superapp/src/pages/CognitionIntegration.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
+      "tier": 1
     }
   ],
   "routes": [

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Button, Badge, toast } from '@workstation/ui';
+import { apiJson, errorMessage } from '../../lib/api';
 import { QEPStudio } from '../../components/QEPStudio';
 import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity, Brain } from 'lucide-react';
 import QEPIntelligence from '../../components/qep/QEPIntelligence';
@@ -56,21 +57,98 @@ export const QEPReligionHub: React.FC = () => {
 // set in this repo (W148: image input was left unbuilt because the native floor has no vision
 // model, rather than faking analysis). The same applies here, and it matters more: a fabricated
 // judgement about someone's recitation of scripture is not a placeholder, it is a false witness.
+// W572 (MILESTONE M1 · R5.3) — THE AYAH WAS A LITERAL IN THIS FILE, UNDER A REFERENCE THAT WAS NOT
+// ITS OWN. The panel hard-coded the Basmala and badged it with a surah-and-ayah RANGE whose text
+// under Hafs is something else, with no source on the panel and no retrieval call anywhere in the
+// file. The prose below then vouched for the pairing, so the page asserted the correctness of its own
+// mislabelling — scripture under a citation that does not match it, on the one surface where the
+// constitution is strictest. (The exact wording of both is in W572's commit message, not here: a
+// comment that quotes the string its own guard forbids is the guard's first false positive.)
+//
+// THE PLATFORM ALREADY HELD THE HONEST PATH: GET /api/v1/qep/ayah/{s}/{a} serves alquran.cloud with
+// provenance and separates a prepended Basmala with a stated basis (W483). This panel is now a
+// CONSUMER of it, and EVERY LABEL IS DERIVED FROM THE RESPONSE — the surah name, the ref and the
+// source are the ones the source returned, never a literal that can drift away from the text beside
+// it, which is exactly how this defect was possible. No Arabic is stored in this file any more.
+//
+// AND THERE IS DELIBERATELY NO FALLBACK COPY. If the retrieval fails, the panel shows no scripture
+// and says why. A verse under the wrong reference is worse than no verse.
+const COACH_AYAH = { surah: 2, ayah: 1 };   // WHICH ayah is displayed; its LABEL comes from the response
+
+interface SourcedAyah {
+  ref: string;
+  text_arabic: string;
+  surah_name: string;
+  source: string;
+  basmala?: string;
+  basmala_separated?: boolean | null;
+  basmala_basis?: string | null;
+}
+
 const TajwidCoach = () => {
+  const [ayah, setAyah] = useState<SourcedAyah | null>(null);
+  const [ayahErr, setAyahErr] = useState('');
+
+  useEffect(() => {
+    let live = true;
+    apiJson<SourcedAyah>(`/api/v1/qep/ayah/${COACH_AYAH.surah}/${COACH_AYAH.ayah}`)
+      .then(d => { if (live) setAyah(d); })
+      .catch((e: unknown) => { if (live) setAyahErr(errorMessage(e)); });
+    return () => { live = false; };
+  }, []);
+
   return (
     <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
        <div className="@[440px]:col-span-8">
           <Card className="p-12 border-slate-900 bg-slate-950/20 relative min-h-[500px] flex flex-col items-center justify-center text-center">
              <div className="absolute top-10 left-10 flex items-center gap-4">
-                <Badge color="aura">Al-Baqarah: 1-5</Badge>
-                <Badge color="slate-800">Hafs 'an 'Asim</Badge>
+                {/* The reference is the one the SOURCE returned for the text below it. The old pair
+                    was two literals: a surah-ayah range the text was not, and a riwayah nothing in
+                    the response states. */}
+                {ayah ? (
+                  <>
+                    {/* The ref leads because it is unambiguous; the name is the SOURCE's own, which
+                        is Arabic, so it carries its own direction. It is omitted when the response
+                        has none rather than left as a dangling separator implying a missing word. */}
+                    <Badge color="aura">
+                      {ayah.ref}
+                      {ayah.surah_name ? <> · <span dir="rtl" className="font-arabic">{ayah.surah_name}</span></> : null}
+                    </Badge>
+                    <Badge color="slate-800">{ayah.source}</Badge>
+                  </>
+                ) : (
+                  <Badge color="slate-800">{ayahErr ? 'verse unavailable' : 'retrieving verse…'}</Badge>
+                )}
              </div>
 
              <div className="mb-12">
-                <p className="text-4xl font-bold text-white mb-4 leading-loose font-arabic" dir="rtl">
-                   بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                </p>
-                <p className="text-slate-500 italic">In the name of Allah, the Most Gracious, the Most Merciful.</p>
+                {ayah ? (
+                  <>
+                    {/* Where this edition PREPENDS the Basmala to ayah 1, the route returns it
+                        separately with the basis on which it was separated (W483). It is shown as
+                        what it is, above the ayah, rather than silently inside it. */}
+                    {ayah.basmala && ayah.basmala_separated && (
+                      <p className="text-2xl font-bold text-slate-400 mb-6 leading-loose font-arabic" dir="rtl"
+                         title={ayah.basmala_basis || undefined}>
+                         {ayah.basmala}
+                      </p>
+                    )}
+                    <p className="text-4xl font-bold text-white mb-4 leading-loose font-arabic" dir="rtl">
+                       {ayah.text_arabic}
+                    </p>
+                    {ayah.basmala_separated && ayah.basmala_basis && (
+                      <p className="mx-auto max-w-md text-[10px] text-slate-500 font-semibold leading-relaxed">
+                         {ayah.basmala_basis}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="max-w-md text-xs text-slate-500 font-semibold leading-relaxed">
+                     {ayahErr
+                       ? `No verse is shown: the sourced text could not be retrieved \u2014 ${ayahErr}`
+                       : 'Retrieving the verse from its source\u2026'}
+                  </p>
+                )}
              </div>
 
              <div className="w-32 h-32 rounded-full flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-600">
@@ -81,8 +159,11 @@ const TajwidCoach = () => {
              </p>
              <p className="mt-4 max-w-md text-xs text-slate-500 font-semibold leading-relaxed">
                 Assessing tajwid requires a phonetic model that is not provisioned on this
-                deployment. Rather than show a score nothing measured, this reports nothing. The
-                verse and riwayah above are real; no judgement is made about your recitation.
+                deployment. Rather than show a score nothing measured, this reports nothing.
+                {ayah
+                  ? ` The text above was retrieved from ${ayah.source} at ${ayah.ref}: it is not stored in this page and is never generated.`
+                  : ' This page keeps no copy of the Qur\u2019an to fall back on, so when the source cannot be reached it shows no verse at all.'}
+                {' '}No judgement is made about your recitation.
              </p>
           </Card>
        </div>

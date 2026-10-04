@@ -1,0 +1,191 @@
+[
+ {
+  "tag": "a component that holds Arabic starts rendering it",
+  "file": "apps/workstation-superapp/src/lib/i18n.tsx",
+  "old": "import { getPrefs } from './userPrefs';",
+  "new": "import { getPrefs } from './userPrefs';\n// font-arabic",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L1. The guard is SCOPED to components that style text as Arabic, so the scoping itself must work: a file holding 1,937 Arabic characters must come into scope the moment it renders them. If this passes, the guard is watching a fixed list of two filenames rather than a property, and the next scripture surface is unguarded."
+ },
+ {
+  "tag": "the typist's hint becomes displayed content",
+  "file": "apps/workstation-superapp/src/components/QEPStudio.tsx",
+  "old": "              placeholder=\"",
+  "new": "              title=\"",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L1. The one Arabic a scripture surface may legitimately hold is an INPUT PLACEHOLDER — a hint to the typist, not content the page asserts. Moving that same string into a rendered attribute must fail, or the exclusion is a hole wide enough to put scripture through."
+ },
+ {
+  "tag": "the panel stops retrieving and goes back to holding",
+  "file": "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+  "old": "    apiJson<SourcedAyah>(`/api/v1/qep/ayah/${COACH_AYAH.surah}/${COACH_AYAH.ayah}`)",
+  "new": "    Promise.resolve({ ref: '2:1', text_arabic: '', surah_name: '', source: 'local' } as SourcedAyah)",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L2. This is the defect's exact shape returning: a verse-shaped object built in the page, with a reference the page chose. It even keeps the field names, so every derived label still renders — only the SOURCE is gone, which is the whole finding."
+ },
+ {
+  "tag": "the reference stops being read off the response",
+  "file": "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+  "old": "                      {ayah.ref}\n",
+  "new": "                      2:1\n",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L2. A citation typed into the page is free to drift from the text beside it the moment the displayed ayah changes — which is precisely how a Basmala came to be badged as a different surah's opening. Derivation is the fix; a correct-looking literal is not."
+ },
+ {
+  "tag": "a surah-and-ayah citation is written into the page again",
+  "file": "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+  "old": "                    <Badge color=\"slate-800\">{ayah.source}</Badge>",
+  "new": "                    <Badge color=\"slate-800\">{ayah.source}</Badge>\n                    <Badge color=\"aura\">Baqarah: 1-5</Badge>",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L2's shape leg. The derived labels all survive this — the page still reads ayah.ref and ayah.source — so only a check on the CITATION SHAPE catches a hand-written reference added beside them. Without it, the guard passes while the original defect sits on the same line."
+ },
+ {
+  "tag": "the page stops saying it has nothing to fall back on",
+  "file": "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+  "old": "                  : ' This page keeps no copy of the Qur\\u2019an to fall back on, so when the source cannot be reached it shows no verse at all.'}",
+  "new": "                  : ' The verse could not be loaded just now.'}",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L3. The honest property is not that the page handles an error but that it holds NOTHING to fall back on. A page with a spare copy renders true-looking scripture from a source it never reached, and the reader cannot tell the difference — so the claim has to be on the surface, and it has to be checked."
+ },
+ {
+  "tag": "the page vouches for its own pairing again",
+  "file": "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+  "old": "                {' '}No judgement is made about your recitation.",
+  "new": "                {' '}The verse and riwayah above are real; no judgement is made about your recitation.",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L3. The sentence that made the original finding worse: the page asserting the correctness of its own labelling. It is plausible prose, it reads as reassurance, and it is exactly what a surface must not say about something it did not verify."
+ },
+ {
+  "tag": "the handler stops returning a field the page prints",
+  "file": "agentic_core/religious_domain/api.py",
+  "old": "        \"surah_name\": ayah.get(\"surah\", {}).get(\"name\", \"\"),",
+  "new": "        \"surah\": ayah.get(\"surah\", {}).get(\"name\", \"\"),",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L4. A renamed producer field is silent in JavaScript: the page renders `undefined`, which beside scripture is a blank label where a citation belongs. This is the producer/consumer class that the ledger renderer hit in this same round with `title` vs `section`."
+ },
+ {
+  "tag": "an ayah that does not exist stops refusing",
+  "file": "agentic_core/religious_domain/api.py",
+  "old": "        raise HTTPException(status_code=422,\n                            detail=f\"surah {surah_number} has {_AYAH_COUNTS[surah_number]} ayaat — \"",
+  "new": "        raise HTTPException(status_code=404,\n                            detail=f\"surah {surah_number} has {_AYAH_COUNTS[surah_number]} ayaat — \"",
+  "selector": "scripture",
+  "expect": "BLIND(red)",
+  "why": "L4. The panel's no-verse path rests on the route refusing a reference that does not exist. If the refusal changes shape the page's honest branch is still reachable, but the guard must notice, because the alternative — an upstream 404 rebranded as something else — is the exact rebranding this route was fixed for earlier."
+ },
+ {
+  "tag": "the tier table counts the findings nobody could reproduce",
+  "file": "scripts/render_fidelity_ledger.py",
+  "old": "    tiers = Counter(standing_tier(f, v) for _, _, f, v, sv, how in rows\n                    if sv != \"DELIVERED\" and how != \"refuted\")",
+  "new": "    tiers = Counter(standing_tier(f, v) for _, _, f, v, sv, how in rows\n                    if sv != \"DELIVERED\")",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L1. The committed defect, restored. A refuted finding has no standing at all, so counting its tier puts work into a phase bucket on the strength of a claim that failed — it read tier 3 as 15 where 12 stood."
+ },
+ {
+  "tag": "a refuter tightening a tier becomes invisible",
+  "file": "scripts/render_fidelity_ledger.py",
+  "old": "    tier_harsher = sum(1 for now, was in _tier_moves\n                       if isinstance(now, int) and isinstance(was, int) and now < was)",
+  "new": "    tier_harsher = 0",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L2. With the counter dead the sentence still renders and still looks informative; it simply reports that no refuter found an assessor too kind. That is how the defect read in v6 — a plausible zero beside four escalations into the measure the milestone is scored on."
+ },
+ {
+  "tag": "an escalation into tier 1 stops being named",
+  "file": "scripts/render_fidelity_ledger.py",
+  "old": "    tier_into_1 = sum(1 for now, was in _tier_moves\n                      if now == 1 and isinstance(was, int) and was != 1)",
+  "new": "    tier_into_1 = sum(1 for now, was in _tier_moves\n                      if now == 1 and isinstance(was, int) and was != 1 and now > was)",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L2. A condition that can never hold — now == 1 and now > was and was != 1 — so the count is always zero while the code still reads like a computation. A guard that only checked the counter EXISTS would pass this; the leg has to drive a real escalation through and read the number out."
+ },
+ {
+  "tag": "a nameless finding is written instead of refused",
+  "file": "scripts/render_fidelity_ledger.py",
+  "old": "            if not _section:\n                raise SystemExit(",
+  "new": "            if False and not _section:\n                raise SystemExit(",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L3. The `if False and` shape that made four blinds vacuous earlier tonight: every message string survives, so a check on the refusal's WORDING still passes. The leg must assert that the render FAILED and that no file was written."
+ },
+ {
+  "tag": "a figure is typed into the instrument again",
+  "file": "scripts/render_fidelity_ledger.py",
+  "old": "      f\" {tier_into_1_read_milder} of the escalations into tier 1 had the verdict axis call them\"",
+  "new": "      f\" two of the escalations into tier 1 had the verdict axis call them\"",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L4. The first draft of this very sentence, restored. It is TRUE of v6 and of no other edition — FU-365's class exactly: a number written into an instrument is right once and then lies, in the direction of the round that wrote it."
+ },
+ {
+  "tag": "the ledger's table and its headings disagree",
+  "file": "docs/VISION_FIDELITY_LEDGER.md",
+  "old": "| **1** | **20** |",
+  "new": "| **1** | **19** |",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L5. The milestone is scored on this number, and it is printed in two places that are computed differently. If they can disagree without anything noticing, the count a round reports is whichever one it happened to read."
+ },
+ {
+  "tag": "the plan reports a count the ledger does not",
+  "file": "docs/FABLE_DELIVERY_PROMPT.md",
+  "old": "STANDING TIER-1 COUNT = 20 — NOT MET.",
+  "new": "STANDING TIER-1 COUNT = 12 — NOT MET.",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L5. The plan is what the next round reads when it decides what is left. A milestone result recorded in the plan that disagrees with the ledger it cites is the stale-figure class the external assessments kept inheriting from the README."
+ },
+ {
+  "tag": "the plan cites an edition that is not on disk",
+  "file": "docs/FABLE_DELIVERY_PROMPT.md",
+  "old": "ledger v6 issued (60\n      findings",
+  "new": "ledger v5 issued (60\n      findings",
+  "selector": "misreport",
+  "expect": "BLIND(red)",
+  "why": "L5. Citing the previous edition would make the plan's record point at a superseded measurement that is still on disk and still readable — a reader would find a real document saying 27, and nothing would be obviously wrong."
+ },
+ {
+  "tag": "a row id is baked into P2.18's own bar",
+  "file": "docs/FABLE_DELIVERY_PROMPT.md",
+  "old": "          names them saying so.",
+  "new": "          names them saying so (FU-313).",
+  "selector": "p24_is_two_items",
+  "expect": "BLIND(red)",
+  "why": "W572's narrowing fix. The leg went red because its slice ran to MILESTONE M2 and so read the newly chartered P2.19 as part of P2.18 — it was never P2.18's bar, it merely looked right while P2.18 was the last P2 item. The fix ends the bar at the next heading, and a narrowing fix is the shape that most easily leaves a guard unable to fail: this drives the real subject (a row id inside P2.18's own bar) through the narrowed slice. MEASURED before widening the rule instead: 12 of 19 P2 items cite row ids, so this is P2.18's convention and not the plan's."
+ },
+ {
+  "tag": "the sweep warns about a bad anchor instead of refusing",
+  "file": "scripts/blind_sweep.py",
+  "old": "        for _t, _f, _w in _bad:\n            print(\"  BAD ANCHOR  %-54s %s  (%s)\" % (_t[:54], _w, _f))\n        return 1",
+  "new": "        for _t, _f, _w in _bad:\n            print(\"  BAD ANCHOR  %-54s %s  (%s)\" % (_t[:54], _w, _f))",
+  "selector": "refuses_a_blind_it_cannot_apply",
+  "expect": "BLIND(red)",
+  "why": "The whole message still prints, so a check on the WORDING passes — and the sweep then runs every blind anyway, which is exactly the twenty minutes the refusal exists to save. The leg has to assert the exit code AND that no verdict line was produced."
+ },
+ {
+  "tag": "an ambiguous anchor is treated as applicable",
+  "file": "scripts/blind_sweep.py",
+  "old": "        if _hits != 1:",
+  "new": "        if _hits < 1:",
+  "selector": "refuses_a_blind_it_cannot_apply",
+  "expect": "BLIND(red)",
+  "why": "The needle-appears-twice class, which cost four vacuous verdicts across two rounds: mutating one occurrence leaves the other, so the defect is never actually restored and the guard's green means nothing. An ambiguous anchor is as unusable as a missing one, and `!= 1` is the difference."
+ },
+ {
+  "tag": "the refusal fires on a sound blind file too",
+  "file": "scripts/blind_sweep.py",
+  "old": "        if _hits != 1:\n            _bad.append((_b.get(\"tag\", \"?\"), _b[\"file\"],",
+  "new": "        if True:\n            _bad.append((_b.get(\"tag\", \"?\"), _b[\"file\"],",
+  "selector": "refuses_a_blind_it_cannot_apply",
+  "expect": "BLIND(red)",
+  "why": "A gate that refuses everything is not a gate, and it is the failure mode a new refusal is most likely to ship with — it looks strict and it blocks all work. L3 drives a sound blind file through the same count the gate uses."
+ }
+]

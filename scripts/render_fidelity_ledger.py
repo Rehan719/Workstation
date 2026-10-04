@@ -184,7 +184,12 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
         for i, f in enumerate(r["findings"]):
             sv, how = standing(f, vmap.get(i))
             rows.append((k, i, f, vmap.get(i), sv, how))
-    tiers = Counter(standing_tier(f, v) for _, _, f, v, sv, _ in rows if sv != "DELIVERED")
+    # W572 — A REFUTED FINDING HAS NO STANDING TIER. This excluded DELIVERED but not struck
+    # entries, so v6's three refuted findings (each carrying corrected_tier 3) inflated tier 3
+    # from 12 to 15. A finding the refuter could not reproduce has no standing at all, and
+    # counting its tier puts work into a phase bucket on the strength of a claim that failed.
+    tiers = Counter(standing_tier(f, v) for _, _, f, v, sv, how in rows
+                    if sv != "DELIVERED" and how != "refuted")
 
     total = len(rows)
     assessed = Counter(f.get("verdict", "?").upper() for _, _, f, _, _, _ in rows)
@@ -194,6 +199,29 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
                      and VERDICTS.index(sv) > VERDICTS.index(f.get("verdict", "PARTIAL").upper()))
     refuted_down = sum(1 for _, _, f, v, sv, how in rows if how in ("refuted", "corrected")
                        and VERDICTS.index(sv) < VERDICTS.index(f.get("verdict", "PARTIAL").upper()))
+    # W572 — DIRECTION ON THE TIER, WHICH IS THE AXIS M1 IS SCORED ON. The two counters above compare
+    # VERDICT INDEX only, so they cannot see a refuter tightening a tier — and in v6 every one of the
+    # five HARSHER corrections was exactly that: R3.4 and R3.7 kept MISSING while moving tier 3 -> 1,
+    # R4.4 and R4.6 moved tier to 1 while their verdict index ROSE (counted as MILDER), R6.0 kept both.
+    # The rendered sentence therefore said "0 moved to a HARSHER verdict" while FOUR FINDINGS WERE
+    # ESCALATED INTO THE M1 MEASURE. A ledger about truth defects may not carry one.
+    _tier_moves = [(standing_tier(f, v), f.get("tier")) for _, _, f, v, sv, how in rows
+                   if how != "refuted" and sv != "DELIVERED"]
+    tier_harsher = sum(1 for now, was in _tier_moves
+                       if isinstance(now, int) and isinstance(was, int) and now < was)
+    tier_milder = sum(1 for now, was in _tier_moves
+                      if isinstance(now, int) and isinstance(was, int) and now > was)
+    tier_into_1 = sum(1 for now, was in _tier_moves
+                      if now == 1 and isinstance(was, int) and was != 1)
+    #  AND HOW MANY OF THOSE THE VERDICT AXIS CALLED MILDER — computed, not written down. The first
+    #  draft of the sentence below said "two belonged to findings whose tier went to 1" because that
+    #  was true of v6; a figure typed into an instrument is true for exactly one edition and then
+    #  lies, which is the FU-365 class (a guard pinned to today's state fails on success).
+    tier_into_1_read_milder = sum(
+        1 for _, _, f, v, sv, how in rows
+        if how == "corrected" and sv != "DELIVERED"
+        and standing_tier(f, v) == 1 and isinstance(f.get("tier"), int) and f["tier"] != 1
+        and VERDICTS.index(sv) > VERDICTS.index(f.get("verdict", "PARTIAL").upper()))
 
     out = []
     w = out.append
@@ -267,6 +295,17 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
     w(f"   HARSHER verdict (a DELIVERED claim that was not), {refuted_up} to a MILDER one (a STUB that was real")
     w("   machinery with an undisclosed shortfall). The verdict in each heading is the one the REFUTER")
     w("   stands behind; the assessor's original is shown where it differs.")
+    # W572 — AND THE TIER, SEPARATELY, BECAUSE THAT IS THE AXIS M1 IS SCORED ON. Reporting only
+    # the verdict said "0 moved to a HARSHER verdict" in an edition where FOUR findings were
+    # escalated into tier 1: a refuter can tighten the tier while leaving the verdict alone, and in
+    # that edition two of those four even had their verdict INDEX rise, so they counted as milder.
+    # EVERY FIGURE IN THE SENTENCE IS COMPUTED, including that last one — see tier_into_1_read_milder.
+    w(f"2a. **And on the TIER, which is the axis M1 is scored on:** {tier_harsher} finding(s)"
+      f" were made HARSHER by the refuter and {tier_milder} milder, with"
+      f" **{tier_into_1} escalated INTO tier 1** — the M1 measure itself. A refuter can tighten"
+      f" a tier while leaving the verdict untouched, and reporting only the verdict hid that:"
+      f" {tier_into_1_read_milder} of the escalations into tier 1 had the verdict axis call them"
+      f" MILDER.")
     w("3. **The floor is the environment.** A finding that says 'floor scaffold reached the user' is")
     w("   not a complaint that no model ran — it is a finding that the surface did not SAY so, or")
     w("   certified what it could not assess. That is the §15 principle-6 line, and it binds.")
@@ -330,10 +369,27 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
                 st = standing_tier(f, v)
                 at = f.get("tier")
                 tag += f" · tier {st if st is not None else '?'}" + (f" *(assessed tier {at})*" if v and v.get("corrected_tier") not in (None, at) else "")
-            w(f"### {k}.{i} · {f.get('section', '').strip()} — **{sv}**{tag}")
+            #  W572 — A NAMELESS FINDING IS NOT WRITEABLE. The first v6 draft rendered all 60 headings
+            #  as "### R1.0 ·  — **DOC_OVERCLAIM**" because the caller's field was `title` and this
+            #  reads `section`; `.get(..., '')` turned a lost field into blank prose instead of an
+            #  error, and the summary counts were all correct, so nothing else looked wrong. The
+            #  heading is the only handle a register row or a reader has on a finding.
+            _section = (f.get("section") or "").strip()
+            if not _section:
+                raise SystemExit(
+                    f"REFUSING TO WRITE: finding {k}.{i} has no `section`, so its heading would be "
+                    f"blank and the finding unnameable. The renderer's contract is `section` (the "
+                    f"finding's one-line title) — check the caller is not supplying it under "
+                    f"another key, e.g. `title`. Keys present: {sorted(f)}")
+            w(f"### {k}.{i} · {_section} — **{sv}**{tag}")
             w("")
             if f.get("severity"):
                 w(f"- **severity (assessor):** {clip(f['severity'], 200)}")
+            if f.get("why_this_tier"):
+                #  W572 — THE ASSESSOR'S TIER ARGUMENT, which is the only place the ledger says WHY a
+                #  finding sits in the bucket M1 is scored on. It had nowhere to go, so the M1 re-run
+                #  carried 52 such arguments into a transform that dropped them.
+                w(f"- **why it is this tier (assessor):** {clip(f['why_this_tier'], 900)}")
             w(f"- **claim:** {clip(f.get('vision_claim'), 600)}")
             w(f"- **observed:** {clip(f.get('observed'), 1400)}")
             w(f"- **evidence:** {clip(f.get('evidence'), 900)}")

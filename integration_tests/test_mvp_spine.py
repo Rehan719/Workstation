@@ -34671,8 +34671,22 @@ def test_w562_p24_is_two_items_and_the_new_one_has_a_bar_made_of_deliverables(cl
     #  have passed. It carries none anyway, and the reason was paid for in this round: FU-369 could not
     #  be moved out of P2.4 until a sentence naming it was rewritten. An id baked into a bar makes the
     #  row harder to move, and a bar of deliverables should not care which rows sit under it today.
-    _k, _l = _prompt.index("\n P2.18 "), _prompt.index("\n MILESTONE M2")
+    #  W572 — THE SLICE RAN TO MILESTONE M2 AND SO WAS NEVER P2.18's BAR. It only looked right while
+    #  P2.18 was the last P2 item: the moment M1 came back NOT MET and P2.19 was chartered to carry
+    #  the twenty, this leg read P2.19's text as P2.18's and went red on the plan advancing — FU-365's
+    #  class, in a guard whose own subject is a bar that must not go stale. The bar ends at the NEXT
+    #  heading, whatever that turns out to be.
+    #  AND THE RULE STAYS SPECIFIC TO P2.18, deliberately. MEASURED before widening it: 12 of the 19
+    #  P2 items cite row ids in their bars, so "a bar carries no row id" is NOT the plan's convention.
+    #  It is this item's, for the reason below — P2.18 is the sink chartered to RECEIVE arrivals, and
+    #  an id baked into its bar makes the row harder to move out again.
+    _k = _prompt.index("\n P2.18 ")
+    _nxt = _re562.search(r"\n (?:P\d+\.\d+ |MILESTONE |WHEN THE MILESTONES RUN)", _prompt[_k + 1:])
+    _l = (_k + 1 + _nxt.start()) if _nxt else _prompt.index("\n MILESTONE M2")
     _bar = _prompt[_k:_l]
+    assert _l > _k and len(_bar) < 12000, (
+        "P2.18's bar did not terminate at the next heading, so this leg is reading another item's "
+        "text as P2.18's", len(_bar))
     assert not _re562.findall(r"FU-\d+", _bar), (
         "a row id survives inside P2.18's bar", _re562.findall(r"FU-\d+", _bar))
     for _clause in ("(a) AN ABSENCE REACHES THE READER",
@@ -36386,3 +36400,328 @@ def test_w571_a_starved_refutation_cannot_read_as_a_complete_one(client):
         "without checking the disk and read as complete with agents dead")
     for _frag in ("before --agents", "after --result", "cleanup"):
         assert _frag in _flat571, ("the rhythm does not say how to invoke the gate", _frag)
+
+
+def test_w572_a_scripture_surface_holds_no_text_of_its_own(client):
+    """MILESTONE M1 · R5.3 — scripture under a citation that is not its own, on the strictest surface.
+
+    TajwidCoach hard-coded Arabic in the .tsx and badged it with a surah-and-ayah range whose text
+    under Hafs is something else. No source on the panel; the whole file contained no retrieval call
+    of any kind. And the panel's prose VOUCHED for the pairing, so the page asserted the correctness
+    of its own mislabelling.
+
+    THE FIX IS STRUCTURAL, so the guard is too. A reference cannot drift from the text beside it when
+    both come from the same response, so the legs below assert DERIVATION, not wording: no scripture
+    literal in a file that renders it, every label read off the response, and no fallback copy.
+    """
+    import ast as _ast572
+    import pathlib as _pl572
+    import re as _re572
+
+    _root = _pl572.Path(__file__).resolve().parents[1]
+    _app = _root / "apps" / "workstation-superapp" / "src"
+    _ARABIC = _re572.compile("[\u0600-\u06FF\u0750-\u077F\ufb50-\ufdff\ufe70-\ufeff]")
+    #  An input's placeholder is a HINT TO THE TYPIST, not content the page asserts. It is the one
+    #  Arabic a scripture surface may legitimately hold, so it is excluded by shape rather than by
+    #  naming the file that happens to have one today.
+    _PLACEHOLDER = _re572.compile(r'placeholder="[^"]*"')
+
+    # ── L1. THE CLASS: a component that RENDERS Arabic may not CONTAIN any ──────────────────────
+    #  Scoped to the files that style text as Arabic, because those are the ones that can display
+    #  scripture. Measured, not assumed: exactly two components render `font-arabic`.
+    _renderers = []
+    for _p in sorted(_app.rglob("*.tsx")):
+        if "node_modules" in _p.parts:
+            continue
+        _t = _p.read_text(encoding="utf-8")
+        if "font-arabic" in _t:
+            _renderers.append(_p)
+            _residue = _ARABIC.findall(_PLACEHOLDER.sub("", _t))
+            assert not _residue, (
+                f"{_p.name} styles text as Arabic AND holds {len(_residue)} Arabic character(s) "
+                "outside an input placeholder — scripture written into a source file cannot carry "
+                "provenance, and a reference beside it is free to be wrong (M1 R5.3)")
+    assert len(_renderers) >= 2, (
+        "no component renders font-arabic any more, so this guard would pass by having nothing to "
+        "check — it must be re-scoped rather than left vacuous", [p.name for p in _renderers])
+
+    # ── L2. THE PANEL IS A CONSUMER, AND EVERY LABEL IS DERIVED ─────────────────────────────────
+    _hub = _app / "pages" / "domains" / "QEPReligionHub.tsx"
+    _src = _hub.read_text(encoding="utf-8")
+    #  COMMENTS ARE NOT CODE. The blind that deleted the retrieval call PASSED this leg, because the
+    #  comment recording the fix names the route — the guard was reading its own documentation. Strip
+    #  comments first, then look for the CALL rather than the string.
+    _code = _re572.sub(r"/\*.*?\*/", "", _src, flags=_re572.S)
+    _code = "\n".join(_l for _l in _code.splitlines() if not _l.lstrip().startswith("//"))
+    assert _re572.search(r"apiJson<SourcedAyah>\(\s*`/api/v1/qep/ayah/", _code), (
+        "the religion hub no longer CALLS the sourced route (a mention in a comment is not a call)")
+    #  AND AT THE SITE, not anywhere in the file. `{ayah.ref}` occurs twice — once in the badge and
+    #  once inside `${ayah.ref}` in the prose — so a check over the whole file survives the badge
+    #  being replaced by a literal, which is the defect itself.
+    _badge = _code[_code.index("absolute top-10 left-10"):]
+    _badge = _badge[:_badge.index("</div>")]
+    for _derived in ("{ayah.ref}", "{ayah.source}"):
+        assert _derived in _badge, (
+            f"the citation badge does not render {_derived} — a label that is not read off the "
+            "response is a literal, which is the whole mechanism of this defect")
+    assert "{ayah.text_arabic}" in _code, "the verse itself is not read off the response"
+    #  THE REFERENCE MUST NOT BE WRITEABLE AS PROSE. A surah-ayah citation typed into the file is
+    #  exactly what was there before; any `Name: n-n` literal in this file is that shape returning.
+    _cite = _re572.compile(r'>\s*[A-Z][A-Za-z\'-]+:\s*\d+(-\d+)?\s*<')
+    assert not _cite.search(_code), (
+        "a surah-and-ayah citation is written into the page again rather than read from the source")
+
+    # ── L3. NO FALLBACK COPY, AND THE FAILURE PATH SHOWS NOTHING ────────────────────────────────
+    #  The honest property is not "it handles an error" but "it has nothing to fall back ON". A page
+    #  holding a spare copy would render something true-looking from a source it never reached.
+    #  The POSITIVE claims are checked on code only — a reassuring sentence that lives in a comment
+    #  is not on the surface a person reads. The NEGATIVE one is checked on the whole file, which is
+    #  stricter: the sentence that vouched for the pairing may not come back even as a comment.
+    _flatc = " ".join(_code.split())
+    _flat = " ".join(_src.split())
+    assert "keeps no copy of the Qur" in _flatc, (
+        "the panel no longer states that it holds no copy to fall back on, which is the claim that "
+        "makes its silence on failure meaningful")
+    assert "No verse is shown" in _flatc, "the failure path does not say that no verse is shown"
+    #  and the old sentence that vouched for the pairing has not come back
+    assert "riwayah above are real" not in _flat, (
+        "the page vouches for its own verse/reference pairing again")
+
+    # ── L4. THE PRODUCER/CONSUMER CONTRACT, checked against the handler that serves it ──────────
+    #  A page reading a field the route does not return renders `undefined` — which, for a citation
+    #  beside scripture, is a blank label under real text.
+    _api = (_root / "agentic_core" / "religious_domain" / "api.py").read_text(encoding="utf-8")
+    _ret = _api[_api.index('@router.get("/ayah/{surah_number}/{ayah_number}")'):]
+    _ret = _ret[:_ret.index("# \u2500\u2500 Hifz")] if "# \u2500\u2500 Hifz" in _ret else _ret[:6000]
+    for _field in ("ref", "text_arabic", "surah_name", "source", "basmala",
+                   "basmala_separated", "basmala_basis"):
+        assert f'"{_field}"' in _ret, (
+            f"the page reads ayah.{_field} but the handler no longer returns it, so the surface "
+            "renders an empty label beside scripture")
+    #  the route still REFUSES an ayah that does not exist, which is what the panel's refusal rests on
+    _bad = client.get("/api/v1/qep/ayah/2/999")
+    assert _bad.status_code == 422, (
+        "an out-of-range ayah no longer refuses, so the page's no-verse path cannot be reached",
+        _bad.status_code)
+    _ast572.parse(_api)
+
+
+def test_w572_the_fidelity_ledger_cannot_misreport_its_own_measure(client):
+    """MILESTONE M1 ran and the instrument that writes its result had two truth defects.
+
+    (1) The method sentence reported direction on the VERDICT axis only, so it printed that none had
+        been made harsher in an edition where FOUR findings were escalated INTO tier 1 — two of them
+        with their verdict index RISING, which the verdict axis counts as milder.
+    (2) The tier table excluded DELIVERED entries but not REFUTED ones, so three findings nobody could
+        reproduce still contributed their tier, inflating tier 3 from 12 to 15.
+
+    A ledger whose subject is truth defects on reached surfaces may not carry one. Both are driven
+    FUNCTIONALLY — the renderer is run on crafted input — because a source-text check cannot tell
+    whether a counter is actually consulted.
+    """
+    import json as _json572
+    import pathlib as _pl572
+    import re as _re572
+    import subprocess as _sp572
+    import sys as _sys572
+    import tempfile as _tf572
+
+    _root = _pl572.Path(__file__).resolve().parents[1]
+    _script = _root / "scripts" / "render_fidelity_ledger.py"
+    assert _script.is_file(), _script
+
+    def _render(regions, out_name="out.md"):
+        """Run the committed renderer on crafted input; return (returncode, stdout+stderr, text)."""
+        _d = _pl572.Path(_tf572.mkdtemp())
+        _src = _d / "in.json"
+        _src.write_text(_json572.dumps(regions), encoding="utf-8")
+        _dst = _d / out_name
+        _p = _sp572.run([_sys572.executable, str(_script), str(_src), str(_dst),
+                         "deadbeef", "2026-01-01", "8086", "6", "W572"],
+                        capture_output=True, text=True, encoding="utf-8",
+                        env=dict(__import__("os").environ, PYTHONIOENCODING="utf-8"))
+        _text = _dst.read_text(encoding="utf-8") if _dst.exists() else None
+        return _p.returncode, (_p.stdout or "") + (_p.stderr or ""), _text
+
+    def _f(i, verdict, tier, section="a finding with a name"):
+        return {"id": f"R1.{i}", "section": section, "verdict": verdict, "tier": tier,
+                "vision_claim": "c", "observed": "o", "evidence": "e"}
+
+    # ── L1. A REFUTED FINDING HAS NO STANDING TIER ──────────────────────────────────────────────
+    _regions = [{"region": "R1", "summary": "", "findings": [
+        _f(0, "STUB", 3), _f(1, "STUB", 3)], "verdicts": [
+        {"index": 0, "corrected_verdict": "STUB", "corrected_tier": 3, "refuted": False,
+         "reason": "r", "evidence": "x"},
+        {"index": 1, "corrected_verdict": "STUB", "corrected_tier": 3, "refuted": True,
+         "reason": "r", "evidence": "x"}]}]
+    _rc, _out, _text = _render(_regions)
+    assert _rc == 0, _out
+    _row = _re572.search(r"^\| 3 \| (\d+) \|", _text, _re572.M)
+    assert _row, "the tier table has no tier-3 row"
+    assert _row.group(1) == "1", (
+        "a REFUTED finding still contributes its tier, so a claim nobody could reproduce puts work "
+        "into a phase bucket — v6 read tier 3 as 15 when 12 stood", _row.group(1))
+
+    # ── L2. A TIER ESCALATION IS HARSHER, EVEN WHEN THE VERDICT INDEX RISES ─────────────────────
+    #  The exact v6 shape: STUB -> API_ONLY is a HIGHER verdict index (reads as milder) while the
+    #  tier moves 2 -> 1, which is the measure M1 is scored on.
+    _regions2 = [{"region": "R1", "summary": "", "findings": [_f(0, "STUB", 2)], "verdicts": [
+        {"index": 0, "corrected_verdict": "API_ONLY", "corrected_tier": 1, "refuted": False,
+         "reason": "r", "evidence": "x"}]}]
+    _rc2, _out2, _text2 = _render(_regions2, "out2.md")
+    assert _rc2 == 0, _out2
+    _flat2 = " ".join(_text2.split())
+    _m = _re572.search(r"on the TIER, which is the axis M1 is scored on:\*\* (\d+) finding\(s\)"
+                       r" were made HARSHER by the refuter and (\d+) milder, with \*\*(\d+) escalated"
+                       r" INTO tier 1\*\*", _flat2)
+    assert _m, ("the ledger no longer reports direction on the tier axis, so a refuter tightening a "
+                "tier is invisible in the summary", _flat2[:400])
+    assert (_m.group(1), _m.group(3)) == ("1", "1"), (
+        "a finding moved from tier 2 to tier 1 was not counted as harsher or as an escalation into "
+        "tier 1 — this is the case the verdict axis reports as MILDER", _m.groups())
+
+    # ── L3. A NAMELESS FINDING IS REFUSED, AND NOTHING IS WRITTEN ───────────────────────────────
+    #  The first v6 draft rendered sixty headings with an empty title, because the caller supplied
+    #  `title` and the renderer reads `section`. Every summary count was correct, so nothing else
+    #  looked wrong: a dropped field was silent.
+    _bad = [{"region": "R1", "summary": "", "findings": [
+        {"id": "R1.0", "title": "supplied under the wrong key", "verdict": "STUB", "tier": 2,
+         "vision_claim": "c", "observed": "o", "evidence": "e"}],
+        "verdicts": [{"index": 0, "corrected_verdict": "STUB", "corrected_tier": 2,
+                      "refuted": False, "reason": "r", "evidence": "x"}]}]
+    _rc3, _out3, _text3 = _render(_bad, "out3.md")
+    assert _rc3 != 0, "a finding with no heading was rendered rather than refused"
+    assert _text3 is None, "the renderer refused but wrote a file anyway"
+    assert "section" in _out3 and "title" in _out3, (
+        "the refusal does not name the field that is missing nor the key it was probably supplied "
+        "under, so a reader cannot act on it", _out3[:200])
+
+    # ── L4. THE FIGURES ARE COMPUTED, NOT WRITTEN DOWN ──────────────────────────────────────────
+    #  The first draft of that sentence ended "two belonged to findings whose tier went to 1" — true
+    #  of v6 and of no other edition. A figure typed into an instrument is FU-365's class: it is
+    #  right once and then lies, and it lies in the direction of the round that wrote it.
+    _rsrc = _script.read_text(encoding="utf-8")
+    _i = _rsrc.index("on the TIER, which is the axis M1 is scored on")
+    _sentence = _rsrc[_i:_rsrc.index('w("3.', _i)]
+    assert "tier_into_1_read_milder" in _sentence, (
+        "the count of escalations the verdict axis called milder is not computed in the sentence")
+    for _word in (" two ", " three ", " four ", " 2 of ", " 4 of "):
+        assert _word not in _sentence, (
+            f"the tier sentence writes {_word.strip()!r} as a literal where a count belongs", _word)
+
+    # ── L5. THE LEDGER AND THE PLAN AGREE ON THE MEASURE ────────────────────────────────────────
+    #  NOT pinned to twenty. The invariant that survives this item being worked is that the plan's
+    #  M1 record and the ledger it cites report the SAME count — a guard pinned to today's number
+    #  would go red the first time a round reduced it, which is FU-365 exactly.
+    _led = (_root / "docs" / "VISION_FIDELITY_LEDGER.md").read_text(encoding="utf-8")
+    _ver = _re572.search(r"^# Vision Fidelity Ledger \u2014 (v\d+) ", _led, _re572.M)
+    assert _ver, "the ledger has no version in its title"
+    _t1 = _re572.search(r"^\| \*\*1\*\* \| \*\*(\d+)\*\* \|", _led, _re572.M)
+    assert _t1, "the ledger's tier table has no tier-1 row"
+    _headings = len(_re572.findall(r"^### R\d+\.\d+ .*\u00b7 tier 1(?: |\*|$)", _led, _re572.M))
+    assert _headings == int(_t1.group(1)), (
+        "the ledger's own tier-1 TABLE and its tier-1 HEADINGS disagree, so the number the milestone "
+        "is scored on is not the number of findings carrying it",
+        _t1.group(1), _headings)
+    _plan = (_root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _flatp = " ".join(_plan.split())
+    assert f"ledger {_ver.group(1)} issued" in _flatp, (
+        f"the plan's milestone record does not cite the ledger edition on disk ({_ver.group(1)})")
+    assert f"STANDING TIER-1 COUNT = {_t1.group(1)}" in _flatp, (
+        "the plan reports a different standing Tier-1 count than the ledger it cites",
+        _t1.group(1))
+
+
+def test_w572_a_sweep_refuses_a_blind_it_cannot_apply(client):
+    """A blind whose anchor does not match is not a weak result — it is NO result.
+
+    `blind_sweep` already reported such a blind correctly, as BAD BLIND with no exit code. What it
+    did not do was say so UP FRONT: the verdict arrived at the end, after the whole sweep had been
+    paid for, and the fix-and-rerun cost another one. Two came back that way tonight from a
+    double-escaped em dash in a JSON blind file, which no amount of care in writing JSON prevents.
+
+    So the anchors are now all checked before any of them runs, and a bad one REFUSES the sweep
+    rather than warning about it — the point is to fix every bad anchor in one pass and then run once.
+    """
+    import json as _json572c
+    import pathlib as _pl572c
+    import subprocess as _sp572c
+    import sys as _sys572c
+    import tempfile as _tf572c
+
+    _root = _pl572c.Path(__file__).resolve().parents[1]
+    _sweep = _root / "scripts" / "blind_sweep.py"
+    assert _sweep.is_file(), _sweep
+
+    def _run(blinds):
+        _d = _pl572c.Path(_tf572c.mkdtemp())
+        _f = _d / "b.json"
+        _f.write_text(_json572c.dumps(blinds), encoding="utf-8")
+        return _sp572c.run([_sys572c.executable, str(_sweep), "--blinds", str(_f), "--shards", "2"],
+                           cwd=str(_root), capture_output=True, text=True, encoding="utf-8",
+                           env=dict(__import__("os").environ, PYTHONIOENCODING="utf-8"))
+
+    # ── L1. AN ANCHOR THAT MATCHES NOTHING REFUSES THE WHOLE SWEEP ──────────────────────────────
+    #  Paired with a blind whose anchor is FINE, so the refusal must come from the bad one rather
+    #  than from the sweep declining to start for some unrelated reason.
+    _p = _run([
+        {"tag": "a fine anchor", "file": "scripts/blind_sweep.py", "selector": "nothing_at_all",
+         "old": "def main() -> int:", "new": "def main() -> int:"},
+        {"tag": "an anchor that is in no file", "file": "scripts/blind_sweep.py",
+         "selector": "nothing_at_all", "old": "\u2014 a string no file contains \u2014", "new": "x"},
+    ])
+    assert _p.returncode == 1, ("a sweep with an unapplicable blind did not refuse", _p.returncode,
+                                (_p.stdout or "")[:300])
+    _out = (_p.stdout or "") + (_p.stderr or "")
+    assert "BAD ANCHOR" in _out and "an anchor that is in no file" in _out, (
+        "the refusal does not name the blind that cannot be applied", _out[:300])
+    assert "a fine anchor" not in _out.split("BAD ANCHOR")[0][-400:] or "BAD ANCHOR" in _out, _out[:200]
+    #  AND IT RAN NO TESTS. The whole point is to refuse before the expensive part.
+    assert "BLIND(red)" not in _out and "VACUOUS" not in _out, (
+        "the sweep ran blinds anyway, so the refusal saves nothing", _out[:300])
+
+    # ── L2. AN ANCHOR THAT MATCHES TWICE IS ALSO NO RESULT ──────────────────────────────────────
+    #  The needle-appears-twice class: mutating one occurrence leaves the other, so the defect is
+    #  not actually restored and a green guard means nothing. It is as unusable as a missing anchor.
+    #  DERIVED, not guessed: the first non-trivial line that occurs more than once in the sweep's own
+    #  source. A hardcoded needle here would be a guard pinned to today's file — the first draft used
+    #  "import io", which occurs exactly once, and the leg went red on its own premise.
+    _sweep_src = (_root / "scripts" / "blind_sweep.py").read_text(encoding="utf-8")
+    _twice = next((_l for _l in _sweep_src.splitlines()
+                   if len(_l.strip()) > 8 and _sweep_src.count(_l) > 1), None)
+    assert _twice, "no line occurs twice in the sweep's source, so the ambiguous-anchor case has no subject"
+    _p2 = _run([{"tag": "an anchor that appears twice", "file": "scripts/blind_sweep.py",
+                 "selector": "nothing_at_all", "old": _twice, "new": _twice + "  # x"}])
+    assert _p2.returncode == 1, ("a blind whose anchor is ambiguous was applied anyway",
+                                 _p2.returncode, (_p2.stdout or "")[:300])
+    assert "not once" in ((_p2.stdout or "") + (_p2.stderr or "")), (_p2.stdout or "")[:300]
+
+    # ── L3. IT DOES NOT REFUSE A SOUND BLIND FILE ───────────────────────────────────────────────
+    #  A gate that refuses everything is not a gate, and it is the failure mode a new refusal most
+    #  easily ships with: it looks strict and it blocks all work.
+    #
+    #  ASSERTED ON THE OUTPUT, NOT THE EXIT CODE, and that is forced rather than preferred. W537 made
+    #  a sweep-inside-a-sweep structurally impossible (NESTED_GUARD_ENV), so when this test itself runs
+    #  under the sweep the inner run never reaches pytest and returns non-zero for that reason alone.
+    #  The exit code cannot tell "refused the file" from "declined to nest"; the REFUSAL TEXT can, and
+    #  that is what this leg is about.
+    #
+    #  The first draft recounted the anchors here instead of invoking the sweep, so it could not have
+    #  failed if the gate refused everything. The blind written against it came back BAD BLIND, and
+    #  that is what exposed it.
+    _p3 = _run([{"tag": "a sound blind", "file": "scripts/blind_sweep.py",
+                 "selector": "nothing_at_all",
+                 "old": "def main() -> int:", "new": "def main() -> int:"}])
+    _out3 = (_p3.stdout or "") + (_p3.stderr or "")
+    assert "BAD ANCHOR" not in _out3, (
+        "the gate refused a blind whose anchor matches exactly once, so it refuses everything",
+        _out3[:300])
+    #  and this round's own blind file would pass that same gate
+    _mine = _root / "scripts" / "blinds_w572.json"
+    _blinds = _json572c.loads(_mine.read_text(encoding="utf-8"))
+    assert len(_blinds) >= 10, ("the blind file shrank", len(_blinds))
+    for _b in _blinds:
+        _hits = (_root / _b["file"]).read_text(encoding="utf-8").count(_b["old"])
+        assert _hits == 1, (
+            f"this round's own blind {_b['tag']!r} would be refused: its anchor matches {_hits} "
+            "time(s) in " + _b["file"])

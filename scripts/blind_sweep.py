@@ -315,6 +315,28 @@ def main() -> int:
               "Run with --recover first." % marker)
         return 1
     blinds = json.loads(io.open(a.blinds, encoding="utf-8").read())
+    #  W572 — EVERY ANCHOR IS CHECKED BEFORE ANY OF THEM RUNS. A blind whose `old` does not match its
+    #  file exactly once is not applied, so it reaches a verdict of BAD BLIND and says NOTHING about
+    #  any guard — and that is only discovered at the end, after the whole sweep has been paid for.
+    #  Two came back that way tonight from a double-escaped em dash in a JSON blind file. The check
+    #  costs a second against twenty minutes, so it is a REFUSAL rather than a warning: the point is
+    #  to fix every bad anchor in one go and then run the sweep once.
+    _bad = []
+    for _b in blinds:
+        try:
+            _hits = io.open(_b["file"], encoding="utf-8").read().count(_b["old"])
+        except OSError as _e:                    # noqa: BLE001
+            _bad.append((_b.get("tag", "?"), _b.get("file", "?"), f"unreadable: {_e}"))
+            continue
+        if _hits != 1:
+            _bad.append((_b.get("tag", "?"), _b["file"],
+                         f"anchor matches {_hits} time(s), not once"))
+    if _bad:
+        print("REFUSING: %d of %d blind(s) could not be applied, so they would reach no verdict and "
+              "say nothing about any guard. Fix them all, then run once:" % (len(_bad), len(blinds)))
+        for _t, _f, _w in _bad:
+            print("  BAD ANCHOR  %-54s %s  (%s)" % (_t[:54], _w, _f))
+        return 1
     #  W569 — A SHARD PROVES IT IS READING ITS OWN COPY BEFORE IT MUTATES ANYTHING. A stray .pth puts
     #  the real repo root on sys.path for every local process, so a shard could import the ORIGINAL
     #  `agentic_core` and report confident verdicts about a tree nobody is committing. PYTHONPATH is
