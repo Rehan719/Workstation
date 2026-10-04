@@ -7260,6 +7260,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the mechanism half is a round's work, but WHERE seven inherited areas go is a plan-structure decision the Owner has already ruled on once (2026-10-02, route BY AREA) and a round may not reinterpret"
+    },
+    {
+      "id": "FU-403",
+      "title": "No engine performs a constitutional check, so clearance gate 1 can only ever abstain and the loop withholds every emission",
+      "why": "TRACED IN FULL IN W582, because FU-366 holds the avatar path on a condition that cannot be met by what it names. THE CHAIN, measured end to end: every cognitive engine hardcodes constitutional_validation.passed = None with the basis \"no constitutional check ran: this engine performs none\" - a LITERAL in the source, not a refusal; mushawara_bridge_2.deliberate reads those verdicts and derives status NOT ASSESSED whenever any is None; clearance gate 1 in avatars/core/clearance_chain.py requires status == \"APPROVED\" and blocks; and the recirculation loop therefore WITHHOLDS every emission. The heartbeat's own W533 comment states the outcome plainly: \"six measured stages and an empty mouth is the NORMAL state of this platform today.\" SO THE RELEASE CONDITION FU-366 CARRIES IS WRONG, AND MEASURABLY SO. It holds \"until the engines have a model path, after which clearance gate 1 can receive a constitutional verdict\". MEASURED: ollama is reachable and three local models are installed (llama2, llama3.2, llama3.2:1b) with llama3.2 as the effective default - so the engines HAVE a model path - and the loop still withholds, because passed=None is a literal that no model changes. The deliberation's own reason string asserted the false cause too (\"the engines refuse for want of a model path\") and W582 corrected it: they do not refuse for want of a model, they perform no check at all. A hold whose condition cannot be met by the thing it names is a permanent hold wearing a temporary label. THE WORK, which is what the hold should actually wait on: implement a constitutional check that produces a REAL verdict for an emission, so gate 1 can receive a pass or a failure instead of an absence. Where it belongs is the open question and is a design decision rather than a line: either each engine performs the check its own domain supports and returns passed True or False with a basis, or - more likely right - the CHAIN performs one check over the emission and the engines stop being asked for a verdict none of them computes, which would also make the three-state derivation in deliberate honest rather than permanently NOT ASSESSED. WHATEVER IS CHOSEN, TWO THINGS ARE NOT NEGOTIABLE: the check must be able to FAIL and be seen to fail, driven both ways, because a gate that can only abstain is the same defect in a new place; and a withheld emission must continue to show the withholding as a refusal with its reason and never as an empty answer. SCOPE NOTE: this does not require a model to answer, and it is not the avatar path. It is the one thing standing between a loop that measures six stages and a loop that can emit, and FU-366's hold-or-wire choice only becomes a real question once it exists.",
+      "source": "W582 (traced end to end while measuring FU-366's release condition, which the Owner sent back)",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/consultation/mushawara/mushawara_bridge_2.py",
+        "agentic_core/avatars/core/clearance_chain.py",
+        "agentic_core/cognitive/aqal_engine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.21",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [

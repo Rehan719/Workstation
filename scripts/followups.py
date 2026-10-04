@@ -218,6 +218,10 @@ def main() -> int:
     dn.add_argument("--by", required=True)
     dn.add_argument("--reroute", action="store_true", help="move the item's open rows along the routes")
     dn.add_argument("--hand-to", dest="hand_to", default="", help="the open item the finished item's routes now send to")
+    #  W582 — the third option, for the case the other two cannot express: an area with NO open owner.
+    dn.add_argument("--retire-routes", dest="retire_routes", action="store_true",
+                    help="retire the finished item's routes instead of handing them to one item - for areas "
+                         "no open item claims; each retired area is printed")
     sub.add_parser("schedule")
     sub.add_parser("render")
     sub.add_parser("check")
@@ -589,9 +593,37 @@ def main() -> int:
                 sys.exit(f"REFUSED — --hand-to {hand} is not an open delivery-plan item")
             routes = fu.raw_routes(reg)
             to_finished = [rt for rt in routes if isinstance(rt, dict) and rt.get("slot") == slot]
-            if to_finished and not hand:
+            if to_finished and not hand and not args.retire_routes:
                 sys.exit(f"REFUSED — {len(to_finished)} route(s) still send new rows to {slot}: pass --hand-to "
-                         "<the open item that owns that area now> (its routes become handed routes of that item)")
+                         "<the open item that owns that area now> (its routes become handed routes of that "
+                         "item), or --retire-routes when no open item claims those areas")
+            if to_finished and hand and args.retire_routes:
+                sys.exit("REFUSED — --hand-to and --retire-routes say opposite things about the same routes: "
+                         "an area is either taken by an open item or retired, never both")
+            if to_finished and args.retire_routes:
+                #  W582 — an area may only be retired when NO open item claims it. route_row already answers
+                #  that question for a new row and already takes an `exclude` set, so the finishing item is
+                #  left out of the candidates and its own routes are asked where they would go instead. A
+                #  route with a real destination must be HANDED there, not retired: retiring one would
+                #  silently orphan an area somebody still owns, which is worse than the sink this avoids.
+                claimed = []
+                for rt in to_finished:
+                    _f = [str(x) for x in (rt.get("files") or [])]
+                    _w = " ".join(str(x) for x in (rt.get("words") or []))
+                    _ans = fu.route_row(reg, new_prompt_src, _w, _f, "medium", exclude={slot})
+                    if _ans.get("slot"):
+                        claimed.append(f"{_ans['slot']} claims [{', '.join(_f[:3])}] — {_ans.get('by')}")
+                if claimed:
+                    sys.exit("REFUSED — these areas are NOT ownerless, so retiring them would orphan work an "
+                             "open item still claims; hand them on instead:\n  " + "\n  ".join(claimed))
+                kept = [rt for rt in fu.raw_routes(reg) if not (isinstance(rt, dict) and rt.get("slot") == slot)]
+                for rt in to_finished:
+                    _f = [str(x) for x in (rt.get("files") or [])]
+                    said.append(f"route RETIRED with {slot}: [{', '.join(_f[:4])}"
+                                + (f" +{len(_f) - 4} more" if len(_f) > 4 else "") + "]"
+                                + " — no open item claims this area, so a new row in it is UNSCHEDULED and "
+                                  "names its own slot rather than being assigned to an item that does not own it")
+                reg["routes"] = kept
             if same and not to_finished and not riders:
                 sys.exit(f"REFUSED — {slot} is already DONE {by}, with no rows riding it and no route to it: nothing left to do")
             if hand:

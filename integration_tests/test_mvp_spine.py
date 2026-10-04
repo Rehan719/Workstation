@@ -37479,6 +37479,133 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
             "not an error", _v577, _w577)
 
 
+def test_w582_an_area_with_no_owner_is_retired_and_a_deliberation_names_its_real_cause(tmp_path):
+    """W582 — the two halves the Owner approved: route an area by owner or retire it, and stop naming a
+    cause measurement contradicts.
+
+    THE ROUTING. `done <slot> --reroute` refused because routes still sent rows to the finishing item, and
+    `--hand-to` takes exactly ONE destination — so the only way to close an item holding routes was to move
+    every area to a single item. That is how P2.4 became a sink: nine of its eleven open rows arrived AFTER
+    its bar was written, through routes handed in as earlier items closed, which is what the Owner's ruling
+    of 2026-10-02 (route BY AREA) addressed. MEASURED for P2.18's seven routes with `route_row`'s own
+    `exclude` set: ZERO found an open item claiming their area, because every original owner is closed. So
+    handing them anywhere assigns an area to an item that does not own it. Retiring is the third option, and
+    it is REFUSED where an open item does claim the area — otherwise it would orphan work somebody owns,
+    which is worse than the sink it avoids.
+
+    THE CAUSE. The deliberation that feeds clearance gate 1 derived status NOT ASSESSED and said the engines
+    "refuse for want of a model path". MEASURED: ollama is reachable with three local models installed, and
+    each engine's verdict is a HARDCODED `passed=None` whose own basis reads "this engine performs none". So
+    no model changes that outcome, and a reader told otherwise waits for the wrong thing — which is exactly
+    what FU-366's hold on the avatar path was doing.
+    """
+    import json as _json582
+    import os as _os582
+    import pathlib as _pl582
+    import re as _re582
+    import subprocess as _sp582
+    import sys as _sys582
+
+    from agentic_core import plan_followups as _fu582
+
+    _root582 = _pl582.Path(__file__).resolve().parents[1]
+    _prompt582 = _fu582.read_doc(_root582 / "docs" / "FABLE_DELIVERY_PROMPT.md")
+    _living582 = _fu582.read_doc(_root582 / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md")
+    _open582 = [i["slot"] for i in _fu582.plan_items(_prompt582) if not i["done"]]
+    assert len(_open582) >= 2, ("this leg needs two open plan items to drive a claimed-vs-ownerless area",
+                               _open582)
+    _a582, _b582 = _open582[0], _open582[1]
+
+    #  a scratch root, never the repository: this command MUTATES a register
+    _scr582 = tmp_path / "w582root"
+    (_scr582 / "docs").mkdir(parents=True)
+    _empty582 = {"items": []}
+    (_scr582 / "docs" / "FABLE_DELIVERY_PROMPT.md").write_bytes(
+        _fu582.splice_all(_prompt582, _empty582, _prompt582).encode("utf-8"))
+    (_scr582 / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md").write_bytes(
+        _fu582.splice_all(_living582, _empty582, _prompt582).encode("utf-8"))
+    (_scr582 / "docs" / "FOLLOWUPS.json").write_bytes(b'{"items": []}\n')
+    _env582 = dict(_os582.environ, WORKSTATION_FOLLOWUPS_ROOT=str(_scr582), PYTHONIOENCODING="utf-8")
+    _script582 = str((_root582 / "scripts" / "followups.py").resolve())
+
+    def _cli582(*argv):
+        return _sp582.run([_sys582.executable, _script582, *argv], env=_env582,
+                          capture_output=True, text=True, encoding="utf-8")
+
+    def _routes582():
+        return (_json582.loads((_scr582 / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))
+                .get("routes") or [])
+
+    # ── L1. AN AREA NO OPEN ITEM CLAIMS IS RETIRED, and the retirement is PRINTED ───────────────────
+    _lonely582 = "agentic_core/w582_nobody_claims_this/"
+    assert _cli582("route", "--slot", _a582, "--files", _lonely582).returncode == 0
+    assert any(r.get("slot") == _a582 for r in _routes582()), "the route was not created"
+    _done582 = _cli582("done", _a582, "--retire-routes", "--by", "W582")
+    assert _done582.returncode == 0, (
+        "an item whose only route points at an area NO open item claims could not be finished, so the only "
+        "way to close it remains handing that area to an item that does not own it",
+        _done582.stdout, _done582.stderr)
+    assert "RETIRED" in _done582.stdout, (
+        "the retirement is not reported, so an area dropped from the routing table is forgotten rather "
+        "than recorded", _done582.stdout)
+    assert "UNSCHEDULED" in _done582.stdout, (
+        "the report does not say what happens to a NEW row in that area, which is the whole consequence of "
+        "retiring it", _done582.stdout)
+    assert not any(r.get("slot") == _a582 for r in _routes582()), (
+        "the route still points at a finished item, which the register's own check refuses")
+    assert _cli582("check").returncode == 0, (
+        "the register does not pass its own check after a retirement", _cli582("check").stdout)
+
+    # ── L2. AN AREA ANOTHER OPEN ITEM CLAIMS IS NOT RETIRED ────────────────────────────────────────
+    #  THE DANGEROUS DIRECTION. Retiring an owned area orphans work somebody still has, which is worse
+    #  than the sink this option exists to avoid — so it must refuse and NAME the claimant.
+    _scr2582 = tmp_path / "w582root2"
+    (_scr2582 / "docs").mkdir(parents=True)
+    for _f582 in ("FABLE_DELIVERY_PROMPT.md", "WORKSTATION_IDBO_LIVING_PLAN.md", "FOLLOWUPS.json"):
+        (_scr2582 / "docs" / _f582).write_bytes((_scr582 / "docs" / _f582).read_bytes())
+    _env582["WORKSTATION_FOLLOWUPS_ROOT"] = str(_scr2582)
+    _shared582 = "agentic_core/w582_shared_area/"
+    assert _cli582("route", "--slot", _b582, "--files", _shared582).returncode == 0
+    _c582 = [s for s in _open582 if s not in (_a582, _b582)]
+    assert _c582, "this leg needs a third open item"
+    assert _cli582("route", "--slot", _c582[0], "--files", _shared582).returncode == 0
+    _refused582 = _cli582("done", _c582[0], "--retire-routes", "--by", "W582")
+    assert _refused582.returncode != 0, (
+        "an area another open item CLAIMS was retired, orphaning work that item still owns",
+        _refused582.stdout)
+    assert "NOT ownerless" in (_refused582.stdout + _refused582.stderr), _refused582.stderr
+    assert _b582 in (_refused582.stdout + _refused582.stderr), (
+        "the refusal does not name the open item that claims the area, so a reader cannot act on it",
+        _refused582.stderr)
+
+    # ── L3. THE TWO OPTIONS CANNOT BE GIVEN TOGETHER ───────────────────────────────────────────────
+    _both582 = _cli582("done", _c582[0], "--retire-routes", "--hand-to", _b582, "--by", "W582")
+    assert _both582.returncode != 0 and "opposite things" in (_both582.stdout + _both582.stderr), (
+        "--hand-to and --retire-routes were accepted together, so which happened to an area depends on "
+        "the order of the code rather than on what the caller asked for", _both582.stderr)
+
+    # ── L4. THE DELIBERATION NAMES ITS REAL CAUSE ──────────────────────────────────────────────────
+    #  DRIVEN on the engine, then asserted on the derivation's wording. The engine's verdict is what the
+    #  derived status reads, and it is a literal: that is the measurement.
+    _aqal582 = (_root582 / "agentic_core/cognitive/aqal_engine.py").read_text(encoding="utf-8",
+                                                                             errors="replace")
+    assert 'passed=None' in _aqal582 and "this engine performs none" in _aqal582, (
+        "the engine no longer states that it performs no constitutional check - if it now PERFORMS one, the "
+        "deliberation's cause below has changed and this leg must be rewritten rather than relaxed")
+    _delib582 = (_root582 / "agentic_core/consultation/mushawara/mushawara_bridge_2.py").read_text(
+        encoding="utf-8", errors="replace")
+    _code582 = "\n".join(l.split("#", 1)[0] for l in _delib582.splitlines())
+    assert "refuse for want of a model path" not in _code582, (
+        "the deliberation asserts that the perspectives refuse FOR WANT OF A MODEL PATH. Measured: three "
+        "local models are installed and reachable, and the verdict is a hardcoded None whose own basis says "
+        "the engine performs no check - so that cause is contradicted by measurement, and a hold waiting on "
+        "a model path waits for something that cannot release it")
+    assert "perform no " in _code582 and "constitutional check" in _code582, (
+        "the deliberation does not say WHY it did not clear, so a reader is left to infer it")
+    assert "released only by a check being implemented" in _code582, (
+        "the reason does not say what WOULD release it, which is the part a round can act on")
+
+
 def test_w581_p218c_a_promise_the_record_can_hold_and_a_variance_it_can_read_back(client):
     """P2.18 clause (c) — a promise this platform can record, against a capacity it measured.
 

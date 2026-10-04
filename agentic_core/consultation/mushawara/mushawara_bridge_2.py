@@ -44,9 +44,19 @@ class MushawaraBridge2:
                        "constitutional verdict")
         elif _unassessed:
             _status = "NOT ASSESSED"
+            # W582 — THE CAUSE NAMED HERE WAS WRONG, and a basis asserting a cause measurement
+            # contradicts is the defect this programme removes everywhere else. It said the engines
+            # "refuse for want of a model path". MEASURED: ollama is reachable with three local models
+            # installed, and the verdict is not a refusal at all — it is a hardcoded `passed=None` whose
+            # own basis reads "no constitutional check ran: this engine performs none". So no model, on
+            # any hardware, changes this outcome, and a reader told otherwise waits for the wrong thing.
+            # This matters downstream: the avatar path is HELD on a release condition phrased as a model
+            # path, and a hold whose condition cannot be met by what it names is permanent.
             _reason = (f"{_unassessed} of {len(_verdicts)} perspective(s) supplied no constitutional "
                        "verdict, so this deliberation did not clear; an unassessed outcome is not an "
-                       "approval and the engines refuse for want of a model path")
+                       "approval. The perspectives did not refuse for want of a model: they perform no "
+                       "constitutional check at all, so this outcome is unchanged by any model being "
+                       "available and is released only by a check being implemented")
         else:
             _status = "APPROVED"
             _reason = f"all {len(_verdicts)} perspective(s) returned a passing constitutional verdict"

@@ -1,0 +1,47 @@
+[
+ {
+  "tag": "retiring stops being possible, so the only way out is a sink again",
+  "file": "scripts/followups.py",
+  "old": "            if to_finished and args.retire_routes:",
+  "new": "            if False and args.retire_routes:",
+  "selector": "w582_an_area",
+  "expect": "BLIND(red)",
+  "why": "The option disappears and `--hand-to` is the only way to close an item holding routes — every area to ONE item, which is how P2.4 became a sink (nine of eleven rows arrived after its bar was written) and what the Owner's 2026-10-02 by-area ruling addressed. `if False and ...` leaves every message intact, so the leg must assert the BEHAVIOUR."
+ },
+ {
+  "tag": "an area another open item claims is retired anyway",
+  "file": "scripts/followups.py",
+  "old": "                if claimed:",
+  "new": "                if False and claimed:",
+  "selector": "w582_an_area",
+  "expect": "BLIND(red)",
+  "why": "THE DANGEROUS DIRECTION, and the reason this option is safe at all. Retiring an area an open item still claims ORPHANS work somebody owns — strictly worse than the sink it exists to avoid. The check uses route_row's own `exclude` set, so it asks the same question the register asks of every new row rather than a second rule that could disagree with it."
+ },
+ {
+  "tag": "the retirement is no longer reported",
+  "file": "scripts/followups.py",
+  "old": "                    said.append(f\"route RETIRED with {slot}: [{', '.join(_f[:4])}\"",
+  "new": "                    _unsaid = (f\"route RETIRED with {slot}: [{', '.join(_f[:4])}\"",
+  "selector": "w582_an_area",
+  "expect": "BLIND(red)",
+  "why": "An area dropped from the routing table in silence is an area forgotten. The whole justification for retiring rather than handing on is that the consequence is RECORDED — a new row there is unscheduled and names its own slot — and a report nobody prints makes retiring indistinguishable from losing."
+ },
+ {
+  "tag": "--hand-to and --retire-routes are accepted together",
+  "file": "scripts/followups.py",
+  "old": "            if to_finished and hand and args.retire_routes:",
+  "new": "            if False and hand and args.retire_routes:",
+  "selector": "w582_an_area",
+  "expect": "BLIND(red)",
+  "why": "They say opposite things about the same routes, so what happens to an area would depend on the order of the code rather than on what the caller asked for — and the caller would be told nothing. A command that silently picks between two contradictory instructions is how a register ends up in a state nobody chose."
+ },
+ {
+  "tag": "the deliberation asserts the false cause again",
+  "file": "agentic_core/consultation/mushawara/mushawara_bridge_2.py",
+  "old": "                       \"approval. The perspectives did not refuse for want of a model: they perform no \"\n                       \"constitutional check at all, so this outcome is unchanged by any model being \"\n                       \"available and is released only by a check being implemented\")",
+  "new": "                       \"approval and the engines refuse for want of a model path\")",
+  "selector": "w582_an_area",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT. Measured: ollama is reachable with three local models installed, and each engine verdict is a hardcoded passed=None whose own basis reads \"this engine performs none\" - so the cause this string names is contradicted by measurement, and no model on any hardware changes the outcome. It is not a wording quibble: FU-366 held the avatar path on a release condition phrased as a model path, which is a permanent hold wearing a temporary label."
+ }
+]
