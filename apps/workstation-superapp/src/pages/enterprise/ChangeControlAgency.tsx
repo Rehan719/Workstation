@@ -29,6 +29,26 @@ interface CCARow {
   // W464 (FU-012) — what decided it, and whether a review's approval of a HIGH change still waits for the Board
   decision_source?: string | null;
   awaiting_board_ratification?: boolean;
+  // W581 (FU-313) — WHAT WAS PROMISED and what it came to. `confidence_is_declared` is the field that
+  // keeps the number honest on screen: a confidence a submitter stated is not one this platform measured,
+  // and a reviewer looking at 0.7 on a card cannot tell the difference without being told.
+  commitment?: {
+    committed_rounds?: number | null;
+    confidence?: number | null;
+    confidence_is_declared?: boolean;
+    basis?: string;
+    capacity_at_submit?: { median_hours_per_round?: number | null; rounds_measured?: number | null;
+                            p25_hours?: number | null; p75_hours?: number | null } | null;
+    capacity_basis?: string | null;
+  } | null;
+  variance?: {
+    elapsed_hours?: number | null;
+    rounds_equivalent?: number | null;
+    over_by_rounds?: number | null;
+    within_commitment?: boolean | null;
+    derivation?: string;
+  } | null;
+  variance_basis?: string | null;
   board_ratification?: 'ratified' | 'refused' | null;
   // W509 — the METHOD gate (W508). `auto_approval_withheld` is present only when an automatic approval was
   // withheld, and `method_check` carries the three-state verdict per requirement. Both were produced by the
@@ -193,6 +213,58 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
               )}
               {entry.decision === 'auto_approved' && (
                 <span className="text-xs px-2 py-0.5 rounded border text-green-400 bg-green-500/10 border-green-500/20">AUTO</span>
+              )}
+              {/* W581 (FU-313) — the promise, and whether it was kept. A commitment with no outcome yet
+                  shows the promise alone; once there is an outcome the variance shows beside it, and the
+                  rounds figure carries its derivation on hover because a round is not a clock unit. */}
+              {entry.commitment && (
+                <span data-testid="cca-commitment"
+                      title={[entry.commitment.basis,
+                              // W581 (FU-313) — THE MEASURED CAPACITY, on the surface. A promise in rounds
+                              // means nothing without the round length it was made against, and these four
+                              // numbers are the only measured thing on this chip.
+                              entry.commitment.capacity_at_submit?.median_hours_per_round != null
+                                ? `measured capacity: ${entry.commitment.capacity_at_submit.median_hours_per_round}h median round over ${entry.commitment.capacity_at_submit.rounds_measured ?? '?'} rounds`
+                                  // W581 — THE SPREAD, not just the median. A promise made against a
+                                  // median says nothing about how reliable that base is, and the quartiles
+                                  // are the only thing on this record that does.
+                                  + (entry.commitment.capacity_at_submit.p25_hours != null
+                                      ? ` (quartiles ${entry.commitment.capacity_at_submit.p25_hours}h–${entry.commitment.capacity_at_submit.p75_hours ?? '?'}h)`
+                                      : '')
+                                : 'capacity was NOT measured at submit',
+                              entry.commitment.capacity_basis,
+                              entry.variance?.derivation].filter(Boolean).join(' — ')}
+                      className="text-[11px] px-2 py-0.5 rounded border font-mono text-sky-300 bg-sky-500/10 border-sky-500/20">
+                  {entry.commitment.committed_rounds != null
+                    ? `${entry.commitment.committed_rounds}r promised`
+                    : 'promised'}
+                  {entry.commitment.confidence != null && (
+                    <span className="text-white/50">
+                      {' · '}{Math.round(entry.commitment.confidence * 100)}%
+                      {entry.commitment.confidence_is_declared ? ' declared' : ' measured'}
+                    </span>
+                  )}
+                </span>
+              )}
+              {entry.variance != null && (
+                <span data-testid="cca-variance"
+                      title={entry.variance.derivation ?? entry.variance_basis ?? undefined}
+                      className={`text-[11px] px-2 py-0.5 rounded border font-mono ${
+                        entry.variance.within_commitment === true
+                          ? 'text-green-400 bg-green-500/10 border-green-500/20'
+                          : entry.variance.within_commitment === false
+                            ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                            : 'text-white/40 bg-white/5 border-white/10'}`}>
+                  {entry.variance.rounds_equivalent != null
+                    ? `${entry.variance.rounds_equivalent}r actual`
+                    : `${entry.variance.elapsed_hours ?? '—'}h actual`}
+                  {entry.variance.over_by_rounds != null && entry.variance.over_by_rounds > 0 && (
+                    <span>{' · '}+{entry.variance.over_by_rounds}r over</span>
+                  )}
+                  {entry.variance.rounds_equivalent == null && (
+                    <span className="text-white/40">{' · not derivable in rounds'}</span>
+                  )}
+                </span>
               )}
               <span className={`text-xs font-mono uppercase ${STATUS_COLORS[entry.status] ?? 'text-white/40'}`}>{entry.status.replace('_', ' ')}</span>
             </div>

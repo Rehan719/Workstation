@@ -254,6 +254,12 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
                 # W463 — a held record (awaiting an explicit decision) and an economy hold's current amount
                 "hold_reason": c.get("hold_reason"),
                 "est_distributable_wst": c.get("est_distributable_wst"),
+                # W581 (FU-313) — the promise and the variance reach the QUEUE, which is the list the
+                # growing tip reads. A commitment held only on the individual record is a promise nobody
+                # sees while the work is in flight, which is the whole point of recording one.
+                "commitment": c.get("commitment"),
+                "variance": c.get("variance"),
+                "variance_basis": c.get("variance_basis"),
                 # W463 (third refutation) — a hold filed after a rejection needs an explicit decision from the moment
                 # it is filed (before any review sets hold_reason)
                 "follows_rejection": ((c.get("follows_rejection") or {}).get("cca_id")
@@ -507,6 +513,80 @@ class ConfigChangeSpec(BaseModel):
     reset: bool = False
 
 
+def _record_variance(change: dict, now: str, outcome: str) -> None:
+    """Fill `variance` once a change reaches an outcome, or say why it cannot be filled.
+
+    W581 (FU-313). A commitment is made in ROUNDS and a round is not a clock unit, so what gets measured
+    is the ELAPSED HOURS this record actually carries — submitted_at to the outcome — and the rounds
+    figure is DERIVED from it by dividing by a median round length that is named in the result. Where the
+    capacity was never measured at submit, the derived figure is None WITH A REASON: a figure may only
+    carry the name of what it measured, and `0` would be a measured zero nobody measured.
+
+    Called from BOTH places that mark a change implemented. One would have been the second-writer class.
+    """
+    import time as _t
+
+    commitment = change.get("commitment")
+    if not isinstance(commitment, dict):
+        change["variance"] = None
+        change["variance_basis"] = "no commitment was recorded, so no variance is defined"
+        return
+
+    def _secs(stamp):
+        try:
+            return _t.mktime(_t.strptime(str(stamp), "%Y-%m-%dT%H:%M:%SZ"))
+        except (ValueError, TypeError):
+            return None
+
+    t0, t1 = _secs(change.get("submitted_at")), _secs(now)
+    if t0 is None or t1 is None:
+        change["variance"] = None
+        change["variance_basis"] = ("the submit or outcome stamp could not be read, so the elapsed time "
+                                    "is unknown - not zero")
+        return
+
+    elapsed_h = round(max(0.0, (t1 - t0) / 3600.0), 3)
+    cap = commitment.get("capacity_at_submit") or {}
+    median_h = cap.get("median_hours_per_round")
+    committed = commitment.get("committed_rounds")
+
+    rounds_equiv = over_by = None
+    if isinstance(median_h, (int, float)) and median_h > 0:
+        rounds_equiv = round(elapsed_h / float(median_h), 2)
+        if isinstance(committed, int):
+            over_by = round(rounds_equiv - committed, 2)
+        derived = (f"DERIVED, not counted: {elapsed_h} elapsed hours divided by the {median_h} h median "
+                   f"round length measured at submit over {cap.get('rounds_measured')} rounds. A round "
+                   f"is not a clock unit, so this is an equivalence and not a count of rounds.")
+    else:
+        derived = ("NOT DERIVABLE: no median round length was measured at submit, so elapsed hours "
+                   "cannot be expressed in rounds. The hours below ARE measured.")
+
+    change["variance"] = {
+        "outcome": outcome,
+        "elapsed_hours": elapsed_h,
+        "committed_rounds": committed,
+        "rounds_equivalent": rounds_equiv,
+        "over_by_rounds": over_by,
+        "within_commitment": (None if over_by is None else bool(over_by <= 0)),
+        "derivation": derived,
+        #  W581 — THE CONFIDENCE IS NOT REPEATED HERE. The commitment block on the same record holds it
+        #  WITH its declared/measured label, and the page renders that label; carrying a second copy on the
+        #  variance gave two fields one fact, which is how they drift apart. The property "a variance does
+        #  not turn a declared number into a measured one" is kept by the commitment's label surviving the
+        #  outcome, which is what the guard now asserts. `measured_at` went for the same reason: the
+        #  record's own implemented_at stamp is the outcome time.
+    }
+    change["variance_basis"] = (
+        f"measured at the {outcome} outcome: elapsed hours are from this record's own stamps; the rounds "
+        f"figure is derived and names what it divided by")
+
+
+#  W581 (FU-313) — the repo root, for the measured round history the commitment is made against.
+#  agentic_core/api/change_control.py -> parents[2] is the checkout.
+_ROOT_FOR_FORECAST = Path(__file__).resolve().parents[2]
+
+
 class SubmitChangeRequest(BaseModel):
     title: str
     change_type: str = "config_minor"
@@ -517,6 +597,15 @@ class SubmitChangeRequest(BaseModel):
     vsb_id: str | None = None
     rollback_plan: str = ""
     config_change: ConfigChangeSpec | None = None
+    # W581 (FU-313) — WHAT WAS PROMISED, so a variance can be read back against it. These were being
+    # sent to /transformation/orchestrate and SILENTLY DROPPED, because an undeclared field on a
+    # Pydantic model is discarded and the caller still gets a 200 (the platform-wide half of that is
+    # registered separately). A commitment about the platform's OWN delivery is admissible under
+    # CAPACITY_FACULTY_MODEL §2; a number a caller hands over is not a MEASUREMENT, so `confidence` is
+    # recorded as DECLARED and both require a basis.
+    committed_rounds: int | None = None
+    confidence: float | None = None
+    commitment_basis: str = ""
 
 
 class ReviewDecision(BaseModel):
@@ -672,6 +761,66 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     # the name on the record is the authenticated one when there is one; otherwise the caller's
     _by = principal or req.submitted_by or "system"
 
+    #  W581 (FU-313) — THE COMMITMENT, and the capacity it is made against.
+    #  `confidence` is stored as DECLARED, never as measured: §2 of the capacity model admits a
+    #  probability about SELF as a measurement, and a figure a caller supplies is not one. A commitment
+    #  with no basis is refused rather than stored, because a number this platform cannot explain is the
+    #  thing it spends every round removing.
+    _commitment = None
+    if req.committed_rounds is not None or req.confidence is not None:
+        if not (req.commitment_basis or "").strip():
+            raise HTTPException(
+                status_code=422,
+                detail="a commitment must say what it is based on: committed_rounds or confidence was "
+                       "given with no commitment_basis, and an unexplained figure on a governance record "
+                       "is read by a later round as a measurement")
+        if req.confidence is not None and not (0.0 <= float(req.confidence) <= 1.0):
+            raise HTTPException(status_code=422,
+                                detail=f"confidence must be a fraction between 0 and 1, not "
+                                       f"{req.confidence!r}")
+        if req.committed_rounds is not None and int(req.committed_rounds) < 1:
+            raise HTTPException(status_code=422,
+                                detail="committed_rounds must be at least 1 - a promise of zero rounds "
+                                       "is not a commitment")
+        #  THE CAPACITY IS MEASURED, not declared, and says so. It is the platform's own observed round
+        #  length from its commit history, which is what makes a promise in ROUNDS mean anything.
+        _capacity, _cap_basis = None, None
+        try:
+            import importlib.util as _ilu313
+            _sf313 = _ROOT_FOR_FORECAST / "scripts" / "session_forecast.py"
+            if _sf313.exists():
+                _spec313 = _ilu313.spec_from_file_location("_sf313", _sf313)
+                _mod313 = _ilu313.module_from_spec(_spec313)
+                _spec313.loader.exec_module(_mod313)
+                _d313 = _mod313.round_durations()
+                if _d313.get("assessable"):
+                    _capacity = {"median_hours_per_round": _d313.get("median_h"),
+                                 "p25_hours": _d313.get("p25_h"), "p75_hours": _d313.get("p75_h"),
+                                 "rounds_measured": _d313.get("n")}
+                    _cap_basis = str(_d313.get("basis") or "")[:300]
+                else:
+                    _cap_basis = ("NOT MEASURED: " + str(_d313.get("basis") or "the forecaster could "
+                                  "not assess the round history")[:260])
+            else:
+                _cap_basis = "NOT MEASURED: the round-history forecaster is not present in this checkout"
+        except Exception as _exc313:
+            _cap_basis = (f"NOT MEASURED: the round history could not be read "
+                          f"({_exc313.__class__.__name__})")
+        _commitment = {
+            "committed_rounds": req.committed_rounds,
+            "confidence": req.confidence,
+            #  the one thing a later reader must not get wrong about this record
+            "confidence_is_declared": req.confidence is not None,
+            # W581 — FOLDED. The page renders the word "declared" from `confidence_is_declared`, so a
+            # second prose field saying the same thing reached no surface. The attribution is not lost:
+            # it is appended to the basis the chip's title already shows.
+            "basis": ((req.commitment_basis or "").strip()[:400]
+                      + (" (the confidence above is DECLARED BY THE SUBMITTER, not measured by this "
+                         "platform)" if req.confidence is not None else "")),
+            "capacity_at_submit": _capacity,
+            "capacity_basis": _cap_basis,
+        }
+
     change = {
         "cca_id": cca_id,
         "title": req.title,
@@ -697,6 +846,13 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         "vsb_id": req.vsb_id,
         "rollback_plan": req.rollback_plan,
         "review_result": None,
+        # W581 (FU-313) — the promise, and the variance that can only be read once there is an outcome.
+        # `variance` is None with a REASON rather than absent, so a reader can tell "not yet" from
+        # "nobody measured it" — the distinction this programme keeps paying for elsewhere.
+        "commitment": _commitment,
+        "variance": None,
+        "variance_basis": ("no outcome yet, so there is nothing to compare the commitment against"
+                           if _commitment else "no commitment was recorded, so no variance is defined"),
         "decision": None,
         "reviewed_at": None,
         "implemented_at": None,
@@ -853,6 +1009,14 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         # is told when the description changed it, and by which phrase.
         "health_gate": change.get("health_gate"),
         "immune_threat_at_submit": change.get("immune_threat_at_submit"),
+        # W581 (FU-313) — THE COMMITMENT TRAVELS WITH THE SUBMISSION, for the same reason the method
+        # check does: a promise stored on a record and absent from the response is a fact rendered
+        # nowhere, and the caller that made the promise is exactly who needs to see what was kept of it
+        # (the declared/measured labelling included). `variance_basis` comes too, so a caller reading
+        # `variance: None` can tell "no outcome yet" from "no commitment was recorded".
+        "commitment": change.get("commitment"),
+        "variance": change.get("variance"),
+        "variance_basis": change.get("variance_basis"),
         # W508 (P2.10(c)/(d)) — the method check TRAVELS WITH the submission. A check stored on a record and
         # absent from the response is a fact rendered nowhere, which is the shape this whole method warns of.
         "method_check": change.get("method_check"),
@@ -907,9 +1071,15 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         # W506 (pre-flight) - the reversibility fields are carried here too. A caller that reads
         # `reversible` on every response got undefined from this branch, which reads as "not stated"
         # rather than "nothing was applied, so there is nothing to revert".
+        # W581 — FU-334's class, found by the pre-flight on a function this round touched. The branch
+        # below carries seven keys this one omitted, so a caller indexing `cca_id` or `status` on the
+        # nominal path got undefined. None where nothing happened, with the reason beside it.
         return {"threat_level": threat, "action": "none", "governed_by": "Change Control Agency (arms-length)",
                 "reversible": False, "reverts_to": None,
                 "revert_with": "nothing to revert - no reconfiguration was applied",
+                "cca_id": None, "impact_tier": None, "status": None, "applied": None,
+                "reconfiguration": None, "ueg_logged": None,
+                "message": "no defensive reconfiguration was required, so no change was filed",
                 "reason": "Immune state nominal — no defensive reconfiguration required."}
 
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
@@ -974,6 +1144,7 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         if _consumer:
             change["status"] = "implemented"
             change["implemented_at"] = now
+            _record_variance(change, now, "implemented")      # W581 (FU-313)
             change["audit_trail"].append({"event": "implemented", "ts": now, "applied": applied,
                                           "consumer": _consumer})
         else:
@@ -995,11 +1166,15 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
                                 "by": "cca", "by_verified": False, "requested_by": requested_by,
                                 "requested_by_verified": requested_by_verified, "immune_threat": threat,
                                 "implemented": change["status"] == "implemented"})
+    # W581 — the nominal-state sibling above carries `action` and `reason`; a caller reading either here
+    # got undefined. This branch DID reconfigure, so it says which action and why rather than omitting both.
     return {
         "cca_id": cca_id,
         "threat_level": threat,
         "impact_tier": plan["tier"],
         "status": change["status"],
+        "action": "reconfigured",
+        "reason": plan["why"],
         "ueg_logged": ueg_logged,
         "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": plan["why"]},
         "applied": applied,
@@ -1668,7 +1843,9 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
             {"event": "withdrawn_unreleasable", "ts": now_w, "by": principal, "by_verified": verified,
              "reason": f"{why}; nothing ran"})
         _save_change(c)
-        return {"cca_id": cca_id, "status": "withdrawn",
+        # W581 — the sibling below carries `applied`; a caller reading it here got undefined. Nothing was
+        # applied on this path and None says so, where an empty dict would read as an empty application.
+        return {"cca_id": cca_id, "status": "withdrawn", "applied": None,
                 "note": f"This economy record can never be released by running an action ({why}), so it was retired "
                         "(withdrawn) — nothing was distributed or transferred.",
                 "_retired": {"why": why, "vsb_id": c.get("vsb_id"), "record": c}}
@@ -1740,6 +1917,7 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
 
     c["status"] = "implemented"
     c["implemented_at"] = now
+    _record_variance(c, now, "implemented")                   # W581 (FU-313) — the SECOND of two sites
     # W505 (FU-157, S1.10) — WHAT IT DID. A change with no config_change payload applies nothing, and every
     # change submitted from the page's own form is one; the record read IMPLEMENTED and counted in the
     # Implemented stat regardless. `status` keeps its vocabulary (many readers, and the record IS closed out);
@@ -1756,7 +1934,9 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
     _save_change(c)
 
     biobus.fire_signal("motor", "cca.implement", f"Implemented: {c['title']}", 0.7)
+    # W581 — `note` is carried by the withdrawn sibling above, so a caller reading it here got undefined.
     return {"cca_id": cca_id, "status": "implemented", "implemented_at": now, "applied": applied,
+            "note": None,
             "implementation_effect": _effect,
             "implementation_effect_basis": c["implementation_effect_basis"],
             "twin_prevalidation": (c.get("twin_prevalidation") or {}).get("verdict")}

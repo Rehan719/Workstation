@@ -1,0 +1,92 @@
+[
+ {
+  "tag": "an unexplained commitment is stored instead of refused",
+  "file": "agentic_core/api/change_control.py",
+  "old": "        if not (req.commitment_basis or \"\").strip():",
+  "new": "        if False and not (req.commitment_basis or \"\").strip():",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "A number on a governance record with no basis is read by a later round as a measurement, which is the defect this whole method removes. `if False and ...` leaves the message intact, so the leg asserts the BEHAVIOUR — a 422 — rather than the presence of the sentence."
+ },
+ {
+  "tag": "a submitter's confidence stops being labelled DECLARED",
+  "file": "agentic_core/api/change_control.py",
+  "old": "            \"confidence_is_declared\": req.confidence is not None,",
+  "new": "            \"confidence_is_declared\": False,",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "THE ONE THING A LATER READER MUST NOT GET WRONG. CAPACITY_FACULTY_MODEL §2 admits a probability about SELF as a measurement and refuses one about another's choice; a figure a SUBMITTER hands over is neither measured nor about self-performance, so an unlabelled 0.7 on a governance record becomes a measurement this platform never made."
+ },
+ {
+  "tag": "the commitment stops travelling with the submission",
+  "file": "agentic_core/api/change_control.py",
+  "old": "        \"commitment\": change.get(\"commitment\"),\n        \"variance\": change.get(\"variance\"),\n        \"variance_basis\": change.get(\"variance_basis\"),",
+  "new": "        \"_commitment\": change.get(\"commitment\"),\n        \"_variance\": change.get(\"variance\"),\n        \"_variance_basis\": change.get(\"variance_basis\"),",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "A promise stored on a record and absent from the response is a fact rendered nowhere — the shape the method_check in this same file already had to be fixed for. The caller that MADE the promise is exactly who needs to see what was kept of it."
+ },
+ {
+  "tag": "the variance stops saying its rounds figure is derived",
+  "file": "agentic_core/api/change_control.py",
+  "old": "        derived = (f\"DERIVED, not counted: {elapsed_h} elapsed hours divided by the {median_h} h median \"",
+  "new": "        derived = (f\"{elapsed_h} elapsed hours over the {median_h} h median \"",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "A ROUND IS NOT A CLOCK UNIT. Without the word and the divisor named, `rounds_equivalent` reads as a COUNT of rounds nobody counted — a figure carrying the name of something it did not measure, which is this repository's oldest rule about numbers."
+ },
+ {
+  "tag": "one of the two outcome sites stops recording the variance",
+  "file": "agentic_core/api/change_control.py",
+  "old": "    _record_variance(c, now, \"implemented\")                   # W581 (FU-313) — the SECOND of two sites",
+  "new": "    pass  # W581 (FU-313) — the SECOND of two sites",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "THE SECOND-WRITER CLASS, which has cost this repository more rounds than any other: `status = \"implemented\"` is set in two places and a fix applied to one of them leaves the other silent. The leg asserts it over the AST of every function that marks a change implemented, so a third site added later is caught too."
+ },
+ {
+  "tag": "a variance is invented for a change nothing was promised about",
+  "file": "agentic_core/api/change_control.py",
+  "old": "    if not isinstance(commitment, dict):",
+  "new": "    if False and not isinstance(commitment, dict):",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "Then a change with no commitment gets a variance against `committed_rounds: None` — a measured outcome compared with a promise that was never made. 'No promise' and 'a promise of nothing' are different records and only one of them has a variance."
+ },
+ {
+  "tag": "the queue drops the promise, so it is invisible in flight",
+  "file": "agentic_core/api/change_control.py",
+  "old": "                \"commitment\": c.get(\"commitment\"),\n                \"variance\": c.get(\"variance\"),\n                \"variance_basis\": c.get(\"variance_basis\"),",
+  "new": "                \"_commitment\": c.get(\"commitment\"),\n                \"_variance\": c.get(\"variance\"),\n                \"_variance_basis\": c.get(\"variance_basis\"),",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "The queue is the list the growing tip reads. A commitment held only on the individual record is a promise nobody sees WHILE THE WORK IS IN FLIGHT, which is the whole reason for recording one rather than reporting it afterwards."
+ },
+ {
+  "tag": "the page stops rendering the promise",
+  "file": "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx",
+  "old": "              {entry.commitment && (",
+  "new": "              {false && entry.commitment && (",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "Clause (1) of this item's ACCEPT: the property is driven on the surface a person actually reads, never only on the API beneath it, because a writer fixed without its reader moves the untruth down a layer. W503's class, so the leg asserts the gate WITH its opening brace."
+ },
+ {
+  "tag": "the page renders a confidence without saying whether it was declared",
+  "file": "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx",
+  "old": "                      {entry.commitment.confidence_is_declared ? ' declared' : ' measured'}",
+  "new": "                      {' confidence'}",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "§2's line then holds in the record and is LOST ON THE SURFACE. A reviewer looking at 70% on a card has no other way to know whether this platform measured it or a submitter asserted it, and that is the only distinction that makes the number admissible at all."
+ },
+ {
+  "tag": "orchestrate goes back to silently dropping what a caller promised",
+  "file": "agentic_core/api/transformation_orchestration.py",
+  "old": "    committed_rounds: int | None = None\r\n    confidence: float | None = None\r\n    commitment_basis: str = \"\"",
+  "new": "    pass  # undeclared, so Pydantic discards whatever the caller sent",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "THE ROW'S ORIGINAL MEASUREMENT: an undeclared field is discarded and the caller still gets a 200, so a transformation could be promised in a number of rounds at a stated confidence and nothing anywhere held the promise. The platform-wide half — 206 models, none forbidding extras — is registered separately."
+ }
+]

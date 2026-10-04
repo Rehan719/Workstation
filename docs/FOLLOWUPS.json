@@ -5462,12 +5462,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W581",
       "note": "",
       "tier": 2,
       "reach": "internal",
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A commitment is recorded AT SUBMIT (committed_rounds, confidence, a required basis) against a capacity the platform MEASURES from its own commit history (median 1.61h per round over 104 rounds at the time of building, with quartiles and sample size), and a VARIANCE is read back at the outcome. The design follows CAPACITY_FACULTY_MODEL section 2, which is permissive rather than prohibitive here: a probability about SELF is a measurement and one about another's choice is a fabrication, so a commitment about this platform's own delivery is admissible - but a number a CALLER supplies is not a measurement, so confidence is stored and RENDERED as DECLARED, and a commitment with no basis is REFUSED 422 rather than stored. The variance measures ELAPSED HOURS from the record's own stamps and derives a rounds figure only by dividing by a median it NAMES, because a round is not a clock unit; where no capacity was measured the rounds figure is None with a reason rather than a number. OrchestrateRequest declares the two fields that were being silently dropped and threads them to the change it files. The promise reaches the QUEUE (the list the growing tip reads, so it is visible while work is in flight) and the governance PAGE, with the declared/measured label on screen. Both of the two places that mark a change implemented call one helper, asserted over the AST so a third site added later is caught. AND THE PRE-FLIGHT CAUGHT ELEVEN KEYS OF MY OWN REACHING NO SURFACE: four were duplicates of fields that already render and were removed, four were the measured capacity and now reach the chip's title including the quartiles, one prose field was folded into the basis the title shows, and the stage echo's prose moved into the stage basis the page actually consumes. It also surfaced FOUR pre-existing sibling-return disagreements in the two functions this round touched - FU-334's class - and all four are fixed. 10 of 10 blinds red, re-run after the post-sweep edits."
     },
     {
       "id": "FU-314",
@@ -7240,6 +7243,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "clause (a)'s property applied to a gate's pass: a reader is told what was NOT screened"
+    },
+    {
+      "id": "FU-402",
+      "title": "An item holding routes can only be closed by handing ALL of them to one destination, which is how a sink is made",
+      "why": "MEASURED IN W581, when P2.18's three clauses were all delivered and the item still could not be marked done. followups.py done P2.18 --reroute REFUSES with: \"7 route(s) still send new rows to P2.18: pass --hand-to <the open item that owns that area now>\". And --hand-to takes exactly ONE item. So the mechanism's only way to close an item that holds routes is to move ALL of them to a single destination, which is the definition of a sink. THIS IS HOW P2.4 BECAME ONE. Its own charter records it: nine of eleven open rows arrived AFTER its bar was written, through routes handed in when P1.16, P2.6, P2.8, P2.9, P3.18 and P3.19 closed, and the Owner ruled on 2026-10-02 that HIGH rows must route BY AREA precisely because that short-circuit is why P2.4 never closed. P2.18 then inherited all seven of those routes by the same single-target mechanism, and is now in the same position one item later. THE SEVEN AREAS HAVE NO OPEN OWNER BETWEEN THEM: autonomous technical support, the geospheric regulators and the causal simulator, the perimeter and the governance gate, the cascade's delivery measurement, the economy's flows, the catalogue and product directories (the largest, spanning forty files), and the developer pages' export surfaces. Every original owner is CLOSED, which is exactly why the rows keep landing wherever the mechanism last pointed. SO THE DECISION IS NOT A ROUND'S TO MAKE: handing seven unrelated areas to one open item recreates the condition the Owner has already ruled against, and splitting them by area is a thing the CLI cannot currently express. THE WORK, and it is two separable pieces. (1) THE MECHANISM: let an item's routes be handed per-route rather than per-item, so done takes a mapping or defers to the by-area routing that route_row already performs for a new row - the rule exists, it is simply not reachable from done. (2) THE DECISION, which belongs to the Owner once the mechanism can express it: for each of the seven areas, the open item that owns it now, or a statement that the area has no owner and new rows in it are unscheduled rather than silently assigned. UNTIL THEN P2.18's CLAUSES ARE DELIVERED AND THE ITEM IS NOT MARKED DONE, which is the honest state rather than either pretending the item is open work or forcing a routing nobody chose. Note the plan's own order makes the trap plain: the next open item before P2.18 is P2.17, whose subject is the round's own cost, and handing it the catalogue scatter would be absurd on its face.",
+      "source": "W581 (P2.18's three clauses were delivered and the item still could not be marked done)",
+      "found": "2026-10-04",
+      "files": [
+        "scripts/followups.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the mechanism half is a round's work, but WHERE seven inherited areas go is a plan-structure decision the Owner has already ruled on once (2026-10-02, route BY AREA) and a round may not reinterpret"
     }
   ],
   "routes": [

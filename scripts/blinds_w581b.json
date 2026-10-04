@@ -1,0 +1,11 @@
+[
+ {
+  "tag": "orchestrate goes back to silently dropping what a caller promised",
+  "file": "agentic_core/api/transformation_orchestration.py",
+  "old": "    committed_rounds: int | None = None\r\n    confidence: float | None = None\r\n    commitment_basis: str = \"\"",
+  "new": "    pass  # undeclared, so Pydantic discards whatever the caller sent",
+  "selector": "w581_p218c",
+  "expect": "BLIND(red)",
+  "why": "THE ROW'S ORIGINAL MEASUREMENT: an undeclared field is discarded and the caller still gets a 200, so a transformation could be promised in a number of rounds at a stated confidence and nothing anywhere held the promise. The platform-wide half — 206 models, none forbidding extras — is registered separately."
+ }
+]

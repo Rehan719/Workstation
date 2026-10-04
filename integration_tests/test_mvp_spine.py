@@ -37479,6 +37479,233 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
             "not an error", _v577, _w577)
 
 
+def test_w581_p218c_a_promise_the_record_can_hold_and_a_variance_it_can_read_back(client):
+    """P2.18 clause (c) — a promise this platform can record, against a capacity it measured.
+
+    MEASURED BEFORE BUILDING, and the row's own W514 measurement held at HEAD: `/cca/submit` already
+    returned a real method_check, scope_appraisal, health_gate and immune_threat_at_submit, and the change
+    already reached `/cca/queue`. What did not exist was any commitment, confidence, variance, budget or
+    capacity field anywhere on the record, the queue or the individual GET — and `committed_rounds` and
+    `confidence` sent to /transformation/orchestrate were SILENTLY DROPPED, because Pydantic discards a
+    field a model does not declare and the caller still receives a 200.
+
+    THE INVARIANT IS PERMISSIVE HERE, AND THE DISTINCTION IS THE WHOLE DESIGN. CAPACITY_FACULTY_MODEL §2:
+    "a probability about SELF is a measurement; a probability about ANOTHER'S CHOICE is a fabrication.
+    That line is why `_prospect` is right to refuse and why the capacity figure is nonetheless
+    admissible." So a commitment about this platform's own delivery may be recorded — but a number a
+    CALLER hands over is not a measurement, so `confidence` is stored and rendered as DECLARED, it is
+    refused without a basis, and the capacity beside it is measured from this repository's own history.
+    """
+    import json as _json581
+    import pathlib as _pl581
+    import re as _re581
+
+    from fastapi import HTTPException as _HE581
+
+    from agentic_core.api.change_control import (SubmitChangeRequest as _SCR581,
+                                                 _load_change as _load581,
+                                                 _record_variance as _rv581,
+                                                 submit_change as _submit581)
+
+    _root = _pl581.Path(__file__).resolve().parents[1]
+    _aio581 = _ensure_loop()
+
+    # ── L1. A FIGURE THIS PLATFORM CANNOT EXPLAIN IS REFUSED, NOT STORED ────────────────────────────
+    for _bad581, _why581 in (
+        ({"committed_rounds": 3}, "rounds with no basis"),
+        ({"confidence": 0.9}, "a confidence with no basis"),
+    ):
+        try:
+            _aio581.run_until_complete(_submit581(_SCR581(
+                title="w581 unexplained", description="d", **_bad581)))
+            raise AssertionError(
+                f"an unexplained commitment was STORED ({_why581}). A number on a governance record is "
+                f"read by a later round as a measurement, which is the defect this whole method removes")
+        except _HE581 as _e581:
+            assert _e581.status_code == 422, (_why581, _e581.status_code)
+            assert "based on" in str(_e581.detail), (_why581, _e581.detail)
+    #  and a confidence outside 0..1, or a promise of zero rounds, are refused too
+    for _bad581 in ({"confidence": 1.4}, {"committed_rounds": 0}):
+        try:
+            _aio581.run_until_complete(_submit581(_SCR581(
+                title="w581 out of range", description="d", commitment_basis="b", **_bad581)))
+            raise AssertionError(f"an impossible commitment was stored: {_bad581}")
+        except _HE581 as _e581:
+            assert _e581.status_code == 422, (_bad581, _e581.status_code)
+
+    # ── L2. A COMMITMENT IS RECORDED, THE CONFIDENCE IS LABELLED, THE CAPACITY IS MEASURED ─────────
+    _out581 = _aio581.run_until_complete(_submit581(_SCR581(
+        title="w581 a promise", description="d", committed_rounds=2, confidence=0.7,
+        commitment_basis="two rounds at the measured pace; one file and one guard")))
+    _cid581 = _out581["cca_id"]
+    #  IT TRAVELS WITH THE SUBMISSION. A promise stored on a record and absent from the response is a
+    #  fact rendered nowhere, which is the shape this method warns of and which the method_check already
+    #  had to be fixed for.
+    _c581 = _out581.get("commitment")
+    assert isinstance(_c581, dict), (
+        "submit_change does not return the commitment it just recorded, so the caller that made the "
+        "promise cannot see what was kept of it", sorted(_out581))
+    assert _c581.get("committed_rounds") == 2 and _c581.get("confidence") == 0.7, _c581
+    assert _c581.get("confidence_is_declared") is True, (
+        "a confidence a SUBMITTER stated is recorded without being marked declared, so a later reader "
+        "takes it for a measurement this platform made - §2's line is the whole discipline here", _c581)
+    #  the ATTRIBUTION, asserted where it now lives. It was a separate `confidence_basis` key and the
+    #  pre-flight was right that it reached no surface: the page renders the WORD "declared" from the
+    #  boolean above, so the long form is appended to the basis the chip's title already shows. One
+    #  statement, one reader — rather than a second prose field nobody consumes.
+    assert "not measured by this platform" in str(_c581.get("basis") or ""), (
+        "the commitment's basis does not attribute the confidence to the SUBMITTER, so the one sentence a "
+        "reviewer can hover for does not say who asserted the number", _c581.get("basis"))
+    #  the capacity is MEASURED from this repo's own history, or says it was not
+    _cap581 = _c581.get("capacity_at_submit")
+    _capb581 = str(_c581.get("capacity_basis") or "")
+    assert _cap581 is not None or "NOT MEASURED" in _capb581, (
+        "the capacity is absent with no reason, so a reader cannot tell an unmeasured pace from a pace "
+        "of zero", _c581)
+    if _cap581 is not None:
+        assert isinstance(_cap581.get("median_hours_per_round"), (int, float)), _cap581
+        assert _cap581.get("rounds_measured"), (
+            "a median with no sample size is not a measurement anybody can weigh", _cap581)
+    #  and the variance is None WITH A REASON: "not yet" is not "nobody measured it"
+    assert _out581.get("variance") is None
+    assert "no outcome yet" in str(_out581.get("variance_basis") or ""), _out581.get("variance_basis")
+
+    # ── L3. THE VARIANCE IS READ BACK, AND IT IS HONEST ABOUT ITS UNIT ──────────────────────────────
+    _rec581 = _load581(_cid581)
+    _rec581["submitted_at"] = "2026-10-01T00:00:00Z"          # force a gap, so the arithmetic is visible
+    _rv581(_rec581, "2026-10-04T12:00:00Z", "implemented")
+    _v581 = _rec581.get("variance")
+    assert isinstance(_v581, dict), "no variance was recorded at the outcome"
+    assert _v581.get("elapsed_hours") == 84.0, (
+        "the elapsed time is not measured from the record's own stamps", _v581)
+    assert _v581.get("committed_rounds") == 2
+    assert _v581.get("within_commitment") is False and _v581.get("over_by_rounds") > 0, _v581
+    #  A ROUND IS NOT A CLOCK UNIT. The rounds figure must say it is DERIVED and name what it divided by,
+    #  or it is a count of rounds nobody counted - this repository's oldest rule about figures.
+    _der581 = str(_v581.get("derivation") or "")
+    assert "DERIVED" in _der581 and "not counted" in _der581.lower(), (
+        "the rounds figure does not say it is derived", _der581)
+    assert _re581.search(r"\d+(\.\d+)?\s*h median round length", _der581), (
+        "the derivation does not NAME the median it divided by, so the figure cannot be checked", _der581)
+    #  W581 — THE PROPERTY, ASSERTED WHERE IT NOW LIVES. The variance used to carry its own copy of the
+    #  confidence and its label, and the pre-flight was right that neither reached a surface: the
+    #  commitment block beside it holds them and the page renders the label. Two fields holding one fact
+    #  is how they drift apart, so the duplicate went and the property is asserted on the survivor —
+    #  measuring an outcome must not turn a stated figure into a measured one.
+    _after581 = (_rec581.get("commitment") or {})
+    assert _after581.get("confidence") == 0.7 and _after581.get("confidence_is_declared") is True, (
+        "recording the outcome lost or unlabelled the DECLARED confidence, so a later reader takes a "
+        "submitter's figure for one this platform measured", _after581)
+    assert "confidence_declared" not in _v581 and "confidence_was_declared" not in _v581, (
+        "the variance carries a second copy of the confidence again. It reached no surface and the "
+        "commitment's own labelled field does, so a duplicate here can only drift from it", sorted(_v581))
+
+    # ── L4. NO PROMISE MEANS NO VARIANCE, AND IT STAYS THAT WAY AFTER AN OUTCOME ────────────────────
+    _out2581 = _aio581.run_until_complete(_submit581(_SCR581(title="w581 no promise", description="d")))
+    assert _out2581.get("commitment") is None
+    assert "no commitment was recorded" in str(_out2581.get("variance_basis") or "")
+    _rec2581 = _load581(_out2581["cca_id"])
+    _rv581(_rec2581, "2026-10-04T12:00:00Z", "implemented")
+    assert _rec2581.get("variance") is None, (
+        "a variance was invented for a change nothing was promised about", _rec2581.get("variance"))
+
+    # ── L5. BOTH OUTCOME SITES RECORD IT — the second-writer class, asserted on the AST ─────────────
+    import ast as _ast581
+    _ccsrc581 = (_root / "agentic_core/api/change_control.py").read_text(encoding="utf-8",
+                                                                        errors="replace")
+    _tree581 = _ast581.parse(_ccsrc581)
+    _implemented581, _recorded581 = [], []
+    for _n581 in _ast581.walk(_tree581):
+        if not isinstance(_n581, (_ast581.FunctionDef, _ast581.AsyncFunctionDef)):
+            continue
+        _seg581 = _ast581.get_source_segment(_ccsrc581, _n581) or ""
+        _code581 = "\n".join(l.split("#", 1)[0] for l in _seg581.splitlines())
+        #  a plain substring test, not a regex: the pattern needs both quote styles in one character
+        #  class and every spelling of that regex here has fought the surrounding string's own quoting.
+        #  Two literals, both spellings, no escaping to get wrong.
+        if ('["status"] = "implemented"' in _code581
+                or "['status'] = 'implemented'" in _code581):
+            _implemented581.append(_n581.name)
+            if "_record_variance(" in _code581:
+                _recorded581.append(_n581.name)
+    assert len(_implemented581) >= 2, (
+        "this leg found fewer than the two known places that mark a change implemented, so it is not "
+        "checking what it was written to check", _implemented581)
+    assert set(_implemented581) == set(_recorded581), (
+        "a function marks a change IMPLEMENTED and does not record its variance. One site fixed and its "
+        "sibling missed is this repository's second-writer class",
+        sorted(set(_implemented581) - set(_recorded581)))
+
+    # ── L6. THE QUEUE CARRIES IT, AND THE PAGE RENDERS IT ──────────────────────────────────────────
+    _q581 = client.get("/api/v1/cca/queue")
+    assert _q581.status_code == 200, _q581.status_code
+    _rows581 = _q581.json()
+    #  the route answers {"queue": [...], "total": n} — read from the response rather than guessing, and
+    #  fail loudly if the shape changes rather than silently finding no rows to check
+    if isinstance(_rows581, dict):
+        assert "queue" in _rows581, (
+            "the queue route's shape changed, so this leg would find no rows and pass by examining "
+            "nothing", sorted(_rows581))
+        _rows581 = _rows581["queue"]
+    assert isinstance(_rows581, list) and _rows581, "the queue returned no rows to check"
+    _mine581 = [r for r in _rows581 if r.get("cca_id") == _cid581]
+    assert _mine581, ("the change this leg submitted is not in the queue the growing tip reads", _cid581)
+    for _k581 in ("commitment", "variance", "variance_basis"):
+        assert _k581 in _mine581[0], (
+            "the queue drops the promise, so it is invisible while the work is IN FLIGHT - which is the "
+            "whole reason for recording one", _k581, sorted(_mine581[0]))
+    assert (_mine581[0].get("commitment") or {}).get("committed_rounds") == 2, _mine581[0]
+
+    # ── L7. ORCHESTRATE NO LONGER DROPS WHAT A CALLER PROMISED ──────────────────────────────────────
+    #  The row's ORIGINAL measurement was here: `committed_rounds` and `confidence` were sent to
+    #  /transformation/orchestrate and SILENTLY DISCARDED, because Pydantic drops a field a model does not
+    #  declare and the caller still receives a 200. A blind proved the legs above never touched this
+    #  route — they drive submit_change directly — so reverting the declaration left them all green.
+    #  Asserted on the MODEL's binding rather than its source text: an undeclared field has no attribute.
+    from agentic_core.api.transformation_orchestration import OrchestrateRequest as _OR581
+    _req581 = _OR581(objective="w581", committed_rounds=3, confidence=0.5,
+                     commitment_basis="driven by the guard")
+    for _f581, _want581 in (("committed_rounds", 3), ("confidence", 0.5)):
+        assert getattr(_req581, _f581, None) == _want581, (
+            "the orchestrate request DISCARDS what a caller promised: an undeclared field is dropped and "
+            "the caller still gets a 200, so a transformation can be promised in a number of rounds at a "
+            "stated confidence with nothing anywhere holding the promise", _f581)
+    #  and the promise must be THREADED to the change the orchestration files, or it is declared and then
+    #  thrown away one line later — asserted on the call's own keywords.
+    _tosrc581 = (_root / "agentic_core/api/transformation_orchestration.py").read_text(
+        encoding="utf-8", errors="replace")
+    _totree581 = _ast581.parse(_tosrc581)          # _ast581 is imported by L5 above
+    _threaded581 = False
+    for _n581b in _ast581.walk(_totree581):
+        if not isinstance(_n581b, _ast581.Call):
+            continue
+        _fn581b = getattr(_n581b.func, "id", None) or getattr(_n581b.func, "attr", None)
+        if _fn581b != "SubmitChangeRequest":
+            continue
+        _kw581 = {k.arg for k in _n581b.keywords}
+        if {"committed_rounds", "confidence"} <= _kw581:
+            _threaded581 = True
+    assert _threaded581, (
+        "orchestrate declares the commitment fields and does not pass them to the change it files, so "
+        "they are accepted and discarded one layer further down")
+
+    #  the page, with comments stripped, asserted on the GATE and its opening brace
+    _page581 = (_root / "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    _pcode581 = _re581.sub(r"(?m)^\s*//.*$", " ",
+                          _re581.sub(r"/\*.*?\*/", " ", _page581, flags=_re581.S))
+    assert "{entry.commitment && (" in _pcode581, (
+        "the promise reaches the queue and not the page a reviewer reads, which moves the untruth down a "
+        "layer rather than removing it - clause (1) of this item's ACCEPT")
+    assert "{entry.variance != null && (" in _pcode581, "the variance reaches no page"
+    assert 'data-testid="cca-commitment"' in _pcode581 and 'data-testid="cca-variance"' in _pcode581
+    #  AND THE DECLARED LABEL IS ON SCREEN. A reviewer looking at 0.7 on a card has no other way to know
+    #  whether this platform measured it.
+    assert "confidence_is_declared ?" in _pcode581, (
+        "the page renders a confidence without saying whether it was DECLARED or measured, so §2's line "
+        "holds in the record and is lost on the surface")
+
+
 def test_w580_every_screen_is_driven_by_the_method_that_found_the_distress_miss(client):
     """P2.18 — the method that found two real defects in the distress gate, applied to every other screen.
 

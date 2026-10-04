@@ -132,6 +132,13 @@ class OrchestrateRequest(BaseModel):
     owner_id: str = "Rehan"
     domain: str = "enterprise"
     deep: bool = False                  # also run the Chief's cognition on Workstation's OWN native AI swarm (in-house, always works)
+    # W581 (FU-313) — DECLARED, because an undeclared field is DISCARDED and the caller still gets a 200.
+    # These two were being sent here and vanishing, so a transformation could be promised in a number of
+    # rounds at a stated confidence and nothing anywhere held the promise. They are threaded to the change
+    # the orchestration files under Change Control, which is the record a variance can be read back from.
+    committed_rounds: int | None = None
+    confidence: float | None = None
+    commitment_basis: str = ""
 
 
 # ── The cascade ───────────────────────────────────────────────────────────────
@@ -375,21 +382,49 @@ async def orchestrate(req: OrchestrateRequest):
             rationale="Close the vision→realisation gap via the VSB delivery org.",
             affected_systems=["transformation", "business_plan", "board"],
             submitted_by="transformation_orchestrator", vsb_id=req.scope if req.scope != "workstation" else None,
+            # W581 (FU-313) — the promise travels with the change. submit_change REFUSES a commitment
+            # with no basis, so a default is supplied here naming where it came from rather than letting
+            # a caller's figure be stored unexplained; a caller's own basis wins when they give one.
+            committed_rounds=req.committed_rounds,
+            confidence=req.confidence,
+            commitment_basis=(req.commitment_basis.strip()
+                              or ("declared by the caller of /transformation/orchestrate for scope "
+                                  f"'{req.scope}'; no basis was given with it"
+                                  if (req.committed_rounds is not None or req.confidence is not None)
+                                  else "")),
         ))
     except Exception as e:
         cca = {"error": str(e)[:120]}
+    #  W581 (FU-313) — what this run PROMISED, on the run's own output. A commitment held only on the CCA
+    #  record is invisible to whoever reads the orchestration that made it.
+    _commitment_echo = None
+    if isinstance(cca, dict):
+        _commitment_echo = cca.get("commitment")
     stage(7, "Change Control Agency (arms-length)", "Digital Twin",
           "Submit the transformation under arms-length change control",
           # W459 — these read `change_id`/`tier`, which submit_change has never returned (it
           # returns cca_id / impact_tier / status), so stage 7 reported nulls while claiming verified
+          # W581 (FU-313) — and WHAT WAS PROMISED, on the run's own output. `commitment` is None when the
+          # caller promised nothing, which is different from a promise of zero and is why the basis below
+          # says which case it is.
           {"change_id": cca.get("cca_id"), "tier": cca.get("impact_tier"),
-           "status": cca.get("status")},
+           "status": cca.get("status"),
+           # W581 (FU-313) — the structured fact only. A prose `commitment_basis` lived here and reached
+           # NOBODY: TransformationDashboard renders a stage's step, tier, action, verified, checks and
+           # basis, never its `output`. The sentence moved into this stage's `basis` below, which the page
+           # does consume; `commitment` stays because the CCA page renders it properly.
+           "commitment": _commitment_echo},
           # W481 — filing is not a verdict: an approved decision verifies, a held or rejected one FAILS,
           # and a request still awaiting a decision is not assessable.
           verified=(None if not cca.get("cca_id") or str(cca.get("status") or "").lower() in ("submitted", "pending", "")
                     else str(cca.get("status")).lower() in ("approved", "auto_approved", "implemented")) if cca.get("cca_id") else False,
           checks="decision",
-          basis=((f"change request {cca.get('cca_id')} was {cca.get('status')}"
+          basis=((("" if not _commitment_echo else
+                   (f"{_commitment_echo.get('committed_rounds')} round(s) promised"
+                    + (f" at a DECLARED confidence of {_commitment_echo.get('confidence')}"
+                       if _commitment_echo.get("confidence_is_declared") else "")
+                    + "; the variance is read back at the outcome. "))) +
+                 (f"change request {cca.get('cca_id')} was {cca.get('status')}"
                   if str(cca.get("status") or "").lower() not in ("submitted", "pending", "")
                   else f"change request {cca.get('cca_id')} filed and awaiting a decision — not assessable")
                  if cca.get("cca_id") else
