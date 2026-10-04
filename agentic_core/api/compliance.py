@@ -524,6 +524,17 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
             _row["escalated_terms"] = _terms
             _row["reason"] += (f" — escalated for a human to assess: {', '.join(_eth['escalate'])}"
                                + (f" (matched: {', '.join(_terms)})" if _terms else ""))
+        # W576 (FU-318) — THE DIMENSIONS TRAVEL, so a dimension that was never assessed can reach a
+        # surface. This layer flattened every verdict to framework/status/reason/coverage and
+        # DISCARDED the ethical engine's four inner dimensions, and the chip derives its gaps from
+        # framework-level fields alone — so a reader saw THAT the ethical framework was assessed,
+        # never that one of its dimensions was not. W483 correctly removed the quality dimension
+        # from the ethical OVERALL; this is where that correction stopped being visible.
+        #  Only the NOT-ASSESSED names travel. A full per-dimension detail list was added here
+        #  and removed in the same round: the pre-flight found it reaching no surface, and the
+        #  chip renders from these names. A key nothing shows cannot qualify a claim.
+        _row["dimensions_not_assessed"] = [d.get("dimension") for d in (_eth.get("dimensions") or [])
+                                           if d.get("status") == "not_assessed"]
         verdicts.append(_row)
     except Exception:
         verdicts.append(_verdict("ethical", "review",

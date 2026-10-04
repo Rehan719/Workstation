@@ -67,9 +67,16 @@ def _load() -> List[Dict[str, Any]]:
     return []
 
 
+#  W576 (FU-316) — THE CAP IS NAMED, because the writer and the reader must agree on it. It was the
+#  literal 300 here and nowhere else, so the list route counted what remained and reported it as the
+#  total with nothing saying the oldest rows had been discarded. A store sitting exactly on its cap
+#  has been dropping rows, and a count over it reads as complete.
+_ROW_CAP = 300
+
+
 def _save(rows: List[Dict[str, Any]]) -> None:
     _STORE.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(_STORE, rows[-300:])
+    atomic_write_json(_STORE, rows[-_ROW_CAP:])
 
 
 def _grounding(vsb_id: Optional[str]) -> str:
@@ -332,7 +339,20 @@ async def list_deliverables(vsb_id: Optional[str] = None,
                   # W455 — a FAIL is visible on the list row, not only in the detail pane
                   "compliance_overall": ((d.get("quality_assurance") or {}).get("quality") or {}).get("compliance", {}).get("overall"),
                   "updated_at": d.get("updated_at")} for d in rows]
-    return {"deliverables": summaries[::-1], "total": len(summaries)}
+    # W576 (FU-316) — AN EVICTION THAT REACHES THE READER. `total` is the number of rows that
+    # SURVIVE, and the store keeps only the newest _ROW_CAP of them. Sitting exactly on the cap is
+    # the signal that older deliverables have already been discarded, so the count is of what
+    # remains and not of everything produced — which is a different statement, and the one a reader
+    # would otherwise take it for.
+    _at_cap = len(rows) >= _ROW_CAP
+    return {"deliverables": summaries[::-1], "total": len(summaries),
+            "truncated": _at_cap,
+            "total_basis": (
+                f"the {len(summaries)} deliverable(s) still held. This store keeps only the newest "
+                f"{_ROW_CAP}, and it is AT that cap, so older ones have been dropped and this is not "
+                f"a count of everything ever produced" if _at_cap else
+                f"every deliverable held: {len(summaries)} of a {_ROW_CAP}-row cap, so none has been "
+                f"dropped")}
 
 
 @router.get("/{deliverable_id}")

@@ -37403,3 +37403,149 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
                 and "load_json_tolerant(" in p.read_text(encoding="utf-8", errors="replace")}
     _readers.discard("agentic_core/config.py")
     assert len(_readers) >= 8, ("the loader is kept for readers that no longer exist", sorted(_readers))
+
+
+def test_w576_p218a_an_absence_reaches_the_reader(client):
+    """P2.18 clause (a) — where something could not be read, counted or run, the SURFACE says so.
+
+    Six rows, one property. Each of these had a writer that already knew and a reader that was never
+    told: a crash returning an empty list, a count over a store that had silently dropped its oldest
+    rows, a ledger append whose failure rendered identically to a success, sibling returns whose key
+    sets disagreed, a stage that announced a start it never ended, and four compliance dimensions
+    flattened away before any surface could see them.
+    """
+    import ast as _ast576
+    import asyncio as _aio576
+    import pathlib as _pl576
+    import re as _re576
+    from unittest.mock import patch as _patch576
+
+    _root = _pl576.Path(__file__).resolve().parents[1]
+    _app = _root / "apps" / "workstation-superapp" / "src"
+
+    def _code(p):
+        t = p.read_text(encoding="utf-8")
+        t = _re576.sub(r"/\*.*?\*/", "", t, flags=_re576.S)
+        return "\n".join(l for l in t.splitlines() if not l.lstrip().startswith("//"))
+
+    # ── FU-323 — A CRASH IS NOT AN EMPTY PORTFOLIO ─────────────────────────────────────────────
+    #  The failure is carried INSIDE `insights`, because the sole reader takes that list and nothing
+    #  else: a fix that only added a sibling key would be invisible to it, which is how the original
+    #  `error` key sat unread while a crash rendered as "create your first project".
+    import agentic_core.api.products as _P576
+    with _patch576("agentic_core.projects.api._all_projects",
+                   side_effect=RuntimeError("store unreadable")):
+        _out = _aio576.get_event_loop_policy().new_event_loop().run_until_complete(
+            _P576.intelligence_insights())
+    assert _out["insights"], "a crash returns an EMPTY insights list again, which renders as 'no projects'"
+    _first = _out["insights"][0]
+    assert "could not be computed" in _first["title"].lower(), _first["title"]
+    assert "not a statement" in _first["detail"].lower(), (
+        "the failure does not say that nothing was counted, so it still reads as a measured zero",
+        _first["detail"][:160])
+    #  `error` is the fact, and it is the one the page reads. An `insights_are_complete` flag was
+    #  added here too and removed in the same round: the pre-flight found it reaching no surface,
+    #  and a second key saying what `error` already says is a key that qualifies nothing.
+    assert _out.get("error"), _out.keys()
+    #  AND THE SIBLING RETURNS CARRY THE SAME KEYS — FU-334's property, in the branches this row's
+    #  own fix added. A caller indexing `total_projects` on the crash path must get None (nothing
+    #  was counted) rather than undefined (the key is absent).
+    assert "total_projects" in _out and _out["total_projects"] is None, (
+        "the crash branch omits total_projects, so a caller indexing it gets undefined — or reports "
+        "a measured zero for a count that never ran", _out.get("total_projects"))
+    #  and the page names it rather than printing its onboarding line over a crash
+    _kh = _code(_app / "pages" / "coe" / "KnowledgeHub.tsx")
+    assert "insights-error" in _kh, "the page has no reader for the route's error key"
+
+    # ── FU-316 — A COUNT OVER A CAPPED STORE SAYS SO ───────────────────────────────────────────
+    #  The cap must be a NAMED constant: it was a literal in the writer and nowhere else, so the
+    #  reader could not have known what it was counting against even if it had tried.
+    import agentic_core.api.deliverables as _D576
+    import agentic_core.api.resource_fabric as _R576
+    assert isinstance(_D576._ROW_CAP, int) and isinstance(_R576._SWARM_CAP, int)
+    _dsrc = (_root / "agentic_core/api/deliverables.py").read_text(encoding="utf-8")
+    _rsrc = (_root / "agentic_core/api/resource_fabric.py").read_text(encoding="utf-8")
+    assert "rows[-_ROW_CAP:]" in _dsrc and "rows[-_SWARM_CAP:]" in _rsrc, (
+        "a cap is a bare literal again, so the writer and the reader can disagree about it")
+    #  AT THE SITE, because both files now carry `truncated` on TWO branches — the normal one and
+    #  the unreadable one, which reports None (not known) for key-set parity. A file-wide check
+    #  therefore survived the normal branch losing it, which is the needle-appears-twice class.
+    assert '"truncated": _at_cap' in _dsrc and '"truncated": _at_cap' in _rsrc, (
+        "a count route no longer reports whether its store is AT its cap, so a count over a store "
+        "that has been dropping its oldest rows reads as complete")
+    for _src, _what in ((_dsrc, "deliverables"), (_rsrc, "cascades")):
+        assert '"total_basis"' in _src, (
+            f"the {_what} count carries no basis saying what was counted")
+
+    # ── FU-353 — WHETHER THE DECISION REACHED THE LEDGER ───────────────────────────────────────
+    _cc = (_root / "agentic_core/api/change_control.py").read_text(encoding="utf-8")
+    assert '"ueg_logged": ueg_logged' in _cc, "submit_change no longer returns whether it logged"
+    _ccp = _code(_app / "pages" / "enterprise" / "ChangeControlAgency.tsx")
+    assert "ueg_logged" in _ccp and "NOT RECORDED IN THE GOVERNANCE LEDGER" in _ccp, (
+        "the governance page still renders five fields and not whether the change reached the UEG, "
+        "so an unlogged filing looks identical to a logged one")
+    #  AND IT IS APPENDED TO THE MESSAGE. Computing the sentence and never concatenating it is the
+    #  shape a half-finished fix takes, and it leaves every string in the file for a name check to
+    #  find — the blind that removed `+ ledger` passed this leg until it asserted the binding.
+    assert "+ raised + ledger)" in _ccp, (
+        "the ledger sentence is computed and never appended, so the page says nothing about whether "
+        "the change reached the UEG")
+
+    # ── FU-334 — SIBLING RETURNS AGREE ON THEIR KEYS ───────────────────────────────────────────
+    _ap = (_root / "agentic_core/ai/ceo/autonomy_pipelines.py").read_text(encoding="utf-8")
+    _sets = []
+    for _fn in _ast576.walk(_ast576.parse(_ap)):
+        if isinstance(_fn, (_ast576.FunctionDef, _ast576.AsyncFunctionDef)) and \
+                _fn.name == "run_extrospection":
+            for _n in _ast576.walk(_fn):
+                if isinstance(_n, _ast576.Return) and isinstance(_n.value, _ast576.Dict):
+                    _sets.append(frozenset(k.value for k in _n.value.keys
+                                           if isinstance(k, _ast576.Constant)))
+    assert len(_sets) >= 2, ("run_extrospection no longer has sibling returns to compare", len(_sets))
+    assert len(set(_sets)) == 1, (
+        "run_extrospection's sibling returns carry different key sets, so a caller reading one of "
+        "them gets undefined depending on which path ran", [sorted(s) for s in set(_sets)])
+    assert "status" in next(iter(set(_sets))), sorted(next(iter(set(_sets))))
+
+    # ── FU-369 — EVERY STAGE THIS STREAM OPENS, IT CLOSES ──────────────────────────────────────
+    #  Asserted on the ORDER, not on the presence of a string: the defect was that `_start` was
+    #  yielded BEFORE the template check, so the fix is that the check comes first.
+    #  THE ORDER IS THE FIX, and the first cut of this leg carried an `or "_skipped" in ...` escape
+    #  that made it pass whatever the order was. A stage must not be ANNOUNCED as started before
+    #  anything knows whether it can run: an absent ending is indistinguishable from a cut stream.
+    _intel = (_root / "agentic_core/api/intelligence.py").read_text(encoding="utf-8")
+    _loop = _intel.index("for i, (stage_key, stage_label, stage_desc) in enumerate(stages):")
+    _body = _intel[_loop:_loop + 2000]
+    _check = _body.index("prompt_template = prompts.get(stage_key")
+    _start = _body.index('_ev(f"{stage_key}_start"')
+    assert _check < _start, (
+        "a stage announces its START before the template check, so one that cannot run is announced "
+        "as begun and then silently never finishes")
+    assert '_ev(f"{stage_key}_skipped"' in _body, (
+        "a stage with no template is skipped silently; the stream must say which stage and why")
+
+    # ── FU-318 — A DIMENSION THAT ASSESSED NOTHING REACHES THE READER ──────────────────────────
+    from agentic_core.api.compliance import screen_compliance as _screen576
+    _r = _screen576("a delivery about employment tribunal representation and data handling")
+    if _aio576.iscoroutine(_r):
+        _r = _aio576.get_event_loop_policy().new_event_loop().run_until_complete(_r)
+    _eth = [v for v in _r["verdicts"] if v.get("framework") == "ethical"]
+    assert _eth, "the ethical framework no longer appears in the screen"
+    #  Only the NOT-ASSESSED names travel: a full per-dimension detail list was added here and
+    #  removed in the same round because the pre-flight found it reaching no surface. The names are
+    #  what the chip renders, so the names are what must survive.
+    assert "dimensions_not_assessed" in _eth[0], (
+        "the compliance layer flattens the ethical engine's dimensions away again, so a reader sees "
+        "THAT the framework was assessed and never that a dimension inside it was not", _eth[0].keys())
+    assert _eth[0]["dimensions_not_assessed"], (
+        "no dimension is reported unassessed, though the engine's own basis says all three ethical "
+        "dimensions are word lists that cannot assess a subject — this leg would then be vacuous",
+        _eth[0])
+    _chip = _code(_app / "lib" / "api.ts")
+    assert "dimensions_not_assessed" in _chip and "DIMENSIONS not assessed" in _chip, (
+        "complianceChip still derives everything from framework-level status, so a dimension-level "
+        "not_assessed reaches no surface")
+    #  AND IT IS RENDERED. `dimGaps` stayed computed and correct while the render was switched off,
+    #  which left both names above in the file for a presence check to find.
+    assert "dimGaps.length ?" in _chip, (
+        "the dimension gap is computed and never shown, so the producer-side fix reaches no reader")

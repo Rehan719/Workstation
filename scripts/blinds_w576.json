@@ -1,0 +1,92 @@
+[
+ {
+  "tag": "a crash returns an empty insights list again",
+  "file": "agentic_core/api/products.py",
+  "old": "            \"insights\": [{\r\n                \"id\": \"i-err\",",
+  "new": "            \"insights\": [], \"_unreached\": [{\r\n                \"id\": \"i-err\",",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "The committed defect. (The first cut of this blind wrote `[] or [{...}]`, which evaluates to the NON-EMPTY list — a no-op that reported the guard VACUOUS when nothing had been restored. A blind that changes no behaviour accuses a guard of its own mistake.) The sole reader takes `insights` and nothing else, so an empty list renders as \"Create projects to generate portfolio insights\": a crash shown to the founder as the statement that they have no projects. Every other key, `error` included, survives here — which is how the original was."
+ },
+ {
+  "tag": "the failure stops saying that nothing was counted",
+  "file": "agentic_core/api/products.py",
+  "old": "                \"detail\": (f\"The computation failed, so this is NOT a statement that you have no \"",
+  "new": "                \"detail\": (f\"No insights are available right now. \" + f\"\" + f\"\" if False else f\"No insights are available right now. \"",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "A failure named without saying what it is NOT is still read as a measured zero: 'no insights available' and 'you have no projects' are the same sentence to a reader. The whole value of this row's fix is the clause that refuses that reading."
+ },
+ {
+  "tag": "a cap goes back to being a bare literal",
+  "file": "agentic_core/api/deliverables.py",
+  "old": "    atomic_write_json(_STORE, rows[-_ROW_CAP:])",
+  "new": "    atomic_write_json(_STORE, rows[-300:])",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "The writer and the reader must agree on the cap or the reader cannot know what it is counting against. A literal in the writer is how this store dropped rows for rounds while its count read as complete — the number was correct and known to nobody."
+ },
+ {
+  "tag": "the deliverables count stops saying it is truncated",
+  "file": "agentic_core/api/deliverables.py",
+  "old": "            \"truncated\": _at_cap,",
+  "new": "            \"_truncated\": _at_cap,",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "A renamed key is silent. The store sits exactly on its cap in normal use, so this is the live case and not an edge one: a total over a store that has been discarding its oldest rows reads as a complete count of everything produced."
+ },
+ {
+  "tag": "the cascade count stops saying it is truncated",
+  "file": "agentic_core/api/resource_fabric.py",
+  "old": "    return {\"cascades\": rows, \"total\": len(rows), \"truncated\": _at_cap,",
+  "new": "    return {\"cascades\": rows, \"total\": len(rows),",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "The same defect in the second store. This route already states its UNREADABLE case out loud ('this is not a statement that you have none') and said nothing at all about a TRUNCATED one — the two absences are the same class and only one was handled."
+ },
+ {
+  "tag": "the governance page stops saying whether the ledger took it",
+  "file": "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx",
+  "old": "+ raised + ledger);",
+  "new": "+ raised);",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "The `ledger` string stays computed and is simply not appended — the shape a half-finished fix takes, and the one a source check for the variable name would pass. On the page whose whole purpose is to show that a change was recorded, a filing whose UEG append FAILED then renders identically to one that succeeded."
+ },
+ {
+  "tag": "the sibling returns disagree again",
+  "file": "agentic_core/ai/ceo/autonomy_pipelines.py",
+  "old": "            \"status\": \"CHECKED\",\n            \"detail\": (f\"{len(external_data)} supplied external signal(s) were mapped to \"",
+  "new": "            \"detail\": (f\"{len(external_data)} supplied external signal(s) were mapped to \"",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "`status` is the key that tells a caller WHICH path ran, and it was present on one branch and absent on the other — so the caller who most needs it gets undefined precisely when the answer matters. The leg compares the key SETS rather than looking for a string."
+ },
+ {
+  "tag": "a stage announces a start it may never end",
+  "file": "agentic_core/api/intelligence.py",
+  "old": "        prompt_template = prompts.get(stage_key, \"\")\n        if not prompt_template:\n            yield _ev(f\"{stage_key}_skipped\", stage_label,",
+  "new": "        yield _ev(f\"{stage_key}_start\", stage_label, stage_desc)\n        prompt_template = prompts.get(stage_key, \"\")\n        if not prompt_template:\n            yield _ev(f\"{stage_key}_skipped\", stage_label,",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "The ORDER is the fix. Even with the skip event present, announcing the start first means a reader watching the stream sees a stage begin before anything knows whether it can run — and an absent ending is indistinguishable from a stream that was cut off. Latent today, because all four engines declare every template."
+ },
+ {
+  "tag": "the compliance dimensions are flattened away again",
+  "file": "agentic_core/api/compliance.py",
+  "old": "        _row[\"dimensions_not_assessed\"] = [d.get(\"dimension\") for d in (_eth.get(\"dimensions\") or [])",
+  "new": "        _row[\"_dimensions_not_assessed\"] = [d.get(\"dimension\") for d in (_eth.get(\"dimensions\") or [])",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "A renamed key, so the chip maps over nothing and renders no dimension gap while the framework row still reads 'assessed'. That is the exact state this row was filed for: the reader can see THAT the framework ran and never that all four dimensions inside it assessed nothing."
+ },
+ {
+  "tag": "the chip stops rendering the dimension gap",
+  "file": "apps/workstation-superapp/src/lib/api.ts",
+  "old": "          + (dimGaps.length ? `\\nDIMENSIONS not assessed:",
+  "new": "          + (false ? `\\nDIMENSIONS not assessed:",
+  "selector": "p218a_an_absence_reaches",
+  "expect": "BLIND(red)",
+  "why": "The producer-side fix is worthless if the surface drops it, and this is the half that would be silently lost: dimGaps is still computed and still correct, and simply never shown. A writer fixed without its reader moves the untruth down a layer."
+ }
+]

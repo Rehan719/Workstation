@@ -410,11 +410,22 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
       // review" when the gate had withheld an automatic approval for a stated, checkable reason: the platform
       // knew more than it told, and the user could not tell what to supply.
       const withheld = res.data.auto_approval_withheld as string | undefined;
+      // W576 (FU-353) — WHETHER THE DECISION REACHED THE LEDGER. `submit_change` has always returned
+      // `ueg_logged` on an approval and this page rendered five other fields and not that one, so a
+      // change whose ledger append FAILED looked identical to one that succeeded — on the page whose
+      // whole purpose is to show that a change was recorded. false is the case that matters, so it
+      // is said loudly; true is said quietly, because silence there is what hid the failure.
+      const logged = (res.data as any).ueg_logged as boolean | undefined;
+      const ledger = logged === false
+        ? ' ⚠ NOT RECORDED IN THE GOVERNANCE LEDGER: the decision stands but its append to the UEG failed, so the audit trail does not carry it.'
+        : logged === true
+          ? ' Recorded in the governance ledger.'
+          : '';
       setMsg((res.data.status === 'approved'
         ? `✓ Auto-approved: LOW tier, ${measured}, immune threat ${res.data.immune_threat_at_submit ?? 'unknown'}`
         : withheld
           ? `✓ Change submitted — the automatic approval was withheld by the delivery-method gate: ${withheld}. It may still be approved by review.`
-          : '✓ Change submitted — awaiting review') + raised);
+          : '✓ Change submitted — awaiting review') + raised + ledger);
       setTitle(''); setDesc(''); setType('config_minor'); setRationale(''); setSystems('');
       setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
     } catch (e: any) {

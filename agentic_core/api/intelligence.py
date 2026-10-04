@@ -506,11 +506,24 @@ async def _run_intelligence_stream(
 
     provs: list[dict] = []
     for i, (stage_key, stage_label, stage_desc) in enumerate(stages):
-        yield _ev(f"{stage_key}_start", stage_label, stage_desc)
-
+        # W576 (FU-369) — THE TEMPLATE CHECK MOVED ABOVE THE START EVENT. A stage with no prompt
+        # template used to yield its `_start` and then `continue`, emitting no result, no failure
+        # and no reason: a reader watching the stream saw a stage BEGIN and silently never finish,
+        # which is indistinguishable from a stream that was cut off. The completion line counted it
+        # only inside "N of M stages ran", never naming which did not or why.
+        #
+        # A stage that cannot run is now never ANNOUNCED as started, and it is announced as skipped
+        # with its reason — so every stage this stream opens, it also closes. Not live today: all
+        # four engines declare every template they need, which is why the gap was latent and silent.
         prompt_template = prompts.get(stage_key, "")
         if not prompt_template:
+            yield _ev(f"{stage_key}_skipped", stage_label,
+                      f"skipped: no prompt template is declared for the stage '{stage_key}' on this "
+                      f"engine, so it could not run. This is a missing template, not a failed call "
+                      f"and not an empty result.")
             continue
+
+        yield _ev(f"{stage_key}_start", stage_label, stage_desc)
 
         prompt = prompt_template.format(
             challenge=challenge,

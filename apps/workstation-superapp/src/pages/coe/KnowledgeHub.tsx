@@ -194,9 +194,21 @@ export const KnowledgeHub: React.FC = () => {
           !isLoading && (
             <div className="p-12 text-center border-2 border-dashed border-slate-800 rounded-[3rem]">
               <Sparkles className="mx-auto text-slate-700 mb-4" size={48} />
+              {/* W576 (FU-323) — the route's error key had NO READER. This page took `insights`
+                  alone, so a crash inside the computation rendered as the statement below: a
+                  failure shown to the founder as "you have no projects". The producer now carries
+                  the failure inside `insights` itself, so even this branch cannot be reached by a
+                  crash — and if it ever is, the error is named here rather than hidden. */}
+              {(data as any)?.error ? (
+                <p data-testid="insights-error" className="text-amber-400 font-bold text-xs leading-relaxed max-w-md mx-auto">
+                  Portfolio insights could not be computed, so nothing was counted — this is not a
+                  statement that you have no projects. Reason: {String((data as any).error)}
+                </p>
+              ) : (
               <p className="text-slate-500 font-black uppercase tracking-widest text-xs">
                 Create projects to generate portfolio insights
               </p>
+              )}
               <Button className="mt-6 bg-aura text-sovereign" onClick={() => navigate('/projects')}>
                 Start a Project
               </Button>

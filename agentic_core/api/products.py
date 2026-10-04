@@ -863,13 +863,47 @@ async def intelligence_insights() -> dict:
                 "score": 0.5,
                 "score_basis": "salience weight: a fixed constant for this insight type, not a measurement",
             })
+        # W576 — the sibling returns of this function carry the SAME keys. The crash branch
+        # below could not know a project count, and `None` says that; `0` would be a measured
+        # zero it never measured.
         return {"insights": insights, "computed_at": time.time(), "total_projects": len(projects),
+                "error": None,
                 "score_meaning": ("every insight's `score` is a SALIENCE WEIGHT used to order the list; "
                                   "three of the four are fixed constants per insight type and the fourth "
                                   "scales with the project count. None of them measures the subject the "
                                   "insight names.")}
     except Exception as exc:
-        return {"insights": [], "error": str(exc), "computed_at": time.time()}
+        # W576 (FU-323) — A CRASH MUST NOT RENDER AS AN EMPTY PORTFOLIO. This returned
+        # `insights: []` plus an `error` key that NO READER READ: the sole consumer
+        # (pages/coe/KnowledgeHub.tsx) takes `data.insights` only, and an empty list renders
+        # "Create projects to generate portfolio insights". So a store read failing, or a project
+        # record missing a field, was shown to the founder as the statement that they have no
+        # projects — a failure presented as a measured zero, on a reached page.
+        #
+        # THE FAILURE IS CARRIED IN `insights` ITSELF, not only beside it. A reader that takes the
+        # list and nothing else still tells the truth, which is the only version of this fix that
+        # cannot be undone by a consumer who never learns about the second key. `error` stays for
+        # callers that do look, and the page renders it too.
+        return {
+            "insights": [{
+                "id": "i-err",
+                "type": "Unavailable",
+                "title": "Portfolio insights could not be computed",
+                "detail": (f"The computation failed, so this is NOT a statement that you have no "
+                           f"projects or no deliverables — nothing was counted. Reason: {exc}"),
+                "score": 1.0,
+                "score_basis": ("salience weight: fixed, so the failure sorts to the top. It measures "
+                                "nothing about the portfolio, which is the point"),
+            }],
+            "error": str(exc),
+            "computed_at": time.time(),
+            # NOT KNOWN rather than absent: nothing was counted, and a reader indexing these
+            # on this branch would otherwise get undefined (FU-334's class, in this round's
+            # own new branch).
+            "total_projects": None,
+            "score_meaning": ("no insight was produced, so no score was assigned and there is "
+                              "nothing here for a score to mean"),
+        }
 
 
 @router.get("/api/v1/intelligence/forecasts")

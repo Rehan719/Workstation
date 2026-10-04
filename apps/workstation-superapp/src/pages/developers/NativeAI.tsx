@@ -415,8 +415,14 @@ export const NativeAI: React.FC = () => {
   const [savedRun, setSavedRun] = useState<{ id: string; run: SwarmRun } | null>(null);
   const [runningId, setRunningId] = useState('');
 
+  // W576 (FU-316) — the cascade store keeps only its newest rows, so a count over one that has
+  // been dropping its oldest reads as complete. This heading is where a reader meets the number.
+  const [cascadeBasis, setCascadeBasis] = useState<{ truncated?: boolean; total_basis?: string } | null>(null);
   const loadCascades = () =>
-    fetch('/api/v1/resources/swarm').then(r => r.json()).then(d => setCascades(d.cascades || [])).catch(() => {});
+    fetch('/api/v1/resources/swarm').then(r => r.json()).then(d => {
+      setCascades(d.cascades || []);
+      setCascadeBasis({ truncated: d.truncated, total_basis: d.total_basis });
+    }).catch(() => {});
 
   // W276/W284 — the owned-model estate's LIFECYCLE (evaluate · promote · retire · reinstate)
   const [lifecycle, setLifecycle] = useState<{
@@ -952,7 +958,14 @@ export const NativeAI: React.FC = () => {
 
           {/* Saved cascades */}
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Server size={14} /> Saved cascades ({cascades.length})</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Server size={14} /> Saved cascades ({cascades.length})
+              {cascadeBasis?.truncated && (
+                <span data-testid="cascades-truncated" title={cascadeBasis.total_basis}
+                      className="normal-case tracking-normal text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                  older ones dropped
+                </span>
+              )}
+            </h3>
             {cascades.length === 0 && <p className="text-[11px] text-slate-600">No saved cascades yet — design one above.</p>}
             <div className="space-y-3">
               {cascades.slice().reverse().map(c => (

@@ -195,6 +195,13 @@ export const complianceChip = (c: ComplianceRecord | null | undefined) => {
   const cls = (overall === 'pass' && (legacy || !assessedBy.length))
     ? 'bg-slate-800 text-slate-400' : complianceCls(overall);
   const detail = rows.map(v => `${v?.framework}:${v?.status}${v?.coverage ? ` [${v.coverage}]` : ''}`).join(' · ');
+  // W576 (FU-318) — A DIMENSION-LEVEL GAP REACHES THE READER. This derived everything from
+  // framework-level status and coverage, so the ethical engine's four inner dimensions were
+  // invisible: a reader saw THAT the framework was assessed, never that one of its dimensions was
+  // not. The compliance layer now carries them, and an unassessed dimension is named here — at
+  // framework level the row can still read "assessed" while a dimension inside it assessed nothing.
+  const dimGaps = rows.flatMap(v => ((v as any)?.dimensions_not_assessed ?? [])
+    .map((d: string) => `${v?.framework}:${d}`));
   return {
     cls,
     label: `compliance: ${overall ?? 'not screened'}${qualifier}`,
@@ -202,7 +209,8 @@ export const complianceChip = (c: ComplianceRecord | null | undefined) => {
       + (legacy
         ? '\nThis verdict was recorded before the rule that a screen can refuse but never clear, so what it assessed was not recorded.'
         : (assessedBy.length ? `\nASSESSED by: ${assessedBy.join(' · ')}` : '\nNOTHING here assessed this subject')
-          + (gaps.length ? `\nNOT assessed: ${gaps.join(' · ')} — a keyword screen can refuse a subject, not clear one` : ''))
+          + (gaps.length ? `\nNOT assessed: ${gaps.join(' · ')} — a keyword screen can refuse a subject, not clear one` : '')
+          + (dimGaps.length ? `\nDIMENSIONS not assessed: ${dimGaps.join(' · ')} — the framework ran and these dimensions inside it assessed nothing` : ''))
       + (escalated.length ? `\nESCALATED for a human: ${escalated.join(' · ')}` : '')
       + (c?.compliant === null || c?.compliant === undefined ? '' : `\ncompliant: ${c.compliant}`),
   };

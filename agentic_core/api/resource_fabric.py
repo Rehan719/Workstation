@@ -1480,9 +1480,15 @@ def _swarm_lock():
     return store_lock(_SWARM_STORE)
 
 
+#  W576 (FU-316) — THE CAP IS NAMED, so the writer and the reader agree on it. It was the
+#  literal 200 here and nowhere else, and the list route counted what remained and called it
+#  the total, with nothing saying the oldest cascades had already been discarded.
+_SWARM_CAP = 200
+
+
 def _save_swarms(rows: List[Dict[str, Any]]) -> None:
     from agentic_core.config import atomic_write_json
-    atomic_write_json(_SWARM_STORE, rows[-200:])
+    atomic_write_json(_SWARM_STORE, rows[-_SWARM_CAP:])
 
 
 def _living_vsb_grounding(vsb_id: str) -> str:
@@ -1678,14 +1684,32 @@ async def list_swarms(vsb_id: Optional[str] = None,
     try:
         _all = _load_swarms()
     except StoreUnavailable as e:
+        # W576 — the same keys as the branch below, so a caller indexing `truncated` here does
+        # not get undefined. It is None, not False: the store could not be read, so whether it
+        # is at its cap is NOT KNOWN, which is a different answer from "no".
         return {"cascades": [], "total": 0, "unavailable": str(e),
+                "truncated": None, "total_basis": ("the store could not be read, so nothing is "
+                                                   "listed and no count is possible"),
                 "note": ("the saved cascades could not be read whole, so none are listed and nothing is "
                          "written to the store until it can be read - this is not a statement that you "
                          "have none")}
     rows = [c for c in _all if user_can_access(_u, c.get("owner_id"))]   # §14 (W324)
     if vsb_id:
         rows = [c for c in rows if c.get("vsb_id") == vsb_id]
-    return {"cascades": rows, "total": len(rows)}
+    # W576 (FU-316) — AN EVICTION THAT REACHES THE READER. The store keeps only the newest
+    # _SWARM_CAP cascades; sitting exactly ON the cap is the signal that older ones have
+    # already been dropped, so this count is of what REMAINS and not of every cascade saved.
+    # The unreadable-store branch above already says its own absence out loud; a truncated
+    # store said nothing at all, and a count over it reads as complete.
+    _at_cap = len(_all) >= _SWARM_CAP
+    return {"cascades": rows, "total": len(rows), "truncated": _at_cap,
+            "unavailable": None, "note": None,
+            "total_basis": (
+                f"the {len(rows)} cascade(s) visible to this caller. The store keeps only the "
+                f"newest {_SWARM_CAP} and is AT that cap, so older cascades have been dropped "
+                f"and this is not a count of every cascade saved" if _at_cap else
+                f"every cascade held that this caller may see: {len(rows)} of {len(_all)}, "
+                f"under a {_SWARM_CAP}-row cap, so none has been dropped")}
 
 
 @router.get("/swarm/{sid}")

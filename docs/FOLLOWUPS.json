@@ -5522,12 +5522,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W576",
       "note": "",
       "tier": 2,
       "reach": "core",
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "deliverables kept rows[-300:] and resource_fabric rows[-200:], each store sitting EXACTLY on its cap, with the cap a bare literal no reader could see. Named constants now, each count says whether the store is AT the cap, and the basis reaches both pages ('older ones dropped' beside the number)."
     },
     {
       "id": "FU-317",
@@ -5561,12 +5564,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W576",
       "note": "",
       "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
       "tier": 3,
-      "reach": "secondary"
+      "reach": "secondary",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The compliance layer flattened every verdict to framework level and DISCARDED the ethical engine's four inner dimensions, so a reader saw THAT the framework was assessed and never that a dimension inside it assessed nothing. The unassessed names travel now and the chip renders them; all four come back not_assessed."
     },
     {
       "id": "FU-319",
@@ -5655,11 +5661,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W576",
       "note": "",
       "tier": 1,
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The crash branch returned insights:[] plus an error key no reader read, so a failed store read rendered as 'Create projects to generate portfolio insights'. The failure is now carried INSIDE insights itself and states that nothing was counted; the page reads error too. Driven on the real crash path."
     },
     {
       "id": "FU-324",
@@ -5858,11 +5867,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W576",
       "note": "",
       "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "run_extrospection's sibling returns disagreed: one carried status and detail, the other did not, so a caller reading status got undefined depending on which path ran. Asserted by comparing KEY SETS, not by looking for a string."
     },
     {
       "id": "FU-335",
@@ -6217,11 +6229,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W576",
       "note": "",
       "tier": 2,
-      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it"
+      "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "submit_change has always returned ueg_logged and the governance page rendered five other fields and not that one, so a change whose ledger append FAILED rendered identically to one that succeeded. false is said loudly, true quietly."
     },
     {
       "id": "FU-354",
@@ -6531,11 +6546,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W576",
       "note": "",
       "slot_source": "chartered out of P2.4 by the Owner ruling of 2026-10-03: it arrived after P2.4's bar was written and no cluster names it; its subject is an absence that reads as a fact",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A stage with no prompt template yielded its START and then continued: no result, no failure, no reason, indistinguishable from a cut-off stream. The template check moved ABOVE the start event, so a stage that cannot run is never announced as begun and a skip carries its reason. Latent not live: all four engines declare every template they need."
     },
     {
       "id": "FU-370",
@@ -7051,6 +7069,25 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "The producer states its figure is API-SURFACE COVERAGE (routers mounted and stores non-empty, not delivery) in a measure field; the consumer copied the number and left the statement behind, then printed it as 'realisation N%'. The naming invariant: a quantity carries a method's name only when that method computed it, and route-mount coverage did not compute realisation. The measure now travels with the number and the card renders both. The same page rendered the identical figure correctly seventy lines further down, which is exactly why the mislabel survived. Verified live: measure present on /api/v1/cognition/knowledge."
+    },
+    {
+      "id": "FU-394",
+      "title": "score_meaning qualifies a score no surface renders, on the portfolio insights route",
+      "why": "Found W576 by the pre-flight's key screen while fixing FU-323. agentic_core/api/products.py's intelligence_insights returns score_meaning - a true and careful statement that every insight's score is a SALIENCE WEIGHT used to order the list, three of four being fixed constants - and NOTHING RENDERS IT, because nothing renders score either. The sole consumer, pages/coe/KnowledgeHub.tsx, prints title and confidence only. So the qualifier is correct and unreachable, and the thing it qualifies is unreachable too. NOT DELETED, deliberately: removing a true statement is its own defect, and a consumer that later renders score would need exactly this sentence. THE WORK: either render the score with its meaning beside it, or stop returning a score the API cannot explain to anyone - and say which was chosen. Pre-existing; W576 made it visible by adding the same key to the sibling return for key-set parity.",
+      "source": "W576 pre-flight (the key screen, while fixing FU-323)",
+      "found": "2026-10-04",
+      "files": [
+        "agentic_core/api/products.py",
+        "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.18 clause (a) is 'an absence reaches the reader' and this is its mirror: a qualifier that reaches no reader. Found inside clause (a)'s own work.",
+      "tier": 3
     }
   ],
   "routes": [

@@ -119,8 +119,18 @@ class AutonomyPipelines:
                 suggested_updates.append("Extend QEP-Religion with interfaith-dialogue datasets.")
 
         self.trends.extend(suggested_updates)
+        # W576 (FU-334) — THE SIBLING RETURNS AGREE ON THEIR KEYS. The not-checked branch above
+        # carries `status` and `detail` and this one did not, so a caller reading `status` got
+        # `undefined` depending on which path ran — and the path that ran is exactly what `status`
+        # exists to tell them. The same class W524 fixed in the cognitive engines: a key set that
+        # changes with the branch makes every consumer index defensively or be wrong.
         return {
             "timestamp": datetime.utcnow().isoformat(),
+            "status": "CHECKED",
+            "detail": (f"{len(external_data)} supplied external signal(s) were mapped to "
+                       f"{len(suggested_updates)} suggested update(s). These are SUPPLIED signals: "
+                       f"no external feed is wired to this method, so nothing was observed in the "
+                       f"world here"),
             "external_signals_analyzed": len(external_data),
             "suggested_actions": suggested_updates
         }

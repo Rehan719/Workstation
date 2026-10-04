@@ -70,8 +70,15 @@ export const Deliverables: React.FC = () => {
     { id: 'json', label: 'JSON (.json)' },
   ]);
 
+  // W576 (FU-316) — the store keeps only its newest rows, so a count over one that has been
+  // dropping its oldest reads as complete. The API now says whether it is AT its cap; this page is
+  // where a reader meets the number, so it is said here rather than only in the payload.
+  const [listBasis, setListBasis] = useState<{ truncated?: boolean; total_basis?: string } | null>(null);
   const loadList = () =>
-    fetch('/api/v1/deliverables').then(r => r.json()).then(d => setList(d.deliverables || [])).catch(() => {});
+    fetch('/api/v1/deliverables').then(r => r.json()).then(d => {
+      setList(d.deliverables || []);
+      setListBasis({ truncated: d.truncated, total_basis: d.total_basis });
+    }).catch(() => {});
 
   useEffect(() => {
     fetch('/api/v1/deliverables/types').then(r => r.json()).then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
@@ -180,7 +187,14 @@ export const Deliverables: React.FC = () => {
       <div className="grid grid-cols-1 @[900px]:grid-cols-[280px_1fr] gap-6">
         {/* List */}
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Layers size={14} /> Deliverables ({list.length})</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Layers size={14} /> Deliverables ({list.length})
+            {listBasis?.truncated && (
+              <span data-testid="deliverables-truncated" title={listBasis.total_basis}
+                    className="normal-case tracking-normal text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                older ones dropped
+              </span>
+            )}
+          </h3>
           <div className="space-y-2">
             {loading && <p className="text-[11px] text-slate-600">Loading…</p>}
             {!loading && list.length === 0 && <p className="text-[11px] text-slate-600">None yet — produce one above.</p>}
