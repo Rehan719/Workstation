@@ -35793,3 +35793,141 @@ def test_w567_the_controller_owns_the_progress_file_and_a_stalled_worker_can_dum
         "conftest no longer records WHY the external-profiler route is closed, so a later round will "
         "retry py-spy and find out again")
     assert "py-spy" in _cfsrc, _cfsrc[:0]
+
+
+def test_w568_the_bundle_proposal_meets_all_four_of_its_stated_limits(client):
+    """P2.17 clause (a). THREE of the four limits were already met; two halves were not, and saying which
+    is as much the work as building them.
+
+    MEASURED AGAINST THE REAL GENERATOR BEFORE ANYTHING WAS BUILT:
+      (i)   a cap with its reason — met in substance (every cut proposal says "cut from a N-row
+            component") and the CAP ITSELF was never stated, so a reader could not tell a bundle cut to
+            a policy from one that happened to be that size.
+      (ii)  "the proposal says how many rows cite each file" — NOT met. Nothing reported it, and it is
+            the one figure that makes limit (ii)'s own warning actionable rather than decorative.
+      (iii) advances, never closes — met, on both surfaces and in the basis.
+      (iv)  disjointness when SEPARATE components share a round — NOT met, with no mechanism at all.
+            It kept its place as a RULE after W500 corrected the item's central idea, and a rule nobody
+            can execute is indistinguishable from a rule nobody holds.
+    """
+    import json as _json568
+    import pathlib as _pl568
+    import re as _re568
+
+    import agentic_core.plan_followups as _fu568
+
+    _root = _pl568.Path(__file__).resolve().parents[1]
+    _reg = _json568.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _prompt = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+
+    # ── L1. THE COMPONENT IS COMPUTED FROM THE EDGES, NOT STATED ────────────────────────────────
+    #  DRIVEN ON SYNTHETIC ROWS, which is the only way to know the grouping is an algorithm rather than
+    #  a number quoted from the plan: two rows sharing a file must land together and a third must not.
+    #  DRIVEN THROUGH `_components_of`, which is the documented entry point for exactly this: its own
+    #  docstring says it is kept separate from `row_components` "so the algorithm can be DRIVEN with
+    #  synthetic rows". The first version of this leg went through `row_components`, which normalises a
+    #  real register and returned nothing for three hand-written rows — a leg that would have reported
+    #  the algorithm broken when only its own input was wrong.
+    _comps = _fu568._components_of([
+        {"id": "FU-901", "slot": "PX.1", "files": ["a.py", "b.py"]},
+        {"id": "FU-902", "slot": "PX.1", "files": ["b.py"]},
+        {"id": "FU-903", "slot": "PX.1", "files": ["z.py"]},
+    ])
+    _sets = sorted(sorted(c["rows"]) for c in _comps)
+    assert _sets == [["FU-901", "FU-902"], ["FU-903"]], (
+        "the component grouping is not computed from the row-cites-file edges", _sets)
+
+    # ── L2. LIMIT (ii): HOW MANY ROWS CITE EACH FILE, AND THE THINNEST EDGE ─────────────────────
+    _b = _fu568.bundles(_reg, _prompt)
+    assert _b["bundles"], "no bundle is proposed from a register with open rows"
+    for _x in _b["bundles"]:
+        assert "rows_per_file" in _x and isinstance(_x["rows_per_file"], dict), _x.keys()
+        assert set(_x["rows_per_file"]) == set(_x["files"]), (
+            "the per-file counts and the bundle's own file list disagree", _x["slot"])
+        #  EVERY COUNT IS AT LEAST ONE. A zero would mean a file the bundle claims no row cites, which
+        #  is either a normalisation bug or a file that should not be in the bundle at all.
+        for _f, _n in _x["rows_per_file"].items():
+            assert isinstance(_n, int) and _n >= 1, (_x["slot"], _f, _n)
+        assert _x["thinnest_file_rows"] == min(_x["rows_per_file"].values()), _x["slot"]
+    #  and it reaches the SURFACE, because a figure only the dict holds is a figure nobody reads
+    _rendered = _fu568.render_bundles(_reg, _prompt)
+    assert "thinnest file cited by" in _rendered, (
+        "the proposal does not report its weakest edge, so limit (ii)'s warning stays decorative")
+    assert "rows citing each file:" in _rendered, (
+        "the proposal does not say how many rows cite each file, which limit (ii) requires by name")
+
+    # ── L3. LIMIT (iv): DISJOINTNESS IS CHECKED, REFUSES, AND NAMES THE OVERLAP ─────────────────
+    #  THREE-STATE, and the middle state is the one that matters: fewer than two bundles is not a pass.
+    _none = _fu568.combinable([])
+    _one = _fu568.combinable([{"slot": "PX.1", "files": ["a.py"]}])
+    for _r in (_none, _one):
+        assert _r["combinable"] is None, ("fewer than two bundles reported a verdict", _r)
+        assert "NOT a pass" in _r["basis"], _r["basis"]
+    _ok = _fu568.combinable([{"slot": "PX.1", "files": ["a.py"]},
+                             {"slot": "PX.2", "files": ["b.py"]}])
+    assert _ok["combinable"] is True and not _ok["overlaps"], _ok
+    _bad = _fu568.combinable([{"slot": "PX.1", "files": ["a.py", "shared.py"]},
+                              {"slot": "PX.2", "files": ["shared.py"]}])
+    assert _bad["combinable"] is False, ("two bundles sharing a file were allowed together", _bad)
+    #  IT NAMES THE OVERLAP. A round told only that something is wrong spends its first hour finding out
+    #  what, which is the cost this item exists to remove.
+    assert _bad["overlaps"] and _bad["overlaps"][0]["files"] == ["shared.py"], _bad["overlaps"]
+    assert "shared.py" in _bad["basis"] and "REFUSED" in _bad["basis"], _bad["basis"]
+    #  and the REASON is the one W500 established, not edit conflict
+    #  THE ATTRIBUTION HALF, not the phrase "guard subject" — which survived a mutation that replaced
+    #  the reason with edit conflict, because the sentence names guard subjects BEFORE it gives the
+    #  reason. A needle in the half a mutation leaves alone cannot see the half it changes.
+    assert "no longer attributable" in _bad["basis"], (
+        "the refusal does not say WHY two bundles must be disjoint. It is NOT that the edits conflict — "
+        "that framing is what W500 corrected — it is that each one's blinds mutate the other's surface, "
+        "so a RED stops being attributable to either bundle", _bad["basis"])
+    #  THE AFFIRMATIVE FRAMING, not the word. A basis is free to say what it is NOT.
+    assert "edits would conflict" not in _bad["basis"].lower(), (
+        "the refusal is framed as edit conflict. Disjointness is the rule for COMBINING, never for "
+        "choosing: rows on the same files share the measurement, which is the leverage", _bad["basis"])
+    assert "COMBINING:" in _rendered, "the surface does not report whether the proposals may be combined"
+
+    # ── L4. LIMIT (i): THE CAP IS STATED, WITH THE REASON THAT IS NOT EDIT CONFLICT ─────────────
+    _cap = _b.get("cap_basis") or ""
+    #  EVERY PART, because a mutation replacing only the FIRST line of this multi-line string left
+    #  GUARD BREADTH, W499 and W500 all present and the leg green. The cap must say WHAT the partition
+    #  is, WHY the limit exists, and REFUSE the edit-conflict framing the item was corrected away from.
+    assert "sub-partitioned BY ITEM" in _cap, (
+        "the cap no longer says what the partition IS, so a reader cannot tell a bundle cut to a policy "
+        "from one that happened to be that size", _cap[:140])
+    assert "GUARD BREADTH" in _cap, (
+        "the cap's reason is missing or wrong. It is not that the edits conflict — it is that a guard "
+        "spanning many surfaces is where this programme's vacuous legs come from", _cap[:140])
+    assert "W499" in _cap and "W500" in _cap, (
+        "the cap's reason cites no measurement, so it reads as a preference", _cap[:140])
+    #  NO NEGATIVE NEEDLE HERE, and that is a correction made in this round. A leg forbidding the word
+    #  "conflict" matched the cap's OWN sentence — "The limit is not edit conflict but GUARD BREADTH" —
+    #  which is the banned-literal-in-its-own-explanation trap, hit for the third time in one night and
+    #  this time inside the fix for it. The three positive needles above already turn the blind that
+    #  reframes the cap RED, so the negative one bought nothing and broke a correct cap.
+    assert "CAP:" in _rendered, "the cap is computed and never shown"
+
+    # ── L5. LIMIT (iii): ADVANCES, NEVER CLOSES ─────────────────────────────────────────────────
+    #  Still asserted though it was already met, because it is the limit most easily lost: a generator
+    #  that said "closes" would make a bundle look like an item, and no component has ever closed one.
+    assert "ADVANCES the items it touches" in _rendered, _rendered[:0]
+    assert "only an item's own ACCEPT criteria close it" in _rendered, _rendered[:0]
+    assert "never closes" in _b["basis"], _b["basis"][:0]
+    for _x in _b["bundles"]:
+        assert "closes" not in str(_x.get("also_touching") or ""), _x["slot"]
+
+    # ── L6. AND THE BAR RECORDS WHICH LIMITS WERE ALREADY MET ───────────────────────────────────
+    #  A clause marked delivered without saying what was already true invites a later round to re-build
+    #  the three that needed nothing.
+    _i, _j = _prompt.index("\n P2.17 "), len(_prompt)
+    _m = _re568.search(r"\n P\d+\.\d+ ", _prompt[_i + 1:])
+    if _m:
+        _j = _i + 1 + _m.start()
+    _bar = " ".join(_prompt[_i:_j].split())
+    assert "ACCEPT (a)" in _bar, "P2.17's clause (a) has left the bar"
+    assert "THREE OF THE FOUR LIMITS WERE ALREADY MET" in _bar, (
+        "the bar does not record which limits needed nothing, so a later round may rebuild them")
+    #  CASE-INSENSITIVE, because the bar writes this sentence in caps for emphasis and a leg pinned to
+    #  one casing fails on a rewording that changes nothing about the property.
+    assert "a rule nobody can execute is indistinguishable" in _bar.lower(), (
+        "the bar no longer records why disjointness was unmet: it was a RULE with no mechanism")

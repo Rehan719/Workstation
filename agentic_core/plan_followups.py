@@ -1183,9 +1183,29 @@ def bundles(register: Any, prompt_text: str) -> Dict[str, Any]:
             files = sorted({normalise_path(f) for i in rideable
                             for f in (by_id[i].get("files") or [])})
             others = [x for x in c["items_advanced"] if x != slot]
+            #  LIMIT (ii) — HOW MANY ROWS CITE EACH FILE. The graph is only as good as the declared
+            #  `files` lists, so an under-declared row under-connects and HIDES a bundle. A count per
+            #  file is what makes that warning actionable rather than decorative: a file cited by one
+            #  row is where a hidden bundle would be, and the thinnest file in a bundle is the weakest
+            #  edge holding it together. Counted over the WHOLE open register rather than this cut,
+            #  because a file's connectivity is a property of the graph and not of one slice of it.
+            _cites = {}
+            for _r in ((register.get("items") or []) if isinstance(register, dict) else []):
+                if _r.get("status") != "open":
+                    continue
+                for _f in (_r.get("files") or []):
+                    _n = normalise_path(_f)
+                    if _n in files:
+                        _cites[_n] = _cites.get(_n, 0) + 1
+            _rows_per_file = {f: _cites.get(f, 0) for f in files}
             out.append({
                 "slot": slot, "rows": prio, "size": len(prio), "files": files,
                 "files_count": len(files),
+                "rows_per_file": _rows_per_file,
+                #  THE WEAKEST EDGE: the fewest rows citing any file in this bundle. One means the
+                #  bundle hangs on a file a single row declares, which is limit (ii)'s hidden-bundle
+                #  case and a reason to re-read that row's `files` before trusting the grouping.
+                "thinnest_file_rows": min(_rows_per_file.values()) if _rows_per_file else 0,
                 "component_size": c["size"],
                 # the round touches files other items' rows also touch: it ADVANCES them, never closes
                 "also_touching": others,
@@ -1197,6 +1217,16 @@ def bundles(register: Any, prompt_text: str) -> Dict[str, Any]:
     return {
         "bundles": out, "components": len(comps), "ceiling": ceiling,
         "rows": sum(b["size"] for b in out),
+        #  LIMIT (i) — THE CAP, STATED WITH ITS REASON. The cut by item IS the sub-partition and the
+        #  proposal already names it ("cut from a N-row component"); what was missing was saying what
+        #  the limit IS, because a reader could not tell a bundle cut to a policy from one that merely
+        #  happened to be that size. And the reason is not edit conflict: it is that A GUARD spanning
+        #  many surfaces is where this programme's vacuous legs come from.
+        "cap_basis": ("a component is sub-partitioned BY ITEM, and every proposal that was cut says so "
+                      "('cut from a N-row component'). The limit is not edit conflict but GUARD "
+                      "BREADTH: a guard spanning many surfaces is where vacuous legs come from (five "
+                      "of thirty-three in W499, three of ten in W500), and an item is the unit that "
+                      "already carries its own ACCEPT criteria"),
         "basis": ("a bundle is a FILE-CONNECTED COMPONENT cut by ITEM. Components come from each row's "
                   "DECLARED files, so an under-declared row under-connects and its bundle is flagged. "
                   "The cut is by item because that is the clean one (measured) and because an item "
@@ -1204,6 +1234,45 @@ def bundles(register: Any, prompt_text: str) -> Dict[str, Any]:
                   "bundle ADVANCES the other items whose rows touch the same files; it never closes "
                   "them - only an item's own ACCEPT criteria do that."),
     }
+
+
+def combinable(proposed: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """LIMIT (iv) — may these SEPARATE components go in one round? Only if their file sets are DISJOINT.
+
+    Disjointness kept its place after W500 corrected this item's central idea, and it kept it as a RULE
+    WITH NO MECHANISM: nothing ever checked it, because no round has yet combined two components. A rule
+    nobody can execute is indistinguishable from a rule nobody holds.
+
+    WHY DISJOINTNESS IS RIGHT HERE AND WRONG FOR CHOOSING A BUNDLE — the distinction W500 drew, which
+    this must not blur. Rows on the SAME files share the measurement, the guard and the blinds, and that
+    shared reading is the leverage a bundle exists to capture, so a bundle is chosen for CONNECTION. But
+    two bundles in one round are two guard subjects, and if they share a file then each one's blinds
+    mutate the other's surface, so a RED stops being attributable. Combined only on SEPARATION.
+
+    THREE-STATE, and the middle one matters: fewer than two bundles is NOT a pass, it is nothing tested.
+    It REFUSES rather than warns and it NAMES the overlap, because a round told only that something is
+    wrong spends its first hour finding out what.
+    """
+    _norm = [{"slot": b.get("slot"), "files": set(b.get("files") or [])} for b in (proposed or [])]
+    if len(_norm) < 2:
+        return {"combinable": None, "overlaps": [],
+                "basis": (f"{len(_norm)} bundle(s) proposed, so disjointness does not arise. This is "
+                          f"NOT a pass — nothing was tested")}
+    _overlaps = []
+    for _i in range(len(_norm)):
+        for _j in range(_i + 1, len(_norm)):
+            _shared = sorted(_norm[_i]["files"] & _norm[_j]["files"])
+            if _shared:
+                _overlaps.append({"a": _norm[_i]["slot"], "b": _norm[_j]["slot"], "files": _shared})
+    if _overlaps:
+        _w = "; ".join(f"{o['a']} and {o['b']} both touch " + ", ".join(o["files"]) for o in _overlaps)
+        return {"combinable": False, "overlaps": _overlaps,
+                "basis": (f"REFUSED — not disjoint: {_w}. Two bundles in one round are two guard "
+                          f"subjects, and a shared file means each one's blinds mutate the other's "
+                          f"surface, so a RED is no longer attributable to either")}
+    return {"combinable": True, "overlaps": [],
+            "basis": (f"{len(_norm)} bundles, file sets pairwise disjoint, so each keeps its own guard "
+                      f"subject and neither's blinds can reach the other's surfaces")}
 
 
 def render_bundles(register: Any, prompt_text: str, top: int = 6) -> str:
@@ -1224,8 +1293,18 @@ def render_bundles(register: Any, prompt_text: str, top: int = 6) -> str:
             line += f" \u00b7 LARGER THAN ANY ROUND YET ({c['rows']} is the most, {', '.join(c['rounds'])})"
         if x["possibly_under_connected"]:
             line += " \u00b7 single row: possibly under-connected, not isolated"
+        #  LIMIT (ii) ON THE SURFACE. The thinnest edge first, because that is the actionable number: a
+        #  bundle hanging on a file only ONE row declares is exactly where an under-declared `files`
+        #  list would be hiding a larger bundle, and limit (ii) warns about that without ever having
+        #  reported the figure that makes it checkable.
+        line += f" \u00b7 thinnest file cited by {x['thinnest_file_rows']} row(s)"
         out.append(line)
+        if x["files_count"] <= 4:
+            out.append("      rows citing each file: "
+                       + ", ".join(f"{f} ({n})" for f, n in sorted(x["rows_per_file"].items())))
     out.append("  " + c["basis"])
+    out.append("  CAP: " + b["cap_basis"] + ".")
+    out.append("  COMBINING: " + combinable(b["bundles"][:top])["basis"] + ".")
     out.append("  A bundle is one subsystem's worth of reading. It ADVANCES the items it touches;")
     out.append("  only an item's own ACCEPT criteria close it.")
     return "\n".join(out)

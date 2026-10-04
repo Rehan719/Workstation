@@ -2891,6 +2891,40 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; delivered_by: build; ESTIMATED ~9 rou
       its own item says is worse, so it is restated to what was measured and built. What the original
       idea got RIGHT is kept, aimed at the target it actually fits: disjointness is not how a bundle is
       CHOSEN, it is what makes it safe to combine several in one round.
+      W568 DELIVERED CLAUSE (a), AND THREE OF ITS FOUR LIMITS NEEDED NOTHING. Measuring that first was
+          as much the work as building the rest: the cap's partition was already named on every cut
+          proposal, advances-never-closes held on both surfaces and in the basis, and the GRAPH was
+          already computed from the row-cites-file edges — driven here on synthetic rows through
+          `_components_of`, which exists for exactly that, so the grouping is known to be an algorithm
+          rather than a figure quoted from this plan.
+      WHAT WAS MISSING WAS THE FIGURE THAT MAKES LIMIT (ii) ACTIONABLE. The limit warns that the graph is
+          only as good as the declared `files` lists — an under-declared row under-connects and HIDES a
+          bundle — and nothing ever reported HOW MANY ROWS CITE EACH FILE, so the warning could not be
+          acted on. The count per file and the bundle's THINNEST EDGE are now on the surface, thinnest
+          first because that is the actionable number: a bundle hanging on a file one row declares is
+          precisely where a hidden bundle would be.
+      AND DISJOINTNESS HAD NO MECHANISM AT ALL. It kept its place as a rule when W500 corrected this
+          item's central idea, and A RULE NOBODY CAN EXECUTE IS INDISTINGUISHABLE FROM A RULE NOBODY
+          HOLDS. `combinable()` refuses a non-disjoint pair, NAMES the overlapping files, and reports
+          three states — fewer than two bundles is NOT a pass, it is nothing tested. Its reason is the
+          one W500 established: not that the edits conflict, but that two bundles are two guard subjects
+          and a shared file means each one's blinds mutate the other's surface, SO A RED STOPS BEING
+          ATTRIBUTABLE.
+      ONE CLAUSE STILL BINDS A FUTURE ROUND rather than this one, and the bar says so: "a bundled round's
+          guard covers every item in it" is a discipline for the first round that actually combines two
+          components, and no round has. The check is written down so it cannot be forgotten.
+      THE SAME MISTAKE THREE TIMES IN ONE NIGHT, and it is worth naming as a class. A NEEDLE THAT SURVIVES
+          IN THE HALF A MUTATION DOES NOT TOUCH CANNOT SEE THE HALF IT CHANGES. "guard subject" sat before
+          the reason, so a blind replacing the reason left it; GUARD BREADTH and W499/W500 sat on later
+          lines of a multi-line string, so a blind replacing the first line left them; earlier tonight
+          "MILESTONE NOT RUN" and the page's state comparison each existed twice. The legs now assert the
+          part that CARRIES the meaning.
+      AND THE FIX FOR IT COMMITTED THE OTHER REPEATED MISTAKE. Forbidding the word "conflict" in the cap
+          matched the cap's own sentence — "The limit is not edit conflict but GUARD BREADTH" — a leg
+          banning a literal its own subject must be free to quote while explaining itself. The positive
+          needles already turned that blind RED, so the negative one bought nothing and broke a correct
+          cap. It is gone, with the reason recorded where the next round will read it.
+      10 of 10 blinds BLIND(red) after two came back VACUOUS for the same cause.
       W567 FIXED THE STALL'S INSTRUMENT AND MEASURED ITS EXTERNAL ROUTE CLOSED. The stall itself is
           still unexplained and FU-301 still holds it; what changed is that a stall is now LEGIBLE and a
           stalled worker can be made to hand over its own stack.
@@ -3043,6 +3077,27 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; delivered_by: build; ESTIMATED ~9 rou
           real register and plan, with the component COMPUTED from the row-cites-file edges rather than
           stated; when a round combines more than one, their file sets are asserted disjoint rather than
           assumed; and a bundled round's guard covers every item in it.
+          DELIVERED W568, AND THREE OF THE FOUR LIMITS WERE ALREADY MET — recorded so a later round does
+          not rebuild them. (i) the cap: the cut by item IS the sub-partition and every cut proposal
+          already said "cut from a N-row component"; what was missing was stating the cap's own reason,
+          which is NOT edit conflict but GUARD BREADTH (five vacuous legs of thirty-three in W499, three
+          of ten in W500). (iii) advances-never-closes: met on both surfaces and in the basis. The GRAPH
+          was already computed from the row-cites-file edges by `scripts/row_components.py`, driven here
+          on synthetic rows so the grouping is known to be an algorithm rather than a figure quoted from
+          this plan.
+          WHAT WAS NOT MET. (ii) the proposal never said HOW MANY ROWS CITE EACH FILE — the one figure
+          that makes limit (ii)'s own warning actionable, since an under-declared `files` list
+          under-connects and hides a bundle, and a file cited by ONE row is where that would be. The
+          count per file and the bundle's THINNEST EDGE are now on the surface. (iv) disjointness had NO
+          MECHANISM: it kept its place as a rule when W500 corrected this item's central idea, and A RULE
+          NOBODY CAN EXECUTE IS INDISTINGUISHABLE FROM A RULE NOBODY HOLDS. `combinable()` now refuses a
+          non-disjoint pair, names the overlapping files, and reports three states — fewer than two
+          bundles is NOT a pass, it is nothing tested.
+          WHAT STILL BINDS A FUTURE ROUND rather than this one: "a bundled round's guard covers every
+          item in it" is a discipline for the first round that actually combines two components, and no
+          round has. The check is named here so it cannot be forgotten: such a round's guard must assert
+          a property of EVERY item it claims to advance, and its blinds must be attributable to one
+          bundle each.
       ACCEPT (b)1 PROVEN W540, with the figures rather than a claim: two runs on ONE tree (6aa94319 plus
       FU-349's fix, verified unchanged between them) gave serial 520 passed / 19 skipped / 52m52s and
       parallel 524 passed / 15 skipped / 9m47s on six workers — 5.4x — and scripts/pass_set_diff.py

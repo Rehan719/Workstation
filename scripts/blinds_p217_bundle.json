@@ -1,0 +1,92 @@
+[
+  {
+    "tag": "the per-file row counts stop being computed",
+    "file": "agentic_core/plan_followups.py",
+    "old": "                \"rows_per_file\": _rows_per_file,",
+    "new": "                \"rows_per_file\": {},",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L2, limit (ii) by name: 'the proposal says how many rows cite each file'. The limit warns that the graph is only as good as the declared `files` lists, so an under-declared row under-connects and HIDES a bundle — and without the per-file count that warning is decorative, because nothing tells a reader WHICH file is the thin one. An empty dict is the sharpest mutation: the key survives, so nothing looks missing."
+  },
+  {
+    "tag": "a file no row cites is counted into a bundle",
+    "file": "agentic_core/plan_followups.py",
+    "old": "            _rows_per_file = {f: _cites.get(f, 0) for f in files}",
+    "new": "            _rows_per_file = {f: _cites.get(f, 0) for f in list(files) + [\"phantom.py\"]}",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L2. A count of zero means the bundle claims a file no open row declares — either a path-normalisation bug or a file that does not belong in the bundle at all. The leg asserts every count is at least one AND that the count keys and the bundle's own file list are the same set, so a phantom is caught from both directions."
+  },
+  {
+    "tag": "the thinnest edge is reported as the widest",
+    "file": "agentic_core/plan_followups.py",
+    "old": "                \"thinnest_file_rows\": min(_rows_per_file.values()) if _rows_per_file else 0,",
+    "new": "                \"thinnest_file_rows\": max(_rows_per_file.values()) if _rows_per_file else 0,",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L2, and min-for-max is the defect a reader would never see: both are plausible integers and the field name still reads correctly. The WEAKEST edge is the actionable one — a bundle hanging on a file only one row declares is exactly limit (ii)'s hidden-bundle case — and reporting the strongest edge instead would make every bundle look well-connected."
+  },
+  {
+    "tag": "disjointness stops refusing and merely observes",
+    "file": "agentic_core/plan_followups.py",
+    "old": "        return {\"combinable\": False, \"overlaps\": _overlaps,",
+    "new": "        return {\"combinable\": True, \"overlaps\": _overlaps,",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L3, limit (iv). This is the shape the programme removes everywhere else: an instrument that records a violation and then clears it. The overlap list is still populated, so a reader scanning the output sees the evidence AND a verdict that contradicts it — and whichever one a later round trusts, one of them is wrong."
+  },
+  {
+    "tag": "fewer than two bundles is reported as disjoint rather than as untested",
+    "file": "agentic_core/plan_followups.py",
+    "old": "        return {\"combinable\": None, \"overlaps\": [],",
+    "new": "        return {\"combinable\": True, \"overlaps\": [],",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L3's three-state leg. One bundle cannot overlap anything, so True is arithmetically defensible and completely wrong as a verdict: it says a property HOLDS where nothing was tested. That is the measured-zero-versus-unmeasured-field class, in a boolean."
+  },
+  {
+    "tag": "the refusal stops naming the overlapping files",
+    "file": "agentic_core/plan_followups.py",
+    "old": "        _w = \"; \".join(f\"{o['a']} and {o['b']} both touch \" + \", \".join(o[\"files\"]) for o in _overlaps)",
+    "new": "        _w = f\"{len(_overlaps)} overlapping pair(s)\"",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L3. A round told only that something is wrong spends its first hour finding out what — which is the exact cost P2.17 exists to measure and reduce. A count of overlapping pairs is the bare-count defect W514 removed from the round-duration filter, committed in a refusal message."
+  },
+  {
+    "tag": "the refusal's reason becomes edit conflict instead of guard attribution",
+    "file": "agentic_core/plan_followups.py",
+    "old": "                          f\"subjects, and a shared file means each one's blinds mutate the other's \"\n                          f\"surface, so a RED is no longer attributable to either\")}",
+    "new": "                          f\"subjects, and a shared file means the edits would conflict\")}",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L3, and it is the distinction W500 was corrected on. Disjointness is NOT about edits conflicting — that framing is what made the item first propose choosing bundles by disjointness, throwing away the leverage. It is about ATTRIBUTION: two bundles in one round are two guard subjects, and a shared file means each one's blinds mutate the other's surface, so a RED stops telling you which bundle broke."
+  },
+  {
+    "tag": "the cap's reason becomes edit conflict and cites no measurement",
+    "file": "agentic_core/plan_followups.py",
+    "old": "        \"cap_basis\": (\"a component is sub-partitioned BY ITEM, and every proposal that was cut says so \"",
+    "new": "        \"cap_basis\": (\"a component is capped because large edits conflict \"",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L4, limit (i) by name: the cap 'MUST STATE ITS REASON', and the reason the item gives is explicitly not edit conflict — it is GUARD BREADTH, evidenced by five vacuous legs of thirty-three in W499 and three of ten in W500. A cap whose reason cites no measurement reads as a preference, and the next round to find it inconvenient will raise it."
+  },
+  {
+    "tag": "the proposal says a bundle CLOSES the items it touches",
+    "file": "agentic_core/plan_followups.py",
+    "old": "    out.append(\"  A bundle is one subsystem's worth of reading. It ADVANCES the items it touches;\")",
+    "new": "    out.append(\"  A bundle is one subsystem's worth of reading. It closes the items it touches;\")",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L5, limit (iii). Still guarded although it was already met, because it is the limit most easily lost in a rewrite: no component has ever closed an item — the closest was 23 of one item's 26 rows — and a generator that said 'closes' would make a bundle look like an item and a round look finished."
+  },
+  {
+    "tag": "the bar claims clause (a) delivered without recording what was already met",
+    "file": "docs/FABLE_DELIVERY_PROMPT.md",
+    "old": "          DELIVERED W568, AND THREE OF THE FOUR LIMITS WERE ALREADY MET",
+    "new": "          DELIVERED W568, all four limits built",
+    "selector": "w568",
+    "expect": "BLIND(red)",
+    "why": "L6. Three of the four needed nothing: the cap's partition, advances-never-closes, and the computed graph itself. A clause marked delivered without saying which parts were already true invites a later round to rebuild them — and, worse, lets this round take credit for work W500 and W501 did."
+  }
+]
