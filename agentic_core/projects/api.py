@@ -458,7 +458,9 @@ async def run_project(project_id: str,
             # W451 — stream_meta: the done frame discloses who served it and whether the profile shaped it
             # P2.2 (W511) — stated, not inherited: the prompt is already composed from this project's
             # own record, so no cross-request recall is wanted here.
-            async for ev in gateway.stream_meta(full_prompt, agent="projects", augment=False):
+            # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+            _owner_id = user.get("username") if isinstance(user, dict) else None
+            async for ev in gateway.stream_meta(full_prompt, agent="projects", augment=False, owner_id=_owner_id):
                 if "token" in ev:
                     accumulated += ev["token"]
                     safe = ev["token"].replace("\n", "\\n")

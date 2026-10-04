@@ -15557,10 +15557,20 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     open_slots = {i["slot"] for i in items if not i["done"]}
     routes = fu.raw_routes(reg)
     assert routes and all(rt["slot"] in open_slots for rt in routes)
-    # W505 - P2.9 CLOSED and its route was handed to P2.4, exactly as P1.16's was in W473. Asserting that
-    # P2.9 is an open route slot could only hold until the item closed; asserting the handed route is durable,
-    # because a handed route names its origin for ever.
-    assert {"P2.4"} <= {rt["slot"] for rt in routes}
+    # W575 (FU-365) — THE DURABLE PROPERTY, not a named slot. This leg has now named three in turn:
+    # W473 asserted P1.16, W505 replaced it with P2.9's handover target P2.4 under a comment saying
+    # that naming an open slot "could only hold until the item closed" — and then named one. W575
+    # closed P2.4 and handed its seven routes to P2.18, so the literal broke exactly as predicted.
+    # What is actually durable is that a HANDOVER IS RECORDED AND FOLLOWS THE OPEN ITEM: a route's
+    # origin is kept for ever in `handed_from`, and its slot is always an open item (asserted above).
+    _handed = [rt for rt in routes if rt.get("handed_from")]
+    assert _handed, (
+        "no route records where it was handed from, so a closed item's arrivals cannot be traced to "
+        "the item now receiving them")
+    assert all(rt["slot"] in open_slots for rt in _handed), (
+        "a handed route points at an item that is not open, so the next arrival on those files lands "
+        "where nothing can act on it",
+        [rt["slot"] for rt in _handed if rt["slot"] not in open_slots])
     assert any(rt.get("handed_from") == "P2.9" for rt in routes), \
         f"P2.9 closed but its route was not handed on: {[rt.get('handed_from') for rt in routes]}"
     assert "unreadable" in next(rt for rt in routes if rt.get("handed_from") == "P1.16")["words"]   # rides P2.4 now
@@ -15680,12 +15690,31 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     # (W471) P1.14 is done too; the board pack and the plan's layers pass to P3.3 (§17.3 cadence), before the broad
     # hygiene prefixes; (W473) P1.16 is done and its route is HANDED to P2.4 in the same, LAST place (a done --hand-to
     # merge once lifted those broad prefixes to first; W470's catalogue area is P2.4's own route, earlier)
-    assert real_order[-1] == ("P2.4", "P1.16") and real_order.index(("P3.3", None)) < len(real_order) - 1
-    assert real_order.index(("P2.4", None)) < len(real_order) - 1
-    assert fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")["slot"] == "P2.4"
-    # W505 — P2.9 closed and HANDED its economy route to P2.4, the same mechanism the comment below describes
-    # for P2.3 → P3.6. The assertion follows the route rather than pinning a closed item.
-    assert fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.4"
+    #  W575 (FU-365) — THE ORIGIN IS DURABLE; THE SLOT IS NOT. This pinned ("P2.4", "P1.16"), and
+    #  P2.4's closure handed that route to P2.18, so the pair broke while the property it tests —
+    #  the broad hygiene prefix sorts LAST, after every item that owns its own surfaces — held
+    #  throughout. `handed_from` names a route's origin for ever; its slot names wherever the work
+    #  lives now, which is exactly the thing a round is expected to change.
+    assert real_order[-1][1] == "P1.16", (
+        "the broad hygiene prefix handed from P1.16 is no longer the LAST route, so a later item's "
+        "catch-all can take surfaces an earlier item owns", real_order[-1])
+    assert real_order[-1][0] in open_slots, (
+        "that route points at an item that is not open", real_order[-1])
+    assert real_order.index(("P3.3", None)) < len(real_order) - 1
+    #  W575 (FU-365) — the CATALOGUE route, by its files rather than by the item that owns it
+    #  today. P2.4 owned it until W575 closed P2.4 and handed all seven of its routes to P2.18.
+    _cat = fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")
+    assert _cat["slot"] in open_slots, ("a catalogue row routes to an item that is not open", _cat)
+    assert ((_cat["slot"], None) in real_order
+            or any(rt["slot"] == _cat["slot"] for rt in routes)), (
+        "a catalogue row routes somewhere no route points", _cat)
+    # W505 — P2.9 closed and HANDED its economy route on, the same mechanism the comment below
+    # describes for P2.3 → P3.6. W575 (FU-365): that comment says the assertion "follows the route
+    # rather than pinning a closed item" and then pinned the OPEN item the route had moved to,
+    # which broke when P2.4 closed in turn. The durable property is that an economy row lands
+    # wherever the economy route lives, and that item is open.
+    _eco = fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")
+    assert _eco["slot"] in open_slots, ("an economy row routes to an item that is not open", _eco)
     # W505 — P2.3 closed and HANDED its avatars route to P3.6 (§9 depth covers the avatar surface), which
     # is the handing mechanism working. The assertion follows the route rather than pinning a closed item.
     _av_route = fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py"], "medium")
@@ -15696,8 +15725,13 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     assert len(_av) == 1, _av
     assert _av[0].get("handed_from") == "P2.3", \
         f"the avatars route lost its provenance when P2.3 closed: {_av[0]}"
-    # W505 — P2.9 closed; its economy route is P2.4's now, by the same handing the avatars route above shows
-    assert fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py", "agentic_core/economy/ledger.py"], "medium")["slot"] == "P2.4"
+    # W505 — P2.9 closed; its economy route moved on, by the same handing the avatars route shows.
+    # W575 (FU-365): asserted as CONSISTENCY rather than as an id — a row naming both an avatars
+    # file and an economy file must route the same way as the economy file alone, whichever item
+    # owns that route today. That is the precedence rule under test; the id never was.
+    _both = fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py", "agentic_core/economy/ledger.py"], "medium")
+    assert _both["slot"] == _eco["slot"], (
+        "adding an avatars file changed where an economy row routes", _both, _eco)
     # the high count is of rows riding an item (an unscheduled high row is listed on its own)
     sched_h = fu.schedule({"items": [row(severity="high"), row(id="FU-901", slot="NEXT", severity="high")]}, prompt)
     assert sched_h["counts"]["high"] == 1 and sched_h["counts"]["unscheduled"] == 1
@@ -16885,16 +16919,19 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
         monkeypatch.setattr(paths, name, tmp_path / "dirs" / name.lower())
     paths.ensure_dirs()
     assert (tmp_path / "dirs" / "data_dir").is_dir() and sorted(p.name for p in (tmp_path / "dirs").iterdir()) == ["data_dir"]
-    from agentic_core.reactor.domains.ontology_engine import OntologyEngine
-    # W506 (FU-077) — this asserted the exact dict {"nodes": [], "links": []}. The engine now also says
-    # WHY the graph is empty (`available: False` plus a basis naming the path it read), because an empty
-    # graph and an absent ontology were previously indistinguishable to every caller. The leg's own point
-    # is unchanged and checked below: a READER must not create the directory it reads.
-    _ont = OntologyEngine(str(tmp_path / "ont")).get_ontology("law")
-    assert _ont["nodes"] == [] and _ont["links"] == []
-    assert _ont["available"] is False and _ont.get("basis"), \
-        f"an absent ontology is served as an empty graph with no statement that it is absent: {_ont}"
-    assert not (tmp_path / "ont").exists()
+    # W575 (FU-077) — THE ENGINE IS RETIRED, so this leg's subject is gone and the leg says that
+    # instead of importing it. W473 asserted a reader must not create the directory it reads; W506
+    # added that an absent ontology must not be served as an empty graph. The Owner then ruled on
+    # 2026-09-30 that the engine be retired entirely, because no graph exists for it to serve:
+    # the Law file holds 494 concepts and NO relations, and the other holds 293 file paths and NO
+    # edges. An engine that cannot be constructed cannot create a directory or serve an empty graph,
+    # which is a stronger guarantee than either original leg — and the retirement itself is driven
+    # in `test_w575_p24_the_scatter_closes_on_each_row_it_reproduced`.
+    assert not (root / "agentic_core/reactor/domains/ontology_engine.py").exists(), (
+        "the ontology engine is back; the Owner ruled on 2026-09-30 that it be retired, and this "
+        "leg's original subject — a reader that creates the directory it reads — returns with it")
+    assert not (root / "agentic_core/data/ontologies").exists(), (
+        "the directory the retired engine used to read has been created by something")
     gi = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert "genome/" in gi and "models/" in gi and "logs/" in gi
 
@@ -18631,17 +18668,22 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     # naming a specific open item (W496's comment records the first: "this used P1.18, which the same round
     # marked DONE"), so the item is taken from the plan it was handed. The rule under test is "an item is
     # projected at ITS OWN rate", which needs ANY open item and never a particular one.
-    _open_slots = [i["slot"] for i in fu.plan_items(prompt)
-                   if not i["done"] and i["slot"].startswith("P2.")]
-    assert _open_slots, "no open P2 item exists, so this check has nothing to project"
-    _proj = next(x for x in _open_slots if x != "P2.4")
+    #  W575 (FU-365) — BOTH slots are derived now, and from ANY open item rather than from P2.
+    #  W505 derived this one and left the SECOND as the literal "P2.4", under the comment below
+    #  saying a third naming would break on the round that closed it. W575 closed P2.4 and it did.
+    #  Scoping to one phase would bring the fault back the moment that phase has a single item left.
+    _open_slots = [i["slot"] for i in fu.plan_items(prompt) if not i["done"]]
+    assert len(_open_slots) >= 2, (
+        "this check needs two open items to project at different rates, and the plan has "
+        f"{len(_open_slots)}", _open_slots)
+    _proj, _slow = _open_slots[0], _open_slots[1]
     for i in range(6):
         rnd = f"W{800 + i}"
         mixed["items"].append({"id": f"FU-a{i}", "status": "done", "closed_by": rnd, "slot": _proj,
                                "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                "found": "2026-01-01", "owner_gated": False})
         if i < 2:
-            mixed["items"].append({"id": f"FU-b{i}", "status": "done", "closed_by": rnd, "slot": "P2.4",
+            mixed["items"].append({"id": f"FU-b{i}", "status": "done", "closed_by": rnd, "slot": _slow,
                                    "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                    "found": "2026-01-01", "owner_gated": False})
     # W505 - DERIVED, NOT NAMED, because this has now broken twice for the same reason. W496's comment
@@ -18654,7 +18696,7 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
                                "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                "found": "2026-01-01", "owner_gated": False})
     for j in range(10):
-        mixed["items"].append({"id": f"FU-q{j}", "status": "open", "slot": "P2.4", "item": "P2.4",
+        mixed["items"].append({"id": f"FU-q{j}", "status": "open", "slot": _slow, "item": _slow,
                                "title": "t", "why": "w", "source": "W700", "severity": "low", "files": [],
                                "found": "2026-01-01", "owner_gated": False})
     m = fu.forecast(mixed, prompt)
@@ -18663,12 +18705,12 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     _mi = {x["slot"]: x for x in m["by_item"]}
     assert _mi[_proj]["rate_used"] == 1.0, _mi[_proj]
     assert _mi[_proj]["rounds_projected"] == 9, _mi[_proj]               # 9 rows at 1.0, not 6 at 1.5
-    assert _mi["P2.4"]["rounds_projected"] is None, _mi["P2.4"]           # 2 of 6 rounds cannot measure
-    assert "not projected" in _mi["P2.4"]["basis"], _mi["P2.4"]
+    assert _mi[_slow]["rounds_projected"] is None, _mi[_slow]            # 2 of 6 rounds cannot measure
+    assert "not projected" in _mi[_slow]["basis"], _mi[_slow]
     # and the rendered block carries the refusal rather than a borrowed figure
     _mr = fu.render_forecast(mixed, prompt)
     assert "each at its OWN measured rate" in _mr, _mr
-    assert "P2.4 10r\u2014" in _mr, _mr
+    assert f"{_slow} 10r\u2014" in _mr, _mr
 
     g = fu.forecast(growing, prompt)
     assert g["assessable"] is False, g["rate_used"]
@@ -37182,3 +37224,182 @@ def test_w574_a_name_a_number_and_a_placeholder_each_say_what_is_behind_them(cli
     assert [f["ingredient"] for f in _s["flagged"]] == ["pork gelatin"], _s["flagged"]
     assert _s["unmatched"] == ["glucose syrup"], _s["unmatched"]
     assert "NOT thereby acceptable" in _s["basis"], _s["basis"][:120]
+
+
+def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
+    """P2.4 — the four clusters and the three HIGH rows the Owner held there.
+
+    The bar is per cluster and says how a round must know: "a cluster closes when its rows are closed
+    AND a named guard drives the case each row reproduced; the round records, per artefact it removed,
+    the check that established reachability. No cluster closes on an import search, and none closes on
+    a count alone." This is that guard.
+    """
+    import ast as _ast575
+    import pathlib as _pl575
+
+    _root = _pl575.Path(__file__).resolve().parents[1]
+
+    # ── FU-354 — THE LEDGER. An account that is not in the chart is refused ────────────────────
+    #  The row said the two projections "can disagree" and cited record(reserves,750) leaving the
+    #  chart at 0.0. RE-DRIVEN: the chart records it in full (reserve_fund +750, cash −750) and the
+    #  debit-side TOTAL is 0.00 because both are assets — the correct answer for moving cash into a
+    #  reserve. What WAS real: post() invented any account name it was handed.
+    from agentic_core.economy.ledger import CHART, VirtualLedger
+    _led = VirtualLedger("vsb-w575-guard")
+    _led.record("reserves", 750.0, memo="w575 guard")
+    assert _led.balances()["reserves"] == 750.0, _led.balances()
+    _acc = _led._data["accounts"]
+    assert _acc.get("reserve_fund") == 750.0 and _acc.get("cash") == -750.0, (
+        "record() no longer makes the balanced posting it means", _acc)
+    _tb = _led.trial_balance()
+    assert _tb["debit_side_total"] == 0.0 and _tb["balanced"], (
+        "an asset-to-asset movement should net to zero on the debit side", _tb)
+    assert "not comparable" in (_tb.get("scope") or ""), (
+        "trial_balance does not say which set of figures it is, so a reader comparing it with "
+        "balances() is comparing two different questions and cannot tell", _tb.get("scope"))
+    assert "waterfall pots" in VirtualLedger.BALANCES_SCOPE
+    #  THE DEFECT ITSELF: a pot name is not an account, and post() must refuse it
+    assert "reserves" not in CHART, "the fixture for this leg is gone: `reserves` is now an account"
+    try:
+        _led.post("revenue", "reserves", 500.0, memo="w575 guard")
+    except ValueError as _e:
+        assert "not in the chart" in str(_e) and "WATERFALL POT" in str(_e), str(_e)[:200]
+    else:
+        raise AssertionError(
+            "post() accepted `reserves`, a waterfall-pot name that is not an account — it opens a "
+            "phantom asset beside the real reserve_fund, which is how FU-354's apparent divergence "
+            "between the two projections was produced")
+    #  and a REAL posting still works, so the refusal is not a blanket one
+    _led.post("cash", "revenue", 200.0, memo="w575 guard")
+    assert _led._data["accounts"].get("revenue") == 200.0, _led._data["accounts"]
+
+    # ── FU-332 — no docstring claims a post-quantum operation this repository cannot perform ───
+    #  Asserted on the CLAIM, not the phrase: the file legitimately says the wallets are NOT
+    #  PQC-secured, and a substring check on "PQC-secured" fired on that denial.
+    _cg = (_root / "products/capital_fund/adapters/crypto_gateway.py").read_text(encoding="utf-8")
+    _docs = " ".join(_ast575.get_docstring(n) or ""
+                     for n in _ast575.walk(_ast575.parse(_cg))
+                     if isinstance(n, (_ast575.Module, _ast575.ClassDef, _ast575.FunctionDef,
+                                       _ast575.AsyncFunctionDef)))
+    for _claim in ("Integrates PQC-secured", "with PQC signing", "using Dilithium"):
+        assert _claim not in _docs, (
+            f"a docstring claims {_claim!r} on a money path; no post-quantum operation exists in "
+            f"this repository", _claim)
+    assert "KEYED MAC" in _docs.upper(), (
+        "the docstrings no longer name the operation actually performed")
+    #  and there is still no post-quantum module to perform one
+    assert not (_root / "agentic_core/crypto/pqc.py").exists(), (
+        "a pqc module now exists — if a post-quantum operation was built, these docstrings must "
+        "say what it actually does rather than being left as they are")
+
+    # ── FU-346 — the capital vault imports with no managed infrastructure configured ───────────
+    import importlib as _il575
+    _vault = _il575.import_module("products.capital_fund.core.vault")
+    assert hasattr(_vault, "CapitalVault") and hasattr(_vault, "_db"), dir(_vault)
+    _vsrc = (_root / "products/capital_fund/core/vault.py").read_text(encoding="utf-8")
+    _code = "\n".join(l.split("#", 1)[0] for l in _vsrc.splitlines())
+    assert "\ndb = firestore.client()" not in "\n" + _code, (
+        "the Firestore client is acquired at MODULE SCOPE again, so importing this file depends on "
+        "live managed infrastructure and no suite can reach it")
+    #  and the lazy accessor REFUSES rather than initialising anything — P4.4 is the Owner's switch
+    try:
+        _vault._db()
+    except RuntimeError as _e:
+        assert "owner-gated" in str(_e) and "nothing here initialises it" in str(_e), str(_e)[:200]
+    except Exception:                                    # noqa: BLE001
+        raise AssertionError("_db() failed with something other than its stated refusal") from None
+
+    # ── FU-276 — every gateway call site with a user in scope threads it ───────────────────────
+    #  COMPUTED, not a hand-kept list: the 71 sites with no user in scope are deliberately
+    #  unattributed, which is the bar's "recorded as deliberately unattributed with its reason",
+    #  and this recomputes the classification so adding a user without threading it goes red.
+    def _is_gateway_call(node):
+        f = node.func
+        if isinstance(f, _ast575.Name):
+            return f.id == "ai_text"
+        if isinstance(f, _ast575.Attribute):
+            _owner = getattr(f.value, "id", None) or getattr(f.value, "attr", None)
+            return f.attr in ("query_meta", "query", "stream_meta") and _owner == "gateway"
+        return False
+
+    _unthreaded, _total, _threaded, _nouser = [], 0, 0, 0
+
+    def _walk(node, user_in_scope, path):
+        nonlocal _total, _threaded, _nouser
+        for ch in _ast575.iter_child_nodes(node):
+            if isinstance(ch, (_ast575.FunctionDef, _ast575.AsyncFunctionDef)):
+                _p = {a.arg for a in ch.args.args} | {a.arg for a in ch.args.kwonlyargs}
+                _walk(ch, user_in_scope or bool(_p & {"user", "current_user", "owner_id", "uid"}), path)
+                continue
+            if isinstance(ch, _ast575.Call) and _is_gateway_call(ch):
+                _total += 1
+                if any(k.arg == "owner_id" for k in ch.keywords):
+                    _threaded += 1
+                elif user_in_scope:
+                    _unthreaded.append(f"{path}:{ch.lineno}")
+                else:
+                    _nouser += 1
+            _walk(ch, user_in_scope, path)
+
+    for _p in sorted((_root / "agentic_core").rglob("*.py")):
+        if "_archive" in _p.parts:
+            continue
+        try:
+            _tree = _ast575.parse(_p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        _walk(_tree, False, _p.relative_to(_root).as_posix())
+    assert _total > 50, ("the call-site matcher found almost nothing, so this leg proves nothing",
+                         _total)
+    assert _threaded >= 20, ("the threaded count collapsed", _threaded)
+    assert not _unthreaded, (
+        "a gateway call site has a user in scope and does not thread owner_id, so what that person "
+        "asked for is stored in a namespace even they cannot recall from", _unthreaded)
+
+    # ── FU-077 — the ontology engine is retired, and the kept asset is not called a graph ──────
+    assert not (_root / "agentic_core/reactor/domains/ontology_engine.py").exists(), (
+        "the ontology engine is back; the Owner ruled on 2026-09-30 that it be retired")
+    from agentic_core.reactor.domains.weaver import domain_weaver as _dw575
+    import asyncio as _aio575
+    _out = _aio575.get_event_loop_policy().new_event_loop().run_until_complete(
+        _dw575.synthesize("unfair dismissal", ["law", "care"]))
+    assert _out["status"] == "no_ontology_service", _out["status"]
+    assert _out["structured_report"]["entries_found"] == 0
+    #  ON THE FIELD A READER MEETS. `synthesis` is what travels into the AI CEO's answer; a
+    #  structured `kept_asset` key was returned here too and removed in the same round because the
+    #  pre-flight found it reaching no surface. Asserting the dead key would have guarded nothing.
+    assert "494-concept" in _out["synthesis"], (
+        "the surface no longer says what IS kept — 'retire the engine, KEEP THE ASSET, reclassify it "
+        "honestly' is one ruling, and the second half is the half that rots", _out["synthesis"][:200])
+    assert "vocabulary is not a graph" in _out["synthesis"], _out["synthesis"][:200]
+    #  THE RULING'S MEASUREMENT, RE-TAKEN — neither file is a graph, so neither may be served as one
+    import json as _json575
+    _law = _json575.loads((_root / "knowledge/Law/EmploymentTribunal/ontology/"
+                           "uk_employment_law_v9.json").read_text(encoding="utf-8"))
+    assert len(_law["concepts"]) == 494 and "relations" not in _law, (
+        "the Law asset changed shape; it is kept as a VOCABULARY precisely because it has no "
+        "relations, and if it gained some the ruling would need revisiting", sorted(_law))
+    _uni = _json575.loads((_root / "knowledge/Law/EmploymentTribunal/ontology/"
+                           "unified_assimilated_graph.json").read_text(encoding="utf-8"))
+    assert "edges" not in _uni and len(_uni["nodes"]) == 293, sorted(_uni)
+    assert "path" in _uni["nodes"][0], (
+        "the 293 entries are FILE PATHS, which is why this is never loaded as an ontology")
+
+    # ── FU-075 — the tolerant loader is KEPT, and says why ─────────────────────────────────────
+    #  Cluster (a) allows an artefact kept with a stated reason and a reader that uses it. The
+    #  decision must be IN the artefact, or the next round reads the open row and deletes it.
+    _cfg = (_root / "agentic_core/config.py").read_text(encoding="utf-8")
+    assert "def load_json_tolerant" in _cfg, "the tolerant loader was deleted"
+    _i = _cfg.index("def load_json_tolerant")
+    _doc = _cfg[_i:_i + 2600]
+    assert "KEPT DELIBERATELY" in _doc, (
+        "the retention decision is not stated in the function, so the next round sees only an open "
+        "row asking for its deletion")
+    assert "FU-298" in _doc, "the remaining half is not pointed at the item where it belongs"
+    #  and it genuinely has readers, which is the other half of the bar's condition
+    _readers = {p.relative_to(_root).as_posix()
+                for p in (_root / "agentic_core").rglob("*.py")
+                if "_archive" not in p.parts
+                and "load_json_tolerant(" in p.read_text(encoding="utf-8", errors="replace")}
+    _readers.discard("agentic_core/config.py")
+    assert len(_readers) >= 8, ("the loader is kept for readers that no longer exist", sorted(_readers))

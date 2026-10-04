@@ -396,7 +396,9 @@ async def ai_valuation(req: ValuationRequest, user: dict | None = Depends(get_cu
         "## Exit Multiple Estimate\n"
     )
 
-    meta = await gateway.query_meta(prompt, agent="marketplace_valuation", augment=False)
+    # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+    _owner_id = user.get("username") if isinstance(user, dict) else None
+    meta = await gateway.query_meta(prompt, agent="marketplace_valuation", augment=False, owner_id=_owner_id)
     if meta.get("served_by") == "native":
         raise HTTPException(status_code=503, detail=(
             "No model is available to produce a valuation — the deterministic floor can only "

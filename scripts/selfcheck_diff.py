@@ -65,6 +65,21 @@ def changed_files(rev: str) -> list[str]:
     return [f.strip() for f in out.splitlines() if f.strip()]
 
 
+def deleted_files(rev: str) -> set:
+    """Paths this diff DELETES.
+
+    W575 — A DELETED FILE IS NOT A RENAME, and the screens have to know the difference. Retiring
+    `ontology_engine.py` on the Owner's ruling made the [renames] screen report seven of its keys as
+    "removed and still referenced", naming 135 files for `basis`, 85 for `domain`, 47 for `query` —
+    every unrelated dict in the repository that happens to use a common key name. Eight leads, none
+    of them real, in a round whose only genuine lead would have been lost among them. The [routes]
+    screen then tried to AST-parse a path that no longer exists and reported the OSError as a
+    finding. A screen that cries wolf on every deletion is how a true lead gets skimmed past.
+    """
+    out = sh("git", "diff", "--name-only", "--diff-filter=D", rev or "HEAD")
+    return {f.strip() for f in out.splitlines() if f.strip()}
+
+
 def diff_text(rev: str, path: str) -> str:
     return sh("git", "diff", "-U0", rev or "HEAD", "--", path)
 
@@ -875,6 +890,20 @@ def main() -> int:
     args = ap.parse_args()
 
     files = changed_files(args.rev)
+    #  W575 — DELETIONS ARE REPORTED, NOT SCREENED. Every screen here asks a question about a file's
+    #  CONTENT ("is this key still read?", "is this route bound to a helper?"), and a file that is
+    #  gone has no content to ask about: the keys were not renamed, the module was retired. Naming
+    #  them keeps the deletion visible — the round still has to say why it removed each artefact and
+    #  what established its reachability — without manufacturing a finding per common key name.
+    _deleted = deleted_files(args.rev)
+    if _deleted:
+        print(f"  {len(_deleted)} file(s) DELETED by this diff, not screened for content — a deleted "
+              f"file has none, and its keys were retired rather than renamed:")
+        for _d in sorted(_deleted):
+            print(f"      - {_d}")
+        print("      (the round states why each was removed, and the check that established its "
+              "reachability — the screens below cannot establish either)\n")
+    files = [f for f in files if f not in _deleted]
     # W493 (refutation) — the banner used to print only AFTER this early exit, so on a clean tree the
     # tool printed "no changed files" and nothing else. A guard asserting the banner therefore passed
     # only while the author's copy was dirty, and failed in CI the moment the round was committed. The

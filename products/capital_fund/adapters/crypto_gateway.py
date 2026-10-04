@@ -14,7 +14,13 @@ class CryptoGateway:
     """
     Module 3B: Crypto Gateway Adapter.
     Handles on-chain deposits and withdrawals for USDC/ETH.
-    Integrates PQC-secured wallets and gas fee modelling.
+
+    W575 (FU-332) — this line used to claim the wallets were secured by a post-quantum scheme (the
+    exact wording is in W575's commit message, not here). NO POST-QUANTUM OPERATION EXISTS IN THIS
+    REPOSITORY: `agentic_core/crypto/` holds only an entropy pool, and the primitive this module
+    actually reaches for is `agentic_core.attestation`, which states in its own docstring that it
+    computes a KEYED MAC and not a post-quantum signature. The wallets are not PQC-secured; nothing
+    here is. Real-money rails are owner-gated and off, so no withdrawal executes either way.
     """
     def __init__(self, owner_uid: str, constitutional_validator: GaaSValidator, ueg: UEGLogger):
         self.owner_uid = owner_uid
@@ -68,7 +74,16 @@ class CryptoGateway:
 
     async def execute_onchain_withdrawal(self, amount: Decimal, asset_type: str, destination: str) -> Dict[str, Any]:
         """
-        Executes a crypto withdrawal with PQC signing and gas modelling.
+        Executes a crypto withdrawal with gas modelling, attested by a KEYED MAC.
+
+        W575 (FU-332) — this line used to name a post-quantum signature scheme (the exact wording is
+        in W575's commit message). It never signed anything post-quantum: the
+        attestation this path records is a keyed MAC (agentic_core.attestation), which is a different
+        and weaker claim; naming a specific lattice signature scheme on a money path is the kind of
+        overstatement a reader would act on. (The scheme is not named here: a repo-wide guard forbids
+        those names outside the files that record their retirement, and this file is not one of them.
+        It is in W575's commit message.) The gate below refuses while real-money rails are off, so
+        today this returns REFUSED before any of it runs.
         """
         # 0. THE MONEY GATE, and it goes FIRST. W535 — this path is named an on-chain withdrawal and
         #    consulted NO gate of any kind; it was unreachable only by accident, because the module could not

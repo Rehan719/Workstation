@@ -1,84 +1,81 @@
 import logging
 from typing import Dict, Any, List
-from agentic_core.reactor.domains.ontology_engine import ontology_engine
 
 logger = logging.getLogger(__name__)
 
+#  §4 (W575, FU-077) — THE ONTOLOGY ENGINE IS RETIRED, ON THE OWNER'S RULING OF 2026-09-30:
+#  "RETIRE THE ENGINE, KEEP THE ASSET, RECLASSIFY IT HONESTLY."
+#
+#  WHY, MEASURED. The engine read `agentic_core/data/ontologies/`, which holds nothing and which
+#  nothing ever writes, so every domain query answered an absence. The ruling then revised both arms
+#  the row had offered, on a measurement taken before ruling — and this round re-took it rather than
+#  trusting it:
+#    · knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json holds 494 REAL UK
+#      employment-law concepts and 4 rules, and NO relations key at all.
+#    · unified_assimilated_graph.json holds 293 "nodes" that are FILE PATHS over the Owner's own
+#      documents, each with a hash, and NO edges key — the simulated-assimilation era.
+#  So the engine served graphs and no graph exists. Wiring it would have meant inventing relations.
+#
+#  WHAT IS KEPT. The 494-concept vocabulary and its rules remain on disk as a LAW DOMAIN RESOURCE for
+#  P3.23's stakes-scaled gate, where they pair with FU-278's requirement that a legal artefact cite a
+#  page and a line. They are a VOCABULARY, not a graph, and nothing here loads them as one. The
+#  293-node manifest is never loaded as an ontology.
+#
+#  REACHABILITY, ESTABLISHED BEFORE REMOVAL (P2.4 cluster (a) requires the check to be recorded):
+#  the engine was reached by exactly one path — agentic_core/api/v138/ceo.py dispatches the AI CEO's
+#  `domain_weaver` tool into this module, which called `ontology_engine.searched()`. A repo-wide
+#  search found no other importer in the live tree: the remaining hits are this file, the engine
+#  itself, `_archive/`, and register rows. So retiring it changes exactly this surface, and this
+#  surface now says what is true instead of reporting an absence per domain.
+
+
 class DomainWeaver:
-    """v0.1: Cross-Domain Knowledge Synthesis Engine."""
+    """Cross-domain synthesis. There is no ontology service to synthesise over, and it says so."""
+
     def __init__(self):
         self.domains = ["religion", "science", "law", "employment", "education", "care"]
 
+    NO_SERVICE_BASIS = (
+        "no ontology service exists on this platform. The engine that served this surface was "
+        "retired on the Owner's ruling of 2026-09-30 because it read a directory that holds "
+        "nothing: it answered every domain with an empty graph, which a caller could read as 'the "
+        "ontology was consulted and held nothing'. The one real asset is a 494-concept UK "
+        "employment-law VOCABULARY with four rules and no relations, kept as a Law domain resource "
+        "for the legal specialist's gate — a vocabulary is not a graph and cannot be traversed for "
+        "cross-domain findings. A 293-node file-path manifest from the simulated-assimilation era "
+        "is never loaded as an ontology."
+    )
+
     async def synthesize(self, query: str, active_domains: List[str]) -> Dict[str, Any]:
-        """Cross-domain synthesis over what the ontologies ACTUALLY return.
+        """Return the honest absence, in the shape callers already read.
 
-        W506 (FU-077) - every clause here used to be asserted regardless of content. The comparative-analysis
-        line fired because two KEYS existed in a dict whose values were both empty lists; the ethical-guardrail
-        line cited a numbered constitutional article on patient sovereignty that exists nowhere in this
-        repository - the number is in the commit that removed it and is not repeated here, because an invented
-        citation is worth recording once and not carrying forward; the conclusion
-        confirmed "sovereign alignment"; the confidence score was the constant 0.98; and the status was SUCCESS.
-        All of it over zero findings, in the care and law domains.
-
-        Now: a claim appears only when the findings support it, the absence of an ontology is stated with its
-        reason, and the score is replaced by counts a reader can verify against `raw_data`.
+        W506 made every clause of the old synthesis conditional on content, so nothing was asserted
+        over zero findings. W575 removes the step before that one: there is nothing to find, and
+        reporting it per domain ("NO ONTOLOGY WAS CONSULTED — ...", six times) read as a service
+        that was temporarily empty rather than one that does not exist.
         """
-        logger.info("DomainWeaver: synthesising across %s for %r", active_domains, query)
-
-        searched: Dict[str, Any] = {}
-        for domain in active_domains:
-            if domain in self.domains:
-                searched[domain] = ontology_engine.searched(domain, query)
-
-        results = {d: v["results"][:3] for d, v in searched.items()}
-        with_findings = [d for d, items in results.items() if items]
-        unavailable = [d for d, v in searched.items() if not v["available"]]
-
-        lines = [f"Cross-domain synthesis for {query!r}:"]
-
-        # a comparison requires BOTH sides to have returned something. The old test was `key in results`.
-        if "religion" in with_findings and "science" in with_findings:
-            lines.append("Comparative analysis: both the religion and science ontologies returned entries for "
-                         "this query; the intersection below is drawn from those entries.")
-        if "care" in with_findings and "law" in with_findings:
-            # the invented article citation is GONE. No constitutional article is cited unless it exists.
-            lines.append("Care and law both returned entries; any guardrail a reader needs must come from the "
-                         "entries below, not from this summary.")
-
-        for domain in active_domains:
-            if domain not in searched:
-                lines.append(f"- [{domain.upper()}]: not a known domain for this weaver.")
-                continue
-            items = results.get(domain) or []
-            if items:
-                lines.append(f"- [{domain.upper()}]: {', '.join(str(i.get('id', i)) for i in items)}")
-            elif not searched[domain]["available"]:
-                lines.append(f"- [{domain.upper()}]: NO ONTOLOGY WAS CONSULTED - "
-                             f"{searched[domain]['basis']}")
-            else:
-                lines.append(f"- [{domain.upper()}]: the ontology was consulted and held no entry "
-                             f"matching this query.")
-
-        if not with_findings:
-            lines.append("NOTHING WAS SYNTHESISED: no domain returned an entry, so there is no cross-domain "
-                         "finding to report. This is not a negative result about the query.")
-
+        logger.info("DomainWeaver: no ontology service; refusing synthesis for %r over %s",
+                    query, active_domains)
         return {
             "query": query,
-            "synthesis": "\n".join(lines),
+            "synthesis": (f"No cross-domain synthesis is available for {query!r}. "
+                          f"{self.NO_SERVICE_BASIS}"),
             "structured_report": {
-                "summary": (f"cross-domain synthesis over {len(with_findings)} domain(s) that returned entries"
-                            if with_findings else
-                            "no domain returned an entry, so nothing was synthesised"),
+                "summary": "no ontology service exists, so nothing was synthesised",
+                "basis": self.NO_SERVICE_BASIS,
                 "domains_requested": list(active_domains),
-                "domains_with_findings": with_findings,
-                "domains_without_an_ontology": unavailable,
-                "entries_found": sum(len(v) for v in results.values()),
-                "score_basis": ("there is no confidence instrument here. The counts above are what can be "
-                                "checked; a score would be a number nothing computed"),
+                "domains_with_findings": [],
+                "entries_found": 0,
+                # A `kept_asset` field and an unknown-domain list were returned here and removed in
+                # the same round: the pre-flight's key screen found neither reaching any surface.
+                # The kept asset is named in NO_SERVICE_BASIS above, which travels in `synthesis` —
+                # the field a reader actually meets through the AI CEO's answer.
+                "score_basis": ("there is no confidence instrument here, and no counts to report: "
+                                "nothing was searched"),
             },
-            "raw_data": results,
-            "status": "synthesised" if with_findings else "nothing_to_synthesise",
+            "raw_data": {},
+            "status": "no_ontology_service",
         }
+
 
 domain_weaver = DomainWeaver()

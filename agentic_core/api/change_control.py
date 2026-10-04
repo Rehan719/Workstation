@@ -1377,7 +1377,9 @@ async def review_change(cca_id: str, req: ReviewDecision,
         # site to name its recall decision: W489 flipped the default after 29 generation callers had
         # another request's content prepended and presented as analysis of their own subject, and an
         # inherited default is exactly what let that go unnoticed for 29 sites.
-        _rv = await gateway.query_meta(prompt, agent="cca_review", augment=False)
+        # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+        _owner_id = user.get("username") if isinstance(user, dict) else None
+        _rv = await gateway.query_meta(prompt, agent="cca_review", augment=False, owner_id=_owner_id)
         review_text = _rv.get("output", "")
         _served = str(_rv.get("served_by") or "unknown")
         # the GATEWAY's own floor test, which imports the engine's declared name instead of matching a

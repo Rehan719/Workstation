@@ -271,7 +271,9 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     async def _q(prompt: str, agent: str) -> str:  # noqa: F811 — local, provenance-aware
         try:
             # W332 — journey stages persist into the entity/plan and can ship: no cross-request recall
-            res = await gateway.query_meta(_realm_prefix + prompt, agent=agent, augment=False)
+            # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+            _owner_id = user.get("username") if isinstance(user, dict) else None
+            res = await gateway.query_meta(_realm_prefix + prompt, agent=agent, augment=False, owner_id=_owner_id)
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             # §5 × §10 (W436, v10 item 1c) — WHO served each stage is recorded BY AGENT, because the

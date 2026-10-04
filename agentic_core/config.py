@@ -205,6 +205,18 @@ def load_json_tolerant(path, default):
     Prefer `read_json_reported`, which hands the reason to the caller so a response can state it. A log
     line is a weaker remedy than a field on the answer, and this exists for the callers that have not been
     converted yet.
+
+    W575 (FU-075) — THIS FUNCTION IS KEPT DELIBERATELY, and that is a decision rather than an omission.
+    The row asked for it to be deleted "once every writer is strict". Every writer IS strict (W472) and
+    W506 delivered the rest of that row's substance by making this non-silent. Deleting it now would
+    not make anything more honest: its purpose is that A CORRUPT CACHE MUST NOT TAKE A LIVE SUBSYSTEM
+    DOWN (ai/memory.py, W241), and the twelve readers that call it are read-only summaries and listings
+    that never write back. Removing it would convert each of them from "degrades and says so" into a
+    failure, which is a behaviour change nobody asked for and not an improvement in truth.
+    WHAT REMAINS IS NOT ABOUT THIS FUNCTION. Four of its readers carry the reason in their own answers;
+    the rest only log it, so a listing over an unreadable store still shows fewer rows without saying
+    so on the surface. That is FU-298, and it belongs where the property lives — P2.18's clause (a),
+    "an absence reaches the reader" — not here. A reader that logs is this function's caller's defect.
     """
     value, why = read_json_reported(path, default)
     if why:

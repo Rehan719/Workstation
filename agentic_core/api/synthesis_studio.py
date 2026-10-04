@@ -294,7 +294,9 @@ async def synthesise(req: SynthesiseRequest,
 
             # W506 (P2.2) - an SSE engine carries provenance on EVERY stage event, which the item names
             # explicitly; a reader watching the stream must not have to wait for the final record.
-            _st = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False)
+            # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+            _owner_id = user.get("username") if isinstance(user, dict) else None
+            _st = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False, owner_id=_owner_id)
             stage_content = _st.get("output", "")
             results[stage_key] = stage_content
             _stage_served = _st.get("served_by")
@@ -392,7 +394,9 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
         "## 30-Day Priority Actions (numbered list of 5)"
     )
 
-    _vs = await gateway.query_meta(prompt, agent="vsb_spawner", augment=False)
+    # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+    _owner_id = user.get("username") if isinstance(user, dict) else None
+    _vs = await gateway.query_meta(prompt, agent="vsb_spawner", augment=False, owner_id=_owner_id)
     structure = _vs.get("output", "")
 
     entity = {

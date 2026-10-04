@@ -283,7 +283,9 @@ async def translation_translate(req: TranslateRequest,
             "no model resource is available to translate — the deterministic native floor cannot "
             "translate and its output will not be presented as a translation. Start a local model "
             "(Ollama) or enable an external accelerant."))
-    meta = await gateway.query_meta(prompt, agent="qep_translator", augment=False)
+    # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+    _owner_id = user.get("username") if isinstance(user, dict) else None
+    meta = await gateway.query_meta(prompt, agent="qep_translator", augment=False, owner_id=_owner_id)
     served_by = meta.get("served_by", "native")
     if served_by == "native":
         from fastapi import HTTPException
@@ -357,7 +359,9 @@ async def adaptation_execute(req: AdaptationRequest,
     # from a model blueprint), the entry claimed status "active" and the response "executed" when
     # nothing was adapted, activated, or installed anywhere.
     try:
-        _meta = await gateway.query_meta(prompt, agent="qep_adapter", augment=False)
+        # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
+        _owner_id = user.get("username") if isinstance(user, dict) else None
+        _meta = await gateway.query_meta(prompt, agent="qep_adapter", augment=False, owner_id=_owner_id)
         blueprint = _meta.get("output") or ""
         _served_by = _meta.get("served_by", "native")
         _bp_status = "blueprint_generated"

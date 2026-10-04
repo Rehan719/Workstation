@@ -8,7 +8,22 @@ from agentic_core.ueg.logger import VSBUEGLogger as UEGLogger
 from products.capital_fund.core.multisig_protocol import RealMultiSigProtocol as MultiSigProtocol
 from products.capital_fund.core.audit_manager import AuditManager
 
-db = firestore.client()
+# W575 (FU-346) — THIS WAS `db = firestore.client()` AT MODULE SCOPE, so importing this file raised
+# ValueError("The default Firebase app does not exist") unless a Firebase app had already been
+# initialised. Two separate things were wrong. Importability depended on live managed infrastructure,
+# so the file could not be read, tested or type-checked without credentials and no suite could ever
+# reach it. And the fix is NOT to initialise Firebase: managed infrastructure is owner-gated (P4.4),
+# so this REFUSES with a stated reason exactly as the attestation module refuses with no key.
+def _db():
+    """The Firestore client, acquired on use. Refuses — never initialises — when none is configured."""
+    try:
+        return firestore.client()
+    except Exception as exc:                     # noqa: BLE001 — the reason is the answer
+        raise RuntimeError(
+            "the capital vault needs a Firestore client and no Firebase app is configured on this "
+            f"deployment ({exc.__class__.__name__}: {exc}). Managed infrastructure is owner-gated "
+            "(P4.4); nothing here initialises it, and no vault operation is attempted without it"
+        ) from exc
 
 class CapitalVault:
     """
@@ -38,7 +53,7 @@ class CapitalVault:
             raise ValueError(f"Constitutional Violation: {validation.get('reason')}")
 
         # 2. Atomic Firestore Transaction
-        account_ref = db.collection("capital_accounts").document(self.owner_uid)
+        account_ref = _db().collection("capital_accounts").document(self.owner_uid)
 
         def tx_logic(transaction):
             doc = transaction.get(account_ref)
@@ -58,7 +73,7 @@ class CapitalVault:
             }, merge=True)
             return float(new_balance)
 
-        final_balance = db.run_transaction(tx_logic)
+        final_balance = _db().run_transaction(tx_logic)
 
         # 3. UEG Logging & Audit
         event_id = await self.ueg.log_event(
@@ -92,7 +107,7 @@ class CapitalVault:
         Withdraw funds with liquidity guard and MultiSigCouncil for large amounts.
         Executes all checks within an atomic transaction to prevent race conditions.
         """
-        account_ref = db.collection("capital_accounts").document(self.owner_uid)
+        account_ref = _db().collection("capital_accounts").document(self.owner_uid)
 
         # 1. Pre-transaction checks for MultiSig (requires await, so outside transaction)
         total_fund_value = await self._get_total_fund_value()
@@ -147,7 +162,7 @@ class CapitalVault:
             })
             return float(new_balance)
 
-        final_balance = db.run_transaction(tx_logic)
+        final_balance = _db().run_transaction(tx_logic)
 
         # 5. UEG Logging & Audit
         event_id = await self.ueg.log_event(
@@ -165,7 +180,7 @@ class CapitalVault:
 
     async def _get_total_fund_value(self) -> Decimal:
         """In Phase 1, total fund value is the owner's balance."""
-        account_ref = db.collection("capital_accounts").document(self.owner_uid)
+        account_ref = _db().collection("capital_accounts").document(self.owner_uid)
         doc = account_ref.get()
         if not doc.exists:
             return Decimal("0.0")

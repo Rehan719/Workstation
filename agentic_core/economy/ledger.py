@@ -419,6 +419,25 @@ class VirtualLedger:
         field and are genuinely not stated, and a default of "cycle" would have had each of them claim to be
         one. `postings_by_source` names that group rather than attributing it.
         """
+        #  §3 (W575, FU-354) — AN ACCOUNT THAT IS NOT IN THE CHART IS REFUSED. `CHART.get(name, "asset")`
+        #  below silently invents any name it is handed and files it as an asset, so a caller passing a
+        #  WATERFALL POT name — `reserves`, `owner`, `charity`, which are `balances()` keys and NOT
+        #  accounts — created a phantom account that then entered `trial_balance`. That is how FU-354's
+        #  author produced an apparent divergence between the two projections: post("revenue","reserves",
+        #  500) wrote a brand-new `reserves` asset beside the real `reserve_fund`.
+        #  MEASURED BEFORE REFUSING: every internal caller already passes chart accounts — the
+        #  _COMPAT_POSTING pairs, retained_earnings on period close, and transfer_out/reserve_fund in
+        #  transfers.py — so nothing in the tree is broken by this, and a typo can no longer open an
+        #  account. The message names the pot confusion because that is the mistake actually made.
+        for _name, _role in ((debit, "debit"), (credit, "credit")):
+            if _name not in CHART:
+                _pot = _name in _COMPAT_POSTING or _name in ("reserves", "costs")
+                raise ValueError(
+                    f"{_role} account {_name!r} is not in the chart of accounts. "
+                    + (f"{_name!r} is a WATERFALL POT (a `balances()` key), not an account — the pot is "
+                       f"moved with record({_name!r}, ...), which makes the balanced posting it means. "
+                       if _pot else "")
+                    + f"Accounts: {', '.join(sorted(CHART))}")
         amount = round(float(amount), 2)
         accts = self._data.setdefault("accounts", {})
         for name, side in ((debit, "debit"), (credit, "credit")):
@@ -548,7 +567,25 @@ class VirtualLedger:
         credit_side = round(sum(v for k, v in accts.items() if CHART.get(k, "asset") not in _DEBIT_NORMAL), 2)
         return {"debit_side_total": debit_side, "credit_side_total": credit_side,
                 "balanced": abs(debit_side - credit_side) < 0.02,
-                "postings": len(self._data.get("postings", []))}
+                "postings": len(self._data.get("postings", [])),
+                # W575 (FU-354) — WHICH SET OF FIGURES THIS IS. A reader who compares these totals with
+                # `balances()` is comparing two different questions, and the difference is not a
+                # disagreement. Worked example, because the arithmetic is what misled the row's author:
+                # record("reserves", 750) posts Dr reserve_fund / Cr cash — BOTH ASSETS — so the chart
+                # records it in full and the debit-side TOTAL is 0.00, which is the correct answer for
+                # moving cash into a reserve. Nothing was missed.
+                "scope": ("the double-entry CHART OF ACCOUNTS, summed by normal balance. These totals "
+                          "are not comparable with balances(), which is the seven waterfall pots: an "
+                          "asset-to-asset movement nets to zero here and still shows in a pot, and "
+                          "that is agreement, not divergence")}
+
+    #  W575 (FU-354) — THE SEVEN WATERFALL POTS, and that is the whole of what this returns. It is NOT
+    #  the double-entry chart (`trial_balance`), and the two are not two views of one number: a pot
+    #  movement is an asset-to-asset posting in the chart, which nets to zero on the debit side. The
+    #  return type is unchanged — a bare {pot: amount} dict, because its readers index it — so the
+    #  scope is stated here and on `trial_balance`'s own payload rather than by changing this shape.
+    BALANCES_SCOPE = ("the waterfall pots maintained by record(); not the double-entry chart of "
+                      "accounts, whose totals answer a different question and are not comparable")
 
     def balances(self) -> Dict[str, float]:
         self.require_readable()

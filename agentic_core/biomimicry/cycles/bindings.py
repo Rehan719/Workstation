@@ -78,16 +78,24 @@ def water(vsb_id: Optional[str] = None) -> Dict[str, Any]:
                              f"the ledger for {vsb_id} could not be read ({e.__class__.__name__}: {e}), "
                              f"so there is no balance. An unreadable ledger is not an empty one")
     total = sum(v for v in bal.values() if isinstance(v, (int, float)))
-    #  NAMED EXACTLY, because this ledger holds TWO sets of money figures and they are not the same set.
-    #  `balances()` is the seven waterfall pots, maintained by `record()`. `_apply_posting` maintains a
-    #  separate double-entry account chart, which `post()` writes and this figure does not include —
-    #  measured W543: record(reserves, 750) leaves the chart at 0.0, and a subsequent
-    #  post(revenue, reserves, 500) leaves the pots at 750 while the chart reads -500 on both sides.
-    #  Reporting one of them as "the ledger balance" without saying which would be the over-claim.
+    #  NAMED EXACTLY, because this ledger keeps two sets of figures that answer DIFFERENT QUESTIONS.
+    #  `balances()` is the seven waterfall pots, maintained by `record()`; `_apply_posting` maintains
+    #  the double-entry chart of accounts, which `trial_balance()` sums and this figure does not include.
+    #
+    #  W575 (FU-354) CORRECTS THE EVIDENCE THIS COMMENT USED TO CITE. It read "measured W543:
+    #  record(reserves, 750) leaves the chart at 0.0" as the chart MISSING the entry. Re-driven: the
+    #  chart records it in full — reserve_fund +750 and cash −750 — and the debit-side TOTAL is 0.00
+    #  because both are assets, which is the correct answer for moving cash into a reserve. The second
+    #  half of that measurement was a real defect and is now fixed: post() accepted "reserves", a POT
+    #  name that is not an account, and silently opened a phantom asset. It refuses.
+    #  So the two are not "maintained separately and can disagree" — they are different projections of
+    #  the same postings, and a difference between their totals is not a disagreement.
     return _assessed(total, "agentic_core/economy/ledger.py::VirtualLedger.balances",
                      f"the sum of {len(bal)} WATERFALL POT balance(s) for {vsb_id} — the projection "
-                     f"`record()` maintains, NOT the double-entry account chart that `post()` writes; the "
-                     f"two are maintained separately and can disagree (see the register)",
+                     f"`record()` maintains. It is NOT the double-entry chart that `trial_balance()` "
+                     f"sums: the same movements appear there as debits and credits across cash, "
+                     f"reserve_fund and the distribution expenses, so the two totals are not comparable "
+                     f"and a difference between them is not a disagreement",
                      unit="virtual WST")
 
 

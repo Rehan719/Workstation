@@ -1225,9 +1225,12 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W575",
+      "note": "",
+      "because": "performed_not_assessable",
+      "because_means": "the work was performed and its answer is NOT ASSESSABLE, with a basis",
+      "close_note": "RESOLVED AS A RECORDED RETENTION, which cluster (a)'s bar explicitly permits: an artefact is either deleted OR kept with a stated reason and a reader that uses it. Every writer is strict (W472) and W506 delivered the rest of this row's substance by making the loader non-silent. Deleting it now would make nothing more honest: its purpose is that a corrupt cache must not take a live subsystem down (ai/memory.py, W241), and its twelve readers are read-only summaries and listings that never write back - removing it would convert each from 'degrades and says so' into a failure, a behaviour change nobody asked for. The decision and its reason are now stated in the function itself. WHAT REMAINS IS NOT ABOUT THIS FUNCTION: four readers carry the reason in their answers and the rest only log it, so a listing over an unreadable store still shows fewer rows without saying so. That is FU-298, whose own why-field records that W506 delivered FU-075's substance, and it belongs where the property lives - P2.18 clause (a), an absence reaches the reader."
     },
     {
       "id": "FU-076",
@@ -1260,10 +1263,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W575",
       "note": "",
-      "slot_source": "Owner ruling 2026-09-30 ungated it — retire the engine, keep the asset, reclassify it honestly — which is cluster (a)'s own subject: dead code retired or owned. W535 had moved it out only because it sat at OWNER"
+      "slot_source": "Owner ruling 2026-09-30 ungated it — retire the engine, keep the asset, reclassify it honestly — which is cluster (a)'s own subject: dead code retired or owned. W535 had moved it out only because it sat at OWNER",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Owner RULED on 2026-09-30: retire the engine, keep the asset, reclassify it honestly. Executed, and the ruling's measurement RE-TAKEN rather than trusted: uk_employment_law_v9.json holds 494 concepts and 4 rules with NO relations key at all, and unified_assimilated_graph.json holds 293 nodes that are FILE PATHS with hashes and NO edges key. So the engine served graphs and no graph exists; wiring it would have meant inventing relations. REACHABILITY ESTABLISHED BEFORE REMOVAL, as cluster (a) requires: exactly one live path reached it - v138/ceo.py dispatches the AI CEO's domain_weaver tool into weaver.py, which called ontology_engine.searched(). A repo-wide search found no other importer outside _archive and the register. ontology_engine.py is deleted; the weaver now states that no ontology service exists rather than reporting an absence per domain six times, and names the kept asset. The stale MANDATES.md row that described the engine's behaviour is corrected to RETIRED."
     },
     {
       "id": "FU-078",
@@ -4792,9 +4798,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W575",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RE-MEASURED rather than taken from the row, whose '52 of 61' dated from W496 and no longer matched the tree. Counting closures as in-scope: 92 gateway/ai_text call sites, 8 threaded, 71 with NO user in scope - where unattributed IS the correct namespace and nothing needs changing - and 13 with a user available. All 13 now thread owner_id; the count is 21 threaded and ZERO unthreaded-with-a-user. Two were only reachable by closure (swarm's _q inside cascade_orchestration, synthesis_studio's stream inside synthesise) and their identical twins in functions with no user are deliberately NOT threaded, which the comments state at the site. ONE FALSE POSITIVE WAS CAUGHT AND NOT ACTED ON: a bare query( matcher also matches ChromaDB's collection query in ai/ceo/memory_v01.py, which is already scoped by an owner_id filter - a wider matcher would have been a guard accusing correct code, so the matcher is gateway-only."
     },
     {
       "id": "FU-277",
@@ -5811,10 +5820,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W575",
       "note": "",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The import half landed in W535 (the absent pqc module; the file is importable). What remained was the CLAIMS, and they are the part a reader acts on: the class docstring said the wallets were PQC-secured and the withdrawal method said it signed with a post-quantum scheme. No post-quantum operation exists anywhere in this repository - agentic_core/crypto/ holds only an entropy pool - and the primitive actually reached for is agentic_core.attestation, which states in its own docstring that it computes a KEYED MAC. Both docstrings now name the operation performed and say plainly that nothing here is post-quantum. The exact old wording is in W575's commit message, not in the file, so a guard forbidding the claim does not fire on the comment recording its removal. The money gate W535 added is untouched and still refuses while REAL_MONEY_ENABLED is False."
     },
     {
       "id": "FU-333",
@@ -6067,10 +6079,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W575",
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "vault.py called firestore.client() at MODULE SCOPE, so importing it raised ValueError unless a Firebase app was already initialised - the file could not be read, tested or type-checked without credentials and no suite could reach it. The client is now acquired on use by _db(), and the five call sites go through it. THE FIX IS NOT TO INITIALISE FIREBASE: managed infrastructure is owner-gated (P4.4), so _db() REFUSES with a stated reason naming the gate, exactly as the attestation module refuses with no key. Verified: products.capital_fund.core.vault now IMPORTS with no Firebase configured, and _db() raises a RuntimeError whose message says why and that nothing here initialises it."
     },
     {
       "id": "FU-347",
@@ -6220,10 +6235,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W575",
       "note": "",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE ROW'S PREMISE IS PARTLY REFUTED BY RE-DRIVING IT, and the real defect is sharper. The row read 'record(reserves,750) leaves the chart at 0.0' as the chart MISSING the entry. Re-driven on a fresh store: the chart records it in full - reserve_fund +750 and cash -750 - and the debit-side TOTAL is 0.00 because BOTH ARE ASSETS, which is the correct answer for moving cash into a reserve. trial_balance does not miss record(). THE REAL DEFECT, confirmed: post() took its account names through CHART.get(name,'asset'), so it silently invented any name it was handed. 'reserves' is a WATERFALL POT (a balances() key), not an account - so post('revenue','reserves',500) opened a phantom asset beside the real reserve_fund, which is exactly how the apparent divergence was produced. post() now REFUSES an off-chart name and the message names the pot confusion. MEASURED BEFORE REFUSING: every internal caller already passes chart accounts (the _COMPAT_POSTING pairs, retained_earnings on close, transfer_out/reserve_fund in transfers), so nothing in the tree breaks. Both accessors now state their scope, and the ONE consumer's basis - which had repeated the misreading - is corrected: the two are different projections of the same postings, so a difference between their totals is not a disagreement."
     },
     {
       "id": "FU-355",
@@ -6532,11 +6550,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W575",
       "note": "",
       "slot_source": "it is clause (b): an instrument that would catch a defect but instead reports one that was never committed - the guard fails on an arrival the router chose, not on a regression",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Resolved by the mechanism the plan named rather than by hand-editing seven routes: P2.4 closed with 'done P2.4 --by W575 --hand-to P2.18', which moved all seven file routes to P2.18 in one operation. Verified: P2.4 now owns 0 routes and P2.18 owns 7. The risk this row named - the next arrival landing on an item whose bar cannot cover it, turning the W562 guard red on a row nobody chose to put there - is gone, because arrivals on those files now route to the item chartered to receive them."
     },
     {
       "id": "FU-371",
@@ -7087,7 +7108,7 @@
       "handed_from": "P3.17"
     },
     {
-      "slot": "P2.4",
+      "slot": "P2.18",
       "files": [
         "agentic_core/support/"
       ],
@@ -7095,11 +7116,11 @@
         "support agent",
         "support logic"
       ],
-      "note": "handed from P3.18; W482 — autonomous technical support (the archived simulation is not inherited)",
+      "note": "handed from P3.18 via P2.4; handed from P3.18; W482 — autonomous technical support (the archived simulation is not inherited)",
       "handed_from": "P3.18"
     },
     {
-      "slot": "P2.4",
+      "slot": "P2.18",
       "files": [
         "agentic_core/biomimicry/geospheric/regulator.py",
         "agentic_core/biomimicry/geospheric/homeostatic_regulator.py",
@@ -7111,11 +7132,11 @@
         "cycle setpoint",
         "sovereign wealth"
       ],
-      "note": "handed from P3.19; W484 — the six cycles bound to measured flows (the geospheric regulators and the causal simulator)",
+      "note": "handed from P3.19 via P2.4; handed from P3.19; W484 — the six cycles bound to measured flows (the geospheric regulators and the causal simulator)",
       "handed_from": "P3.19"
     },
     {
-      "slot": "P2.4",
+      "slot": "P2.18",
       "files": [
         "agentic_core/api/change_control.py",
         "apps/workstation-superapp/src/pages/governance/",
@@ -7132,11 +7153,11 @@
         "change control",
         "ratification"
       ],
-      "note": "handed from P2.6; the perimeter and the gate",
+      "note": "handed from P2.6 via P2.4; handed from P2.6; the perimeter and the gate",
       "handed_from": "P2.6"
     },
     {
-      "slot": "P2.4",
+      "slot": "P2.18",
       "files": [
         "agentic_core/api/resource_fabric.py",
         "agentic_core/api/swarm.py",
@@ -7147,11 +7168,11 @@
         "assess a subject",
         "form-only"
       ],
-      "note": "handed from P2.8; bespoke swarms; W482 — the cascade's missing delivery measurement; W483 — and what the §11 screen can actually assess (the capability, not the honesty)",
+      "note": "handed from P2.8 via P2.4; handed from P2.8; bespoke swarms; W482 — the cascade's missing delivery measurement; W483 — and what the §11 screen can actually assess (the capability, not the honesty)",
       "handed_from": "P2.8"
     },
     {
-      "slot": "P2.4",
+      "slot": "P2.18",
       "files": [
         "agentic_core/economy/",
         "agentic_core/api/economy.py",
@@ -7159,7 +7180,7 @@
         "apps/workstation-superapp/src/pages/enterprise/"
       ],
       "words": [],
-      "note": "handed from P2.9; the economy's flows, told as they happened",
+      "note": "handed from P2.9 via P2.4; handed from P2.9; the economy's flows, told as they happened",
       "handed_from": "P2.9"
     },
     {
@@ -7185,7 +7206,7 @@
       "handed_from": "P2.7"
     },
     {
-      "slot": "P2.4",
+      "slot": "P2.18",
       "files": [
         "agentic_core/catalog/",
         "products/",
@@ -7238,7 +7259,8 @@
         "catalogue count",
         "catalogue counts"
       ],
-      "note": "the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories); W483 — and scripts/recovery_audit.py, the archive-first audit; W485 — and the developer pages' own export surfaces"
+      "note": "handed from P2.4; the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories); W483 — and scripts/recovery_audit.py, the archive-first audit; W485 — and the developer pages' own export surfaces",
+      "handed_from": "P2.4"
     },
     {
       "slot": "P3.3",
@@ -7254,7 +7276,7 @@
       "note": "§17.3 cadence owns the board pack and the plan's layers after P1.14 (W471)"
     },
     {
-      "slot": "P2.4",
+      "slot": "P2.18",
       "files": [
         "integration_tests/",
         "docs/",
@@ -7275,7 +7297,7 @@
         "ueg path",
         "ueg write"
       ],
-      "note": "handed from P1.16; canon and suite hygiene before M1, the register's own tooling, and the store class after P1.15 (W472; the broad prefixes: last)",
+      "note": "handed from P1.16 via P2.4; handed from P1.16; canon and suite hygiene before M1, the register's own tooling, and the store class after P1.15 (W472; the broad prefixes: last)",
       "handed_from": "P1.16"
     }
   ]

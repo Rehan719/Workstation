@@ -1,0 +1,101 @@
+[
+ {
+  "tag": "a waterfall pot name opens a phantom account again",
+  "file": "agentic_core/economy/ledger.py",
+  "old": "            if _name not in CHART:",
+  "new": "            if False and _name not in CHART:",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "The committed defect: CHART.get(name, 'asset') invents any name it is handed, so post('revenue','reserves',500) opened a phantom asset beside the real reserve_fund. `if False and` leaves every string and the whole message intact, so a check on the refusal's WORDING still passes — the leg has to drive the pot name through and catch the ValueError."
+ },
+ {
+  "tag": "the refusal becomes a blanket one",
+  "file": "agentic_core/economy/ledger.py",
+  "old": "            if _name not in CHART:\n                _pot = _name in _COMPAT_POSTING or _name in (\"reserves\", \"costs\")",
+  "new": "            if True:\n                _pot = _name in _COMPAT_POSTING or _name in (\"reserves\", \"costs\")",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "The opposite failure, and the one a new refusal most easily ships with: every posting is now rejected, including record()'s own compat postings, so the ledger cannot record anything at all. A guard that only drove the BAD case would pass this and the economy would be dead."
+ },
+ {
+  "tag": "trial_balance stops saying which figures it is",
+  "file": "agentic_core/economy/ledger.py",
+  "old": "                \"scope\": (\"the double-entry CHART OF ACCOUNTS, summed by normal balance. These totals \"",
+  "new": "                \"_scope\": (\"the double-entry CHART OF ACCOUNTS, summed by normal balance. These totals \"",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "A renamed key is silent to a reader and to JavaScript. Without it the two projections sit side by side with nothing saying they answer different questions — which is how FU-354's author read a correct 0.00 as the chart missing an entry."
+ },
+ {
+  "tag": "a docstring claims a post-quantum signature again",
+  "file": "products/capital_fund/adapters/crypto_gateway.py",
+  "old": "        Executes a crypto withdrawal with gas modelling, attested by a KEYED MAC.",
+  "new": "        Executes a crypto withdrawal with PQC signing and gas modelling.",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "On a money path, naming a scheme this repository cannot perform is the claim a reader acts on. The leg asserts the CLAIM forms rather than the phrase, because the file legitimately says the wallets are NOT PQC-secured and a substring check fired on that denial."
+ },
+ {
+  "tag": "the Firestore client goes back to module scope",
+  "file": "products/capital_fund/core/vault.py",
+  "old": "def _db():",
+  "new": "db = firestore.client()\n\n\ndef _db():",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "Importability depending on live managed infrastructure is the whole of FU-346: the file could not be read, tested or type-checked without credentials, and no suite could reach it. The lazy accessor still exists here, so only a check on the MODULE SCOPE catches it."
+ },
+ {
+  "tag": "the lazy accessor initialises instead of refusing",
+  "file": "products/capital_fund/core/vault.py",
+  "old": "        raise RuntimeError(\n            \"the capital vault needs a Firestore client and no Firebase app is configured on this \"",
+  "new": "        import firebase_admin; firebase_admin.initialize_app()\n        raise RuntimeError(\n            \"the capital vault needs a Firestore client and no Firebase app is configured on this \"",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "Managed infrastructure is OWNER-GATED (P4.4). A fix that quietly initialises Firebase to make the import work would be a worse outcome than the broken import it replaced, and the refusal message would still read correctly — so the leg asserts what the refusal SAYS it does not do."
+ },
+ {
+  "tag": "a user-facing call site stops threading its account id",
+  "file": "agentic_core/api/change_control.py",
+  "old": "augment=False, owner_id=_owner_id)",
+  "new": "augment=False)",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "One site of thirteen, chosen because its file has exactly one. The leg RECOMPUTES the classification across the tree rather than checking a remembered list, so any site that gains a user without threading it turns this red — which is the bar's 'recorded as deliberately unattributed with its reason', computed."
+ },
+ {
+  "tag": "the ontology engine returns",
+  "file": "agentic_core/reactor/domains/weaver.py",
+  "old": "class DomainWeaver:",
+  "new": "from agentic_core.reactor.domains import ontology_engine  # noqa: F401\n\n\nclass DomainWeaver:",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "The Owner RULED the engine retired. This blind cannot even import, which is itself the point: the leg asserts the FILE is absent rather than that nothing imports it, because an import search is exactly what cluster (a)'s bar forbids relying on."
+ },
+ {
+  "tag": "the weaver reports an absence per domain instead of no service",
+  "file": "agentic_core/reactor/domains/weaver.py",
+  "old": "            \"status\": \"no_ontology_service\",",
+  "new": "            \"status\": \"nothing_to_synthesise\",",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "The difference the ruling turns on: 'nothing was found' reads as a service that is temporarily empty, and 'no service exists' is the truth. Every other field survives this, so only a check on the status catches the weaker claim coming back."
+ },
+ {
+  "tag": "the kept asset is described as a graph",
+  "file": "agentic_core/reactor/domains/weaver.py",
+  "old": "\"for the legal specialist's gate — a vocabulary is not a graph and cannot be traversed for \"",
+  "new": "\"for the legal specialist's gate — a 494-node knowledge graph traversable for \"",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "KEEP THE ASSET, RECLASSIFY IT HONESTLY — the second half is the one that rots. The file holds 494 concepts and NO relations key, so calling it a graph is the exact overstatement the ruling was made to remove, and the leg re-measures the file rather than trusting the sentence. The claim is asserted on the synthesis text, which is the field that travels into the AI CEO's answer: a structured key nothing renders would guard nothing, and the pre-flight caught exactly that in this round's first cut, so the key was dropped."
+ },
+ {
+  "tag": "the tolerant loader's retention decision disappears",
+  "file": "agentic_core/config.py",
+  "old": "    W575 (FU-075) — THIS FUNCTION IS KEPT DELIBERATELY, and that is a decision rather than an omission.",
+  "new": "    W575 (FU-075) — a note about this function.",
+  "selector": "p24_the_scatter_closes",
+  "expect": "BLIND(red)",
+  "why": "The row asked for this function to be DELETED and it is deliberately kept, which cluster (a)'s bar allows only when the reason is stated. Without the statement the next round reads an open-shaped row asking for a deletion and does it, converting twelve readers from 'degrades and says so' into failures."
+ }
+]
