@@ -49,7 +49,6 @@ export const CommandPalette = ({ open, setOpen, setActiveTab }: any) => {
               <Command.Group heading="Navigation" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mb-2 px-2">
                 <Item icon={Zap} label="Dashboard" onSelect={() => go('dashboard', '/')} />
                 <Item icon={MessageSquare} label="AI CEO Chat" onSelect={() => go('ceo', '/ceo')} />
-                <Item icon={Map} label="Federation Portal" onSelect={() => go('fed-map', '/fed-map')} />
                 <Item icon={Cpu} label="QEP Flagship" onSelect={() => go('qep', '/qep')} />
               </Command.Group>
 
@@ -63,8 +62,11 @@ export const CommandPalette = ({ open, setOpen, setActiveTab }: any) => {
               </Command.Group>
 
               <Command.Group heading="Evolution" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mt-4 mb-2 px-2">
-                <Item icon={Brain} label="Introspection" onSelect={() => go('introspection', '/introspection')} />
-                <Item icon={Zap} label="Genome Explorer" onSelect={() => go('genome-explorer', '/genome-explorer')} />
+                {/* W574 (M1 R5.0) — this palette opens on EVERY page with Ctrl/Cmd+K and offered
+                    three destinations the router does not serve. Introspection is a real page at
+                    /cognitive-introspection, so it is corrected; the Federation Portal and the
+                    Genome Explorer have no page anywhere in the tree and are no longer offered. */}
+                <Item icon={Brain} label="Introspection" onSelect={() => go('introspection', '/cognitive-introspection')} />
               </Command.Group>
 
               <Command.Group heading="Settings" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mt-4 mb-2 px-2">

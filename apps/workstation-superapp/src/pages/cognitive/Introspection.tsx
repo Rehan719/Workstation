@@ -54,7 +54,11 @@ export const Introspection: React.FC = () => {
     return <div className="p-8 text-aura animate-pulse font-black uppercase tracking-widest">Reading organism vitals…</div>;
   }
   const activeSignal = bio.communication.neurotransmitter;
-  const vitals = { system_health: bio.immune.health };
+  // W574 (M1 R4.0) — THIS IS THE IMMUNE SUBSYSTEM'S HEALTH, RENAMED. The immune figure was aliased
+  // to `system_health` and printed at 6xl as "System Health", which is a claim about the whole
+  // platform that nothing here computes — the organism reports its own composite separately. The
+  // alias is gone, so the number is read under the name of the thing that produced it.
+  const immuneHealth = bio.immune.health;
 
   return (
     <motion.div
@@ -90,9 +94,17 @@ export const Introspection: React.FC = () => {
              className="absolute inset-0 opacity-10 bg-aura-glow"
           ></motion.div>
           <Activity size={80} className="text-vital mb-8 animate-pulse z-10" />
-          <h3 className="text-4xl font-black z-10">System Health</h3>
-          <p className="text-6xl font-black neon-text mt-2 z-10">{(vitals.system_health * 100).toFixed(2)}%</p>
-          <p className="text-slate-500 mt-6 font-black uppercase tracking-[0.3em] text-xs z-10">Apotheosis Architecture v139.0 Active</p>
+          <h3 className="text-4xl font-black z-10">Immune Health</h3>
+          <p className="text-6xl font-black neon-text mt-2 z-10" data-testid="introspection-immune-health">{(immuneHealth * 100).toFixed(2)}%</p>
+          <p className="text-slate-500 mt-3 text-[10px] z-10 max-w-sm text-center leading-relaxed">
+            The immune subsystem reporting on itself — not a whole-system figure. Nothing on this page
+            measures the platform overall.
+          </p>
+          {/* W574 (M1 R4.0) — a hardcoded architecture version was printed here as though it were a
+              live fact. No such version exists anywhere in the repository: the only Apotheosis
+              strings are legacy comments naming far earlier ones, and the organism reports 1.0.0.
+              A fabricated version, on the page whose entire subject is the platform telling the
+              truth about itself. The exact string is in W574's commit message, not here. */}
         </div>
 
         <div className="glass-card p-12 h-[400px] flex flex-col justify-between">
@@ -101,7 +113,10 @@ export const Introspection: React.FC = () => {
             Live Biometrics
           </h3>
           <div className="space-y-6">
-             <LoadVisual label={`Metabolic (ATP ${(bio.metabolic.atp_ratio * 100).toFixed(0)}%)`} value={Math.round(bio.metabolic.efficiency * 100)} color="bg-aura" />
+             {/* W574 (M1 R4.0) — the ATP ratio was shown among the live vitals. The payload that
+                 carries it says in its own basis that it is simulated, is not measured and cannot
+                 fall, and is "not a live vital". Labelled as the simulation it is. */}
+             <LoadVisual label={`Metabolic (simulated ATP ${(bio.metabolic.atp_ratio * 100).toFixed(0)}%)`} value={Math.round(bio.metabolic.efficiency * 100)} color="bg-aura" />
              {/* W489 (sweep S11.14, C3) — this bar is 100 − host CPU%: a full bar means the HOST IS
                  IDLE, which read as a healthy platform. Labelled for what it measures. */}
              <LoadVisual label={`Host CPU headroom`} value={Math.round(bio.cardiovascular.resource_flow)} color="bg-highlight" />

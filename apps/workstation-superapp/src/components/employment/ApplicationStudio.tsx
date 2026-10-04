@@ -91,7 +91,10 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   const [jobQuery, setJobQuery] = useState('');
   const [jobSearching, setJobSearching] = useState(false);
   const [jobResults, setJobResults] = useState<JobListing[] | null>(null);
-  const [jobSearchMeta, setJobSearchMeta] = useState<{ query: string; basis?: string; total?: number; ai_provenance?: { served_by?: string | null; is_external?: boolean } } | null>(null);
+  // W574 (M1 R5.1) — none_basis: WHY a search produced nothing. A bare zero here reads as "no roles
+  // match", which is a claim about the job market; the truth is that every line the floor returned
+  // was the prompt's own field template, which is a claim about this deployment.
+  const [jobSearchMeta, setJobSearchMeta] = useState<{ query: string; basis?: string; total?: number; none_basis?: string | null; ai_provenance?: { served_by?: string | null; is_external?: boolean } } | null>(null);
   const [jobSearchError, setJobSearchError] = useState('');
   const [usingListingUrl, setUsingListingUrl] = useState<string | null>(null);
   const [usedListingUrls, setUsedListingUrls] = useState<string[]>([]);
@@ -234,7 +237,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
         limit: 12,
       });
       setJobResults(resp.data.results);
-      setJobSearchMeta({ query: resp.data.query, basis: resp.data.basis, total: resp.data.total, ai_provenance: resp.data.ai_provenance });
+      setJobSearchMeta({ query: resp.data.query, basis: resp.data.basis, total: resp.data.total, none_basis: resp.data.none_basis, ai_provenance: resp.data.ai_provenance });
     } catch (err) {
       setJobSearchError('Example-listing synthesis failed. Try again.');
     } finally {
@@ -452,6 +455,12 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
             </p>
             {jobSearchMeta.ai_provenance && (() => { const b = provenanceBadge(jobSearchMeta.ai_provenance?.served_by, jobSearchMeta.ai_provenance?.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
           </div>
+        )}
+        {/* W574 (M1 R5.1) — an absence that would otherwise read as a fact. */}
+        {jobSearchMeta?.none_basis && (
+          <p data-testid="job-search-none-basis" className="text-[10px] text-amber-400 font-semibold leading-relaxed mt-2">
+            {jobSearchMeta.none_basis}
+          </p>
         )}
 
         {jobResults && jobResults.length === 0 && (

@@ -87,7 +87,14 @@ async def knowledge_layers():
         pass
     try:
         from agentic_core.api.transformation import _realise
-        out["code_live_state"]["overall_realisation"] = _realise().get("overall_realisation")
+        #  W574 (M1 R6.0) — THE CAVEAT TRAVELS WITH THE NUMBER. This copied the figure and left the
+        #  producer's `measure` behind ("API surface coverage — pillar routers mounted and stores
+        #  non-empty; not delivery"), so a consumer printed it as "realisation 97%" with nothing
+        #  qualifying it. The naming invariant: a quantity carries a method's name only when that
+        #  method computed it, and route-mount coverage did not compute realisation.
+        _r = _realise()
+        out["code_live_state"]["overall_realisation"] = _r.get("overall_realisation")
+        out["code_live_state"]["measure"] = _r.get("measure")
     except Exception:
         pass
     return out

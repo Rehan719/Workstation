@@ -196,10 +196,54 @@ export const ReligionHub: React.FC = () => {
                   ) : activeTab === 'halal' ? (
                     <DomainTool
                       title={T['halal'].title}
-                      description={<>Describe a product — Workstation's <span className="text-aura">own</span> AI gives a halal pre-assessment (ingredient flags, process concerns, certification guidance), in-house, with scholarly humility.</>}
+                      /* W574 (M1 R1.1) — THE BLURB PROMISED THREE THINGS AND THE SCREEN SHOWED NONE
+                         OF THEM. It advertised "ingredient flags, process concerns, certification
+                         guidance" while the floor WITHHOLDS the Halal Status Assessment, Critical
+                         Issues and Flagged Ingredients sections — and the one real, deterministic
+                         piece of work the endpoint does, the ingredient screen, was in the response
+                         and never rendered, because the tool prints only `assessment`. So the page
+                         promised what it withheld and hid what it had. */
+                      description={<>Describe a product and this screens your declared ingredients against the terms that commonly require verification — in-house, deterministic. It <span className="text-aura">flags</span>; it never clears, and it is not certification. Where the owned model is unavailable some sections are withheld rather than guessed, and the result says which.</>}
                       endpoint="/api/v1/religion/halal-review"
                       resultKey="assessment"
-                      submitLabel="Assess product"
+                      submitLabel="Screen ingredients"
+                      renderExtra={(r: any) => {
+                        const scr = r?.ingredient_screen;
+                        const withheld: string[] = r?.sections_withheld ?? [];
+                        if (!scr && !withheld.length) return null;
+                        return (
+                          <div className="mt-6 space-y-4">
+                            {scr && (
+                              <div data-testid="halal-ingredient-screen" className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-aura mb-2">
+                                  Ingredient screen — {scr.flagged?.length ?? 0} flagged of {scr.declared ?? 0} declared
+                                </p>
+                                {(scr.flagged ?? []).map((f: any, i: number) => (
+                                  <p key={i} className="text-xs text-amber-400 font-semibold leading-relaxed">
+                                    <span className="font-black">{f.ingredient}</span> — {f.why}
+                                  </p>
+                                ))}
+                                {!!(scr.unmatched ?? []).length && (
+                                  <p className="text-[11px] text-slate-500 font-semibold leading-relaxed mt-2">
+                                    Not matched by the screen: {(scr.unmatched ?? []).join(', ')} — the screen has
+                                    no view on these. Not matched is not the same as acceptable.
+                                  </p>
+                                )}
+                                <p className="text-[10px] text-slate-600 leading-relaxed mt-3">{scr.basis}</p>
+                              </div>
+                            )}
+                            {!!withheld.length && (
+                              <div data-testid="halal-withheld" className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                                  Withheld on this deployment — {withheld.length} section{withheld.length === 1 ? '' : 's'}
+                                </p>
+                                <p className="text-xs text-slate-500 font-semibold leading-relaxed">{withheld.join(' · ')}</p>
+                                {r?.floor_note && <p className="text-[10px] text-slate-600 leading-relaxed mt-2">{r.floor_note}</p>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }}
                       fields={[
                         { name: 'product_name', label: 'Product name', type: 'text', placeholder: 'e.g. Fruit gummy sweets' },
                         { name: 'product_description', label: 'Product description', type: 'textarea', placeholder: 'what the product is and how it is used' },

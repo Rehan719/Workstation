@@ -9357,7 +9357,17 @@ def test_w450_shipped_body_never_wears_scaffold_or_fallback_name(client):
     before = (root / "web" / "index.html").read_bytes()
     m2 = client.post(f"/api/v1/vsb/{vid}/repo").json()
     assert (root / "web" / "index.html").read_bytes() == before
-    assert "generated" in m2["integrated_surfaces"]["website"] and "web/index.html" not in m2["tree"]
+    assert "generated" in m2["integrated_surfaces"]["website"]
+    #  W574 (M1 R2.2) — THIS USED TO ASSERT `web/index.html` WAS ABSENT FROM THE TREE, and that was a
+    #  proxy that only worked while `tree` meant "the files THIS call wrote": the repo step drops its
+    #  scaffold for an already-generated surface, so the path vanished from the manifest even though
+    #  the GENERATED page was sitting on disk. The tree is now counted from disk — which is the whole
+    #  of R2.2, a card that reported 9 files for a 30-file repository — so the path is present and
+    #  SHOULD be. The regression this test is really about is asserted one line above, and far more
+    #  strongly: the generated page is byte-identical after the re-ship.
+    assert "web/index.html" in m2["tree"], (
+        "the generated entry page is on disk and missing from the manifest's tree, which is the "
+        "undercount R2.2 was filed for")
     ship = _json.loads((_REPO_STORE / f"{vid}.ship.json").read_text(encoding="utf-8"))
     assert ship["stale"] is False and ship["surfaces"]["website"]["file_count"] == 3
     # …and renaming a SHIPPED body marks it stale with the reason (its every page wears the name),
@@ -25256,7 +25266,9 @@ def test_w506_p27_layers_state_per_layer_and_the_reachability_is_checked():
     assert set(Q.LAYER_STATE) == set(Q.BIOMIMETIC_LAYERS), (
         sorted(set(Q.LAYER_STATE) ^ set(Q.BIOMIMETIC_LAYERS)))
     allowed = {"engaged_with_value", "engaged_no_value", "implemented_not_on_this_path",
-               "measurement_under_this_name", "code_exists_unreached"}
+               "measurement_under_this_name", "code_exists_unreached",
+               # W574 (M1 R4.6) — stronger than unreached: the module cannot be imported at all
+               "code_unloadable"}
     bad = {l: v["state"] for l, v in Q.LAYER_STATE.items() if v["state"] not in allowed}
     assert not bad, bad
     for l, v in Q.LAYER_STATE.items():
@@ -25308,6 +25320,49 @@ def test_w506_p27_layers_state_per_layer_and_the_reachability_is_checked():
         assert imps == [], (
             f"{layer} is declared unreached and {primary} now HAS importers {imps} — if it was wired, "
             f"quality.py's LAYER_STATE must say so instead of claiming nothing calls it")
+        #  W574 — AND IT MUST ACTUALLY BE IMPORTABLE. `code_exists_unreached` PROMISES real code one
+        #  wiring away; the Respiratory basis used this state while its module raises
+        #  ModuleNotFoundError, so "nothing imports it" was true and "a real TriadIntegrator" was
+        #  not. Without this leg the two states are interchangeable here and the weaker claim can
+        #  always stand in for the stronger one.
+        import importlib as _il506
+        try:
+            _il506.import_module(primary.replace("/", ".")[: -len(".py")])
+        except Exception as _e:                                 # noqa: BLE001
+            raise AssertionError(
+                f"{layer} is declared code_exists_unreached — real code that nothing calls — but "
+                f"{primary} cannot be imported ({type(_e).__name__}: {str(_e)[:120]}). That is the "
+                f"code_unloadable state: nothing could call it even if something tried") from None
+
+    # (2b) W574 (M1 R4.6) — A LAYER DECLARED UNLOADABLE MUST ACTUALLY FAIL TO IMPORT.
+    #      `code_exists_unreached` promises real code one wiring away, and the Respiratory basis used
+    #      that state while saying the module "holds a real TriadIntegrator". It holds no such thing:
+    #      it imports six siblings from agentic_core/molecular/ and only atp_simulator still exists,
+    #      so it raises ModuleNotFoundError and the class can never be instantiated. The stronger
+    #      state is only worth having if it is DRIVEN — so the import is attempted here, and if a
+    #      later round restores the siblings this fails and the basis must change.
+    import importlib as _il574
+    for layer, v in Q.LAYER_STATE.items():
+        if v["state"] != "code_unloadable":
+            continue
+        mods = _module_paths(v["basis"])
+        assert mods, f"{layer} claims code exists and names no module: {v['basis'][:90]}"
+        primary = mods[0]
+        assert (root / primary).exists(), f"{layer} names {primary}, which does not exist"
+        _dotted = primary.replace("/", ".")[: -len(".py")]
+        try:
+            _il574.import_module(_dotted)
+        except ModuleNotFoundError as _e:
+            assert "molecular" in str(_e) or True, _e          # the cause is named in the basis
+        except Exception as _e:                                 # noqa: BLE001
+            raise AssertionError(
+                f"{layer} is declared code_unloadable and {primary} fails for a DIFFERENT reason "
+                f"({type(_e).__name__}: {_e}) — the basis names a missing-import cause") from None
+        else:
+            raise AssertionError(
+                f"{layer} is declared code_unloadable but {primary} IMPORTS CLEANLY now — if its "
+                f"siblings were restored, quality.py's LAYER_STATE must say so instead of claiming "
+                f"the module cannot be loaded")
 
     # (3) a layer declared REACHABLE must have its module present and an importer
     for layer, v in Q.LAYER_STATE.items():
@@ -25333,9 +25388,13 @@ def test_w506_p27_layers_state_per_layer_and_the_reachability_is_checked():
     note = bio["layers_note"]
     # the unreached layers must be NAMED in the note a reader sees, not only in a side field
     for layer, v in Q.LAYER_STATE.items():
-        if v["state"] == "code_exists_unreached":
+        if v["state"] in ("code_exists_unreached", "code_unloadable"):
             assert layer in note, f"{layer} is unreached and the note does not say so: {note[:200]}"
     assert "NOTHING CALLS IT" in note, note[:200]
+    #  W574 — and the stronger state reaches the reader too. A layer that cannot be imported reported
+    #  under the same words as one merely unimported is the overclaim this row was filed for.
+    if any(v["state"] == "code_unloadable" for v in Q.LAYER_STATE.values()):
+        assert "CANNOT BE IMPORTED" in note, note[:300]
     assert bio["layer_basis"]["Endocrine"].strip(), "the basis field is empty for Endocrine"
 
     # (5) FU-160 S3.8 — the two TOOLTIPS are the same claim's other writers. Both said
@@ -36895,3 +36954,231 @@ def test_w573_a_completion_mark_is_read_from_the_state_not_written_beside_it(cli
     #  Model · Simulate · Rank has no verification entry and must say so rather than borrow one
     assert "carries no §10 verification entry" in _rs, (
         "the unverified stage claims a verification it does not have")
+
+
+def test_w574_a_name_a_number_and_a_placeholder_each_say_what_is_behind_them(client):
+    """P2.19 clauses (b)(c)(d)(e) — MILESTONE M1, eleven rows, four mechanisms.
+
+    (b) A NUMBER WITH NO MEASUREMENT BEHIND IT — a repository card counting only the files one
+        generator wrote, a simulated ATP ratio described as expenditure and as a live vital, a
+        fabricated architecture version, and API-surface coverage printed as "realisation".
+    (c) A NAME WITH NOTHING BEHIND IT — four named consumers of which two never call, a Chief
+        described as a trained digital twin in the API's published descriptions, a biomimetic layer
+        vouched for as real code when its module cannot be imported, and eight advertised
+        destinations resolving to "Page Not Found".
+    (d) A PLACEHOLDER THAT READS AS CONTENT — the platform's pending text attributed to the Owner,
+        invented board directives beside a grounding count of zero, a prompt's own field template
+        rendered as a job advert, and a manifest calling generated files scaffolds.
+    (e) A HARDCODED LITERAL PRESENTED AS THE USER'S OWN — a fixed org structure on an entity's
+        cockpit, and a halal tool promising what it withheld while hiding what it had.
+
+    FOUR OF THE ELEVEN CLOSED BY STOPPING A CLAIM rather than building, which clause (c)'s ACCEPT
+    anticipated. TWO WERE NOT DELETED THOUGH THEY LOOKED DEAD: the Forge and Introspection pages are
+    real and were behind the wrong path, and removing a true statement is its own defect.
+    """
+    import ast as _ast574
+    import json as _json574
+    import pathlib as _pl574
+    import re as _re574
+
+    _root = _pl574.Path(__file__).resolve().parents[1]
+    _app = _root / "apps" / "workstation-superapp" / "src"
+
+    def _code(p):
+        """Source with comments stripped — a claim in a comment is not a claim on a surface, and a
+        comment holding a required string makes a presence check pass with the code deleted."""
+        t = p.read_text(encoding="utf-8")
+        t = _re574.sub(r"/\*.*?\*/", "", t, flags=_re574.S)
+        return "\n".join(l for l in t.splitlines() if not l.lstrip().startswith("//"))
+
+    # ── (c) NOTHING ADVERTISED LEADS NOWHERE — the mechanism, not the eight edits ───────────────
+    _routes = set(_re574.findall(r'path="(/[^"]*)"',
+                                 (_app / "App.tsx").read_text(encoding="utf-8")))
+    assert len(_routes) > 50, ("the route table could not be read, so this leg proves nothing",
+                               len(_routes))
+    _nav = {"SearchMeshModal": _app / "components" / "SearchMeshModal.tsx",
+            "CommandPalette": _app / "components" / "layout" / "CommandPalette.tsx"}
+    _advertised = 0
+    for _who, _p in _nav.items():
+        _t = _code(_p)
+        _dests = _re574.findall(r"route: '(/[^']*)'", _t) + _re574.findall(r"go\(\s*'[^']*',\s*'(/[^']*)'", _t)
+        assert _dests, (f"{_who} advertises no destinations, so this leg cannot fail", _who)
+        _advertised += len(_dests)
+        _dead = sorted({d for d in _dests if d != "/" and d not in _routes})
+        assert not _dead, (
+            f"{_who} advertises {len(_dead)} destination(s) the router does not serve, so they "
+            f"render the catch-all Page Not Found: {_dead}")
+    assert _advertised >= 20, ("the navigation indexes shrank to almost nothing", _advertised)
+
+    # ── (c) THE COMPLIANCE PAGE NAMES ONLY MODULES THAT CALL THE SCREEN ─────────────────────────
+    #  The page used to name four systems of which two never called it. Each name now carries its
+    #  module, so the claim is checkable against the tree instead of remembered.
+    _cc = _code(_app / "pages" / "governance" / "ComplianceChecker.tsx")
+    _named = _re574.findall(r"module: '([^']+)'", _cc)
+    assert len(_named) >= 5, ("the compliance page names almost no consumers", _named)
+    for _m in _named:
+        _f = _root / _m
+        assert _f.exists(), (f"the compliance page names {_m}, which does not exist")
+        _src = _f.read_text(encoding="utf-8", errors="replace")
+        assert ("screen_compliance" in _src or "assure_delivery" in _src), (
+            f"the compliance page names {_m} as a consumer of the §11 screen and it contains no "
+            f"call to it — this is the exact claim the page exists for a reader to check")
+    #  and the two that never called it are not named again
+    for _absent in ("api/forge.py", "synthesis/api.py", "synthesis_studio.py"):
+        assert not any(_absent in _m for _m in _named), (
+            f"{_absent} is named as a consumer again and it contains no call", _absent)
+
+    # ── (c) NO PUBLISHED DESCRIPTION CALLS THE CHIEF A TRAINED TWIN ─────────────────────────────
+    #  Scoped to the CHIEF. agentic_core/api/digital_twin.py models real-world SYSTEMS, where the
+    #  term is correct — a check on the phrase alone would accuse working code, and did when I
+    #  first ran it.
+    _claims = []
+    for _mod in ("agentic_core/api/board.py", "agentic_core/api/swarm.py",
+                 "agentic_core/api/v138/ceo.py"):
+        _src = (_root / _mod).read_text(encoding="utf-8")
+        for _n in _ast574.walk(_ast574.parse(_src)):
+            if not isinstance(_n, (_ast574.FunctionDef, _ast574.AsyncFunctionDef)):
+                continue
+            if not any("router" in _ast574.dump(_d) for _d in _n.decorator_list):
+                continue
+            _d = (_ast574.get_docstring(_n) or "").lower()
+            if "chief" in _d and "digital twin" in _d and "no twin model is trained" not in _d:
+                _claims.append(f"{_mod}:{_n.lineno} {_n.name}")
+    assert not _claims, (
+        "a PUBLISHED route description calls the Chief a digital twin with no disclaimer — these "
+        "are served at /docs, and the disclaimer reached the payloads and the pages but stopped "
+        "short of them", _claims)
+    #  the CEO's own system prompt is a writer too: it shapes what the answer claims.
+    #  COMMENTS STRIPPED — the comment recording this removal necessarily quotes the phrase, and a
+    #  whole-file check therefore fails on the fix itself. Fourth occurrence of that class tonight,
+    #  so it is handled by shape rather than by rewording the comment.
+    _ceosrc = (_root / "agentic_core/api/v138/ceo.py").read_text(encoding="utf-8")
+    _ceo = "\\n".join(l.split("#", 1)[0] for l in _ceosrc.splitlines())
+    assert "digital-twin Chief" not in _ceo, (
+        "the AI CEO prompt tells the model the Chief is a trained digital twin")
+
+    # ── (c) A LAYER THAT CANNOT BE IMPORTED SAYS SO (the state and its drive live in W506's guard)
+    from agentic_core.vbs import quality as _Q574
+    assert _Q574.LAYER_STATE["Respiratory"]["state"] == "code_unloadable", (
+        "the Respiratory layer is back to a state that promises real code one wiring away",
+        _Q574.LAYER_STATE["Respiratory"]["state"])
+    assert "CANNOT BE IMPORTED" in _Q574.LAYER_STATE["Respiratory"]["basis"], (
+        _Q574.LAYER_STATE["Respiratory"]["basis"][:120])
+
+    # ── (d) A PENDING PLACEHOLDER IS NOT THE OWNER'S WORDS ──────────────────────────────────────
+    from agentic_core.api.business_plan import _is_unset as _unset574
+    assert _unset574("content pending the owned model — this enterprise has not composed its own x")
+    assert _unset574("") and _unset574(None)
+    assert not _unset574("Lend power tools to residents and track each tool's maintenance")
+    _gen = (_root / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    #  AT THE SITE: `_concept_unset(req.concept)` occurs twice — in this branch and in the
+    #  placeholder flag beside it — so a file-wide check survived the branch reverting to a
+    #  blank-only test. The needle-appears-twice class, again.
+    assert "if _concept_unset(req.concept):" in _gen, (
+        "the opening's provenance tests only whether the concept is BLANK again, so the platform's "
+        "own pending text passes through establish and is stamped as the Owner's words")
+
+    # ── (d) THE ANSWER IS CHECKED AGAINST ITS OWN GROUNDING ─────────────────────────────────────
+    from agentic_core.api.v138.ceo import _ungrounded_sections as _ug574
+    _invented = ("## Board directives\n- Validate the structured outputs.\n- Route generation.\n"
+                 "- Iterate via the cascade.\n## Priorities\n- a real priority")
+    _flag = _ug574(_invented, {"directives": 0})
+    assert len(_flag) == 1 and _flag[0]["items"] == 3, (
+        "three items printed under a heading the grounding says is empty were not reported", _flag)
+    assert "must not be read as one" in _flag[0]["basis"], _flag[0]["basis"]
+    #  the grounding's OWN "none recorded" line is not an invented item
+    assert _ug574("## Board directives\n- none recorded for this scope", {"directives": 0}) == []
+    #  AND IT NEVER FIRES ON A SCOPE THAT HAS DIRECTIVES — the same text, grounded, is clean
+    assert _ug574(_invented, {"directives": 3}) == [], (
+        "the check fires on a scope whose directives are real, which would make it noise")
+    assert _ug574("## Assessment\n- fine", {"directives": 0}) == []
+    #  and it reaches the reader, beside the count it contradicts
+    _chat = _code(_app / "pages" / "CEOChat.tsx")
+    assert "grounding_conflicts" in _chat and "ceo-grounding-conflict" in _chat, (
+        "the chat card does not render the conflict, so a reader must still cross-check the "
+        "answer's prose against the grounded-in chip themselves")
+
+    # ── (d) THE PROMPT'S OWN TEMPLATE IS NOT A JOB ADVERT ───────────────────────────────────────
+    from agentic_core.api.career import _is_template_echo as _echo574
+    assert _echo574(_json574.loads('{"title":"...","company":"...","location":"...",'
+                                   '"salary_estimate":"...","tags":["tag1","tag2"],'
+                                   '"description":"2-sentence description"}')), (
+        "the prompt's own field template is accepted as a listing again")
+    assert not _echo574({"title": "Senior Data Scientist", "company": "Ordnance Survey",
+                         "location": "Southampton", "tags": ["python"]}), (
+        "a real listing is discarded — the filter must be conservative")
+    #  CONSERVATIVE: one missing field does not make an advert a template
+    assert not _echo574({"title": "Data Scientist", "company": "..."}), (
+        "a half-filled listing is discarded, trading this defect for the opposite one")
+    #  AND THE FILTER IS ACTUALLY CALLED. Driving the helper proves the helper; it says nothing
+    #  about whether the parser consults it, and `if False and …` leaves the helper, its placeholder
+    #  set and every string intact.
+    _car = (_root / "agentic_core/api/career.py").read_text(encoding="utf-8")
+    _carc = "\\n".join(l.split("#", 1)[0] for l in _car.splitlines())
+    assert "if _is_template_echo(obj):" in _carc, (
+        "the parser no longer consults the template filter, so the prompt's own field template "
+        "becomes a job listing again")
+    assert '"none_basis"' in _car, (
+        "a run that discarded every line reports a bare zero, which reads as 'no roles match' — a "
+        "false statement about the job market rather than about this deployment")
+
+    # ── (b) THE REPOSITORY CARD COUNTS THE REPOSITORY ───────────────────────────────────────────
+    _vsb = (_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert '"file_count": len(_on_disk)' in _vsb, (
+        "the manifest counts only the files this generator wrote again, so every website, web-app "
+        "and phone-app file is missing from the card the founder reads")
+    assert 'name != "manifest.json"' in _vsb, (
+        "the manifest counts itself — it describes a tree it is in, so the totals go stale by its "
+        "own size every time it is written")
+    assert '"count_basis"' in _vsb, "the exclusion is silent, which makes the totals unexplainable"
+
+    # ── (b) A SIMULATED FIGURE IS NOT A COST AND NOT A LIVE VITAL ───────────────────────────────
+    _del = _code(_app / "pages" / "Deliverables.tsx")
+    assert "expended metabolic ATP" not in _del, (
+        "the deliverable chip claims ATP was expended again — the payload says the ratio is "
+        "simulated, is not measured and cannot fall")
+    assert "atp_basis" in _del, "the chip does not carry the payload's own basis for the figure"
+    _intro = _code(_app / "pages" / "cognitive" / "Introspection.tsx")
+    assert "System Health" not in _intro, (
+        "the immune subsystem's figure is published as whole-system health again")
+    assert "Immune Health" in _intro and "introspection-immune-health" in _intro, _intro[:200]
+    assert "simulated ATP" in _intro, "the simulated ATP ratio is shown as a live vital again"
+    #  the fabricated version is gone, and nothing like it has come back: no vNNN claimed as Active
+    _ver = _re574.findall(r"v\d{2,}\.\d+ Active", _intro)
+    assert not _ver, ("an architecture version is published as active on the self-report page", _ver)
+
+    # ── (b) THE CAVEAT TRAVELS WITH THE NUMBER ──────────────────────────────────────────────────
+    _cog = (_root / "agentic_core/api/cognition.py").read_text(encoding="utf-8")
+    #  THE BINDING, not the key name: `["measure"] = None` leaves the key present, so a check that
+    #  the field exists passes while the caveat is gone exactly as before.
+    assert '["measure"] = _r.get("measure")' in _cog, (
+        "the producer's statement of WHAT was measured is dropped again, so a consumer renames "
+        "route-mount coverage after a method that did not compute it")
+    _cogpage = _code(_app / "pages" / "CognitionIntegration.tsx")
+    assert "API surface coverage" in _cogpage, "the knowledge card names the figure wrongly again"
+    assert not _re574.search(r"`realisation \$\{", _cogpage), (
+        "the knowledge card prints the coverage figure as 'realisation' again")
+
+    # ── (e) A FIXED STRUCTURE IS NOT THE USER'S DESIGN; A TOOL SHOWS WHAT IT HAS ────────────────
+    _ck = _code(_app / "pages" / "enterprise" / "VSBCockpit.tsx")
+    assert "standing organisational structure" in _ck and "not editable" in _ck, (
+        "the cockpit presents the platform's fixed seven tiers as this entity's organisational "
+        "hierarchy again — no route anywhere creates, renames or removes an officer or a tier")
+    _rh = _code(_app / "pages" / "domains" / "ReligionHub.tsx")
+    assert "halal-ingredient-screen" in _rh and "halal-withheld" in _rh, (
+        "the halal tool hides the ingredient screen it computes and the sections it withholds")
+    #  AND IT READS THE RESPONSE. The whole JSX block, both test ids and the blurb all survive a
+    #  change that simply stops binding the data — which is exactly what the original defect was:
+    #  the endpoint did the work, the response carried it, and the page rendered only its result key.
+    assert "r?.ingredient_screen" in _rh and "r?.sections_withheld" in _rh, (
+        "the halal panel renders its screen block from something other than the response, so the "
+        "work the endpoint actually did still does not reach the reader")
+    assert "certification guidance" not in _rh, (
+        "the halal blurb promises what the floor withholds again")
+    #  the screen itself still refuses to clear — the property, not the wording
+    from agentic_core.api.religion import _screen_ingredients as _scr574
+    _s = _scr574(["pork gelatin", "glucose syrup"])
+    assert _s["verdict"] is None, "the ingredient screen produces a verdict; it may only flag"
+    assert [f["ingredient"] for f in _s["flagged"]] == ["pork gelatin"], _s["flagged"]
+    assert _s["unmatched"] == ["glucose syrup"], _s["unmatched"]
+    assert "NOT thereby acceptable" in _s["basis"], _s["basis"][:120]

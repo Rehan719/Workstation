@@ -35,6 +35,9 @@ BIOMIMETIC_LAYERS: List[str] = ["Genome", "Nervous", "Immune", "Cardiovascular",
 #   implemented_not_on_this_path  real, reachable code that this path does not exercise
 #   measurement_under_this_name   a genuine measurement published under an anatomical name — not an organ
 #   code_exists_unreached         a module exists and NOTHING IMPORTS IT, so the layer does not run anywhere
+#   code_unloadable               a module exists and CANNOT BE IMPORTED, so nothing could call it even if
+#                                 something tried - stronger than unreached, and the difference between
+#                                 "one wiring away" and code that can never run at all (W574, M1 R4.6)
 # `test_w506_p27_layers` asserts the reachability claims against the tree, so none of this can rot the way
 # the W434 sentence did.
 LAYER_STATE: Dict[str, Dict[str, str]] = {
@@ -58,9 +61,14 @@ LAYER_STATE: Dict[str, Dict[str, str]] = {
                            "with an integral term and NOTHING IMPORTS IT; a second copy of the same class sits "
                            "in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and "
                            "W446 measured that vouching as the overclaim"},
-    "Respiratory": {"state": "code_exists_unreached",
-                    "basis": "agentic_core/molecular/triad_integration.py holds a real TriadIntegrator and "
-                             "NOTHING IMPORTS IT"},
+    "Respiratory": {"state": "code_unloadable",
+                    "basis": "agentic_core/molecular/triad_integration.py CANNOT BE IMPORTED: it imports six "
+                             "siblings from agentic_core/molecular/ and only atp_simulator still exists "
+                             "(p53_oscillator, ubiquitin_system, hsp_network, redox_sensor and "
+                             "chaperone_cascade were archived), so it raises ModuleNotFoundError and the "
+                             "TriadIntegrator can never be instantiated. Nothing imports it either, but that "
+                             "is the weaker of the two facts - this basis used to say it held a REAL "
+                             "TriadIntegrator, which is what code_exists_unreached is meant to mean"},
 }
 
 _STUB_RE = re.compile(r"\b(TODO|TBD|FIXME|lorem ipsum|placeholder|coming soon|as an ai)\b", re.I)
@@ -550,6 +558,12 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     _reachable = [l for l in BIOMIMETIC_LAYERS
                   if LAYER_STATE[l]["state"] == "implemented_not_on_this_path"]
     _unreached = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "code_exists_unreached"]
+    #  W574 (M1 R4.6) — a layer whose module CANNOT BE IMPORTED is reported separately from one that
+    #  merely has no importer. Collapsing them is how "holds a real TriadIntegrator" survived on a
+    #  reached surface: `code_exists_unreached` promises real code one wiring away, and that module
+    #  raises ModuleNotFoundError. A reader who is told a layer is unreached will ask what it would
+    #  take to reach it; this one cannot be reached at all.
+    _unloadable = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "code_unloadable"]
     _relabelled = [l for l in BIOMIMETIC_LAYERS if LAYER_STATE[l]["state"] == "measurement_under_this_name"]
     biomimetic["layers_note"] = (
         f"{len(biomimetic['layers'])} of {len(BIOMIMETIC_LAYERS)} declared layers contributed a value to this "
@@ -562,6 +576,8 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
            if _relabelled else "")
         + (f"CODE EXISTS BUT NOTHING CALLS IT — so the layer does not run anywhere: {', '.join(_unreached)}. "
            if _unreached else "")
+        + (f"CODE EXISTS BUT CANNOT BE IMPORTED — so the layer could not run even if something called "
+           f"it: {', '.join(_unloadable)}. " if _unloadable else "")
         + "`layer_basis` names the module behind each claim.")
 
     return {"quality": quality, "biomimetic": biomimetic}

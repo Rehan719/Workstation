@@ -253,6 +253,32 @@ async def generate_career_docs(req: GenerateRequest):
 
 # ── Job search (AI-synthesized listings) ─────────────────────────────────────
 
+#  W574 (M1 R5.1) — THE PROMPT'S OWN FIELD TEMPLATE CAME BACK AS A JOB LISTING. The deterministic
+#  floor echoes the template line from the prompt, and the parser accepted ANY {…} line, so the echo
+#  became a row and the page reported "Synthesised 1 illustrative listing". A person acts on a job
+#  listing; that one was the scaffolding of the request that asked for it.
+#
+#  THE TEST IS ON THE VALUES, not on the shape of the line, and it is deliberately CONSERVATIVE: a
+#  listing is discarded only when EVERY value it carries is one of the template's own placeholders.
+#  A half-filled listing survives, because a real advert with one missing field is still an advert,
+#  and discarding it would trade this defect for the opposite one.
+_PLACEHOLDER_VALUES = {"...", "…", "tag1", "tag2", "2-sentence description",
+                       "title", "company", "location", "salary_estimate"}
+
+
+def _is_template_echo(obj: dict) -> bool:
+    """True when a parsed line is the prompt's field template rather than a listing."""
+    vals = []
+    for v in (obj or {}).values():
+        if isinstance(v, str):
+            vals.append(v.strip().lower())
+        elif isinstance(v, list):
+            vals += [str(x).strip().lower() for x in v]
+    if not vals:
+        return True
+    return all(v in _PLACEHOLDER_VALUES or not v for v in vals)
+
+
 class JobSearchRequest(BaseModel):
     file_ids: list[str] = []
     instructions: str = ""
@@ -299,12 +325,23 @@ async def job_search(req: JobSearchRequest):
 
     raw, provenance = await ai_text(prompt, "career_job_search")
 
-    listings = []
+    # W574 (M1 R5.1) — THE PROMPT'S OWN FIELD TEMPLATE CAME BACK AS A JOB LISTING. The deterministic
+    # floor echoes the template line above ({"title": "...", "company": "...", …}) and this parser
+    # accepted any {…} line, so the echo became a row and the page reported "Synthesised 1
+    # illustrative listing". A person acts on a job listing; this one was the scaffolding of the
+    # request that asked for it.
+    #
+    # The test is on the VALUES, not on the line — see `_is_template_echo`, which is module-level so
+    # a guard can drive it rather than infer it from this function's source.
+    listings, _echoes = [], 0
     for line in raw.splitlines():
         line = line.strip()
         if line.startswith("{") and line.endswith("}"):
             try:
                 obj = json.loads(line)
+                if _is_template_echo(obj):
+                    _echoes += 1
+                    continue
                 listings.append({
                     "listing_id": uuid.uuid4().hex[:10],
                     "title": obj.get("title", "Position"),
@@ -328,6 +365,17 @@ async def job_search(req: JobSearchRequest):
         "basis": ("AI-synthesised example listings — not a live job board; no listing here links to a real "
                   "advert, and every employer, role and figure must be verified independently"),
         "total": len(listings),
+        # W574 (M1 R5.1) — AN ABSENCE THAT WOULD OTHERWISE READ AS A FACT. If the only thing the
+        # model returned was the prompt's own field template, the honest answer is zero listings AND
+        # the reason: a bare `total: 0` would read as "no roles match", which is a different and
+        # false statement about the job market rather than about this deployment.
+        # (A numeric `template_echoes_discarded` was returned here too and removed in the same
+        # round: the pre-flight's key screen found it reaching no surface, and the sentence below
+        # already states the count in words where a reader actually meets it.)
+        "none_basis": (
+            f"{_echoes} line(s) came back as the prompt's own field template rather than a listing "
+            f"and were discarded. No listing could be synthesised here — this says nothing about "
+            f"whether such roles exist." if _echoes and not listings else None),
         "ai_provenance": provenance,
     }
 

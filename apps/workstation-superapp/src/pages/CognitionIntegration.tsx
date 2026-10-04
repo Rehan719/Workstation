@@ -191,12 +191,23 @@ export const CognitionIntegration: React.FC = () => {
               { k: 'Understanding', d: 'the same-page artifact' },
               { k: 'Plan', d: 'vision↔state↔action' },
               { k: 'Memory', d: 'durable agent memory' },
-              { k: 'Code / Live-State', d: `realisation ${knowledge.code_live_state?.overall_realisation != null ? Math.round(knowledge.code_live_state.overall_realisation * 100) + '%' : '—'}` },
-            ].map(l => (
-              <div key={l.k} className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              // W574 (M1 R6.0) — this said `realisation N%`. The figure is API-SURFACE COVERAGE
+              // (routers mounted and stores non-empty, not delivery), and the producer says so in a
+              // `measure` field this card dropped. Line ~261 of this same page prints the identical
+              // number correctly; this one renamed it after a method that did not compute it.
+              { k: 'Code / Live-State',
+                d: knowledge.code_live_state?.overall_realisation != null
+                  ? `API surface coverage ${Math.round(knowledge.code_live_state.overall_realisation * 100)}%`
+                  : 'API surface coverage —',
+                t: knowledge.code_live_state?.measure || undefined },
+            ].map((l: { k: string; d: string; t?: string }) => (
+              <div key={l.k} className="p-4 rounded-2xl bg-slate-900 border border-slate-800" title={l.t}>
                 <Brain size={14} className="text-highlight mb-2" />
                 <p className="text-[11px] font-black text-white">{l.k}</p>
-                <p className="text-[9px] text-slate-500 mt-0.5">{l.d}</p>
+                <p className="text-[9px] text-slate-500 mt-0.5" data-testid={`knowledge-layer-${l.k}`}>{l.d}</p>
+                {/* W574 (M1 R6.0) — the producer's own statement of WHAT was measured, carried to
+                    the card rather than dropped on the way. */}
+                {l.t && <p className="text-[8px] text-slate-600 mt-1 leading-relaxed">{l.t}</p>}
               </div>
             ))}
           </div>

@@ -126,7 +126,13 @@ def _build_repo_files(vsb: dict) -> dict:
         "- `ORGANISATION.md` — Chief → Board → AI CEO → C-Suite → CoE → Build-to-Order\n"
         "- `resources/cascades.json` — native AI-swarm cascades (reconfigurable, re-runnable)\n"
         "- `compliance/QUALITY.md` — live compliance + quality record (see `manifest.json`)\n"
-        "- `web/`, `webapp/`, `mobile/` — integrated Website / Web app / Phone app (scaffold)\n")
+        # W574 (M1 R2.4) — this said "(scaffold)" unconditionally. The README is written BEFORE the
+        # surfaces are generated, so at this point it genuinely cannot know which they are: it now
+        # points at the one place that is computed from disk rather than guessing, instead of
+        # asserting the answer that happened to be wrong.
+        "- `web/`, `webapp/`, `mobile/` — integrated Website / Web app / Phone app "
+        "(see `integrated_surfaces` in `manifest.json` for which are generated and which are "
+        "still scaffolds; none is a built or running app)\n")
     # §8 (W310) — the §13 body EXPRESSES the genome: applied (CCA-approved) mutations are part of
     # the entity's shipped identity, not just a hidden record field.
     _mut = vsb.get("applied_mutations") or []
@@ -404,14 +410,41 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         fp.parent.mkdir(parents=True, exist_ok=True)
         fp.write_text(content, encoding="utf-8")
         written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+    #  §13 (W574, M1 R2.2) — THE REPOSITORY IS WHAT IS ON DISK, not what this call wrote. The count,
+    #  the byte total and the tree were all built from `written` — the files THIS generator produced
+    #  — while the website, web-app and phone-app generators write their own and never update the
+    #  manifest. A founder was shown "9 files · 10,656 bytes" and a nine-path tree for a repository
+    #  holding 30 files and 87,171 bytes, with every generated surface file missing: the card looked
+    #  complete, which is why nothing about it invited checking. Walking the tree answers the
+    #  question the card actually asks, whoever wrote the files.
+    #  manifest.json is EXCLUDED, and that is a correctness requirement rather than tidiness: this
+    #  manifest describes a tree that contains it, and writing it changes its own size — counted in,
+    #  the totals are stale by exactly the difference between this manifest and the last one. The
+    #  field name says what was counted so the exclusion is not a silent one.
+    #  WHERE THE PER-FILE `bytes` SURFACES, since the pre-flight's key screen asks and the answer is
+    #  not a page: it is summed into `total_bytes`, which the repository card renders, and the whole
+    #  `files` list is written into manifest.json INSIDE THE FOUNDER'S OWN REPOSITORY — a file on
+    #  disk that outlives any page, which is the form of surfacing W490 asked for.
+    _on_disk = []
+    for _p in sorted(root.rglob("*")):
+        if _p.is_file() and ".git" not in _p.parts and _p.name != "manifest.json":
+            _on_disk.append({"path": _p.relative_to(root).as_posix(),
+                             "bytes": _p.stat().st_size})
     _history = _manifest_history(vsb_id)                       # W289 — never silently overwritten
     _vc = _version_control_commit(root, vsb_id, "repo", qa)    # W289 — a real commit per generation
     manifest = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "slug": _repo_slug(vsb.get("name") or vsb_id),
         "domain": vsb.get("domain"), "realm": vsb.get("realm"),
-        "repo_root": str(root), "file_count": len(written),
-        "total_bytes": sum(x["bytes"] for x in written),
-        "tree": sorted(x["path"] for x in written), "files": written,
+        # W574 (M1 R2.2) — counted from DISK, so every generated surface file is included
+        "repo_root": str(root), "file_count": len(_on_disk),
+        "total_bytes": sum(x["bytes"] for x in _on_disk),
+        "tree": sorted(x["path"] for x in _on_disk), "files": _on_disk,
+        # (a `written_this_call` count was added here and removed again in the same round: the
+        # pre-flight's key screen found it reaching no surface, and a number nothing renders cannot
+        # qualify anything. The difference it would have explained is explained by count_basis.)
+        "count_basis": ("every file on disk under the repository root except .git and this manifest "
+                        "— the manifest describes a tree it is itself in, so counting it would make "
+                        "these totals stale by its own size each time it is written"),
         # W450 — labelled by what is actually on disk: a generated surface is never re-labelled scaffold
         "integrated_surfaces": {
             "website": "web/ (generated — index · about · solution)" if _generated["website"] else "web/index.html (scaffold)",
@@ -422,9 +455,23 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         "version_control": _vc,
         "manifest_history": _history,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "note": ("Bespoke VSB IDBO entity repository — real scaffold files generated in-house from the "
-                 "entity's own data; web/webapp/mobile are scaffolds for later increments (NOT built/"
-                 "compiled/running apps)."),
+        # §13 (W574, M1 R2.1/R2.4) — THE SURFACE CLAUSE IS COMPUTED, from the same `_generated` map
+        # that `integrated_surfaces` above is built from. It was a CONSTANT calling web/webapp/mobile
+        # "scaffolds" in the very response whose computed field said "(generated PWA)" — two
+        # statements about the same three directories, in one payload, one key apart.
+        # THE OTHER HALF WAS TRUE AND IS KEPT: generated source is still not a built, compiled or
+        # running app, and a founder reading "generated" could reasonably assume otherwise. Dropping
+        # that sentence to resolve the contradiction would have removed the true statement and left
+        # the overclaim.
+        "note": ("Bespoke VSB IDBO entity repository — real files generated in-house from the "
+                 "entity's own data. "
+                 + (("Generated from this entity's data: "
+                     + ", ".join(k for k in ("website", "webapp", "mobile") if _generated[k]) + ". ")
+                    if any(_generated.values()) else "")
+                 + (("Still a scaffold for a later increment: "
+                     + ", ".join(k for k in ("website", "webapp", "mobile") if not _generated[k])
+                     + ". ") if not all(_generated.values()) else "")
+                 + "None of the three is a built, compiled or running app — they are source."),
     }
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     _REPO_STORE.mkdir(parents=True, exist_ok=True)

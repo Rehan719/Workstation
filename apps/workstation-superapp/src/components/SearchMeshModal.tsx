@@ -21,6 +21,13 @@ interface SearchEntry {
   route: string;
 }
 
+// W574 (M1 R5.0) — EVERY ENTRY HERE MUST BE ROUTED IN App.tsx. Eight of these advertised
+// destinations resolved to the catch-all "Page Not Found": six had nothing behind them at all
+// (there is no AR/VR, file-hub, GRN or homeostasis page, and pages/federation and pages/genome
+// are empty directories nothing imports) and two were REAL pages behind the wrong path — the
+// Forge is routed at /forge-pipeline and Introspection at /cognitive-introspection, so those
+// were corrected rather than deleted. A guard now diffs this index against App.tsx's routes,
+// because a hand-kept list of destinations is exactly what drifted.
 const SEARCH_INDEX: SearchEntry[] = [
   { id: 'dashboard',       label: 'Dashboard',         description: 'Command center overview',              category: 'Core',        icon: LayoutDashboard, route: '/' },
   { id: 'ceo',             label: 'AI CEO',             description: 'Consult your autonomous executive',    category: 'Productivity', icon: MessageSquare,   route: '/ceo' },
@@ -35,18 +42,12 @@ const SEARCH_INDEX: SearchEntry[] = [
   { id: 'law',             label: 'Law',                description: 'Legal research & governance',         category: 'Domains',     icon: Gavel,           route: '/law' },
   { id: 'care',            label: 'Care',               description: 'Health & wellbeing services',         category: 'Domains',     icon: HeartPulse,      route: '/care' },
   { id: 'employment',      label: 'Employment',         description: 'Career, CVs & application tools',       category: 'Domains',     icon: Briefcase,       route: '/employment' },
-  { id: 'genome-explorer', label: 'Genome',             description: 'System evolution & GRN mesh',         category: 'Evolution',   icon: Fingerprint,     route: '/genome-explorer' },
-  { id: 'grn-dashboard',   label: 'GRN Mesh',           description: 'Gene regulatory network dashboard',   category: 'Evolution',   icon: Network,         route: '/grn-dashboard' },
-  { id: 'introspection',   label: 'Introspection',      description: 'Cognitive self-analysis & memory',    category: 'Evolution',   icon: Brain,           route: '/introspection' },
-  { id: 'orchestrator',    label: 'Homeostasis',        description: 'Organism balance & vital signs',      category: 'Evolution',   icon: HeartPulse,      route: '/orchestrator' },
+  { id: 'introspection',   label: 'Introspection',      description: 'Cognitive self-analysis & memory',    category: 'Evolution',   icon: Brain,           route: '/cognitive-introspection' },
   { id: 'constitution',    label: 'Constitution',       description: 'Constitutional articles & law',       category: 'Governance',  icon: FileText,        route: '/constitution' },
   { id: 'transparency',    label: 'Transparency',       description: 'Audit trail & transparency log',      category: 'Governance',  icon: History,         route: '/transparency' },
   { id: 'admin',           label: 'Entity Control',     description: 'User & entity management panel',      category: 'Governance',  icon: ShieldCheck,     route: '/admin' },
   { id: 'governance-hub',  label: 'Governance Hub',     description: 'Audit, Sovereign Vault & The Sanctum',category: 'Governance',  icon: ShieldCheck,     route: '/governance-hub' },
-  { id: 'forge',           label: 'The Forge',          description: 'Developer tooling & pipelines',       category: 'Advanced',    icon: Terminal,        route: '/forge' },
-  { id: 'ar-vr',           label: 'AR/VR Lab',          description: 'Immersive spatial computing lab',     category: 'Advanced',    icon: Camera,          route: '/ar-vr' },
-  { id: 'fed-map',         label: 'Federation',         description: 'Multi-node federation map',           category: 'Advanced',    icon: Map,             route: '/fed-map' },
-  { id: 'file-hub',        label: 'File Hub',           description: 'Sovereign file management system',    category: 'Advanced',    icon: FolderOpen,      route: '/file-hub' },
+  { id: 'forge',           label: 'The Forge',          description: 'Developer tooling & pipelines',       category: 'Advanced',    icon: Terminal,        route: '/forge-pipeline' },
   { id: 'settings',        label: 'System Settings',    description: 'Platform configuration & preferences',category: 'Advanced',    icon: Settings,        route: '/settings' },
 ];
 

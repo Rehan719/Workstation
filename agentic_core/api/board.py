@@ -368,7 +368,7 @@ class ChiefInstruction(BaseModel):
 @router.post("/chief/instruct")
 async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_current_user)):
     """
-    The Owner instructs their Chief digital twin. The Chief interprets the instruction
+    The Owner instructs their Chief. The Chief interprets the instruction
     faithfully (representing the Owner), issues a board-level directive, and delegates a
     timelined/resourced action plan to the AI CEO.
     """

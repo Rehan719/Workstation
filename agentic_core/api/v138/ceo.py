@@ -344,6 +344,44 @@ class ToolRegistry:
 
 tool_registry = ToolRegistry()
 
+#  §17.3 (W574, M1 R3.2) — SECTIONS WHOSE GROUNDING COUNT IS ZERO. The answer may describe, advise
+#  or reason about anything; what it may not do is print a section of ITEMS under a heading the
+#  grounding says is empty, because a reader cannot tell a recited directive from an invented one.
+#  Keyed on the grounding FACTS, so a section is only policed when the count for it is actually 0 —
+#  this never fires on a scope that has directives.
+_GROUNDED_SECTIONS = {"directives": "board directives"}
+
+
+def _ungrounded_sections(answer: str, facts: dict) -> list:
+    """Headings the answer filled with items while the grounding counted none. Empty when clean."""
+    out = []
+    lines = (answer or "").splitlines()
+    for fact_key, heading in _GROUNDED_SECTIONS.items():
+        if facts.get(fact_key) not in (0, None):
+            continue
+        inside, items = False, 0
+        for raw in lines:
+            line = raw.strip()
+            if line.startswith("#"):
+                inside = heading in line.lower().lstrip("# ").strip()
+                continue
+            if inside and line.startswith(("- ", "* ", "• ")):
+                #  "- none recorded for this scope" is the grounding's own line, not an item
+                if "none recorded" in line.lower() or "none " == line[2:7].lower():
+                    continue
+                items += 1
+        if items:
+            #  No separate `grounded` key: the basis below already states the grounded count in
+            #  words, and a second copy that no surface renders is a key qualifying nothing.
+            out.append({
+                "section": heading, "items": items,
+                "basis": (f"the answer prints {items} item(s) under \"{heading}\" while the grounding "
+                          f"for this scope holds {facts.get(fact_key) or 0} — nothing here was "
+                          f"recited from a record, so it must not be read as one"),
+            })
+    return out
+
+
 def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
     """W451 (P1.3, ledger 1.3) — the AI CEO answers from the §5 chain, not from a persona: the
     Board's directives for this scope, the living plan's adherence and phases, the scope's business
@@ -419,8 +457,13 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
         tool_output = None
     grounding, facts = _ceo_grounding(prompt, scope, owner_id)
     full_prompt = (
+        # W574 (M1 R3.7) — this said "the owner's digital-twin Chief". No twin model is trained
+        # (§17.4 Mode 2 is planned, P3.4); the Chief is the Owner's standing charter and stored
+        # instructions. The disclaimer had reached the payloads and the pages and stopped short of
+        # the prompts, which is the second-writer class — and a prompt shapes what the answer claims.
         "You are the AI CEO of this Workstation IDBO enterprise. You report to the Board, chaired by the "
-        "owner's digital-twin Chief; you direct the C-Suite, the Centres of Excellence and Build-to-Order. "
+        "Chief — the Owner's standing charter and last instructions, not a trained digital twin; you "
+        "direct the C-Suite, the Centres of Excellence and Build-to-Order. "
         "Answer from the grounding below and the question only — never invent directives, articles, debates "
         "or figures; where the grounding is silent, say so plainly.\n\n"
         f"{grounding}\n\n"
@@ -428,9 +471,17 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
         + f"## Question\n{prompt}\n\n"
         "Respond with:\n## Assessment\n## Priorities\n## Next actions"
     )
+    # W574 (M1 R3.2) — THE ANSWER IS CHECKED AGAINST ITS OWN GROUNDING. The grounding handed in is
+    # correct ("## Board directives\n- none recorded for this scope") and the prompt says never to
+    # invent directives, yet the floor returned a "## Board directives" section carrying three
+    # generic bullets while the same response reported grounding.directives = 0. An instruction in a
+    # prompt is not a guarantee, so the output is MEASURED rather than trusted: a section the
+    # grounding says is empty may not come back with content under it.
+    _answer: list = []
     try:
         async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=True):
             if "token" in ev:
+                _answer.append(str(ev["token"]))
                 yield f"data: {json.dumps({'content': ev['token'], 'done': False})}\n\n"
             elif ev.get("done"):
                 yield "data: " + json.dumps({
@@ -438,6 +489,7 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
                     "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
                     "grounding": facts,
+                    "grounding_conflicts": _ungrounded_sections("".join(_answer), facts),
                 }) + "\n\n"
     except Exception as exc:
         # honest terminal frame — never a canned answer, never a silent stop

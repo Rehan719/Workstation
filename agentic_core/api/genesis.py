@@ -1001,7 +1001,19 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
         # said nothing while the heading claimed authorship. `served_by` keeps its meaning for its existing
         # readers; the per-field truth is ADDED beside it.
         _templated = ["executive_summary", "vision", "mission", "strategy"]
-        if not (req.concept or "").strip():
+        # §4 (W574, M1 R3.0) — A PENDING PLACEHOLDER IS NOT THE OWNER'S WORDS. This tested only
+        # whether the concept was BLANK, so the platform's own pending-body text ("content pending
+        # the owned model — this enterprise has not yet composed its own concept") passed through
+        # establish and was stamped `owner_supplied`, and the opening then told the reader in so many
+        # words that the concept was the Owner's. A sentence no person wrote, published under a named
+        # person — and that attribution is the only thing holding up the heading "Chief's Opening".
+        # `_is_unset` is the repo's existing test for exactly this: empty OR the pending marker.
+        from agentic_core.api.business_plan import _is_unset as _concept_unset
+        #  BLANK and PENDING-MARKER are both "not the Owner's words", but they are not the same fact
+        #  and the sentence below says which: a blank concept was filled from the establish template,
+        #  while a pending marker is the platform's own placeholder passed straight through.
+        _concept_is_placeholder = bool((req.concept or "").strip()) and _concept_unset(req.concept)
+        if _concept_unset(req.concept):
             _templated.append("concept")
         plan["provenance"] = {
             "served_by": (entity.get("ai_provenance") or {}).get("served_by") or None,
@@ -1012,7 +1024,9 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
             "templated_fields": _templated,
             "opening_written_by": (
                 "code templates filled from the establish request — not the Chief, and not a model. "
-                + (f"The concept is the Owner's own words. " if "concept" not in _templated else "")
+                + ("The concept is the Owner's own words. " if "concept" not in _templated else "")
+                + ("The concept field holds the platform's own pending-body text, which is not the "
+                   "Owner's words and was composed by nobody. " if _concept_is_placeholder else "")
                 + "Edit any field to replace it with your own; a model or the Chief has composed nothing here."),
         }
         plan.setdefault("objectives", [])

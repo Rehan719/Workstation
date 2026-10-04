@@ -26,7 +26,11 @@ interface Deliverable {
   id: string; type: string; title: string; brief: string; sections: string[];
   content: string; ai_provenance: { posture: string; served_by: string; is_external: boolean };
   quality_assurance?: QualityAssurance;
-  homeostasis?: { posture?: string; organism?: { atp_ratio?: number; circadian?: string } } | null;
+  // W574 (M1 R2.5) — the payload has always carried `atp_measured` and `atp_basis` saying the ratio
+  // is a simulation that cannot fall; the type stopped at the number, so the only fields that could
+  // have qualified it were invisible to the page that claimed ATP had been "expended".
+  homeostasis?: { posture?: string; organism?: { atp_ratio?: number; circadian?: string;
+                                                 atp_measured?: boolean; atp_basis?: string } } | null;
   // §13 (W-versions) — each version carries its full stored text (the API already returns it);
   // the UI now lets the user read any prior version, not just the count.
   versions: { created_at: string; content?: string; brief?: string }[];
@@ -266,7 +270,17 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                   )}
                   {selected.homeostasis?.posture && (
                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
-                      title={`§8→§13 — this living deliverable was produced under the organism's homeostatic posture; producing it expended metabolic ATP (ATP ${Math.round((selected.homeostasis.organism?.atp_ratio ?? 0) * 100)}%, ${selected.homeostasis.organism?.circadian}).`}>
+                      /* W574 (M1 R2.5) — this said "producing it expended metabolic ATP (ATP N%)".
+                         The same payload says atp_measured false, atp_can_fall false and, in its own
+                         basis, "It is a simulation, not a reading of this platform's energy" — a
+                         model whose production term always exceeds its consumption term, so the
+                         figure only rises. Nothing was expended and the number is not a cost. The
+                         posture is real and is still shown; the ATP figure is labelled as what it
+                         is, and the payload's own basis is carried here rather than summarised. */
+                      title={`§8→§13 — produced under the organism's homeostatic posture (${selected.homeostasis.organism?.circadian}). `
+                        + `Simulated ATP ratio ${Math.round((selected.homeostasis.organism?.atp_ratio ?? 0) * 100)}% — `
+                        + `${selected.homeostasis.organism?.atp_measured === false ? 'not measured, and nothing here was expended: ' : ''}`
+                        + `${selected.homeostasis.organism?.atp_basis ?? 'no basis recorded for this figure'}`}>
                       §8 homeostasis: {selected.homeostasis.posture}
                     </span>
                   )}

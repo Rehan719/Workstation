@@ -6609,11 +6609,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The blurb promised 'ingredient flags, process concerns, certification guidance' while the floor WITHHOLDS the Halal Status Assessment, Critical Issues and Flagged Ingredients sections - and the one real deterministic piece of work the endpoint does, the ingredient screen, was in the response and never rendered, because DomainTool prints only resultKey. So the page promised what it withheld and hid what it had. renderExtra (which already existed on the component) now surfaces the screen - flagged ingredients with the reason, the UNMATCHED ones stated as 'the screen has no view on these, not matched is not the same as acceptable', and the screen's own basis - plus the withheld sections and the floor note. The blurb now describes what the tool does: it flags, it never clears, it is not certification. Verified live: pork gelatin flagged, glucose syrup unmatched, verdict null, three sections named as withheld."
     },
     {
       "id": "FU-375",
@@ -6629,11 +6632,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "MEASURED: of the four systems the page named, the economy (economy/charity.py) and Genesis call the screen; agentic_core/api/forge.py, agentic_core/synthesis/api.py and agentic_core/api/synthesis_studio.py contain no call at all. The page now renders from SCREEN_CONSUMERS, where each name carries the module that calls it, so the claim ships with its own evidence and a guard checks every entry against the tree - a bare list of names is what rotted. The Forge's real behaviour is stated: it screens its request's intent label against the prohibited list, not the delivery's content, which is what its own response says."
     },
     {
       "id": "FU-376",
@@ -6691,11 +6697,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The manifest counted only the files the repo generator wrote in that call, while the website, web-app and phone-app generators write their own and never updated it - so the card read 9 files and 10,656 bytes for a repository holding 30 files and 87,171. It is counted from disk now. FOUND BY DRIVING THE FIX RATHER THAN READING IT: the file count then matched and the BYTES did not, because the manifest describes a tree it is itself in and writing it changes its own size, so manifest.json is excluded and count_basis says so. Verified exact: 29 files, 74,005 bytes on disk and in the manifest. The card carries count_basis as its title."
     },
     {
       "id": "FU-379",
@@ -6730,11 +6739,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The manifest's note was a CONSTANT calling web/webapp/mobile scaffolds in the same response whose computed integrated_surfaces said '(generated PWA)' - two statements about the same three directories one key apart. The surface clause is now computed from the same _generated map. THE OTHER HALF WAS TRUE AND IS KEPT: generated source is still not a built, compiled or running app, and dropping that sentence to resolve the contradiction would have removed the true statement and left the overclaim. The README is written BEFORE the surfaces are generated so it cannot know, and now points at integrated_surfaces instead of asserting. Both branches driven live: scaffold-only reads 'Still a scaffold for a later increment: website, webapp, mobile'; after generating all three it reads 'Generated from this entity's data: website, webapp, mobile'."
     },
     {
       "id": "FU-381",
@@ -6748,11 +6760,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The chip said producing the deliverable 'expended metabolic ATP' and printed a percentage. The same payload says atp_measured false, atp_can_fall false and, in its own basis, that the ratio is a simulation whose production term always exceeds its consumption term so it only rises - nothing was expended and the number is not a cost. The posture IS real and is still shown; the figure is labelled simulated and the payload's own basis is carried rather than summarised. The type stopped at the number, which is why the fields that could have qualified it were invisible to the page."
     },
     {
       "id": "FU-382",
@@ -6767,11 +6782,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The test was whether the concept was BLANK, so the platform's own pending-body text passed through establish and was stamped owner_supplied - and the opening then told the reader the concept was the Owner's words, which is the only thing holding up the heading Chief's Opening. A sentence nobody wrote, published under a named person. Now uses the repo's existing _is_unset (empty OR the pending marker), and the two cases are kept DISTINCT because they are different facts: a blank concept was filled from the establish template, a pending marker is the platform's placeholder passed straight through, and the opening says which. Verified live: field_sources.concept went from owner_supplied to establish_template and the opening now states the concept 'was composed by nobody'."
     },
     {
       "id": "FU-383",
@@ -6808,11 +6826,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The grounding handed in is CORRECT ('## Board directives - none recorded for this scope') and the prompt already said never to invent directives - yet the floor returned that heading with three generic bullets while the same response reported grounding.directives = 0. An instruction in a prompt is not a guarantee, so the OUTPUT is now measured: _ungrounded_sections compares the answer's filled sections against the grounding counts and the done frame carries grounding_conflicts, which the chat card renders beside the grounded-in chip. Keyed on the FACTS, so it never fires on a scope that has directives. Driven on four cases: invented bullets with 0 grounded -> flagged (3 items); the grounding's own 'none recorded' line -> not flagged; the same text with 3 real directives -> not flagged; no section -> not flagged. Verified live on the running backend."
     },
     {
       "id": "FU-385",
@@ -6827,12 +6848,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.19",
+      "slot": "P3.3",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "slot_source": "W574: the TIER-1 element of this row was the Board Pack certifying the strategic layer present over a placeholder - the refuter raised it to tier 1 on exactly that basis - and W573 removed it (present is now derived from a four-state holds, and layers_present no longer lists strategic). What REMAINS is the capability: nothing refreshes a Strategic or Action-Plan layer quarterly, weekly, on market signal or on a KPI. That is P3.3's stated subject (heartbeat-driven Strategic and Action cadence), so the row moves there at tier 3 rather than sitting in a Phase 2 honesty item as a build task it was never going to close.",
+      "tier": 3
     },
     {
       "id": "FU-386",
@@ -6848,11 +6869,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Board page, the Board Pack and the status payload all carried the disclaimer; the two PUBLISHED route descriptions at /docs did not - POST /api/v1/board/chief/instruct said 'The Owner instructs their Chief digital twin' and POST /api/v1/swarm/cascade said 'Chief of the Board (founder's digital twin)'. Confirmed by AST that these were the only two @router docstrings making the claim. Both corrected, plus a THIRD writer the finding did not name: the AI CEO's own system prompt said 'the owner's digital-twin Chief', and a prompt shapes what the answer claims. agentic_core/api/digital_twin.py was deliberately NOT changed - it models real-world SYSTEMS, where the term is correct, and changing it would have been a guard accusing working code."
     },
     {
       "id": "FU-387",
@@ -6866,11 +6890,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Three untruths on the page whose entire subject is the platform telling the truth about itself. A hardcoded architecture version published as Active that exists NOWHERE in the repository (the organism reports 1.0.0); the immune subsystem's figure aliased to system_health and printed at 6xl as a whole-platform claim nothing computes; and the simulated ATP ratio shown among the live vitals. All three corrected: the version is gone and the guard forbids the SHAPE (any vNNN.N published as Active) rather than the one string, the figure is named Immune Health with a line saying nothing here measures the platform overall, and the ATP label says simulated."
     },
     {
       "id": "FU-388",
@@ -6885,11 +6912,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The heading 'Organisational hierarchy' sat on an entity's own cockpit over a hardcoded seven-tier array, with the officer roster a module literal in swarm.py, and no route anywhere creates, renames or removes an officer or a tier - so it read as that entity's structure, something the founder had or could have designed. NOT FIXED BY BUILDING AN EDITOR, which would be a capability decision well beyond an honesty row: the surface now says what is true - these seven tiers and the roster behind them are the PLATFORM's standing structure, identical for every VSB and not editable, and this entity has not designed them - and points at the delivery cascade below, which IS this entity's own and already editable. The false part was the implied ownership, and that is what was removed."
     },
     {
       "id": "FU-389",
@@ -6904,11 +6934,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The basis said triad_integration.py 'holds a real TriadIntegrator and NOTHING IMPORTS IT'. MEASURED: it imports six siblings from agentic_core/molecular/ and only atp_simulator still exists - p53_oscillator, ubiquitin_system, hsp_network, redox_sensor and chaperone_cascade were archived - so it raises ModuleNotFoundError and the class can never be instantiated. 'code_exists_unreached' promises real code one wiring away, which is the opposite of true here. A sixth state code_unloadable now says it, the reader's note distinguishes CANNOT BE IMPORTED from NOTHING CALLS IT, and the guard ATTEMPTS THE IMPORT so the claim is driven. Endocrine was checked and deliberately left as unreached: regulator.py imports only stdlib, so it genuinely is one wiring away."
     },
     {
       "id": "FU-390",
@@ -6923,11 +6956,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Eight advertised destinations resolved to the catch-all Page Not Found, on the two surfaces a user discovers the platform through (the Search Mesh and the Ctrl/Cmd+K palette on every page). TWO WERE REAL PAGES BEHIND THE WRONG PATH and were corrected rather than deleted - the Forge is routed at /forge-pipeline and Introspection at /cognitive-introspection; deleting those would have removed a true statement about a capability that exists. The other six have nothing behind them anywhere (pages/federation and pages/genome are EMPTY directories nothing imports) and are no longer advertised. The mechanism is the guard: a leg diffs every advertised route in both surfaces against App.tsx's route set, so an entry leading nowhere cannot be added again. Verified: 0 advertised routes unrouted, against 75 routes."
     },
     {
       "id": "FU-391",
@@ -6942,11 +6978,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The deterministic floor echoes the prompt's own field-template line back and the parser accepted ANY {...} line, so the echo became a row and the page reported 'Synthesised 1 illustrative listing'. A person acts on a job listing; this one was the scaffolding of the request that asked for it. The test is now on the VALUES rather than the line shape - a listing whose fields are all the template's own placeholders is the template - and it is conservative: a half-filled listing survives. AND THE ABSENCE REACHES THE READER: a bare total 0 would read as 'no roles match', which is a false statement about the job market rather than about this deployment, so none_basis says what was discarded and that it says nothing about whether such roles exist. Verified live: total went 1 -> 0 with template_echoes_discarded 1."
     },
     {
       "id": "FU-392",
@@ -6983,11 +7022,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.19",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W574",
       "note": "",
       "slot_source": "MILESTONE M1 re-run W572 came back NOT MET with 20 standing Tier-1; P2.19 carries them as P1.17 carried 14 and P1.18 carried 27. Routing by file would split one measurement across items and make the next M1 uncountable.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The producer states its figure is API-SURFACE COVERAGE (routers mounted and stores non-empty, not delivery) in a measure field; the consumer copied the number and left the statement behind, then printed it as 'realisation N%'. The naming invariant: a quantity carries a method's name only when that method computed it, and route-mount coverage did not compute realisation. The measure now travels with the number and the card renders both. The same page rendered the identical figure correctly seventy lines further down, which is exactly why the mislabel survived. Verified live: measure present on /api/v1/cognition/knowledge."
     }
   ],
   "routes": [

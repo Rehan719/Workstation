@@ -348,7 +348,8 @@ async def cascade_orchestration(req: CascadeRequest,
     """
     Full VSB org cascade, apex → operational delivery, every tier run on Workstation's OWN native
     fabric with proven in-house provenance:
-      Chief of the Board (founder's digital twin) → Board of Directors → AI CEO → C-Suite →
+      Chief of the Board (the founder's standing charter and last instructions — no twin model is
+      trained; §17.4 Mode 2 is planned, P3.4) → Board of Directors → AI CEO → C-Suite →
       Centres of Excellence → Business Transformation Office → Build-to-Order (operational delivery
       resources) → Products/Services catalogue.
     """

@@ -1,0 +1,173 @@
+[
+ {
+  "tag": "a destination that leads nowhere is advertised again",
+  "file": "apps/workstation-superapp/src/components/SearchMeshModal.tsx",
+  "old": "  { id: 'settings',        label: 'System Settings',",
+  "new": "  { id: 'ar-vr',           label: 'AR/VR Lab',          description: 'Immersive spatial computing lab',     category: 'Advanced',    icon: Camera,          route: '/ar-vr' },\n  { id: 'settings',        label: 'System Settings',",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The committed defect returning as a single plausible line. The mechanism is the leg, not the eight edits: it diffs every advertised destination against App.tsx's route set, so an entry leading to the catch-all cannot be added again without turning this red."
+ },
+ {
+  "tag": "the corrected path reverts to the one that 404s",
+  "file": "apps/workstation-superapp/src/components/layout/CommandPalette.tsx",
+  "old": "go('introspection', '/cognitive-introspection')",
+  "new": "go('introspection', '/introspection')",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "Introspection is a REAL page behind the wrong path, which is why it was corrected rather than deleted. A guard that only checked for the six removed ids would miss this: the entry is present, the label is right, and the destination is Page Not Found."
+ },
+ {
+  "tag": "the compliance page names a module that never calls the screen",
+  "file": "apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx",
+  "old": "  { label: 'Genesis',            module: 'agentic_core/api/genesis.py' },",
+  "new": "  { label: 'the Forge',          module: 'agentic_core/api/forge.py' },\n  { label: 'Genesis',            module: 'agentic_core/api/genesis.py' },",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The exact claim M1 found, re-added. The whole point of carrying the module beside the label is that the page's claim can be checked against the tree rather than remembered — if this passes, the module field is decoration and the list is back to being a list of names."
+ },
+ {
+  "tag": "a published description calls the Chief a trained twin again",
+  "file": "agentic_core/api/board.py",
+  "old": "    The Owner instructs their Chief. The Chief interprets the instruction",
+  "new": "    The Owner instructs their Chief digital twin. The Chief interprets the instruction",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "Served at /docs to anyone reading the API, on a deployment whose own JSON says no twin model is trained. The disclaimer reached the payloads and the React pages and stopped at the docstrings - 'fix every writer, not one' - so the leg walks every @router docstring by AST rather than checking the files someone remembered."
+ },
+ {
+  "tag": "the CEO prompt tells the model the Chief is a twin",
+  "file": "agentic_core/api/v138/ceo.py",
+  "old": "        \"Chief — the Owner's standing charter and last instructions, not a trained digital twin; you \"",
+  "new": "        \"owner's digital-twin Chief; you \"",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "A prompt is a writer: it shapes what the answer claims, and this one is upstream of every CEO reply. The finding named the two docstrings; this third writer was found by grepping the class rather than the row."
+ },
+ {
+  "tag": "a layer that cannot be imported is called real code one wiring away",
+  "file": "agentic_core/vbs/quality.py",
+  "old": "    \"Respiratory\": {\"state\": \"code_unloadable\",",
+  "new": "    \"Respiratory\": {\"state\": \"code_exists_unreached\",",
+  "selector": "p27_layers_state",
+  "expect": "BLIND(red)",
+  "why": "`code_exists_unreached` PROMISES a module one wiring away. triad_integration.py imports six siblings and five were archived, so it raises ModuleNotFoundError and the class can never be instantiated. W506's guard now ATTEMPTS THE IMPORT for this state, so the distinction is driven rather than asserted."
+ },
+ {
+  "tag": "a pending placeholder counts as the Owner's own words",
+  "file": "agentic_core/api/genesis.py",
+  "old": "        if _concept_unset(req.concept):",
+  "new": "        if not (req.concept or \"\").strip():",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The committed defect: a non-blank placeholder passes through establish and is stamped owner_supplied, and the opening then tells the reader the concept is the Owner's words. A sentence nobody wrote, published under a named person - the gravest row in this clause after the scripture one."
+ },
+ {
+  "tag": "the grounding check stops firing",
+  "file": "agentic_core/api/v138/ceo.py",
+  "old": "        if facts.get(fact_key) not in (0, None):",
+  "new": "        if facts.get(fact_key) not in (-1,):",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "Inverted so it never applies to a zero-grounded section. Every string, the field and the page's chip all survive, so a check on the WORDING or on the key's presence passes - the leg has to drive invented bullets through the function and read the count back."
+ },
+ {
+  "tag": "the grounding check fires on a scope that HAS directives",
+  "file": "agentic_core/api/v138/ceo.py",
+  "old": "        if facts.get(fact_key) not in (0, None):\r\n            continue",
+  "new": "        if False:\r\n            continue",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The opposite failure, and the one a new check most easily ships with: it now flags a real, recorded directive as unrecorded. A warning that fires when nothing is wrong is noise, and noise is how a true warning gets ignored."
+ },
+ {
+  "tag": "the prompt's own template is a job advert again",
+  "file": "agentic_core/api/career.py",
+  "old": "                if _is_template_echo(obj):",
+  "new": "                if False and _is_template_echo(obj):",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "`if False and` leaves the helper, its placeholder set and every string intact, so a source check on any of them still passes - the shape that made four blinds vacuous two rounds ago. A person acts on a job listing, and this one is the scaffolding of the request that asked for it."
+ },
+ {
+  "tag": "the echo filter becomes greedy and eats real listings",
+  "file": "agentic_core/api/career.py",
+  "old": "    return all(v in _PLACEHOLDER_VALUES or not v for v in vals)",
+  "new": "    return any(v in _PLACEHOLDER_VALUES or not v for v in vals)",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "all -> any. The template is still discarded, so the headline case still looks right, while any real advert with one empty field is now thrown away - trading this defect for its opposite, silently. The leg drives a half-filled listing through on purpose."
+ },
+ {
+  "tag": "the repository card counts only what this call wrote",
+  "file": "agentic_core/api/vsb.py",
+  "old": "        \"repo_root\": str(root), \"file_count\": len(_on_disk),",
+  "new": "        \"repo_root\": str(root), \"file_count\": len(written),",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The committed defect: 9 files reported for a repository holding 30, with every Website, Web-app and Phone-app file missing from the tree. It looked complete, which is exactly why nothing about it invited checking."
+ },
+ {
+  "tag": "the manifest counts itself",
+  "file": "agentic_core/api/vsb.py",
+  "old": "        if _p.is_file() and \".git\" not in _p.parts and _p.name != \"manifest.json\":",
+  "new": "        if _p.is_file() and \".git\" not in _p.parts:",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "Found by driving the fix rather than by reading it: the file count matched but the BYTES did not, because the manifest describes a tree it is itself in and writing it changes its own size. A fix that is almost right is the hardest kind to see."
+ },
+ {
+  "tag": "a simulated ratio is described as expenditure again",
+  "file": "apps/workstation-superapp/src/pages/Deliverables.tsx",
+  "old": "                      title={`§8→§13 — produced under the organism's homeostatic posture (${selected.homeostasis.organism?.circadian}). `",
+  "new": "                      title={`§8→§13 — producing it expended metabolic ATP (${selected.homeostasis.organism?.circadian}). `",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The payload says in its own basis that the ratio is a simulation whose production term always exceeds its consumption term, so it only rises: nothing was expended and the number is not a cost. The posture IS real and is still shown - the claim about energy was the false part."
+ },
+ {
+  "tag": "the immune figure is published as whole-system health",
+  "file": "apps/workstation-superapp/src/pages/cognitive/Introspection.tsx",
+  "old": "          <h3 className=\"text-4xl font-black z-10\">Immune Health</h3>",
+  "new": "          <h3 className=\"text-4xl font-black z-10\">System Health</h3>",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "One subsystem's number printed at 6xl as a claim about the whole platform, on the page whose entire subject is the platform telling the truth about itself. Nothing computes a whole-system figure here."
+ },
+ {
+  "tag": "an architecture version is published as active",
+  "file": "apps/workstation-superapp/src/pages/cognitive/Introspection.tsx",
+  "old": "          <p className=\"text-slate-500 mt-3 text-[10px] z-10 max-w-sm text-center leading-relaxed\">",
+  "new": "          <p className=\"text-slate-500 mt-6 font-black uppercase tracking-[0.3em] text-xs z-10\">Apotheosis Architecture v141.0 Active</p>\n          <p className=\"text-slate-500 mt-3 text-[10px] z-10 max-w-sm text-center leading-relaxed\">",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "A DIFFERENT fabricated version from the one removed, deliberately: a guard that forbade only the exact old string would pass this, and the defect is the shape - a version number published as a live fact when the organism reports something else entirely."
+ },
+ {
+  "tag": "the coverage figure is renamed realisation again",
+  "file": "agentic_core/api/cognition.py",
+  "old": "        out[\"code_live_state\"][\"measure\"] = _r.get(\"measure\")",
+  "new": "        out[\"code_live_state\"][\"measure\"] = None",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The producer states what it measured and the consumer dropped it; nulling it restores that silently, with the key still present so a presence check passes. The same page renders the same figure correctly seventy lines further down, which is what made the mislabel survive."
+ },
+ {
+  "tag": "the cockpit presents the fixed structure as the entity's own",
+  "file": "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+  "old": "The platform's standing organisational structure (apex → operational delivery)</h4>",
+  "new": "Organisational hierarchy (apex → operational delivery)</h4>",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The heading is the whole claim: on an entity's own cockpit it reads as that entity's structure, something the founder had or could design, over a hardcoded seven-tier array and a module-literal roster that no route can change."
+ },
+ {
+  "tag": "the halal tool hides the screen it computes",
+  "file": "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+  "old": "                        const scr = r?.ingredient_screen;",
+  "new": "                        const scr = null as any;",
+  "selector": "a_name_a_number_and_a_placeholder",
+  "expect": "BLIND(red)",
+  "why": "The renderExtra block, the test ids and the blurb all survive this - only the data is gone, which is precisely how the original defect looked: the endpoint did real deterministic work, the response carried it, and the page printed only `assessment`."
+ }
+]

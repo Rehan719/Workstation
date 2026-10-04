@@ -67,7 +67,9 @@ interface JourneyResult {
   status: string;
 }
 interface RepoManifest {
-  vsb_id: string; name: string; file_count: number; total_bytes: number; tree: string[];
+  // W574 (M1 R2.2) — count_basis states WHAT was counted (everything on disk bar .git and the
+  // manifest, which describes a tree it is itself in), so the totals are explainable on the card.
+  vsb_id: string; name: string; file_count: number; total_bytes: number; count_basis?: string; tree: string[];
   integrated_surfaces: { website: string; webapp: string; mobile: string };
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
@@ -1078,7 +1080,12 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                       <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Repository</span>
-                          <span className="text-[8px] font-mono text-slate-500">{repo.file_count} files · {repo.total_bytes} bytes</span>
+                          {/* W574 (M1 R2.2) — these counted only the files ONE generator wrote, so
+                              the card read "9 files · 10656 bytes" for a repository holding 30
+                              files, with every Website, Web-app and Phone-app file missing. They
+                              are counted from disk now, and count_basis says what was counted. */}
+                          <span className="text-[8px] font-mono text-slate-500"
+                                data-testid="repo-count" title={repo.count_basis}>{repo.file_count} files · {repo.total_bytes} bytes</span>
                           {(() => { const c = qmsChip(repo.quality_assurance?.quality, 'QMS:'); return c && (
                             <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                           ); })()}

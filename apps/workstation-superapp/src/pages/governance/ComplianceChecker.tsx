@@ -17,6 +17,21 @@ interface Result {
 const STATUS_ICON: Record<string, React.ComponentType<any>> = { pass: CheckCircle2, review: AlertTriangle, fail: XCircle, not_checked: MinusCircle, error: XCircle };
 const STATUS_TONE: Record<string, string> = { pass: 'text-emerald-400', review: 'text-amber-400', fail: 'text-vital', not_checked: 'text-slate-500', error: 'text-vital' };
 
+// W574 (M1 R1.2) — THE MEASURED CONSUMERS OF THE §11 FEDERATED SCREEN. Each carries the module
+// that calls it, so this list is checkable rather than remembered: `test_w574_...` asserts every
+// `module` below really imports the screen, and that the two the page used to name and that never
+// called it are absent. A name with nothing behind it is this clause's whole subject.
+const SCREEN_CONSUMERS: { label: string; module: string }[] = [
+  { label: 'Genesis',            module: 'agentic_core/api/genesis.py' },
+  { label: 'the economy',        module: 'agentic_core/economy/charity.py' },
+  { label: 'the swarm',          module: 'agentic_core/api/swarm.py' },
+  { label: 'the marketplace',    module: 'agentic_core/api/marketplace.py' },
+  { label: 'the heartbeat',      module: 'agentic_core/organism/heartbeat.py' },
+  { label: 'the AI CEO',         module: 'agentic_core/api/v138/ceo.py' },
+  { label: 'the resource fabric',module: 'agentic_core/api/resource_fabric.py' },
+  { label: 'the quality record', module: 'agentic_core/vbs/quality.py' },
+];
+
 export const ComplianceChecker: React.FC = () => {
   const [frameworks, setFrameworks] = useState<any[]>([]);
   const [subject, setSubject] = useState('');
@@ -45,7 +60,20 @@ export const ComplianceChecker: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           One federated screen across <span className="text-highlight">Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional</span> —
           keyword and vocabulary screens plus engines where one exists. It flags; it does not certify. A pass is a pass of the screen;
-          "review — no engine covers this area" means nothing here read the subject. Used by the economy, synthesis, Genesis and the Forge.
+          "review — no engine covers this area" means nothing here read the subject.
+        </p>
+        {/* W574 (M1 R1.2) — this said "Used by the economy, synthesis, Genesis and the Forge".
+            Two of those four never call it: there is no call in agentic_core/api/forge.py, in
+            agentic_core/synthesis/api.py or in agentic_core/api/synthesis_studio.py. Each name
+            below now carries the module it refers to, so the claim ships with its own evidence
+            and the suite can check every entry against the tree — a bare list of names is what
+            rotted here, and a corrected bare list would rot the same way. */}
+        <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed text-[11px]">
+          Called by: {SCREEN_CONSUMERS.map(c => c.label).join(" · ")}.{" "}
+          <span className="text-slate-600">
+            The Forge screens only its request’s intent label against the prohibited list, not the
+            delivery’s content, and the Synthesis studio does not call this screen at all.
+          </span>
         </p>
       </header>
 

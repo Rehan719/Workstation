@@ -6,7 +6,10 @@ import { provenanceBadge } from '../lib/api';
 
 // W451 (P1.3) — the CEO answers from the owned fabric, grounded in the Board + living plan; the pill
 // and every assistant message say WHO served it (amber on the floor). No persona, no roleplay copy.
-type CeoMessage = { role: string; content: string; servedBy?: string | null; isExternal?: boolean; grounding?: any };
+// W574 (M1 R3.2) — groundingConflicts: sections the answer filled with items while its own
+// grounding counted none. The card already said "grounded in 0 directives" beside three invented
+// bullets; a count a reader has to cross-check against prose is not a disclosure.
+type CeoMessage = { role: string; content: string; servedBy?: string | null; isExternal?: boolean; grounding?: any; groundingConflicts?: any[] };
 const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite — I answer from the record, and every answer says who served it.';
 
 export const CEOChat: React.FC = () => {
@@ -95,6 +98,7 @@ export const CEOChat: React.FC = () => {
                 assistantMessage.servedBy = data.served_by ?? null;
                 assistantMessage.isExternal = !!data.is_external;
                 assistantMessage.grounding = data.grounding ?? null;
+                assistantMessage.groundingConflicts = data.grounding_conflicts ?? [];
                 setLastProv({ servedBy: data.served_by ?? null, isExternal: !!data.is_external });
               }
               setMessages(prev => {
@@ -286,6 +290,16 @@ export const CEOChat: React.FC = () => {
                      <div className="flex flex-wrap items-center gap-2 ml-2">
                        <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
                        {m.grounding && <span className="text-[9px] text-slate-500" title="what the answer was grounded in">grounded in {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · scope {m.grounding.scope}</span>}
+                       {/* W574 (M1 R3.2) — the answer printed a "## Board directives" section with
+                           three bullets while the chip beside it said "grounded in 0 directives".
+                           A count the reader has to cross-check against the prose is not a
+                           disclosure; the contradiction is named here, where the answer is. */}
+                       {(m.groundingConflicts ?? []).map((c: any, ci: number) => (
+                         <span key={ci} data-testid="ceo-grounding-conflict" title={c?.basis}
+                               className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                           {c?.items} unrecorded {c?.section}
+                         </span>
+                       ))}
                      </div>
                    ); })()}
                    {m.role === 'assistant' && (

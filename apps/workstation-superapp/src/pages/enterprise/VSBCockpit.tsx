@@ -613,7 +613,20 @@ export const VSBCockpit: React.FC = () => {
                 <p className="text-[9px] font-mono text-slate-600">{detail.vsb_id} · realm: {detail.realm} · owner: {detail.owner_id}</p>
               </Card>
               <Card className="p-6">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2"><Workflow size={14} /> Organisational hierarchy (apex → operational delivery)</h4>
+                {/* W574 (M1 R4.4) — THIS IS THE PLATFORM'S STANDING STRUCTURE, NOT THIS ENTITY'S
+                    DESIGN. The seven tiers below are a literal in this file and the officer roster
+                    behind them is a module literal in swarm.py; no route anywhere creates, renames
+                    or removes an officer or a tier, so nothing a user does can change either. Headed
+                    "Organisational hierarchy" on an entity's own cockpit, it read as that entity's
+                    structure — something the founder had or could have designed. What IS editable
+                    is the delivery cascade below, and that is now the distinction the heading makes
+                    rather than one a reader has to discover. */}
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2"><Workflow size={14} /> The platform's standing organisational structure (apex → operational delivery)</h4>
+                <p className="text-[10px] text-slate-500 mb-4 leading-relaxed">
+                  Identical for every VSB and not editable: these seven tiers and the officer roster behind
+                  them are fixed in the platform. This entity has not designed them. The delivery cascade
+                  below <span className="text-aura">is</span> this entity's own and can be edited.
+                </p>
                 <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider">
                   {['Chief of Board', 'Board of Directors', 'AI CEO', 'C-Suite', 'Centres of Excellence', 'Business Transformation Office', 'Build-to-Order'].map((t, i, a) => (
                     <React.Fragment key={t}>
