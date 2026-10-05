@@ -17,6 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 0 = the full history. The default is ONE commit, and the suite measures the programme's
+          # own round durations and round-boundary cost by walking commits - with a single commit to
+          # walk those instruments returned nothing and two guards failed on CI only.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -28,7 +33,10 @@ jobs:
       - name: Boot check
         run: python -c "import agentic_core.app_mvp; print('boot ok')"
       - name: Integration suite (AI tests auto-skip without a key)
-        run: python -m pytest integration_tests/test_mvp_spine.py --noconftest -q
+        # THE CONFTEST IS LOADED HERE, deliberately. Skipping it ran a DIFFERENT suite from the one
+        # every round runs: no isolated data root, no _assert_store_is_isolated, no collection hooks.
+        # That is how CI stayed red for thirteen rounds on failures no local run could reproduce.
+        run: python -m pytest integration_tests -q
 
   import-integrity:
     name: Import integrity — no dangling first-party imports

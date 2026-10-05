@@ -688,15 +688,39 @@ async def organism_cadence(scope: str = "workstation"):
         raise HTTPException(status_code=503, detail=(
             f"{e} - the plan was NOT read and no cadence state is reported. A refresh is never written "
             f"over a plan that could not be read whole."))
+    #  W589 — WHAT THE LAST BEAT ACTUALLY MANAGED, which the state above cannot say. The beat used to
+    #  swallow a cadence failure with `except Exception: pass`, so a cadence that had STOPPED FIRING looked
+    #  exactly like a cadence with nothing due. It now records the reason - and a record nothing surfaces is
+    #  only readable by a test, so it is reported here. The two answer different questions: `layers` is read
+    #  from the plan and says whether a layer is due NOW; `last_beat` says what the most recent heartbeat
+    #  did, including a failure that wrote nothing. Due in the first and failing in the second is the silent
+    #  state this exists to end.
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    _lastc = getattr(_hb, "last_cadence", None)
+    _last_beat = {
+        "ran": bool(_lastc),
+        "refreshed": (_lastc or {}).get("refreshed") or [],
+        "could_not_run": (_lastc or {}).get("could_not_run"),
+        "at": (_lastc or {}).get("at"),
+        "basis": ((_lastc or {}).get("basis") or
+                  ("NO BEAT HAS RUN A CADENCE STEP IN THIS PROCESS YET, so this is not a report that the "
+                   "cadence is healthy and not a report that it failed - nothing has been attempted. The "
+                   "layer states above are read from the plan and are unaffected by that")),
+    }
     return {
         **st,
         "history": hist,
         "history_count": len(hist),
+        "last_beat": _last_beat,
         "method": ("each layer is due on elapsed time (quarterly for strategic, weekly for the action "
                    "plan) or on its own signal (a market signal, a KPI trigger), whichever comes first. "
                    "The due check is a pure function of the last refresh, the time and the signals, so a "
                    "trigger can be FORCED rather than waited for. A layer never refreshed says so rather "
                    "than reporting an age of zero"),
+        "last_beat_basis": ("`layers` is the plan's own record of when each layer last refreshed; "
+                            "`last_beat` is what the most recent heartbeat managed. A layer that is DUE "
+                            "while last_beat.could_not_run is set means the cadence is not firing, which "
+                            "an absent action alone could never distinguish from nothing being due"),
     }
 
 

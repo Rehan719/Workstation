@@ -7513,6 +7513,60 @@
       "note": "",
       "slot_source": "the router REFUSED this row because the areas covering docs/ and the delivery tooling were retired in this same round, which is the consequence the Owner ruled on 2026-10-05: a row in an ownerless area names its own slot. P2.17 is named by SUBJECT, not convenience - it is the only open item about the round's own INSTRUMENTS being wrong rather than slow, and its own text records an instrument that was internally consistent and externally meaningless (a serial-suite constant used as a parallel floor). A pre-flight that cannot see a register reformat is the same shape. FU-413 sits here on the same basis.",
       "tier": 2
+    },
+    {
+      "id": "FU-415",
+      "title": "The forecast returns a DIFFERENT KEY SET when history cannot be walked, so an unmeasurable figure reads as a missing field",
+      "why": "MEASURED IN W589 from CI run 37276077594, where the keys the forecast returned were exactly ['hours_available', 'projection', 'round_durations', 'suite_h'] and a guard failed with \"the forecast no longer reports the round-boundary cost\". The cause is an EARLY RETURN: forecast_session() in scripts/session_forecast.py builds three keys, and when round_durations() reports assessable=False it sets projection to {\"unavailable\": why} and returns there - so round_boundaries_cost, contingency and the two-window comparison are ABSENT from the result rather than present with a stated basis. A reader that indexes round_boundaries_cost gets a KeyError, and a reader that uses .get() cannot tell an unmeasurable history from a forecast that simply does not carry the field. W589 fixed the CI symptom by setting fetch-depth: 0 on the backend checkout, so CI now has the history to walk; the defect itself is untouched, and a shallow clone is legitimate elsewhere - a fresh clone, a contributor's checkout, and the P5.4 handover where the entity repository must live without this repo. The fix is the pattern this codebase already uses everywhere else: every return of this function carries the same key set, with each unmeasurable figure as None beside the basis that says WHY it could not be computed, so the shape does not depend on whether the measurement succeeded. A missing key and a measured zero and an unmeasured field are three different things, and an early return collapses them into one.",
+      "source": "W589 CI diagnosis (run 37276077594)",
+      "found": "2026-10-05",
+      "files": [
+        "scripts/session_forecast.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 OWNS this instrument by subject, not by convenience: its clause (c) names session_forecast.round_durations() as the computation that replaced the item's retyped figures, and this row is a defect in the shape that same instrument returns. The router refused because no open item carries a route for scripts/, which is the retired-area consequence the Owner ruled on 2026-10-05 - a row in an ownerless area names its own slot.",
+      "tier": 2
+    },
+    {
+      "id": "FU-416",
+      "title": "CI runs the suite SERIALLY because the runner installs pytest without xdist: 48.8 minutes measured against 29 locally",
+      "why": "MEASURED IN W589 from CI run 37287845785: the backend job took 48.8 minutes while the same suite takes 29 minutes locally at -n 2, and the other three jobs took 6.5, 1.7 and 0.1 minutes. The cause is in the workflow: the dependency step installs `pytest` alone, with the comment that it is the dev/test-only dependency the runtime requirements omit, so pytest-xdist is absent and the suite runs SERIALLY on a runner slower than this machine. The consequence is not the cost of the minutes but the feedback delay: a round pushes, waits most of an hour for CI, and in practice stops waiting - which is one of the reasons CI went unread for thirteen rounds while it was red. The fix is to install pytest-xdist in that step and pass -n auto, which is what the round itself runs; the conftest already subdivides the data root per worker (`_per_worker` rewrites DATA_DIR, WORKSTATION_DATA_DIR, PROJECTS_DIR, LISTINGS_DIR, SYNTHESIS_OUTPUT_DIR, PROPOSALS_DIR and WORKSTATION_UEG_PATH on PYTEST_XDIST_WORKER), so parallel workers over one store - the documented corruption mode - does not apply. It must be MEASURED on CI rather than assumed: a two-core runner may gain nothing from -n auto, and the four-core count observed in the test_w559 failure is the figure to size it against. Not done in W589 because that round's job was to make CI run the same suite the round runs and to stop it being red; changing how it runs the suite at the same time would have made the result of the first change unreadable.",
+      "source": "W589 CI measurement (run 37287845785)",
+      "found": "2026-10-05",
+      "files": [
+        ".github/workflows/spine.yml"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 is THE ROUND'S OWN COST and this is a measured cost of a round - the feedback delay between a push and a verdict. Named explicitly because the router carries no route for .github/, an area no open item claims.",
+      "tier": 3
+    },
+    {
+      "id": "FU-417",
+      "title": "A beat skipped the cadence for both layers in the full suite and the cause was never recorded; not reproduced since",
+      "why": "OBSERVED ONCE IN W589 AND NOT REPRODUCED, which is why this is open rather than closed. test_w585_p33 failed in the full suite and passed in isolation: it ages both cadence layers' history past their periods, asserts with cadence.due() that each is genuinely DUE, runs one real beat, and the beat's actions came back as ['pulse', 'homeostasis', 'genome_scan', 'compliance_rescreen', 'transformation_tick'] with no 'cadence_refresh'. So the step raised, because the whole step sat in `except Exception: pass` - and the exception was swallowed, so the run that failed left NO record of the cause anywhere. The two defects that reading the step then found were fixed in the same round (the swallowed reason, and a single try around the whole layer loop that discarded a layer's completed refresh when a later layer raised), plus a confirmed ValueError where _compose ran int() on a progress field it does not own. The re-run with all three in place is green and the failure did not recur, so it CANNOT be said which of these was the cause, or whether the cause was any of them: a green run after a change is not evidence when the red run was not reproduced first. What remains to be done is therefore not a fix but a reproduction: the beat now records could_not_run with the exception type, message and a basis stating that a layer which could not run is still due, so the next occurrence names its own cause in the suite output and the guard's assertion message carries it. Candidates worth testing deliberately if it recurs: a store_lock TimeoutError on the plan path (store_lock raises after its timeout rather than writing unserialised, and the plan is written by several tests in a worker), and a strict read failing on a plan an earlier test left in a shape business_plan._load rejects. Do not close this row on another green suite; close it on a reproduction with the recorded reason, or on a measured argument that the fixed defects were necessarily the cause.",
+      "source": "W589 full suite",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/organism/cadence.py",
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
     }
   ],
   "routes": [

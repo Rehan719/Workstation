@@ -30827,10 +30827,17 @@ def test_w537_the_blind_harness_and_the_stall_detector_can_both_fail():
         ("a sweep ran inside a sweep instead of refusing", _refused)
     #  and it must NOT refuse when the marker is absent — otherwise every sweep would report BAD BLIND and
     #  the harness would be unable to measure anything while appearing to run.
-    assert sweep._run_selector("no_such_test_w537_nested_control",
-                               "integration_tests/test_mvp_spine.py",
-                               dict(_os.environ)) == 5, \
-        "the runner refuses even outside a sweep, so no blind could ever reach a verdict"
+    #  AND THE FAILURE EXPLAINS ITSELF. This asserted on a bare exit code, and when CI reported 3 (pytest's
+    #  INTERNAL ERROR) instead of 5 (nothing collected) there was no way to know why: the harness discarded
+    #  the child's output. It now keeps it, so the message below states the cause on the run that fails.
+    _ctl537 = sweep._run_selector("no_such_test_w537_nested_control",
+                                  "integration_tests/test_mvp_spine.py",
+                                  dict(_os.environ))
+    assert _ctl537 == 5, (
+        "the runner refuses even outside a sweep, so no blind could ever reach a verdict",
+        {"exit": _ctl537, "5": "nothing collected, which is what a selector matching no test must give",
+         "3": "pytest internal error - the child's output follows",
+         "child": sweep.LAST_RUN.get("output")})
 
     # ── 9. A KILLED SWEEP LEAVES A RECOVERABLE MARKER, and a stale one blocks the next run ──────
     #  `finally` does not run when the process is killed, and in this round one mutation DID survive a
@@ -34428,14 +34435,50 @@ def test_w559_a_tier_says_what_it_cannot_run_here_and_the_router_records_why_it_
     #  W557 made with the word "inferred".
     import ast as _ast
     _tree = _ast.parse(_src)
-    _nums = {n.value for n in _ast.walk(_tree)
-             if isinstance(n, _ast.Constant) and isinstance(n.value, (int, float))
-             and not isinstance(n.value, bool)}
-    assert _m["ram_gb"] not in _nums, (
-        "this machine's measured memory appears as a numeric constant in executable code, so the figure "
-        "will outlive the hardware it describes", _m["ram_gb"])
-    assert float(_os.cpu_count() or -1) not in {float(x) for x in _nums}, (
-        "this machine's core count is a constant in the module rather than a measurement", _nums)
+    #  SCOPED TO `machine()`, AND ASSERTED AS A PROPERTY OF HOW THE FIGURE IS PRODUCED - not as the absence
+    #  of a spelling. The previous form forbade the measured number from appearing as ANY numeric literal in
+    #  the module, and a core count is a small integer: on a four-core runner `4` is a literal in almost any
+    #  module, so the check went red on CI while the code was correct. A guard that fails when the HARDWARE
+    #  changes rather than when the CODE does is a guard that fails on success.
+    _mach = next((n for n in _ast.walk(_tree)
+                  if isinstance(n, _ast.FunctionDef) and n.name == "machine"), None)
+    assert _mach is not None, "the tiers module no longer has a machine() to measure anything"
+    _CAP = ("cpu_count", "ram_gb")
+
+    #  (1) the measurements are CALLED
+    _calls = {n.func.attr for n in _ast.walk(_mach)
+              if isinstance(n, _ast.Call) and isinstance(n.func, _ast.Attribute)}
+    assert "cpu_count" in _calls, (
+        "machine() never calls a core-count measurement, so whatever it reports was not measured here",
+        sorted(_calls))
+    assert "virtual_memory" in _calls, (
+        "machine() never calls a memory measurement", sorted(_calls))
+
+    #  (3) names bound to a bare number inside the function - the indirection a literal sweep was reaching
+    #  for, stated exactly rather than by searching the whole file
+    _const_names = {t.id for a in _ast.walk(_mach) if isinstance(a, _ast.Assign)
+                    for t in a.targets
+                    if isinstance(t, _ast.Name) and isinstance(a.value, _ast.Constant)
+                    and isinstance(a.value.value, (int, float))
+                    and not isinstance(a.value.value, bool)}
+
+    #  (2) + (3) applied to every assignment INTO a capacity key
+    for _a in _ast.walk(_mach):
+        if not isinstance(_a, _ast.Assign):
+            continue
+        for _t in _a.targets:
+            if not (isinstance(_t, _ast.Subscript) and isinstance(_t.slice, _ast.Constant)
+                    and _t.slice.value in _CAP):
+                continue
+            _key = _t.slice.value
+            assert not (isinstance(_a.value, _ast.Constant)
+                        and isinstance(_a.value.value, (int, float))
+                        and not isinstance(_a.value.value, bool)), (
+                "this machine's capacity is TYPED INTO the module rather than measured, so the figure will "
+                "outlive the hardware it describes", _key, getattr(_a.value, "value", None))
+            assert not (isinstance(_a.value, _ast.Name) and _a.value.id in _const_names), (
+                "this machine's capacity is assigned from a name bound to a bare number, which is a typed "
+                "figure one step removed", _key, _a.value.id)
 
     # ── L2. FIVE TIERS, AND EACH SAYS WHETHER IT RUNS HERE AND WHY ───────────────────────────────
     _reg = _T.registry()
@@ -39735,7 +39778,11 @@ def test_w585_p33_the_cadence_layers_refresh_themselves_and_say_why(client, monk
     assert isinstance(_beat585, dict), ("the beat did not return its record", type(_beat585).__name__)
     assert "cadence_refresh" in (_beat585.get("actions") or []), (
         "a layer was DUE and the beat did not refresh it, so the cadence is not heartbeat-driven - a "
-        "refresh behind a route is a button, not a cadence", _beat585.get("actions"))
+        "refresh behind a route is a button, not a cadence", _beat585.get("actions"),
+        #  W589 — THE BEAT'S OWN REASON, which the step used to swallow with a bare `except: pass`. Without
+        #  it this failure reported an absent action and nothing else, so a run that failed in the full
+        #  suite and passed in isolation could not be diagnosed from its output at all.
+        {"last_cadence": getattr(_hb585.heartbeat, "last_cadence", None)})
     _state585 = _cad585.state("workstation")
     for _layer585 in _cad585.LAYERS:
         assert _state585["layers"][_layer585]["ever_refreshed"] is True, (
@@ -39751,6 +39798,52 @@ def test_w585_p33_the_cadence_layers_refresh_themselves_and_say_why(client, monk
     _did585 = {_r585["layer"] for _r585 in (_hb585.heartbeat.last_cadence.get("refreshed") or [])}
     assert _did585 == set(_cad585.LAYERS), (
         "the beat refreshed only some of the layers that were due", sorted(_did585))
+
+    # ── L1b (W589). A CADENCE THAT CANNOT RUN IS VISIBLE WHERE A PERSON READS, not only in a test ──
+    #  The step used to end in `except Exception: pass`, so a cadence that had STOPPED FIRING was
+    #  indistinguishable from one with nothing due: both appended no action and left no trace. It now records
+    #  the reason - and a record nothing surfaces is only readable by a guard, which is barely better. No page
+    #  fetches this route, so the route's own response is the surface, and this asserts the key is in it.
+    _api585 = client.get("/api/v1/organism/cadence")
+    assert _api585.status_code == 200, (_api585.status_code, _api585.text[:200])
+    _lb585 = _api585.json().get("last_beat")
+    assert isinstance(_lb585, dict), (
+        "the cadence route reports the plan's layer states but not what the last BEAT managed, so a cadence "
+        "that has stopped firing cannot be seen at all", _api585.json().keys())
+    assert _lb585["ran"] is True and _lb585["could_not_run"] is None, _lb585
+    assert {_r585["layer"] for _r585 in _lb585["refreshed"]} == set(_cad585.LAYERS), _lb585
+    #  AND THE ROUTE SAYS WHY THERE ARE TWO RECORDS. Without this a reader who sees a layer reported DUE
+    #  beside a last beat that could not run has no way to tell two different questions from a contradiction.
+    _lbb585 = _api585.json().get("last_beat_basis") or ""
+    assert "plan" in _lbb585 and "last_beat" in _lbb585, (
+        "the route reports both the plan's layer states and the last beat's outcome without saying which "
+        "question each one answers", _lbb585[:200])
+
+    #  DRIVEN. The failure path is made to happen, because asserting the healthy shape would pass equally
+    #  well with the failure path broken - a healthy beat never produces a reason to render.
+    _savedc585 = _hb585.heartbeat.last_cadence
+    _origref585 = _cad585.refresh
+    try:
+        def _boom585(*_a585, **_k585):
+            raise RuntimeError("w589 driven cadence failure")
+        _cad585.refresh = _boom585
+        _aio585.run(_hb585.heartbeat.beat())
+        _fail585 = client.get("/api/v1/organism/cadence").json()["last_beat"]
+        assert _fail585["could_not_run"], (
+            "the cadence raised on every layer and the surface reports no failure, so a stopped cadence "
+            "still reads as a quiet one", _fail585)
+        assert "RuntimeError" in str(_fail585["could_not_run"]), (
+            "the surface reports a failure without saying what it was", _fail585["could_not_run"])
+        assert _fail585["refreshed"] == [], (
+            "a beat that refreshed nothing reports refreshed layers", _fail585)
+        assert "still" in str(_fail585["basis"]).lower() and "due" in str(_fail585["basis"]).lower(), (
+            "the basis does not say that a layer which could not run is STILL DUE, which is the whole "
+            "difference between this state and 'nothing was due'", _fail585["basis"])
+    finally:
+        _cad585.refresh = _origref585
+        _hb585.heartbeat.last_cadence = _savedc585
+    assert _cad585.refresh is _origref585, "the cadence refresh was left patched"
+    assert _hb585.heartbeat.last_cadence is _savedc585, "the beat's cadence record was left failed"
 
     # ── L2. CLAUSE (2): PROVENANCE, A HISTORY, AND WHAT THE REFRESH DISPLACED ──────────────────────
     #  the Owner's own strategy text goes in first, so the overwrite this clause is about really happens
@@ -40527,3 +40620,73 @@ def test_w588_exactly_one_class_carries_the_constitutional_interceptor_name():
         "the name it actually uses")
     assert "RecirculationPreflight(" in _orch588, (
         "the orchestrator imports the pre-flight and never constructs it")
+def test_w589_ci_runs_the_same_suite_the_round_runs():
+    """CI's backend job runs the round's own command, and checks out enough history to measure itself.
+
+    MEASURED, from the real failing run 37276077594 on 3931ca4d: CI had been red for THIRTEEN rounds and
+    three of its six failures were caused not by the code but by CI running something else.
+
+      * the suite step passed a flag that SKIPPED THE CONFTEST, so CI never had the isolated data root
+        (DATA_DIR, WORKSTATION_DATA_DIR, PROJECTS_DIR, SYNTHESIS_OUTPUT_DIR, PROPOSALS_DIR,
+        WORKSTATION_UEG_PATH), never ran `_assert_store_is_isolated` - the session fixture whose whole job is
+        to fail loudly when the suite is about to write the real store - and never ran the collection hooks.
+        A measuring script that moved the process data root therefore moved it for everything after it, which
+        is how an entity's record and its repo files came to sit under DIFFERENT roots and a guard asserted on
+        a deleted path.
+      * no checkout in either workflow set `fetch-depth`, so actions/checkout took its default of ONE commit
+        and every instrument that walks commit history had one commit to walk. Two standing failures, one
+        cause: the forecast reported no round-boundary cost and the commitment variance read None.
+      * and the target was the spine FILE while every round runs the DIRECTORY.
+
+    The flag was not load-bearing, which is why removing it is safe rather than brave: conftest.py imports
+    only json, os and pytest, reads PYTEST_XDIST_WORKER as a plain env string and takes the serial path when
+    it is absent, every hook is opt-in on an env var CI does not set and wrapped so it cannot break the run,
+    and it defines no fixture the test module also defines.
+
+    A permanently red CI gives no signal, so each round's own new breakage lands invisibly. That is the
+    instrument-that-cannot-fail class operating one level above the suite.
+    """
+    import pathlib as _pl589
+
+    import yaml as _yaml589
+
+    _root589 = _pl589.Path(__file__).resolve().parents[1]
+    _wf589 = _root589 / ".github" / "workflows" / "spine.yml"
+    assert _wf589.is_file(), "the Spine CI workflow is gone, so nothing runs the suite on a push"
+    _doc589 = _yaml589.safe_load(_wf589.read_text(encoding="utf-8"))
+    _steps589 = _doc589["jobs"]["backend"]["steps"]
+
+    #  SELECTED BY WHAT THE STEP IS, not by a word that appears in two of them. The dependency step runs
+    #  `pip install pytest`, and a selector on the bare word returned THAT step - which made this round's own
+    #  patch assert "the flag is absent" against an install command and pass for the wrong reason.
+    _runs589 = [s for s in _steps589 if "-m pytest" in str(s.get("run") or "")]
+    assert len(_runs589) == 1, (
+        "the backend job does not have exactly one step that runs the pytest module, so this guard cannot "
+        "know which command CI trusts", [str(s.get("run"))[:60] for s in _runs589])
+    _cmd589 = " ".join(str(_runs589[0]["run"]).split())
+
+    #  (1) THE CONFTEST IS LOADED. Asserted on the parsed command, which is the thing CI executes.
+    assert "noconftest" not in _cmd589, (
+        "CI's suite step skips the conftest, so it runs a DIFFERENT suite from the one every round runs and "
+        "every commit is trusted on - no isolated data root, no isolation fixture, no collection hooks",
+        _cmd589)
+
+    #  (2) THE SAME TARGET THE ROUND RUNS. The only other file under integration_tests is the xdist probe,
+    #  whose tests skip when not running under xdist, so the directory costs CI four skips.
+    assert "integration_tests" in _cmd589.split(), (
+        "CI does not run the integration_tests directory the round runs", _cmd589)
+
+    #  (3) ENOUGH HISTORY TO MEASURE ITSELF.
+    _cos589 = [s for s in _steps589 if str(s.get("uses") or "").startswith("actions/checkout")]
+    assert len(_cos589) == 1, ("the backend job has no single checkout to check", len(_cos589))
+    _depth589 = (_cos589[0].get("with") or {}).get("fetch-depth")
+    assert _depth589 == 0, (
+        "the backend checkout does not take the full history (0), so every instrument that measures this "
+        "programme by walking commits - the round-duration median, the round-boundary cost, the commitment "
+        "variance - sees one commit and reports nothing", _depth589)
+
+    #  AND THE SUITE IS ACTUALLY RUN ON A PUSH, because a correct command in a workflow nothing triggers is
+    #  the same silence by another route.
+    _on589 = _doc589.get("on") if "on" in _doc589 else _doc589.get(True)
+    assert _on589 and "push" in _on589, (
+        "the Spine CI workflow does not run on a push, so nothing reports on a round's own commit", _on589)

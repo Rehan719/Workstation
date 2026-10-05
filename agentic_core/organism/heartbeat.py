@@ -265,24 +265,54 @@ class OrganismHeartbeat:
         #     the "cheap + deterministic + virtual" rule the steps around it keep. Nothing is appended to
         #     `actions` when nothing was due — an action list that always carries an entry says nothing
         #     about whether anything happened.
+        #     W589 — ONE HANDLER PER LAYER. The try used to wrap the whole loop with the action appended
+        #     after it, so a second layer that raised discarded the FIRST layer's refresh - which had
+        #     already been written to the plan with its history entry. The beat then reported nothing while
+        #     the plan said otherwise, which is worse than a silent failure: two records of the same beat
+        #     disagreeing. Now a layer that refreshed is recorded as refreshed whatever the other does.
         try:
             from agentic_core.organism import cadence as _cad
-            _refreshed = []
+            _refreshed, _cad_failed = [], []
             for _layer in _cad.LAYERS:
-                _res = _cad.refresh("workstation", _layer)
+                try:
+                    _res = _cad.refresh("workstation", _layer)
+                except Exception as _layer_err:          # noqa: BLE001 — recorded, not swallowed
+                    _cad_failed.append({"layer": _layer,
+                                        "could_not_run": f"{_layer_err.__class__.__name__}: {_layer_err}"})
+                    continue
                 if _res.get("refreshed"):
                     _refreshed.append({"layer": _layer, "trigger": _res["entry"]["trigger"],
                                        "reason": _res["entry"]["reason"], "at": _res["entry"]["at"],
                                        "served_by": _res["entry"]["served_by"]})
-            if _refreshed:
+            if _refreshed or _cad_failed:
                 self.last_cadence = {"refreshed": _refreshed,
-                                     "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                                     "could_not_run": _cad_failed or None,
+                                     "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                     "basis": (f"{len(_refreshed)} layer(s) refreshed on this beat and "
+                                               f"{len(_cad_failed)} could not run. A layer that could not "
+                                               f"run is still DUE - this is not 'nothing was due'")}
+            if _refreshed:
                 actions.append("cadence_refresh")
-        except Exception:
+        except Exception as _cad_err:
             #  a plan that cannot be read whole must not stop the beat, and it must not be refreshed
             #  either: cadence.refresh reads strictly, so an unreadable plan raises here rather than
             #  being overwritten with an invented one (the FU-395 class).
-            pass
+            #  W589 — BUT IT IS RECORDED. This was `pass`, and a swallowed exception made a cadence that
+            #  CANNOT RUN indistinguishable from a cadence with nothing due: both appended no action and
+            #  left no trace. Since the whole point of §17.3 is that the layers refresh THEMSELVES, a
+            #  cadence that has silently stopped firing is the failure that matters most, and it was the
+            #  one this handler hid. `actions` is still not appended to - claiming an action for a failure
+            #  would be the opposite defect - so the three states are told apart by this record instead.
+            self.last_cadence = {
+                "refreshed": [],
+                "could_not_run": f"{_cad_err.__class__.__name__}: {_cad_err}",
+                "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "basis": ("the cadence step raised, so NO layer was refreshed on this beat. This is not "
+                          "'nothing was due': the due-check never completed, and a layer that is due is "
+                          "still due. The beat continues because an unreadable plan must not stop it, and "
+                          "the plan is deliberately NOT written - cadence.refresh reads strictly so that a "
+                          "plan it cannot read is left alone rather than overwritten with an invented one"),
+            }
 
         # 2e. §4 — autonomously OPERATE one living VSB enterprise (round-robin, paced): run one virtual economy
         #     cycle for the least-recently-operated established VSB, so each "continually, autonomously operates"

@@ -179,11 +179,33 @@ def _compose(plan: Dict[str, Any], layer: str) -> Dict[str, Any]:
                    "; no mission is on record") + ".")
     else:
         _open = [o for o in objectives if str(o.get("status") or "") != "done"]
-        _stalled = [o for o in _open if int(o.get("progress_pct") or 0) == 0]
+
+        def _pct(o: Dict[str, Any]) -> Optional[int]:
+            """This objective's progress, or None when the stored value is not a number.
+
+            W589 — this was `int(o.get("progress_pct") or 0)`, and ONE objective carrying a non-numeric
+            progress raised ValueError out of _compose, out of refresh, and stopped the ENTIRE cadence for
+            every layer (verified: "half" raises invalid literal for int()). The cadence does not own that
+            field and is not its validator, so a value it cannot read is reported as unknown rather than
+            counted as zero progress - which would also be a lie, since an unreadable progress is not a
+            measured nought.
+            """
+            try:
+                return int(o.get("progress_pct") or 0)
+            except (TypeError, ValueError):
+                return None
+
+        _stalled = [o for o in _open if _pct(o) == 0]
+        _unknown = [o for o in _open if _pct(o) is None]
         body = (f"Action position derived from the plan itself: {len(_open)} open objective(s), of which "
                 f"{len(_stalled)} record no progress at all"
-                + ("; " + "; ".join(f"{str(o.get('title'))[:60]} ({o.get('progress_pct') or 0}%)"
-                                    for o in _open[:5]) if _open else
+                #  an unreadable progress is named rather than folded into the stalled count
+                + (f", and {len(_unknown)} record a progress this module cannot read as a number"
+                   if _unknown else "")
+                + ("; " + "; ".join(
+                    f"{str(o.get('title'))[:60]} "
+                    f"({'unknown' if _pct(o) is None else _pct(o)}%)"
+                    for o in _open[:5]) if _open else
                    "; the roadmap carries no open objective") + ".")
     return {
         "content": body,

@@ -65,6 +65,11 @@ def _sha(path: str) -> str:
 NESTED_GUARD_ENV = "WORKSTATION_BLIND_SWEEP_ACTIVE"
 NESTED_EXIT = -1          # not a pytest code: a nested sweep never reached pytest at all
 
+# W589 — the last child's OUTPUT, so an unexpected exit code can be explained rather than reported as a
+# bare number. Only the output: the exit code is this function's return value and the selector is the
+# caller's own argument, so holding either here would be a key nothing reads. Never used to decide anything.
+LAST_RUN: Dict[str, Any] = {"output": ""}
+
 
 def _run_selector(selector: str, test_path: str, env: Dict[str, str]) -> int:
     """Run the selector, unless we are already inside a sweep.
@@ -76,11 +81,18 @@ def _run_selector(selector: str, test_path: str, env: Dict[str, str]) -> int:
     hand. A marker in the environment cannot be defeated by a badly chosen selector.
     """
     if env.get(NESTED_GUARD_ENV):
+        LAST_RUN["output"] = "refused before pytest was reached: a sweep may not run inside a sweep"
         return NESTED_EXIT
     r = subprocess.run([sys.executable, "-m", "pytest", test_path, "-q", "--no-header",
                         "-p", "no:warnings", "-k", selector],
                        capture_output=True, text=True, errors="replace",
                        env=dict(env, **{NESTED_GUARD_ENV: "1"}))
+    #  W589 — THE CHILD'S OUTPUT IS KEPT. This returned a bare exit code and discarded stdout and stderr, so
+    #  when CI reported 3 (pytest's INTERNAL ERROR) from a selector that should have reported 5 (nothing
+    #  collected), there was nothing to read and the failure stood undiagnosed for twelve rounds. A harness
+    #  whose purpose is to explain why something failed must be able to explain its own failure. Bounded,
+    #  because a collection error over a 40,000-line test file would otherwise become the whole message.
+    LAST_RUN["output"] = ((r.stdout or "") + (r.stderr or ""))[-1800:]
     return r.returncode
 
 
