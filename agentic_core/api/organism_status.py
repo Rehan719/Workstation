@@ -105,7 +105,14 @@ def _vsb_state() -> dict:
     try:
         vsb_store = data_path("vsb_entities")
         if not vsb_store.exists():
-            return {"total": 0, "active": 0, "domains": []}
+            #  W593 — SHAPE-COMPLETE, and `active` is gone: it is the orphan of the vocabulary W438
+            #  replaced, read by nothing, while `operational` - which the anatomy page indexes with no
+            #  default - was absent. This return means NO ENTITY HAS EVER BEEN ESTABLISHED, which is a
+            #  real zero, unlike the exception return below.
+            return {"total": 0, "operational": 0, "operating": 0, "legacy_operating": 0,
+                    "operational_basis": ("no VSB entity store exists yet, so no entity has been "
+                                          "established - this is a true zero, not an unreadable store"),
+                    "by_status": {}, "domains": [], "domains_total": 0}
         entities = []
         for p in vsb_store.glob("*.json"):
             try:
@@ -120,12 +127,45 @@ def _vsb_state() -> dict:
         for v in entities:
             s = str(v.get("status") or "unknown")
             by_status[s] = by_status.get(s, 0) + 1
-        operational = sum(n for s, n in by_status.items() if s in ("operational", "active"))
+        #  W593 (FU-425, M1 R2.3) — THE PREDICATE NAMES THE VOCABULARY THE WRITER USES. This read
+        #  `s in ("operational", "active")`, and the comment above records the FIRST round of exactly this
+        #  defect (W438: counting "active" when the writer persisted "operational"). W496 then made the
+        #  status DERIVED, and `_derived_status` returns "operating" - so the predicate matched nothing the
+        #  writer emits and the figure was structurally zero AGAIN, silently lowering the readiness computed
+        #  from it. The current term is imported from the writer's own module rather than retyped, so the
+        #  next vocabulary change cannot orphan this counter a third time.
+        from agentic_core.api.vsb import OPERATING_STATUS as _OPERATING
+        _LEGACY_OPERATING = ("operational", "active")   # written by pre-W496 establish paths, still on disk
+        _now = sum(n for s, n in by_status.items() if s == _OPERATING)
+        _legacy = sum(n for s, n in by_status.items() if s in _LEGACY_OPERATING)
+        _not_counted = ", ".join(sorted(s for s in by_status
+                                         if s != _OPERATING and s not in _LEGACY_OPERATING))
         domains = sorted({v.get("domain", "") for v in entities if v.get("domain")})
-        return {"total": len(entities), "operational": operational, "by_status": by_status,
+        return {"total": len(entities),
+                #  the key keeps its MEANING - how many are operating - and gains a correct value. It is
+                #  not renamed, because the page reads it; the computation is what was wrong.
+                "operational": _now + _legacy,
+                "operating": _now,
+                "legacy_operating": _legacy,
+                "operational_basis": (
+                    f"counts status == {_OPERATING!r}, which is what _derived_status returns today "
+                    f"({_now} entit(ies)), plus {_legacy} written by pre-W496 paths that still carry "
+                    f"{list(_LEGACY_OPERATING)} on disk. Statuses NOT counted as operating: "
+                    #  W593 — the empty case is reachable. `... or "none"` bound to the whole
+                    #  concatenation, which is never falsy, so with every status operating the sentence
+                    #  ended on its colon and stopped.
+                    + (_not_counted or "none")),
+                "by_status": by_status,
                 "domains": domains[:10], "domains_total": len(domains)}
-    except Exception:
-        return {"total": 0, "operational": 0, "by_status": {}, "domains": [], "domains_total": 0}
+    except Exception as _e:
+        #  W593 — SHAPE-COMPLETE. FU-425 added three keys to the success return and left this fallback
+        #  carrying the old shape, so a reader indexing them on an unreadable store got a KeyError. Same
+        #  class as FU-415, reproduced two files away in the round that registered it.
+        return {"total": 0, "operational": 0, "operating": 0, "legacy_operating": 0,
+                "operational_basis": (f"the entity store could not be read "
+                                      f"({_e.__class__.__name__}), so NO status was counted - which is "
+                                      f"not a count of zero operating entities"),
+                "by_status": {}, "domains": [], "domains_total": 0}
 
 
 def _cca_state() -> dict:
@@ -697,11 +737,33 @@ async def organism_cadence(scope: str = "workstation"):
     #  state this exists to end.
     from agentic_core.organism.heartbeat import heartbeat as _hb
     _lastc = getattr(_hb, "last_cadence", None)
+    #  W593 (FU-430) — THE RECORD NAMES ITS OWN BEAT, and the reader can see whether that is the latest.
+    #  This block used to assert "what the most recent heartbeat managed" as a property of the data, with
+    #  nothing a reader could check it against — and between W589 and W593 it was FALSE on every beat where
+    #  nothing was due, because the producer only wrote the record when something happened. The producer is
+    #  fixed; this makes the claim verifiable rather than trusting it.
+    _rec_beat = (_lastc or {}).get("beat")
+    _now_beat = getattr(_hb, "beats", None)
+    _is_latest = (_rec_beat is not None and _now_beat is not None and _rec_beat == _now_beat)
     _last_beat = {
         "ran": bool(_lastc),
+        "beat": _rec_beat,
+        "heartbeat_beats": _now_beat,
+        "is_the_latest_beat": _is_latest if _lastc else None,
+        "nothing_was_due": (_lastc or {}).get("nothing_was_due"),
         "refreshed": (_lastc or {}).get("refreshed") or [],
+        #  W593 (FU-431) — WHICH ENTITIES THE BEAT VISITED. `refreshed` names layers; before this the
+        #  §17.3 cadence only ever ran for "workstation" while the surface spoke of the layers generally,
+        #  so a reader had no way to tell the apex-only beat from one that reaches the roster.
+        "scopes": (_lastc or {}).get("scopes") or [],
+        "scope_basis": (_lastc or {}).get("scope_basis"),
         "could_not_run": (_lastc or {}).get("could_not_run"),
         "at": (_lastc or {}).get("at"),
+        "beat_basis": ("`beat` is the beat this record was written on and `heartbeat_beats` is the count "
+                       "now; when they differ the record is NOT the latest beat and this says so rather "
+                       "than calling it the most recent. Between W589 and W593 the record was only written "
+                       "when a layer refreshed or failed, so on a quiet beat it was an earlier beat's "
+                       "record presented as the current one (MILESTONE M1, R3.4)"),
         "basis": ((_lastc or {}).get("basis") or
                   ("NO BEAT HAS RUN A CADENCE STEP IN THIS PROCESS YET, so this is not a report that the "
                    "cadence is healthy and not a report that it failed - nothing has been attempted. The "

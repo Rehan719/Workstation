@@ -273,24 +273,68 @@ class OrganismHeartbeat:
         try:
             from agentic_core.organism import cadence as _cad
             _refreshed, _cad_failed = [], []
-            for _layer in _cad.LAYERS:
-                try:
-                    _res = _cad.refresh("workstation", _layer)
-                except Exception as _layer_err:          # noqa: BLE001 — recorded, not swallowed
-                    _cad_failed.append({"layer": _layer,
-                                        "could_not_run": f"{_layer_err.__class__.__name__}: {_layer_err}"})
-                    continue
-                if _res.get("refreshed"):
-                    _refreshed.append({"layer": _layer, "trigger": _res["entry"]["trigger"],
-                                       "reason": _res["entry"]["reason"], "at": _res["entry"]["at"],
-                                       "served_by": _res["entry"]["served_by"]})
-            if _refreshed or _cad_failed:
-                self.last_cadence = {"refreshed": _refreshed,
-                                     "could_not_run": _cad_failed or None,
-                                     "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                                     "basis": (f"{len(_refreshed)} layer(s) refreshed on this beat and "
-                                               f"{len(_cad_failed)} could not run. A layer that could not "
-                                               f"run is still DUE - this is not 'nothing was due'")}
+            #  W593 (FU-431, M1 R3.6) — ONE VSB PER BEAT JOINS THE APEX. W585 refreshed "workstation" only,
+            #  so no VSB's Strategic or Action-Plan layer was ever refreshed while §17.3 and the surface
+            #  spoke of the layers generally. `refresh` has always taken a SCOPE and `_plan_path` resolves
+            #  each entity's own plan; the beat just never passed anything else. Round-robin by the BEAT
+            #  COUNTER rather than by the roster's `last_operated` timestamp, which the §4 economy step uses
+            #  because a cycle POSTS and must not double-post: a refresh is idempotent on its own due-check
+            #  (`refresh` returns refreshed=False when nothing is due), so a repeated turn costs nothing and
+            #  a missed one is picked up next pass - no new persisted field, no extra write per beat.
+            _scopes = ["workstation"]
+            _roster_note = "the apex only"
+            try:
+                from agentic_core.economy.living_vsbs import _load as _load_roster
+                _entries = [v for v in (_load_roster() or {}).values()
+                            if isinstance(v, dict) and isinstance(v.get("vsb_id"), str)]
+                if _entries:
+                    _pick = _entries[self.beats % len(_entries)]
+                    _scopes.append(str(_pick["vsb_id"]))
+                    _roster_note = (f"the apex plus 1 of {len(_entries)} living entit(ies), chosen by "
+                                    f"beat {self.beats} % {len(_entries)} - every entity is visited "
+                                    f"REGULARLY, not exactly every {len(_entries)} beats, because a roster "
+                                    f"that changes size shifts the rotation")
+            except Exception as _roster_err:              # noqa: BLE001 — an unreadable roster is SAID
+                _roster_note = (f"the apex only: the living roster could not be read "
+                                f"({_roster_err.__class__.__name__}), so no entity took its turn this beat "
+                                f"- which is not the same as there being none")
+            for _scope in _scopes:
+                for _layer in _cad.LAYERS:
+                    try:
+                        _res = _cad.refresh(_scope, _layer)
+                    except Exception as _layer_err:      # noqa: BLE001 — recorded, not swallowed
+                        _cad_failed.append({"scope": _scope, "layer": _layer,
+                                            "could_not_run": f"{_layer_err.__class__.__name__}: "
+                                                             f"{_layer_err}"})
+                        continue
+                    if _res.get("refreshed"):
+                        _refreshed.append({"scope": _scope, "layer": _layer,
+                                           "trigger": _res["entry"]["trigger"],
+                                           "reason": _res["entry"]["reason"], "at": _res["entry"]["at"],
+                                           "served_by": _res["entry"]["served_by"]})
+            #  W593 (FU-430) — WRITTEN ON EVERY BEAT THAT COMPLETED THE STEP. This was
+            #  `if _refreshed or _cad_failed`, so a beat with nothing due left an EARLIER beat's record in
+            #  place — and the /organism/cadence surface added in the same round presented it as "what the
+            #  most recent heartbeat managed". From beat 3 onwards that sentence was false for every
+            #  quiet beat. MILESTONE M1 found it (R3.4) in the round that wrote it. The beat NUMBER travels
+            #  with the record so the surface can name the beat instead of implying the latest, and
+            #  `nothing_was_due` separates a quiet cadence from a broken one.
+            self.last_cadence = {
+                "beat": self.beats,
+                "refreshed": _refreshed,
+                "could_not_run": _cad_failed or None,
+                "nothing_was_due": not _refreshed and not _cad_failed,
+                "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "scopes": _scopes,
+                "scope_basis": _roster_note,
+                "basis": (f"{len(_refreshed)} layer(s) refreshed on beat {self.beats} across "
+                          f"{len(_scopes)} scope(s) ({_roster_note}) and {len(_cad_failed)} could not run. "
+                          f"A layer that could not run is still DUE - this is not 'nothing was due'"
+                          if (_refreshed or _cad_failed) else
+                          f"beat {self.beats} completed the cadence step over {len(_scopes)} scope(s) "
+                          f"({_roster_note}) and NO layer was due. This is a quiet cadence, not a broken "
+                          f"one, and not a record left over from an earlier beat"),
+            }
             if _refreshed:
                 actions.append("cadence_refresh")
         except Exception as _cad_err:

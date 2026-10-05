@@ -349,7 +349,12 @@ tool_registry = ToolRegistry()
 #  grounding says is empty, because a reader cannot tell a recited directive from an invented one.
 #  Keyed on the grounding FACTS, so a section is only policed when the count for it is actually 0 —
 #  this never fires on a scope that has directives.
-_GROUNDED_SECTIONS = {"directives": "board directives"}
+#  W593 (P2.20 a.iii) — `objectives` joins it. R3.0: `facts` already carries that count, so the "business
+#  plan for this scope" heading was checkable and unchecked. "living plan" is deliberately NOT keyed: its
+#  only fact is `plan_score`, the canon's PILLAR SCORE, which is not a count of plan content — keying a
+#  section on a number that does not measure it would produce a verdict rather than withhold one.
+_GROUNDED_SECTIONS = {"directives": "board directives",
+                      "objectives": "business plan for this scope"}
 
 
 def _ungrounded_sections(answer: str, facts: dict) -> list:
@@ -432,7 +437,49 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
         parts.append("## Recent C-Suite debate (real meeting log)\n" + (debate if debate and debate.strip() else "- none held yet"))
     except Exception:
         parts.append("## Recent C-Suite debate\n- unavailable")
-    return "\n\n".join(parts), facts
+    #  W593 (P2.20 a.iii) — THE GROUNDING IS CONTEXT, NOT A LIST OF SECTIONS TO WRITE. Every part above is
+    #  built in "## Heading" form, and the native floor's `_sections` reads "## " headings out of its own
+    #  prompt and writes a section for each: measured, the answer came back with all three grounding
+    #  headings carrying ONE identical scaffold body. The prompt legitimately asks for sections at the end
+    #  ("Respond with: ## Assessment …"), so the mechanism is right and the misuse is here. Converting at
+    #  the JOIN rather than at the seven appends keeps it to one place, and leaves the requested sections
+    #  as the only headings the resource sees.
+    def _demote_embedded_headings(_text: str) -> str:
+        """A stored record's own "## " headings may not become sections the floor is asked to write.
+
+        W593 (second pass) — converting the seven labels above was the AUTHOR's half of R3.0. This is the
+        DATA's half: the bodies are stored board directives, plan pillars and the meeting log, and in a
+        running system those hold earlier floor compositions carrying "## Understanding" and "## Terms
+        most frequent in your request". `_sections` reads "## " out of the prompt, so a stored document
+        steered the floor's section list and the answer came back writing those sections too - R3.0's
+        exact symptom, reached through data rather than through this function's own text. Found by the
+        full suite; it cannot reproduce on an empty store, which is why the guard needed the real one.
+
+        DEMOTED, NOT STRIPPED: the heading's text is real content from a real record, so it becomes a
+        bold line - the same thing to a reader, and invisible to `_sections`.
+        """
+        if "## " not in _text:
+            return _text
+        _out = []
+        for _ln in _text.split("\n"):
+            _s = _ln.lstrip()
+            if _s.startswith("#"):
+                _hashes = len(_s) - len(_s.lstrip("#"))
+                _title = _s[_hashes:].strip()
+                _out.append(f"**{_title}**" if _title else _ln)
+            else:
+                _out.append(_ln)
+        return "\n".join(_out)
+
+    _labelled = []
+    for _p in parts:
+        if _p.startswith("## "):
+            _head, _, _rest = _p.partition("\n")
+            _rest = _demote_embedded_headings(_rest)
+            _labelled.append(f"{_head[3:].strip()}:\n{_rest}" if _rest else f"{_head[3:].strip()}:")
+        else:
+            _labelled.append(_demote_embedded_headings(_p))
+    return "\n\n".join(_labelled), facts
 
 
 async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
@@ -467,8 +514,11 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
         "Answer from the grounding below and the question only — never invent directives, articles, debates "
         "or figures; where the grounding is silent, say so plainly.\n\n"
         f"{grounding}\n\n"
-        + (f"## Tool output\n{json.dumps(tool_output)[:1200]}\n\n" if tool_output else "")
-        + f"## Question\n{prompt}\n\n"
+        #  W593 (P2.20 a.iii) — context in LABEL form, so the floor does not treat it as a section to write.
+        #  `Question` is one of the engine's content labels, so labelling it also makes the floor's terms
+        #  come from the USER'S QUESTION rather than from whatever text the prompt happens to carry.
+        + (f"Tool output: {json.dumps(tool_output)[:1200]}\n\n" if tool_output else "")
+        + f"Question: {prompt}\n\n"
         "Respond with:\n## Assessment\n## Priorities\n## Next actions"
     )
     # W574 (M1 R3.2) — THE ANSWER IS CHECKED AGAINST ITS OWN GROUNDING. The grounding handed in is

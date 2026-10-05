@@ -6068,7 +6068,15 @@ def test_economy_double_entry_and_period_close(client):
     assert bs["balanced"] is True and tb["balanced"] is True       # the books genuinely balance
     assert bs["assets_total_wst"] == bs["liabilities_and_equity_total_wst"]
     assert cf["operating_receipts_wst"] == 15000.0                 # cash flow from real postings
-    assert "CFO" in st["prepared_by"]
+    #  W593 (FU-438) — THE CREDIT NAMES WHAT DID THE WORK. This asserted `"CFO" in prepared_by`, which
+    #  required the statement to keep crediting a "CFO agent (AI C-Suite)" that is on no roster, for
+    #  arithmetic the ledger performs itself. The guard was asserting the defect. Asserted on the property,
+    #  not on a spelling: no C-Suite actor may be credited, and the routine that computed it must be named.
+    _prep = st["prepared_by"]
+    assert not any(_a in _prep for _a in ("CFO", "C-Suite agent", "CFO agent")), (
+        "a period statement credits a C-Suite actor for figures the ledger computes deterministically", _prep)
+    assert "ledger" in _prep.lower() and "postings" in _prep.lower(), (
+        "the statement does not name the routine that actually produced it", _prep)
     # period close: net rolls into retained earnings; a second close covers ONLY the new period
     c1 = client.post("/api/v1/economy/close-period", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid"}).json()
     assert c1["retained_earnings_wst"] == c1["close"]["net_profit_wst"] > 0
@@ -9495,7 +9503,13 @@ def test_w451_ceo_chat_runs_on_the_owned_fabric_both_ways(client, monkeypatch):
     # word alone was destroying answers like "exploit the market opportunity". What this test checks is that
     # the guardrail notice reaches every stream branch, not that one phrase is banned.
     bad = _aio.run(_collect_stream(
-        gateway, "## Summary\nExploit the unpatched vulnerability on the host."))   # the floor echoes the subject
+        #  W593 (P2.20 a.i) — THE PHRASE ARRIVES IN A LABELLED FIELD. This probe put the phrase on an
+        #  UNLABELLED line and relied on the floor echoing it as the subject — the R1.0 defect itself.
+        #  With that fall-through gone the phrase never reached the output, so the screen had nothing
+        #  to read and this stream branch went unexercised. A `Problem:` field is content the floor is
+        #  SUPPOSED to compose from, so the branch is driven end to end again. Measured both ways
+        #  before changing it: labelled reaches the output, unlabelled does not.
+        gateway, "Problem: Exploit the unpatched vulnerability on the host.\n\n## Summary"))
     assert bad[-1]["guardrail_passed"] is False and "[POLICY VIOLATION]" in bad[-1]["output"]
     assert any("[POLICY VIOLATION]" in e.get("token", "") for e in bad[:-1])
     # refuter F5 — the three older stream surfaces now DISCLOSE served_by / profile in their done frame
@@ -19468,11 +19482,22 @@ def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
     for p, why in ((root / "agentic_core/avatars/api.py", "avatar"),
                    (root / "agentic_core/api/v138/ceo.py", "CEO chat")):
         assert "augment=True" in p.read_text(encoding="utf-8"), f"the {why} lost its explicit opt-in"
+    #  W593 — ASSERTED ON WHAT IS RENDERED, NOT ON THE FILE'S TEXT. These read engine.py as a string, and
+    #  "not an analysis of the subject" vanished from the SOURCE when the f-string was reflowed across two
+    #  literals ("not an analysis of " + "the subject") while the rendered sentence was unchanged. A guard
+    #  that greps source cannot see a render. The floor is driven instead, with a labelled field so there
+    #  is a term list to head; the absence checks stay on the source, where a vanished phrase is the
+    #  honest direction of failure.
     floor = (root / "agentic_core/ai/native/engine.py").read_text(encoding="utf-8")
     assert "## Key factors" not in floor, "the floor still calls a word count 'Key factors'"
-    assert "## Terms most frequent in your request" in floor
-    assert "not an analysis of the subject" in floor
     assert "grounded in the input above" not in floor and "grounded in the input's salient terms" not in floor
+    from agentic_core.ai.native.engine import native_engine as _ne489
+    _rendered489 = _ne489.generate("Problem: varroa mites destroy beehives over winter in Somerset\n")
+    assert "## Terms most frequent in your request" in _rendered489, (
+        "the floor no longer heads the list as a frequency count of the request", _rendered489[:400])
+    assert "not an analysis of the subject" in _rendered489, (
+        "the floor stopped disclosing that the list is a word count rather than a judgement",
+        _rendered489[:400])
 
     # ── FU-151 (S13.2): a card shows the number the API computes, not two it never sends ────────
     hub = (root / "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx").read_text(encoding="utf-8")
@@ -40989,3 +41014,687 @@ def test_w590_the_suite_collects_where_pytest_xdist_is_not_installed():
         _r590.returncode, _out590[-600:])
     assert "unknown hook" not in _out590 and "PluginValidationError" not in _out590, (
         "a hook name is still rejected with the plugin absent", _out590[-400:])
+def test_w593_p220a_the_floor_never_returns_its_own_text_as_the_users(client):
+    """P2.20 clause (a) — one shape, three mechanisms, each driven on the input that found it.
+
+    THE SHAPE: the floor produces a reading for whatever it was given, and the surface presents it as a
+    reading of the USER'S input. Measured before building, and the audit's stated causes were wrong twice:
+    R4.0 blames the floor's banner, which `_CARRIED_MARKER_RE` strips; R3.0 blames a single-key map, which
+    is only why two of three sections go UNDETECTED. The causes below are the ones that reproduce.
+
+    (i)   `_subject` searched 17 labels and fell through to THE LONGEST SENTENCE, which in a prompt carrying
+          a realm directive IS the directive: a report on a Kenyan clinic opened "Subject: Lead with the
+          decision and its cost...", and 164 of 300 records in data/deliverables.json carry such a line.
+    (ii)  `_CONTENT_LABELS` held "Task / question" but not bare `Task`, which is exactly what a DELEGATED
+          prompt carries (orchestrator.py builds `Task: {instruction}`), so `_content` fell through to the
+          whole prompt and the bullets came back `- plain markdown`, `- structure short`. Separately
+          `Prior context` holds the PREVIOUS STAGE'S OUTPUT and was counted as the user's terms, and
+          `_phrases` ran over the " . "-joined fields so a bigram could span two of them: `- kitchen
+          understanding`, the user's word joined to this engine's own "## Understanding" heading.
+    (iii) the v138 CEO handed its grounding over in "## Heading" form, and `_sections` reads "## " headings
+          OUT OF THE PROMPT — so the floor wrote a section for each and filled every one with the same
+          scaffold body. The prompt asks for sections legitimately at the end ("Respond with: ## Assessment
+          …"), so the mechanism is right and the misuse was the context.
+    """
+    import os as _os593
+    import tempfile as _tf593
+
+    from agentic_core.ai.native import engine as _E
+
+    # ── THE INVARIANT BETWEEN THE TWO LABEL LISTS ─────────────────────────────────────────────────
+    #  Asserted as a RELATIONSHIP, never as the presence of a spelling: a guard that checks "Brief is in
+    #  the subject labels" passes the moment the word is added and says nothing about the next label.
+    #  The lists diverged in BOTH directions before this round — 23 content labels invisible to the
+    #  subject, and bare `Task` a subject label that was not a content label — and each direction
+    #  corrupted a different part of the same output.
+    _subj593, _cont593 = set(_E._SUBJECT_LABELS), set(_E._CONTENT_LABELS)
+    assert _subj593 <= _cont593, (
+        "a label can become the SUBJECT while being invisible to the content extractor, so a prompt "
+        "carrying only that label has a subject and no content — and its term list then falls through to "
+        "the platform's own prompt. That is exactly what bare `Task` did to every delegated cascade stage",
+        sorted(_subj593 - _cont593))
+    assert "Brief" in _subj593, (
+        "a deliverable's own Brief cannot become its subject, which is the finding R1.0 reproduced")
+    assert _cont593 - _subj593, (
+        "every content label is now a subject label, so a BODY field (Background, Prior context, a draft) "
+        "can be sliced to 220 characters and printed as the subject — one false subject traded for another")
+
+    # ── (i) A BRIEF IS THE SUBJECT, AND NO LABEL MEANS NO SUBJECT ─────────────────────────────────
+    _brief593 = ("Brief: A 20-bed clinic in rural Kenya needs reliable power for vaccine refrigeration.\n"
+                 "Lead with the decision and its cost, keep evidence tight, and prefer concrete numbers, "
+                 "timelines and owners over explanation of fundamentals.\nDomain: energy")
+    assert "Kenya" in _E._subject(_brief593), (
+        "the brief is not the subject", _E._subject(_brief593))
+    assert "Lead with the decision" not in _E._subject(_brief593), (
+        "the realm's house-style directive is still being reported as the user's subject",
+        _E._subject(_brief593))
+
+    _bare593 = "Structure as: a short list.\nRespond with plain markdown."
+    assert _E._subject(_bare593) == "", (
+        "a prompt with no labelled subject still yields one, so the fall-through is guessing again",
+        _E._subject(_bare593))
+    _out_bare = _E.NativeReasoningEngine().generate(_bare593, agent="bare")
+    assert "carries no labelled subject" in _out_bare, (
+        "the surface does not SAY the request named no subject; an absent subject must be stated, not "
+        "silently replaced", _out_bare[:300])
+    assert "WITHHELD" in _out_bare, (
+        "with no labelled field the term list is still printed under \"most frequent in your request\", "
+        "so it is counted over the platform's own prompt and the heading is false", _out_bare[:400])
+
+    # ── (ii) A DELEGATED TASK, AND A CARRIED STAGE ────────────────────────────────────────────────
+    def _terms593(out):
+        keep, got = False, []
+        for _l in out.splitlines():
+            _s = _l.strip()
+            if _s.startswith("## "):
+                keep = "terms most frequent" in _s.lower()
+                continue
+            if keep and _s.startswith("- "):
+                got.append(_s.lower())
+        return got
+
+    _task593 = ("Task: Draft the evening delivery rota for the Birmingham halal kitchen so that two staff "
+                "are always free at maghrib.\nStructure as: a short list.\nRespond with plain markdown.")
+    assert _E._content(_task593).strip() != _task593.strip(), (
+        "a delegated prompt still falls through to the WHOLE PROMPT, so its terms are the platform's own "
+        "scaffolding — the shape bare `Task` produced on every cascade stage")
+    _t_task = " ".join(_terms593(_E.NativeReasoningEngine().generate(_task593, agent="delegate")))
+    for _scaffold in ("plain markdown", "structure short", "respond"):
+        assert _scaffold not in _t_task, (
+            "the platform's own formatting instruction is presented as one of the user's most frequent "
+            "terms", _scaffold, _t_task)
+    assert "delivery" in _t_task or "kitchen" in _t_task, (
+        "the user's own words are not in the term list at all", _t_task)
+
+    _eng593 = _E.NativeReasoningEngine()
+    _stage1 = _eng593.generate(
+        "Objective: Open a halal delivery kitchen in Birmingham serving Pakistani home cooking to students, "
+        "with evening delivery and a prayer-friendly staff rota.", agent="stage1")
+    _stage2 = "Prior context:\n" + _stage1[:1200] + "\n\nObjective: Price the menu for the same kitchen."
+    _t_carry = " ".join(_terms593(_eng593.generate(_stage2, agent="stage2")))
+    assert "understanding" not in _t_carry and "native approach" not in _t_carry, (
+        "the CARRIED previous-stage output is being counted under \"most frequent in your request\", so "
+        "the floor's own headings are reported as the user's terms", _t_carry)
+
+    #  AND THE PER-FIELD PHRASE BUILD, ON ITS OWN. A blind proved this needed separating: with the carried
+    #  label excluded there is nothing of the floor's left to span onto, so the leg above passed whether
+    #  phrases were built per field or over the join — the property was DOUBLY HELD and the blind was
+    #  meaningless. Both fields here are the USER'S, so only the per-field build can keep them apart: a
+    #  joined build pairs "kitchen" (the end of Objective) with "Understanding" (the start of Concern) and
+    #  reports a phrase that appears in neither field.
+    _twofield593 = ("Objective: Open a halal delivery kitchen.\n"
+                    "Concern: Understanding the tax rules for student catering.")
+    _t_two = " ".join(_terms593(_E.NativeReasoningEngine().generate(_twofield593, agent="twofield")))
+    assert "kitchen understanding" not in _t_two, (
+        "a phrase spans the boundary between two of the user's OWN fields, so the list contains a pair of "
+        "words that appear together nowhere in the request", _t_two)
+    assert "halal delivery" in _t_two or "tax rules" in _t_two, (
+        "the within-field phrases were lost along with the cross-field ones, so the fix removed the "
+        "capability instead of the defect", _t_two)
+    assert "Prior context" in _E._CARRIED_LABELS, (
+        "the carried previous-stage output is counted as the user's own request again")
+    assert "Prior context" in _E._CONTENT_LABELS, (
+        "the carried context was dropped from the CONTENT too, which degrades the composition — it is "
+        "excluded from the TERMS only")
+
+    # ── (iii) THE CEO HANDS OVER CONTEXT, NOT A LIST OF SECTIONS TO WRITE ─────────────────────────
+    _d593 = _tf593.mkdtemp(prefix="w593ceo-")
+    _saved593 = {k: _os593.environ.get(k) for k in ("DATA_DIR", "WORKSTATION_DATA_DIR", "PROJECTS_DIR")}
+    try:
+        for _k in _saved593:
+            _os593.environ[_k] = _d593
+        from agentic_core.api.v138 import ceo as _C593
+        _g593, _facts593 = _C593._ceo_grounding("How should we prioritise next quarter?", "workstation",
+                                                None)
+    finally:
+        for _k, _v in _saved593.items():
+            if _v is None:
+                _os593.environ.pop(_k, None)
+            else:
+                _os593.environ[_k] = _v
+    #  W593 — THE FUNCTION'S OWN HEADINGS, NOT EVERY "## " IN ITS OUTPUT. This asserted `"## " not in
+    #  _g593`, and the grounding is composed from STORED board directives, plan pillars and the debate
+    #  log - which in a full suite hold earlier floor compositions carrying this engine's own
+    #  "## Understanding". The guard then failed on DATA and named the fix as the cause, which is the
+    #  shape I have recorded as a blind accusing working code. The property R3.0 is about is that
+    #  `_ceo_grounding` hands ITS sections over in label form, so each of its own headings is checked by
+    #  name and a stored document's markdown is left alone.
+    _glines593 = _g593.splitlines()
+    for _own593 in ("Board directives", "Living plan", "Business plan", "Recent C-Suite debate"):
+        assert not any(_l.lstrip().startswith(f"## {_own593}") for _l in _glines593), (
+            "the CEO still hands its grounding over as HEADINGS, so the floor writes a section for each "
+            "and fills every one with the same scaffold — the three identical bullet lists R3.0 found",
+            _own593, _g593[:300])
+    #  ASSERTED AS A PROPERTY, NOT A SPELLING. This read `"Board directives:" in _g593`, and the function
+    #  writes "## Board directives (most recent first)" when directives EXIST and "## Board directives"
+    #  when none do — so the literal held on an empty store and broke the moment a real directive was
+    #  recorded. Label form is: a line that begins with the section name and ends in a colon. True of
+    #  both variants and of any later one.
+    assert any(_l.startswith("Board directives") and _l.rstrip().endswith(":") for _l in _glines593), (
+        "the grounding no longer carries its board section in LABEL form, so the conversion that replaced "
+        "the headings has stopped happening",
+        [_l for _l in _glines593 if "Board directives" in _l][:3])
+    #  AND THE DATA'S HALF, DRIVEN. The grounding embeds STORED records - board directives, plan pillars,
+    #  the meeting log - and in a running system those hold earlier floor compositions carrying this
+    #  engine's own "## Understanding". `_sections` reads "## " out of the prompt, so a stored document
+    #  could steer the floor's section list: R3.0's symptom reached through data rather than through this
+    #  function's own text. It cannot reproduce on an empty store, which is why this leg failed in the
+    #  suite and passed alone TWICE before the state was driven here on purpose.
+    _seeded593 = ("Raise margin on the care realm.\n## Understanding\n"
+                  "a stored floor composition inside a real record.")
+    _r593 = client.post("/api/v1/board/chief/instruct", json={"instruction": _seeded593})
+    assert _r593.status_code == 200, ("the directive could not be seeded, so this leg measures nothing",
+                                      _r593.status_code, _r593.text[:200])
+    _g593b, _ = _C593._ceo_grounding("How should we prioritise next quarter?", "workstation", None)
+    assert not [_l for _l in _g593b.splitlines() if _l.lstrip().startswith("#")], (
+        "a stored record's own markdown heading survives into the grounding, so the floor is asked to "
+        "write a section the CEO never requested - R3.0 reached through the data instead of the labels",
+        [_l for _l in _g593b.splitlines() if _l.lstrip().startswith("#")][:4])
+    assert "**Understanding**" in _g593b, (
+        "the embedded heading was STRIPPED rather than demoted, which loses real text from a real record",
+        _g593b[:400])
+
+    _full593 = ("You are the AI CEO.\n\n" + _g593b + "\n\nQuestion: How should we prioritise next "
+                "quarter?\n\nRespond with:\n## Assessment\n## Priorities\n## Next actions")
+    assert _E._sections(_full593) == ["Assessment", "Priorities", "Next actions"], (
+        "the floor is asked to write sections the CEO never requested", _E._sections(_full593))
+    assert "prioritise" in _E._subject(_full593), (
+        "the subject of a CEO answer is not the user's question", _E._subject(_full593))
+
+    #  and the grounded-section detector covers the section it already had the facts for
+    assert "objectives" in _C593._GROUNDED_SECTIONS, (
+        "`facts` carries an objectives count and the business-plan section is still unchecked")
+    assert "plan_score" not in _C593._GROUNDED_SECTIONS, (
+        "a section is keyed on the canon's pillar SCORE, which is not a count of plan content — a wrong "
+        "key produces a verdict where the right answer is to withhold one")
+    _ungrounded = _C593._ungrounded_sections(
+        "## Business plan for this scope\n- objective one\n- objective two\n", {"objectives": 0})
+    assert [x["section"] for x in _ungrounded] == ["business plan for this scope"], (
+        "a section printing items while its grounding counted none is not detected", _ungrounded)
+    assert _C593._ungrounded_sections(
+        "## Business plan for this scope\n- objective one\n", {"objectives": 2}) == [], (
+        "a grounded section is reported as ungrounded, so the detector fires on a scope that has content")
+def test_w593_p220_bcdef_a_claim_names_what_actually_did_it():
+    """P2.20 clauses (b) (c) (d) (e) (f) — seven rows, each a claim corrected to what is true.
+
+    MILESTONE M1 found all seven. They are grouped here because each is the same question asked of a
+    different surface: does this sentence name what actually happened?
+
+      FU-421 (b) the interfaith route was the ONE Religion tool with no floor_note, no disclaimer and no
+                 withheld sections - a scholar persona over per-tradition "Perspectives" nothing looked up.
+      FU-420 (b) the Qur'an study panel rendered floor-composed curriculum in a bare <pre>: no badge, no
+                 AI-assisted label, no teacher referral, and the response's own ai_provenance unread.
+      FU-436 (c) the quality record claimed the Endocrine regulator "holds a real HomeostaticRegulator with
+                 an integral term". FU-307's correction reached the docstring and a comment, NOT the string
+                 that ships - the second-writer class.
+      FU-438 (d) a period close and the board pack were "prepared_by: CFO agent (AI C-Suite)". No such agent
+                 is on any roster.
+      FU-434 (d) the Religion hub's primary ethics button offered an "Ethics Council" that does not exist.
+      FU-430 (e) /organism/cadence reported a STALE beat as "what the most recent heartbeat managed",
+                 because the record was only written when a layer refreshed. MY OWN DEFECT, from W589.
+      FU-433 (f) the QEP roadmap advertised an emotion-adaptive interface, which Appendix A.9.4 RATIFIES as
+                 refused - the product promising what its own constitution forbids.
+    """
+    import asyncio as _aio593
+    import pathlib as _pl593
+
+    _root593 = _pl593.Path(__file__).resolve().parents[1]
+
+    # ── FU-430 (e): THE CADENCE RECORD IS WRITTEN ON EVERY BEAT, so a stale one cannot pass for new ──
+    #  DRIVEN over two beats, because the defect only appears on the SECOND: the first beat refreshed and
+    #  wrote a record, and the second (nothing due) used to leave the first beat's record in place while
+    #  the surface called it "what the most recent heartbeat managed".
+    import agentic_core.organism.heartbeat as _hb593
+    _b1 = _aio593.run(_hb593.heartbeat.beat())
+    _rec1 = dict(_hb593.heartbeat.last_cadence or {})
+    _b2 = _aio593.run(_hb593.heartbeat.beat())
+    _rec2 = dict(_hb593.heartbeat.last_cadence or {})
+    assert _rec1 and _rec2, ("the beat records no cadence state at all", _rec1, _rec2)
+    assert _rec2.get("beat") == _hb593.heartbeat.beats, (
+        "the cadence record is from an EARLIER beat while the surface presents it as the most recent - the "
+        "record is only written when something happened, which is false on every quiet beat",
+        _rec2.get("beat"), _hb593.heartbeat.beats)
+    assert _rec2.get("beat") != _rec1.get("beat"), (
+        "two consecutive beats produced the same record, so the second did not write one", _rec1, _rec2)
+    assert _rec2.get("nothing_was_due") in (True, False), (
+        "the record cannot say whether anything was DUE, so a quiet cadence and a broken one read alike",
+        _rec2)
+    assert "beat" in str(_rec2.get("basis") or ""), (
+        "the basis does not name the beat it describes", _rec2.get("basis"))
+
+    # ── FU-421 (b): THE INTERFAITH ROUTE WITHHOLDS ON THE FLOOR AND SAYS SO ──────────────────────
+    from agentic_core.api import religion as _rel593
+    _ifq = _rel593.InterfaithRequest(topic="charity", traditions=["Islam", "Christianity"])
+    _if = _aio593.run(_rel593.interfaith_dialogue(_ifq))
+    assert _if.get("floor_note"), (
+        "the one Religion tool that lacked a floor_note still lacks it, so a scholar persona over "
+        "per-tradition perspectives reaches the reader with nothing saying what served it", sorted(_if))
+    assert _if.get("disclaimer"), ("the interfaith route carries no disclaimer", sorted(_if))
+    _wh = _if.get("sections_withheld") or []
+    assert any("Perspective" in s for s in _wh), (
+        "the per-tradition perspective sections are not withheld on the floor, so a tradition's position "
+        "that nothing looked up is shown as a frame", _wh)
+    for _s in ("Points of Convergence", "Points of Divergence"):
+        assert _s in _wh, ("a comparative section nothing compared is still rendered", _s, _wh)
+    #  the headings are built FROM THE REQUEST, so a fixed list would miss them
+    assert any("charity" in s for s in _wh), (
+        "the withheld list does not carry the headings this route builds per call", _wh)
+    assert "## " not in _if["analysis"], (
+        "a research heading survives in the analysis after withholding", _if["analysis"][:200])
+
+    # ── FU-436 (c): THE SHIPPED BASIS SAYS WHAT THE CLASS DOES ───────────────────────────────────
+    #  Asserted on the LOADED VALUE, not the file: the comment above the string records the false claim it
+    #  replaced, so a text search would match its own record.
+    from agentic_core.vbs.quality import LAYER_STATE as _LS593
+    _endo = _LS593["Endocrine"]["basis"]
+    assert "integral term" not in _endo, (
+        "the quality record still tells every reader the Endocrine regulator has an integral term, while "
+        "the regulator's own docstring says `integral_error` is never accumulated", _endo[:200])
+    assert "PROPORTIONAL THRESHOLD" in _endo, ("the basis does not say what the class actually does", _endo)
+    assert "NOTHING IMPORTS IT" in _endo, ("the unreached half of the basis was lost with the fix", _endo)
+
+    # ── FU-438 (d): THE CLOSE IS CREDITED TO THE ROUTINE THAT DID IT, IN BOTH WRITERS ────────────
+    for _f593 in ("agentic_core/api/economy.py", "agentic_core/economy/ledger.py"):
+        _src = (_root593 / _f593).read_text(encoding="utf-8")
+        _lines = [ln for ln in _src.splitlines() if '"prepared_by":' in ln]
+        assert _lines, ("this writer no longer records who prepared the figures", _f593)
+        for _ln in _lines:
+            assert "CFO agent" not in _ln, (
+                "a period close is still credited to a CFO agent that is on no roster - and fixing one "
+                "writer and not the other is the class this programme keeps recording", _f593, _ln.strip())
+            assert "close routine" in _ln, (
+                "the attribution does not name what actually produced the figures", _f593, _ln.strip())
+
+    # ── FU-420 (b) · FU-434 (d) · FU-433 (f): THE FRONTEND CLAIMS ───────────────────────────────
+    _ltm = (_root593 / "apps/workstation-superapp/src/components/LearnTeachModule.tsx").read_text(
+        encoding="utf-8")
+    #  THE CALL, NOT THE NAME. This read `"provenanceBadge" in _ltm`, which the IMPORT LINE satisfies - a
+    #  blind that removed the call and left the import kept this leg GREEN, which is the exact state the
+    #  row describes: a badge helper imported and never used.
+    assert "provenanceBadge(reportServedBy)" in _ltm, (
+        "the Qur'an study panel does not CALL the provenance helper on what served it, so floor-composed "
+        "curriculum reaches a learner unlabelled on the surface §11 binds hardest")
+    assert "qep-studyframe-provenance" in _ltm, (
+        "the badge is computed and never rendered, so nothing reaches the page")
+    assert "ai_provenance" in _ltm, ("the response's own provenance is still never read")
+    assert "qualified teacher" in _ltm, (
+        "the panel does not direct the reader to a qualified teacher, which §11 rule 5 requires")
+    assert "not reviewed curriculum" in _ltm, ("the panel does not say what the text is NOT")
+    _btn = [ln for ln in _ltm.splitlines() if "<Button" in ln and "Generate" in ln]
+    assert _btn and not any("Class Report" in ln for ln in _btn), (
+        "the button still asserts a class report, one panel below this file's own line saying no roster "
+        "exists on this deployment", _btn)
+
+    _hub = (_root593 / "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx").read_text(
+        encoding="utf-8")
+    assert not [ln for ln in _hub.splitlines() if "<Button" in ln and "Ethics Council" in ln], (
+        "a button still offers an Ethics Council, which does not exist - no body, no roster, no route")
+
+    _qep = (_root593 / "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx").read_text(
+        encoding="utf-8")
+    _card = [ln for ln in _qep.splitlines() if "id: 'adaptive_ui'" in ln]
+    assert len(_card) == 1, ("the adaptive-UI roadmap card is gone or duplicated", len(_card))
+    assert "adjusts to age and emotion" not in _card[0], (
+        "the roadmap still advertises an emotion-adaptive interface, which Appendix A.9.4 ratifies as "
+        "REFUSED - the product promising what its own constitution forbids", _card[0][:160])
+    assert "never inferred" in _card[0], (
+        "the card does not state the boundary, so a reader cannot tell a refusal from a backlog item",
+        _card[0][:160])
+    #  and the live mechanism it describes is still the honest preference-based one
+    _aui = (_root593 / "apps/workstation-superapp/src/components/AdaptiveUIProvider.tsx").read_text(
+        encoding="utf-8")
+    assert "ui.tone" in _aui, (
+        "the adaptive-UI label no longer derives from the saved preference, so something else now feeds it")
+def test_w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order():
+    """P2.20 — seven more rows, each a figure or a mark that now comes FROM the state it describes.
+
+      FU-427 (e) the living Roadmap ordered phases by the order objectives were TYPED IN, so it named a
+                 Q4 2026 current phase while a Q1 2026 objective sat at 0%. Owner ruling 2026-10-05: sort
+                 by a parsed date and park what does not parse under Unscheduled, excluded from
+                 current/next - plus fix the writer that injected "next review" as a timeline.
+      FU-423 (c) an EMPTY §4 section was recorded as not-pending, so the stage derivation found no gap and
+                 said "every §4 section on this entity is composed" for an entity with none.
+      FU-424 (c) the terminal spawn event announced "VSB Operational" seven lines below the derived status
+                 that said otherwise.
+      FU-422 (c) generate_vsb_repo writes manifest.json FIRST, so running it first described a disk holding
+                 13 of the eventual 29 files and called the generated apps absent.
+      FU-429 (d) the establish stream told a founder their Board was "chaired by the owner's Chief twin".
+      FU-435 (d) two unbuilt tabs answered a click with a release name, and told the user their own DEVICE
+                 was the obstacle when no WebXR code exists at all.
+      FU-437 (c) the cash-flow statement reported a net movement that is zero BY CONSTRUCTION, with nothing
+                 saying so.
+    """
+    import pathlib as _pl593c
+
+    _root = _pl593c.Path(__file__).resolve().parents[1]
+
+    # ── FU-427 (e): THE ROADMAP IS IN TIME ORDER, AND WHAT CANNOT BE PLACED IS NOT A PHASE ──────
+    from agentic_core.api import business_plan as _bp593
+    _plan593 = {"objectives": [
+        {"id": "a", "title": "Commission the Birmingham filtration pilot", "timeline": "Q4 2026",
+         "progress_pct": 10, "status": "planned"},
+        {"id": "b", "title": "Chief fallback objective", "timeline": "next review",
+         "progress_pct": 0, "status": "planned"},
+        {"id": "c", "title": "Secure the Q1 grant", "timeline": "Q1 2026",
+         "progress_pct": 0, "status": "planned"},
+        {"id": "d", "title": "Hire the ops lead", "timeline": "March 2026",
+         "progress_pct": 0, "status": "planned"},
+    ]}
+    _rm = _bp593._roadmap(_plan593)
+    _phases = [p["timeline"] for p in _rm["phases"]]
+    assert _phases == ["Q1 2026", "March 2026", "Q4 2026", "Unscheduled"], (
+        "the roadmap's phases are not in TIME order - this is the entry order the Owner ruled against, "
+        "which named a Q4 phase current while a Q1 objective sat at 0%", _phases)
+    assert _rm["current_phase"] == "Q1 2026", (
+        "the current phase is not the earliest incomplete one in time", _rm["current_phase"])
+    assert (_rm["next_milestone"] or {}).get("title") == "Secure the Q1 grant", (
+        "next_milestone is a definite claim about what comes next in TIME and it names the wrong objective",
+        _rm["next_milestone"])
+    assert _rm["unscheduled_count"] == 1 and _rm["unparsed_timelines"] == ["next review"], (
+        "an objective whose timeline cannot be placed is not counted and named, so the roadmap drops it "
+        "silently", _rm["unscheduled_count"], _rm["unparsed_timelines"])
+    assert "TIME ORDER" in _rm["note"] and "Unscheduled" in _rm["note"], (
+        "the surface does not say how the phases are ordered, which is what made the old order "
+        "undisclosed rather than merely wrong", _rm["note"])
+    #  and Unscheduled can never be the current phase, even when it is the only incomplete one
+    _only_un = _bp593._roadmap({"objectives": [
+        {"id": "x", "title": "unplaceable", "timeline": "when the grant lands", "progress_pct": 0}]})
+    assert _only_un["current_phase"] is None, (
+        "an unplaceable objective became the CURRENT PHASE, which answers a question about time with a "
+        "non-answer", _only_un["current_phase"])
+    #  THE WRITER: the platform must not inject a non-temporal placeholder into a timeline
+    _board_src = (_root / "agentic_core/api/board.py").read_text(encoding="utf-8")
+    _fallback = [ln for ln in _board_src.splitlines()
+                 if "KPI to be set by the Board" in ln and not ln.strip().startswith("#")]
+    assert _fallback, ("the chief_instruct fallback is gone, so this leg measures nothing", len(_fallback))
+    assert not any("next review" in ln for ln in _fallback), (
+        "the platform still writes 'next review' into the TIMELINE position, so it feeds a fake phase into "
+        "its own time-phased roadmap", _fallback)
+
+    # ── FU-423 (c): AN EMPTY §4 SECTION IS PENDING ──────────────────────────────────────────────
+    from agentic_core.api import genesis as _g593
+    from agentic_core.api import vsb as _v593
+
+    class _Req593:
+        concept = ""
+        design = ""
+        commercialisation = ""
+        ai_provenance = None
+
+    _req = _Req593()
+    #  TWO MAPS, because they are two facts. The first pass of this fix widened `body_pending` to cover an
+    #  empty section, and `body_pending` drives the entity STATUS - so every entity would have been "body
+    #  pending" forever (no establish path provides §4.7 operations) and FU-425's operating count would
+    #  have gone structurally zero again in the round that fixed it. `body_absent` carries the new fact.
+    _pend, _absent = _g593._resolve_body_fields(_req)
+    assert _absent and all(_absent.values()), (
+        "an EMPTY §4 section is recorded as not awaiting content, so the stage derivation finds no gap and "
+        "reports the lifecycle as composed on an entity that composed nothing", _absent)
+    assert not any(_pend.values()), (
+        "a section nobody provided is recorded as FLOOR-COMPOSED, which is a different fact and makes "
+        "every entity body-pending forever", _pend)
+    _stage, _basis = _v593._derived_stage({"body_pending": _pend, "body_absent": _absent})
+    assert _stage is None, ("a stage is reported for an entity with every section empty", _stage, _basis)
+    assert "was never provided" in _basis, (
+        "the basis does not distinguish a section nobody supplied from one the floor composed while a real "
+        "model is awaited - merging them was the defect this fix reintroduced once already", _basis)
+    assert "every §4 section" not in _basis, (
+        "the basis still claims every section is composed", _basis)
+    #  and the floor-composed case keeps its own sentence, so the two are not merged the other way either
+    _stage_f, _basis_f = _v593._derived_stage({"body_pending": {"concept": True}, "body_absent": {}})
+    assert _stage_f is None and "awaits the owned model" in _basis_f, (
+        "a floor-composed section no longer reads as awaiting the owned model", _stage_f, _basis_f)
+
+    # ── FU-424 (c) · FU-429 (d) · FU-422 (c): THE SPAWN STREAM AND THE SHIP ORDER ───────────────
+    _vsb_src = (_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    _code = [ln for ln in _vsb_src.splitlines() if not ln.strip().startswith("#")]
+    assert not any('"VSB Operational"' in ln for ln in _code), (
+        "the terminal spawn event still hardcodes a status seven lines below the derived one")
+    assert any('_event("complete", f"VSB {_st}"' in ln for ln in _code), (
+        "the terminal event does not carry the DERIVED status, so the mark is still written beside the "
+        "state instead of from it")
+    assert not any("owner's Chief twin" in ln for ln in _code), (
+        "the establish stream still tells a founder their Board is chaired by a twin; no twin model is "
+        "trained and this file's own comment says so")
+    #  the manifest must be written against the finished disk: repo runs LAST
+    _i_repo = _vsb_src.index('("repo", generate_vsb_repo)')
+    for _other in ('("website", generate_vsb_website)', '("webapp", generate_vsb_webapp)',
+                   '("mobile", generate_vsb_mobile)', '("board_pack", generate_vsb_board_pack)'):
+        assert _vsb_src.index(_other) < _i_repo, (
+            "generate_vsb_repo runs before another generator, so manifest.json is written against a disk "
+            "that is still being built and under-reports the repository", _other)
+
+    # ── FU-435 (d): A CLICK NAMES WHAT IS ABSENT, AND NEVER THE READER'S DEVICE ─────────────────
+    _qep = (_root / "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx").read_text(
+        encoding="utf-8")
+    _toasts = [ln.strip() for ln in _qep.splitlines() if "toast(" in ln]
+    assert _toasts, "the flagship tabs answer a click with nothing at all"
+    for _bad, _why in (("Season 2", "a toast names a release that does not exist"),
+                       ("coming in Phase", "a toast promises a plan-internal phase to a learner"),
+                       ("requires a WebXR", "a toast puts the absence on the reader's own device")):
+        assert not [t for t in _toasts if _bad in t], (_why, [t[:80] for t in _toasts if _bad in t])
+    assert any("not blocked by your" in t for t in _toasts), (
+        "nothing tells the reader the absence is the product's and not their equipment's")
+
+    # ── FU-437 (c): THE CASH-FLOW STATEMENT SAYS WHAT IT SUMS ───────────────────────────────────
+    _ledg = (_root / "agentic_core/economy/ledger.py").read_text(encoding="utf-8")
+    _cf = _ledg[_ledg.index('"cash_flow": {'):]
+    _cf = _cf[:_cf.index('"trial_balance"')]
+    assert '"scope"' in _cf and '"basis"' in _cf, (
+        "cash_flow reports a net movement with no scope and no basis, so a reader takes a structural zero "
+        "for a finding that cash in matched cash out", _cf[:200])
+    assert "ZERO BY CONSTRUCTION" in _cf, (
+        "the basis does not say the zero cannot be anything else on a period built from the compat "
+        "postings", _cf[:300])
+    assert "reserve_fund" in _cf, (
+        "the basis does not name where the movements it cannot see are posted", _cf[:300])
+def test_w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_everything():
+    """P2.20 — the last three of MILESTONE M1's twenty.
+
+      FU-425 (c) the Organism page's operating count matched ("operational", "active") while
+                 `_derived_status` returns "operating", so the figure was structurally ZERO for every
+                 entity whose status was derived — and the readiness computed from it was lowered. The SAME
+                 defect W438 fixed once: that round counted "active" when the writer wrote "operational".
+                 The term is now imported from the writer, so a third vocabulary change cannot orphan it.
+      FU-428 (c) a governance verdict carried `scope: "... content was NOT screened ..."` AND
+                 `content_screened: true` on one payload, because the sentence was assigned BEFORE
+                 `out.update(extra)`. It is derived from the final value now, so the contradiction is not
+                 something a caller can express.
+      FU-431 (e) the §17.3 cadence refreshed the workstation apex only — MY OWN defect from W585 — so no
+                 VSB's Strategic or Action-Plan layer was ever refreshed while the surface spoke of the
+                 layers generally.
+    """
+    import asyncio as _aio4
+    import json as _json4
+    import os as _os4
+    import tempfile as _tf4
+
+    # ── FU-428 (c): THE SCOPE SENTENCE IS DERIVED FROM WHAT WAS SCREENED ────────────────────────
+    from agentic_core.gaas.v5 import intent_gate_result as _gate4
+    _intent_only = _gate4("allowed", "cp-intent")
+    assert _intent_only["content_screened"] is False, _intent_only
+    assert "NOT screened" in _intent_only["scope"], (
+        "a gate that screened only the intent no longer says the content was not screened", _intent_only)
+    _with_content = _gate4("allowed", "cp-content", content_screened=True, content_chars=38253,
+                           tiers_screened=["t1", "t2"])
+    assert _with_content["content_screened"] is True, _with_content
+    assert "NOT screened" not in _with_content["scope"], (
+        "one payload says the content WAS screened and its scope sentence says it was NOT - the "
+        "contradiction M1 found, and a reader cannot tell which to believe", _with_content["scope"])
+    assert "the delivered content" in _with_content["screened"], (
+        "the summary and the sentence have drifted apart", _with_content["screened"])
+    #  and a caller cannot reintroduce it by passing a scope of its own through **extra
+    _forced = _gate4("allowed", "cp", content_screened=True, scope="whatever I feel like")
+    assert "NOT screened" not in _forced["scope"] and "delivered content" in _forced["scope"], (
+        "a caller overrode the derived scope sentence, so the contradiction is expressible again", _forced)
+
+    # ── FU-425 (c) and FU-431 (e), both driven against a seeded store ───────────────────────────
+    _d4 = _tf4.mkdtemp(prefix="w593last-")
+    _saved4 = {k: _os4.environ.get(k) for k in ("DATA_DIR", "WORKSTATION_DATA_DIR", "PROJECTS_DIR")}
+    try:
+        for _k in _saved4:
+            _os4.environ[_k] = _d4
+        import importlib
+        import agentic_core.config as _cfg4
+        importlib.reload(_cfg4)
+
+        #  FU-425: the counter reads the writer's own term
+        from agentic_core.api.vsb import OPERATING_STATUS as _OP4
+        assert _OP4 == "operating", ("the writer's operating term changed and this guard did not", _OP4)
+        _ent = _cfg4.data_path("vsb_entities")
+        _ent.mkdir(parents=True, exist_ok=True)
+        for _i, _s in enumerate(["operating", "operating", "held", "operational", "body pending"]):
+            (_ent / f"vsb-g4-{_i}.json").write_text(
+                _json4.dumps({"vsb_id": f"vsb-g4-{_i}", "status": _s, "domain": "care"}),
+                encoding="utf-8")
+        import agentic_core.api.organism_status as _os_mod4
+        importlib.reload(_os_mod4)
+        _vs = _os_mod4._vsb_state()
+        assert _vs["operating"] == 2, (
+            "the count does not match the vocabulary `_derived_status` actually returns, so it is "
+            "structurally zero for every derived entity - the defect W438 fixed once already", _vs)
+        assert _vs["legacy_operating"] == 1, (
+            "pre-W496 rows are not counted in their own named bucket, so the figure silently spans two "
+            "vocabularies", _vs)
+        assert _vs["operational"] == 3, ("the headline figure is not the sum of the two buckets", _vs)
+        assert _OP4 in _vs["operational_basis"] and "NOT counted" in _vs["operational_basis"], (
+            "the basis does not name which statuses were counted and which were not", _vs)
+
+        #  FU-431: the cadence reaches one living entity per beat as well as the apex
+        _reg4 = _cfg4.data_path("living_vsbs.json")
+        _reg4.parent.mkdir(parents=True, exist_ok=True)
+        _reg4.write_text(_json4.dumps({
+            "vsb-g4-a": {"vsb_id": "vsb-g4-a", "status": "living"},
+            "vsb-g4-b": {"vsb_id": "vsb-g4-b", "status": "living"}}), encoding="utf-8")
+        #  THE ROSTER MODULE RESOLVES ITS PATH ONCE, AT FIRST IMPORT. `living_vsbs._STORE` is a module
+        #  constant, so whichever test imported it first in this session froze the path - and the beat reads
+        #  through that binding. Writing a roster to this test's own data dir and reloading only `heartbeat`
+        #  drove a file nobody reads: this leg failed in the suite, passed alone, and blamed the fix for
+        #  scopes that belonged to another guard's entities. The binding the READER resolves is redirected
+        #  and restored, which is what test_w587 does for the Change Control store; reloading the roster
+        #  module instead would re-freeze the path for every later test.
+        import agentic_core.economy.living_vsbs as _lv4
+        import agentic_core.organism.heartbeat as _hb4
+        importlib.reload(_hb4)
+        _lv_store4 = _lv4._STORE
+        try:
+            _lv4._STORE = _reg4
+            #  the roster the beat will actually read, asserted BEFORE the behaviour, so a leaked entity is
+            #  reported as a leak rather than charged to the code under test
+            _roster4 = {k for k, v in (_lv4._load() or {}).items() if isinstance(v, dict)}
+            assert _roster4 == {"vsb-g4-a", "vsb-g4-b"}, (
+                "the beat is not reading this test's roster, so whatever it visits says nothing about the "
+                "rotation", sorted(_roster4))
+            _seen4 = set()
+            for _ in range(3):
+                _aio4.run(_hb4.heartbeat.beat())
+                _lc4 = _hb4.heartbeat.last_cadence or {}
+                _seen4.update(_lc4.get("scopes") or [])
+        finally:
+            _lv4._STORE = _lv_store4
+        assert "workstation" in _seen4, (
+            "the apex stopped being refreshed, which the whole platform reads", sorted(_seen4))
+        assert {"vsb-g4-a", "vsb-g4-b"} <= _seen4, (
+            "the cadence never reached a VSB's own layers, so §17.3 runs for the apex alone while the "
+            "surface speaks of the layers generally", sorted(_seen4))
+        _basis4 = str((_hb4.heartbeat.last_cadence or {}).get("scope_basis") or "")
+        assert "living entit" in _basis4 and "REGULARLY" in _basis4, (
+            "the record does not say how the entity was chosen or admit that the rotation shifts with the "
+            "roster, so a reader takes 'every entity' for a guarantee", _basis4)
+    finally:
+        for _k, _v in _saved4.items():
+            if _v is None:
+                _os4.environ.pop(_k, None)
+            else:
+                _os4.environ[_k] = _v
+        import importlib as _il4
+        import agentic_core.config as _c4
+        _il4.reload(_c4)
+
+
+def test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds():
+    """P2.20 (c)(d)(f) · FU-440..444 — the four flagship methods that still returned literals.
+
+    Found by sweeping P2.20's clauses rather than its rows: ACCEPT (1) closes a clause when its MECHANISM
+    holds nowhere it applies, so the rows were evidence and this is the check. Eight of the thirteen
+    methods in this service were made honest across W331, W403 and W404; four were never audited and still
+    answered with counts, a status and a timestamp that nothing measured. That the class recurs after being
+    closed twice is the finding - "fix every writer, not one", across rounds rather than within one.
+
+    DRIVEN, NOT GREPPED: the docstrings now record what was removed, so a source-text guard would match the
+    sentences describing the removal (W495, five red runs). The one source check is an ABSENCE, and it is
+    safe only because those docstrings describe the two forum titles instead of quoting them.
+    """
+    import asyncio as _aio440
+    import pathlib as _pl440
+
+    from agentic_core.reactor.religion.qep_flagship import qep_flagship_service as _s440
+
+    #  FU-440 — a faith question is not answered by a placeholder, and no engine is credited for it
+    _g440 = _aio440.run(_s440.ai_guidance_assistant("Is this transaction permissible?"))
+    assert _g440["response"] is None and _g440["answered"] is False, (
+        "the guidance assistant still answers a faith question with a literal sentence", _g440)
+    assert _g440["source"] is None and _g440["local_inference"] is False, (
+        "an answer nothing produced is still credited to a named engine, and inference is still asserted",
+        _g440)
+    assert not [k for k in _g440 if "emotion" in k.lower()], (
+        "a religion response still carries an emotion label, which is one of the six boundaries "
+        "Appendix A.9 records as forbidden - it is not a field to keep as decoration", sorted(_g440))
+    assert _g440.get("detail"), "the refusal does not say why nothing was answered"
+
+    #  FU-441 — READY with no code, no asset and no transport; and the reader's device is never blamed
+    _v440 = _aio440.run(_s440.ar_vr_immersion("VR"))
+    assert _v440["status"] == "NOT_IMPLEMENTED", (
+        "the immersion tool still answers READY while no scene code or asset exists", _v440)
+    assert _v440["scene_url"] is None and _v440["webrtc_channel"] is None \
+        and _v440["interactive_nodes"] is None, (
+        "a scene file, a node count or a channel for a transport nothing speaks is still reported", _v440)
+    assert "not blocked by the reader" in (_v440.get("detail") or "").lower() \
+        or "NOT blocked by the reader" in (_v440.get("detail") or ""), (
+        "the gap is reported without saying it is the product's and not the reader's device", _v440)
+
+    #  FU-442 — nothing stores a forum, a post, a circle or a membership
+    _c440 = _aio440.run(_s440.community_features())
+    assert _c440["forums"] == [] and _c440["circles"] == [], (
+        "forums and circles are still reported over a store that holds none of them", _c440)
+    assert _c440["websocket_endpoint"] is None, (
+        "a websocket endpoint is still named; the application mounts exactly one and it is not this",
+        _c440)
+    assert _c440.get("detail"), "the empty community does not say why it is empty"
+
+    #  FU-443 — a sync that always just finished
+    _o440 = _aio440.run(_s440.offline_global_access("w593-user"))
+    assert _o440["sync_manifest"] is None and _o440["last_full_sync"] is None, (
+        "a sync manifest is still reported, and a last_full_sync stamped with the current time says a "
+        "full sync finished moments ago on every call, forever", _o440)
+    assert _o440["offline_capabilities"] == [], (
+        "offline capabilities are still listed with no sync mechanism and no service worker", _o440)
+
+    #  the two forum titles named ratified boundaries — asserted as an ABSENCE on the source, which is
+    #  only safe because the docstrings describe them rather than quoting them
+    _src440 = (_pl440.Path(__file__).resolve().parents[1]
+               / "agentic_core/reactor/religion/qep_flagship.py").read_text(encoding="utf-8")
+    for _banned440 in ("Recitation Feedback", "Scholar Q&A"):
+        assert _banned440 not in _src440, (
+            "a forum title still advertises one of the six capabilities Appendix A.9 records §11 as "
+            "forbidding, as a live community rather than as withheld", _banned440)
+    assert "Production Grade" not in _src440 and "Production-Grade" not in _src440 \
+        and "Production Ready" not in _src440, (
+        "a method still calls itself production grade while returning literals")
+
+    #  FU-444 — every flagship card discloses its state; four did and seven asserted a capability
+    _cards440 = (_pl440.Path(__file__).resolve().parents[1]
+                 / "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx"
+                 ).read_text(encoding="utf-8")
+    import re as _re440
+    _descs440 = {m.group(1): m.group(2) for m in
+                 _re440.finditer(r"id: '([a-z_]+)'[^\n]*?desc: '((?:[^'\\]|\\.)*)'", _cards440)}
+    assert len(_descs440) >= 13, ("the card array stopped parsing, so this leg measures nothing",
+                                  sorted(_descs440))
+    _MARKERS440 = ("Planned:", "LIVE", "NOT measured", "are real", "is recorded", "No cohort")
+    _bare440 = {k: v[:70] for k, v in _descs440.items()
+                if not any(m in v for m in _MARKERS440)}
+    assert not _bare440, (
+        "a flagship card states a capability with no disclosure of its state, while four cards in the "
+        "same array carry an explicit one - the convention reached some of them and not the rest",
+        _bare440)

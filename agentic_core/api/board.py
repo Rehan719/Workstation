@@ -693,7 +693,11 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
             new_objs = bp_mod.parse_objective_lines(action_plan, extra={"directive_id": directive_id})
             if not new_objs:
                 new_objs = bp_mod.parse_objective_lines(
-                    f"{req.instruction[:110]} | (KPI to be set by the Board) | next review | AI CEO",
+                    #  W593 (FU-427) — THE TIMELINE IS LEFT EMPTY, not filled with "next review". This
+                    #  wrote a non-temporal placeholder into the TIMELINE position, so the platform itself
+                    #  fed a fake phase into what it calls a time-phased roadmap and the roadmap then had
+                    #  to defend against its own writer. An empty timeline lands in Unscheduled honestly.
+                    f"{req.instruction[:110]} | (KPI to be set by the Board) |  | AI CEO",
                     extra={"directive_id": directive_id, "source": "chief_instruct_fallback"})
             plan = bp_mod._load(req.scope)
             plan.setdefault("objectives", []).extend(new_objs)

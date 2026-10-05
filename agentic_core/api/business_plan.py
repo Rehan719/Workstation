@@ -168,6 +168,36 @@ def parse_chief_draft(draft: str) -> tuple[Dict[str, str], str]:
     return {f: " ".join(ls).strip()[:1200] for f, ls in buf.items()}, " ".join(pre).strip()[:600]
 
 
+#  W593 (FU-427) — THE TIMELINE VOCABULARY, stated because a parser IS a decision about what counts as a
+#  date. Anything not matched here is Unscheduled rather than guessed at. A bare year sorts at month 0,
+#  ahead of that year's quarters: it is the less specific claim, and putting a vague phase after a precise
+#  one would reorder work on how loosely it was written.
+_MONTHS = {m: i for i, m in enumerate(
+    ["january", "february", "march", "april", "may", "june",
+     "july", "august", "september", "october", "november", "december"], start=1)}
+
+
+def _phase_sort_key(timeline: str):
+    """(year, month) for a timeline this module can place in time, else None."""
+    import re as _re
+    t = str(timeline or "").strip().lower()
+    if not t:
+        return None
+    m = _re.search(r"\bq([1-4])\b", t)
+    y = _re.search(r"\b(20\d\d)\b", t)
+    if m and y:
+        return (int(y.group(1)), (int(m.group(1)) - 1) * 3 + 1)
+    m2 = _re.search(r"\b(20\d\d)-(0[1-9]|1[0-2])\b", t)
+    if m2:
+        return (int(m2.group(1)), int(m2.group(2)))
+    for name, idx in _MONTHS.items():
+        if (_re.search(r"\b" + name + r"\b", t) or _re.search(r"\b" + name[:3] + r"\b", t)) and y:
+            return (int(y.group(1)), idx)
+    if y and _re.fullmatch(r"\W*20\d\d\W*", t):
+        return (int(y.group(1)), 0)
+    return None
+
+
 def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
     """LIVING roadmap — derived from the plan's objectives (the Chief delivers Aims/Mission/Objectives
     via Strategy AND a living Roadmap). Time-phases the objectives, computes per-phase + overall
@@ -176,12 +206,27 @@ def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
     objs = plan.get("objectives", []) or []
     phases: Dict[str, list] = {}
     order: List[str] = []
+    _unparsed: List[str] = []
     for o in objs:
         tl = (str(o.get("timeline") or "").strip() or "Unscheduled")
+        #  W593 (FU-427, M1 R3.1, Owner ruling 2026-10-05) — A TIMELINE THAT DOES NOT PARSE IS NOT A PHASE.
+        #  The order used to be first-appearance and `current` the first incomplete phase in ENTRY order, so
+        #  objectives entered Q4 2026, "next review", Q1 2026 reported current_phase "Q4 2026" while the
+        #  Q1 2026 objective sat at 0%. Everything unparseable — including the empty timeline, which already
+        #  mapped here — goes into the single Unscheduled bucket, which is EXCLUDED from current/next and
+        #  COUNTED, because excluding it silently would let the roadmap drop work.
+        if tl != "Unscheduled" and _phase_sort_key(tl) is None:
+            if tl not in _unparsed:
+                _unparsed.append(tl)
+            tl = "Unscheduled"
         if tl not in phases:
             phases[tl] = []
             order.append(tl)
         phases[tl].append(o)
+    #  parseable phases in TIME order; Unscheduled always last
+    order = sorted([t for t in order if t != "Unscheduled"],
+                   key=lambda t: _phase_sort_key(t) or (9999, 99)) + \
+            (["Unscheduled"] if "Unscheduled" in phases else [])
     phase_list = []
     for tl in order:
         items = phases[tl]
@@ -196,7 +241,9 @@ def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
                             "status": i.get("status"), "kpi": i.get("kpi"), "owner_role": i.get("owner_role")} for i in items],
         })
     overall = round(sum(int(o.get("progress_pct") or 0) for o in objs) / len(objs)) if objs else 0
-    current = next((p for p in phase_list if not p["complete"]), None)
+    #  UNSCHEDULED IS NEVER THE CURRENT PHASE: it is the bucket for objectives whose timeline nobody can
+    #  place, so naming it "current" would answer a question about time with a non-answer.
+    current = next((p for p in phase_list if not p["complete"] and p["timeline"] != "Unscheduled"), None)
     next_milestone = None
     if current:
         nm = next((o for o in current["objectives"] if int(o.get("progress_pct") or 0) < 100), None)
@@ -210,7 +257,14 @@ def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
         "overall_progress_pct": overall,
         "current_phase": current["timeline"] if current else None,
         "next_milestone": next_milestone,
-        "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress.",
+        "unscheduled_count": len(phases.get("Unscheduled", []) or []),
+        "unparsed_timelines": _unparsed,
+        "note": ("Living roadmap derived from the plan's objectives — it updates as objectives progress. "
+                 "PHASES ARE IN TIME ORDER, parsed from each objective's timeline (Q1 2026 / 2026 Q1, a "
+                 "month and year, 2026-01, or a bare year). A timeline that does not parse is NOT a phase: "
+                 "those objectives are listed under Unscheduled, which is excluded from current_phase and "
+                 "next_milestone and counted in unscheduled_count — so the roadmap never drops them "
+                 "silently, and never claims an unplaceable objective comes next."),
     }
 
 

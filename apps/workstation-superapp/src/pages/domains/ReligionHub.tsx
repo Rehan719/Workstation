@@ -346,7 +346,13 @@ export const ReligionHub: React.FC = () => {
                    copy claiming the real §11 engines. Both figures were literals: nothing computed
                    an alignment score for this page. Removed rather than replaced — the real
                    compliance checks run per-entity in the §11 engines, not as a page decoration. */}
-               <Button onClick={() => navigate('/ceo')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Consult Ethics Council</Button>
+               {/* W593 (FU-434, M1 R5.1) — this read "Consult Ethics Council" and navigated to /ceo.
+                   No Ethics Council exists: no body, no roster, no route. The paragraph directly above
+                   already says a ruling belongs to a qualified scholar and not to a screen, and the button
+                   contradicted it by offering a council to consult. Relabelled rather than removed — the
+                   navigation is real and /ceo is where an escalation is actually discussed, so deleting it
+                   would take a working path away with the false name. */}
+               <Button onClick={() => navigate('/ceo')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Open the Living Organisation (AI CEO)</Button>
             </Card>
 
             {/* W439 — two fabrication cards sat here: "Spiritual Markers (Methylation)" with

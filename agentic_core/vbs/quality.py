@@ -57,8 +57,16 @@ LAYER_STATE: Dict[str, Dict[str, str]] = {
                                 "'cardiovascular'. That is host CPU headroom, honestly measured, under an "
                                 "anatomical name — there is no circulatory subsystem"},
     "Endocrine": {"state": "code_exists_unreached",
-                  "basis": "agentic_core/biomimicry/geospheric/regulator.py holds a real HomeostaticRegulator "
-                           "with an integral term and NOTHING IMPORTS IT; a second copy of the same class sits "
+                  #  W593 (FU-436, M1 R6.0) — this said "a real HomeostaticRegulator with an integral term".
+                  #  FU-307's correction reached the regulator's docstring (W515) and a comment in this
+                  #  file, and NOT the string that ships with every delivery's quality record: the
+                  #  second-writer class, where the explanation was fixed and the claim was not.
+                  #  `integral_error` is assigned once as zeros and never accumulated, `dt` is computed
+                  #  and never read, and the corrective action is returned as a STRING.
+                  "basis": "agentic_core/biomimicry/geospheric/regulator.py holds a HomeostaticRegulator that "
+                           "does a PROPORTIONAL THRESHOLD COMPARISON and names a corrective action as a "
+                           "string - no integral accumulates, no derivative is read, nothing actuates - "
+                           "and NOTHING IMPORTS IT; a second copy of the same class sits "
                            "in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and "
                            "W446 measured that vouching as the overclaim"},
     "Respiratory": {"state": "code_unloadable",

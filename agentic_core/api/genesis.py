@@ -880,6 +880,11 @@ async def _derive_name(problem: str, domain: str, requested: str = "") -> tuple:
 # field with no provenance (the standalone /establish path) is the caller's own writing and ships
 # as given; a model-served field ships as given.
 _PENDING_BODY = ("content pending the owned model — this enterprise has not yet composed its own {what}")
+#  W593 (FU-423, corrected) — A FIELD NOBODY PROVIDED IS NOT A FIELD AWAITING THE OWNED MODEL. The first
+#  pass gave both the sentence above, which says the floor composed something and a real model is awaited.
+#  "Not provided at establishment" is the statement that is TRUE of an absent field, and it was already
+#  here before this round narrowed it away.
+_ABSENT_BODY = ("Not provided at establishment — no {what} was supplied and none has been composed since")
 # W479 (FU-121 refutation 4) — the journey text the page saves as a deliverable (concept, research, design,
 # operations, commercialisation). A gate certifying that text reads the servers of THESE agents only.
 JOURNEY_BODY_AGENTS = ("genesis_concept", "genesis_research", "genesis_design", "genesis_operations", "genesis_commercial")
@@ -959,20 +964,44 @@ def _birth_gates(req: "EstablishRequest") -> dict:
     return {"stages": stages, "decisions": {}}
 
 
-def _resolve_body_fields(req: "EstablishRequest") -> dict:
-    """Replace floor-served body fields on `req` with the pending state; return {field: pending?}."""
+def _resolve_body_fields(req: "EstablishRequest") -> tuple:
+    """Replace floor-served body fields on `req`; return ({field: floor-pending?}, {field: absent?}).
+
+    TWO MAPS, because they are two facts with different readers. `body_pending` means the floor composed
+    this section and a real model is awaited - `_derived_status` turns any true value into the entity
+    status "body pending", so widening it to cover absence would have made every entity body-pending
+    forever (no establish path provides §4.7 operations) and taken FU-425's operating count back to a
+    structural zero in the round that fixed it. `body_absent` means nobody ever provided the section.
+    `_derived_stage` reads both; everything else keeps the meaning it already had.
+    """
     from agentic_core.vbs.quality import floor_served
     prov = req.ai_provenance or {}
     sba = prov.get("served_by_agent") or {}
     all_floor = (not sba) and floor_served(prov.get("served_by"))
     pending: dict = {}
+    absent: dict = {}
     for field, agent, what in _BODY_AGENTS:
         text = getattr(req, field, "") or ""
-        is_floor = bool(text.strip()) and (sba.get(agent) == "native" if sba else all_floor)
+        #  W593 (FU-423, M1 R2.1) — AN EMPTY FIELD IS PENDING TOO. `is_floor` requires text to EXIST, so a
+        #  section the founder left empty was recorded `False` — "not awaiting the owned model" — and
+        #  `_derived_stage` then found no gap and reported "every §4 section on this entity is composed"
+        #  for an entity with no concept, design or commercialisation. The stage derivation is correct
+        #  given an accurate map; the map was wrong, so the fix belongs here and every sentence downstream
+        #  becomes true without being touched. The two conditions stay SEPARATE because `is_floor` answers
+        #  a different question for its own callers: text that exists and was composed by the floor.
+        _empty = not text.strip()
+        is_floor = (not _empty) and (sba.get(agent) == "native" if sba else all_floor)
         pending[field] = is_floor
+        absent[field] = _empty
         if is_floor:
             setattr(req, field, _PENDING_BODY.format(what=what))
-    return pending
+        #  AN ABSENT FIELD IS LEFT EMPTY. The first pass wrote a placeholder into it, and every
+        #  downstream reader then saw content where there was none: a fourth §4.7 objective was seeded,
+        #  the board pack called an entity with no concept "blueprint"-sourced and dropped "no concept
+        #  recorded yet", and OPERATIONS.md stopped saying it was not provided. The text belongs to the
+        #  RENDERERS, which already have a true sentence for an empty field; the resolver records the
+        #  fact and writes nothing.
+    return pending, absent
 
 
 def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", entity: dict) -> None:
@@ -1104,7 +1133,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
 
     vsb_id = f"vsb-{_uuid.uuid4().hex[:10]}"
     birth_gates = _birth_gates(req)                    # W452 — Mode 3 gates at birth (validated first)
-    body_pending = _resolve_body_fields(req)          # W450 — floor scaffold never becomes the body
+    body_pending, body_absent = _resolve_body_fields(req)   # W450 — floor scaffold never becomes the body
     name, name_source = await _derive_name(req.problem, req.domain, req.name)
 
     async def _attest() -> str:
@@ -1172,7 +1201,8 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         # W450 (P1.2) — the name's source (founder / model / slug) and which body fields are
         # pending the owned model; a slug name is PENDING the founder's choice.
         "name_source": name_source, "name_pending": name_source == "slug",
-        "body_pending": body_pending, "ship_requested": bool(req.ship_output),
+        "body_pending": body_pending, "body_absent": body_absent,
+        "ship_requested": bool(req.ship_output),
         "governance": _intent_gate_result(gov.status, gov.checkpoint_id),
         "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
     }
@@ -1283,7 +1313,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "living": entity.get("living"),          # W472 (refutation) — registered, or refused and why
         "name": name,
         "name_source": name_source, "name_pending": name_source == "slug",   # W450
-        "body_pending": body_pending,                                          # W450
+        "body_pending": body_pending, "body_absent": body_absent,              # W450
         # §4.8 (W496, FU-100) - the entity's own derived status and the facts behind it, not a literal
         "status": entity.get("status"),
         "status_basis": entity.get("status_basis"),
@@ -1325,7 +1355,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                      f"Generating a living Enterprise IDBO for: {req.problem[:120]}", {"vsb_id": vsb_id})
 
         # 1 — naming (AI-derived when blank; scaffold lines filtered; W450: a floor slug is PENDING)
-        body_pending = _resolve_body_fields(req)      # W450 — floor scaffold never becomes the body
+        body_pending, body_absent = _resolve_body_fields(req)   # W450 — floor scaffold never becomes the body
         name, name_source = await _derive_name(req.problem, req.domain, req.name)
         yield _event("named", ("Named" if name_source != "slug" else "Name Pending"),
                      (f"The enterprise is named: {name}" if name_source != "slug" else
@@ -1371,7 +1401,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "ai_provenance": dict(req.ai_provenance or {}),   # W449 — parity with the blocking path (F2)
             "review_gates": birth_gates,                        # W452 — parity with the blocking path
             "name_source": name_source, "name_pending": name_source == "slug",   # W450
-            "body_pending": body_pending, "ship_requested": bool(req.ship_output),
+            "body_pending": body_pending, "body_absent": body_absent,
+            "ship_requested": bool(req.ship_output),
             "governance": _intent_gate_result(gov.status, gov.checkpoint_id),
             "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
         }
@@ -1492,7 +1523,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "vsb_id": vsb_id, "name": name, "status": entity.get("status"),
             "status_basis": entity.get("status_basis"),
             "name_source": name_source, "name_pending": name_source == "slug",   # W450
-            "body_pending": body_pending,
+            "body_pending": body_pending, "body_absent": body_absent,
             "dashboard": f"/api/v1/vsb/{vsb_id}",
             "initial_ship": initial_ship,
             "birth_vitals": birth_vitals,

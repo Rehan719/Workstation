@@ -18,7 +18,9 @@ interface Lifecycle {
   farthest_stage: string; lifecycle_stages_reached: string[]; stages_note: string;
   vsb_spawned: boolean; vsb_operational: boolean;
   projects: { total_projects: number; by_stage: Record<string, number>; running: number; pipeline_health: string; pipeline_health_basis: string };
-  vsb_entities: { total: number; operational: number; by_status: Record<string, number> };
+  vsb_entities: { total: number; operational: number; by_status: Record<string, number>;
+                  operating?: number; legacy_operating?: number;
+                  operational_basis?: string };
   commercialisation_readiness: number; commercialisation_readiness_basis: string;
 }
 interface Systems {
@@ -275,7 +277,13 @@ export const OrganismAnatomy: React.FC = () => {
                 <Chip key={s} tone={life.lifecycle_stages_reached.includes(s) ? 'ok' : 'dim'}>{s} · {life.projects.by_stage?.[s] ?? 0}</Chip>
               ))}
               <Chip tone={life.vsb_spawned ? 'ok' : 'dim'}>VSBs {life.vsb_entities.total}</Chip>
-              <Chip tone={life.vsb_operational ? 'ok' : 'dim'}>{life.vsb_entities.operational} operational</Chip>
+              {/* W593 (FU-425) — the chip carries the BASIS for its own figure. This count matched a
+                  vocabulary the writer had stopped using, so it read zero for every derived entity; a
+                  reader had nothing on the surface to check it against. */}
+              <Chip tone={life.vsb_operational ? 'ok' : 'dim'}
+                    title={life.vsb_entities.operational_basis ?? 'no basis reported'}>
+                {life.vsb_entities.operational} operational
+              </Chip>
             </div>
             <p className="text-[11px] text-slate-300 mb-1">Readiness {pct(life.commercialisation_readiness)} <span className="text-slate-600">· {life.projects.pipeline_health}</span></p>
             <p className="text-[9px] text-slate-600 leading-relaxed">{life.commercialisation_readiness_basis}</p>

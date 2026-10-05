@@ -1,0 +1,308 @@
+[
+ {
+  "tag": "A the subject guesses the longest sentence again",
+  "file": "agentic_core/ai/native/engine.py",
+  "old": "    #  subject, which is true and checkable.\n    return \"\"\n",
+  "new": "    #  subject, which is true and checkable.\n    _s = re.split(r\"(?<=[.!?])\\s+\", prompt.strip())\n    return (max(_s, key=len) if _s else \"\")[:220]\n",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'fall-through is guessing again'"
+ },
+ {
+  "tag": "B Brief leaves the subject labels",
+  "file": "agentic_core/ai/native/engine.py",
+  "old": "\"Brief\", \"Design\", \"Vision\", \"Commercialisation\", \"Product\", \"Scope\", \"Description\")",
+  "new": "\"Design\", \"Vision\", \"Commercialisation\", \"Product\", \"Scope\", \"Description\")",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says \"deliverable's own Brief cannot become its subject\""
+ },
+ {
+  "tag": "C bare Task leaves the content labels",
+  "file": "agentic_core/ai/native/engine.py",
+  "old": "\"Prior knowledge\", \"Context\", \"Task\")",
+  "new": "\"Prior knowledge\", \"Context\")",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'has a subject and no content'"
+ },
+ {
+  "tag": "D the carried label is counted in the terms again",
+  "file": "agentic_core/ai/native/engine.py",
+  "old": "_CARRIED_LABELS = (\"Prior context\",)",
+  "new": "_CARRIED_LABELS = ()",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says \"reported as the user's terms\""
+ },
+ {
+  "tag": "E phrases span the joined fields again",
+  "file": "agentic_core/ai/native/engine.py",
+  "old": "        phrases = [p for part in _term_parts for p in _phrases(part)]",
+  "new": "        phrases = _phrases(\" . \".join(_term_parts))",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'appear together nowhere in the request'"
+ },
+ {
+  "tag": "F the CEO hands its grounding over as headings",
+  "file": "agentic_core/api/v138/ceo.py",
+  "old": "            _labelled.append(f\"{_head[3:].strip()}:\\n{_rest}\" if _rest else f\"{_head[3:].strip()}:\")",
+  "new": "            _labelled.append(_p)",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still hands its grounding over as HEADINGS'"
+ },
+ {
+  "tag": "G objectives leaves the grounded-section map",
+  "file": "agentic_core/api/v138/ceo.py",
+  "old": "_GROUNDED_SECTIONS = {\"directives\": \"board directives\",\r\n                      \"objectives\": \"business plan for this scope\"}",
+  "new": "_GROUNDED_SECTIONS = {\"directives\": \"board directives\"}",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'business-plan section is still unchecked'"
+ },
+ {
+  "tag": "H the cadence record is written only when something happened",
+  "file": "agentic_core/organism/heartbeat.py",
+  "old": "            self.last_cadence = {\n                \"beat\": self.beats,",
+  "new": "            if not (_refreshed or _cad_failed):\n                pass\n            self.last_cadence = {\n                \"beat\": self.beats,",
+  "selector": "w593_p220_bcdef_a_claim_names_what_actually_did_it",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'is from an EARLIER beat' - driven on its own and the firing assertion read directly (1 == 2), because this driver's module-level entry for H is a no-op by construction and is replaced inside main()"
+ },
+ {
+  "tag": "I the interfaith route stops withholding on the floor",
+  "file": "agentic_core/api/religion.py",
+  "old": "    _floor = (provenance or {}).get(\"served_by\") == \"native\"\n    sections_withheld: list[str] = []\n    floor_note = None\n    if _floor:\n        _heads = []",
+  "new": "    _floor = False\n    sections_withheld: list[str] = []\n    floor_note = None\n    if _floor:\n        _heads = []",
+  "selector": "w593_p220_bcdef_a_claim_names_what_actually_did_it",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still lacks it'"
+ },
+ {
+  "tag": "J the Endocrine basis claims an integral term again",
+  "file": "agentic_core/vbs/quality.py",
+  "old": "\"does a PROPORTIONAL THRESHOLD COMPARISON and names a corrective action as a \"",
+  "new": "\"holds a real HomeostaticRegulator with an integral term and \"",
+  "selector": "w593_p220_bcdef_a_claim_names_what_actually_did_it",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'integral term'"
+ },
+ {
+  "tag": "K one of the two writers credits the CFO agent again",
+  "file": "agentic_core/economy/ledger.py",
+  "old": "            \"prepared_by\": \"the ledger's own close routine",
+  "new": "            \"prepared_by\": \"CFO agent (AI C-Suite) - the ledger's own close routine",
+  "selector": "w593_p220_bcdef_a_claim_names_what_actually_did_it",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'credited to a CFO agent'"
+ },
+ {
+  "tag": "L the study panel drops its provenance badge",
+  "file": "apps/workstation-superapp/src/components/LearnTeachModule.tsx",
+  "old": "                  const pb = provenanceBadge(reportServedBy);",
+  "new": "                  const pb = { label: \"\", cls: \"\", title: \"\" };",
+  "selector": "w593_p220_bcdef_a_claim_names_what_actually_did_it",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'does not CALL the provenance helper'"
+ },
+ {
+  "tag": "M the button offers an Ethics Council again",
+  "file": "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx",
+  "old": "text-xs\">Open the Living Organisation (AI CEO)</Button>",
+  "new": "text-xs\">Consult Ethics Council</Button>",
+  "selector": "w593_p220_bcdef_a_claim_names_what_actually_did_it",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still offers an Ethics Council'"
+ },
+ {
+  "tag": "N the roadmap advertises emotion adaptation again",
+  "file": "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx",
+  "old": "desc: 'Planned: layout follows a chosen age band. Tone follows your SAVED PREFERENCE — emotion is never inferred (a ratified boundary, Appendix A.9.4).' }",
+  "new": "desc: 'Interface adjusts to age and emotion.' }",
+  "selector": "w593_p220_bcdef_a_claim_names_what_actually_did_it",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still advertises an emotion-adaptive interface'"
+ },
+ {
+  "tag": "O phases ordered by first appearance again",
+  "file": "agentic_core/api/business_plan.py",
+  "old": "    order = sorted([t for t in order if t != \"Unscheduled\"],\n                   key=lambda t: _phase_sort_key(t) or (9999, 99)) + \\\n            ([\"Unscheduled\"] if \"Unscheduled\" in phases else [])",
+  "new": "    order = list(order)",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'not in TIME order'"
+ },
+ {
+  "tag": "P the writer injects 'next review' as a timeline again",
+  "file": "agentic_core/api/board.py",
+  "old": "f\"{req.instruction[:110]} | (KPI to be set by the Board) |  | AI CEO\",",
+  "new": "f\"{req.instruction[:110]} | (KPI to be set by the Board) | next review | AI CEO\",",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says \"writes 'next review' into the TIMELINE\""
+ },
+ {
+  "tag": "Q a section nobody provided is treated as composed again",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    absent = absent if isinstance(absent, dict) else {}",
+  "new": "    absent = {}",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'recorded as not awaiting content'"
+ },
+ {
+  "tag": "R the spawn event hardcodes a status again",
+  "file": "agentic_core/api/vsb.py",
+  "old": "yield _event(\"complete\", f\"VSB {_st}\", f\"VSB {vsb_id}: {_st_basis}\", {",
+  "new": "yield _event(\"complete\", \"VSB Operational\", f\"VSB {vsb_id} is now operational.\", {",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'hardcodes a status'"
+ },
+ {
+  "tag": "S the repo generator runs first again",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    for name, gen in ((\"website\", generate_vsb_website), (\"webapp\", generate_vsb_webapp),\n                      (\"mobile\", generate_vsb_mobile), (\"board_pack\", generate_vsb_board_pack),\n                      (\"repo\", generate_vsb_repo)):",
+  "new": "    for name, gen in ((\"repo\", generate_vsb_repo), (\"website\", generate_vsb_website),\n                      (\"webapp\", generate_vsb_webapp), (\"mobile\", generate_vsb_mobile),\n                      (\"board_pack\", generate_vsb_board_pack)):",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'runs before another generator'"
+ },
+ {
+  "tag": "T the Board is chaired by a twin again",
+  "file": "agentic_core/api/vsb.py",
+  "old": "f\"Board chaired by the Chief (the owner's standing charter and instructions - no twin \"",
+  "new": "f\"Board chaired by the owner's Chief twin; no twin \"",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'chaired by a twin'"
+ },
+ {
+  "tag": "U a toast blames the reader's device again",
+  "file": "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx",
+  "old": "toast('No WebXR code exists yet - this is not blocked by your device')",
+  "new": "toast('AR Mouth Model requires a WebXR-compatible device')",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says \"puts the absence on the reader's own device\""
+ },
+ {
+  "tag": "V cash_flow drops its scope and basis",
+  "file": "agentic_core/economy/ledger.py",
+  "old": "                          \"scope\": \"postings that touch the `cash` account only\",",
+  "new": "",
+  "selector": "w593_p220_the_mark_is_derived_and_the_roadmap_is_in_time_order",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'no scope and no basis'"
+ },
+ {
+  "tag": "W the operating count matches the old vocabulary again",
+  "file": "agentic_core/api/organism_status.py",
+  "old": "        _now = sum(n for s, n in by_status.items() if s == _OPERATING)",
+  "new": "        _now = sum(n for s, n in by_status.items() if s in (\"operational\", \"active\"))",
+  "selector": "w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_everything",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'does not match the vocabulary'"
+ },
+ {
+  "tag": "X the scope sentence is assigned before the update again",
+  "file": "agentic_core/gaas/v5/__init__.py",
+  "old": "    out.update(extra)\n    _content = bool(out.get(\"content_screened\"))\n    out[\"scope\"] = CONTENT_GATE_SCOPE if _content else INTENT_GATE_SCOPE",
+  "new": "    out[\"scope\"] = INTENT_GATE_SCOPE\n    out.update(extra)\n    _content = bool(out.get(\"content_screened\"))",
+  "selector": "w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_everything",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'scope sentence says it was NOT'"
+ },
+ {
+  "tag": "Y the cadence refreshes the apex only again",
+  "file": "agentic_core/organism/heartbeat.py",
+  "old": "                    _scopes.append(str(_pick[\"vsb_id\"]))",
+  "new": "                    pass",
+  "selector": "w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_everything",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says \"never reached a VSB's own layers\""
+ },
+ {
+  "tag": "AA the guidance answer becomes a literal sentence again",
+  "file": "agentic_core/reactor/religion/qep_flagship.py",
+  "old": "            \"response\": None,\n            \"answered\": False,",
+  "new": "            \"response\": \"Based on the internal knowledge graph and Llama-3.2 reasoning...\",\n            \"answered\": True,",
+  "selector": "w593_p220_the_qep_flagship_service_reports_only_what_it_holds",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still answers a faith question with a literal sentence'"
+ },
+ {
+  "tag": "AB the religion response carries an emotion label again",
+  "file": "agentic_core/reactor/religion/qep_flagship.py",
+  "old": "            \"local_inference\": False,\n            \"source\": None,",
+  "new": "            \"local_inference\": False,\n            \"emotion_alignment\": \"Calming\",\n            \"source\": None,",
+  "selector": "w593_p220_the_qep_flagship_service_reports_only_what_it_holds",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still carries an emotion label'"
+ },
+ {
+  "tag": "AC the immersion tool answers READY again",
+  "file": "agentic_core/reactor/religion/qep_flagship.py",
+  "old": "            \"status\": \"NOT_IMPLEMENTED\",\n            \"mode\": mode,",
+  "new": "            \"status\": \"READY\",\n            \"mode\": mode,",
+  "selector": "w593_p220_the_qep_flagship_service_reports_only_what_it_holds",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still answers READY'"
+ },
+ {
+  "tag": "AD a forum with a post count comes back",
+  "file": "agentic_core/reactor/religion/qep_flagship.py",
+  "old": "            \"forums\": [],\n            \"circles\": [],",
+  "new": "            \"forums\": [{\"id\": \"f1\", \"title\": \"Tajweed circle\", \"posts\": 124}],\n            \"circles\": [],",
+  "selector": "w593_p220_the_qep_flagship_service_reports_only_what_it_holds",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still reported over a store that holds none'"
+ },
+ {
+  "tag": "AE last_full_sync is stamped with the current time again",
+  "file": "agentic_core/reactor/religion/qep_flagship.py",
+  "old": "            \"sync_manifest\": None,\n            \"last_full_sync\": None,",
+  "new": "            \"sync_manifest\": {\"version\": \"1.0.4\"},\n            \"last_full_sync\": datetime.datetime.utcnow().isoformat(),",
+  "selector": "w593_p220_the_qep_flagship_service_reports_only_what_it_holds",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'says a full sync finished moments ago'"
+ },
+ {
+  "tag": "AF a flagship card asserts a capability again",
+  "file": "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx",
+  "old": "desc: 'Planned: forums and virtual study circles",
+  "new": "desc: 'Forums and virtual study circles.' },  // x: 'Planned: forums and virtual study circles",
+  "selector": "w593_p220_the_qep_flagship_service_reports_only_what_it_holds",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'states a capability with no disclosure'"
+ },
+ {
+  "tag": "AG a method claims production readiness again",
+  "file": "agentic_core/reactor/religion/qep_flagship.py",
+  "old": "        \"\"\"Feature 3: Gamified Competitions — the real tournaments, and no invented standing.",
+  "new": "        \"\"\"Feature 3: Gamified Competitions (Production Grade).\n\n        keeping the body honest:",
+  "selector": "w593_p220_the_qep_flagship_service_reports_only_what_it_holds",
+  "expect": "BLIND(red)",
+  "why": "the guard must fail on the leg that says 'still calls itself production grade'"
+ },
+ {
+  "tag": "a stored record's own markdown heading is no longer demoted",
+  "file": "agentic_core/api/v138/ceo.py",
+  "old": "            _rest = _demote_embedded_headings(_rest)",
+  "new": "            _rest = _rest",
+  "selector": "w593_p220a_the_floor_never_returns_its_own_text_as_the_users",
+  "expect": "BLIND(red)",
+  "why": "R3.0's DATA half, found by the full suite. Converting this function's own seven labels was the author's half; the embedded bodies are stored board directives, plan pillars and the meeting log, which in a running system hold earlier floor compositions carrying '## Understanding'. `_sections` reads '## ' out of the prompt, so a stored document steered the floor's section list. The leg now SEEDS such a record, because the case cannot reproduce on an empty store - it failed in the suite and passed alone twice before the state was driven on purpose."
+ },
+ {
+  "tag": "the cadence runs for the apex alone (re-driven after the leg was rewritten)",
+  "file": "agentic_core/organism/heartbeat.py",
+  "old": "if _entries:",
+  "new": "if _entries and False:",
+  "selector": "w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_everything",
+  "expect": "BLIND(red)",
+  "why": "FU-431. The leg was rewritten mid-round to REDIRECT `living_vsbs._STORE` (a module constant frozen at first import) instead of reloading `heartbeat` alone - it had been driving a roster the reader never looked at, and failed in the suite while passing alone, accusing the fix for another guard's entities. A blind verified against the earlier assertion proves nothing about this one, so it was driven again, and it must go red on the SCOPE assertion rather than on the new roster pre-check (a redirect pointing at an empty roster would make the leg vacuous)."
+ }
+]

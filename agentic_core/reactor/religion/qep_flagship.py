@@ -17,9 +17,17 @@ from agentic_core.security.pqc_hardening import content_integrity
 logger = logging.getLogger(__name__)
 
 class QEPFlagshipService:
-    """
-    Workstation v1.0: Production-Grade QEP Flagship Service.
-    Implements all 13 Core Features for the Religion Domain.
+    """The QEP flagship service: thirteen feature surfaces, each reporting only what it can.
+
+    W593 (FU-440..443) — this asserted production readiness and a count of implemented features. Eight of
+    the thirteen were made honest across W331, W403 and W404 (a recitation score is refused, a leaderboard
+    is empty, a credential needs recorded evidence, billing names the one real gated path); four still
+    returned literals while their own docstrings repeated the readiness claim, and one is an Owner decision
+    (FU-445). A count of features is not a claim about whether they work, so the count is gone.
+
+    The removed wording is NOT quoted anywhere in this file: a guard forbids it here, and a comment
+    recording a removal that carries the literal it forbids matches its own record - that cost five red
+    runs in W495. The exact phrases are in the commit message and in FU-440..443.
     """
     def __init__(self):
         self.db_path = DATA_DIR / "qep_production.json"
@@ -143,7 +151,12 @@ class QEPFlagshipService:
         }
 
     async def gamified_competition(self, tournament_id: str = None, user_id: str = None) -> Dict[str, Any]:
-        """Feature 3: Gamified Competitions (Production Grade)."""
+        """Feature 3: Gamified Competitions — the real tournaments, and no invented standing.
+
+        W593 — the body below was made honest by W404 (an empty leaderboard, a null rank, and a `detail`
+        naming what nothing scores) and this line went on asserting production readiness directly above
+        it. A fix that reaches the return and not the sentence over it leaves the claim standing.
+        """
         if tournament_id and user_id:
             for t in self.data["competitions"]:
                 if t["id"] == tournament_id and user_id not in t["participants"]:
@@ -166,21 +179,36 @@ class QEPFlagshipService:
         }
 
     async def ar_vr_immersion(self, mode: str = "VR") -> Dict[str, Any]:
-        """Feature 4: Interactive AI/AR with VC/VR (Production Ready)."""
-        # Provides metadata for A-Frame (VR) or Three.js (AR)
-        scenes = {
-            "VR": {"scene_id": "makkah_v1", "url": "/assets/scenes/makkah.glb", "interactive_nodes": 12},
-            "AR": {"scene_id": "tajwid_overlay", "markers": ["m1", "m2"], "overlay_type": "phonetic_mesh"}
-        }
+        """Feature 4: Immersion — no scene code, no scene asset and no transport exist.
+
+        W593 (FU-441) — this answered status "READY" with a scene url, a count of interactive nodes and a
+        freshly-minted room id for a WebRTC channel, while its own docstring asserted readiness. MEASURED:
+        there is no public/assets/scenes/ directory and no scene file anywhere in the tree, and the string
+        `webrtc` occurs in this file and nowhere else in the platform - so the channel named a transport
+        nothing speaks.
+
+        SECOND-WRITER CLASS, INSIDE ONE ROUND: W593's FU-435 made the frontend toast say that no WebXR
+        code exists and that the reader's device is not the obstacle, while this tool went on answering
+        READY. The fix reached the writer a user clicks and not the one a tool call reads.
+        """
         return {
-            "status": "READY",
+            "status": "NOT_IMPLEMENTED",
             "mode": mode,
-            "config": scenes.get(mode, scenes["VR"]),
-            "webrtc_channel": f"qep-room-{uuid.uuid4().hex[:6]}"
+            "config": None,
+            "scene_url": None,
+            "interactive_nodes": None,
+            "webrtc_channel": None,
+            "detail": ("No immersive scene exists: no WebXR or A-Frame/Three.js code is wired, no scene "
+                       "asset is in the tree, and this platform speaks no WebRTC transport. This is a gap "
+                       "in the product and is NOT blocked by the reader's device or headset."),
         }
 
     async def learn_teach_module(self, role: str = "Learner", user_id: str = None) -> Dict[str, Any]:
-        """Feature 5: Learn-Teach Modules (Production Grade)."""
+        """Feature 5: Learn-Teach Modules — fixed syllabus content, and no cohort that is not recorded.
+
+        W593 — as with Feature 3, W404 made the teacher branch honest (cohort, sessions and retention all
+        None, with a `detail` saying this store holds no enrolment) and left this line claiming readiness.
+        """
         # Integration with collaborative whiteboards (yjs) and student analytics
         if role == "Learner":
             # W404 - each playlist carried a per-user completion count ("completed": 4) and the
@@ -216,7 +244,16 @@ class QEPFlagshipService:
             }
 
     async def adaptive_ui_engine(self, user_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Feature 6: Adaptive UI/UX Engine (Production Grade)."""
+        """Feature 6: Adaptive UI/UX Engine — claims no readiness; see FU-445, which is the Owner's.
+
+        W593 — this asserted production readiness while being UNCALLABLE: the registered AI-CEO tool
+        passes one argument where this takes two, so every invocation raises TypeError. That is false
+        quite apart from the open question about the branch below, so the claim goes now and the branch
+        waits for the ruling. FU-445 states the choice: delete the sentiment branch and the registration,
+        or feed it the user's SAVED tone preference instead - adapting to an inferred emotional state is
+        one of the six things Appendix A.9 records §11 as forbidding, and this round's FU-433 put exactly
+        that on the roadmap card.
+        """
         user = self._get_user(user_id)
         sentiment = context.get("sentiment", "neutral")
 
@@ -232,17 +269,27 @@ class QEPFlagshipService:
         return {"theme": user["settings"]["theme"], "layout": user["settings"]["layout"], "font_size": "optimal"}
 
     async def community_features(self) -> Dict[str, Any]:
-        """Feature 7: Social Media & Community (Production Grade)."""
+        """Feature 7: Community — reports only what this store actually records, which is none of it.
+
+        W593 (FU-442) — this returned two forums with post counts of 124 and 56, two study circles with
+        12 and 85 members one of them marked live, and a websocket endpoint. This store holds users,
+        competitions, swarms and certificates: no forum, no post, no circle and no membership. The
+        application mounts exactly one websocket, and it is not this one.
+
+        AND BOTH FORUM TITLES NAMED RATIFIED BOUNDARIES - one offered feedback on a user's recitation and
+        the other an answer from a scholar, which are two of the six things Appendix A.9 records §11 as
+        forbidding. They are DESCRIBED here rather than quoted, because a comment recording a removal must
+        not carry the literal its own guard forbids; the titles are in the commit message and in FU-442.
+        Presented as live communities with post counts, they were not a gap to fill.
+        """
         return {
-            "forums": [
-                {"id": "f1", "title": "Recitation Feedback", "posts": 124},
-                {"id": "f2", "title": "Scholar Q&A", "posts": 56}
-            ],
-            "circles": [
-                {"name": "Fajr Memorizers", "members": 12, "status": "LIVE"},
-                {"name": "Weekend Tafsir", "members": 85, "status": "UPCOMING"}
-            ],
-            "websocket_endpoint": "/ws/community"
+            "forums": [],
+            "circles": [],
+            "websocket_endpoint": None,
+            "detail": ("No community exists yet: nothing in this service stores a forum, a post, a study "
+                       "circle or a membership, and no websocket is mounted for one. The counts "
+                       "previously reported here were literals, and two of the forum titles named "
+                       "capabilities §11 forbids rather than features awaiting a backend."),
         }
 
     async def analytics_reports(self, user_id: str) -> Dict[str, Any]:
@@ -333,15 +380,21 @@ class QEPFlagshipService:
         }
 
     async def offline_global_access(self, user_id: str) -> Dict[str, Any]:
-        """Feature 10: Offline & Global Access (Production Ready)."""
-        # Returns a sync Manifest for IndexedDB/AsyncStorage
+        """Feature 10: Offline access — nothing syncs, so nothing is reported as synced.
+
+        W593 (FU-443) — this returned a sync manifest with a version, a list of collections, and a
+        `last_full_sync` stamped with the CURRENT TIME. So the answer was always that a full sync had
+        finished moments ago - on every call, forever, with no sync mechanism and no service worker behind
+        it. A timestamp is the most credible kind of fabricated figure precisely because it is never
+        stale: a literal count invites the question "measured how?", and a fresh timestamp does not.
+        """
         return {
-            "sync_manifest": {
-                "version": "1.0.4",
-                "collections": ["quran_text", "user_progress", "audio_previews"],
-                "last_full_sync": datetime.datetime.utcnow().isoformat()
-            },
-            "offline_capabilities": ["recitation_recording", "flashcard_review"]
+            "sync_manifest": None,
+            "last_full_sync": None,
+            "offline_capabilities": [],
+            "detail": ("No offline sync exists: nothing writes a sync manifest, no service worker is "
+                       "registered, and no collection has ever been synced for this or any user. The "
+                       "capabilities previously listed here were literals, not features."),
         }
 
     async def secure_billing_donations(self) -> Dict[str, Any]:
@@ -362,14 +415,33 @@ class QEPFlagshipService:
         }
 
     async def ai_guidance_assistant(self, query: str) -> Dict[str, Any]:
-        """Feature 12: AI Agents & Guidance Assistant (Local LLM Ready)."""
-        # Integrated with local Ollama/Llama endpoint
+        """Feature 12: Guidance Assistant — no reasoning resource is wired here, so nothing is answered.
+
+        W593 (FU-440) — this returned one LITERAL sentence as its answer to every query, with
+        local_inference True, a named engine credited as the source, and an emotion label on the
+        response, under a comment claiming a local Ollama integration. Nothing read the query, no engine
+        by that name ran, and no inference happened.
+
+        Of the four fabrications in this file this is the one a user could act on RELIGIOUSLY, which is
+        why it is the first fixed. A fabricated judgement about a person's recitation was refused for the
+        same reason in W403, and the precedent holds here: a religious question is not answered by a
+        placeholder. Two of the six boundaries Appendix A.9 records §11 as forbidding are in play - an AI
+        scholar service, and inferring a person's emotional state - so the emotion field goes with the
+        rest rather than being kept as decoration.
+
+        The platform's real reasoning path is the gateway, which declares what served each response. This
+        module wires none of it.
+        """
         return {
             "query": query,
-            "response": "Based on the internal knowledge graph and Llama-3.2 reasoning...",
-            "emotion_alignment": "Calming",
-            "local_inference": True,
-            "source": "Sovereign-Llama-Engine"
+            "response": None,
+            "answered": False,
+            "local_inference": False,
+            "source": None,
+            "detail": ("No guidance is produced here: this module wires no reasoning resource, so there "
+                       "is nothing to answer with and a placeholder would be worse than silence. The "
+                       "platform's reasoning path is the gateway, which states what served a response. A "
+                       "religious ruling belongs to a qualified scholar, not to a screen."),
         }
 
     async def swarm_intelligence_learning(self) -> Dict[str, Any]:

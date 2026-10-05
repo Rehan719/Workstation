@@ -28,16 +28,22 @@ export const QEPFlagshipFeatures: React.FC = () => {
     { id: 'tajwid', name: 'AI Tajwīd Coach', icon: Mic, color: 'text-aura', desc: 'Planned: recitation analysis needs a phonetic model none is provisioned. Written-text tools ARE live in QEP.' },
     { id: 'memorization', name: 'Memorization Suite', icon: Book, color: 'text-highlight', desc: 'LIVE (W439): real SM-2 scheduling, reviews and progress — in the QEP studio above.' },
     { id: 'competitions', name: 'Competitions', icon: Trophy, color: 'text-aura', desc: 'Planned: tournaments and leaderboards — no backend exists yet.' },
-    { id: 'ar_vr', name: 'AI/AR Immersion', icon: Glasses, color: 'text-vital', desc: '360° history and Tajwīd overlays.' },
-    { id: 'education', name: 'Learn-Teach', icon: GraduationCap, color: 'text-aura', desc: 'Guided playlists and student analytics.' },
-    { id: 'adaptive_ui', name: 'Adaptive UI', icon: Palette, color: 'text-highlight', desc: 'Interface adjusts to age and emotion.' },
-    { id: 'community', name: 'Community', icon: Users, color: 'text-aura', desc: 'Forums and virtual study circles.' },
-    { id: 'analytics', name: 'Growth Analytics', icon: LineChart, color: 'text-vital', desc: 'Personal mastery dashboards.' },
+    { id: 'ar_vr', name: 'AI/AR Immersion', icon: Glasses, color: 'text-vital', desc: 'Planned: 360° history and Tajwīd overlays — no WebXR code and no scene asset exist yet.' },
+    { id: 'education', name: 'Learn-Teach', icon: GraduationCap, color: 'text-aura', desc: 'Guided playlists are fixed syllabus content. No cohort, session or retention data is recorded, so no student analytics are reported.' },
+    // W593 (FU-433, M1 R5.0) — this read 'Interface adjusts to age and emotion.' Appendix A.9.4
+    // RATIFIES the opposite: adaptation follows an explicit SAVED PREFERENCE (the W428 profile),
+    // never inferred affect, and reopening it needs an Owner ruling. The live mechanism is already
+    // honest — AdaptiveUIProvider derives its label from the stored ui.tone preference and the hubs
+    // render it as "TONE (saved pref.)" — so only this card claimed it. Stating what is true and
+    // what is refused, rather than deleting the card, is ACCEPT clause (4).
+    { id: 'adaptive_ui', name: 'Adaptive UI', icon: Palette, color: 'text-highlight', desc: 'Planned: layout follows a chosen age band. Tone follows your SAVED PREFERENCE — emotion is never inferred (a ratified boundary, Appendix A.9.4).' },
+    { id: 'community', name: 'Community', icon: Users, color: 'text-aura', desc: 'Planned: forums and virtual study circles — nothing stores a forum, a post or a circle yet.' },
+    { id: 'analytics', name: 'Growth Analytics', icon: LineChart, color: 'text-vital', desc: 'Your memorisation review counts are real, from your own records. Fluency, accuracy and consistency are NOT measured, so they are reported empty.' },
     { id: 'credentials', name: 'Certifications', icon: Award, color: 'text-aura', desc: 'Planned: verified digital credentials — no issuing mechanism exists yet.' },
-    { id: 'offline', name: 'Offline Access', icon: WifiOff, color: 'text-highlight', desc: 'Learn without connectivity.' },
+    { id: 'offline', name: 'Offline Access', icon: WifiOff, color: 'text-highlight', desc: 'Planned: learn without connectivity — no offline sync and no service worker exist yet.' },
     { id: 'finance', name: 'Islamic Finance', icon: CreditCard, color: 'text-aura', desc: 'Planned: zakat-eligible donations — no payment rails are enabled (Owner-gated).' },
-    { id: 'assistant', name: 'AI Assistant', icon: MessageCircle, color: 'text-vital', desc: 'Conversational guidance bots.' },
-    { id: 'swarm', name: 'Swarm Learning', icon: Share2, color: 'text-aura', desc: 'AI-coordinated group pacing.' },
+    { id: 'assistant', name: 'AI Assistant', icon: MessageCircle, color: 'text-vital', desc: 'Planned: conversational guidance — no reasoning resource is wired here, so no answer is produced. A ruling belongs to a qualified scholar.' },
+    { id: 'swarm', name: 'Swarm Learning', icon: Share2, color: 'text-aura', desc: 'Planned: AI-coordinated group pacing — not implemented; nothing writes a study swarm yet.' },
   ];
 
   // Ledger cluster 3 — this used to sleep 1.2s and render hardcoded mock results for all 13

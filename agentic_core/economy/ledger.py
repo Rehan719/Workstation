@@ -646,10 +646,29 @@ class VirtualLedger:
                               "assets_total_wst": assets_total,
                               "liabilities_and_equity_total_wst": liab_equity_total,
                               "balanced": abs(assets_total - liab_equity_total) < 0.02},
+            #  W593 (FU-437, M1 R6.1) — THE SCOPE IS STATED, the way `trial_balance` states its own.
+            #  These three figures come only from postings that TOUCH THE `cash` ACCOUNT, and the cycle's
+            #  compat postings route everything through `cash` in equal and opposite totals — so the net
+            #  movement is zero BY CONSTRUCTION, not as a finding about the period. A reader took that zero
+            #  as "cash in matched cash out". The arithmetic is right for what it measures; what was missing
+            #  was what it measures. The computation is deliberately NOT changed: deciding what a cash
+            #  movement is across inter-VSB transfers and reserve movements is an economic decision, not a
+            #  defect fix.
             "cash_flow": {"operating_receipts_wst": receipts, "operating_payments_wst": payments,
-                          "net_cash_movement_wst": round(receipts - payments, 2)},
+                          "net_cash_movement_wst": round(receipts - payments, 2),
+                          "scope": "postings that touch the `cash` account only",
+                          "basis": ("receipts are postings DEBITING `cash` and payments are postings "
+                                    "CREDITING it, so this is movement through one account and not a "
+                                    "statement about the enterprise's whole cash position. The cycle's "
+                                    "compat postings route their amounts through `cash` in equal and "
+                                    "opposite totals, so net_cash_movement_wst is ZERO BY CONSTRUCTION on "
+                                    "any period built from them — a zero here is not a finding that cash "
+                                    "in matched cash out. Inter-VSB transfers and reserve movements post "
+                                    "against `reserve_fund` and are NOT counted here")},
             "trial_balance": self.trial_balance(),
-            "prepared_by": "CFO agent (AI C-Suite) — computed from the double-entry postings",
+            #  W593 (FU-438, M1 R6.2) - the second writer of the same claim. The "computed from the
+            #  double-entry postings" half was true and is kept; the actor is what goes.
+            "prepared_by": "the ledger's own close routine - deterministic arithmetic over the double-entry postings. No C-Suite resource was consulted and no agent reviewed these figures",
             "disclaimer": "Virtual/simulated WST units — not real money.",
         }
 

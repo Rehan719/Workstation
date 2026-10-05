@@ -1635,7 +1635,10 @@ async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_
             "type": "economy.period_close", "vsb_id": req.vsb_id,
             "net_profit_wst": result["close"]["net_profit_wst"],
             "retained_earnings_wst": result["retained_earnings_wst"],
-            "prepared_by": "CFO agent (AI C-Suite)",
+            #  W593 (FU-438, M1 R6.2) - this read "CFO agent (AI C-Suite)". No such agent is on any
+            #  roster: the figures are deterministic arithmetic over the postings, and a named actor
+            #  is a claim about what exists.
+            "prepared_by": "the ledger's own close routine - deterministic arithmetic over the double-entry postings. No C-Suite resource was consulted and no agent reviewed these figures",
             "disclaimer": "Virtual/simulated WST — no real funds moved.",
         })
         ueg_logged = True

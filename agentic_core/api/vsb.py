@@ -1615,6 +1615,13 @@ def _gate_block_reason(vsb: dict) -> str | None:
     return "review gate blocks progress (Mode 3): " + ", ".join(f"{b['stage']} {b['status']}" for b in blk)
 
 
+#  W593 (FU-425) — THE OPERATING TERM, exported so a counter elsewhere reads it rather than
+#  retyping it. Retyped vocabularies are how this figure broke twice: W438 counted "active"
+#  when the writer wrote "operational", and after W496 derived the status the Organism page
+#  still counted "operational"/"active" while this function returned "operating".
+OPERATING_STATUS = "operating"
+
+
 def _derived_status(vsb: dict) -> tuple:
     """§3.3 (W496, FU-100) — THE STATUS IS DERIVED FROM FACTS, NEVER WRITTEN AS A LITERAL.
 
@@ -1647,7 +1654,7 @@ def _derived_status(vsb: dict) -> tuple:
         return ("registered - operation unknown",
                 f"the living roster could not be read, so whether anything tends this entity is not "
                 f"known ({type(e).__name__})")
-    return ("operating", "review gates clear, no body section pending, and the heartbeat is tending "
+    return (OPERATING_STATUS, "review gates clear, no body section pending, and the heartbeat is tending "
                          "this entity on the circadian beat")
 
 
@@ -1677,29 +1684,48 @@ def _derived_stage(vsb: dict) -> tuple:
     asked for, and it is legitimately "commercialise" on an entity that has reached nothing.
     """
     pend = vsb.get("body_pending")
+    #  W593 (FU-423, M1 R2.1) — AND THE SECTIONS NOBODY PROVIDED. This read `body_pending` alone, which
+    #  records only "the floor composed this and a real model is awaited" - so a section the founder left
+    #  EMPTY came back False, no gap was found, and this sentence said "every §4 section on this entity is
+    #  composed" about an entity that had composed none. `body_absent` is the other half, kept as its own
+    #  map because `body_pending` drives the entity STATUS and widening it would make every entity
+    #  body-pending forever. A section is not composed if either map claims it, and the basis says WHICH:
+    #  an absent section and a floor-composed one are different states.
+    absent = vsb.get("body_absent")
+    absent = absent if isinstance(absent, dict) else {}
     if not isinstance(pend, dict) or not pend:
         return (None, "no body-pending map is recorded on this entity, so which §4 sections it has "
                       "composed is NOT KNOWN - which is not the same as having composed none, and "
                       "not the same as having composed them all")
-    known = [k for k in _BODY_STAGE_ORDER if k in pend]
+    known = [k for k in _BODY_STAGE_ORDER if k in pend or k in absent]
     if not known:
         return (None, "the body-pending map names no §4 lifecycle section (it holds "
                       + ", ".join(sorted(map(str, pend))) + "), so the stage reached is NOT KNOWN")
-    reached, blocked_at = None, None
+
+    def _blocked(k):
+        """(is it not composed, why) - the two reasons are reported, never merged."""
+        if absent.get(k):
+            return True, "was never provided"
+        if pend.get(k):
+            return True, "still awaits the owned model"
+        return False, ""
+
+    reached, blocked_at, blocked_why = None, None, ""
     for k in known:
-        if pend[k]:
-            blocked_at = k
+        _b, _why = _blocked(k)
+        if _b:
+            blocked_at, blocked_why = k, _why
             break
         reached = k
     _after = known[known.index(reached) + 1:] if reached else known
-    ahead = [k for k in _after if not pend[k]]
+    ahead = [k for k in _after if not _blocked(k)[0]]
     _ooo = (f", and {len(ahead)} later section(s) are composed out of order ({', '.join(ahead)}) - a "
             f"later section does not carry this entity past an earlier one" if ahead else "")
     if reached is None:
-        return (None, f"no §4 lifecycle stage is reached: the first section ({blocked_at}) still "
-                      f"awaits the owned model{_ooo}")
+        return (None, f"no §4 lifecycle stage is reached: the first section ({blocked_at}) "
+                      f"{blocked_why}{_ooo}")
     return (reached, f"the furthest §4 section composed with no gap before it: {reached}"
-                     + (f"; {blocked_at} still awaits the owned model" if blocked_at
+                     + (f"; {blocked_at} {blocked_why}" if blocked_at
                         else " (every §4 section on this entity is composed)") + _ooo)
 
 
@@ -2348,7 +2374,11 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         enrich_vsb_entity(vsb_entity, owner_id=req.owner_id, problem=req.challenge,
                           domain=req.domain, entity_type=req.entity_type)
         yield _event("governance", "Board + Living Economy Attached",
-                     f"Board chaired by the owner's Chief twin; {req.entity_type} economy initialised; "
+                     #  W593 (FU-429, M1 R5/d) - this said "the owner's Chief twin". No twin model is
+                     #  trained; the comment six lines above already says so, and this event contradicted
+                     #  it. §17.4 Mode 2 is P3.4's subject, not a shipped capability.
+                     f"Board chaired by the Chief (the owner's standing charter and instructions - no twin "
+                     f"model is trained); {req.entity_type} economy initialised; "
                      "registered as a living entity; business plan seeded.",
                      {"has_board": "board" in vsb_entity, "entity_type": req.entity_type,
                       "living": "living" in vsb_entity})
@@ -2366,7 +2396,12 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         biobus.record_operation("vsb_spawn", "vsb.spawn", success=True, payload=f"{vsb_id} [{req.domain}]")
         biobus.fire_signal("motor", "vsb.launch", f"VSB launched: {vsb_id} — {req.challenge[:60]}", 0.9)
 
-        yield _event("complete", "VSB Operational", f"VSB {vsb_id} is now operational.", {
+        #  W593 (FU-424, M1 R2.2) - this announced a hardcoded "VSB Operational" seven lines below
+        #  `_derived_status`, which had already decided what this entity IS and why. On a body-pending
+        #  entity the founder was told it was operational while its own record said otherwise: the mark
+        #  written beside the state instead of FROM it. The event now carries both.
+        yield _event("complete", f"VSB {_st}", f"VSB {vsb_id}: {_st_basis}", {
+            "status": _st, "status_basis": _st_basis,
             "vsb_id": vsb_id, "name": _spawn_name,
             "name_source": _spawn_source, "name_pending": _spawn_source == "slug",   # W450
             "dashboard": f"/api/v1/vsb/{vsb_id}",
@@ -2400,9 +2435,15 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     _refuse_gated(vsb, "ship")  # W452 — Mode 3: a pending/rejected human review gate blocks the ship
     surfaces: Dict[str, Any] = {}
-    for name, gen in (("repo", generate_vsb_repo), ("website", generate_vsb_website),
-                      ("webapp", generate_vsb_webapp), ("mobile", generate_vsb_mobile),
-                      ("board_pack", generate_vsb_board_pack)):
+    #  W593 (FU-422, M1 R2.0) - "repo" MOVED TO LAST. generate_vsb_repo writes manifest.json first,
+    #  so running it first wrote a manifest against a disk holding 13 of the eventual 29 files, with
+    #  `_generated` still all False - and the Cockpit read that manifest as the repository's own account
+    #  of itself, under-reporting its files and calling the generated Website, Web app and Phone app
+    #  absent. Written last, the manifest describes the finished disk. The board_pack guard below is
+    #  keyed on the NAME, so the order does not affect it.
+    for name, gen in (("website", generate_vsb_website), ("webapp", generate_vsb_webapp),
+                      ("mobile", generate_vsb_mobile), ("board_pack", generate_vsb_board_pack),
+                      ("repo", generate_vsb_repo)):
         if name == "board_pack" and not _recorded_concept(vsb, _blueprint(vsb)):
             # W471 — no concept recorded: the pack is deferred and says why; the ship is not a coherent whole
             surfaces[name] = {"deferred": _no_concept_reason(vsb)}

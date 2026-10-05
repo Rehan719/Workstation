@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button, toast } from '@workstation/ui';
 import { useNavigate } from 'react-router-dom';
-import { apiJson, errorMessage } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
 import { GraduationCap, Users, Shield, BookOpen, User } from 'lucide-react';
 
 export const LearnTeachModule: React.FC = () => {
@@ -15,13 +15,17 @@ export const LearnTeachModule: React.FC = () => {
   // too, since nothing counts students anywhere.
   const [report, setReport] = useState<string>("");
   const [reportError, setReportError] = useState<string>("");
+  // W593 (FU-420) — the response's own ai_provenance was never read, so the panel rendered
+  // floor-composed Qur'an curriculum with no badge. It is kept and rendered below.
+  const [reportServedBy, setReportServedBy] = useState<string>("");
 
   const generateReport = async () => {
     setReportLoading(true);
     setReportError("");
     setReport("");
     try {
-      const data = await apiJson<{ curriculum?: string; output?: string }>(
+      const data = await apiJson<{ curriculum?: string; output?: string;
+                                   ai_provenance?: { served_by?: string } }>(
         "/api/v1/education/curriculum",
         {
           method: "POST",
@@ -33,6 +37,7 @@ export const LearnTeachModule: React.FC = () => {
         },
       );
       const text = data.curriculum ?? data.output ?? "";
+      setReportServedBy(data.ai_provenance?.served_by ?? "");
       if (!text.trim()) {
         setReportError("The curriculum service returned an empty plan.");
       } else {
@@ -90,13 +95,34 @@ export const LearnTeachModule: React.FC = () => {
                 appear when a real roster records them, never before.
              </p>
           </div>
-          <Button onClick={generateReport} disabled={reportLoading} className="w-full mt-6 bg-highlight text-sovereign uppercase font-black text-xs py-4">{reportLoading ? 'Generating…' : 'Generate Class Report'}</Button>
+          <Button onClick={generateReport} disabled={reportLoading} className="w-full mt-6 bg-highlight text-sovereign uppercase font-black text-xs py-4">{reportLoading ? 'Generating…' : 'Generate a study-plan frame'}</Button>
           {reportError && (
             <p role="alert" className="mt-3 text-[10px] font-bold text-vital leading-relaxed">{reportError}</p>
           )}
           {report && (
-            <div className="mt-4 max-h-72 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950 p-4">
-              <pre className="whitespace-pre-wrap text-[10px] text-slate-300 leading-relaxed font-medium">{report}</pre>
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950 p-4">
+              {/* W593 (FU-420, M1 R1.1) — WHAT SERVED IT, AND WHAT IT IS NOT. This rendered a bare <pre>
+                  of floor-composed Qur'an curriculum with no badge, no AI-assisted label and no teacher
+                  referral, while every sibling tool on this hub carries all three. §11 binds hardest on
+                  faith content, and an unlabelled frame is an assertion. */}
+              <div className="mb-3 flex items-center gap-2">
+                {(() => {
+                  const pb = provenanceBadge(reportServedBy);
+                  return <span title={pb.title}
+                               data-testid="qep-studyframe-provenance"
+                               className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pb.cls}`}>
+                    {pb.label}
+                  </span>;
+                })()}
+              </div>
+              <p className="mb-3 text-[10px] font-bold text-highlight leading-relaxed">
+                AI-assisted study-plan FRAME for Qur'an study — not reviewed curriculum, and not
+                scholarship. The structured floor arranges the headings it was asked for; it does not
+                select what a learner should study. Study with a qualified teacher.
+              </p>
+              <div className="max-h-72 overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-[10px] text-slate-300 leading-relaxed font-medium">{report}</pre>
+              </div>
             </div>
           )}
         </Card>

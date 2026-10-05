@@ -217,8 +217,8 @@ const ARVRLab = () => (
          </p>
       </div>
       <div className="flex gap-4 justify-center">
-         <Button onClick={() => toast('AR Mouth Model requires a WebXR-compatible device — coming in Phase 4')} variant="outline" className="border-slate-800">Launch AR Mouth Model</Button>
-         <Button onClick={() => toast('VR Mosque requires a WebXR headset — coming in Phase 4')} className="bg-white text-sovereign">Enter VR Mosque</Button>
+         <Button onClick={() => toast('No WebXR code exists yet - this is not blocked by your device')} variant="outline" className="border-slate-800">Launch AR Mouth Model</Button>
+         <Button onClick={() => toast('No WebXR code exists yet - this is not blocked by your headset')} className="bg-white text-sovereign">Enter VR Mosque</Button>
       </div>
    </Card>
 );
@@ -231,6 +231,6 @@ const TournamentCard = ({ title, tier, players, status }: any) => (
      </div>
      <h4 className="text-xl font-black text-white uppercase tracking-tight mb-2">{title}</h4>
      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{tier} • {players} Participants</p>
-     <Button onClick={() => toast('Global leaderboard launching with QEP Season 2')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
+     <Button onClick={() => toast('No tournament or leaderboard backend exists yet - this card is a preview, not a fixture')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
   </Card>
 );

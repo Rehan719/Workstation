@@ -7608,11 +7608,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a.i - THE SUBJECT REFUSES RATHER THAN GUESSING. `_subject` searched 17 labels and fell through to THE LONGEST SENTENCE, which in a prompt carrying a realm directive IS the directive. The seven labels that NAME a topic joined the list (Brief, Design, Vision, Commercialisation, Product, Scope, Description) and a no-match now returns \"\", with the one rendering site saying the request named no subject. The sixteen labels that hold a BODY were deliberately left out: a 220-character slice of a body is not a subject. Measured wider than the row stated - the two label lists diverged in BOTH directions over 23 labels, and bare `Task` was a subject label that was NOT a content label, which made every delegated cascade stage print the platform's formatting instructions as the user's terms. Driven on the deliverable (its Subject line now carries the brief), the five live download formats, and the QEP tajweed route (which now WITHHOLDS its term list with its reason). Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-420",
@@ -7626,11 +7629,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "b - THE QUR'AN STUDY PANEL SAYS WHAT SERVED IT. LearnTeachModule.tsx rendered floor-composed curriculum in a bare <pre> with no badge, no AI-assisted label and no teacher referral, and never read the response's own ai_provenance. It now calls provenanceBadge on what served it, renders the badge, states that the text is a frame and not reviewed curriculum, directs the reader to a qualified teacher, and the button says what it does instead of asserting a class report one panel below this file's own line saying no roster exists. NOT done: moving the panel onto a Religion route that carries floor_note/disclaimer - that changes what it fetches and is a separate piece of work. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-421",
@@ -7645,11 +7651,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "b - THE INTERFAITH ROUTE WITHHOLDS ON THE FLOOR, like its four siblings. It was the one Religion tool with no floor_note, no disclaimer and no sections_withheld, returning a scholar persona over per-tradition \"Perspectives\" nothing looked up. The W498 pattern is applied: the withheld list is built FROM THE REQUEST, because this route generates its headings per call (\"{tradition}'s Perspective on {topic}\") and a fixed list would miss exactly those. Driven: 7 sections withheld including the per-tradition ones, floor_note and disclaimer present, no research heading surviving in the analysis. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-422",
@@ -7664,11 +7673,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "c - THE MANIFEST IS WRITTEN AGAINST THE FINISHED DISK. generate_vsb_repo writes manifest.json FIRST and ran FIRST, so it described a disk holding 13 of the eventual 29 files with `_generated` still all False, and the Cockpit read that as the repository's own account of itself. \"repo\" moved to the END of the generator tuple; the board_pack guard is keyed on the name, so the order does not affect it. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-423",
@@ -7683,11 +7695,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "c - AN EMPTY §4 SECTION IS RECORDED AS AWAITING CONTENT. `is_floor` required text to EXIST, so a section the founder left empty was recorded `False` - not awaiting - and `_derived_stage` then found no gap and reported \"every §4 section on this entity is composed\". FIXED AT THE CHOKEPOINT: the stage derivation is correct given an accurate map, so the map was the defect and every sentence downstream became true without being touched. Driven: three empty sections now yield stage None with basis \"the first section (concept) still awaits the owned model\". Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-424",
@@ -7702,11 +7717,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "c - THE TERMINAL EVENT CARRIES THE DERIVED STATUS. It announced a hardcoded \"VSB Operational\" seven lines below `_derived_status`, which had already decided what the entity IS and why - so a body-pending entity was announced as operational while its own record said otherwise. The event now carries `_st` and `_st_basis`. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-425",
@@ -7723,11 +7741,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "c - THE OPERATING COUNT READS THE WRITER'S OWN VOCABULARY. The predicate matched (\"operational\", \"active\") while `_derived_status` returns \"operating\", so the figure was structurally ZERO for every derived entity and the readiness computed from it was lowered. THE SAME DEFECT W438 FIXED ONCE (it counted \"active\" when the writer wrote \"operational\"), returned by a vocabulary change. The term is now IMPORTED from the writer as OPERATING_STATUS so a third change cannot orphan the counter; legacy rows are counted in their own named bucket; a basis names which statuses were counted and which were not; the exception return was made shape-complete (caught by the pre-flight's [returns] leg); and the anatomy chip now carries the basis as its tooltip. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-426",
@@ -7742,11 +7763,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a.iii - THE CEO HANDS OVER CONTEXT, NOT A LIST OF SECTIONS TO WRITE. THE ROW'S STATED CAUSE IS NOT THE ROOT: `_GROUNDED_SECTIONS` being a single-key map is why two of three sections went UNDETECTED, not why they were wrong. Measured - `_sections` reads \"## \" headings OUT OF THE PROMPT and the floor writes a section for each, so the CEO's grounding headings came back filled with ONE identical scaffold body across all three. The grounding itself is built from real data. Fixed at the join: grounding, tool output and question are context in LABEL form, so the floor writes exactly the three sections the CEO asked for - and `Question:` being a content label means the terms now come from the user's question. The map also gained `objectives`; \"living plan\" was deliberately NOT keyed on `plan_score`, which is a pillar score and not a count of plan content. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-427",
@@ -7760,11 +7784,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "e - THE ROADMAP IS IN TIME ORDER (Owner ruling 2026-10-05, option A plus the writer fix). Phases were ordered by FIRST APPEARANCE of the free-text timeline and `current` was the first incomplete phase in ENTRY order, so it named a Q4 2026 phase current while a Q1 2026 objective sat at 0%. A stated vocabulary is parsed (Q1 2026 / 2026 Q1, a month and year, 2026-01, a bare year); everything else is Unscheduled, EXCLUDED from current/next and COUNTED, with the raw strings reported - and the page now prints the unscheduled count, because excluding them silently was the defect one layer along. AND THE WRITER: board.py's chief_instruct fallback no longer puts \"next review\" in the timeline position, so the platform stops feeding a fake phase into its own roadmap. Driven: the finding's exact input now yields Q1 2026, March 2026, Q4 2026, Unscheduled with current Q1 2026. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-428",
@@ -7780,11 +7807,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "c - THE SCOPE SENTENCE IS DERIVED FROM WHAT WAS SCREENED. `intent_gate_result` assigned `scope` BEFORE `out.update(extra)`, so an emitter that genuinely screened the content overwrote the FLAG and left the SENTENCE saying \"the delivery's content was NOT screened\" - one payload asserting both. The sentence is now computed from the final `content_screened` value, so the contradiction is not something a caller can express rather than something each caller must remember not to write; CONTENT_GATE_SCOPE is the wording for a gate that did screen, and `screened` is upgraded with it. Driven both ways, including a caller trying to pass its own scope through **extra. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-429",
@@ -7800,11 +7830,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "d - THE BOARD IS NOT CHAIRED BY A TWIN, and this file's own comment six lines above already said so. The establish stream told a founder \"Board chaired by the owner's Chief twin\"; no twin model is trained (§17.4 Mode 2 is P3.4's subject). The second-writer class: a correction reached the explanation and not the claim. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-430",
@@ -7819,11 +7852,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "e - THE CADENCE RECORD IS WRITTEN ON EVERY BEAT. MY OWN DEFECT from W589: the record was written only `if _refreshed or _cad_failed`, so a quiet beat left an EARLIER beat's record in place while the surface I added in the same round called it \"what the most recent heartbeat managed\". From beat 3 onwards that sentence was false for every quiet beat. The record now carries its BEAT NUMBER and `nothing_was_due`, and the route reports the record's beat beside the heartbeat's count and whether they agree - so a lagging record is visible instead of asserted as current. Driven over two beats. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-431",
@@ -7838,11 +7874,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "e - THE §17.3 CADENCE REACHES EVERY VSB, not the apex alone. MY OWN DEFECT from W585: `refresh` has always taken a SCOPE and `_plan_path` resolves each entity's own plan, and the beat only ever passed \"workstation\" - so no VSB's Strategic or Action-Plan layer was ever refreshed while the surface spoke of the layers generally. One living entity per beat joins the apex, round-robin by the BEAT COUNTER rather than the roster's timestamp: a refresh is idempotent on its own due-check, so a repeated turn costs nothing and no new persisted field or extra write is needed. The basis admits the limit - every entity is visited REGULARLY, not exactly every N beats, because a roster that changes size shifts the rotation. Driven over three beats on a two-entity roster. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-432",
@@ -7854,11 +7893,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a.ii - THE TERMS ARE THE USER'S OWN FIELDS, PER FIELD. THE ROW'S STATED CAUSE DOES NOT REPRODUCE: it says the top terms are the floor's banner, and `_CARRIED_MARKER_RE` strips that banner - driven in-process on a two-stage cascade. The real mechanism is that `Prior context` is a content label, so the carried PREVIOUS-STAGE OUTPUT was part of the text the count ran over, and `_phrases` paired ACROSS the \" . \" field separator - producing \"kitchen understanding\", the user's word joined to the floor's own \"## Understanding\" heading, a phrase in neither. Carried labels are excluded from the TERM source only (the content keeps them), phrases are built PER FIELD, and with no labelled field the section is WITHHELD rather than counted over the platform's own prompt. A later reader must not hunt a surviving marker: there is none. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-433",
@@ -7875,11 +7917,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "f - THE ROADMAP STATES THE BOUNDARY INSTEAD OF ADVERTISING IT. The card read \"Interface adjusts to age and emotion\"; Appendix A.9.4 RATIFIES the opposite - adaptation follows an explicit saved preference, never inferred affect, and reopening it needs an Owner ruling. Measured: the live mechanism is already honest (AdaptiveUIProvider derives its label from the stored ui.tone preference and the hubs render \"TONE (saved pref.)\"), so one card claimed what the platform refuses. ACCEPT clause (4) - the claim is removed and both halves are stated. CHECKED AGAINST ALL SIX BOUNDARIES because the clause closes when the mechanism holds NOWHERE: no other card generates Arabic, offers translation, scores recitation, mentions Fitrah or advertises a scholar network. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-434",
@@ -7895,11 +7940,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "d - THE BUTTON NAMES WHERE IT GOES. The Religion hub's primary ethics call-to-action offered to \"Consult Ethics Council\" - no such body, no roster, no route - and the paragraph directly above it already says a ruling belongs to a qualified scholar and not to a screen. Relabelled rather than removed: the navigation is real and /ceo is where an escalation is discussed, so deleting it would take a working path away with the false name. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-435",
@@ -7915,11 +7963,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "d - A CLICK NAMES WHAT IS ABSENT, AND NEVER THE READER'S DEVICE. Two unbuilt tabs answered with a release name (\"launching with QEP Season 2\", \"coming in Phase 4\") or a hardware requirement (\"requires a WebXR headset\"). The hardware wording was the worst of it: it put an absence in the product onto the person, telling a user with a headset that their equipment was the obstacle when no WebXR code exists at all. All three toasts now state what is missing, and the plan-internal phase reference is gone - a learner is not owed the delivery plan's numbering. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-436",
@@ -7934,11 +7985,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "c - THE SHIPPED BASIS SAYS WHAT THE CLASS DOES. The quality record claimed the Endocrine regulator \"holds a real HomeostaticRegulator with an integral term\". FU-307's correction reached the regulator's docstring (W515) and a comment in quality.py and NOT the string that ships with every delivery's quality record - the second-writer class in its purest form. `integral_error` is assigned once as zeros and never accumulated, `dt` is computed and never read, the corrective action is returned as a STRING. Verified on the LOADED VALUE, not the file text, because the comment above it records the false claim and a text check would match its own record. The unreached half (NOTHING IMPORTS IT) is true and was kept. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-437",
@@ -7950,11 +8004,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "c - THE CASH-FLOW STATEMENT SAYS WHAT IT SUMS. `net_cash_movement_wst` is derived only from postings that touch the `cash` account, and the cycle's compat postings route everything through `cash` in equal and opposite totals - so the figure is ZERO BY CONSTRUCTION and a reader took that for \"cash in matched cash out\". A scope and basis are added, the way `trial_balance` already has one, naming the single account summed, why the zero is structural, and that inter-VSB transfers and reserve movements post against `reserve_fund` and are not counted. THE COMPUTATION IS DELIBERATELY UNCHANGED: deciding what a cash movement IS across transfers and reserves is an economic decision, not a defect fix. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-438",
@@ -7969,11 +8026,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W593",
       "note": "",
       "tier": 1,
-      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent."
+      "slot_source": "MILESTONE M1 ledger v7's twenty standing Tier-1 findings ride P2.20, the item chartered to carry them - exactly as P1.17 carried W474's fourteen, P1.18 carried W476's twenty-seven and P2.19 carried W572's twenty. They were first registered with --slot auto and SEVENTEEN of them routed to P2.17 by route_row's high-severity FALLBACK, which rode the next open item when no route claimed the files; P2.17 is THE ROUND'S OWN COST and owns none of them. W592 removed that fallback (it had already made P2.4 and then P2.18 a sink, and W588's retirement of seven areas left eight routes, so the fallback had become the common path) and re-slotted every row here by the M1 precedent.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "d - THE CLOSE IS CREDITED TO THE ROUTINE THAT DID IT. A period close and the board pack reported `prepared_by: \"CFO agent (AI C-Suite)\"`; no such agent is on any roster and the figures are deterministic arithmetic over the postings. BOTH writers changed together (economy.py and ledger.py), grepped rather than assumed - exactly two sites, no `assembled_by` anywhere, and `curated_by` in sovereign_evolution.py left alone because it is a different field that names the AI CEO only when a directive really came from one. Verified by driving the behaviour, with a blind that restores the defect seen to turn the guard RED. Guards: test_w593_* in integration_tests/test_mvp_spine.py."
     },
     {
       "id": "FU-439",
@@ -7991,6 +8051,149 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P2.17 is the item about the round's own INSTRUMENTS being wrong rather than slow, and this is the pre-flight leg added in W588 failing to name the guards it exists to name. FU-414, FU-415, FU-416 and FU-418 sit here on the same basis. Named explicitly because no open item carries a route for scripts/, an area W588 retired.",
+      "tier": 2
+    },
+    {
+      "id": "FU-440",
+      "title": "The QEP guidance assistant returns a fixed sentence as its AI answer to any faith question, credits it to an engine that never ran, and labels it with an emotion",
+      "why": "agentic_core/reactor/religion/qep_flagship.py:364 `ai_guidance_assistant(query)` returns response = \"Based on the internal knowledge graph and Llama-3.2 reasoning...\" - a LITERAL string - for every query, with local_inference: True asserted, source: \"Sovereign-Llama-Engine\", emotion_alignment: \"Calming\", and a comment claiming \"Integrated with local Ollama/Llama endpoint\". No inference happens; no engine by that name runs; nothing reads the query. It is registered as the AI-CEO tool at ceo.py:131, so it is reached. FOUR CLAUSES AT ONCE: (c) a credit written beside the state, (d) an actor credited that does not exist, (f) an emotion label on a religion response is the ratified emotion-inference boundary, and (b) floor-served faith content with no provenance and no referral. OF THE FIVE UNAUDITED METHODS IN THIS FILE THIS IS THE ONE A USER COULD ACT ON RELIGIOUSLY, which is why it is high. THE REMEDY IS NOT IN QUESTION: this same file already demonstrates it eight times - W403's tajwid_coach refuses rather than inventing a judgement about a person's recitation, and W404's swarm_intelligence_learning returns NOT_IMPLEMENTED with the real collection size. Return no answer, name what is not wired, and remove the engine credit and the emotion field.",
+      "source": "W593 P2.20 clause sweep (ACCEPT (1): does the mechanism still hold anywhere it applies?)",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/reactor/religion/qep_flagship.py",
+        "agentic_core/api/v138/ceo.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.20",
+      "status": "done",
+      "closed_by": "W593",
+      "note": "",
+      "slot_source": "These ARE P2.20's clauses (c), (d) and (f) still holding, which is what ACCEPT (1) turns on, so they ride P2.20 rather than being routed by subject. M1 v7 did not surface them: four of its six regions hit the ten-finding cap, so each of those regions' eleventh-worst finding is absent from the ledger - this is the measured cost of that cap.",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE GUIDANCE ASSISTANT ANSWERS NOTHING RATHER THAN ANSWERING FALSELY. It returned ONE literal sentence as its answer to every query, with local_inference asserted true, a named engine credited as the source and an emotion label on the response, under a comment claiming a local Ollama integration. Nothing read the query, no engine by that name ran, no inference happened. Of the four this was the one a user could act on RELIGIOUSLY, which is why it was fixed first: W403 refused to invent a judgement about a person's recitation for the same reason, and the precedent holds - a religious question is not answered by a placeholder. Two ratified boundaries were in play (an AI scholar service, and inferring a person's emotional state), so the emotion field went with the rest rather than being kept as decoration. Now: response None, answered False, source None, local_inference False, no field whose name contains 'emotion', and a detail naming the gateway as the platform's real reasoning path and a qualified scholar as where a ruling belongs. Guard: test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds, driven on the RETURNED VALUES rather than the file's text - the docstrings now record what was removed, so a source-text guard would match the sentences describing the removal (W495). Blind seen RED."
+    },
+    {
+      "id": "FU-441",
+      "title": "The QEP AR/VR tool answers READY with a scene file that is not in the tree and a WebRTC channel for a transport the platform does not speak - in the round that made its own toast honest",
+      "why": "qep_flagship.py:168 `ar_vr_immersion` returns status: \"READY\", url: \"/assets/scenes/makkah.glb\", interactive_nodes: 12 and webrtc_channel: f\"qep-room-{uuid}\" under a \"(Production Ready)\" docstring. MEASURED: there is no apps/workstation-superapp/public/assets/scenes/ directory and no makkah.glb anywhere in the tree, and the string `webrtc` occurs in THIS FILE ONLY - nothing else in the platform speaks that transport. SECOND-WRITER CLASS INSIDE ONE ROUND: W593's FU-435 made the frontend toast say \"No WebXR code exists yet - this is not blocked by your device/headset\" while this backend tool kept answering READY, so the fix reached the writer a user clicks and not the one a tool call reads.",
+      "source": "W593 P2.20 clause sweep (ACCEPT (1): does the mechanism still hold anywhere it applies?)",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/reactor/religion/qep_flagship.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.20",
+      "status": "done",
+      "closed_by": "W593",
+      "note": "",
+      "slot_source": "These ARE P2.20's clauses (c), (d) and (f) still holding, which is what ACCEPT (1) turns on, so they ride P2.20 rather than being routed by subject. M1 v7 did not surface them: four of its six regions hit the ten-finding cap, so each of those regions' eleventh-worst finding is absent from the ledger - this is the measured cost of that cap.",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE IMMERSION TOOL REPORTS THE GAP AS THE PRODUCT'S, NEVER THE READER'S DEVICE. It answered status READY with a scene url, a count of interactive nodes and a freshly-minted WebRTC room id. MEASURED: no public/assets/scenes/ directory, no scene file anywhere in the tree, and the string `webrtc` occurs in that file and nowhere else in the platform - so the channel named a transport nothing speaks. SECOND-WRITER CLASS INSIDE ONE ROUND: W593's own FU-435 had already made the frontend toast say no WebXR code exists and that the reader's headset is not the obstacle, while this tool went on answering READY. The fix had reached the writer a user clicks and not the one a tool call reads. Now NOT_IMPLEMENTED with every fabricated field null and a detail that puts the absence in the product. Guard: test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds, driven on the RETURNED VALUES rather than the file's text - the docstrings now record what was removed, so a source-text guard would match the sentences describing the removal (W495). Blind seen RED."
+    },
+    {
+      "id": "FU-442",
+      "title": "The QEP community tool reports forums with 124 and 56 posts and circles with 12 and 85 members over a store that holds none, and names two ratified boundaries as live forums",
+      "why": "qep_flagship.py:234 `community_features` returns forums [{\"title\": \"Recitation Feedback\", \"posts\": 124}, {\"title\": \"Scholar Q&A\", \"posts\": 56}], circles with 12 and 85 members one of them status \"LIVE\", and websocket_endpoint \"/ws/community\". The store holds users, competitions, swarms and certificates - no forum, no post, no circle, no membership - and the app mounts exactly one websocket, /api/v154/ws/streams (app_mvp.py:722). AND THE TWO FORUM TITLES NAME RATIFIED BOUNDARIES: recitation scoring and AI Ask-a-Scholar are two of the six things Appendix A.9 records §11 as forbidding, presented here as live communities with post counts rather than as withheld. Clauses (c), (d) and (f) in one return.",
+      "source": "W593 P2.20 clause sweep (ACCEPT (1): does the mechanism still hold anywhere it applies?)",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/reactor/religion/qep_flagship.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.20",
+      "status": "done",
+      "closed_by": "W593",
+      "note": "",
+      "slot_source": "These ARE P2.20's clauses (c), (d) and (f) still holding, which is what ACCEPT (1) turns on, so they ride P2.20 rather than being routed by subject. M1 v7 did not surface them: four of its six regions hit the ten-finding cap, so each of those regions' eleventh-worst finding is absent from the ledger - this is the measured cost of that cap.",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE COMMUNITY TOOL REPORTS WHAT THE STORE HOLDS, WHICH IS NONE OF IT. Two forums with post counts of 124 and 56, two circles with 12 and 85 members one of them marked LIVE, and a websocket endpoint - over a store holding users, competitions, swarms and certificates and no forum, post, circle or membership, in an app that mounts exactly one websocket (/api/v154/ws/streams) and not that one. AND BOTH FORUM TITLES NAMED RATIFIED BOUNDARIES: \"Recitation Feedback\" and \"Scholar Q&A\" are recitation scoring and AI Ask-a-Scholar, two of the six things Appendix A.9 records §11 as forbidding - presented as live communities with post counts rather than as withheld, which is worse than a gap. The docstring DESCRIBES those titles instead of quoting them, because a comment carrying the literal its own guard forbids matches its own record. Now forums [], circles [], endpoint None, with a detail stating both facts. Guard: test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds, driven on the RETURNED VALUES rather than the file's text - the docstrings now record what was removed, so a source-text guard would match the sentences describing the removal (W495). Blind seen RED."
+    },
+    {
+      "id": "FU-443",
+      "title": "The QEP offline tool reports a full sync as having just completed on every call, when no sync mechanism exists",
+      "why": "qep_flagship.py:335 `offline_global_access` returns sync_manifest {version: \"1.0.4\", collections: [...], last_full_sync: datetime.utcnow().isoformat()} and offline_capabilities [\"recitation_recording\", \"flashcard_review\"] under a \"(Production Ready)\" docstring. `last_full_sync` is stamped with the CURRENT TIME, so the answer is always that a full sync finished moments ago - a timestamp is the most credible kind of fabricated figure, because it is never stale. There is no sync mechanism and no service worker. Clause (c).",
+      "source": "W593 P2.20 clause sweep (ACCEPT (1): does the mechanism still hold anywhere it applies?)",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/reactor/religion/qep_flagship.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.20",
+      "status": "done",
+      "closed_by": "W593",
+      "note": "",
+      "slot_source": "These ARE P2.20's clauses (c), (d) and (f) still holding, which is what ACCEPT (1) turns on, so they ride P2.20 rather than being routed by subject. M1 v7 did not surface them: four of its six regions hit the ten-finding cap, so each of those regions' eleventh-worst finding is absent from the ledger - this is the measured cost of that cap.",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE OFFLINE TOOL NO LONGER REPORTS A SYNC THAT NEVER HAPPENED. Its manifest carried a version, a collection list and a `last_full_sync` stamped with datetime.utcnow() - so the answer was always that a full sync had finished moments ago, on every call, forever, with no sync mechanism and no service worker behind it. Worth recording as its own shape: a fresh timestamp is the most credible fabricated figure precisely because it is never stale, where a literal count at least invites the question 'measured how?'. Now all three fields null or empty with a detail saying nothing has ever been synced for this or any user. Guard: test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds, driven on the RETURNED VALUES rather than the file's text - the docstrings now record what was removed, so a source-text guard would match the sentences describing the removal (W495). Blind seen RED."
+    },
+    {
+      "id": "FU-444",
+      "title": "Seven of eleven QEP flagship cards state a capability flatly while four carry an explicit 'Planned: no X exists yet' - the disclosure convention was applied to four of eleven",
+      "why": "QEPFlagshipFeatures.tsx:28-43 holds eleven cards. FOUR disclose their state (competitions, adaptive_ui, credentials, finance). SEVEN assert a capability: ar_vr \"360° history and Tajwīd overlays\" (no WebXR code, no scene asset), community \"Forums and virtual study circles\" (no forum or circle in any store), education \"Guided playlists and student analytics\" (the backend returns None for analytics), assistant \"Conversational guidance bots\" (a fixed string), swarm \"AI-coordinated group pacing\" (NOT_IMPLEMENTED), offline \"Learn without connectivity\" (no service worker), analytics \"Personal mastery dashboards\". The convention exists IN THE SAME ARRAY and reached four of eleven. RECORDED AGAINST MY OWN WORK: when W593 closed FU-433 it checked the other cards against the SIX BOUNDARIES only, not against whether each was backed - the note said exactly that and claimed no more, but the clause needs the wider check and this is it.",
+      "source": "W593 P2.20 clause sweep (ACCEPT (1): does the mechanism still hold anywhere it applies?)",
+      "found": "2026-10-05",
+      "files": [
+        "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.20",
+      "status": "done",
+      "closed_by": "W593",
+      "note": "",
+      "slot_source": "These ARE P2.20's clauses (c), (d) and (f) still holding, which is what ACCEPT (1) turns on, so they ride P2.20 rather than being routed by subject. M1 v7 did not surface them: four of its six regions hit the ten-finding cap, so each of those regions' eleventh-worst finding is absent from the ledger - this is the measured cost of that cap.",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "EVERY FLAGSHIP CARD DISCLOSES ITS STATE; SEVEN OF THIRTEEN DID NOT. Four already read \"Planned: ... no X exists yet\" and seven asserted a capability flatly. Each of the seven was measured against what its backend actually returns and reworded to that: the immersion card now says no WebXR code or scene asset exists, the community card that nothing stores a forum, the assistant card that no reasoning resource is wired, the swarm card that nothing writes a swarm, the offline card that no sync or service worker exists, the learn-teach card that the playlists are fixed syllabus and no cohort or retention data is recorded, and the analytics card that the memorisation counts ARE real from the user's own SM-2 records while fluency, accuracy and consistency are not measured - which is the honest split rather than a blanket disclaimer. RECORDED AGAINST MY OWN WORK: when this round closed FU-433 it checked the other cards against the SIX BOUNDARIES only, not against whether each was backed; the note said exactly that and claimed no more, but the clause needs the wider check and this is it. AND SIX READINESS CLAIMS, NOT ONE: the phrase occurred six times, and counting it found that W404 had made gamified_competition's and learn_teach_module's BODIES honest while their docstrings went on asserting readiness directly above those returns - the second-writer class again - and that adaptive_ui_engine claimed readiness while being uncallable. All six removed; the class docstring no longer claims a count of implemented features. Guard: test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds, driven on the RETURNED VALUES rather than the file's text - the docstrings now record what was removed, so a source-text guard would match the sentences describing the removal (W495). Blind seen RED."
+    },
+    {
+      "id": "FU-445",
+      "title": "OWNER: the QEP adaptive-UI tool branches on a SENTIMENT and cannot be called - delete the branch and the registration, or feed it a saved preference",
+      "why": "qep_flagship.py:218 `adaptive_ui_engine(user_id, context)` branches on context.get(\"sentiment\"): \"stressed\" sets a Calming_Blue/Guided_Simplified layout, \"focused\" sets Deep_Sovereign/Expert_Compact. It is registered as the AI-CEO tool qep_adaptive_ui at ceo.py:125 AND CALLED WITH ONE ARGUMENT where the method requires two, so every invocation raises TypeError. So either a registered tool advertises a capability that cannot run, or it is made live and the interface adapts to a SENTIMENT - which is what W593's FU-433 fix put on the roadmap card as \"emotion is never inferred (a ratified boundary, Appendix A.9.4)\". M-EXEC-07: a fix reading do-X-or-Y is an Owner decision whatever its slot says, so this is surfaced rather than picked. RECOMMENDATION: delete the sentiment branch and the tool registration, keeping saved-preference adaptation only - AdaptiveUIProvider already derives its label from the stored ui.tone preference and the hubs render \"TONE (saved pref.)\", so what A.9.4 permits is already delivered; the alternative adds a second mechanism for it and keeps a field named `sentiment` inviting the forbidden reading.",
+      "source": "W593 P2.20 clause sweep (ACCEPT (1): does the mechanism still hold anywhere it applies?)",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/reactor/religion/qep_flagship.py",
+        "agentic_core/api/v138/ceo.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "These ARE P2.20's clauses (c), (d) and (f) still holding, which is what ACCEPT (1) turns on, so they ride P2.20 rather than being routed by subject. M1 v7 did not surface them: four of its six regions hit the ten-finding cap, so each of those regions' eleventh-worst finding is absent from the ledger - this is the measured cost of that cap.",
+      "tier": 1
+    },
+    {
+      "id": "FU-446",
+      "title": "learn_teach_module returns two different key sets by role, so a reader indexing either branch gets a KeyError",
+      "why": "agentic_core/reactor/religion/qep_flagship.py:219 (Learner) returns playlists, tutor_availability and whiteboard_session; :236 (Teacher) returns students, active_sessions, analytics and curriculum. Neither branch carries the other's keys, so a caller written against one role raises KeyError on the other, and the only consumer is the AI-CEO tool at ceo.py:123 which does not branch on role. Surfaced by the pre-flight's [returns] leg while W593 closed FU-440..444 in this file - the leg fired because the round touched the function's docstring, not its returns, which is the leg working as intended. THE SAME CLASS W593 FIXED THREE TIMES IN ONE FUNCTION (_vsb_state's three returns) and that FU-415 records for the forecast: a missing key, a measured zero and an unmeasured field are three different facts and a shape-complete return keeps them distinguishable.",
+      "source": "W593 pre-flight [returns] leg, while closing FU-440..444",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/reactor/religion/qep_flagship.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "Rides P2.17 because FU-415 is the row that owns this class there - a function whose returns carry different key sets by path, so an unmeasurable or role-specific field reads as a missing one. Registered rather than fixed in W593: deciding what a role-specific payload should carry for the OTHER role is a design question, not a defect fix, and the round was already at its suite.",
       "tier": 2
     }
   ],

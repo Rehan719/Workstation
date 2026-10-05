@@ -119,6 +119,18 @@ def _role(prompt: str) -> str:
     return m.group(1).strip().rstrip(".") if m else ""
 
 
+#  W593 (P2.20 a.i) — the labels that may become a SUBJECT, as a constant beside `_CONTENT_LABELS` so the
+#  relationship between the two is readable without parsing a function body. THE INVARIANT: every label here
+#  must also be in `_CONTENT_LABELS`. Not the reverse — a body field (Background, Prior context, Current
+#  draft) is substantive without being a topic, and a 220-character slice of a body is not a subject. The
+#  direction that must hold is the one that was broken: bare `Task` was here and not there, so a delegated
+#  prompt had a subject and no content and its terms came from the platform's own scaffolding.
+_SUBJECT_LABELS = ("User", "Problem", "Challenge", "Objective", "Mission", "Concept", "Topic",
+                   "Research question", "Question", "Task / question", "Task", "Hypothesis",
+                   "Target role", "Current situation", "Concern", "Subject", "Search query",
+                   "Brief", "Design", "Vision", "Commercialisation", "Product", "Scope", "Description")
+
+
 def _subject(prompt: str) -> str:
     """Best-effort one-line subject from a labelled field, else the longest sentence.
     §3A (W336) — the label set covers the labels the domain routers ACTUALLY use, so the floor's
@@ -134,14 +146,24 @@ def _subject(prompt: str) -> str:
     # longest sentence was inside the carried `Your officer's plan: …` blob. Note that `_CONTENT_LABELS`
     # below DOES list "Mission" - the two lists disagreed about whether a mission is substantive, and the
     # content list was the right one.
-    field = _field(prompt, "User", "Problem", "Challenge", "Objective", "Mission", "Concept", "Topic",
-                   "Research question", "Question", "Task / question", "Task", "Hypothesis",
-                   "Target role", "Current situation", "Concern", "Subject", "Search query")
+    #  W593 (P2.20 a.i) — the seven labels that NAME a topic joined this list: Brief, Design, Vision,
+    #  Commercialisation, Product, Scope, Description. `_CONTENT_LABELS` already called all of them
+    #  substantive, and `Brief` is what a deliverable carries, so without it the fall-through below chose
+    #  the subject for every deliverable. The sixteen labels that hold a BODY are deliberately NOT here
+    #  (Background, Prior context, Current draft, Refinement instruction, Experience, Clinical context,
+    #  Identified care needs, Prior knowledge, Context, Profile, Company, Current role, Care setting,
+    #  Ingredients, Candidate experience, Assessment): a 220-character slice of a body is not a subject,
+    #  and taking one would replace a false subject with a different false subject. The two lists SHOULD
+    #  differ; what must not happen is a prompt that one list reads and the other falls through on.
+    field = _field(prompt, *_SUBJECT_LABELS)
     if len(field) > 8:
         return field[:220]
-    sentences = re.split(r"(?<=[.!?])\s+", prompt.strip())
-    longest = max(sentences, key=len) if sentences else prompt[:220]
-    return longest.strip()[:220]
+    #  NO LABEL MATCHED, SO THERE IS NO SUBJECT TO REPORT. This returned THE LONGEST SENTENCE, and in a
+    #  prompt carrying a realm directive the longest sentence IS the directive - which is how a report on a
+    #  Kenyan clinic opened "Subject: Lead with the decision and its cost...". A fall-through presented as a
+    #  reading is the defect; returning nothing lets the one rendering site say the request named no
+    #  subject, which is true and checkable.
+    return ""
 
 
 # §3A (W336) — the census of SUBSTANTIVE labels the domain routers + refine genuinely emit
@@ -154,13 +176,51 @@ _CONTENT_LABELS = ("User", "Problem", "Challenge", "Objective", "Concept", "Desi
                    "Profile", "Experience", "Subject", "Assessment", "Description",
                    "Current draft", "Refinement instruction", "Search query", "Scope",
                    "Product", "Ingredients", "Care setting", "Identified care needs",
-                   "Prior knowledge", "Context")
+                   "Prior knowledge", "Context", "Task",
+                   #  W593 — THE REALM IS PART OF THE REQUEST. It reached the composition only through
+                   #  `_subject`'s fall-through to the longest sentence (the unlabelled realm DIRECTIVE
+                   #  line), so removing that fall-through made two realms produce a byte-identical
+                   #  blueprint - the defect W434 fixed, reopened by fixing R1.0. Declared here instead,
+                   #  and excluded from the term list below because "Enterprise" is the platform's
+                   #  vocabulary for a choice, not a word the user wrote.
+                   "Realm")
+
+#  W593 (P2.20 a.ii) — labels whose value is NOT what the user wrote in THIS request. `Prior context` holds
+#  the PREVIOUS STAGE'S OUTPUT: orchestrator.py is its only emitter and it is always `carry`. A list headed
+#  "most frequent in your request" may not be counted over it. Excluded from the TERM source only - the
+#  content keeps it, because for composition it genuinely is context.
+#  `Realm` is the second kind: the founder chose it, so it is real context for the composition, but
+#  "Enterprise" is this platform's label for that choice and not a word the user typed - counting it under
+#  "most frequent in your request" would make the heading false in the same way.
+_CARRIED_LABELS = ("Prior context", "Realm")
+
+
+def _content_parts(prompt: str, *, for_terms: bool = False) -> List[str]:
+    """The prompt's content-field values, ONE PER FIELD, so nothing is read across a field boundary.
+
+    W593 — `_content` joined these with " . " and `_phrases` then formed bigrams over the join, so the
+    user's last word paired with the next field's first: a probe returned "kitchen understanding", the
+    user's word joined to this engine's own "## Understanding" heading, under a heading that calls the list
+    the user's own terms. Phrases are built per part instead; unigrams cannot span a boundary.
+
+    `for_terms` drops the labels whose value is not the user's own wording - a previous stage's output, and
+    the platform's name for a choice the founder made - because a term list about the user's request may not
+    be counted over either.
+    """
+    labels = tuple(lab for lab in _CONTENT_LABELS
+                   if not (for_terms and lab in _CARRIED_LABELS))
+    return [v for lab in labels if (v := _field(prompt, lab))]
 
 
 def _content(prompt: str) -> str:
     """The substantive content of the prompt (values of its content fields), so term/phrase
-    extraction grounds on the actual subject rather than the instruction/section scaffolding."""
-    vals = [v for lab in _CONTENT_LABELS if (v := _field(prompt, lab))]
+    extraction grounds on the actual subject rather than the instruction/section scaffolding.
+
+    W593 — the fall-through to the whole prompt is KEPT here and removed from the TERM path. This value is
+    the composition's context, where falling back to the prompt degrades quality; the term list is a CLAIM
+    about the user's request, where falling back makes the claim false.
+    """
+    vals = _content_parts(prompt)
     return " . ".join(vals) if vals else prompt
 
 
@@ -181,30 +241,66 @@ class NativeReasoningEngine:
         domain = _field(prompt, "Domain") or "the stated domain"
         role = _role(prompt)
         content = _content(prompt)
-        kws = _keywords(content)
-        phrases = _phrases(content)
+        #  W593 (P2.20 a.ii) — THE TERMS COME FROM THE USER'S OWN FIELDS, PER FIELD. The carried labels are
+        #  dropped (a previous stage's output is not "your request") and phrases are built within each field
+        #  so no bigram spans two sources. Unigrams cannot span a boundary, so they stay on the joined text.
+        _term_parts = _content_parts(prompt, for_terms=True)
+        kws = _keywords(" . ".join(_term_parts)) if _term_parts else []
+        phrases = [p for part in _term_parts for p in _phrases(part)]
         terms = phrases + [k for k in kws if k not in " ".join(phrases)]  # phrases first, then singles
         sections = _sections(prompt)
 
         lead = ""
         if role:
             lead = f"_Acting as: {role}._\n\n"
+        #  W593 — THE REALM IS RECORDED, AND THE LIMIT IS STATED. W434 put the realm into the prompt to
+        #  stop it reaching nothing, and the only thing that carried it into the composition was
+        #  `_subject`'s fall-through to the longest sentence - the realm DIRECTIVE line - so fixing R1.0
+        #  made two realms produce a byte-identical blueprint. The sections branch composes from
+        #  subject/domain/terms and never reads the content fields, so no label could fix it there. The
+        #  precedent is this engine's own: a floor cannot act on a style directive, and the honest move is
+        #  to say so rather than to look as though it did (W434's candidates ruling, W498's withheld
+        #  sections). A served model DOES act on the directive, and then this line is still true.
+        _realm_named = _field(prompt, "Realm")
+        if _realm_named:
+            lead += (f"_Composed for the {_realm_named} realm. This engine RECORDS the realm and does not "
+                     f"act on it: it composes from the request's labelled fields, and a house style is a "
+                     f"directive only a served model can follow._\n\n")
 
         if sections:
             blocks = [f"## {title}\n{self._section_body(title, subject, domain, terms)}" for title in sections]
             body = lead + "\n\n".join(blocks)
         else:
+            #  W593 (P2.20 a.i) — WHAT THE UNDERSTANDING LINE SAYS WHEN NO LABEL NAMED A SUBJECT. `_subject`
+            #  used to return the longest sentence here, and in a prompt carrying a platform directive the
+            #  longest sentence IS the directive: a report on a Kenyan clinic opened "Subject: Lead with the
+            #  decision and its cost...". It now returns "" and this says so, which is true and checkable.
+            _understanding = (f"The request concerns: {subject} (domain: {domain}).\n\n" if subject else
+                              f"The request carries no labelled subject, so this engine does not state one "
+                              f"(domain: {domain}). It did NOT infer one from the longest sentence, which in "
+                              f"a prompt carrying a platform directive is the directive.\n\n")
+            #  W593 (P2.20 a.ii) — AND THE TERM LIST IS WITHHELD RATHER THAN COUNTED OVER THE PLATFORM'S OWN
+            #  PROMPT. With no labelled field there is nothing of the user's to count, and a list here under
+            #  a heading that says "in your request" would be false. Withholding is the house move: W489
+            #  renamed this heading and dropped "grounded in the input", W498 made the hadith tool withhold
+            #  bigram-filled sections, and the halal tool already withholds three.
+            _termsec = (f"## Terms most frequent in your request\n"
+                        f"_Extracted by counting words and adjacent pairs — not an analysis of "
+                        f"the subject, and counted only over the fields the request itself carries._\n"
+                        f"{self._bullets(terms, 6)}\n\n" if terms else
+                        f"## Terms most frequent in your request\n"
+                        f"_WITHHELD: the request carries no labelled field for this engine to count, so any "
+                        f"list here would be counted over the platform's own prompt and this heading would "
+                        f"be false._\n\n")
             body = (
-                f"{lead}## Understanding\nThe request concerns: {subject} (domain: {domain}).\n\n"
+                f"{lead}## Understanding\n{_understanding}"
                 # W489 (sweep S4.6, C3) — "Key factors" named an analysis nobody performed. The bullets
                 # are the most frequent non-stopword words and adjacent bigrams in the request text; a
                 # term appearing often is not a factor in the subject. The heading now says what the list
                 # actually is, so a reader cannot mistake a word count for a judgement — and "grounded in
                 # the input" is gone, which read as "grounded in YOUR subject" when the input could carry
                 # another request's recalled text (closed at the gateway in the same round).
-                f"## Terms most frequent in your request\n"
-                f"_Extracted by counting words and adjacent pairs — not an analysis of the subject._\n"
-                f"{self._bullets(terms, 6)}\n\n"
+                f"{_termsec}"
                 f"## Native approach\nWorkstation composes a structured response from its own "
                 f"process-intelligence and knowledge for the agent '{agent}', framing the request above "
                 f"rather than analysing it.\n\n"

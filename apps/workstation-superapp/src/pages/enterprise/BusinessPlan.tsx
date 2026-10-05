@@ -19,7 +19,7 @@ interface Objective {
     transformation?: { transformation_id: string } }[];
 }
 interface RoadmapPhase { timeline: string; progress_pct: number; complete: boolean; count: number; objectives: { title: string }[] }
-interface Roadmap { living: boolean; phases: RoadmapPhase[]; overall_progress_pct: number; current_phase: string | null; next_milestone: { phase: string; title: string } | null; note?: string }
+interface Roadmap { living: boolean; phases: RoadmapPhase[]; overall_progress_pct: number; current_phase: string | null; next_milestone: { phase: string; title: string } | null; note?: string; unscheduled_count?: number; unparsed_timelines?: string[] }
 // W471 — who wrote the opening (the generation's provenance) and which fields the owner set
 interface PlanProvenance { served_by?: Record<string, number>; any_external?: boolean; generated_at?: string; preamble?: string; body_pending?: string[]; written?: string[] }
 interface Plan { provenance?: PlanProvenance; owner_edits?: Record<string, string>; scope: string; owner: string; executive_summary: string; concept: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
@@ -202,6 +202,16 @@ export const BusinessPlan: React.FC = () => {
               <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-highlight flex items-center gap-2"><Target size={14} /> Living roadmap</h3>
                 <span className="text-[9px] font-black uppercase text-slate-500">overall {plan.roadmap.overall_progress_pct}% · current: {plan.roadmap.current_phase ?? '—'}</span>
+                {/* W593 (FU-427) — THE PHASES ARE IN TIME ORDER AND WHAT COULD NOT BE PLACED IS SAID.
+                    The roadmap excludes an unparseable timeline from current/next; saying nothing about it
+                    here would let the page drop that work silently, which is the defect one layer along. */}
+                {!!plan.roadmap.unscheduled_count && (
+                  <span data-testid="roadmap-unscheduled"
+                        title={`not placed in time: ${(plan.roadmap.unparsed_timelines ?? []).join(', ')} — excluded from current and next, never dropped`}
+                        className="ml-2 text-[9px] font-black uppercase text-amber-400">
+                    · {plan.roadmap.unscheduled_count} unscheduled
+                  </span>
+                )}
               </div>
               <div className="space-y-3">
                 {plan.roadmap.phases.map((ph, i) => (

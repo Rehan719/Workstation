@@ -603,12 +603,46 @@ async def interfaith_dialogue(req: InterfaithRequest):
 
     analysis, provenance = await ai_text(prompt, "religion_interfaith", realm=req.realm)
 
+    # §15 (W593, FU-421, M1 R1.2) — THE TAFSIR PATTERN, APPLIED TO THE ONE RELIGION TOOL THAT LACKED IT.
+    # Its four siblings all withhold on the floor and say so; this route returned a scholar persona over
+    # per-tradition "Perspectives", Points of Convergence and "authoritative sources" that nothing looked
+    # up, with no floor_note, no sections_withheld and no disclaimer. A tradition's position that nothing
+    # researched is worse than silence, and §11 binds hardest here. The per-tradition headings are built
+    # FROM THE REQUEST, so the withheld list is built the same way — a fixed list would miss the headings
+    # this route invents on every call.
+    _floor = (provenance or {}).get("served_by") == "native"
+    sections_withheld: list[str] = []
+    floor_note = None
+    if _floor:
+        _heads = []
+        for _t in traditions:
+            _heads += [f"{_t}'s Perspective on {req.topic}", f"{_t}'s Perspective", f"{_t}"]
+        analysis, sections_withheld = _withhold_sections(analysis, tuple(
+            _heads + ["Points of Convergence", "Points of Divergence", "Convergence", "Divergence",
+                      "Suggested Resources for Further Study", "Suggested Resources", "Resources",
+                      "Dialogue Questions (5 open questions for respectful discussion)",
+                      "Dialogue Questions", "Overview"]))
+        floor_note = (
+            "served by the deterministic native floor — NO comparative research happened. The floor "
+            "composes the headings it is asked for from the words of the request; it does not read a "
+            "tradition's scholarly position, locate an authoritative source, or compare what two faiths "
+            "actually teach. Those sections are withheld rather than shown as a frame: a tradition's "
+            "position that nothing looked up misrepresents that tradition. Take this to qualified "
+            "representatives of the traditions concerned.")
+
     return {
         "analysis_id": uuid.uuid4().hex[:10],
         "topic": req.topic,
         "traditions": traditions,
         "dialogue_purpose": req.dialogue_purpose,
         "analysis": analysis,
+        "sections_withheld": sections_withheld,
+        **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "disclaimer": (
+            "AI-assisted comparative material, not scholarship and not a statement of any tradition's "
+            "position. It represents no faith community and speaks for none of them; where it was served "
+            "by the deterministic floor the research sections are WITHHELD and named in "
+            "`sections_withheld`. Consult qualified representatives of each tradition."),
     }
