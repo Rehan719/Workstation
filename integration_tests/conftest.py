@@ -213,6 +213,14 @@ def _write_progress():
         pass
 
 
+#  OPTIONAL, BECAUSE THE PLUGIN THAT DEFINES THIS HOOK IS OPTIONAL (W590). pluggy validates hook
+#  NAMES against the registered plugins, so with pytest-xdist absent an undeclared xdist hook makes
+#  check_pending() raise PluginValidationError - an INTERNALERROR, exit 3, no tests run at all. That
+#  is what CI hit the moment it stopped skipping this file, and it is also the unexplained exit 3
+#  test_w537 had been reporting since W577: the child pytest it spawns loads this conftest. A hook
+#  name is a dependency surface just as an import is. Declaring it optional is the mechanism pluggy
+#  provides for a hook belonging to a plugin that may not be installed; under xdist nothing changes.
+@pytest.hookimpl(optionalhook=True)
 def pytest_xdist_node_collection_finished(node, ids):
     # W539 — THE PARALLEL DENOMINATOR. Under xdist each WORKER collects its own shard, so the
     # controller's pytest_collection_finish sees no items and `collected` stayed null: run_verdict

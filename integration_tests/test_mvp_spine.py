@@ -40690,3 +40690,142 @@ def test_w589_ci_runs_the_same_suite_the_round_runs():
     _on589 = _doc589.get("on") if "on" in _doc589 else _doc589.get(True)
     assert _on589 and "push" in _on589, (
         "the Spine CI workflow does not run on a push, so nothing reports on a round's own commit", _on589)
+def test_w590_the_milestone_instrument_is_committed_and_matches_the_renderers_contract():
+    """MILESTONE M1 can be re-run from this repository, and the instrument agrees with the renderer.
+
+    FU-418, measured W590. M1's bar is a standing TIER-1 count of 0 and it is mandated before any P2-P4
+    item — and the milestone could not be re-run here at all. The only committed workflow was
+    fidelity_audit_v3.js, whose FINDINGS schema carries section/verdict/vision_claim/observed/evidence/
+    disclosed_to_user/severity/smallest_honest_fix and whose VERDICTS schema carries index/refuted/
+    corrected_verdict/reason/evidence. NEITHER CARRIES A TIER, while render_fidelity_ledger.py computes the
+    milestone's own measure from that field: `standing_tier` reads a verdict's `corrected_tier` and falls
+    back to the finding's `tier`. A run of the committed script therefore produced a ledger in which every
+    standing tier was None and M1 could not be scored.
+
+    The tiered instrument had never been committed. W572's M1 commit (93f51c95) shipped ten files — the
+    ledger, the v5 archive, the prompt, the register, the test file, the renderer, blinds — and no workflow
+    among them, so the instrument that measured the standing count of 20 existed only in that session's
+    transcript. That is the P5.4 problem in miniature: a milestone only one session can run is not a
+    milestone.
+
+    ASSERTED AS ONE CONTRACT WITH TWO ENDS, not as two files existing. Every failure of this kind has been a
+    MISMATCH — the renderer read `section` while the assessors supplied `title`, and sixty headings rendered
+    blank while every summary count stayed correct, which is how a dropped field stays silent.
+    """
+    import pathlib as _pl590
+
+    _root590 = _pl590.Path(__file__).resolve().parents[1]
+    _wf590 = _root590 / "scripts" / "workflows" / "fidelity_audit_v7.js"
+    assert _wf590.is_file(), (
+        "no tiered fidelity workflow is committed, so MILESTONE M1 - which is mandated before every P2-P4 "
+        "item and scored on a tier - cannot be re-run from this repository at all")
+    _src590 = _wf590.read_text(encoding="utf-8")
+    _rend590 = (_root590 / "scripts" / "render_fidelity_ledger.py").read_text(encoding="utf-8")
+
+    #  THE RENDERER'S END: the M1 measure is computed from these two keys.
+    assert "corrected_tier" in _rend590 and "standing_tier" in _rend590, (
+        "the renderer no longer computes a standing tier, so nothing turns the audit into the milestone's "
+        "measure")
+
+    #  THE INSTRUMENT'S END: it must SUPPLY them, and as REQUIRED fields - an optional tier is a tier the
+    #  assessors will sometimes omit, and the measure would then be silently short.
+    _reqs590 = []
+    _i590 = 0
+    while True:
+        _i590 = _src590.find("required:", _i590)
+        if _i590 < 0:
+            break
+        _j590 = _src590.find("]", _i590)
+        _reqs590.append(_src590[_i590:_j590])
+        _i590 = _j590
+    assert len(_reqs590) >= 2, (
+        "the workflow declares fewer than two required-field lists, so it has no schema for findings and "
+        "verdicts", len(_reqs590))
+    _finding590 = [r for r in _reqs590 if "'section'" in r or '"section"' in r]
+    _verdict590 = [r for r in _reqs590 if "'index'" in r or '"index"' in r]
+    assert _finding590, "no findings schema requires `section`, the finding's only heading"
+    assert _verdict590, "no verdicts schema requires `index`, which is what joins a verdict to its finding"
+    for _key590 in ("'tier'", "'why_this_tier'", "'verdict'"):
+        assert _key590 in _finding590[0], (
+            "the findings schema does not REQUIRE this field, so a finding can arrive without it and the "
+            "milestone's own measure is silently short", _key590, _finding590[0])
+    assert "'corrected_tier'" in _verdict590[0], (
+        "the verdicts schema does not require corrected_tier, so a refuter can move a tier without saying "
+        "so - which is exactly how v6 reported that none had been made harsher in an edition where four "
+        "were escalated INTO tier 1", _verdict590[0])
+
+    #  AND IT CANNOT RUN WITHOUT NAMING WHAT IT AUDITED. v3 pinned the HEAD and date into its prompt text,
+    #  so an un-edited re-run would have told six assessors they were auditing a weeks-old commit.
+    assert "args" in _src590, (
+        "the workflow takes no arguments, so the commit it audits is hardcoded and a re-run assesses HEAD "
+        "while telling its agents a different sha")
+    assert "is not a measurement" in _src590, (
+        "the workflow does not refuse when the commit or date it audits is unstated, so it can produce an "
+        "unattributable fidelity verdict")
+
+    #  the tier DEFINITIONS travel with the instrument, because a tier nobody defines is a number
+    for _word590 in ("TIER 1", "reached", "DELIVERED"):
+        assert _word590 in _src590 or _word590.lower() in _src590.lower(), (
+            "the instrument does not state what the tiers MEAN, so each run tiers against whatever the "
+            "assessor assumes", _word590)
+def test_w590_the_suite_collects_where_pytest_xdist_is_not_installed():
+    """A hook belonging to an optional plugin is declared optional, so a checkout without xdist can run.
+
+    MEASURED FROM CI, run 37304562756, and it refuted my own W589 measurement. W589 removed the
+    conftest-skipping flag from the backend job on the stated ground that conftest.py imports only json, os
+    and pytest. It does - and that was the wrong thing to check. `pytest_xdist_node_collection_finished` is a
+    hook that pytest-xdist DEFINES, and pluggy validates hook NAMES against the registered plugins at the end
+    of collection, so on a runner without xdist `check_pending()` raised
+
+        PluginValidationError: unknown hook 'pytest_xdist_node_collection_finished' in plugin conftest
+
+    which is an INTERNALERROR, exit 3, and NO TESTS RAN AT ALL. The change took CI from four failing tests to
+    a suite that never started. A hook NAME is a dependency surface exactly as an import is.
+
+    AND IT IS THE TWELVE-ROUND MYSTERY IN test_w537. That guard's control leg expects exit 5 (nothing
+    collected) from a child pytest and CI returned 3. The child is spawned without the conftest-skipping flag,
+    so on a runner with no xdist it loaded this conftest and hit this same PluginValidationError. One cause,
+    two standing failures.
+
+    The remedy is pluggy's own mechanism for a hook whose plugin may be absent - `optionalhook=True` - so
+    validation passes and the hook simply never fires. Under xdist nothing about it changes. This is asserted
+    by DRIVING a collection with the plugin unregistered rather than by reading the decorator, because the
+    decorator's presence says nothing about whether a run collects, and nothing here had ever exercised the
+    plugin-absent state.
+    """
+    import os as _os590
+    import pathlib as _pl590
+    import subprocess as _sp590
+    import sys as _sys590
+
+    #  NON-REENTRANT (W537's lesson): the child carries the marker, and a child that is itself this probe
+    #  does not run it again. A guard that spawns pytest can otherwise be re-entered by what it spawned.
+    _MARK590 = "WORKSTATION_XDIST_ABSENT_PROBE"
+    if _os590.environ.get(_MARK590):
+        return
+
+    #  the declaration itself, as an introspectable PROPERTY of the function rather than a string in a file
+    import integration_tests.conftest as _cf590
+    _hook590 = getattr(_cf590, "pytest_xdist_node_collection_finished", None)
+    assert _hook590 is not None, "the parallel-denominator hook is gone, so a parallel run reports NOT KNOWN"
+    _impl590 = getattr(_hook590, "pytest_impl", None) or {}
+    assert _impl590.get("optionalhook") is True, (
+        "the xdist hook is not declared optional, so pluggy rejects its NAME wherever pytest-xdist is not "
+        "installed - an INTERNALERROR at the end of collection, exit 3, and no tests run", _impl590)
+
+    #  AND A RUN REALLY COLLECTS WITH THE PLUGIN UNREGISTERED. `-p no:xdist` puts this process in exactly the
+    #  state a runner without pytest-xdist is in, which is the condition that was never exercised.
+    _root590 = _pl590.Path(__file__).resolve().parents[1]
+    _env590 = dict(_os590.environ, **{_MARK590: "1"}, PYTHONIOENCODING="utf-8")
+    _r590 = _sp590.run([_sys590.executable, "-m", "pytest",
+                        str(_root590 / "integration_tests" / "test_xdist_iso.py"),
+                        "--collect-only", "-q", "-p", "no:xdist"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       env=_env590, cwd=str(_root590))
+    _out590 = " ".join(((_r590.stdout or "") + (_r590.stderr or "")).split())
+    assert _r590.returncode == 0, (
+        "collection fails when pytest-xdist is unregistered, so this suite cannot run on a checkout without "
+        "it - which is what CI is, what a fresh clone is, and what the P5.4 handover gets",
+        _r590.returncode, _out590[-600:])
+    assert "unknown hook" not in _out590 and "PluginValidationError" not in _out590, (
+        "a hook name is still rejected with the plugin absent", _out590[-400:])

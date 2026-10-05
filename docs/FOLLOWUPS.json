@@ -7567,6 +7567,25 @@
       "closed_by": null,
       "note": "",
       "tier": 2
+    },
+    {
+      "id": "FU-418",
+      "title": "MILESTONE M1 cannot be re-run from this repository: the only committed fidelity workflow carries no TIER, which is the measure M1 is scored on",
+      "why": "MEASURED IN W590 while preparing the M1 re-run the Owner ruled on 2026-10-05. MILESTONE M1 is mandated before any P2-P4 item and its bar is a standing Tier-1 count of 0, yet the milestone CANNOT BE RE-RUN FROM THIS REPOSITORY. The only committed fidelity workflow is scripts/workflows/fidelity_audit_v3.js: twelve agents (six assessors, six refuters) whose FINDINGS schema carries section, verdict, vision_claim, observed, evidence, disclosed_to_user, severity and smallest_honest_fix, and whose VERDICTS schema carries index, refuted, corrected_verdict, reason and evidence. Neither carries a TIER. But scripts/render_fidelity_ledger.py computes the M1 measure from exactly that field - standing_tier() reads a verdict's corrected_tier and falls back to the finding's own tier - so a run of the committed script produces a ledger in which every standing tier is None and the Tier-1 count cannot be computed at all. The script's own header says as much: version=4 \"adds the tier the refuter stands behind\", and v4 was W474. The tiered instrument has therefore never been committed. W572's commit 93f51c95 ran M1 with SIXTY-SIX agents over the six regions and committed ten files - the ledger, the v5 archive, the prompt, the register, the test file, the renderer, blinds - and no workflow script among them. So the instrument that produced the current measurement of 20 exists only in that session's transcript, and the repository holds a strictly weaker instrument that cannot score the milestone it is named for. Two consequences, both load-bearing. First, the milestone is not reproducible by anyone but the session that last ran it, which is the opposite of what a milestone is for and is squarely the P5.4 problem - the work must live without this repo's current session, let alone without this conversation. Second, every lesson about an instrument applies here: an instrument a plan names must RESOLVE, and this one resolves to a file that cannot produce the number the plan scores. The fix is to author and COMMIT the tiered edition - the v3 regions and the adversarial-refuter discipline, plus tier on the assessor's finding and corrected_tier on the refuter's verdict, the tier definitions the ledger itself states (1 a truth defect on a reached surface, 2 an invisible shortfall, 3 a disclosed or unreached gap, DELIVERED carrying none), and the completeness reconciliation scripts/refutation_gate.py already provides - so that the next M1 is a re-run of a committed instrument rather than a reconstruction.",
+      "source": "W590 M1 preparation",
+      "found": "2026-10-05",
+      "files": [
+        "scripts/workflows/fidelity_audit_v3.js",
+        "scripts/render_fidelity_ledger.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 is the item about the round's own INSTRUMENTS being wrong rather than slow, and this is the milestone instrument failing to resolve. Named explicitly because no open item carries a route for scripts/workflows/, an area W588 retired - the consequence the Owner ruled on 2026-10-05.",
+      "tier": 2
     }
   ],
   "routes": [
