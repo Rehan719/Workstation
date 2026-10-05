@@ -34516,11 +34516,38 @@ def test_w559_a_tier_says_what_it_cannot_run_here_and_the_router_records_why_it_
         if _t["runnable"] != _T.RUNNABLE:
             assert _t["resources"] == [], (_name, "an unrunnable tier lists resources", _t["resources"])
             assert "NO RESOURCE IS ASSIGNED" in _t["resources_basis"], _t["resources_basis"]
-    #  AND THE NOT-RUNNABLE REASON CARRIES THE ARITHMETIC, not just a verdict
-    _short = [t for t in _reg["tiers"].values()
-              if t["runnable"] == _T.NOT_RUNNABLE and "short by" in t["runnable_basis"]]
-    assert _short, ("no tier states how far short this machine is; a reader cannot tell a 0.3 GB gap "
-                    "from a 12 GB one", {k: v["runnable_basis"][:80] for k, v in _reg["tiers"].items()})
+    #  AND THE NOT-RUNNABLE REASON CARRIES THE ARITHMETIC, not just a verdict.
+    #  DRIVEN, BECAUSE THE LIVE MACHINE MAY BE ABLE TO RUN EVERYTHING. This read the live tiers and asserted
+    #  that at least ONE was short — a statement about the HARDWARE, so on a runner with enough memory the
+    #  list was empty and the assertion fired while the code was correct. That is the second instance in this
+    #  one test of a guard that fails on success; the core-count leg above was the first, and it masked this
+    #  one until it was fixed. A machine with half a gigabyte is short for every memory-needing tier on any
+    #  runner, which is the same synthetic-machine shape L3 below already uses.
+    _tiny559 = {"ram_gb": 0.5, "ram_basis": "driven by the guard: a machine that can run almost nothing",
+                "cpu_count": 1, "cpu_basis": "driven", "cuda": False, "cuda_basis": "driven"}
+    _quantified559 = []
+    for _tname559 in _reg["tiers"]:
+        _tstate559, _twhy559 = _T.runnable(_tname559, _tiny559)
+        if _tstate559 != _T.NOT_RUNNABLE:
+            continue
+        #  the GPU refusal carries no arithmetic because none applies to it; the MEMORY refusal must
+        if "CUDA device" in _twhy559:
+            continue
+        _quantified559.append(_tname559)
+        assert "short by" in _twhy559, (
+            "a tier refused for want of memory does not say HOW FAR short, so a reader cannot tell a 0.3 GB "
+            "gap from a 12 GB one", _tname559, _twhy559)
+    assert _quantified559, (
+        "not one tier refuses for memory even on a half-gigabyte machine, so the memory floor is not "
+        "enforced at all and the arithmetic above was never exercised", sorted(_reg["tiers"]))
+
+    #  and on the LIVE machine the same holds for whichever tiers are short HERE — possibly none, which is a
+    #  fact about this box and not a defect in the code
+    for _lname559, _lt559 in _reg["tiers"].items():
+        if _lt559["runnable"] == _T.NOT_RUNNABLE and "CUDA device" not in _lt559["runnable_basis"]:
+            assert "short by" in _lt559["runnable_basis"], (
+                "a tier this machine cannot run for want of memory does not say how far short it is",
+                _lname559, _lt559["runnable_basis"])
 
     # ── L3. UNKNOWN IS NOT NOT_RUNNABLE — a machine nobody measured is not one that cannot run ───
     _unmeasured = {"ram_gb": None, "ram_basis": "NOT MEASURED: driven by the guard",
