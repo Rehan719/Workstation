@@ -1377,6 +1377,19 @@ def render_plan_now(register: Any, prompt_text: str) -> str:
         # W549 (FU-336) — "open/ever", so a zero says WHICH zero it is: 0/0 is an item no row has ever
         # ridden (unexamined), and 0/4 is one whose rows all closed. An item closes on its BAR, so
         # neither zero means done — but a reader can no longer mistake the second for the first.
+        #  W587 — AREAS WITH NO OWNER, recorded when an item was closed with --retire-routes. They are
+        #  printed here because a reader of this document is the one who needs to know that a new row in
+        #  one of them will be UNSCHEDULED: the alternative to retiring was forcing the area onto an item
+        #  that does not own it, which is how P2.4 and then P2.18 became sinks.
+        _ret = register.get("retired_areas") if isinstance(register, dict) else None
+        if isinstance(_ret, list) and _ret:
+            out.append(f"  AREAS WITH NO OWNER ({len(_ret)}), each retired when the item that owned it closed and no "
+                       f"open item claimed it. A new row in one of these is UNSCHEDULED and names its own slot:")
+            for _r in _ret[:12]:
+                if not isinstance(_r, dict):
+                    continue
+                _rf = ", ".join(str(x) for x in (_r.get("files") or [])[:3]) or "(no file prefix)"
+                out.append(f"    [{_rf}] retired with {_r.get('retired_with')} by {_r.get('retired_by')}")
         rest = [f"{it['slot']} {it['followups']}/{it['ever']}" for it in p["open_items"][1:]]
         if rest:
             out.extend(_wrap("  Then, in order (the follow-ups riding each): ", rest))

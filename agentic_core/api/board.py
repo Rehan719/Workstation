@@ -140,23 +140,133 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) 
         return f"[{agent} unavailable: {e}]"
 
 
-def founder_profile() -> str:
-    """§5 (W281) — the Chief twin is modelled on the FOUNDER'S LIVED RECORD, not just a static
-    charter: the Owner's standing values (from their documented canon) + their actual recent
-    instructions read from the board store — the twin REMEMBERS what the Owner has asked and
-    stays consistent with it, iterating with every directive. Honest: no history reads as none."""
-    values = ("Standing values from the Owner's documented canon: faith-rooted halal ethics and "
-              "beneficence · honesty over polish (never fabricate, never pad) · decide-and-build · "
-              "real user enablement · virtual/simulated finance only (real rails stay Owner-gated).")
-    hist = ""
+#  P3.4 (W587) — the standing canon, named once. It is the PLATFORM's, shared by every Chief, and not
+#  something an Owner wrote into a store: `founder_model()` labels it accordingly rather than letting a
+#  constant read as this Owner's declaration.
+_STANDING_CANON = ("Standing values from the Owner's documented canon: faith-rooted halal ethics and "
+                   "beneficence · honesty over polish (never fabricate, never pad) · decide-and-build · "
+                   "real user enablement · virtual/simulated finance only (real rails stay Owner-gated).")
+
+
+def _owner_decisions(limit: int = 5) -> List[Dict[str, Any]]:
+    """The Owner's own recorded DECISIONS — the Board ratifications, read from Change Control.
+
+    P3.4 clause (1) names decisions as one of the three inputs a founder model is built from, and nothing
+    read them before. A ratification is the Owner's direction recorded by the Board (W464), so it is the
+    one place this platform holds a decision the Owner actually made rather than inferred.
+
+    Never raises into a model build: a store that cannot be read yields NO decisions, and the count then
+    says zero — which the caller reports as "none read" rather than as "none made".
+    """
+    out: List[Dict[str, Any]] = []
     try:
-        prior = [r for r in _load() if r.get("instruction")][-5:]
-        hist = "\n".join(f"- ({str(r.get('created_at', '?'))[:10]}) {str(r.get('instruction'))[:140]}"
-                         for r in prior)
+        from agentic_core.api import change_control as _cca
+        for _p in sorted(_cca._CCA_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
+            c = _cca._load_change(_p.stem)
+            if not c:
+                continue
+            d = _cca._ratification_decision(c)
+            if not d:
+                continue
+            r = c.get("board_ratification") or {}
+            out.append({"cca_id": c.get("cca_id"), "decision": d,
+                        "title": str(c.get("title") or "")[:120],
+                        "at": r.get("at") or r.get("decided_at"),
+                        "notes": str(r.get("notes") or "")[:160]})
+            if len(out) >= max(0, int(limit)):
+                break
     except Exception:
-        hist = ""
-    return (f"\nFOUNDER MODEL (the Owner's lived record — reason AS this person):\n{values}\n"
-            + (f"The Owner's recent instructions (remember them; stay consistent):\n{hist}\n" if hist else ""))
+        return out
+    return out
+
+
+def founder_model() -> Dict[str, Any]:
+    """The Chief's founder model as a STRUCTURE: three inputs, each counted and each naming its source.
+
+    P3.4 clause (1). A Chief with NO instructions and NO decisions is reported as a ROLE and not as a
+    modelled twin — which is the distinction W492 forced onto the fidelity ledger and which the previous
+    string could not make, because its values line was an unconditional constant and so every Chief read
+    as "the Owner's lived record".
+
+    THE PROFILE IS LABELLED, NOT COUNTED AS A DECLARATION. The canon is the platform's and is identical
+    for every Chief, so `declared_by_owner` is False: a constant shared by everyone is not this Owner's
+    own statement, which is the same reading W585 applied to a VSB's values. Only instructions and
+    decisions — things the Owner actually wrote or decided — make a model a twin.
+    """
+    instructions: List[Dict[str, Any]] = []
+    instructions_readable = True
+    try:
+        #  ONLY THE OWNER'S OWN WORDS. A directive the twin issued unprompted carries an `instruction`
+        #  too - its restatement of what the Owner last asked for - and counting that as a new input
+        #  would make the model read its own output back as its principal's record: the count would rise
+        #  without the Owner saying anything, and the beat's idempotence would never hold. A row with no
+        #  marker predates the unprompted path and IS the Owner's.
+        for r in [x for x in _load()
+                  if x.get("instruction") and not x.get("unprompted")][-5:]:
+            instructions.append({"at": str(r.get("created_at") or "")[:19],
+                                 "instruction": str(r.get("instruction"))[:200]})
+    except Exception:
+        instructions_readable = False
+    decisions = _owner_decisions()
+    n_i, n_d = len(instructions), len(decisions)
+    is_twin = (n_i + n_d) > 0
+
+    return {
+        "profile": {
+            "text": _STANDING_CANON,
+            "source": "the platform's standing canon, identical for every Chief",
+            #  NOT this Owner's declaration: a shared constant cannot be one
+            "declared_by_owner": False,
+        },
+        "instructions": {"count": n_i, "recent": instructions,
+                         "source": "the board store's instruction rows",
+                         "readable": instructions_readable},
+        "decisions": {"count": n_d, "recent": decisions,
+                      "source": "the Owner's ratify/refuse decisions recorded by the Board in Change Control"},
+        "owner_inputs": n_i + n_d,
+        "is_modelled_twin": is_twin,
+        "reported_as": "modelled twin" if is_twin else "role",
+        "basis": (
+            (f"MODELLED TWIN: built from {n_i} instruction(s) the Owner wrote and {n_d} decision(s) the "
+             f"Owner made. The standing canon is also carried and is the PLATFORM's, identical for every "
+             f"Chief - it is not counted as this Owner's own declaration."
+             if is_twin else
+             "A ROLE, NOT A MODELLED TWIN: this Owner has written no instruction and made no recorded "
+             "decision, so there is nothing of theirs to model. The standing canon is carried and is the "
+             "platform's, identical for every Chief, so it cannot stand in for a lived record - a Chief "
+             "built from it alone represents the platform's values and not this person.")
+            + ("" if instructions_readable else
+               " NOTE: the board store could not be read, so the instruction count is what was READ and "
+               "not necessarily what exists.")),
+    }
+
+
+def founder_profile() -> str:
+    """§5 (W281) — the Chief's grounding text, DERIVED from `founder_model()` (P3.4, W587).
+
+    This used to open "FOUNDER MODEL (the Owner's lived record — reason AS this person)" unconditionally,
+    because the values line above it is a constant: an Owner who had written nothing still got a header
+    claiming a lived record. The header now follows the model's own verdict, so a ROLE says it is a role.
+
+    The signature and return type are UNCHANGED on purpose: board.py, business_plan.py and swarm.py all
+    call this, and changing what it returns would break them. Only its content moved.
+    """
+    m = founder_model()
+    head = ("FOUNDER MODEL (the Owner's lived record — reason AS this person)"
+            if m["is_modelled_twin"] else
+            "CHIEF AS A ROLE (no lived record of this Owner exists — represent the platform's standing "
+            "values only, and say so when a question needs this Owner's own view)")
+    out = f"\n{head}:\n{m['profile']['text']}\n"
+    if m["instructions"]["count"]:
+        hist = "\n".join(f"- ({str(i.get('at') or '?')[:10]}) {i.get('instruction')}"
+                          for i in m["instructions"]["recent"])
+        out += f"The Owner's recent instructions (remember them; stay consistent):\n{hist}\n"
+    if m["decisions"]["count"]:
+        dec = "\n".join(f"- ({str(d.get('at') or '?')[:10]}) {d.get('decision')}: {d.get('title')}"
+                         for d in m["decisions"]["recent"])
+        out += f"The Owner's recorded decisions (ratified or refused - stay consistent):\n{dec}\n"
+    out += f"BASIS: {m['basis']}\n"
+    return out
 
 
 def _live_intelligence(scope: str) -> str:
@@ -202,9 +312,14 @@ def board_for_owner(owner_name: str, vision_summary: str = "") -> Dict[str, Any]
         "chief": {
             # W475 (ledger v4 R3.4) — no twin model is trained (/api/v1/twin/models holds none): the Chief is the
             # founder's standing charter and last instructions on the owned fabric, and is titled so.
+            # P3.4 (W587) — "Mode 2 planned" is gone because Mode 2 is DELIVERED: the Chief is now built
+            # from the Owner's recorded instructions and decisions, and reports itself a ROLE when there
+            # are none (see founder_model). "No twin model is trained" STAYS, because it is still true and
+            # is exactly the distinction clause (1) turns on: a model assembled from a record is not a
+            # trained one.
             "title": (f"Chief of the Board — {owner_name if owner_name and owner_name != 'default' else 'the founder'}'s "
-                      "standing charter and last instructions on the owned fabric (no twin model is trained; Mode 2 "
-                      "planned, P3.4)"),
+                      "standing charter, instructions and recorded decisions on the owned fabric (no twin "
+                      "model is trained; the Chief reports whether it is a modelled twin or a role)"),
             "fidelity_charter": _OWNER["fidelity_charter"],
         },
         "directors": [d for d in _BOARD if d["id"] != "chief"],
@@ -263,6 +378,116 @@ def _pending_ratification_count() -> Optional[int]:
         return len(_pr())
     except Exception:
         return None
+
+
+async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any]:
+    """Issue a board directive UNPROMPTED, as the twin — or refuse, and say which.
+
+    P3.4 clause (2). Called by the heartbeat when the Owner has switched `auto_align` on. Three outcomes,
+    and each is a different fact:
+
+      * the Chief is a ROLE — no instruction and no decision of the Owner's exists, so there is nothing of
+        theirs to act on. Acting anyway would be the platform issuing its own direction under the Owner's
+        name, so it REFUSES. This is the coupling to clause (1): the model's verdict decides.
+      * nothing NEW since the last unprompted directive — the beat visits every sixty seconds, and a
+        directive per visit would churn the living plan. Measured by the Owner's input COUNTS, so a new
+        instruction or a new decision is what moves it.
+      * issued — through `chief_instruct`, which runs the gaas.v5 pre-gate and cascades to the AI CEO, so
+        the directive EXECUTES rather than being filed.
+
+    The instruction the twin acts on is the Owner's OWN most recent one, carried verbatim. Nothing is
+    invented: an unprompted directive restates what the Owner last asked for, in the light of what the
+    plan now records, which is what a twin staying consistent with its principal means.
+    """
+    m = founder_model()
+    if not m["is_modelled_twin"]:
+        return {"issued": False, "reason": "role", "founder_model_basis": m["basis"],
+                "owner_inputs": m["owner_inputs"],
+                "basis": ("REFUSED: this Chief is a ROLE, not a modelled twin - the Owner has written no "
+                          "instruction and made no recorded decision, so there is nothing of theirs to act "
+                          "on. Issuing a directive from the platform's standing canon alone would be the "
+                          "platform directing itself under the Owner's name")}
+
+    #  IDEMPOTENT ON THE OWNER'S RECORD, not on a clock: the beat may visit a thousand times between two
+    #  instructions, and the plan must not grow an objective for each visit.
+    try:
+        prior = [r for r in _load() if r.get("kind") == "twin_directive_unprompted"]
+    except Exception:
+        prior = []
+    last = prior[-1] if prior else None
+    if last and int(last.get("owner_inputs") or -1) == int(m["owner_inputs"]):
+        return {"issued": False, "reason": "nothing_new", "owner_inputs": m["owner_inputs"],
+                "last_directive_id": last.get("directive_id"),
+                "founder_model_basis": m["basis"],
+                "basis": (f"NOT ISSUED: the Owner's record is unchanged since the last unprompted "
+                          f"directive ({m['owner_inputs']} input(s) then and now), so there is nothing new "
+                          f"to act on. A directive per beat would grow the living plan without the Owner "
+                          f"having asked for anything")}
+
+    #  the Owner's OWN latest words, verbatim — an unprompted directive restates what they asked for
+    _latest = ""
+    if m["instructions"]["count"]:
+        _latest = str(m["instructions"]["recent"][-1].get("instruction") or "")
+    elif m["decisions"]["count"]:
+        _d = m["decisions"]["recent"][0]
+        _latest = f"Act on the Owner's recorded decision to {_d.get('decision')}: {_d.get('title')}"
+    if not _latest.strip():
+        return {"issued": False, "reason": "no_readable_input", "owner_inputs": m["owner_inputs"],
+                "founder_model_basis": m["basis"],
+                "basis": ("NOT ISSUED: the model counts inputs but none carried readable text, so there is "
+                          "nothing to restate. Nothing is invented in its place")}
+
+    #  `unprompted=True` is what keeps this from becoming its own input on the next beat
+    res = await chief_instruct(
+        ChiefInstruction(instruction=_latest, cascade_to_ceo=True, scope=scope, unprompted=True),
+        user=None)
+    out = {
+        "issued": True,
+        "directive_id": res.get("directive_id"),
+        "scope": scope,
+        "acted_on": _latest[:200],
+        #  W587 — REPORTED FROM THE OUTCOME, not from the request. A blind proved the guard vacuous
+        #  because these were literals: asserting a flag the same dict hardcodes cannot fail (W497's
+        #  shape). `objectives_added` is what the cascade actually landed on the living plan, so both of
+        #  these now follow it rather than announcing an intention.
+        "executed": bool(res.get("objectives_added")),
+        "cascaded_to_ceo": bool(res.get("objectives_added")) or res.get("ceo_action_plan") not in (None, ""),
+        "objectives_added": res.get("objectives_added"),
+        "governance": (res.get("governance") or {}).get("status"),
+        "owner_inputs": m["owner_inputs"],
+        "founder_model_basis": m["basis"],
+        "basis": (f"ISSUED UNPROMPTED by the twin, driven by a beat and not by a manual call. It restates "
+                  f"the Owner's own latest input verbatim and nothing is invented. It ran through the "
+                  f"gaas.v5 apex gate and was cascaded to the AI CEO, so it EXECUTES rather than being "
+                  f"filed. Built from {m['instructions']['count']} instruction(s) and "
+                  f"{m['decisions']['count']} decision(s) of the Owner's"),
+        "kind": "twin_directive_unprompted",
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    try:
+        rows = _load()
+        rows.append(dict(out))
+        _save(rows)
+    except Exception:
+        out["recorded"] = False
+    return out
+
+
+@router.get("/chief/model")
+async def chief_model():
+    """The Chief's founder model and its BASIS — which inputs it was built from, and how many.
+
+    P3.4 clause (3): every twin output is rendered with its basis. The model itself is the thing a reader
+    needs in order to know whether the Chief speaking to them is a modelled twin or a role, so it is a
+    surface of its own rather than a field buried in a directive's response.
+    """
+    m = founder_model()
+    return {
+        **m,
+        "method": ("a Chief is a MODELLED TWIN only when the Owner has written an instruction or made a "
+                   "recorded decision. The standing canon is carried either way and is the platform's, "
+                   "identical for every Chief, so it is never counted as this Owner's own declaration"),
+    }
 
 
 @router.get("/charter")
@@ -363,6 +588,13 @@ class ChiefInstruction(BaseModel):
     owner: str = "Rehan"
     cascade_to_ceo: bool = True
     scope: str = "workstation"   # which living business plan receives the objectives (e.g. a vsb_id)
+    # P3.4 (W587) — WHOSE WORDS THE INSTRUCTION IS. The twin can issue a directive unprompted from the
+    # beat, restating what the Owner last asked for; that restatement is NOT a new instruction from the
+    # Owner, and counting it as one makes the twin read its own output back as its principal's record —
+    # which would both inflate the "lived record" of a person who said nothing more and defeat the
+    # beat's idempotence, issuing a directive on every visit forever. Default False: a request with no
+    # marker is a human's, which is what every directive before this change was.
+    unprompted: bool = False
 
 
 @router.post("/chief/instruct")
@@ -491,6 +723,13 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
                          "the caller's own label \u2014 single-user mode has no principal to stamp"),
         "owner_as_requested": req.owner,
         "instruction": req.instruction,
+        # P3.4 (W587) — stamped so the founder model can tell the Owner's own words from the twin's
+        # restatement of them. A row without this field predates the unprompted path and is the Owner's.
+        "unprompted": bool(req.unprompted),
+        "instruction_source": ("the Owner's twin, restating their latest input on a beat - NOT a new "
+                               "instruction from the Owner, and not counted as one"
+                               if req.unprompted else
+                               "supplied directly by the caller as the Owner's own instruction"),
         "chief_directive": directive,
         "ceo_action_plan": action_plan,
         "business_plan_scope": req.scope,

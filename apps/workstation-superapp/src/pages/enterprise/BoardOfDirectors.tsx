@@ -57,6 +57,14 @@ export const BoardOfDirectors: React.FC = () => {
   const [result, setResult] = useState<ChiefResult | null>(null);
   const [open, setOpen] = useState<'directive' | 'plan'>('directive');
   const [charter, setCharter] = useState<Charter | null>(null);
+  //  P3.4 (W587) — the Chief's founder model and its BASIS. `null` means NOT LOADED and is never
+  //  conflated with a Chief that has no inputs: the second is a fact the model states, the first is not.
+  const [chiefModel, setChiefModel] = useState<{
+    is_modelled_twin: boolean; reported_as: string; owner_inputs: number;
+    instructions: { count: number }; decisions: { count: number };
+    profile: { declared_by_owner: boolean }; basis: string; method?: string;
+  } | null>(null);
+  const [chiefModelErr, setChiefModelErr] = useState('');
   const [loadErr, setLoadErr] = useState('');
   // W464 (FU-012) — the ratification queue and the Board's decision on it
   const [ratQueue, setRatQueue] = useState<PendingRatification[] | null>(null);
@@ -79,8 +87,41 @@ export const BoardOfDirectors: React.FC = () => {
       .catch(() => setLoadErr('Could not load the board status.'));
     fetch('/api/v1/board/charter').then(r => r.json()).then(setCharter)
       .catch(() => setLoadErr('Could not load the board charter.'));
+    //  P3.4 (W587) — whether this Chief is a modelled twin or a role, and what it was built from
+    fetch('/api/v1/board/chief/model').then(r => r.json()).then(setChiefModel)
+      .catch(() => setChiefModelErr('Could not read whether this Chief is a modelled twin or a role.'));
     loadRatifications();
   }, []);
+
+  /* P3.4 (W587) — THE CHIEF'S OWN STANDING, rendered with its basis. A reader meeting their Chief needs
+     to know, before they read a word it says, whether it is a twin built from their own record or a role
+     speaking the platform's standing values. The two cases are rendered DIFFERENTLY: one rendering for
+     both is the defect this item is about. */
+  const chiefStanding = () => {
+    if (chiefModelErr) return (
+      <p role="alert" data-testid="chief-model-error" className="text-[10px] font-bold text-vital">{chiefModelErr}</p>
+    );
+    if (!chiefModel) return (
+      <p className="text-[10px] font-bold text-slate-500 animate-pulse">Reading the Chief's standing…</p>
+    );
+    return chiefModel.is_modelled_twin ? (
+      <div data-testid="chief-model-twin" className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+          Modelled twin — {chiefModel.instructions.count} instruction(s) you wrote ·{' '}
+          {chiefModel.decisions.count} decision(s) you made
+        </p>
+        <p className="text-[10px] text-slate-400 leading-relaxed">{chiefModel.basis}</p>
+      </div>
+    ) : (
+      <div data-testid="chief-model-role" className="space-y-1">
+        {/* AMBER AND SAYING SO: this Chief holds nothing of yours. */}
+        <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+          A role, not a modelled twin
+        </p>
+        <p className="text-[10px] text-amber-400/90 leading-relaxed">{chiefModel.basis}</p>
+      </div>
+    );
+  };
 
   const decideRatification = async (id: string, decision: 'ratify' | 'refuse') => {
     setRatBusy(id); setRatResult(null);
@@ -300,7 +341,11 @@ export const BoardOfDirectors: React.FC = () => {
               <div className="flex items-center gap-3"><Crown size={14} className="text-highlight" /><p className="font-black text-white text-sm">Chief's Board Directive</p></div>
               {open === 'directive' ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
             </button>
-            {open === 'directive' && <div className="px-5 pb-6 border-t border-slate-800/50 pt-4"><p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{result.chief_directive}</p></div>}
+            {open === 'directive' && <div className="px-5 pb-6 border-t border-slate-800/50 pt-4">
+              {/* P3.4 (W587) — the Chief's standing travels WITH its output: a reader of a directive sees
+                  whether the Chief that issued it is a twin built from their record or a role. */}
+              <div data-testid="chief-standing-with-output" className="mb-3 pb-3 border-b border-slate-800/50">{chiefStanding()}</div>
+              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{result.chief_directive}</p></div>}
           </Card>
           {result.ceo_action_plan && (
             <Card className="p-0 overflow-hidden border-slate-800/80">

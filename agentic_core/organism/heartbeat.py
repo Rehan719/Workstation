@@ -140,6 +140,9 @@ class OrganismHeartbeat:
         #  §17.3 (P3.3, W585) — the last cadence refresh the beat performed, or None for "the beat has
         #  not refreshed a layer", which is not the same as "no layer was ever due"
         self.last_cadence: Optional[Dict[str, Any]] = None
+        #  P3.4 (W587) — what the Owner's twin did on the beat, or why it withheld. None means the twin
+        #  step has not run, which is not the same as a twin that ran and withheld.
+        self.last_twin_directive: Optional[Dict[str, Any]] = None
         self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
         self.last_vsb_operated: Optional[str] = None   # §4 — last living VSB autonomously operated on the beat
         # W503 (FU-045, FU-063) — the visits that were NOT cycles. Declared and published, because a
@@ -473,12 +476,42 @@ class OrganismHeartbeat:
         except Exception:
             pass
 
-        # 3b. Autonomous alignment (opt-in, cheap plan-only) — route vision gaps to the living tiers
+        # 3b. Autonomous alignment (opt-in) — route vision gaps to the living tiers, AND let the Owner's
+        #     twin direct unprompted (P3.4 clause 2, W587).
+        #
+        #     MEASURED BEFORE THIS CHANGE: this step was `await align(AlignRequest(execute=False))` and
+        #     nothing else. `align` is the vision-gap router, not a board directive, and execute=False made
+        #     even that plan-only — so the beat produced no directive at all, which is what the clause
+        #     ("auto_align → board_directive with execute") is written against.
+        #
+        #     The twin's own step REFUSES when the Chief is a ROLE — no instruction and no decision of the
+        #     Owner's exists, so acting would be the platform directing itself under their name — and it is
+        #     idempotent on the Owner's RECORD rather than on the clock, because this beat visits every
+        #     sixty seconds and a directive per visit would grow the living plan unasked. Both outcomes are
+        #     recorded; neither is silent.
         if self.auto_align:
             try:
                 from agentic_core.api.cognition import align, AlignRequest
                 await align(AlignRequest(execute=False))
                 actions.append("alignment")
+            except Exception:
+                pass
+            try:
+                from agentic_core.api.board import twin_directive_unprompted
+                _tw = await twin_directive_unprompted("workstation")
+                self.last_twin_directive = {
+                    "issued": bool(_tw.get("issued")),
+                    "reason": _tw.get("reason"),
+                    "directive_id": _tw.get("directive_id"),
+                    "owner_inputs": _tw.get("owner_inputs"),
+                    "basis": _tw.get("basis"),
+                    "founder_model_basis": _tw.get("founder_model_basis"),
+                    "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                }
+                #  the action list records what HAPPENED, not that the step ran: a refusal and an issued
+                #  directive are different facts and a single marker for both would say neither
+                actions.append("twin_directive" if _tw.get("issued") else
+                               f"twin_directive_withheld:{_tw.get('reason')}")
             except Exception:
                 pass
 
@@ -989,6 +1022,7 @@ class OrganismHeartbeat:
             "last_heal": self.last_heal,
             "last_genome": self.last_genome,
             "last_cadence": self.last_cadence,
+            "last_twin_directive": self.last_twin_directive,
             "last_evolution": self.last_evolution,
             "last_vsb_operated": self.last_vsb_operated,
             # W503 — `last_vsb_operated` only ever names an entity a cycle RAN for; these say what

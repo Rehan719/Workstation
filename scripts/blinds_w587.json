@@ -1,0 +1,101 @@
+[
+ {
+  "tag": "clause 1: every Chief reads as a modelled twin again",
+  "file": "agentic_core/api/board.py",
+  "old": "    is_twin = (n_i + n_d) > 0",
+  "new": "    is_twin = True",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT, exactly as measured: the values line is a CONSTANT in the source, so the old string opened 'FOUNDER MODEL (the Owner's lived record - reason AS this person)' for an Owner who had written nothing at all. W492 forced the ROLE-versus-MODEL distinction onto the fidelity ledger and board.py states it in prose; this is it being computed where the model is built, which is the only place a downstream reader can learn it from."
+ },
+ {
+  "tag": "clause 1: the platform's canon is counted as the Owner's own declaration",
+  "file": "agentic_core/api/board.py",
+  "old": "            \"declared_by_owner\": False,",
+  "new": "            \"declared_by_owner\": True,",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "The canon is identical for every Chief, so it cannot be this Owner's declaration - and treating it as one is precisely what let every Chief read as a lived record. The same reading W585 applied to a VSB's values: a constant shared by everyone is not one entity's statement."
+ },
+ {
+  "tag": "clause 1: decisions stop being read",
+  "file": "agentic_core/api/board.py",
+  "old": "    decisions = _owner_decisions()",
+  "new": "    decisions = []",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "Clause (1) names THREE inputs and decisions were the one nothing read. They are the Owner's own ratify/refuse recorded by the Board through Change Control - the one place this platform holds a decision the Owner actually made rather than inferred."
+ },
+ {
+  "tag": "clause 2: the beat stops driving the twin",
+  "file": "agentic_core/organism/heartbeat.py",
+  "old": "                _tw = await twin_directive_unprompted(\"workstation\")",
+  "new": "                _tw = {\"issued\": False, \"reason\": \"disabled\"}",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "THE CLAUSE SAYS UNPROMPTED, DRIVEN BY A BEAT. Before this round auto_align called the vision-gap router with execute=False and produced no directive at all; a directive reachable only through a route is a manual call, which is the state the clause was written against."
+ },
+ {
+  "tag": "clause 2: the directive is filed instead of executed",
+  "file": "agentic_core/api/board.py",
+  "old": "        ChiefInstruction(instruction=_latest, cascade_to_ceo=True, scope=scope, unprompted=True),",
+  "new": "        ChiefInstruction(instruction=_latest, cascade_to_ceo=False, scope=scope, unprompted=True),",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "'board_directive WITH execute' is the clause's own wording. Without the cascade the directive is composed and filed: no action plan is delegated to the AI CEO and no objective lands on the living plan, so nothing the twin directed actually happens."
+ },
+ {
+  "tag": "clause 2: a ROLE acts unprompted anyway",
+  "file": "agentic_core/api/board.py",
+  "old": "    if not m[\"is_modelled_twin\"]:\r\n        return {\"issued\": False, \"reason\": \"role\",",
+  "new": "    if False and not m[\"is_modelled_twin\"]:\r\n        return {\"issued\": False, \"reason\": \"role\",",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "THE COUPLING TO CLAUSE (1). A Chief with no instruction and no decision of the Owner's has nothing of theirs to act on, so issuing anyway is the platform directing itself under the Owner's name - and it would do so from the standing canon, which is identical for everyone. `if False and` leaves the refusal's message in the file, so a leg searching for the wording rather than driving the refusal would stay green."
+ },
+ {
+  "tag": "clause 2: the twin reads its own output back as the Owner's input",
+  "file": "agentic_core/api/board.py",
+  "old": "                  if x.get(\"instruction\") and not x.get(\"unprompted\")][-5:]:",
+  "new": "                  if x.get(\"instruction\")][-5:]:",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "FOUND BY DRIVING THE IDEMPOTENCE, before anything shipped. chief_instruct records an `instruction`, so without the marker the twin's own restatement becomes a new Owner input: the count rises, the unchanged-record check never holds, and the beat issues another directive on every visit forever while the Owner has asked for nothing. It also reports an ever-richer 'lived record' of a person who said nothing more."
+ },
+ {
+  "tag": "clause 2: a directive is issued on every beat regardless",
+  "file": "agentic_core/api/board.py",
+  "old": "    if last and int(last.get(\"owner_inputs\") or -1) == int(m[\"owner_inputs\"]):",
+  "new": "    if False and last and int(last.get(\"owner_inputs\") or -1) == int(m[\"owner_inputs\"]):",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "The beat visits every sixty seconds. Without the unchanged-record check the living plan grows an objective per visit, which is the churn the three-state cadence discipline exists to prevent - and every one of them would be attributed to the Owner."
+ },
+ {
+  "tag": "clause 3: the basis stops saying how many inputs",
+  "file": "agentic_core/api/board.py",
+  "old": "            (f\"MODELLED TWIN: built from {n_i} instruction(s) the Owner wrote and {n_d} decision(s) the \"",
+  "new": "            (f\"MODELLED TWIN: built from the Owner's record, with {0} instruction(s) and {0} decision(s) the \"",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "Clause (3) says every twin output is rendered WITH its basis - 'which inputs it was built from, AND HOW MANY'. A basis that reports zero for both while the model is a twin is the basis-string-is-code class: a sentence asserting something it did not compute."
+ },
+ {
+  "tag": "clause 4: a Chief is titled 'of default' again",
+  "file": "agentic_core/api/board.py",
+  "old": "            \"title\": (f\"Chief of the Board — {owner_name if owner_name and owner_name != 'default' else 'the founder'}'s \"",
+  "new": "            \"title\": (f\"Chief of the Board of {owner_name or 'default'} — {owner_name}'s \"",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "THE EXACT STRING W492 FOUND SHIPPED. A per-VSB Chief is titled for its OWNER, and an owner name that is missing or literally 'default' must fall back to 'the founder' rather than to the literal - a Chief titled 'of default' names nobody while looking like it names someone."
+ },
+ {
+  "tag": "clause 4: the title claims Mode 2 is still planned",
+  "file": "agentic_core/api/board.py",
+  "old": "                      \"standing charter, instructions and recorded decisions on the owned fabric (no twin \"\r\n                      \"model is trained; the Chief reports whether it is a modelled twin or a role)\"),",
+  "new": "                      \"standing charter and last instructions on the owned fabric (no twin model is \"\r\n                      \"trained; Mode 2 planned, P3.4)\"),",
+  "selector": "w587_p34",
+  "expect": "BLIND(red)",
+  "why": "This round DELIVERS Mode 2, so a title still calling it planned is a stale claim on a surface - the same class as any sentence that outlives the state it described. 'No twin model is trained' stays, because it remains true and is the distinction clause (1) turns on."
+ }
+]

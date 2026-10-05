@@ -617,12 +617,27 @@ def main() -> int:
                     sys.exit("REFUSED — these areas are NOT ownerless, so retiring them would orphan work an "
                              "open item still claims; hand them on instead:\n  " + "\n  ".join(claimed))
                 kept = [rt for rt in fu.raw_routes(reg) if not (isinstance(rt, dict) and rt.get("slot") == slot)]
+                #  W587 — RECORDED, not merely printed. The first cut appended the sentence to `said` and
+                #  removed the route, so after the round nothing in the register or either document said the
+                #  area had been deliberately left ownerless. A consequence stated once in a terminal is not
+                #  a consequence recorded: the next round reads the plan, not a scrollback.
+                _retired = reg.setdefault("retired_areas", [])
+                if not isinstance(_retired, list):
+                    sys.exit("REFUSED — the register's retired_areas is not a list; repair it by hand first")
                 for rt in to_finished:
                     _f = [str(x) for x in (rt.get("files") or [])]
+                    _w = [str(x) for x in (rt.get("words") or [])]
                     said.append(f"route RETIRED with {slot}: [{', '.join(_f[:4])}"
                                 + (f" +{len(_f) - 4} more" if len(_f) > 4 else "") + "]"
                                 + " — no open item claims this area, so a new row in it is UNSCHEDULED and "
                                   "names its own slot rather than being assigned to an item that does not own it")
+                    _retired.append({
+                        "files": _f, "words": _w, "retired_with": slot, "retired_by": by,
+                        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "consequence": ("no open item claims this area, so a new row in it is UNSCHEDULED "
+                                        "and names its own slot rather than being assigned to an item that "
+                                        "does not own it"),
+                    })
                 reg["routes"] = kept
             if same and not to_finished and not riders:
                 sys.exit(f"REFUSED — {slot} is already DONE {by}, with no rows riding it and no route to it: nothing left to do")

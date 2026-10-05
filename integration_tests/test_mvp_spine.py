@@ -15706,16 +15706,29 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     #  below already follows it: a route's ORIGIN is durable and its slot is whatever a round last made
     #  it. The property is that this route is not the LAST one, so the broad hygiene catch-all still
     #  sorts after everything that owns its own surfaces.
+    #  W587 (FU-365's class again, in an assertion W586 itself wrote): this asserted the business-plan
+    #  route EXISTS. W587 closed P3.4 and RETIRED it, because the W582 mechanism reported that no open
+    #  item claims that area — and retiring is the honest outcome, since the alternative is forcing a
+    #  --hand-to onto an item that does not own the area, which is how P2.4 and then P2.18 became sinks.
+    #  Existence was never the property. The ORDERING is: a route that owns an area must sort before the
+    #  broad hygiene catch-all. With no such route, the plan must SAY the area is unowned, so a reader
+    #  knows a new row there names its own slot rather than silently landing somewhere.
     _bp_route = [i for i, rt in enumerate(routes)
                  if any("business_plan" in str(f) for f in (rt.get("files") or []))]
-    assert _bp_route, ("no route owns the business-plan area at all, so a new row about the Chief's "
-                       "opening or the living business system would fall through to the catch-all",
-                       [rt.get("files") for rt in routes])
-    assert max(_bp_route) < len(routes) - 1, (
-        "the business-plan route is now the LAST route, so the broad hygiene catch-all no longer sorts "
-        "after it", _bp_route, len(routes))
-    assert routes[_bp_route[0]]["slot"] in open_slots, (
-        "the business-plan route points at an item that is not open", routes[_bp_route[0]])
+    if _bp_route:
+        assert max(_bp_route) < len(routes) - 1, (
+            "the business-plan route is now the LAST route, so the broad hygiene catch-all no longer sorts "
+            "after it", _bp_route, len(routes))
+        assert routes[_bp_route[0]]["slot"] in open_slots, (
+            "the business-plan route points at an item that is not open", routes[_bp_route[0]])
+    else:
+        assert "business_plan.py" in prompt, (
+            "no route owns the business-plan area AND the plan does not mention it, so a new row there "
+            "would land wherever the mechanism last pointed with nothing recording that the area was "
+            "deliberately left unowned")
+        assert "UNSCHEDULED" in prompt, (
+            "an area was retired without the plan recording the consequence - that a new row in it is "
+            "unscheduled and names its own slot")
     #  W575 (FU-365) — the CATALOGUE route, by its files rather than by the item that owns it
     #  today. P2.4 owned it until W575 closed P2.4 and handed all seven of its routes to P2.18.
     _cat = fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")
@@ -40091,3 +40104,256 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     assert "repoTree === null" in _cpcode586, (
         "the page does not distinguish NOT LOADED from an empty repo, so a slow fetch reads as an entity "
         "with no files")
+def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monkeypatch, tmp_path):
+    """P3.4 — the Chief is a twin built from the Owner's own record, or it says it is only a role.
+
+    MEASURED BEFORE BUILDING. `founder_profile()` read the Owner's recent instructions from the board
+    store — real — but prefixed them with a VALUES LINE THAT IS A CONSTANT IN THE SOURCE. The constant is
+    unconditional, so the string always opened "FOUNDER MODEL (the Owner's lived record — reason AS this
+    person)" even for an Owner who had written nothing. And the third input the clause names, DECISIONS,
+    was not read at all. W492 had already forced the ROLE-versus-MODEL distinction onto the fidelity
+    ledger and board.py states it in prose; what was missing was it being COMPUTED where the model is
+    built.
+
+    Clause (2) was precisely falsified: heartbeat.py's auto_align was `await align(AlignRequest(
+    execute=False))` — the vision-gap router, not a board directive, and plan-only.
+
+    AND auto_align IS NEVER LEFT ON. It is one of the autonomy keys the Owner sets and defaults to False;
+    this guard sets it for its own beat inside a try/finally and asserts the restore.
+    """
+    import asyncio as _aio587
+    import pathlib as _pl587
+    import re as _re587
+
+    from agentic_core.api import board as _b587
+
+    # ── L1. CLAUSE (1): THREE INPUTS, EACH COUNTED — AND A CHIEF WITH NONE IS A ROLE ───────────────
+    #  the store is emptied for this leg, so the ROLE state is DRIVEN rather than hoped for: in a
+    #  shared store an earlier test's directive would make every Chief a twin and this leg vacuous.
+    _rows587 = _b587._load()
+    try:
+        _b587._save([])
+        _role587 = _b587.founder_model()
+        assert _role587["is_modelled_twin"] is False, (
+            "an Owner who has written nothing is reported as a modelled twin", _role587)
+        assert _role587["reported_as"] == "role" and _role587["owner_inputs"] == 0, _role587
+        assert "A ROLE, NOT A MODELLED TWIN" in _role587["basis"], _role587["basis"]
+        #  THE PROFILE IS NOT COUNTED AS A DECLARATION. It is the platform's canon, identical for every
+        #  Chief, and it is what made the old string claim a lived record unconditionally.
+        assert _role587["profile"]["declared_by_owner"] is False, (
+            "the platform's standing canon is reported as this Owner's own declaration, which is what let "
+            "every Chief read as a modelled twin", _role587["profile"])
+        assert _role587["profile"]["text"].strip(), "the canon is not carried at all"
+        #  and the STRING a prompt is built from says role, because that is what every caller reads
+        _s587 = _b587.founder_profile()
+        assert "CHIEF AS A ROLE" in _s587, (
+            "the grounding string still opens with a lived record for an Owner who wrote nothing",
+            _s587[:160])
+        assert "FOUNDER MODEL (the Owner's lived record" not in _s587, _s587[:160]
+
+        #  THE THREE INPUT KINDS ARE EACH NAMED AND COUNTED
+        for _k587 in ("profile", "instructions", "decisions"):
+            assert _k587 in _role587, ("an input kind the clause names is absent from the model", _k587)
+            assert str(_role587[_k587].get("source") or "").strip(), (
+                "an input kind does not say where it came from", _k587)
+        assert _role587["instructions"]["count"] == 0 and _role587["decisions"]["count"] == 0, _role587
+
+        #  A DECISION ALONE MAKES IT A TWIN — the input kind nothing read before this round, and the one
+        #  a blind showed the guard was not exercising at all. Written straight into the Change Control
+        #  store so the leg drives the READ rather than the whole ratification flow.
+        import json as _json587
+        from agentic_core.api import change_control as _cca587
+        _cca587._CCA_STORE.mkdir(parents=True, exist_ok=True)
+        _cid587 = "cca-w587probe"
+        _cpath587 = _cca587._CCA_STORE / f"{_cid587}.json"
+        _cpath587.write_text(_json587.dumps({
+            "cca_id": _cid587, "title": "a change the Owner ratified", "status": "approved",
+            "board_ratification": {"decision": "ratify", "at": "2026-10-05T00:00:00Z",
+                                   "notes": "the Owner's own decision"},
+        }), encoding="utf-8")
+        try:
+            _dec587 = _b587.founder_model()
+            assert _dec587["decisions"]["count"] >= 1, (
+                "a ratified change is in the store and the model reads NO decisions, so the input kind "
+                "nothing read before this round is still not read", _dec587["decisions"])
+            assert _dec587["is_modelled_twin"] is True and _dec587["instructions"]["count"] == 0, (
+                "a DECISION alone does not make the Chief a twin, so only instructions actually count",
+                _dec587)
+            assert "decision(s) the Owner made" in _dec587["basis"], _dec587["basis"]
+            #  and a decision alone is enough for the twin to act unprompted, restating the decision
+            _dd587 = _aio587.run(_b587.twin_directive_unprompted("w587decscope"))
+            assert _dd587["issued"] is True, ("a Chief built from a decision refuses to act", _dd587)
+            assert "ratify" in str(_dd587.get("acted_on") or "").lower(), (
+                "the directive does not restate the Owner's decision", _dd587.get("acted_on"))
+        finally:
+            _cpath587.unlink(missing_ok=True)
+        assert _b587.founder_model()["decisions"]["count"] == 0, (
+            "the probe decision was not removed, so later legs would read it")
+
+        #  AN INSTRUCTION MAKES IT A TWIN, and the count is the Owner's own
+        _b587._save([{"kind": "chief_instruction", "instruction": "Close Phase 3",
+                      "created_at": "2026-10-05T00:00:00Z"}])
+        _twin587 = _b587.founder_model()
+        assert _twin587["is_modelled_twin"] is True and _twin587["owner_inputs"] == 1, _twin587
+        assert _twin587["instructions"]["count"] == 1, _twin587["instructions"]
+        assert "MODELLED TWIN" in _twin587["basis"], _twin587["basis"]
+        assert "FOUNDER MODEL (the Owner's lived record" in _b587.founder_profile()
+
+        # ── L3. CLAUSE (3): THE BASIS TRAVELS WITH THE OUTPUT, WITH ITS COUNTS ─────────────────────
+        #  (checked here while the state is controlled; the route is the surface a reader reaches)
+        assert "BASIS:" in _b587.founder_profile(), (
+            "the grounding string carries no basis, so nothing downstream can say which inputs the twin "
+            "was built from")
+        _cm587 = client.get("/api/v1/board/chief/model")
+        assert _cm587.status_code == 200, (_cm587.status_code, _cm587.text[:200])
+        _cj587 = _cm587.json()
+        assert _cj587["is_modelled_twin"] is True, _cj587
+        assert _cj587["instructions"]["count"] == 1, _cj587["instructions"]
+        assert str(_cj587.get("basis") or "").strip() and str(_cj587.get("method") or "").strip(), _cj587
+        #  the counts are IN the basis, not merely beside it
+        assert "1 instruction(s)" in _cj587["basis"], (
+            "the basis does not say HOW MANY inputs the twin was built from, which is what clause (3) "
+            "asks for", _cj587["basis"])
+
+        #  AND IT IS RENDERED WHERE A PERSON MEETS THEIR CHIEF. Clause (3) says every twin output is
+        #  RENDERED with its basis, and the pre-flight's key screen caught that no page fetched the model
+        #  at all. The two cases must render DIFFERENTLY: one rendering for both is the defect this item
+        #  is about, since a reader would learn nothing from it.
+        _bp587 = (_pl587.Path(__file__).resolve().parents[1]
+                  / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(
+                      encoding="utf-8", errors="replace")
+        _bpcode587 = _re587.sub(r"(?m)^\s*//.*$", " ",
+                                _re587.sub(r"/\*(?:.|\n)*?\*/", " ", _bp587))
+        assert "/api/v1/board/chief/model" in _bpcode587, (
+            "no page fetches the Chief's model, so a reader cannot tell a twin from a role")
+        assert "chiefModel.is_modelled_twin ? (" in _bpcode587, (
+            "the page does not branch on whether the Chief is a twin, so both cases render the same - "
+            "W503's class, so this asserts the gate with its opening brace rather than the field name")
+        for _btid587 in ('data-testid="chief-model-twin"', 'data-testid="chief-model-role"',
+                         'data-testid="chief-standing-with-output"'):
+            assert _btid587 in _bpcode587, ("a Chief standing has no rendered element", _btid587)
+
+        # ── L2. CLAUSE (2): UNPROMPTED, WITH EXECUTE, AND A ROLE REFUSES ───────────────────────────
+        #  (a) a ROLE refuses to act at all
+        _b587._save([])
+        _ref587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
+        assert _ref587["issued"] is False and _ref587["reason"] == "role", _ref587
+        assert "REFUSED" in _ref587["basis"] and "under the Owner's name" in _ref587["basis"], (
+            "a Chief with nothing of the Owner's does not say why it refuses to direct", _ref587["basis"])
+
+        #  (b) with an instruction of the Owner's it ISSUES, through the gate, WITH execute
+        _b587._save([{"kind": "chief_instruction", "instruction": "Close Phase 3 of the plan",
+                      "created_at": "2026-10-05T00:00:00Z"}])
+        _iss587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
+        assert _iss587["issued"] is True, _iss587
+        #  THE OUTCOME, not the intention. A blind proved the first cut vacuous: it asserted
+        #  `cascaded_to_ceo`, which the returned dict hardcoded to True, so the check could not fail
+        #  however the call was made (W497's shape — a guard asserting a value derived from the flag it is
+        #  checking). What "with execute" MEANS is that the directive reached the living plan.
+        assert int(_iss587.get("objectives_added") or 0) >= 1, (
+            "the directive was composed and FILED: nothing was delegated to the AI CEO and no objective "
+            "landed on the living plan, so nothing the twin directed actually happens. The clause says "
+            "WITH execute", _iss587.get("objectives_added"), _iss587.get("governance"))
+        assert _iss587["cascaded_to_ceo"] is True and _iss587["executed"] is True, _iss587
+        assert _iss587.get("directive_id"), _iss587
+        assert _iss587.get("governance"), (
+            "the unprompted directive records no gaas.v5 gate verdict, so an apex direction ran with no "
+            "constitutional record", _iss587)
+        #  it restates the OWNER's OWN words and invents nothing
+        assert "Close Phase 3 of the plan" in str(_iss587.get("acted_on") or ""), (
+            "the unprompted directive does not restate the Owner's own input", _iss587.get("acted_on"))
+
+        #  (c) THE TWIN DOES NOT READ ITS OWN OUTPUT BACK AS THE OWNER'S INPUT. Found by driving the
+        #  idempotence: chief_instruct records an `instruction`, so without a marker the twin's
+        #  restatement became a new Owner input - the count rose, the check never held, and the beat
+        #  would issue a directive on every visit forever while the Owner asked for nothing.
+        _after587 = _b587.founder_model()
+        assert _after587["owner_inputs"] == 1, (
+            "issuing a directive INCREASED the Owner's input count, so the twin is reading its own output "
+            "back as its principal's record", _after587["owner_inputs"],
+            _after587["instructions"]["recent"])
+        _rep587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
+        assert _rep587["issued"] is False and _rep587["reason"] == "nothing_new", (
+            "a second call with an unchanged Owner record issued ANOTHER directive; the beat visits every "
+            "sixty seconds, so this grows the living plan unasked", _rep587)
+
+        #  (d) a NEW input of the Owner's moves it again
+        _b587._save(_b587._load() + [{"kind": "chief_instruction", "instruction": "Now close Phase 4",
+                                      "created_at": "2026-10-05T01:00:00Z"}])
+        _mov587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
+        assert _mov587["issued"] is True and "Phase 4" in str(_mov587.get("acted_on") or ""), _mov587
+
+        # ── AND IT IS THE BEAT THAT DRIVES IT, not a manual call ───────────────────────────────────
+        import agentic_core.organism.heartbeat as _hb587
+        assert _hb587.heartbeat.auto_align is False, (
+            "auto_align is ON before this leg touched it - it is an autonomy key the Owner sets and must "
+            "default to off")
+        _b587._save([{"kind": "chief_instruction", "instruction": "Drive P3 to completion",
+                      "created_at": "2026-10-05T02:00:00Z"}])
+        _was587 = _hb587.heartbeat.auto_align
+        try:
+            _hb587.heartbeat.auto_align = True
+            _beat587 = _aio587.run(_hb587.heartbeat.beat())
+            _acts587 = _beat587.get("actions") or []
+            assert any(a == "twin_directive" for a in _acts587), (
+                "a beat with auto_align ON did not produce a twin directive, so the twin is not invoked "
+                "unprompted - a directive behind a route is a manual call", _acts587)
+            assert (_hb587.heartbeat.last_twin_directive or {}).get("issued") is True, (
+                "the beat issued a directive and recorded nothing, so the organism's status cannot report "
+                "what its twin did", _hb587.heartbeat.last_twin_directive)
+            #  a SECOND beat withholds and says so: a refusal and an issue are different facts and the
+            #  action list must not carry one marker for both
+            _beat2587 = _aio587.run(_hb587.heartbeat.beat())
+            _acts2587 = _beat2587.get("actions") or []
+            assert any(str(a).startswith("twin_directive_withheld:") for a in _acts2587), (
+                "a second beat with an unchanged Owner record did not record a WITHHELD directive",
+                _acts2587)
+            assert "twin_directive" not in _acts2587, (
+                "the second beat issued another directive", _acts2587)
+        finally:
+            _hb587.heartbeat.auto_align = _was587
+        assert _hb587.heartbeat.auto_align is False, (
+            "auto_align was left ON by this guard - it is the Owner's switch, not a test's")
+    finally:
+        _b587._save(_rows587)
+
+    # ── L4. CLAUSE (4): NO CHIEF IS TITLED "of default" ────────────────────────────────────────────
+    #  W492 found that exact string shipped. The guard's job is to keep it gone, DRIVEN through the
+    #  roster the surfaces actually read rather than by grepping the source.
+    #  the roster's real shape is {owner, chief, directors, governance, vision_summary} — the Chief is its
+    #  own key rather than a row in a members list, which is what the first cut of this leg assumed.
+    _named587 = _b587.board_for_owner("W587 Owner Name", "a vision")
+    assert isinstance(_named587.get("chief"), dict), ("the roster carries no Chief at all",
+                                                     sorted(_named587))
+    _ctitle587 = str(_named587["chief"].get("title") or "")
+    assert _ctitle587.strip(), "the Chief has no title"
+    #  TITLED FOR ITS OWNER
+    assert "W587 Owner Name" in _ctitle587, (
+        "a per-VSB Chief is not titled for its owner", _ctitle587)
+    #  and "of default" appears nowhere in the roster, for ANY owner name — including the one that
+    #  produced the string W492 found shipped
+    for _owner587 in ("W587 Owner Name", "default", "", None):
+        _r587 = _b587.board_for_owner(_owner587 or "", "a vision")
+        _blob587 = _re587.sub(r"\s+", " ", str(_r587)).lower()
+        assert "of default" not in _blob587, (
+            "a Chief is titled 'of default' - the exact string W492 found shipped. An owner name of "
+            "'default' or none must fall back to 'the founder', never to the literal",
+            _owner587, str(_r587.get("chief", {}).get("title"))[:160])
+        #  ...and the fallback really is the founder, not an empty possessive
+        if not _owner587 or _owner587 == "default":
+            assert "the founder's" in str(_r587["chief"].get("title") or ""), (
+                "an owner with no name produces a Chief titled for nobody rather than for the founder",
+                _r587["chief"].get("title"))
+    #  the directors are present and none of them carries it either
+    for _d587 in (_named587.get("directors") or []):
+        assert "of default" not in str(_d587.get("title") or "").lower(), _d587
+    assert len(_named587.get("directors") or []) >= 3, (
+        "the roster carries almost no directors, so this leg checks little",
+        len(_named587.get("directors") or []))
+    #  AND THE TITLE DOES NOT STILL CALL MODE 2 PLANNED, because this round delivered it
+    assert "Mode 2" not in _ctitle587 or "planned" not in _ctitle587, (
+        "the Chief's title still says Mode 2 is PLANNED after it was delivered", _ctitle587)
+    assert "no twin model is trained" in _ctitle587, (
+        "the title dropped the statement that no twin model is TRAINED, which is still true and is the "
+        "distinction clause (1) turns on - a model assembled from a record is not a trained one",
+        _ctitle587)
