@@ -1,0 +1,20 @@
+[
+ {
+  "tag": "the duplicate interceptor name comes back",
+  "file": "agentic_core/governance/uci_interceptor.py",
+  "old": "class RecirculationPreflight:",
+  "new": "class UnifiedConstitutionalInterceptorV16Omega:",
+  "selector": "w588_exactly_one",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT: two live classes under one name. A search for the constitutional interceptor returned both and a reader resolved it by guessing, which in W584 nearly put the Divine Alignment fix in the wrong file. Asserted on the AST class DEFINITIONS, so the renames own docstring naming the old identifier cannot satisfy it."
+ },
+ {
+  "tag": "the one live importer keeps the old name",
+  "file": "agentic_core/avatars/core/recirculation_orchestrator.py",
+  "old": "from agentic_core.governance.uci_interceptor import RecirculationPreflight",
+  "new": "from agentic_core.governance.uci_interceptor import RecirculationPreflight as UnifiedConstitutionalInterceptorV16Omega",
+  "selector": "w588_exactly_one",
+  "expect": "BLIND(red)",
+  "why": "A rename whose consumer still refers to the old name is a half-rename: the ambiguity survives in the importing module even though the class is renamed. The orchestrator is the only live importer, so its import IS the rename reaching its consumer."
+ }
+]

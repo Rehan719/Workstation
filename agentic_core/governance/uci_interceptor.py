@@ -17,11 +17,24 @@ from agentic_core.products.signature_suite.core import SignatureProductSuite
 
 logger = logging.getLogger(__name__)
 
-class UnifiedConstitutionalInterceptorV16Omega:
-    """
-    Ultimate UCI v16.Omega - Definitive Convergence.
-    Enforces all architectural pillars: geospheric homeostasis, divine alignment,
-    digital twin simulation, and signature suite integrity.
+class RecirculationPreflight:
+    """The avatar recirculation path's own pre-flight — NOT the platform's constitutional interceptor.
+
+    RENAMED W588 under the Owner's ruling of 2026-10-05 (FU-409). This class was called
+    `UnifiedConstitutionalInterceptorV16Omega`, and so is
+    `agentic_core/gaas/v5/uci_v16_omega.py:62` — which is the WIRED constitutional engine: exported from
+    gaas/v5/__init__, driven by the suite, returning an InterceptionResult. Two live classes under one
+    name meant a reader searching for "the interceptor" got both and resolved it by guessing, and in W584
+    that nearly sent a fix for the Divine Alignment gate into the wrong file.
+
+    What this one actually is: the pre-flight of ONE caller,
+    `avatars/core/recirculation_orchestrator.py`, which is its only live importer. It returns a plain dict
+    and raises PermissionError from its gates, where the gaas/v5 engine returns a result object — they
+    were never variants of one thing.
+
+    Enforces the pillars that path checks before it runs an action: geospheric homeostasis, the niyyah
+    gate (which W584 made three-state after driving it with five opposite intents and getting one
+    constant), digital twin simulation, and signature suite integrity.
     """
     def __init__(self, node_id: str = "MASTER_UCI_001", ueg_logger: Optional[Any] = None):
         self.node_id = node_id

@@ -15571,9 +15571,37 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
         "a handed route points at an item that is not open, so the next arrival on those files lands "
         "where nothing can act on it",
         [rt["slot"] for rt in _handed if rt["slot"] not in open_slots])
-    assert any(rt.get("handed_from") == "P2.9" for rt in routes), \
-        f"P2.9 closed but its route was not handed on: {[rt.get('handed_from') for rt in routes]}"
-    assert "unreadable" in next(rt for rt in routes if rt.get("handed_from") == "P1.16")["words"]   # rides P2.4 now
+    #  W588 (FU-365's class) — ACCOUNTED FOR, not merely present. These asserted that a route handed from
+    #  P2.9 and one handed from P1.16 still EXIST; W588 closed P2.18 under the Owner's ruling of
+    #  2026-10-05 and RETIRED its seven areas, because no open item claimed them, so both are gone and
+    #  the second raised StopIteration. Existence was never the property: a closed item's area must be
+    #  accounted for — HANDED to an open item that owns it, or RECORDED as retired with its consequence —
+    #  and never silently dropped. W587 made --retire-routes record `retired_areas` rather than only
+    #  printing a sentence, which is what makes this checkable at all.
+    _retired_areas = reg.get("retired_areas") if isinstance(reg, dict) else []
+    _retired_areas = _retired_areas if isinstance(_retired_areas, list) else []
+    for _origin in ("P2.9", "P1.16"):
+        _handed_on = [rt for rt in routes if rt.get("handed_from") == _origin]
+        _retired_from = [r for r in _retired_areas
+                         if isinstance(r, dict) and str(r.get("retired_with") or "") == "P2.18"]
+        assert _handed_on or _retired_from, (
+            f"{_origin}'s area is in NEITHER place: no open route carries it and nothing records it as "
+            f"retired, so the next row on those files lands wherever the mechanism last pointed with "
+            f"nothing saying the area was deliberately left unowned",
+            _origin, [rt.get("handed_from") for rt in routes], len(_retired_areas))
+        for _rt in _handed_on:
+            assert _rt["slot"] in open_slots, (
+                f"{_origin}'s area was handed to an item that is not open", _rt["slot"])
+    #  and EVERY retired area carries its consequence, because a retirement that recorded only the files
+    #  would leave a reader to guess what it means for a new row there
+    for _r in _retired_areas:
+        if not isinstance(_r, dict):
+            continue
+        assert "UNSCHEDULED" in str(_r.get("consequence") or ""), (
+            "a retired area does not record that a new row in it is UNSCHEDULED and names its own slot",
+            _r.get("files"), _r.get("consequence"))
+        assert _r.get("retired_with") and _r.get("retired_by"), (
+            "a retired area does not say which item owned it or which round retired it", _r)
     own = [rt for rt in routes if not rt.get("handed_from")]
     assert len({rt["slot"] for rt in own}) == len(own)                                        # one OWN route per item
     # the routes agree with the plan as filed: every open, non-gated row is where route_row would send it today
@@ -15695,11 +15723,24 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     #  the broad hygiene prefix sorts LAST, after every item that owns its own surfaces — held
     #  throughout. `handed_from` names a route's origin for ever; its slot names wherever the work
     #  lives now, which is exactly the thing a round is expected to change.
-    assert real_order[-1][1] == "P1.16", (
-        "the broad hygiene prefix handed from P1.16 is no longer the LAST route, so a later item's "
-        "catch-all can take surfaces an earlier item owns", real_order[-1])
-    assert real_order[-1][0] in open_slots, (
-        "that route points at an item that is not open", real_order[-1])
+    #  W588 (FU-365's class) — CONDITIONAL, because the broad hygiene catch-all itself can be retired.
+    #  This asserted the LAST route is the one handed from P1.16; W588 retired it with P2.18's six other
+    #  areas, since no open item claimed any of them. The property was never that the catch-all exists —
+    #  it is that WHILE one exists it sorts last, so no narrower route is shadowed by it.
+    _broad = [i for i, pair in enumerate(real_order) if pair[1] == "P1.16"]
+    if _broad:
+        assert max(_broad) == len(real_order) - 1, (
+            "the broad hygiene prefix handed from P1.16 is no longer the LAST route, so a later item's "
+            "catch-all can take surfaces an earlier item owns", real_order[-1], _broad)
+        assert real_order[max(_broad)][0] in open_slots, (
+            "that route points at an item that is not open", real_order[max(_broad)])
+    else:
+        #  retired rather than handed on: the area must be RECORDED as ownerless, which is the only
+        #  honest alternative to a sink (the Owner's ruling of 2026-10-05).
+        assert any(isinstance(r, dict) and any("integration_tests" in str(f) for f in (r.get("files") or []))
+                   for r in (reg.get("retired_areas") or [])), (
+            "the broad hygiene area is neither an open route nor a recorded retirement, so a new row "
+            "about docs/ or integration_tests/ has nowhere to go and nothing says why")
     #  W585 (FU-365's class) — BY ITS FILE, not by the item that owns it today. This pinned the pair
     #  ("P3.3", None), and W585 closed P3.3 and handed the route to P3.4 by area, so the pair became
     #  ("P3.4", "P3.3") and index() raised. The comment above states the remedy and the `_cat` assertion
@@ -15731,18 +15772,31 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
             "unscheduled and names its own slot")
     #  W575 (FU-365) — the CATALOGUE route, by its files rather than by the item that owns it
     #  today. P2.4 owned it until W575 closed P2.4 and handed all seven of its routes to P2.18.
+    #  W588 — ONE PROPERTY FOR BOTH AREAS, because this is the fifth pin of the same class in a single
+    #  round. An area is well-formed when a row in it either ROUTES to an open item, or the area is
+    #  RECORDED as retired so the row is UNSCHEDULED and names its own slot. A third state — no route and
+    #  no record — is the silent drop the whole mechanism exists to prevent.
+    def _area_accounted(_answer, _marker, _what):
+        if _answer.get("slot"):
+            assert _answer["slot"] in open_slots, (
+                f"a {_what} row routes to an item that is not open", _answer)
+            assert any(rt["slot"] == _answer["slot"] for rt in routes), (
+                f"a {_what} row routes somewhere no route points", _answer)
+            return
+        assert any(isinstance(r, dict) and any(_marker in str(f) for f in (r.get("files") or []))
+                   for r in (reg.get("retired_areas") or [])), (
+            f"a {_what} row routes NOWHERE and the area is not recorded as retired either, so it would "
+            f"be dropped with nothing saying the area was deliberately left unowned", _marker, _answer)
+
     _cat = fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")
-    assert _cat["slot"] in open_slots, ("a catalogue row routes to an item that is not open", _cat)
-    assert ((_cat["slot"], None) in real_order
-            or any(rt["slot"] == _cat["slot"] for rt in routes)), (
-        "a catalogue row routes somewhere no route points", _cat)
+    _area_accounted(_cat, "catalog", "catalogue")
     # W505 — P2.9 closed and HANDED its economy route on, the same mechanism the comment below
     # describes for P2.3 → P3.6. W575 (FU-365): that comment says the assertion "follows the route
     # rather than pinning a closed item" and then pinned the OPEN item the route had moved to,
     # which broke when P2.4 closed in turn. The durable property is that an economy row lands
     # wherever the economy route lives, and that item is open.
     _eco = fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")
-    assert _eco["slot"] in open_slots, ("an economy row routes to an item that is not open", _eco)
+    _area_accounted(_eco, "economy", "economy")
     # W505 — P2.3 closed and HANDED its avatars route to P3.6 (§9 depth covers the avatar surface), which
     # is the handing mechanism working. The assertion follows the route rather than pinning a closed item.
     _av_route = fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py"], "medium")
@@ -15757,9 +15811,21 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     # W575 (FU-365): asserted as CONSISTENCY rather than as an id — a row naming both an avatars
     # file and an economy file must route the same way as the economy file alone, whichever item
     # owns that route today. That is the precedence rule under test; the id never was.
+    #  W588 — THE PRECEDENCE RULE, with its premise stated. This asserted that a row naming an avatars
+    #  file AND an economy file routes where the economy file alone routes. That holds only while BOTH
+    #  areas have routes; W588 retired the economy area, so the economy file alone routes nowhere and the
+    #  avatars route legitimately decides. Precedence is still the property — the EARLIER-declared route
+    #  wins — so it is asserted against the route list's own order rather than against one area's id.
     _both = fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py", "agentic_core/economy/ledger.py"], "medium")
-    assert _both["slot"] == _eco["slot"], (
-        "adding an avatars file changed where an economy row routes", _both, _eco)
+    if _eco.get("slot"):
+        assert _both["slot"] == _eco["slot"], (
+            "adding an avatars file changed where an economy row routes, so the earlier route no longer "
+            "takes precedence", _both, _eco)
+    else:
+        #  the economy area is retired, so the avatars route is the only one either file matches
+        assert _both["slot"] == _av_route["slot"], (
+            "with the economy area retired, a row naming both files must route by the avatars file - the "
+            "only area of the two that still has an owner", _both, _av_route)
     # the high count is of rows riding an item (an unscheduled high row is listed on its own)
     sched_h = fu.schedule({"items": [row(severity="high"), row(id="FU-901", slot="NEXT", severity="high")]}, prompt)
     assert sched_h["counts"]["high"] == 1 and sched_h["counts"]["unscheduled"] == 1
@@ -39528,7 +39594,7 @@ def test_w584_p327_selection_refuses_before_it_ranks(client, monkeypatch, tmp_pa
         "unreachable", _low584)
 
     #  THE GATE ITSELF, both branches driven
-    from agentic_core.governance.uci_interceptor import UnifiedConstitutionalInterceptorV16Omega as _U584
+    from agentic_core.governance.uci_interceptor import RecirculationPreflight as _U584
 
     async def _ok584():
         return {"ok": True}
@@ -39864,7 +39930,15 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     import re as _re586
     import zipfile as _zf586
 
-    from agentic_core.config import data_path as _dp586
+    import agentic_core.api.vsb as _vstore586
+    from agentic_core.config import data_path as _dp586  # noqa: F401 — kept for the manifest-path leg below
+
+    #  W588 — THE PRODUCER'S OWN ROOT, not a re-derivation. `data_path` reads the environment when it is
+    #  CALLED, so calling it at assert time resolved into a readme-figures temp root on CI while the repo
+    #  had been written under the root the app booted with — green locally, red on CI, which is the
+    #  environment-assumption shape this programme records for DATA_DIR. `vsb._REPO_STORE` is bound at
+    #  import and is the root the writer used, so it cannot disagree with the writer.
+    _store586 = _vstore586._REPO_STORE
 
     _root586 = _pl586.Path(__file__).resolve().parents[1]
 
@@ -39889,7 +39963,7 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     _f586 = client.get(f"/api/v1/vsb/{_vid586}/repo/file", params={"path": _one586})
     assert _f586.status_code == 200, (_f586.status_code, _f586.text[:200])
     #  THE BYTES ARE THE REPO'S — compared against the file on disk, not merely non-empty
-    _disk586 = (_dp586("vsb_repos") / _vid586 / _one586)
+    _disk586 = (_store586 / _vid586 / _one586)
     assert _disk586.is_file(), ("the declared file is not on disk, so this comparison proves nothing",
                                str(_disk586))
     assert _f586.content == _disk586.read_bytes(), (
@@ -39905,7 +39979,7 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
         assert _br586.status_code in (400, 404), (
             "a path outside the repo's declared tree was SERVED", _bad586, _br586.status_code)
     #  a file that exists on disk but is NOT declared is also refused: the manifest is the allow-list
-    _undeclared586 = _dp586("vsb_repos") / _vid586 / "w586_not_declared.txt"
+    _undeclared586 = _store586 / _vid586 / "w586_not_declared.txt"
     _undeclared586.write_bytes(b"on disk, not in the manifest")
     try:
         _ur586 = client.get(f"/api/v1/vsb/{_vid586}/repo/file",
@@ -39920,9 +39994,9 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     #  changed nothing, because every bad path above is already refused by the manifest - the property is
     #  DOUBLY HELD (W497's shape). So the manifest is made to DECLARE a traversing path: the allow-list
     #  then passes it and only the containment check can refuse it. Without that check this is served.
-    _mpath586 = _dp586("vsb_repos") / f"{_vid586}.manifest.json"
+    _mpath586 = _store586 / f"{_vid586}.manifest.json"
     _manraw586 = _mpath586.read_bytes()
-    _outside586 = _dp586("vsb_repos") / "w586_outside_the_root.txt"
+    _outside586 = _store586 / "w586_outside_the_root.txt"
     _outside586.write_bytes(b"this file is OUTSIDE the repo root")
     try:
         _mdoc586 = _json586.loads(_manraw586.decode("utf-8"))
@@ -39946,7 +40020,7 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     #  no file was ever missing in the run, so a silent omission and a complete archive looked identical.
     #  A short archive that looks complete is the quieter defect - a caller who unzips it cannot tell.
     _victim586 = _tree586[-1]
-    _vpath586 = _dp586("vsb_repos") / _vid586 / _victim586
+    _vpath586 = _store586 / _vid586 / _victim586
     _vraw586 = _vpath586.read_bytes()
     try:
         _vpath586.unlink()
@@ -40063,7 +40137,6 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
 
     # ── L4. CLAUSE (4): AN ENTITY WITH NO REPO IS SAID TO HAVE NONE, NEVER SHOWN AS AN EMPTY TREE ──
     #  TWO STATES, driven separately, because they are different facts
-    _store586 = _dp586("vsb_repos")
     _man586 = _store586 / f"{_vid586}.manifest.json"
     _saved586 = _man586.read_bytes()
     try:
@@ -40126,6 +40199,21 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
     import re as _re587
 
     from agentic_core.api import board as _b587
+    from agentic_core.api import change_control as _cca587
+
+    #  BOTH STORES THIS MODEL READS ARE DRIVEN, not one. `founder_model()` counts three inputs and the
+    #  second is the Owner's recorded DECISIONS, read from the Change Control store. Emptying only the
+    #  board store made the ROLE leg pass in isolation and fail in the full suite, where an earlier
+    #  ratification guard leaves a ratified change on record for the rest of the session - so the Chief
+    #  was a twin and the leg that proves a Chief with no inputs is a ROLE went red.
+    #  REDIRECTED, NOT STUBBED: `_cca_path()` and every glob read this global on each call, so the REAL
+    #  reader runs against a real but empty directory, which is what makes "reads zero" worth asserting.
+    _ccadir587 = tmp_path / "cca_w587"
+    _ccadir587.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(_cca587, "_CCA_STORE", _ccadir587)
+    assert _b587._owner_decisions() == [], (
+        "the decisions store was redirected and still yields decisions, so this guard is reading state it "
+        "does not control and its ROLE leg cannot be trusted")
 
     # ── L1. CLAUSE (1): THREE INPUTS, EACH COUNTED — AND A CHIEF WITH NONE IS A ROLE ───────────────
     #  the store is emptied for this leg, so the ROLE state is DRIVEN rather than hoped for: in a
@@ -40162,8 +40250,7 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
         #  a blind showed the guard was not exercising at all. Written straight into the Change Control
         #  store so the leg drives the READ rather than the whole ratification flow.
         import json as _json587
-        from agentic_core.api import change_control as _cca587
-        _cca587._CCA_STORE.mkdir(parents=True, exist_ok=True)
+        #  (change_control is already imported above, with its store redirected into tmp_path)
         _cid587 = "cca-w587probe"
         _cpath587 = _cca587._CCA_STORE / f"{_cid587}.json"
         _cpath587.write_text(_json587.dumps({
@@ -40357,3 +40444,86 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
         "the title dropped the statement that no twin model is TRAINED, which is still true and is the "
         "distinction clause (1) turns on - a model assembled from a record is not a trained one",
         _ctitle587)
+def test_w588_exactly_one_class_carries_the_constitutional_interceptor_name():
+    """FU-409 (Owner-ruled 2026-10-05) — two live classes shared one name and it misdirected a fix.
+
+    MEASURED IN W584: `agentic_core/gaas/v5/uci_v16_omega.py:62` and
+    `agentic_core/governance/uci_interceptor.py:20` were BOTH called
+    `UnifiedConstitutionalInterceptorV16Omega`. They are not variants of one thing — the first is the wired
+    constitutional engine, exported from gaas/v5/__init__ and driven by this suite at four monkeypatch
+    points, returning an InterceptionResult; the second returns a plain dict, raises PermissionError from
+    its gates, and had exactly one live importer. A search for "the interceptor" returned both, and a
+    reader resolved the ambiguity by guessing: while fixing the Divine Alignment gate in W584 that nearly
+    put the fix in the wrong file.
+
+    ASSERTED ON THE CLASS DEFINITIONS, NOT THE NAME IN TEXT. The rename's own docstring and the
+    orchestrator's import comment both mention the old identifier in order to explain the rename, so a
+    string count would be satisfied by prose while two real classes still shared the name — the
+    banned-literal trap this programme has now hit five times.
+    """
+    import ast as _ast588
+    import pathlib as _pl588
+
+    _root588 = _pl588.Path(__file__).resolve().parents[1]
+    _live588 = [p for p in (_root588 / "agentic_core").rglob("*.py")
+                if "_archive" not in p.parts and "__pycache__" not in p.parts]
+    assert len(_live588) > 200, ("the scan found almost nothing, so it proves nothing", len(_live588))
+
+    _defs588 = {}
+    for _p588 in _live588:
+        try:
+            _tree588 = _ast588.parse(_p588.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for _n588 in _ast588.walk(_tree588):
+            if isinstance(_n588, _ast588.ClassDef):
+                _defs588.setdefault(_n588.name, []).append(
+                    str(_p588.relative_to(_root588)).replace("\\", "/"))
+
+    #  THE WIRED ENGINE KEEPS THE NAME, and only it
+    _omega588 = _defs588.get("UnifiedConstitutionalInterceptorV16Omega", [])
+    assert len(_omega588) == 1, (
+        "more than one live class is named UnifiedConstitutionalInterceptorV16Omega, so a reader searching "
+        "for the constitutional interceptor gets both and resolves it by guessing - which in W584 nearly "
+        "sent a fix for the Divine Alignment gate into the wrong file", _omega588)
+    assert _omega588[0] == "agentic_core/gaas/v5/uci_v16_omega.py", (
+        "the name no longer belongs to the WIRED constitutional engine - the one exported from "
+        "gaas/v5/__init__ and driven by this suite", _omega588)
+
+    #  and the avatar path's pre-flight is named for what it is, in its own file
+    _pre588 = _defs588.get("RecirculationPreflight", [])
+    assert _pre588 == ["agentic_core/governance/uci_interceptor.py"], (
+        "the avatar recirculation path's pre-flight is not where or what it should be", _pre588)
+
+    #  THE ONE LIVE IMPORTER FOLLOWS THE RENAME. A rename whose consumer still imports the old name is a
+    #  break, and the orchestrator is the only module that imports this class at all.
+    _orch588 = (_root588 / "agentic_core/avatars/core/recirculation_orchestrator.py").read_text(
+        encoding="utf-8", errors="replace")
+    _otree588 = _ast588.parse(_orch588)
+    #  BOTH the imported name AND the local binding. `ast.alias.name` is the original and `.asname` is
+    #  the local one, so reading only `.name` let a blind alias the import straight back to the engine's
+    #  name — reintroducing the ambiguity the ruling removed, in the one module that imports this class.
+    _imported588, _localnames588 = set(), set()
+    for _n588 in _ast588.walk(_otree588):
+        if isinstance(_n588, _ast588.ImportFrom) and "uci_interceptor" in str(_n588.module or ""):
+            for _a588 in _n588.names:
+                _imported588.add(_a588.name)
+                _localnames588.add(_a588.asname or _a588.name)
+    assert _imported588 == {"RecirculationPreflight"}, (
+        "the avatar recirculation orchestrator does not import the renamed pre-flight, so either the "
+        "rename did not reach its only consumer or the old name is still resolvable", sorted(_imported588))
+    assert "UnifiedConstitutionalInterceptorV16Omega" not in _localnames588, (
+        "the orchestrator ALIASES the pre-flight back to the constitutional engine's name, so the "
+        "ambiguity the ruling removed is alive again in the one module that imports this class",
+        sorted(_localnames588))
+
+    #  AND THE MODULE IMPORTS. The construction check used to be `"RecirculationPreflight(" in source`,
+    #  which an alias leaves untouched while the module raises NameError — a string search cannot see
+    #  that. Importing it is the only check that proves the rename reached its consumer.
+    import importlib as _il588
+    _mod588 = _il588.import_module("agentic_core.avatars.core.recirculation_orchestrator")
+    assert getattr(_mod588, "RecirculationPreflight", None) is not None, (
+        "the orchestrator module does not bind RecirculationPreflight at all, so the rename did not reach "
+        "the name it actually uses")
+    assert "RecirculationPreflight(" in _orch588, (
+        "the orchestrator imports the pre-flight and never constructs it")

@@ -1079,6 +1079,56 @@ def _bound_names_top(tree: ast.Module) -> set:
     return out
 
 
+def check_register_change(rev: str, files: list[str]) -> list[str]:
+    """A register change that invalidates assertions the round did not touch (W588).
+
+    `check_plan_pins` screens the lines a round ADDS to a test. This screens the other side: the six pins
+    that broke in W588 were written in W469, W505, W575 and W586 and were invalidated by the REGISTER
+    moving — an item marked done, a route removed, an area retired. No added line carries that, so the
+    added-line screen is blind to it by construction.
+
+    It names the guards the change puts at risk rather than running them; the pre-flight stays mechanical.
+    """
+    out: list[str] = []
+    #  the two documents a register change lands in
+    reg_changed = any(f.endswith("docs/FOLLOWUPS.json") for f in files)
+    plan_changed = any(f.endswith("docs/FABLE_DELIVERY_PROMPT.md") for f in files)
+    if not (reg_changed or plan_changed):
+        return out
+
+    kinds: list[str] = []
+    if plan_changed:
+        added, removed = added_removed(rev, "docs/FABLE_DELIVERY_PROMPT.md")
+        if any("\u2705 DONE" in line for _, line in added):
+            kinds.append("an item was marked DONE — the item-count, ordering and 'is this item open' "
+                         "assertions read that")
+        if any("AREAS WITH NO OWNER" in line for _, line in added):
+            kinds.append("an area was RETIRED — the route-origin, precedence and area-accounting "
+                         "assertions read the route list that no longer holds it")
+    if reg_changed:
+        added, removed = added_removed(rev, "docs/FOLLOWUPS.json")
+        if any('"routes"' in line for _, line in added) or any('"routes"' in line for line in removed):
+            kinds.append("the ROUTE LIST changed — assertions that pin a route's existence, its origin "
+                         "or its position go red when one is added, moved or retired")
+        if any('"retired_areas"' in line for _, line in added):
+            kinds.append("an area was recorded as RETIRED — an assertion that a row in that area routes "
+                         "to an open item now has no destination to find")
+        if any('"slot"' in line for _, line in added):
+            kinds.append("a row was RESLOTTED or added — assertions that count the rows riding an item "
+                         "read that")
+    if not kinds:
+        return out
+
+    #  the guards that actually read the register and the plan, by name, so the round can run them
+    out.append("this round changed the register or the plan, which can invalidate assertions it did not "
+               "touch — run the register guards before the full suite: "
+               "-k 'plan_carries_every_followup or plan_projects or an_area_with_no_owner or "
+               "route_whose_matcher'")
+    for k in kinds:
+        out.append(f"  {k}")
+    return out
+
+
 CHECKS = {
     # W570 (FU-348) - the label said "no surface" while the check only looked at PAGES, so a
     # CLI-surfaced key was reported under a label that was false about it. A page and a printed line
@@ -1094,6 +1144,11 @@ CHECKS = {
     "order": ("a branch inserted ahead of an existing one", check_order),
     "planpins": ("an assertion pinned to plan state, which goes red when the plan advances",
                  check_plan_pins),
+    # W588 — the OTHER side of the same class. `planpins` screens lines a round ADDS; this screens the
+    # register change that invalidates assertions the round never touched, which is how six pins broke in
+    # W588 while `planpins` reported ok.
+    "regchange": ("a register or plan change that invalidates assertions the round did not touch",
+                  check_register_change),
 }
 
 

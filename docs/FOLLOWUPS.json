@@ -6507,9 +6507,9 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
+      "status": "dropped",
       "closed_by": null,
-      "note": "",
+      "note": "Re-stated as a new row under the Owner's ruling of 2026-10-05: option (a) HOLD, with the release condition corrected from its WORDING to its SUBSTANCE. The old condition was a model path, and W582 traced that to be false - the engines hardcode passed=None as a literal and ollama is reachable with three models, so no model changes it. The real condition is FU-403. Replaced rather than amended because a row whose stated release condition cannot be met teaches the next reader the wrong thing.",
       "slot_source": "the hold's release condition IS P3.20 - the engines' model path - so the obligation belongs with the item that lifts it, not with the item that deferred it",
       "tier": 2
     },
@@ -7175,11 +7175,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.18",
+      "slot": "P3.6",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "clause (a)'s property on the one reader W577 reached last and could only log from"
+      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. ai/user_context.py is how a person's own recorded context reaches the model, which is P3.6's subject - its clause (2) is an AI output honouring what a user asked for. An unreadable profile yielding the same preamble as a person who never wrote one is that path's three-state defect, and FU-411 already rides P3.6 on the same user-preference path."
     },
     {
       "id": "FU-398",
@@ -7193,11 +7193,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.18",
+      "slot": "P3.8",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the class behind clause (c)'s named single: FU-313 cannot record a commitment partly because the request model drops it, and that drop is platform-wide"
+      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. P3.8 is the item that carries Tier-1-shaped fixes, and a request model that silently discards a field a caller sent is exactly one: an instruction and a dropped instruction are indistinguishable, which is the same shape as P3.8's own clause (2), a lifecycle field that only ever holds its final value. The fit is by CLASS rather than by file, and that is stated here because no open item owns the API-contract area."
     },
     {
       "id": "FU-399",
@@ -7211,11 +7211,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.18",
+      "slot": "P2.17",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "clause (b) continues to own it: an instrument that says what it is, now that the second instrument exists"
+      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. P2.17 is THE ROUND'S OWN COST - the suite and the instruments a round depends on - and 81 guards that scan text instead of driving a rendered page is a weakness in those instruments. It does NOT block P2.17's bar, which closes only on FU-301's cause being established: an item closes on its ACCEPT clause and not on zero open rows."
     },
     {
       "id": "FU-400",
@@ -7247,11 +7247,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.18",
+      "slot": "P3.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "clause (a)'s property applied to a gate's pass: a reader is told what was NOT screened"
+      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. P3.21 is the verifier whose checks each return MET, UNMET or NOT ASSESSABLE with a basis and whose UNMET WITHHOLDS the output naming the check that failed. A declared coverage limit that reaches a backend reader and stops there is that same class one layer down: a limit nobody downstream can read cannot withhold anything."
     },
     {
       "id": "FU-402",
@@ -7431,6 +7431,88 @@
       "slot_source": "P3.26 clause (1) is this row word for word, and P3.26's own text calls it the precondition for the rest of turnover; FU-312 carried it against P3.27, whose bar says nothing about lineage",
       "tier": 2,
       "reach": "secondary"
+    },
+    {
+      "id": "FU-411",
+      "title": "Trimming the 12-language list to the 5 with dictionaries also narrows voice dictation, which the clause does not discuss",
+      "why": "Trimming the 12-language list to the 5 with dictionaries also narrows VOICE DICTATION, which the clause does not discuss. OWNER-RULED 2026-10-05, approved shape recorded here so a later round does not decide it quietly. P3.6's own deliverable says \"12-language list trimmed to what has a dictionary\", and its ACCEPT clause (3) is explicit that \"a hard-coded list of twelve fails this whatever it contains\". MEASURED: apps/workstation-superapp/src/lib/userPrefs.ts:20 hardcodes exactly twelve entries (en-US, ar-SA, ur-PK, fr-FR, es-ES, de-DE, hi-IN, bn-BD, zh-CN, id-ID, tr-TR, ms-MY) and apps/workstation-superapp/src/lib/i18n.tsx:326 holds FIVE dictionaries (en, ar, fr, es, ur). So the clause is precisely met in its premise: the list is hard-coded and seven of the twelve have no dictionary. THE CONSEQUENCE THE BAR DOES NOT DISCUSS, and the reason this is a row rather than a line in a round. prefs.language is not only the interface language. Settings sets it on the browser Web Speech API for voice dictation, applyDocumentDirection reads it to switch the document to right-to-left for Arabic and Urdu, and it is the natural input for an AI output language. Trimming the single list to five therefore removes a user's ability to DICTATE in Turkish, Hindi, Bengali, Mandarin, Indonesian, Malay or German - a capability that works today, because dictation is the browser's own and does not depend on this platform holding a dictionary. AND THE OVER-CLAIM THE CLAUSE WAS WRITTEN AGAINST IS ALREADY ABSENT, which is what makes the trim a net loss if it is done naively. W370 and W505 already made the Settings page state coverage from the REAL dictionaries per selection: choosing a language without one prints \"The interface is not translated into this language yet - it stays in English\", and the dictation line says only that the choice is sent to the browser and that whether the browser recognises it \"is its own capability, which this platform cannot check\". So nothing currently claims twelve translated languages. What remains wrong is only the hard-coded list itself. THE APPROVED SHAPE: trim the INTERFACE language list as the deliverable says, computed from the dictionaries present so it grows by itself when a dictionary is added, and keep a WIDER set for dictation as a separate control rather than deleting the capability. A person who wants the interface in English and dictation in Turkish must still be able to say so. DO NOT delete the per-selection coverage line or the dictation sentence: both are true and removing a true statement is also a defect. NOT THIS ROW: P3.6's other two clauses. Clause (1) spans roughly nine surfaces (the six domain hubs, whatever the item means by DomainTool - no such file exists - Settings, and the avatar), each new key needing an entry in all five dictionaries or it silently falls back to English; clause (2) is a build from zero, since agentic_core/ai/gateway.py contains no language handling at all and a repo-wide search for requested_language, language_honoured, output_language and not_in_requested returns nothing. P3.6 is larger than one round and this row is only its clause (3) plus the consequence.",
+      "source": "W587 (measured while sizing P3.6; Owner-ruled 2026-10-05)",
+      "found": "2026-10-05",
+      "files": [
+        "apps/workstation-superapp/src/lib/userPrefs.ts",
+        "apps/workstation-superapp/src/lib/i18n.tsx",
+        "apps/workstation-superapp/src/pages/Settings.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "It IS P3.6 clause (3) plus the consequence the clause does not discuss, so it rides the item whose bar it belongs to rather than waiting for an item of its own",
+      "tier": 2,
+      "reach": "core"
+    },
+    {
+      "id": "FU-412",
+      "title": "The avatar path is HELD until a constitutional check produces a real verdict (FU-403), not until the engines have a model path",
+      "why": "The avatar path is HELD, and the release condition is now the one that can actually be met. OWNER-RULED 2026-10-05: option (a) HOLD, with this row's release condition corrected from its wording to its substance. The hold itself is unchanged and the reason the Owner accepted in W554 still stands - wiring a chat surface to a loop that withholds every emission would turn a surface that answers into one that deliberately delivers nothing, and a user-facing regression is still a regression. WHAT THE OLD CONDITION SAID, AND WHY IT WAS WRONG. This row was released by \"P3.20 giving the engines a path to a model, after which clearance gate 1 can receive a constitutional verdict and the loop can emit rather than withhold\". W560 gave them the path: all six engines call the tier router and carry what served them. W555 then measured that the consequence did not follow, and read it as a MODEL problem - the router walks down to the deterministic floor because no tier above it holds a resource, so the row pointed at FU-271 option (b) hardware or option (c) an Owner-gated external accelerant. W582 TRACED THE CHAIN END TO END AND THAT READING IS FALSE. Every cognitive engine hardcodes constitutional_validation.passed = None with the basis \"no constitutional check ran: this engine performs none\" - a LITERAL in the source, not a refusal for want of a resource. mushawara_bridge_2.deliberate reads those verdicts and derives NOT ASSESSED whenever any is None; clearance gate 1 in avatars/core/clearance_chain.py requires status APPROVED and blocks; the recirculation loop therefore withholds every emission. MEASURED IN THE SAME ROUND: ollama is reachable and three local models are installed (llama2, llama3.2, llama3.2:1b) with llama3.2 as the effective default - so the engines HAVE a model that answers, and the loop still withholds, because passed=None is a literal no model changes. The deliberation's own reason string asserted the same false cause and W582 corrected it. SO THE RELEASE CONDITION IS FU-403, NOT A MODEL: the avatar path waits until an engine - or the chain itself - performs a constitutional check that produces a REAL verdict, so gate 1 can receive a pass or a failure instead of an absence. Nothing about hardware, nothing about an external accelerant, and FU-271's options are not on this path at all. A hold whose stated condition cannot be met by the thing it names is a permanent hold wearing a temporary label, which is what this was for twenty-six rounds. WHAT THE WORK IS WHEN FU-403 LANDS, unchanged and still true: export the interface (agentic_core/avatars/__init__.py exports the orchestrator and not the interface), give it a route (no route reaches either today), and drive BOTH outcomes - an emission that clears and one that is withheld - because a chat surface wired to a loop that can still withhold must show the withholding as a refusal with its reason and never as an empty answer. WHY THIS ROW EXISTS AT ALL: W554 closed FU-357 by amending P3.16's third ACCEPT clause to hold the path, and nothing carried the deferred work forward - no open row mentioned the avatar path or avatar_interface.py, and the obligation existed only as prose inside the bar of an item about to be marked DONE. That is the exact failure FU-361 was filed against in W551, committed one round later. This row is what makes the hold visible rather than remembered. NO LONGER OWNER-GATED: the Owner has ruled, so it waits on FU-403's work rather than on a decision, and it is slotted alongside FU-403 on the item that now owns the avatars/core area.",
+      "source": "W588 (Owner-ruled 2026-10-05; re-states FU-366 on W582's trace)",
+      "found": "2026-10-05",
+      "files": [
+        "agentic_core/avatars/frontend/avatar_interface.py",
+        "agentic_core/avatars/__init__.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.21",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.21 now owns the avatars/core area (five routes handed to it when P3.12 and P3.14-P3.17 closed), and FU-403 - the condition this hold now names - already rides it. A hold and the work that releases it belong on the same item.",
+      "tier": 2,
+      "reach": "secondary"
+    },
+    {
+      "id": "FU-413",
+      "title": "A measuring script moves the process data root and a test loads it in-process, so a later test can see a moved store",
+      "why": "A measuring script mutates the whole process's data root, and a test loads it IN-PROCESS, so whatever runs after it in that worker can see a moved store. FOUND W588 while diagnosing the W586 CI failure, and the diagnosis is NOT complete - the residue is named here rather than dressed as a cause. WHAT IS ESTABLISHED. scripts/readme_figures.py api_figures() creates tempfile.mkdtemp(prefix=\"readme-figures-\") and then does os.environ.setdefault for DATA_DIR, WORKSTATION_DATA_DIR, PROJECTS_DIR, WORKSTATION_UEG_PATH and AI_DISABLE_LOCAL before importing agentic_core.app_mvp. Its own comment says why: the app writes to its data dir on import, so measuring must not touch the live store, and CI sets no DATA_DIR. Because it uses setdefault, it is a NO-OP on a developer machine where DATA_DIR is already exported and it SETS the process-wide data root on CI where nothing is. integration_tests/test_mvp_spine.py's W499 guard loads that script through importlib and calls measured() IN-PROCESS, so on CI the first test to do so moves the data root for everything that follows in that xdist worker. THE SYMPTOM THIS EXPLAINS. W586's repo guard failed on CI, and only on CI, with \"the declared file is not on disk\" at /tmp/readme-figures-lwa5daym/vsb_repos/vsb-ba11956c07/BUSINESS_PLAN.md - a path under exactly that temp prefix. The local suite was green in every round. WHAT IS NOT ESTABLISHED, and why this row exists rather than a claim. agentic_core.config.data_path resolves Path(settings.data_dir), and settings is built when config is first imported, so it does not re-read the environment per call - driven in W588, where moving DATA_DIR mid-process changed nothing. For the CI path to resolve under the temp prefix, settings must have been bound AFTER the script set the variables, which requires an import order I did not reproduce. So the mechanism is consistent with the evidence and is not proven, and restoring the variables afterwards would not undo it, because the binding is in settings and not in the environment. WHAT WAS DONE IN W588: the W586 guard stopped re-deriving the store root and now reads agentic_core.api.vsb._REPO_STORE, the constant the WRITER binds at import, so the read cannot disagree with the write however the environment moves. That removes one class of disagreement without claiming to be the cause. THE WORK THIS ROW CARRIES: make the measurement unable to move another test's store at all - run readme_figures as a SUBPROCESS from the guard that checks its figures, which is what a script that mutates process-wide state needs, or give it a pure function that computes the figures without importing the app into this process. Then re-read CI, because CI is the only place this reproduces. SUSPECT IT ALSO FOR W565, whose CI failure is a forecast figure arriving as None - a store that moved mid-worker would produce exactly that, and the git checkout depth is a second environment assumption already recorded for that shape.",
+      "source": "W588 (found while diagnosing the W586 CI failure; mechanism not reproduced)",
+      "found": "2026-10-05",
+      "files": [
+        "scripts/readme_figures.py",
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 is THE ROUND'S OWN COST - the suite and the instruments a round depends on - and a test that moves the data root for every test after it in its worker is a defect in those instruments. It sits beside FU-301 and FU-399 for the same reason.",
+      "tier": 2,
+      "reach": "internal"
+    },
+    {
+      "id": "FU-414",
+      "title": "Nothing asserts the register on disk is serialised the way its own writer serialises it, so a format drift returns as an unreviewable whole-file diff",
+      "why": "MEASURED IN W588: docs/FOLLOWUPS.json was stored at indent=1 while both of its writers emit indent=2 (agentic_core/plan_followups.py:105 and scripts/followups.py:681), so the register had been maintained by scripted edits that preserved an older formatting. The first CLI write of the round reformatted all 7,708 lines and the round's real register change - seven retired areas, four reslotted rows, three new rows - arrived inside a 15,479-line whole-file rewrite that no reader could review. W588 separated the reformat into its own commit (ad30cf89), so the format now matches its writer. What remains is that NOTHING asserts it: the next scripted edit that rewrites the register at a different indent re-creates the drift silently, and the round after it produces another unreviewable whole-file diff. A whole-file rewrite is the shape that hides a defect rather than showing one, which is why this is worth a guard rather than a habit: assert that the register on disk is byte-identical to its own writer's serialisation of itself, so a drift fails at the pre-flight instead of surfacing as a 15,000-line diff.",
+      "source": "W588 refutation of the round's own diff",
+      "found": "2026-10-05",
+      "files": [
+        "docs/FOLLOWUPS.json",
+        "agentic_core/plan_followups.py",
+        "scripts/followups.py",
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the router REFUSED this row because the areas covering docs/ and the delivery tooling were retired in this same round, which is the consequence the Owner ruled on 2026-10-05: a row in an ownerless area names its own slot. P2.17 is named by SUBJECT, not convenience - it is the only open item about the round's own INSTRUMENTS being wrong rather than slow, and its own text records an instrument that was internally consistent and externally meaningless (a serial-suite constant used as a parallel floor). A pre-flight that cannot see a register reformat is the same shape. FU-413 sits here on the same basis.",
+      "tier": 2
     }
   ],
   "routes": [
@@ -7488,82 +7570,6 @@
       "handed_from": "P3.17"
     },
     {
-      "slot": "P2.18",
-      "files": [
-        "agentic_core/support/"
-      ],
-      "words": [
-        "support agent",
-        "support logic"
-      ],
-      "note": "handed from P3.18 via P2.4; handed from P3.18; W482 — autonomous technical support (the archived simulation is not inherited)",
-      "handed_from": "P3.18"
-    },
-    {
-      "slot": "P2.18",
-      "files": [
-        "agentic_core/biomimicry/geospheric/regulator.py",
-        "agentic_core/biomimicry/geospheric/homeostatic_regulator.py",
-        "agentic_core/biomimicry/geospheric/balance_regulator.py",
-        "agentic_core/simverse/"
-      ],
-      "words": [
-        "biogeochemical",
-        "cycle setpoint",
-        "sovereign wealth"
-      ],
-      "note": "handed from P3.19 via P2.4; handed from P3.19; W484 — the six cycles bound to measured flows (the geospheric regulators and the causal simulator)",
-      "handed_from": "P3.19"
-    },
-    {
-      "slot": "P2.18",
-      "files": [
-        "agentic_core/api/change_control.py",
-        "apps/workstation-superapp/src/pages/governance/",
-        "agentic_core/api/board.py",
-        "agentic_core/auth/",
-        "agentic_core/gaas/v5/circuit_breaker_rl.py",
-        "agentic_core/api/constitutional_gaas.py"
-      ],
-      "words": [
-        "auth dependency",
-        "governance verdict",
-        "circuit breaker",
-        "evolution apply",
-        "change control",
-        "ratification"
-      ],
-      "note": "handed from P2.6 via P2.4; handed from P2.6; the perimeter and the gate",
-      "handed_from": "P2.6"
-    },
-    {
-      "slot": "P2.18",
-      "files": [
-        "agentic_core/api/resource_fabric.py",
-        "agentic_core/api/swarm.py",
-        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
-      ],
-      "words": [
-        "delivery check",
-        "assess a subject",
-        "form-only"
-      ],
-      "note": "handed from P2.8 via P2.4; handed from P2.8; bespoke swarms; W482 — the cascade's missing delivery measurement; W483 — and what the §11 screen can actually assess (the capability, not the honesty)",
-      "handed_from": "P2.8"
-    },
-    {
-      "slot": "P2.18",
-      "files": [
-        "agentic_core/economy/",
-        "agentic_core/api/economy.py",
-        "agentic_core/api/marketplace.py",
-        "apps/workstation-superapp/src/pages/enterprise/"
-      ],
-      "words": [],
-      "note": "handed from P2.9 via P2.4; handed from P2.9; the economy's flows, told as they happened",
-      "handed_from": "P2.9"
-    },
-    {
       "slot": "P3.6",
       "files": [
         "agentic_core/avatars/"
@@ -7586,7 +7592,123 @@
       "handed_from": "P2.7"
     },
     {
-      "slot": "P2.18",
+      "slot": "P3.26",
+      "files": [
+        "requirements.txt",
+        "pyproject.toml",
+        "Dockerfile",
+        "requirements-dev.txt"
+      ],
+      "words": [
+        "declared dependency",
+        "dependencies declared",
+        "unimported dependency",
+        "manifest",
+        "pin",
+        "pins",
+        "distribution"
+      ],
+      "note": "W588: the dependency DECLARATION area, narrowed from W583's words after they collided. W583 gave this route the bare words dependency and dependencies, and a route word is matched as a whole phrase inside a row's TITLE - so it also matched P2.18's governance route, whose words are auth dependency governance verdict circuit breaker evolution. followups.py done P2.18 --retire-routes then REFUSED with \"P3.26 claims [change_control.py, governance pages, board.py] - title word dependency\", which would have blocked P2.18's closure on a false claim. The same generic-word hazard W586 recorded for value, outcome and benefit: a word common enough to be useful is common enough to capture somebody else's area. The words are now phrases that only a manifest row carries. P3.26 clause (7) remains the mechanism that answers this area: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why, which is what 25 declared dependencies that no module imports needs - not a round quietly deleting a pin from a lock CI installs from."
+    }
+  ],
+  "retired_areas": [
+    {
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "words": [
+        "board pack",
+        "chief's opening",
+        "business plan",
+        "living business system"
+      ],
+      "retired_with": "P3.4",
+      "retired_by": "W587",
+      "at": "2026-10-05T06:30:09Z",
+      "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
+    },
+    {
+      "files": [
+        "agentic_core/support/"
+      ],
+      "words": [
+        "support agent",
+        "support logic"
+      ],
+      "retired_with": "P2.18",
+      "retired_by": "W588",
+      "at": "2026-10-05T07:12:55Z",
+      "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
+    },
+    {
+      "files": [
+        "agentic_core/biomimicry/geospheric/regulator.py",
+        "agentic_core/biomimicry/geospheric/homeostatic_regulator.py",
+        "agentic_core/biomimicry/geospheric/balance_regulator.py",
+        "agentic_core/simverse/"
+      ],
+      "words": [
+        "biogeochemical",
+        "cycle setpoint",
+        "sovereign wealth"
+      ],
+      "retired_with": "P2.18",
+      "retired_by": "W588",
+      "at": "2026-10-05T07:12:55Z",
+      "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
+    },
+    {
+      "files": [
+        "agentic_core/api/change_control.py",
+        "apps/workstation-superapp/src/pages/governance/",
+        "agentic_core/api/board.py",
+        "agentic_core/auth/",
+        "agentic_core/gaas/v5/circuit_breaker_rl.py",
+        "agentic_core/api/constitutional_gaas.py"
+      ],
+      "words": [
+        "auth dependency",
+        "governance verdict",
+        "circuit breaker",
+        "evolution apply",
+        "change control",
+        "ratification"
+      ],
+      "retired_with": "P2.18",
+      "retired_by": "W588",
+      "at": "2026-10-05T07:12:55Z",
+      "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
+    },
+    {
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/api/swarm.py",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "words": [
+        "delivery check",
+        "assess a subject",
+        "form-only"
+      ],
+      "retired_with": "P2.18",
+      "retired_by": "W588",
+      "at": "2026-10-05T07:12:55Z",
+      "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
+    },
+    {
+      "files": [
+        "agentic_core/economy/",
+        "agentic_core/api/economy.py",
+        "agentic_core/api/marketplace.py",
+        "apps/workstation-superapp/src/pages/enterprise/"
+      ],
+      "words": [],
+      "retired_with": "P2.18",
+      "retired_by": "W588",
+      "at": "2026-10-05T07:12:55Z",
+      "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
+    },
+    {
       "files": [
         "agentic_core/catalog/",
         "products/",
@@ -7639,31 +7761,12 @@
         "catalogue count",
         "catalogue counts"
       ],
-      "note": "handed from P2.4; the scatter: the catalogue and the product directories (P1.13's area since W470); the simulated signer, the ontology engine and the unwired biomimicry modules (W473 — audit-before-wire, retire freely); W477 — the truth sweep's Tier-2 files no other route owns (exact files, not directories); W483 — and scripts/recovery_audit.py, the archive-first audit; W485 — and the developer pages' own export surfaces",
-      "handed_from": "P2.4"
+      "retired_with": "P2.18",
+      "retired_by": "W588",
+      "at": "2026-10-05T07:12:55Z",
+      "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
     },
     {
-      "slot": "P3.26",
-      "files": [
-        "requirements.txt",
-        "pyproject.toml",
-        "Dockerfile",
-        "requirements-dev.txt"
-      ],
-      "words": [
-        "declared",
-        "dependency",
-        "dependencies",
-        "manifest",
-        "pin",
-        "pins",
-        "distribution",
-        "unimported"
-      ],
-      "note": "W583: the dependency DECLARATION area, which P3.25's bar explicitly sends away from itself - \"requirements.txt is NOT edited by this item - the manifest question is a separate row with a separate measurement\". P3.26 clause (7) is the mechanism that answers it: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why. A declared dependency nothing imports is exactly that proposal, and it must not be a round quietly deleting a pin - P3.25 measured why, with pip show reporting opentelemetry Required-by chromadb, which is live on the cross-request recall path. NOT routed to P2.18, whose lockfile words are about a tolerant READ of an unreadable file, and whose seven inherited routes are the owner-gated question FU-402 was raised for."
-    },
-    {
-      "slot": "P2.18",
       "files": [
         "integration_tests/",
         "docs/",
@@ -7684,24 +7787,9 @@
         "ueg path",
         "ueg write"
       ],
-      "note": "handed from P1.16 via P2.4; handed from P1.16; canon and suite hygiene before M1, the register's own tooling, and the store class after P1.15 (W472; the broad prefixes: last)",
-      "handed_from": "P1.16"
-    }
-  ],
-  "retired_areas": [
-    {
-      "files": [
-        "agentic_core/api/business_plan.py"
-      ],
-      "words": [
-        "board pack",
-        "chief's opening",
-        "business plan",
-        "living business system"
-      ],
-      "retired_with": "P3.4",
-      "retired_by": "W587",
-      "at": "2026-10-05T06:30:09Z",
+      "retired_with": "P2.18",
+      "retired_by": "W588",
+      "at": "2026-10-05T07:12:55Z",
       "consequence": "no open item claims this area, so a new row in it is UNSCHEDULED and names its own slot rather than being assigned to an item that does not own it"
     }
   ]

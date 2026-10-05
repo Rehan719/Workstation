@@ -21,7 +21,10 @@ from agentic_core.avatars.tools.tool_registry import AvatarToolRegistry
 from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
 from agentic_core.quality.vrpr_pipeline import VRPRPipeline
 from agentic_core.personalisation.sil_personaliser import SILPersonaliser
-from agentic_core.governance.uci_interceptor import UnifiedConstitutionalInterceptorV16Omega
+# W588 (FU-409) — renamed from UnifiedConstitutionalInterceptorV16Omega, which the WIRED constitutional
+# engine in gaas/v5 also carried: two live classes under one name, and this module is the only live
+# importer of this one, so it is named for what it is to this path.
+from agentic_core.governance.uci_interceptor import RecirculationPreflight
 
 # ARTICLE 1137: Landauer-bounded computation (TFEL)
 try:
@@ -165,7 +168,7 @@ class AvatarRecirculationOrchestrator:
         #  a guardrail a caller has to remember to ask for is not on the path.
         from agentic_core.validation.constitutional_validators import register_all as _register
         self.enforcement_registry = _register(self.enforcement)
-        self.uci = UnifiedConstitutionalInterceptorV16Omega(ueg_logger=self.ueg)
+        self.uci = RecirculationPreflight(ueg_logger=self.ueg)
         self.cognitive_orchestrator = AvatarCognitiveOrchestrator(ueg_logger, self.enforcement)
         self.clearance = ConstitutionalClearanceChain(ueg_logger, self.cognitive_orchestrator)
         self.mode_manager = AvatarModeManager(ueg_logger)
