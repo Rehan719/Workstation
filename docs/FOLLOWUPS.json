@@ -6912,11 +6912,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W585",
       "note": "",
       "slot_source": "W574: the TIER-1 element of this row was the Board Pack certifying the strategic layer present over a placeholder - the refuter raised it to tier 1 on exactly that basis - and W573 removed it (present is now derived from a four-state holds, and layers_present no longer lists strategic). What REMAINS is the capability: nothing refreshes a Strategic or Action-Plan layer quarterly, weekly, on market signal or on a KPI. That is P3.3's stated subject (heartbeat-driven Strategic and Action cadence), so the row moves there at tier 3 rather than sitting in a Phase 2 honesty item as a build task it was never going to close.",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Strategic and Action-Plan cadence layers now exist and fire. agentic_core/organism/cadence.py holds a PURE due-predicate per layer - quarterly or market signal for strategic, weekly or KPI trigger for the action plan - taking the clock and the signal as arguments so a trigger is FORCED rather than waited for, which is what P3.3 clause (1) asks. The heartbeat checks both layers on every visit and refreshes what is due, recording cadence_refresh and last_cadence. Every refresh writes to the plan and appends a history entry carrying its trigger, reason, provenance and THE CONTENT IT DISPLACED; a not-due call writes nothing; a forced refresh is recorded as forced. The board pack's strategic and action layers are assembled from the latest refresh and carry its refresh_id, so changing a refresh changes the pack traceably - and with no refresh the existing four-state readings are untouched, because they are true. And the pack's values are the entity's own or the field says NOT DECLARED rather than showing the platform's standing line. Eleven blinds, 11 of 11 red."
     },
     {
       "id": "FU-386",
@@ -7640,7 +7643,7 @@
       "handed_from": "P2.4"
     },
     {
-      "slot": "P3.3",
+      "slot": "P3.4",
       "files": [
         "agentic_core/api/business_plan.py"
       ],
@@ -7650,7 +7653,8 @@
         "business plan",
         "living business system"
       ],
-      "note": "§17.3 cadence owns the board pack and the plan's layers after P1.14 (W471)"
+      "note": "handed from P3.3; §17.3 cadence owns the board pack and the plan's layers after P1.14 (W471)",
+      "handed_from": "P3.3"
     },
     {
       "slot": "P3.26",

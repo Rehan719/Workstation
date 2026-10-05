@@ -15700,7 +15700,22 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
         "catch-all can take surfaces an earlier item owns", real_order[-1])
     assert real_order[-1][0] in open_slots, (
         "that route points at an item that is not open", real_order[-1])
-    assert real_order.index(("P3.3", None)) < len(real_order) - 1
+    #  W585 (FU-365's class) — BY ITS FILE, not by the item that owns it today. This pinned the pair
+    #  ("P3.3", None), and W585 closed P3.3 and handed the route to P3.4 by area, so the pair became
+    #  ("P3.4", "P3.3") and index() raised. The comment above states the remedy and the `_cat` assertion
+    #  below already follows it: a route's ORIGIN is durable and its slot is whatever a round last made
+    #  it. The property is that this route is not the LAST one, so the broad hygiene catch-all still
+    #  sorts after everything that owns its own surfaces.
+    _bp_route = [i for i, rt in enumerate(routes)
+                 if any("business_plan" in str(f) for f in (rt.get("files") or []))]
+    assert _bp_route, ("no route owns the business-plan area at all, so a new row about the Chief's "
+                       "opening or the living business system would fall through to the catch-all",
+                       [rt.get("files") for rt in routes])
+    assert max(_bp_route) < len(routes) - 1, (
+        "the business-plan route is now the LAST route, so the broad hygiene catch-all no longer sorts "
+        "after it", _bp_route, len(routes))
+    assert routes[_bp_route[0]]["slot"] in open_slots, (
+        "the business-plan route points at an item that is not open", routes[_bp_route[0]])
     #  W575 (FU-365) — the CATALOGUE route, by its files rather than by the item that owns it
     #  today. P2.4 owned it until W575 closed P2.4 and handed all seven of its routes to P2.18.
     _cat = fu.route_row(reg, prompt, "Marketplace counts unrouted entries as live", [], "medium")
@@ -39558,3 +39573,262 @@ def test_w584_p327_selection_refuses_before_it_ranks(client, monkeypatch, tmp_pa
         "consolidation renamed it to `repair`, so the handler for a failing action was itself a failure")
     import agentic_core.change_control.regulator as _reg584
     assert hasattr(_reg584.Regulator, "repair"), "the method the interceptor now calls does not exist"
+def test_w585_p33_the_cadence_layers_refresh_themselves_and_say_why(client, monkeypatch, tmp_path):
+    """P3.3 §17.3 — the Strategic and Action-Plan layers refresh on a cadence, and the pack is made of them.
+
+    MEASURED BEFORE BUILDING. The cadence existed only as PROMPT TEXT: the four occurrences of strategic
+    / cadence / quarterly / weekly in api/management_systems.py are all inside a request to a model, and
+    nothing fired. api/board.py published a `ceo_action_plan` composed by a model call made at pack time,
+    which is the shape clause (3) is written against — a pack that reads elsewhere looks identical
+    whatever the refreshes say.
+
+    EVERY TRIGGER IS FORCED, NEVER WAITED FOR, which is clause (1)'s own wording. `due()` takes `now` and
+    the signal as ARGUMENTS, so this drives a quarter's passage and a market signal without touching a
+    clock. A due-check buried in the beat would have left this leg asserting the source instead.
+    """
+    import ast as _ast585
+    import asyncio as _aio585
+    import pathlib as _pl585
+    import time as _t585
+
+    from agentic_core.api import business_plan as _bp585
+    from agentic_core.organism import cadence as _cad585
+
+    _root585 = _pl585.Path(__file__).resolve().parents[1]
+    _scope585 = "w585probe"
+    _NOW585 = 1800000000.0
+
+    def _stamp585(ts):
+        return _t585.strftime("%Y-%m-%dT%H:%M:%SZ", _t585.gmtime(ts))
+
+    # ── L1. CLAUSE (1): BOTH TRIGGERS, FOR BOTH LAYERS, FORCED RATHER THAN WAITED FOR ──────────────
+    #  a quarter and a week are the elapsed periods §17.3 names; the module declares them so this leg
+    #  computes with the same numbers rather than re-deriving one it hopes matches
+    assert _cad585.PERIOD_SECONDS[_cad585.STRATEGIC] > _cad585.PERIOD_SECONDS[_cad585.ACTION_PLAN], (
+        "the strategic period is not longer than the action-plan period, so quarterly and weekly have "
+        "been swapped", _cad585.PERIOD_SECONDS)
+
+    for _layer585 in _cad585.LAYERS:
+        _period585 = _cad585.PERIOD_SECONDS[_layer585]
+        #  NEVER REFRESHED is its own state, not an age of zero
+        _never585 = _cad585.due(_layer585, None, now=_NOW585)
+        assert _never585["due"] is True and _never585["trigger"] == _cad585.TRIGGER_NEVER_REFRESHED, _never585
+        assert "NEVER been refreshed" in _never585["reason"], (
+            "a layer that has never refreshed is not distinguished from one refreshed long ago - they "
+            "produce the same answer today and different reasons, and the reason is what is acted on",
+            _never585["reason"])
+        #  INSIDE the period: not due, and the reason says a signal would fire it anyway
+        _fresh585 = _cad585.due(_layer585, _stamp585(_NOW585 - 86400), now=_NOW585)
+        assert _fresh585["due"] is False, (_layer585, "a layer refreshed yesterday is reported due",
+                                           _fresh585)
+        #  ELAPSED: forced by passing a `now` past the period, never by waiting
+        _old585 = _cad585.due(_layer585, _stamp585(_NOW585 - _period585 - 60), now=_NOW585)
+        assert _old585["due"] is True and _old585["trigger"] == _cad585.TRIGGER_ELAPSED, (_layer585, _old585)
+        #  THE SIGNAL fires regardless of the clock - the second trigger's whole purpose
+        _sig585 = _cad585.due(_layer585, _stamp585(_NOW585 - 86400), now=_NOW585, signal="a real signal")
+        assert _sig585["due"] is True and _sig585["trigger"] == _cad585.TRIGGER_SIGNAL, (_layer585, _sig585)
+        assert "a real signal" in _sig585["reason"], (
+            "the signal that fired the refresh is not named in the reason", _sig585["reason"])
+    #  an unknown layer is refused rather than silently treated as one of the two
+    with pytest.raises(ValueError):
+        _cad585.due("not_a_layer", None)
+
+    #  AND IT IS HEARTBEAT-DRIVEN, driven for real. A refresh behind a route is a button; the clause
+    #  says heartbeat-driven, so the beat is run and the refresh is read back out of the plan.
+    import agentic_core.organism.heartbeat as _hb585
+
+    #  THE STATE IS DRIVEN, NOT OBSERVED. The first cut asserted `cadence_refresh` in the actions of the
+    #  beat it ran, and in the suite's shared store an earlier beat had already refreshed both layers -
+    #  so by beat 2 nothing was due and the action was correctly absent. That made the leg pass or fail
+    #  on who ran first. Both layers' histories are aged past their own periods first, so a refresh is
+    #  genuinely due when the beat visits and its absence would be a real failure.
+    _wsplan585 = _bp585._load("workstation")
+    for _entry585 in (_wsplan585.get("refreshes") or []):
+        if isinstance(_entry585, dict):
+            _entry585["at"] = _stamp585(_NOW585 - 400 * 86400)
+    _bp585._save(_wsplan585)
+    for _layer585 in _cad585.LAYERS:
+        assert _cad585.due(_layer585, _cad585.last_refresh_at(_bp585._load("workstation"), _layer585))["due"], (
+            "the aged history did not make this layer due, so the beat below would prove nothing",
+            _layer585)
+
+    _beat585 = _aio585.run(_hb585.heartbeat.beat())
+    assert isinstance(_beat585, dict), ("the beat did not return its record", type(_beat585).__name__)
+    assert "cadence_refresh" in (_beat585.get("actions") or []), (
+        "a layer was DUE and the beat did not refresh it, so the cadence is not heartbeat-driven - a "
+        "refresh behind a route is a button, not a cadence", _beat585.get("actions"))
+    _state585 = _cad585.state("workstation")
+    for _layer585 in _cad585.LAYERS:
+        assert _state585["layers"][_layer585]["ever_refreshed"] is True, (
+            "a real heartbeat did not refresh this layer", _layer585,
+            _state585["layers"][_layer585])
+        #  and the layer is no longer due, because the beat actually wrote
+        assert _state585["layers"][_layer585]["due"]["due"] is False, (
+            "the layer is still due after the beat refreshed it, so nothing was written",
+            _layer585, _state585["layers"][_layer585]["due"])
+    assert _hb585.heartbeat.last_cadence, (
+        "the beat refreshed a layer and recorded nothing on last_cadence, so the organism's status "
+        "cannot report what the beat did")
+    _did585 = {_r585["layer"] for _r585 in (_hb585.heartbeat.last_cadence.get("refreshed") or [])}
+    assert _did585 == set(_cad585.LAYERS), (
+        "the beat refreshed only some of the layers that were due", sorted(_did585))
+
+    # ── L2. CLAUSE (2): PROVENANCE, A HISTORY, AND WHAT THE REFRESH DISPLACED ──────────────────────
+    #  the Owner's own strategy text goes in first, so the overwrite this clause is about really happens
+    _plan585 = _bp585._load(_scope585)
+    _plan585["strategy"] = "THE OWNER WROTE THIS STRATEGY"
+    _plan585["vision"] = "a vision on record"
+    _plan585["objectives"] = [{"id": "o1", "title": "ship the thing", "status": "planned",
+                               "progress_pct": 0}]
+    _bp585._save(_plan585)
+
+    _r1585 = _cad585.refresh(_scope585, _cad585.STRATEGIC, now=_NOW585)
+    assert _r1585["refreshed"] is True, _r1585
+    _e585 = _r1585["entry"]
+    for _k585 in ("id", "layer", "at", "trigger", "reason", "content", "served_by", "provenance_basis"):
+        assert _e585.get(_k585) not in (None, ""), ("a history entry is missing a field a reader needs",
+                                                    _k585, _e585)
+    assert _e585["is_external"] is False and _e585["served_by"] == "deterministic-floor", (
+        "the default composition does not declare itself the deterministic floor, so a derived paragraph "
+        "could be read as one a model composed", _e585)
+    #  IT WROTE TO THE PLAN
+    _after585 = _bp585._load(_scope585)
+    assert _after585["strategy"] == _e585["content"], (
+        "the refresh did not write to the plan at all", _after585.get("strategy"))
+    #  AND THE HISTORY KEPT WHAT IT REPLACED. An entry recording only the new text still loses the old.
+    assert _e585["replaced"] == "THE OWNER WROTE THIS STRATEGY", (
+        "the refresh overwrote the plan and the history does not carry what it displaced - clause (2) "
+        "fails an overwrite without a history entry, and an entry that drops the old text is the same "
+        "loss one layer down", _e585.get("replaced"))
+    assert len(_after585.get("refreshes") or []) == 1, _after585.get("refreshes")
+
+    #  A SECOND CALL INSIDE THE PERIOD WRITES NOTHING, so a caller on every beat cannot churn the plan
+    _r2585 = _cad585.refresh(_scope585, _cad585.STRATEGIC, now=_NOW585 + 86400)
+    assert _r2585["refreshed"] is False and "not due" in _r2585["basis"], _r2585
+    assert len(_bp585._load(_scope585).get("refreshes") or []) == 1, "a not-due call appended a history entry"
+
+    #  A SIGNAL FIRES IT ANYWAY, and the entry names the signal
+    _r3585 = _cad585.refresh(_scope585, _cad585.STRATEGIC, now=_NOW585 + 86400,
+                             signal="a competitor exited the market")
+    assert _r3585["refreshed"] is True and _r3585["entry"]["signal"] == "a competitor exited the market"
+    #  ...and the Owner's text is STILL readable in the first entry, two refreshes later
+    _hist585 = _cad585.history(_scope585, _cad585.STRATEGIC)
+    assert _hist585[0]["replaced"] == "THE OWNER WROTE THIS STRATEGY", (
+        "the Owner's displaced text was lost by a later refresh", _hist585[0].get("replaced"))
+
+    #  A FORCED REFRESH SAYS IT WAS FORCED. One that looked due would make the history lie about why
+    #  the plan changed.
+    _r4585 = _cad585.refresh(_scope585, _cad585.STRATEGIC, now=_NOW585 + 2 * 86400, force=True)
+    assert _r4585["refreshed"] is True and _r4585["entry"]["forced"] is True, _r4585["entry"]
+    assert "FORCED" in _r4585["entry"]["reason"], _r4585["entry"]["reason"]
+
+    #  THE ROUTE carries the history to a reader, with its states
+    _cj585 = client.get(f"/api/v1/organism/cadence?scope={_scope585}").json()
+    assert _cj585["history_count"] >= 3, _cj585["history_count"]
+    assert _cj585["layers"][_cad585.STRATEGIC]["ever_refreshed"] is True, _cj585["layers"]
+    assert _cj585["layers"][_cad585.ACTION_PLAN]["ever_refreshed"] is False, (
+        "the action-plan layer reports refreshes it never had", _cj585["layers"][_cad585.ACTION_PLAN])
+    assert str(_cj585.get("method") or "").strip(), "the cadence route reports no method"
+    assert client.post("/api/v1/organism/cadence/refresh?layer=not_a_layer").status_code == 422
+
+    # ── L3. CLAUSE (3): THE PACK'S LAYERS ARE ASSEMBLED FROM THE REFRESHES ─────────────────────────
+    #  "a guard changes a refresh and asserts the pack changes, because a pack that reads elsewhere
+    #  would look identical" — so the assertion is on an IDENTIFIER that travels, not on similar prose.
+    import agentic_core.api.vsb as _vmod585
+    _s0585 = _vmod585._strategic_layer({}, None)
+    assert _s0585["refresh_id"] is None and _s0585["holds"] == "empty", _s0585
+    assert "EMPTY" in _s0585["basis"], (
+        "with no refresh the layer no longer reports what it actually holds", _s0585["basis"])
+    _fake585 = {"id": "refresh-w585aaa", "at": "2026-10-05T00:00:00Z", "trigger": "elapsed",
+                "reason": "quarterly period elapsed", "content": "STRATEGY FROM THE REFRESH",
+                "served_by": "deterministic-floor", "is_external": False}
+    _s1585 = _vmod585._strategic_layer({}, _fake585)
+    assert _s1585["refresh_id"] == "refresh-w585aaa", (
+        "the pack's strategic layer does not carry the refresh it was assembled from, so changing a "
+        "refresh could not be shown to change the pack", _s1585)
+    assert _s1585["content"] == "STRATEGY FROM THE REFRESH" and _s1585["holds"] == "content", _s1585
+    #  CHANGE THE REFRESH, THE PACK CHANGES
+    _s2585 = _vmod585._strategic_layer({}, dict(_fake585, id="refresh-w585bbb",
+                                                content="A DIFFERENT STRATEGY"))
+    assert _s2585["refresh_id"] != _s1585["refresh_id"] and _s2585["content"] != _s1585["content"], (
+        "the layer did not change when the refresh changed")
+    #  and the superseded reading is KEPT rather than erased
+    assert "EMPTY" in _s1585["basis"], (
+        "the refresh erased the layer's previous true statement instead of superseding it")
+
+    _a0585 = _vmod585._action_plan_layer({"chair": "someone"}, None)
+    assert _a0585["holds"] == "other" and _a0585["present"] is False, _a0585
+    assert "not what is to be done" in _a0585["basis"], (
+        "the roster statement was dropped; a roster is still not a plan of action", _a0585["basis"])
+    _a1585 = _vmod585._action_plan_layer({"chair": "someone"},
+                                         dict(_fake585, id="refresh-w585ccc", content="ACTIONS"))
+    assert _a1585["refresh_id"] == "refresh-w585ccc" and _a1585["present"] is True, _a1585
+
+    #  AND IT REACHES THE PAGE. The refresh's id, time and trigger are appended to the layer's BASIS,
+    #  and W573 already made GenesisJourney.tsx render every layer's state as a chip whose title is that
+    #  basis - it no longer depends on the "N empty" chip, which rendered only when a layer was absent.
+    #  Both halves are asserted, because either one changing alone would leave clause (3) traceable
+    #  through the API and invisible to a reader.
+    _est3585 = client.post("/api/v1/genesis/establish",
+                           json={"problem": "a halal meal service", "domain": "care",
+                                 "owner_id": "pytest-w585r", "name": "W585 Pack Reach",
+                                 "concept": "meal boxes", "design": "d",
+                                 "commercialisation": "subscription"})
+    assert _est3585.status_code == 200, (_est3585.status_code, _est3585.text[:200])
+    _vid3585 = _est3585.json()["vsb_id"]
+    _rr585 = _cad585.refresh(_vid3585, _cad585.STRATEGIC, signal="a market signal arrived")
+    assert _rr585["refreshed"] is True, _rr585
+    _pk585 = client.post(f"/api/v1/vsb/{_vid3585}/board-pack").json()
+    _ls585 = _pk585.get("layers_state") or {}
+    assert set(_ls585) == {"constitutional", "strategic", "action_plan", "operational"}, sorted(_ls585)
+    _sb585 = str((_ls585.get("strategic") or {}).get("basis") or "")
+    assert _rr585["entry"]["id"] in _sb585, (
+        "the pack's layers_state - which is what the page renders - does not carry the refresh the layer "
+        "was assembled from, so the traceability stops at the API", _sb585[:200])
+    assert "fired on signal" in _sb585, (
+        "the layer's basis does not say WHICH trigger produced the refresh it was assembled from", _sb585[:200])
+    _gj585 = (_root585 / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    assert "Object.entries(pack.layers_state ?? {}).map(" in _gj585, (
+        "the page no longer renders a chip per layer from layers_state, so a basis is readable only when "
+        "a layer is ABSENT - which is the state W573 removed")
+    assert "title={v?.basis || 'no basis is recorded for this layer'}" in _gj585, (
+        "the per-layer chip no longer carries the layer's basis as its title, so the refresh that "
+        "produced the layer reaches no reader")
+
+    # ── L4. CLAUSE (4): THE VALUES ARE THE ENTITY'S OWN, OR THE FIELD SAYS THERE ARE NONE ──────────
+    _PLATFORM_LINE585 = "Integrity · Compassion · Excellence · Halal/Sharia · Beneficence · Stewardship"
+    _est585 = client.post("/api/v1/genesis/establish",
+                          json={"problem": "a halal community meal service", "domain": "care",
+                                "owner_id": "pytest-w585", "name": "W585 Cadence Probe",
+                                "concept": "weekly halal meal boxes", "design": "d",
+                                "commercialisation": "subscription"})
+    assert _est585.status_code == 200, (_est585.status_code, _est585.text[:200])
+    _vid585 = _est585.json()["vsb_id"]
+    _pack585 = client.post(f"/api/v1/vsb/{_vid585}/board-pack").json()
+    _const585 = _pack585["layers"]["constitutional"]
+    assert _const585["values_declared"] is False, (
+        "a freshly established entity is reported as having declared its own values", _const585)
+    assert "NOT DECLARED" in str(_const585["values"]), (
+        "the entity declared no values and the pack does not say so in the values position",
+        _const585["values"])
+    assert _PLATFORM_LINE585 not in str(_const585["values"]), (
+        "the platform's standing values line is SHOWN as this entity's. Clause (4) says an entity with "
+        "none says so RATHER THAN showing the platform's - a reader skims the values, not the source "
+        "field beside them, and that line is identical for every VSB", _const585["values"])
+    assert str(_const585.get("values_source") or "").strip(), (
+        "values_source was dropped; it is true either way and removing a true statement is also a defect")
+
+    #  AND WHEN THE ENTITY DECLARES ITS OWN, THEY ARE USED
+    _v585 = _vmod585._load_vsb(_vid585)
+    _v585["values"] = ["Sabr", "Amanah", "Ihsan"]
+    _vmod585._save_vsb(_v585)
+    _pack2585 = client.post(f"/api/v1/vsb/{_vid585}/board-pack").json()
+    _const2585 = _pack2585["layers"]["constitutional"]
+    assert _const2585["values_declared"] is True, _const2585
+    for _own585 in ("Sabr", "Amanah", "Ihsan"):
+        assert _own585 in str(_const2585["values"]), (
+            "the entity declared its own values and the pack does not show them", _own585,
+            _const2585["values"])
+    assert "declared by this entity itself" in str(_const2585["values_source"]), (
+        "the source does not say the values are the entity's own", _const2585["values_source"])

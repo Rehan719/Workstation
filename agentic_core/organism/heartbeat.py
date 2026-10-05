@@ -137,6 +137,9 @@ class OrganismHeartbeat:
         self.last_self_healing: Optional[float] = None   # last self-healing circuit health read on the beat
         self.last_heal: Optional[str] = None        # last proactive self-heal (circuits probed for recovery)
         self.last_genome: Optional[Dict[str, Any]] = None   # last genome-population vital sign on the beat
+        #  §17.3 (P3.3, W585) — the last cadence refresh the beat performed, or None for "the beat has
+        #  not refreshed a layer", which is not the same as "no layer was ever due"
+        self.last_cadence: Optional[Dict[str, Any]] = None
         self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
         self.last_vsb_operated: Optional[str] = None   # §4 — last living VSB autonomously operated on the beat
         # W503 (FU-045, FU-063) — the visits that were NOT cycles. Declared and published, because a
@@ -250,6 +253,32 @@ class OrganismHeartbeat:
             if gs.get("total_genomes"):
                 actions.append("genome_scan")
         except Exception:
+            pass
+
+        # 2d-bis. §17.3 CADENCE — the Strategic and Action-Plan layers refresh themselves (P3.3, W585).
+        #     Measured before this existed: the cadence was PROMPT TEXT only, so nothing refreshed
+        #     quarterly, weekly, on a market signal or on a KPI. The due-check is a pure comparison and
+        #     the default composition is derived from the plan's own stored state, so this stays within
+        #     the "cheap + deterministic + virtual" rule the steps around it keep. Nothing is appended to
+        #     `actions` when nothing was due — an action list that always carries an entry says nothing
+        #     about whether anything happened.
+        try:
+            from agentic_core.organism import cadence as _cad
+            _refreshed = []
+            for _layer in _cad.LAYERS:
+                _res = _cad.refresh("workstation", _layer)
+                if _res.get("refreshed"):
+                    _refreshed.append({"layer": _layer, "trigger": _res["entry"]["trigger"],
+                                       "reason": _res["entry"]["reason"], "at": _res["entry"]["at"],
+                                       "served_by": _res["entry"]["served_by"]})
+            if _refreshed:
+                self.last_cadence = {"refreshed": _refreshed,
+                                     "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                actions.append("cadence_refresh")
+        except Exception:
+            #  a plan that cannot be read whole must not stop the beat, and it must not be refreshed
+            #  either: cadence.refresh reads strictly, so an unreadable plan raises here rather than
+            #  being overwritten with an invented one (the FU-395 class).
             pass
 
         # 2e. §4 — autonomously OPERATE one living VSB enterprise (round-robin, paced): run one virtual economy
@@ -959,6 +988,7 @@ class OrganismHeartbeat:
             "last_recovery": self.last_recovery,
             "last_heal": self.last_heal,
             "last_genome": self.last_genome,
+            "last_cadence": self.last_cadence,
             "last_evolution": self.last_evolution,
             "last_vsb_operated": self.last_vsb_operated,
             # W503 — `last_vsb_operated` only ever names an entity a cycle RAN for; these say what

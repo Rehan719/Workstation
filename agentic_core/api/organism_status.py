@@ -28,7 +28,9 @@ import time
 from pathlib import Path
 from agentic_core.config import data_path
 
-from fastapi import APIRouter
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -669,3 +671,52 @@ async def organism_selection_floor(vsb_id: str):
                    "the entity for review; nothing here removes anything and a removal is governed "
                    "through Change Control"),
     }
+@router.get("/cadence")
+async def organism_cadence(scope: str = "workstation"):
+    """The §17.3 cadence: when each layer last refreshed, whether it is due, and the whole history.
+
+    P3.3 clause (2). Every entry carries its trigger, its reason, its provenance and the content it
+    DISPLACED — a refresh that overwrote the plan without a history entry would fail the clause, and an
+    entry that recorded only the new text would still lose the old one.
+    """
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.organism import cadence as _cad
+    try:
+        st = _cad.state(scope)
+        hist = _cad.history(scope)
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"{e} - the plan was NOT read and no cadence state is reported. A refresh is never written "
+            f"over a plan that could not be read whole."))
+    return {
+        **st,
+        "history": hist,
+        "history_count": len(hist),
+        "method": ("each layer is due on elapsed time (quarterly for strategic, weekly for the action "
+                   "plan) or on its own signal (a market signal, a KPI trigger), whichever comes first. "
+                   "The due check is a pure function of the last refresh, the time and the signals, so a "
+                   "trigger can be FORCED rather than waited for. A layer never refreshed says so rather "
+                   "than reporting an age of zero"),
+    }
+
+
+@router.post("/cadence/refresh")
+async def organism_cadence_refresh(layer: str, scope: str = "workstation",
+                                   signal: Optional[str] = None, force: bool = False):
+    """Refresh one §17.3 layer now. A SIGNAL fires it regardless of the clock; `force` is recorded as such.
+
+    Nothing here invents a market signal or a KPI breach: both are supplied by whoever observed one. A
+    refresh that is neither due nor forced writes NOTHING and says why, so a caller polling this route
+    cannot accidentally rewrite the plan on every call.
+    """
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.organism import cadence as _cad
+    if layer not in _cad.LAYERS:
+        raise HTTPException(status_code=422, detail=(
+            f"unknown cadence layer {layer!r}; §17.3 has {list(_cad.LAYERS)}"))
+    try:
+        return _cad.refresh(scope, layer, signal=signal, force=force)
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"{e} - the plan was NOT read and nothing was written. A tolerant read here would hand this "
+            f"route a fresh empty plan and the write would replace the real one."))

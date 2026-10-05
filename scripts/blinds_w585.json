@@ -1,0 +1,101 @@
+[
+ {
+  "tag": "clause 1: the signal trigger stops firing",
+  "file": "agentic_core/organism/cadence.py",
+  "old": "    if signal:\n        return {\"due\": True, \"trigger\": TRIGGER_SIGNAL,",
+  "new": "    if False and signal:\n        return {\"due\": True, \"trigger\": TRIGGER_SIGNAL,",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "§17.3 names TWO triggers per layer and the second one is the whole point: a market signal or a breached KPI is not willing to wait out the rest of a quarter or a week. With only the clock left, a cadence cannot respond to anything. `if False and` leaves the message in the file, so a leg searching for the wording rather than driving the trigger would stay green."
+ },
+ {
+  "tag": "clause 1: never-refreshed is collapsed into refreshed-long-ago",
+  "file": "agentic_core/organism/cadence.py",
+  "old": "    if last is None:\n        return {\"due\": True, \"trigger\": TRIGGER_NEVER_REFRESHED,",
+  "new": "    if last is None:\n        return {\"due\": True, \"trigger\": TRIGGER_ELAPSED,",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "The two produce the same answer TODAY and different reasons, and the reason is what a reader acts on: there is no previous refresh to measure an elapsed period from, so reporting one is a claim about a measurement that was never taken. The three-state rule this plan applies everywhere."
+ },
+ {
+  "tag": "clause 1: the beat stops driving the cadence",
+  "file": "agentic_core/organism/heartbeat.py",
+  "old": "                _res = _cad.refresh(\"workstation\", _layer)",
+  "new": "                _res = {\"refreshed\": False}",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "THE CLAUSE SAYS HEARTBEAT-DRIVEN. A refresh reachable only through a route is a button, and a cadence nobody presses never fires - which is exactly the state the item was written against, where §17.3's cadence existed as prompt text and nothing refreshed at all."
+ },
+ {
+  "tag": "clause 2: the refresh keeps no record of what it displaced",
+  "file": "agentic_core/organism/cadence.py",
+  "old": "            \"replaced\": replaced if replaced not in (\"\", None) else None,",
+  "new": "            \"replaced\": None,",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "Clause (2) fails an overwrite with no history entry, and an entry that recorded only the NEW text is the same loss one layer down: the Owner's own strategy paragraph would be gone the first time a quarterly refresh landed on it. The guard writes the Owner's text in, refreshes twice, and reads it back out of the first entry."
+ },
+ {
+  "tag": "clause 2: a not-due call rewrites the plan anyway",
+  "file": "agentic_core/organism/cadence.py",
+  "old": "        if not verdict[\"due\"] and not force:",
+  "new": "        if False and not verdict[\"due\"] and not force:",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "The beat calls this on every visit. A refresh that wrote regardless would churn the plan every sixty seconds, fill the history with entries that record no trigger worth the name, and destroy the Owner's text on the first beat rather than the first quarter."
+ },
+ {
+  "tag": "clause 2: a forced refresh is recorded as a due one",
+  "file": "agentic_core/organism/cadence.py",
+  "old": "            \"forced\": bool(force and not verdict[\"due\"]),",
+  "new": "            \"forced\": False,",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "A forced refresh that looked due would make the history LIE about why the plan changed, which is the one thing a provenance record exists to prevent. The reason string is checked too, so the flag and the sentence have to agree."
+ },
+ {
+  "tag": "clause 2: the default composition hides that it is the deterministic floor",
+  "file": "agentic_core/organism/cadence.py",
+  "old": "        \"served_by\": \"deterministic-floor\",",
+  "new": "        \"served_by\": \"ai-composed\",",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "Eight renderers in this repository were corrected for letting the deterministic floor wear an in-house badge. A derived paragraph presented as one a model composed is that defect in a new place, and the refresh's provenance is the only thing standing between the two."
+ },
+ {
+  "tag": "clause 3: the pack stops carrying the refresh it was assembled from",
+  "file": "agentic_core/api/vsb.py",
+  "old": "            \"refresh_id\": refresh.get(\"id\"), \"refresh_at\": refresh.get(\"at\"),\r\n            \"refresh_trigger\": refresh.get(\"trigger\"), \"refresh_reason\": refresh.get(\"reason\"),\r\n            \"content\": refresh.get(\"content\"),\r\n            \"served_by\": refresh.get(\"served_by\"), \"is_external\": refresh.get(\"is_external\"),\r\n            \"basis\": (f\"assembled from the §17.3 strategic refresh {refresh.get('id')} of \"",
+  "new": "            \"refresh_id\": None, \"refresh_at\": refresh.get(\"at\"),\r\n            \"refresh_trigger\": refresh.get(\"trigger\"), \"refresh_reason\": refresh.get(\"reason\"),\r\n            \"content\": refresh.get(\"content\"),\r\n            \"served_by\": refresh.get(\"served_by\"), \"is_external\": refresh.get(\"is_external\"),\r\n            \"basis\": (f\"assembled from the §17.3 strategic refresh {refresh.get('id')} of \"",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "THE CLAUSE WITH TEETH: 'a guard changes a refresh and asserts the pack changes, because a pack that reads elsewhere would look identical'. The identifier is what makes that assertion possible - similar prose is not traceable to the refresh that produced it."
+ },
+ {
+  "tag": "clause 3: the refresh erases the layer's previous true statement",
+  "file": "agentic_core/api/vsb.py",
+  "old": "                      f\"specification reading above is superseded and kept: \" + basis),",
+  "new": "                      f\"specification reading above is superseded: \"),",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "The CEO-specification placeholder reading and the board-roster reading are TRUE, and a refresh supersedes them rather than making them false. Removing a true statement is also a defect - W502 killed a case where the strong statement held, and this is the same move."
+ },
+ {
+  "tag": "clause 4: the platform's values line is shown as the entity's",
+  "file": "agentic_core/api/vsb.py",
+  "old": "                      \"values\": _own_values if _own_values else\r\n                                \"NOT DECLARED - this entity has declared no values of its own\",",
+  "new": "                      \"values\": _own_values if _own_values else\r\n                                \"Integrity · Compassion · Excellence · Halal/Sharia · Beneficence · Stewardship\",",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "THE EXACT DEFECT CLAUSE (4) NAMES: 'an entity with none SAYS SO RATHER THAN SHOWING the platform's'. W496 had already made the disclosure honest, and the clause goes one step further because a reader skims the values and not the source field beside them - and that line is identical for every VSB this platform has ever made."
+ },
+ {
+  "tag": "clause 4: the entity's own values are ignored",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    _own_values = vsb.get(\"values\") or (vsb.get(\"constitution\") or {}).get(\"values\")",
+  "new": "    _own_values = None",
+  "selector": "w585_p33",
+  "expect": "BLIND(red)",
+  "why": "The other half of clause (4): the values must COME FROM the VSB's own constitution when it has one. A field that is never read is the same as a field that does not exist, and the guard declares three values on a real entity and reads them back out of the pack."
+ }
+]

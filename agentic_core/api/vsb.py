@@ -1216,12 +1216,27 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # values line is one constant string shared by every VSB this platform has ever made. The narrative
     # then called all four layers "live data". Each field now says where it came from, so a reader can
     # tell a derived line from something the founder or the Board actually wrote.
+    #  P3.3 clause (4), W585 — THE VALUES ARE THE ENTITY'S OWN, OR THE FIELD SAYS THERE ARE NONE.
+    #  W496 made the disclosure honest: `values_source` said "the platform's standing values line,
+    #  identical for every VSB - this entity has not declared its own". But the clause contrasts
+    #  disclosing with SHOWING - "an entity with none says so RATHER THAN showing the platform's" - and a
+    #  reader skims the values, not the source beside them. So the platform's line is no longer put in
+    #  the entity's values position at all. `values_source` is kept either way, because it is true
+    #  either way, and it now names the entity's own declaration when there is one.
+    _own_values = vsb.get("values") or (vsb.get("constitution") or {}).get("values")
+    if isinstance(_own_values, (list, tuple)):
+        _own_values = " · ".join(str(v).strip() for v in _own_values if str(v).strip()) or None
+    _own_values = str(_own_values).strip() if _own_values else None
     constitutional = {"mission": f"Deliver: {challenge}"[:280], "vision": challenge,
-                      "values": "Integrity · Compassion · Excellence · Halal/Sharia · Beneficence · Stewardship",
+                      "values": _own_values if _own_values else
+                                "NOT DECLARED - this entity has declared no values of its own",
+                      "values_declared": bool(_own_values),
                       "mission_source": "derived from the founder's problem statement - not authored",
                       "vision_source": "the founder's problem statement, verbatim - not authored",
-                      "values_source": ("the platform's standing values line, identical for every VSB - "
-                                        "this entity has not declared its own"),
+                      "values_source": (("declared by this entity itself" if _own_values else
+                                         "this entity has declared no values of its own, and the "
+                                         "platform's standing values line is NOT shown in their place - "
+                                         "it is identical for every VSB and would read as this entity's")),
                       "genome_present": bool(vsb.get("genome_spec")), "entity": vsb_id}
     # §4 (W573, M1 R2.1) - the pack carries the stage's BASIS beside it, as it does the status's
     #  `stage_basis` only. A `stage_label` was added here too and the pre-flight's key screen caught
@@ -1324,10 +1339,14 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # it, so no reader has to know the difference between a field existing and a layer holding
     # something. FOUR states, because three were not enough: the board roster is neither a placeholder
     # nor empty - it is real content that is not an action plan, and its own basis has always said so.
+    #  P3.3 clause (3), W585 — the refreshes for THIS entity's plan scope, read once and handed to the
+    #  two layers that §17.3 says are assembled from them.
+    _strat_refresh = _cadence_latest(vsb_id, "strategic")
+    _act_refresh = _cadence_latest(vsb_id, "action_plan")
     layers = {
         "constitutional": constitutional,                                  # derived (see the sources above)
-        "strategic": _strategic_layer(_ceo_spec),
-        "action_plan": _action_plan_layer(_board),
+        "strategic": _strategic_layer(_ceo_spec, _strat_refresh),
+        "action_plan": _action_plan_layer(_board, _act_refresh),
         "operational": operational,                                         # live snapshot
     }
     # constitutional and operational are derived fresh from the entity on every pack, so they always
@@ -1578,7 +1597,21 @@ def _derived_stage(vsb: dict) -> tuple:
 #                   is still nothing to read
 #    other        — holds something real that is NOT what this layer is for (the board roster)
 #    empty        — holds nothing
-def _strategic_layer(ceo_spec) -> dict:
+def _cadence_latest(scope: str, layer: str):
+    """The latest §17.3 refresh for one layer of one entity's plan, or None.
+
+    Never raises into the pack: a plan that cannot be read whole means the pack reports no refresh for
+    that layer, which is exactly what it reported before refreshes existed — it must not mean the pack
+    fails, and it must not mean an invented refresh.
+    """
+    try:
+        from agentic_core.organism import cadence as _cad
+        return _cad.latest(scope, layer)
+    except Exception:
+        return None
+
+
+def _strategic_layer(ceo_spec, refresh=None) -> dict:
     """§17.3 strategic layer. `present` was `bool(ceo_specification)`, and at birth that field is the
     string "content pending the owned model - ...", which is truthy: a placeholder counted as a
     composed strategic layer and the basis then asserted "the AI CEO specification recorded on this
@@ -1597,20 +1630,58 @@ def _strategic_layer(ceo_spec) -> dict:
                                        "is nothing here to read as strategy")
     else:
         holds, basis = "content", "the AI CEO specification recorded on this entity"
-    return {"ceo": ceo_spec, "holds": holds, "present": holds == "content", "basis": basis}
+    out = {"ceo": ceo_spec, "holds": holds, "present": holds == "content", "basis": basis}
+    #  P3.3 clause (3), W585 — ASSEMBLED FROM THE REFRESH when one exists. The refresh_id travels into
+    #  the pack so a guard can change a refresh and assert the pack changed; similar prose would not be
+    #  traceable, and a pack that read elsewhere would look identical whatever the refreshes said.
+    if refresh:
+        out.update({
+            "holds": "content", "present": True,
+            "refresh_id": refresh.get("id"), "refresh_at": refresh.get("at"),
+            "refresh_trigger": refresh.get("trigger"), "refresh_reason": refresh.get("reason"),
+            "content": refresh.get("content"),
+            "served_by": refresh.get("served_by"), "is_external": refresh.get("is_external"),
+            "basis": (f"assembled from the §17.3 strategic refresh {refresh.get('id')} of "
+                      f"{refresh.get('at')}, which fired on {refresh.get('trigger')}. The CEO-"
+                      f"specification reading above is superseded and kept: " + basis),
+        })
+    else:
+        out["refresh_id"] = None
+        out["refresh_basis"] = ("no §17.3 strategic refresh exists for this entity's plan, so this layer "
+                                "is whatever the CEO specification is - which is what the basis says")
+    return out
 
 
-def _action_plan_layer(board) -> dict:
+def _action_plan_layer(board, refresh=None) -> dict:
     """§17.3 action layer. A ROSTER IS NOT A PLAN OF ACTION — this layer's own basis has said exactly
     that since W496, while the same dict counted it present. The pack contradicted itself one key
     apart, and `layers_present` carried the half that was wrong."""
     if not board:
-        return {"board": board, "holds": "empty", "present": False,
-                "basis": "EMPTY - no board is attached to this entity"}
-    return {"board": board, "holds": "other", "present": False,
-            "basis": ("OTHER - the entity's standing board roster, which is who would act and not "
-                      "what is to be done; no action items are recorded here, so this layer holds "
-                      "something real that is not an action plan")}
+        out = {"board": board, "holds": "empty", "present": False,
+               "basis": "EMPTY - no board is attached to this entity"}
+    else:
+        out = {"board": board, "holds": "other", "present": False,
+               "basis": ("OTHER - the entity's standing board roster, which is who would act and not "
+                         "what is to be done; no action items are recorded here, so this layer holds "
+                         "something real that is not an action plan")}
+    #  P3.3 clause (3), W585 — a refresh makes this a real action layer. Until one exists the roster
+    #  statement above stands unchanged, because it is true: a roster is still not a plan of action.
+    if refresh:
+        out.update({
+            "holds": "content", "present": True,
+            "refresh_id": refresh.get("id"), "refresh_at": refresh.get("at"),
+            "refresh_trigger": refresh.get("trigger"), "refresh_reason": refresh.get("reason"),
+            "content": refresh.get("content"),
+            "served_by": refresh.get("served_by"), "is_external": refresh.get("is_external"),
+            "basis": (f"assembled from the §17.3 action-plan refresh {refresh.get('id')} of "
+                      f"{refresh.get('at')}, which fired on {refresh.get('trigger')}. The roster "
+                      f"reading above is superseded and kept: " + out["basis"]),
+        })
+    else:
+        out["refresh_id"] = None
+        out["refresh_basis"] = ("no §17.3 action-plan refresh exists for this entity's plan, so this "
+                                 "layer is whatever the board roster is - which is what the basis says")
+    return out
 
 
 def _stage_label(vsb: dict) -> str:
