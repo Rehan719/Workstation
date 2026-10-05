@@ -1,0 +1,65 @@
+[
+ {
+  "tag": "the generic handler goes, so a 500 leaves no record again",
+  "file": "agentic_core/app_mvp.py",
+  "old": "@app.exception_handler(Exception)\nasync def _unhandled_failure_is_recorded(request, exc):",
+  "new": "async def _unhandled_failure_is_recorded(request, exc):",
+  "selector": "w583_p325",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT, exactly as measured at HEAD: with only the RequestValidationError handler registered, an uncaught exception on any route leaves no record anywhere. 13 record_outcome call sites, a hash-chained UEG across 11 modules, psutil vitals in 8 - and nothing at all about a 500."
+ },
+ {
+  "tag": "the handler swallows the failure instead of reporting it",
+  "file": "agentic_core/app_mvp.py",
+  "old": "    _response = JSONResponse(\n        status_code=500,",
+  "new": "    _response = JSONResponse(\n        status_code=200,",
+  "selector": "w583_p325",
+  "expect": "BLIND(red)",
+  "why": "Recording a failure is not RESOLVING one. A handler that answers 200 turns every crash into a success for every caller and every rate computed downstream - strictly worse than no handler, because the record would exist while the response lied about it."
+ },
+ {
+  "tag": "the record claims a cause it does not have",
+  "file": "agentic_core/app_mvp.py",
+  "old": "                 \"failure_class\": _cls, \"route\": _route, \"cause_established\": False,",
+  "new": "                 \"failure_class\": _cls, \"route\": _route, \"cause_established\": True,",
+  "selector": "w583_p325",
+  "expect": "BLIND(red)",
+  "why": "The item says the record must never invent a cause it does not have. The handler knows the exception CLASS, the route and the time; a class name is not a diagnosis, and a record asserting the cause is established invites a reader to stop looking."
+ },
+ {
+  "tag": "the failure is not written to the outcome ledger",
+  "file": "agentic_core/app_mvp.py",
+  "old": "        record_outcome(\"route_failure\", _route, served_by=\"platform\", success=False,",
+  "new": "        record_outcome(\"route_failure_NOT_RECORDED\", _route, served_by=\"platform\", success=False,",
+  "selector": "w583_p325",
+  "expect": "BLIND(red)",
+  "why": "The ruling puts the record in the ledger this platform already keeps, and the surface reads that ledger by kind. A renamed kind is silent: the row exists and nothing finds it, which is the reach class this plan keeps catching one step short of a module nothing imports."
+ },
+ {
+  "tag": "an empty ledger reads the same as a clean one",
+  "file": "agentic_core/api/operational_excellence.py",
+  "old": "        state = \"nothing_recorded_at_all\"",
+  "new": "        state = \"none_recorded\"",
+  "selector": "w583_p325",
+  "expect": "BLIND(red)",
+  "why": "THE CLAUSE THIS ITEM TURNS ON. No failures over a POPULATED ledger says recording works and nothing broke; no failures over an EMPTY one says nothing about reliability whatsoever. Collapsing them shows the absence of any statement as health, which is the untruth the item was written against."
+ },
+ {
+  "tag": "the page stops distinguishing the empty case",
+  "file": "apps/workstation-superapp/src/pages/OperationalExcellence.tsx",
+  "old": "          {failures.state === 'nothing_recorded_at_all' ? (",
+  "new": "          {false && failures.state === 'nothing_recorded_at_all' ? (",
+  "selector": "w583_p325",
+  "expect": "BLIND(red)",
+  "why": "The route can report three states and the SURFACE is where a person reads them. W503's class, so the leg asserts the literal with its quotes rather than the field name, which survives a disabled branch."
+ },
+ {
+  "tag": "a pin this item explicitly excludes is removed",
+  "file": "requirements.txt",
+  "old": "opentelemetry-api",
+  "new": "_opentelemetry-api",
+  "selector": "w583_p325",
+  "expect": "BLIND(red)",
+  "why": "HALF THE RULING RESTED ON A FALSE PREMISE and the item says so: pip show reports this Required-by chromadb, which agentic_core/ai/ceo/memory_v01.py imports on the cross-request recall path, and requirements.txt is a 298-line LOCK that lists transitive dependencies by design. Removing one breaks the install rather than tidying it, so the item excludes the retirement and the manifest question is a separate row with its own measurement."
+ }
+]

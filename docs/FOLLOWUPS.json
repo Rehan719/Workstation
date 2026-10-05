@@ -4927,7 +4927,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.25",
+      "slot": "P3.26",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -7501,6 +7501,26 @@
         "living business system"
       ],
       "note": "§17.3 cadence owns the board pack and the plan's layers after P1.14 (W471)"
+    },
+    {
+      "slot": "P3.26",
+      "files": [
+        "requirements.txt",
+        "pyproject.toml",
+        "Dockerfile",
+        "requirements-dev.txt"
+      ],
+      "words": [
+        "declared",
+        "dependency",
+        "dependencies",
+        "manifest",
+        "pin",
+        "pins",
+        "distribution",
+        "unimported"
+      ],
+      "note": "W583: the dependency DECLARATION area, which P3.25's bar explicitly sends away from itself - \"requirements.txt is NOT edited by this item - the manifest question is a separate row with a separate measurement\". P3.26 clause (7) is the mechanism that answers it: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why. A declared dependency nothing imports is exactly that proposal, and it must not be a round quietly deleting a pin - P3.25 measured why, with pip show reporting opentelemetry Required-by chromadb, which is live on the cross-request recall path. NOT routed to P2.18, whose lockfile words are about a tolerant READ of an unreadable file, and whose seven inherited routes are the owner-gated question FU-402 was raised for."
     },
     {
       "slot": "P2.18",

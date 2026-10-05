@@ -37479,6 +37479,164 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
             "not an error", _v577, _w577)
 
 
+def test_w583_p325_what_the_platform_records_when_it_fails(client, tmp_path):
+    """P3.25 — the platform records its own failures, and an empty record is not health.
+
+    MEASURED BEFORE BUILDING, and the item's premise still held at HEAD: app_mvp.py registered exactly ONE
+    exception handler, for RequestValidationError, so an uncaught 500 left no record anywhere. The platform
+    has 13 record_outcome call sites, a hash-chained UEG across 11 API modules and psutil vitals in 8 — it
+    was not blind to itself; it had no error capture.
+
+    THE BREAK-IT RULE IS THE WHOLE TEST. This does not read source to see whether a handler is registered:
+    it BREAKS A REAL ROUTE, calls it, and reads the record back from the ledger and the chain. A guard that
+    asserted the decorator exists would pass over a handler that recorded nothing.
+
+    AND THE EMPTY CASE IS DRIVEN IN THREE STATES, because that is the clause the item turns on: "nothing
+    recorded" must read as its own state rather than as health. No failures over a populated ledger is a
+    statement about reliability; no failures over an EMPTY ledger is the absence of one, and a single green
+    zero for both is the untruth this item was written against.
+    """
+    import pathlib as _pl583
+    import re as _re583
+
+    import agentic_core.api.operational_excellence as _oe583
+
+    _root583 = _pl583.Path(__file__).resolve().parents[1]
+
+    # ── L1. THE THREE STATES, DRIVEN IN ORDER ON A STORE THIS LEG CONTROLS ─────────────────────────
+    #  the ledger is whatever this worker's store holds, so the states are driven by ADDING rows rather
+    #  than by assuming an empty one: an empty-ledger assertion that depended on test order would be a
+    #  guard that passes or fails on who ran first.
+    _before583 = [r for r in _oe583._load() if r.get("kind") == "route_failure"]
+    #  W583 — DRIVEN, not observed. The first cut asserted the empty-ledger basis only `if` the state
+    #  happened to be the empty one, and after a single run this store is never empty — so the clause the
+    #  item turns on was checked by luck and a blind that collapsed the two empty states passed. The route
+    #  reads the ledger through `_load`, so the three states are driven by controlling exactly that.
+    _load_orig583 = _oe583._load
+    try:
+        _oe583._load = lambda *_a, **_k: []
+        _empty583 = client.get("/api/v1/operations/failures")
+        assert _empty583.status_code == 200, _empty583.status_code
+        _je583 = _empty583.json()
+        assert _je583["state"] == "nothing_recorded_at_all", (
+            "an EMPTY outcome ledger is not reported as its own state", _je583)
+        assert "says nothing about reliability" in _je583["basis"], (
+            "an EMPTY ledger does not say that it is NOT a reliability statement, which is the one thing "
+            "this clause exists for - a green zero here and a green zero over a long clean history are "
+            "opposite facts", _je583["basis"])
+
+        _oe583._load = lambda *_a, **_k: [{"id": "x", "kind": "model_attempt", "resource": "ollama",
+                                           "created_at": "2026-01-01T00:00:00Z", "success": True}]
+        _clean583 = client.get("/api/v1/operations/failures").json()
+        assert _clean583["state"] == "none_recorded", (
+            "a populated ledger with no failures is not distinguished from an empty one", _clean583)
+        assert "recording is working" in _clean583["basis"], (
+            "no failures over a POPULATED ledger must say that recording WORKS - otherwise it reads the "
+            "same as having recorded nothing at all", _clean583["basis"])
+    finally:
+        _oe583._load = _load_orig583
+    assert _oe583._load is _load_orig583, "the ledger reader was left patched"
+
+    # ── L2. BREAK A REAL ROUTE AND READ THE RECORD BACK ───────────────────────────────────────────
+    _orig583 = _oe583.model_health
+
+    def _boom583(*_a, **_k):
+        raise RuntimeError("w583 induced failure, per the break-it rule")
+
+    #  ITS OWN CLIENT, and the reason matters. The shared `client` fixture is built with
+    #  raise_server_exceptions=True, which makes the TestClient RE-RAISE a handled exception instead of
+    #  returning the response the handler produced — so the fixture cannot see a 500 at all, and this leg
+    #  would report the induced error as its own failure. Same `app` singleton, so the same handler.
+    from fastapi.testclient import TestClient as _TC583
+
+    from agentic_core.app_mvp import app as _app583
+    _c583 = _TC583(_app583, raise_server_exceptions=False)
+    _oe583.model_health = _boom583
+    try:
+        _r583 = _c583.get("/api/v1/operations/model-health")
+    finally:
+        _oe583.model_health = _orig583
+
+    assert _r583.status_code == 500, (
+        "an unhandled exception on a real route did not answer 500 - the handler must RECORD the failure, "
+        "never swallow it", _r583.status_code)
+    _b583 = _r583.json()
+    assert _b583.get("failure_class") == "RuntimeError", _b583
+    assert _b583.get("route") == "/api/v1/operations/model-health", _b583
+    #  AND IT CLAIMS NO CAUSE. A class name is not a diagnosis, and a record that guessed would be worse
+    #  than none — this is the item's "never invents a cause it does not have".
+    assert _b583.get("cause_established") is False, (
+        "the response does not say the cause is unestablished, so a reader takes an exception CLASS for an "
+        "explanation", _b583)
+
+    _after583 = [r for r in _oe583._load() if r.get("kind") == "route_failure"]
+    assert len(_after583) > len(_before583), (
+        "the failure answered 500 and was NOT recorded in the outcome ledger, which is the whole item")
+    _row583 = _after583[-1]
+    assert _row583.get("resource") == "/api/v1/operations/model-health", _row583
+    assert "RuntimeError" in str(_row583.get("ref") or ""), (
+        "the record does not name the class of failure", _row583)
+    assert str(_row583.get("created_at") or "").endswith("Z"), (
+        "the record does not say WHEN", _row583)
+    assert _row583.get("success") is False and _row583.get("produced") is False, (
+        "a failure is recorded as a success, so every rate computed over these rows is wrong", _row583)
+
+    # ── L3. THE SURFACE SHOWS IT, WITH ITS BASIS AND THE THREE STATES ─────────────────────────────
+    _f1 = client.get("/api/v1/operations/failures").json()
+    assert _f1["state"] == "failures_recorded", _f1["state"]
+    assert _f1["total_failures"] >= 1
+    _top583 = _f1["failures"][0]
+    for _k583 in ("route", "method", "failure_class", "at", "basis"):
+        assert _top583.get(_k583), ("the surface's row is missing a field a reader needs", _k583, _top583)
+    assert _top583.get("cause_established") is False, _top583
+    assert "NOT established" in _top583["basis"], (
+        "the row's basis does not carry the refusal to claim a cause", _top583["basis"])
+
+    _page583 = (_root583 / "apps/workstation-superapp/src/pages/OperationalExcellence.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    _code583 = _re583.sub(r"(?m)^\s*//.*$", " ",
+                         _re583.sub(r"/\*.*?\*/", " ", _page583, flags=_re583.S))
+    #  the GATE with its opening brace (W503's class), and the three states rendered DIFFERENTLY
+    assert "{failures && (" in _code583, "the page does not render the failures at all"
+    #  W583 — THE GATE, with its opening brace. A blind proved the first cut vacuous: it asserted the
+    #  LITERAL, and `{false && failures.state === 'nothing_recorded_at_all'` still contains it, so a
+    #  disabled branch passed. W503's class.
+    assert "{failures.state === 'nothing_recorded_at_all' ? (" in _code583, (
+        "the page does not branch on the EMPTY-ledger state, so it shows the absence of any statement as "
+        "health - the clause this item turns on")
+    assert "failures.state === 'none_recorded' ? (" in _code583, (
+        "the page does not render the clean-ledger state as its own thing")
+    for _tid583 in ('data-testid="ops-failures-nothing-recorded"', 'data-testid="ops-failures-none"',
+                    'data-testid="ops-failure-no-cause"'):
+        assert _tid583 in _code583, ("a state has no rendered element", _tid583)
+
+    # ── L4. THE UEG ENTRY VERIFIES IN THE CHAIN ───────────────────────────────────────────────────
+    _v583 = client.get("/api/v1/gaas/ueg/verify")
+    assert _v583.status_code == 200, _v583.status_code
+    _vj583 = _v583.json()
+    _ok583 = _vj583.get("valid")
+    if _ok583 is None:
+        _ok583 = _vj583.get("verified", _vj583.get("intact"))
+    assert _ok583 is True, (
+        "the UEG hash chain does not verify after a failure was logged into it - a tamper-evident record "
+        "that does not verify is not a record", _vj583)
+
+    # ── L5. requirements.txt IS NOT EDITED BY THIS ITEM ───────────────────────────────────────────
+    #  The ruling's other half rested on a false premise (opentelemetry is Required-by chromadb, which is
+    #  LIVE on the recall path; requirements.txt is a 298-line LOCK that lists transitive deps by design).
+    #  The item says so and excludes it, and the manifest question is a separate row with its own
+    #  measurement — so the pins must still be there.
+    _req583 = (_root583 / "requirements.txt").read_text(encoding="utf-8", errors="replace")
+    #  W583 — ANCHORED TO THE LINE START. `"opentelemetry-api" in text` is satisfied by
+    #  `_opentelemetry-api`, so a renamed pin passed the first cut — a substring is not a declaration.
+    for _pin583 in ("opentelemetry-api", "opentelemetry-sdk"):
+        assert _re583.search(r"(?m)^" + _re583.escape(_pin583) + r"[=<>~\s]", _req583), (
+            "a pin this item explicitly excludes was removed. `pip show` reports it Required-by chromadb, "
+            "which agentic_core/ai/ceo/memory_v01.py imports on the cross-request recall path, and a lock "
+            "lists transitive dependencies BY DESIGN - removing one breaks the install rather than tidying "
+            "it", _pin583)
+
+
 def test_w582_an_area_with_no_owner_is_retired_and_a_deliberation_names_its_real_cause(tmp_path):
     """W582 — the two halves the Owner approved: route an area by owner or retire it, and stop naming a
     cause measurement contradicts.
@@ -38732,3 +38890,113 @@ def test_w576_p218a_an_absence_reaches_the_reader(client):
     #  which left both names above in the file for a presence check to find.
     assert "dimGaps.length ?" in _chip, (
         "the dimension gap is computed and never shown, so the producer-side fix reaches no reader")
+def test_a_route_whose_matcher_can_never_fire_is_refused(tmp_path):
+    """A route stored with input the matcher cannot act on sends its area nowhere while reading as owned.
+
+    FOUND BY TRIPPING IT, W583. `route --slot P3.26 --files "requirements.txt pyproject.toml"` was
+    ACCEPTED and printed "route added at position 16". `_route_matches` compares a route's file whole
+    (`==`) or as a directory prefix (`startswith`), so that single space-joined prefix could never match
+    any row — and the very next command refused with "no route matches its files". Two messages that
+    disagreed, neither naming the cause.
+
+    THE PROPERTY, NOT THE SPELLING: the control leg does not merely check that the comma form is
+    accepted — it asserts the stored route ACTUALLY MATCHES a row through the real matcher. A refusal
+    that let an unmatchable route through in some other shape would pass a spelling check and fail this.
+
+    AND THE REFUSAL MUST NOT OVER-REACH. `--words` is matched by searching a row's TITLE for the whole
+    phrase, so a multi-word word is legitimate and P2.18's own route carries "cannot be read". A refusal
+    that rejected whitespace in --words too would silently narrow what a route can own.
+    """
+    import json as _jsonR
+    import os as _osR
+    import pathlib as _plR
+    import subprocess as _spR
+    import sys as _sysR
+
+    import agentic_core.plan_followups as _fuR
+
+    _rootR = _plR.Path(__file__).resolve().parents[1]
+    _promptR = _fuR.read_doc(_rootR / "docs" / "FABLE_DELIVERY_PROMPT.md")
+    _livingR = _fuR.read_doc(_rootR / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md")
+    _openR = [i["slot"] for i in _fuR.plan_items(_promptR) if not i["done"]]
+    assert _openR, "this leg needs an open plan item for a route to point at"
+    _slotR = _openR[0]
+
+    #  a scratch root, never the repository: `route` MUTATES a register
+    _scrR = tmp_path / "routeroot"
+    (_scrR / "docs").mkdir(parents=True)
+    _emptyR = {"items": []}
+    (_scrR / "docs" / "FABLE_DELIVERY_PROMPT.md").write_bytes(
+        _fuR.splice_all(_promptR, _emptyR, _promptR).encode("utf-8"))
+    (_scrR / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md").write_bytes(
+        _fuR.splice_all(_livingR, _emptyR, _promptR).encode("utf-8"))
+    (_scrR / "docs" / "FOLLOWUPS.json").write_bytes(b'{"items": []}\n')
+    _envR = dict(_osR.environ, WORKSTATION_FOLLOWUPS_ROOT=str(_scrR), PYTHONIOENCODING="utf-8")
+    _scriptR = str((_rootR / "scripts" / "followups.py").resolve())
+    assert _plR.Path(_scriptR).is_file(), ("the CLI this leg drives is not where it was looked for", _scriptR)
+
+    def _cliR(*argv):
+        return _spR.run([_sysR.executable, _scriptR, *argv], env=_envR,
+                        capture_output=True, text=True, encoding="utf-8")
+
+    def _routesR():
+        return (_jsonR.loads((_scrR / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))
+                .get("routes") or [])
+
+    # ── L1. A SPACE-JOINED --files IS REFUSED, AND NOTHING IS STORED ────────────────────────────────
+    _spacedR = _cliR("route", "--slot", _slotR, "--files", "requirements.txt pyproject.toml",
+                     "--words", "manifest")
+    assert _spacedR.returncode != 0, (
+        "a route whose file is a space-joined list was ACCEPTED - it can never match a row, so the area "
+        "it claims to own silently has no owner", _spacedR.stdout, _spacedR.stderr)
+    _saidR = (_spacedR.stdout + _spacedR.stderr).lower()
+    assert "comma" in _saidR, (
+        "the refusal does not name the separator the caller should have used, so it does not say how to "
+        "fix the thing it refused", _spacedR.stdout, _spacedR.stderr)
+    assert not _routesR(), ("the refused route was stored anyway", _routesR())
+
+    # ── L2. AND A ROUTE ALREADY IN THE REGISTER IS SCREENED, WHICH IS THE POINT OF WHERE IT LIVES ───
+    #  The first cut put this rule in the CLI's add branch. A blind then proved one of its two refusals
+    #  VACUOUS — _route_shape_problems ALREADY refuses a matcherless route — and that said where the
+    #  surviving rule belonged: beside its siblings in the shape validator, which check() runs over the
+    #  routes ALREADY STORED. A CLI-only check could not see a bad route that is already in the file.
+    _badR = {"slot": _slotR, "files": ["requirements.txt pyproject.toml"], "words": []}
+    (_scrR / "docs" / "FOLLOWUPS.json").write_bytes(
+        _jsonR.dumps({"items": [], "routes": [_badR]}, ensure_ascii=False, indent=1).encode("utf-8") + b"\n")
+    _checkR = _cliR("check")
+    _checkSaidR = _checkR.stdout + _checkR.stderr
+    assert "space in it" in _checkSaidR, (
+        "a route ALREADY in the register carries a prefix with a space, which can never match a path, and "
+        "check() does not report it - so the area reads as owned and every row in it falls through",
+        _checkSaidR)
+    #  and the rule is NOT applied to words, where a phrase is legitimate
+    _phraseR = {"slot": _slotR, "files": [], "words": ["cannot be read"]}
+    (_scrR / "docs" / "FOLLOWUPS.json").write_bytes(
+        _jsonR.dumps({"items": [], "routes": [_phraseR]}, ensure_ascii=False, indent=1).encode("utf-8") + b"\n")
+    _phraseCheckR = _cliR("check")
+    assert "space in it" not in (_phraseCheckR.stdout + _phraseCheckR.stderr), (
+        "a multi-word route WORD was reported as unmatchable; a word is searched for INSIDE a row's title, "
+        "so a phrase is legitimate and P2.18's own route carries exactly this one",
+        _phraseCheckR.stdout, _phraseCheckR.stderr)
+    #  restore an empty register for the control leg
+    (_scrR / "docs" / "FOLLOWUPS.json").write_bytes(b'{"items": []}\n')
+
+    # ── L3. THE CONTROL: the correct form is accepted AND the stored route REALLY MATCHES ───────────
+    #  a multi-word --words phrase is legitimate (searched inside a title) and must still be accepted
+    _okR = _cliR("route", "--slot", _slotR, "--files", "requirements.txt,pyproject.toml",
+                 "--words", "manifest,cannot be read")
+    assert _okR.returncode == 0, (
+        "the CORRECT comma form was refused, so the refusal over-reached and a round can no longer give "
+        "an area an owner", _okR.stdout, _okR.stderr)
+    _storedR = [r for r in _routesR() if r.get("slot") == _slotR]
+    assert _storedR, ("the accepted route was not stored", _routesR())
+    _rtR = _storedR[0]
+    assert "cannot be read" in _rtR.get("words", []), (
+        "a multi-word route WORD was dropped or split; --words is searched for inside a row's title, so "
+        "a phrase is legitimate and P2.18's own route carries exactly this one", _rtR)
+    #  THE PROPERTY the refusals exist to protect: the stored route can actually fire
+    assert _fuR._route_matches(_rtR, "a title about nothing", ["requirements.txt"]), (
+        "the stored route does not match a row whose file it names - the matcher cannot act on what the "
+        "CLI accepted, which is the whole defect", _rtR)
+    assert _fuR._route_matches(_rtR, "a lockfile that cannot be read tolerantly", []), (
+        "the stored route does not match a row whose title carries its phrase", _rtR)

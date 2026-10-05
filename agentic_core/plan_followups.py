@@ -402,6 +402,17 @@ def _route_shape_problems(rt: Any, idx: int) -> List[str]:
         bad = [f for f in rt.get("files", []) if f != normalise_path(f) or f.startswith("/") or re.match(r"^[A-Za-z]:", f)]
         if bad:
             p.append(f"{name} ({slot}): file prefix {bad[0]!r} must be repository-relative with forward slashes")
+        # W583 — A PREFIX THE MATCHER CAN NEVER ACT ON. Found by tripping it: `route --files "a.txt b.txt"`
+        # was accepted and stored as ONE prefix, because the CLI splits on COMMAS. _route_matches compares a
+        # prefix whole (==) or by startswith, so no row could ever match it: the CLI printed "route added"
+        # and the very next command refused with "no route matches its files". The rule lives here rather
+        # than in the CLI so that check() screens the routes ALREADY STORED, not only the next one added.
+        # NOT applied to words: a word is searched for INSIDE a row's title, so a phrase is legitimate and
+        # P2.18's own route carries "cannot be read".
+        spaced = [f for f in rt.get("files", []) if isinstance(f, str) and len(f.split()) > 1]
+        if spaced:
+            p.append(f"{name} ({slot}): file prefix {spaced[0]!r} has a space in it, so it can never match "
+                     f"a path - separate the paths with COMMAS")
         if any(w != w.strip().lower() for w in rt.get("words", [])):
             p.append(f"{name} ({slot}): title words are matched in lower case — write them in lower case")
     if "note" in rt and not isinstance(rt["note"], str):

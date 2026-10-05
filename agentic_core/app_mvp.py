@@ -68,6 +68,52 @@ async def _validation_error_survives_its_input(request, exc):
     return JSONResponse(status_code=422, content={"detail": _json_safe(exc.errors())})
 
 
+# W583 (P3.25, OWNER ruling 2026-09-27) — WHAT THE PLATFORM RECORDS WHEN IT FAILS.
+# Until now the handler above was the ONLY one, so an uncaught exception on any route left no record
+# anywhere: 13 record_outcome call sites, a hash-chained UEG across 11 modules, psutil vitals in 8 — and
+# nothing at all about a 500. The record belongs in the ledger this platform already keeps, which is also
+# why the ruling's other half (wiring the OTLP SDK) is not part of this: OTLP still has nowhere to export
+# to, so it would move the gap rather than close it.
+#
+# IT DOES NOT SWALLOW. The caller still receives a 500; recording a failure is not resolving one.
+# IT DOES NOT INVENT A CAUSE. It knows the route, the method, the exception CLASS and the time. It does
+# not know why, and it says so — `cause_established: False` — because a class name is not a diagnosis and
+# a record that guessed would be worse than none.
+# IT DOES NOT RAISE. The response is built BEFORE anything is recorded, and every recording step is
+# best-effort, so a failure to record a failure can never replace the error the caller came for.
+@app.exception_handler(Exception)
+async def _unhandled_failure_is_recorded(request, exc):
+    import time as _t583
+    _route = getattr(getattr(request, "url", None), "path", None) or "(unknown)"
+    _method = getattr(request, "method", None) or "(unknown)"
+    _cls = exc.__class__.__name__
+    _at = _t583.strftime("%Y-%m-%dT%H:%M:%SZ", _t583.gmtime())
+    #  the response FIRST: whatever happens below, the caller gets this
+    _response = JSONResponse(
+        status_code=500,
+        content={"detail": f"{_method} {_route} failed with {_cls}. The failure is recorded; the cause "
+                           f"is not established.",
+                 "failure_class": _cls, "route": _route, "cause_established": False}  # W583 — no `recorded_at` here. The ledger row carries created_at and /operations/failures
+    #  exposes it per row; a third copy in the error body reached no reader and two fields holding one
+    #  fact is how they drift apart.
+    )
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        record_outcome("route_failure", _route, served_by="platform", success=False,
+                       quality_gate=None, ref=f"{_method} {_cls}")
+    except Exception:                 # noqa: BLE001 — a failure to record is never a failure to respond
+        pass
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "platform.route_failure", "route": _route, "method": _method,
+                         "failure_class": _cls, "at": _at,
+                         "basis": "an unhandled exception reached the application boundary; the class and "
+                                  "the route are recorded and the cause is NOT established"})
+    except Exception:                 # noqa: BLE001
+        pass
+    return _response
+
+
 # W554 (P2.11) — THE HORIZON SEAM'S FIRST HALF: a middleware in front of the six domain routes that
 # OBSERVES AND RECORDS AND DOES NOT GATE. It takes no decision about the request, changes no response and
 # adds no header: the request is served exactly as it would be with this function absent. That is the

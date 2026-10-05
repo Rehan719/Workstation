@@ -433,6 +433,53 @@ async def rebaseline_model_health(req: RebaselineRequest):
             "health_now": model_health().get(req.model, {})}
 
 
+@router.get("/failures")
+async def recent_failures(limit: int = 20):
+    """W583 (P3.25) — the failures the platform recorded, with the basis of the count itself.
+
+    THE EMPTY CASE IS THREE STATES, NOT TWO, and the item's bar names the reason: "nothing recorded" must
+    read as its own state and never as health. No failures over a ledger holding 400 rows says recording
+    works and nothing broke; no failures over an EMPTY ledger says nothing about reliability whatsoever,
+    and rendering both as a green zero would be the defect this platform spends its rounds removing.
+
+    AND NO CAUSE IS INVENTED HERE EITHER. The handler records the exception CLASS, the route and the time,
+    because those are known; `cause_established` is False on every row, and this route carries that
+    forward rather than quietly presenting a class name as a diagnosis.
+    """
+    rows = [r for r in _load() if r.get("kind") == "route_failure"]
+    total_ledger = len(_load())
+    recent = list(reversed(rows[-max(1, min(int(limit), 200)):]))
+    out = []
+    for r in recent:
+        _ref = str(r.get("ref") or "")
+        _method, _, _cls = _ref.partition(" ")
+        out.append({
+            "route": r.get("resource"),
+            "method": _method or None,
+            "failure_class": _cls or None,
+            "at": r.get("created_at"),
+            "cause_established": False,
+            "basis": (f"an unhandled {_cls or 'exception'} reached the application boundary on "
+                      f"{_method or 'a request'} {r.get('resource')}; the class, the route and the time "
+                      f"are recorded and the cause is NOT established"),
+        })
+    if rows:
+        state = "failures_recorded"
+        basis = (f"{len(rows)} recorded failure(s) out of {total_ledger} outcome row(s); each names its "
+                 f"route, its exception class and when, and none claims a cause")
+    elif total_ledger:
+        state = "none_recorded"
+        basis = (f"no failure has been recorded across {total_ledger} outcome row(s), so recording is "
+                 f"working and nothing reached the handler - this IS a statement about reliability")
+    else:
+        state = "nothing_recorded_at_all"
+        basis = ("the outcome ledger is EMPTY, so no failure has been recorded because NOTHING has been "
+                 "recorded. This says nothing about reliability and must not be read as health")
+    return {"failures": out, "total_failures": len(rows), "ledger_rows": total_ledger,
+            "state": state, "basis": basis,
+            "recording_since": (_load()[0].get("created_at") if total_ledger else None)}
+
+
 @router.get("/model-health")
 async def model_health_view():
     """The fabric's LEARNING surface: per-model track records and which models the native

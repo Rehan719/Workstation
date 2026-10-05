@@ -12,6 +12,23 @@ interface Summary {
   assessed_runs?: number; unassessed_runs?: number;
   success_rate_basis?: string; produced_rate?: number;
 }
+// W583 (P3.25) — what the platform records when it FAILS. `state` is three-valued on purpose and the
+// page MUST distinguish the last two: no failures over a populated ledger is a reliability statement; no
+// failures over an EMPTY one is the absence of any statement, and showing both as a green zero is exactly
+// the untruth this item was written against.
+interface FailureRow {
+  route?: string; method?: string | null; failure_class?: string | null;
+  at?: string; cause_established?: boolean; basis?: string;
+}
+interface Failures {
+  failures: FailureRow[];
+  total_failures: number;
+  ledger_rows: number;
+  state: 'failures_recorded' | 'none_recorded' | 'nothing_recorded_at_all';
+  basis: string;
+  recording_since?: string | null;
+}
+
 interface Ranking {
   resource: string; kind: string; runs: number; success_rate: number | null;
   avg_duration_ms: number; in_house_rate: number; last_seen: string;
@@ -36,6 +53,7 @@ export const OperationalExcellence: React.FC = () => {
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [models, setModels] = useState<ModelHealth[]>([]);
+  const [failures, setFailures] = useState<Failures | null>(null);   // W583 (P3.25)
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -45,8 +63,10 @@ export const OperationalExcellence: React.FC = () => {
       fetch('/api/v1/operations/rankings').then(r => r.json()),
       fetch('/api/v1/operations/outcomes?limit=40').then(r => r.json()),
       fetch('/api/v1/operations/model-health').then(r => r.json()),
-    ]).then(([s, r, o, m]) => {
+      fetch('/api/v1/operations/failures?limit=20').then(r => r.json()),
+    ]).then(([s, r, o, m, f]) => {
       setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); setModels(m.models || []);
+      setFailures(f && typeof f === 'object' && 'state' in f ? (f as Failures) : null);
     })
       .catch(() => setError('Failed to load operational metrics'))
       .finally(() => setLoading(false));
@@ -182,6 +202,60 @@ export const OperationalExcellence: React.FC = () => {
               </tbody>
             </table>
           </Card>
+        </div>
+      )}
+
+      {/* W583 (P3.25) — WHAT THE PLATFORM RECORDS WHEN IT FAILS. Until this item, an uncaught 500 left no
+          record anywhere: the app had exactly one exception handler and it was for request validation.
+          THE EMPTY CASE IS THE HARD PART and the bar names it: "nothing recorded" is its own state, never
+          health. So an EMPTY ledger renders amber and says it is not a reliability statement, while no
+          failures over a populated ledger renders green and is one. A single green zero for both is the
+          untruth this item was written against. No row claims a CAUSE — the handler knows the exception
+          class, the route and the time, and a class name is not a diagnosis. */}
+      {failures && (
+        <div data-testid="ops-failures">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+            Recorded failures ({failures.total_failures})
+          </h3>
+          {failures.state === 'nothing_recorded_at_all' ? (
+            <p data-testid="ops-failures-nothing-recorded"
+               className="text-[11px] font-bold text-amber-400 leading-relaxed p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              Nothing has been recorded at all — the outcome ledger is empty, so this is NOT a statement
+              that nothing has failed. {failures.basis}
+            </p>
+          ) : failures.state === 'none_recorded' ? (
+            <p data-testid="ops-failures-none"
+               className="text-[11px] font-bold text-emerald-400 leading-relaxed p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              No failure recorded across {failures.ledger_rows} outcome row(s) — recording is working and
+              nothing reached the handler
+              {failures.recording_since ? `, with the record starting ${failures.recording_since}` : ''}.
+              {' '}{failures.basis}
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {failures.failures.map((f, i) => (
+                <div key={`${f.route}-${f.at}-${i}`}
+                     className="text-[10px] p-2 rounded-lg bg-slate-950 border border-amber-900/40">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-vital font-black">✕</span>
+                    <span className="font-mono font-bold text-white">{f.method} {f.route}</span>
+                    <span className="font-mono text-amber-400">{f.failure_class}</span>
+                    <span className="text-slate-500">{f.at}</span>
+                    {/* the record never claims a cause, and the card says so rather than letting a class
+                        name read as an explanation */}
+                    {f.cause_established === false && (
+                      <span data-testid="ops-failure-no-cause"
+                            className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                        cause not established
+                      </span>
+                    )}
+                  </div>
+                  {f.basis && <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{f.basis}</p>}
+                </div>
+              ))}
+              <p className="text-[10px] text-slate-500 leading-relaxed">{failures.basis}</p>
+            </div>
+          )}
         </div>
       )}
 

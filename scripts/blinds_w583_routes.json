@@ -1,0 +1,29 @@
+[
+ {
+  "tag": "the space-in-a-prefix rule is removed",
+  "file": "agentic_core/plan_followups.py",
+  "old": "        spaced = [f for f in rt.get(\"files\", []) if isinstance(f, str) and len(f.split()) > 1]\n        if spaced:",
+  "new": "        spaced = [f for f in rt.get(\"files\", []) if isinstance(f, str) and len(f.split()) > 1]\n        if False and spaced:",
+  "selector": "route_whose_matcher",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT, tripped in W583: `route --files \"a.txt b.txt\"` was accepted and stored as ONE prefix, because the CLI splits on COMMAS. _route_matches compares a prefix whole or by startswith, so no row could ever match it - the CLI printed 'route added' and the next command refused with 'no route matches its files'. `if False and` deliberately leaves the message in the file, so a leg searching for the wording rather than asserting the REFUSAL stays green."
+ },
+ {
+  "tag": "the rule reports but the refusal does not say COMMAS",
+  "file": "agentic_core/plan_followups.py",
+  "old": "            p.append(f\"{name} ({slot}): file prefix {spaced[0]!r} has a space in it, so it can never match \"\n                     f\"a path - separate the paths with COMMAS\")",
+  "new": "            p.append(f\"{name} ({slot}): file prefix {spaced[0]!r} has a space in it, so it can never match \"\n                     f\"a path\")",
+  "selector": "route_whose_matcher",
+  "expect": "BLIND(red)",
+  "why": "A refusal that does not say how to fix what it refused sent me round the same loop twice: the separator IS the fix, and the two disagreeing messages were the whole reason this was hard to see. The leg asserts the word, so dropping it is caught."
+ },
+ {
+  "tag": "the rule OVER-REACHES into words",
+  "file": "agentic_core/plan_followups.py",
+  "old": "        spaced = [f for f in rt.get(\"files\", []) if isinstance(f, str) and len(f.split()) > 1]",
+  "new": "        spaced = [f for f in (rt.get(\"files\", []) + rt.get(\"words\", [])) if isinstance(f, str) and len(f.split()) > 1]",
+  "selector": "route_whose_matcher",
+  "expect": "BLIND(red)",
+  "why": "THIS BLIND EXISTS FOR THE CONTROL, which would otherwise be a check that the happy path still works - the weakest kind. A route's WORD is searched for INSIDE a row's title, so a phrase is legitimate and P2.18's own route carries 'cannot be read'. Rejecting whitespace there would silently narrow what any route can own, and a leg asserting only that the refusal fires would never see it."
+ }
+]
