@@ -15855,7 +15855,29 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     assert routed("x", ["agentic_core/api/economy.pyc"]) is None                    # a prefix without '/' is one file
     assert routed("The UEG cannot be read", ["docs/a.md"]) == first_open            # precedence: the first route wins
     assert routed("a stale thing") is None                                           # a route to a DONE item is skipped
-    assert routed("anything", severity="high") == first_open                        # high rides the next open item
+    #  SEVERITY DOES NOT CHOOSE THE DESTINATION (W535, and W592 finished it). This leg read
+    #  `routed("anything", severity="high") == first_open` — "high rides the next open item" — which asserted
+    #  route_row's fallback as correct. Registering MILESTONE M1 v7's twenty tier-1 findings sent SEVENTEEN of
+    #  them to P2.17 down that path, an item about the round's own COST that owns none of them; the Owner's
+    #  ruling of 2026-10-05 says such a row is UNSCHEDULED and names its own slot. So the fallback is gone and
+    #  this asserts the two halves that remain true, which is more than the single line it replaces.
+    assert routed("The UEG cannot be read", severity="high") == first_open, (
+        "a HIGH row with a route no longer rides its AREA, so severity has started deciding the slot again — "
+        "the defect W535 removed when every high row in the repository was landing on P2.4")
+    _hi592 = fu.route_row(rts, prompt, "anything", [], "high")
+    assert _hi592["slot"] is None, (
+        "a HIGH row that no route claims still rides whatever item is next, which made P2.4, then P2.18, then "
+        "P2.17 a sink for everything urgent — the Owner ruled such a row names its own slot", _hi592)
+    assert "sink" in str(_hi592["reason"]), (
+        "the refusal does not tell the caller WHY a high row is not placed for it, so the next round will "
+        "read it as a routing bug and re-add the fallback", _hi592["reason"])
+    #  and every return of that function carries the same keys, so a caller may read `reason` unconditionally
+    for _case592 in (fu.route_row(rts, prompt, "The UEG cannot be read", [], "high"),
+                     fu.route_row(rts, prompt, "anything", [], "high"),
+                     fu.route_row(rts, prompt, "nothing", [], "low")):
+        assert set(_case592) == {"slot", "by", "reason"}, (
+            "route_row returns a different key set on different paths, so a reader indexing one of them gets "
+            "a KeyError", sorted(_case592))
     assert "no route matches" in fu.route_row(rts, prompt, "nothing", [], "low")["reason"]
 
     # PLAN NOW lockstep: either doc edited by hand, a missing or duplicated marker, a block outside the delivery plan
@@ -15935,13 +15957,50 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     assert nxt.returncode != 0 and "leave --slot out to route it" in out(nxt) and scratch_reg() == before
     unmatched = cli("add", "--title", "nothing routes this", "--why", "w", "--source", "test")
     assert unmatched.returncode != 0 and "no route matches" in out(unmatched) and scratch_reg() == before
+    #  SEVERITY BUYS NO EXCEPTION TO THE ROUTE (W592). This read `high.returncode == 0 and ... == first_open`
+    #  — the CLI half of route_row's high-severity fallback, which rode the next open item when no route
+    #  claimed the row. Registering MILESTONE M1 v7's twenty tier-1 findings sent SEVENTEEN to P2.17 that way,
+    #  and the Owner's ruling of 2026-10-05 says such a row is UNSCHEDULED and names its own slot. Driven
+    #  through the CLI because the refusal has to reach the command a person types, not only the function.
     high = cli("add", "--title", "nothing routes this", "--why", "w", "--source", "test", "--severity", "high")
-    assert high.returncode == 0 and scratch_reg()["items"][-1]["slot"] == first_open
-    moved = cli("reslot", "FU-003", "--slot", "NEXT")
-    assert moved.returncode != 0 and "use --slot auto or name the plan item" in out(moved)
+    assert high.returncode != 0, (
+        "a HIGH row with no route is still placed automatically, so urgency once again chooses the "
+        "destination — the mechanism that made P2.4, then P2.18, then P2.17 a sink", out(high))
+    assert scratch_reg() == before, (
+        "a REFUSED add changed the register, so a row was half-written by a command that reported failure")
+    assert "sink" in out(high) and "--slot-source" in out(high), (
+        "the refusal does not say why the row was not placed or how to place it, so the next round reads it "
+        "as a routing bug and re-adds the fallback", out(high))
+    #  THE ID COMES FROM THE REGISTER (W592). This named FU-003, which existed only because three adds above
+    #  succeeded; the third now correctly refuses, so the command failed with "0 rows have id FU-003" — still a
+    #  refusal, so a returncode check passed for the WRONG REASON while the message assertion failed. A leg
+    #  whose fixture is a row count breaks on every change to the legs above it, and fails in a way that looks
+    #  like the behaviour under test. Its real subject is that `reslot` refuses the retired NEXT slot.
+    _rid592 = scratch_reg()["items"][-1]["id"]
+    moved = cli("reslot", _rid592, "--slot", "NEXT")
+    assert moved.returncode != 0 and "use --slot auto or name the plan item" in out(moved), (
+        "reslot accepted the retired NEXT slot, or refused for a reason other than the slot", _rid592,
+        out(moved))
+    assert "have id" not in out(moved), (
+        "the row this leg reslots does not exist, so it is testing the id lookup rather than the slot rule",
+        _rid592, out(moved))
     assert cli("check").returncode == 0
     doc = (scratch / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
-    assert f"  Next: {first_open} " in doc and "2 follow-ups ride it" in doc
+    #  THE COUNT COMES FROM THE REGISTER (W592). This read `"2 follow-ups ride it"`, and two rode first_open
+    #  only because the high-severity add landed there by the routing fallback; with that refused, one does.
+    #  The count is computed rather than typed, and the WORDING is deliberately not rebuilt here - mirroring
+    #  the renderer's sentence would fail on a rewording and pass on a wrong number, which is backwards.
+    assert f"  Next: {first_open} " in doc, ("PLAN NOW does not name the next open item", first_open)
+    _nextline592 = next(l for l in doc.splitlines() if l.startswith(f"  Next: {first_open} "))
+    _openride592 = sum(1 for r in scratch_reg()["items"]
+                       if r.get("slot") == first_open and r.get("status") == "open")
+    _words592 = _nextline592.split()
+    _idx592 = next((i for i, w in enumerate(_words592) if w.startswith("follow-up")), None)
+    assert _idx592 is not None and _idx592 > 0, (
+        "the Next line says nothing about how many rows ride the item", _nextline592)
+    assert _words592[_idx592 - 1] == str(_openride592), (
+        "PLAN NOW's rider count disagrees with the register, so the generated block and its own source say "
+        "different things about the next item", _words592[_idx592 - 1], _openride592, _nextline592)
     # done: refused while rows ride it, refused while a route still sends rows to it, then marks, moves and hands on
     before_done = (scratch_reg(), (scratch / "docs" / "FABLE_DELIVERY_PROMPT.md").read_bytes())
     riding = cli("done", first_open, "--by", "W999")
@@ -18696,7 +18755,17 @@ def test_w486_the_plan_says_where_it_is_going_or_says_it_cannot(client):
     assert set(st["rounds"]) | set(st["excluded"]) == set(f["window"]["rounds"]), (st, f["window"])
     if st["excluded"]:
         assert f["rate_used"]["source"].startswith("steady"), f["rate_used"]
-        assert st["closed_per_round"] >= f["window"]["closed_per_round"], (st, f["window"])
+        #  THE INVARIANT IS ON THE **FOUND** RATE, NOT THE CLOSED RATE (W592). This asserted
+        #  `st["closed_per_round"] >= f["window"]["closed_per_round"]`, on the assumption that a one-time
+        #  intake closes fewer rows than average. W592 registered MILESTONE M1's twenty findings - so it
+        #  is correctly excluded - and also closed TWO rows, the pair the Owner had already ruled on and
+        #  W588 left open. Two is above the steady 1.8, so the exclusion moved the closed rate DOWN and
+        #  the assertion failed at 1.8 >= 1.83 with nothing wrong anywhere. A round is named an intake
+        #  because of what it FOUND, so that is the only rate whose direction the exclusion guarantees.
+        assert st["found_per_round"] <= f["window"]["found_per_round"], (
+            "excluding a one-time intake RAISED the found rate, which contradicts why it was excluded - "
+            "the round was named an intake because it registered an unusual number of rows",
+            st, f["window"])
 
     # 3. a projection is arithmetic over the rate it names — checkable, not asserted
     import math
@@ -28221,7 +28290,38 @@ def test_w512_the_cell_has_a_temporal_spine_whose_middle_is_the_present(client):
     # ── PROSPECTION: branches with assumptions, and NOTHING ranked ─────────────────────────────────────
     p = f["prospection"]
     assert p["count"] == len(p["branches"])
-    assert p["branches"], "P2 has blocked items and unsized items; both are readable branches"
+    #  EITHER BRANCHES OR A STATED REASON THERE ARE NONE (W592). This read `assert p["branches"]` with the
+    #  message "P2 has blocked items and unsized items" - an assumption about plan STATE, which this round
+    #  ended: closing FU-402 and FU-409 removed the only owner-gated rows in scope and P2.20 arrived with
+    #  twenty rows, so every open P2 item is sized. `_prospect` reads three sources - a ruling-blocked item,
+    #  an open owner-gated row, an unsized item - and all three are now legitimately empty. The production
+    #  code already says so with state NOT_ASSESSABLE and a basis naming all three, so the guard was the
+    #  thing that was wrong: it went red because the plan IMPROVED.
+    if not p["branches"]:
+        assert p["state"] == "NOT_ASSESSABLE", (
+            "no branch is readable and prospection does not say so, which is the difference between "
+            "'nothing to branch on' and 'nothing computed'", p)
+        for _phrase512 in ("blocked", "awaiting the Owner", "carries a row"):
+            assert _phrase512 in p["basis"], (
+                "the basis does not name the source it found empty, so a reader cannot tell which of the "
+                "three is absent", _phrase512, p["basis"])
+        assert "not a statement that the future is certain" in p["basis"], p["basis"]
+
+    #  AND THE ENUMERATE PATH IS DRIVEN, so this leg cannot go vacuous on a clean plan. A synthetic
+    #  owner-gated row must produce a branch that names its assumption and ranks nothing.
+    from agentic_core.api import method as _m512
+    _driven512 = _m512._prospect(
+        [{"slot": "P2.99", "done": False}],
+        [{"id": "FU-999", "status": "open", "owner_gated": True, "slot": "OWNER",
+          "slot_source": "driven by this guard"}])
+    assert _driven512["branches"], ("an open owner-gated row produced no branch, so prospection cannot "
+                                   "enumerate the one source it is most often given", _driven512)
+    _ob512 = next((b for b in _driven512["branches"] if "FU-999" in b.get("branch", "")), None)
+    assert _ob512 and _ob512.get("assumption"), ("the Owner branch carries no assumption", _driven512)
+    for _banned512 in ("probability", "likelihood", "confidence", "weight", "rank", "score"):
+        assert _banned512 not in _ob512, (
+            "a driven branch carries a ranking key, so a possibility has been turned into a prediction",
+            _banned512, _ob512)
     for b in p["branches"]:
         assert b.get("branch") and b.get("assumption"), b
         # the thing that would turn a possibility into a prediction
@@ -28253,8 +28353,24 @@ def test_w512_the_cell_has_a_temporal_spine_whose_middle_is_the_present(client):
         #  inventing one would be a branch about a constraint that no longer exists.
         assert "the gate clears" not in names and "the gate does not clear" not in names, (
             "the cell enumerates a gate that no longer holds anything", names)
-        assert p["branches"], (
-            "every branch vanished with the gate, so prospection now says nothing at all", p)
+        #  DISCHARGED FURTHER (W592). This asserted `p["branches"]` — true while the other two sources still
+        #  produced one, but this round closed the last open owner-gated rows (FU-402, FU-409) and P2.20
+        #  arrived carrying twenty rows, so every open item in scope is sized. All three sources are
+        #  legitimately empty and `_prospect` says so with state NOT_ASSESSABLE. The assertion is not deleted,
+        #  because an empty prospection could also mean the cell stopped reading the register — which is what
+        #  this leg existed to catch. So the emptiness is CROSS-CHECKED against the register instead.
+        if not p["branches"]:
+            assert p["state"] == "NOT_ASSESSABLE", (
+                "prospection reports no branch and does not say the scope is unassessable", p)
+            _reg512b = json.loads((Path(__file__).resolve().parents[1] / "docs" / "FOLLOWUPS.json")
+                                  .read_text(encoding="utf-8"))
+            _gated512b = [r.get("id") for r in (_reg512b.get("items") or [])
+                          if isinstance(r, dict) and r.get("status") == "open"
+                          and (r.get("owner_gated") or str(r.get("slot")) == "OWNER")]
+            assert not _gated512b, (
+                "prospection reports NO branch while the register still holds an open owner-gated row, so a "
+                "decision awaiting the Owner has become invisible — the cell is not reading the register",
+                _gated512b)
 
     # the cell still refuses to call a scope sound, with three more faculties than before
     assert "sound, ready, or on track" in a["this_cell_never_says"]
@@ -30452,10 +30568,27 @@ def test_w535_the_owners_four_rulings_of_2026_10_02():
     #  (b) and a MEDIUM row with the same files reaches the same item — severity no longer picks the slot
     med = _fu.route_row(reg, prompt, "something wrong in the mjm engine", ["agentic_core/mjm/mjm.py"], "medium")
     assert med["slot"] == hi["slot"], ("severity still changes the destination", hi, med)
-    #  (c) the fallback survives for the genuinely cross-cutting case the old rule was written for
+    #  (c) THE FALLBACK IS GONE, BECAUSE A LATER RULING SUPERSEDED THIS ONE (W592). This leg used to assert
+    #      that a high row no route claims still rides the next open item — faithful to the ruling of
+    #      2026-10-02, which kept that for the genuinely cross-cutting case. The Owner's ruling of 2026-10-05,
+    #      the one that closed P2.18, decided the opposite ON EXACTLY THAT CASE: a row in an area NO OPEN ITEM
+    #      CLAIMS is UNSCHEDULED and NAMES ITS OWN SLOT rather than being assigned to an item that does not
+    #      own it. The measurement that forced it: W588 retired seven areas on that ruling, leaving EIGHT
+    #      routes in the whole register, so "no route claims it" became the COMMON case — and registering
+    #      MILESTONE M1 v7's twenty tier-1 findings put SEVENTEEN of them on P2.17, an item about the round's
+    #      own cost that owns none of them, in a single command. P2.4, then P2.18, then P2.17: the same
+    #      mechanism producing a sink for the third time. The assertion is inverted deliberately and the
+    #      supersession is recorded here, because a guard that silently flips a ruling is worse than one that
+    #      fails.
     none_claimed = _fu.route_row({"routes": []}, prompt, "a row no route claims", [], "high")
-    assert none_claimed["slot"], "a high row with no matching route now routes nowhere at all"
-    assert "NO route claims its files" in none_claimed["by"], none_claimed
+    assert none_claimed["slot"] is None, (
+        "a high row that no route claims is still placed automatically, which the ruling of 2026-10-05 "
+        "forbids — severity has gone back to choosing the destination", none_claimed)
+    assert "sink" in str(none_claimed["reason"]), (
+        "the refusal does not name the sink it is avoiding, so a later round reads it as a routing bug and "
+        "restores the fallback", none_claimed)
+    assert none_claimed["by"] is None, (
+        "a refused row reports HOW it was routed, which it was not", none_claimed)
     #  (d) every branch of route_row answers with the SAME KEYS, so a caller indexing one shape does not
     #      raise on another. The refusal branch is the one a caller is least likely to have exercised.
     refused = _fu.route_row({"routes": []}, prompt, "a row no route claims", [], "low")

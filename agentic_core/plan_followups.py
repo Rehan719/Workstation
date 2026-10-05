@@ -504,19 +504,30 @@ def route_row(register: Any, prompt_text: str, title: str, files: List[str], sev
                 continue
             how = _route_matches(rt, title, [normalise_path(f) for f in files])
             if how:
-                return {"slot": rt["slot"], "by": f"high severity, routed by area: {how}"}
-        if open_items:
-            return {"slot": open_items[0]["slot"],
-                    "by": ("high severity and NO route claims its files, so it rides the next open item "
-                           "rather than waiting for an area it has none of")}
+                #  `reason` is carried on EVERY return of this function, None when there is nothing to
+                #  explain, so a caller may read it unconditionally (the [returns] class).
+                return {"slot": rt["slot"], "by": f"high severity, routed by area: {how}", "reason": None}
+        #  NO FALLBACK TO THE NEXT OPEN ITEM (W592). This returned open_items[0] when no route claimed the
+        #  row, and MEASURED on MILESTONE M1 v7 that put SEVENTEEN of twenty tier-1 findings on P2.17 - the
+        #  item about the round's own COST - which owns none of them. W535 had already removed the version
+        #  that short-circuited here BEFORE consulting routes, because every high row landed on P2.4 and it
+        #  refilled as fast as it drained; the fallback that survived was for the genuinely cross-cutting
+        #  case, and then W588 retired seven areas on the Owner's ruling, leaving eight routes in the whole
+        #  register - so "no route claims it" became the common case and the sink returned one item along.
+        #  The Owner's ruling of 2026-10-05 says such a row is UNSCHEDULED and NAMES ITS OWN SLOT rather
+        #  than being assigned to an item that does not own it, which is the opposite of a fallback.
+        #  Severity still orders the schedule; it no longer chooses the destination.
         return {"slot": None, "by": None,
-                "reason": "a high-severity row rides the next open plan item, and none is open"}
+                "reason": ("no route claims its files or title, and a HIGH row no longer rides whatever item "
+                           "is next - that made P2.4, then P2.18, then P2.17 a sink for everything urgent. "
+                           "Name the item with --slot and say why with --slot-source, or give the area an "
+                           "owner with: python scripts/followups.py route --slot P… --files … --words …")}
     for rt in _routes(register):
         if rt["slot"] not in open_slots:
             continue
         how = _route_matches(rt, title, [normalise_path(f) for f in files])
         if how:
-            return {"slot": rt["slot"], "by": how}
+            return {"slot": rt["slot"], "by": how, "reason": None}
     return {"slot": None, "by": None,
             "reason": "no route matches its files or title — name the plan item with --slot (or add a route: "
                       "python scripts/followups.py route --slot P… --files … --words …)"}

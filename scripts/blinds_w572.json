@@ -137,8 +137,8 @@
  {
   "tag": "the plan reports a count the ledger does not",
   "file": "docs/FABLE_DELIVERY_PROMPT.md",
-  "old": "STANDING TIER-1 COUNT = 20 — NOT MET.",
-  "new": "STANDING TIER-1 COUNT = 12 — NOT MET.",
+  "old": "STANDING TIER-1 COUNT = 20 — NOT MET. P2.19 carries the twenty",
+  "new": "STANDING TIER-1 COUNT = 12 — NOT MET. P2.19 carries the twenty",
   "selector": "misreport",
   "expect": "BLIND(red)",
   "why": "L5. The plan is what the next round reads when it decides what is left. A milestone result recorded in the plan that disagrees with the ledger it cites is the stale-figure class the external assessments kept inheriting from the README."
