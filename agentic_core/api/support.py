@@ -32,7 +32,7 @@ from pydantic import BaseModel, Field
 from agentic_core.api._ai_provenance import ai_text
 from agentic_core.attestation import attest
 from agentic_core.auth.core import get_current_user
-from agentic_core.support import tickets
+from agentic_core.support import satisfaction, tickets
 from agentic_core.ueg.registry import ueg_ledger
 
 router = APIRouter(prefix="/api/v1/support", tags=["autonomous-support"])
@@ -84,6 +84,20 @@ class ConfirmRequest(BaseModel):
     ticket_id: str
     resolved: bool
     by: str = ""
+
+
+class RatingRequest(BaseModel):
+    """A rating a PERSON gives about something this platform did.
+
+    `rating` is typed `int` deliberately. A float is what a computed score looks like, and the store
+    refuses one; declaring it `int` here makes FastAPI reject a fractional value at the edge with a 422
+    rather than letting it reach a refusal deeper in. `subject` names what was rated, never who.
+    """
+    subject: str = Field(..., min_length=1, max_length=200,
+                         description="what was rated - a product, a route, an answer, the platform")
+    rating: int = Field(..., description="an integer on the 1-5 scale, given explicitly by a person")
+    comment: Optional[str] = Field(None, max_length=2000)
+    by: str = Field("", max_length=200, description="who gave it; defaults to the signed-in user")
 
 
 class PolicyChangeRequest(BaseModel):
@@ -220,4 +234,57 @@ async def support_sla(user: dict | None = Depends(get_current_user)) -> Dict[str
                    "confirmation are excluded from BOTH sides rather than counted as successes, which is "
                    "the difference between this figure and the archived monitor's 100%: that one divided "
                    "over tickets it had invented, against a success field that was an unconditional literal"),
+    }
+@router.post("/satisfaction")
+async def support_record_satisfaction(req: RatingRequest,
+                                      user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """Record a user-satisfaction rating. A person says what they think; nothing is inferred.
+
+    §8 names customer/user satisfaction as one of four measures the organism monitors, and P3.27 makes
+    selection depend on it. Before this route the platform had NO mechanism: the only honest treatment
+    anywhere was `drad.py` holding `user_satisfaction: None` because it had no source.
+
+    EXPLICIT ONLY, by the Owner's ruling of 2026-10-03c option (a): no dwell time, no implicit signal, no
+    per-individual preference model and no behavioural aggregate. This route is the only writer, and it
+    writes only what a person passed in.
+    """
+    _by = req.by.strip() or f"user:{(user or {}).get('username') or 'anonymous'}"
+    try:
+        rec = satisfaction.record_rating(req.subject, req.rating, _by, comment=req.comment)
+    except (TypeError, ValueError) as exc:
+        #  the refusal travels to the caller with its reason. A clamped or coerced rating would read as
+        #  one somebody gave, which is the whole thing this clause is against.
+        raise HTTPException(status_code=422, detail=str(exc))
+    _ledger = await _attest_and_log("satisfaction_rating", {
+        "rating_id": rec["id"], "subject": rec["subject"], "rating": rec["rating"],
+        "signal": rec["signal"]}, _by)
+    return {
+        "rating_id": rec["id"], "subject": rec["subject"], "rating": rec["rating"],
+        "scale": f'{rec["scale_min"]}-{rec["scale_max"]}', "given_by": rec["given_by"],
+        "signal": rec["signal"], "ledger": _ledger,
+        "basis": ("recorded from what a person explicitly said, naming its source. Nothing on this "
+                  "platform rates its own work on a user's behalf, and nothing is inferred from how "
+                  "anyone behaved"),
+    }
+
+
+@router.get("/satisfaction")
+async def support_satisfaction(subject: Optional[str] = None,
+                               user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
+    """The satisfaction figure over explicit ratings only — None with a basis when nobody has rated.
+
+    "Nobody has said anything" and "people are satisfied" are opposite facts. This returns `state:
+    not_measured` for the first and never a 0 or a flattering default, which is the same rule as /sla
+    above: silence is excluded from both sides rather than counted either way.
+    """
+    s = satisfaction.summary(subject)
+    return {
+        **s,
+        "recent": satisfaction.ratings(limit=20, subject=subject),
+        "simulated": False,
+        "inferred_from_behaviour": False,
+        "method": ("the mean of ratings a person gave explicitly, on a declared 1-5 scale. A rating is "
+                   "refused rather than clamped or coerced, silence is not a rating, and NOTHING is "
+                   "inferred from how anyone behaved - no dwell time, no implicit signal and no "
+                   "behavioural aggregate (Owner's ruling 2026-10-03c, option (a))"),
     }

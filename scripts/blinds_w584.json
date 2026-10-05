@@ -1,0 +1,164 @@
+[
+ {
+  "tag": "clause 1: a forbidden name is BOUND in a module this item builds",
+  "file": "agentic_core/organism/selection.py",
+  "old": "    out: Dict[str, Any] = {\"vsb_id\": vsb_id, \"measures\": {}}",
+  "new": "    out: Dict[str, Any] = {\"vsb_id\": vsb_id, \"measures\": {}, \"sincerity_score\": None}",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "CLAUSE ONE, and it is clause one because it cannot be added later. Ruling A.9.5 forbids an AI verdict on a person's spiritual state, and the inherited background specified exactly this system - UserFitrahProfile with spectrumScores, a Tazkiyah Score as an identity marker, Da'wah Readiness, spiritual KPI dashboards. The leg asserts the BINDING rather than a word list, because these very modules discuss the forbidden names at length and a grep would match the paragraph forbidding them."
+ },
+ {
+  "tag": "clause 2: silence is reported as a zero",
+  "file": "agentic_core/support/satisfaction.py",
+  "old": "            \"mean\": None,\n            \"count\": 0,\n            \"state\": \"not_measured\",",
+  "new": "            \"mean\": 0,\n            \"count\": 0,\n            \"state\": \"not_measured\",",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "A platform reporting 0 satisfaction because nobody has rated it says people are unhappy; reporting 1.0 is the archived monitor's fabricated figure. Nobody-has-said-anything and people-are-satisfied are opposite facts and neither is a number."
+ },
+ {
+  "tag": "clause 2: a computed score can be stored as a person's opinion",
+  "file": "agentic_core/support/satisfaction.py",
+  "old": "    if isinstance(rating, bool) or not isinstance(rating, int):",
+  "new": "    if False and (isinstance(rating, bool) or not isinstance(rating, int)):",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "A float is what a COMPUTED score looks like. The Owner's ruling of 2026-10-03c took option (a), the explicit rating only - so a value this platform derived must not be storable as something a person said. `if False and` leaves the refusal's message in the file, so a leg that searched for the wording rather than driving the refusal would stay green."
+ },
+ {
+  "tag": "clause 2: the page stops distinguishing the not-measured state",
+  "file": "apps/workstation-superapp/src/pages/support/Support.tsx",
+  "old": "            {sat.state === 'not_measured' ? (",
+  "new": "            {false && sat.state === 'not_measured' ? (",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "The route can say 'nobody has rated this' and the SURFACE is where a person reads it. W503's class, hit four times in W583 alone, so the leg asserts the gate WITH its opening brace rather than the field name - which survives a disabled branch."
+ },
+ {
+  "tag": "clause 2: a behavioural signal is bound in the satisfaction path",
+  "file": "agentic_core/support/satisfaction.py",
+  "old": "        \"signal\": \"explicit-rating-by-a-person\",",
+  "new": "        \"signal\": \"explicit-rating-by-a-person\",\n        \"dwell_ms\": None,",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "Option (b) - an aggregate behavioural signal - was OFFERED to the Owner and not taken, and the clause says a guard greps the live tree rather than trusting the clause. The archived mechanism W563 assessed would have passed A.9.5 and was still refused, because it would have been the first time this platform held a model OF AN INDIVIDUAL fitted from that person's behaviour."
+ },
+ {
+  "tag": "clause 3: selection acts although a measure is unmeasured",
+  "file": "agentic_core/organism/selection.py",
+  "old": "    if unmeasured:\n        return {\n            \"vsb_id\": vsb_id,\n            \"status\": NOT_ASSESSABLE,",
+  "new": "    if False and unmeasured:\n        return {\n            \"vsb_id\": vsb_id,\n            \"status\": NOT_ASSESSABLE,",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "THE CLAUSE THIS ITEM TURNS ON. A selection that treats silence as a low score retires the unmeasured; one that treats it as fine retires nobody. Both are decided by a missing number rather than by a record, which is why the refusal comes before any ranking."
+ },
+ {
+  "tag": "clause 3: the refusal does not name WHICH measure is missing",
+  "file": "agentic_core/organism/selection.py",
+  "old": "                f\"measured for this entity - \" + \", \".join(unmeasured) + \". An entity nobody has measured \"",
+  "new": "                f\"measured for this entity. An entity nobody has measured \"",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "A refusal that does not say which of the four stopped it cannot be acted on - the whole point is that a reader can go and measure the named thing. §11's screen refuses with a reason for exactly this reason."
+ },
+ {
+  "tag": "clause 3: founder-alignment is given a proxy",
+  "file": "agentic_core/organism/selection.py",
+  "old": "    out[\"measures\"][\"founder_alignment\"] = {\n        \"value\": None, \"measured\": False,",
+  "new": "    out[\"measures\"][\"founder_alignment\"] = {\n        \"value\": 1.0, \"measured\": True,",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "§8 names founder-alignment as continuously monitored and nothing implements it. A stand-in would be this platform deciding what its founder thinks, and it would also silently make selection assessable - so the one measure with no mechanism is the one most likely to be quietly defaulted."
+ },
+ {
+  "tag": "clause 4: the flag does not name the floor it failed",
+  "file": "agentic_core/organism/selection.py",
+  "old": "        \"floors_breached\": [f[\"floor\"] for f in breached],",
+  "new": "        \"floors_breached\": [],",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "Clause (4) says the flag NAMES the floor. A flag without its floor is an accusation with no charge, and a reviewer cannot act on it."
+ },
+ {
+  "tag": "clause 4: an unassessable floor is silently treated as passed",
+  "file": "agentic_core/organism/selection.py",
+  "old": "            + (\" COVERAGE: \" + \", \".join(f[\"floor\"] for f in unassessable)",
+  "new": "            + (\"\" + \"\".join(f[\"floor\"] for f in unassessable)[:0]",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "A SCREEN MAY REFUSE, NEVER CLEAR - this platform's own rule, and it applies to a floor exactly as to a screen. This platform records no per-entity obligations, so that floor cannot be assessed; dropping the coverage statement reports a clean entity on a question nobody asked."
+ },
+ {
+  "tag": "clause 5: selection reads the funding score",
+  "file": "agentic_core/organism/selection.py",
+  "old": "from __future__ import annotations",
+  "new": "from __future__ import annotations\n\nfrom agentic_core.economy import ventures as _v  # noqa: F401",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "Funding selects on POTENTIAL (§4 Stage 4) and survival on RECORD. Conflating them lets a well-pitched entity outlive a well-performing one, which is selection on the pitch."
+ },
+ {
+  "tag": "clause 6: a live module references the deleted constant fitness",
+  "file": "agentic_core/organism/selection.py",
+  "old": "NOT_ASSESSABLE = \"NOT_ASSESSABLE\"",
+  "new": "NOT_ASSESSABLE = \"NOT_ASSESSABLE\"\n_W584_DEAD = \"genetic_immune.genome.fitness\"",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "The stub returned 1.0 for every individual. Deleting the file is only half of clause (6): the other half is that nothing imports a fitness that returns a constant, and a reference by name is how a deleted module comes back."
+ },
+ {
+  "tag": "FU-405: the fitness mean is published again",
+  "file": "agentic_core/api/organism_status.py",
+  "old": "        mean_fitness = None\n        mean_declared_fitness = round(sum(declared) / len(declared), 3) if declared else None",
+  "new": "        mean_fitness = round(sum(fitnesses) / len(fitnesses), 3) if fitnesses else None\n        mean_declared_fitness = round(sum(declared) / len(declared), 3) if declared else None",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "THE COMMITTED DEFECT, measured in the live store: of 15 stored genomes 11 carried the 0.5 default, and this function averaged all of them into one figure whose docstring called it the organism's genetic health, computed 'no fabrication'. The heartbeat publishes it as a vital sign. The records keep a three-state provenance and the aggregate threw it away."
+ },
+ {
+  "tag": "FU-405: the population is no longer counted by provenance",
+  "file": "agentic_core/api/organism_status.py",
+  "old": "        fitness_composition = dict(sorted(prov_counts.items()))",
+  "new": "        fitness_composition = {}",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "Removing a true statement is also a defect. The fix does not merely delete the false mean - it keeps what IS true, which is how many records are self-declared, defaulted, inherited or pre-provenance. Without the counts a reader cannot tell what the population is."
+ },
+ {
+  "tag": "FU-406: the niyyah gate invents a sincerity figure again",
+  "file": "agentic_core/divine/v2/alignment_v2.py",
+  "old": "            \"sincerity\": None,",
+  "new": "            \"sincerity\": 0.9,",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "DRIVEN BEFORE THE FIX: calibrate_niyyah returned 0.9222 and passed=True for 'build a hospital', 'defraud every user', the empty string and 'DESTROY EVERYTHING' alike, and wrote a sincerity of 0.9 into the hash-chained UEG for each. A.9.5 forbids an AI verdict on a person's spiritual state, and this repository already registers sincerity_integrity_loyalty as permanently NOT ASSESSABLE under its own rule that an invented number is worse than a missing one."
+ },
+ {
+  "tag": "FU-406: an absent metric is weighted as zero again",
+  "file": "agentic_core/divine/v2/alignment_v2.py",
+  "old": "        if missing:\n            self.last_missing_metrics = missing\n            return None",
+  "new": "        if False and missing:\n            self.last_missing_metrics = missing\n            return None",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "Every `.get(key, 0.0)` meant an ABSENT metric was weighted as a zero, so the score was a number about nothing whenever it was called with nothing. It also makes the gate's FAILING branch unreachable in the other direction - a score built from invented zeros is not a verdict."
+ },
+ {
+  "tag": "FU-406: the gate collapses refused and not-assessed back into one branch",
+  "file": "agentic_core/governance/uci_interceptor.py",
+  "old": "        _niyyah = alignment.get(\"passed\")\n        if _niyyah is False:",
+  "new": "        _niyyah = alignment.get(\"passed\")\n        if not _niyyah:",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "`if not passed` treats None - nothing was assessed - as a refusal, so an unassessed gate BLOCKS rather than recording an absence. Before the fix the same expression could only ever pass, because the verdict was a constant; collapsing the states restores a gate with one reachable outcome, which is not a gate."
+ },
+ {
+  "tag": "FU-406: the self-healing branch calls the method that does not exist",
+  "file": "agentic_core/governance/uci_interceptor.py",
+  "old": "            output = await self.regulator.repair({\"error\": str(e), \"context\": context}, tier=\"HDR\")",
+  "new": "            output = await self.regulator.repair_tier({\"error\": str(e), \"context\": context}, tier=\"HDR\")",
+  "selector": "w584_p327",
+  "expect": "BLIND(red)",
+  "why": "The v2/v140 consolidation into change_control.regulator.Regulator renamed repair_tier to repair and this caller was never updated, so the HANDLER for a failing action was itself a failure - an AttributeError every time an intercepted action raised. Found by driving it."
+ }
+]

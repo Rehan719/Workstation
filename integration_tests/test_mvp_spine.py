@@ -22137,7 +22137,19 @@ def test_w499_the_plan_projects_only_the_work_a_round_closes(client):
     if _expected_sized < len(_open_build):
         assert "PROJECTION COVERAGE" in _b, _b
     _line = render_forecast(_reg, _text)
-    assert "owner-switch (not projected)" in _line, _line[:400]
+    #  FU-365's class, fixed in W584 after it bit: this asserted the phrase unconditionally, and the
+    #  phrase belongs to a PROJECTION. The pace mechanism deliberately withholds one when the backlog is
+    #  not shrinking, which is what W584 produced - 2.17 rows closed per round against 2.17 registered -
+    #  so the designed output turned the guard red. The durable property is the disjunction, and the
+    #  no-projection branch is held to stating a REASON rather than merely going quiet.
+    if "NO PROJECTION" in _line:
+        assert len(_line.split("NO PROJECTION:", 1)[1].strip()) > 40, (
+            "the forecast withholds a projection without saying why, which reads as an absent figure "
+            "rather than a refusal to project", _line[:400])
+    else:
+        assert "owner-switch (not projected)" in _line, (
+            "a projection was rendered and does not exclude the owner-switch items, which are not a "
+            "backlog a round can burn down", _line[:400])
 
     # ── (b) the effort paragraph says which figure is live, and names what it cost ──────────────────
     assert "THIS PARAGRAPH IS NOT THE LIVE FIGURE" in _text
@@ -28275,9 +28287,17 @@ def test_w513_vision_8_is_delivered_into_the_sections_built_for_it(client):
     # ── the two items exist, are NOT done, and each states a bar ───────────────────────────────────────
     from agentic_core import plan_followups as fu
     items = {i["slot"]: i for i in fu.plan_items(prompt)}
+    #  FU-365's class, fixed in W584 after it bit: this asserted both items are NOT done, and P3.27
+    #  closed in W584. "Still open" is not the property this leg is for - the property is that W513's two
+    #  scoped items EXIST, are well-formed, and each states a bar. A closed one is additionally held to
+    #  recording WHO closed it, which "not done" never checked and which an item cannot satisfy by
+    #  quietly vanishing.
     for slot in ("P3.26", "P3.27"):
         assert slot in items, sorted(k for k in items if k.startswith("P3.2"))
-        assert not items[slot]["done"] and not items[slot].get("malformed_done"), items[slot]
+        assert not items[slot].get("malformed_done"), items[slot]
+        if items[slot]["done"]:
+            assert str(items[slot].get("done_by") or "").strip(), (
+                slot, "a closed item does not record which round closed it", items[slot])
     # anchored to LINE START, as plan_items does. Splitting on " P3.27 " anywhere matched a cross-reference
     # inside another item's body and a rendered counter line, so the boundary assertions read the wrong text
     # entirely — a needle that matches a MENTION instead of a HEADING.
@@ -34991,12 +35011,44 @@ def test_w563_the_other_twenty_three_archived_modules_are_decided_on_both_axes(c
         "the record does not put the one-question test to the Owner")
     assert "the explicit rating only" in _sec, (
         "the record does not state what may be built while the question is open")
+    #  ASSERTED ON THE BINDING, not on the word. W584 fixed this after it bit: the screen searched every
+    #  live module's TEXT for "dwell", and the explicit rating the Owner's ruling of 2026-10-03c option
+    #  (a) permits was built with a disclosure saying - truthfully, in the ruling's own words - "no dwell
+    #  time, no implicit signal and no behavioural aggregate enters this figure". The sentence stating the
+    #  rule tripped the screen for the rule, which is the banned-literal class. An implicit per-person
+    #  channel has to be something a module BINDS - a field, a key, a parameter, an attribute - and prose
+    #  cannot be mistaken for one, because a bound name is short and has no spaces. Rewording the
+    #  disclosure instead would have weakened a true statement to satisfy a text search.
+    import ast as _ast563
     _dwell = []
     for _p in list((_root / "agentic_core").rglob("*.py")):
         _s = str(_p).replace("\\", "/")
         if "/_archive/" in _s or "/__pycache__/" in _s:
             continue
-        if "dwell" in _p.read_text(encoding="utf-8", errors="replace").lower():
+        _txt = _p.read_text(encoding="utf-8", errors="replace")
+        if "dwell" not in _txt.lower():            # cheap pre-filter; only candidates are parsed
+            continue
+        try:
+            _tree563 = _ast563.parse(_txt)
+        except SyntaxError:                        # a file that does not parse is a different defect
+            _dwell.append(_s + " (does not parse)")
+            continue
+        _names563 = set()
+        for _n563 in _ast563.walk(_tree563):
+            if isinstance(_n563, _ast563.Name):
+                _names563.add(_n563.id.lower())
+            elif isinstance(_n563, (_ast563.FunctionDef, _ast563.AsyncFunctionDef, _ast563.ClassDef)):
+                _names563.add(_n563.name.lower())
+            elif isinstance(_n563, _ast563.arg):
+                _names563.add(_n563.arg.lower())
+            elif isinstance(_n563, _ast563.keyword) and _n563.arg:
+                _names563.add(_n563.arg.lower())
+            elif isinstance(_n563, _ast563.Attribute):
+                _names563.add(_n563.attr.lower())
+            elif isinstance(_n563, _ast563.Constant) and isinstance(_n563.value, str):
+                if len(_n563.value) <= 40 and " " not in _n563.value:
+                    _names563.add(_n563.value.lower())
+        if any("dwell" in _b563 for _b563 in _names563):
             _dwell.append(_s)
     assert not _dwell, ("the implicit per-person channel is being built while the question is open",
                         _dwell[:5])
@@ -35985,7 +36037,15 @@ def test_w568_the_bundle_proposal_meets_all_four_of_its_stated_limits(client):
         #  is either a normalisation bug or a file that should not be in the bundle at all.
         for _f, _n in _x["rows_per_file"].items():
             assert isinstance(_n, int) and _n >= 1, (_x["slot"], _f, _n)
-        assert _x["thinnest_file_rows"] == min(_x["rows_per_file"].values()), _x["slot"]
+        #  MIRRORS THE PRODUCER'S RULE, not half of it. This called min() with no empty case and crashed
+        #  with ValueError on the register's first fileless open row, where `bundles()` itself answers 0
+        #  (`min(...) if _rows_per_file else 0`). A guard that raises instead of reporting is not a guard.
+        if _x["rows_per_file"]:
+            assert _x["thinnest_file_rows"] == min(_x["rows_per_file"].values()), _x["slot"]
+        else:
+            assert _x["thinnest_file_rows"] == 0, (
+                _x["slot"], "a bundle whose rows cite no file must report a thinnest edge of 0 rather "
+                            "than inventing one", _x["thinnest_file_rows"])
     #  and it reaches the SURFACE, because a figure only the dict holds is a figure nobody reads
     _rendered = _fu568.render_bundles(_reg, _prompt)
     assert "thinnest file cited by" in _rendered, (
@@ -39000,3 +39060,501 @@ def test_a_route_whose_matcher_can_never_fire_is_refused(tmp_path):
         "CLI accepted, which is the whole defect", _rtR)
     assert _fuR._route_matches(_rtR, "a lockfile that cannot be read tolerantly", []), (
         "the stored route does not match a row whose title carries its phrase", _rtR)
+def test_w584_p327_selection_refuses_before_it_ranks(client, monkeypatch, tmp_path):
+    """P3.27 — selection becomes possible, and the first thing it does is refuse.
+
+    MEASURED BEFORE BUILDING. `organism/genome.py` had crossover, mutation and lineage and its own
+    docstring said "NOTHING in this module evaluates fitness" — variation yes, inheritance yes, SELECTION
+    NO. Customer/user satisfaction had no mechanism anywhere: the only occurrences in the live tree were a
+    heading in a generated document and `drad.py` holding `user_satisfaction: None` precisely BECAUSE it
+    had no source. And the only fitness implementation was a stub returning 1.0 for every individual.
+
+    THE CLAUSES ARE DRIVEN, NOT READ. Each leg below puts the platform into a state and reads the answer
+    back out, because every one of these could be satisfied by a source file that says the right words.
+    """
+    import ast as _ast584
+    import json as _json584
+    import pathlib as _pl584
+    import re as _re584
+
+    import agentic_core.economy.living_vsbs as _lv584
+    from agentic_core.organism import selection as _sel584
+    from agentic_core.support import satisfaction as _sat584
+
+    _root584 = _pl584.Path(__file__).resolve().parents[1]
+
+    # ── L1. CLAUSE (1): THE BOUNDARY, ASSERTED ON THE BINDING ──────────────────────────────────────
+    #  Ruling A.9.5. Nothing this item builds may compute, score, rank or infer a spiritual state. The
+    #  assertion is on the BINDING and not on a word list, because this round's own files DISCUSS the
+    #  forbidden names at length — a grep for the word would match the paragraph forbidding it, which is
+    #  the inverse of the banned-literal trap and would make this leg pass for the wrong reason.
+    _forbidden584 = ("sincerity", "tazkiyah", "barakah", "fitrah", "virtue", "gratitude", "piety",
+                     "readiness", "spiritual")
+    for _mod584 in ("agentic_core/organism/selection.py", "agentic_core/support/satisfaction.py"):
+        _tree584 = _ast584.parse((_root584 / _mod584).read_text(encoding="utf-8"))
+        #  every NAME this module binds: assignments, keyword arguments, dict keys and def/class names
+        _bound584 = set()
+        for _n584 in _ast584.walk(_tree584):
+            if isinstance(_n584, _ast584.Name):
+                _bound584.add(_n584.id.lower())
+            elif isinstance(_n584, (_ast584.FunctionDef, _ast584.AsyncFunctionDef, _ast584.ClassDef)):
+                _bound584.add(_n584.name.lower())
+            elif isinstance(_n584, _ast584.keyword) and _n584.arg:
+                _bound584.add(_n584.arg.lower())
+            elif isinstance(_n584, _ast584.Attribute):
+                _bound584.add(_n584.attr.lower())
+            elif isinstance(_n584, _ast584.Constant) and isinstance(_n584.value, str):
+                #  a dict KEY is a string constant; only short ones can be field names, which keeps the
+                #  prose in these modules' docstrings out of the comparison
+                if len(_n584.value) <= 40 and " " not in _n584.value:
+                    _bound584.add(_n584.value.lower())
+        for _word584 in _forbidden584:
+            _hits584 = [b for b in _bound584 if _word584 in b]
+            assert not _hits584, (
+                "a field, name or key in a module this item builds carries a word Ruling A.9.5 forbids "
+                "being computed about anyone - the boundary is clause ONE because it is the clause that "
+                "cannot be added later", _mod584, _word584, sorted(_hits584))
+
+    # ── L2. CLAUSE (2): A REAL EXPLICIT RATING, AND "NOT MEASURED" WHERE THERE IS NONE ─────────────
+    #  the empty state is DRIVEN by controlling what the store returns, not observed: after any earlier
+    #  leg records a rating the store is not empty, so an unconditional read would check this by luck.
+    _read_orig584 = _sat584._read
+    try:
+        _sat584._read = lambda: []
+        _empty584 = _sat584.summary()
+        assert _empty584["mean"] is None and _empty584["state"] == "not_measured", _empty584
+        assert "NOT MEASURED" in _empty584["basis"] and "absence of a signal" in _empty584["basis"], (
+            "an empty satisfaction store does not say that it is the ABSENCE of a signal rather than a low "
+            "one - a 0 would read as nobody being happy and a 1.0 as the archived monitor's figure",
+            _empty584["basis"])
+        assert _empty584["mean"] != 0, "silence was reported as a zero"
+    finally:
+        _sat584._read = _read_orig584
+    assert _sat584._read is _read_orig584, "the satisfaction reader was left patched"
+
+    #  IT REFUSES rather than coercing. A float is what a COMPUTED score looks like, and a clamped value
+    #  reads as one somebody gave.
+    for _bad584, _why584 in ((4.5, "a float, which is what a computed score looks like"),
+                             (True, "a boolean, which is not a rating on a scale"),
+                             (9, "above the declared scale"),
+                             (0, "below the declared scale")):
+        with pytest.raises((TypeError, ValueError)):
+            _sat584.record_rating("the platform", _bad584, "w584")
+    with pytest.raises(ValueError):
+        _sat584.record_rating("the platform", 4, "   ")          # an unattributable rating
+
+    _rec584 = _sat584.record_rating("w584 probe subject", 4, "w584-person", comment="driven")
+    assert _rec584["signal"] == "explicit-rating-by-a-person", _rec584
+    _sum584 = _sat584.summary("w584 probe subject")
+    assert _sum584["state"] == "measured" and _sum584["mean"] == 4.0 and _sum584["count"] == 1, _sum584
+
+    #  AND THE ROUTE, both states
+    _r584 = client.post("/api/v1/support/satisfaction",
+                        json={"subject": "w584 route subject", "rating": 5, "by": "w584-person"})
+    assert _r584.status_code == 200, (_r584.status_code, _r584.text[:300])
+    assert _r584.json()["signal"] == "explicit-rating-by-a-person", _r584.json()
+    #  a fractional rating is refused AT THE EDGE, never clamped
+    _bad584 = client.post("/api/v1/support/satisfaction",
+                          json={"subject": "x", "rating": 4.5, "by": "w584-person"})
+    assert _bad584.status_code == 422, (
+        "a fractional rating was accepted somewhere on the way in; a computed score must not be storable "
+        "as a person's opinion", _bad584.status_code, _bad584.text[:200])
+    _g584 = client.get("/api/v1/support/satisfaction?subject=w584%20route%20subject").json()
+    assert _g584["state"] == "measured" and _g584["mean"] == 5.0, _g584
+    assert _g584["inferred_from_behaviour"] is False, _g584
+
+    #  THE LIVE TREE IS SCREENED FOR A BEHAVIOURAL SIGNAL, because the clause says to rather than
+    #  trusting it. Option (b) - an aggregate behavioural signal - was offered to the Owner and NOT taken.
+    #
+    #  ASSERTED ON THE BINDING, and the first cut of this leg is why. It searched the source TEXT and
+    #  failed on correct code, because the store's basis says - truthfully - "no dwell time, no implicit
+    #  signal and no behavioural aggregate enters this figure". A runtime f-string is neither a comment nor
+    #  a docstring, so stripping those left the sentence that states the rule, and the detector read it as
+    #  the rule being broken. That is the banned-literal class one layer out: last time a COMMENT
+    #  recording a removal, this time a BASIS declaring an exclusion. A behavioural signal would have to be
+    #  something the module BINDS - a field, key, parameter or attribute - and prose cannot be mistaken for
+    #  one, because a bound name is short and has no spaces.
+    _satbound584 = set()
+    for _n584 in _ast584.walk(_ast584.parse(
+            (_root584 / "agentic_core/support/satisfaction.py").read_text(encoding="utf-8"))):
+        if isinstance(_n584, _ast584.Name):
+            _satbound584.add(_n584.id.lower())
+        elif isinstance(_n584, (_ast584.FunctionDef, _ast584.AsyncFunctionDef, _ast584.ClassDef)):
+            _satbound584.add(_n584.name.lower())
+        elif isinstance(_n584, _ast584.arg):
+            _satbound584.add(_n584.arg.lower())
+        elif isinstance(_n584, _ast584.keyword) and _n584.arg:
+            _satbound584.add(_n584.arg.lower())
+        elif isinstance(_n584, _ast584.Attribute):
+            _satbound584.add(_n584.attr.lower())
+        elif isinstance(_n584, _ast584.Constant) and isinstance(_n584.value, str):
+            if len(_n584.value) <= 40 and " " not in _n584.value:
+                _satbound584.add(_n584.value.lower())
+    for _beh584 in ("dwell", "time_on_page", "click_through", "implicit", "engagement",
+                    "session_length", "scroll_depth", "behaviour_score", "behavior_score"):
+        _bhits584 = [b for b in _satbound584 if _beh584 in b]
+        assert not _bhits584, (
+            "a BEHAVIOURAL signal is BOUND in the satisfaction path. The Owner's ruling of 2026-10-03c "
+            "took option (a), the explicit rating ONLY, and option (b) - an aggregate behavioural signal "
+            "- was offered and not taken", _beh584, sorted(_bhits584))
+    #  and the one legal signal value is the one the store writes, so an inferred row has no way in
+    assert "explicit-rating-by-a-person" in _satbound584, (
+        "the store no longer declares the single legal signal value, so a row with any other provenance "
+        "could enter the figure the ruling says must contain none")
+
+    #  and the SURFACE renders the not-measured state as its own thing, asserted on the GATE
+    _page584 = (_root584 / "apps/workstation-superapp/src/pages/support/Support.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    _pcode584 = _re584.sub(r"(?m)^\s*//.*$", " ",
+                           _re584.sub(r"/\*(?:.|\n)*?\*/", " ", _page584))
+    assert "{sat.state === 'not_measured' ? (" in _pcode584, (
+        "the page does not branch on the not-measured state, so an absent signal has no rendering of its "
+        "own - W503's class, so this asserts the gate with its opening brace rather than the literal")
+    for _tid584 in ('data-testid="support-satisfaction-not-measured"',
+                    'data-testid="support-satisfaction-mean"'):
+        assert _tid584 in _pcode584, ("a satisfaction state has no rendered element", _tid584)
+    #  the rating control is asserted on its BINDING, not on an expanded testid: the buttons build their
+    #  own test ids from a template literal, so `data-testid="support-rate-1"` appears nowhere in source
+    #  and a leg looking for it was checking a string the page never contains.
+    assert 'support-rate-' in _pcode584, "the page offers no rating control at all"
+    assert '[1, 2, 3, 4, 5].map' in _pcode584, (
+        "the rating control does not offer the declared scale, so a person cannot give the only signal "
+        "this platform has")
+    assert 'onClick={() => rate(n)}' in _pcode584, (
+        "the rating buttons are not wired to the writer, so pressing one records nothing - a control that "
+        "looks like it works is worse than none")
+
+    # ── L3. CLAUSE (3): SELECTION REFUSES WHILE ANY MEASURE IS UNMEASURED, AND NAMES WHICH ─────────
+    #  driven with EXACTLY ONE missing, which is what the clause specifies. The roster is monkeypatched
+    #  rather than written, so no shared store is touched by this leg.
+    _ROSTER584 = {"living_vsbs": [{"vsb_id": "vsb-w584", "name": "w584 probe",
+                                   "last_distributable": 120.0,
+                                   "compliance": {"verdict": "pass", "screened_at": "2026-01-02T00:00:00Z"}}],
+                  "total": 1}
+    monkeypatch.setattr(_lv584, "list_living", lambda: _ROSTER584)
+    monkeypatch.setattr(_sat584, "summary", lambda *_a, **_k: {
+        "mean": 4.2, "state": "measured", "count": 3, "basis": "driven by the w584 guard"})
+
+    _one584 = _sel584.assess("vsb-w584")
+    assert _one584["status"] == _sel584.NOT_ASSESSABLE, (
+        "three of the four measures are present and selection did not refuse on the fourth", _one584)
+    assert _one584["unmeasured"] == ["founder_alignment"], (
+        "the refusal does not name EXACTLY the one measure that is missing", _one584["unmeasured"])
+    assert sorted(_one584["measured"]) == ["live_compliance", "profitability", "user_satisfaction"], _one584
+    assert "founder_alignment" in _one584["basis"], (
+        "the basis does not NAME the missing measure, so a reader cannot tell which of the four stopped "
+        "selection", _one584["basis"])
+    assert _one584["selected"] is None, "a refusal produced a selection verdict anyway"
+    #  NO PAGE FETCHES THIS ROUTE, so its own response is the surface a person reads - which means the
+    #  keys that qualify the answer have to be asserted here or nothing holds them there.
+    _rt584 = client.get("/api/v1/organism/selection/vsb-w584").json()
+    assert _rt584["measures_required"] == list(_sel584.MEASURES), (
+        "the route does not state WHICH four measures §8 requires, so a reader of the refusal cannot tell "
+        "what the complete set is", _rt584.get("measures_required"))
+    assert _rt584["status"] == _sel584.NOT_ASSESSABLE and _rt584["unmeasured"], _rt584
+    assert str(_rt584.get("method") or "").strip(), "the route reports no method at all"
+    #  founder-alignment is NOT MEASURED and not substituted by a proxy
+    _fa584 = _one584["measures"]["founder_alignment"]
+    assert _fa584["measured"] is False and _fa584["value"] is None, _fa584
+    assert "no mechanism" in _fa584["basis"], (
+        "founder-alignment reports something other than the absence of any mechanism", _fa584["basis"])
+
+    #  a MEASURED ZERO is a measurement, not an absence - the three-state rule this plan keeps applying
+    monkeypatch.setitem(_ROSTER584["living_vsbs"][0], "last_distributable", 0.0)
+    _zero584 = _sel584.measure_entity("vsb-w584")["measures"]["profitability"]
+    assert _zero584["measured"] is True and _zero584["value"] == 0.0, (
+        "a recorded profitability of ZERO was treated as unmeasured; a measured zero and an unmeasured "
+        "field are different facts", _zero584)
+
+    # ── L4. CLAUSE (4): THE HARD FLOOR FLAGS, NAMES THE FLOOR, AND CARRIES ITS COVERAGE ────────────
+    monkeypatch.setitem(_ROSTER584["living_vsbs"][0], "compliance",
+                        {"verdict": "fail", "screened_at": "2026-01-02T00:00:00Z"})
+    _flag584 = _sel584.negative_selection("vsb-w584")
+    assert _flag584["status"] == _sel584.FLAGGED and _flag584["flagged"] is True, _flag584
+    assert _flag584["floors_breached"] == ["live_compliance"], (
+        "the flag does not name the floor it failed", _flag584)
+    assert _flag584["retired"] is False and "never a retirement" in _flag584["basis"], (
+        "a flag reads as a retirement; death is governed through Change Control, not by a floor", _flag584)
+    #  a floor nothing can assess says so and is NEVER counted as passed
+    assert "section_8_obligations" in _flag584["floors_not_assessable"], _flag584
+    assert "COVERAGE" in _flag584["basis"], (
+        "the result does not carry what it could NOT assess, so it reads as clearing the entity on a "
+        "question nobody asked - a screen may refuse, never clear", _flag584["basis"])
+    #  and a clean verdict is not flagged, so the flag is not a constant
+    monkeypatch.setitem(_ROSTER584["living_vsbs"][0], "compliance",
+                        {"verdict": "pass", "screened_at": "2026-01-02T00:00:00Z"})
+    _clean584 = _sel584.negative_selection("vsb-w584")
+    assert _clean584["status"] == _sel584.NOT_FLAGGED and _clean584["flagged"] is False, (
+        "a passing entity is flagged too, so the flag carries no information", _clean584)
+
+    # ── L5. CLAUSE (5): THE FUNDING SCORE IS NOT REUSED ────────────────────────────────────────────
+    #  funding selects on POTENTIAL (§4 Stage 4: outcome x value x benefit x feasibility x strategic-fit),
+    #  survival on RECORD. Asserted against the field list ventures.py itself declares, so a rename there
+    #  cannot quietly make this leg compare against a stale set.
+    import agentic_core.economy.ventures as _ven584
+    assert tuple(_ven584._METRICS) == _sel584.FUNDING_POTENTIAL_FIELDS, (
+        "the funding scorer's own field list no longer matches the list selection declares it must not "
+        "read, so this leg would compare against a stale set", _ven584._METRICS,
+        _sel584.FUNDING_POTENTIAL_FIELDS)
+
+    #  THE IMPORT CHECK IS WHAT DOES THE REAL WORK HERE, and the limit is stated rather than hidden:
+    #  three of the five potential field names - outcome, value, benefit - are ordinary English and are
+    #  dict keys in this very module, so screening the source text for them would fail on correct code.
+    #  Only `feasibility` and `strategic_fit` are distinctive enough to screen by name.
+    _seltree584 = _ast584.parse((_root584 / "agentic_core/organism/selection.py").read_text(encoding="utf-8"))
+    _imports584 = set()
+    for _n584 in _ast584.walk(_seltree584):
+        if isinstance(_n584, _ast584.Import):
+            _imports584.update(a.name for a in _n584.names)
+        elif isinstance(_n584, _ast584.ImportFrom) and _n584.module:
+            _imports584.add(_n584.module)
+    assert not any("ventures" in _i584 for _i584 in _imports584), (
+        "selection imports the funding scorer. Funding selects on what MIGHT happen and survival on what "
+        "DID; conflating them lets a well-pitched entity outlive a well-performing one", sorted(_imports584))
+
+    _selsrc584 = (_root584 / "agentic_core/organism/selection.py").read_text(encoding="utf-8")
+    _selcode584 = _re584.sub(r"(?m)^\s*#.*$", " ",
+                             _re584.sub(r'"""(?:.|\n)*?"""', " ", _selsrc584))
+    #  the declaration itself names all five, so it is removed before the search - otherwise this leg
+    #  would fail on the very tuple it exists to check
+    _selcode584 = _re584.sub(r"FUNDING_POTENTIAL_FIELDS\s*=\s*\([^)]*\)", " ", _selcode584)
+    for _pot584 in ("feasibility", "strategic_fit"):
+        assert _pot584 not in _selcode584, (
+            "selection reads a §4 Stage 4 POTENTIAL field by name", _pot584)
+    #  and the measures it DOES read are exactly the four §8 names
+    _m584 = _sel584.measure_entity("vsb-w584")["measures"]
+    assert set(_m584) == set(_sel584.MEASURES), sorted(_m584)
+
+    # ── L6. CLAUSE (6): THE DEAD FITNESS STUBS ARE GONE ────────────────────────────────────────────
+    for _gone584 in ("fitness.py", "evolution.py", "population.py"):
+        _p584 = _root584 / "agentic_core/genetic_immune/genome" / _gone584
+        assert not _p584.exists(), (
+            "a dead genome stub is still present. FitnessFunction.evaluate returned 1.0 for every "
+            "individual, EvolutionEngine.evolve returned its argument and Population was a list wrapper",
+            _gone584)
+    #  the siblings that ARE imported must survive - a deletion that took them would break 10 call sites
+    for _kept584 in ("chromosome.py", "gene.py"):
+        assert (_root584 / "agentic_core/genetic_immune/genome" / _kept584).exists(), (
+            "a genome module that IS imported was deleted with the dead ones", _kept584)
+    #  nothing imports a fitness that returns a constant
+    #  A GUARD CANNOT SEARCH ITS OWN FILE. The first cut walked every live .py and failed on THIS test,
+    #  which names the deleted modules in the very assertion that forbids importing them. The scan is
+    #  scoped to where a live import could actually be - the package and its scripts - and the limit is
+    #  stated: a reference from a test would not be caught here, which is acceptable because a test
+    #  importing a deleted module fails by importing it.
+    _live584 = [p for p in list((_root584 / "agentic_core").rglob("*.py"))
+                + list((_root584 / "scripts").rglob("*.py"))
+                if "_archive" not in p.parts and "node_modules" not in p.parts
+                and "__pycache__" not in p.parts]
+    assert len(_live584) > 200, ("the reachability scan found almost nothing, so it proves nothing",
+                                len(_live584))
+    for _f584 in _live584:
+        _t584 = _f584.read_text(encoding="utf-8", errors="replace")
+        for _dead584 in ("genetic_immune.genome.fitness", "genetic_immune.genome.population",
+                         "genetic_immune.genome.evolution", "FitnessFunction"):
+            assert _dead584 not in _t584, (
+                "a live module references a deleted constant-returning fitness", str(_f584), _dead584)
+
+    # ── L7. FU-405: THE FITNESS MEAN NO LONGER CLAIMS TO BE A MEASUREMENT ──────────────────────────
+    import agentic_core.api.organism_status as _os584
+
+    #  BOTH STATES ARE DRIVEN, not observed. The first cut read the store as the suite happened to leave
+    #  it - empty - and asserted the POPULATED case's basis against the empty one's. Pointing the
+    #  function's own data_path at a directory this test owns touches no shared store and makes neither
+    #  state depend on test order. This is W583's lesson, one round later.
+    _gdir584 = tmp_path / "w584genomes"
+    _gdir584.mkdir()
+    monkeypatch.setattr(_os584, "data_path", lambda *_a, **_k: _gdir584)
+
+    #  (a) EMPTY: its own basis, and no mean
+    _empty_gs584 = _os584._genome_state()
+    assert _empty_gs584["mean_fitness"] is None and _empty_gs584["total_genomes"] == 0, _empty_gs584
+    assert "no genomes stored" in _empty_gs584["mean_fitness_basis"], (
+        "an empty genome store does not say that it is empty", _empty_gs584["mean_fitness_basis"])
+
+    #  (b) POPULATED with all three provenances - which is the state the fix exists for
+    for _i584, (_prov584, _fit584) in enumerate((
+            ("ai-declared (unverified)", 0.8),
+            ("ai-declared (unverified)", 0.6),
+            ("default-unencoded (no FITNESS line parsed)", 0.5),
+            ("inherited-mean-unevaluated (no selection step exists)", 0.55))):
+        (_gdir584 / f"g{_i584}.json").write_text(_json584.dumps({
+            "genome_id": f"genome-w584{_i584}", "entity_name": f"e{_i584}", "fitness_score": _fit584,
+            "fitness_provenance": _prov584, "generation": _i584, "encoded": True,
+            "traits": {"a": 0.5}}), encoding="utf-8")
+
+    _gs584 = _os584._genome_state()
+    assert _gs584["total_genomes"] == 4, _gs584
+    assert _gs584["mean_fitness"] is None, (
+        "a mean fitness is still published over a populated store. Nothing in this platform evaluates "
+        "fitness - genome.py says so where the number is written and OrganismAnatomy.tsx says it to the "
+        "reader - so a mean over self-declared guesses, unencoded defaults and inherited means is not a "
+        "measurement of genetic health", _gs584["mean_fitness"])
+    assert "nothing in this platform evaluates fitness" in _gs584["mean_fitness_basis"].lower(), (
+        "the basis does not say WHY there is no mean", _gs584["mean_fitness_basis"])
+    #  the COMPOSITION is counted, so a reader can see what the population is made of
+    assert _gs584["fitness_composition"] == {"declared": 2, "default": 1, "inherited": 1}, (
+        "the aggregate does not count the population by provenance, so it still discards the distinction "
+        "the records keep", _gs584["fitness_composition"])
+    #  and what IS true is kept rather than deleted: the self-declared mean, over the declared rows ONLY
+    assert _gs584["mean_declared_fitness"] == 0.7, (
+        "the self-declared mean is not the mean of the self-declared rows alone - 0.8 and 0.6 average to "
+        "0.7, and including the default or the inherited row is the blend this fix removed",
+        _gs584["mean_declared_fitness"])
+    #  EVERY return carries the same keys - W495 made that this function's rule
+    _keys584 = set(_gs584)
+    _srcos584 = (_root584 / "agentic_core/api/organism_status.py").read_text(encoding="utf-8")
+    for _needed584 in ("mean_fitness_basis", "mean_declared_fitness", "fitness_composition"):
+        assert _srcos584.count(f'"{_needed584}"') >= 4, (
+            "a new key is missing from one of _genome_state's four returns, so the function is no longer "
+            "shape-complete and a reader of the error path gets a different dict", _needed584,
+            _srcos584.count(f'"{_needed584}"'))
+    #  AND THE BASIS REACHES THE PAGE A PERSON ACTUALLY OPENS. /api/v1/organism/status carries the
+    #  corrected aggregate and NO page fetches it; OrganismAnatomy.tsx fetches /api/v1/organism/genome.
+    #  Nothing on a page was wrong - no page ever rendered the mean - but a correction that reaches no
+    #  reader is half a fix, so the list endpoint carries the population summary and the page renders it.
+    _gl584 = client.get("/api/v1/organism/genome").json()
+    assert "population" in _gl584, (
+        "the endpoint the genome page actually calls carries no population summary, so the correction "
+        "reaches no reader", sorted(_gl584))
+    assert _gl584["population"]["mean_fitness"] is None, _gl584["population"]
+    assert str(_gl584["population"]["mean_fitness_basis"]).strip(), (
+        "the population summary carries no basis", _gl584["population"])
+    _anat584 = (_root584 / "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    _acode584 = _re584.sub(r"(?m)^\s*//.*$", " ",
+                           _re584.sub(r"/\*(?:.|\n)*?\*/", " ", _anat584))
+    assert "{pop.mean_fitness === null ? (" in _acode584, (
+        "the page does not branch on an absent population mean, so it has no way to show that nothing "
+        "evaluates fitness - W503's class, so this asserts the gate with its opening brace")
+    for _ptid584 in ('data-testid="genome-mean-not-measured"',
+                     'data-testid="genome-fitness-composition"'):
+        assert _ptid584 in _acode584, ("a population state has no rendered element", _ptid584)
+
+    #  AND THE SECOND WRITER. heartbeat.py republishes this summary as a VITAL SIGN, and it used to copy
+    #  only three fields - so after the aggregate was corrected the beat would publish mean_fitness: None
+    #  with no reason at all, leaving a reader unable to tell "nothing evaluates fitness" from "the store
+    #  could not be read". Fixing a writer without its reader moves the lie down a layer (W475's class).
+    #  DRIVEN through the published record, not read off the source: the defect is that the vital sign
+    #  loses the basis, not that a line is absent from a file.
+    import agentic_core.organism.heartbeat as _hb584
+    _vital584 = {"total": _gs584.get("total_genomes"),
+                 "mean_fitness": _gs584.get("mean_fitness"),
+                 "mean_fitness_basis": _gs584.get("mean_fitness_basis"),
+                 "mean_declared_fitness": _gs584.get("mean_declared_fitness"),
+                 "fitness_composition": _gs584.get("fitness_composition"),
+                 "max_generation": _gs584.get("max_generation")}
+    _hbsrc584 = (_root584 / "agentic_core/organism/heartbeat.py").read_text(encoding="utf-8")
+    _assign584 = _hbsrc584.split("self.last_genome = {", 1)
+    assert len(_assign584) == 2, "the heartbeat no longer assigns last_genome at all"
+    _block584 = _assign584[1].split("}", 1)[0]
+    for _vk584 in ("mean_fitness_basis", "mean_declared_fitness", "fitness_composition"):
+        assert _vk584 in _block584, (
+            "the heartbeat's genome VITAL SIGN drops a field that says what the number is worth, so the "
+            "beat publishes an unexplained null - the second-writer class", _vk584, _block584)
+    #  and the live beat really does carry it, so the check above is not merely about a source line
+    _hb_obj584 = getattr(_hb584, "heartbeat", None)
+    if _hb_obj584 is not None and getattr(_hb_obj584, "last_genome", None):
+        assert "mean_fitness_basis" in _hb_obj584.last_genome, (
+            "a beat has already run and its recorded vital sign carries no basis",
+            sorted(_hb_obj584.last_genome))
+    assert set(_vital584) >= {"mean_fitness", "mean_fitness_basis"}, _vital584
+
+    #  and the reader's fallback is no longer a different number from the writer's
+    _gsrc584 = (_root584 / "agentic_core/organism/genome.py").read_text(encoding="utf-8")
+    assert 'g.get("fitness_score", 0.0)' not in _gsrc584, (
+        "one field still has two different fallbacks: the writer uses 0.5 and this reader used 0.0, and "
+        "0.0 reads as the WORST possible fitness rather than a midpoint")
+
+    # ── L8. FU-406: THE NIYYAH GATE INVENTS NO FIGURE, AND ITS REFUSAL IS REACHABLE ────────────────
+    import asyncio as _aio584
+
+    from agentic_core.divine.v2.alignment_v2 import DivineAlignmentEngineV2 as _DA584
+    _eng584 = _DA584()
+    #  the same five opposite intents that exposed it: it must no longer answer the same pass for all
+    _answers584 = [_aio584.run(_eng584.calibrate_niyyah(_i584)) for _i584 in
+                   ("build a hospital", "defraud every user", "", "DESTROY EVERYTHING")]
+    for _a584 in _answers584:
+        assert _a584["passed"] is None and _a584["assessed"] is False, (
+            "the niyyah gate still returns a verdict. Driven with four opposite intents it answered "
+            "0.9222 and passed=True for every one, because it never read its intent argument at all",
+            _a584)
+        assert _a584["sincerity"] is None, (
+            "a SINCERITY FIGURE is still produced. Ruling A.9.5 forbids an AI verdict on a person's "
+            "spiritual state, and this repository already registers sincerity_integrity_loyalty as "
+            "permanently NOT ASSESSABLE under its own rule that an invented number is worse than a "
+            "missing one", _a584["sincerity"])
+        assert _a584["alignment_score"] is None, _a584
+        assert "A.9.5" in _a584["basis"], (
+            "the refusal does not cite the ruling that forbids the figure it is refusing to produce")
+    #  an absent metric makes the SCORE None rather than weighting it as a zero
+    assert _aio584.run(_eng584.calculate_divine_alignment_score({}, {})) is None, (
+        "an absent metric is still weighted as 0.0, so this returns a number about nothing")
+    #  ...and a real set of metrics DOES score, which is what makes a refusal reachable rather than
+    #  decorative: a gate whose failing branch cannot be reached is not a gate
+    _low584 = _aio584.run(_eng584.calculate_divine_alignment_score(
+        {"faithfulness": 0.1, "sincerity": 0.1, "maslaha": 0.1},
+        {"user_value": 0.1, "efficiency": 0.1, "legal_compliance": 0.1}))
+    assert _low584 is not None and _low584 < 0.85, (
+        "a real low metric set does not produce a failing score, so the gate's False branch is still "
+        "unreachable", _low584)
+
+    #  THE GATE ITSELF, both branches driven
+    from agentic_core.governance.uci_interceptor import UnifiedConstitutionalInterceptorV16Omega as _U584
+
+    async def _ok584():
+        return {"ok": True}
+
+    _u584 = _U584("w584-guard")
+    _proceeded584 = _aio584.run(_u584.intercept({"intent": "anything at all"}, _ok584))
+    assert isinstance(_proceeded584, dict) and _proceeded584.get("status"), (
+        "an UNASSESSED niyyah blocked the action. A check that did not happen must neither bless nor "
+        "block - it is recorded as an absence", _proceeded584)
+
+    #  AND WHAT IT WRITES INTO THE CHAIN. This field carried a hardcoded 0.9 sincerity into the
+    #  hash-chained UEG for every intercepted action, so what is recorded is the point of the fix. The
+    #  write is captured rather than read back off disk, because the property is that the record carries
+    #  the ABSENCE - a log call is not a print, so no source-reading screen can see this.
+    _logged584 = []
+    _u3584 = _U584("w584-guard-ledger")
+    _orig_log584 = _u3584.ueg.log_minimisation_event
+
+    async def _capture584(kind, payload):
+        _logged584.append((kind, payload))
+        return await _orig_log584(kind, payload)
+
+    _u3584.ueg.log_minimisation_event = _capture584
+    _aio584.run(_u3584.intercept({"intent": "anything at all"}, _ok584))
+    _converged584 = [p for k, p in _logged584 if "converged" in str(k)]
+    assert _converged584, ("the interceptor recorded no completion event at all",
+                           [k for k, _ in _logged584])
+    _payload584 = _converged584[-1]
+    assert _payload584.get("sincerity") is None, (
+        "a sincerity figure is still written into the tamper-evident chain. This field carried a "
+        "hardcoded 0.9 for every intercepted action, and A.9.5 forbids an AI verdict on a person's "
+        "spiritual state", _payload584.get("sincerity"))
+    assert _payload584.get("niyyah_assessed") is False, (
+        "the record does not say that nothing was assessed, so a reader of the chain cannot tell an "
+        "unassessed gate from a passed one", _payload584)
+    assert str(_payload584.get("niyyah_basis") or "").strip(), (
+        "the record carries no reason for the absence", _payload584)
+
+    _u2584 = _U584("w584-guard-refuse")
+
+    async def _refuse584(intent, framework="islamic_khayr"):
+        return {"passed": False, "assessed": True, "sincerity": None, "basis": "a real refusal"}
+
+    _u2584.divine.calibrate_niyyah = _refuse584
+    with pytest.raises(PermissionError) as _ei584:
+        _aio584.run(_u2584.intercept({"intent": "x"}, _ok584))
+    assert "REFUSED" in str(_ei584.value), (
+        "the gate does not refuse on a real negative verdict, so it has exactly one reachable outcome - "
+        "which is what it had before, with the opposite sign", str(_ei584.value))
+
+    #  and the self-healing branch is reachable at all: it called a method that does not exist
+    _ucisrc584 = (_root584 / "agentic_core/governance/uci_interceptor.py").read_text(encoding="utf-8")
+    assert "self.regulator.repair_tier(" not in _ucisrc584, (
+        "the interceptor still calls regulator.repair_tier, which does not exist - the v2/v140 "
+        "consolidation renamed it to `repair`, so the handler for a failing action was itself a failure")
+    import agentic_core.change_control.regulator as _reg584
+    assert hasattr(_reg584.Regulator, "repair"), "the method the interceptor now calls does not exist"

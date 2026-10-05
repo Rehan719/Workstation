@@ -29,7 +29,7 @@ interface Systems {
 }
 interface NervSignal { age_seconds: number; signal_type: string; source: string; payload: string; intensity: number }
 interface Genome {
-  genome_id: string; entity_name: string; generation: number; fitness_score: number;
+  genome_id: string; entity_name: string; generation: number; fitness_score: number | null;
   fitness_provenance: string; encoded: boolean | null; created_at: string; domain?: string;
   traits?: Record<string, number>; trait_provenance?: { parsed: string[]; defaulted: string[] };
   served_by?: string; mutations?: string[]; encoding_note?: string; crossover_method?: string;
@@ -56,6 +56,11 @@ export const OrganismAnatomy: React.FC = () => {
   const [signals, setSignals] = useState<NervSignal[]>([]);
   const [healLog, setHealLog] = useState<{ events: { ts: string; endpoint: string; state: string; reason: string }[]; events_ever: number; capacity: number } | null>(null);
   const [genomes, setGenomes] = useState<Genome[] | null>(null);   // null = not loaded (never conflate with empty)
+  //  FU-405 — what the population's fitness values are WORTH, not just what they are
+  const [pop, setPop] = useState<{
+    mean_fitness: number | null; mean_fitness_basis: string;
+    mean_declared_fitness: number | null; fitness_composition: Record<string, number>;
+  } | null>(null);
   const [config, setConfig] = useState<ConfigPayload | null>(null);
   const [err, setErr] = useState('');
   const [loadErrs, setLoadErrs] = useState<string[]>([]);
@@ -75,7 +80,7 @@ export const OrganismAnatomy: React.FC = () => {
     getJson('/api/v1/organism/systems', setSystems);
     getJson('/api/v1/organism/nervous/signals?n=25', d => setSignals(d.signals || []));
     getJson('/api/v1/organism/self-healing/log', setHealLog);
-    getJson('/api/v1/organism/genome', d => setGenomes(d.genomes || []));
+    getJson('/api/v1/organism/genome', d => { setGenomes(d.genomes || []); setPop(d.population ?? null); });
     getJson('/api/v1/organism/config', setConfig);
   };
   useEffect(loadAll, []);
@@ -376,12 +381,37 @@ export const OrganismAnatomy: React.FC = () => {
                 className={`w-full text-left p-2 rounded-lg border transition-colors ${selGenome?.genome_id === g.genome_id ? 'border-aura/40 bg-aura/5' : 'border-slate-900 bg-slate-950 hover:border-slate-700'}`}>
                 <p className="text-[11px] font-bold text-white truncate">{g.entity_name} <span className="text-slate-600">g{g.generation}</span></p>
                 <p className="text-[9px] text-slate-600 truncate" title={g.fitness_provenance}>
-                  fitness {g.fitness_score} · {g.fitness_provenance?.split(' ')[0]}
+                  fitness {g.fitness_score ?? 'not recorded'} · {g.fitness_provenance?.split(' ')[0] ?? 'unknown'}
                   {g.encoded === false && <span className="text-amber-400"> · NOT ENCODED</span>}
                 </p>
               </button>
             ))}
             {genomes !== null && genomes.length === 0 && <p className="text-[10px] text-slate-700 italic">no genomes yet — encode one above</p>}
+            {pop && (
+              /* NO POPULATION MEAN HERE, BY DESIGN. Nothing in this platform evaluates fitness, so a mean
+                 over self-declared guesses, unencoded defaults and inherited means is not a measurement of
+                 genetic health. The backend's own sentence, plus what the population is actually made of. */
+              <div data-testid="genome-population-basis"
+                   className="mt-2 pt-2 border-t border-slate-900 space-y-1">
+                {pop.mean_fitness === null ? (
+                  <p data-testid="genome-mean-not-measured" className="text-[9px] text-amber-400 leading-relaxed">
+                    {pop.mean_fitness_basis}
+                  </p>
+                ) : (
+                  <p className="text-[9px] text-slate-500">population mean {pop.mean_fitness}</p>
+                )}
+                {pop.mean_declared_fitness !== null && (
+                  <p className="text-[9px] text-slate-600">
+                    self-declared mean {pop.mean_declared_fitness} — what models claimed, unverified
+                  </p>
+                )}
+                {Object.keys(pop.fitness_composition || {}).length > 0 && (
+                  <p data-testid="genome-fitness-composition" className="text-[9px] text-slate-600">
+                    {Object.entries(pop.fitness_composition).map(([k, v]) => `${v} ${k}`).join(' · ')}
+                  </p>
+                )}
+              </div>
+            )}
             {genomes === null && loadErrs.length > 0 && <p className="text-[10px] text-amber-400 italic">genome list failed to load — not empty, unknown</p>}
           </div>
           {selGenome ? (
@@ -391,7 +421,7 @@ export const OrganismAnatomy: React.FC = () => {
                 {selGenome.served_by && <Chip tone={selGenome.encoded ? 'ok' : 'warn'}>served by {selGenome.served_by}</Chip>}
                 {selGenome.encoded === false && <Chip tone="warn">not encoded — defaults</Chip>}
                 <Chip tone="dim" title={selGenome.fitness_provenance || 'this genome predates provenance tracking'}>
-                  fitness {selGenome.fitness_score} · {
+                  fitness {selGenome.fitness_score ?? 'not recorded'} · {
                     !selGenome.fitness_provenance ? 'provenance unknown (pre-W438)'
                     : selGenome.fitness_provenance.includes('inherited') ? 'inherited'
                     : selGenome.fitness_provenance.includes('default') ? 'default'

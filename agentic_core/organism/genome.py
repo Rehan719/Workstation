@@ -87,7 +87,11 @@ def _list_genomes() -> list[dict]:
                 "entity_name": g.get("entity_name", ""),
                 "domain": g.get("domain", ""),
                 "generation": g.get("generation", 0),
-                "fitness_score": g.get("fitness_score", 0.0),
+                # FU-405 (W584) — NOT 0.0. The writer below uses 0.5 as its unencoded default and this
+                # reader used 0.0, so one field had two different fallbacks and the stricter one read as
+                # the WORST possible fitness rather than a midpoint. A record with no fitness has none:
+                # the surface says so, exactly as it already does for the missing provenance beside it.
+                "fitness_score": g.get("fitness_score"),
                 "fitness_provenance": g.get("fitness_provenance", "unknown (pre-W438 genome)"),
                 "encoded": g.get("encoded", None),
                 "created_at": g.get("created_at", ""),
@@ -99,8 +103,23 @@ def _list_genomes() -> list[dict]:
 
 @router.get("/genome")
 async def list_genomes():
+    #  FU-405 (W584) — THE POPULATION'S BASIS TRAVELS WITH THE LIST. The corrected aggregate lives on
+    #  /api/v1/organism/status, which no page fetches; this is the endpoint OrganismAnatomy.tsx actually
+    #  calls, so a reader looking at the genomes sees what their fitness values are worth as a population
+    #  rather than only per record. Read from the one producer so there is no second computation to drift.
     gs = _list_genomes()
-    return {"genomes": gs, "total": len(gs)}
+    try:
+        from agentic_core.api.organism_status import _genome_state
+        _st = _genome_state()
+        _pop = {"mean_fitness": _st.get("mean_fitness"),
+                "mean_fitness_basis": _st.get("mean_fitness_basis"),
+                "mean_declared_fitness": _st.get("mean_declared_fitness"),
+                "fitness_composition": _st.get("fitness_composition")}
+    except Exception as exc:                                      # pragma: no cover - defensive
+        _pop = {"mean_fitness": None,
+                "mean_fitness_basis": f"the population summary could not be read: {type(exc).__name__}",
+                "mean_declared_fitness": None, "fitness_composition": {}}
+    return {"genomes": gs, "total": len(gs), "population": _pop}
 
 
 @router.get("/genome/{genome_id}")

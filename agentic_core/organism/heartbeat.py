@@ -237,7 +237,15 @@ class OrganismHeartbeat:
         try:
             from agentic_core.api.organism_status import _genome_state
             gs = _genome_state()
+            #  W584 (FU-405) — THE BASIS TRAVELS WITH THE NUMBER. This copied three fields, and after
+            #  the aggregate was corrected it would have published `mean_fitness: None` with no reason at
+            #  all - leaving a reader of the beat unable to tell "nothing in this platform evaluates
+            #  fitness" from "the store could not be read". Fixing a writer without its reader moves the
+            #  lie down a layer (W475's class), so the vital sign now carries what the figure is worth.
             self.last_genome = {"total": gs.get("total_genomes"), "mean_fitness": gs.get("mean_fitness"),
+                                "mean_fitness_basis": gs.get("mean_fitness_basis"),
+                                "mean_declared_fitness": gs.get("mean_declared_fitness"),
+                                "fitness_composition": gs.get("fitness_composition"),
                                 "max_generation": gs.get("max_generation")}
             if gs.get("total_genomes"):
                 actions.append("genome_scan")

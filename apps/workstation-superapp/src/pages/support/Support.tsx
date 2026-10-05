@@ -56,6 +56,18 @@ interface Sla {
   method: string;
 }
 
+interface Satisfaction {
+  mean: number | null;
+  count: number;
+  state: string;
+  scale: string;
+  distribution: Record<string, number>;
+  rejected_non_explicit: number;
+  basis: string;
+  method: string;
+  inferred_from_behaviour: boolean;
+}
+
 export const Support: React.FC = () => {
   const [query, setQuery] = useState('');
   const [asking, setAsking] = useState(false);
@@ -64,6 +76,10 @@ export const Support: React.FC = () => {
   const [sla, setSla] = useState<Sla | null>(null);
   const [slaErr, setSlaErr] = useState('');
   const [confirmed, setConfirmed] = useState<boolean | null>(null);
+  const [sat, setSat] = useState<Satisfaction | null>(null);
+  const [satErr, setSatErr] = useState('');
+  const [rating, setRating] = useState<number | null>(null);
+  const [ratingMsg, setRatingMsg] = useState('');
 
   const loadSla = () => {
     axios.get<Sla>('/api/v1/support/sla', { validateStatus: () => true })
@@ -73,7 +89,29 @@ export const Support: React.FC = () => {
       })
       .catch(() => { setSla(null); setSlaErr('The support record could not be reached.'); });
   };
-  useEffect(() => { loadSla(); }, []);
+  const loadSat = () => {
+    axios.get<Satisfaction>('/api/v1/support/satisfaction', { validateStatus: () => true })
+      .then(r => {
+        if (r.status === 200 && r.data) { setSat(r.data); setSatErr(''); }
+        else { setSat(null); setSatErr(`The satisfaction record is not reporting (HTTP ${r.status}).`); }
+      })
+      .catch(() => { setSat(null); setSatErr('The satisfaction record could not be reached.'); });
+  };
+  useEffect(() => { loadSla(); loadSat(); }, []);
+
+  const rate = (n: number) => {
+    setRating(n); setRatingMsg('');
+    axios.post('/api/v1/support/satisfaction',
+               { subject: 'the platform', rating: n }, { validateStatus: () => true })
+      .then(r => {
+        //  a refusal is shown AS a refusal. The store refuses rather than clamping, so a rejected
+        //  rating must not leave the page looking as though something was recorded.
+        if (r.status === 200) setRatingMsg('Recorded. Thank you — this is the only satisfaction signal this platform has.');
+        else setRatingMsg(`Not recorded (HTTP ${r.status}). ${(r.data && (r.data as {detail?: string}).detail) || ''}`);
+      })
+      .catch(() => setRatingMsg('Not recorded — the surface could not be reached.'))
+      .finally(() => loadSat());
+  };
 
   const ask = () => {
     if (!query.trim()) return;
@@ -177,6 +215,47 @@ export const Support: React.FC = () => {
           </div>
         </section>
       )}
+
+      <section data-testid="support-satisfaction"
+               className="border border-slate-800 rounded-2xl p-6 bg-slate-900/40 space-y-3">
+        <h2 className="text-xl font-black uppercase tracking-wider flex items-center gap-2 text-slate-300">
+          <LifeBuoy className="w-5 h-5" /> Satisfaction — what people actually said
+        </h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">rate this platform</span>
+          {[1, 2, 3, 4, 5].map(n => (
+            <button key={n} type="button" onClick={() => rate(n)} data-testid={`support-rate-${n}`}
+              className={`w-9 h-9 rounded-lg border font-black tabular-nums transition-colors ${rating === n ? 'border-aura/60 bg-aura/10 text-aura' : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-600'}`}>
+              {n}
+            </button>
+          ))}
+        </div>
+        {ratingMsg && <p data-testid="support-rating-result" className="text-slate-400 text-xs font-bold">{ratingMsg}</p>}
+        {satErr && <div role="alert" className="text-vital font-bold">{satErr} No figure is shown.</div>}
+        {!satErr && !sat && <p className="text-slate-500 font-bold animate-pulse">Reading the record…</p>}
+        {sat && (
+          <>
+            {sat.state === 'not_measured' ? (
+              /* NO NUMBER HERE, BY DESIGN — not a zero, not a one. Nobody has said anything, and that is
+                 the absence of a signal rather than a low one. The backend's own sentence. */
+              <p data-testid="support-satisfaction-not-measured"
+                 className="text-amber-400 font-bold leading-relaxed">{sat.basis}</p>
+            ) : (
+              <>
+                <p data-testid="support-satisfaction-mean"
+                   className="text-5xl font-black text-emerald-400 tabular-nums">
+                  {sat.mean} <span className="text-slate-600 text-2xl">from {sat.count} rating(s)</span>
+                </p>
+                <p className="text-slate-400 font-bold text-sm leading-relaxed">{sat.basis}</p>
+              </>
+            )}
+            <p data-testid="support-satisfaction-explicit-only"
+               className="text-slate-600 text-xs font-bold leading-relaxed border-t border-slate-800 pt-3">
+              {sat.method}
+            </p>
+          </>
+        )}
+      </section>
 
       <section className="border border-slate-800 rounded-2xl p-6 bg-slate-900/40 space-y-3">
         <h2 className="text-xl font-black uppercase tracking-wider flex items-center gap-2 text-slate-300">

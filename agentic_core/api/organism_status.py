@@ -155,9 +155,17 @@ def _cca_state() -> dict:
 
 
 def _genome_state() -> dict:
-    """Summarise the genome registry as real population genetics: count, mean fitness, generational depth,
-    and the population's dominant trait — the organism's genetic health (computed from the stored genomes,
-    no fabrication)."""
+    """Summarise the genome registry: count, generational depth, the population's dominant trait, and what
+    the stored fitness values actually are.
+
+    FU-404 (W584) — this docstring used to call the summary "the organism's genetic health (computed from
+    the stored genomes, no fabrication)" and the summary used to carry a `mean_fitness` number. Both were
+    wrong together: nothing in this platform evaluates fitness, so every stored value is a model's
+    self-declared guess, the unencoded 0.5 default, or a mean inherited from a crossover that evaluated
+    nothing — and 11 of the 15 genomes in the live store carried the default. The records keep that
+    three-state provenance honestly and this aggregate threw it away. `mean_fitness` is therefore None
+    with a basis; `mean_declared_fitness` and `fitness_composition` carry what is true instead.
+    """
     import json as _json
     try:
         genome_store = data_path("genomes")
@@ -165,14 +173,20 @@ def _genome_state() -> dict:
             return {"total_genomes": 0, "encoded_genomes": 0, "mean_fitness": None,
                     "max_generation": 0, "dominant_trait": None, "dominant_trait_tied": [],
                     "dominant_trait_basis": "no genomes stored yet",
+                    "mean_fitness_basis": "no genome store exists yet",
+                    "mean_declared_fitness": None, "fitness_composition": {},
                     "encoded_basis": "no genome store exists yet"}
         files = list(genome_store.glob("*.json"))
         if not files:
             return {"total_genomes": 0, "encoded_genomes": 0, "mean_fitness": None,
                     "max_generation": 0, "dominant_trait": None, "dominant_trait_tied": [],
                     "dominant_trait_basis": "no genomes stored yet",
+                    "mean_fitness_basis": "no genomes stored yet",
+                    "mean_declared_fitness": None, "fitness_composition": {},
                     "encoded_basis": "no genomes stored yet"}
         fitnesses: list[float] = []
+        declared: list[float] = []
+        prov_counts: dict[str, int] = {}
         max_gen = 0
         # §8 (W495, FU-129, S8.2) - the page labelled this count "encoded genomes" while it was simply
         # the number of JSON files in genomes/. Every stored genome has encoded:false, because the
@@ -190,14 +204,47 @@ def _genome_state() -> dict:
             if g.get("encoded") is True:
                 encoded_n += 1
             f = g.get("fitness_score")
+            # FU-404 (W584) — the number is kept WITH what it is worth. The records carry a three-state
+            # provenance and the mean used to throw it away; a mean over self-declared numbers and
+            # filler is not the same figure as a mean over evaluated ones, and nothing here evaluates.
+            _prov = str(g.get("fitness_provenance") or "").strip() or "unknown (pre-W438 genome)"
+            _kind = ("declared" if _prov.startswith("ai-declared")
+                     else "default" if _prov.startswith("default")
+                     else "inherited" if _prov.startswith("inherited")
+                     else "unknown")
+            prov_counts[_kind] = prov_counts.get(_kind, 0) + 1
             if isinstance(f, (int, float)):
                 fitnesses.append(float(f))
+                if _kind == "declared":
+                    declared.append(float(f))
             max_gen = max(max_gen, int(g.get("generation", 0) or 0))
             for axis, val in (g.get("traits") or {}).items():
                 if isinstance(val, (int, float)):
                     trait_sums[axis] = trait_sums.get(axis, 0.0) + float(val)
                     trait_counts[axis] = trait_counts.get(axis, 0) + 1
-        mean_fitness = round(sum(fitnesses) / len(fitnesses), 3) if fitnesses else None
+        # FU-404 (W584) — THERE IS NO EVALUATED FITNESS TO AVERAGE, so this reports none. genome.py says
+        # it plainly where the number is written ("the fitness is the MODEL'S self-declared number even
+        # when parsed; nothing in this system measures it") and OrganismAnatomy.tsx says it to the reader
+        # ("no fitness here is ever evaluated"). This function averaged all three provenances into one
+        # figure and its docstring called the result the organism's genetic health, computed "no
+        # fabrication" — while 11 of the 15 stored genomes carried the 0.5 default. A mean over filler is
+        # not a health figure, and a mean that blends filler with a model's own guess is not one either.
+        # What IS true is kept rather than deleted: the self-declared mean is reported as its own field,
+        # labelled unverified, and the composition is counted so a reader can see what the population is.
+        mean_fitness = None
+        mean_declared_fitness = round(sum(declared) / len(declared), 3) if declared else None
+        fitness_composition = dict(sorted(prov_counts.items()))
+        _n_decl, _n_def = prov_counts.get("declared", 0), prov_counts.get("default", 0)
+        _n_inh, _n_unk = prov_counts.get("inherited", 0), prov_counts.get("unknown", 0)
+        mean_fitness_basis = (
+            f"NOT MEASURED: nothing in this platform evaluates fitness, so there is no evaluated value "
+            f"to average and no mean is reported. Of {len(files)} stored genome(s): {_n_decl} carry a "
+            f"model's self-declared number (unverified), {_n_def} carry the unencoded default (nobody "
+            f"declared anything), {_n_inh} inherited a mean from a crossover that evaluated nothing, and "
+            f"{_n_unk} predate provenance tracking. mean_declared_fitness is the mean of the "
+            f"{_n_decl} SELF-DECLARED value(s) only and is a report of what models claimed, never a "
+            f"measurement of genetic health."
+            if files else "no genomes stored yet")
         # §4.5 class (W433) — this took the first maximal key in dict order (the guard forbids that
         # expression appearing anywhere in this file, comments included, which is why it is described
         # rather than reproduced), and the trait axes insert in a fixed order, so a tie always crowned the same
@@ -213,6 +260,9 @@ def _genome_state() -> dict:
             # finding, not an occasion to name the alphabetically-first axis.
             dominant = tied[0] if len(tied) == 1 else None
         return {"total_genomes": len(files), "mean_fitness": mean_fitness,
+                "mean_fitness_basis": mean_fitness_basis,
+                "mean_declared_fitness": mean_declared_fitness,
+                "fitness_composition": fitness_composition,
                 "encoded_genomes": encoded_n,
                 "encoded_basis": (
                     f"{encoded_n} of {len(files)} stored genome(s) carry encoded:true. An unencoded "
@@ -230,6 +280,8 @@ def _genome_state() -> dict:
         return {"total_genomes": 0, "encoded_genomes": 0, "mean_fitness": None, "max_generation": 0,
                 "dominant_trait": None, "dominant_trait_tied": [],
                 "dominant_trait_basis": "unavailable (read error)",
+                "mean_fitness_basis": "unavailable - the genome store could not be read",
+                "mean_declared_fitness": None, "fitness_composition": {},
                 "encoded_basis": "unavailable - the genome store could not be read"}
 
 
@@ -579,4 +631,41 @@ async def trigger_homeostasis(req: HomeostasisRequest):
         "ai_recommendation_served_by": recommendation_served_by,
         "ai_recommendation_is_external": recommendation_is_external,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+@router.get("/selection/{vsb_id}")
+async def organism_selection(vsb_id: str):
+    """Can selection act on this entity? It REFUSES while any of §8's four measures is unmeasured.
+
+    P3.27 clause (3). The answer is deliberately not a score: it is ASSESSABLE or NOT_ASSESSABLE, and a
+    refusal NAMES the measures that are missing. One of the four — founder-alignment — has no mechanism
+    anywhere in this platform, so selection refuses today for a reason a reader can check, and will keep
+    refusing until a founder actually says something rather than having a proxy stand in for them.
+    """
+    from agentic_core.organism import selection as _sel
+    r = _sel.assess(vsb_id)
+    return {
+        **r,
+        "measures_required": list(_sel.MEASURES),
+        "method": ("each measure is read from its own source and carries its own `measured` flag; nothing "
+                   "is defaulted, a recorded zero is a measurement and an absence is not. No verdict, "
+                   "score or ranking is produced here"),
+    }
+
+
+@router.get("/selection/{vsb_id}/floor")
+async def organism_selection_floor(vsb_id: str):
+    """Is this entity under a hard floor? A flag is a REVIEW, never a retirement.
+
+    P3.27 clause (4). A floor creates no optimisation pressure toward a proxy because it reads no number
+    to improve: there is a line and an entity is either under it or not. A floor that cannot be assessed
+    says so and never counts as passed, so the result carries its own COVERAGE — this platform records no
+    per-entity obligations, so the §8-obligations floor is reported unassessable rather than cleared.
+    """
+    from agentic_core.organism import selection as _sel
+    r = _sel.negative_selection(vsb_id)
+    return {
+        **r,
+        "method": ("each floor is a LINE, not a score, and nothing is ranked against it. A breach FLAGS "
+                   "the entity for review; nothing here removes anything and a removal is governed "
+                   "through Change Control"),
     }

@@ -56,10 +56,20 @@ def divine_calibration(func: Callable):
             intent = kwargs.get('intent', f"geospheric_{func.__name__}")
             # Ensure niyyah calibration passes before proceeding
             calibration = await engine.calibrate_niyyah(intent)
-            if not calibration.get("passed", False):
-                 await ueg.log_minimisation_event("divine_calibration_failure", {"intent": intent})
-                 # In a strict environment, we would raise an error here.
-                 # For now, we log and proceed but with a penalty flag.
+            #  W584 (FU-406) — THREE-STATE here too. `not calibration.get("passed", False)` recorded a
+            #  "calibration_failure" for an intention nothing had assessed, which names a cause that did
+            #  not happen: there was no failure, there was no check. The two are logged separately now,
+            #  and neither is treated as a pass.
+            _n = calibration.get("passed")
+            if _n is False:
+                await ueg.log_minimisation_event("divine_calibration_refused",
+                                                 {"intent": intent, "basis": calibration.get("basis")})
+            elif _n is None:
+                await ueg.log_minimisation_event("divine_calibration_not_assessed",
+                                                 {"intent": intent, "basis": calibration.get("basis")})
+            #  Neither branch stops the cycle: this decorator has never had the authority to refuse one,
+            #  and a comment claiming a strict environment would someday do so was the only thing
+            #  standing in for that authority. What it does have is a record of what was not checked.
 
         return await func(self, *args, **kwargs)
 
