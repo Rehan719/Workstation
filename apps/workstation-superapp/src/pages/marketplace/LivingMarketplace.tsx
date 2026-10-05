@@ -55,6 +55,10 @@ interface Listing {
   author: string;
   category: string;
   price_wst: number;
+  //  P3.7 (W586) — whether a price was SET, from the record. Optional, because a listing written before
+  //  this round has no such field and the `price_wst > 0` fallback below is what tells the truth about it.
+  priced?: boolean;
+  price_basis?: string;
   tier: string;
   certified: boolean;
   status: string;
@@ -110,7 +114,12 @@ export const LivingMarketplace: React.FC = () => {
 
   // Only what someone has actually priced is purchasable. A §11-held listing never reaches the
   // client — the backend filters it — so nothing here can offer a compliance-failed item.
-  const tradeable = listings.filter(l => l.price_wst > 0 && l.status !== 'held');
+  //  P3.7 (W586) — ONE reading of "is this priced", used everywhere below. It prefers the record's own
+  //  statement and falls back to the number for listings written before that field existed; both say the
+  //  same thing, and the fallback is not removed because it is true of those listings.
+  const isPriced = (l: { priced?: boolean; price_wst: number }) =>
+    (typeof l.priced === 'boolean' ? l.priced : l.price_wst > 0);
+  const tradeable = listings.filter(l => isPriced(l) && l.status !== 'held');
   // W444 — unpriced listings were hidden entirely, so the PATCH that could ever price one had
   // no possible surface and the §12 tradeable economy was structurally empty forever. All
   // listings render now; unpriced ones are badged, and the detail drawer hosts edit/delete.
@@ -384,8 +393,8 @@ export const LivingMarketplace: React.FC = () => {
                 listing present the grid two lines below showed a WST price the sentence denied. Each
                 reason is now counted separately, over the population it actually covers. */}
             {tradeable.length === 0 && (() => {
-              const unpriced = listings.filter(l => !(l.price_wst > 0)).length;
-              const held = listings.filter(l => l.price_wst > 0 && l.status === 'held').length;
+              const unpriced = listings.filter(l => !isPriced(l)).length;
+              const held = listings.filter(l => isPriced(l) && l.status === 'held').length;
               return (
                 <p className="text-xs text-slate-500 italic py-3" data-testid="listings-unpriced-count">
                   Nothing is offered for sale yet, of {listings.length} registered {listings.length === 1 ? 'listing' : 'listings'}:
@@ -402,7 +411,8 @@ export const LivingMarketplace: React.FC = () => {
                     <h3 className="text-sm font-black text-white leading-tight">{l.name}</h3>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {l.certified && <Badge className="text-[8px]">Certified</Badge>}
-                      {!(l.price_wst > 0) && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">unpriced — not for sale</span>}
+                      {!isPriced(l) && <span data-testid="listing-unpriced" title={l.price_basis || 'no price was set on this listing'}
+                        className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">unpriced — not for sale</span>}
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-500 font-semibold leading-relaxed line-clamp-3">{l.description}</p>
@@ -411,7 +421,7 @@ export const LivingMarketplace: React.FC = () => {
                     {l.sales_count > 0 && <><span>·</span><span>{l.sales_count} sold</span></>}
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-1">
-                    <span className="text-sm font-black text-aura">{l.price_wst > 0 ? `${l.price_wst.toLocaleString()} WST` : '—'}</span>
+                    <span className="text-sm font-black text-aura" title={l.price_basis || undefined}>{isPriced(l) ? `${l.price_wst.toLocaleString()} WST` : '—'}</span>
                     {l.price_wst > 0 && l.status !== 'held' ? (
                       <button
                         type="button"

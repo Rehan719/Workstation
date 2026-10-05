@@ -46,9 +46,21 @@ class Listing(BaseModel):
     author: str = "Community"
     category: str = "Product"
     price_wst: float = 0.0
+    # P3.7 (W586) — WHETHER A PRICE WAS SET, in the record rather than inferred from the number.
+    # `price_wst` keeps its meaning exactly: 0 has always meant "nobody priced this" by convention, and
+    # the marketplace page already renders that as "unpriced — not for sale". The convention worked but
+    # lived only in the reader, so a record could not distinguish an unpriced product from one priced at
+    # zero and every future reader had to be told. These two say it. Old documents default to
+    # `priced: False`, which is what a 0 already meant, so nothing that was true stops being true.
+    priced: bool = False
+    price_basis: str = ""
     tier: str = "Standard"
     tags: list[str] = []
     certified: bool = False
+    # P3.7 (W586) — the entity DELIVERABLE this listing was made from, when it was made from one. It is
+    # the dedupe key for /listings/from-entity: listing the same product twice would double an entity's
+    # apparent catalogue without anything being produced.
+    source_deliverable_id: str = ""
     status: str = "active"   # active | sold_out | draft | held (W322 — §11 FAIL)
     compliance: dict = {}    # §11 (W322) — the listing's real screen verdict (overall + verdicts)
     sales_count: int = 0
@@ -254,6 +266,12 @@ def _seed_from_catalog() -> int:
         lid = uuid.uuid4().hex[:12]
         listing = Listing(
             id=lid,
+            # P3.7 (W586) — the docstring above has always said price is unset for these; now the
+            # record says it too rather than leaving a reader to infer it from a 0.
+            priced=False,
+            price_basis=("NOT PRICED - derived from a product the catalogue serves; its identity is a "
+                         "fact and nobody has priced it. This is the absence of a price, not a price "
+                         "of zero"),
             name=prod.get("name") or prod.get("slug", "Unnamed"),
             description=", ".join(prod.get("features") or []) or "Registered product in the live catalogue.",
             author="Platform catalogue",
@@ -365,6 +383,12 @@ async def create_listing(req: CreateListingRequest,
         author=req.author,
         category=req.category,
         price_wst=req.price_wst,
+        # P3.7 (W586) — said in the record, not left to a reader's reading of the number
+        priced=bool(req.price_wst and req.price_wst > 0),
+        price_basis=(f"priced by its creator at {req.price_wst} WST"
+                     if (req.price_wst and req.price_wst > 0) else
+                     "NOT PRICED - whoever created this listing set no price, so it is not for sale. "
+                     "This is the absence of a price and not a price of zero"),
         tier=req.tier,
         tags=req.tags,
         # §14 (W311) — attribution is server-stamped under auth; a client cannot claim another creator
@@ -392,6 +416,101 @@ async def create_listing(req: CreateListingRequest,
         except Exception:
             pass
     return listing.model_dump()
+
+
+@router.post("/api/v1/marketplace/listings/from-entity/{vsb_id}")
+async def list_entity_products(vsb_id: str,
+                               user: dict | None = Depends(get_current_user)) -> dict:
+    """§13 × §12 — list an ENTITY's own products on the marketplace, once each, unpriced until priced.
+
+    P3.7 clause (3). An entity's products are its DELIVERABLES: before this, nothing put them on the
+    marketplace at all. A listing could carry a `vsb_id` when a person created one by hand, and the
+    commercialise stage's label claimed the Commercial CoE "creates marketplace listing" with no
+    mechanism behind it.
+
+    EVERY FIELD IS A FACT ABOUT SOMETHING THAT EXISTS, which is the rule `_seed_from_catalog` set: the
+    name, type and description come from the deliverable the entity actually produced. NOTHING INVENTS A
+    PRICE - each listing is created unpriced with a basis saying so, because what an entity should charge
+    is the Owner's to decide and a default would read as a price somebody set. The §11 screen runs exactly
+    as it does for a hand-made listing, so a listing that fails it is HELD off the marketplace.
+
+    It is idempotent per deliverable: `source_deliverable_id` is the dedupe key, because listing the same
+    product twice would double an entity's apparent catalogue without anything being produced.
+    """
+    if user is not None and not isinstance(user, dict):
+        user = None
+    #  ownership first: a caller may only list the products of an entity they own
+    _require_vsb_attribution(vsb_id, user)
+
+    #  the deliverables store is read through its OWN module, filtered here: that module's `_load`
+    #  returns every row, and marketplace has a `_load` of its own, so it is called on the module rather
+    #  than imported by name.
+    try:
+        from agentic_core.api import deliverables as _dl
+        produced = [d for d in _dl._load()
+                    if isinstance(d, dict) and str(d.get("vsb_id") or "") == str(vsb_id)]
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=(
+            f"the entity's deliverables could not be read, so nothing was listed: "
+            f"{type(exc).__name__}: {exc}"))
+
+    already = {str(l.source_deliverable_id) for l in _all_listings() if l.source_deliverable_id}
+    created, skipped, held = [], [], []
+    for d in produced:
+        did = str(d.get("id") or "")
+        if not did or did in already:
+            skipped.append(did or "(a deliverable with no id)")
+            continue
+        _name = str(d.get("title") or d.get("type") or "Untitled deliverable")[:160]
+        _screen = _screen_listing(_name, str(d.get("brief") or ""), [str(d.get("type") or "")])
+        lid = uuid.uuid4().hex[:12]
+        listing = Listing(
+            id=lid,
+            name=_name,
+            description=str(d.get("brief") or "A product this entity produced.")[:400],
+            author=str(d.get("owner_id") or "the entity"),
+            category=str(d.get("type") or "Product").title(),
+            price_wst=0.0,
+            priced=False,
+            price_basis=("NOT PRICED - this product was listed from the entity's own deliverables and "
+                         "nothing has priced it. What an entity charges is the Owner's to set; a default "
+                         "here would read as a price somebody chose"),
+            tier="Standard",
+            tags=[t for t in (str(d.get("type") or ""),) if t],
+            creator_id=request_owner_id(user, str(d.get("owner_id") or "the entity")),
+            vsb_id=vsb_id,
+            source_deliverable_id=did,
+            origin="vsb",
+            certified=False,
+            status="held" if _screen.get("hold") else "active",
+            compliance=_screen,
+            created_at=time.time(),
+            updated_at=time.time(),
+        )
+        _save(listing)
+        created.append({"listing_id": lid, "name": _name, "deliverable_id": did,
+                        "status": listing.status})
+        if listing.status == "held":
+            held.append(lid)
+
+    return {
+        "vsb_id": vsb_id,
+        "deliverables_found": len(produced),
+        "listed": created,
+        "listed_count": len(created),
+        "already_listed": skipped,
+        "held_by_the_screen": held,
+        "basis": (
+            f"{len(created)} of {len(produced)} product(s) this entity produced were listed; "
+            f"{len(skipped)} were already on the marketplace. EVERY listing is created UNPRICED with a "
+            f"reason saying so - nothing here sets a price, because what an entity charges is the Owner's "
+            f"to decide and a default would read as a price somebody chose. "
+            + (f"{len(held)} were HELD off the marketplace by the §11 screen." if held else
+               "None was held by the §11 screen.")
+            if produced else
+            "this entity has produced NO deliverables, so it has no products to list - which is different "
+            "from having products nobody listed"),
+    }
 
 
 @router.get("/api/v1/marketplace/listings/{listing_id}")

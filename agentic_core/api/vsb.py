@@ -483,6 +483,122 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     return manifest
 
 
+def _repo_declared_files(vsb_id: str) -> tuple[dict, "Path"]:
+    """The manifest and the resolved repo root — or a 404 that distinguishes the two ways there is none.
+
+    P3.7 clause (4) begins here: "no repository generated" and "a repository whose files are gone" are
+    different facts, and a reader who sees one message for both cannot tell which. Neither is reported as
+    an empty tree.
+    """
+    p = _REPO_STORE / f"{vsb_id}.manifest.json"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=(
+            f"No repository has been generated for VSB {vsb_id}. This entity HAS NO REPO - it is not an "
+            f"empty one. Generate it with POST /api/v1/vsb/{vsb_id}/repo."))
+    manifest = json.loads(p.read_text(encoding="utf-8"))
+    root = (_REPO_STORE / vsb_id).resolve()
+    if not root.is_dir():
+        raise HTTPException(status_code=404, detail=(
+            f"VSB {vsb_id} has a repo MANIFEST but its files are not on disk at {root.name}/. That is a "
+            f"different fact from having no repo, and neither is an empty tree."))
+    return manifest, root
+
+
+def _repo_resolved_path(vsb_id: str, rel: str) -> "Path":
+    """Resolve one repo-relative path, refusing anything the manifest does not declare.
+
+    TWO INDEPENDENT RULES, because either alone is a single point of failure. The manifest's own `tree` is
+    the allow-list - the same discipline as the website route's "known pages only" beside it, with the
+    repo's declared tree in place of four hardcoded names - AND the resolved path is checked for
+    containment regardless, so a symlink or an unexpected spelling that satisfied the first rule still
+    cannot reach outside the root.
+    """
+    manifest, root = _repo_declared_files(vsb_id)
+    declared = {str(x) for x in (manifest.get("tree") or [])}
+    want = (rel or "").strip().lstrip("/")
+    if want not in declared:
+        raise HTTPException(status_code=404, detail=(
+            f"{want!r} is not a file this repo declares. The manifest's tree is the allow-list: a file "
+            f"on disk that the manifest does not list is not part of the repo as recorded. "
+            f"{len(declared)} file(s) are declared."))
+    fp = (root / want).resolve()
+    #  the containment test runs even though the manifest already matched
+    if root != fp and root not in fp.parents:
+        raise HTTPException(status_code=400, detail=(
+            f"{want!r} resolves outside this repo's root, so it is refused regardless of the manifest."))
+    if not fp.is_file():
+        raise HTTPException(status_code=404, detail=(
+            f"{want!r} is declared by the manifest and is NOT on disk. The manifest and the tree "
+            f"disagree, which is a fact about this repo rather than a missing file."))
+    return fp
+
+
+@router.get("/{vsb_id}/repo/file")
+async def get_vsb_repo_file(vsb_id: str, path: str,
+                            user: dict | None = Depends(get_current_user)):
+    """§13 — serve ONE file of an entity's repo, as the bytes that are on disk.
+
+    P3.7 clause (1). Owner-scoped like every other repo read. The response carries the path it served and
+    the byte count in headers so a caller can check it got what it asked for, and the content type is
+    guessed from the suffix with a text default rather than forcing a download.
+    """
+    _require_vsb_access(vsb_id, user)
+    fp = _repo_resolved_path(vsb_id, path)
+    data = fp.read_bytes()
+    _suffix = fp.suffix.lower()
+    _media = {".md": "text/markdown", ".json": "application/json", ".py": "text/x-python",
+              ".txt": "text/plain", ".html": "text/html", ".css": "text/css",
+              ".js": "text/javascript", ".yml": "text/yaml", ".yaml": "text/yaml",
+              ".toml": "text/plain", ".cfg": "text/plain", ".sh": "text/x-shellscript"}.get(
+                  _suffix, "application/octet-stream")
+    from fastapi.responses import Response as _Resp
+    return _Resp(content=data, media_type=_media, headers={
+        "X-Repo-Path": fp.name,
+        "X-Repo-Bytes": str(len(data)),
+        "X-Repo-Basis": ("served from the entity's repo on disk; the manifest's declared tree is the "
+                         "allow-list and the resolved path is contained in the repo root"),
+    })
+
+
+@router.get("/{vsb_id}/repo/zip")
+async def get_vsb_repo_zip(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    """§13 — serve the entity's whole repo as a zip of exactly the files its manifest declares.
+
+    P3.7 clause (1). Built in memory: these repos are a handful of small files, so there is no temporary
+    file to clean up and a READ writes nothing to disk. A file the manifest declares but that is missing
+    on disk is REPORTED in a header rather than silently omitted - a short archive that looked complete
+    would be the quieter defect.
+    """
+    _require_vsb_access(vsb_id, user)
+    import io as _io
+    import zipfile as _zf
+    manifest, root = _repo_declared_files(vsb_id)
+    declared = [str(x) for x in (manifest.get("tree") or [])]
+    buf, missing, written = _io.BytesIO(), [], 0
+    with _zf.ZipFile(buf, "w", _zf.ZIP_DEFLATED) as z:
+        for rel in declared:
+            fp = (root / rel).resolve()
+            if root != fp and root not in fp.parents:
+                missing.append(f"{rel} (outside the root)")
+                continue
+            if not fp.is_file():
+                missing.append(rel)
+                continue
+            z.write(fp, arcname=rel)
+            written += 1
+    buf.seek(0)
+    from fastapi.responses import Response as _Resp
+    _slug = str(manifest.get("slug") or vsb_id)
+    return _Resp(content=buf.getvalue(), media_type="application/zip", headers={
+        "Content-Disposition": f'attachment; filename="{_slug}-repo.zip"',
+        "X-Repo-Files": str(written),
+        "X-Repo-Declared": str(len(declared)),
+        "X-Repo-Missing": ", ".join(missing) if missing else "none",
+        "X-Repo-Basis": ("exactly the files the manifest declares, zipped from disk. A declared file that "
+                         "is not on disk is named in X-Repo-Missing rather than silently omitted"),
+    })
+
+
 @router.get("/{vsb_id}/repo")
 async def get_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_user)):
     _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read

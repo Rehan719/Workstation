@@ -223,6 +223,24 @@ export const VSBCockpit: React.FC = () => {
   // is read on selection and after every ship — previously no UI ever read the stale flag, so a
   // drifted shipped body was invisible end-to-end.
   const [shipState, setShipState] = useState<Dict | null>(null);
+  //  P3.7 (W586) — §13 the repo's own tree, its files and the archive. `repoTree === null` means NOT
+  //  LOADED and is never conflated with an empty repo; `repoNone` carries the backend's own sentence for
+  //  an entity that HAS no repo, which is a different fact from one whose declared tree is empty.
+  const [repoTree, setRepoTree] = useState<string[] | null>(null);
+  const [repoNone, setRepoNone] = useState('');
+  const [repoErr, setRepoErr] = useState('');
+  const [repoFile, setRepoFile] = useState<{ path: string; text: string; bytes: string } | null>(null);
+  const [repoBusy, setRepoBusy] = useState('');
+  //  a BRACED function, deliberately: the loader beside this one is a concise arrow body, and inserting
+  //  a statement into one of those silently makes the inserted line the return value.
+  const loadRepoTree = (vid: string) => {
+    setRepoTree(null); setRepoNone(''); setRepoErr(''); setRepoFile(null);
+    axios.get(`/api/v1/vsb/${vid}/repo`, { validateStatus: () => true }).then(r => {
+      if (r.status === 200 && Array.isArray(r.data?.tree)) { setRepoTree(r.data.tree as string[]); }
+      else if (r.status === 404) { setRepoNone(String(r.data?.detail ?? 'This entity has no repository.')); }
+      else { setRepoErr(`The repository could not be read (HTTP ${r.status}). No tree is shown.`); }
+    }).catch(() => setRepoErr('The repository could not be reached. No tree is shown.'));
+  };
   const loadShipState = (vid: string) =>
     axios.get(`/api/v1/vsb/${vid}/repo/ship`).then(r => setShipState(r.data))
       .catch(() => setShipState(null));   // 404 = never shipped — honestly nothing to show
@@ -244,6 +262,7 @@ export const VSBCockpit: React.FC = () => {
     });
     loadDeliverables(selected);
     loadShipState(selected);
+    loadRepoTree(selected);          // P3.7 (W586) — §13 the repo's declared tree, per entity
     // W508 (P2.8(2)) — `cascadeTick` is in the deps so saving a cascade edit re-reads the entity and
     // the stage count on the summary line above is not left stale after a change the user just made.
   }, [selected, cascadeTick]);
@@ -253,6 +272,58 @@ export const VSBCockpit: React.FC = () => {
   const [growthBusy, setGrowthBusy] = useState('');
   const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
   const [growthResult, setGrowthResult] = useState<Dict | null>(null);
+
+  //  P3.7 (W586) — a tree entry opens its file THROUGH axios, so the Bearer that lib/auth.ts's request
+  //  interceptor attaches travels with it. A raw anchor to this user-scoped route would carry no token
+  //  and 401 the moment auth is on, which is the D-BEARER class the bar names. `selected` is the
+  //  component-level entity; the effect's own `issuedFor` is local to the effect and invisible here.
+  const openRepoFile = (path: string) => {
+    if (!selected) return;
+    setRepoBusy(path); setRepoFile(null); setRepoErr('');
+    axios.get(`/api/v1/vsb/${selected}/repo/file`, {
+      params: { path }, responseType: 'text', transformResponse: [(d: unknown) => d],
+      validateStatus: () => true,
+    }).then(r => {
+      if (r.status === 200) setRepoFile({ path, text: String(r.data ?? ''), bytes: String(r.headers?.['x-repo-bytes'] ?? '') });
+      else setRepoErr(`${path} did not open (HTTP ${r.status}). Nothing is shown as its contents.`);
+    }).catch(() => setRepoErr(`${path} could not be fetched. Nothing is shown as its contents.`))
+      .finally(() => setRepoBusy(''));
+  };
+
+  //  P3.7 (W586) — LIST THIS ENTITY'S PRODUCTS on the marketplace. The route exists and the clause says
+  //  the products ARE listed, so something has to invoke it: a mechanism nobody calls leaves the claim
+  //  exactly as true as the commercialise stage's label was. Through axios, because the route checks
+  //  that the caller owns the entity.
+  const [listedResult, setListedResult] = useState<Dict | null>(null);
+  const listEntityProducts = () => {
+    if (!selected) return;
+    setRepoBusy('listing'); setListedResult(null); setRepoErr('');
+    axios.post(`/api/v1/marketplace/listings/from-entity/${selected}`, {}, { validateStatus: () => true })
+      .then(r => {
+        if (r.status === 200) setListedResult(r.data as Dict);
+        else setRepoErr(`The products were not listed (HTTP ${r.status}). Nothing was added to the marketplace.`);
+      })
+      .catch(() => setRepoErr('The marketplace could not be reached. Nothing was listed.'))
+      .finally(() => setRepoBusy(''));
+  };
+
+  //  the archive is fetched as a blob through the SAME authenticated client and saved from an object
+  //  URL, so the download carries the token instead of being a link the browser follows unauthenticated.
+  const downloadRepoZip = () => {
+    if (!selected) return;
+    setRepoBusy('zip'); setRepoErr('');
+    axios.get(`/api/v1/vsb/${selected}/repo/zip`, { responseType: 'blob', validateStatus: () => true })
+      .then(r => {
+        if (r.status !== 200) { setRepoErr(`The archive was not produced (HTTP ${r.status}).`); return; }
+        const url = URL.createObjectURL(r.data as Blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${selected}-repo.zip`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => setRepoErr('The archive could not be fetched.'))
+      .finally(() => setRepoBusy(''));
+  };
   // W503 (FU-059) — a 200 that HELD, kept apart from a cycle that ran
   const [cycleHold, setCycleHold] = useState<Dict | null>(null);
   const [chiefText, setChiefText] = useState('');
@@ -284,6 +355,7 @@ export const VSBCockpit: React.FC = () => {
       if (issuedFor !== selectedRef.current) { setGrowthBusy(''); return; }   // W503 — another entity is on screen now
       setGrowthResult({ kind, ...r.data });
       loadShipState(selected);   // W338 — the staleness banner reflects the ship immediately
+      loadRepoTree(selected);    // P3.7 (W586) — a ship REGENERATES the repo, so the tree is re-read too
     } catch (e: any) {
       setGrowthResult({ kind, forEntity: issuedFor,
                         error: (issuedFor !== selectedRef.current ? `${issuedFor}: ` : '')
@@ -1076,6 +1148,77 @@ export const VSBCockpit: React.FC = () => {
                   )}
                 </Card>
               )}
+              {/* P3.7 (W586) — §13 THE REPO ITSELF: its declared tree, each file openable, and the
+                  archive. Every fetch goes through axios so the Bearer travels; a raw anchor to this
+                  user-scoped route would 401 the moment auth is on. An entity with NO repo is SAID to
+                  have none, never drawn as an empty tree. */}
+              <Card className="p-6 border-sky-500/30" data-testid="cockpit-repo">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-sky-300">The repository (§13)</h4>
+                  {repoTree && repoTree.length > 0 && (
+                    <Button type="button" onClick={downloadRepoZip} disabled={!!repoBusy}
+                      data-testid="cockpit-repo-zip"
+                      className="bg-sky-500/15 text-sky-300 text-[10px] flex items-center gap-1.5">
+                      {repoBusy === 'zip' ? <Loader2 size={12} className="animate-spin" /> : null}
+                      Download all {repoTree.length} file(s) as a zip
+                    </Button>
+                  )}
+                </div>
+                {repoErr && <p role="alert" data-testid="cockpit-repo-error" className="text-[10px] font-bold text-vital">{repoErr}</p>}
+                {/* P3.7 (W586) — §12 × §13: this entity's own products onto the marketplace, UNPRICED.
+                    Nothing here sets a price: what an entity charges is the Owner's to decide, and a
+                    default would read as a price somebody chose. */}
+                <div className="flex items-center gap-2 flex-wrap border-t border-slate-900 pt-2 mt-1">
+                  <Button type="button" onClick={listEntityProducts} disabled={!!repoBusy}
+                    data-testid="cockpit-list-products"
+                    className="bg-aura/10 text-aura text-[10px] flex items-center gap-1.5">
+                    {repoBusy === 'listing' ? <Loader2 size={12} className="animate-spin" /> : null}
+                    List this entity's products on the marketplace (§12)
+                  </Button>
+                  {listedResult && (
+                    <p data-testid="cockpit-listed-result" className="text-[9px] font-bold text-slate-400 leading-relaxed">
+                      {String(listedResult.basis ?? '')}
+                    </p>
+                  )}
+                </div>
+                {/* NO EMPTY TREE HERE, BY DESIGN — the backend's own sentence, which distinguishes
+                    "never generated" from "a manifest whose files are gone". */}
+                {repoNone && (
+                  <p data-testid="cockpit-repo-none" className="text-[10px] font-bold text-amber-400 leading-relaxed">{repoNone}</p>
+                )}
+                {!repoNone && !repoErr && repoTree === null && (
+                  <p className="text-[10px] font-bold text-slate-500 animate-pulse">Reading the repository…</p>
+                )}
+                {repoTree && (
+                  <div className="grid grid-cols-1 @[820px]:grid-cols-2 gap-3">
+                    <div className="max-h-56 overflow-y-auto space-y-0.5" data-testid="cockpit-repo-tree">
+                      {repoTree.map(p => (
+                        <button key={p} type="button" onClick={() => openRepoFile(p)} disabled={!!repoBusy}
+                          data-testid={`repo-file-${p}`}
+                          className={`w-full text-left px-2 py-1 rounded text-[10px] font-mono transition-colors ${repoFile?.path === p ? 'bg-sky-500/10 text-sky-300' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
+                          {repoBusy === p ? '… ' : ''}{p}
+                        </button>
+                      ))}
+                      {repoTree.length === 0 && (
+                        <p className="text-[10px] font-bold text-amber-400">This repository declares no files at all — a fact about the manifest, not a view of an empty folder.</p>
+                      )}
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-900 min-h-[6rem]">
+                      {repoFile ? (
+                        <>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-sky-300 mb-1">
+                            {repoFile.path}{repoFile.bytes ? ` · ${repoFile.bytes} bytes` : ''}
+                          </p>
+                          <pre data-testid="cockpit-repo-preview" className="text-[9px] text-slate-400 whitespace-pre-wrap break-all max-h-44 overflow-y-auto">{repoFile.text.slice(0, 4000)}</pre>
+                        </>
+                      ) : (
+                        <p className="text-[10px] font-bold text-slate-600">Select a file to preview it. Its contents are fetched from this entity's repo, not rendered from the manifest.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </Card>
+
               {/* W299 — §13 growth machinery, now reachable for THIS entity (previously API-only) */}
               <Card className="p-6 border-emerald-500/30">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2">Grow the living enterprise (§13)</h4>

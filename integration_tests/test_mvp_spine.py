@@ -39832,3 +39832,262 @@ def test_w585_p33_the_cadence_layers_refresh_themselves_and_say_why(client, monk
             _const2585["values"])
     assert "declared by this entity itself" in str(_const2585["values_source"]), (
         "the source does not say the values are the entity's own", _const2585["values_source"])
+def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, tmp_path):
+    """P3.7 §13 — the repo serves its real bytes, the Cockpit can open them, and products reach §12.
+
+    MEASURED BEFORE BUILDING: vsb.py had GET /{vsb_id}/repo returning a manifest (tree + per-file byte
+    counts + a ship_status) and POST /repo, /repo/ship, /repo/cascade. There was NO file endpoint and NO
+    zip endpoint, the Cockpit rendered no repo tree at all, and nothing listed an ENTITY's products on the
+    marketplace — a listing could CARRY a vsb_id when a person made one by hand, and the commercialise
+    stage's "Commercial CoE creates marketplace listing" was a label with no mechanism.
+
+    EVERY CLAUSE IS DRIVEN. The bytes are compared against the file on disk, the containment refusals are
+    driven rather than read, the no-repo states are produced by removing the manifest and by moving the
+    files, and the products are listed after a deliverable is really produced.
+    """
+    import io as _io586
+    import json as _json586
+    import pathlib as _pl586
+    import re as _re586
+    import zipfile as _zf586
+
+    from agentic_core.config import data_path as _dp586
+
+    _root586 = _pl586.Path(__file__).resolve().parents[1]
+
+    _est586 = client.post("/api/v1/genesis/establish",
+                          json={"problem": "a halal meal service", "domain": "care",
+                                "owner_id": "pytest-w586", "name": "W586 Repo Probe",
+                                "concept": "meal boxes", "design": "d",
+                                "commercialisation": "subscription"})
+    assert _est586.status_code == 200, (_est586.status_code, _est586.text[:200])
+    _vid586 = _est586.json()["vsb_id"]
+
+    # ── L1. CLAUSE (1): A REAL FILE AND A REAL ZIP, AND THE BYTES ARE THE REPO'S ───────────────────
+    _m586 = client.get(f"/api/v1/vsb/{_vid586}/repo")
+    assert _m586.status_code == 200, (
+        "an entity established through genesis has no repo manifest, so this leg cannot test one",
+        _m586.status_code)
+    _tree586 = _m586.json().get("tree") or []
+    assert len(_tree586) >= 3, ("the repo declares almost nothing, so the tests below prove little",
+                               _tree586)
+
+    _one586 = _tree586[0]
+    _f586 = client.get(f"/api/v1/vsb/{_vid586}/repo/file", params={"path": _one586})
+    assert _f586.status_code == 200, (_f586.status_code, _f586.text[:200])
+    #  THE BYTES ARE THE REPO'S — compared against the file on disk, not merely non-empty
+    _disk586 = (_dp586("vsb_repos") / _vid586 / _one586)
+    assert _disk586.is_file(), ("the declared file is not on disk, so this comparison proves nothing",
+                               str(_disk586))
+    assert _f586.content == _disk586.read_bytes(), (
+        "the file endpoint served something other than the bytes on disk", _one586)
+    assert _f586.headers.get("X-Repo-Bytes") == str(len(_f586.content)), (
+        "the byte count the response reports disagrees with what it served", _f586.headers.get("X-Repo-Bytes"))
+
+    #  CONTAINMENT, DRIVEN BOTH WAYS. The bar for the sibling item puts it plainly: asserted by driving a
+    #  read of a sibling directory and seeing it refused, not by reading the code.
+    for _bad586 in ("../../../etc/passwd", "../README.md", "not/declared.md",
+                    f"../{_vid586}_other/README.md"):
+        _br586 = client.get(f"/api/v1/vsb/{_vid586}/repo/file", params={"path": _bad586})
+        assert _br586.status_code in (400, 404), (
+            "a path outside the repo's declared tree was SERVED", _bad586, _br586.status_code)
+    #  a file that exists on disk but is NOT declared is also refused: the manifest is the allow-list
+    _undeclared586 = _dp586("vsb_repos") / _vid586 / "w586_not_declared.txt"
+    _undeclared586.write_bytes(b"on disk, not in the manifest")
+    try:
+        _ur586 = client.get(f"/api/v1/vsb/{_vid586}/repo/file",
+                            params={"path": "w586_not_declared.txt"})
+        assert _ur586.status_code == 404, (
+            "a file on disk that the manifest does not declare was served; the manifest is the allow-list",
+            _ur586.status_code)
+    finally:
+        _undeclared586.unlink()
+
+    #  CONTAINMENT, ISOLATED FROM THE ALLOW-LIST. A blind proved that disabling the resolved-path check
+    #  changed nothing, because every bad path above is already refused by the manifest - the property is
+    #  DOUBLY HELD (W497's shape). So the manifest is made to DECLARE a traversing path: the allow-list
+    #  then passes it and only the containment check can refuse it. Without that check this is served.
+    _mpath586 = _dp586("vsb_repos") / f"{_vid586}.manifest.json"
+    _manraw586 = _mpath586.read_bytes()
+    _outside586 = _dp586("vsb_repos") / "w586_outside_the_root.txt"
+    _outside586.write_bytes(b"this file is OUTSIDE the repo root")
+    try:
+        _mdoc586 = _json586.loads(_manraw586.decode("utf-8"))
+        _mdoc586["tree"] = list(_mdoc586.get("tree") or []) + ["../w586_outside_the_root.txt"]
+        _mpath586.write_bytes(_json586.dumps(_mdoc586, indent=2).encode("utf-8"))
+        _esc586 = client.get(f"/api/v1/vsb/{_vid586}/repo/file",
+                             params={"path": "../w586_outside_the_root.txt"})
+        assert _esc586.status_code == 400, (
+            "a path the MANIFEST declares but which resolves outside the repo root was served. The "
+            "allow-list cannot catch this one - it is declared - so only the resolved-path containment "
+            "check stands between a manifest and any file on the machine", _esc586.status_code,
+            _esc586.content[:120])
+        assert b"outside this repo" in _esc586.content or "outside" in str(_esc586.json().get("detail", "")), (
+            "the refusal does not say the path escaped the root", _esc586.content[:160])
+    finally:
+        _mpath586.write_bytes(_manraw586)
+        _outside586.unlink(missing_ok=True)
+    assert _mpath586.read_bytes() == _manraw586, "the manifest was not restored byte-exact"
+
+    #  AND A DECLARED FILE THAT IS MISSING IS NAMED, not quietly dropped. A blind proved this leg absent:
+    #  no file was ever missing in the run, so a silent omission and a complete archive looked identical.
+    #  A short archive that looks complete is the quieter defect - a caller who unzips it cannot tell.
+    _victim586 = _tree586[-1]
+    _vpath586 = _dp586("vsb_repos") / _vid586 / _victim586
+    _vraw586 = _vpath586.read_bytes()
+    try:
+        _vpath586.unlink()
+        _short586 = client.get(f"/api/v1/vsb/{_vid586}/repo/zip")
+        assert _short586.status_code == 200, _short586.status_code
+        assert _victim586 in (_short586.headers.get("X-Repo-Missing") or ""), (
+            "a file the manifest declares was missing from disk and the archive did not NAME it, so a "
+            "short archive is indistinguishable from a complete one", _victim586,
+            _short586.headers.get("X-Repo-Missing"))
+        _sz586 = _zf586.ZipFile(_io586.BytesIO(_short586.content))
+        assert _victim586 not in _sz586.namelist(), (
+            "the missing file is reported missing AND present in the archive", _victim586)
+    finally:
+        _vpath586.write_bytes(_vraw586)
+    assert _vpath586.read_bytes() == _vraw586, "the removed file was not restored byte-exact"
+
+    #  THE ZIP holds exactly what the manifest declares, and its bytes match the file endpoint's
+    _z586 = client.get(f"/api/v1/vsb/{_vid586}/repo/zip")
+    assert _z586.status_code == 200, (_z586.status_code, _z586.text[:200])
+    assert _z586.headers.get("content-type") == "application/zip", _z586.headers.get("content-type")
+    assert _z586.headers.get("X-Repo-Missing") == "none", (
+        "the archive is short of files the manifest declares", _z586.headers.get("X-Repo-Missing"))
+    _zip586 = _zf586.ZipFile(_io586.BytesIO(_z586.content))
+    assert set(_zip586.namelist()) == set(_tree586), (
+        "the archive and the manifest disagree about what this repo contains",
+        sorted(set(_tree586) ^ set(_zip586.namelist()))[:6])
+    assert _zip586.read(_one586) == _f586.content, (
+        "the same file has different bytes in the archive and from the file endpoint", _one586)
+
+    # ── L2. CLAUSE (2): THE COCKPIT OPENS THEM, THROUGH THE AUTHENTICATED CLIENT ───────────────────
+    _cp586 = (_root586 / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    _cpcode586 = _re586.sub(r"(?m)^\s*//.*$", " ",
+                            _re586.sub(r"/\*(?:.|\n)*?\*/", " ", _cp586))
+    #  it FETCHES the tree, a file and the zip
+    for _needle586 in ("/repo`, { validateStatus", "/repo/file`", "/repo/zip`"):
+        assert _needle586 in _cpcode586, (
+            "the Cockpit does not reach this repo surface at all", _needle586)
+    #  THE D-BEARER CLASS: every one of them goes through axios, and NO raw anchor points at the route.
+    #  lib/auth.ts attaches `Authorization: Bearer <token>` with a request interceptor, which an <a href>
+    #  never carries - so a raw link 401s the moment auth is switched on.
+    assert "axios.get(`/api/v1/vsb/${selected}/repo/file`" in _cpcode586, (
+        "the file is not fetched through axios, so the Bearer the interceptor attaches would not travel")
+    assert "axios.get(`/api/v1/vsb/${selected}/repo/zip`" in _cpcode586, (
+        "the archive is not fetched through axios, so the download would be unauthenticated")
+    assert not _re586.search(r"href=\{?[\"`']?/api/v1/vsb/", _cpcode586), (
+        "a RAW ANCHOR points at a user-scoped API route - it carries no Bearer and 401s the moment auth "
+        "is on, which is the D-BEARER class this clause names")
+    #  the tree is CLICKABLE: a button per path, wired to the opener
+    assert "onClick={() => openRepoFile(p)}" in _cpcode586, (
+        "the tree's entries are not wired to anything, so it is a list and not a clickable tree")
+    for _tid586 in ('data-testid="cockpit-repo-tree"', 'data-testid="cockpit-repo-preview"',
+                    'data-testid="cockpit-repo-zip"'):
+        assert _tid586 in _cpcode586, ("a repo surface has no rendered element", _tid586)
+
+    # ── L3. CLAUSE (3): THE ENTITY'S PRODUCTS, ON THE MARKETPLACE, UNPRICED IN THE RECORD ──────────
+    #  an entity with no products SAYS SO rather than listing nothing silently
+    _n586 = client.post(f"/api/v1/marketplace/listings/from-entity/{_vid586}")
+    assert _n586.status_code == 200, (_n586.status_code, _n586.text[:200])
+    _nj586 = _n586.json()
+    assert _nj586["listed_count"] == 0 and _nj586["deliverables_found"] == 0, _nj586
+    assert "produced NO deliverables" in _nj586["basis"], (
+        "an entity with no products does not say so - 'no products to list' and 'products nobody listed' "
+        "are different facts", _nj586["basis"])
+
+    #  produce ONE real product. Verbatim content, so no model is called and the test is deterministic.
+    _p586 = client.post("/api/v1/deliverables/produce",
+                        json={"type": "report", "title": "W586 Care Report", "brief": "a real brief",
+                              "vsb_id": _vid586, "content": "# Real content\nproduced verbatim",
+                              "source_served_by": "w586-guard"})
+    assert _p586.status_code == 200, (_p586.status_code, _p586.text[:200])
+    _did586 = _p586.json().get("id")
+    assert _did586, _p586.json()
+
+    _l586 = client.post(f"/api/v1/marketplace/listings/from-entity/{_vid586}").json()
+    assert _l586["deliverables_found"] == 1 and _l586["listed_count"] == 1, _l586
+    _lid586 = _l586["listed"][0]["listing_id"]
+    _rec586 = client.get(f"/api/v1/marketplace/listings/{_lid586}").json()
+    assert _rec586["vsb_id"] == _vid586 and _rec586["origin"] == "vsb", _rec586
+    assert _rec586["source_deliverable_id"] == _did586, _rec586
+    #  THE RECORD SAYS IT IS UNPRICED. Before this the only thing saying so was the page's reading of a
+    #  0, so an unpriced product and one priced at zero were the same record.
+    assert _rec586["priced"] is False, _rec586
+    assert "NOT PRICED" in _rec586["price_basis"], (
+        "the listing carries no statement that nobody priced it", _rec586.get("price_basis"))
+    assert "not a price of zero" in _rec586["price_basis"] or "read as a price" in _rec586["price_basis"], (
+        "the basis does not distinguish the ABSENCE of a price from a price of zero",
+        _rec586["price_basis"])
+
+    #  LISTING IT TWICE DOES NOT DOUBLE IT: an entity's apparent catalogue must not grow without
+    #  anything being produced.
+    _again586 = client.post(f"/api/v1/marketplace/listings/from-entity/{_vid586}").json()
+    assert _again586["listed_count"] == 0 and _again586["already_listed"] == [_did586], _again586
+
+    #  AND SOMETHING IN THE APP ACTUALLY CALLS IT. The clause says the entity's products ARE listed; a
+    #  route nobody invokes leaves that exactly as true as the commercialise stage's label was, and the
+    #  pre-flight's key screen caught precisely that - no page fetched the route at all.
+    assert "axios.post(`/api/v1/marketplace/listings/from-entity/${selected}`" in _cpcode586, (
+        "nothing in the app lists an entity's products, so the mechanism exists and is never invoked")
+    for _ltid586 in ('data-testid="cockpit-list-products"', 'data-testid="cockpit-listed-result"'):
+        assert _ltid586 in _cpcode586, ("the listing action has no rendered element", _ltid586)
+
+    #  and the PAGE reads the record's statement while keeping its own true fallback for older listings
+    _mp586 = (_root586 / "apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx").read_text(
+        encoding="utf-8", errors="replace")
+    _mpcode586 = _re586.sub(r"(?m)^\s*//.*$", " ",
+                            _re586.sub(r"/\*(?:.|\n)*?\*/", " ", _mp586))
+    assert "typeof l.priced === 'boolean' ? l.priced : l.price_wst > 0" in _mpcode586, (
+        "the page does not prefer the record's own statement, or has DROPPED the price_wst fallback that "
+        "is still true of every listing written before that field existed")
+    assert 'data-testid="listing-unpriced"' in _mpcode586, (
+        "nothing on the page is marked as the unpriced statement")
+    assert "unpriced" in _mpcode586.lower(), "the page no longer says a product is unpriced at all"
+
+    # ── L4. CLAUSE (4): AN ENTITY WITH NO REPO IS SAID TO HAVE NONE, NEVER SHOWN AS AN EMPTY TREE ──
+    #  TWO STATES, driven separately, because they are different facts
+    _store586 = _dp586("vsb_repos")
+    _man586 = _store586 / f"{_vid586}.manifest.json"
+    _saved586 = _man586.read_bytes()
+    try:
+        _man586.unlink()
+        for _ep586 in ("file", "zip"):
+            _r586 = client.get(f"/api/v1/vsb/{_vid586}/repo/{_ep586}",
+                               params={"path": _one586} if _ep586 == "file" else None)
+            assert _r586.status_code == 404, (_ep586, _r586.status_code)
+            _d586 = str(_r586.json().get("detail") or "")
+            assert "HAS NO REPO" in _d586 and "not an empty one" in _d586, (
+                "the entity does not SAY it has no repo; an empty tree and no repo are different facts",
+                _ep586, _d586[:160])
+    finally:
+        _man586.write_bytes(_saved586)
+    assert _man586.read_bytes() == _saved586, "the manifest was not restored byte-exact"
+
+    #  and the SECOND state: a manifest whose files are gone is its own message
+    _dir586 = _store586 / _vid586
+    _moved586 = _store586 / f"{_vid586}__w586moved"
+    _dir586.rename(_moved586)
+    try:
+        _g586 = client.get(f"/api/v1/vsb/{_vid586}/repo/zip")
+        assert _g586.status_code == 404, _g586.status_code
+        _gd586 = str(_g586.json().get("detail") or "")
+        assert "MANIFEST but its files are not on disk" in _gd586, (
+            "a manifest with no files reports the same thing as no repo at all, so a reader cannot tell "
+            "which", _gd586[:160])
+    finally:
+        _moved586.rename(_dir586)
+    assert _dir586.is_dir(), "the repo directory was not restored"
+
+    #  THE PAGE says it rather than drawing an empty tree, asserted on the GATE with its opening brace
+    assert "{repoNone && (" in _cpcode586, (
+        "the Cockpit does not branch on the no-repo state, so an entity with no repo would fall through "
+        "to whatever the tree branch renders - W503's class, so this asserts the gate and not the field")
+    assert 'data-testid="cockpit-repo-none"' in _cpcode586, (
+        "the no-repo sentence has no rendered element")
+    assert "repoTree === null" in _cpcode586, (
+        "the page does not distinguish NOT LOADED from an empty repo, so a slow fetch reads as an entity "
+        "with no files")

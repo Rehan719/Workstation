@@ -1,0 +1,101 @@
+[
+ {
+  "tag": "clause 1: the manifest stops being the allow-list",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    if want not in declared:",
+  "new": "    if False and want not in declared:",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "The manifest's declared tree is the allow-list - the same discipline as the website route's 'known pages only' set beside it, with the repo's own tree in place of four hardcoded names. Without it a file on disk that the repo does not declare is served as part of the repo. The guard writes exactly such a file and asks for it. `if False and` leaves the message in the file, so a leg searching for the wording rather than driving the refusal would stay green."
+ },
+ {
+  "tag": "clause 1: the resolved-path containment check goes",
+  "file": "agentic_core/api/vsb.py",
+  "old": "    if root != fp and root not in fp.parents:\r\n        raise HTTPException(status_code=400, detail=(\r\n            f\"{want!r} resolves outside this repo's root, so it is refused regardless of the manifest.\"))",
+  "new": "    if False and root != fp and root not in fp.parents:\r\n        raise HTTPException(status_code=400, detail=(\r\n            f\"{want!r} resolves outside this repo's root, so it is refused regardless of the manifest.\"))",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "TWO INDEPENDENT RULES, because either alone is a single point of failure: a symlink or an unexpected spelling that satisfied the manifest check must still not reach outside the root. The bar for the sibling item states the method - containment is asserted by driving a read of a sibling directory and seeing it refused, not by reading the code."
+ },
+ {
+  "tag": "clause 1: the zip omits a declared file silently",
+  "file": "agentic_core/api/vsb.py",
+  "old": "                missing.append(rel)\r\n                continue",
+  "new": "                continue",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "A SHORT ARCHIVE THAT LOOKED COMPLETE is the quieter defect: a caller who unzips it has no way to know a declared file was dropped. The header names what was missing instead, and the guard asserts the archive's contents equal the manifest's tree exactly."
+ },
+ {
+  "tag": "clause 2: the Cockpit fetches the file with a raw anchor instead of axios",
+  "file": "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+  "old": "    axios.get(`/api/v1/vsb/${selected}/repo/file`, {",
+  "new": "    void `href=/api/v1/vsb/${selected}/repo/file`; axios.get(`/api/v1/vsb/${selected}/repo/filex`, {",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "THE D-BEARER CLASS THE BAR NAMES. lib/auth.ts installs an axios request interceptor attaching `Authorization: Bearer <token>`; an <a href> to a user-scoped route carries none, so it works while auth is off and 401s the moment it is on. The leg asserts the axios call AND that no raw anchor points at the route, so this blind trips both."
+ },
+ {
+  "tag": "clause 2: the tree stops being clickable",
+  "file": "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+  "old": "onClick={() => openRepoFile(p)}",
+  "new": "data-w586-unwired=\"true\"",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "A tree whose entries are wired to nothing is a LIST. The clause says the tree is clickable and its preview links RESOLVE, so the binding from each path to the opener is the thing, not the presence of the paths."
+ },
+ {
+  "tag": "clause 3: an entity's products are no longer listed",
+  "file": "agentic_core/api/marketplace.py",
+  "old": "        if not did or did in already:",
+  "new": "        if True or not did or did in already:",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "THE HALF THAT DID NOT EXIST: nothing put an ENTITY's products on the marketplace. A listing could carry a vsb_id when a person made one by hand, and the commercialise stage's 'Commercial CoE creates marketplace listing' was a label with no mechanism. Skipping every deliverable restores exactly that state while the route still answers 200."
+ },
+ {
+  "tag": "clause 3: a listed product claims it was priced",
+  "file": "agentic_core/api/marketplace.py",
+  "old": "            price_wst=0.0,\n            priced=False,",
+  "new": "            price_wst=0.0,\n            priced=True,",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "'A product with no price SAYS SO rather than showing a default.' A listing that claims it was priced at 0 is the default this clause forbids - and it would also make the product tradeable on the page, offered at nothing, because `isPriced` is what the buy path filters on."
+ },
+ {
+  "tag": "clause 3: the page drops the fallback that is true of older listings",
+  "file": "apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx",
+  "old": "    (typeof l.priced === 'boolean' ? l.priced : l.price_wst > 0);",
+  "new": "    (l.priced === true);",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "REMOVING A TRUE STATEMENT IS ALSO A DEFECT. Every listing written before this round carries no `priced` field, and `price_wst > 0` is what tells the truth about those. Dropping the fallback would quietly mark every older PRICED listing as unpriced and pull it out of `tradeable`."
+ },
+ {
+  "tag": "clause 4: no repo and an empty repo become the same answer",
+  "file": "agentic_core/api/vsb.py",
+  "old": "            f\"No repository has been generated for VSB {vsb_id}. This entity HAS NO REPO - it is not an \"\r\n            f\"empty one. Generate it with POST /api/v1/vsb/{vsb_id}/repo.\"))",
+  "new": "            f\"No repository for VSB {vsb_id}.\"))",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "The clause is explicit: an entity with no repo is SAID to have none, never shown as an empty tree. The page prints the backend's own sentence, so a message that does not say it leaves a reader unable to tell an entity with no repo from one whose repo is empty."
+ },
+ {
+  "tag": "clause 4: a manifest with no files reports the same as no manifest",
+  "file": "agentic_core/api/vsb.py",
+  "old": "            f\"VSB {vsb_id} has a repo MANIFEST but its files are not on disk at {root.name}/. That is a \"\r\n            f\"different fact from having no repo, and neither is an empty tree.\"))",
+  "new": "            f\"No repository has been generated for VSB {vsb_id}. This entity HAS NO REPO - it is not an empty one.\"))",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "TWO DIFFERENT FACTS. A repo that was never generated and a repo whose files have gone need different actions, and one message for both sends a reader to regenerate something that is already recorded - or to hunt for files that were never written."
+ },
+ {
+  "tag": "clause 4: the page stops branching on the no-repo state",
+  "file": "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+  "old": "                {repoNone && (",
+  "new": "                {false && repoNone && (",
+  "selector": "w586_p37",
+  "expect": "BLIND(red)",
+  "why": "W503's class, so the leg asserts the gate WITH its opening brace rather than the field name, which survives a disabled branch. With the branch off, an entity with no repo falls through to whatever the tree branch renders - which is the empty tree this clause forbids."
+ }
+]
