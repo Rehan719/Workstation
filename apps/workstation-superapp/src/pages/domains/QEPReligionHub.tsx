@@ -4,6 +4,7 @@ import { apiJson, errorMessage } from '../../lib/api';
 import { QEPStudio } from '../../components/QEPStudio';
 import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity, Brain } from 'lucide-react';
 import QEPIntelligence from '../../components/qep/QEPIntelligence';
+import QepDonorStatement from '../../components/QepDonorStatement';
 
 export const QEPReligionHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState('coach');
@@ -41,6 +42,10 @@ export const QEPReligionHub: React.FC = () => {
       {activeTab === 'intel' && <QEPIntelligence />}
       {activeTab === 'comp' && <QuranCompetitions />}
       {activeTab === 'lab' && <ARVRLab />}
+      {/* FU-467 — A.8's transparent donor view, on every tab */}
+      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+        <QepDonorStatement />
+      </div>
     </div>
   );
 };

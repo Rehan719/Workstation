@@ -45575,3 +45575,164 @@ def test_w609_p326_a_mature_entity_divides_through_change_control_and_the_child_
     finally:
         client.post("/api/v1/heartbeat/configure", json={"auto_metabolic": _was[0], "metabolic_every": _was[1]})
     assert _hb609.heartbeat.auto_metabolic == _was[0], "the guard left the shared heartbeat's lever changed"
+
+
+def test_w610_p323_the_legal_specialist_assembles_with_provenance_and_never_invents_a_particular(client, monkeypatch, tmp_path):
+    """P3.23 / FU-278: every particular carries the document and line it came from or is a BLANK; every authority
+    is resolved against the corpus or refused; an empty bundle yields a TEMPLATE; a filing-shaped artefact waits
+    for the Owner; the unresolved checks and the not-legal-advice statement are on the page a person reads."""
+    import pathlib as _pl610
+    import re as _re610
+
+    from agentic_core.legal import bundle as _b610
+
+    _bdir = tmp_path / "legal-matter"
+    _bdir.mkdir()
+    monkeypatch.setenv(_b610.ENV_VAR, str(_bdir))
+    _spec = {"template_id": "et1_claim",
+             "particulars": [{"name": "date of dismissal", "words": ["dismissed", "on"]},
+                             {"name": "employer's name", "words": ["employer", "ltd"]}],
+             "authorities": ["Equality Act 2010", "Smith v Imaginary Holdings [2031] UKEAT 9"]}
+
+    # ── (d) the EMPTY bundle yields a TEMPLATE whose every particular is a blank ────────────────
+    _t = client.post("/api/v1/law/matter/assemble", json=_spec).json()
+    assert _t["is_template"] is True and _t["sourced"] == [] and len(_t["blanks"]) == 2, _t["face"]
+    assert all(p["rendered"].startswith("[BLANK:") and p["document"] is None for p in _t["particulars"]), (
+        "an empty bundle produced a particular that is not a blank - the invented-specifics defect FU-278 names",
+        [p["rendered"] for p in _t["particulars"]])
+    assert "Nothing here is legal advice" in _t["not_legal_advice"], _t["not_legal_advice"]
+
+    # ── (a) a particular the bundle STATES carries its document and line, re-verified ──────────
+    (_bdir / "dismissal_letter.txt").write_text(
+        "Dear Ms Example,\nYou were dismissed on 3 March with immediate effect.\nRegards\n", encoding="utf-8")
+    _a = client.post("/api/v1/law/matter/assemble", json=_spec).json()
+    _p0 = _a["particulars"][0]
+    assert _p0["found"] and _p0["document"] == "dismissal_letter.txt" and _p0["line"] == 2, _p0
+    assert _p0["rendered"] == "You were dismissed on 3 March with immediate effect.", _p0["rendered"]
+    assert _p0["verification"]["verdict"] == "MET", _p0["verification"]
+    assert _a["particulars"][1]["rendered"].startswith("[BLANK:"), "a particular the bundle does not state was filled"
+    assert _a["sourced"] == ["date of dismissal"] and _a["blanks"] == ["employer's name"], _a["face"]
+
+    # ── (b) an authority is resolved against the corpus or REFUSED, never emitted as prose ─────
+    _au = {x["authority"]: x for x in _a["authorities"]}
+    assert _au["Equality Act 2010"]["resolved"] is True, _au["Equality Act 2010"]
+    assert _au["Smith v Imaginary Holdings [2031] UKEAT 9"]["resolved"] is False, (
+        "an authority the corpus does not hold was resolved")
+    assert _a["authorities_refused"] == ["Smith v Imaginary Holdings [2031] UKEAT 9"], _a["authorities_refused"]
+
+    # ── the GATE: a filing-shaped artefact is a draft until the Owner approves it ────────────────
+    assert _a["filing_shaped"] and _a["status"] == "draft_awaiting_owner_approval", _a["status"]
+    _ok = client.post(f"/api/v1/law/matter/artefacts/{_a['artefact_id']}/approve")
+    assert _ok.status_code == 200 and _ok.json()["artefact"]["status"] == "approved_by_owner", _ok.text[:200]
+    _nf = client.post("/api/v1/law/matter/assemble", json={**_spec, "template_id": "nda"}).json()
+    assert _nf["status"] == "draft" and not _nf["filing_shaped"]
+    _no = client.post(f"/api/v1/law/matter/artefacts/{_nf['artefact_id']}/approve")
+    assert _no.status_code == 409 and _no.json()["detail"]["refused"] == "not_filing_shaped", _no.text[:200]
+    assert client.post("/api/v1/law/matter/artefacts/lgl-doesnotexist/approve").status_code == 404
+
+    # ── a re-verification that FAILS is reported as unresolved, not hidden ───────────────────
+    from agentic_core.legal import specialist as _sp610
+    _bad = _sp610.verify_located({"found": True, "document": "dismissal_letter.txt", "line": 1,
+                                  "text": "You were dismissed"})
+    assert _bad["verdict"] == "UNMET", _bad
+
+    # ── the SURFACE: unresolved checks and the not-legal-advice statement are ON THE PAGE ────────
+    _root = _pl610.Path(__file__).resolve().parents[1]
+    _pn = (_root / "apps/workstation-superapp/src/components/MatterAssemblyPanel.tsx").read_text(encoding="utf-8")
+    _pnc = _re610.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _pn, flags=_re610.S)
+    for _t610 in ("matter-not-legal-advice", "matter-unresolved-checks", "matter-particulars", "matter-authorities"):
+        assert f'data-testid="{_t610}"' in _pnc, _t610
+    assert "art.unresolved_checks" in _pnc and "art.authorities_refused" in _pnc, (
+        "the page does not render the unresolved checks it is given")
+    assert "<MatterAssemblyPanel />" in (_root / "apps/workstation-superapp/src/pages/domains/LawHub.tsx").read_text(encoding="utf-8")
+    #  and EVERY law response a person reads says it is not legal advice, the old generator included
+    _law = (_root / "agentic_core/api/law.py").read_text(encoding="utf-8")
+    _gen = _law[_law.index('async def generate_document'):]
+    _gen = _gen[:_gen.index("\n@router")] if "\n@router" in _gen else _gen
+    assert "Nothing here is legal advice." in _gen, "the template generator's disclaimer does not say it is not legal advice"
+
+
+def test_w610_p323_every_domain_gate_refuses_and_the_qep_and_search_surfaces_are_read(client, monkeypatch):
+    """P3.23: every gate refuses in a driven test (GMP QA sign-off, the career agent's recorded-only rule, beside
+    the law approval and QEP's scholar review already driven), and FU-462 / FU-467 reach a page."""
+    import pathlib as _pl611
+    import re as _re611
+
+    from agentic_core.config import data_path as _dp611
+    from agentic_core.science import gmp_signoff as _gmp
+
+    # ── GMP: no QA engaged -> nothing released; an unknown signer refused; a changed text withheld ──
+    _roster = _dp611("science/gmp_roster.json")
+    _had = _roster.exists()
+    _prev = _roster.read_bytes() if _had else None
+    try:
+        if _roster.exists():
+            _roster.unlink()
+        assert client.post("/api/v1/science/gmp/records", json={"record_id": "w611-b1", "body": "Batch 1: mixed 10 kg"}).status_code == 200
+        _s0 = client.post("/api/v1/science/gmp/records/w611-b1/sign", json={"signatory_id": "qa-1"})
+        assert _s0.status_code == 409 and _s0.json()["detail"]["reason"] == "no_qa_engaged", _s0.text[:200]
+        assert client.get("/api/v1/science/gmp/records/w611-b1").json()["body"] is None
+        assert client.post("/api/v1/science/gmp/roster", json={"signatory_id": "qa-1", "name": "QA One"}).status_code == 200
+        _s1 = client.post("/api/v1/science/gmp/records/w611-b1/sign", json={"signatory_id": "somebody"})
+        assert _s1.status_code == 409 and _s1.json()["detail"]["reason"] == "signatory_not_on_roster", _s1.text[:200]
+        _s2 = client.post("/api/v1/science/gmp/records/nope/sign", json={"signatory_id": "qa-1"})
+        assert _s2.status_code == 409 and _s2.json()["detail"]["reason"] == "not_submitted"
+        _pend = client.get("/api/v1/science/gmp/records/w611-b1").json()
+        assert _pend["state"] == "withheld" and _pend["body"] is None, ("an unsigned record was released", _pend)
+        assert client.post("/api/v1/science/gmp/records/w611-b1/sign", json={"signatory_id": "qa-1"}).status_code == 200
+        _rel = client.get("/api/v1/science/gmp/records/w611-b1").json()
+        assert _rel["state"] == "signed" and _rel["body"] == "Batch 1: mixed 10 kg", _rel
+        #  the text changes after signature -> withheld again
+        _recs = _gmp._load("records")
+        _recs["w611-b1"]["body"] = "Batch 1: mixed 12 kg"
+        _recs["w611-b1"]["body_hash"] = _gmp._hash("Batch 1: mixed 12 kg")
+        _gmp._save("records", _recs)
+        assert client.get("/api/v1/science/gmp/records/w611-b1").json()["body"] is None, (
+            "a record changed after signature was still released")
+    finally:
+        if _had:
+            _roster.write_bytes(_prev)
+        elif _roster.exists():
+            _roster.unlink()
+
+    # ── CAREER: nothing recorded -> refused; an invented specific is listed, a recorded one is not ──
+    _r0 = client.post("/api/v1/career/generate", json={"output_types": ["cover_letter"]}).json()
+    assert _r0["refused"] == "nothing_recorded" and _r0["results"] == [], (
+        "the career agent generated with nothing recorded about the person", _r0.get("refused"))
+    from agentic_core.api import career as _car
+    from agentic_core.ingestion.api import ingestion_manager as _im611
+    _entry = {"file_id": "w611-cv", "status": "EXTRACTED", "category": "cv", "filename": "cv.txt",
+              "extracted_text": "Analyst at Example Ltd since 2019. Led a team of 4."}
+    _im611.registry.append(_entry)
+
+    async def _fake_ai(prompt, agent, **k):
+        assert "Use ONLY facts stated in the candidate profile context" in prompt, "the recorded-only rule was not sent"
+        return ("I joined Example Ltd in 2019, led a team of 4, and grew revenue by 37% in 2021.", {"served_by": "native"})
+
+    monkeypatch.setattr(_car, "ai_text", _fake_ai)
+    try:
+        _r1 = client.post("/api/v1/career/generate", json={"file_ids": ["w611-cv"], "output_types": ["cover_letter"]}).json()
+    finally:
+        _im611.registry.remove(_entry)
+    assert _r1["refused"] is None and _r1["results"], _r1
+    assert _r1["results"][0]["unsupported_specifics"] == ["2021", "37"], (
+        "the output's invented figures are not listed, or recorded ones are", _r1["results"][0]["unsupported_specifics"])
+    assert "2 concrete achievements" not in _car._OUTPUT_PROMPTS["cover_letter"], "the prompt still asks for achievements"
+
+    # ── FU-462 and FU-467: the search and the donor statement are rendered, comment-stripped ────
+    _root = _pl611.Path(__file__).resolve().parents[1]
+    def _code(rel):
+        t = (_root / rel).read_text(encoding="utf-8")
+        return _re611.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", t, flags=_re611.S)
+    _sp = _code("apps/workstation-superapp/src/components/ArchiveSearchPanel.tsx")
+    for _k in ("res.passages", "res.not_citable", "res.citation_basis", "res.not_searched", "p.path", "p.line"):
+        assert _k in _sp, ("the search panel does not render", _k)
+    assert "<ArchiveSearchPanel />" in _code("apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx")
+    _q = _code("apps/workstation-superapp/src/components/QepDonorStatement.tsx")
+    for _k in ("st.contributions_by_channel_wst", "st.would_allocate_wst", "NOT a distribution",
+               "st.template_is_a_fallback", "st.untagged_postings", "/api/v1/qep/contribute/statement/"):
+        assert _k in _q, ("the donor statement does not render", _k)
+    assert "<QepDonorStatement />" in _code("apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx")
+    #  the search route answers with the keys the panel reads
+    _sr = client.get("/api/v1/horizon/archive/search", params={"term": "w611probe"}).json()
+    assert {"passages", "not_citable", "citation_basis", "not_searched", "passages_matched"} <= set(_sr), sorted(_sr)

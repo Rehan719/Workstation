@@ -13,7 +13,9 @@ import time
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+
+from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import ai_text
@@ -66,6 +68,31 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
         "and a compelling particulars of claim section. Mark with [SQUARE BRACKETS] where user input needed."
     ),
 }
+
+
+class AssembleRequest(BaseModel):
+    template_id: str
+    particulars: list = []        # [{name, words: [..]}] - each filled ONLY from a located bundle line
+    authorities: list = []        # names of statutes or cases - each resolved against the corpus or refused
+
+
+@router.post("/matter/assemble")
+async def matter_assemble(req: AssembleRequest, user: dict | None = Depends(get_current_user)):
+    """P3.23 / FU-278 — the legal specialist ASSEMBLES: every particular comes from a located line of a document in
+    the one named folder (with its document and line), or is a BLANK; every authority is resolved against the
+    corpus or refused; a filing-shaped artefact is a draft until the Owner approves it. Not legal advice."""
+    from agentic_core.legal import specialist
+    return specialist.assemble(req.template_id, req.particulars, req.authorities)
+
+
+@router.post("/matter/artefacts/{artefact_id}/approve")
+async def matter_approve(artefact_id: str, admin: dict = Depends(require_admin)):
+    """The Owner's approval of a filing-shaped artefact - the human gate the ruling of 2026-10-03c requires."""
+    from agentic_core.legal import specialist
+    res = specialist.approve(artefact_id, by=str(admin.get("username") or "owner"))
+    if not res["approved"]:
+        raise HTTPException(status_code=404 if res["refused"] == "not_found" else 409, detail=res)
+    return res
 
 
 @router.get("/bundle")
@@ -269,6 +296,8 @@ async def generate_document(req: GenerateRequest):
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             "This document is AI-generated and provided as a starting point only. "
-            "It must be reviewed by a qualified solicitor before use."
+            "It must be reviewed by a qualified solicitor before use. "
+            #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
+            "Nothing here is legal advice."
         ),
     }

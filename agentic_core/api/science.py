@@ -12,7 +12,9 @@ from __future__ import annotations
 import time
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+
+from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import ai_text
@@ -248,3 +250,59 @@ async def literature_review_outline(req: LiteratureRequest):
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+
+
+#  ── P3.23 (W610) — GMP RECORD QA SIGN-OFF, the human gate the GMP specialist carries ──────────────────────
+class GmpSignatoryRequest(BaseModel):
+    signatory_id: str
+    name: str
+    role: str = "QA"
+
+
+class GmpRecordRequest(BaseModel):
+    record_id: str
+    kind: str = "batch_record"
+    body: str
+
+
+class GmpSignRequest(BaseModel):
+    signatory_id: str
+    approve: bool = True
+    note: str = ""
+
+
+@router.post("/gmp/roster")
+async def gmp_add_signatory(req: GmpSignatoryRequest, admin: dict = Depends(require_admin)):
+    """The Owner engages a QA signatory. Until one is engaged, no GMP record is released."""
+    from agentic_core.science import gmp_signoff
+    res = gmp_signoff.add_signatory(req.signatory_id, req.name, req.role, str(admin.get("username") or "owner"))
+    if not res["ok"]:
+        raise HTTPException(status_code=422, detail=res)
+    return res
+
+
+@router.post("/gmp/records")
+async def gmp_submit(req: GmpRecordRequest, user: dict | None = Depends(get_current_user)):
+    from agentic_core.science import gmp_signoff
+    res = gmp_signoff.submit(req.record_id, req.kind, req.body)
+    if not res["ok"]:
+        raise HTTPException(status_code=422, detail=res)
+    return res
+
+
+@router.post("/gmp/records/{record_id}/sign")
+async def gmp_sign(record_id: str, req: GmpSignRequest, user: dict | None = Depends(get_current_user)):
+    """QA sign-off by a signatory ON THE ROSTER; every refusal names which of three facts it is."""
+    from agentic_core.science import gmp_signoff
+    res = gmp_signoff.sign(record_id, req.signatory_id, req.approve, req.note)
+    if not res["ok"]:
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
+@router.get("/gmp/records/{record_id}")
+async def gmp_record(record_id: str, user: dict | None = Depends(get_current_user)):
+    """The record's body ONLY when QA signed it; otherwise withheld, with the reason."""
+    from agentic_core.science import gmp_signoff
+    body, state, why = gmp_signoff.released(record_id)
+    return {"record_id": record_id, "body": body, "state": state, "basis": why}

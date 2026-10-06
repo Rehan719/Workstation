@@ -9,6 +9,7 @@ Career Domain API — Employment domain endpoints for Application Studio.
 from __future__ import annotations
 
 import json
+import re
 import time
 import uuid
 from typing import Any, Dict, List, Optional
@@ -117,7 +118,8 @@ _OUTPUT_PROMPTS: dict[str, str] = {
     "cover_letter": (
         "Write a compelling, personalised cover letter (3-4 paragraphs). "
         "Opening: hook tied to the company's mission. "
-        "Middle: 2 concrete achievements from the candidate's background that match the role requirements. "
+        "Middle: the achievements STATED in the candidate profile context that match the role requirements "
+        "(if none are stated, write [ADD: an achievement you have recorded] - never supply one). "
         "Closing: clear call to action. Professional but warm tone."
     ),
     "supporting_statement": (
@@ -219,6 +221,18 @@ async def generate_career_docs(req: GenerateRequest):
     if req.instructions:
         target_context += f"Special instructions: {req.instructions}\n"
 
+    #  P3.23 (W610) — THE CAREER AGENT MAY ONLY ASSEMBLE WHAT THE CANDIDATE RECORDED. A CV is a claim about a
+    #  person, so nothing recorded means nothing is generated: the request is REFUSED and says what to record.
+    #  Every prompt carries the recorded-only instruction, and every output is CHECKED afterwards: a number or a
+    #  year it contains that the recorded profile does not is listed as an unsupported specific, because an
+    #  instruction to a model is not a guarantee about its output.
+    if not profile_context.strip():
+        return {"results": [], "generated_count": 0, "unread_files": _unread, "refused": "nothing_recorded",
+                "unread_basis": "",
+                "basis": ("REFUSED: nothing about the candidate is recorded (no readable uploaded document was "
+                          "named), and the career agent assembles only what was recorded - it never invents an "
+                          "achievement, a metric or a date. Upload a CV or a record of your experience first.")}
+    _recorded_numbers = set(re.findall(r"\d+(?:[.,]\d+)?", profile_context))
     results = []
     for output_type in req.output_types[:8]:  # cap at 8 to avoid rate-limit abuse
         prompt_base = _OUTPUT_PROMPTS.get(
@@ -229,6 +243,8 @@ async def generate_career_docs(req: GenerateRequest):
             f"{prompt_base}\n\n"
             + (f"Candidate profile context:\n{profile_context}\n" if profile_context else "")
             + (f"Target role context:\n{target_context}\n" if target_context else "")
+            + "\nUse ONLY facts stated in the candidate profile context. For any achievement, metric, employer, "
+              "date or qualification it does not state, write [ADD: what is needed] instead. Never invent one."
             + "\nGenerate the complete document now in Markdown format."
         )
 
@@ -238,12 +254,18 @@ async def generate_career_docs(req: GenerateRequest):
             "output_type": output_type,
             "title": output_type.replace("_", " ").title(),
             "content": content,
+            #  every number or year in the output that the recorded profile does not contain
+            "unsupported_specifics": sorted({n for n in re.findall(r"\d+(?:[.,]\d+)?", str(content or ""))
+                                             if n not in _recorded_numbers}),
             "ai_provenance": provenance,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
 
     # W495 - the caller is told which of its uploads contributed nothing, and why
     return {"results": results, "generated_count": len(results),
+            "refused": None,
+            "basis": ("assembled from the recorded profile only; any number or year an output contains that the "
+                      "record does not is listed in that output's unsupported_specifics"),
             "unread_files": _unread,
             "unread_basis": ("" if not _unread else
                              f"{len(_unread)} uploaded file(s) contributed nothing to these outputs "

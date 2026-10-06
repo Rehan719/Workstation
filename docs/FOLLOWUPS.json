@@ -4838,10 +4838,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W610",
       "note": "",
-      "slot_source": "rider of FU-277 (W496): an acceptance bar belongs to the item that BUILDS the thing it bars - the legal specialist is P3.23's work, while this row's files route to P2.4 by filename"
+      "slot_source": "rider of FU-277 (W496): an acceptance bar belongs to the item that BUILDS the thing it bars - the legal specialist is P3.23's work, while this row's files route to P2.4 by filename",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "agentic_core/legal/specialist.py is the legal specialist, and it meets the row's four-part bar, each driven: (a) every particular is filled only from a line located in a document inside the one named folder (read through legal/bundle.py, the only reader) and carries that document and 1-based line, re-verified by re-reading it; a particular nothing states renders as a BLANK; (b) an authority is resolved against the employment-law corpus the platform holds or REFUSED by name - the corpus names one statute, which is reported rather than hidden; (c) the artefact's face states how many particulars came from a document and how many are blanks, and lists unresolved checks; (d) an EMPTY bundle yields a TEMPLATE whose every particular is a blank. A filing-shaped artefact (ET1, cease-and-desist) is a draft until the Owner approves it. The Law hub renders it all, including the unresolved checks and the not-legal-advice statement, and the old template generator's disclaimer now says it is not legal advice too. Eight blinds red."
     },
     {
       "id": "FU-279",
@@ -8564,11 +8567,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W610",
       "note": "",
       "slot_source": "P3.23 is the item that CONSUMES located citations (every assembled claim carries the document and line), so the surface that shows them belongs with it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A search over the owned index now reaches a page: HorizonCompanion renders ArchiveSearchPanel, which calls GET /api/v1/horizon/archive/search and shows each located passage with its path and line, the passage and file counts with file_hits_basis, citation_basis, every NOT CITABLE passage with why, and the files not searched because they are not in the index. Asserted over a comment-stripped copy, and the route is driven to answer with the keys the panel reads."
     },
     {
       "id": "FU-463",
@@ -8671,11 +8677,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W610",
       "note": "",
       "tier": 3,
-      "slot_source": "P3.23 owns QEP as one of the four domain specialists and its ACCEPT already requires the unresolved checks to be visible ON THE PAGE rather than only in a log; a donor dashboard showing allocation and impact is that same surface obligation. P3.11's own ACCEPT asks for the two channels and the entity's books, not a dashboard, so this is outside the bar of the item that produced it"
+      "slot_source": "P3.23 owns QEP as one of the four domain specialists and its ACCEPT already requires the unresolved checks to be visible ON THE PAGE rather than only in a log; a donor dashboard showing allocation and impact is that same surface obligation. P3.11's own ACCEPT asks for the two channels and the entity's books, not a dashboard, so this is outside the bar of the item that produced it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A.8's donor statement reaches a page: QEPReligionHub renders QepDonorStatement on every tab. It lists the QEP entities on the living roster, fetches /api/v1/qep/contribute/statement/{id}, and shows what came in by channel, what the waterfall WOULD allocate labelled explicitly as NOT a distribution, the allocation basis, a template fallback when there is one, and untagged postings. With no QEP entity on the roster it says there is no statement to show."
     },
     {
       "id": "FU-468",
@@ -8798,11 +8807,29 @@
       "closed_by": null,
       "note": "",
       "slot_source": "W607: the Owner chose to review the 16 unchecked constitutional constraints LATER (FU-472, choice 3). Which declared constraints apply to an avatar reply is a constitutional decision, so it is the Owner's."
+    },
+    {
+      "id": "FU-474",
+      "title": "GMP and QEP have their human gates but not the retrieval-plus-verifier composition P3.23's description names",
+      "why": "P3.23 closed on its ACCEPT in W610: every gate refuses in a driven test, every assembled legal claim carries its document and line, the unresolved checks and the not-legal-advice statement are on the page, and nothing outside the named folder is opened. Its DESCRIPTION also says each of the four domains is a composition of retrieval, a domain prompt and the verifier. That is built for law (legal/specialist.py over legal/bundle.py) and is not built for GMP (only the QA sign-off gate exists, over records submitted by hand) or QEP (the scholar review gate and the donor statement exist; no retrieval-with-citations over a QEP corpus). Career is built as recorded-only assembly with a post-check. Not claimed as done, and not hidden.",
+      "source": "W610 (closing P3.23 on its ACCEPT)",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/science/gmp_signoff.py",
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W610: P3.23's ACCEPT is met, and this is the part of its DESCRIPTION the ACCEPT does not require; P2.20, the truth pass that re-reads the platform against its vision, is where a description-versus-delivery gap is measured."
     }
   ],
   "routes": [
     {
-      "slot": "P3.23",
+      "slot": "P2.20",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -8810,40 +8837,40 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "handed from P3.12 via P3.28; handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "note": "handed from P3.12 via P3.23; handed from P3.12 via P3.28; handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
       "handed_from": "P3.12"
     },
     {
-      "slot": "P3.23",
+      "slot": "P2.20",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "handed from P3.14 via P3.28; handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
+      "note": "handed from P3.14 via P3.23; handed from P3.14 via P3.28; handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
       "handed_from": "P3.14"
     },
     {
-      "slot": "P3.23",
+      "slot": "P2.20",
       "files": [
         "agentic_core/avatars/core/recirculation_orchestrator.py",
         "agentic_core/avatars/cognition/"
       ],
       "words": [],
-      "note": "handed from P3.16 via P3.28; handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
+      "note": "handed from P3.16 via P3.23; handed from P3.16 via P3.28; handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
       "handed_from": "P3.16"
     },
     {
-      "slot": "P3.23",
+      "slot": "P2.20",
       "files": [],
       "words": [
         "attestation",
         "post-quantum"
       ],
-      "note": "handed from P3.15 via P3.28; handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
+      "note": "handed from P3.15 via P3.23; handed from P3.15 via P3.28; handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
       "handed_from": "P3.15"
     },
     {
-      "slot": "P3.23",
+      "slot": "P2.20",
       "files": [
         "agentic_core/biomimicry/minimisation/",
         "core/transcendent_subsystems/",
@@ -8851,11 +8878,11 @@
         "agentic_core/validation/"
       ],
       "words": [],
-      "note": "handed from P3.17 via P3.28; handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
+      "note": "handed from P3.17 via P3.23; handed from P3.17 via P3.28; handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
       "handed_from": "P3.17"
     },
     {
-      "slot": "P3.23",
+      "slot": "P2.20",
       "files": [
         "agentic_core/avatars/"
       ],
@@ -8863,7 +8890,7 @@
         "avatar",
         "profile applied"
       ],
-      "note": "handed from P2.3 via P3.28; handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
+      "note": "handed from P2.3 via P3.23; handed from P2.3 via P3.28; handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
       "handed_from": "P2.3"
     },
     {
