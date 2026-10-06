@@ -136,6 +136,65 @@ async def horizon_screen(req: ScreenRequest,
     return _g.screen_all(req.text)
 
 
+class ScheduleRequest(BaseModel):
+    """The caller supplies BOTH the case's dates and the rules to apply, each with its own citation.
+
+    The rules are an input on purpose: encoding them here would make this platform state what the law
+    requires, which is legal advice in a data structure. It applies the rules it is given and names them.
+    """
+    events: dict = {}
+    rules: list = []
+
+
+@router.post("/simulation/schedule")
+async def horizon_schedule(req: ScheduleRequest):
+    """P3.24 stage 1 — a SCHEDULE computed from the caller's rules and the case's own dates.
+
+    Every date carries the rule, the citation the caller gave, the event it counted from and the sum in
+    words, so it can be checked by hand. A rule that cannot be computed is listed with the reason and never
+    estimated. THIS IS NOT A FORECAST and nothing here predicts an outcome.
+    """
+    from agentic_core.simulation.staged import procedural_timeline
+    return procedural_timeline(req.events, req.rules)
+
+
+@router.get("/simulation/stage/{number}")
+async def horizon_stage(number: int):
+    """Any of the four stages. Stages 2 and 3 report NO INPUT with the reason; stage 4 is shadow-only."""
+    from agentic_core.simulation.staged import stage
+    return stage(number)
+
+
+@router.post("/simulation/surface-stage-4")
+async def horizon_surface_stage_4(reason: str = ""):
+    """ALWAYS REFUSED, and served rather than absent so the refusal is discoverable.
+
+    Clause (4) requires a guard that drives an attempt to surface stage 4 and sees it refused. A 404 would
+    satisfy nobody: it teaches a caller that the feature is missing rather than that it is refused, and it
+    gives no reason they could dispute.
+    """
+    from agentic_core.simulation.staged import surface_stage_4
+    return surface_stage_4(reason)
+
+
+@router.post("/simulation/forecast")
+async def horizon_forecast():
+    """There is no forecast, and asking gets a REASON instead of a 404.
+
+    The Owner's October ruling (option (a)) is the frame and it is now spent: no outcome dataset exists
+    here, no judge data, and a settlement range shown to someone in a live matter is a number they will act
+    on however it is labelled. A later round may not reopen this on its own judgement.
+
+    NO DATE IS WRITTEN HERE, and that is deliberate rather than vagueness. Three guards scan this file for
+    any digit run a person in distress could read as a number to dial — the rule is
+    `(?:\\+?\\d[\\d\\s().-]{6,}\\d)|(?:\\b\\d{4,}\\b)`, which an ISO date matches, and so does a bare year.
+    A fabricated helpline is the one fabrication no later correction reaches, so the file carries no digit
+    runs at all and the ruling's full identifier lives in the plan, which is its canonical home.
+    """
+    from agentic_core.simulation.staged import forecast
+    return forecast()
+
+
 class VerifyRequest(BaseModel):
     output: str = ""
     citations: list = []

@@ -36,6 +36,7 @@ interface JourneyResult {
     criteria_not_measured?: Record<string, string>;
   };
   phase_2_design_development: string;
+  stage_6_develop?: string;                    // §4.6 (P3.1) — the costed, checkable artefact
   stage_7_operational_intelligence?: string;   // §4.7 — deliverability · compliance · operability
   phase_3_commercialisation: string;
   // W494 (FU-130) - the shared intent-gate result carries what it screened
@@ -299,6 +300,9 @@ export const GenesisJourney: React.FC = () => {
         '## Concept', String(result?.phase_1_conceptualisation?.concept ?? ''),
         '## Innovate & Research', String(result?.stage_3_innovate_research ?? ''),
         '## Design & Development', String(result?.phase_2_design_development ?? ''),
+        // P3.1 - the 6.4.6 Develop stage and its costed bill of materials. An export that skipped it
+        // would hand a founder five stages of a six-stage journey.
+        '## Develop (buildable artefact)', String(result?.stage_6_develop ?? ''),
         '## Operational Intelligence', String(result?.stage_7_operational_intelligence ?? ''),
         '## Commercialisation', String(result?.phase_3_commercialisation ?? ''),
       ].join('\n\n');
@@ -495,8 +499,33 @@ export const GenesisJourney: React.FC = () => {
         </div>
       ) },
     { key: 'phase2', n: 2, icon: Layers, label: 'Design & Development',
-      blurb: 'Concept → buildable solution design',
-      body: <PlainText text={result.phase_2_design_development} /> },
+      blurb: 'Concept → buildable solution design → a costed, checkable artefact',
+      body: (
+        <div className="space-y-5">
+          <PlainText text={result.phase_2_design_development} />
+          {/* P3.1 — this card is labelled Design & DEVELOPMENT and showed only the design body, while
+              the field behind it (phase_2_design_development) carries only design too. §4.6 Develop now
+              runs as its own stage and produces a costed bill of materials whose pass/fail is its own
+              arithmetic, so the card shows it — with the VERDICT, because an artefact shown without
+              whether it checks out is the thing this stage exists to stop. */}
+          {result.stage_6_develop && (
+            <div data-testid="genesis-develop">
+              <p className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">§4.6 Develop — buildable artefact</p>
+              <PlainText text={result.stage_6_develop} />
+              {result.stage_verifications?.develop && (
+                <p data-testid="genesis-develop-verdict" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                  {result.stage_verifications.develop.verified === true
+                    ? 'The bill of materials CHECKS OUT: its line items sum to the total it states. '
+                    : result.stage_verifications.develop.verified === false
+                      ? 'The bill of materials DOES NOT CHECK OUT. '
+                      : 'No pass or fail is claimed for this artefact. '}
+                  {result.stage_verifications.develop.basis}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      ) },
     { key: 'phase3', n: 3, icon: Rocket, label: 'Enterprise Commercialisation',
       blurb: 'Go-to-market + the user’s own living VSB',
       body: <PlainText text={result.phase_3_commercialisation} /> },

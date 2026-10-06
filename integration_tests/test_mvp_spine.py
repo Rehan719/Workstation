@@ -8187,17 +8187,40 @@ def test_w436_floor_served_stages_are_not_certified(client):
         % (served,))
 
     sv = d.get("stage_verifications") or {}
-    assert len(sv) == 5
+    # W597 — this pinned `len(sv) == 5` and `stages_floor_served == 5`. P3.1 added §4.6 Develop as a sixth
+    # stage and both went red, which is the FU-365 class: a guard that fails when the PLAN ADVANCES. Bumping
+    # 5 to 6 would re-arm the same trap for the next stage, so the counts are DERIVED and the property this
+    # test exists for — a check that cannot fail must not certify — is asserted per stage instead.
+    assert len(sv) >= 5, ("the journey reports almost no stage verifications, so the loop below would pass "
+                          "over nothing", sorted(sv))
+    # §4.6 Develop is verified by its ARTEFACT, not by heading proxies — its own docstring records that
+    # those proxies cannot fail on floor output, which is why P3.1 could not reuse them. So the
+    # proxy-specific assertions apply to the proxy-verified stages, and `artefact` is the discriminator.
+    _artefact_stages = [s for s, v in sv.items() if "artefact" in v]
+    assert len(_artefact_stages) == 1, (
+        "the artefact discriminator no longer identifies exactly one stage, so the proxy assertions below "
+        "are being skipped for stages that should carry them", _artefact_stages)
     for stage, v in sv.items():
         assert v["verified"] is None, (
             "%s claims verified=%r on floor-served output, where the check cannot fail" % (stage, v["verified"]))
+        if stage in _artefact_stages:
+            # the artefact stage discloses the same absence in its own terms: the floor cannot cost a
+            # component, so it built nothing and claims no pass
+            assert "not buildable on the floor" in (v.get("basis") or ""), (
+                "the artefact stage neither claims a pass nor says why it could not produce one", stage, v)
+            assert v.get("artefact") is None, (
+                "the floor recorded an artefact it cannot build", stage, v.get("artefact"))
+            continue
         assert "not assessable" in (v.get("basis") or ""), "the absence must carry its reason"
         # the proxy scores remain — they are real measurements of the text, just not evidence
         assert "score" in v and "sections_present" in v
 
     # the headline arithmetic counts only what was assessable, and the floor count is disclosed
     assert d.get("stages_verified") == "0/0"
-    assert d.get("stages_floor_served") == 5
+    assert d.get("stages_floor_served") == len(sv), (
+        "the disclosed floor-served count does not account for every stage on a run where the floor served "
+        "everything — a stage missing from it would be one nobody is told about",
+        d.get("stages_floor_served"), len(sv))
     assert "not assessable" in (d.get("stages_note") or "")
 
     # and the §10 record must NOT attest tested/validated for a run whose verification never ran
@@ -42546,3 +42569,457 @@ def test_w596_p321_the_verifier_refuses_on_a_checkable_check_and_never_on_a_scor
     assert _rj["withheld"] is True and _rj["output"] is None, (
         "the route serves an output whose citation failed a check", _rj)
     assert not _floats(_rj), ("the route's response carries a float", _floats(_rj))
+
+
+def test_w597_p31_develop_produces_a_checkable_artefact_and_can_fail_on_it(client):
+    """P3.1 (§4.6 Develop) — a distinct stage, a stored artefact, and a pass/fail from the artefact itself.
+
+    Measured before this round: there was no `develop` stage, no artefact store, and no `factory`/`forge`
+    package — so of the three artefacts the item permits, the costed bill of materials is the only one with
+    a property that can be checked. Its check is arithmetic: the line items either sum to the stated total
+    or they do not.
+
+    WHY THAT MATTERS. `_verify_stage`'s own docstring records that its proxies CANNOT FAIL on floor output —
+    the floor emits the headings it was asked for, so coverage is 1.0 and structure ≥1.0 and the composite
+    lands exactly on the threshold. Every other journey stage is verified that way. This one reads the
+    ARTEFACT, so it is the first verification in the journey that can fail on substance.
+    """
+    from agentic_core.api import develop_artefact as _da
+
+    # ── (3) THE FAILING CASE FIRST, because a check that cannot fail is the defect this guards ──
+    _bad_bom = ("## Bill of Materials\n"
+                "- compressor unit | 2 x 450.00 | 900.00\n"
+                "- insulated panel | 10 x 35.50 | 355.00\n"
+                "## Total\nTotal: 2000.00\n")
+    _art_bad, _ver_bad = _da.record("jny-w597-fail", _bad_bom, floor_served=False)
+    assert _ver_bad["verified"] is False, (
+        "a bill of materials whose lines do not sum to its stated total does not record a FAIL - None "
+        "would be an absence, and the clause requires a real pass/fail", _ver_bad)
+    assert "does not add up" in _ver_bad["basis"], (
+        "the failure does not say WHY, so an author cannot correct the bill", _ver_bad["basis"])
+    assert str(_art_bad["computed_total"]) in _ver_bad["basis"] and \
+        str(_art_bad["stated_total"]) in _ver_bad["basis"], (
+        "the failure names neither figure, so the arithmetic cannot be checked by a reader", _ver_bad)
+
+    #  and the PASSING case, so the check is not simply always-fail
+    _good_bom = _bad_bom.replace("Total: 2000.00", "Total: 1255.00")
+    _art_ok, _ver_ok = _da.record("jny-w597-pass", _good_bom, floor_served=False)
+    assert _ver_ok["verified"] is True, ("a bill whose lines DO sum is not recorded as a pass", _ver_ok)
+
+    #  and NOT ASSESSABLE when there is no bill at all - three states, never two
+    _, _ver_none = _da.record("jny-w597-none", "a prose answer with no bill of materials", floor_served=False)
+    assert _ver_none["verified"] is None, (
+        "an output with no bill of materials is recorded as a pass or a fail, when nothing was checkable",
+        _ver_none)
+
+    # ── (4) THE FLOOR REFUSES, AND RECORDS NO PASS ─────────────────────────────────────────────
+    _, _ver_floor = _da.record("jny-w597-floor", _good_bom, floor_served=True)
+    assert _ver_floor["verified"] is None, (
+        "the deterministic floor records a PASS for a buildable artefact it cannot produce", _ver_floor)
+    assert _da.NOT_BUILDABLE_ON_THE_FLOOR in _ver_floor["basis"], (
+        "the floor does not say it cannot build this, so a reader cannot tell a refusal from a failure",
+        _ver_floor["basis"])
+
+    # ── (2) THE ARTEFACT EXISTS IN A STORE, loaded back by id ─────────────────────────────────
+    _loaded = _da.load("jny-w597-pass")
+    assert _loaded is not None, (
+        "the artefact was not stored, so clause (2) is satisfied by the stage having RUN rather than by the "
+        "artefact existing - which the item explicitly distinguishes")
+    assert _loaded["kind"] == "costed_bill_of_materials" and _loaded["lines"], _loaded
+    assert _da.load("jny-w597-floor") is None, (
+        "the floor path stored an artefact it did not build")
+
+    # ── (1) A DISTINCT STAGE, IN THE JOURNEY'S OWN ORDER, NOT ONLY IN PROSE ───────────────────
+    _j = client.post("/api/v1/genesis/journey",
+                     json={"problem": "cold storage for smallholder mango farmers",
+                           "domain": "science", "realm": "enterprise"})
+    assert _j.status_code == 200, (_j.status_code, _j.text[:160])
+    _jb = _j.json()
+    _sv = _jb.get("stage_verifications") or {}
+    assert "develop" in _sv, (
+        "§4.6 Develop has no entry in stage_verifications, so it is a stage in prose only and invisible to "
+        "every figure that counts stages", sorted(_sv))
+    _keys = list(_sv)
+    assert _keys.index("design") < _keys.index("develop") < _keys.index("operations"), (
+        "Develop is not between design and operational intelligence, which is where §4.6 sits", _keys)
+    #  the journey returns its id, so the artefact it produced can be fetched
+    assert _jb.get("journey_id"), (
+        "the journey does not report its own id, so the artefact it stored cannot be looked up and 'exists "
+        "in a store' is unverifiable from outside")
+    #  and on this deployment the floor serves, so the stage must refuse rather than claim a pass
+    _dev = _sv["develop"]
+    assert _dev["verified"] is not True, (
+        "the develop stage recorded a PASS on a deployment with no owned model, which is a check that "
+        "cannot fail", _dev)
+    assert _dev.get("basis"), "the develop verification carries no basis"
+
+    # ── AND THE STAGE REACHES A READER, with its VERDICT ────────────────────────────────────────
+    #  The pre-flight asked which surface shows these keys, and the honest answer was none: the journey
+    #  gained a develop stage and an artefact that no page rendered. The clause only requires the entry in
+    #  stage_verifications, but an artefact nobody can see is the FU-420 class — provenance and verdicts
+    #  must travel WITH the output to the reader.
+    #  The field is ADDED rather than reusing `phase_2_design_development`, which is NAMED for development
+    #  while carrying only the design body: three readers already depend on it, and a field's meaning
+    #  belongs to its readers.
+    assert "stage_6_develop" in _jb, (
+        "the journey returns no develop body, so the §4.6 stage ran and produced prose nobody receives",
+        sorted(k for k in _jb if "stage" in k or "phase" in k))
+    import pathlib as _pl31
+    _gj = (_pl31.Path(__file__).resolve().parents[1]
+           / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(
+               encoding="utf-8")
+    assert 'data-testid="genesis-develop"' in _gj, (
+        "no page renders the Develop stage, so a founder is shown a five-stage account of a six-stage "
+        "journey on the one surface they actually read")
+    assert 'data-testid="genesis-develop-verdict"' in _gj, (
+        "the artefact is rendered WITHOUT whether it checks out - and an artefact shown without its "
+        "pass/fail is precisely what this stage exists to stop")
+    assert "stage_verifications.develop.verified === false" in _gj, (
+        "the page cannot distinguish a bill that FAILED from one nothing could assess; collapsing those "
+        "two is the absence-for-a-failure substitution this item is written against")
+    assert "'## Develop (buildable artefact)'" in _gj, (
+        "the journey export omits the Develop stage, so a founder who downloads the record gets five "
+        "stages of a six-stage journey")
+
+
+def test_w597_p310_no_curriculum_without_a_named_scholar(client):
+    """P3.10 — learning modules behind the RULED gate: withheld without a review, named when approved.
+
+    Measured before this round: LearnTeachModule.tsx posted subject "Quran & Islamic Studies" to the
+    GENERAL route /api/v1/education/curriculum and rendered the result to a learner under a caption
+    calling it an AI-assisted study-plan FRAME. So AI-composed religious teaching content reached a
+    learner carrying a disclaimer - and R7 says in as many words that A DISCLAIMER IS NOT A REVIEW.
+
+    Gating the general route was not the answer: it serves Bloom's, the UK National Curriculum, IGCSE, IB
+    and STEM, and withholding those would teach nobody anything (W594 guards that scope line, and FU-448
+    records that it is the author's reading and not the Owner's). So religious requests are REFUSED there
+    and served - when a scholar has approved them - by the gated QEP path.
+    """
+    import pathlib as _pl310
+
+    from agentic_core.api import scholar_review as _sr310
+    from agentic_core.religious_domain.subject_screen import screen_subject as _scr310
+
+    _roster_p, _review_p = _sr310._roster_path(), _sr310._review_path()
+    _saved_r = _roster_p.read_bytes() if _roster_p.exists() else None
+    _saved_v = _review_p.read_bytes() if _review_p.exists() else None
+    try:
+        # ── THE SCREEN MAY REFUSE, NEVER CLEAR ──────────────────────────────────────────────────
+        _flag = _scr310("Quran & Islamic Studies", "Intermediate", "bloom")
+        _pass = _scr310("Photosynthesis", "ks3", "bloom")
+        assert _flag["flagged"] is True and "quran" in _flag["matched"], _flag
+        assert _pass["flagged"] is False and _pass["matched"] == [], _pass
+        #  BOTH branches must deny clearing. A screen whose negative result reads as "secular" is the
+        #  defect: the absence of a matched word is the absence of evidence, not evidence of absence.
+        for _s310 in (_flag, _pass):
+            assert "CANNOT certify one as secular" in _s310["basis"], (
+                "the screen's result implies it cleared the subject, when all it can do is flag one",
+                _s310["basis"])
+            assert set(_s310) == {"flagged", "matched", "basis"}, (
+                "the two branches return different key sets, so a caller cannot tell a missing field "
+                "from a false one", sorted(_s310))
+
+        # ── (1a) THE GENERAL ROUTE REFUSES A RELIGIOUS SUBJECT AND SAYS WHERE IT GOES ────────────
+        _ref = client.post("/api/v1/education/curriculum",
+                           json={"subject": "Quran & Islamic Studies", "level": "Intermediate"})
+        assert _ref.status_code == 409, (
+            "the general education route still composes religious teaching content, which R7 puts behind "
+            "a named scholar before any learner sees it", _ref.status_code, _ref.text[:200])
+        _rd = _ref.json()["detail"]
+        assert _rd["where_instead"] == "/api/v1/qep/curriculum", (
+            "the refusal does not say where the request should go, so it reads as a dead end", _rd)
+        assert "quran" in _rd["matched"], (
+            "the refusal does not name what matched, so a teacher whose secular course tripped the list "
+            "cannot see why and cannot dispute it", _rd)
+        #  AND IT MUST SURVIVE THE PAGE'S OWN TRUNCATION. apps/.../lib/api.ts renders a non-string detail
+        #  as JSON.stringify(detail).slice(0, 300) through errorMessage(), so a refusal longer than that
+        #  reaches a teacher on EducationHub cut off mid-sentence - which is how a careful explanation
+        #  becomes unreadable JSON. The readable sentence must fit, and must come first.
+        import json as _js310
+        _wire = _js310.dumps(_rd)[:300]
+        assert "/api/v1/qep/curriculum" in _wire, (
+            "the referral falls outside the first 300 characters of the serialised detail, which is all "
+            "the page keeps - so the one thing a teacher needs is the thing truncated away", len(_wire),
+            _wire[-80:])
+        assert _rd["message"].endswith("."), (
+            "the refusal's readable sentence is itself truncated", _rd["message"][-60:])
+
+        # ── (1b) AND THE GENERAL ROUTE STILL SERVES SECULAR CURRICULUM, UNGATED ──────────────────
+        #  W594's own leg for this posted `topic`, which CurriculumRequest does not accept, so it 422'd
+        #  and its status==200 branch never ran. Posting the field the model actually declares.
+        _sec = client.post("/api/v1/education/curriculum",
+                           json={"subject": "Photosynthesis", "level": "ks3", "framework": "bloom"})
+        assert _sec.status_code == 200, (
+            "secular curriculum is no longer servable, which no ruling asks for and which would withhold "
+            "mathematics from every user", _sec.status_code, _sec.text[:200])
+        _sb = _sec.json()
+        assert "review_state" not in _sb, (
+            "the scholar gate has been applied to the GENERAL education route - see FU-448, which is the "
+            "Owner's question and not this round's to answer", sorted(_sb))
+        assert _sb["religious_subject_screen"]["flagged"] is False, _sb["religious_subject_screen"]
+        assert "CANNOT certify" in _sb["religious_subject_screen"]["basis"], (
+            "a curriculum served here carries no statement that nothing cleared it, so a reader infers a "
+            "clearance that was never performed")
+
+        # ── (1c) WITH AN EMPTY ROSTER THE GATED PATH SERVES NO CONTENT AT ALL ────────────────────
+        for _p310 in (_roster_p, _review_p):
+            if _p310.exists():
+                _p310.unlink()
+        assert _sr310.roster_is_empty(), "the roster did not clear, so this leg cannot see an empty gate"
+        _c1 = client.post("/api/v1/qep/curriculum",
+                          json={"subject": "W597 Quran Studies", "level": "Intermediate",
+                                "duration_weeks": 6})
+        assert _c1.status_code == 200, (_c1.status_code, _c1.text[:200])
+        _b1 = _c1.json()
+        assert _b1["curriculum"] is None, (
+            "curriculum content is servable with no scholar on the roster, which is exactly what R7 "
+            "forbids - and a disclaimer in its place is not a review", str(_b1)[:300])
+        assert _b1["review_state"] == "withheld" and _b1["scholar_reviewed"] is False, _b1
+        assert "no scholar" in _b1["review_note"].lower(), (
+            "the learner is not told WHY nothing is shown, so an absence reads as a fault in the platform "
+            "rather than as a deliberate withholding", _b1["review_note"])
+        assert _b1["gate"]["roster_is_empty"] is True and _b1["gate"]["scholars_on_roster"] == 0, _b1["gate"]
+
+        # ── (3) AN APPROVED MODULE NAMES THE REVIEW THAT CLEARED IT ──────────────────────────────
+        _sr310.add_scholar("w597-shaykha", "A Named Scholar", "ijazah in qira'at", "pytest-owner")
+        _key310 = "qep_curriculum:W597 Quran Studies:Intermediate:6"
+        _d310 = _sr310.decide(_key310, "w597-shaykha", approve=True, note="sound for this level")
+        assert _d310["ok"] is True, ("the approval was refused, so clause (3) cannot be driven", _d310)
+        _c2 = client.post("/api/v1/qep/curriculum",
+                          json={"subject": "W597 Quran Studies", "level": "Intermediate",
+                                "duration_weeks": 6}).json()
+        assert _c2["curriculum"], (
+            "an APPROVED module is still withheld, so approval does nothing and the gate is a wall",
+            str(_c2)[:300])
+        assert _c2["scholar_reviewed"] is True and "w597-shaykha" in _c2["review_note"], (
+            "a shipped module does not NAME the review that cleared it, which is clause (3) word for word",
+            _c2.get("review_note"))
+
+        # ── AND A MODULE WITH NO REVIEW IS NOT SERVABLE, driven as a DIFFERENT subject ───────────
+        _c3 = client.post("/api/v1/qep/curriculum",
+                          json={"subject": "W597 Unreviewed Subject", "level": "Intermediate",
+                                "duration_weeks": 6}).json()
+        assert _c3["curriculum"] is None and _c3["review_state"] == "withheld", (
+            "a second subject is served on the strength of the FIRST one's approval, so one approval "
+            "clears everything", str(_c3)[:300])
+
+        # ── (2) THE SURFACE STATES THE RULED STATE AND DOES NOT DRESS THE ABSENCE ───────────────
+        _lt310 = (_pl310.Path(__file__).resolve().parents[1]
+                  / "apps/workstation-superapp/src/components/LearnTeachModule.tsx").read_text(
+                      encoding="utf-8")
+        #  THE CODE IS SEARCHED, NOT THE FILE. The first run of this leg went red on the COMMENT that
+        #  records the change - which names the old route in order to explain why it was abandoned. That
+        #  is the fifth time this suite has been bitten by a fix comment quoting the literal its own
+        #  guard forbids, and the rule the project settled on is to forbid the BINDING rather than the
+        #  text. So the line comments come out first and the assertion is about what the page CALLS.
+        _lt310_code = "\n".join(
+            ln for ln in _lt310.splitlines() if not ln.lstrip().startswith("//"))
+        assert "//" not in _lt310_code or len(_lt310_code) < len(_lt310), (
+            "no comment line was stripped, so this leg is searching the whole file again and the next "
+            "comment that names a route will break it")
+        assert "/api/v1/qep/curriculum" in _lt310_code, (
+            "the page still posts religious curriculum to the GENERAL route, so what a learner sees never "
+            "passes the gate at all")
+        assert "/api/v1/education/curriculum" not in _lt310_code, (
+            "the page still CALLS the ungated route, so the gated one is decoration")
+        assert "review_note" in _lt310, (
+            "the page does not render the gate's reason, so a learner meets an empty panel and is told "
+            "nothing - the item's own instruction is that this must not be dressed")
+        assert "data-testid=\"learnteach-review-state\"" in _lt310, (
+            "the review state is not rendered, so a withheld plan is indistinguishable from a failed fetch")
+        #  the stale sentence: a registry now EXISTS, it is merely empty, and those are different claims
+        assert "needs a real registry" not in _lt310, (
+            "the page still says scholar verification NEEDS A REAL REGISTRY. W594 built one - "
+            "agentic_core/api/scholar_review.py, with a roster, a body-hash-bound approval and a refusal "
+            "that distinguishes an empty roster from an unknown reviewer. The registry exists and is "
+            "EMPTY, which is a different statement, and the page must make the true one")
+    finally:
+        for _p310, _v310 in ((_roster_p, _saved_r), (_review_p, _saved_v)):
+            if _v310 is None:
+                if _p310.exists():
+                    _p310.unlink()
+            else:
+                _p310.write_bytes(_v310)
+        assert _sr310.roster_is_empty() or _saved_r is not None, (
+            "this guard left a scholar on the roster, which changes the gate for every later test")
+
+
+def test_w597_a_structured_refusal_never_reaches_react_as_a_child():
+    """P3.10's blocker — a dict `detail` put straight into error state THROWS when React renders it.
+
+    Found by refuting P3.10 before building it. A route may raise HTTPException(detail={...}) — seven
+    already do — and axios hands that object to the page unchanged. `setError(obj)` followed by `{error}`
+    makes an object a React child, and React throws: the surface CRASHES rather than showing a poor
+    message. P3.10's own 409 lands on a DomainTool endpoint, so it would have been the first live one.
+
+    I FIRST RECORDED THIS AS 22 SITES AND IT IS 4. The 22 occurrences of that expression split by SHAPE:
+    four put the object into state (the crash), about fifteen interpolate it into a template string so it
+    stringifies to the object-Object text (useless to a reader, but not fatal), and three destructure it
+    behind a `typeof` check and are already correct. A grep gives SITES, not instances; the defect is what
+    the site DOES with the value. This guard therefore asserts the crash SHAPE and not the expression.
+    """
+    import pathlib as _pld
+    import re as _red
+
+    _root = _pld.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    # ── (1) THE HELPER EXISTS AND RETURNS A STRING FOR EVERY SHAPE A DETAIL CAN TAKE ───────────
+    _api_src = (_root / "lib/api.ts").read_text(encoding="utf-8")
+    assert "export function axiosDetail" in _api_src, (
+        "no shared helper coerces an axios error's detail, so each page decides for itself and four of "
+        "them decided to hand React an object")
+    for _shape, _why in (
+            ("Array.isArray(d)", "a 422 carries a LIST of {loc, msg}; rendering that as JSON tells a "
+                                 "reader nothing they can act on, and as an array child it throws just "
+                                 "as an object does"),
+            (".message", "a structured refusal's own readable sentence is the right thing to show, and "
+                         "the gated-curriculum refusal puts one there deliberately"),
+            ("JSON.stringify(d)", "an unrecognised object must still be rendered as something TRUE "
+                                  "rather than replaced by 'the backend may be unavailable', which is a "
+                                  "different and false claim about a backend that refused with a reason")):
+        assert _shape in _api_src, (f"axiosDetail does not handle {_shape}: {_why}")
+
+    # ── (2) NO PAGE PUTS A RAW DETAIL INTO ERROR STATE — the crash shape, named ────────────────
+    #  `setX(e?.response?.data?.detail || …)`. A destructured `const d = …detail` followed by a typeof
+    #  check is NOT this shape and is deliberately allowed: three files already do it correctly, and
+    #  rewriting correct code to use a new helper is churn that risks a regression for no gain.
+    _crash = _red.compile(r"set[A-Za-z_]*\(\s*e\?\.response\?\.data\?\.detail\s*\|\|")
+    _offenders, _scanned = [], 0
+    for _f in sorted(_root.rglob("*.tsx")) + sorted(_root.rglob("*.ts")):
+        _scanned += 1
+        _t = _f.read_text(encoding="utf-8")
+        for _m in _crash.finditer(_t):
+            _offenders.append(f"{_f.name}:{_t[:_m.start()].count(chr(10)) + 1}")
+    assert _scanned > 50, ("this leg scanned almost nothing, so it would pass on an empty tree", _scanned)
+    assert _offenders == [], (
+        "a page puts an axios error's raw `detail` into state and renders it. When the route answering "
+        "that call raises HTTPException with a dict — seven routes already do — React is handed an "
+        "object as a child and THROWS, so the surface crashes instead of showing the refusal. Use "
+        "axiosDetail(e, fallback)", _offenders)
+
+    # ── (3) AND THE GATED REFUSAL IS THE SHAPE THE HELPER CAN READ ─────────────────────────────
+    #  P3.10's 409 detail carries `message` first precisely so this helper, and the fetch path's own
+    #  errorMessage, both render a sentence rather than JSON. Asserted on the SOURCE OF THE REFUSAL so
+    #  the two cannot drift apart silently.
+    _edu_src = (_pld.Path(__file__).resolve().parents[1]
+                / "agentic_core/api/education.py").read_text(encoding="utf-8")
+    assert '"message": (' in _edu_src, (
+        "the religious-subject refusal carries no `message` key, so axiosDetail falls through to "
+        "JSON.stringify and a teacher is shown a serialised dict")
+
+
+def test_w597_p324_a_schedule_never_a_forecast(client):
+    """P3.24 — staged simulation, procedural first: a SCHEDULE computed from cited rules, and no forecast.
+
+    The Owner's ruling of 2026-10-03c (option (a)) is the frame and it is SPENT: the platform computes
+    schedules and assembles evidence and never forecasts an outcome. No outcome dataset exists here, no
+    judge data, and a settlement range shown to someone in a live matter is a number they will act on
+    however it is labelled. A later round may not reopen that on its own judgement.
+
+    THE RULES ARE AN INPUT. Encoding procedural rules in the module would make it a statement about what
+    the law IS — legal advice in a data structure — so the caller supplies each rule with its citation and
+    the module does only arithmetic and names whose rule it used.
+    """
+    import datetime as _dt324
+
+    from agentic_core.simulation import staged as _ss
+
+    # ── EVERY DATE IS ARITHMETIC OVER A CITED RULE, re-checked here ─────────────────────────────
+    _events = {"dismissal": "2026-01-15", "acas_received": "not-a-date"}
+    _rules = [
+        {"id": "R1", "citation": "(guard-supplied rule A)", "from_event": "dismissal", "offset_days": 90},
+        {"id": "R2", "citation": "(guard-supplied rule B)", "from_event": "acas_received", "offset_days": 28},
+        {"id": "R3", "citation": "(guard-supplied rule C)", "from_event": "hearing", "offset_days": 14},
+        {"id": "R4", "citation": "(guard-supplied rule D)", "from_event": "dismissal", "offset_days": "soon"},
+    ]
+    _r = _ss.procedural_timeline(_events, _rules)
+    assert len(_r["timeline"]) == 1, ("only the one computable rule should yield a date", _r["timeline"])
+    _e = _r["timeline"][0]
+    for _f in ("rule", "citation", "from_event", "from_date", "offset_days", "date", "arithmetic"):
+        assert _e.get(_f) not in (None, ""), (f"a computed date omits {_f}, so it cannot be traced to a "
+                                              f"rule", _f, _e)
+    #  RE-COMPUTE IT: the leg must not take the module's own arithmetic on trust
+    _base = _dt324.date.fromisoformat(_e["from_date"])
+    assert _e["date"] == (_base + _dt324.timedelta(days=_e["offset_days"])).isoformat(), (
+        "the stated date is not the arithmetic the entry claims", _e)
+    assert _e["arithmetic"].count(_e["date"]) >= 1 and _e["from_date"] in _e["arithmetic"], (
+        "the sum is not shown in words, so a reader cannot check it by hand", _e["arithmetic"])
+
+    # ── A RULE THAT CANNOT BE COMPUTED IS NAMED, WITH ITS REASON, AND NEVER ESTIMATED ───────────
+    _why = {n["rule"]: n["why"] for n in _r["not_computable"]}
+    assert set(_why) == {"R2", "R3", "R4"}, ("a rule that could not be computed was silently dropped", _why)
+    assert "not an ISO date" in _why["R2"] and "NOT guessed" in _why["R2"], _why["R2"]
+    assert "records no event" in _why["R3"], _why["R3"]
+    assert "does not invent" in _why["R4"], _why["R4"]
+
+    # ── A STAGE WITH NO INPUT SAYS SO — and `timeline` is None, not an empty list ───────────────
+    for _n, _word in ((2, "no precedent index"), (3, "no causal graph")):
+        _s = _ss.stage(_n)
+        assert _s["status"] == _ss.NO_INPUT, (f"stage {_n} does not report NO INPUT", _s)
+        assert _s["timeline"] is None, (
+            f"stage {_n} returns an empty timeline, which makes an unavailable stage look like a stage "
+            f"that found nothing - different facts", _s)
+        assert _word in _s["basis"], (f"stage {_n} does not say WHY it has no input", _s["basis"])
+
+    # ── STAGE 4 IS SHADOW-ONLY, AND THE ATTEMPT TO SURFACE IT IS REFUSED ───────────────────────
+    _att = _ss.surface_stage_4("a client asked to see it")
+    assert _att["refused"] is True and _att["surfaced"] is False, (
+        "stage 4 can be put on a surface, which the ruling forbids", _att)
+    assert _att["reason_given"], ("the refusal does not record what was asked for", _att)
+    assert "whatever reason is given" in _att["basis"], (
+        "the refusal reads as conditional, so a caller could believe some reason would satisfy it",
+        _att["basis"])
+
+    # ── NO SURFACE CARRIES A PREDICTED OUTCOME OR A SETTLEMENT RANGE ────────────────────────────
+    _f = _ss.forecast("what are my chances")
+    assert _f["forecast"] is None and _f["refused"] is True, ("a forecast is produced", _f)
+    assert "does NOT forecast" in _f["basis"] and "settlement range" in _f["basis"], _f["basis"]
+    #  and no RESPONSE field anywhere in this module's output carries forecast vocabulary
+    def _strings(obj):
+        if isinstance(obj, str):
+            return [obj]
+        if isinstance(obj, dict):
+            return [s for k, v in obj.items() for s in _strings(k) + _strings(v)]
+        if isinstance(obj, (list, tuple)):
+            return [s for v in obj for s in _strings(v)]
+        return []
+    for _resp in (_r, _ss.stage(2), _ss.stage(3), _ss.stage(4)):
+        _keys = [k for k in (_resp if isinstance(_resp, dict) else {})]
+        for _term in _ss.FORECAST_TERMS:
+            assert not any(_term in str(k).lower() for k in _keys), (
+                f"a staged-simulation response carries a field named for {_term!r}", _term, _keys)
+    #  the refusals DO name the vocabulary, deliberately - that is how a caller learns what is refused
+    assert any(t in _f["basis"].lower() for t in ("settlement range", "forecast")), _f["basis"]
+
+    # ── FU-452 — THE OLDER ENGINE IN THIS PACKAGE REFUSES TOO ───────────────────────────────────
+    #  Measured while preparing this item, which was about to add an honest staged simulation to a
+    #  package that already held a fabricating one. RealitySimulationEngine.simulate_future returned a
+    #  health score derived from two caller-supplied numbers with default values, a prosperity
+    #  percentage of "+24%" or "-12%" chosen by a threshold, and a stability index that was one of two
+    #  magic constants. Every figure was invented. Leaving it beside a module that refuses to forecast
+    #  would leave a reader to pick between them, and they would reasonably take the older one for this
+    #  platform's position - so it refuses, rather than being deleted, for the same reason the staged
+    #  module serves its own refusals.
+    from agentic_core.simulation.engine import simulation_engine as _se
+    _old = _se.simulate_future({"collective_empathy": 0.9, "resource_scarcity": 0.1})
+    assert _old.get("refused") is True, (
+        "the older simulation engine still produces a civilisational forecast", _old)
+    for _gone in ("health_score", "prosperity_projection", "stability_index"):
+        assert _gone not in _old, (
+            f"the invented {_gone} is still returned - and it was never measured from anything", _gone)
+    assert "use_instead" in _old and "procedural_timeline" in _old["use_instead"], (
+        "the refusal does not say what to use instead, so a caller is left with nothing", _old)
+
+    #  AND THE TWO IMPORTS OF A CLASS THAT WAS NOT THERE. Both named a core module in which
+    #  EnvironmentalSimulator is not defined; one is at MODULE level, so that SDK could not be imported
+    #  at all. Driven by importing it, which is the only check that would have caught this.
+    import importlib as _il452
+    _bi = _il452.import_module("products.business_incubator.sdk.business_incubator")
+    assert _bi is not None, "the business_incubator SDK still cannot be imported"
+    #  core must NOT have been wired to a product SDK to achieve that - the layering is the point
+    import pathlib as _pl452
+    _base_src = (_pl452.Path(__file__).resolve().parents[1]
+                 / "agentic_core/reactor/ecosystem/base.py").read_text(encoding="utf-8")
+    assert "import EnvironmentalSimulator" not in _base_src, (
+        "core still imports a simulator class; if it now imports it from the digital_reactor SDK then "
+        "core depends on a product built on top of it, which is an inversion rather than a fix")

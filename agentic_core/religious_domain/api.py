@@ -920,6 +920,67 @@ async def qep_leaderboard(limit: int = 20):
     }
 
 
+class QepCurriculumRequest(BaseModel):
+    subject: str = "Quran & Islamic Studies"
+    level: str = "Intermediate"
+    duration_weeks: int = 12
+
+
+@router.post("/curriculum")
+async def qep_curriculum(req: QepCurriculumRequest):
+    """P3.10 — religious curriculum BEHIND the R7 gate: composed, submitted, and served only if approved.
+
+    The three facts a caller gets back, always the same keys so none has to be guessed at:
+
+      curriculum       the approved text, or None. None is never an error and never an empty plan.
+      review_state     approved / withheld — what the gate decided about THIS text.
+      review_note      WHY, in a sentence a learner can act on. "No scholar is engaged yet" and "a
+                       reviewer rejected this" are different things to be told, and the gate keeps them
+                       distinct rather than collapsing both into silence.
+
+    While the roster is empty NOTHING can be approved, so every request is withheld with that stated.
+    That is the designed state until the Owner engages a reviewer - not a failure, and not dressed up as
+    one. P3.10's own instruction is that the surface "must not be dressed".
+    """
+    from agentic_core.api import scholar_review as _sr
+
+    _weeks = min(max(int(req.duration_weeks), 4), 52)
+    prompt = (
+        f"Design a {_weeks}-week study plan for: {req.subject}\n"
+        f"Level: {req.level}\n\n"
+        f"## Learning Objectives\n## Week-by-Week Plan\n## Assessment Approach\n"
+        f"## Resources (named editions and authors only)\n\n"
+        f"State a scholarly position only where it is agreed; where schools differ, say that they differ "
+        f"and name them rather than choosing."
+    )
+    meta = await gateway.query_meta(prompt, agent="qep_curriculum", augment=False)
+    body = meta.get("output") or ""
+    served_by = meta.get("served_by", "native")
+
+    #  submit_if_new, never submit: a second request for the same subject must not reset an approval
+    _key = f"qep_curriculum:{req.subject}:{req.level}:{_weeks}"
+    _sr.submit_if_new(_key, "qep/curriculum", body, reference=req.subject)
+    _published, _state, _why = _sr.published_body(_key, body)
+
+    return {
+        "subject": req.subject,
+        "level": req.level,
+        "duration_weeks": _weeks,
+        "curriculum": _published,
+        "review_state": _state,
+        "review_note": _why,
+        "scholar_reviewed": _state == "approved",
+        "gate": _sr.gate_status(),
+        "served_by": served_by,
+        "floor_served": served_by == "native",
+        "basis": (
+            "Owner ruling 2026-10-05b R7 (§A.12.3): a named human scholar approves AI-composed religious "
+            "teaching content before a learner sees it, and a disclaimer is not a review. An approval is "
+            "bound to the exact text approved, so an edit after approval falls back to withheld. Nothing "
+            "here scores a learner, assesses a recitation or rules on a difference between schools."),
+    }
+
+
 @router.get("/status")
 async def qep_status():
     """Platform status — component lines say what each ACTUALLY is (W439: they were constants —

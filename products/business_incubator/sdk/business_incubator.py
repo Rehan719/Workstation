@@ -3,7 +3,10 @@ import time
 import uuid
 import os
 from typing import Dict, Any, List, Optional
-from agentic_core.simulation.engine import EnvironmentalSimulator
+# W597 (FU-452) — this named agentic_core.simulation.engine, where no such class is defined, so this
+# module could not be imported AT ALL: the failure was at module level, not inside a function. The class
+# lives in the digital_reactor SDK, which is a sibling product rather than core.
+from products.digital_reactor.sdk.engine import EnvironmentalSimulator
 from agentic_core.governance.runtime_framework import RuntimeConstitutionalFramework, AgencyRiskIndex, GovernanceTier
 
 logger = logging.getLogger(__name__)

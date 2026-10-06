@@ -9,7 +9,7 @@ import {
   MonitorPlay, Database, Cloud, GitBranch, Wrench,
 } from 'lucide-react';
 import { Card } from '@workstation/ui';
-import { apiJson, errorMessage } from '../lib/api';
+import { apiJson, errorMessage, axiosDetail } from '../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -164,7 +164,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
       // Ledger cluster 3 — this catch used to FABRICATE a canned specification and mark the phase
       // 'done', so a failed AI call looked like a successful design. Surface the failure instead.
       setSpec(s => ({ ...s, generated_spec: '' }));
-      setDesignErr(`Specification generation failed: ${e?.response?.data?.detail ?? 'the AI fabric did not respond'}. Nothing was generated.`);
+      setDesignErr(`Specification generation failed: ${axiosDetail(e, 'the AI fabric did not respond')}. Nothing was generated.`);
       setStatus(s => ({ ...s, design: 'idle' }));
     } finally {
       setDesigning(false);

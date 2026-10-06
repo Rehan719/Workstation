@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail} from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -179,7 +179,7 @@ const SwarmIntelligence: React.FC = () => {
       await loadCascadeRuns();
       setTask('');
     } catch (e: any) {
-      setStreamOutput(`Error: ${e?.response?.data?.detail ?? e.message}`);
+      setStreamOutput(`Error: ${axiosDetail(e, e.message)}`);
       setStreaming(false);
     } finally {
       setDelegating(false);

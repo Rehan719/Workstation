@@ -1,5 +1,5 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, axiosDetail} from '../../lib/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -27,7 +27,7 @@ export const LawHub: React.FC = () => {
       const r = await axios.post('/api/v1/law/analyse', { document_text: docText, analysis_focus: focus });
       setResult(r.data);
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Analysis failed — the backend may be unavailable.');
+      setError(axiosDetail(e, 'Analysis failed — the backend may be unavailable.'));
     }
     setAnalyzing(false);
   };

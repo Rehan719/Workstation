@@ -29,13 +29,33 @@ class SpecializedReactor(DigitalReactor, ABC):
         return self.config.get("capabilities", [])
 
     async def get_digital_twin(self, twin_id: str) -> Dict[str, Any]:
-        """ARTICLE 306/307: Retrieves or initializes a digital twin for this reactor."""
-        from agentic_core.simulation.engine import EnvironmentalSimulator
-        ese = EnvironmentalSimulator()
-        twin = ese.registry.get_twin(twin_id)
-        if not twin:
-            twin = await ese.lifecycle.create_twin(self.registry_id, twin_id, self.config)
-        return twin
+        """NOT AVAILABLE in core — and it says so rather than raising ImportError at the call.
+
+        W597 (FU-452). This imported `EnvironmentalSimulator` from `agentic_core.simulation.engine`,
+        where no such class is defined — so any caller got an ImportError naming a module rather than an
+        answer. It never fired only because this method has NO CALLERS anywhere in the live tree, which
+        was checked rather than assumed.
+
+        The class it wanted is in the digital_reactor SDK, and that is a PRODUCT. Pointing a core
+        ecosystem base class at a product SDK inverts the layering — core would then depend on something
+        built on top of it — so the import is not simply redirected. A reactor that needs a twin should
+        be given a simulator by whatever constructs it, rather than core reaching sideways for one.
+
+        A reasoned refusal, not a silent None: a caller learns that core provisions no twin simulator and
+        where one exists, instead of concluding the feature is merely missing.
+        """
+        return {
+            "twin_id": twin_id,
+            "twin": None,
+            "available": False,
+            "basis": (
+                "No digital-twin simulator is provisioned in core. The EnvironmentalSimulator this "
+                "method once imported is not defined in agentic_core.simulation.engine - that import "
+                "would have raised ImportError at the call - and it lives in the digital_reactor product "
+                "SDK, which core must not depend on. A reactor needing a twin should be constructed with "
+                "a simulator rather than core reaching into a product for one."),
+            "simulator_location": "products/digital_reactor/sdk/engine.py",
+        }
 
     async def optimize_resources(self, user_id: str, tier: str) -> Dict[str, Any]:
         """ARTICLE 311/313: Domain-specific resource optimization."""

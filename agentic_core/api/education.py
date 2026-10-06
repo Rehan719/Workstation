@@ -12,10 +12,11 @@ from __future__ import annotations
 import time
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import ai_text
+from agentic_core.religious_domain.subject_screen import screen_subject
 
 router = APIRouter(prefix="/api/v1/education", tags=["education"])
 
@@ -57,7 +58,32 @@ class CurriculumRequest(BaseModel):
 async def design_curriculum(req: CurriculumRequest):
     """
     Design a complete curriculum structure for a subject/level.
+
+    P3.10 — A RELIGIOUS SUBJECT IS REFUSED HERE AND REFERRED, not composed with a caveat.
+    Owner ruling 2026-10-05b R7 (§A.12.3): a named human scholar approves AI-composed religious content
+    before a learner sees it, and A DISCLAIMER IS NOT A REVIEW. This route is general - it serves
+    mathematics and history too - so it is not gated; what it does is decline the requests that belong
+    behind the gate and say where they go. The screen can only FLAG, never clear, and the response says so.
     """
+    _screen = screen_subject(req.subject, req.level, req.framework)
+    if _screen["flagged"]:
+        #  THE DETAIL IS SHAPED FOR THE READER IT REACHES. apps/.../lib/api.ts turns a non-string
+        #  `detail` into JSON.stringify(detail).slice(0, 300) and EducationHub renders that through
+        #  errorMessage(), so a long explanatory basis here would arrive on a teacher's screen as JSON
+        #  cut off mid-sentence. `message` therefore carries ONE readable sentence and comes first, and
+        #  the whole dict stringifies well inside the 300 characters that survive.
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": (
+                    f"Not composed here: \"{req.subject}\" is religious teaching content, which needs a "
+                    f"named scholar's approval before a learner sees it. Use /api/v1/qep/curriculum, "
+                    f"which submits it for review. Matched: {', '.join(_screen['matched'][:3])}."),
+                "where_instead": "/api/v1/qep/curriculum",
+                "matched": _screen["matched"],
+                "ruling": "2026-10-05b R7 (§A.12.3)",
+            },
+        )
     n_weeks = min(max(req.duration_weeks, 4), 52)
     n_objectives = min(max(req.learning_objectives_count, 3), 10)
 
@@ -89,6 +115,10 @@ async def design_curriculum(req: CurriculumRequest):
         "framework": req.framework,
         "curriculum": curriculum,
         "ai_provenance": provenance,
+        #  P3.10 — the screen's result travels WITH the output. It did not clear this subject; it only
+        #  failed to flag it, and those are different facts. A reader who sees a curriculum served here
+        #  should not infer that anything certified it as outside the scholar gate's scope.
+        "religious_subject_screen": _screen,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 

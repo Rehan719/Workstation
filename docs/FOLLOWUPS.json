@@ -8293,11 +8293,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W597",
       "note": "",
       "slot_source": "P3.10 is the open QEP learning item and this is a QEP learning module",
-      "tier": 3
+      "tier": 3,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "Read the file rather than trusting the row. W439 ALREADY gave GamifiedLearning the disclosure this row asked for: its class docstring states that award_nur_points requires a dual_metric_middleware which does not exist in this deployment, that no persistence exists here, that the live gamification surface is the persisted award store in religious_domain/api.py, and that the class is retained for the ethics-constraint design it documents and NOT as a working engine. That is precisely the second remedy this row offered - give it a docstring saying plainly that it is retained unused and why - and it predates the row. My row overstated the position by saying its only references were comments recording abandonment; the honest disclosure is in the class itself. Nothing to build, and deleting a module whose own docstring explains why it is kept would discard a deliberate decision."
     },
     {
       "id": "FU-452",
@@ -8313,11 +8316,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W597",
       "note": "",
       "slot_source": "P3.24 is the staged-simulation item and this is the package it would add to",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built with P3.24, which is where this row said the remedy belonged - adding an honest staged simulation beside a fabricating one would have left a reader to pick, and they would reasonably have taken the older for the platform's position. RealitySimulationEngine.simulate_future now REFUSES with its reason rather than being deleted, for the same reason staged.py serves its own refusals: a caller reaching for a prediction learns the platform does not make one instead of meeting a missing attribute. The three invented figures are gone - a health score that was a restatement of the request, a prosperity percentage chosen by a threshold, and a stability index that was one of two constants - and the refusal names procedural_timeline as what to use instead. The two imports of EnvironmentalSimulator from a core module where it is not defined are fixed differently from each other on purpose: the business_incubator SDK, whose MODULE-LEVEL import made it entirely unimportable, now names the digital_reactor SDK where the class actually lives, product to product; but core's reactor base class is NOT redirected there, because core depending on a product built on top of it is an inversion rather than a fix - get_digital_twin returns a reasoned unavailable instead, naming where a simulator exists. All three modules verified to import, and the guard drives the import of the SDK that previously could not be imported at all."
     },
     {
       "id": "FU-453",
@@ -8334,11 +8340,52 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.10",
+      "status": "done",
+      "closed_by": "W597",
+      "note": "",
+      "slot_source": "P3.10's 409 would be the first dict detail on a DomainTool endpoint, so the class blocks it",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W597 as P3.10's blocker. lib/api.ts gains axiosDetail(e, fallback), which returns a string for every shape a detail can take: the dict's own message key first, a 422's list unpacked into readable per-field reasons the way VSBCockpit already did it, otherwise its JSON - ugly but TRUE, and far better than claiming the backend may be unavailable when it refused and gave a reason. Applied by a script that asserts the crash-shape count and refuses to write if it disagrees; four crash-shape sites found, exactly the four measured. A guard asserts no page puts a raw detail into error state, that the helper handles all three shapes, and that the gated-curriculum refusal carries a message key so both the axios and fetch paths render a sentence. Two blinds driven red."
+    },
+    {
+      "id": "FU-454",
+      "title": "Genesis presents three phases for a seven-stage journey, so three stages reach no reader",
+      "why": "The pre-flight asked which surface shows the new develop keys and the answer was none, which led to reading the page properly. GenesisJourney.tsx builds its phase list from exactly three entries - Conceptualisation, Design and Development, Enterprise Commercialisation - while the journey response returns seven stage bodies: phase_1_conceptualisation, stage_3_innovate_research, stage_5_model_simulate_rank, phase_2_design_development, stage_6_develop (added W597), stage_7_operational_intelligence and phase_3_commercialisation. So stage_3_innovate_research, stage_5_model_simulate_rank and stage_7_operational_intelligence are computed, paid for in model calls or floor composition, verified in stage_verifications, and shown to NOBODY on the page a founder actually reads. W597 fixed only the one it created: the develop body and its artefact verdict now render inside the Design and Development card, because that card is NAMED for development and was showing only the design body, and the export gained the stage too. The other three are older and were not that round's to take. NOT A FABRICATION - nothing claims they are displayed, and the export includes two of them - but a journey that computes seven stages and narrates three understates its own work to the only person who sees it, and the verifications of the unshown stages count toward the stages_verified figure the page DOES show. REMEDY: either render the missing stages, or state on the page which stages are summarised rather than shown, so the count and the narrative agree. An informed decision needs reading why the three-phase framing was chosen - it matches the marketing arc in the header - so this is a design question and not a mechanical fix.",
+      "source": "W597 pre-flight",
+      "found": "2026-10-06",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+        "agentic_core/api/genesis.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.2",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P3.10's 409 would be the first dict detail on a DomainTool endpoint, so the class blocks it",
-      "tier": 3
+      "slot_source": "no route owns Genesis surfaces; P3.2 clause (3) is this exact class - a page understating server state it already has - so it is the nearest open owner by subject rather than by file",
+      "tier": 2
+    },
+    {
+      "id": "FU-455",
+      "title": "A round that adds a route makes test_w499 red, and the pre-flight does not say so",
+      "why": "test_w499 asserts the README's stated API operation and path counts EQUAL what the live app exposes, which is the whole point of that guard - W499 built it because an external assessment of this repository inherited a drifted figure as its baseline. The consequence is that ANY round adding a route makes it red until scripts/readme_figures.py --fix is run. It bit W596 (two routes added, 522 stated against 524 measured) and W597 the very next round (five routes, 524 against 529). In W596 it cost a FULL 32-minute suite, because the register guards were not run first; in W597 it cost 90 seconds, because they were. THE GUARD IS CORRECT AND MUST NOT BE WEAKENED - it is not failing on success in the FU-365 sense, because the README genuinely IS wrong at that moment and a reader would be misled. What is missing is a WARNING EARLIER. scripts/selfcheck_diff.py already has a regchange leg that tells a round to run the register guards before the full suite when it touched the register or the plan; it has no equivalent for routes. REMEDY: a pre-flight leg that notices the diff adds or removes a route decorator and says that the README's measured figures are now stale and readme_figures.py --fix must run. CHEAP AND ALREADY SAFE, because readme_figures.py MEASURES rather than being told a number, so the leg cannot be satisfied by writing a figure in by hand. If built, the leg must be driven RED on a diff that adds a route, since an instrument that cannot fail reports success.",
+      "source": "W597 (the second round in a row it bit)",
+      "found": "2026-10-06",
+      "files": [
+        "scripts/selfcheck_diff.py",
+        "scripts/readme_figures.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.17 is the instrument item - FU-399, FU-413, FU-414 and FU-301 all ride it",
+      "tier": 2
     }
   ],
   "routes": [

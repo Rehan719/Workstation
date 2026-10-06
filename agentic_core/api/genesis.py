@@ -14,6 +14,7 @@ gate into a single end-to-end journey whose deliverable is the user's *own* VSB
 """
 from __future__ import annotations
 
+import uuid as _uuid        # P3.1 — the journey mints its own id; the only other alias was function-local
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -24,6 +25,7 @@ from agentic_core.auth.core import get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime_meta, _ai_mjm_lifecycle_meta, _usable, _selected_lenses
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 from agentic_core.api.vsb import _public_prose, _gate_block_reason, _gates_blocking, _LIFECYCLE_STAGE_IDS
+from agentic_core.api import develop_artefact as _develop
 from agentic_core.taxonomy import (PRODUCT_LABELS, REALM_LABELS, normalise_product,
                                    normalise_realm, realm_directive)
 from agentic_core.vbs.quality import assure_delivery
@@ -274,6 +276,11 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     _realm_prefix = (f"{realm_directive(req.realm)}\n"
                      f"Realm: {REALM_LABELS.get(normalise_realm(req.realm), 'Enterprise')}\n"
                      f"Problem: {(req.problem or '').strip()[:400]}\n\n")
+
+    #  P3.1 — the journey's own id. The §4.6 artefact is stored under it, so a reader can fetch the
+    #  bill of materials this journey produced; an artefact nobody can look up does not satisfy
+    #  "the artefact EXISTS in a store".
+    journey_id = f"jny-{_uuid.uuid4().hex[:12]}"
 
     async def _q(prompt: str, agent: str) -> str:  # noqa: F811 — local, provenance-aware
         try:
@@ -556,6 +563,21 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "genesis_design",
     )
 
+    # ── §4.6 DEVELOP (P3.1) — between design and operational intelligence, producing a BUILDABLE,
+    #    CHECKABLE artefact rather than more prose. A costed bill of materials is asked for because its
+    #    correctness is arithmetic: the line items either sum to the stated total or they do not. The item
+    #    permits three artefacts; there is no factory/forge package in this repository and a runnable
+    #    prototype spec has nothing here to run it, so this is the one that can be checked at all.
+    develop = _blocked_body if _blocked else await _q(
+        "You are the IDBO Develop engine (\u00a74.6). Turn the design into a BUILDABLE artefact: a costed "
+        "bill of materials for the solution as designed.\n\n"
+        f"Design: {design[:800]}\nDomain: {req.domain}\n\n"
+        "Give ONE LINE PER COMPONENT in the form `item | quantity x unit cost | line total`, then a single "
+        "`Total: <sum>` line, then your assumptions. Use real components for this domain and realistic "
+        "unit costs; do not state a total that does not match the lines.\n\n"
+        "## Bill of Materials\n## Total\n## Assumptions",
+        "genesis_develop",
+    )
     # ── Stage 7 — Enhance via Operational Intelligence (§4.7): make the designed solution not just
     #    innovative but DELIVERABLE, COMPLIANT and OPERABLE — operations delivery + compliance
     #    (legal · regulatory · EHS · Sharia/halal · ethical) + operational excellence. ──
@@ -619,10 +641,24 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     _NOT_RUN = {"verified": None, "checks": "none", "ran": False,
                 "basis": ("not run — the journey was blocked by the §11 screen before this stage, so "
                           "there is nothing to verify")}
+
+    #  P3.1 — THE §4.6 ARTEFACT IS PARSED, STORED AND CHECKED. Its pass/fail is the bill's OWN arithmetic,
+    #  so a model-served bill whose numbers disagree records a FAIL rather than an absence — which is
+    #  clause (3)'s point and the reason this cannot reuse `_verify_stage`'s heading proxies, whose own
+    #  docstring records that they cannot fail on floor output.
+    #  It sits HERE, after `_floor` is defined, and not beside the Develop call above: the first draft put
+    #  it there and the stage raised UnboundLocalError on `_floor` at request time, which the guard caught.
+    _develop_artefact, _develop_verified = _develop.record(
+        journey_id, develop, floor_served=bool(_blocked) or _floor("genesis_develop"))
+
     stage_verifications = {
         "concept": _verify_stage(concept, ["Problem Understanding", "Optimal Solution Concept", "Why This Concept Wins"], floor_served=_floor("genesis_concept")),
         "research": _verify_stage(research, ["Best & Latest Approaches", "Innovative Options", "Recommended Direction"], floor_served=_floor("genesis_research")),
         "design": (dict(_NOT_RUN) if _blocked else _verify_stage(design, ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope"], floor_served=_floor("genesis_design"))),
+        #  P3.1 — §4.6 DEVELOP sits between design and operations HERE, not only in prose,
+        #  so every figure that counts stages sees it. Its verdict is the artefact's own
+        #  arithmetic rather than a heading proxy, so it can fail on substance.
+        "develop": _develop_verified,
         "operations": (dict(_NOT_RUN) if _blocked else _verify_stage(operations, ["Operations Delivery", "Compliance", "Operational Excellence"], floor_served=_floor("genesis_operations"))),
         "commercialisation": (dict(_NOT_RUN) if _blocked else _verify_stage(commercial, ["Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"], floor_served=_floor("genesis_commercial"))),
     }
@@ -721,6 +757,11 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "stage_3_innovate_research": research,     # §4.3 — best/latest approaches across science·tech·business·ops·law
         "stage_5_model_simulate_rank": stage_5,   # §4.5 — candidate solutions modelled + evidence-ranked → best selected
         "phase_2_design_development": design,
+        #  P3.1 — §4.6 DEVELOP, as its own field. `phase_2_design_development` is NAMED for development but
+        #  carries only the design body, and three readers already depend on it (GenesisJourney's card, its
+        #  export and its summary), so it is left exactly as it was: a field's meaning belongs to its
+        #  readers, and the remedy for a field that under-delivers is to ADD one beside it.
+        "stage_6_develop": develop,
         "stage_7_operational_intelligence": operations,   # §4.7 — deliverable · compliant · operable
         "phase_3_commercialisation": commercial,
         # W494 (FU-130) — the streaming establish path already said the gate screens the intent and
@@ -747,6 +788,11 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                         f"{len(stage_verifications)} stages were served by the deterministic floor "
                         "and are not assessable — the verification proxies cannot fail on floor "
                         "output, so no verdict is claimed for them"),
+        #  P3.1 — the journey's own id, so the §4.6 artefact stored under it can actually be fetched.
+        #  Clause (2) is met by the artefact EXISTING in a store, and an artefact under an id the caller
+        #  is never told is one nobody can look up.
+        "journey_id": journey_id,
+        "develop_artefact": _develop_artefact,
         "quality_assurance": quality_assurance,
         "ai_provenance": {**provenance, "body_served_by": body_served_by(provenance)},
         # W479 (FU-121 refutation 2) — what RAN, never a literal: the lens names when the lens call ran,

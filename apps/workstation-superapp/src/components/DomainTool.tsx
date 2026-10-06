@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { provenanceBadge, qmsChip, provenanceLine } from '../lib/api';
+import { provenanceBadge, qmsChip, provenanceLine, axiosDetail} from '../lib/api';
 import { useT } from '../lib/i18n';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -156,7 +156,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         setHistoryId(rec.id);   // W337 — refines update THIS record in place
       } catch { /* history is best-effort */ }
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Request failed — the backend may be unavailable.');
+      setError(axiosDetail(e, 'Request failed — the backend may be unavailable.'));
     }
     setBusy(false);
   };
@@ -193,7 +193,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         }
       } catch { /* history is best-effort */ }
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Refine failed — the backend may be unavailable. Your current output is unchanged.');   // W337 — never a silent click
+      setError(axiosDetail(e, 'Refine failed — the backend may be unavailable. Your current output is unchanged.'));   // W337 — never a silent click
     }
     setRefining(false);
   };

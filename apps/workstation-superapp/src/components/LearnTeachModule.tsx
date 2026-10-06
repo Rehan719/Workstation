@@ -18,15 +18,27 @@ export const LearnTeachModule: React.FC = () => {
   // W593 (FU-420) — the response's own ai_provenance was never read, so the panel rendered
   // floor-composed Qur'an curriculum with no badge. It is kept and rendered below.
   const [reportServedBy, setReportServedBy] = useState<string>("");
+  //  P3.10 — the gate's verdict on this text and its reason, which a learner must be able to read
+  const [reviewState, setReviewState] = useState<string>("");
+  const [reviewNote, setReviewNote] = useState<string>("");
+  const [gateScholars, setGateScholars] = useState<number | null>(null);
 
   const generateReport = async () => {
     setReportLoading(true);
     setReportError("");
     setReport("");
+    setReviewState("");
+    setReviewNote("");
     try {
-      const data = await apiJson<{ curriculum?: string; output?: string;
-                                   ai_provenance?: { served_by?: string } }>(
-        "/api/v1/education/curriculum",
+      // P3.10 — THE GATED ROUTE. This posted "Quran & Islamic Studies" to the GENERAL
+      // /api/v1/education/curriculum and rendered whatever came back under a disclaimer. Owner ruling
+      // 2026-10-05b R7 (§A.12.3) requires a named human scholar to approve AI-composed religious
+      // teaching content before a learner sees it and records that A DISCLAIMER IS NOT A REVIEW, so the
+      // request now goes through the gate and a learner sees the approved text or the reason there is none.
+      const data = await apiJson<{ curriculum?: string | null; review_state?: string;
+                                   review_note?: string; served_by?: string;
+                                   gate?: { scholars_on_roster?: number; roster_is_empty?: boolean } }>(
+        "/api/v1/qep/curriculum",
         {
           method: "POST",
           body: {
@@ -36,13 +48,14 @@ export const LearnTeachModule: React.FC = () => {
           },
         },
       );
-      const text = data.curriculum ?? data.output ?? "";
-      setReportServedBy(data.ai_provenance?.served_by ?? "");
-      if (!text.trim()) {
-        setReportError("The curriculum service returned an empty plan.");
-      } else {
-        setReport(text);
-      }
+      setReportServedBy(data.served_by ?? "");
+      setReviewState(data.review_state ?? "");
+      setReviewNote(data.review_note ?? "");
+      setGateScholars(data.gate?.scholars_on_roster ?? null);
+      // A WITHHELD PLAN IS NOT AN ERROR. The old code set an error string whenever the text was blank,
+      // which would present a deliberate withholding as a service fault — the reader would think the
+      // platform had broken rather than that a review is required. The two are kept apart.
+      setReport(data.curriculum ?? "");
     } catch (e) {
       setReportError(errorMessage(e));
     } finally {
@@ -99,6 +112,22 @@ export const LearnTeachModule: React.FC = () => {
           {reportError && (
             <p role="alert" className="mt-3 text-[10px] font-bold text-vital leading-relaxed">{reportError}</p>
           )}
+          {/* P3.10 — WHY THERE IS NOTHING, when there is nothing. A withheld plan with an empty panel
+              beneath it reads as a broken feature; the gate returns a sentence saying whether no scholar
+              is engaged, whether the text awaits review or whether a reviewer rejected it, and those are
+              different things to tell a learner. The item's own instruction is that this must not be
+              dressed, so the reason is shown plainly and no plan is implied. */}
+          {reviewState && !report && (
+            <div data-testid="learnteach-review-state"
+                 className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <p className="text-[8px] font-black uppercase tracking-widest text-amber-400/80 mb-2">
+                withheld — {reviewState}
+              </p>
+              <p data-testid="learnteach-review-note" className="text-[10px] text-slate-300 leading-relaxed font-medium">
+                {reviewNote}
+              </p>
+            </div>
+          )}
           {report && (
             <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950 p-4">
               {/* W593 (FU-420, M1 R1.1) — WHAT SERVED IT, AND WHAT IT IS NOT. This rendered a bare <pre>
@@ -115,10 +144,18 @@ export const LearnTeachModule: React.FC = () => {
                   </span>;
                 })()}
               </div>
-              <p className="mb-3 text-[10px] font-bold text-highlight leading-relaxed">
-                AI-assisted study-plan FRAME for Qur'an study — not reviewed curriculum, and not
-                scholarship. The structured floor arranges the headings it was asked for; it does not
-                select what a learner should study. Study with a qualified teacher.
+              {/* The caption must now tell the truth about a REVIEWED plan too. It read "not reviewed
+                  curriculum" unconditionally, which was true while nothing was gated and becomes false
+                  the moment a scholar approves something — and a page that understates its own review
+                  is as wrong as one that overstates it. The referral to a teacher stays either way:
+                  an approved study plan is still not a substitute for one. */}
+              <p data-testid="learnteach-plan-caption" className="mb-3 text-[10px] font-bold text-highlight leading-relaxed">
+                {reviewState === "approved"
+                  ? <>Reviewed study plan for Qur'an study. {reviewNote} It remains a study plan and not
+                      scholarship: study with a qualified teacher.</>
+                  : <>AI-assisted study-plan FRAME for Qur'an study — not reviewed curriculum, and not
+                      scholarship. The structured floor arranges the headings it was asked for; it does not
+                      select what a learner should study. Study with a qualified teacher.</>}
               </p>
               <div className="max-h-72 overflow-y-auto">
                 <pre className="whitespace-pre-wrap text-[10px] text-slate-300 leading-relaxed font-medium">{report}</pre>
@@ -138,11 +175,20 @@ export const LearnTeachModule: React.FC = () => {
             anywhere in the platform — there is no route, no store, and nothing that verifies
             anyone. In a religious-guidance context a user could reasonably trust guidance on the
             strength of a named, "verified" scholar, so inventing them is not a placeholder. */}
-        <p className="text-xs text-slate-500 font-semibold leading-relaxed max-w-2xl">
-           No scholars are verified on this deployment. Scholar verification needs a real registry
-           of credentials and an authority that issues them; neither exists here yet, so no names
-           are shown. This board will list scholars only once there is something behind the word
-           &ldquo;verified&rdquo;.
+        {/* W403 removed three invented "Verified Scholar" names from here and wrote that no registry
+            existed anywhere in the platform. That was true then. W594 BUILT one for Owner ruling
+            2026-10-05b R7 — agentic_core/api/scholar_review.py, with a roster, an approval bound to the
+            exact text approved, and a refusal that distinguishes an empty roster from an unknown
+            reviewer. So the old sentence is now false in its reason while still true in its conclusion:
+            the registry exists and NOBODY IS ON IT. Narrowing a true statement is a defect of its own,
+            so the conclusion is kept and only the reason is corrected. */}
+        <p data-testid="learnteach-scholar-board" className="text-xs text-slate-500 font-semibold leading-relaxed max-w-2xl">
+           No scholars are verified on this deployment{typeof gateScholars === "number" ? ` — the roster holds ${gateScholars}` : ""}.
+           A scholar registry now exists: a roster, an approval bound to the exact text it approved, and a
+           refusal that tells an empty roster apart from an unrecognised reviewer. It is EMPTY, which is
+           why no names are shown and why no religious curriculum is servable here — nothing can be
+           approved until the Owner engages a reviewer. That is the designed state, not a fault, and it
+           is not papered over with a disclaimer: a disclaimer is not a review.
         </p>
       </Card>
     </div>

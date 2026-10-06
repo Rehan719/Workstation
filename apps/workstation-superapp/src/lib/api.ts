@@ -50,6 +50,43 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
   return res.json() as Promise<T>;
 }
 
+/** An AXIOS error's `detail`, always as a string a page can render.
+ *
+ *  A route may raise `HTTPException(detail={...})` — seven already do — and axios hands that object to the
+ *  caller unchanged. `setError(obj)` then puts an object where React expects a child, and React THROWS: the
+ *  surface crashes rather than showing a bad message. Twenty-two call sites read `e?.response?.data?.detail`
+ *  straight into error state, so this is a class and not a site.
+ *
+ *  A structured detail is rendered by its `message` when it has one, because that is the sentence written
+ *  for a reader; otherwise by its JSON, which is ugly but TRUE and far better than a blank panel claiming
+ *  the backend is unavailable when it in fact refused and gave a reason.
+ *
+ *  `errorMessage` above does the same job for the fetch path. The two now agree.
+ */
+export function axiosDetail(e: any, fallback: string): string {
+  const d = e?.response?.data?.detail;
+  if (typeof d === 'string' && d) return d;
+  // A 422 carries a LIST of {loc, msg} — FastAPI's validation shape — and rendering that as JSON tells a
+  // reader nothing they can act on, while rendering it as an array child throws just as an object does.
+  // VSBCockpit.tsx already unpacks it this way; the helper takes that over so one place knows how.
+  if (Array.isArray(d)) {
+    const reasons = d.map((x: any) => {
+      if (typeof x === 'string') return x;
+      if (!x?.msg) return '';
+      const field = Array.isArray(x.loc) && x.loc.length ? `${x.loc[x.loc.length - 1]}: ` : '';
+      return `${field}${x.msg}`;
+    }).filter(Boolean).join('; ');
+    return reasons || fallback;
+  }
+  if (d && typeof d === 'object') {
+    const m = (d as Record<string, unknown>).message ?? (d as Record<string, unknown>).error
+              ?? (d as Record<string, unknown>).note;
+    if (typeof m === 'string' && m) return m;
+    try { return JSON.stringify(d); } catch { return fallback; }
+  }
+  return fallback;
+}
+
 /** Honest, user-facing message for anything a failed call can throw. */
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.status === 401

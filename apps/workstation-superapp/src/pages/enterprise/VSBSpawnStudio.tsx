@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, axiosDetail} from '../../lib/api';
 import { DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -491,7 +491,7 @@ const VSBDetailPanel: React.FC<{
       const r = await axios.post('/api/v1/resources/swarm/run', { swarm_id: ns.cascade_id });
       setSwarmRun(r.data);
     } catch (e: any) {
-      setSwarmErr(e?.response?.data?.detail || 'Could not run this VSB’s swarm — the backend may be unavailable.');
+      setSwarmErr(axiosDetail(e, 'Could not run this VSB’s swarm — the backend may be unavailable.'));
     }
     setSwarmBusy(false);
   };

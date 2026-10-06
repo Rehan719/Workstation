@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { axiosDetail } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button, toast } from '@workstation/ui';
 import {
@@ -56,7 +57,7 @@ const ProposalsPanel: React.FC = () => {
         : `Proposal ${d?.status ?? 'rejected'}.`);
       load();
     } catch (e: any) {
-      toast(e?.response?.data?.detail ?? 'Vote failed');
+      toast(axiosDetail(e, 'Vote failed'));
     }
   };
 
