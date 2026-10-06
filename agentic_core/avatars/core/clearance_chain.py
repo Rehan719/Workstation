@@ -348,7 +348,21 @@ class ConstitutionalClearanceChain:
         _enf = self.enforcement.validate(_subject_text)
         _verdict = getattr(_enf, "passed", None)
         _enf_basis = (getattr(_enf, "basis", "") or "").strip()
-        if _verdict is not True:
+        #  OWNER RULING 2026-10-06 (FU-472, choice 1) — DECIDE BY COVERAGE, the rule gate 1 follows. A
+        #  VIOLATION still blocks, and so does a run that checked NOTHING; when every constraint that CAN be
+        #  checked passed and none was violated, the gate clears and the record names every constraint that
+        #  was NOT checked, so the reader is told exactly what this clearance does not cover. Which declared
+        #  constraints apply to a reply at all is the Owner's later review (choice 3).
+        _det = getattr(_enf, "details", None) or {}
+        _assessed = list(_det.get("assessed") or []) if isinstance(_det, dict) else []
+        _unchecked = list(_det.get("unassessable") or []) if isinstance(_det, dict) else []
+        _cov6 = None
+        if _verdict is None and _assessed and not getattr(_enf, "violation", None):
+            _cov6 = {"assessed": _assessed, "not_checked": _unchecked,
+                     "no_instrument": list(_det.get("no_instrument") or []),
+                     "input_absent": list(_det.get("input_absent") or [])}
+            _verdict = "coverage"
+        if _verdict not in (True, "coverage"):
             _why = (f"a declared constraint was VIOLATED: {getattr(_enf, 'violation', None)!r}. {_enf_basis}"
                     if _verdict is False else
                     f"the constraints could not all be assessed, so the chain did not clear. {_enf_basis}"
@@ -357,8 +371,16 @@ class ConstitutionalClearanceChain:
             return self._blocked(
                 gates + [self._record(key, name, subject, "blocked", _why)],
                 attestations, 5, f"Gate 6 ({name}) Block: {_why}")
-        _rec = self._record(key, name, subject, "cleared", _enf_basis or (
-            "every declared constraint was assessed and passed"))
+        if _cov6 is not None:
+            _rec = self._record(key, name, subject, "cleared", (
+                f"cleared BY COVERAGE, not a pass of every declared constraint: {len(_assessed)} assessed and "
+                f"passed ({', '.join(_assessed)}); {len(_unchecked)} NOT CHECKED ({', '.join(_unchecked)}) - "
+                f"{len(_cov6['no_instrument'])} have no instrument and {len(_cov6['input_absent'])} were not "
+                f"given their input"))
+            _rec["coverage"] = _cov6
+        else:
+            _rec = self._record(key, name, subject, "cleared", _enf_basis or (
+                "every declared constraint was assessed and passed"))
         attestations[key] = self._attest_gate(emission, _rec)
         gates.append(_rec)
 

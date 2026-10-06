@@ -7485,12 +7485,15 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.28",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W607",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing.",
       "tier": 2,
-      "reach": "secondary"
+      "reach": "secondary",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE HOLD IS RELEASED THROUGH THE CHAIN, as the Owner's ruling of 2026-10-05 required and only by P3.28 clause (3). An approved learner's chat reply is delivered only when all six clearance gates clear it, and carries what the clearance does not cover; a withheld reply shows the gate's reason, never the draft; a learner with no approval gets the ordinary answer stated as NOT cleared by the chain. DRIVEN end to end with the real engines: approval and goals recorded, the second turn of a session is delivered with all six gates cleared."
     },
     {
       "id": "FU-413",
@@ -8767,15 +8770,36 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
+      "status": "done",
+      "closed_by": "W607",
+      "note": "",
+      "slot_source": "W606: after the Owner's FU-471 ruling, gates 1 to 5 clear an approved learner's reply and gate 6 withholds every one, because 16 of its 19 declared constraints cannot be checked. Whether a constitutional gate may decide by coverage, or which declared constraints stay declared, is a decision about the constitution, not a build.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-10-06: the recommendation - choice 1 now (gate 6 decides by coverage) and choice 3 later (review the 16 unchecked constraints). BUILT: gate 6 clears when every constraint that can be checked passed and none was violated, and its record names every constraint NOT checked, split into no-instrument and input-absent; a violation still blocks, and a run that checked NOTHING still blocks. A delivered chat reply carries every coverage basis (gate 1 and gate 6), so the reader is told what the clearance does not cover - the Owner's stated condition. The two guards that encoded the old rule (W525 leg 1, W555 L4a) were rewritten to the ruled one, and W525's per-gate no-input loop was found VACUOUS for this gate (its double dropped engine fields, which this gate never reads) and now drives a pattern that assessed nothing. Choice 3 is registered as its own Owner row."
+    },
+    {
+      "id": "FU-473",
+      "title": "REVIEW: which of the 16 unchecked constitutional constraints apply to an avatar reply, and which should be retired from the declared set",
+      "why": "Deferred by the Owner on 2026-10-06 as choice 3 of FU-472. Gate 6 now clears by coverage and every delivered reply names the 16 it did not check: 15 with no instrument anywhere (edge_first_sovereignty, causal_sovereignty, biomimetic_fidelity, genetic_immune_topology_integrity, statistical_rigor, legal_precision_hard, adversarial_co_evolution, trillion_token_provenance, human_ai_constitutional_co_sovereignty, oam_qkd_software_only, federated_consensus, commercial_integrity, first_principles_grounding, sincerity_integrity_loyalty, lob_fixpoint) and 1 whose instrument is never given its input (thermodynamic_accountability). For each, the Owner decides: keep and build an instrument, keep as declared-but-unchecked (stated on every reply, as now), or retire from the declared set with the reason recorded. Nothing is retired without that decision.",
+      "source": "W607 (FU-472 ruling, choice 3 deferred by the Owner)",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+        "agentic_core/validation/constitutional_validators.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "W606: after the Owner's FU-471 ruling, gates 1 to 5 clear an approved learner's reply and gate 6 withholds every one, because 16 of its 19 declared constraints cannot be checked. Whether a constitutional gate may decide by coverage, or which declared constraints stay declared, is a decision about the constitution, not a build."
+      "slot_source": "W607: the Owner chose to review the 16 unchecked constitutional constraints LATER (FU-472, choice 3). Which declared constraints apply to an avatar reply is a constitutional decision, so it is the Owner's."
     }
   ],
   "routes": [
     {
-      "slot": "P3.28",
+      "slot": "P3.23",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -8783,40 +8807,40 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "note": "handed from P3.12 via P3.28; handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
       "handed_from": "P3.12"
     },
     {
-      "slot": "P3.28",
+      "slot": "P3.23",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
+      "note": "handed from P3.14 via P3.28; handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
       "handed_from": "P3.14"
     },
     {
-      "slot": "P3.28",
+      "slot": "P3.23",
       "files": [
         "agentic_core/avatars/core/recirculation_orchestrator.py",
         "agentic_core/avatars/cognition/"
       ],
       "words": [],
-      "note": "handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
+      "note": "handed from P3.16 via P3.28; handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
       "handed_from": "P3.16"
     },
     {
-      "slot": "P3.28",
+      "slot": "P3.23",
       "files": [],
       "words": [
         "attestation",
         "post-quantum"
       ],
-      "note": "handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
+      "note": "handed from P3.15 via P3.28; handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
       "handed_from": "P3.15"
     },
     {
-      "slot": "P3.28",
+      "slot": "P3.23",
       "files": [
         "agentic_core/biomimicry/minimisation/",
         "core/transcendent_subsystems/",
@@ -8824,11 +8848,11 @@
         "agentic_core/validation/"
       ],
       "words": [],
-      "note": "handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
+      "note": "handed from P3.17 via P3.28; handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
       "handed_from": "P3.17"
     },
     {
-      "slot": "P3.28",
+      "slot": "P3.23",
       "files": [
         "agentic_core/avatars/"
       ],
@@ -8836,7 +8860,7 @@
         "avatar",
         "profile applied"
       ],
-      "note": "handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
+      "note": "handed from P2.3 via P3.28; handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
       "handed_from": "P2.3"
     },
     {

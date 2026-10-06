@@ -408,7 +408,9 @@ async def cosign_ratification(rid: str, admin: dict = Depends(require_admin)):
 
 
 @router.get("/balance-objectives")
-async def get_balance_objectives():
+async def get_balance_objectives(user: dict | None = Depends(get_current_user)):
+    """The Owner's goals are PLATFORM-level, not one tenant's data, so any caller may read them; the dependency is
+    taken so this route sits inside the tenancy matrix like every other, rather than outside it."""
     from agentic_core.avatars.core import balance_objectives as _bo
     return {**_bo.get(), "measured": _bo.MEASURED, "directions": list(_bo.DIRECTIONS)}
 
@@ -474,9 +476,14 @@ async def _clear_chat_answer(session: Dict[str, Any], owner: Optional[str], text
         return {"cleared": False, "gates": None,
                 "reason": f"the clearance chain could not run ({exc.__class__.__name__}: {str(exc)[:120]})"}
     session["drift_baseline"] = _cur
+    #  FU-472 (Owner ruling, choice 1) — A CLEARED REPLY SAYS WHAT ITS CLEARANCE DOES NOT COVER. The coverage
+    #  bases of the gates that cleared by coverage are carried verbatim, so every unchecked rule is named.
+    _cov_bases = [g.get("basis") for g in (getattr(_res, "gates", None) or [])
+                  if isinstance(g, dict) and g.get("coverage")]
     return {"cleared": bool(_res.passed), "gates": getattr(_res, "gates", None),
             "reason": (_res.reason if not _res.passed else
-                       "cleared by every gate of the constitutional clearance chain")}
+                       "cleared by every gate of the constitutional clearance chain"
+                       + (". What this clearance does NOT cover: " + " | ".join(_cov_bases) if _cov_bases else ""))}
 
 
 @router.post("/chat", response_model=ChatResponse)

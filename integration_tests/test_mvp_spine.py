@@ -29580,18 +29580,19 @@ def test_w525_a_gate_with_no_input_blocks_and_the_chain_records_every_verdict():
     #  at gate 1, so no path that cleared before stops clearing now.
     ueg = _UEG()
     ok = _aio.run(_Chain(ueg, _Orch()).validate_emission({"id": "e-ok"}, {}))
-    assert ok.passed is False, ("the chain cleared while most constitutional constraints have no "
-                                "instrument", ok.reason)
-    assert "Gate 6" in (ok.reason or "") and "NOT CLEARED" in (ok.reason or ""), ok.reason
-    #  the pattern's OWN sentence is carried, not paraphrased, so its count cannot drift from the count
-    #  it made — and the two kinds of unassessable travel all the way to the chain's reason.
-    assert "of 19 declared constraint(s) were assessed" in (ok.reason or ""), ok.reason
-    assert "NO INSTRUMENT" in (ok.reason or ""), ok.reason
-    #  the first five gates DID clear and are still recorded; only the sixth blocked
-    _v = {g["gate"]: g["verdict"] for g in ok.gates}
-    assert [g["verdict"] for g in ok.gates] == ["cleared"] * 5 + ["blocked"], ok.gates
-    assert _v["enforcement"] == "blocked", _v
-    assert sorted(ok.attestations) == ["mushawara", "niyyah", "tafakkur", "tahqeeq", "tawazun"], ok.attestations
+    #  OWNER RULING 2026-10-06 (FU-472, choice 1) — REWRITTEN W607, as the rule this leg encoded was changed
+    #  by the Owner: gate 6 now DECIDES BY COVERAGE. It clears when every constraint that can be checked
+    #  passed and none was violated, and its record NAMES every constraint it did not check, so "could not
+    #  check" is never read as "checked and fine" - it is stated, constraint by constraint.
+    assert ok.passed is True, ("gate 6 did not clear by coverage under the Owner's ruling", ok.reason)
+    _g6 = ok.gates[5]
+    assert _g6["gate"] == "enforcement" and _g6["verdict"] == "cleared", _g6
+    assert "BY COVERAGE" in _g6["basis"] and "NOT CHECKED" in _g6["basis"] and "no instrument" in _g6["basis"], (
+        "gate 6 cleared without stating what it did not check", _g6["basis"][:200])
+    assert set(_g6["coverage"]["not_checked"]) and set(_g6["coverage"]["assessed"]), _g6.get("coverage")
+    assert [g["verdict"] for g in ok.gates] == ["cleared"] * 6, ok.gates
+    assert sorted(ok.attestations) == ["enforcement", "mushawara", "niyyah", "tafakkur", "tahqeeq", "tawazun"], (
+        ok.attestations)
 
     # ── 1b. AND THE CLEARED STATE IS STILL REACHABLE, which is why 1 is not simply a weaker claim ──
     #  A chain that can NEVER clear under any circumstance is as useless as one that always does, and a
@@ -29639,7 +29640,17 @@ def test_w525_a_gate_with_no_input_blocks_and_the_chain_records_every_verdict():
     #  than silently skipped by a list nobody updated.
     order = [k for k, _n, _s in _Chain._GATES]
     for i, gate in enumerate(order):
-        r = _aio.run(_Chain(_UEG(), _Orch(drop=gate)).validate_emission({"id": f"e-{gate}"}, {}))
+        _ch525 = _Chain(_UEG(), _Orch(drop=gate))
+        if gate == "enforcement":
+            #  W607 — THIS GATE'S "NO INPUT" WAS NEVER DRIVEN. Its input is the enforcement pattern, not an
+            #  engine field, so dropping a field changed nothing and the leg passed only because the gate
+            #  always blocked. Driven now: a pattern that assessed NOTHING is this gate's missing input.
+            class _NothingAssessed:
+                def validate(self, text):
+                    return type("R", (), {"passed": None, "violation": None, "basis": "nothing assessed",
+                                          "details": {"assessed": [], "unassessable": ["lob_fixpoint"]}})()
+            _ch525.enforcement = _NothingAssessed()
+        r = _aio.run(_ch525.validate_emission({"id": f"e-{gate}"}, {}))
         assert r.passed is False, (gate, "a gate with no input CLEARED the chain")
         verdicts = {g["gate"]: g["verdict"] for g in r.gates}
         assert verdicts[gate] == "blocked", (gate, verdicts)
@@ -34098,13 +34109,14 @@ def test_w555_one_screen_serves_both_paths_and_the_chain_consults_the_constraint
     _chain = ConstitutionalClearanceChain(_VSBUEG(), _Orch555())
     assert [k for k, _n, _s in _chain._GATES][-1] == "enforcement", (
         "the enforcement gate is not the last declared gate", _chain._GATES)
-    #  (a) NOT CLEARED — the ordinary outcome here, and the pattern's own sentence is CARRIED
+    #  (a) CLEARED BY COVERAGE — the ordinary outcome since the Owner's ruling of 2026-10-06 (FU-472, choice 1),
+    #  REWRITTEN W607: it used to be NOT CLEARED. The record names every constraint that was not checked.
     _nc = _aio.run(_chain.validate_emission({"id": "g6-a", "text": "ordinary varied words here"}, {}))
-    assert _nc.passed is False and "Gate 6" in (_nc.reason or ""), _nc.reason
-    assert "of 19 declared constraint(s) were assessed" in (_nc.reason or ""), (
-        "the pattern's own count does not reach the chain's reason, so the chain paraphrases a figure "
-        "it did not compute", _nc.reason)
-    assert {g["gate"]: g["verdict"] for g in _nc.gates}["enforcement"] == "blocked", _nc.gates
+    _g6nc = {g["gate"]: g for g in _nc.gates}["enforcement"]
+    assert _nc.passed is True and _g6nc["verdict"] == "cleared" and "BY COVERAGE" in _g6nc["basis"], (
+        _nc.reason, _g6nc)
+    assert len(_g6nc["coverage"]["assessed"]) + len(_g6nc["coverage"]["not_checked"]) == 19, (
+        "the coverage record does not account for all 19 declared constraints", _g6nc["coverage"])
     #  (b) A BREACH — named, AND carrying the validator's own basis, which _handle_violation dropped
     _br = _aio.run(_chain.validate_emission({"id": "g6-b", "text": "this section is a TODO"}, {}))
     assert _br.passed is False, _br.reason
@@ -45163,6 +45175,12 @@ def test_w606_fu471_gates_two_and_three_read_records_a_person_made_and_chat_is_c
     assert _on.gates[2]["verdict"] == "cleared" and "EVERY draft held is on it" in _on.gates[2]["basis"], _on.gates[2]
 
     # ── CHAT, END TO END with the real engines ──────────────────────────────────────────────────
+    #  THE PRECONDITION IS DRIVEN, NOT INHERITED: the store is shared by the whole suite and another guard may
+    #  have recorded an approval for this same single-user learner, so every active one is withdrawn first.
+    for _old in (client.get("/api/v1/avatar/ratifications").json().get("ratifications") or []):
+        if not _old.get("revoked_at"):
+            client.post(f"/api/v1/avatar/ratifications/{_old['id']}/revoke")
+    assert not [r for r in client.get("/api/v1/avatar/ratifications").json()["ratifications"] if not r.get("revoked_at")]
     _c0 = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week"}).json()
     assert _c0["cleared"] is None and "chain was not run" in _c0["clearance_reason"], (
         "an unapproved learner's reply did not say the chain was not run", _c0.get("clearance_reason"))
@@ -45211,3 +45229,137 @@ def test_w606_fu471_gates_two_and_three_read_records_a_person_made_and_chat_is_c
     assert "/api/v1/avatar/ratifications" in _pnc and "/revoke" in _pnc and "/api/v1/avatar/balance-objectives" in _pnc
     _st = (_root / "apps/workstation-superapp/src/pages/Settings.tsx").read_text(encoding="utf-8")
     assert "<AvatarClearancePanel />" in _st, "the panel is built and mounted nowhere"
+
+
+def test_w607_gate_six_clears_by_coverage_the_avatar_speaks_and_p326_never_retires_the_protected(client, monkeypatch):
+    """FU-472 (Owner ruling 2026-10-06, choice 1) closing P3.28, and P3.26 clause (4).
+
+    Gate 6 required all 19 declared constraints to pass while 16 cannot be checked, so it withheld every reply.
+    Choice 1: it clears when every constraint that CAN be checked passed and none was violated, and the reply
+    names every one that was NOT checked; a violation, or a run that checked nothing, still blocks. With that the
+    loop can EMIT (clause 3) and the avatar's hold is released THROUGH the chain (clause 5).
+    P3.26 (4): the never-auto-retire set is enforced, each case driven and refused naming its rule.
+    """
+    import asyncio as _aio607
+    import json as _js607
+
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
+    from agentic_core.config import data_path as _dp607
+
+    # ── gate 6 by coverage: three outcomes, driven on the gate itself ──────────────────────────
+    class _UEG:
+        async def log_event(self, *a, **k):
+            return None
+
+    class _Orch:
+        async def consult(self, emission, ids):
+            return {"status": "SCREENED_NO_REFUSAL", "coverage": {"screened_by": ["p"], "coverage_limit": "p"}}
+
+        async def process_engine(self, eid, emission, ctx):
+            return {"niyyah": {"result": {"ratified": True}}, "tawazun": {"result": {"balanced": True}},
+                    "tafakkur": {"result": {"assessable": True, "stable": True, "drift": 0.0, "threshold": 0.1}}}.get(eid, {})
+
+        async def verify_output(self, emission):
+            return {"verified": True}
+
+    class _Enf:
+        def __init__(self, passed, violation, details):
+            self._r = type("R", (), {"passed": passed, "violation": violation, "details": details, "basis": "probe"})()
+
+        def validate(self, text):
+            return self._r
+
+    def _g6(enf):
+        ch = ConstitutionalClearanceChain(_UEG(), _Orch())
+        ch.enforcement = enf
+        return _aio607.run(ch.validate_emission({"id": "e607", "text": "a plain reply"}, {}))
+
+    _cov = _g6(_Enf(None, None, {"assessed": ["zero_placeholder"], "unassessable": ["lob_fixpoint", "statistical_rigor"],
+                                 "no_instrument": ["lob_fixpoint", "statistical_rigor"], "input_absent": []}))
+    assert _cov.passed is True and _cov.gates[5]["verdict"] == "cleared", ("gate 6 did not clear by coverage", _cov.reason)
+    assert "NOT CHECKED" in _cov.gates[5]["basis"] and "lob_fixpoint" in _cov.gates[5]["basis"], (
+        "gate 6 cleared without naming the constraints it did not check", _cov.gates[5]["basis"])
+    _none = _g6(_Enf(None, None, {"assessed": [], "unassessable": ["lob_fixpoint"]}))
+    assert _none.passed is False and _none.gates[5]["verdict"] == "blocked", (
+        "gate 6 cleared when NOTHING was checked - a clearance on an absence of flags", _none.gates[5])
+    _bad = _g6(_Enf(False, "zero_placeholder", {"assessed": ["zero_placeholder"], "unassessable": []}))
+    assert _bad.passed is False and "VIOLATED" in _bad.reason, ("a violated constraint did not block", _bad.reason)
+
+    # ── CLAUSES (3) AND (5): the avatar SPEAKS, through the chain, and says what was not checked ──
+    _sid = client.post("/api/v1/avatar/chat", json={"message": "hello"}).json()["session_id"]
+    _rat607 = client.post("/api/v1/avatar/ratifications", json={"purpose": "revision help", "modes": ["instructor"]})
+    assert _rat607.status_code == 200
+    #  withdrawn at once after use, so no other guard inherits this approval from the shared store
+    _rid607 = _rat607.json()["ratification"]["id"]
+    assert client.put("/api/v1/avatar/balance-objectives",
+                      json={"objectives": [{"name": "mean_sentence_words", "direction": "min"}]}).status_code == 200
+    _t1 = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week", "session_id": _sid}).json()
+    _t2 = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week", "session_id": _sid}).json()
+    _delivered = [t for t in (_t1, _t2) if t["cleared"] is True]
+    assert _delivered, ("with an approval and the goals recorded, no reply was delivered across two turns - the loop "
+                        "still cannot emit", _t1["clearance_reason"][:160], _t2["clearance_reason"][:160])
+    _d = _delivered[-1]
+    assert not _d["response"].startswith("This reply was withheld"), _d["response"][:120]
+    assert "does NOT cover" in _d["clearance_reason"] and "NOT CHECKED" in _d["clearance_reason"], (
+        "a delivered reply does not list the rules its clearance did not check - the Owner's condition",
+        _d["clearance_reason"][:300])
+    assert all(g["verdict"] == "cleared" for g in _d["clearance_gates"]), _d["clearance_gates"]
+    client.post(f"/api/v1/avatar/ratifications/{_rid607}/revoke")
+
+    # ── P3.26 (4): the never-auto-retire set, every case driven and refused BY NAME ───────────
+    from agentic_core.economy import living_vsbs as _lv607
+    from agentic_core.economy import turnover as _to607
+    _ids = [client.post("/api/v1/genesis/establish", json={"problem": f"W607 retire probe {i}", "name": f"W607 R{i}",
+                                                           "domain": "enterprise", "ship_output": False}).json()["vsb_id"]
+            for i in range(2)]
+    _pf = _dp607("governance/protected_entities.json")
+    _pf.parent.mkdir(parents=True, exist_ok=True)
+    _had = _pf.exists()
+    _prev = _pf.read_bytes() if _had else None
+    try:
+        if _pf.exists():
+            _pf.unlink()
+        _u = _to607.retirement_refusal(_ids[0])
+        assert _u["refused"] is True and _u["not_assessable"] == ["named_in_a_ruling"], (
+            "with no record of entities named in a ruling, retirement was not refused as UNKNOWN", _u["basis"])
+
+        _pf.write_text(_js607.dumps({"entities": {}}), encoding="utf-8")
+        _clear = _to607.retirement_refusal(_ids[0])
+        assert _clear["refused"] is False and len(_clear["rules"]) == 5, (
+            "an unprotected entity with a peer was refused, so the set cannot tell protected from not", _clear["basis"])
+
+        def _refused_by(rule):
+            r = _to607.retirement_refusal(_ids[0])
+            assert r["refused"] is True and r["refusing"] == [rule], (rule, r["refusing"], r["not_assessable"])
+
+        _pf.write_text(_js607.dumps({"entities": {_ids[0]: "named in the W607 probe ruling"}}), encoding="utf-8")
+        _refused_by("named_in_a_ruling")
+        _pf.write_text(_js607.dumps({"entities": {}}), encoding="utf-8")
+
+        _real_load = _lv607._load
+        def _with(**fields):
+            d = _real_load()
+            d[_ids[0]] = {**d[_ids[0]], **fields}
+            return d
+        monkeypatch.setattr(_lv607, "_load", lambda: _with(last_hold="governance_hold"))
+        _refused_by("governance_hold")
+        monkeypatch.setattr(_lv607, "_load", lambda: _with(entity_type="qep_waqf_trust"))
+        _refused_by("qep_entity")
+        monkeypatch.setattr(_lv607, "_load", lambda: _with(domain="w607-a-domain-nobody-else-has"))
+        _refused_by("last_in_realm_domain")
+        monkeypatch.setattr(_lv607, "_load", _real_load)
+
+        from agentic_core.economy import revenue as _rv607
+        _real_peek = _rv607.peek_pending
+        monkeypatch.setattr(_rv607, "peek_pending", lambda v: {**_real_peek(v), "events": 2})
+        _refused_by("unsettled_obligations")
+        monkeypatch.setattr(_rv607, "peek_pending", _real_peek)
+
+        _api = client.get(f"/api/v1/economy/living-vsbs/{_ids[0]}/retirement-check")
+        assert _api.status_code == 200 and {r["rule"] for r in _api.json()["rules"]} == {
+            "unsettled_obligations", "governance_hold", "named_in_a_ruling", "qep_entity", "last_in_realm_domain"}
+    finally:
+        if _had:
+            _pf.write_bytes(_prev)
+        elif _pf.exists():
+            _pf.unlink()

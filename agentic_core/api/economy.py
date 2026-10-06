@@ -598,6 +598,15 @@ async def living_vsb_lifecycle(vsb_id: str, req: LifecycleRequest, user: dict | 
     return res
 
 
+@router.get("/living-vsbs/{vsb_id}/retirement-check")
+async def living_vsb_retirement_check(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (4) — every never-auto-retire rule for this entity, each with its verdict and basis. Read-only:
+    it retires nothing. An entity is refused when ANY rule protects it or cannot be checked."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.turnover import retirement_refusal
+    return retirement_refusal(vsb_id)
+
+
 @router.get("/living-vsbs")
 async def living_vsbs(user: dict | None = Depends(get_current_user)):
     """§4 — the established VSB enterprises the organism autonomously tends (each continually operated via
