@@ -15811,10 +15811,24 @@ def test_w469_the_plan_carries_every_followup_and_keeps_itself_current(tmp_path)
     # wherever the economy route lives, and that item is open.
     _eco = fu.route_row(reg, prompt, "x", ["docs/a.md", "agentic_core/economy/ledger.py"], "medium")
     _area_accounted(_eco, "economy", "economy")
-    # W505 — P2.3 closed and HANDED its avatars route to P3.6 (§9 depth covers the avatar surface), which
-    # is the handing mechanism working. The assertion follows the route rather than pinning a closed item.
+    # W505 — P2.3 closed and HANDED its avatars route on, which is the handing mechanism working. The
+    # assertion is supposed to FOLLOW the route rather than pin an item.
+    # W595 — IT PINNED ONE ANYWAY. This read `== "P3.6"`, and when P3.6 closed its avatars route was
+    # handed to P3.21 exactly as designed, so the guard went red ON SUCCESS: the plan advanced and the
+    # assertion called it a defect. The destination is now DERIVED from the register's own route list, so
+    # the leg follows the handing chain however many times it moves, and it checks the property that
+    # actually matters - a row lands on whichever OPEN item owns that area.
     _av_route = fu.route_row(reg, prompt, "x", ["agentic_core/avatars/api.py"], "medium")
-    assert _av_route["slot"] == "P3.6", _av_route
+    _av_owner = next((r.get("slot") for r in (reg.get("routes") or [])
+                      if any(str(f).startswith("agentic_core/avatars/") for f in (r.get("files") or []))),
+                     None)
+    assert _av_owner, "no route owns the avatars area at all, so a row there would be routed by severity"
+    assert _av_route["slot"] == _av_owner, (
+        "a row in the avatars area does not route to the item whose route owns that area", _av_route,
+        _av_owner)
+    assert _av_owner in {i["slot"] for i in fu.plan_items(prompt) if not i.get("done")}, (
+        "the avatars area routes to an item that is already DONE, so new rows there would ride a closed "
+        "item - which is what the handing mechanism exists to prevent", _av_owner)
     # `handed_from` is a property of the ROUTE, not of route_row's {slot, by} answer - asserted
     # where it lives. Verified against the register: the avatars route carries handed_from P2.3.
     _av = [rt for rt in routes if rt.get("files") == ["agentic_core/avatars/"]]
@@ -41984,3 +41998,220 @@ def test_w594_the_owners_rulings_of_2026_10_05b_hold_in_code_and_in_canon(client
         assert _ruled not in _still, (
             "the list still asks the Owner for a ruling they have given - which is how a ruling gets "
             "quietly undone", _ruled)
+
+
+def test_w595_p38_a_lifecycle_field_holds_the_state_it_is_in(client):
+    """P3.8 clause (2) — the §4.5 shape, driven across the whole progression.
+
+    The clause requires an INTERMEDIATE state to be observable, not merely a final one: a field that only
+    ever holds its last value passes a single-point check taken at the end. Measured before this round,
+    all 219 entities held `stage: "commercialise"` — 218 from a genesis literal, one from the spawn path —
+    and no code advanced it, so the field could only ever report the end.
+
+    Driven here on `_derived_stage`, which computes the furthest §4 section composed WITH NO GAP, and on
+    the establishment path, which must not write a final literal at birth.
+    """
+    from agentic_core.api.vsb import _derived_stage as _ds595
+
+    _ORDER = ("concept", "design", "operations", "commercialisation")
+
+    def _state(composed):
+        """A body map in which `composed` are done and the rest were never provided."""
+        return {"body_pending": {k: False for k in _ORDER},
+                "body_absent": {k: k not in composed for k in _ORDER}}
+
+    # ── every intermediate state is observable, in order ────────────────────────────────────────
+    _seen595 = []
+    for _n in range(len(_ORDER) + 1):
+        _stage, _basis = _ds595(_state(_ORDER[:_n]))
+        _seen595.append(_stage)
+    assert _seen595[0] is None, (
+        "an entity that has composed nothing reports a stage, so the field is not derived from state",
+        _seen595)
+    assert _seen595[1:] == list(_ORDER), (
+        "the lifecycle field does not move through its INTERMEDIATE values as sections are composed - a "
+        "field that only ever holds its final value is the §4.5 shape this clause exists to replace",
+        _seen595)
+
+    # ── and a GAP does not let a later section stand in for an earlier one ─────────────────────
+    _gapped = {"body_pending": {k: False for k in _ORDER},
+               "body_absent": {"concept": False, "design": True,
+                               "operations": False, "commercialisation": False}}
+    _gs, _gb = _ds595(_gapped)
+    assert _gs == "concept", (
+        "a commercialisation composed while the design is missing carries the entity past the gap, which "
+        "reports a position it has not reached", _gs, _gb)
+    assert "was never provided" in _gb and "out of order" in _gb, (
+        "the basis does not say WHY the stage stopped, nor that later sections were composed out of "
+        "order - a silent stop reads as the end of the lifecycle", _gb)
+
+    # ── NO STORED FIELD HOLDS THE LIFECYCLE STATE — asserted on the STORE ─────────────────────
+    #  This leg first read `stage` off the entity's GET response, which has no such key: `.get("stage")`
+    #  returned None, `None != "commercialise"` was trivially true, and blind DB — writing the final
+    #  literal at birth again — went GREEN. Measured instead: the stored record carries NO `stage` at
+    #  all, which is how the §4.5 shape is actually fixed. There is no field that could hold only its
+    #  final value; the state is derived. `scope` IS "commercialise" and that is legitimate - it is the
+    #  ambition the founder asked for, which `_derived_stage`'s own docstring says is correctly the end
+    #  point on an entity that has reached nothing.
+    import json as _j595
+
+    from agentic_core.config import data_path as _dp595
+
+    _e595 = client.post("/api/v1/genesis/establish",
+                        json={"problem": "w595 lifecycle probe", "domain": "science",
+                              "concept": "a measured concept for the lifecycle probe",
+                              "name": "W595 Lifecycle Probe"}).json()
+    _vid595 = _e595["vsb_id"]
+    _stored595 = _j595.loads((_dp595("vsb_entities") / f"{_vid595}.json").read_text(encoding="utf-8"))
+    #  THE STORED STAGE IS THE DERIVED ONE, not a constant. Measured: the record DOES carry `stage`, and
+    #  for an entity that has composed only a concept it reads "concept" - which is the §4.5 fix working,
+    #  not the defect. So the property is not "no stored stage" (an earlier draft of this leg asserted
+    #  that and went red on correct code); it is that the stored value EQUALS what the derivation computes
+    #  from the same record, and is therefore not the final value on a partial entity.
+    _stored_stage = _stored595.get("stage")
+    assert _stored_stage not in ("commercialise", "commercialisation"), (
+        "a freshly-established entity STORES the FINAL lifecycle value, which is the defect measured "
+        "across all 219 entities - 218 from a genesis literal, one from the spawn path, with no code "
+        "advancing it", _stored_stage)
+    assert _stored595.get("scope"), (
+        "the ambition the founder asked for is not recorded at all, so nothing distinguishes what an "
+        "entity is AIMING at from what it has REACHED - collapsing those two is the §4.5 shape")
+    #  and the derived stage agrees with what this entity has actually composed
+    _dstage, _dbasis = _ds595(_stored595)
+    assert _dstage != "commercialisation", (
+        "a freshly-established entity derives the FINAL stage, so the derivation is not reading its "
+        "composed sections", _dstage, _dbasis[:160])
+    assert _stored_stage == _dstage, (
+        "the stage STORED on the record disagrees with what the derivation computes from that same "
+        "record, so one of the two is a value nothing recomputed - which is how a lifecycle field comes "
+        "to hold a constant", _stored_stage, _dstage)
+    assert _dbasis, "the derived stage carries no basis, so a reader cannot check it"
+
+
+def test_w595_p36_language_depth_reaches_the_surfaces_and_labels_what_it_cannot_deliver():
+    """P3.6 — §9 depth: useT across the named surfaces, the AI language honoured or LABELLED, and the
+    interface list computed from the dictionaries that exist.
+
+    Measured before this round: useT reached the Sidebar, DashboardNew, DomainsHub and ThemeContext and
+    NOT DomainTool, Settings or the avatar; nothing anywhere read a language for AI output, so a user
+    whose preference was Urdu got English with nothing saying so ("the defect is silent English"); and
+    `LANGUAGES` was a hard-coded twelve while five dictionaries existed, so seven options changed nothing
+    but the stored preference.
+    """
+    import pathlib as _pl36
+    import re as _re36
+
+    _root36 = _pl36.Path(__file__).resolve().parents[1]
+    _src = _root36 / "apps/workstation-superapp/src"
+    _i18n = (_src / "lib/i18n.tsx").read_text(encoding="utf-8")
+
+    # ── (1) THE NAMED SURFACES READ A SPECIFIC KEY, AND THE KEY EXISTS IN EVERY DICTIONARY ──────
+    #  No JSX renderer exists in this suite, so the strongest available assertion ties a key to a
+    #  surface AND to all five dictionaries: a key only in English would make the usage a no-op in the
+    #  four translated languages, which is "reading the translation" in name only.
+    _dict_count = len(_re36.findall(r"^const (?:en|ar|fr|es|ur): Dict = \{", _i18n, _re36.M))
+    assert _dict_count >= 5, ("the dictionaries this file is supposed to hold are not there, so every "
+                              "translation leg below would be vacuous", _dict_count)
+    _surfaces36 = {
+        "pages/Settings.tsx": "settings.title",
+        "components/DomainTool.tsx": "tool.result",
+        "components/avatar/ConversationPanel.tsx": "avatar.attachImage",
+        "pages/domains/DomainsHub.tsx": None,       # a hub — already translated; key not pinned
+    }
+    for _rel, _key in _surfaces36.items():
+        _text = (_src / _rel).read_text(encoding="utf-8")
+        assert "useT" in _text, (
+            f"{_rel} does not read the translation at all, so §9 depth stops before it", _rel)
+        assert _re36.search(r"const \{\s*t\s*[,}]", _text), (
+            f"{_rel} imports useT without taking `t` from it, so nothing is translated there", _rel)
+        if _key:
+            assert f"'{_key}'" in _text, (
+                f"{_rel} no longer reads the key it was wired to, so the surface's translation is gone",
+                _rel, _key)
+            #  the key must be translated in EVERY dictionary, or the usage is a no-op in that language
+            assert _i18n.count(f"'{_key}'") >= _dict_count, (
+                f"the key {_key!r} is missing from at least one dictionary, so {_rel} falls back to "
+                f"English in a language that HAS a dictionary - a translation that is not there",
+                _i18n.count(f"'{_key}'"), _dict_count)
+
+    # ── (2) AN AI OUTPUT IS HONOURED, OR LABELLED AS NOT DELIVERED ─────────────────────────────
+    from agentic_core.ai.gateway import language_verdict as _lv36
+    _none = _lv36(None, "native", True)
+    assert _none["language_requested"] is None and _none["language_delivered"] is None, (
+        "a claim about the output's language is made when no language was requested", _none)
+    _en = _lv36("en-US", "native", True)
+    assert _en["language_delivered"] == "en", ("English on the floor is not reported as delivered", _en)
+    _ur = _lv36("ur-PK", "native", True)
+    assert _ur["language_delivered"] == "en" and "NOT DELIVERED IN UR" in _ur["language_basis"], (
+        "a language the owned floor cannot serve is answered in English with NO label, which is the "
+        "silent-English defect this clause exists to end", _ur)
+    #  and the third state: a MODEL served, so the language is NOT VERIFIED rather than assumed honoured
+    _model = _lv36("ur-PK", "ollama:llama3.2", False)
+    assert _model["language_delivered"] is None and "NOT VERIFIED" in _model["language_basis"], (
+        "a model's output is reported as DELIVERED in the requested language, which is a claim about an "
+        "outcome derived from the ask - nobody inspected the language of that text", _model)
+
+    # ── (2b) AND A READER SEES IT. A field in the API is not a label ───────────────────────────
+    #  The register refused a row that would have parked this: "rides on P3.6, already DONE - that round
+    #  closed without doing it". It was right, and FU-420's lesson is the same: provenance must travel
+    #  WITH the output to the reader. Driven end to end through a REAL domain tool, with the language
+    #  arriving as Accept-Language - a body field would have to be declared on each of the six tools'
+    #  Pydantic models or it is silently dropped.
+    from fastapi.testclient import TestClient as _TC36
+    from agentic_core.app_mvp import app as _app36
+    _r36 = _TC36(_app36).post("/api/v1/care/care-plan",
+                              json={"client_name": "W595", "needs": "mobility support"},
+                              headers={"Accept-Language": "ur-PK"})
+    assert _r36.status_code == 200, (_r36.status_code, _r36.text[:160])
+    _prov36 = (_r36.json() or {}).get("ai_provenance") or {}
+    assert _prov36.get("language_requested") == "ur", (
+        "the request's language does not reach the seam every domain tool calls, so no output can be "
+        "labelled with it", _prov36)
+    assert _prov36.get("language_delivered") == "en" and "NOT DELIVERED IN UR" in (
+        _prov36.get("language_basis") or ""), (
+        "a domain tool answers in English with no label on the response a reader receives - silent "
+        "English, which is the defect this clause names", _prov36)
+    #  and the shared component every domain tool renders through SHOWS it
+    _dt36 = (_src / "components/DomainTool.tsx").read_text(encoding="utf-8")
+    assert "Accept-Language" in _dt36, (
+        "the page does not send the reader's language, so nothing downstream can label the answer")
+    assert 'data-testid="tool-language-note"' in _dt36, (
+        "the language basis is not RENDERED anywhere, so it is an API field and not a label - the "
+        "badge-in-the-DOM class (FU-420)")
+    assert "language_delivered !== (effectiveProv as any)?.language_requested" in _dt36, (
+        "the note is rendered unconditionally or not at all; it must appear exactly when the delivered "
+        "language differs from the requested one, or it becomes noise on every English answer")
+
+    # ── (3) THE INTERFACE LIST IS COMPUTED, NOT HARD-CODED ─────────────────────────────────────
+    _prefs = (_src / "lib/userPrefs.ts").read_text(encoding="utf-8")
+    _langs = _re36.findall(r"\{ code: '([a-z]{2}-[A-Z]{2})'", _prefs)
+    assert len(_langs) >= 12, ("the DICTATION list was trimmed, which the Owner's ruling of 2026-10-05 "
+                               "kept wider on purpose - trimming it removes voice dictation in those "
+                               "languages", len(_langs))
+    assert "interfaceLanguages" in _i18n, "the interface list is not derived anywhere"
+    _settings = (_src / "pages/Settings.tsx").read_text(encoding="utf-8")
+    #  SCOPED TO THE INTERFACE SELECT. A blind that pointed the picker back at the hard-coded list left
+    #  this GREEN, because `interfaceLanguages(LANGUAGES)` also appears in the dictation block's
+    #  explanatory paragraph - a needle appearing twice cannot be checked by a presence test. The options
+    #  of the interface select are cut out and read on their own.
+    _iface_sel = _settings.split('id="pref-lang"', 1)[1].split("</select>", 1)[0]
+    assert "interfaceLanguages(" in _iface_sel, (
+        "the Settings picker still offers the hard-coded list, so it offers languages this interface "
+        "cannot render - 'a hard-coded list of twelve fails this whatever it contains'", _iface_sel[-220:])
+    #  EXACT, INCLUDING THE CLOSING QUOTE. A blind that renamed the id to `pref-dictation-lang-removed`
+    #  left this GREEN too: a substring check is satisfied by any longer string containing it.
+    assert 'id="pref-dictation-lang"' in _settings, (
+        "there is no separate DICTATION control, so trimming the interface list silently narrowed "
+        "dictation - the consequence the Owner's ruling of 2026-10-05 was about")
+    _dict_sel = _settings.split('id="pref-dictation-lang"', 1)[1].split("</select>", 1)[0]
+    assert "LANGUAGES.map" in _dict_sel and "interfaceLanguages" not in _dict_sel, (
+        "the DICTATION select was narrowed to the interface list, which removes voice dictation in the "
+        "languages the Owner's ruling kept it for", _dict_sel[-200:])
+    #  every dictation reader honours the separate preference - three readers, and a new field honoured
+    #  in one of them leaves two surfaces silently on the old one
+    for _rel in ("components/DomainTool.tsx", "hooks/useAvatarSession.ts",
+                 "pages/synthesis/GenesisJourney.tsx"):
+        _t = (_src / _rel).read_text(encoding="utf-8")
+        assert "dictationLanguage" in _t, (
+            f"{_rel} still takes the INTERFACE language for dictation, so the separate control does not "
+            f"reach it", _rel)

@@ -6,10 +6,32 @@ Forge/Genesis. In-house-first; never a dependency on an external provider.
 """
 from __future__ import annotations
 
+import contextvars
 import time
 from typing import Any, Dict, Tuple
 
 from agentic_core.ai.gateway import gateway
+
+
+#  P3.6 clause (2) — THE REQUEST'S LANGUAGE, CAPTURED ONCE. DomainTool sends `Accept-Language`; the
+#  middleware in app_mvp puts it here; `ai_text` reads it below. A ContextVar is used rather than a body
+#  field because every domain route declares its own Pydantic model and an undeclared field is silently
+#  dropped - so a body field would mean editing six models to carry one string, while this needs none.
+#  ContextVars propagate into the request's own task, so this is per-request and not shared.
+_REQUEST_LANGUAGE: "contextvars.ContextVar[str]" = contextvars.ContextVar("ws_request_language", default="")
+
+
+def set_request_language(value: str) -> None:
+    """Called by the HTTP middleware, once per request."""
+    _REQUEST_LANGUAGE.set(str(value or "").strip())
+
+
+def request_language() -> str:
+    """The language this request asked for, or "" when it asked for none."""
+    try:
+        return _REQUEST_LANGUAGE.get()
+    except LookupError:          # pragma: no cover - a default is declared, so this cannot normally fire
+        return ""
 
 
 async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
@@ -36,7 +58,11 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         prompt = f"{realm_directive(normalise_realm(realm))}\n\n{prompt}"
     t0 = time.monotonic()
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
-                                   owner_id=owner_id, augment=augment)
+                                   owner_id=owner_id, augment=augment,
+                                   #  P3.6 clause (2) — the request's own language, so the output can be
+                                   #  labelled when it is not delivered in it ("the defect is silent
+                                   #  English"). One seam, so all six domain tools are covered at once.
+                                   language=request_language())
     output = res.get("output", "")
     served_by = res.get("served_by", "native")
     is_external = bool(res.get("is_external"))
@@ -51,7 +77,12 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     except Exception:
         pass
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": served_by,
-                                  "is_external": is_external}
+                                  "is_external": is_external,
+                                  #  P3.6 clause (2) — the verdict travels WITH the provenance the page
+                                  #  already renders, so a reader sees it rather than it sitting in the API
+                                  "language_requested": res.get("language_requested"),
+                                  "language_delivered": res.get("language_delivered"),
+                                  "language_basis": res.get("language_basis")}
     # §10×§11 (W308) — Offering-1 GATED: every domain-tool / refine response passes the SAME living
     # QMS + compliance gate as the cascade and deliverables (assure_delivery). FLAG, never block:
     # the user always gets their output; the quality/compliance posture rides on the provenance the

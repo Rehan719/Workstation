@@ -281,7 +281,8 @@ export function useAvatarSession() {
     if (SR) {
       try {
         const rec = new SR();
-        rec.lang = getPrefs().language || 'en-US';
+        //  P3.6 clause (3) — dictation has its own preference, wider than the interface list
+        rec.lang = getPrefs().dictationLanguage || getPrefs().language || 'en-US';
         rec.interimResults = false;
         rec.maxAlternatives = 1;
         rec.onresult = (ev: any) => {

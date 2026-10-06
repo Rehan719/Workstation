@@ -133,6 +133,16 @@ async def _unhandled_failure_is_recorded(request, exc):
 @app.middleware("http")
 async def _horizon_observe(request, call_next):
     import time as _t
+    #  P3.6 clause (2) — THE REQUEST'S LANGUAGE, CAPTURED HERE because this is the only layer that sees
+    #  the headers for every route without each one declaring a field. DomainTool sends Accept-Language
+    #  from the reader's saved preference; `ai_text` reads it at the single seam all six domain tools
+    #  call, and the output carries a label when it is not delivered in that language. A body field would
+    #  have meant adding `language` to six Pydantic models, since an undeclared field is dropped.
+    try:
+        from agentic_core.api._ai_provenance import set_request_language
+        set_request_language((request.headers.get("accept-language") or "").split(",")[0])
+    except Exception:          # noqa: BLE001 - a missing header must never fail a request
+        pass
     _status, _raised = None, None
     # W558 (P2.15) — the clock is here because this is the only layer that brackets the handler. A
     # monotonic clock, not a wall clock, so a system time change cannot produce a negative duration.

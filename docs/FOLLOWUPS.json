@@ -7175,11 +7175,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.6",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. ai/user_context.py is how a person's own recorded context reaches the model, which is P3.6's subject - its clause (2) is an AI output honouring what a user asked for. An unreadable profile yielding the same preamble as a person who never wrote one is that path's three-state defect, and FU-411 already rides P3.6 on the same user-preference path."
+      "slot_source": "Re-slotted when P3.6 closed in W595. Its own area has NO OPEN OWNER - its files are agentic_core/ai/user_context.py and agentic_core/api/user_workspace.py, and P3.6's handed route covered agentic_core/avatars/, which is not where this lives. It rides P2.20 because it is one of the CLASSES P2.20 exists to close, not because P2.20 was the next open item: an unreadable stored profile yielding the same empty preamble as a person who never wrote one is clause (e) - a value true of one state presented as true of another - and the three-state rule this plan applies everywhere else says unreadable, absent and empty are three different facts."
     },
     {
       "id": "FU-398",
@@ -7193,11 +7193,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.8",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. P3.8 is the item that carries Tier-1-shaped fixes, and a request model that silently discards a field a caller sent is exactly one: an instruction and a dropped instruction are indistinguishable, which is the same shape as P3.8's own clause (2), a lifecycle field that only ever holds its final value. The fit is by CLASS rather than by file, and that is stated here because no open item owns the API-contract area."
+      "slot_source": "Re-slotted when P3.8 closed in W595. Its area has no open owner either - its files are agentic_core/api/transformation_orchestration.py and agentic_core/api/change_control.py, and change_control.py's governance route was RETIRED with P2.18 in W588. It rides P2.20 as the same class: a request model that silently discards a field makes an instruction and a DROPPED instruction look identical, which is a truth defect on a reached surface. W595 HIT THIS ROW'S SUBJECT and routed around it rather than fixing the class - P3.6 clause (2) needed the reader's language at the one seam all six domain tools call, and a language field in the body would have been silently dropped by every domain model, so the round used the Accept-Language header and a per-request context variable instead. That is a workaround for one field; any caller sending any undeclared field still cannot tell it was discarded."
     },
     {
       "id": "FU-399",
@@ -7452,12 +7452,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W595",
       "note": "",
       "slot_source": "It IS P3.6 clause (3) plus the consequence the clause does not discuss, so it rides the item whose bar it belongs to rather than waiting for an item of its own",
       "tier": 2,
-      "reach": "core"
+      "reach": "core",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DONE as part of P3.6 clause (3), on the Owner's ruling of 2026-10-05. This row recorded the consequence the clause did not discuss: prefs.language drove BOTH the interface translation and the browser Web Speech API, so trimming the twelve to the five with dictionaries would have removed voice dictation in the other seven. W595 built the approved shape - the INTERFACE list is now derived from the dictionaries that exist (i18n.interfaceLanguages, so adding a dictionary adds an option with nothing else to remember), and DICTATION became its own wider control with its own stored preference (prefs.dictationLanguage, the full twelve, its own select with its own id). Nothing was deleted. ALL THREE dictation readers honour the new preference with a fallback chain of dictationLanguage then language then en-US, so a user who never opens the new control keeps exactly what they had - DomainTool, useAvatarSession and GenesisJourney, because a new field honoured in one reader leaves two surfaces silently on the old one. Guard: test_w595_p36_language_depth_reaches_the_surfaces_and_labels_what_it_cannot_deliver, whose dictation legs were SCOPED after two blinds went green on them - a presence check for interfaceLanguages(LANGUAGES) was satisfied by the dictation block's own explanatory paragraph, and a check for the control's id was satisfied by a renamed id that contained it as a substring."
     },
     {
       "id": "FU-412",
@@ -8314,7 +8317,7 @@
       "handed_from": "P3.17"
     },
     {
-      "slot": "P3.6",
+      "slot": "P3.21",
       "files": [
         "agentic_core/avatars/"
       ],
@@ -8322,7 +8325,7 @@
         "avatar",
         "profile applied"
       ],
-      "note": "handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
+      "note": "handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
       "handed_from": "P2.3"
     },
     {

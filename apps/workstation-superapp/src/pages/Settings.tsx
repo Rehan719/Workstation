@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
 import { Check, Trash2, User, Settings as SettingsIcon } from 'lucide-react';
+import { interfaceLanguages, useT } from '../lib/i18n';
 import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
 import { coverageFor, applyDocumentDirection } from '../lib/i18n';
 import { clearWorkspaceEverywhere } from '../lib/outputHistory';
@@ -23,6 +24,8 @@ const dictationAvailable = typeof window !== 'undefined'
   && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
 export const Settings: React.FC = () => {
+  //  P3.6 clause (1) — this surface reads the translation; the fallback is the English it used to hardcode
+  const { t } = useT();
   const [prefs, setLocal] = useState<UserPrefs>(() => getPrefs());
   const [saved, setSaved] = useState(false);
 
@@ -69,7 +72,7 @@ export const Settings: React.FC = () => {
     <div className="space-y-8 pb-16 max-w-2xl">
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aura mb-2 flex items-center gap-2"><SettingsIcon size={12} /> Workstation IDBO</p>
-        <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">System Settings</h1>
+        <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">{t('settings.title', 'System Settings')}</h1>
         <p className="text-slate-500 font-bold mt-2 leading-relaxed">
           Personalise your experience. Signed in, these preferences are saved to your account and follow you
           across devices; in single-user mode they are saved in this browser.
@@ -111,7 +114,10 @@ export const Settings: React.FC = () => {
           <label htmlFor="pref-lang" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Language</label>
           <select id="pref-lang" value={prefs.language ?? 'en-US'} onChange={e => update({ language: e.target.value })}
             className="block w-full @[440px]:w-72 mt-1.5 text-xs font-black bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2.5">
-            {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+            {/* P3.6 clause (3) — DERIVED from the dictionaries that exist, not a hard-coded twelve.
+                Seven of the twelve had no dictionary, so choosing them changed nothing but the stored
+                preference. Add a dictionary and the option appears here with nothing else to remember. */}
+            {interfaceLanguages(LANGUAGES).map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
           {/* §14 (W370) — state coverage from the REAL dictionaries, not a blanket claim. The old
               text said interface translation "depends on the external AI accelerant", which was
@@ -150,6 +156,26 @@ export const Settings: React.FC = () => {
             })()}
             Translation covers interface chrome, not every screen, and AI-generated content is still produced
             in English — the in-house engine reasons in English.
+          </p>
+        </div>
+
+        {/* P3.6 clause (3) + OWNER RULING 2026-10-05 — DICTATION, AS ITS OWN CONTROL. The interface list
+            above is trimmed to the languages this platform can actually translate; dictation is a
+            different capability with a different limit (the browser's own speech recognition), so it
+            keeps the wider list. Nothing was taken away by trimming the interface. */}
+        <div>
+          <label htmlFor="pref-dictation-lang" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Dictation language</label>
+          <select id="pref-dictation-lang" value={prefs.dictationLanguage ?? prefs.language ?? 'en-US'}
+            onChange={e => update({ dictationLanguage: e.target.value })}
+            className="block w-full @[440px]:w-72 mt-1.5 text-xs font-black bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2.5">
+            {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
+          <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed">
+            Wider than the interface list on purpose: this platform translates its own interface into
+            {' '}{interfaceLanguages(LANGUAGES).length} language(s), and dictation is limited by your
+            browser's speech recognition rather than by us. Whether recognition exists at all, and which
+            languages it covers, is your browser and operating system's business — we set the language on
+            it and nothing more.
           </p>
         </div>
 

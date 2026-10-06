@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { provenanceBadge, qmsChip, provenanceLine } from '../lib/api';
+import { useT } from '../lib/i18n';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
@@ -83,6 +84,8 @@ const withDisclosures = (body: string, data: any): string =>
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 
 export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
+  //  P3.6 clause (1) — this surface READS the translation; the fallback is the English it hardcoded
+  const { t } = useT();
   const navigate = useNavigate();
   const [form, setForm] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map(f => [f.name, f.default ?? ''])));
@@ -130,7 +133,12 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           : f.type === 'claims' ? parseClaims(form[f.name])
           : form[f.name];
       }
-      const r = await axios.post(endpoint, body);
+      //  P3.6 clause (2) — the reader's own language, sent the standard way. A body field would
+      //  have to be declared on each of the six tools' Pydantic models or it is silently dropped;
+      //  a header needs none, and the middleware captures it once for every route.
+      const r = await axios.post(endpoint, body, {
+        headers: { 'Accept-Language': getPrefs().language || 'en-US' },
+      });
       setResult(r.data);
       // E3 — save to "My Work" history so the output is revisitable (not lost on navigate).
       try {
@@ -253,7 +261,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           <AttachDocument
             hint="your own data — research, reviews, notes (read in-browser, stays with this request)"
             onText={block => setForm(prev => ({ ...prev, [primary]: appendDocBlock(prev[primary], block) }))} />
-          <DictateButton lang={getPrefs().language || 'en-US'} onTranscript={text => setForm(prev => ({ ...prev, [primary]: (prev[primary] ? prev[primary] + ' ' : '') + text }))} />
+          <DictateButton lang={getPrefs().dictationLanguage || getPrefs().language || 'en-US'} onTranscript={text => setForm(prev => ({ ...prev, [primary]: (prev[primary] ? prev[primary] + ' ' : '') + text }))} />
         </div>
       )}
 
@@ -265,7 +273,18 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       {result && (
         <Card className="p-6 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h4 className="text-sm font-black text-white uppercase tracking-wide">Result</h4>
+            <h4 className="text-sm font-black text-white uppercase tracking-wide">{t('tool.result', 'Result')}</h4>
+            {/* P3.6 clause (2) — THE LABEL A READER SEES. The item names the defect as "silent
+                English": an answer in English to a request made in another language, with nothing
+                saying so. A field in the API is not a label, which is why this is rendered here and
+                not left in the provenance payload. */}
+            {(effectiveProv as any)?.language_basis
+              && (effectiveProv as any)?.language_delivered !== (effectiveProv as any)?.language_requested && (
+              <p data-testid="tool-language-note" title={(effectiveProv as any).language_basis}
+                 className="basis-full text-[10px] font-bold text-amber-400 leading-relaxed">
+                {(effectiveProv as any).language_basis}
+              </p>
+            )}
             <div className="flex items-center gap-2">
               {refineCount > 0 && (
                 <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-aura/15 text-aura">refined ×{refineCount}</span>

@@ -17,6 +17,11 @@ export const isRTL = (code?: string) => RTL.has(baseLang(code));
 
 const en: Dict = {
   'home.eyebrow': 'Workstation IDBO · Command Center',
+  //  P3.6 clause (1) — one key per surface the item names, so DomainTool, Settings and the avatar
+  //  genuinely READ a translation rather than the helper merely existing.
+  'settings.title': 'System Settings',
+  'tool.result': 'Result',
+  'avatar.attachImage': 'Attach image',
   'home.title.concept': 'Concept',
   'home.title.commercialisation': 'Commercialisation',
   'home.welcome': 'Welcome',
@@ -75,6 +80,9 @@ const ar: Dict = {
   'nav.admin': 'التحكم بالكيان',
 
   'home.eyebrow': 'وركستيشن IDBO · مركز القيادة',
+  'settings.title': 'إعدادات النظام',
+  'tool.result': 'النتيجة',
+  'avatar.attachImage': 'إرفاق صورة',
   'home.title.concept': 'الفكرة',
   'home.title.commercialisation': 'التسويق التجاري',
   'home.welcome': 'مرحباً',
@@ -145,6 +153,9 @@ const fr: Dict = {
   'nav.admin': 'Contrôle de l\'entité',
 
   'home.eyebrow': 'Workstation IDBO · Centre de Commande',
+  'settings.title': 'Paramètres système',
+  'tool.result': 'Résultat',
+  'avatar.attachImage': 'Joindre une image',
   'home.title.concept': 'Concept',
   'home.title.commercialisation': 'Commercialisation',
   'home.welcome': 'Bienvenue',
@@ -218,6 +229,9 @@ const es: Dict = {
   'nav.admin': 'Control de entidad',
 
   'home.eyebrow': 'Workstation IDBO · Centro de Mando',
+  'settings.title': 'Ajustes del sistema',
+  'tool.result': 'Resultado',
+  'avatar.attachImage': 'Adjuntar una imagen',
   'home.title.concept': 'Concepto',
   'home.title.commercialisation': 'Comercialización',
   'home.welcome': 'Bienvenido',
@@ -288,6 +302,9 @@ const ur: Dict = {
   'nav.admin': 'اینٹیٹی کنٹرول',
 
   'home.eyebrow': 'ورک سٹیشن IDBO · کمانڈ سینٹر',
+  'settings.title': 'سسٹم کی ترتیبات',
+  'tool.result': 'نتیجہ',
+  'avatar.attachImage': 'تصویر منسلک کریں',
   'home.title.concept': 'تصور',
   'home.title.commercialisation': 'تجارتی کاری',
   'home.welcome': 'خوش آمدید',
@@ -344,6 +361,28 @@ export function applyDocumentDirection(lang?: string): void {
 }
 
 /** What is ACTUALLY translated for a language, so the UI can state coverage without overclaiming. */
+/** P3.6 clause (3) — the codes this interface ACTUALLY has a dictionary for, derived from `DICTS`.
+ *
+ * The language picker offered twelve languages and five dictionaries exist, so seven of them silently
+ * changed nothing but the stored preference. A hard-coded list "fails this whatever it contains", so the
+ * list is computed: add a dictionary and the option appears, with nothing else to remember.
+ *
+ * `en` is included because it is the source language — `coverageFor` reports `hasDict: false` for it
+ * deliberately (there is no en dictionary to look a key up in; the key IS the English), and an interface
+ * picker that omitted English would be absurd.
+ */
+export function interfaceLanguageCodes(): string[] {
+  return Object.keys(DICTS);
+}
+
+/** Those of `list` the interface can actually render, matched on the BASE code so a BCP-47 tag
+ *  (`ar-SA`) resolves against a dictionary keyed `ar`. Returns the same objects, never copies with
+ *  rewritten labels. */
+export function interfaceLanguages<T extends { code: string }>(list: T[]): T[] {
+  const have = new Set(interfaceLanguageCodes());
+  return list.filter((l) => have.has(baseLang(l.code)));
+}
+
 export function coverageFor(lang?: string): { hasDict: boolean; keys: number; rtl: boolean } {
   const base = baseLang(lang ?? getPrefs().language);
   const dict = DICTS[base];

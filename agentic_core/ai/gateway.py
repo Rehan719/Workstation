@@ -86,6 +86,42 @@ def _record_checkpoint(agent: str, pre: dict, post: dict, screened: bool) -> dic
             chk["gate_unavailable"] = src[key]
     return chk
 
+def language_verdict(requested: str | None, served_by: str, is_floor: bool) -> dict:
+    """P3.6 clause (2) — was the output delivered in the requested language, or is that NOT KNOWN?
+
+    Three states, kept apart because they are three different facts and the defect this replaces was
+    SILENT ENGLISH — an English answer to a request made in another language, with nothing saying so.
+
+      · nothing requested            → no claim is made at all
+      · the deterministic floor served → "en", by construction: it composes English prose from the
+        request's labelled fields, so this is a fact and not an inference
+      · a model served               → NOT VERIFIED. This platform does not inspect the language of a
+        model's output. Reporting the REQUESTED language as delivered would be a claim about an outcome
+        derived from the ask, which is the shape this plan exists to remove.
+    """
+    base = (requested or "").split("-")[0].lower()
+    if not base:
+        return {"language_requested": None, "language_delivered": None,
+                "language_basis": "no language was requested, so no claim is made about the output's"
+                                  " language"}
+    if is_floor:
+        delivered = "en"
+        if base == "en":
+            note = ("the deterministic native floor composed this, and it composes in English - which is"
+                    " what was asked for")
+        else:
+            note = (f"NOT DELIVERED IN {base.upper()}: the deterministic native floor composed this and it"
+                    f" composes in English only. The request's language was recorded and not honoured -"
+                    f" an owned model that writes {base.upper()} is not installed, and this platform does"
+                    f" not translate its own output")
+        return {"language_requested": base, "language_delivered": delivered, "language_basis": note}
+    return {"language_requested": base, "language_delivered": None,
+            "language_basis": (f"{served_by} served this and the platform does NOT inspect the language of"
+                               f" a model's output, so whether it is in {base.upper()} is NOT VERIFIED -"
+                               f" reporting the requested language as delivered would be a claim nobody"
+                               f" measured")}
+
+
 class _RateLimiter:
     """Token-bucket rate limiter — prevents runaway API spend."""
 
@@ -249,7 +285,8 @@ class ModelGateway:
     async def query_meta(self, prompt: str, agent: str = "assistant",
                          timeout: float | None = 90.0,
                          owner_id: str | None = None, augment: bool = _RECALL_OFF,
-                         governance: dict | None = None) -> dict:
+                         governance: dict | None = None,
+                         language: str | None = None) -> dict:
         """Like `query()` but returns PROVENANCE — {output, served_by, is_external} — so callers
         can surface which OWNED resource served the completion (Genesis/Forge/Transformation use
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
@@ -276,6 +313,13 @@ class ModelGateway:
             _halt = _record_halt(agent, _pre)
             return {"output": f"[CONSTITUTIONAL REFUSAL] {_pre.get('reason')}",
                     "served_by": "constitutional_policy_gate", "is_external": False,
+                    #  shape-complete with the success return: a caller reading the language verdict on a
+                    #  refusal gets one rather than a KeyError, and a refusal is not in any language
+                    **language_verdict(language, "constitutional_policy_gate", False),
+                    #  and the recall keys, for the same reason: a refusal entered no recall pool, and
+                    #  saying so is not the same as the key being absent
+                    "recall_stored": False,
+                    "recall_not_stored_because": ("the request was refused by the constitutional gate, so there was no answer to store"),
                     "recall_stored": False,
                     "recall_not_stored_because": "the request was refused before any model ran, so there "
                                                  "is no completion to recall",
@@ -348,13 +392,20 @@ class ModelGateway:
         # W428 — DISCLOSED, not silent. A profile that shapes output without the caller being able
         # to tell is the same opacity §10 spent this cycle removing from the quality record.
         return {"output": response, "served_by": served_by, "is_external": is_external,
+                #  P3.6 clause (2) — the language verdict travels WITH the output, because a disclosure on
+                #  the settings page is not a label on the text
+                **language_verdict(language, served_by, _floor),
                 # W505 (P2.1) — said, not silent: a caller can tell whether this answer entered the
                 # recall pool, and why it did not.
                 "recall_stored": _stored,
-                **({} if _stored else {"recall_not_stored_because":
-                                       "the deterministic floor served this, so its structured prose was "
-                                       "withheld from the recall pool - it is the engine's own framing, "
-                                       "not prior knowledge. Your own message was kept."}),
+                #  SHAPE-COMPLETE, not conditional. This was spread in only when the answer was NOT
+                #  stored, so a caller indexing it after a stored answer got a KeyError. None means it
+                #  WAS stored, which is a different fact from the key being absent.
+                "recall_not_stored_because": (
+                    None if _stored else
+                    "the deterministic floor served this, so its structured prose was withheld from the "
+                    "recall pool - it is the engine's own framing, not prior knowledge. Your own "
+                    "message was kept."),
                 "profile_applied": bool(_preamble),
                 # W505 (P2.6) — every gateway response carries its governance checkpoint: what the gate
                 # decided before and after, and whether the constitutional ledger actually recorded it.

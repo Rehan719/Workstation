@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { provenanceBadge } from '../../lib/api';
+import { useT } from '../../lib/i18n';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, Compass, ImagePlus, Loader2, Trash2, Volume2, VolumeX } from 'lucide-react';
 import type { UseAvatarSessionReturn } from '../../hooks/useAvatarSession';
@@ -42,6 +43,9 @@ function renderRichText(text: string): React.ReactNode {
  * shared `avatar` session as the VoiceVisualizer and AvatarWidget.
  */
 export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) => {
+  //  P3.6 clause (1) — the avatar reads the translation. An aria-label is the string where this
+  //  matters most: a screen-reader user in Arabic or Urdu also gets an RTL layout.
+  const { t } = useT();
   const {
     messages, input, setInput, sending, notice, context,
     sendMessage, clearConversation, pendingImage, setPendingImage, handleImageFile,
@@ -176,8 +180,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
 
       <div className="shrink-0 mt-2 flex items-end gap-2">
         <div className="flex-1 flex items-end gap-2 bg-slate-900/90 border rounded-3xl px-4 py-2.5 shadow-2xl backdrop-blur-md transition-all duration-200 border-slate-700/40 focus-within:border-aura/40 min-w-0">
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" aria-label="Attach image" onChange={handleImagePick} />
-          <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Attach image" title="Attach image" className="shrink-0 p-1.5 rounded-xl text-slate-500 hover:text-aura transition-colors">
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" aria-label={t('avatar.attachImage', 'Attach image')} onChange={handleImagePick} />
+          <button type="button" onClick={() => fileInputRef.current?.click()} aria-label={t('avatar.attachImage', 'Attach image')} title="Attach image" className="shrink-0 p-1.5 rounded-xl text-slate-500 hover:text-aura transition-colors">
             <ImagePlus size={15} />
           </button>
           {/* W325 — the speak-replies capability was exported but reachable from NO component */}
