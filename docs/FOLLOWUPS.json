@@ -5236,11 +5236,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "it is the other half of FU-249, which W507 closed for the isolation and the measurement; this row carries the reliability that stops it being the default",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; the parallel stall is a property of the instrument that does the measuring.",
       "tier": 2
     },
     {
@@ -7211,11 +7211,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. P2.17 is THE ROUND'S OWN COST - the suite and the instruments a round depends on - and 81 guards that scan text instead of driving a rendered page is a weakness in those instruments. It does NOT block P2.17's bar, which closes only on FU-301's cause being established: an item closes on its ACCEPT clause and not on zero open rows."
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject."
     },
     {
       "id": "FU-400",
@@ -7247,11 +7247,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.21",
+      "slot": "P3.28",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "W588 (Owner-ruled 2026-10-05): placed by SUBJECT when P2.18 closed and no route claimed it. P3.21 is the verifier whose checks each return MET, UNMET or NOT ASSESSABLE with a basis and whose UNMET WITHHOLDS the output naming the check that failed. A declared coverage limit that reaches a backend reader and stops there is that same class one layer down: a limit nobody downstream can read cannot withhold anything."
+      "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing."
     },
     {
       "id": "FU-402",
@@ -7286,10 +7286,11 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P3.21",
+      "slot": "P3.28",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "",
+      "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing."
     },
     {
       "id": "FU-404",
@@ -7474,11 +7475,11 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P3.21",
+      "slot": "P3.28",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P3.21 now owns the avatars/core area (five routes handed to it when P3.12 and P3.14-P3.17 closed), and FU-403 - the condition this hold now names - already rides it. A hold and the work that releases it belong on the same item.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing.",
       "tier": 2,
       "reach": "secondary"
     },
@@ -7494,11 +7495,11 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.17 is THE ROUND'S OWN COST - the suite and the instruments a round depends on - and a test that moves the data root for every test after it in its worker is a defect in those instruments. It sits beside FU-301 and FU-399 for the same reason.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 2,
       "reach": "internal"
     },
@@ -7516,11 +7517,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the router REFUSED this row because the areas covering docs/ and the delivery tooling were retired in this same round, which is the consequence the Owner ruled on 2026-10-05: a row in an ownerless area names its own slot. P2.17 is named by SUBJECT, not convenience - it is the only open item about the round's own INSTRUMENTS being wrong rather than slow, and its own text records an instrument that was internally consistent and externally meaningless (a serial-suite constant used as a parallel floor). A pre-flight that cannot see a register reformat is the same shape. FU-413 sits here on the same basis.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 2
     },
     {
@@ -7534,11 +7535,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.17 OWNS this instrument by subject, not by convenience: its clause (c) names session_forecast.round_durations() as the computation that replaced the item's retyped figures, and this row is a defect in the shape that same instrument returns. The router refused because no open item carries a route for scripts/, which is the retired-area consequence the Owner ruled on 2026-10-05 - a row in an ownerless area names its own slot.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 2
     },
     {
@@ -7552,11 +7553,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.17 is THE ROUND'S OWN COST and this is a measured cost of a round - the feedback delay between a push and a verdict. Named explicitly because the router carries no route for .github/, an area no open item claims.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 3
     },
     {
@@ -7589,11 +7590,11 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.17 is the item about the round's own INSTRUMENTS being wrong rather than slow, and this is the milestone instrument failing to resolve. Named explicitly because no open item carries a route for scripts/workflows/, an area W588 retired - the consequence the Owner ruled on 2026-10-05.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 2
     },
     {
@@ -8049,11 +8050,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.17 is the item about the round's own INSTRUMENTS being wrong rather than slow, and this is the pre-flight leg added in W588 failing to name the guards it exists to name. FU-414, FU-415, FU-416 and FU-418 sit here on the same basis. Named explicitly because no open item carries a route for scripts/, an area W588 retired.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 2
     },
     {
@@ -8195,11 +8196,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "Rides P2.17 because FU-415 is the row that owns this class there - a function whose returns carry different key sets by path, so an unmeasurable or role-specific field reads as a missing one. Registered rather than fixed in W593: deciding what a role-specific payload should carry for the OTHER role is a design question, not a defect fix, and the round was already at its suite.",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 2
     },
     {
@@ -8236,11 +8237,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W598",
       "note": "",
       "slot_source": "An Owner decision: it is a question about what A.12.3 covers, and the stricter reading would stop five working surfaces returning anything. Not routed by subject because the cost falls on the Owner's product, not on a round.",
-      "tier": 3
+      "tier": 3,
+      "because": "refuted",
+      "because_means": "the row's premise was measured and did not hold; nothing needed building",
+      "close_note": "OWNER RULING 2026-10-06: the scholar-review gate does NOT extend to the five Religion RESEARCH tools. It covers the learner/curriculum path only. THE REASONING THE OWNER ACCEPTED: the five research tools (fatwa-research, hadith-study, quran-tafsir, halal-review, interfaith) already withhold on the deterministic floor, already carry the line that they are AI-assisted scholarly research only and NOT a fatwa and NOT a substitute for authenticated sources, and already refer the reader to a qualified Islamic scholar or mufti. A tool that says take this to a scholar performs a different act from one teaching a learner a curriculum, and R7's own words are about what a LEARNER sees before studying it. THE COST OF THE STRICTER READING WAS MEASURED rather than assumed: with an empty scholar roster the gate withholds everything, so wiring those five would stop all five returning any content at all until a reviewer is engaged - a real product consequence, which is why it was put to the Owner instead of decided by the author. IT STAYS CHEAP TO REVERSE: the gate exists and each of those routes already has a withholding path, so the stricter reading is a few lines per route if a user is ever observed treating a research answer as a ruling. Closed as refuted rather than built because the ruling is that no code change is wanted."
     },
     {
       "id": "FU-449",
@@ -8380,17 +8384,132 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.17",
+      "slot": "P2.21",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.17 is the instrument item - FU-399, FU-413, FU-414 and FU-301 all ride it",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
+      "tier": 2
+    },
+    {
+      "id": "FU-456",
+      "title": "The religious-subject screen's 'nothing cleared this' sentence reaches no reader, and a guard claims it does",
+      "why": "W597's pre-flight flagged religious_subject_screen as a key produced on a reached surface that no page shows. I judged it addressed because DomainTool renders the result and its provenance. I then READ withDisclosures and it appends only score_summary, floor_note and disclaimer - nothing reads religious_subject_screen. So the sentence saying the subject was NOT cleared (the screen can only FLAG a subject as religious teaching; it cannot certify one as secular) reaches nobody, while W597's own guard asserts: a curriculum served here carries no statement that nothing cleared it, so a reader infers a clearance that was never performed. THAT GUARD MESSAGE IS ABOUT A READER AND IS ASSERTED ON THE API RESPONSE, so the instrument describes a surface it does not check - the same defect in the guard as in the code. REMEDY, and the first option is right: add a SHORT screen_note to the education response and append it in withDisclosures, which is the shared channel every DomainTool surface already uses, so a later route carrying a screen result renders automatically; keep the full structured key as the record; and the rendered sentence must be ONE LINE, because the full basis is correct for an audit trail and noise on a mathematics curriculum. Then correct the guard's wording to match whichever is true. The alternative is to declare the key audit-only and soften the guard, which is honest but leaves a reader able to infer a clearance. NOT FIXED IN W597 because its full suite was already running and editing the tree mid-suite would have invalidated the run - scheduled rather than rushed.",
+      "source": "W597 pre-flight, re-read W598",
+      "found": "2026-10-06",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "agentic_core/api/education.py",
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "no route owns Genesis/DomainTool surfaces; P3.2 clause (3) is the same class - a page not showing server state it has - and FU-454 already rides it for the same reason",
+      "tier": 2
+    },
+    {
+      "id": "FU-457",
+      "title": "The combining check refuses all-or-nothing, and the one file every guard shares cannot cause the collision it names",
+      "why": "The Owner asked for MORE ROWS CLOSED PER ROUND. followups.py bundles is the mechanism that answers that, and its COMBINING line currently refuses every time, for two reasons that are both mechanical rather than substantive. ONE, IT IS ALL-OR-NOTHING ACROSS THE TOP N. combinable() walks every pair among the top six bundles and returns REFUSED if ANY pair shares a file, so one overlapping pair refuses all fifteen pairs. It never reports WHICH subset is disjoint, which is the actual decision a round needs - two bundles that genuinely do not overlap are never offered, and the output reads as though no combination were possible at all. TWO, THE SHARED FILE IS SHARED BY CONSTRUCTION, NOT BY CONNECTION. Every guard in this project lives in integration_tests/test_mvp_spine.py, so any row about a guard cites it, and the observed refusal was precisely that P2.17 and P3.2 both touch that file. But the risk the rule NAMES is that each bundle's blinds mutate the other's surface - and the test file is not a blind surface: every blind driver in scratchpad mutates SOURCE files and the plan, runs the guard, and restores bytes. So the one file guaranteed to appear in many rows cannot cause the collision the refusal cites. THE RULE ITSELF IS RIGHT and must not be weakened: two guard subjects sharing a SOURCE file would make a RED unattributable, which is exactly why blinds are driven one at a time. What is wrong is the file set it computes over and the all-or-nothing verdict. REMEDY: exclude the shared guard file from the disjointness computation (or compute disjointness over BLIND SURFACES rather than over all cited files), and report the largest disjoint SUBSET with its basis instead of a single refusal. The function's own docstring says a rule nobody can execute is indistinguishable from a rule nobody holds; a rule that always refuses is equally uninformative. A guard must assert a DISJOINT pair is reported as combinable, or the fix is unobservable.",
+      "source": "W598, answering the Owner's ask for more rows per round",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/plan_followups.py",
+        "scripts/followups.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.21",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
+      "tier": 2
+    },
+    {
+      "id": "FU-458",
+      "title": "OWNER: charter an INSTRUMENT item to own P2.17's eleven rows, so P2.17 can close on its own bar",
+      "why": "P2.17 IS ONE TEST FROM CLOSING, measured W598. Its ACCEPT has three parts: (a) the bundle as a file-connected component was DELIVERED W568 with three of its four limits already met; (c) the round-cost figures computed rather than typed was DELIVERED W565; and (b) has three requirements of which two are done - the parallel suite proven to give the same pass/fail set as the serial one on one tree (W540, with figures) and the blind harness's runtime measured before and after (W569, which refuted its own row's premise: sharding gave 1.60x at two shards and got WORSE at four, because contention and not the single tree was the limit). THE ONLY MISSING REQUIREMENT is the per-worker store proven isolated by a test that would FAIL if two workers shared it, and nothing asserts that today. That test is small and is designed. BUT ELEVEN ROWS RIDE P2.17 AND NONE CLOSES WITH IT: FU-301 the parallel stall, FU-399 page guards as text scans, FU-413, FU-414, FU-415, FU-416 CI running serially, FU-418 M1's workflow not re-runnable, FU-439, FU-446, FU-455, FU-457. The register refuses to mark an item DONE while rows ride it - it refused exactly that for P3.21 this round - so they must be rehoused first. THE RECOMMENDATION: charter an INSTRUMENT item rather than scattering them into P2.20. Six of the eleven are one mechanism (the instruments that tell a round what it must check: a hardcoded guard list, a missing route warning, an all-or-nothing combining refusal, a data root moved under a test, no assertion that the register on disk matches its writer, and a forecast returning two key sets) and that six-row round is already prepared with its fix shapes located. A coherent area with prepared work is what an item is for. THE ALTERNATIVE, reslotting eleven instrument rows onto P2.20 whose subject is user context and request models, would make P2.20's own bar unreadable - which is the condition that kept P2.4 from ever closing. This is put to the Owner rather than decided because creating a plan item is their act; they approved the identical shape for P3.28 this round.",
+      "source": "W598, preparing P2.17's closure",
+      "found": "2026-10-06",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "done",
+      "closed_by": "W598",
+      "note": "",
+      "slot_source": "a plan-structure decision: creating an item is the Owner's act, not a round's - the same decision they approved for P3.28",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-10-06: charter the INSTRUMENT item. Delivered in the same round - P2.21 THE INSTRUMENTS THAT TELL A ROUND WHAT TO CHECK was created with an ACCEPT written from the area's own defect shape, and all ELEVEN rows that rode P2.17 were reslotted to it, so P2.17 now has zero riders and can close on its own bar. The register refused the reslot four times until P2.17's text stopped naming row ids - three mentions in its prose and a fourth found only by computing the item's exact line span rather than grepping a guessed range - which is the rule working: an item that lists its rows goes stale the moment one moves. AND THIS ROW IS ITS OWN DEMONSTRATION of why the open-decisions list must be computed rather than pinned: W598 rewrote that leg to match the register both ways, and the full suite then failed on exactly this row - an owner-gated row OPEN in the register and absent from the Owner-facing list. The guard demanded the Owner be asked, the Owner ruled, and the closure clears it. A pinned id would have stayed silent."
+    },
+    {
+      "id": "FU-459",
+      "title": "R13's entity split was measured wrong: all 112 of the 'auto-only' group have real economic history",
+      "why": "THE OWNER APPROVED A BATCH DELETION OF 112 ENTITIES ON A BASIS I GAVE THEM, AND MEASURING BEFORE EXECUTING IT SHOWED THE BASIS IS FALSE. Nothing was deleted. The document said those 112 were referenced ONLY by an auto-seeded business plan, which every entity receives and which therefore says nothing about whether anything happened to the entity. Measured against live data: 112 of 112 carry NON-ZERO owner-payment history, typically 1200 to 1560 WST accrued across 10 to 13 entries memoed cycle owner share, with timestamps; 112 of 112 are keys in economy_owner_payments.json and 111 of 112 in economy_ventures_portfolio.json. Those are PLATFORM-LEVEL financial records, not an entity's own self-ledger, so deleting the entity records would leave payment entries pointing at nothing. WHY THE DOCUMENT GOT IT WRONG, which matters more than the number: its 'also on disk as' column was built by checking a FEW artefact kinds - a repo, a business plan - and never looked at the economy records at all. So that column never meant 'only a business plan'; it meant 'only a business plan among the kinds the script happened to check', and the column's name invited exactly the reading that was made of it. An absence in a coverage column must mean CHECKED AND NOT FOUND, or it is not evidence. AND THE EXISTING INSTRUMENT WAS RIGHT ALL ALONG: scripts/prune_test_entities.py run dry reports safe to remove 0 and KEPT referenced elsewhere 162, because its cross-reference set includes both economy records, which its own comment already calls genuine platform-level references. The document disagreed with the instrument and the document was wrong. This is the THIRD R13 figure of mine to need correcting and the most serious, because the other two were overstatements of risk while this one understated it - and it reached an Owner decision. REMEDY: a coverage column that NAMES the kinds it checked and covers every record kind; a separate statement for the economy records; a defensible rule for what makes a fixture removable when it HAS accrued virtual WST, the honest candidate being that its payment entries are removed WITH it and the removal recorded rather than the entity deleted and the entries orphaned; and the prune executed only through the script with its guard intact.",
+      "source": "W598, executing the Owner's approval and measuring first",
+      "found": "2026-10-06",
+      "files": [
+        "docs/R13_TEST_OWNED_ENTITIES.md",
+        "scripts/prune_test_entities.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "no route owns the prune instrument; P2.20 is the open non-instrument P2 item and this is a data-record truth defect, not a planning one",
+      "tier": 1
+    },
+    {
+      "id": "FU-460",
+      "title": "Per-worker test directories accumulate in the real data root and nothing removes them",
+      "why": "Found while enumerating the data root to build R13's honest coverage measurement. The real data root holds 24 leftover per-worker directories - test_projects__gw0 through gw7, test_proposals__gw0 through gw7 and test_synthesis__gw0 through gw7 - with content in most of them. They are GITIGNORED, so nothing is committed and no CI or review surface is affected, which is why this is tier 3 and low. W507 already fixed one half of exactly this: data/_test_store__gw0..gw7 were being created on every run including runs with an explicit DATA_DIR, and the fix was to create the default store only when it is actually going to be used. The same reasoning was not applied to the other three roots, which conftest creates unconditionally inside the subdivision loop whenever a worker id is present - so every parallel run with an explicit root still makes eight directories per root and leaves them. WHY IT IS WORTH CLOSING even though nothing is wrong today: the directories make the data root harder to read, and reading the data root is exactly what an honest R13 coverage measurement has to do - the leftover directories are themselves candidates for a scan that is trying to find which records reference an entity. An instrument whose own debris pollutes the thing a later measurement must read is the cheap kind of defect to fix now and an annoying one to disentangle later. REMEDY: create a subdivided root only when it will be written, as W507 did for the store, or remove it on session teardown when it is empty; and assert in the per-worker isolation guard that a run leaves no empty subdivided directory behind. Do NOT simply delete the existing 24 as part of the fix - they are gitignored test output, but deleting a directory the Owner may have inspected is a separate act from stopping their creation.",
+      "source": "W598, measuring the data root for R13",
+      "found": "2026-10-06",
+      "files": [
+        "integration_tests/conftest.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.21",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.21 owns the instruments; this is the parallel-run instrument leaving state behind, and it sits beside the per-worker isolation work P2.17 closes on",
+      "tier": 3
+    },
+    {
+      "id": "FU-461",
+      "title": "Twenty-two swallowed exceptions in the heartbeat: W589 fixed one beat step, twenty-one still fail silently",
+      "why": "Counted by AST, not by eye: agentic_core/organism/heartbeat.py holds TWENTY-TWO handlers whose entire body is a bare pass, and about fifteen of them sit immediately after an actions.append call - meaning they are BEAT STEPS whose failure is swallowed. The step raises, nothing is appended, and the beat reports a shorter actions list with no indication that anything went wrong. W589 FIXED EXACTLY ONE OF THEM and wrote the reason in place at line 340: a swallowed exception made a cadence that CANNOT RUN indistinguishable from a cadence with nothing due, because both appended no action. That sentence is true of the other twenty-one. The swallows sit under compliance_rescreen (line 472), operate_vsb_unclassified (432), operate_vsb_failed (410), alignment (571), twin_directive (589), evolution_cycle (650), evolve_vsb (697 and 699), reshipped_stale_repo (733, 738, 740), metabolic_throttle (612), transformation_tick (550), genome_scan (258), pulse (212) and the constitutional audit (750). THE CONSEQUENCE IS MEASURED, not hypothetical: FU-417 records a real flake where test_w585_p33 failed in the full suite and passed in isolation, and the ONLY reason it is now diagnosable is that W589 fixed the one swallow in its path. Any of the remaining twenty-one failing produces the same unattributable symptom with no record to read. THIS IS THE FIX-EVERY-WRITER CLASS at its plainest: a defect understood, a remedy written and applied at one site, and the comment explaining the remedy sitting six lines above twenty-one instances of the defect. REMEDY: the same shape W589 used - except Exception as err, record it into the beat's own record with the step named, and let the beat report that a step was ATTEMPTED AND FAILED rather than silently omitting it. Mechanical and uniform, which is why it belongs in one pass. A guard must assert the beat record names a failed step, driven by making one step raise.",
+      "source": "W598, measuring P3.2 clause (4)",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.21",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.21's ACCEPT is instruments that report less than they should; a beat's actions list IS the instrument reporting what the organism did",
       "tier": 2
     }
   ],
   "routes": [
     {
-      "slot": "P3.21",
+      "slot": "P3.28",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -8398,40 +8517,40 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "note": "handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
       "handed_from": "P3.12"
     },
     {
-      "slot": "P3.21",
+      "slot": "P3.28",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
+      "note": "handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
       "handed_from": "P3.14"
     },
     {
-      "slot": "P3.21",
+      "slot": "P3.28",
       "files": [
         "agentic_core/avatars/core/recirculation_orchestrator.py",
         "agentic_core/avatars/cognition/"
       ],
       "words": [],
-      "note": "handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
+      "note": "handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
       "handed_from": "P3.16"
     },
     {
-      "slot": "P3.21",
+      "slot": "P3.28",
       "files": [],
       "words": [
         "attestation",
         "post-quantum"
       ],
-      "note": "handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
+      "note": "handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
       "handed_from": "P3.15"
     },
     {
-      "slot": "P3.21",
+      "slot": "P3.28",
       "files": [
         "agentic_core/biomimicry/minimisation/",
         "core/transcendent_subsystems/",
@@ -8439,11 +8558,11 @@
         "agentic_core/validation/"
       ],
       "words": [],
-      "note": "handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
+      "note": "handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
       "handed_from": "P3.17"
     },
     {
-      "slot": "P3.21",
+      "slot": "P3.28",
       "files": [
         "agentic_core/avatars/"
       ],
@@ -8451,7 +8570,7 @@
         "avatar",
         "profile applied"
       ],
-      "note": "handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
+      "note": "handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
       "handed_from": "P2.3"
     },
     {

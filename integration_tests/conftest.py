@@ -36,12 +36,25 @@ os.environ["PROPOSALS_DIR"] = "data/test_proposals"
 _XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER") or ""
 
 
-def _per_worker(path: str) -> str:
-    """The same path, made this worker's own. Unchanged when not running under xdist."""
-    if not _XDIST_WORKER:
+def _per_worker(path: str, worker: str = None) -> str:
+    """The same path, made this worker's own. Unchanged when not running under xdist.
+
+    P2.17 ACCEPT (b) — `worker` is a PARAMETER so the isolation can be PROVEN. It was read only from the
+    module-level `_XDIST_WORKER`, which binds at import, so no test could vary it: setting the env var later
+    changes nothing, and reloading the module rebinds its instance while every importer keeps the old one.
+    The requirement is a test that would FAIL if two workers shared the store, and a property that cannot be
+    driven cannot be proven. Default None means "use this process's worker", so both call sites below and
+    every serial run behave exactly as before.
+
+    The SPLIT MATTERS: the suffix goes before the extension, so `ueg.jsonl` becomes `ueg__gw0.jsonl` and
+    stays a .jsonl file. Appending after it would produce `ueg.jsonl__gw0`, which every reader keyed on the
+    extension would then miss.
+    """
+    w = _XDIST_WORKER if worker is None else worker
+    if not w:
         return path
     base, ext = os.path.splitext(path)
-    return f"{base}__{_XDIST_WORKER}{ext}"
+    return f"{base}__{w}{ext}"
 
 
 _TEST_STORE = _per_worker(os.path.abspath(os.path.join("data", "_test_store")))
@@ -59,11 +72,15 @@ os.environ.setdefault("LISTINGS_DIR", os.path.join(_TEST_STORE, "marketplace"))
 # isolated-run recipe used for every verification run sets one — so without this, `-n 8` with that recipe
 # would have pointed all eight workers at the SAME directory and corrupted them while looking isolated.
 # An explicit value defeating the isolation is W394's original defect one layer over.
+#  P2.17 ACCEPT (b) — the subdivided set, named so a guard can assert EVERY one of them. A sample would
+#  pass while one path stayed shared, and one shared path is the whole corruption mode.
+SUBDIVIDED = (("DATA_DIR", None), ("WORKSTATION_DATA_DIR", None),
+              ("PROJECTS_DIR", None), ("LISTINGS_DIR", None),
+              ("SYNTHESIS_OUTPUT_DIR", None), ("PROPOSALS_DIR", None),
+              ("WORKSTATION_UEG_PATH", "file"))
+
 if _XDIST_WORKER:
-    for _var, _leaf in (("DATA_DIR", None), ("WORKSTATION_DATA_DIR", None),
-                        ("PROJECTS_DIR", None), ("LISTINGS_DIR", None),
-                        ("SYNTHESIS_OUTPUT_DIR", None), ("PROPOSALS_DIR", None),
-                        ("WORKSTATION_UEG_PATH", "file")):
+    for _var, _leaf in SUBDIVIDED:
         _val = os.environ.get(_var)
         if not _val or _val.endswith(f"__{_XDIST_WORKER}") or f"__{_XDIST_WORKER}" in _val:
             continue

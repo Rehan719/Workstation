@@ -8,8 +8,8 @@ list. Nothing has been deleted, and the script that produced it has no delete pa
 - other owners: **57**
 - of the test-owned, **50** carry a LEDGER, a REPO or a roster entry — economic
   events were posted, or a body was shipped to disk, so these are not stray fixtures.
-- a further **112** are referenced ONLY by an auto-seeded business plan, which is
-  created for every entity and therefore says nothing about whether anything happened to it.
+- a further **112** were described here as referenced ONLY by an auto-seeded business plan.
+  **THAT IS WRONG AND IS CORRECTED BELOW — SEE THE W598 MEASUREMENT. DO NOT DELETE ON IT.**
 
 Matching is an EXACT owner_id comparison, never a substring: a real owner whose name contains
 "pytest" would otherwise be swept in, which is the bare-word mistake this round hit twice.
@@ -186,3 +186,229 @@ Delete ONLY the ids the Owner approves from the table above, after taking a copy
 afterwards — those counts are what the prune is for.
 
 _Generated 2026-10-05 23:40Z. Deletes nothing._
+
+## THE SPLIT, FOR A CONCRETE APPROVAL (added W598, Owner-approved 2026-10-06)
+
+Generated W597 from docs/R13_TEST_OWNED_ENTITIES.md by parsing its own table. Counts asserted:
+162 rows parsed, 112 + 50. The Owner approved the SPLIT APPROACH; these are the ids it needs.
+
+**Nothing is deleted on the strength of this file.** The standing constraint is that no round
+deletes an entity until the Owner approves the ids, and approving an approach is not approving a list.
+
+## GROUP A — 112 entities referenced ONLY by an auto-seeded business plan
+
+Every entity gets a business plan seeded automatically at establishment, so this reference says
+nothing about the entity having been used. These carry no repo, no ledger and no roster entry.
+**Recommended: approve as one batch.**
+
+| # | vsb_id | name | created |
+|---|--------|------|---------|
+| 1 | `vsb-000b75b0c4` | VSB — a halal community meal service | 2026-06-30 |
+| 2 | `vsb-04ea154b67` | VSB — per-vsb deliverable | 2026-06-29 |
+| 3 | `vsb-0573e3e2a1` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 4 | `vsb-05809c02e8` | VSB — a halal community meal service | 2026-06-30 |
+| 5 | `vsb-0882e81280` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 6 | `vsb-0a3d1f2585` | VSB — list-flags test | 2026-06-29 |
+| 7 | `vsb-0c108d05f1` | VSB — ledger lock-in | 2026-06-29 |
+| 8 | `vsb-0f9990d928` | VSB — a halal community meal service | 2026-06-29 |
+| 9 | `vsb-114fb493a8` | VSB — ledger lock-in | 2026-06-29 |
+| 10 | `vsb-15f4ca6d5f` | VSB — a halal community meal service | 2026-06-30 |
+| 11 | `vsb-170650a2a4` | VSB — avatar grounding test | 2026-06-29 |
+| 12 | `vsb-18b5202a4f` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 13 | `vsb-18c1a044c5` | VSB — per-vsb deliverable | 2026-06-30 |
+| 14 | `vsb-1f1b5f42b0` | VSB — a halal community meal service | 2026-06-29 |
+| 15 | `vsb-225512f64e` | VSB — avatar grounding test | 2026-06-29 |
+| 16 | `vsb-236448d224` | VSB — avatar grounding test | 2026-06-30 |
+| 17 | `vsb-23ba76ce60` | VSB — ledger lock-in | 2026-06-30 |
+| 18 | `vsb-26b30162f9` | VSB — a halal community meal service | 2026-06-29 |
+| 19 | `vsb-28cb9cd857` | VSB — list-flags test | 2026-06-30 |
+| 20 | `vsb-2d69e838b4` | VSB — pytest VSB business-plan seed check | 2026-06-30 |
+| 21 | `vsb-2dac0a963a` | VSB — pytest VSB business-plan seed check | 2026-06-30 |
+| 22 | `vsb-2ed7fe7b43` | VSB — ledger lock-in | 2026-06-29 |
+| 23 | `vsb-323fa06bd2` | VSB — pytest per-vsb swarm | 2026-06-30 |
+| 24 | `vsb-33c1d624df` | VSB — avatar grounding test | 2026-06-29 |
+| 25 | `vsb-342610d248` | VSB — avatar grounding test | 2026-06-30 |
+| 26 | `vsb-34d57722d1` | VSB — a halal community meal service | 2026-06-30 |
+| 27 | `vsb-370b59a53f` | VSB — list-flags test | 2026-06-29 |
+| 28 | `vsb-38deea4ff9` | VSB — ledger lock-in | 2026-06-29 |
+| 29 | `vsb-38defe6b80` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 30 | `vsb-39a81d2d58` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 31 | `vsb-3b5a7fa09a` | VSB — per-vsb deliverable | 2026-06-30 |
+| 32 | `vsb-3f660dbd3c` | VSB — avatar grounding test | 2026-06-29 |
+| 33 | `vsb-3fe6729eee` | VSB — ledger lock-in | 2026-06-29 |
+| 34 | `vsb-44f69adb47` | VSB — ledger lock-in | 2026-06-29 |
+| 35 | `vsb-454ff83c0f` | VSB — per-vsb deliverable | 2026-06-29 |
+| 36 | `vsb-464e5c3709` | VSB — ledger lock-in | 2026-06-30 |
+| 37 | `vsb-49a52ce858` | VSB — list-flags test | 2026-06-30 |
+| 38 | `vsb-4a2bc0802f` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 39 | `vsb-4c6bcbd65d` | VSB — pytest VSB business-plan seed check | 2026-06-30 |
+| 40 | `vsb-4d2f938da9` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 41 | `vsb-4d9bb368c3` | VSB — a halal community meal service | 2026-06-29 |
+| 42 | `vsb-554c6676f9` | VSB — a halal community meal service | 2026-06-30 |
+| 43 | `vsb-5aac6b830e` | VSB — avatar grounding test | 2026-06-29 |
+| 44 | `vsb-5b6251a209` | VSB — a halal community meal service | 2026-06-29 |
+| 45 | `vsb-644452646c` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 46 | `vsb-673a7465df` | VSB — list-flags test | 2026-06-30 |
+| 47 | `vsb-6b19b04add` | VSB — ledger lock-in | 2026-06-30 |
+| 48 | `vsb-6bd5354c2d` | VSB — a halal community meal service | 2026-06-30 |
+| 49 | `vsb-6c80fdd503` | VSB — ledger lock-in | 2026-06-30 |
+| 50 | `vsb-6cbf407c81` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 51 | `vsb-6cc08b3d00` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 52 | `vsb-6d6dad5ee3` | VSB — avatar grounding test | 2026-06-29 |
+| 53 | `vsb-71f2e069f5` | VSB — avatar grounding test | 2026-06-30 |
+| 54 | `vsb-77da2e63bf` | VSB — list-flags test | 2026-06-29 |
+| 55 | `vsb-7c4c07a1da` | VSB — pytest VSB business-plan seed check | 2026-06-30 |
+| 56 | `vsb-88dfc70a61` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 57 | `vsb-8a951e2113` | VSB — ledger lock-in | 2026-06-29 |
+| 58 | `vsb-8e36c8066a` | VSB — pytest per-vsb swarm | 2026-06-30 |
+| 59 | `vsb-8eab78223c` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 60 | `vsb-8ffcefb274` | VSB — per-vsb deliverable | 2026-06-29 |
+| 61 | `vsb-939933c66c` | VSB — avatar grounding test | 2026-06-30 |
+| 62 | `vsb-96b10e7590` | VSB — a halal community meal service | 2026-06-29 |
+| 63 | `vsb-979b096264` | VSB — list-flags test | 2026-06-29 |
+| 64 | `vsb-9ac18c8c14` | VSB — a halal community meal service | 2026-06-29 |
+| 65 | `vsb-9b5e39caa9` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 66 | `vsb-9ff6f84d91` | VSB — list-flags test | 2026-06-29 |
+| 67 | `vsb-a1e2f8ac72` | VSB — a halal community meal service | 2026-06-30 |
+| 68 | `vsb-a466d5e838` | VSB — pytest per-vsb swarm | 2026-06-30 |
+| 69 | `vsb-aa71c26445` | VSB — per-vsb deliverable | 2026-06-29 |
+| 70 | `vsb-abd0f0edbd` | VSB — ledger lock-in | 2026-06-29 |
+| 71 | `vsb-ac0f5c4133` | VSB — list-flags test | 2026-06-29 |
+| 72 | `vsb-ac9fd0210d` | VSB — a halal community meal service | 2026-06-29 |
+| 73 | `vsb-acb1c8ac15` | VSB — per-vsb deliverable | 2026-06-30 |
+| 74 | `vsb-ada946bdd6` | VSB — a halal community meal service | 2026-06-30 |
+| 75 | `vsb-af62f4353d` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 76 | `vsb-b317579762` | VSB — a halal community meal service | 2026-06-29 |
+| 77 | `vsb-b36090baba` | VSB — a halal community meal service | 2026-06-29 |
+| 78 | `vsb-b37bd4eee7` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 79 | `vsb-b54d2b98c8` | VSB — per-vsb deliverable | 2026-06-29 |
+| 80 | `vsb-b85c184f3d` | VSB — per-vsb deliverable | 2026-06-29 |
+| 81 | `vsb-bf6fcb188d` | VSB — per-vsb deliverable | 2026-06-30 |
+| 82 | `vsb-c5ccc6d2a9` | VSB — a halal community meal service | 2026-06-29 |
+| 83 | `vsb-c755564e6e` | VSB — pytest per-vsb swarm | 2026-06-30 |
+| 84 | `vsb-c8498ba01a` | VSB — ledger lock-in | 2026-06-29 |
+| 85 | `vsb-c8a3d027f1` | VSB — list-flags test | 2026-06-29 |
+| 86 | `vsb-c8f6f6bbd7` | VSB — a halal community meal service | 2026-06-29 |
+| 87 | `vsb-ca084cb019` | VSB — a halal community meal service | 2026-06-29 |
+| 88 | `vsb-ce97065195` | VSB — avatar grounding test | 2026-06-29 |
+| 89 | `vsb-cf8aad58a7` | VSB — list-flags test | 2026-06-29 |
+| 90 | `vsb-cfa9a93d33` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 91 | `vsb-d00573f5bc` | VSB — a halal community meal service | 2026-06-29 |
+| 92 | `vsb-d0caf0dc80` | VSB — pytest VSB business-plan seed check | 2026-06-29 |
+| 93 | `vsb-d3e1f340b1` | VSB — ledger lock-in | 2026-06-29 |
+| 94 | `vsb-d4f4217a8c` | VSB — ledger lock-in | 2026-06-29 |
+| 95 | `vsb-d5fda298c8` | VSB — avatar grounding test | 2026-06-29 |
+| 96 | `vsb-d63577cebb` | VSB — a halal community meal service | 2026-06-29 |
+| 97 | `vsb-d6fef75254` | VSB — avatar grounding test | 2026-06-29 |
+| 98 | `vsb-d865433b57` | VSB — list-flags test | 2026-06-30 |
+| 99 | `vsb-d8da3f4dbd` | VSB — per-vsb deliverable | 2026-06-29 |
+| 100 | `vsb-da887e8800` | VSB — per-vsb deliverable | 2026-06-29 |
+| 101 | `vsb-dc5e467a11` | VSB — a halal community meal service | 2026-06-30 |
+| 102 | `vsb-dfb81ba1c2` | VSB — a halal community meal service | 2026-06-29 |
+| 103 | `vsb-e463d5542f` | VSB — ledger lock-in | 2026-06-29 |
+| 104 | `vsb-e758d229e2` | VSB — a halal community meal service | 2026-06-29 |
+| 105 | `vsb-e820cb0a7f` | VSB — a halal community meal service | 2026-06-29 |
+| 106 | `vsb-e89e46128d` | VSB — pytest per-vsb swarm | 2026-06-29 |
+| 107 | `vsb-f01f2ce6c3` | VSB — ledger lock-in | 2026-06-29 |
+| 108 | `vsb-f3706686de` | VSB — ledger lock-in | 2026-06-29 |
+| 109 | `vsb-f6500f01e0` | VSB — a halal community meal service | 2026-06-30 |
+| 110 | `vsb-f9097b4f1c` | VSB — a halal community meal service | 2026-06-29 |
+| 111 | `vsb-fa3a355fc6` | VSB — list-flags test | 2026-06-29 |
+| 112 | `vsb-ff5e8006a4` | VSB — per-vsb deliverable | 2026-06-29 |
+
+## GROUP B — 50 entities that ALSO have a generated repo on disk
+
+A repo means files were produced for this entity, so removing one discards generated work.
+**Recommended: review individually.** Each row names what exists beyond the auto-seeded plan.
+
+| # | vsb_id | name | created | also on disk as |
+|---|--------|------|---------|-----------------|
+| 1 | `vsb-0340e1ab07` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 2 | `vsb-067f5a3868` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 3 | `vsb-06a576445f` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 4 | `vsb-070343695f` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 5 | `vsb-12d937d05e` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 6 | `vsb-1685a08a2d` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 7 | `vsb-18778ead15` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 8 | `vsb-1aabf0d821` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 9 | `vsb-242be7f086` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 10 | `vsb-267c8f2f47` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 11 | `vsb-2682149ff1` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 12 | `vsb-2c9c01adf1` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 13 | `vsb-36189f1765` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 14 | `vsb-362bf547c4` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 15 | `vsb-3b3c25e172` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 16 | `vsb-3d9e97d76b` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 17 | `vsb-3f09f40ed2` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 18 | `vsb-547b62d743` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 19 | `vsb-5558582314` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 20 | `vsb-5624a730fa` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 21 | `vsb-5e1e053912` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 22 | `vsb-6cb7bc5db4` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 23 | `vsb-86e5d0dae1` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 24 | `vsb-86fbfa31d5` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 25 | `vsb-87f6c799d4` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 26 | `vsb-8963da3558` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 27 | `vsb-8a80bb39ea` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 28 | `vsb-8dc9c84b33` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 29 | `vsb-93d06bf891` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 30 | `vsb-a01b2af1d6` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 31 | `vsb-abe1419767` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 32 | `vsb-ad2d6c0e38` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 33 | `vsb-b04a7e42cf` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 34 | `vsb-b2f21b2876` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 35 | `vsb-b896126d29` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 36 | `vsb-c0f227c0fb` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 37 | `vsb-c29660aaa3` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 38 | `vsb-c3e5d72165` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 39 | `vsb-cfc6e7e41d` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 40 | `vsb-d0cec0bc4c` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 41 | `vsb-e087d4ffb8` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 42 | `vsb-e332a6f82c` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 43 | `vsb-e7c9b5048c` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 44 | `vsb-f0ef43fd4d` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 45 | `vsb-f67d7e0e67` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 46 | `vsb-f6f859baa2` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+| 47 | `vsb-fa4bb6bffc` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 48 | `vsb-fe3b5403a3` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 49 | `vsb-fefa202668` | VSB — a halal community meal service | 2026-06-29 | repo, business plan |
+| 50 | `vsb-ffaaa9c19b` | VSB — a halal community meal service | 2026-06-30 | repo, business plan |
+
+## W598 — THE MEASUREMENT THAT REFUTES THIS DOCUMENT'S OWN SPLIT. DO NOT DELETE.
+
+The Owner approved Group A's 112 as one batch on the basis stated above: that their only reference was an
+auto-seeded business plan, which every entity gets and which therefore says nothing about whether anything
+happened to the entity. **Measured against live data before executing it, that basis is FALSE.**
+
+| measured W598, against `data/` | result |
+|---|---|
+| Group A entities with NON-ZERO owner-payment history | **112 of 112** |
+| Group A present as a key in `economy_owner_payments.json` | **112 of 112** |
+| Group A present as a key in `economy_ventures_portfolio.json` | 111 of 112 |
+| typical Group A entity | 1200–1560 WST accrued, 10–13 ledger entries |
+
+Every one of the 112 carries recorded economic events — accruals memoed "cycle owner share (§4 waterfall)"
+with timestamps — in a **platform-level** financial record, not in its own self-ledger. Deleting the entity
+records would leave those payment entries pointing at nothing.
+
+**WHY THIS DOCUMENT GOT IT WRONG, which matters more than the number.** The "also on disk as" column was
+built by checking a FEW artefact kinds — a repo, a business plan — and never looked at the economy records at
+all. So "business plan" in that column never meant *only a business plan*; it meant *only a business plan
+among the kinds this script happened to check*. The column's name invited exactly the reading that was made
+of it. `scripts/prune_test_entities.py` disagrees with this document and is RIGHT: run dry, it reports
+`safe to remove: 0` and `KEPT (referenced elsewhere): 162`, because its cross-reference set includes
+`economy_owner_payments.json` and `economy_ventures_portfolio.json` — which its own comment already calls
+genuine platform-level references.
+
+**STATUS: R13 has no approved deletion list.** The Owner's approval was given on a false basis and the basis,
+not the Owner, is what failed. Nothing was deleted.
+
+**What a correct basis would require**, before any list is put to the Owner again:
+1. an "also on disk as" column that covers EVERY artefact and record kind, with the kinds it checked NAMED,
+   so an absence means "checked and not found" rather than "not looked for";
+2. a separate statement for the economy records, since those are what make an entity's history real;
+3. a defensible definition of what makes a test fixture safe to remove when it HAS accrued virtual WST — the
+   honest candidate is that the payment entries are removed WITH the entity and the removal is recorded, not
+   that the entity is deleted and the entries orphaned;
+4. and the prune executed through `scripts/prune_test_entities.py` with its guard intact, never by a
+   hand-rolled deletion, so the instrument and the decision cannot disagree again.

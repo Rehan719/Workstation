@@ -42013,9 +42013,31 @@ def test_w594_the_owners_rulings_of_2026_10_05b_hold_in_code_and_in_canon(client
         "A.12.4 still reads as an open question beside its own ruling")
 
     # ── and the open-decisions list holds only what is genuinely open ─────────────────────────
-    _still = _plan594.split("STILL WITH THE OWNER", 1)[1][:1400]
-    assert "THE STRIPE KEY ROLL" in _still and "162" in _still and "FU-448" in _still, (
-        "the open-decisions list has lost something that IS open", _still[:300])
+    #  W598 — this pinned the literal "FU-448" as open, and the Owner then RULED it. So the guard went red
+    #  because a decision got made: the FU-365 class, inside the very list W594 built to stop the canon
+    #  presenting ruled decisions as open. Pinning an id punishes the progress it was written to protect.
+    #  THE PROPERTY IS A MATCH AGAINST THE REGISTER, both ways: every owner-gated row that is still OPEN
+    #  appears, and no row that is CLOSED is still being asked about. Computed, so ruling one removes it and
+    #  registering one adds it, with nothing here to edit either time.
+    _still = _plan594.split("STILL WITH THE OWNER", 1)[1][:2600]
+    assert "THE STRIPE KEY ROLL" in _still and "162" in _still, (
+        "the open-decisions list has lost a standing Owner decision that no register row carries",
+        _still[:300])
+    import json as _js594
+    _reg594 = _js594.loads((_root594 / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _gated = [r for r in _reg594["items"]
+              if r.get("owner_gated") or str(r.get("slot") or "") == "OWNER"]
+    _open_gated = [r["id"] for r in _gated if r.get("status") == "open"]
+    _closed_gated = [r["id"] for r in _gated if r.get("status") != "open"]
+    _missing594 = [i for i in _open_gated if i not in _still]
+    assert _missing594 == [], (
+        "an owner-gated row is OPEN in the register and absent from the plan's open-decisions list, so the "
+        "Owner is never asked for a decision the register is waiting on", _missing594)
+    _stale594 = [i for i in _closed_gated if i in _still]
+    assert _stale594 == [], (
+        "the list still asks the Owner about a row that has been RULED and closed - which is how a ruling "
+        "gets quietly undone, and is exactly what W594 found this list doing for thirty-odd rounds",
+        _stale594)
     for _ruled in ("whether §17.1's Products axis is built or amended",
                    "whether §17.5's KPI gate is built or amended"):
         assert _ruled not in _still, (
@@ -43023,3 +43045,96 @@ def test_w597_p324_a_schedule_never_a_forecast(client):
     assert "import EnvironmentalSimulator" not in _base_src, (
         "core still imports a simulator class; if it now imports it from the digital_reactor SDK then "
         "core depends on a product built on top of it, which is an inversion rather than a fix")
+
+
+def test_w599_p217b_the_per_worker_store_is_proven_isolated():
+    """P2.17 ACCEPT (b) — the per-worker store, proven isolated by a test that FAILS if two workers share it.
+
+    The last unmet requirement of P2.17. Its other parts are done: the bundle as a file-connected component
+    (W568, three of four limits already met), the round-cost figures computed rather than typed (W565), the
+    parallel suite proven to give the same pass/fail set as the serial one on one tree (W540, with figures),
+    and the blind harness's runtime measured before and after (W569 — which refuted its own row's premise:
+    sharding gave 1.60x at two shards and got WORSE at four, because contention and not the single tree was
+    the limit).
+
+    WHY THIS NEEDED A REFACTOR FIRST. `conftest._XDIST_WORKER` is read at module import and `_per_worker`
+    closed over it, so no test could vary the worker: setting the env var afterwards changes nothing, and
+    reloading the module rebinds its own instance while every importer keeps the old one. The worker is now a
+    PARAMETER defaulting to the constant, so the property can be DRIVEN. A property that cannot be driven
+    cannot be proven, and "proven" is the requirement's own word.
+    """
+    import os as _os217
+    import pathlib as _pl217
+
+    import conftest as _cf217
+
+    # ── 1. TWO WORKERS NEVER COLLIDE, and the extension is split correctly ──────────────────────
+    for _p217 in ("data/_test_store", "data/ueg.jsonl", "a.b/c", "/abs/root"):
+        _a, _b = _cf217._per_worker(_p217, "gw0"), _cf217._per_worker(_p217, "gw1")
+        assert _a != _b, (
+            "two workers map the same path to the same place, which IS sharing the store - the documented "
+            "corruption mode this mechanism exists to prevent", _p217, _a)
+        assert "gw0" in _a and "gw1" in _b, (_p217, _a, _b)
+    #  the suffix goes BEFORE the extension or every reader keyed on it misses the file
+    assert _cf217._per_worker("data/ueg.jsonl", "gw0") == "data/ueg__gw0.jsonl", (
+        "the worker suffix was appended AFTER the extension, so the file is no longer a .jsonl and a reader "
+        "selecting by extension skips it", _cf217._per_worker("data/ueg.jsonl", "gw0"))
+
+    # ── 2. A SERIAL RUN IS UNCHANGED ────────────────────────────────────────────────────────────
+    assert _cf217._per_worker("data/_test_store", "") == "data/_test_store", (
+        "a serial run's path was rewritten, so every non-xdist run reads a store nothing else writes")
+
+    # ── 3. EVERY SUBDIVIDED VAR IS SUFFIXED UNDER A WORKER — not a sample ───────────────────────
+    #  The real corruption mode is ONE path being missed while the rest look isolated: conftest's own comment
+    #  records that without this an explicit DATA_DIR would have pointed all eight workers at the same
+    #  directory, which is W394's defect one layer up. So the declared set is read from conftest rather than
+    #  retyped here, and a var added there without being subdivided fails this.
+    _names = [v for v, _ in _cf217.SUBDIVIDED]
+    assert len(_names) >= 7, ("the subdivided set shrank, so paths that were isolated no longer are", _names)
+    _worker = _os217.environ.get("PYTEST_XDIST_WORKER") or ""
+    if _worker:
+        _unsuffixed = [v for v in _names
+                       if _os217.environ.get(v) and f"__{_worker}" not in _os217.environ[v]]
+        assert _unsuffixed == [], (
+            "running under xdist and these paths carry NO worker suffix, so these workers share them while "
+            "every other path looks isolated", _worker, _unsuffixed)
+    else:
+        #  serial: the mechanism cannot be observed live, so the per-var transformation is driven directly.
+        #  Skipping here would make this leg pass for the wrong reason on every serial run - which is every
+        #  run of this suite that is not -n.
+        for _v in _names:
+            assert _cf217._per_worker(f"/root/{_v.lower()}", "gw3") != f"/root/{_v.lower()}", _v
+
+    # ── 4. NO TWO SUBDIVIDED PATHS COLLAPSE TO ONE ──────────────────────────────────────────────
+    #  Two purposes sharing one store is a DIFFERENT sharing bug from two workers sharing one, and the
+    #  string arithmetic above cannot rule it out.
+    _live = {v: _os217.environ.get(v) for v in _names if _os217.environ.get(v)}
+    _dupes = {}
+    for _v, _val in _live.items():
+        _dupes.setdefault(_os217.path.normcase(_os217.path.abspath(_val)), []).append(_v)
+    _shared217 = {k: v for k, v in _dupes.items() if len(v) > 1}
+    #  DATA_DIR and WORKSTATION_DATA_DIR are the same root by design - they are two names for one store.
+    _shared217 = {k: v for k, v in _shared217.items()
+                  if sorted(v) != ["DATA_DIR", "WORKSTATION_DATA_DIR"]}
+    assert _shared217 == {}, (
+        "two differently-purposed stores resolve to ONE directory, so one subsystem's writes land in "
+        "another's store", _shared217)
+
+    # ── 5. PROVEN BY A WRITE, not by string arithmetic ──────────────────────────────────────────
+    #  Comparing two strings proves the formatter. The requirement says the store is proven ISOLATED, so a
+    #  file is written through the live store path and its location is read back.
+    _root217 = _pl217.Path(_os217.environ["DATA_DIR"])
+    _root217.mkdir(parents=True, exist_ok=True)
+    _probe = _root217 / "w599_isolation_probe.txt"
+    try:
+        _probe.write_text("w599", encoding="utf-8")
+        assert _probe.is_file(), ("the store root is not writable, so nothing here proves isolation", _root217)
+        if _worker:
+            assert f"__{_worker}" in str(_probe.resolve()), (
+                "a file written through the live store landed OUTSIDE this worker's own directory, so the "
+                "store is shared in fact whatever the paths say", str(_probe.resolve()), _worker)
+    finally:
+        try:
+            _probe.unlink()
+        except OSError:
+            pass
