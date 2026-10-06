@@ -8063,11 +8063,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W602",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The [regchange] leg now COMPUTES the guards it names: it scans the suite for every test whose body carries a register or plan marker and prints that set as its -k expression, biased toward inclusion because an extra guard costs seconds and a missing one costs a suite. The kinds are detail, not the gate: a diff that only closes a row (W601's exact change, on which the old leg said ok) now fires and says CLOSED, and a diff no named kind classifies still fires and says so. The same round widened check_banned's file-read pattern from three literal path roots to any root, which took it from 190 to 357 file-read mappings in the suite. Driven red by nine blinds: the call site swapped back to the hardcoded four, the scan returning nothing, the scan naming every test, the CLOSED kind removed, the catch-all returned to silence, and the read pattern narrowed back."
     },
     {
       "id": "FU-440",
@@ -8403,11 +8406,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W602",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A new pre-flight leg, [figures], counts route decorators added and removed in the diff's non-test .py files, using the same decorator shape as [routes], and tells the round to run readme_figures.py --fix BEFORE the suite. It names the file and the net change, fires on a removal as well as an addition, warns on a net-zero change because the paths may still differ, and ignores decorators in test files. test_w499 is unchanged: the README genuinely is wrong at that moment, so the guard stays and the warning moves earlier. Driven red by three blinds: the leg never firing, the leg counting test files, and the leg unregistered."
     },
     {
       "id": "FU-456",
@@ -8445,11 +8451,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W602",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "combinable() now computes disjointness over BLIND SURFACES: the shared suite file is excluded, because every blind mutates source files and restores them and nothing blinds the suite, and the exclusion is reported in excluded_from_disjointness so a reader can see why two rows citing the same file were called disjoint. It reports the largest pairwise-disjoint subset (a maximum independent set, brute-forced over the six proposed bundles) with the excluded bundles named, on every path in one key set. Bundles are labelled by slot AND rows, because one item is cut into several components. The rule is not weakened: a shared SOURCE file still refuses the pair, and a blind removing that refusal goes red. Four blinds red."
     },
     {
       "id": "FU-458",
