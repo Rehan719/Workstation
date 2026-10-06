@@ -1186,7 +1186,9 @@ class OrganismHeartbeat:
                   auto_evolve: Optional[bool] = None, auto_economy: Optional[bool] = None,
                   auto_align: Optional[bool] = None,
                   auto_compliance: Optional[bool] = None,
-                  auto_ship: Optional[bool] = None) -> None:
+                  auto_ship: Optional[bool] = None,
+                  auto_metabolic: Optional[bool] = None,
+                  metabolic_every: Optional[int] = None) -> None:
         if interval_seconds is not None:
             self.interval_seconds = max(5, int(interval_seconds))
         if auto_evolve is not None:
@@ -1199,6 +1201,13 @@ class OrganismHeartbeat:
             self.auto_compliance = bool(auto_compliance)
         if auto_ship is not None:
             self.auto_ship = bool(auto_ship)
+        #  FU-367 (W609) — the recirculation loop's lever could only be set from inside the process, so a running
+        #  backend could never run it. It is settable here now. DELIBERATELY NOT PERSISTED: it is not in
+        #  _AUTONOMY_KEYS, so a restart comes back with the loop off, and status says so.
+        if auto_metabolic is not None:
+            self.auto_metabolic = bool(auto_metabolic)
+        if metabolic_every is not None:
+            self._metabolic_every = max(1, int(metabolic_every))
         self._save_autonomy()
 
     def _reflex_arc_count(self):
@@ -1239,6 +1248,10 @@ class OrganismHeartbeat:
             "last_vsb_evolved": self.last_vsb_evolved,
             "last_reshipped": getattr(self, "last_reshipped", None),
             "auto_ship": self.auto_ship,
+            "auto_metabolic": self.auto_metabolic,
+            "metabolic_every": self._metabolic_every,
+            "auto_metabolic_basis": ("runtime only: set through /heartbeat/configure and NOT persisted, so a "
+                                     "restart returns it to off"),
             "interval_seconds": self.interval_seconds,
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,

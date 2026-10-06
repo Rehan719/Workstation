@@ -205,3 +205,116 @@ def apply_retirement(vsb_id: str, cca_id: str) -> Dict[str, Any]:
                       f"({', '.join(f'{k} {v}' for k, v in moved.items()) or 'it held nothing'}); its record and books "
                       f"are kept and the organism no longer operates it")
     return out
+
+
+#  ── P3.26 clause (5) — MITOSIS: a mature entity divides, the child inherits its constitution VERBATIM ─────────
+#  Funded from the parent's own share - its reserve fund - by transfers.record_transfer, which debits the parent
+#  inside the ledger lock and queues the same amount into the child's intake, so nothing is created and nothing
+#  goes negative. Proposed and applied through Change Control, like retirement; the implement step re-checks
+#  maturity and funds, because both can change between filing and approval.
+MITOSIS_CHANGE_TYPE = "entity_mitosis"
+#  the STORED parts a constitution is derived from (api/vsb.py derives the rest on read from these)
+CONSTITUTION_FIELDS = ("constitution", "values", "genome_spec", "epigenetic_traits", "problem", "entity_type")
+
+
+def constitution_of(vsb: Dict[str, Any]) -> Dict[str, Any]:
+    import copy
+    return {k: copy.deepcopy(vsb.get(k)) for k in CONSTITUTION_FIELDS}
+
+
+def _mitosis_check(parent_id: str, amount: float) -> Dict[str, Any]:
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.economy.living_vsbs import _load
+    rec = (_load() or {}).get(parent_id)
+    if not isinstance(rec, dict):
+        return {"ok": False, "refused": "not_on_roster", "basis": f"{parent_id} is not on the living roster"}
+    if rec.get("lifecycle_state") != "mature":
+        return {"ok": False, "refused": "not_mature",
+                "basis": (f"{parent_id} is {rec.get('lifecycle_state') or 'UNRECORDED'}, and only a MATURE entity "
+                          f"divides")}
+    try:
+        amt = round(float(amount), 2)
+    except (TypeError, ValueError):
+        return {"ok": False, "refused": "bad_amount", "basis": f"{amount!r} is not an amount"}
+    if amt <= 0:
+        return {"ok": False, "refused": "bad_amount", "basis": "a child is funded with a positive amount"}
+    reserve = round(float(VirtualLedger(parent_id).chart_balances().get("reserve_fund") or 0.0), 2)
+    if amt > reserve:
+        return {"ok": False, "refused": "insufficient_share",
+                "basis": f"the parent's reserve fund holds {reserve} WST, less than the {amt} WST asked"}
+    return {"ok": True, "refused": None, "amount": amt, "reserve": reserve, "basis": "mature and funded"}
+
+
+async def propose_mitosis(parent_id: str, child_name: str, amount: float, why: str, by: str) -> Dict[str, Any]:
+    out: Dict[str, Any] = {"filed": False, "refused": None, "cca_id": None, "check": None, "basis": ""}
+    if not str(child_name or "").strip() or not str(why or "").strip() or not str(by or "").strip():
+        out.update(refused="incomplete", basis="REFUSED: a division names the child, why, and who proposes it")
+        return out
+    chk = _mitosis_check(parent_id, amount)
+    out["check"] = chk
+    if not chk["ok"]:
+        out.update(refused=chk["refused"], basis=f"NOT FILED: {chk['basis']}")
+        return out
+    from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+    rec = await submit_change(SubmitChangeRequest(
+        title=f"[turnover] {parent_id} divides: {str(child_name)[:60]}", change_type=MITOSIS_CHANGE_TYPE,
+        vsb_id=parent_id, submitted_by=str(by), rationale=str(why),
+        description=(f"Mitosis: {parent_id} creates the subsidiary {child_name!r}, which inherits its constitution "
+                     f"verbatim and is funded with {chk['amount']} WST moved from the parent's reserve fund. "
+                     f"Why: {why}"),
+        affected_systems=[parent_id, "living roster", "VSB store", "ledger"]))
+    # the child's name and amount travel on the record, read back by the implement step
+    from agentic_core.api.change_control import _load_change, _save_change
+    c = _load_change(rec.get("cca_id")) or {}
+    c["mitosis"] = {"child_name": str(child_name)[:120], "amount_wst": chk["amount"]}
+    _save_change(c)
+    out.update(filed=True, cca_id=rec.get("cca_id"),
+               basis=f"filed as {rec.get('cca_id')}; nothing is created or moved until it is approved and implemented")
+    return out
+
+
+def apply_mitosis(parent_id: str, cca_id: str, spec: Dict[str, Any]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {"divided": False, "refused": None, "child_vsb": None, "amount_wst": None,
+                           "constitution_inherited": None, "transfer": None, "basis": ""}
+    chk = _mitosis_check(parent_id, (spec or {}).get("amount_wst"))
+    if not chk["ok"]:
+        out.update(refused=chk["refused"], basis=f"NOT DIVIDED: {chk['basis']}")
+        return out
+    import uuid
+    from agentic_core.api.vsb import _load_vsb, _save_vsb, enrich_vsb_entity
+    from agentic_core.economy.transfers import record_transfer
+    parent = _load_vsb(parent_id) or {}
+    child_id = f"vsb-{uuid.uuid4().hex[:10]}"
+    inherited = constitution_of(parent)
+    child = {"vsb_id": child_id, "name": str(spec.get("child_name") or child_id), "domain": parent.get("domain"),
+             "realm": parent.get("realm"), "owner_id": parent.get("owner_id", "default"), "generation": 0,
+             "status": "living", "stage": "established", "born_of": {"parent": parent_id, "cca_id": cca_id}}
+    child.update({k: v for k, v in inherited.items() if v is not None})
+    child = enrich_vsb_entity(child, owner_id=parent.get("owner_id", "default"),
+                              problem=str(parent.get("problem") or ""), domain=parent.get("domain") or "enterprise",
+                              entity_type=str(parent.get("entity_type") or "waqf_ltd_hybrid"), parent_vsb=parent_id)
+    #  enrichment may set defaults; the inherited parts are re-applied so they stay VERBATIM
+    child.update({k: v for k, v in constitution_of(parent).items() if v is not None})
+    _save_vsb(child)
+    try:
+        tr = record_transfer(parent_id, child_id, chk["amount"], memo=f"mitosis funding via {cca_id}",
+                             transfer_id=f"mitosis-{cca_id}")   # idempotent on the change id: one division, one debit
+    except Exception as exc:  # noqa: BLE001 - an unfunded child is never presented as a division
+        from agentic_core.config import store_lock
+        from agentic_core.economy import living_vsbs as _lv
+        with store_lock(_lv._STORE):
+            d = _lv._load()
+            if isinstance(d.get(child_id), dict):
+                d[child_id]["lifecycle_state"] = "retired"
+                d[child_id]["retirement"] = {"cca_id": cca_id, "at": _lv._now(), "conserved_wst": 0.0,
+                                             "moved": {}, "why": f"its funding transfer failed: {exc.__class__.__name__}"}
+                _lv._save(d)
+        out.update(refused="funding_failed", child_vsb=child_id,
+                   basis=(f"NOT DIVIDED: the funding transfer failed ({exc.__class__.__name__}: {str(exc)[:120]}), "
+                          f"so nothing left the parent; the created child {child_id} is retired with its record kept"))
+        return out
+    out.update(divided=True, child_vsb=child_id, amount_wst=chk["amount"], transfer=tr,
+               constitution_inherited=sorted(k for k, v in inherited.items() if v is not None),
+               basis=(f"{parent_id} divided: {child_id} inherits its constitution verbatim and is funded with "
+                      f"{chk['amount']} WST from the parent's reserve fund"))
+    return out

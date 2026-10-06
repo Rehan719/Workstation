@@ -4927,7 +4927,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.26",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -5366,7 +5366,7 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P3.26",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -6527,11 +6527,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W609",
       "note": "",
       "slot_source": "agentic_core/organism/ is P3.2's route 12 (the organism and its heartbeat); the recirculation loop is P3.16's but the SWITCH is the heartbeat's own configuration surface",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "POST /api/v1/heartbeat/configure now accepts auto_metabolic and metabolic_every and the heartbeat's status reports both, with a basis saying the lever is RUNTIME ONLY - deliberately not persisted, because a persisted 'on' would leak into every later heartbeat (and a restart returns it to off). The Heartbeat page lists it as Self-reflect. Driven through the routes: configure on, POST /beat runs the metabolic cycle, configure restores it. Two blinds red (the heartbeat dropping the lever, the route dropping it)."
     },
     {
       "id": "FU-368",
@@ -7593,7 +7596,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.26",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -8864,17 +8867,17 @@
       "handed_from": "P2.3"
     },
     {
-      "slot": "P3.26",
+      "slot": "P2.20",
       "files": [
         "agentic_core/organism/",
         "agentic_core/optimizer/"
       ],
       "words": [],
-      "note": "handed from P2.7 via P3.2; handed from P2.7; the organism and its heartbeat",
+      "note": "handed from P2.7 via P3.26; handed from P2.7 via P3.2; handed from P2.7; the organism and its heartbeat",
       "handed_from": "P2.7"
     },
     {
-      "slot": "P3.26",
+      "slot": "P2.20",
       "files": [
         "requirements.txt",
         "pyproject.toml",
@@ -8890,7 +8893,8 @@
         "pins",
         "distribution"
       ],
-      "note": "W588: the dependency DECLARATION area, narrowed from W583's words after they collided. W583 gave this route the bare words dependency and dependencies, and a route word is matched as a whole phrase inside a row's TITLE - so it also matched P2.18's governance route, whose words are auth dependency governance verdict circuit breaker evolution. followups.py done P2.18 --retire-routes then REFUSED with \"P3.26 claims [change_control.py, governance pages, board.py] - title word dependency\", which would have blocked P2.18's closure on a false claim. The same generic-word hazard W586 recorded for value, outcome and benefit: a word common enough to be useful is common enough to capture somebody else's area. The words are now phrases that only a manifest row carries. P3.26 clause (7) remains the mechanism that answers this area: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why, which is what 25 declared dependencies that no module imports needs - not a round quietly deleting a pin from a lock CI installs from."
+      "note": "handed from P3.26; W588: the dependency DECLARATION area, narrowed from W583's words after they collided. W583 gave this route the bare words dependency and dependencies, and a route word is matched as a whole phrase inside a row's TITLE - so it also matched P2.18's governance route, whose words are auth dependency governance verdict circuit breaker evolution. followups.py done P2.18 --retire-routes then REFUSED with \"P3.26 claims [change_control.py, governance pages, board.py] - title word dependency\", which would have blocked P2.18's closure on a false claim. The same generic-word hazard W586 recorded for value, outcome and benefit: a word common enough to be useful is common enough to capture somebody else's area. The words are now phrases that only a manifest row carries. P3.26 clause (7) remains the mechanism that answers this area: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why, which is what 25 declared dependencies that no module imports needs - not a round quietly deleting a pin from a lock CI installs from.",
+      "handed_from": "P3.26"
     }
   ],
   "retired_areas": [

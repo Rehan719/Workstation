@@ -602,6 +602,25 @@ class RemovalRequest(BaseModel):
     why: str
 
 
+class MitosisRequest(BaseModel):
+    child_name: str
+    amount_wst: float
+    why: str
+
+
+@router.post("/living-vsbs/{vsb_id}/propose-mitosis")
+async def living_vsb_propose_mitosis(vsb_id: str, req: MitosisRequest, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (5) — a MATURE entity proposes to divide through Change Control: the child inherits its
+    constitution verbatim and is funded from the parent's reserve fund. Nothing moves until implemented."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.turnover import propose_mitosis
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = await propose_mitosis(vsb_id, req.child_name, req.amount_wst, req.why, by=str(_who or "owner (single-user mode)"))
+    if not res.get("filed"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
 @router.post("/living-vsbs/{vsb_id}/propose-removal")
 async def living_vsb_propose_removal(vsb_id: str, req: RemovalRequest, user: dict | None = Depends(get_current_user)):
     """P3.26 clause (7) — PROPOSE a removal through Change Control, naming what and why. Refused (409) for an

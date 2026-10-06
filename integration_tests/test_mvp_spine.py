@@ -45446,3 +45446,132 @@ def test_w608_p326_retirement_is_governed_conserves_every_balance_and_keeps_the_
             _pf.write_bytes(_prev)
         elif _pf.exists():
             _pf.unlink()
+
+
+def test_w609_p326_a_mature_entity_divides_through_change_control_and_the_child_inherits_verbatim(client):
+    """P3.26 clause (5) - MITOSIS: a mature entity creates a subsidiary inheriting its constitution VERBATIM,
+    funded from the parent's own share so funds are conserved, through Change Control. The regulator's old
+    'mitosis' cloned dicts and was deleted in W604; this is the real one."""
+    from agentic_core.api import change_control as _cc609
+    from agentic_core.api.vsb import _load_vsb
+    from agentic_core.economy import governance as _gv609
+    from agentic_core.economy import living_vsbs as _lv609
+    from agentic_core.economy import turnover as _to609
+    from agentic_core.economy.ledger import VirtualLedger
+
+    _pid = client.post("/api/v1/genesis/establish", json={"problem": "W609 a parent that divides", "name": "W609 Parent",
+                                                          "domain": "enterprise", "ship_output": False}).json()["vsb_id"]
+    _led = VirtualLedger(_pid)
+    _led.record("revenue", 100.0, memo="W609 intake")      # Dr cash 100
+    _led.record("reserves", 60.0, memo="W609 reserve")     # Dr reserve_fund 60 / Cr cash 60
+    _reserve0 = _led.chart_balances().get("reserve_fund")
+    assert _reserve0 and _reserve0 >= 60, _led.chart_balances()
+
+    #  a JUVENILE parent does not divide
+    _j = client.post(f"/api/v1/economy/living-vsbs/{_pid}/propose-mitosis",
+                     json={"child_name": "W609 Child", "amount_wst": 40, "why": "probe"})
+    assert _j.status_code == 409 and _j.json()["detail"]["refused"] == "not_mature", _j.text[:200]
+    assert _lv609.set_lifecycle(_pid, "mature", by="w609-owner")["changed"]
+
+    #  more than the parent's share is refused at filing
+    _big = client.post(f"/api/v1/economy/living-vsbs/{_pid}/propose-mitosis",
+                       json={"child_name": "W609 Child", "amount_wst": 10_000, "why": "probe"})
+    assert _big.status_code == 409 and _big.json()["detail"]["refused"] == "insufficient_share", _big.text[:200]
+
+    _p = client.post(f"/api/v1/economy/living-vsbs/{_pid}/propose-mitosis",
+                     json={"child_name": "W609 Child", "amount_wst": 40, "why": "W609 probe: a second market"})
+    assert _p.status_code == 200 and _p.json()["filed"], _p.text[:200]
+    _c = _cc609._load_change(_p.json()["cca_id"])
+    #  at least MAJOR: the filing names the constitution, and Change Control's keyword elevation may raise it to
+    #  CRITICAL, which is stricter and stands (a stored tier is never lowered)
+    assert _c["change_type"] == "entity_mitosis" and _cc609._TIER_RANK[_cc609.effective_tier(_c)] >= _cc609._TIER_RANK["HIGH"], (
+        _c.get("change_type"), _cc609.effective_tier(_c))
+    _roster_n = len(_lv609._load())
+    assert _lv609._load().get(_pid) and _roster_n == len(_lv609._load()), "filing created something"
+
+    _c.update(status="approved", decision_source="admin_override", owner_decision_acknowledged=True,
+              twin_prevalidation={"verdict": "pass", "source": "twin_marker"})
+    _cc609._save_change(_c)
+    _im = client.post(f"/api/v1/cca/{_c['cca_id']}/implement")
+    assert _im.status_code == 200 and _im.json()["status"] == "implemented", _im.text[:300]
+    _ap = _im.json()["applied"]
+    _cid = _ap["child_vsb"]
+    assert _ap["divided"] is True and _cid and _ap["amount_wst"] == 40, _ap
+
+    # ── the child INHERITS ITS CONSTITUTION VERBATIM ────────────────────────────────────────
+    _parent, _child = _load_vsb(_pid), _load_vsb(_cid)
+    assert _child, "the child was not written to the VSB store"
+    assert _to609.constitution_of(_child) == _to609.constitution_of(_parent), (
+        "the child's constitution is not the parent's, verbatim",
+        {k: (_to609.constitution_of(_parent)[k], _to609.constitution_of(_child)[k]) for k in _to609.CONSTITUTION_FIELDS
+         if _to609.constitution_of(_parent)[k] != _to609.constitution_of(_child)[k]})
+    _crow = _lv609._load().get(_cid)
+    assert _crow and _crow["parent_vsb"] == _pid and _crow["lineage_generation"] == 1, _crow
+
+    # ── FUNDS ARE CONSERVED: the parent's share fell by exactly what the child received ──────
+    _reserve1 = VirtualLedger(_pid).chart_balances().get("reserve_fund")
+    assert round(_reserve0 - _reserve1, 2) == 40.0, ("the parent's reserve did not fall by the child's funding",
+                                                     _reserve0, _reserve1)
+    _ret, _trn = _gv609._pending_parts(_cid)
+    assert round(float(_trn), 2) == 40.0, ("the child's intake did not receive what the parent gave", _trn)
+
+    # ── re-checked AT IMPLEMENT: a parent that is no longer mature does not divide ────────────
+    _p2 = client.post(f"/api/v1/economy/living-vsbs/{_pid}/propose-mitosis",
+                      json={"child_name": "W609 Second", "amount_wst": 5, "why": "probe"})
+    assert _p2.status_code == 200, _p2.text[:200]
+    _c2 = _cc609._load_change(_p2.json()["cca_id"])
+    _c2.update(status="approved", decision_source="admin_override", owner_decision_acknowledged=True,
+               twin_prevalidation={"verdict": "pass", "source": "twin_marker"})
+    _cc609._save_change(_c2)
+    _lv609.set_lifecycle(_pid, "senescent", by="w609-owner")
+    _n_before = len(_lv609._load())
+    _im2 = client.post(f"/api/v1/cca/{_c2['cca_id']}/implement")
+    assert _im2.status_code == 409 and _im2.json()["detail"]["refused"] == "not_mature", _im2.text[:200]
+    assert len(_lv609._load()) == _n_before, "a refused division still created an entity"
+
+    # ── a FAILED funding transfer never yields a funded-looking child ────────────────────────────
+    _lv609.set_lifecycle(_pid, "dormant", by="w609-owner")
+    _rec = _lv609._load()[_pid]
+    _rec_states = dict(_rec)
+    from agentic_core.config import store_lock as _sl609
+    with _sl609(_lv609._STORE):
+        _d = _lv609._load()
+        _d[_pid]["lifecycle_state"] = "mature"
+        _lv609._save(_d)
+    _p3 = client.post(f"/api/v1/economy/living-vsbs/{_pid}/propose-mitosis",
+                      json={"child_name": "W609 Third", "amount_wst": 5, "why": "probe"})
+    assert _p3.status_code == 200, _p3.text[:200]
+    _c3 = _cc609._load_change(_p3.json()["cca_id"])
+    _c3.update(status="approved", decision_source="admin_override", owner_decision_acknowledged=True,
+               twin_prevalidation={"verdict": "pass", "source": "twin_marker"})
+    _cc609._save_change(_c3)
+    from agentic_core.economy import transfers as _tr609
+    _real_rt = _tr609.record_transfer
+    def _boom(*a, **k):
+        raise RuntimeError("probe: the ledger refused")
+    _tr609.record_transfer = _boom
+    try:
+        _reserve_b = VirtualLedger(_pid).chart_balances().get("reserve_fund")
+        _im3 = client.post(f"/api/v1/cca/{_c3['cca_id']}/implement")
+    finally:
+        _tr609.record_transfer = _real_rt
+    assert _im3.status_code == 409 and _im3.json()["detail"]["refused"] == "funding_failed", _im3.text[:200]
+    _orphan = _im3.json()["detail"]["child_vsb"]
+    assert _lv609._load()[_orphan]["lifecycle_state"] == "retired", "an unfunded child was left living"
+    assert VirtualLedger(_pid).chart_balances().get("reserve_fund") == _reserve_b, "money left the parent anyway"
+
+    # ── FU-367: the recirculation loop's lever is settable from a RUNNING backend, and reverts ──────
+    from agentic_core.organism import heartbeat as _hb609
+    _was = (_hb609.heartbeat.auto_metabolic, _hb609.heartbeat._metabolic_every)
+    try:
+        _cf = client.post("/api/v1/heartbeat/configure", json={"auto_metabolic": True, "metabolic_every": 1})
+        assert _cf.status_code == 200 and _cf.json()["auto_metabolic"] is True and _cf.json()["metabolic_every"] == 1, (
+            "the configure route still drops the metabolic lever, so a running backend can never run the loop",
+            _cf.text[:200])
+        assert "NOT persisted" in _cf.json()["auto_metabolic_basis"], _cf.json().get("auto_metabolic_basis")
+        _b = client.post("/api/v1/heartbeat/beat").json()
+        assert any("metabolic" in a for a in (_b.get("actions") or [])), (
+            "the lever was set and the beat still did not run the loop", _b.get("actions"))
+    finally:
+        client.post("/api/v1/heartbeat/configure", json={"auto_metabolic": _was[0], "metabolic_every": _was[1]})
+    assert _hb609.heartbeat.auto_metabolic == _was[0], "the guard left the shared heartbeat's lever changed"

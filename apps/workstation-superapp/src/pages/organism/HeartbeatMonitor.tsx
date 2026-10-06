@@ -8,6 +8,7 @@ interface Status {
   last_beat: string | null; last_realisation: number | null; interval_seconds: number;
   auto_evolve: boolean; auto_economy: boolean; auto_align: boolean; auto_compliance: boolean;
   auto_ship: boolean; autonomy_persisted?: boolean; autonomy_restored_at?: string | null;
+  auto_metabolic?: boolean; metabolic_every?: number; auto_metabolic_basis?: string;
   evolution_auto_apply?: { enabled: boolean | null; readable: boolean; governed_by: string;
     consumer?: string; how_to_change?: string; why_not_a_toggle?: string; effect_when_off?: string };
   recent: Beat[]; integrations: string[];
@@ -50,6 +51,9 @@ const AUTONOMY: { key: keyof Status; label: string; does: string }[] = [
     does: 'Names the owning tier for each vision gap on the beat. Plan-only: nothing is sent to any tier and no code is written.' },
   { key: 'auto_ship', label: 'Self-ship',
     does: 'Re-ships ONE stale repo per beat, oldest first.' },
+  // FU-367 (W609) — the recirculation loop's lever, settable from the running backend for the first time
+  { key: 'auto_metabolic', label: 'Self-reflect',
+    does: 'Runs the six-stage recirculation loop every N beats; anything it would say is delivered only if all six clearance gates clear it. Runtime only: a restart turns it off.' },
 ];
 
 const PHASE_ICON: Record<string, React.ComponentType<any>> = {

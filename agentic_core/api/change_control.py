@@ -292,6 +292,8 @@ _TIER_MAP: dict[str, ImpactTier] = {
     # P3.26 clause (3) (W608) — the death of an entity is a MAJOR change: twin pre-validation, and Board
     # ratification when a review rather than the Owner approved it
     "entity_retirement":    "HIGH",
+    # P3.26 clause (5) (W609) — an entity dividing creates a new one and moves funds: also MAJOR
+    "entity_mitosis":       "HIGH",
     # W464 (FU-014, the Owner's ruling of 2026-09-14) — both fell through to MEDIUM by the default, so their tier
     # was an accident rather than a decision. A code correction is HIGH (a review's approval waits for Board
     # ratification); a material economy action is CRITICAL (decided only by the Owner's explicit decision).
@@ -1932,6 +1934,18 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
         applied = _ret
         _retirement_effect = _ret["basis"]
         c["audit_trail"].append({"event": "entity_retired", "ts": now, "applied": _ret})
+    # P3.26 clause (5) (W609) — MITOSIS is applied here and nowhere else, re-checking maturity and funds
+    if c.get("change_type") == "entity_mitosis":
+        from agentic_core.economy.turnover import apply_mitosis
+        _mit = apply_mitosis(str(c.get("vsb_id") or ""), cca_id, c.get("mitosis") or {})
+        if not _mit.get("divided"):
+            c["audit_trail"].append({"event": "implement_refused_mitosis", "ts": now, "by": principal,
+                                     "by_verified": verified, "basis": _mit.get("basis")})
+            _save_change(c)
+            raise HTTPException(status_code=409, detail=_mit)
+        applied = _mit
+        _retirement_effect = _mit["basis"]
+        c["audit_trail"].append({"event": "entity_divided", "ts": now, "applied": _mit})
 
     c["status"] = "implemented"
     c["implemented_at"] = now
