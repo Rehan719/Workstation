@@ -22,8 +22,10 @@ The figures are deliberately exact, not "140+": a range cannot be wrong, so it c
 from __future__ import annotations
 
 import io
+import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 
@@ -36,17 +38,30 @@ _HTTP = ("GET", "POST", "PUT", "PATCH", "DELETE")
 
 
 def api_figures() -> tuple[int, int]:
-    """(operations, distinct paths) as the booted app actually exposes them."""
-    # the app writes to its data dir on import, so it is given a throwaway one: measuring must not
-    # touch the live store (and CI sets no DATA_DIR).
+    """(operations, distinct paths) as the booted app actually exposes them — measured in a CHILD PROCESS.
+
+    FU-413 (P2.21 clause 3) — this used to `os.environ.setdefault` the data root and then import the app
+    IN-PROCESS. A test loads this module and calls it, so under CI — which sets no DATA_DIR — the whole xdist
+    worker's data root moved to a throwaway directory and every test after it in that worker read a temp
+    store. Restoring the environment afterwards would NOT have fixed it: the import is the damage, because
+    the app's module-level config freezes against whatever the paths were when it was first imported, and
+    putting the variables back does not unfreeze it. A child process is the only thing that guarantees no
+    process-global state moved, which is exactly what the clause asks for.
+    """
+    out = _api_figures_in_child()
+    return out["ops"], out["paths"]
+
+
+def _count_api_operations() -> dict:
+    """The measurement itself, run ONLY in the child. Boots the app against a throwaway store."""
     tmp = tempfile.mkdtemp(prefix="readme-figures-")
     for k in ("DATA_DIR", "WORKSTATION_DATA_DIR", "PROJECTS_DIR"):
-        os.environ.setdefault(k, tmp)
-    os.environ.setdefault("WORKSTATION_UEG_PATH", os.path.join(tmp, "ueg.json"))
-    os.environ.setdefault("AI_DISABLE_LOCAL", "1")
+        os.environ[k] = tmp
+    os.environ["WORKSTATION_UEG_PATH"] = os.path.join(tmp, "ueg.json")
+    os.environ["AI_DISABLE_LOCAL"] = "1"
     if ROOT not in sys.path:
         sys.path.insert(0, ROOT)
-    from agentic_core.app_mvp import app     # noqa: E402  (import after the env is set)
+    from agentic_core.app_mvp import app     # noqa: E402  (imported after the env is set)
     ops, paths = set(), set()
     for r in app.routes:
         p = getattr(r, "path", None)
@@ -62,7 +77,9 @@ def api_figures() -> tuple[int, int]:
         for m in (getattr(r, "methods", None) or ()):
             if m in _HTTP:
                 ops.add((m, p))
-    return len(ops), len(paths)
+    #  a dict rather than a tuple: this crosses a process boundary as one json line, and a named pair
+    #  cannot be reassembled in the wrong order on the far side
+    return {"ops": len(ops), "paths": len(paths)}
 
 
 def route_files() -> list[str]:
@@ -139,5 +156,45 @@ def main() -> int:
     return 0
 
 
+def _api_figures_in_child() -> dict:
+    """Run `_count_api_operations()` in a child and read its two numbers back.
+
+    ROOT is passed EXPLICITLY and re-inserted by the child rather than inherited: a stray .pth puts the repo
+    root on sys.path for every local process here, so a child that relied on that would pass locally and fail
+    on CI (the trap recorded for subprocess path assumptions). The child's env is built from a COPY, so
+    nothing this process holds is altered either way.
+    """
+    env = dict(os.environ)
+    env["READMEFIG_CHILD"] = "1"
+    env["READMEFIG_ROOT"] = ROOT
+    #  the child prints ONE json line on stdout; its stderr is kept for the failure message
+    proc = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "readme_figures.py"),
+                           "--count-api-only"],
+                          cwd=ROOT, env=env, capture_output=True, text=True, errors="replace")
+    line = (proc.stdout or "").strip().splitlines()
+    payload = None
+    for ln in reversed(line):
+        if ln.startswith("{"):
+            try:
+                payload = json.loads(ln)
+            except ValueError:
+                payload = None
+            break
+    if proc.returncode or not isinstance(payload, dict) or "ops" not in payload:
+        raise RuntimeError(
+            "the API figures could not be measured in a child process (rc="
+            f"{proc.returncode}); the figure is NOT reported as zero, because a count of zero operations "
+            f"would be a false measurement of a booted app. stderr: {(proc.stderr or '')[-400:]}")
+    return payload
+
+
 if __name__ == "__main__":
+    if "--count-api-only" in sys.argv:
+        #  FU-413 — the child half. Prints one json line and exits; nothing else in this module runs, so the
+        #  parent's environment is untouched whatever this does to its own.
+        _r = os.environ.get("READMEFIG_ROOT")
+        if _r and _r not in sys.path:
+            sys.path.insert(0, _r)
+        print(json.dumps(_count_api_operations()))
+        raise SystemExit(0)
     raise SystemExit(main())

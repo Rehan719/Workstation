@@ -44139,3 +44139,257 @@ def test_w600_p311_the_qep_vsb_has_an_economic_model_that_is_its_own(client):
         "the pricing module does not record that it is virtual WST only")
     assert "stripe" not in _src600.lower() and "real_money" not in _src600.lower(), (
         "the pricing module names a real-money rail")
+
+
+def test_w601_p221_an_instrument_answers_in_one_shape(client):
+    """P2.21 clause (2) — the same keys whatever the answer, with the three states in the VALUES.
+
+    Driven on BOTH branches of all three, because a shape defect lives on the path less travelled: all three
+    of these survived every previous round and were found only when a pre-flight leg counted key sets.
+    """
+    import asyncio as _aio601
+    import importlib.util as _ilu601
+    import json as _json601
+    import pathlib as _pl601
+
+    _root601 = _pl601.Path(__file__).resolve().parents[1]
+
+    # ── FU-463 · _screen_candidate: the fault path and the normal path ──────────────────────────
+    from agentic_core.api import compliance as _comp601
+    from agentic_core.api.genesis import _screen_candidate as _sc601
+    _ok601 = _sc601("a lawful plan to open a bakery on the high street")
+    _prev_sc = _comp601.screen_compliance
+    try:
+        def _raise_sc(_t):
+            raise RuntimeError("w601 forced screen fault")
+
+        _comp601.screen_compliance = _raise_sc
+        _bad601 = _sc601("anything")
+    finally:
+        _comp601.screen_compliance = _prev_sc
+    assert set(_ok601) == set(_bad601), (
+        "_screen_candidate answers with a DIFFERENT SHAPE depending on whether the screen faulted, so a "
+        "caller indexing a coverage field gets undefined exactly when the screen could not read the subject",
+        sorted(set(_ok601) ^ set(_bad601)))
+    assert _bad601["screen_error"] and _ok601["screen_error"] is None, (
+        "screen_error does not distinguish the two paths", _bad601.get("screen_error"),
+        _ok601.get("screen_error"))
+    #  THE THREE STATES: a screen that RAISED established no coverage, so `covered` is None - NOT [].
+    #  [] asserts "no framework covered this subject", which a fault did not establish.
+    assert _bad601["compliance_covered"] is None and _bad601["safety_covered"] is None, (
+        "a faulted screen reports its coverage as an EMPTY LIST, which asserts that no framework covered "
+        "the subject - a claim the fault did not establish", _bad601["compliance_covered"],
+        _bad601["safety_covered"])
+    assert isinstance(_ok601["compliance_covered"], list), (
+        "the normal path does not report which frameworks read the subject", _ok601["compliance_covered"])
+    #  and a fault must never disqualify a candidate for an infrastructure hiccup
+    assert _bad601["disqualified"] is False, _bad601
+
+    # ── FU-415 · the forecast: history walkable, and not ────────────────────────────────────────
+    _spec601 = _ilu601.spec_from_file_location("_sf601", _root601 / "scripts/session_forecast.py")
+    _sf601 = _ilu601.module_from_spec(_spec601)
+    _spec601.loader.exec_module(_sf601)
+    _full601 = _sf601.forecast_session(8.0)
+    _sf601.round_durations = lambda since=460: {"assessable": False, "why": "w601 forced: no history"}
+    _early601 = _sf601.forecast_session(8.0)
+    assert set(_full601) == set(_early601), (
+        "the forecast returns a different key set when the history cannot be walked, so an unmeasurable "
+        "figure reads as a MISSING FIELD rather than as a figure it could not compute",
+        sorted(set(_full601) ^ set(_early601)))
+    assert _early601["projection"].get("unavailable"), _early601["projection"]
+    #  THE LIST OF WHAT THE ARITHMETIC CANNOT KNOW must be present exactly when it cannot know anything.
+    assert _early601["what_this_cannot_know"], (
+        "the unmeasurable path drops the list of what the arithmetic cannot know - the one answer where it "
+        "matters most")
+    assert _early601["what_this_cannot_know"] == _full601["what_this_cannot_know"], (
+        "the two paths carry DIFFERENT honest-limits lists, so one of them is a second copy that will drift")
+    #  the nested dict is shape-complete too, and its uncomputable fields are None rather than 0
+    _rbc_f, _rbc_e = _full601["round_boundaries_cost"], _early601["round_boundaries_cost"]
+    assert isinstance(_rbc_e, dict) and set(_rbc_f) == set(_rbc_e), (
+        "round_boundaries_cost changes shape with the answer, or is nulled whole - which discards the three "
+        "fields that need no duration at all", type(_rbc_e).__name__,
+        sorted(set(_rbc_f) ^ set(_rbc_e)) if isinstance(_rbc_e, dict) else None)
+    assert _rbc_e["share_of_a_median_round"] is None, (
+        "an unmeasurable share is reported as a number; a zero share would read as a suite that costs "
+        "nothing per round", _rbc_e["share_of_a_median_round"])
+    assert _rbc_e["suite_h_per_round"] and _rbc_e["suite_mode"], (
+        "the fields that need NO duration were nulled along with the ones that do, so measurements that "
+        "were available were thrown away", _rbc_e)
+    assert "NOT MEASURED" in str(_rbc_e["basis"]), _rbc_e["basis"]
+
+    # ── FU-446 · learn_teach_module: both roles, and NOT-APPLICABLE kept apart from NOT-RECORDED ─
+    from agentic_core.reactor.religion.qep_flagship import QEPFlagshipService as _QFS601
+    _svc601 = _QFS601()
+    _L601 = _aio601.run(_svc601.learn_teach_module("Learner", "w601user"))
+    _T601 = _aio601.run(_svc601.learn_teach_module("Teacher", "w601user"))
+    assert set(_L601) == set(_T601), (
+        "the two roles answer with different key sets and the only consumer does not branch on role, so it "
+        "indexes whichever keys it was written against and gets undefined on the other",
+        sorted(set(_L601) ^ set(_T601)))
+    assert _L601["role"] == "Learner" and _T601["role"] == "Teacher", (
+        "nothing in the answer says which branch produced it, so a reader cannot tell which nulls to expect")
+    #  THE DISTINCTION THAT MATTERS: a null is either NOT APPLICABLE TO THIS ROLE or NOT RECORDED, and
+    #  flattening them would be the same defect one layer down.
+    assert "students" in _L601["not_applicable"] and "playlists" in _T601["not_applicable"], (
+        "not_applicable does not name the other role's keys, so a null cannot be told from an unrecorded "
+        "figure", _L601["not_applicable"], _T601["not_applicable"])
+    assert "tutor_availability" not in _L601["not_applicable"], (
+        "a Learner's tutor_availability is listed as NOT APPLICABLE when it is a figure this store does not "
+        "record - no tutor registry exists. Those are different facts and the list must not merge them")
+    assert "tutor_availability" in _T601["not_applicable"], _T601["not_applicable"]
+    for _k601 in _L601["not_applicable"]:
+        assert _L601[_k601] is None, (_k601, "named not-applicable and carrying a value")
+
+    # ── FU-414 · the register is stored the way its own writer writes it ────────────────────────
+    #  W588: the file was at indent=1 while BOTH writers emit indent=2, so the first CLI write of a round
+    #  reformatted 7,708 lines and the round's real change arrived inside a 15,479-line rewrite no reader
+    #  could review. Nothing asserted the two agreed; this is that assertion.
+    _reg_raw601 = (_root601 / "docs/FOLLOWUPS.json").read_bytes()
+    _reg601 = _json601.loads(_reg_raw601.decode("utf-8"))
+    _emitted601 = (_json601.dumps(_reg601, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    assert _emitted601 == _reg_raw601, (
+        "docs/FOLLOWUPS.json on disk is NOT byte-identical to what its own writers emit, so the next CLI "
+        "write will reformat the whole file and bury the round's real register change inside an "
+        "unreviewable whole-file diff",
+        len(_reg_raw601), len(_emitted601))
+    #  and the two writers must agree with each other, or the file can only match one of them
+    for _w601 in ("agentic_core/plan_followups.py", "scripts/followups.py"):
+        _src601 = (_root601 / _w601).read_text(encoding="utf-8")
+        assert "indent=2, ensure_ascii=False" in _src601, (
+            f"{_w601} no longer serialises the register the way this guard asserts the file is stored, so "
+            f"one of the two writers has drifted from the other")
+
+
+def test_w601_p221_no_instrument_moves_the_process_data_root():
+    """P2.21 clause (3) — a measuring script and the conftest, each driven in a CHILD without isolation set.
+
+    This cannot be asserted in-process. With DATA_DIR already set, the old `setdefault` was a no-op and the
+    old code would have passed here — which is exactly why the defect survived every local run and only
+    appeared on CI, where no DATA_DIR exists.
+    """
+    import json as _json613
+    import os as _os613
+    import pathlib as _pl613
+    import subprocess as _sp613
+    import sys as _sys613
+
+    _root613 = _pl613.Path(__file__).resolve().parents[1]
+
+    #  the child's environment is CI's: the isolation variables are REMOVED, not overridden
+    _env613 = {k: v for k, v in _os613.environ.items()
+               if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR", "WORKSTATION_UEG_PATH",
+                            "PROJECTS_DIR", "SYNTHESIS_OUTPUT_DIR", "PROPOSALS_DIR",
+                            "LISTINGS_DIR", "AI_DISABLE_LOCAL")}
+    _env613["PYTHONIOENCODING"] = "utf-8"
+
+    # ── FU-413 · the measuring script must not move the process data root ───────────────────────
+    _probe613 = (
+        "import importlib.util, json, os, sys\n"
+        "before = dict(os.environ)\n"
+        "spec = importlib.util.spec_from_file_location('rf', r'{root}/scripts/readme_figures.py')\n"
+        "rf = importlib.util.module_from_spec(spec); spec.loader.exec_module(rf)\n"
+        "m = rf.measured()\n"
+        "changed = sorted(k for k in set(before) | set(os.environ)\n"
+        "                 if before.get(k) != os.environ.get(k))\n"
+        "print(json.dumps({{'changed': changed, 'ops': m['ops'], 'paths': m['paths'],\n"
+        "                  'app_imported': 'agentic_core.app_mvp' in sys.modules}}))\n"
+    ).format(root=str(_root613).replace("\\", "/"))
+    _p613 = _sp613.run([_sys613.executable, "-c", _probe613], cwd=str(_root613), env=_env613,
+                       capture_output=True, text=True, errors="replace")
+    assert _p613.returncode == 0, (
+        "the measuring script could not be driven in a child", _p613.stderr[-500:])
+    _out613 = None
+    for _ln in reversed((_p613.stdout or "").strip().splitlines()):
+        if _ln.startswith("{"):
+            _out613 = _json613.loads(_ln)
+            break
+    assert _out613, ("the probe printed no reading", (_p613.stdout or "")[-300:])
+    #  THE PROPERTY: measuring changes NO environment variable in the calling process.
+    assert _out613["changed"] == [], (
+        "the measuring script moved process-global state: a test loads this module in-process, so every "
+        "test after it in that xdist worker reads a different data root than it was given. CI sets no "
+        "DATA_DIR, which is why this is invisible locally", _out613["changed"])
+    #  and it must not pull the app into the caller either — that import is what freezes the paths
+    assert _out613["app_imported"] is False, (
+        "the measurement imported the app into the CALLING process, so the app's module-level config froze "
+        "against a throwaway store for everything that follows. Restoring the environment afterwards would "
+        "not undo this, which is why the measurement belongs in a child")
+    #  THE MEASUREMENT STILL HAPPENED — a zero would mean the child silently failed and the figure is a lie
+    assert _out613["ops"] > 100 and _out613["paths"] > 100, (
+        "the figures came back implausibly small, so the child did not really boot the app and the number "
+        "is not a measurement", _out613["ops"], _out613["paths"])
+
+    #  ── AND A FAILING CHILD MUST REFUSE, NOT ANSWER ZERO. Driven by FORCING the branch, because the child
+    #  succeeds in a healthy tree and a blind inside that branch would otherwise never execute. The stake is
+    #  concrete: if a failed child returned zeros, `readme_figures --fix` would rewrite the README to claim
+    #  the platform exposes 0 API operations and `--check` would then agree with it.
+    import importlib.util as _ilu613
+    _spec613 = _ilu613.spec_from_file_location("_rf613", _root613 / "scripts/readme_figures.py")
+    _rf613 = _ilu613.module_from_spec(_spec613)
+    _spec613.loader.exec_module(_rf613)
+
+    class _FailedProc613:
+        returncode = 9
+        stdout = ""
+        stderr = "w601 forced: the child could not start"
+
+    _prev_run613 = _rf613.subprocess.run
+    try:
+        _rf613.subprocess.run = lambda *a, **k: _FailedProc613()
+        _raised613 = None
+        try:
+            _rf613.api_figures()
+        except Exception as _e613:
+            _raised613 = _e613
+    finally:
+        _rf613.subprocess.run = _prev_run613
+    assert _raised613 is not None, (
+        "a child that FAILED produced a figure instead of refusing. A count of zero API operations is not a "
+        "measurement of a booted app, and `--fix` would write it into the README as one")
+    assert "not reported as zero" in str(_raised613) or "could not be measured" in str(_raised613), (
+        "the refusal does not say what went wrong, so a reader cannot tell a broken measurement from a real "
+        "one", str(_raised613)[:200])
+
+    # ── FU-460 · conftest must HONOUR an explicit path, not overwrite it ───────────────────────
+    _scratch613 = str(_pl613.Path(_os613.environ.get("TEMP", "/tmp")) / "w601_iso_probe").replace("\\", "/")
+    _env2613 = dict(_env613)
+    _env2613.update({"PROJECTS_DIR": _scratch613 + "/projects",
+                     "SYNTHESIS_OUTPUT_DIR": _scratch613 + "/synth",
+                     "PROPOSALS_DIR": _scratch613 + "/prop",
+                     "DATA_DIR": _scratch613 + "/data",
+                     "WORKSTATION_DATA_DIR": _scratch613 + "/data"})
+    _probe2613 = (
+        "import importlib.util, json, os\n"
+        "spec = importlib.util.spec_from_file_location('cft', r'{root}/integration_tests/conftest.py')\n"
+        "spec.loader.exec_module(importlib.util.module_from_spec(spec))\n"
+        "print(json.dumps({{k: os.environ.get(k) for k in\n"
+        "                  ('PROJECTS_DIR','SYNTHESIS_OUTPUT_DIR','PROPOSALS_DIR','DATA_DIR')}}))\n"
+    ).format(root=str(_root613).replace("\\", "/"))
+    _q613 = _sp613.run([_sys613.executable, "-c", _probe2613], cwd=str(_root613), env=_env2613,
+                       capture_output=True, text=True, errors="replace")
+    assert _q613.returncode == 0, ("conftest could not be imported in a child", _q613.stderr[-500:])
+    _got613 = None
+    for _ln in reversed((_q613.stdout or "").strip().splitlines()):
+        if _ln.startswith("{"):
+            _got613 = _json613.loads(_ln)
+            break
+    assert _got613, ((_q613.stdout or "")[-300:])
+    for _k613 in ("PROJECTS_DIR", "SYNTHESIS_OUTPUT_DIR", "PROPOSALS_DIR", "DATA_DIR"):
+        assert _scratch613 in str(_got613[_k613] or ""), (
+            f"conftest OVERWROTE an explicit {_k613}, so the isolated-run recipe this project uses for every "
+            f"verification run does not isolate it and the suite writes into the repository's own data/. "
+            f"The per-worker __gw0..__gw7 directories left behind are the symptom of this, not a separate "
+            f"defect", _k613, _got613[_k613])
+    #  AND THE DEFAULT MUST STILL APPLY when nothing is given, or this fix breaks every plain run
+    _probe3613 = _probe2613
+    _q3613 = _sp613.run([_sys613.executable, "-c", _probe3613], cwd=str(_root613), env=_env613,
+                        capture_output=True, text=True, errors="replace")
+    assert _q3613.returncode == 0, _q3613.stderr[-400:]
+    _def613 = None
+    for _ln in reversed((_q3613.stdout or "").strip().splitlines()):
+        if _ln.startswith("{"):
+            _def613 = _json613.loads(_ln)
+            break
+    assert _def613 and "test_projects" in str(_def613["PROJECTS_DIR"]), (
+        "with nothing set, conftest no longer falls back to its own test directory - so making the explicit "
+        "value win has broken the default every plain `pytest` run depends on", _def613)

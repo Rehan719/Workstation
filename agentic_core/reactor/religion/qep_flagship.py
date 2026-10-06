@@ -222,9 +222,23 @@ class QEPFlagshipService:
                 ],
                 "tutor_availability": None,
                 "whiteboard_session": f"session-{user_id[:4]}" if user_id else "global-session",
+                #  FU-446 — SHAPE-COMPLETE ACROSS ROLES. The two branches carried different key sets and the
+                #  only consumer (the AI-CEO tool) does not branch on role, so it indexed whichever keys it
+                #  was written against and got undefined on the other. AND THE DISTINCTION THAT MATTERS:
+                #  `None` here means two different things, so it is disambiguated rather than flattened —
+                #  a key named in `not_applicable` does not apply to this ROLE, while any other None is a
+                #  figure this store does not record. Collapsing those would be the same defect one layer
+                #  down.
+                "role": "Learner",
+                "students": None,
+                "active_sessions": None,
+                "analytics": None,
+                "curriculum": None,
+                "not_applicable": ["students", "active_sessions", "analytics", "curriculum"],
                 "detail": ("Per-lesson completion is not recorded for this learner and no tutor "
                            "registry exists, so neither is reported. 'lessons' is the fixed length "
-                           "of each playlist."),
+                           "of each playlist. The teacher-side keys are present and null because they "
+                           "do not apply to a Learner, which `not_applicable` names."),
             }
         else: # Teacher
             # W404 - this returned students 45, active_sessions 3 and analytics
@@ -237,9 +251,18 @@ class QEPFlagshipService:
                 "active_sessions": None,
                 "analytics": {"avg_progress": None, "retention_rate": None},
                 "curriculum": ["Rules of Noon Sakina", "Intro to Qalqalah"],  # fixed syllabus
+                #  FU-446 — the same key set as the Learner branch, with the learner-side keys named in
+                #  `not_applicable` so a null there is read as "not this role" and not as "not recorded".
+                "role": "Teacher",
+                "playlists": None,
+                "tutor_availability": None,
+                "whiteboard_session": None,
+                "not_applicable": ["playlists", "tutor_availability", "whiteboard_session"],
                 "detail": ("No cohort is recorded: this store holds no teacher-student enrolment, "
                            "no sessions and no retention history, so none of those are reported. "
-                           "The curriculum listed is fixed syllabus content, not a measurement."),
+                           "The curriculum listed is fixed syllabus content, not a measurement. The "
+                           "learner-side keys are present and null because they do not apply to a "
+                           "Teacher, which `not_applicable` names."),
             }
 
     async def adaptive_ui_engine(self, user_id: str, context: Dict[str, Any] = None) -> Dict[str, Any]:

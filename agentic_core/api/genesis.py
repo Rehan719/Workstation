@@ -73,8 +73,15 @@ def _screen_candidate(text: str) -> Dict[str, Any]:
         from agentic_core.api.compliance import screen_compliance
         s = screen_compliance(text or "")
     except Exception as exc:  # noqa: BLE001 — a screen fault must not decide a ranking
-        return {"screen_error": str(exc), "compliance": None, "safety": None, "disqualified": False,
-                "verdicts": {}}
+        #  FU-463 — SHAPE-COMPLETE. This path carried five keys and the normal one seven, so a caller
+        #  reading `overall` or `compliance_covered` got undefined exactly when the screen had faulted —
+        #  the moment it most needs to know. `*_covered` is None rather than [] on purpose: [] asserts
+        #  "no framework covered this subject", and a screen that raised did not establish that.
+        #  `verdicts` stays {} rather than becoming None because existing readers iterate it; `screen_error`
+        #  being non-None is what tells a reader the rest of this reading is unknown.
+        return {"screen_error": str(exc), "verdicts": {}, "overall": None,
+                "compliance": None, "compliance_covered": None,
+                "safety": None, "safety_covered": None, "disqualified": False}
     verdicts = {v.get("framework"): v.get("status") for v in (s.get("verdicts") or [])}
     # W455 — a row that says 'review — no engine covers this area' (coverage 'none') is not a finding
     # against the candidate; it is the screen saying it could not read this subject. It neither
@@ -87,6 +94,9 @@ def _screen_candidate(text: str) -> Dict[str, Any]:
     comp = [_VERDICT_SCORE.get(v, 0.5) for f, v in verdicts.items() if f not in _SAFETY_FRAMEWORKS and f in _covered]
     safe = [_VERDICT_SCORE.get(verdicts[f], 0.5) for f in _SAFETY_FRAMEWORKS if f in verdicts and f in _covered]
     return {
+        #  FU-463 — present and None on the path that did NOT fault, so the key set does not change with
+        #  the branch. A reader checks `screen_error` first and the rest of the reading is then meaningful.
+        "screen_error": None,
         "verdicts": verdicts,
         "overall": s.get("overall"),
         # W455 (refuter F5) — the score names WHICH frameworks read the subject; a 1.0 built on one

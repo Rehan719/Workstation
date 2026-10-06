@@ -7499,12 +7499,15 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W601",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
       "tier": 2,
-      "reach": "internal"
+      "reach": "internal",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The measurement runs in a CHILD PROCESS now, which is the only fix that satisfies the clause. api_figures() used to os.environ.setdefault the data root and import the app IN-PROCESS, and a test loads this module and calls it - so under CI, which sets no DATA_DIR, the whole xdist worker's data root moved to a throwaway directory and every test after it read a temp store. RESTORING THE ENVIRONMENT WOULD NOT HAVE FIXED IT: the import is the damage, because the app's module-level config freezes against whatever the paths were when it was first imported. Driven in a child started WITHOUT the isolation variables, exactly as CI runs it - asserted in-process it would have passed even with the old code, which is why this survived every local run. ROOT is passed explicitly and re-inserted by the child rather than inherited, because a stray .pth puts the repo root on sys.path for every local process and a child relying on that passes here and fails on CI. Two blinds red, the second after FORCING the failure branch: a failing child must REFUSE, never answer zero, or `--fix` would rewrite the README to claim the platform exposes 0 API operations and `--check` would then agree with it."
     },
     {
       "id": "FU-414",
@@ -7521,11 +7524,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W601",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The drift itself was already gone - docs/FOLLOWUPS.json is byte-identical to what both writers emit at indent=2, verified by round-tripping the real file. What was missing is the ASSERTION, which is what this row asked for: nothing checked that the file on disk is serialised the way its own writer serialises it. A guard now round-trips the live register and asserts byte equality, AND asserts both writers still emit indent=2 - because the file can only match one of them if they drift apart. Blind red: changing one writer's indent."
     },
     {
       "id": "FU-415",
@@ -7539,11 +7545,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W601",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Shape-complete, and the second attempt is the one that landed. My first fix filled the missing keys INSIDE the early return, which duplicated the key set in two places, left second_window_W490_plus still conditional, and added a _why key the full path lacked - so the shapes disagreed in the other direction. Driving both paths and diffing the key sets is what showed it. EVERY KEY IS NOW DECLARED ONCE in the initialiser both paths share, so no return can omit one because no return builds the set. round_boundaries_cost is a shape-complete DICT rather than None, because three of its seven fields need no duration at all and nulling the whole dict would throw away measurements that were available; the three that divide by the median round are None with a basis saying why. And what_this_cannot_know - the list of what the arithmetic cannot know - was being dropped exactly when the arithmetic could not know anything; it is now one tuple with one writer. Three blinds red."
     },
     {
       "id": "FU-416",
@@ -8200,11 +8209,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W601",
       "note": "",
       "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Shape-complete across roles: both branches now carry the same ten keys, so the only consumer (which does not branch on role) cannot index into undefined. AND THE DISTINCTION THAT WOULD HAVE BEEN LOST: a null means two different things here, so it is disambiguated rather than flattened. `role` says which branch answered and `not_applicable` names the keys that do not apply to that ROLE, so any other null is a figure this store does not record. A Learner's tutor_availability is NOT in that list - no tutor registry exists, which is a different fact from not-this-role - and a blind that merged the two came back red."
     },
     {
       "id": "FU-447",
@@ -8491,11 +8503,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W601",
       "note": "",
       "slot_source": "P2.21 owns the instruments; this is the parallel-run instrument leaving state behind, and it sits beside the per-worker isolation work P2.17 closes on",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Fixed, and the cause is larger than this row recorded. The row called it tier 3 / low because the leftover per-worker directories are gitignored. MEASURED IN W601: conftest.py set PROJECTS_DIR, SYNTHESIS_OUTPUT_DIR and PROPOSALS_DIR by PLAIN ASSIGNMENT where every other path uses setdefault, so an explicit value was OVERWRITTEN - driven, with an explicit scratch path going in and data/test_projects coming out. The isolated-run recipe this project uses for every verification run has therefore never isolated those three, and the suite has been writing projects, synthesis output and proposals into the repository's own data/. The 24 __gw0..__gw7 directories are the SYMPTOM of that line, not a separate defect, and DATA_DIR was always honoured which is why the leak was invisible. Now setdefault, with both halves driven: an explicit value survives, and the default still applies when nothing is set so no plain pytest run changes. Two blinds red."
     },
     {
       "id": "FU-461",
@@ -8546,11 +8561,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W601",
       "note": "",
       "slot_source": "P2.21's ACCEPT clause (2) is shape-complete returns: the same keys whatever the answer",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Shape-complete: _screen_candidate now answers with the SAME EIGHT KEYS whether the screen faulted or not, driven on both branches. The fault path carried five keys and the normal one seven, so a caller indexing `overall` or `compliance_covered` got undefined exactly when the screen had faulted. AND THE THREE STATES ARE KEPT: *_covered is None on the fault path, not [] - an empty list asserts that no framework covered the subject, which a screen that raised did not establish. `verdicts` stays {} because existing readers iterate it, and `screen_error` being non-None is what tells a reader the rest is unknown. Two blinds red: dropping screen_error from the normal return, and reporting [] coverage on the fault path."
     },
     {
       "id": "FU-464",

@@ -94,13 +94,59 @@ def round_durations(since: int = 449) -> Dict[str, Any]:
                       "DAYTIME gap is kept as a long round")}
 
 
+#  FU-415 — ONE WRITER for the honest-limits list, because BOTH returns carry it now. It was inline in the
+#  full path only, so the early return — the one that cannot measure anything — was the one that said nothing
+#  about what it could not know.
+_WHAT_THIS_CANNOT_KNOW = (
+    "a round that turns out to be a DECISION rather than a build finishes in minutes and skews the rate",
+    "a red suite that needs more than one diagnosis pass is unbounded, and the contingency covers only one",
+    "the durations include the Owner's replies, so an unattended night may run faster than the sample",
+    "a measurement round (a row closed by reading the tree) costs a fraction of a build round and the "
+    "sample does not separate them",
+)
+
+
 def forecast_session(hours: float, since: int = 460,
                      red_suite_contingency: bool = True) -> Dict[str, Any]:
     """How many complete rounds fit in `hours`, with the bands and what the arithmetic cannot know."""
     d = round_durations(since)
-    out: Dict[str, Any] = {"hours_available": hours, "round_durations": d, "suite_h": round(SUITE_H, 2)}
+    #  FU-415 — EVERY KEY DECLARED ONCE, HERE. The early return below used to build a four-key answer where
+    #  the full path builds eight, so a guard reading `round_boundaries_cost` failed with "the forecast no
+    #  longer reports the round-boundary cost" when the real answer was "the history could not be walked" —
+    #  and `what_this_cannot_know` was dropped exactly when the arithmetic could not know anything. Declaring
+    #  the set here rather than in each return means no path can omit a key, because no path builds the set.
+    out: Dict[str, Any] = {
+        "hours_available": hours,
+        "round_durations": d,
+        "suite_h": round(SUITE_H, 2),
+        "projection": None,
+        "contingency": None,
+        "round_boundaries_cost": None,
+        "second_window_W490_plus": None,
+        "what_this_cannot_know": list(_WHAT_THIS_CANNOT_KNOW),
+    }
     if not d.get("assessable"):
+        #  Fill what IS knowable without the durations, and say what is not. The contingency needs no
+        #  history at all, and three of the round-boundary fields are constants — nulling the whole dict
+        #  would throw away measurements that were available, which is the same defect from the other side.
         out["projection"] = {"unavailable": d["why"]}
+        out["contingency"] = ({"reserved_h": round(SUITE_H, 2),
+                               "why": "one red suite costs a full re-run; W513 spent exactly this tonight"}
+                              if red_suite_contingency else None)
+        out["round_boundaries_cost"] = {
+            "suite_h_per_round": round(SUITE_H, 2),
+            "suite_mode": K.SUITE_MODE_IN_USE,
+            "suite_basis": K.SUITE_IN_USE_BASIS,
+            "share_of_a_median_round": None,
+            "share_basis": None,
+            "suite_cost_at_n_rounds": None,
+            "implication": ("the suite is FIXED per round, so fewer and larger rounds convert verification "
+                            "overhead into working time; two extra round boundaries cost about one round's "
+                            "work"),
+            "basis": (f"the three fields that divide by the median round are NOT MEASURED, not zero: the "
+                      f"durations could not be walked ({d['why']}). A zero share would read as a suite that "
+                      f"costs nothing per round."),
+        }
         return out
 
     usable = hours - (SUITE_H if red_suite_contingency else 0.0)
@@ -134,6 +180,10 @@ def forecast_session(hours: float, since: int = 460,
         "suite_cost_at_n_rounds": {f"{n} rounds": round(n * SUITE_H, 2) for n in (n_med, n_med + 2)},
         "implication": ("the suite is FIXED per round, so fewer and larger rounds convert verification "
                         "overhead into working time; two extra round boundaries cost about one round's work"),
+        #  FU-415 — the same key the unmeasurable path carries, so the dict's shape does not change with the
+        #  answer. Here it says the fields WERE measured; there it says which three could not be.
+        "basis": (f"measured: the share and the per-n costs are computed from the median round "
+                  f"({d['median_h']}h) in the {K.SUITE_MODE_IN_USE} suite mode."),
     }
     # TWO WINDOWS, BOTH REPORTED. The recent regime and the wider history disagree about the SLOW band
     # (W490+ p75 2.63h vs W460+ p75 3.72h) and the night's committed round count turns on which is used.
@@ -153,13 +203,7 @@ def forecast_session(hours: float, since: int = 460,
             "the LOWER of two NESTED windows' slow bands -- a worst case, NOT the commitment. The committed and "
             "expected counts come from night_sim.committed_and_expected(), which is the one rule that decides them")
 
-    out["what_this_cannot_know"] = [
-        "a round that turns out to be a DECISION rather than a build finishes in minutes and skews the rate",
-        "a red suite that needs more than one diagnosis pass is unbounded, and the contingency covers only one",
-        "the durations include the Owner's replies, so an unattended night may run faster than the sample",
-        "a measurement round (a row closed by reading the tree) costs a fraction of a build round and the "
-        "sample does not separate them",
-    ]
+    out["what_this_cannot_know"] = list(_WHAT_THIS_CANNOT_KNOW)
     return out
 
 

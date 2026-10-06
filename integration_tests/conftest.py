@@ -8,9 +8,17 @@ import os
 import pytest
 
 # Use isolated test data directories so tests don't pollute real data.
-os.environ["PROJECTS_DIR"] = "data/test_projects"
-os.environ["SYNTHESIS_OUTPUT_DIR"] = "data/test_synthesis"
-os.environ["PROPOSALS_DIR"] = "data/test_proposals"
+#  FU-460 (P2.21 clause 3) — `setdefault`, NOT plain assignment. These three lines USED to overwrite an
+#  explicit value, so the isolated-run recipe every verification run uses ("PROJECTS_DIR=<scratch> ...")
+#  silently had no effect for them and the suite wrote into the repository's own data/. The SUBDIVIDED loop
+#  below then appended __gw0..__gw7 to each, which is where the 24 leftover directories came from: the
+#  symptom of this line, not a separate defect. DATA_DIR two blocks down always used setdefault and was
+#  always honoured, which is why the leak was invisible — the store looked isolated because it was.
+#  The principle is already stated thirty lines below, against the subdivision: "An explicit value defeating
+#  the isolation is W394's original defect one layer over."
+os.environ.setdefault("PROJECTS_DIR", "data/test_projects")
+os.environ.setdefault("SYNTHESIS_OUTPUT_DIR", "data/test_synthesis")
+os.environ.setdefault("PROPOSALS_DIR", "data/test_proposals")
 
 # W394 — the three lines above promised isolation they did not deliver. DATA_DIR was never set, and
 # DATA_DIR is where the things that actually accumulate live: VSB entities, the token ledger, the UEG
