@@ -44393,3 +44393,181 @@ def test_w601_p221_no_instrument_moves_the_process_data_root():
     assert _def613 and "test_projects" in str(_def613["PROJECTS_DIR"]), (
         "with nothing set, conftest no longer falls back to its own test directory - so making the explicit "
         "value win has broken the default every plain `pytest` run depends on", _def613)
+
+
+def test_w602_p221_the_preflight_computes_which_guards_a_register_change_invalidates(tmp_path):
+    """P2.21 clause (1) — [regchange] names the guards it COMPUTES, not four it remembers.
+
+    W592's register change broke seven guards, none in the hardcoded four. W601 closed six rows and the leg
+    said `ok`, because "a row was closed" was not among its hardcoded kinds. Both halves were fixed lists.
+    """
+    import importlib.util as _ilu602
+    import pathlib as _pl602
+
+    _root602 = _pl602.Path(__file__).resolve().parents[1]
+    _spec602 = _ilu602.spec_from_file_location("_scd602", _root602 / "scripts/selfcheck_diff.py")
+    _scd602 = _ilu602.module_from_spec(_spec602)
+    _spec602.loader.exec_module(_scd602)
+
+    # ── the list is COMPUTED: a planted test the old four could never have named is found ────────
+    _planted602 = tmp_path / "test_planted_602.py"
+    _planted602.write_text(
+        "def test_zzz_planted_reads_the_register_602(client):\n"
+        "    import json, pathlib\n"
+        "    reg = json.loads(pathlib.Path('docs/FOLLOWUPS.json').read_text())\n"
+        "    assert reg\n"
+        "\n"
+        "def test_zzz_planted_reads_nothing_602(client):\n"
+        "    assert 1 + 1 == 2\n",
+        encoding="utf-8")
+    _found602 = _scd602._register_reading_guards(_planted602)
+    assert "test_zzz_planted_reads_the_register_602" in _found602, (
+        "the pre-flight does not COMPUTE which guards read the register - a test planted in a scratch suite "
+        "that reads FOLLOWUPS.json was not named, so the leg is recalling a list rather than scanning",
+        _found602)
+    assert "test_zzz_planted_reads_nothing_602" not in _found602, (
+        "a test that reads neither the register nor the plan was named, so the scan is not discriminating "
+        "and would tell every round to run every guard", _found602)
+
+    # ── against the REAL suite: a guard the hardcoded four omitted is named, and the count cannot shrink ─
+    _real602 = _scd602._register_reading_guards()
+    assert "test_w486_the_plan_says_where_it_is_going_or_says_it_cannot" in _real602, (
+        "test_w486 reads the real plan and the live register and was NOT in the hardcoded four; if the "
+        "computed list does not name it, the computation has regressed to the list", len(_real602))
+    assert "test_w469_the_plan_carries_every_followup_and_keeps_itself_current" in _real602, _real602[:8]
+    assert len(_real602) >= 20, (
+        "the computed list is short enough to be a hand-written one; the measurement at W602 found 35 "
+        "register-reading guards and a count this low means the scan is no longer scanning", len(_real602))
+    #  this very test reads the register through the module it loads, so it must name itself - a scan that
+    #  cannot see the file it lives in is reading something other than the suite
+    assert "test_w602_p221_the_preflight_computes_which_guards_a_register_change_invalidates" in _real602, (
+        "the scan did not find THIS test, which loads selfcheck_diff and names FOLLOWUPS.json in its own "
+        "body - so it is not scanning the live suite", len(_real602))
+
+    # ── the KINDS gate: a diff that ONLY CLOSES A ROW must trigger the leg ──────────────────────
+    #  W601's exact change. The old leg returned ok on it because closing was not a listed kind.
+    _prev_ar602 = _scd602.added_removed
+    try:
+        def _fake_added_removed(rev, f):
+            if f.endswith("docs/FOLLOWUPS.json"):
+                return ([(1, '      "status": "closed",'), (2, '      "closed_by": "W601",')], [])
+            return ([], [])
+
+        _scd602.added_removed = _fake_added_removed
+        _leads602 = _scd602.check_register_change("HEAD", ["docs/FOLLOWUPS.json"])
+    finally:
+        _scd602.added_removed = _prev_ar602
+    assert _leads602, (
+        "a diff that only CLOSES a row produced no lead - the leg still gates on a fixed list of kinds, and "
+        "closing a row is the most common register change there is")
+    assert any("CLOSED" in ln for ln in _leads602), (
+        "the leg fired but did not say WHY: 'a row was closed' is not among the kinds it reports",
+        _leads602[:4])
+    assert any(ln.strip().startswith("-k '") for ln in _leads602), (
+        "the leg names no -k expression, so a round cannot run the guards it was just told about",
+        _leads602[:3])
+    #  THE EMITTED LINE, not the helper: a round reads the -k the leg PRINTS, so that is what must carry the
+    #  computed names. Asserting the helper alone stayed green when the call site was swapped back to the
+    #  old four-name list - the helper was fine and nothing used it.
+    _k602 = next(ln for ln in _leads602 if ln.strip().startswith("-k '"))
+    assert "test_w486_the_plan_says_where_it_is_going_or_says_it_cannot" in _k602, (
+        "the -k line the leg EMITS does not name test_w486 - the computed list exists but the leg is not "
+        "printing it, so a round still runs the four it used to", _k602[:160])
+    assert _k602.count(" or ") >= 19, (
+        "the emitted -k names too few guards to be the computed list", _k602.count(" or ") + 1)
+
+    #  THE CATCH-ALL, FORCED: a register diff that matches NO named kind must still fire. The CLOSED leg
+    #  above could not see this branch because its own diff is classified; this one is not.
+    _prev_ar602b = _scd602.added_removed
+    try:
+        def _unclassified_added_removed(rev, f):
+            if f.endswith("docs/FOLLOWUPS.json"):
+                return ([(1, '      "why": "w602: a sentence in a row was reworded",')], [])
+            return ([], [])
+
+        _scd602.added_removed = _unclassified_added_removed
+        _leads602b = _scd602.check_register_change("HEAD", ["docs/FOLLOWUPS.json"])
+    finally:
+        _scd602.added_removed = _prev_ar602b
+    assert _leads602b, (
+        "a register change that matches none of the named kinds produced NO lead - the gate is back to a "
+        "fixed list of kinds, and a change it cannot classify is silent again")
+    assert any("none of the named kinds" in ln for ln in _leads602b), (
+        "the leg fired on an unclassified change but did not SAY it was unclassified", _leads602b[:4])
+
+
+def test_w602_p221_the_combining_check_names_the_workable_subset():
+    """P2.21 clause (4) — COMBINING reports what CAN go together, not only that something cannot.
+
+    Before: one overlapping pair among six refused all fifteen pairs and named no subset, and the one file
+    every guard shares (the suite) caused overlaps that are not collisions - nothing blinds the suite. So the
+    line refused every time, which is as uninformative as never refusing.
+    """
+    import json as _json603
+    import pathlib as _pl603
+
+    from agentic_core import plan_followups as _pf603
+
+    _T603 = "integration_tests/test_mvp_spine.py"
+
+    # ── a GENUINELY workable case is reported as such ───────────────────────────────────────────
+    _ok603 = _pf603.combinable([{"slot": "A", "rows": ["FU-1"], "files": [_T603, "pkg/a.py"]},
+                                {"slot": "B", "rows": ["FU-2"], "files": [_T603, "pkg/b.py"]}])
+    assert _ok603["combinable"] is True, (
+        "two bundles that share ONLY the suite file are refused - the suite is not a blind surface, so this "
+        "pair is workable and the view is refusing a round it could propose", _ok603["basis"][:200])
+    assert sorted(_ok603["largest_disjoint_subset"]) == ["A[FU-1]", "B[FU-2]"], _ok603["largest_disjoint_subset"]
+    assert _T603 in _ok603["excluded_from_disjointness"], (
+        "the view does not SAY it excluded the suite file from the computation, so a reader cannot tell why "
+        "two rows citing the same file were called disjoint")
+
+    # ── THE RULE IS NOT WEAKENED: a shared SOURCE file still refuses the pair ───────────────────
+    _no603 = _pf603.combinable([{"slot": "A", "rows": ["FU-1"], "files": ["pkg/shared.py", "pkg/a.py"]},
+                                {"slot": "B", "rows": ["FU-2"], "files": ["pkg/shared.py", "pkg/b.py"]}])
+    assert _no603["combinable"] is False, (
+        "two bundles sharing a SOURCE file were called combinable - each one's blinds would mutate the "
+        "other's surface and a RED would stop being attributable, which is the rule this check exists for")
+    assert _no603["overlaps"] and _no603["overlaps"][0]["files"] == ["pkg/shared.py"], _no603["overlaps"]
+    assert len(_no603["largest_disjoint_subset"]) == 1, (
+        "with one overlapping pair the workable subset is ONE of them, and the view must still name it "
+        "rather than only refusing", _no603["largest_disjoint_subset"])
+
+    # ── THE WORKABLE SUBSET IS NAMED when SOME can go together and some cannot ──────────────────
+    _mix603 = _pf603.combinable([
+        {"slot": "A", "rows": ["FU-1"], "files": [_T603, "pkg/shared.py"]},
+        {"slot": "B", "rows": ["FU-2"], "files": [_T603, "pkg/shared.py", "pkg/b.py"]},
+        {"slot": "C", "rows": ["FU-3"], "files": [_T603, "pkg/c.py"]},
+    ])
+    assert _mix603["combinable"] is False, "not ALL three are disjoint, so the all-together answer is False"
+    assert len(_mix603["largest_disjoint_subset"]) == 2 and "C[FU-3]" in _mix603["largest_disjoint_subset"], (
+        "the largest workable subset is two of three and must include the one that overlaps nothing; the "
+        "view either did not compute it or computed it wrong", _mix603["largest_disjoint_subset"])
+    assert "WORKABLE SUBSET" in _mix603["basis"] and "2 of 3" in _mix603["basis"], (
+        "the basis does not state the workable subset, so the payload knows what a round can hold and the "
+        "sentence a round reads does not", _mix603["basis"][:220])
+    assert "excluded" in _mix603["basis"], (
+        "the basis names the subset but not WHY the rest are excluded", _mix603["basis"][:220])
+
+    # ── shape-complete across all three paths (clause 2 applies to this instrument too) ─────────
+    _one603 = _pf603.combinable([{"slot": "A", "rows": ["FU-1"], "files": ["pkg/a.py"]}])
+    assert _one603["combinable"] is None, "fewer than two bundles is NOT a pass - nothing was tested"
+    assert set(_ok603) == set(_no603) == set(_mix603) == set(_one603), (
+        "combinable() answers with different key sets on different paths",
+        sorted(set(_ok603) ^ set(_one603)))
+
+    # ── AND THE RENDERED LINE CARRIES IT — the payload reaching a reader is the whole point ─────
+    _root603 = _pl603.Path(__file__).resolve().parents[1]
+    _reg603 = _json603.loads((_root603 / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _prompt603 = (_root603 / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _rendered603 = _pf603.render_bundles(_reg603, _prompt603)
+    _line603 = next((ln for ln in _rendered603.splitlines() if "COMBINING:" in ln), "")
+    assert _line603, "the bundles view no longer prints a COMBINING line at all"
+    assert ("WORKABLE SUBSET" in _line603) or ("pairwise disjoint" in _line603), (
+        "the COMBINING line a round reads neither names a workable subset nor says everything is disjoint - "
+        "so it is back to a bare refusal or a bare pass", _line603[:240])
+    #  and a bundle is identified by its ROWS, because bundles() cuts one item into several components and
+    #  "P3.2, P3.2, P3.2" names three different things a reader cannot tell apart
+    if "WORKABLE SUBSET" in _line603:
+        assert "[FU-" in _line603, (
+            "the subset names bundles by slot alone, so several components of one item are indistinguishable "
+            "and a reader cannot tell WHICH one was excluded", _line603[:240])

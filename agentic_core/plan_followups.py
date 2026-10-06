@@ -1275,26 +1275,63 @@ def combinable(proposed: List[Dict[str, Any]]) -> Dict[str, Any]:
     It REFUSES rather than warns and it NAMES the overlap, because a round told only that something is
     wrong spends its first hour finding out what.
     """
-    _norm = [{"slot": b.get("slot"), "files": set(b.get("files") or [])} for b in (proposed or [])]
+    #  FU-457 (P2.21 clause 4) — THE SHARED GUARD FILE IS NOT A BLIND SURFACE. Every guard in this project
+    #  lives in the one suite file, so every guard-related row cites it and any two bundles "overlap" on it.
+    #  But blinds mutate SOURCE files and restore them; nothing blinds the suite. So the one file guaranteed
+    #  to appear in many rows cannot cause the collision the refusal names, and counting it made the check
+    #  refuse every time — which is as uninformative as never refusing.
+    _not_a_surface = {normalise_path("integration_tests/test_mvp_spine.py")}
+    #  a bundle is labelled by its slot AND its rows: bundles() cuts one item into several file-components,
+    #  so "P3.2, P3.2, P3.2" names three different things and a reader could not tell which was excluded
+    def _label(b):
+        _rows = [str(r) for r in (b.get("rows") or []) if isinstance(r, str)]
+        return f"{b.get('slot')}[{','.join(_rows)}]" if _rows else str(b.get("slot"))
+    _norm = [{"slot": _label(b),
+              "files": {normalise_path(f) for f in (b.get("files") or [])} - _not_a_surface}
+             for b in (proposed or [])]
+    _excluded = sorted(_not_a_surface)
     if len(_norm) < 2:
-        return {"combinable": None, "overlaps": [],
+        return {"combinable": None, "overlaps": [], "largest_disjoint_subset": [n["slot"] for n in _norm],
+                "excluded_from_disjointness": _excluded,
                 "basis": (f"{len(_norm)} bundle(s) proposed, so disjointness does not arise. This is "
                           f"NOT a pass — nothing was tested")}
     _overlaps = []
+    _adj = {i: set() for i in range(len(_norm))}
     for _i in range(len(_norm)):
         for _j in range(_i + 1, len(_norm)):
             _shared = sorted(_norm[_i]["files"] & _norm[_j]["files"])
             if _shared:
                 _overlaps.append({"a": _norm[_i]["slot"], "b": _norm[_j]["slot"], "files": _shared})
+                _adj[_i].add(_j)
+                _adj[_j].add(_i)
+    #  THE WORKABLE ANSWER: the largest set of these that IS pairwise disjoint. A maximum independent set on
+    #  the overlap graph, brute-forced because bundles() proposes six and 2**6 is nothing — an approximation
+    #  here would sometimes understate what a round can hold, which is this defect in a smaller form.
+    _best: list = []
+    _n = len(_norm)
+    for _mask in range(1, 1 << _n):
+        _members = [i for i in range(_n) if _mask >> i & 1]
+        if len(_members) <= len(_best):
+            continue
+        if all(j not in _adj[i] for i in _members for j in _members if j > i):
+            _best = _members
+    _subset = [_norm[i]["slot"] for i in _best]
+    _left_out = [_norm[i]["slot"] for i in range(_n) if i not in _best]
     if _overlaps:
         _w = "; ".join(f"{o['a']} and {o['b']} both touch " + ", ".join(o["files"]) for o in _overlaps)
-        return {"combinable": False, "overlaps": _overlaps,
-                "basis": (f"REFUSED — not disjoint: {_w}. Two bundles in one round are two guard "
-                          f"subjects, and a shared file means each one's blinds mutate the other's "
-                          f"surface, so a RED is no longer attributable to either")}
-    return {"combinable": True, "overlaps": [],
-            "basis": (f"{len(_norm)} bundles, file sets pairwise disjoint, so each keeps its own guard "
-                      f"subject and neither's blinds can reach the other's surfaces")}
+        return {"combinable": False, "overlaps": _overlaps, "largest_disjoint_subset": _subset,
+                "excluded_from_disjointness": _excluded,
+                "basis": (f"NOT ALL combinable — not pairwise disjoint: {_w}. Two bundles in one round are "
+                          f"two guard subjects, and a shared SOURCE file means each one's blinds mutate the "
+                          f"other's surface, so a RED is no longer attributable to either. THE WORKABLE "
+                          f"SUBSET is {len(_subset)} of {_n}: {', '.join(_subset) or 'none'}; "
+                          f"{', '.join(_left_out)} excluded because each shares a source file with one of "
+                          f"them. The suite file is not counted: nothing blinds it.")}
+    return {"combinable": True, "overlaps": [], "largest_disjoint_subset": _subset,
+            "excluded_from_disjointness": _excluded,
+            "basis": (f"{_n} bundles, source-file sets pairwise disjoint, so each keeps its own guard "
+                      f"subject and neither's blinds can reach the other's surfaces. The suite file is "
+                      f"not counted: nothing blinds it.")}
 
 
 def render_bundles(register: Any, prompt_text: str, top: int = 6) -> str:
