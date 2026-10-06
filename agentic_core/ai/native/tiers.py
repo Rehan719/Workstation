@@ -151,6 +151,96 @@ def runnable(tier: str, m: Optional[Dict[str, Any]] = None) -> Tuple[str, str]:
         + ("" if not needs["gpu"] else f", and a CUDA device is visible ({m.get('cuda_basis')})"))
 
 
+#  P3.5 clause (3) — THE VISION-CAPABLE FAMILIES, as a screen that may FLAG and never CLEAR.
+#  Families, not exact names: `local_models()` returns names with a tag (`llava:13b`), so a bare equality
+#  test would miss every tagged pull. Deliberately short — a list long enough to be exhaustive would be a
+#  list nobody maintains, and the UNKNOWN state below is what makes a short list safe.
+VISION_FAMILIES = ("llava", "bakllava", "moondream", "llama3.2-vision", "llama3-vision",
+                   "qwen-vl", "qwen2-vl", "minicpm-v", "pixtral", "gemma3-vision")
+
+VISION_CANNOT_CLEAR = (
+    "this list can only RECOGNISE a vision-capable family; it cannot establish that a model is NOT "
+    "vision-capable. A model it does not recognise is reported UNKNOWN, never as text-only, because 'I do "
+    "not recognise this model' and 'this model cannot read an image' are different statements")
+
+
+def vision_resources(models: List[str]) -> Dict[str, Any]:
+    """Which of the pulled models can read an image. THREE STATES, and the middle one is the point.
+
+    A PURE function over a list of names, not a reader of the environment: `local_models()` returns [] under
+    AI_DISABLE_LOCAL and the suite sets it, so a check that asked the environment could never be driven — it
+    would see "nothing installed" forever and pass whatever this logic did.
+
+      matched   : models whose family is recognised as vision-capable
+      unknown   : models whose family is NOT recognised — reported, never silently dropped
+      basis     : what the result does and does not establish, including the cannot-clear statement
+    """
+    matched, unknown = [], []
+    for m in models or []:
+        name = str(m or "").strip().lower()
+        if not name:
+            continue
+        family = name.split(":", 1)[0]
+        if any(family == f or family.startswith(f) for f in VISION_FAMILIES):
+            matched.append(m)
+        else:
+            unknown.append(m)
+    return {
+        "matched": matched,
+        "unknown": unknown,
+        "basis": (
+            (f"{len(matched)} pulled model(s) belong to a recognised vision-capable family: "
+             f"{', '.join(matched)}. " if matched else
+             "no pulled model belongs to a recognised vision-capable family. ")
+            + (f"{len(unknown)} model(s) were NOT RECOGNISED either way ({', '.join(unknown[:6])}): they are "
+               f"not counted as vision-capable and are not claimed to be text-only. " if unknown else "")
+            + VISION_CANNOT_CLEAR),
+    }
+
+
+def image_intake(models: Optional[List[str]] = None) -> Dict[str, Any]:
+    """P3.5 clauses (2) and (3) — what this deployment can read from an image, and the REFUSAL when nothing.
+
+    clause (2): where no owned vision resource is installed it REFUSES with an accurate reason naming WHAT IS
+    MISSING, and produces no text. The reason is not written here — it is READ from the `perception` tier's
+    own declared requirements and its `why_it_needs_that` sentence, plus the measured machine, so the refusal
+    states the actual shortfall rather than a sentence somebody typed. A fabricated description is the defect
+    this item exists to prevent, and it is the same class as the transcription mock W495 deleted.
+
+    clause (3): the accept list is COMPUTED from the matched resource, never a constant. With nothing matched
+    it is EMPTY and says why — a list naming a format nothing can read fails this clause explicitly.
+    """
+    if models is None:
+        try:
+            from agentic_core.ai.native.model_resource import local_models
+            models = local_models()
+        except Exception:                       # noqa: BLE001 — reported, never silently treated as empty
+            models = []
+    v = vision_resources(models)
+    state, why = runnable("perception")
+    spec = TIERS["perception"]
+    return {
+        "can_read_images": bool(v["matched"]),
+        "resources": v["matched"],
+        "unrecognised_models": v["unknown"],
+        #  EMPTY when nothing matched, and that is the honest computed answer rather than a constant
+        "accepts": ["image/png", "image/jpeg", "image/webp"] if v["matched"] else [],
+        "accepts_basis": (
+            "computed from the matched vision resource" if v["matched"] else
+            "EMPTY because no matched vision resource can read an image here. A list naming a format "
+            "nothing can read would be a promise this deployment cannot keep"),
+        "tier_state": state,
+        "refusal": None if v["matched"] else (
+            f"NO TEXT IS PRODUCED FROM AN IMAGE on this deployment. What is missing, measured rather than "
+            f"asserted: the perception tier needs about {spec['needs']['ram_gb']} GB"
+            + (" and a CUDA device" if spec['needs']['gpu'] else "")
+            + f", and {why} {spec['why_it_needs_that']}. Nothing is described, summarised or guessed at from "
+              f"the image: a fabricated description would be worse than a refusal, because a reader cannot "
+              f"tell one from a reading."),
+        "vision_screen_basis": v["basis"],
+    }
+
+
 def registry() -> Dict[str, Any]:
     """Every tier, what it serves, whether it is runnable here, and WHICH RESOURCES it actually has.
 
@@ -180,6 +270,13 @@ def registry() -> Dict[str, Any]:
             res = ["the deterministic floor (in-process, no model)"]
         elif name == "reflex_routing":
             res = list(_models)
+        elif name == "perception":
+            #  P3.5 clause (3) — MATCHED, not assigned. This branch returned [] for every tier above
+            #  reflex_routing with the comment "the higher tiers get nothing, because nothing on this
+            #  machine can serve them". True of this machine and written as an assignment, so pulling a
+            #  vision model would have changed nothing and the §18 boundary would have been permanent in
+            #  code while reading as conditional in prose.
+            res = vision_resources(_models)["matched"]
         else:
             res = []
         tiers[name] = {

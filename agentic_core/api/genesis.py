@@ -818,6 +818,9 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
 
 
 class EstablishRequest(BaseModel):
+    #  P3.26 clause (1) — the lineage a caller may state. "" means NO PARENT, never a null that reads as
+    #  an answer; an id that does not resolve is REFUSED at the route below, before any enrichment.
+    parent_vsb: str = ""
     problem: str
     domain: str = "enterprise"
     realm: str = "enterprise"
@@ -1182,6 +1185,20 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     The entity is persisted into the shared VSB store, so it appears in /api/v1/vsb
     and its dashboard, with its DNA encoded into the epigenetic genome registry.
     """
+    #  P3.26 clause (1) — AN UNRESOLVABLE PARENT IS REFUSED HERE, and here is the only place it can be.
+    #  NOT in register(): enrich_vsb_entity calls it inside `except Exception: pass` because enrichment must
+    #  never block generation, so a refusal raised there is SWALLOWED and the entity created parentless in
+    #  silence - this item's own defect wearing a fix's costume. The detail carries `message` first because a
+    #  dict detail reaching a page as a React child throws (W597).
+    from agentic_core.economy.living_vsbs import resolve_parent as _rp, PARENT_UNRESOLVED as _PU
+    _lin_chk = _rp(getattr(req, "parent_vsb", "") or "")
+    if _lin_chk["state"] == _PU:
+        raise HTTPException(status_code=409, detail={
+            "message": (f"Not established: the stated parent {getattr(req, 'parent_vsb', '')!r} is not on "
+                        f"the living roster, so this entity would claim a parent that never existed."),
+            "stated_parent": getattr(req, "parent_vsb", ""),
+            "basis": _lin_chk["basis"],
+        })
     # §17.5 user isolation — with auth enabled, the established VSB's owner is ALWAYS the
     # authenticated user (server-side stamp). Single-user mode unchanged.
     req.owner_id = request_owner_id(user, req.owner_id)
@@ -1299,7 +1316,12 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     # will continually run its virtual economy cycles), so it "operates, improves and evolves forever".
     try:
         from agentic_core.economy.living_vsbs import register as _register_living
-        _register_living(vsb_id, name, req.entity_type, req.domain, req.owner_id)
+        #  P3.26 clause (1) — THE PARENT IS PASSED HERE TOO. This call is the fifth creation path and
+        #  the only one that does not go through enrich_vsb_entity, so adding the field and the
+        #  refusal without this line left the lineage unrecorded on the very route the guard drives.
+        #  Caught by driving HTTP: register()'s own unit behaviour was already correct.
+        _register_living(vsb_id, name, req.entity_type, req.domain, req.owner_id,
+                        parent_vsb=getattr(req, 'parent_vsb', '') or '')
         # W475 (ledger v4 R2.0) — the present tense is earned only when the heartbeat's economy lever is ON; it is
         # off by default, so only the birth cycle ran and the founder was told the organism was tending the VSB.
         from agentic_core.economy.living_vsbs import living_statement
@@ -1476,7 +1498,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
         }
         vsb_mod.enrich_vsb_entity(entity, owner_id=req.owner_id, problem=req.problem,
-                                  domain=req.domain, entity_type=req.entity_type)
+                                  domain=req.domain, entity_type=req.entity_type,
+                                  parent_vsb=getattr(req, 'parent_vsb', '') or '')
         # §4×§5 (W315) — SSE path plan PARITY: the same seeding core as the blocking path, so the
         # Chief's living Business Plan opens with the journey's concept + the §4.7 ops objective.
         _seed_plan_from_journey(vsb_id, name, req, entity)

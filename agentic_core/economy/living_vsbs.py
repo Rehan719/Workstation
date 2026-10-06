@@ -98,18 +98,124 @@ def intake_note(what: str = "this") -> Dict[str, Any]:
     return {"note": note, "autonomous_cycles": running, "virtual": True}
 
 
+#  P3.26 clause (1) — THE LINEAGE STATES, as three and not two.
+#  "An entity with no parent must SAY it has none rather than carrying a null that reads as an answer."
+#  A null cannot distinguish "no parent" from "nobody recorded one", and FIVE of P3.26's clauses are claims
+#  ABOUT a lineage — mitosis inheriting a constitution, apoptosis returning what an entity held, the
+#  never-auto-retire set protecting the last entity in its realm x domain. The difference is load-bearing.
+NO_PARENT = "no_parent"
+PARENT_RESOLVED = "resolved"
+PARENT_UNRESOLVED = "unresolved"
+
+#  P3.2 clause (1) — PER-ENTITY TENDING, and why absent means ON.
+#  `auto_economy` and `auto_compliance` exist today only as GLOBAL heartbeat levers
+#  (organism/heartbeat.py), so "switches them on FOR THE NEW ENTITY" had nowhere to be recorded. They are
+#  now facts about an entity, and tending requires BOTH: the organism beating with its lever on, and the
+#  entity's own flag.
+#  EVERY ENTITY ALREADY ON THE ROSTER PREDATES THESE FIELDS. A default of False would silently stop the
+#  organism tending all of them — a regression delivered as a feature — so readers must use
+#  `rec.get(flag, True)` and this writer states the value explicitly rather than leaning on a default two
+#  layers away. A record should SAY what is true of it.
+TENDING_FLAGS = ("auto_economy", "auto_compliance")
+TENDING_ABSENT_MEANS = ("an entity registered before these fields existed carries neither, and absent is "
+                        "read as ON — the organism was tending it already and a new field must not quietly "
+                        "stop that")
+
+
+def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
+    """Three states for a claimed parent. A LOOKUP ONLY — it refuses nothing; the routes do that.
+
+    It lives here so every creation path shares one answer to "does this parent exist" rather than each
+    deciding for itself what resolving means and drifting apart.
+    """
+    pid = str(parent_vsb or "").strip()
+    if not pid:
+        return {"state": NO_PARENT, "parent_vsb": None, "generation": 0,
+                "basis": ("no parent was stated, so this entity has NONE - which is a fact about it and "
+                          "not a field somebody forgot. An entity established directly by its founder is "
+                          "the root of its own lineage, which makes it generation 0.")}
+    d = _load()
+    if pid in d:
+        #  P3.2 clause (5) — THE GENERATION, so "has evolved >= 1 generation" has a field to mean something.
+        #  Measured W598: no evolutionary generation counter existed anywhere in the live tree (every
+        #  `generation` was TEXT generation), so that clause's own stated test - "a guard drives generation
+        #  0 and asserts NO re-score" - had nothing to drive. A generation is the DEPTH of the lineage chain
+        #  this field creates, so it belongs here with the parent rather than in a second mechanism.
+        _pg = d[pid].get("generation")
+        _gen = (int(_pg) + 1) if isinstance(_pg, int) else 1
+        return {"state": PARENT_RESOLVED, "parent_vsb": pid, "generation": _gen,
+                "basis": (f"spawned from {pid}, which was resolved on the living roster at creation - so "
+                          f"this lineage names an entity that exists rather than an id somebody typed. "
+                          f"Generation {_gen}: one deeper than its parent"
+                          + ("" if isinstance(_pg, int) else
+                             ", whose own generation was not recorded (it predates the field), so this is "
+                             "counted as 1 rather than guessed from a chain that cannot be walked")
+                          + ".")}
+    return {"state": PARENT_UNRESOLVED, "parent_vsb": None, "generation": None,
+            "basis": (f"the stated parent {pid!r} is not on the living roster. A lineage field that "
+                      f"accepted this would claim a parent that never existed, and every clause reasoning "
+                      f"over the lineage would then be reasoning about a fiction. The generation is None "
+                      f"rather than 0: an unresolvable parent leaves the depth UNKNOWN, and 0 would assert "
+                      f"this entity is a root.")}
+
+
+def tending(rec: Dict[str, Any]) -> Dict[str, Any]:
+    """Is the organism tending THIS entity? Reads the entity's own flags, with absent meaning ON.
+
+    One reader for both flags, so no surface invents its own default. The basis names which flags were
+    STATED on the record and which were absent, because "on because it says so" and "on because nothing
+    says otherwise" are different facts about an entity.
+    """
+    stated = [f for f in TENDING_FLAGS if f in rec]
+    absent = [f for f in TENDING_FLAGS if f not in rec]
+    on = {f: bool(rec.get(f, True)) for f in TENDING_FLAGS}
+    return {
+        "flags": on,
+        "stated": stated,
+        "absent": absent,
+        "basis": (
+            (f"stated on this entity: {', '.join(stated)}. " if stated else "")
+            + (f"not stated and therefore read as ON: {', '.join(absent)} - " + TENDING_ABSENT_MEANS + ". "
+               if absent else "")
+            + "Whether a cycle actually runs needs the ORGANISM's lever on and its heartbeat beating too; "
+              "these flags say whether this entity consents to be tended, not whether anything is beating."),
+    }
+
+
 def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
-             domain: str = "enterprise", owner: str = "Rehan") -> Dict[str, Any]:
+             domain: str = "enterprise", owner: str = "Rehan",
+             parent_vsb: str = "", auto_economy: bool = True,
+             auto_compliance: bool = True) -> Dict[str, Any]:
     """Register an established VSB as a living entity the organism will autonomously tend.
     §12 (W349) — serialised: the Round-10 concurrency audit lost 28 of 32 concurrent
-    registrations to the unserialised load-modify-write."""
+    registrations to the unserialised load-modify-write.
+
+    P3.26 clause (1) and P3.2 clause (1) are both written HERE, at the single roster writer, because the
+    alternative is writing them at five creation paths and leaving two behind — which is what W475 found
+    when `body_pending` had four writers and a one-site fix left three lies in place.
+
+    NOTHING IN HERE THROWS, deliberately. `enrich_vsb_entity` calls this inside an `except Exception: pass`
+    because enrichment must never block generation, so anything raised here would vanish. An unresolvable
+    parent is REFUSED AT THE ROUTE, before enrichment; by the time this is reached the id has been resolved
+    or was never stated.
+    """
     from agentic_core.config import store_lock
     with store_lock(_STORE):
         d = _load()
         if vsb_id not in d:
+            #  resolved INSIDE the lock, so the parent cannot be retired between the check and the write
+            _lin = resolve_parent(parent_vsb)
             d[vsb_id] = {"vsb_id": vsb_id, "name": name or vsb_id, "entity_type": entity_type,
                          "domain": domain, "owner": owner, "registered_at": _now(),
-                         "operating_cycles": 0, "last_operated": None, "status": "living"}
+                         "operating_cycles": 0, "last_operated": None, "status": "living",
+                         #  ADDED, never folded into `status`: it already has readers.
+                         "parent_vsb": _lin["parent_vsb"],
+                         "lineage_state": _lin["state"],
+                         "generation": _lin["generation"],
+                         "lineage_basis": _lin["basis"],
+                         #  stated explicitly, so the record says what is true of it
+                         "auto_economy": bool(auto_economy),
+                         "auto_compliance": bool(auto_compliance)}
             _save(d)
         return d[vsb_id]
 

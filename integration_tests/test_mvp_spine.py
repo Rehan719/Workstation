@@ -43138,3 +43138,428 @@ def test_w599_p217b_the_per_worker_store_is_proven_isolated():
             _probe.unlink()
         except OSError:
             pass
+
+
+def test_w599_p322_a_passage_without_a_resolvable_location_cannot_be_cited(client, tmp_path):
+    """P3.22 — the owned index, and every retrieved passage traceable to a LINE.
+
+    Measured before this round: `scan()` reduced each file to a SET of words (`tokens[rel]`), so the index
+    knew which documents contained a term and nothing about where. A hit could name a document and never a
+    place inside it — which clause (1) forbids in as many words, and which is exactly the defect FU-450
+    recorded in the archived text_indexer.py ("real, but indexes FILES not passages").
+
+    Clauses (2) and (3) were ALREADY met and are asserted here anyway: three states, a reason per unread
+    file, and nothing unread in the index. A guard covering only the new half would let the older half be
+    broken by a later round without anything going red.
+    """
+    import os as _os322
+    import pathlib as _pl322
+
+    from agentic_core.horizon import archive as _ar322
+
+    #  a real inbox on disk, because this is a module that reads FILES and a fixture dict would test
+    #  nothing about reading. The inbox location is taken from the module's own resolver so the test does
+    #  not hard-code a path the deployment may move.
+    _inbox = _pl322.Path(_ar322._inbox())
+    _inbox.mkdir(parents=True, exist_ok=True)
+    _doc = _inbox / "w599_note.txt"
+    #  line 1 non-empty, lines 2-3 blank, line 4 the needle. If the splitter numbered only NON-EMPTY lines
+    #  the needle would be reported at line 2, and a reader opening line 2 would find nothing — a citation
+    #  that resolves to the wrong text.
+    _doc.write_text("Opening remarks about procedure\n\n   \n"
+                    "The committee resolved to adjourn until the following term\n"
+                    "Closing note\n", encoding="utf-8")
+    _secret = _inbox / "w599_secret_token.txt"
+    _secret.write_text("this must never be read\n", encoding="utf-8")
+    #  scan() PERSISTS the index through atomic_write_json, so calling it here overwrites the shared store
+    #  that other tests read. Deleting the temp FILES is not enough — the manifest naming them survives. The
+    #  store's bytes are saved and restored, the same discipline the scholar roster needed in W594: a guard
+    #  that leaves shared state behind makes the next test's result depend on whether this one ran first.
+    _store_p = _ar322._store()
+    _saved_store = _store_p.read_bytes() if _store_p.exists() else None
+    try:
+        _man = _ar322.scan()
+        #  THE BODIES LIVE IN THE PERSISTED DOC, not in the returned manifest. `files[]` carries a per-file
+        #  `passages` COUNT and `passages_capped`; the passage bodies sit at the top level of the store
+        #  beside `tokens`, which is the shape `_read_index()` returns and the shape `search()` reads.
+        #  Measured W599 rather than assumed: the first draft of this guard read `man["passages"]` and found
+        #  an empty dict while search() was finding the passage correctly.
+        _doc322 = _ar322._read_index()
+        _bodies = _doc322.get("passages") or {}
+
+        # ── (3) NOTHING UNREAD IS IN THE KNOWLEDGE BASE, and (2) EVERY UNREAD FILE SAYS WHY ────
+        _by_path = {f["path"]: f for f in _man["files"]}
+        _states = {f["path"]: f["state"] for f in _man["files"]}
+        assert _states.get("w599_note.txt") == _ar322.INDEXED, _states.get("w599_note.txt")
+        assert _states.get("w599_secret_token.txt") == _ar322.EXCLUDED, (
+            "a file whose NAME marks it secret was read; exclusion must happen before any read, because a "
+            "rule applied afterwards has already loaded the secret and nothing downstream can undo that",
+            _states.get("w599_secret_token.txt"))
+        assert "w599_secret_token.txt" in _by_path, (
+            "the excluded file is not even LISTED, so the exclusion is invisible - which looks exactly "
+            "like a file that was never there")
+        for _p322, _f322 in _by_path.items():
+            assert _f322.get("basis"), (f"{_p322} carries no basis for its state", _f322)
+            if _f322["state"] != _ar322.INDEXED:
+                assert _p322 not in _bodies, (
+                    f"{_p322} is not INDEXED yet has passages in the knowledge base - the FU-124 rule is "
+                    f"that nothing unread is in it", _f322["state"])
+                assert _p322 not in (_man.get("tokens") or {}), (
+                    f"{_p322} is not INDEXED yet contributed tokens", _f322["state"])
+
+        # ── (1) EVERY PASSAGE CARRIES A LINE, AND THE LINE RESOLVES IN THE REAL DOCUMENT ───────
+        _ps = _bodies.get("w599_note.txt") or []
+        assert _ps, ("the indexed document contributed no located passages, so nothing can be cited from "
+                     "it", sorted(_bodies))
+        _lines = _doc.read_text(encoding="utf-8").splitlines()
+        for _p in _ps:
+            assert isinstance(_p.get("line"), int) and _p["line"] >= 1, (
+                "a passage carries no line number, so a claim traced to it names a document and not a "
+                "place in it", _p)
+            #  RE-READ THE DOCUMENT AT THE STATED LINE. This is the whole clause: a line that does not
+            #  resolve is worse than no citation, because it is a precise-looking reference to something
+            #  the document does not say.
+            assert _p["line"] <= len(_lines), (
+                "a passage cites a line beyond the end of the document", _p["line"], len(_lines))
+            assert _p["text"].strip() and _p["text"].strip() in _lines[_p["line"] - 1], (
+                "the text at the cited line is NOT the text the index recorded - so the numbering counts "
+                "something other than file lines, and every citation from this index resolves to the "
+                "wrong place", _p["line"], _p["text"], _lines[_p["line"] - 1])
+
+        # ── AND RETRIEVAL RETURNS THE LOCATION, OR REFUSES TO CITE ─────────────────────────────
+        _res = _ar322.search("adjourn")
+        _hits = [h for h in _res["passages"] if h["path"] == "w599_note.txt"]
+        assert _hits, ("a term present in the document was not retrieved as a LOCATED passage",
+                       _res.get("passages_matched"), _res.get("hits"))
+        assert _hits[0]["line"] == 4, (
+            "the needle is on line 4 of the file, counting the two blank lines. A different number means "
+            "the splitter numbers non-empty lines only, and every citation is off by the number of blank "
+            "lines above it", _hits[0]["line"], _hits[0].get("text"))
+
+        #  A PASSAGE WITH NO RESOLVABLE LINE IS REPORTED AS UNCITABLE, not returned without one.
+        #  Written INTO THE STORE, because search() reads the persisted doc: handing it a fake manifest
+        #  would test a parameter the live route does not use, which is a test of nothing.
+        import json as _js322
+        _doc_b = _ar322._read_index()
+        _doc_b.setdefault("passages", {})["ghost.txt"] = [
+            {"line": None, "text": "the committee resolved to adjourn", "tokens": ["adjourn"]}]
+        _store_p.write_text(_js322.dumps(_doc_b), encoding="utf-8")
+        _r2 = _ar322.search("adjourn")
+        assert all(h["path"] != "ghost.txt" for h in _r2["passages"]), (
+            "a passage with no resolvable location was CITED, which clause (1) forbids",
+            [h for h in _r2["passages"] if h["path"] == "ghost.txt"])
+        assert _r2["not_citable"] and "CANNOT be cited" in _r2["not_citable"][0]["why"], (
+            "an unlocatable passage was dropped silently rather than reported - so a caller cannot tell "
+            "a result set that found nothing from one that found something it could not cite",
+            _r2.get("not_citable"))
+
+        # ── THE CAPS ARE PUBLISHED, NOT SILENT ────────────────────────────────────────────────
+        _b = _man["bounds"]
+        assert _b["max_passages_per_file"] == _ar322.MAX_PASSAGES_PER_FILE, _b
+        assert "cap nobody is told about" in _b["passage_basis"], _b["passage_basis"]
+        #  and a limited search SAYS it is limited - the defect W596 found in its own leaderboard, whose
+        #  basis denied being a top-N while the code sliced the rows
+        _r3 = _ar322.search("adjourn", limit=0)
+        assert _r3["truncated"] is True and "TOP-0" in _r3["file_hits_basis"], _r3["file_hits_basis"]
+        assert _res["truncated"] is False and "none omitted" in _res["file_hits_basis"], _res["file_hits_basis"]
+
+        # ── NOTHING IMPLIES SEMANTIC RECALL, ON THE RESPONSE AND ON A SURFACE ─────────────────
+        assert _res["embedding_backend"] is None, _res.get("embedding_backend")
+        assert "not semantic recall" in _res["basis"], (
+            "the basis does not say that a document phrasing the same idea differently will not be found, "
+            "so a lexical index reads as semantic search", _res["basis"])
+        #  the item says "the SURFACE states embeddings: none installed". W597 measured that no .tsx
+        #  mentioned embeddings at all, so the claim was true in the payload and absent from every screen.
+        #  SCOPED TO THE RENDERED ELEMENT, not to the word. A bare `"embeddings" in text` search stayed
+        #  GREEN when the blind removed the statement's own testid, because the word still appeared in a
+        #  neighbouring attribute and in prose — the too-broad presence check this suite keeps being bitten
+        #  by. The testid is what a reader's element is identified BY, so that is what is asserted.
+        _root322 = _pl322.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+        _shown = [p.name for p in _root322.rglob("*.tsx")
+                  if 'data-testid="horizon-archive-embeddings"' in p.read_text(encoding="utf-8")]
+        assert _shown, (
+            "no page states that no embedding backend is installed, so a reader of the search surface is "
+            "left to assume semantic recall - which the item forbids in as many words")
+    finally:
+        for _f in (_doc, _secret):
+            try:
+                _os322.unlink(_f)
+            except OSError:
+                pass
+        #  the persisted index last, so a failure above still restores it
+        if _saved_store is None:
+            if _store_p.exists():
+                _store_p.unlink()
+        else:
+            _store_p.write_bytes(_saved_store)
+
+
+def test_w599_p35_an_image_is_read_or_the_refusal_names_what_is_missing(client):
+    """P3.5 — clauses (2) and (3) built; clause (1) a §18 boundary with its reason.
+
+    MEASURED BEFORE BUILDING, and my own assessment was wrong three times before this: clause (1) was
+    ALREADY built — `avatars/api.py::_ollama_vision` posts the image to a LOCAL Ollama vision model and
+    returns None when none answers, its docstring saying the caller "falls back honestly — never fabricates
+    image content". It is unreachable only because no vision model is pulled.
+
+    What was missing: an accurate reason NAMING what is absent (the status said only `no_vision_model`,
+    which is a label), and an accept list computed from what is installed (nothing computed one).
+    """
+    import base64 as _b64_35
+    import pathlib as _pl35
+
+    from agentic_core.ai.native import tiers as _t35
+
+    # ── (3) THE ACCEPT LIST IS COMPUTED, and the screen may FLAG but never CLEAR ────────────────
+    #  A PURE function over model names, because local_models() returns [] under AI_DISABLE_LOCAL and this
+    #  suite sets it: a check that asked the environment could never be driven, and would read "nothing
+    #  installed" forever while passing whatever the matching logic did.
+    _none = _t35.image_intake([])
+    assert _none["can_read_images"] is False and _none["accepts"] == [], (
+        "an accept list is offered with no resource that can read an image - a list naming a format "
+        "nothing can read is a promise this deployment cannot keep", _none["accepts"])
+    assert "EMPTY because" in _none["accepts_basis"], _none["accepts_basis"]
+
+    _with = _t35.image_intake(["llava:13b", "llama2", "some-unreleased-vlm"])
+    assert _with["can_read_images"] is True and _with["accepts"], (
+        "a recognised vision family is installed and the accept list is still empty", _with)
+    assert _with["resources"] == ["llava:13b"], (
+        "the family match failed on a TAGGED pull; `llava:13b` must match the llava family or every tagged "
+        "install is missed", _with["resources"])
+    #  A SCREEN MAY REFUSE, NEVER CLEAR: an unrecognised model is reported, never called text-only
+    assert "some-unreleased-vlm" in _with["unrecognised_models"], (
+        "a model the list does not recognise was silently dropped - 'I do not recognise this model' is not "
+        "'this model cannot read an image', and silently excluding it makes the symptom look like a bug in "
+        "the refusal rather than in the match", _with)
+    assert "cannot establish that a model is NOT" in _with["vision_screen_basis"], (
+        "the screen's result implies it cleared the models it did not match", _with["vision_screen_basis"])
+
+    # ── (2) THE REFUSAL NAMES WHAT IS MISSING, FROM MEASURED STATE ─────────────────────────────
+    assert _none["refusal"], "no refusal is produced when nothing can read an image"
+    for _frag35 in ("NO TEXT IS PRODUCED", "perception tier needs", "GB"):
+        assert _frag35 in _none["refusal"], (
+            f"the refusal does not carry {_frag35!r}: it must name the measured shortfall, not merely say "
+            f"that it failed", _none["refusal"][:200])
+    assert "fabricated description" in _none["refusal"], (
+        "the refusal does not say that nothing was guessed at from the image - which is the defect this "
+        "item exists to prevent, and the same class as the transcription mock W495 deleted")
+    assert _with["refusal"] is None, (
+        "a refusal is asserted on a deployment that CAN read an image, contradicting the reading it would "
+        "perform", _with["refusal"])
+
+    # ── AND IT REACHES THE CALLER, on every path where the image was not read ───────────────────
+    #  Measured W599: with no owned model AND an external key present while AI_ALLOW_EXTERNAL is off, the
+    #  status is `blocked_by_policy` - which attributes the failure to POLICY while a resource is ALSO
+    #  missing, so a reader concludes an administrator blocked it. The refusal therefore travels on every
+    #  not-understood path, not only on `no_vision_model`.
+    _img35 = _b64_35.b64encode(b"not-a-real-png").decode()
+    _r35 = client.post("/api/v1/avatar/chat",
+                       json={"message": "Describe this image.", "context": "w599", "image_base64": _img35})
+    assert _r35.status_code == 200, (_r35.status_code, _r35.text[:160])
+    _b35 = _r35.json()
+    assert _b35["image_understood"] is False, (
+        "the image was reported as understood on a deployment with no vision model", _b35.get("image_status"))
+    assert _b35.get("image_refusal"), (
+        "the reply carries no reason at all: the status alone is a LABEL, and clause (2) asks for an "
+        "accurate reason naming what is missing", _b35.get("image_status"))
+    assert "perception tier needs" in _b35["image_refusal"], _b35["image_refusal"][:160]
+    assert _b35.get("image_accepts") == [], (
+        "the reply advertises an image format it cannot read", _b35.get("image_accepts"))
+
+    # ── CLAUSE (1) IS A BOUNDARY, NOT A GAP: the mechanism EXISTS and lifts when a model arrives ──
+    #  The boundary was nearly recorded as permanent. `registry()` assigned every pulled model to the
+    #  reflex tier by a hardcoded branch and gave `perception` an empty list BY CONSTRUCTION, so installing
+    #  a vision model would have changed nothing while the prose read as conditional.
+    import inspect as _insp35
+    _reg_src = _insp35.getsource(_t35.registry)
+    assert "vision_resources(_models)" in _reg_src, (
+        "the perception tier's resources are not COMPUTED from the pulled models, so the §18 boundary is "
+        "permanent in code while reading as conditional in prose - installing a model would change nothing")
+    assert _t35.vision_resources(["llama2", "llava"])["matched"] == ["llava"], (
+        "the computation that lifts the boundary does not recognise a vision family")
+    #  and the owned reader clause (1) names is present and local-first
+    _av_src = (_pl35.Path(__file__).resolve().parents[1]
+               / "agentic_core/avatars/api.py").read_text(encoding="utf-8")
+    assert "async def _ollama_vision" in _av_src, (
+        "the OWNED vision reader is gone, so clause (1) has no mechanism to lift to")
+    assert "never fabricates image content" in _av_src, (
+        "the owned reader no longer records that it falls back honestly rather than fabricating")
+
+
+def test_w598_p326_an_entity_records_its_lineage_or_says_it_has_none(client):
+    """P3.26 clause (1) — a lineage written by WHATEVER creates an entity, and three states not two.
+
+    Five of P3.26's clauses are claims ABOUT a lineage — mitosis creating a subsidiary that inherits its
+    parent's constitution, apoptosis returning what a retired entity held, the never-auto-retire set
+    protecting the LAST entity in its realm × domain. None can even be stated while no entity records a
+    parent, which is why this clause is the item's precondition.
+
+    MEASURED BEFORE THIS ROUND: no parent_vsb, parent_id or lineage field existed anywhere on an entity.
+    And there are FIVE creation paths, not the three a grep of the request models suggested — the two in
+    synthesis_studio.py were missed by exactly the mistake this project recorded as "grep the call, not the
+    method name". Had this been built against three, two paths would have recorded nothing.
+    """
+    from agentic_core.economy import living_vsbs as _lv598
+
+    # ── THE RESOLVER HAS THREE STATES, AND THE MIDDLE ONE IS NOT A NULL ─────────────────────────
+    _none = _lv598.resolve_parent("")
+    assert _none["state"] == _lv598.NO_PARENT and _none["parent_vsb"] is None, _none
+    assert "has NONE" in _none["basis"] and "not a field somebody forgot" in _none["basis"], (
+        "a parentless entity's basis does not SAY it has no parent, so a null is left to speak for itself "
+        "- which the row forbids in as many words", _none["basis"])
+    _bad = _lv598.resolve_parent("vsb-does-not-exist-598")
+    assert _bad["state"] == _lv598.PARENT_UNRESOLVED and _bad["parent_vsb"] is None, _bad
+    assert "vsb-does-not-exist-598" in _bad["basis"], (
+        "the unresolved basis does not name the id, so a caller cannot see what failed", _bad["basis"])
+    #  the three states must be DISTINCT values, or two of them collapse at every reader
+    assert len({_lv598.NO_PARENT, _lv598.PARENT_RESOLVED, _lv598.PARENT_UNRESOLVED}) == 3, (
+        "two lineage states share a value, so no reader can tell them apart")
+
+    # ── P3.2 clause (1) — ABSENT MEANS ON, which nothing asserted until a blind proved it ───────
+    #  Every entity already on the roster predates these fields, so a default of False would silently stop
+    #  the organism tending ALL of them — a regression delivered as a feature. A blind flipping the default
+    #  to False stayed GREEN, because the lineage legs below never touched the tending flags: the property
+    #  I was most careful about was the one with no assertion behind it.
+    _legacy = _lv598.tending({})
+    assert _legacy["flags"] == {"auto_economy": True, "auto_compliance": True}, (
+        "a record carrying NEITHER flag reads as not-tended, so adding these fields silently stops the "
+        "organism tending every entity registered before they existed", _legacy["flags"])
+    assert _legacy["absent"] == ["auto_economy", "auto_compliance"] and _legacy["stated"] == [], (
+        "a legacy record does not report its flags as ABSENT, so 'on because it says so' and 'on because "
+        "nothing says otherwise' are indistinguishable", _legacy)
+    assert "read as ON" in _legacy["basis"], _legacy["basis"]
+    #  and an explicit False is still respected — the default must not override a stated value
+    assert _lv598.tending({"auto_economy": False})["flags"]["auto_economy"] is False, (
+        "an entity that explicitly switched tending OFF is tended anyway")
+
+    # ── A PARENTLESS CREATION SAYS SO, READ BACK FROM THE ROSTER ────────────────────────────────
+    #  /api/v1/genesis/establish, NOT /api/v1/vsb/spawn: spawn is SSE-only, so .json() on it would fail on
+    #  the content type rather than on the property, and a leg that errors for the wrong reason proves
+    #  nothing. establish is a blocking JSON route and returns vsb_id at the top level.
+    _r1 = client.post("/api/v1/genesis/establish",
+                      json={"problem": "W598 a root entity", "name": "W598 Root",
+                            "domain": "enterprise", "realm": "enterprise"})
+    assert _r1.status_code == 200, (_r1.status_code, _r1.text[:200])
+    _id1 = _r1.json().get("vsb_id")
+    assert _id1, ("the establish response does not report the entity's id", str(_r1.json())[:200])
+    #  FROM THE STORE, not from the response: a response can claim anything
+    _rec1 = _lv598.roster().get(_id1) if hasattr(_lv598, "roster") else _lv598._load().get(_id1)
+    assert _rec1 is not None, ("the entity is not on the living roster at all", _id1)
+    assert _rec1["parent_vsb"] is None, (
+        "a founder-established entity records a parent it does not have", _rec1.get("parent_vsb"))
+    assert _rec1["lineage_state"] == _lv598.NO_PARENT, _rec1.get("lineage_state")
+    assert "has NONE" in _rec1["lineage_basis"], (
+        "the stored record carries a null parent with no statement beside it, so a reader cannot tell "
+        "'no parent' from 'nobody recorded one'", _rec1.get("lineage_basis"))
+
+    # ── A CREATION NAMING A RESOLVABLE PARENT RECORDS IT, READ BACK FROM THE ROSTER ─────────────
+    _r2 = client.post("/api/v1/genesis/establish",
+                      json={"problem": "W598 a child entity", "name": "W598 Child",
+                            "domain": "enterprise", "realm": "enterprise", "parent_vsb": _id1})
+    assert _r2.status_code == 200, (_r2.status_code, _r2.text[:200])
+    _id2 = _r2.json().get("vsb_id")
+    _rec2 = (_lv598.roster() if hasattr(_lv598, "roster") else _lv598._load()).get(_id2)
+    assert _rec2["parent_vsb"] == _id1, (
+        "the parent was stated at creation and is not on the record, so whatever creates an entity does "
+        "NOT write its lineage", _rec2.get("parent_vsb"), _id1)
+    assert _rec2["lineage_state"] == _lv598.PARENT_RESOLVED, _rec2.get("lineage_state")
+    assert _id1 in _rec2["lineage_basis"], _rec2.get("lineage_basis")
+
+    # ── THE GENERATION, which is what makes P3.2 clause (5) drivable at all ─────────────────────
+    #  Measured W598: no evolutionary generation counter existed anywhere - every `generation` in the live
+    #  tree was TEXT generation - so P3.2's clause "the living-plan pillar is re-scored ONLY when an
+    #  instance has evolved >= 1 generation" had no field to drive. Its own stated test is "a guard drives
+    #  generation 0 and asserts NO re-score", and generation 0 did not exist. A generation is the DEPTH of
+    #  the lineage chain this field creates, so it is written here with the parent.
+    assert _rec1["generation"] == 0, (
+        "a founder-established entity is not generation 0, so 'has evolved >= 1 generation' cannot be "
+        "distinguished from 'has never evolved' - which is the whole of P3.2 clause (5)",
+        _rec1.get("generation"))
+    assert _rec2["generation"] == 1, (
+        "a child's generation is not one deeper than its root parent's", _rec2.get("generation"),
+        _rec1.get("generation"))
+    #  A GRANDCHILD, so the depth is proven to ACCUMULATE rather than merely to be set once
+    _r4 = client.post("/api/v1/genesis/establish",
+                      json={"problem": "W598 a grandchild entity", "name": "W598 Grandchild",
+                            "domain": "enterprise", "realm": "enterprise", "parent_vsb": _id2})
+    assert _r4.status_code == 200, (_r4.status_code, _r4.text[:160])
+    _rec4 = (_lv598.roster() if hasattr(_lv598, "roster") else _lv598._load()).get(_r4.json()["vsb_id"])
+    assert _rec4["generation"] == 2, (
+        "the generation does not accumulate down the chain, so it records whether an entity has a parent "
+        "rather than how deep it sits - and a depth that never exceeds 1 cannot express evolution",
+        _rec4.get("generation"))
+    #  AND AN UNRESOLVED PARENT LEAVES IT UNKNOWN, NOT ZERO. Zero asserts the entity is a root, which is a
+    #  claim about its lineage rather than an absence of one - the three-state rule on a number.
+    _unres = _lv598.resolve_parent("vsb-never-existed-598")
+    assert _unres["generation"] is None, (
+        "an unresolvable parent yields a generation rather than None; 0 in particular would assert the "
+        "entity is a ROOT, which is the opposite of 'its depth is unknown'", _unres.get("generation"))
+
+    # ── AN UNRESOLVABLE PARENT IS REFUSED, AND REFUSED THROUGH THE ROUTE ───────────────────────
+    #  DRIVEN OVER HTTP ON PURPOSE. enrich_vsb_entity calls register inside `except Exception: pass`
+    #  because enrichment must never block generation, so a refusal raised in the writer would be
+    #  SWALLOWED and the entity created parentless in silence. Calling resolve_parent directly would pass
+    #  while the live path did the wrong thing - a test proving nothing. So the refusal must be a 4xx a
+    #  caller actually receives.
+    #  BOTH A JSON ROUTE AND AN SSE ROUTE. The SSE case is the one that looks done while being wrong:
+    #  /api/v1/vsb/spawn returns a StreamingResponse, so by the time its inner _stream() runs the status
+    #  200 has already been sent and an HTTPException raised there CANNOT become a 409. The check must sit
+    #  in the outer handler, before StreamingResponse is constructed. A guard that drove only the blocking
+    #  route would certify a streaming path that silently creates the entity parentless.
+    for _path598, _body598 in (
+            ("/api/v1/genesis/establish",
+             {"problem": "W598 orphan claim", "name": "W598 Orphan", "domain": "enterprise",
+              "parent_vsb": "vsb-never-existed-598"}),
+            ("/api/v1/vsb/spawn",
+             {"challenge": "W598 orphan claim stream", "name": "W598 Orphan Stream",
+              "domain": "enterprise", "scope": "build", "parent_vsb": "vsb-never-existed-598"})):
+        _r3 = client.post(_path598, json=_body598)
+        assert _r3.status_code in (400, 404, 409), (
+            f"{_path598} created an entity claiming a parent that does not exist. Five of P3.26's clauses "
+            f"reason over the lineage, so every one of them would be reasoning about a fiction. On a "
+            f"STREAMING route a 200 here means the check sits inside the generator, after the status was "
+            f"already sent", _path598, _r3.status_code, _r3.text[:200])
+        assert "vsb-never-existed-598" in _r3.text, (
+            f"{_path598}'s refusal does not name the id that failed to resolve, so a caller cannot "
+            f"correct it", _r3.text[:200])
+        #  and the detail must be renderable: W597 established that a dict detail put into React state
+        #  throws, so a refusal a page cannot show is a refusal nobody reads
+        try:
+            _d598 = _r3.json().get("detail")
+        except Exception:
+            _d598 = None
+        if isinstance(_d598, dict):
+            assert "message" in _d598, (
+                f"{_path598}'s refusal detail is a dict with no `message` key, so axiosDetail falls "
+                f"through to JSON.stringify and the caller is shown a serialised dict", sorted(_d598))
+
+    # ── COVERAGE: EVERY CREATION PATH PASSES IT, AND A SIXTH CANNOT APPEAR SILENTLY ─────────────
+    #  This is a count, not a conscience. Four paths reach the roster through enrich_vsb_entity and one
+    #  (genesis_establish) calls register directly; the legs above drive the spawn path end to end. If a
+    #  SIXTH creation path is added and does not pass the parent through, the defect returns by a new
+    #  route and nothing above would notice - so the caller set is pinned and a newcomer fails HERE, with
+    #  an instruction, rather than silently recording no parent.
+    import pathlib as _pl598
+    import re as _re598
+    _root598 = _pl598.Path(__file__).resolve().parents[1]
+    _callers = {}
+    for _py in sorted(_root598.rglob("agentic_core/**/*.py")) + sorted(_root598.rglob("products/**/*.py")):
+        if "_archive" in _py.as_posix():
+            continue
+        _t = _py.read_text(encoding="utf-8")
+        if "enrich_vsb_entity(" not in _t:
+            continue
+        for _m in _re598.finditer(r"enrich_vsb_entity\(", _t):
+            _line = _t[:_m.start()].count("\n") + 1
+            #  the definition itself is not a caller
+            if _t[max(0, _m.start() - 4):_m.start()] == "def ":
+                continue
+            _callers[f"{_py.relative_to(_root598).as_posix()}:{_line}"] = _t[_m.start():_m.start() + 400]
+    assert len(_callers) >= 4, (
+        "fewer than four callers of enrich_vsb_entity were found, so this leg is not looking where the "
+        "creation paths are and would pass on an empty tree", sorted(_callers))
+    _missing = [k for k, v in _callers.items() if "parent_vsb" not in v]
+    assert _missing == [], (
+        "a creation path reaches enrich_vsb_entity without passing parent_vsb, so an entity born on that "
+        "path records no lineage. This is the defect returning by a new route - the fix is one keyword at "
+        "the call, not a change here", _missing)

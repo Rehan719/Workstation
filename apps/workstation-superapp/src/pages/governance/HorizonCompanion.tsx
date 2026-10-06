@@ -125,6 +125,10 @@ export const HorizonCompanion: React.FC = () => {
   const [d, setD] = useState<Records | null>(null);
   const [consumption, setConsumption] = useState<Record<string, Consumption>>({});
   const [err, setErr] = useState('');
+  // P3.22 — the owned knowledge index, SHOWN. Its clause says "the surface states `embeddings: none
+  // installed` rather than implying semantic recall", and measured W598: no page read the archive at all,
+  // so the statement was true in the payload and absent from every screen (the FU-420 class).
+  const [archive, setArchive] = useState<any | null>(null);
 
   useEffect(() => {
     axios.get<Records>('/api/v1/horizon/records?limit=25', { validateStatus: () => true })
@@ -139,6 +143,10 @@ export const HorizonCompanion: React.FC = () => {
       { validateStatus: () => true })
       .then(r => { if (r.status === 200 && r.data?.records) setConsumption(byIntent(r.data.records)); })
       .catch(() => { /* leaves the card at "Not recorded", which is what is true */ });
+    // Fetched separately for the same reason: an unreadable index must not blank the records above it.
+    axios.get<any>('/api/v1/horizon/archive', { validateStatus: () => true })
+      .then(r => { if (r.status === 200 && r.data) setArchive(r.data); })
+      .catch(() => { /* the panel below then says the index is not reporting, which is true */ });
   }, []);
 
   return (
@@ -299,6 +307,58 @@ export const HorizonCompanion: React.FC = () => {
       {d && (
         <p className="text-slate-500 text-xs font-bold leading-relaxed">{d.basis}</p>
       )}
+
+      {/* P3.22 — THE OWNED KNOWLEDGE INDEX, ON A SURFACE. The clause asks for the surface to state
+          `embeddings: none installed` rather than implying semantic recall, and until now no page read the
+          archive at all: the statement was true in the payload and absent from every screen. What a reader
+          needs is here together — what was indexed, what was NOT read and why, the caps, and the plain
+          statement that this is lexical matching and not semantic recall. */}
+      <section data-testid="horizon-archive-index" className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">
+          the owned knowledge index
+        </p>
+        {!archive ? (
+          <p data-testid="horizon-archive-unavailable" className="text-[10px] text-slate-500 leading-relaxed">
+            The index is not reporting. That is a statement about reachability, not about what is indexed —
+            nothing here should be read as "the archive is empty".
+          </p>
+        ) : (
+          <>
+            <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+              {(archive.counts?.INDEXED ?? 0)} file(s) indexed · {(archive.counts?.NOT_READ ?? 0)} not read ·
+              {' '}{(archive.counts?.EXCLUDED ?? 0)} excluded by a secret rule.
+            </p>
+            {/* embeddings: none installed — the clause's own words, and the reason beside it */}
+            <p data-testid="horizon-archive-embeddings" className="text-[10px] text-amber-400/80 mt-2 leading-relaxed font-bold">
+              embeddings: {archive.embedding_backend === null || archive.embedding_backend === undefined
+                ? 'none installed' : String(archive.embedding_backend)}
+            </p>
+            <p data-testid="horizon-archive-embeddings-basis" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+              {archive.embedding_basis ?? ('Search here is this platform’s own LEXICAL index: a passage '
+                + 'matches when it contains one of the query’s words. There is no embedding backend '
+                + 'installed, so nothing here is semantic recall — a document that says the same thing in '
+                + 'different words will NOT be found.')}
+            </p>
+            {/* the caps, published — a cap nobody is told about reads as a complete index */}
+            {archive.bounds && (
+              <p data-testid="horizon-archive-bounds" className="text-[9px] text-slate-600 mt-2 leading-relaxed">
+                Bounds: at most {archive.bounds.max_files} file(s), {archive.bounds.max_bytes} byte(s) per
+                file, {archive.bounds.max_passages_per_file} located passage(s) per document.
+                {' '}{archive.bounds.passage_basis}
+              </p>
+            )}
+            {/* what it could NOT look inside, named — the FU-124 rule made visible */}
+            {Array.isArray(archive.files) && archive.files.some((f: any) => f.state !== 'INDEXED') && (
+              <p data-testid="horizon-archive-not-read" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                NOT in the index, and therefore never searched:{' '}
+                {archive.files.filter((f: any) => f.state !== 'INDEXED').slice(0, 6)
+                  .map((f: any) => `${f.path} (${f.state})`).join(' · ')}
+                . Nothing unread is in the knowledge base.
+              </p>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 };

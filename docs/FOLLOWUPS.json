@@ -7432,12 +7432,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W599",
       "note": "",
       "slot_source": "P3.26 clause (1) is this row word for word, and P3.26's own text calls it the precondition for the rest of turnover; FU-312 carried it against P3.27, whose bar says nothing about lineage",
       "tier": 2,
-      "reach": "secondary"
+      "reach": "secondary",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Delivered as P3.26 clause (1), in ONE edit to living_vsbs.register() - the single roster writer - carrying parent_vsb, lineage_state, a generation and the per-entity tending flags together, because preparing them separately collided on the same dict literal. THREE STATES, not two: no parent stated gives generation 0 and a basis saying the entity IS a root rather than a null left to speak for itself; a resolved parent gives one deeper than its own, with a parent predating the field counted as 1 and SAYING so rather than guessing a chain that cannot be walked; an unresolvable id gives None, never 0, because 0 would assert the entity is a root. THE REFUSAL IS AT THE ROUTE and had to be: enrich_vsb_entity calls register inside except-Exception-pass so a refusal raised in the writer is swallowed, and three of the five creation paths return a StreamingResponse so a refusal inside the generator cannot be a 4xx - status 200 is already sent. Both were driven over HTTP and both return 409 naming the id. AND THE COVERAGE LEG EARNED ITS PLACE TWICE: it caught that genesis_establish called register positionally without the field (register's own unit behaviour was already correct, so only driving HTTP exposed it), then caught four further paths reaching enrich_vsb_entity without passing it, two of them in synthesis_studio.py which the original three-path estimate had missed entirely. Eleven blinds red, including one that proved the absent-means-ON default had no assertion behind it at all."
     },
     {
       "id": "FU-411",
@@ -8279,11 +8282,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W599",
       "note": "",
       "slot_source": "P3.22 is the owned knowledge index; this is the measurement of what the archive offers it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Delivered by P3.22. The row's finding was that the archive's one REAL candidate, text_indexer.py, indexes FILES with no line or passage location, so a citation built on it could name a document and never a place inside it. P3.22 added exactly that: _passages() splits a document into located passages numbered from 1 with BLANK LINES COUNTED, so line 42 in the index is line 42 in the file - getting that wrong would produce precise-looking citations to text the document does not contain, which is worse than no citation. search() was EXTENDED rather than replaced (the prepared patch would have defined a second function in a module that already had one, and Python keeps the last) and now returns located passages beside the file hits, with a passage whose line does not resolve reported under not_citable rather than returned without one. Its silent [:limit] now reports the cap. The row's other three candidates stand as recorded and were NOT recovered: rag_pipeline.py returns a sentence claiming it found three papers with a literal SIM marker, qep_logic.py scores recitations from random.random which is both a fabrication and a section-11 forbidden boundary, and the apoptosis stub is about components not entities. The standing hazard is unchanged and now has a mechanism behind it: recover the SHAPE, never the corpus, and a claim that cannot cite a resolvable location cannot be asserted."
     },
     {
       "id": "FU-451",
@@ -8505,6 +8511,61 @@
       "note": "",
       "slot_source": "P2.21's ACCEPT is instruments that report less than they should; a beat's actions list IS the instrument reporting what the organism did",
       "tier": 2
+    },
+    {
+      "id": "FU-462",
+      "title": "The archive search's located passages and its not-citable notice reach no reader: there is no search surface",
+      "why": "P3.22 added located passages to the owned index and a surface for the INDEX - HorizonCompanion now shows what was indexed, what was not read and why, the published caps and the embeddings statement the clause asks for. But it added no surface for a SEARCH: the keys search() now returns - passages, passages_matched, not_citable, citation_basis, matched_files, shown_files, file_hits_basis - reach no page and no printed line. The pre-flight named all six. P3.22's own ACCEPT is met: its surface clause is specifically that the surface states embeddings none installed, and that is rendered. But not_citable and citation_basis QUALIFY A CLAIM - not_citable says a passage exists that cannot be cited, and citation_basis says every returned passage carries its document and line so the claim can be checked at source - and a qualification nobody reads is the FU-420 class. THE REASON THIS BELONGS TO P3.23 RATHER THAN BEING FIXED NOW: P3.23's ACCEPT requires that every factual particular in a generated artefact carries the document id and the LOCATION it came from, and that the unresolved checks are visible ON THE PAGE and not only in a log. That is the same surface, and building it twice would be building it wrong once. REMEDY: a search panel that shows each hit with its document and line, renders not_citable as a named refusal rather than an omission, and carries citation_basis - with the verifier's check_quote_at_location resolving the quote at the stated line so a reader sees the check and not merely the citation.",
+      "source": "W599 pre-flight",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/horizon/archive.py",
+        "apps/workstation-superapp/src/pages/governance/HorizonCompanion.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.23",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.23 is the item that CONSUMES located citations (every assembled claim carries the document and line), so the surface that shows them belongs with it",
+      "tier": 2
+    },
+    {
+      "id": "FU-463",
+      "title": "_screen_candidate returns three different key sets, so a caller indexing its verdict gets undefined",
+      "why": "The pre-flight's returns leg named two of the three: genesis.py line 76 omits compliance_covered, overall and safety_covered which a sibling return carries, and line 89 omits screen_error which another sibling carries. So _screen_candidate - the function that screens a journey candidate against section 11 - answers with a DIFFERENT SHAPE depending on which path it took: an exception path carrying screen_error and no coverage fields, and a normal path carrying coverage fields and no screen_error. A caller indexing either gets undefined on the other, and a caller testing truthiness cannot tell NOT SCREENED from SCREENED AND CLEAN from SCREENED AND FAILED - three facts collapsed into one falsy value, on the function that decides whether a candidate passes the section 11 screen. NOT INTRODUCED BY THIS ROUND: W599 edited genesis.py at the establish route and the register call, nowhere near line 76, and the pre-flight reports leads for every CHANGED FILE rather than only changed lines - which is how a pre-existing defect surfaced. Recorded rather than fixed in the same round because it is a different subject from the round's three items and would be a fourth guard subject. REMEDY is the FU-415 shape: one shape literal with every key present, the exception path carrying screen_error beside coverage fields set to None WITH their reason, and a guard asserting that every return of the function has the same key set - asserted on the AST so a new return added later cannot quietly carry a fourth shape.",
+      "source": "W599 pre-flight (pre-existing; surfaced because the round touched the file)",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/api/genesis.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.21",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P2.21's ACCEPT clause (2) is shape-complete returns: the same keys whatever the answer",
+      "tier": 2
+    },
+    {
+      "id": "FU-464",
+      "title": "The regulator's meiosis fabricates a diversity score from the clock, and its mitosis clones dicts not entities",
+      "why": "Measured while sizing P3.26's remaining clauses, because clause 6 says crossover ALREADY EXISTS and a round would reasonably look here first. What exists must not be built on. ONE: meiosis_recombine sets diversity_score to 0.35 plus 0.05 times time.time() modulo 1 - a figure derived PURELY FROM THE CLOCK, with both parents ignored entirely (the child is just the two dicts merged). Sampled across timestamps it returns 0.913, 1.263, 0.563, 0.4, 0.35: so a DIVERSITY score can exceed 1.0, which is arithmetically meaningless as well as fabricated, and it is logged to the UEG as regulator_meiosis diversity - a measurement nobody measured, entering the audit log. TWO: mitosis_scale returns dict clones carrying a clone_id and a timestamp. It inherits no constitution, transfers no funds and creates no entity, so it is not the mitosis clause 5 describes - a mature entity creating a subsidiary that inherits its parent's constitution VERBATIM, funded from the parent's own section 4 share so funds are conserved, through Change Control. THREE: NEITHER IS CALLED ANYWHERE in the live tree, which is the only reason the fabricated score reaches no reader today. WHY THIS IS REGISTERED RATHER THAN FIXED NOW: it is P3.26's own clauses 5 and 6, so the fix IS that item's work, and the row exists to stop a later round treating these functions as a foundation. THE REMEDY WHEN P3.26 IS BUILT: delete the clock-derived score outright rather than replacing it with another number - a recombined constitution's diversity is either computed from the two parents' actual content or not reported at all - and build mitosis on the lineage field W599 added, where a child's parent_vsb and generation make the inheritance checkable and the funds transfer assertable. Clause 6's own words are the boundary: meiosis produces a CANDIDATE, never a birth, and a recombined constitution reaches an entity only through ratification.",
+      "source": "W599, measuring P3.26's clauses 5 and 6",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/change_control/regulator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.26",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.26 clauses 5 and 6 ARE mitosis and meiosis; these are the namesakes a round would otherwise build on",
+      "tier": 3
     }
   ],
   "routes": [

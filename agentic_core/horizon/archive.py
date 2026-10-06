@@ -49,6 +49,11 @@ EXCLUDED = "EXCLUDED"
 #  THE BOUNDS, STATED. A scan that does not publish its own limits invites a reader to treat its
 #  manifest as the whole of what exists.
 MAX_FILES = 2000
+#  P3.22 — the passage cap. Per-line tokens over MAX_FILES documents of MAX_BYTES each will not sit in a
+#  JSON store, so a document contributes at most this many located passages. IT IS PUBLISHED in `bounds`
+#  with its own sentence: a cap nobody is told about is a silent top-N, and a retrieval that quietly stops
+#  at a line answers a question about a document nobody has.
+MAX_PASSAGES_PER_FILE = 400
 MAX_BYTES = 2 * 1024 * 1024          # 2 MiB per file
 BOUNDS_BASIS = (f"at most {MAX_FILES} files are listed and at most {MAX_BYTES} bytes are read from any "
                 f"one of them. A file beyond the size cap is listed as NOT_READ with the cap named, not "
@@ -108,12 +113,37 @@ def _tokens(text: str) -> List[str]:
     return sorted({t for t in re.findall(r"[a-z0-9_]{3,}", text.lower())})
 
 
+def _passages(text: str) -> List[Dict[str, Any]]:
+    """Split a document into LOCATED passages — one per non-empty line, numbered from 1.
+
+    P3.22 clause (1): "a passage without a resolvable location cannot be cited." A line number is the
+    location that can actually be resolved: a reader opens the file, goes to the line and sees the text, and
+    the verifier's check_quote_at_location does exactly that mechanically. A paragraph index or a character
+    offset would not survive a reader checking it by hand, and P3.23's clause asks for "the document and
+    LINE it came from" in as many words.
+
+    BLANK LINES ARE SKIPPED AND THE NUMBERING STILL COUNTS THEM, so line 42 here is line 42 in the file.
+    Getting that wrong would produce citations that resolve to the WRONG TEXT, which is worse than no
+    citation at all — a precise-looking reference to something the document does not say.
+    """
+    out: List[Dict[str, Any]] = []
+    for i, raw in enumerate(text.splitlines(), start=1):
+        line = raw.strip()
+        if not line:
+            continue
+        if len(out) >= MAX_PASSAGES_PER_FILE:
+            break
+        out.append({"line": i, "text": line[:400], "tokens": _tokens(line)})
+    return out
+
+
 def scan() -> Dict[str, Any]:
     """Index the inbox. Every file gets exactly one of the three states, and the counts are published."""
     inbox = _inbox()
     os.makedirs(inbox, exist_ok=True)
     files: List[Dict[str, Any]] = []
     tokens: Dict[str, List[str]] = {}
+    passages: Dict[str, List[Dict[str, Any]]] = {}      # P3.22 — located passages, per file
     _capped = False
 
     for root, _dirs, names in os.walk(inbox):
@@ -181,10 +211,21 @@ def scan() -> Dict[str, Any]:
                 continue
 
             tokens[rel] = _tokens(text)
+            #  P3.22 — LOCATED passages beside the file-level token set. `tokens[rel]` is left exactly as
+            #  it was: `files[].tokens` counts it and readers depend on that count.
+            passages[rel] = _passages(text)
+            _capped_p = len(passages[rel]) >= MAX_PASSAGES_PER_FILE
             files.append({"path": rel, "state": INDEXED, "ext": ext, "bytes": size,
                           "tokens": len(tokens[rel]),
+                          "passages": len(passages[rel]),
+                          "passages_capped": _capped_p,
                           "basis": (f"INDEXED: read as UTF-8 text and reduced to {len(tokens[rel])} "
-                                    f"lexical token(s). No embedding was computed")})
+                                    f"lexical token(s) and {len(passages[rel])} located passage(s), each "
+                                    f"carrying its line number so a claim can be traced to a place in the "
+                                    f"document and not merely to the document. No embedding was computed"
+                                    + (f". ONLY THE FIRST {MAX_PASSAGES_PER_FILE} passages were indexed - "
+                                       f"later lines of this file are NOT searchable, which is a cap and "
+                                       f"not an absence of content" if _capped_p else ""))})
         if _capped:
             break
 
@@ -197,6 +238,11 @@ def scan() -> Dict[str, Any]:
         "total": len(files),
         "file_cap_reached": _capped,
         "bounds": {"max_files": MAX_FILES, "max_bytes": MAX_BYTES,
+                   "max_passages_per_file": MAX_PASSAGES_PER_FILE,
+                   "passage_basis": (f"a document contributes at most {MAX_PASSAGES_PER_FILE} located "
+                                     f"passages; a file longer than that is indexed to that line and the "
+                                     f"file's own entry says so, because a cap nobody is told about reads "
+                                     f"as a complete index"),
                    "exclusion_rules": [r for _, r in _SECRET_RULES],
                    "text_extensions": list(_TEXT_EXT),
                    "extractor_extensions": dict(_NEEDS_EXTRACTOR),
@@ -214,7 +260,7 @@ def scan() -> Dict[str, Any]:
                            "nothing in this module sends it anywhere"),
     }
     with store_lock(_store()):
-        atomic_write_json(_store(), {"manifest": manifest, "tokens": tokens})
+        atomic_write_json(_store(), {"manifest": manifest, "tokens": tokens, "passages": passages})
     return manifest
 
 
@@ -244,11 +290,47 @@ def search(term: str, limit: int = 20) -> Dict[str, Any]:
     man = data.get("manifest") or {}
     toks = data.get("tokens") or {}
     needle = (term or "").strip().lower()
-    hits = [p for p, ts in sorted(toks.items()) if needle and needle in ts][:limit]
+    #  P3.22 — THE CAP IS REPORTED. This was `[...][:limit]` with nothing saying so, so a caller seeing
+    #  twenty hits could not tell whether there were two hundred: `searched_files` counts indexed FILES,
+    #  not matches. Same defect class as a basis sentence denying the truncation its own code applies.
+    _all_hits = [p for p, ts in sorted(toks.items()) if needle and needle in ts]
+    hits = _all_hits[:limit]
+    #  P3.22 clause (1) — LOCATED passages, ADDED beside `hits`. `hits` keeps holding PATHS because its
+    #  readers expect paths; a field's meaning belongs to them. A passage whose line does not resolve is
+    #  reported as NOT CITABLE rather than returned without one, which is the clause word for word.
+    _passage_hits: List[Dict[str, Any]] = []
+    _not_citable: List[Dict[str, Any]] = []
+    for _rel, _plist in sorted((data.get("passages") or {}).items()):
+        for _p in _plist or []:
+            if not needle or needle not in (_p.get("tokens") or []):
+                continue
+            if not isinstance(_p.get("line"), int) or _p["line"] < 1:
+                _not_citable.append({"path": _rel, "why": (
+                    "this passage carries no resolvable line, so it CANNOT be cited - a claim traced to a "
+                    "document but not to a place in it is not traceable")})
+                continue
+            _passage_hits.append({"path": _rel, "line": _p["line"], "text": _p.get("text") or ""})
+    _passage_hits.sort(key=lambda h: (h["path"], h["line"]))
     _unread = [f["path"] for f in (man.get("files") or []) if f.get("state") != INDEXED]
     return {
         "term": term,
         "hits": hits,
+        "matched_files": len(_all_hits),
+        "shown_files": len(hits),
+        "truncated": len(hits) < len(_all_hits),
+        "passages": _passage_hits[:limit],
+        "passages_matched": len(_passage_hits),
+        "not_citable": _not_citable,
+        "citation_basis": (
+            f"{len(_passage_hits)} passage(s) matched, each carrying its document and LINE so the claim can "
+            f"be checked at the source. A passage with no resolvable line is listed under not_citable "
+            f"rather than returned without one: a claim traced to a document but not to a place in it is "
+            f"not traceable."
+            + (f" {len(_not_citable)} passage(s) could not be cited." if _not_citable else "")),
+        "file_hits_basis": (
+            f"{len(_all_hits)} file(s) matched and {len(hits)} are shown"
+            + (f", so THIS IS A TOP-{len(hits)} of a larger set - raise `limit` to see the rest"
+               if len(hits) < len(_all_hits) else ", none omitted")),
         "searched_files": len(toks),
         #  THE FU-124 RULE, MADE VISIBLE: what the search could not look inside, named.
         "not_searched": _unread,

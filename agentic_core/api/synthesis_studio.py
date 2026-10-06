@@ -253,6 +253,7 @@ async def run_lab_cascade(challenge: str, realm: str = "enterprise", domain: str
 
 class SynthesiseRequest(BaseModel):
     challenge: str
+    parent_vsb: str = ""     # P3.26 cl.(1) — "" means NO PARENT; an unresolvable id is refused
     realm: str = "enterprise"
     domain: str = "general"
     solution_name: str = ""
@@ -325,7 +326,8 @@ async def synthesise(req: SynthesiseRequest,
         # §3.3 invariant — the cascade-born VSB also carries Board + Chief + living economy + plan.
         try:
             from agentic_core.api.vsb import enrich_vsb_entity
-            enrich_vsb_entity(entity, owner_id=owner_id, problem=req.challenge, domain=req.domain)
+            enrich_vsb_entity(entity, owner_id=owner_id, problem=req.challenge, domain=req.domain,
+                              parent_vsb=getattr(req, 'parent_vsb', '') or '')
         except Exception:
             pass
         _save_vsb(entity)
@@ -366,6 +368,7 @@ async def synthesise(req: SynthesiseRequest,
 
 class SpawnRequest(BaseModel):
     project_id: str
+    parent_vsb: str = ""     # P3.26 cl.(1) — a parent VSB, distinct from project_id which is a PROJECT
     solution_name: str
     challenge: str = ""
     realm: str = "enterprise"
@@ -417,7 +420,8 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
     from agentic_core.auth.core import request_owner_id
     owner = request_owner_id(user, "default")
     entity["owner_id"] = owner
-    enrich_vsb_entity(entity, owner_id=owner, problem=req.challenge or req.solution_name, domain=req.domain)
+    enrich_vsb_entity(entity, owner_id=owner, problem=req.challenge or req.solution_name,
+                      domain=req.domain, parent_vsb=getattr(req, 'parent_vsb', '') or '')
     _save_vsb(entity)
 
     return {"entity_id": entity_id, "solution_name": req.solution_name, "structure": structure,

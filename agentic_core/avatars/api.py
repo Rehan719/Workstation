@@ -90,6 +90,15 @@ class ChatResponse(BaseModel):
     # most needs on that path: their image left the platform.
     #   read | failed_external | blocked_by_policy | no_vision_model | none (no image sent)
     image_status: str = "none"
+    # P3.5 clause (2) — WHY, when the status is no_vision_model. A status is a label; the clause asks for
+    # "an accurate reason naming what is missing", and `image_status` names only the outcome. This carries
+    # the MEASURED shortfall — the perception tier's memory and GPU requirement and what the machine
+    # actually has — read from the tier registry rather than written here, so it cannot drift from reality.
+    image_refusal: Optional[str] = None
+    # P3.5 clause (3) — what this deployment CAN read, computed from the installed resource. Empty when
+    # nothing can read an image, which is the honest answer; a list naming a format nothing can read would
+    # be a promise the deployment cannot keep.
+    image_accepts: List[str] = []
     context: str
     served_by: str = "native"          # which OWNED resource answered the TEXT (in-house-first provenance)
     is_external: bool = False
@@ -342,6 +351,11 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     # pool twice. The authenticated caller's namespace now scopes BOTH stores.
     """Real text (and, when a multimodal key is available, image-aware) chat turn."""
     _owner = user.get("username") if isinstance(user, dict) else None
+    #  P3.5 clauses (2) and (3) — computed ONCE per turn from what is actually installed. Read here rather
+    #  than written anywhere: the refusal names the perception tier's declared requirement and the measured
+    #  machine, and the accept list is derived from the matched resource, so neither can drift from reality.
+    from agentic_core.ai.native.tiers import image_intake as _image_intake
+    _img_intake = _image_intake()
     session_id = _get_or_create_session(request.session_id, owner_id=_owner)   # W350 — stamped
     session = _require_session_access(session_id, user)   # resuming another tenant's id → 404
     history: List[Dict[str, str]] = session["history"]
@@ -445,6 +459,20 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
         image_served_by=image_served_by,
         image_is_external=image_is_external,
         image_status=image_status if request.image_base64 else "none",
+        #  P3.5 clauses (2) and (3) — the REASON and the accept list, both computed from what is installed
+        #  rather than written here. `image_intake()` reads the perception tier's declared requirements and
+        #  the measured machine, so the refusal names the actual shortfall and the accept list is empty
+        #  exactly when nothing can read an image. Only populated on the no-vision-model path: a successful
+        #  read needs no refusal, and asserting one would contradict the reading it just performed.
+        #  ON EVERY not-understood path, not only `no_vision_model`. Measured W599: with no owned vision
+        #  model AND an external key present while AI_ALLOW_EXTERNAL is off, the status is
+        #  `blocked_by_policy` — which attributes the failure to POLICY when a resource is ALSO missing, so
+        #  a reader concludes an administrator blocked it. Both facts are true and the owned-resource
+        #  shortfall is the primary one on an in-house-first platform, so it is stated whenever the image
+        #  was not read, whatever the status says about the external path.
+        image_refusal=(_img_intake["refusal"]
+                       if (request.image_base64 and not image_understood) else None),
+        image_accepts=list(_img_intake["accepts"]),
         context=request.context,
         served_by=meta.get("served_by", "native"),
         is_external=bool(meta.get("is_external")),

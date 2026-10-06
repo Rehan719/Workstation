@@ -2061,7 +2061,8 @@ async def get_vsb_genome(vsb_id: str, user: dict | None = Depends(get_current_us
 
 
 def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str = "",
-                      domain: str = "enterprise", entity_type: str = "waqf_ltd_hybrid") -> dict:
+                      domain: str = "enterprise", entity_type: str = "waqf_ltd_hybrid",
+                      parent_vsb: str = "") -> dict:
     """§3.3 invariant (Living Plan) — EVERY generated VSB carries its own Board + a Chief that is the
     digital twin of its owner, a living economic metabolism in its selected legal/economic form,
     registration as a living entity the organism autonomously tends (heartbeat-paced virtual economy),
@@ -2093,7 +2094,7 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
     # Registered as a LIVING entity the organism autonomously tends
     try:
         from agentic_core.economy.living_vsbs import register as _register_living
-        _register_living(vsb_id, name, entity_type, domain, owner_id)
+        _register_living(vsb_id, name, entity_type, domain, owner_id, parent_vsb=parent_vsb)
         # W475 (refutation, ledger v4 R2.0) — the shared enrichment path (SSE establishment, /vsb/spawn, the Studio)
         # says the lever's truth too; one statement for every writer
         from agentic_core.economy.living_vsbs import living_statement
@@ -2131,6 +2132,10 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
 
 class SpawnRequest(BaseModel):
     challenge: str
+    #  P3.26 clause (1) — the lineage a caller may state. "" means NO PARENT. An id that does not
+    #  resolve is REFUSED in the OUTER handler, before StreamingResponse is built: this route streams,
+    #  so by the time the inner generator runs status 200 has been sent and no 4xx is possible.
+    parent_vsb: str = ""
     name: str = ""            # W450 — the founder's name; a floor slug is PENDING and publishes nothing
     domain: str = "enterprise"
     realm: str = "enterprise"
@@ -2150,6 +2155,21 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
     # (server-side stamp; a client cannot claim another owner). Single-user mode unchanged.
     from agentic_core.auth.core import request_owner_id
     req.owner_id = request_owner_id(user, req.owner_id)
+
+    #  P3.26 clause (1) — THE REFUSAL SITS HERE, IN THE OUTER HANDLER, and it has to.
+    #  This route returns a StreamingResponse: by the time `_stream()` below executes, status 200 has
+    #  already been sent and an HTTPException cannot become a 409 — the caller would get a 200 whose
+    #  event stream merely stops. Stacked with the other trap, a refusal has two places it must NOT
+    #  go: not inside register() (an `except Exception: pass` eats it) and not inside the generator.
+    from agentic_core.economy.living_vsbs import resolve_parent as _rp, PARENT_UNRESOLVED as _PU
+    _lin_chk = _rp(getattr(req, "parent_vsb", "") or "")
+    if _lin_chk["state"] == _PU:
+        raise HTTPException(status_code=409, detail={
+            "message": (f"Not spawned: the stated parent {req.parent_vsb!r} is not on the living "
+                        f"roster, so this entity would claim a parent that never existed."),
+            "stated_parent": req.parent_vsb,
+            "basis": _lin_chk["basis"],
+        })
 
     async def _stream():
         vsb_id = f"vsb-{uuid.uuid4().hex[:10]}"
@@ -2372,7 +2392,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         # charter, not a trained twin — W492/FU-188),
         # a living economy in its selected legal form, living-entity registration, and a seeded plan.
         enrich_vsb_entity(vsb_entity, owner_id=req.owner_id, problem=req.challenge,
-                          domain=req.domain, entity_type=req.entity_type)
+                          domain=req.domain, entity_type=req.entity_type,
+                          parent_vsb=getattr(req, 'parent_vsb', '') or '')
         yield _event("governance", "Board + Living Economy Attached",
                      #  W593 (FU-429, M1 R5/d) - this said "the owner's Chief twin". No twin model is
                      #  trained; the comment six lines above already says so, and this event contradicted

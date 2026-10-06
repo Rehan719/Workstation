@@ -412,3 +412,42 @@ not the Owner, is what failed. Nothing was deleted.
    that the entity is deleted and the entries orphaned;
 4. and the prune executed through `scripts/prune_test_entities.py` with its guard intact, never by a
    hand-rolled deletion, so the instrument and the decision cannot disagree again.
+
+## W598 — THE FULL COVERAGE SCAN. R13's DELETION LIST IS EMPTY, AND THIS IS THE FINAL ANSWER.
+
+The remedy this document asked for has been run: every top-level file and directory in the data root was
+treated as a KIND and scanned, the kinds are NAMED in the result, and files that are binary or over the size
+cap are reported as NOT SCANNED so an absence there is never read as evidence. Result in
+`scratchpad/w514/r13_coverage_result.json`.
+
+**Named by NOTHING outside their own files: 0 of 162.**
+
+| entities | the kinds that name them |
+|---|---|
+| **133** | `economy_owner_payments.json` · `economy_ventures_portfolio.json` · `swarm_cascades.json` |
+| **15** | `economy_owner_payments.json` · `economy_ventures_portfolio.json` |
+| **10** | those two plus `deliverables.json` · `operations_outcomes.json` · `swarm_cascades.json` |
+| 1 | `economy_owner_payments.json` alone |
+| 1 | **ten kinds**, including `vsb_contracts.json`, `revenue_events.json`, `economy_pending_transfers.json`, `memory.json`, `org_cascade_runs.json` |
+| 1 | six kinds including `vsb_contracts.json` |
+| 1 | four kinds |
+
+**NOT ONE of the 162 is referenced only by an auto-seeded business plan.** The claim this document was built
+on is refuted comprehensively, not marginally — and a business plan does not even appear in the combinations,
+because a per-entity plan is an entity naming ITSELF and this scan excludes self-references, which is the
+distinction the original column never drew.
+
+**So the prune cannot proceed as conceived.** Deleting any of these entities would orphan references in
+platform-level financial records (owner payments, the ventures portfolio, pending transfers, revenue events),
+in swarm cascade records, in deliverables and in operations outcomes — and in one case in a service contract.
+
+### What a correct R13 would now have to be
+
+Not "which entities are safe to delete" — the answer is none — but **"what does it mean to retire a test
+fixture that has accrued virtual WST and appears in the platform's own books?"** The honest candidate remains
+the one stated above: the referencing entries are removed WITH the entity and the removal is RECORDED, as a
+transaction rather than a deletion. That is a different and larger piece of work than a prune, and it is the
+Owner's to scope.
+
+**Nothing has been deleted at any point.** The standing constraint held: no round deletes an entity until the
+Owner approves the ids, and the ids never became approvable because the basis for approving them was false.
