@@ -84,6 +84,30 @@ def _as_meta(fn):
                 "served_by": "test-stub", "is_external": False}
     return _qm
 
+# W611 (FU-468) — A PRESENCE CHECK READS CODE, NOT DOCUMENTATION. A guard asserting a literal is present in
+# a source file was satisfied by the same literal in a COMMENT, so deleting the code it was written for left
+# it passing. These two readers are what such a check runs over instead.
+def _code_only(text):
+    """The text with // and /* */ comments (TS/JS) and whole-line # comments (Python) removed."""
+    import re as _re_co
+    t = _re_co.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", str(text or ""), flags=_re_co.S)
+    return "\n".join(ln for ln in t.splitlines() if not ln.lstrip().startswith(("//", "#")))
+
+
+def _string_constants(src):
+    """Every string constant in a Python source, implicit concatenation JOINED, f-string text parts included.
+    The text a module can actually emit, which a comment can never satisfy."""
+    import ast as _ast_sc
+    out = []
+    for node in _ast_sc.walk(_ast_sc.parse(src)):
+        if isinstance(node, _ast_sc.Constant) and isinstance(node.value, str):
+            out.append(node.value)
+        elif isinstance(node, _ast_sc.JoinedStr):
+            out.append("".join(v.value for v in node.values
+                               if isinstance(v, _ast_sc.Constant) and isinstance(v.value, str)))
+    return "\n".join(out)
+
+
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
@@ -5537,7 +5561,7 @@ def test_avatar_grounding_live_and_honest(client):
     # the platform surface sends vsb_id + language now (frontend contract, grep-verified)
     hook = open("apps/workstation-superapp/src/hooks/useAvatarSession.ts", encoding="utf-8").read()
     assert "resolveGroundingVsb()" in hook and "prefLanguageName()" in hook
-    assert "speechSynthesis" in hook and "SpeechRecognition" in hook   # in-house voice both ways
+    assert "speechSynthesis" in _code_only(hook) and "SpeechRecognition" in hook   # in-house voice both ways
     panel = open("apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx",
                  encoding="utf-8").read()
     assert "setSpeakReplies" in panel                             # the toggle is REACHABLE
@@ -18227,7 +18251,12 @@ def test_w481_the_transformation_cascade_verifies_delivery_or_says_it_did_not(cl
     _rows = lambda d: [x for x in (d.get("outcomes") or d.get("rows") or []) if x.get("resource") == "transformation_orchestrate"]
     run2 = client.post("/api/v1/transformation/orchestrate", json={"scope": "workstation"}).json()
     assert run2["validation"]["validated"] is None and run2.get("outcome_not_recorded")
-    assert len(_rows(client.get("/api/v1/operations/outcomes").json())) == len(_rows(before))
+    #  W610 — BY ID, NOT BY COUNT. The listing is a window of the most recent rows over a store every xdist
+    #  worker writes, so another worker's rows push older ones out and a COUNT of this resource's rows can
+    #  fall with nothing this run did (measured: 5 -> 4 in W610's full suite). A new row from THIS run would sit
+    #  at the top of the window, so "no new id of this resource" is the property and it cannot drift.
+    _new_ids = {x["id"] for x in _rows(client.get("/api/v1/operations/outcomes").json())} - {x["id"] for x in _rows(before)}
+    assert not _new_ids, ("a NOT ASSESSABLE run filed an outcome against the resource", _new_ids)
 
     # the branch ORDER: a checked failure outranks 'no delivery check'
     mixed = [{"step": 1, "tier": "Chief", "delegates_to": "Board", "verified": False, "checks": "decision", "basis": "b"},
@@ -18738,7 +18767,7 @@ def test_w485_a_veto_stops_the_journey_and_a_pack_says_whose_text_it_screened(cl
     # ── 3. exported text carries its provenance (FU-128 / sweep S7.8) ───────────────────────────
     api = (root / "apps/workstation-superapp/src/lib/api.ts").read_text(encoding="utf-8")
     assert "export const provenanceLine" in api
-    assert "composed by the deterministic native structured engine" in api
+    assert "composed by the deterministic native structured engine" in _code_only(api)
     # (refutation) an EMPTY provenance map served nothing — calling that 'floor-composed' is a
     # positive claim about a run that produced nothing; and the non-model set is {native, template}
     assert "no call is recorded as having served this output" in api
@@ -18750,13 +18779,13 @@ def test_w485_a_veto_stops_the_journey_and_a_pack_says_whose_text_it_screened(cl
     assert "return NO_SERVED_CALL_LINE;" in api, "the empty-map guard is gone"
     # (refutation) the third copy path in My Work carries the label too
     mw = (root / "apps/workstation-superapp/src/pages/MyWork.tsx").read_text(encoding="utf-8")
-    assert "provenanceHeader(rec) + v.output" in mw
+    assert "provenanceHeader(rec) + v.output" in _code_only(mw)
     # BOTH the copy and the download carry it — one without the other is the same defect
     assert mw.count("provenanceHeader(rec) + rec.output") == 2, mw.count("provenanceHeader(rec) + rec.output")
     assert "provenanceLine(" in mw
     dt = (root / "apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
     # EVERY export path, counted — one path left bare is the same defect as all of them
-    assert "await navigator.clipboard.writeText(provHeader() + exportText)" in dt, "the copy is bare"
+    assert "await navigator.clipboard.writeText(provHeader() + exportText)" in _code_only(dt), "the copy is bare"
     assert "let content = provHeader() + exportText," in dt, "the md/txt export is bare"
     assert "const esc = (provHeader() + exportText).replace(" in dt, "the html export is bare"
     assert dt.count("provHeader()") >= 3, dt.count("provHeader()")   # its definition + copy + exports
@@ -19721,7 +19750,7 @@ def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
     for _row in _ins.get("insights", []):
         assert "salience weight" in str(_row.get("score_basis", "")), _row
     assert "Salience weight" in hub and "Insight score" not in hub
-    assert "not a measurement" in hub
+    assert "not a measurement" in _code_only(hub)
 
     # ── the panel says what a what-if did, and promises only what it can do ─────────────────────
     assert "failed gates open them automatically" not in panel
@@ -19766,7 +19795,7 @@ def test_w490_floor_served_output_says_so_wherever_it_goes(client):
 
     # ── the shared mechanism this round sweeps (it must keep saying what the floor is) ──────────
     api_ts = (app / "lib/api.ts").read_text(encoding="utf-8")
-    assert "structured floor — not model analysis" in api_ts
+    assert "structured floor — not model analysis" in _code_only(api_ts)
     assert "composed by the deterministic native structured engine, not by a model" in api_ts
 
     # ── FU-144 (S6.7): the API stops discarding what served the assessment ──────────────────────
@@ -20589,7 +20618,7 @@ def test_w492_the_page_says_what_the_engine_said(client):
     assert "verify.anchor_checked" in gh_ui and "chain-verified-figure" in gh_ui
     assert "ledger-integrity-verdict" in cu_ui and "TRUNCATION NOT RULED OUT" in cu_ui
     assert "integrity.valid ? (integrity.anchor_checked ? \"VERIFIED\"" in cu_ui
-    assert "the ledger was not read" in cu_ui        # no count or root for books not read
+    assert "the ledger was not read" in _code_only(cu_ui)        # no count or root for books not read
     assert "{typeof integrity.events === 'number' && integrity.root_hash" in cu_ui
 
     # ── FU-182 (S12.7): the screen's own basis reaches the drawer, and a screen fault holds ────────
@@ -20810,7 +20839,7 @@ def test_w493_a_present_tense_claim_needs_the_process_running(client):
     lv = (root / "agentic_core/economy/living_vsbs.py").read_text(encoding="utf-8")
     # W493 refutation - the literal occurs only in prose (a module docstring and a comment); the
     # BEHAVIOUR is the sort that takes a single entity.
-    assert "least-recently-operated" in lv
+    assert "least-recently-operated" in _code_only(lv)
     assert "sorted(entries, key=lambda v: (str(v.get(\"last_operated\") or \"\")," in lv
     assert "def operate_one(" in lv
     # the autonomous evolution picker must sort by the CYCLE stamp: sorting by the APPLIED stamp lets an
@@ -23331,6 +23360,9 @@ def test_w502b_the_economy_says_whether_a_cycle_is_coming_and_whose_the_prioriti
     _clean = client.get("/api/v1/economy/transfers/unmarked-audit")
     assert _clean.status_code == 200, _clean.text
     _base = _clean.json()["unmarked_total"]
+    #  W611 — the BASELINE IS DRIVEN, NOT INHERITED: under xdist a store can already hold this fixed id's debit
+    #  (measured: 1 before and 1 after), so the +1 holds only when it was not already listed.
+    _listed_before = any(u.get("from_vsb") == "vsb-w502b-legacy" for u in (_clean.json().get("unmarked") or []))
     _bk = LG.VirtualLedger("vsb-w502b-legacy")
     atomic_write_json(_bk.path, {
         "vsb_id": "vsb-w502b-legacy", "currency": "WST", "entries": [],
@@ -23341,7 +23373,7 @@ def test_w502b_the_economy_says_whether_a_cycle_is_coming_and_whose_the_prioriti
     _aud = client.get("/api/v1/economy/transfers/unmarked-audit")
     assert _aud.status_code == 200, _aud.text
     _j = _aud.json()
-    assert _j["unmarked_total"] == _base + 1, (_j["unmarked_total"], _base)
+    assert _j["unmarked_total"] == _base + (0 if _listed_before else 1), (_j["unmarked_total"], _base, _listed_before)
     _row = next(u for u in _j["unmarked"] if u["from_vsb"] == "vsb-w502b-legacy")
     assert _row["amount_wst"] == 25.0
     assert _row["receiver_credited"] is None                    # not guessed at
@@ -24602,7 +24634,7 @@ def test_w505_p23_avatar_and_profile_honesty(client):
     assert "{false &&" not in settings, "Settings holds a dead branch"
     assert "Voice dictation works in your language." not in settings, \
         "the unconditional dictation claim is back"
-    assert "dictationAvailable" in settings, "the claim is not conditional on the browser's capability"
+    assert "dictationAvailable" in _code_only(settings), "the claim is not conditional on the browser's capability"
     # the EXPRESSION, not the bare identifier: my own comment used to name the identifier, so a blind
     # that removed the check left the guard green off the prose (W503 recorded this twice; C08 is the third)
     assert ("!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)"
@@ -27408,7 +27440,7 @@ def test_w508_p28_the_cascade_can_be_edited_the_planner_is_named_and_a_rerun_rep
     assert reads(nai, "planned by the swarm") and reads(nai, "planned by template"), (
         "the tree view does not RENDER which planner produced the decomposition, so a "
         "template-planned tree and a swarm-planned one look identical on the page")
-    assert "swarm_planned" in nai and "deterministic_template" in nai, \
+    assert "swarm_planned" in _code_only(nai) and "deterministic_template" in nai, \
         "the page does not distinguish the two planners, which is the only thing the field is for"
     assert "planner not stated" in nai, \
         "a run that names no planner is presented as one of the two, which invents a fact"
@@ -29312,7 +29344,7 @@ def test_w520_the_factory_export_carries_the_provenance_it_already_captured():
     # the helper is defined once, in one place, and still distinguishes an unknown producer from the floor
     api = (src / "lib/api.ts").read_text(encoding="utf-8")
     assert api.count("export const provenanceLine") == 1, "the helper is defined more than once"
-    assert "not recorded for this output" in api, "an unknown producer would be given a name"
+    assert "not recorded for this output" in _code_only(api), "an unknown producer would be given a name"
 
 
 def test_w521_the_portfolio_insights_name_what_they_counted(client, monkeypatch):
@@ -36826,9 +36858,9 @@ def test_w570_a_key_shown_only_by_a_printed_line_is_surfaced(client):
     #  not tell NO PAGE from NOBODY. The row's closing line was: "a round must read the lead as no
     #  PAGE, not nobody."
     _src570 = (_root / "scripts/selfcheck_diff.py").read_text(encoding="utf-8")
-    assert "reaches NO SURFACE AT ALL" in _src570, (
+    assert "reaches NO SURFACE AT ALL" in _string_constants(_src570), (
         "the finding no longer distinguishes no-page from no-surface-of-any-kind")
-    assert "no print or log statement emits it" in _src570, (
+    assert "no print or log statement emits it" in _string_constants(_src570), (
         "the finding does not say that the CLI was checked too, so a reader cannot tell what was looked "
         "for")
     #  AND THE CHECK'S OWN LABEL STOPPED BEING FALSE ABOUT ITS SUBJECT
@@ -41423,7 +41455,12 @@ def test_w593_p220_bcdef_a_claim_names_what_actually_did_it():
         "curriculum reaches a learner unlabelled on the surface §11 binds hardest")
     assert "qep-studyframe-provenance" in _ltm, (
         "the badge is computed and never rendered, so nothing reaches the page")
-    assert "ai_provenance" in _ltm, ("the response's own provenance is still never read")
+    #  W611 (FU-469) — over the CODE, not the file: "ai_provenance" survived only in a comment here, so this
+    #  leg passed on documentation (FU-468's class). The property is that the response's served_by is SET.
+    import re as _re593b
+    _ltm_code = "\n".join(ln for ln in _re593b.sub(r"/\*.*?\*/", "", _ltm, flags=_re593b.S).splitlines()
+                          if not ln.lstrip().startswith("//"))
+    assert "setReportServedBy(data.served_by" in _ltm_code, ("the response's own provenance is still never read")
     assert "qualified teacher" in _ltm, (
         "the panel does not direct the reader to a qualified teacher, which §11 rule 5 requires")
     assert "not reviewed curriculum" in _ltm, ("the panel does not say what the text is NOT")
@@ -43841,9 +43878,10 @@ def test_w600_p32_autonomy_that_starts_and_says_so(client):
             "clears", _rec2600.get("steps_failed"))
         #  AND AN EMPTY RECORD MUST NOT READ AS "NOTHING FAILED" while eleven swallows remain unconverted:
         #  a screen may refuse, never clear.
-        assert "not that nothing failed" in (_rec2600.get("steps_failed_basis") or ""), (
-            "an empty steps_failed reads as 'no step failed' although eleven handlers in this file still "
-            "swallow theirs (FU-461)", _rec2600.get("steps_failed_basis"))
+        #  W611 (FU-461) — every beat step is converted now, so the basis may say what an empty dict means;
+        #  before, it had to warn that eleven handlers still swallowed theirs
+        assert "EMPTY steps_failed means no step raised" in (_rec2600.get("steps_failed_basis") or ""), (
+            "the basis does not say what an empty steps_failed means", _rec2600.get("steps_failed_basis"))
     finally:
         _inst600.auto_compliance = _prev_ac600
         _inst600.__dict__.pop("_compliance_beat", None)
@@ -45736,3 +45774,62 @@ def test_w610_p323_every_domain_gate_refuses_and_the_qep_and_search_surfaces_are
     #  the search route answers with the keys the panel reads
     _sr = client.get("/api/v1/horizon/archive/search", params={"term": "w611probe"}).json()
     assert {"passages", "not_citable", "citation_basis", "not_searched", "passages_matched"} <= set(_sr), sorted(_sr)
+
+
+def test_w611_p221_no_beat_step_fails_silently_and_no_presence_check_reads_a_comment(client, monkeypatch):
+    """FU-461: twenty-one heartbeat handlers swallowed their exception, so a step that could not run looked like a
+    step with nothing due. FU-468: a presence check satisfied by a COMMENT passed with the code deleted."""
+    import ast as _ast611
+    import asyncio as _aio611
+    import pathlib as _pl611
+
+    _root = _pl611.Path(__file__).resolve().parents[1]
+    _src = (_root / "agentic_core/organism/heartbeat.py").read_text(encoding="utf-8")
+    _tree = _ast611.parse(_src)
+
+    # ── by AST: no swallow-and-pass remains in the beat or the compliance screen ─────────────────
+    for _fn in [n for n in _ast611.walk(_tree) if isinstance(n, (_ast611.FunctionDef, _ast611.AsyncFunctionDef))
+                and n.name in ("beat", "screen_living_vsb")]:
+        _bare = [h.lineno for h in _ast611.walk(_fn) if isinstance(h, _ast611.ExceptHandler)
+                 and len(h.body) == 1 and isinstance(h.body[0], _ast611.Pass)]
+        assert _bare == [], (f"{_fn.name} still swallows exceptions silently at line(s)", _bare)
+
+    # ── DRIVEN: a step that raises is RECORDED by name, and is NOT reported as an action ────────
+    from agentic_core.api import transformation as _tr611
+    from agentic_core.organism.heartbeat import OrganismHeartbeat
+
+    def _boom():
+        raise RuntimeError("w611 probe: the realisation could not be read")
+
+    monkeypatch.setattr(_tr611, "_realise", _boom)
+    _h = OrganismHeartbeat()
+    _rec = _aio611.run(_h.beat())
+    assert "transformation_tick" not in (_rec.get("actions") or []), "a failed step was reported as done"
+    assert "transformation_tick" in (_rec.get("steps_failed") or {}), (
+        "the step raised and the beat did not say so - the FU-461 silence", _rec.get("steps_failed"))
+    assert "w611 probe" in _rec["steps_failed"]["transformation_tick"], _rec["steps_failed"]
+    assert "EMPTY steps_failed means no step raised" in _rec["steps_failed_basis"], _rec["steps_failed_basis"]
+    monkeypatch.undo()
+    _clean = _aio611.run(OrganismHeartbeat().beat())
+    assert "transformation_tick" not in (_clean.get("steps_failed") or {}), "a failure outlived its beat"
+
+    # ── the compliance screen carries the side effects that failed, on every path ───────────────
+    from agentic_core.organism import heartbeat as _hbm
+    _ret = [n for n in _ast611.walk(next(n for n in _ast611.walk(_tree) if isinstance(n, _ast611.FunctionDef)
+                                          and n.name == "screen_living_vsb"))
+            if isinstance(n, _ast611.Return) and isinstance(n.value, _ast611.Dict)]
+    assert _ret and all(any(isinstance(k, _ast611.Constant) and k.value == "side_effects_failed" for k in r.value.keys)
+                        for r in _ret), "a screen return omits side_effects_failed"
+
+    # ── FU-468: the two readers a presence check now runs over cannot be satisfied by a comment ──
+    _code = _code_only("// marker-w611 only in a comment\n/* marker-w611b */\nconst x = 1;\n# marker-w611c\n")
+    assert "marker-w611" not in _code and "const x = 1" in _code, _code
+    _consts = _string_constants('# "phrase-w611" in a comment\nx = ("split " "phrase")\ny = f"lead {1} tail"\n')
+    assert "phrase-w611" not in _consts and "split phrase" in _consts and "lead  tail" in _consts, _consts
+    #  and the pre-flight's presence leg, which found them, now finds none in the suite
+    import importlib.util as _ilu611
+    _spec = _ilu611.spec_from_file_location("_scd611", _root / "scripts/selfcheck_diff.py")
+    _scd = _ilu611.module_from_spec(_spec)
+    _spec.loader.exec_module(_scd)
+    _leads = _scd.check_presence("HEAD", ["integration_tests/test_mvp_spine.py"])
+    assert _leads == [], ("a presence check can still be satisfied by a comment alone", _leads[:3])

@@ -92,6 +92,7 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     history (capped); a REGRESSION (prior non-fail → fail) registers with the immune system and
     marks the shipped repo stale (§13 drift honesty, W309). Reusable: the heartbeat's rotation
     (W288) and the ESTABLISHMENT first-screen (W309 — birth is alive) share this one path."""
+    _side_failed: List[str] = []   # FU-461 — the parts that failed, said rather than swallowed
     from agentic_core.config import StoreUnavailable, atomic_write_json, data_path, read_json_strict
     from agentic_core.economy.living_vsbs import list_living
     living = (list_living() or {}).get("living_vsbs") or []
@@ -104,6 +105,7 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     except StoreUnavailable as e:
         # the screen would run, but its verdict has nowhere honest to go: the history is not replaced
         return {"vsb_id": vsb_id, "overall": None, "regression": False, "history_unavailable": str(e),
+                "side_effects_failed": _side_failed,
                 "note": "the compliance history could not be read whole — the screen was not recorded"}
     # the CURRENT living text: registration identity + the scoped plan's objectives
     parts = [str(target.get("name") or ""), str(target.get("mission") or ""),
@@ -118,8 +120,8 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         # objective titles read clean. The challenge, concept and plan narrative join the text.
         parts.append(str(_plan.get("concept") or "")[:1200])
         parts.append(str(_plan.get("executive_summary") or "")[:800])
-    except Exception:
-        pass
+    except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+        _side_failed.append(f"plan_text: {_swallowed.__class__.__name__}: {_swallowed}")
     try:
         from agentic_core.api.vsb import _load_vsb, _blueprint
         _ent = _load_vsb(vsb_id)
@@ -128,8 +130,8 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             _bp = _blueprint(_ent)
             parts.append(_bp.get("concept", "")[:1200])
             parts.append(_bp.get("commercialisation", "")[:800])
-    except Exception:
-        pass
+    except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+        _side_failed.append(f"blueprint_text: {_swallowed.__class__.__name__}: {_swallowed}")
     from agentic_core.api.compliance import screen_compliance
     screen = screen_compliance(" ".join(p for p in parts if p))
     rec = hist.get(vsb_id) or {}
@@ -156,14 +158,15 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             from agentic_core.organism.biobus import biobus
             biobus.fire_signal("reflex", "organism.compliance.regression",
                                f"{vsb_id} regressed to FAIL", 0.9)
-        except Exception:
-            pass
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            _side_failed.append(f"regression_signal: {_swallowed.__class__.__name__}: {_swallowed}")
         try:   # §13 (W309) — a FAIL regression is drift: the shipped body no longer tells the truth
             from agentic_core.api.vsb import mark_repo_stale
             mark_repo_stale(vsb_id, "compliance regression to FAIL")
-        except Exception:
-            pass
-    return {"vsb_id": vsb_id, "overall": screen["overall"], "regression": regression}
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            _side_failed.append(f"mark_repo_stale: {_swallowed.__class__.__name__}: {_swallowed}")
+    return {"vsb_id": vsb_id, "overall": screen["overall"], "regression": regression,
+            "side_effects_failed": _side_failed}
 
 
 def circadian_phase(hour: Optional[int] = None) -> str:
@@ -281,8 +284,8 @@ class OrganismHeartbeat:
             from agentic_core.organism.biobus import biobus
             biobus.fire_signal("reflex", "organism.heartbeat", f"beat {self.beats} [{phase}]", intensity)
             actions.append("pulse")
-        except Exception:
-            pass
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            self._step_failed("pulse", _swallowed)
 
         # 2. Homeostasis check + AUTONOMOUS self-regulation (cheap, no AI) — the §8 survival instinct on the
         #    beat: the organism reads its own state and, when energy is depleted, actively RESTS to restore it
@@ -327,8 +330,8 @@ class OrganismHeartbeat:
                                 "max_generation": gs.get("max_generation")}
             if gs.get("total_genomes"):
                 actions.append("genome_scan")
-        except Exception:
-            pass
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            self._step_failed("genome_scan", _swallowed)
 
         # 2d-bis. §17.3 CADENCE — the Strategic and Action-Plan layers refresh themselves (P3.3, W585).
         #     Measured before this existed: the cadence was PROMPT TEXT only, so nothing refreshed
@@ -479,8 +482,8 @@ class OrganismHeartbeat:
                                          "error": str(op.get("error"))[:200],
                                          "cycle_ran": bool(op.get("cycle_ran")),
                                          "disclaimer": "Virtual/simulated WST — no real funds moved."})
-                    except Exception:
-                        pass
+                    except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                        self._step_failed("vsb_visit_failure_logged", _swallowed)
                     logger.warning("heartbeat: VSB visit failed for %s: %s",
                                     op.get("vsb_id"), str(op.get("error"))[:200])
                 elif op:
@@ -501,8 +504,8 @@ class OrganismHeartbeat:
                         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
                     logger.error("heartbeat: a VSB visit returned an unclassifiable result for %s (keys: %s)",
                                  op.get("vsb_id"), sorted(str(k) for k in op)[:12])
-            except Exception:
-                pass
+            except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                self._step_failed("operate_vsb_unclassified_logged", _swallowed)
             # W466 (register FU-023) — every fifth beat, complete transfers whose sender was debited and whose receiver
             # was never credited (a replay that cannot debit; see transfers.reconcile_receiver_legs). Runs only with
             # autonomous economy on — the same opt-in as the cycles above — and says what it did in status().
@@ -629,8 +632,8 @@ class OrganismHeartbeat:
             from agentic_core.api.transformation import _realise
             self.last_realisation = _realise().get("overall_realisation")
             actions.append("transformation_tick")
-        except Exception:
-            pass
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            self._step_failed("transformation_tick", _swallowed)
 
         # 3b. Autonomous alignment (opt-in) — route vision gaps to the living tiers, AND let the Owner's
         #     twin direct unprompted (P3.4 clause 2, W587).
@@ -650,8 +653,8 @@ class OrganismHeartbeat:
                 from agentic_core.api.cognition import align, AlignRequest
                 await align(AlignRequest(execute=False))
                 actions.append("alignment")
-            except Exception:
-                pass
+            except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                self._step_failed("alignment", _swallowed)
             try:
                 from agentic_core.api.board import twin_directive_unprompted
                 _tw = await twin_directive_unprompted("workstation")
@@ -668,8 +671,8 @@ class OrganismHeartbeat:
                 #  directive are different facts and a single marker for both would say neither
                 actions.append("twin_directive" if _tw.get("issued") else
                                f"twin_directive_withheld:{_tw.get('reason')}")
-            except Exception:
-                pass
+            except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                self._step_failed("twin_directive", _swallowed)
 
         # 4. Paced, opt-in self-evolution (EXPENSIVE — arms-length gated). AUTONOMOUS evolution ALWAYS routes
         #    its proposals through the Change Control Agency (submit_to_change_control=True): with no human in
@@ -691,8 +694,8 @@ class OrganismHeartbeat:
                 if float(((_ctx.get("metabolic") or {}).get("atp_ratio")) or 1.0) < 0.2:
                     _throttled = True
                     actions.append("metabolic_throttle")
-        except Exception:
-            pass
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            self._step_failed("metabolic_throttle", _swallowed)
         # §8 (W310/W346) — the `organism.evolution_auto_apply` lever gets its REAL consumer: when
         # the Owner enables it, CCA-APPROVED evolution proposals are applied on the beat (mutations
         # still gated by the CCA decision — this only automates the post-approval application).
@@ -715,8 +718,8 @@ class OrganismHeartbeat:
                         actions.append("evolution_applied")
                     elif _ap.get("applied"):
                         actions.append("evolution_approval_consumed_no_mutation_applicable")
-        except Exception:
-            pass
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            self._step_failed("evolution_apply", _swallowed)
 
 
         if (self.auto_evolve and not _throttled and phase in ("MAINTENANCE_FOCUS", "MAINTENANCE_REST")
@@ -729,8 +732,8 @@ class OrganismHeartbeat:
                 subs = (cyc or {}).get("change_control_submissions") if isinstance(cyc, dict) else None
                 self.last_evolution = {"submitted_to_governance": len(subs) if subs else 0}
                 actions.append("evolution_cycle")
-            except Exception:
-                pass
+            except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                self._step_failed("evolution_cycle", _swallowed)
             # §8×§3 (W309) — the organism tends its CHILDREN too: on the same paced evolve tick,
             # evolve the least-recently-evolved living VSB (round-robin; system context — the
             # entity's own evolution machinery, proposals recorded on its record, repo refreshed).
@@ -776,10 +779,10 @@ class OrganismHeartbeat:
                     try:
                         from agentic_core.economy.living_vsbs import spend_self_investment
                         spend_self_investment(_t.get("vsb_id"), "autonomous evolution cycle")
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+                    except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                        self._step_failed("evolve_vsb_self_investment", _swallowed)
+            except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                self._step_failed("evolve_vsb", _swallowed)
         # §13 (W319) — the STALE flag gets its autonomous consumer: when the Owner enables
         # auto_ship, the heartbeat re-ships ONE stale repo per beat (oldest stale first) so the
         # shipped body tracks the life; the re-ship itself is UEG-logged by ship_vsb_repo, and the
@@ -812,15 +815,15 @@ class OrganismHeartbeat:
                     try:
                         from agentic_core.economy.living_vsbs import spend_self_investment
                         spend_self_investment(_vid, "autonomous repo re-ship")
-                    except Exception:
-                        pass
+                    except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                        self._step_failed("reship_self_investment", _swallowed)
                     try:
                         self._ueg_logger().log({"type": "vsb.repo.reshipped_on_drift",
                                                 "vsb_id": _vid, "beat": self.beats})
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+                    except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                        self._step_failed("reship_ueg_log", _swallowed)
+            except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                self._step_failed("reshipped_stale_repo", _swallowed)
 
         # 5. Constitutional audit — hash-chain the beat into the UEG
         ueg = self._ueg_logger()
@@ -829,8 +832,8 @@ class OrganismHeartbeat:
                 ueg.log({"type": "heartbeat", "beat": self.beats, "phase": phase,
                          "realisation": self.last_realisation, "health": health,
                          "self_healing": self.last_self_healing, "actions": actions})
-            except Exception:
-                pass
+            except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+                self._step_failed("heartbeat_ueg_log", _swallowed)
 
         record = {"beat": self.beats, "phase": phase, "intensity": intensity,
                   "realisation": self.last_realisation, "health": health,
@@ -845,9 +848,8 @@ class OrganismHeartbeat:
                   "steps_failed_basis": (
                       "steps attempted on this beat that raised, by name, cleared at the start of every "
                       "beat so a failure never outlives the beat that had it. They are deliberately NOT in "
-                      "`actions`: an action is something the beat performed. Twenty-two handlers in this "
-                      "file swallowed their exception; FU-461 tracks the eleven still to convert, so an "
-                      "EMPTY steps_failed means no CONVERTED step failed - not that nothing failed."),
+                      "`actions`: an action is something the beat performed. Since W611 (FU-461) EVERY beat "
+                      "step's failure is recorded here, so an EMPTY steps_failed means no step raised."),
                   }
         self._log.append(record)
         self._log = self._log[-100:]
@@ -1094,6 +1096,9 @@ class OrganismHeartbeat:
                          "choosing on incomplete timestamps: %s", _hist_why)
         target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
         _vsb_res = screen_living_vsb(target.get("vsb_id"))
+        #  FU-461 — a side effect of the screen that failed reaches the beat's record, by name
+        for _sf in ((_vsb_res or {}).get("side_effects_failed") or []):
+            self.last_step_failures[f"compliance_screen:{_sf.split(':', 1)[0]}"] = _sf
         #  P3.2 clause (4) — THE BEAT EXTENDS TO LIVING DELIVERABLES, one per beat, least-recently-screened
         #  first: the same rotation as the VSB one above, so the per-beat cost stays bounded and a fleet is
         #  covered over time rather than all at once. Its own failure is RECORDED and never swallowed.

@@ -5239,11 +5239,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.21",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; the parallel stall is a property of the instrument that does the measuring.",
+      "slot_source": "W611: P2.21 closed on its own ACCEPT; this row sits in its area (the instruments a round reads, CI's execution mode, the fidelity workflow M1 re-runs from) and bears on P2.20's clause (6), the M1 re-run, so it rides P2.20.",
       "tier": 2
     },
     {
@@ -7217,11 +7217,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.21",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject."
+      "slot_source": "W611: P2.21 closed on its own ACCEPT; this row sits in its area (the instruments a round reads, CI's execution mode, the fidelity workflow M1 re-runs from) and bears on P2.20's clause (6), the M1 re-run, so it rides P2.20."
     },
     {
       "id": "FU-400",
@@ -7580,11 +7580,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.21",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
+      "slot_source": "W611: P2.21 closed on its own ACCEPT; this row sits in its area (the instruments a round reads, CI's execution mode, the fidelity workflow M1 re-runs from) and bears on P2.20's clause (6), the M1 re-run, so it rides P2.20.",
       "tier": 3
     },
     {
@@ -7617,11 +7617,11 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P2.21",
+      "slot": "P2.20",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "OWNER-APPROVED 2026-10-06: P2.21 chartered to own the instruments, so P2.17 closes on its own bar. P2.17's ACCEPT covers the round-cost MEASUREMENT; these rows are about the instruments that do the measuring, which is a different subject.",
+      "slot_source": "W611: P2.21 closed on its own ACCEPT; this row sits in its area (the instruments a round reads, CI's execution mode, the fidelity workflow M1 re-runs from) and bears on P2.20's clause (6), the M1 re-run, so it rides P2.20.",
       "tier": 2
     },
     {
@@ -8548,11 +8548,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W611",
       "note": "",
       "slot_source": "P2.21's ACCEPT is instruments that report less than they should; a beat's actions list IS the instrument reporting what the organism did",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every swallow-and-pass in the heartbeat's beat and its compliance screen is converted, counted by AST: sixteen beat steps (pulse, genome_scan, transformation_tick, alignment, twin_directive, metabolic_throttle, evolution_apply, evolution_cycle, evolve_vsb and its self-investment spend, the re-ship and its spend and log, the visit-failure and unclassified-visit logs, the beat's own UEG log) now record their failure by name in steps_failed through W600's _step_failed, and never as an action; the four in screen_living_vsb (two text-gathering reads, the regression signal, the stale mark) are carried on its result as side_effects_failed, on both of its returns. The one remaining pass, in start(), is the documented no-event-loop-at-import case. The basis now says what an EMPTY steps_failed means. Driven: a step forced to raise is recorded with its error and absent from actions, and the next beat clears it. Three blinds red."
     },
     {
       "id": "FU-462",
@@ -8699,11 +8702,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W611",
       "note": "",
       "tier": 2,
-      "slot_source": "P2.21 is the instruments item and its ACCEPT clause (1) is exactly this shape - an instrument naming a fixed list where it could compute one - while clause (5) is the discipline of driving a new leg red before trusting it. The sweep and the new pre-flight leg are both instruments"
+      "slot_source": "P2.21 is the instruments item and its ACCEPT clause (1) is exactly this shape - an instrument naming a fixed list where it could compute one - while clause (5) is the discipline of driving a new leg red before trusting it. The sweep and the new pre-flight leg are both instruments",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every presence check the pre-flight's [presence] leg named now reads CODE: eleven run over _code_only (comments stripped, TS and Python), and the two that read selfcheck_diff.py's emitted messages run over _string_constants (the module's actual string constants from its AST, implicit concatenation joined) - a comment can satisfy neither. A twelfth (FU-469's guard) asserts the real setter call. The leg itself, run against the suite, now returns NO leads, and the W611 guard asserts that, so a new comment-satisfiable check is caught by the guard as well as by the pre-flight."
     },
     {
       "id": "FU-469",
@@ -8718,11 +8724,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.21",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W611",
       "note": "",
       "tier": 2,
-      "slot_source": "the defect that matters here is the INSTRUMENT: a guard asserting the response's provenance is read, satisfied by the comment recording that it is not. The page fix is small and the guard correction is P2.21's clause (2)/(5) territory, so both travel with the instruments item"
+      "slot_source": "the defect that matters here is the INSTRUMENT: a guard asserting the response's provenance is read, satisfied by the comment recording that it is not. The page fix is small and the guard correction is P2.21's clause (2)/(5) territory, so both travel with the instruments item",
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "MEASURED W611: LearnTeachModule.tsx now calls setReportServedBy(data.served_by ?? '') on the gated /api/v1/qep/curriculum response, and that route returns served_by and floor_served, so the study-frame report's provenance badge is fed. What remained was the row's second half: the guard asserted the literal 'ai_provenance', which now survives only in a comment, so it passed on documentation. It now asserts setReportServedBy(data.served_by over a comment-stripped copy of the panel."
     },
     {
       "id": "FU-470",
