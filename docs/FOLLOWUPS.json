@@ -8722,10 +8722,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W605",
       "note": "",
-      "slot_source": "W603: P3.26 clause (1) is the lineage this row says is recorded and invisible, so the item that built the field owns showing it. The router finds no owner because the roster module and the Cockpit are routed to no open item."
+      "slot_source": "W603: P3.26 clause (1) is the lineage this row says is recorded and invisible, so the item that built the field owns showing it. The router finds no owner because the roster module and the Cockpit are routed to no open item.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The VSB Cockpit's operating panel now renders the entity's lineage from the roster record: the parent, or 'established directly by its founder' for a root, the lineage depth labelled as depth from the founder and explicitly NOT the number of evolutions applied, and the lineage basis. An unresolved parent shows the depth as UNKNOWN, never 0, and a row predating the field says so. Asserted over a comment-stripped copy of the page; blinds red for the line removed and for an unresolved parent shown as depth 0."
     },
     {
       "id": "FU-471",

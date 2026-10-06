@@ -68,6 +68,15 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
 }
 
 
+@router.get("/bundle")
+async def matter_bundle():
+    """P3.23 (W605) — the live matter's ONE named folder: its state, whether indexing may start (MEASURED from
+    the folder, never stored), and how many documents it holds. Never a document's contents, and nothing about
+    the matter leaves this machine."""
+    from agentic_core.legal import bundle as _bundle
+    return _bundle.status()
+
+
 @router.get("/templates")
 async def list_templates():
     """Return available legal document templates."""

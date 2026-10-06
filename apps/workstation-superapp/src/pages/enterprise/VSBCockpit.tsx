@@ -1187,6 +1187,35 @@ export const VSBCockpit: React.FC = () => {
                     <p data-testid="cockpit-cycle-counts-basis" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
                       {String(operating._counts_basis ?? operating.operating_cycles_basis ?? '')}
                     </p>
+                    {/* P3.26 clause (2) — the life cycle; dormancy is self-service and reversible */}
+                    <p data-testid="cockpit-lifecycle" className="text-[10px] text-slate-300 mt-2">
+                      Life cycle: {operating.lifecycle_state ? String(operating.lifecycle_state) : 'UNRECORDED (registered before the life cycle existed; operated as before)'}
+                      {' '}
+                      {operating.lifecycle_state !== 'retired' && (
+                        <button type="button" data-testid="cockpit-lifecycle-toggle"
+                          className="ml-2 px-2 py-0.5 rounded border border-slate-700 text-[9px] text-slate-300 hover:bg-slate-800"
+                          onClick={async () => {
+                            const to = operating.lifecycle_state === 'dormant' ? 'awake' : 'dormant';
+                            const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/lifecycle`, { to }, { validateStatus: () => true });
+                            if (r.status === 200 && r.data) setOperating({ ...operating, lifecycle_state: (r.data as Dict).to, lifecycle_basis: (r.data as Dict).basis });
+                            else setOperatingErr(`The life-cycle change was refused (HTTP ${r.status}): ${JSON.stringify((r.data as any)?.detail?.basis ?? r.data)}`);
+                          }}>
+                          {operating.lifecycle_state === 'dormant' ? 'Wake' : 'Make dormant'}
+                        </button>
+                      )}
+                    </p>
+                    {operating.lifecycle_basis && <p className="text-[9px] text-slate-600 leading-relaxed">{String(operating.lifecycle_basis)}</p>}
+                    {/* FU-470 — the lineage: whom this entity descends from, and how deep it sits */}
+                    <p data-testid="cockpit-lineage" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                      {operating.lineage_state === 'resolved'
+                        ? <>Lineage: child of {String(operating.parent_vsb)} · lineage depth {String(operating.lineage_generation ?? operating.generation ?? 'unrecorded')} (depth from its founder, NOT the number of evolutions applied)</>
+                        : operating.lineage_state === 'no_parent'
+                          ? <>Lineage: established directly by its founder · lineage depth 0 (a root)</>
+                          : operating.lineage_state === 'unresolved'
+                            ? <>Lineage: a parent was stated and could not be resolved, so the depth is UNKNOWN</>
+                            : <>Lineage: not recorded (this entity predates the lineage field)</>}
+                      {operating.lineage_basis && <span className="block text-slate-600">{String(operating.lineage_basis)}</span>}
+                    </p>
                     {/* P3.28 clause (4) — the last money cycle's governance, with what the gate did NOT read */}
                     <p data-testid="cockpit-last-governance" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                       {operating.last_governance && typeof operating.last_governance === 'object'

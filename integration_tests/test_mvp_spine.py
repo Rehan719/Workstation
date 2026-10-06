@@ -36152,7 +36152,12 @@ def test_w566_the_supplied_distress_route_carries_its_reviewer_and_the_matter_ha
     #  is MEASURED rather than remembered. If this flag ever means "the Owner approved indexing", the
     #  approval and the readiness have been conflated and an empty folder could authorise a read.
     assert str(_m.get("bundle_dir") or "").strip(), "no bundle folder is named"
-    assert "bundle_indexing_may_start" in _m, "nothing records whether there is anything to index"
+    #  W605 (P3.23) — MEASURED, NOT REMEMBERED: the stored flag is gone, because a stored value is the opposite
+    #  of the measurement this leg's own comment requires. legal/bundle.py computes it from the folder.
+    assert "bundle_indexing_may_start" not in _m, (
+        "matter.json stores whether indexing may start, so the flag is remembered rather than measured")
+    from agentic_core.legal import bundle as _bundle_l6
+    assert "may_start" in _bundle_l6.may_start(), "nothing measures whether there is anything to index"
     _bb = str(_m.get("bundle_indexing_basis") or "")
     assert "NOT an Owner switch" in _bb, (
         "the bundle flag does not state that it is a measurement of the folder rather than an approval",
@@ -44976,3 +44981,111 @@ def test_w604_p328_the_chain_decides_by_coverage_and_no_engine_reports_a_verdict
     assert _cls and not any(hasattr(c, "meiosis_recombine") or hasattr(c, "mitosis_scale") for c in _cls), (
         "the regulator still offers a meiosis whose diversity score is the time of day, or a mitosis that "
         "clones dicts")
+
+
+def test_w605_p326_dormancy_stops_the_beat_and_p323_nothing_outside_the_folder_is_opened(client, monkeypatch, tmp_path):
+    """P3.26 clause (2) with FU-470, and P3.23's folder boundary (its ACCEPT's last clause).
+
+    P3.26: an entity had one state, "living"; the beat tended every row; deregister deleted the record and had no
+    caller. P3.23: whether indexing may start was a STORED false beside a basis saying it must be measured, and
+    nothing enforced "no path outside the one named folder is ever opened" - the clause says to assert that by
+    DRIVING a read of a sibling directory, not by reading the code.
+    """
+    import os as _os605
+    import pathlib as _pl605
+    import re as _re605
+
+    from agentic_core.economy import living_vsbs as _lv605
+    from agentic_core.legal import bundle as _b605
+
+    # ── P3.26 (2): born juvenile; dormancy is self-service, stops the beat, costs nothing, and reverses ──
+    _est = client.post("/api/v1/genesis/establish", json={"problem": "W605 lifecycle probe", "name": "W605 Life",
+                                                          "domain": "enterprise", "ship_output": False})
+    assert _est.status_code == 200, (_est.status_code, _est.text[:160])
+    _id = _est.json()["vsb_id"]
+    _row = _lv605._load()[_id]
+    assert _row.get("lifecycle_state") == "juvenile", ("a new entity is not born juvenile", _row.get("lifecycle_state"))
+
+    _d = client.post(f"/api/v1/economy/living-vsbs/{_id}/lifecycle", json={"to": "dormant"})
+    assert _d.status_code == 200 and _d.json()["changed"] is True, (_d.status_code, _d.text[:200])
+    _row = _lv605._load()[_id]
+    assert _row["lifecycle_state"] == "dormant" and _row["dormant_from"] == "juvenile", _row.get("lifecycle_state")
+    assert _row["lifecycle_history"][-1]["by"], "the transition does not record who made it"
+
+    _cycles_before = int(_row.get("operating_cycles") or 0)
+    _op = _lv605.operate_vsb(_id)
+    assert _op["cycle_ran"] is False and _op["outcome"] == "refused" and _op["held"] == "lifecycle_dormant", (
+        "a dormant entity was operated", _op)
+    assert int(_lv605._load()[_id].get("operating_cycles") or 0) == _cycles_before, (
+        "a refused dormant visit still advanced the cycle counter, so dormancy is not free")
+    #  THE BEAT: over a roster holding only this dormant entity, the picker finds nothing to operate
+    _only = {_id: dict(_lv605._load()[_id])}
+    _real_load = _lv605._load
+    monkeypatch.setattr(_lv605, "_load", lambda: _only)
+    assert _lv605.operate_one() is None, "the heartbeat's picker chose a dormant entity"
+    monkeypatch.setattr(_lv605, "_load", _real_load)
+
+    _w = client.post(f"/api/v1/economy/living-vsbs/{_id}/lifecycle", json={"to": "awake"})
+    assert _w.status_code == 200 and _w.json()["to"] == "juvenile", ("wake did not restore the prior state", _w.text[:200])
+    assert _lv605.lifecycle(_lv605._load()[_id])["operable"] is True
+
+    # ── retirement is REFUSED here (governed through Change Control); illegal moves refused by name ──
+    _r = client.post(f"/api/v1/economy/living-vsbs/{_id}/lifecycle", json={"to": "retired"})
+    assert _r.status_code == 409 and _r.json()["detail"]["refused"] == "retirement_is_governed", _r.text[:200]
+    _x = client.post(f"/api/v1/economy/living-vsbs/{_id}/lifecycle", json={"to": "senescent"})
+    assert _x.status_code == 409 and _x.json()["detail"]["refused"] == "illegal_transition", _x.text[:200]
+    assert _lv605.set_lifecycle(_id, "dormant", by="")["refused"] == "unattributed"
+    #  a legacy row with no state is OPERABLE and says it is unrecorded, never a state it was not given
+    _legacy = _lv605.lifecycle({"vsb_id": "legacy"})
+    assert _legacy["operable"] is True and _legacy["state"] is None and "UNRECORDED" in _legacy["basis"], _legacy
+
+    # ── the Cockpit renders the life cycle, its control, and the lineage (FU-470), comment-stripped ──
+    _root = _pl605.Path(__file__).resolve().parents[1]
+    _ck = (_root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    _ckc = _re605.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _ck, flags=_re605.S)
+    for _tid in ("cockpit-lifecycle", "cockpit-lifecycle-toggle", "cockpit-lineage"):
+        assert f'data-testid="{_tid}"' in _ckc, ("the Cockpit does not render", _tid)
+    assert "operating.parent_vsb" in _ckc and "operating.lineage_generation" in _ckc, (
+        "the lineage line does not read the roster's parent and lineage depth")
+    assert "depth is UNKNOWN" in _ckc and "NOT the number of evolutions applied" in _ckc, (
+        "the lineage line does not keep an unresolved parent UNKNOWN, or does not separate depth from evolution")
+
+    # ── P3.23: the folder in three states; may_start MEASURED; nothing outside it is opened ─────
+    monkeypatch.setenv(_b605.ENV_VAR, str(tmp_path / "not-here"))
+    assert _b605.resolve_bundle_dir()["state"] == _b605.CONFIGURED_ABSENT, (
+        "a named folder that does not exist was not reported as ABSENT - an absent folder is not an empty one")
+    assert _b605.may_start()["may_start"] is False and _b605.may_start()["count"] is None
+
+    _bundle = tmp_path / "legal-matter"
+    _bundle.mkdir()
+    monkeypatch.setenv(_b605.ENV_VAR, str(_bundle))
+    _m0 = _b605.may_start()
+    assert _m0["may_start"] is False and _m0["count"] == 0 and "NOT an Owner switch" in _m0["basis"], _m0
+    (_bundle / "letter.txt").write_text("Dated 1 May. The meeting was rescheduled.", encoding="utf-8")
+    _m1 = _b605.may_start()
+    assert _m1["may_start"] is True and _m1["count"] == 1, ("placing a file did not flip the measurement", _m1)
+    assert _b605.open_document("letter.txt")["opened"] is True
+
+    #  A SIBLING whose name shares the folder's prefix - the case a string-prefix check lets through
+    _sib = tmp_path / "legal-matter-x"
+    _sib.mkdir()
+    (_sib / "secret.txt").write_text("not part of the bundle", encoding="utf-8")
+    for _p in (str(_sib / "secret.txt"), "../legal-matter-x/secret.txt"):
+        _o = _b605.open_document(_p)
+        assert _o["opened"] is False and _o["refused"] == "outside_the_named_folder" and _o["text"] is None, (
+            "a document OUTSIDE the one named folder was opened", _p, _o)
+    #  a symlink INSIDE the folder pointing OUT is refused too
+    try:
+        _os605.symlink(_sib / "secret.txt", _bundle / "link.txt")
+    except (OSError, NotImplementedError):
+        pass
+    else:
+        _ol = _b605.open_document("link.txt")
+        assert _ol["opened"] is False and _ol["refused"] == "outside_the_named_folder", (
+            "a symlink inside the folder escaped it", _ol)
+        assert "link.txt" not in (_b605.list_documents()["documents"] or []), "the walk listed an escaping link"
+
+    # ── and the surface reports the measurement, never contents ─────────────────────────────────
+    _s = client.get("/api/v1/law/bundle")
+    assert _s.status_code == 200 and _s.json()["bundle_indexing_may_start"] is True, _s.text[:200]
+    assert _s.json()["document_count"] == 1 and "text" not in _s.json(), _s.json()

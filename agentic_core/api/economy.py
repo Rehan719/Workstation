@@ -579,6 +579,25 @@ async def owner_payout(req: PayoutRequest, user: dict | None = Depends(get_curre
             "The owner-payments store is busy (another write held its lock) — no payout was recorded. Retry."))
 
 
+class LifecycleRequest(BaseModel):
+    to: str                       # juvenile · mature · senescent · dormant · awake (retired is refused)
+    note: str = ""
+
+
+@router.post("/living-vsbs/{vsb_id}/lifecycle")
+async def living_vsb_lifecycle(vsb_id: str, req: LifecycleRequest, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (2) — move an entity along its life cycle: dormancy is self-service and reversible, and
+    retirement is refused here because death is governed through Change Control. The transition is recorded
+    against the caller; a refusal names its rule and is a 409, so it cannot be read as a success."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.living_vsbs import set_lifecycle
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = set_lifecycle(vsb_id, req.to, by=str(_who or "owner (single-user mode)"), note=req.note)
+    if res.get("refused"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
 @router.get("/living-vsbs")
 async def living_vsbs(user: dict | None = Depends(get_current_user)):
     """§4 — the established VSB enterprises the organism autonomously tends (each continually operated via
