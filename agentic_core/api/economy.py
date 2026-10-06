@@ -598,6 +598,24 @@ async def living_vsb_lifecycle(vsb_id: str, req: LifecycleRequest, user: dict | 
     return res
 
 
+class RemovalRequest(BaseModel):
+    why: str
+
+
+@router.post("/living-vsbs/{vsb_id}/propose-removal")
+async def living_vsb_propose_removal(vsb_id: str, req: RemovalRequest, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (7) — PROPOSE a removal through Change Control, naming what and why. Refused (409) for an
+    entity any never-auto-retire rule protects or cannot clear; nothing moves until the change is approved and
+    implemented, which re-checks before it retires anything."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.turnover import propose_removal
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = await propose_removal(vsb_id, req.why, by=str(_who or "owner (single-user mode)"))
+    if not res.get("filed"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
 @router.get("/living-vsbs/{vsb_id}/retirement-check")
 async def living_vsb_retirement_check(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """P3.26 clause (4) — every never-auto-retire rule for this entity, each with its verdict and basis. Read-only:

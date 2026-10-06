@@ -45363,3 +45363,86 @@ def test_w607_gate_six_clears_by_coverage_the_avatar_speaks_and_p326_never_retir
             _pf.write_bytes(_prev)
         elif _pf.exists():
             _pf.unlink()
+
+
+def test_w608_p326_retirement_is_governed_conserves_every_balance_and_keeps_the_record(client):
+    """P3.26 clauses (3) and (7): a removal is PROPOSED through Change Control naming what and why, and applied
+    only by its implement step, which re-checks the never-auto-retire rules, moves every asset balance to the
+    Sovereign Capital Fund, and keeps the record. Before: deregister DELETED the row and had no caller."""
+    import json as _js608
+
+    from agentic_core.api import change_control as _cc608
+    from agentic_core.api.capital_fund import _load_fund
+    from agentic_core.config import data_path as _dp608
+    from agentic_core.economy import living_vsbs as _lv608
+    from agentic_core.economy.ledger import VirtualLedger
+
+    _ids = [client.post("/api/v1/genesis/establish", json={"problem": f"W608 retire {i}", "name": f"W608 R{i}",
+                                                           "domain": "enterprise", "ship_output": False}).json()["vsb_id"]
+            for i in range(3)]          # three: once one is retired the second must still have a peer
+    _pf = _dp608("governance/protected_entities.json")
+    _pf.parent.mkdir(parents=True, exist_ok=True)
+    _had, _prev = _pf.exists(), (_pf.read_bytes() if _pf.exists() else None)
+    try:
+        _pf.write_text(_js608.dumps({"entities": {}}), encoding="utf-8")
+        _led = VirtualLedger(_ids[0])
+        _led.record("revenue", 50.0, memo="W608 probe intake")          # Dr cash 50 / Cr revenue 50
+        _held = round(sum(float(_led.chart_balances().get(a) or 0) for a in ("cash", "reserve_fund")), 2)
+        assert _held > 0, ("the probe could not give the entity a balance to conserve", _led.chart_balances())
+
+        # ── clause (7): proposed through Change Control, naming what and why ─────────────────
+        _p = client.post(f"/api/v1/economy/living-vsbs/{_ids[0]}/propose-removal", json={"why": "W608 probe: dormant and duplicated"})
+        assert _p.status_code == 200 and _p.json()["filed"], _p.text[:200]
+        _cid = _p.json()["cca_id"]
+        _c = _cc608._load_change(_cid)
+        assert _c["change_type"] == "entity_retirement" and _c["vsb_id"] == _ids[0], _c.get("change_type")
+        assert "W608 probe" in _c["description"] and _ids[0] in _c["affected_systems"], _c["description"][:160]
+        assert _cc608.effective_tier(_c) == "HIGH", "the death of an entity is not a MAJOR change"
+        #  nothing moved at filing
+        assert _lv608._load()[_ids[0]].get("lifecycle_state") != "retired"
+        assert round(sum(float(VirtualLedger(_ids[0]).chart_balances().get(a) or 0) for a in ("cash", "reserve_fund")), 2) == _held
+
+        #  a PROTECTED entity's removal is never filed
+        _pf.write_text(_js608.dumps({"entities": {_ids[1]: "W608 probe ruling"}}), encoding="utf-8")
+        _no = client.post(f"/api/v1/economy/living-vsbs/{_ids[1]}/propose-removal", json={"why": "W608"})
+        assert _no.status_code == 409 and _no.json()["detail"]["refused"] == "protected", _no.text[:200]
+        _pf.write_text(_js608.dumps({"entities": {}}), encoding="utf-8")
+
+        # ── approved by the Owner, pre-validated, implemented: APOPTOSIS CONSERVES ───────────
+        _c.update(status="approved", decision_source="admin_override", owner_decision_acknowledged=True,
+                  twin_prevalidation={"verdict": "pass", "source": "twin_marker"})
+        _cc608._save_change(_c)
+        _fund0 = float(_load_fund().get("total_capital") or 0)
+        _im = client.post(f"/api/v1/cca/{_cid}/implement")
+        assert _im.status_code == 200 and _im.json()["status"] == "implemented", _im.text[:300]
+        _ap = _im.json()["applied"]
+        assert _ap["retired"] is True and round(_ap["conserved_wst"], 2) == _held, _ap
+        _after = VirtualLedger(_ids[0]).chart_balances()
+        assert round(sum(float(_after.get(a) or 0) for a in ("cash", "reserve_fund")), 2) == 0, (
+            "the entity still holds assets after retirement", _after)
+        assert round(float(_load_fund().get("total_capital") or 0) - _fund0, 2) == _held, (
+            "the fund did not rise by exactly what left the entity's books - a balance was lost or created",
+            _fund0, _load_fund().get("total_capital"), _held)
+        #  THE RECORD IS KEPT: the row is still on the roster, retired, with what was conserved
+        _row = _lv608._load().get(_ids[0])
+        assert _row and _row["lifecycle_state"] == "retired" and _row["retirement"]["cca_id"] == _cid, _row
+        assert _lv608.lifecycle(_row)["operable"] is False
+        assert _lv608.operate_vsb(_ids[0])["held"] == "lifecycle_retired"
+
+        # ── re-checked AT IMPLEMENT: an entity that became protected after approval is not retired ──
+        _p2 = client.post(f"/api/v1/economy/living-vsbs/{_ids[1]}/propose-removal", json={"why": "W608 second"})
+        assert _p2.status_code == 200, _p2.text[:200]
+        _c2 = _cc608._load_change(_p2.json()["cca_id"])
+        _c2.update(status="approved", decision_source="admin_override", owner_decision_acknowledged=True,
+                   twin_prevalidation={"verdict": "pass", "source": "twin_marker"})
+        _cc608._save_change(_c2)
+        _pf.write_text(_js608.dumps({"entities": {_ids[1]: "protected after approval"}}), encoding="utf-8")
+        _im2 = client.post(f"/api/v1/cca/{_c2['cca_id']}/implement")
+        assert _im2.status_code == 409 and _im2.json()["detail"]["refused"] == "protected", _im2.text[:200]
+        assert _lv608._load()[_ids[1]].get("lifecycle_state") != "retired", "a protected entity was retired"
+        assert _cc608._load_change(_c2["cca_id"])["status"] == "approved", "a refused implement consumed the approval"
+    finally:
+        if _had:
+            _pf.write_bytes(_prev)
+        elif _pf.exists():
+            _pf.unlink()

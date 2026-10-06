@@ -122,3 +122,86 @@ def retirement_refusal(vsb_id: str) -> Dict[str, Any]:
            if unknown else []))) if refused else "no never-auto-retire rule protects it; every rule was checked"
     return {"vsb_id": vsb_id, "refused": refused, "refusing": refusing, "not_assessable": unknown,
             "rules": rules, "basis": basis}
+
+
+#  ── P3.26 clauses (3) and (7) — RETIREMENT IS GOVERNED, AND APOPTOSIS CONSERVES ───────────────────────────
+#  A removal is PROPOSED through Change Control (autophagy, clause 7), never set directly: propose_removal files
+#  the change only for an entity no never-auto-retire rule protects, naming what it would remove and why. The
+#  change is applied by Change Control's implement step, which calls apply_retirement: it RE-CHECKS the rules
+#  (an entity can become protected between filing and approval), then moves every asset balance out of the
+#  entity's books into the Sovereign Capital Fund with a balanced posting each, credits the fund by exactly that
+#  total, and marks the entity retired. THE RECORD IS KEPT: the roster row and the books stay readable, and
+#  nothing is deleted, because a retirement that loses its record fails the clause as surely as one that loses
+#  a balance.
+RETIREMENT_CHANGE_TYPE = "entity_retirement"
+_ASSET_ACCOUNTS = ("cash", "reserve_fund")
+
+
+async def propose_removal(vsb_id: str, why: str, by: str) -> Dict[str, Any]:
+    why, by = str(why or "").strip(), str(by or "").strip()
+    #  one key set on every path (P2.21 clause 2), declared once
+    out: Dict[str, Any] = {"filed": False, "refused": None, "cca_id": None, "check": None, "basis": ""}
+    if not why or not by:
+        out.update(refused="incomplete", basis="REFUSED: a removal names why it is proposed and who proposes it")
+        return out
+    chk = retirement_refusal(vsb_id)
+    if chk["refused"]:
+        out.update(refused="protected", check=chk, basis=f"NOT FILED: {chk['basis']}")
+        return out
+    from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+    rec = await submit_change(SubmitChangeRequest(
+        title=f"[turnover] retire {vsb_id}", change_type=RETIREMENT_CHANGE_TYPE, vsb_id=vsb_id,
+        description=(f"Retire living entity {vsb_id}: its asset balances move to the Sovereign Capital Fund, its "
+                     f"record and books are KEPT, and the organism stops operating it. Why: {why}"),
+        rationale=why, submitted_by=by,
+        affected_systems=[vsb_id, "living roster", "Sovereign Capital Fund"],
+        rollback_plan=("the record is kept, so a retirement is reversible by Change Control; the moved balance "
+                       "is attributed in the fund to this entity")))
+    out.update(filed=True, cca_id=rec.get("cca_id"), check=chk,
+               basis=f"filed through Change Control as {rec.get('cca_id')}; nothing moves until it is approved and implemented")
+    return out
+
+
+def apply_retirement(vsb_id: str, cca_id: str) -> Dict[str, Any]:
+    """Change Control's implement step for an approved retirement. Re-checks, conserves, keeps the record."""
+    chk = retirement_refusal(vsb_id)
+    out: Dict[str, Any] = {"retired": False, "refused": None, "check": chk, "conserved_wst": None, "moved": None,
+                           "fund_after": None, "basis": ""}
+    if chk["refused"]:
+        out.update(refused="protected", basis=f"NOT RETIRED: {chk['basis']}")
+        return out
+    from agentic_core.api.capital_fund import contribute_from_cycle
+    from agentic_core.config import store_lock
+    from agentic_core.economy.ledger import VirtualLedger
+    from agentic_core.economy import living_vsbs as _lv
+    led = VirtualLedger(vsb_id)
+    bal = led.chart_balances()
+    moved: Dict[str, float] = {}
+    for acct in _ASSET_ACCOUNTS:
+        amt = round(float(bal.get(acct) or 0.0), 2)
+        if amt > 0:
+            led.post(debit="distribution_capital_fund", credit=acct, amount=amt,
+                     memo=f"apoptosis: {vsb_id} retired by {cca_id}", source="apoptosis")
+            moved[acct] = amt
+    total = round(sum(moved.values()), 2)
+    if total > 0:
+        contribute_from_cycle(vsb_id, total)
+    from agentic_core.api.capital_fund import _load_fund
+    fund_after = (_load_fund() or {}).get("total_capital")
+    stamp = _lv._now()
+    with store_lock(_lv._STORE):
+        d = _lv._load()
+        rec = d.get(vsb_id)
+        if isinstance(rec, dict):
+            prev = rec.get("lifecycle_state")
+            rec["lifecycle_state"] = "retired"
+            rec["lifecycle_basis"] = _lv.lifecycle(rec)["basis"]
+            rec.setdefault("lifecycle_history", []).append(
+                {"from": prev, "to": "retired", "by": f"cca:{cca_id}", "at": stamp, "note": "governed retirement"})
+            rec["retirement"] = {"cca_id": cca_id, "at": stamp, "conserved_wst": total, "moved": moved}
+            _lv._save(d)
+    out.update(retired=True, conserved_wst=total, moved=moved, fund_after=fund_after)
+    out["basis"] = (f"retired: {total} WST moved from its books to the Sovereign Capital Fund "
+                      f"({', '.join(f'{k} {v}' for k, v in moved.items()) or 'it held nothing'}); its record and books "
+                      f"are kept and the organism no longer operates it")
+    return out

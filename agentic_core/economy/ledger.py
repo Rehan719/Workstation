@@ -592,6 +592,12 @@ class VirtualLedger:
     BALANCES_SCOPE = ("the waterfall pots maintained by record(); not the double-entry chart of "
                       "accounts, whose totals answer a different question and are not comparable")
 
+    def chart_balances(self) -> Dict[str, float]:
+        """W608 (P3.26 clause 3) — the DOUBLE-ENTRY chart's account balances (cash, reserve_fund, ...), which is
+        what an entity actually holds. balances() is the seven waterfall pots and is a different question."""
+        self.require_readable()
+        return {k: round(float(v), 2) for k, v in (self._data.get("accounts") or {}).items()}
+
     def balances(self) -> Dict[str, float]:
         self.require_readable()
         return dict(self._data["balances"])

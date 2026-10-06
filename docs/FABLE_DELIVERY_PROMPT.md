@@ -5708,7 +5708,18 @@ PHASE P3 — CAPABILITY (Tier 3; delivered_by: build; ESTIMATED ~11 rounds — N
       (7) AUTOPHAGY: the retire-or-relabel discipline proposes removal through Change Control rather than
           waiting for a round, and a proposal names what it would remove and why.
       NOT THIS ITEM: carrying capacity, which is derived from the metabolic budget (P3.2) and belongs with it.
-      ⏳ W607 — CLAUSE (4) DELIVERED. (3), (5) and (7) remain.
+      ⏳ W608 — CLAUSES (3) AND (7) DELIVERED. ONLY (5), MITOSIS, REMAINS.
+      clause (7) a removal is PROPOSED through Change Control, naming what it removes and why, and never filed for
+                 an entity any never-auto-retire rule protects or cannot clear. Retirement is a new MAJOR
+                 change type, so it takes the twin pre-validation and, when a review rather than the Owner
+                 approved it, Board ratification.
+      clause (3) Change Control's implement step is the only place an entity is retired, and it RE-CHECKS the
+                 rules first: driven with an entity that became protected after approval, which is refused and
+                 keeps its approval. APOPTOSIS CONSERVES: every asset balance leaves the entity's books by a
+                 balanced posting and the Sovereign Capital Fund rises by exactly that total - driven with a
+                 real balance and both sides read back. THE RECORD IS KEPT: the roster row stays, marked retired
+                 with what was conserved, and the organism no longer operates it. Nothing is deleted.
+      ⏳ W607 — CLAUSE (4) DELIVERED.
       clause (4) the never-auto-retire set is ENFORCED in economy/turnover.py: unsettled obligations, a
                  governance hold, named in a ruling, the QEP entity, and the last living entity in its realm x
                  domain - every rule evaluated, each driven and refused by name, and an unprotected entity with

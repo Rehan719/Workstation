@@ -289,6 +289,9 @@ _TIER_MAP: dict[str, ImpactTier] = {
     "security_change":      "HIGH",
     "integration_add":      "LOW",
     "integration_remove":   "MEDIUM",
+    # P3.26 clause (3) (W608) — the death of an entity is a MAJOR change: twin pre-validation, and Board
+    # ratification when a review rather than the Owner approved it
+    "entity_retirement":    "HIGH",
     # W464 (FU-014, the Owner's ruling of 2026-09-14) — both fell through to MEDIUM by the default, so their tier
     # was an accident rather than a decision. A code correction is HIGH (a review's approval waits for Board
     # ratification); a material economy action is CRITICAL (decided only by the Owner's explicit decision).
@@ -1915,6 +1918,21 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
         c["audit_trail"].append({"event": "config_applied", "ts": now, "applied": applied,
                                  "consumer": consumer})
 
+    # P3.26 clauses (3) and (7) (W608) — A RETIREMENT IS APPLIED HERE AND NOWHERE ELSE, and it re-checks the
+    # never-auto-retire rules first: an entity can become protected between filing and approval.
+    _retirement_effect = None
+    if c.get("change_type") == "entity_retirement":
+        from agentic_core.economy.turnover import apply_retirement
+        _ret = apply_retirement(str(c.get("vsb_id") or ""), cca_id)
+        if not _ret.get("retired"):
+            c["audit_trail"].append({"event": "implement_refused_protected", "ts": now, "by": principal,
+                                     "by_verified": verified, "basis": _ret.get("basis")})
+            _save_change(c)
+            raise HTTPException(status_code=409, detail=_ret)
+        applied = _ret
+        _retirement_effect = _ret["basis"]
+        c["audit_trail"].append({"event": "entity_retired", "ts": now, "applied": _ret})
+
     c["status"] = "implemented"
     c["implemented_at"] = now
     _record_variance(c, now, "implemented")                   # W581 (FU-313) — the SECOND of two sites
@@ -1925,6 +1943,7 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
     _effect = "applied" if applied else "recorded_only"
     c["implementation_effect"] = _effect
     c["implementation_effect_basis"] = (
+        _retirement_effect if _retirement_effect else
         "the change carried a config_change payload and the reconfiguration engine applied it"
         if applied else
         "this change carried nothing for the platform to apply, so implementing it recorded the decision and "
