@@ -7248,10 +7248,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.28",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W604",
       "note": "",
-      "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing."
+      "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The governance record of a money cycle reached governed_cycle_sync's return and died one step later: living_vsbs' operating result kept only the word 'passed'. The whole record (status, gate, screened, coverage_limit, label_screened, at) is now kept on the roster entry as last_governance and in the result as governance_coverage, and the VSB Cockpit's operating panel renders it, the limit on its own line. Driven on a real governed cycle of an established entity; blinds red for the roster write and the page line."
     },
     {
       "id": "FU-402",
@@ -7287,10 +7290,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.28",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W604",
       "note": "",
-      "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing."
+      "slot_source": "OWNER-APPROVED 2026-10-06: the cognitive/clearance area now has its own item. These three rode P3.21, which was held open to own them while its own ACCEPT was already met in W596 - an item closes on its own bar, not as a parking space. P3.28's ACCEPT is written from these three rows' own end-to-end tracing.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "No engine reports a verdict it did not compute now: all thirteen delegate to consultation/constitutional_screen.py, which runs gaas.v5's three Horizon guardrails over the request and the answer and the policy gate's output screen over the answer, with no ledger write per consultation. A refusal is passed=False with the violations; a non-refusal keeps passed=None and states refused=False, screened_by and the coverage limit, so it is never a pass (the item's named trap). The deliberation gained a fourth outcome, SCREENED_NO_REFUSAL, and gate 1 decides BY COVERAGE: it clears that outcome with a basis saying it is not an approval and naming the limit, and still blocks BLOCKED and NOT ASSESSED. Gates 2 to 4 read the engine's computed answer under 'result', where the registry puts it; gate 2 was unclearable by construction before. Driven: every engine both refuses and does not; a screen that raised is NOT ASSESSED; the live chain clears gate 1 and withholds at gate 2. The loop still withholds, now for the reason FU-471 names. Fourteen blinds red."
     },
     {
       "id": "FU-404",
@@ -8591,11 +8597,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W604",
       "note": "",
       "slot_source": "P3.26 clauses 5 and 6 ARE mitosis and meiosis; these are the namesakes a round would otherwise build on",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "regulator.meiosis_recombine (a diversity_score from the wall clock) and mitosis_scale (dict clones) are deleted; neither had a caller. Asserted on the import binding. The real meiosis, /organism/genome/crossover, now says its offspring is a CANDIDATE that reaches an entity only through ratification, the Organism Anatomy page shows that, and the guard asserts a crossover leaves the living roster and the VSB store unchanged (P3.26 clause (6))."
     },
     {
       "id": "FU-465",
@@ -8717,6 +8726,26 @@
       "closed_by": null,
       "note": "",
       "slot_source": "W603: P3.26 clause (1) is the lineage this row says is recorded and invisible, so the item that built the field owns showing it. The router finds no owner because the roster module and the Cockpit are routed to no open item."
+    },
+    {
+      "id": "FU-471",
+      "title": "RULING: clearance gates 2 and 3 have no honest input on the avatar path, so the loop cannot emit until the Owner says where intent signatures and balance objectives come from",
+      "why": "MEASURED W604. Gate 1 now decides by coverage and clears a screened emission; the live chain then blocks at gate 2. Niyyah ratifies intent by COUNTING distinct signatories against a stated quorum and refuses when none is given, which is correct; the avatar loop's context carries no signatures and no quorum. Tawazun balances an emission by taking a Pareto frontier over NAMED objectives and candidates; the loop carries neither. Gate 4 (Tafakkur, drift) DOES have an honest source - the avatar's own recorded skill profile and energy budget, snapshotted each cycle, which W604 wired. OPTIONS: (a) the requesting user's own request counts as a quorum of one, and the refinery's drafts are the candidates under stated objectives (depth and load) - cheap, but every request then ratifies itself, which clears on what nothing checked; (b) gates 2 and 3 are retired from the avatar path and recorded as retired - honest, but removes two gates the constitution names; (c) both stay and the avatar path stays HELD until a ratification store and an objectives record exist that a person writes. RECOMMENDED: (c). FU-412's hold on the avatar path is released only by P3.28 clause (3), and clause (3) is released only by this ruling, so the hold's release condition now names a decision rather than a build.",
+      "source": "W604 (P3.28, measured with a probe and then on the live chain)",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/avatars/core/clearance_chain.py",
+        "agentic_core/avatars/core/recirculation_orchestrator.py",
+        "agentic_core/cognitive/meta/niyyah_engine.py",
+        "agentic_core/cognitive/meta/tawazun_engine.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W604: P3.28 clause (3) asks that the loop can EMIT. After W604 gate 1 clears by coverage and the chain blocks at gate 2, because gates 2 and 3 need inputs no part of the avatar loop holds. Where those inputs would honestly come from is a decision about the constitution's own gates, not a build, so it waits on the Owner."
     }
   ],
   "routes": [

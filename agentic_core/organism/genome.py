@@ -344,6 +344,12 @@ async def crossover_genomes(req: CrossoverRequest):
         "crossover_method": req.crossover_method,
         **_derived_trait_provenance([ga, gb], "crossover"),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        #  P3.26 clause (6) — MEIOSIS PRODUCES A CANDIDATE, NEVER A BIRTH. A recombined genome is a NEW
+        #  constitution, and it reaches an entity only through ratification; this route writes the genome
+        #  file and establishes nothing, which the record now says rather than leaving a reader to assume.
+        "candidate": True,
+        "candidate_basis": ("a recombined genome is a NEW constitution and a CANDIDATE only: it reaches an "
+                            "entity through ratification, and this call established none"),
     }
     _save_genome(child_genome)
 

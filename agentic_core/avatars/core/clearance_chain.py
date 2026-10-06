@@ -33,6 +33,19 @@ class ClearanceResult:
     attestations_signed: bool = False
     attestations_basis: Optional[str] = None
 
+def _computed(res: Any) -> Dict[str, Any]:
+    """An engine's COMPUTED answer: the registry nests it under `result`; a top-level answer is still read.
+
+    P3.28 — gates 2 to 4 read only the top level, while nine_engine_registry.get_engine_response puts what the
+    engine computed under `result`, so Niyyah's `ratified` sat one level below where its gate looked. The nested
+    answer wins where both exist, because it is what the engine computed rather than what wrapped it.
+    """
+    if not isinstance(res, dict):
+        return {}
+    nested = res.get("result") if isinstance(res.get("result"), dict) else {}
+    return {**res, **nested}
+
+
 class ConstitutionalClearanceChain:
     """
     ARTICLE 1134: Five-gate constitutional clearance chain.
@@ -171,9 +184,14 @@ class ConstitutionalClearanceChain:
                 attestations, 0, f"Gate 1 ({name}) Block: the deliberation call failed")
         # This gate raised KeyError before P3.14 — a crash rather than a verdict.
         _status = mushawara_res.get("status") if isinstance(mushawara_res, dict) else None
-        if _status != "APPROVED":
+        #  P3.28 clause (2) — DECIDE BY COVERAGE, NOT STATUS. This required APPROVED, which a screen cannot
+        #  issue, so it could only ever block. It clears on "screened, nothing refused" and refuses on a
+        #  refusal; NOT ASSESSED still blocks, because clearing on an absence of flags would be worse than
+        #  today's honest abstention.
+        if _status not in ("APPROVED", "SCREENED_NO_REFUSAL"):
             _basis = (_missing("status", mushawara_res) if _status is None else
-                      f"deliberation returned status {_status!r}, not APPROVED")
+                      f"deliberation returned status {_status!r}, which is neither APPROVED nor screened with "
+                      f"no refusal")
             return self._blocked(
                 gates + [self._record(key, name, subject, "blocked", _basis)],
                 attestations, 0,
@@ -182,7 +200,15 @@ class ConstitutionalClearanceChain:
                 # while a precise reason had already been worked out one line earlier.
                 f"Gate 1 ({name}) Block: "
                 f"{(mushawara_res.get('reason') if isinstance(mushawara_res, dict) else None) or _basis}")
-        _rec = self._record(key, name, subject, "cleared", "deliberation returned status APPROVED")
+        if _status == "SCREENED_NO_REFUSAL":
+            _cov = (mushawara_res.get("coverage") or {}) if isinstance(mushawara_res, dict) else {}
+            _rec = self._record(key, name, subject, "cleared",
+                                f"cleared BY COVERAGE, not approved: screened by "
+                                f"{', '.join(_cov.get('screened_by') or []) or 'an unnamed screen'} and nothing "
+                                f"refused. Stated limit: {_cov.get('coverage_limit') or 'not stated'}")
+            _rec["coverage"] = _cov
+        else:
+            _rec = self._record(key, name, subject, "cleared", "deliberation returned status APPROVED")
         attestations[key] = self._attest_gate(emission, _rec)
         gates.append(_rec)
 
@@ -192,13 +218,21 @@ class ConstitutionalClearanceChain:
         #  fixed all the gates would be reporting work it did not do.
         key, name, subject = self._GATES[1]
         niyyah_res = await self.orchestrator.process_engine("niyyah", emission, context)
-        _rat = niyyah_res.get("ratified") if isinstance(niyyah_res, dict) else None
+        #  P3.28 — the engine's computed answer is under `result` (nine_engine_registry nests the engine's
+        #  metadata there), so reading only the top level made this gate unclearable by construction. The
+        #  nested answer is read first; a top-level one is still honoured.
+        _rat = _computed(niyyah_res).get("ratified")
         if _rat is not True:
             return self._blocked(
                 gates + [self._record(key, name, subject, "blocked",
                                       _missing("ratified", niyyah_res) if _rat is None else
                                       "intent was not ratified: the quorum of signatures was not met")],
-                attestations, 1, f"Gate 2 ({name}) Block: Intent failed ratification")
+                attestations, 1,
+                #  P3.28 — say WHICH: an intent that was not assessable (no signatures, no quorum stated) is a
+                #  different fact from one that was counted and fell short, and the engine says which
+                f"Gate 2 ({name}) Block: "
+                + ("Intent failed ratification" if _rat is False else
+                   f"intent was not assessable - {_computed(niyyah_res).get('basis') or 'the engine gave no basis'}"))
         _rec = self._record(key, name, subject, "cleared", "intent ratified against a stated quorum")
         attestations[key] = self._attest_gate(emission, _rec)
         gates.append(_rec)
@@ -206,7 +240,7 @@ class ConstitutionalClearanceChain:
         # ── GATE 3: Tawazun — balance between depth and cognitive load ─────────────────────────
         key, name, subject = self._GATES[2]
         tawazun_res = await self.orchestrator.process_engine("tawazun", emission, context)
-        _bal = tawazun_res.get("balanced") if isinstance(tawazun_res, dict) else None
+        _bal = _computed(tawazun_res).get("balanced")
         if _bal is not True:                              # the old default here approved on absence
             return self._blocked(
                 gates + [self._record(key, name, subject, "blocked",
@@ -220,28 +254,45 @@ class ConstitutionalClearanceChain:
         # ── GATE 4: Tafakkur — reflection on downstream effects ────────────────────────────────
         key, name, subject = self._GATES[3]
         tafakkur_res = await self.orchestrator.process_engine("tafakkur", emission, context)
-        _risk = tafakkur_res.get("risk_score") if isinstance(tafakkur_res, dict) else None
-        if _risk is None:                                 # the old default read absence as NO RISK
-            return self._blocked(
-                gates + [self._record(key, name, subject, "blocked",
-                                      "the engine reported no 'risk_score', and an unmeasured risk is not "
-                                      "a zero risk. This gate previously read a missing score as 0.0, "
-                                      "which is the strongest possible pass")],
-                attestations, 3, f"Gate 4 ({name}) Block: downstream risk not assessed")
-        if not isinstance(_risk, (int, float)) or isinstance(_risk, bool):
-            return self._blocked(
-                gates + [self._record(key, name, subject, "blocked",
-                                      f"'risk_score' is not a number but a {type(_risk).__name__}, so it "
-                                      f"cannot be compared with the threshold")],
-                attestations, 3, f"Gate 4 ({name}) Block: risk score is not a number")
-        if _risk > 0.15:
-            return self._blocked(
-                gates + [self._record(key, name, subject, "blocked",
-                                      f"downstream risk {_risk} exceeds the threshold 0.15")],
-                attestations, 3, f"Gate 4 ({name}) Block: Downstream risk threshold exceeded")
-        _rec = self._record(key, name, subject, "cleared",
-                            f"downstream risk {_risk} is within the threshold 0.15, which is a "
-                            f"DEFAULT this repository has not tuned against its own history")
+        #  P3.28 — Tafakkur reports DRIFT and its own `stable` verdict against a stated threshold; it never
+        #  produced a `risk_score`, so this gate could not clear on the real engine. Its own verdict is used
+        #  when present, and the legacy risk_score path below is kept for a caller that supplies one.
+        _tc = _computed(tafakkur_res)
+        if "stable" in _tc or "assessable" in _tc:
+            if _tc.get("stable") is not True:
+                _why4 = (f"drift {_tc.get('drift')} against threshold {_tc.get('threshold')} is not stable"
+                         if _tc.get("stable") is False else
+                         f"drift was not measured: {_tc.get('basis') or 'no basis given'}")
+                return self._blocked(
+                    gates + [self._record(key, name, subject, "blocked", _why4)],
+                    attestations, 3, f"Gate 4 ({name}) Block: {_why4}")
+            _rec = self._record(key, name, subject, "cleared",
+                                f"drift {_tc.get('drift')} is within threshold {_tc.get('threshold')}"
+                                + (", which is a DEFAULT this repository has not tuned against its own history"
+                                   if _tc.get("threshold_is_a_default") else ""))
+        else:
+            _risk = _tc.get("risk_score")
+            if _risk is None:                             # the old default read absence as NO RISK
+                return self._blocked(
+                    gates + [self._record(key, name, subject, "blocked",
+                                          "the engine reported no 'risk_score', and an unmeasured risk is not "
+                                          "a zero risk. This gate previously read a missing score as 0.0, "
+                                          "which is the strongest possible pass")],
+                    attestations, 3, f"Gate 4 ({name}) Block: downstream risk not assessed")
+            if not isinstance(_risk, (int, float)) or isinstance(_risk, bool):
+                return self._blocked(
+                    gates + [self._record(key, name, subject, "blocked",
+                                          f"'risk_score' is not a number but a {type(_risk).__name__}, so it "
+                                          f"cannot be compared with the threshold")],
+                    attestations, 3, f"Gate 4 ({name}) Block: risk score is not a number")
+            if _risk > 0.15:
+                return self._blocked(
+                    gates + [self._record(key, name, subject, "blocked",
+                                          f"downstream risk {_risk} exceeds the threshold 0.15")],
+                    attestations, 3, f"Gate 4 ({name}) Block: Downstream risk threshold exceeded")
+            _rec = self._record(key, name, subject, "cleared",
+                                f"downstream risk {_risk} is within the threshold 0.15, which is a "
+                                f"DEFAULT this repository has not tuned against its own history")
         attestations[key] = self._attest_gate(emission, _rec)
         gates.append(_rec)
 

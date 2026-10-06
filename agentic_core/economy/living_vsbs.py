@@ -902,8 +902,16 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
             from agentic_core.economy.governance import retire_heartbeat_holds_for_consumed_events
             retire_heartbeat_holds_for_consumed_events(vsb_id)
         stamp = _now()
+        #  P3.28 clause (4) (FU-401) — THE GOVERNANCE RECORD, WHOLE. The policy gate states what it screened
+        #  and the limit of that screening on every pass, and governed_cycle_sync carries it; this return kept
+        #  only the word "passed", so the limit died one step before any surface. It is kept on the roster
+        #  record now, which is what the Cockpit's operating panel reads.
+        _g = res.get("governance") if isinstance(res.get("governance"), dict) else {}
+        _gov_record = {k: _g.get(k) for k in ("status", "gate", "screened", "coverage_limit", "label_screened")}
+        _gov_record["at"] = stamp
 
         def _ran(e: Dict[str, Any]) -> None:
+            e["last_governance"] = _gov_record
             e["operating_cycles"] = int(e.get("operating_cycles", 0)) + 1
             e["last_operated"] = stamp
             e.pop("last_hold", None)   # a real cycle ran — no standing hold implied
@@ -936,7 +944,8 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
                 "revenue_recognised_wst": pend["revenue"],
                 "revenue_basis": ("recognised_events" if pend["events"]
                                   else "no_activity_maintenance_cycle"),
-                "governance": (res.get("governance") or {}).get("status")}
+                "governance": (res.get("governance") or {}).get("status"),
+                "governance_coverage": _gov_record}
     except Exception as e:
         # W468 — a visit that RAISED is still a visit: last_operated used to advance only on a cycle or a hold, so the
         # least-recently-operated pick chose the same failing entity on every beat and no other entity was tended again

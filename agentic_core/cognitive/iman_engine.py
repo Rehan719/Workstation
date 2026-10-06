@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional
 from agentic_core.biomimicry.cycles.utils import constitutional_guard
 from agentic_core.consultation.interface import ConsultationRequest, ConsultationResponse, ValidationResult
+from agentic_core.consultation.constitutional_screen import screen as _constitutional_screen
 from agentic_core.cognitive.model_path import floor_basis, serve
 
 class ImanEngine:
@@ -22,7 +23,7 @@ class ImanEngine:
         #  router now; on this machine the walk ends at the deterministic floor, and the
         #  difference from before is that it can say WHY rather than simply not having asked.
         _text, _prov = await serve("iman", request.query)
-        return ConsultationResponse(
+        _resp = ConsultationResponse(
             engine="iman",
             #  the model's text when one served, and the engine's own marker when none did —
             #  never a blend, so a reader is not left guessing which they are looking at
@@ -38,6 +39,11 @@ class ImanEngine:
             confidence_basis=floor_basis(_prov),
             served_by=(_prov.get("served_by") or "native-fixed-marker"),
             is_external=bool(_prov.get("is_external")),
-            constitutional_validation=ValidationResult(passed=None, basis="no constitutional check ran: this engine performs none, so neither a pass nor a failure is claimed"),
+            constitutional_validation=ValidationResult(),
             reasoning_trace="Ethical value alignment and conviction via Iman Engine."
         )
+        #  P3.28 clause (1) — the verdict is COMPUTED by gaas.v5's own checks over the request and
+        #  this answer, replacing a literal that said no check ran. A screen may refuse, never clear:
+        #  a non-refusal keeps passed=None and states its coverage (consultation/constitutional_screen.py).
+        _resp.constitutional_validation = _constitutional_screen("iman", request.query, _resp.answer)
+        return _resp

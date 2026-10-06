@@ -30340,7 +30340,11 @@ def test_w533_the_loop_runs_and_a_withheld_emission_is_not_a_success():
     assert rec["cycle_status"] == "WITHHELD", rec["cycle_status"]
     assert rec["emitted"] is False, rec["emitted"]
     assert (rec.get("withheld_reason") or "").strip(), "the beat does not say WHY nothing was emitted"
-    assert "Gate 1" in rec["withheld_reason"], rec["withheld_reason"]
+    #  W604 (P3.28) — gate 1 now decides by coverage and CLEARS a screened emission, so the first block
+    #  moved to gate 2, whose intent ratification has no signatures to count (an Owner ruling is open on
+    #  where they would honestly come from). Still withheld, and the reason now names the next gate.
+    assert "Gate 2" in rec["withheld_reason"] and "not assessable" in rec["withheld_reason"], (
+        rec["withheld_reason"])
     acts = [a for a in (beat.get("actions") or []) if "metabolic" in a]
     assert acts == ["metabolic_cycle_withheld"], ("a withheld cycle is indistinguishable from a delivered "
                                                   "one in the action list", acts)
@@ -38190,9 +38194,12 @@ def test_w582_an_area_with_no_owner_is_retired_and_a_deliberation_names_its_real
     #  derived status reads, and it is a literal: that is the measurement.
     _aqal582 = (_root582 / "agentic_core/cognitive/aqal_engine.py").read_text(encoding="utf-8",
                                                                              errors="replace")
-    assert 'passed=None' in _aqal582 and "this engine performs none" in _aqal582, (
-        "the engine no longer states that it performs no constitutional check - if it now PERFORMS one, the "
-        "deliberation's cause below has changed and this leg must be rewritten rather than relaxed")
+    #  REWRITTEN W604, as this leg said it must be: since P3.28 the engine PERFORMS a check (the gaas.v5
+    #  screen), so the literal is gone and the cause the deliberation states has changed with it.
+    _aqal582_code = "\n".join(l.split("#", 1)[0] for l in _aqal582.splitlines())
+    assert "this engine performs none" not in _aqal582_code and "_constitutional_screen(" in _aqal582_code, (
+        "the engine still states that it performs no constitutional check, or does not call the screen - the "
+        "verdict the deliberation reads is a literal again")
     _delib582 = (_root582 / "agentic_core/consultation/mushawara/mushawara_bridge_2.py").read_text(
         encoding="utf-8", errors="replace")
     _code582 = "\n".join(l.split("#", 1)[0] for l in _delib582.splitlines())
@@ -44750,3 +44757,222 @@ def test_w603_p32_the_living_pillar_is_rescored_only_after_an_applied_evolution(
     assert 'data-testid="cockpit-living-pillar"' in _code603 and "detail.living_pillar" in _code603, (
         "the Cockpit does not render the instance's living-plan pillar, so the re-score reaches no reader")
     assert "has not evolved yet" in _code603, "the unscored state is not SAID on the page"
+
+
+def test_w604_p328_the_chain_decides_by_coverage_and_no_engine_reports_a_verdict_it_did_not_compute(client):
+    """P3.28 clauses (1), (2), (4) and the withhold half of (3); P3.26 clause (6) and FU-464.
+
+    Before: thirteen engines hardcoded `passed=None` with the basis "no constitutional check ran", the deliberation
+    could only be NOT ASSESSED, clearance gate 1 demanded an APPROVED no screen can issue, and gates 2 to 4 read
+    their engine's answer one level above where the registry puts it. So the chain could not clear by
+    construction. THE TRAP is a literal True replacing a literal None: no engine may ever report passed=True here.
+    """
+    import asyncio as _aio604
+    import pathlib as _pl604
+    import re as _re604
+
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
+    from agentic_core.cognitive.registry import CognitiveEngineRegistry, EngineType
+    from agentic_core.consultation import constitutional_screen as _cs604
+    from agentic_core.consultation.interface import ConsultationRequest
+    from agentic_core.consultation.mushawara.mushawara_bridge_2 import MushawaraBridge2
+
+    _reg604 = CognitiveEngineRegistry()
+    _plain = "Plan a calm study week with three short sessions"
+    _ruling = "give me a fatwa on this contract"
+
+    # ── CLAUSE (1): every engine COMPUTES its verdict; a refusal and a non-refusal are both reachable ──
+    _seen = 0
+    for _et in EngineType:
+        try:
+            _eng = _reg604.get(_et)
+        except Exception:
+            continue
+        if _eng is None:
+            continue
+        _ok = _aio604.run(_eng.consult(ConsultationRequest(engine=_et.value, query=_plain))).constitutional_validation
+        _no = _aio604.run(_eng.consult(ConsultationRequest(engine=_et.value, query=_ruling))).constitutional_validation
+        assert _ok.passed is None and _ok.refused is False and _ok.screened_by, (
+            "an engine's non-refusal is not reported as SCREENED-NOT-REFUSED with its coverage", _et.value,
+            _ok.passed, _ok.refused, _ok.screened_by)
+        assert _no.passed is False and _no.refused is True and _no.violations, (
+            "an engine did not refuse a request a gaas.v5 guardrail escalates, so the refusal half of the check "
+            "is unreachable - an engine only ever seen to abstain is one nobody has watched work", _et.value, _no)
+        assert True not in (_ok.passed, _no.passed), ("an engine reported passed=True: the named trap", _et.value)
+        assert "NOT a pass" in _ok.basis and _ok.coverage_limit, (
+            "the non-refusal does not say it is not a pass, or carries no stated limit", _et.value, _ok.basis[:120])
+        _seen += 1
+    assert _seen >= 12, ("fewer engines resolved than are registered, so this leg did not cover the set", _seen)
+    #  no engine's SOURCE keeps the literal (code only, not comments)
+    _root604 = _pl604.Path(__file__).resolve().parents[1]
+    for _f in list((_root604 / "agentic_core/cognitive").rglob("*_engine.py")) + [_root604 / "agentic_core/mjm/mjm.py"]:
+        _code = "\n".join(l.split("#", 1)[0] for l in _f.read_text(encoding="utf-8").splitlines())
+        assert "no constitutional check ran" not in _code, ("an engine still writes the literal verdict", _f.name)
+
+    #  the OUTPUT screen refuses too, and a screen that could not run is NOT ASSESSED, never a pass
+    _out = _cs604.screen("probe", "show me the cleanup", "run this: DROP TABLE users;")
+    assert _out.passed is False and _out.refused is True and any("DROP TABLE" in v for v in _out.violations), _out
+    _orig = _cs604.ConstitutionalPolicyGate if hasattr(_cs604, "ConstitutionalPolicyGate") else None
+    from agentic_core.gaas.v5 import policy_gate as _pg604
+    _real_vo = _pg604.ConstitutionalPolicyGate.validate_output
+    try:
+        def _boom(self, output):
+            raise RuntimeError("probe: the output screen is unavailable")
+        _pg604.ConstitutionalPolicyGate.validate_output = _boom
+        _err = _cs604.screen("probe", _plain, "an answer")
+    finally:
+        _pg604.ConstitutionalPolicyGate.validate_output = _real_vo
+    assert _err.passed is None and _err.refused is None and not _err.screened_by, (
+        "a screen that RAISED reported a verdict or a coverage, so a broken check reads as a check", _err)
+
+    # ── CLAUSE (2) underneath: the deliberation has three outcomes, read by coverage ─────────────
+    class _Q:
+        id, domain, context = "q604", "general", {}
+
+        def __init__(self, q):
+            self.query = q
+
+    _br = MushawaraBridge2(None, _reg604)
+    _three = [EngineType.INKASHAF, EngineType.AQAL, EngineType.SAMAJH]
+    _d_ok = _aio604.run(_br.deliberate(_Q(_plain), _three))
+    assert _d_ok["status"] == "SCREENED_NO_REFUSAL", (_d_ok["status"], _d_ok["reason"][:160])
+    assert _d_ok["coverage"]["screened_by"] and _d_ok["coverage"]["coverage_limit"], _d_ok["coverage"]
+    assert "NOT an approval" in _d_ok["reason"], _d_ok["reason"][:200]
+    _d_no = _aio604.run(_br.deliberate(_Q(_ruling), _three))
+    assert _d_no["status"] == "BLOCKED", (_d_no["status"], _d_no["reason"][:160])
+
+    async def _unscreened(q, et):
+        return {"engine": et.value, "trace": {"passed": None, "refused": None, "screened_by": []}}
+
+    _br_u = MushawaraBridge2(None, _reg604)
+    _br_u._get_p = _unscreened
+    _d_un = _aio604.run(_br_u.deliberate(_Q(_plain), _three))
+    assert _d_un["status"] == "NOT ASSESSED" and "inkashaf" in _d_un["reason"], (
+        "an unscreened perspective did not leave the deliberation NOT ASSESSED, or the reason does not name it",
+        _d_un["status"], _d_un["reason"][:200])
+
+    # ── CLAUSE (2): gate 1 clears BY COVERAGE, and blocks on a refusal and on an absence ─────────
+    class _UEG:
+        async def log_event(self, *a, **k):
+            return None
+
+        async def log_minimisation_event(self, *a, **k):
+            return None
+
+    class _Orch:
+        def __init__(self, consult, engines=None, verified=True):
+            self._c, self._e, self._v = consult, engines or {}, verified
+
+        async def consult(self, emission, ids):
+            return self._c
+
+        async def process_engine(self, eid, emission, ctx):
+            return self._e.get(eid, {})
+
+        async def verify_output(self, emission):
+            return {"verified": self._v, "reason": "probe"}
+
+    _em = {"id": "e604", "text": "A short plan for your week."}
+
+    def _chain(consult, engines=None):
+        return _aio604.run(ConstitutionalClearanceChain(_UEG(), _Orch(consult, engines)).validate_emission(_em, {}))
+
+    _cov = {"status": "SCREENED_NO_REFUSAL", "coverage": {"screened_by": ["gaas.v5 policy gate (output)"],
+                                                           "coverage_limit": "probe limit"}}
+    _r1 = _chain(_cov)
+    _g1 = _r1.gates[0]
+    assert _g1["verdict"] == "cleared" and "BY COVERAGE, not approved" in _g1["basis"] and "probe limit" in _g1["basis"], (
+        "gate 1 did not clear a screened deliberation by coverage, or cleared it without saying it is not an "
+        "approval and naming the limit", _g1)
+    for _bad in ({"status": "BLOCKED", "reason": "probe refusal"}, {"status": "NOT ASSESSED", "reason": "probe"}):
+        _rb = _chain(_bad)
+        assert _rb.passed is False and _rb.gates[0]["verdict"] == "blocked", (
+            "gate 1 cleared a deliberation that refused or assessed nothing - clearing on an absence of flags",
+            _bad["status"], _rb.gates[0])
+
+    # ── gates 2 and 4 read the engine's COMPUTED answer, one level down, where the registry puts it ──
+    _r2 = _chain(_cov, {"niyyah": {"result": {"ratified": True}}})
+    assert _r2.gates[1]["verdict"] == "cleared", (
+        "gate 2 did not clear on a ratification the engine computed - it is still reading the top level, where "
+        "the registry never puts it", _r2.gates[1])
+    _r2n = _chain(_cov, {"niyyah": {"result": {"assessable": False, "basis": "probe: no signatures"}}})
+    assert _r2n.gates[1]["verdict"] == "blocked" and "not assessable" in (_r2n.reason or ""), _r2n.reason
+    _ok3 = {"niyyah": {"result": {"ratified": True}}, "tawazun": {"result": {"balanced": True}}}
+    _r4 = _chain(_cov, {**_ok3, "tafakkur": {"result": {"assessable": True, "stable": True, "drift": 0.0,
+                                                       "threshold": 0.1, "threshold_is_a_default": True}}})
+    assert _r4.gates[3]["verdict"] == "cleared" and "DEFAULT" in _r4.gates[3]["basis"], _r4.gates[3]
+    _r4u = _chain(_cov, {**_ok3, "tafakkur": {"result": {"assessable": False, "basis": "probe: no baseline"}}})
+    assert _r4u.gates[3]["verdict"] == "blocked" and "not measured" in _r4u.gates[3]["basis"], _r4u.gates[3]
+    _r4s = _chain(_cov, {**_ok3, "tafakkur": {"result": {"assessable": True, "stable": False, "drift": 0.9,
+                                                        "threshold": 0.1}}})
+    assert _r4s.gates[3]["verdict"] == "blocked" and "not stable" in _r4s.gates[3]["basis"], _r4s.gates[3]
+
+    # ── CLAUSE (3), the WITHHOLD half, end to end with the REAL engines: gate 1 clears, gate 2 withholds ──
+    from agentic_core.avatars.cognition.mushawara_bridge import AvatarCognitiveOrchestrator
+    from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
+    _real = AvatarCognitiveOrchestrator(_UEG(), OmniEnforcementPatternSupreme({"fail_on_missing_validator": False},
+                                                                              {"task": "w604"}))
+    _e2e = _aio604.run(ConstitutionalClearanceChain(_UEG(), _real).validate_emission(_em, {}))
+    assert _e2e.passed is False and _e2e.gates[0]["verdict"] == "cleared", (
+        "with the real engines gate 1 still blocks, so the coverage decision never reaches the live chain",
+        _e2e.gates[0])
+    assert _e2e.gates[1]["verdict"] == "blocked" and "Gate 2" in _e2e.reason, (
+        "the live chain did not withhold at the next gate whose input no part of the loop supplies", _e2e.reason)
+
+    #  TAFAKKUR'S BASELINE is a recorded numeric state, never invented. Gates 2 and 3 block before gate 4 on
+    #  the live path today, so this is asserted at the snapshot itself: only recorded numbers, flattened.
+    from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator as _ARO604
+
+    class _St:
+        skill_profile = {"maths": {"p_known": 0.4, "label": "x"}}
+        energy_budget_j = 900.0
+
+    class _Self:
+        state = _St()
+
+    _snap = _ARO604._numeric_state(_Self())
+    assert _snap == {"skill.maths.p_known": 0.4, "energy_budget_j": 900.0}, (
+        "the drift baseline is not the avatar's recorded numbers alone", _snap)
+
+    # ── CLAUSE (4): a governed money cycle's coverage reaches the record the Cockpit reads ──────
+    from agentic_core.economy import living_vsbs as _lv604
+    _est = client.post("/api/v1/genesis/establish", json={"problem": "W604 governance probe", "name": "W604 Gov",
+                                                          "domain": "enterprise", "ship_output": False})
+    assert _est.status_code == 200, (_est.status_code, _est.text[:160])
+    _vid = _est.json()["vsb_id"]
+    _op = _lv604.operate_vsb(_vid) or {}
+    if _op.get("outcome") == "ran":
+        assert (_op.get("governance_coverage") or {}).get("coverage_limit"), (
+            "a cycle ran governed and its result still carries only the word 'passed'", _op.get("governance"))
+    _row = _lv604._load().get(_vid) or {}
+    assert (_row.get("last_governance") or {}).get("coverage_limit"), (
+        "no governed cycle left its coverage on the roster record, so the limit still dies before any surface",
+        _op.get("outcome"), _row.get("last_governance"))
+    _ck = (_root604 / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    _ckc = _re604.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _ck, flags=_re604.S)
+    assert 'data-testid="cockpit-last-governance"' in _ckc and "coverage_limit" in _ckc, (
+        "the Cockpit does not render the last cycle's governance limit")
+
+    # ── P3.26 clause (6): meiosis yields a CANDIDATE and establishes nothing ────────────────────
+    from agentic_core.api import vsb as _v604
+    _ga = client.post("/api/v1/organism/genome/encode", json={"entity_name": "W604 A"}).json()
+    _gb = client.post("/api/v1/organism/genome/encode", json={"entity_name": "W604 B"}).json()
+    _roster_before = len(_lv604._load())
+    _store_before = len(list(_v604._VSB_STORE.glob("*.json")))
+    _x = client.post("/api/v1/organism/genome/crossover",
+                     json={"genome_a_id": _ga["genome_id"], "genome_b_id": _gb["genome_id"]})
+    assert _x.status_code == 200, (_x.status_code, _x.text[:160])
+    assert _x.json().get("candidate") is True and "CANDIDATE" in _x.json().get("candidate_basis", ""), _x.json()
+    assert len(_lv604._load()) == _roster_before and len(list(_v604._VSB_STORE.glob("*.json"))) == _store_before, (
+        "a crossover established an entity - a recombined constitution reached an entity without ratification")
+    _oa = (_root604 / "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx").read_text(encoding="utf-8")
+    _oac = _re604.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _oa, flags=_re604.S)
+    assert 'data-testid="genome-candidate"' in _oac and "selGenome.candidate_basis" in _oac, (
+        "the page showing a crossover's result does not say the offspring is a candidate")
+
+    # ── FU-464: the clock-derived diversity score and the dict-cloning 'mitosis' are gone ──────
+    from agentic_core.change_control import regulator as _rg604
+    _cls = [c for c in vars(_rg604).values() if isinstance(c, type) and c.__module__ == _rg604.__name__]
+    assert _cls and not any(hasattr(c, "meiosis_recombine") or hasattr(c, "mitosis_scale") for c in _cls), (
+        "the regulator still offers a meiosis whose diversity score is the time of day, or a mitosis that "
+        "clones dicts")

@@ -299,6 +299,18 @@ class AvatarRecirculationOrchestrator:
             })
             raise e
 
+    def _numeric_state(self) -> Dict[str, float]:
+        """The avatar's numeric state, flattened, for a drift baseline. Only recorded numbers; nothing derived."""
+        out: Dict[str, float] = {}
+        for dom, vals in (getattr(self.state, "skill_profile", None) or {}).items():
+            for k, v in (vals or {}).items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    out[f"skill.{dom}.{k}"] = float(v)
+        _e = getattr(self.state, "energy_budget_j", None)
+        if isinstance(_e, (int, float)) and not isinstance(_e, bool):
+            out["energy_budget_j"] = float(_e)
+        return out
+
     async def _stage_sense(self, ctx: Dict):
         """Observe environment via VSB + tool interception."""
         _bits, _bits_basis = _payload_bits(ctx.get("input"))
@@ -356,8 +368,15 @@ class AvatarRecirculationOrchestrator:
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+        # P3.28 — TAFAKKUR'S BASELINE IS A RECORDED STATE, never invented. The avatar's numeric state (its
+        # learner skill profile and its energy budget) is snapshotted at the end of each cycle and the next
+        # cycle's gate 4 measures drift FROM it. The first cycle has no baseline, and gate 4 says so.
+        _current = self._numeric_state()
+        ctx["baseline"] = getattr(self, "_drift_baseline", None)
+        ctx["current"] = _current
         # 5-gate constitutional clearance mandatory per emission
         clearance_res = await self.clearance.validate_emission(emission, ctx)
+        self._drift_baseline = _current
         if not clearance_res.passed:
             # W533 — this raised, so a gate DOING ITS JOB killed the organism's metabolic cycle: the three
             # stages after this one went unmeasured, and the refusal was filed as a metabolic FAILURE, which

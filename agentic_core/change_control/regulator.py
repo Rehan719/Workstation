@@ -76,17 +76,8 @@ class Regulator:
         else:
             self.pid_gains["kp"] *= 0.99
 
-    async def meiosis_recombine(self, parent_a: Dict, parent_b: Dict) -> Dict:
-        child = {**parent_a, **parent_b}
-        child["diversity_score"] = 0.35 + (0.05 * time.time() % 1)
-        await self.ueg.log_minimisation_event("regulator_meiosis", {"diversity": child["diversity_score"]})
-        return child
-
-    async def mitosis_scale(self, template: Dict, count: int) -> List[Dict]:
-        clones = []
-        for i in range(count):
-            clone = {**template, "clone_id": i, "ts": time.time()}
-            clones.append(clone)
-            self._template_cache[f"clone_{i}"] = clone
-        await self.ueg.log_minimisation_event("regulator_mitosis", {"count": count})
-        return clones
+    #  W604 (FU-464, P3.26) — meiosis_recombine and mitosis_scale were DELETED. The first reported a
+    #  "diversity_score" computed from the wall clock, so the figure measured the time of day; the second
+    #  cloned dicts and called the copies an entity's mitosis. Neither had a caller anywhere in the tree.
+    #  Real meiosis is /organism/genome/crossover, which produces a CANDIDATE; real mitosis is P3.26 clause
+    #  (5), which must run through Change Control and conserve funds.

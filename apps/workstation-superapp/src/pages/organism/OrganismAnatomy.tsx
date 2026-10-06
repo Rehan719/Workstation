@@ -35,6 +35,7 @@ interface Genome {
   fitness_provenance: string; encoded: boolean | null; created_at: string; domain?: string;
   traits?: Record<string, number>; trait_provenance?: { parsed: string[]; defaulted: string[] };
   served_by?: string; mutations?: string[]; encoding_note?: string; crossover_method?: string;
+  candidate?: boolean; candidate_basis?: string;
   parent_genomes?: string[];
 }
 interface ConfigPayload {
@@ -438,6 +439,8 @@ export const OrganismAnatomy: React.FC = () => {
                 {selGenome.crossover_method && <Chip tone="dim">{selGenome.crossover_method} crossover</Chip>}
               </div>
               {selGenome.encoding_note && <p className="text-[9px] text-amber-200/70 italic mb-2">{selGenome.encoding_note}</p>}
+              {/* P3.26 clause (6) — a crossover yields a CANDIDATE constitution, never an entity */}
+              {selGenome.candidate && <p data-testid="genome-candidate" className="text-[9px] text-slate-400 mb-2">{selGenome.candidate_basis}</p>}
               {/* W492 (FU-198) - mutate and crossover wrote no trait_provenance, so this pre-W438
                   fallback fired for genomes created seconds ago and the bars were drawn in the
                   'analysed' colour. They carry their lineage now; this note is for genuinely old

@@ -1187,6 +1187,14 @@ export const VSBCockpit: React.FC = () => {
                     <p data-testid="cockpit-cycle-counts-basis" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
                       {String(operating._counts_basis ?? operating.operating_cycles_basis ?? '')}
                     </p>
+                    {/* P3.28 clause (4) — the last money cycle's governance, with what the gate did NOT read */}
+                    <p data-testid="cockpit-last-governance" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                      {operating.last_governance && typeof operating.last_governance === 'object'
+                        ? <>Last cycle governance: {String((operating.last_governance as Dict).status ?? 'unrecorded')} by {String((operating.last_governance as Dict).gate ?? 'an unnamed gate')}
+                            {(operating.last_governance as Dict).screened ? ` · screened: ${String((operating.last_governance as Dict).screened)} ("${String((operating.last_governance as Dict).label_screened ?? '')}")` : ''}
+                            {(operating.last_governance as Dict).coverage_limit ? <span className="block text-slate-600">Limit: {String((operating.last_governance as Dict).coverage_limit)}</span> : null}</>
+                        : <>No governed cycle is recorded for this entity yet, so no governance status is shown.</>}
+                    </p>
                     {/* the governing flags, per entity, with ABSENT distinguished from stated-off */}
                     <p data-testid="cockpit-tending-flags" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                       Tending: auto_economy {operating.auto_economy === false ? 'OFF' : 'on'}
