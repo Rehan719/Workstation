@@ -1227,6 +1227,12 @@ export const VSBCockpit: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                  {/* P3.2 clause (5) — the per-instance living-plan pillar, re-scored only after an APPLIED evolution */}
+                  <p className="text-[10px] text-slate-500 mt-3" data-testid="cockpit-living-pillar">
+                    {detail.living_pillar && typeof detail.living_pillar === 'object'
+                      ? <>Living-plan pillar: {String((detail.living_pillar as Dict).status ?? 'unrecorded')} at generation {String((detail.living_pillar as Dict).scored_at_generation ?? '—')}, scored {String((detail.living_pillar as Dict).scored_at ?? 'at an unrecorded time')} · {String((detail.living_pillar as Dict).basis ?? '')}</>
+                      : <>Living-plan pillar: not scored. It is re-scored only after an approved evolution is applied, and {Number(detail.generation ?? 0) > 0 ? 'none has been scored since this instance evolved' : 'this instance has not evolved yet'}.</>}
+                  </p>
                   {detail.evolution_pending_cca ? (
                     <p className="text-[10px] text-amber-400 mt-3" data-testid="cockpit-evolution-pending">
                       A review is pending: change record {String(detail.evolution_pending_cca)} is awaiting your decision
@@ -1357,6 +1363,11 @@ export const VSBCockpit: React.FC = () => {
                                 ? ' (advanced by this apply)'
                                 : ' (NOT advanced)'}
                               {growthResult.generation_basis && <span className="block text-slate-500">{String(growthResult.generation_basis)}</span>}
+                              {growthResult.living_pillar_rescore && (
+                                <span className="block text-slate-500" data-testid="cockpit-apply-pillar">
+                                  Living-plan pillar: {growthResult.living_pillar_rescore.rescored ? 're-scored' : `not re-scored (${String(growthResult.living_pillar_rescore.refused ?? 'no reason reported')})`} · {String(growthResult.living_pillar_rescore.basis ?? '')}
+                                </span>
+                              )}
                             </>
                           : <>Nothing was applied — {String(growthResult.reason ?? 'no reason reported')}{growthResult.detail ? `: ${String(growthResult.detail)}` : ''}. An evolution must be APPROVED in Change Control first; filing a proposal does not mutate the genome.</>}
                       </p>

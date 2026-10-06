@@ -160,7 +160,7 @@ def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
     """
     pid = str(parent_vsb or "").strip()
     if not pid:
-        return {"state": NO_PARENT, "parent_vsb": None, "generation": 0,
+        return {"state": NO_PARENT, "parent_vsb": None, "lineage_generation": 0,
                 "basis": ("no parent was stated, so this entity has NONE - which is a fact about it and "
                           "not a field somebody forgot. An entity established directly by its founder is "
                           "the root of its own lineage, which makes it generation 0.")}
@@ -171,9 +171,12 @@ def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
         #  `generation` was TEXT generation), so that clause's own stated test - "a guard drives generation
         #  0 and asserts NO re-score" - had nothing to drive. A generation is the DEPTH of the lineage chain
         #  this field creates, so it belongs here with the parent rather than in a second mechanism.
-        _pg = d[pid].get("generation")
+        #  FU-465 (W603) — the field is `lineage_generation` now, because `generation` already meant APPLIED
+        #  EVOLUTIONS in the VSB store. A roster record written W599-W602 carries the old key with the
+        #  lineage meaning, so it is read as a fallback here and nowhere else.
+        _pg = d[pid].get("lineage_generation", d[pid].get("generation"))
         _gen = (int(_pg) + 1) if isinstance(_pg, int) else 1
-        return {"state": PARENT_RESOLVED, "parent_vsb": pid, "generation": _gen,
+        return {"state": PARENT_RESOLVED, "parent_vsb": pid, "lineage_generation": _gen,
                 "basis": (f"spawned from {pid}, which was resolved on the living roster at creation - so "
                           f"this lineage names an entity that exists rather than an id somebody typed. "
                           f"Generation {_gen}: one deeper than its parent"
@@ -181,7 +184,7 @@ def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
                              ", whose own generation was not recorded (it predates the field), so this is "
                              "counted as 1 rather than guessed from a chain that cannot be walked")
                           + ".")}
-    return {"state": PARENT_UNRESOLVED, "parent_vsb": None, "generation": None,
+    return {"state": PARENT_UNRESOLVED, "parent_vsb": None, "lineage_generation": None,
             "basis": (f"the stated parent {pid!r} is not on the living roster. A lineage field that "
                       f"accepted this would claim a parent that never existed, and every clause reasoning "
                       f"over the lineage would then be reasoning about a fiction. The generation is None "
@@ -241,7 +244,9 @@ def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
                          #  ADDED, never folded into `status`: it already has readers.
                          "parent_vsb": _lin["parent_vsb"],
                          "lineage_state": _lin["state"],
-                         "generation": _lin["generation"],
+                         #  FU-465 — LINEAGE DEPTH, named so it cannot be read as vsb["generation"],
+                         #  which counts APPLIED EVOLUTIONS and is what P3.2 clause (5) gates on
+                         "lineage_generation": _lin["lineage_generation"],
                          "lineage_basis": _lin["basis"],
                          #  stated explicitly, so the record says what is true of it
                          "auto_economy": bool(auto_economy),

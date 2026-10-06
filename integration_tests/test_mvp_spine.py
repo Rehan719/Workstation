@@ -43483,29 +43483,29 @@ def test_w598_p326_an_entity_records_its_lineage_or_says_it_has_none(client):
     #  instance has evolved >= 1 generation" had no field to drive. Its own stated test is "a guard drives
     #  generation 0 and asserts NO re-score", and generation 0 did not exist. A generation is the DEPTH of
     #  the lineage chain this field creates, so it is written here with the parent.
-    assert _rec1["generation"] == 0, (
+    assert _rec1["lineage_generation"] == 0, (
         "a founder-established entity is not generation 0, so 'has evolved >= 1 generation' cannot be "
         "distinguished from 'has never evolved' - which is the whole of P3.2 clause (5)",
-        _rec1.get("generation"))
-    assert _rec2["generation"] == 1, (
-        "a child's generation is not one deeper than its root parent's", _rec2.get("generation"),
-        _rec1.get("generation"))
+        _rec1.get("lineage_generation"))
+    assert _rec2["lineage_generation"] == 1, (
+        "a child's generation is not one deeper than its root parent's", _rec2.get("lineage_generation"),
+        _rec1.get("lineage_generation"))
     #  A GRANDCHILD, so the depth is proven to ACCUMULATE rather than merely to be set once
     _r4 = client.post("/api/v1/genesis/establish",
                       json={"problem": "W598 a grandchild entity", "name": "W598 Grandchild",
                             "domain": "enterprise", "realm": "enterprise", "parent_vsb": _id2})
     assert _r4.status_code == 200, (_r4.status_code, _r4.text[:160])
     _rec4 = (_lv598.roster() if hasattr(_lv598, "roster") else _lv598._load()).get(_r4.json()["vsb_id"])
-    assert _rec4["generation"] == 2, (
+    assert _rec4["lineage_generation"] == 2, (
         "the generation does not accumulate down the chain, so it records whether an entity has a parent "
         "rather than how deep it sits - and a depth that never exceeds 1 cannot express evolution",
-        _rec4.get("generation"))
+        _rec4.get("lineage_generation"))
     #  AND AN UNRESOLVED PARENT LEAVES IT UNKNOWN, NOT ZERO. Zero asserts the entity is a root, which is a
     #  claim about its lineage rather than an absence of one - the three-state rule on a number.
     _unres = _lv598.resolve_parent("vsb-never-existed-598")
-    assert _unres["generation"] is None, (
+    assert _unres["lineage_generation"] is None, (
         "an unresolvable parent yields a generation rather than None; 0 in particular would assert the "
-        "entity is a ROOT, which is the opposite of 'its depth is unknown'", _unres.get("generation"))
+        "entity is a ROOT, which is the opposite of 'its depth is unknown'", _unres.get("lineage_generation"))
 
     # ── AN UNRESOLVABLE PARENT IS REFUSED, AND REFUSED THROUGH THE ROUTE ───────────────────────
     #  DRIVEN OVER HTTP ON PURPOSE. enrich_vsb_entity calls register inside `except Exception: pass`
@@ -43836,17 +43836,17 @@ def test_w600_p32_autonomy_that_starts_and_says_so(client):
     #  A child established from a parent has evolved ZERO times and has lineage depth 1. Reading the
     #  lineage field as the evolution count would re-score the pillar for an entity that never evolved —
     #  precisely the defect clause (5) names. My own first version of this block did exactly that.
-    assert _rec.get("generation") == 0, (
-        "a founder-established entity is not lineage generation 0", _rec.get("generation"))
+    assert _rec.get("lineage_generation") == 0, (
+        "a founder-established entity is not lineage generation 0", _rec.get("lineage_generation"))
     _child = client.post("/api/v1/genesis/establish",
                          json={"problem": "W600 evolved", "name": "W600 Child",
                                "domain": "enterprise", "parent_vsb": _id})
     assert _child.status_code == 200, (_child.status_code, _child.text[:160])
     _cid600 = _child.json()["vsb_id"]
     _crec = _lv600._load().get(_cid600) or {}
-    assert _crec.get("generation") == 1, (
+    assert _crec.get("lineage_generation") == 1, (
         "a child is not one lineage generation deeper, so no lineage can be read from the roster",
-        _crec.get("generation"))
+        _crec.get("lineage_generation"))
     #  THE DISTINCTION, ASSERTED so nobody repeats the misreading: this child is lineage depth 1 and has
     #  evolved NOT AT ALL. If these two ever read the same, one of them has taken the other's meaning.
     #  THE ROSTER HALF FIRST, because it does not depend on the VSB store holding a record and so cannot go
@@ -43864,7 +43864,7 @@ def test_w600_p32_autonomy_that_starts_and_says_so(client):
             "a newly established child reports APPLIED EVOLUTIONS > 0 - it has evolved nothing, so either "
             "the evolution counter advanced without an approved apply (the W493 defect) or the lineage "
             "field has been read as the evolution count (the P3.2 clause (5) defect)",
-            _cv600.get("generation"), _crec.get("generation"))
+            _cv600.get("generation"), _crec.get("lineage_generation"))
     else:
         #  not a failure and not a pass: this entity is on the living roster and not in the VSB store, so
         #  the two generations cannot be compared here. Said out loud so a later reader does not take this
@@ -44626,3 +44626,127 @@ def test_w602_p221_the_preflight_says_when_a_route_moves_the_readme_figures():
     _old604 = 'mkt = (app / "pages/Market.tsx").read_text()\n'
     assert {m.group("var"): m.group("path") for m in _scd604.SRC_READ_RE.finditer(_old604)} == {
         "mkt": "pages/Market.tsx"}, "widening the read pattern lost the spelling it used to match"
+
+
+def test_w603_p32_the_living_pillar_is_rescored_only_after_an_applied_evolution(client, monkeypatch):
+    """P3.2 clause (5), FU-466 and FU-465 — the per-instance living-plan pillar, and the two generations kept apart.
+
+    W600 measured that the clause's subject did not exist: every pillar was platform-level, so "no re-score at
+    generation 0" was green at every generation. It exists now, gated on APPLIED EVOLUTIONS, and the refusal is
+    RETURNED to the caller rather than merely absent. The roster's lineage depth is renamed lineage_generation,
+    because a child established from a parent has lineage depth 1 and has evolved nothing.
+    """
+    import pathlib as _pl603
+    import re as _re603
+
+    from agentic_core.api import change_control as _cc603
+    from agentic_core.api import vsb as _v603
+    from agentic_core.economy import living_vsbs as _lv603
+
+    _est603 = client.post("/api/v1/genesis/establish",
+                          json={"problem": "W603 living pillar probe", "name": "W603 Pillar Co",
+                                "domain": "enterprise", "ship_output": False})
+    assert _est603.status_code == 200, (_est603.status_code, _est603.text[:200])
+    _id603 = _est603.json()["vsb_id"]
+    _rec603 = _v603._load_vsb(_id603)
+    assert _rec603 and int(_rec603.get("generation", 0)) == 0, "a new entity is not at applied generation 0"
+
+    # ── GENERATION 0 IS REFUSED, AND THE REFUSAL IS A FACT THE CALLER RECEIVES ───────────────────
+    _shapes603 = []
+    _r0 = _v603.rescore_living_pillar(dict(_rec603))
+    _shapes603.append(set(_r0))
+    assert _r0["rescored"] is False and _r0["refused"] == "not_evolved", (
+        "an instance that has applied NO evolution had its living-plan pillar re-scored - the exact defect "
+        "P3.2 clause (5) names", _r0)
+    assert _r0["generation"] == 0 and _r0["score"] is None and "REFUSED" in _r0["basis"], _r0
+    for _bad603 in ("1", True, None):
+        _ru = _v603.rescore_living_pillar({"generation": _bad603})
+        _shapes603.append(set(_ru))
+        assert _ru["refused"] == "generation_unreadable" and _ru["generation"] is None, (
+            "an applied-evolution count that is not a whole number was treated as one, so 'has it evolved' was "
+            "answered from something that cannot say", _bad603, _ru)
+
+    # ── THROUGH THE REAL APPLY PATH: an approval that lands NOTHING returns the refusal ──────────
+    _store603 = {}
+
+    def _fake_load(cid):
+        return _store603.get(cid)
+
+    def _fake_update(cid, fn):
+        fn(_store603[cid])
+        return _store603[cid]
+
+    monkeypatch.setattr(_cc603, "_load_change", _fake_load)
+    monkeypatch.setattr(_cc603, "_update_change", _fake_update)
+
+    def _approve(cid, proposals):
+        _v = _v603._load_vsb(_id603)
+        _v["evolution_pending_cca"] = cid
+        _v["evolution_proposals"] = proposals
+        _v603._save_vsb(_v)
+        _store603[cid] = {"status": "approved", "audit_trail": []}
+
+    _approve("CCA-W603-EMPTY", [])
+    _a0 = _v603.apply_approved_evolution(_id603)
+    assert _a0["applied"] is True and _a0["generation"] == 0 and _a0["generation_advanced"] is False, _a0
+    assert _a0["living_pillar_rescore"]["refused"] == "not_evolved", (
+        "an approval consumed with no applicable mutation re-scored the pillar, or did not say it refused",
+        _a0.get("living_pillar_rescore"))
+    assert "living_pillar" not in (_v603._load_vsb(_id603) or {}), (
+        "a REFUSED re-score still wrote a pillar record onto the entity")
+
+    # ── ONE APPLIED EVOLUTION: re-scored once, at that generation, and stored where the page reads it ──
+    _approve("CCA-W603-ONE", [{"trait": "w603_resilience", "proposed_change": "w603 probe change"}])
+    _a1 = _v603.apply_approved_evolution(_id603)
+    assert _a1["generation"] == 1 and _a1["generation_advanced"] is True, _a1
+    _p1 = _a1["living_pillar_rescore"]
+    _shapes603.append(set(_p1))
+    assert _p1["rescored"] is True and _p1["refused"] is None and _p1["scored_at_generation"] == 1, _p1
+    assert _p1["score"]["status"] == "met" and _p1["score"]["applied_evolutions"] == 1, _p1["score"]
+    assert _p1["score"]["applied_mutations"] >= 1, (
+        "the score does not report the mutations that made the instance living, so 'met' stands on nothing",
+        _p1["score"])
+    _detail603 = client.get(f"/api/v1/vsb/{_id603}").json()
+    assert (_detail603.get("living_pillar") or {}).get("scored_at_generation") == 1, (
+        "the re-score was returned but not STORED where the Cockpit reads it", _detail603.get("living_pillar"))
+
+    # ── THE SAME GENERATION TWICE IS REFUSED: one evolution is one re-score ─────────────────────
+    _again = _v603.rescore_living_pillar(_v603._load_vsb(_id603))
+    _shapes603.append(set(_again))
+    assert _again["rescored"] is False and _again["refused"] == "already_scored_at_this_generation", _again
+
+    # ── FU-465: a CHILD carries lineage depth 1 and has evolved NOTHING, and the gate reads the right one ──
+    _child603 = client.post("/api/v1/genesis/establish",
+                            json={"problem": "W603 child", "name": "W603 Child", "domain": "enterprise",
+                                  "parent_vsb": _id603, "ship_output": False})
+    assert _child603.status_code == 200, (_child603.status_code, _child603.text[:200])
+    _cid603 = _child603.json()["vsb_id"]
+    _croster = _lv603._load().get(_cid603) or {}
+    assert _croster.get("lineage_generation") == 1, (
+        "the child's lineage depth is not on the roster as lineage_generation", _croster)
+    assert "generation" not in _croster, (
+        "the roster still writes a field called `generation`, so the two meanings share a name again",
+        sorted(_croster))
+    _cvsb603 = _v603._load_vsb(_cid603)
+    if _cvsb603:
+        _rc = _v603.rescore_living_pillar(_cvsb603)
+        assert _rc["refused"] == "not_evolved", (
+            "a child at lineage depth 1 with NO applied evolution had its pillar re-scored - lineage was read "
+            "as evolution", _rc, _croster.get("lineage_generation"))
+    #  a legacy roster record written W599-W602 still resolves: its old key is read as lineage
+    _legacy = {"vsb-w603-legacy": {"vsb_id": "vsb-w603-legacy", "generation": 3}}
+    monkeypatch.setattr(_lv603, "_load", lambda: _legacy)
+    assert _lv603.resolve_parent("vsb-w603-legacy")["lineage_generation"] == 4, (
+        "a parent recorded before the rename no longer resolves its depth")
+
+    # ── SHAPE-COMPLETE on every path ────────────────────────────────────────────────────────────
+    assert all(s == _shapes603[0] for s in _shapes603), [sorted(s) for s in _shapes603]
+
+    # ── AND THE COCKPIT READS IT, over a comment-stripped copy so a comment cannot satisfy this ──
+    _ck603 = (_pl603.Path(__file__).resolve().parents[1]
+              / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    _code603 = _re603.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _ck603, flags=_re603.S)
+    _code603 = "\n".join(ln for ln in _code603.splitlines() if not ln.lstrip().startswith("//"))
+    assert 'data-testid="cockpit-living-pillar"' in _code603 and "detail.living_pillar" in _code603, (
+        "the Cockpit does not render the instance's living-plan pillar, so the re-score reaches no reader")
+    assert "has not evolved yet" in _code603, "the unscored state is not SAID on the page"

@@ -5366,7 +5366,7 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P3.2",
+      "slot": "P3.26",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -6526,7 +6526,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.2",
+      "slot": "P3.26",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -7584,7 +7584,7 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.2",
+      "slot": "P3.26",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -8276,11 +8276,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.2",
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "Rides P3.2 (autonomy that starts) because it is about what establishment SETS UP for a new entity: the seeder creates objectives the platform cannot measure, which is the same subject as /establish switching tending on. Not routed to the KPI gate's own item - the gate is correct and this is about what it finds.",
+      "slot_source": "W603: P3.2 closed on its whole bar and no open item routes the Genesis journey. P5.1 drives ONE tenant through that journey from problem to commercial output and reads every stage back, which is where a stage no reader sees and an objective the release gate cannot pass are both measured.",
       "tier": 2
     },
     {
@@ -8386,11 +8386,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P3.2",
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "no route owns Genesis surfaces; P3.2 clause (3) is this exact class - a page understating server state it already has - so it is the nearest open owner by subject rather than by file",
+      "slot_source": "W603: P3.2 closed on its whole bar and no open item routes the Genesis journey. P5.1 drives ONE tenant through that journey from problem to commercial output and reads every stage back, which is where a stage no reader sees and an objective the release gate cannot pass are both measured.",
       "tier": 2
     },
     {
@@ -8611,11 +8611,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.2",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W603",
       "note": "",
       "tier": 2,
-      "slot_source": "P3.2 clause (5) is the clause the collision breaks: its subject is whether an instance has evolved, and the field this round's first guard leg read means lineage depth instead. The roster field was added by the round that also delivered P3.2 clauses (1)-(4), so the item that introduced the collision is the item that owns fixing it"
+      "slot_source": "P3.2 clause (5) is the clause the collision breaks: its subject is whether an instance has evolved, and the field this round's first guard leg read means lineage depth instead. The roster field was added by the round that also delivered P3.2 clauses (1)-(4), so the item that introduced the collision is the item that owns fixing it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The living roster's lineage depth is now lineage_generation, so it can no longer be read as vsb['generation'], which counts APPLIED EVOLUTIONS and is the only field P3.2 clause (5) gates on. One reader existed outside the guards (resolve_parent reading the parent's depth); it falls back to the old key so a roster record written W599-W602 still resolves. The guard drives a child: lineage_generation 1 on the roster, no field called generation there, applied evolutions 0 in the VSB store, and the pillar re-score REFUSED for it. Blinds red: the rename reverted, the legacy fallback removed, and the gate reading the roster's lineage instead of the evolution count."
     },
     {
       "id": "FU-466",
@@ -8631,11 +8634,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.2",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W603",
       "note": "",
       "tier": 2,
-      "slot_source": "it IS P3.2 clause (5) - the clause has no subject in the tree, which is why the item did not close. It cannot ride anything else without separating a clause from the item whose bar it is"
+      "slot_source": "it IS P3.2 clause (5) - the clause has no subject in the tree, which is why the item did not close. It cannot ride anything else without separating a clause from the item whose bar it is",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "rescore_living_pillar() is the per-instance living-plan pillar the clause names, and the evolution-apply path calls it after the generation moves and before the save. It is gated on vsb['generation'] (applied evolutions) and REFUSES, returning the refusal: not_evolved at generation 0, already_scored_at_this_generation on a second call, generation_unreadable for a count that is not a whole number. One key set on every path. The score is counts of what happened (applied evolutions, mutations, traits), never a grade. The apply response carries the result and the Cockpit renders both the stored score and the apply's re-score or refusal. Driven through the real apply path with the change record stubbed: an approval that lands nothing is refused and writes no record; one applied mutation re-scores at generation 1. Ten blinds red."
     },
     {
       "id": "FU-467",
@@ -8693,6 +8699,24 @@
       "note": "",
       "tier": 2,
       "slot_source": "the defect that matters here is the INSTRUMENT: a guard asserting the response's provenance is read, satisfied by the comment recording that it is not. The page fix is small and the guard correction is P2.21's clause (2)/(5) territory, so both travel with the instruments item"
+    },
+    {
+      "id": "FU-470",
+      "title": "An entity's lineage (parent, lineage depth, and the basis for both) is recorded on the living roster and rendered by no page",
+      "why": "MEASURED W603 by the pre-flight's keys leg. W599 wrote parent_vsb, lineage_state, lineage_basis and the lineage depth onto every roster record at the single roster writer, and W603 renamed the depth to lineage_generation so it cannot be read as the applied-evolution count. No page and no printed line reads any of them: the Cockpit shows the applied generation and, since W603, the living-plan pillar, but never whom an entity descends from or how deep it sits. So P3.26's lineage is recorded and invisible, and a reader cannot tell a root entity from a child or an unresolved parent from no parent. REMEDY: the Cockpit renders the parent (or 'established directly by its founder'), the lineage depth beside the applied generation with each labelled for what it counts, and the lineage basis; an unresolved parent shows UNKNOWN depth, never 0. Assert over a comment-stripped copy, and drive a root and a child.",
+      "source": "W603 (pre-flight keys leg)",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/economy/living_vsbs.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.26",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "W603: P3.26 clause (1) is the lineage this row says is recorded and invisible, so the item that built the field owns showing it. The router finds no owner because the roster module and the Cockpit are routed to no open item."
     }
   ],
   "routes": [
@@ -8762,13 +8786,13 @@
       "handed_from": "P2.3"
     },
     {
-      "slot": "P3.2",
+      "slot": "P3.26",
       "files": [
         "agentic_core/organism/",
         "agentic_core/optimizer/"
       ],
       "words": [],
-      "note": "handed from P2.7; the organism and its heartbeat",
+      "note": "handed from P2.7 via P3.2; handed from P2.7; the organism and its heartbeat",
       "handed_from": "P2.7"
     },
     {

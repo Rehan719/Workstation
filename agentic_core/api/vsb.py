@@ -2806,6 +2806,67 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
     }
 
 
+#  P3.2 clause (5) (FU-466, W603) — THE PER-INSTANCE LIVING-PLAN PILLAR, re-scored only on evolution.
+#  Measured W600: every `pillar` in agentic_core/ was PLATFORM-level, so the clause's subject did not exist and
+#  a "no re-score at generation 0" guard would have been green at every generation. The pillar this instance
+#  answers for is the plan's own "living Enterprise IDBO" pillar, and what makes an instance LIVING in that
+#  sense is that it has evolved. So the score is a record of MEASURED facts about this instance's evolution,
+#  never a graded number: the status is met only because an applied generation exists, and says so.
+LIVING_PILLAR = "Generate a living Enterprise IDBO (VSB) for the user"
+#  every answer carries these keys, so a refusal is never read as a missing field (P2.21 clause (2))
+_PILLAR_KEYS = ("rescored", "refused", "pillar", "generation", "scored_at_generation", "score", "basis")
+
+
+def rescore_living_pillar(vsb: Dict[str, Any], now: str | None = None) -> Dict[str, Any]:
+    """Re-score this instance's living-plan pillar, or REFUSE and say why. Mutates `vsb` only on a re-score.
+
+    GATED ON vsb["generation"], which counts APPLIED EVOLUTIONS (one writer: the approved-apply path) and
+    NEVER on the living roster's lineage_generation — a child established from a parent has lineage depth 1
+    and has evolved nothing (FU-465). A refusal is RETURNED, never swallowed, because an absent re-score and
+    a refused one are different facts and the clause's caller must be able to receive the second.
+    """
+    out: Dict[str, Any] = {k: None for k in _PILLAR_KEYS}
+    out.update(rescored=False, pillar=LIVING_PILLAR)
+    _prev = vsb.get("living_pillar") if isinstance(vsb.get("living_pillar"), dict) else {}
+    out["scored_at_generation"] = _prev.get("scored_at_generation")
+    _g = vsb.get("generation", 0)
+    if isinstance(_g, bool) or not isinstance(_g, int):
+        out.update(refused="generation_unreadable",
+                   basis=(f"this instance's applied-evolution count is {_g!r}, not a whole number, so whether it "
+                          f"has evolved is NOT KNOWN - and a pillar re-scored on an unknown would be the defect "
+                          f"this gate exists to prevent"))
+        return out
+    out["generation"] = _g
+    if _g < 1:
+        out.update(refused="not_evolved",
+                   basis=("REFUSED: this instance has applied 0 evolutions, and the living-plan pillar is "
+                          "re-scored only once an instance has evolved at least one generation. Nothing about "
+                          "it has changed that the pillar measures, so a re-score would restate the founding "
+                          "plan as though it had been re-assessed"))
+        return out
+    if _prev.get("scored_at_generation") == _g:
+        out.update(refused="already_scored_at_this_generation", score=_prev,
+                   basis=(f"REFUSED: the pillar was already scored at generation {_g}, and nothing has evolved "
+                          f"since - re-scoring it again would count one evolution twice"))
+        return out
+    _traits = vsb.get("epigenetic_traits") if isinstance(vsb.get("epigenetic_traits"), dict) else {}
+    _muts = vsb.get("applied_mutations") if isinstance(vsb.get("applied_mutations"), list) else []
+    score = {
+        "pillar": LIVING_PILLAR, "status": "met", "scored_at_generation": _g,
+        "scored_at": now or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "applied_evolutions": _g, "applied_mutations": len(_muts), "traits": len(_traits),
+        "last_evolved": vsb.get("last_evolved"),
+        "basis": (f"met for THIS instance because it has applied {_g} approved evolution(s) - "
+                  f"{len(_muts)} mutation(s) across {len(_traits)} trait(s) - which is what makes it living "
+                  f"rather than generated once. These are counts of what happened, not a grade; the "
+                  f"platform-level pillar status in /plan is a different, aggregate judgement"),
+    }
+    vsb["living_pillar"] = score
+    out.update(rescored=True, score=score, scored_at_generation=_g,
+               basis=f"re-scored at generation {_g}, the first score since this instance last evolved")
+    return out
+
+
 def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     """§8 (W310) — the genome MUTATES on approval, and only on approval: when the entity's pending
     vsb_evolution change request has been APPROVED by the arms-length CCA, fold the proposals into
@@ -2916,6 +2977,9 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     if applied:
         vsb["generation"] = int(vsb.get("generation", 0)) + 1
         vsb["last_evolved"] = now
+    #  P3.2 clause (5) — AFTER the generation moves and BEFORE the save, so a re-score lands in the same
+    #  write as the evolution it answers for, and an apply that landed nothing gets the refusal back
+    _pillar = rescore_living_pillar(vsb, now)
     try:
         _save_vsb(vsb)
     except Exception:
@@ -2979,7 +3043,8 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
                                  if applied else
                                  "NOT advanced: the approval was consumed but no mutation was "
                                  "applicable, so the traits are unchanged"),
-            "mutations_applied": len(applied), "applied_mutations": applied}
+            "mutations_applied": len(applied), "applied_mutations": applied,
+            "living_pillar_rescore": _pillar}
 
 
 @router.post("/{vsb_id}/evolution/apply")
