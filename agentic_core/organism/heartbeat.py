@@ -569,9 +569,14 @@ class OrganismHeartbeat:
                 # made every stage fail on an await of a non-coroutine. Two logger interfaces exist
                 # in this repository and the dependency decides which one is correct here.
                 from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
-                _orch = AvatarRecirculationOrchestrator(
-                    _VSBUEG(),
-                    AvatarState(avatar_id="platform", user_id="platform"))
+                #  FU-471 (W606) — KEPT between beats. A new orchestrator every beat meant clearance gate 4
+                #  never had a baseline to measure drift from, so the second beat was always a first cycle.
+                _orch = getattr(self, "_metabolic_orch", None)
+                if _orch is None:
+                    _orch = AvatarRecirculationOrchestrator(
+                        _VSBUEG(),
+                        AvatarState(avatar_id="platform", user_id="platform"))
+                    self._metabolic_orch = _orch
                 _ctx = await _orch.execute_cycle({
                     "user_id": "platform",
                     "domain": "organism_self_regulation",

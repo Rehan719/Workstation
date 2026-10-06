@@ -240,14 +240,37 @@ class ConstitutionalClearanceChain:
         # ── GATE 3: Tawazun — balance between depth and cognitive load ─────────────────────────
         key, name, subject = self._GATES[2]
         tawazun_res = await self.orchestrator.process_engine("tawazun", emission, context)
-        _bal = _computed(tawazun_res).get("balanced")
+        #  FU-471 (Owner ruling 2026-10-06, option 3) — Tawazun returns a FRONTIER, never a `balanced` key, so
+        #  this gate could not clear on the real engine. BALANCED MEANS THE EMITTED DRAFT IS NON-DOMINATED among
+        #  the drafts the caller held, under the Owner's recorded objectives. The emitted draft's id travels in
+        #  the context; with no id, or an engine that could not assess, the gate blocks and says which.
+        _tc3 = _computed(tawazun_res)
+        _basis3 = "balance affirmed by the engine"
+        if "frontier" in _tc3 or _tc3.get("assessable") is False:
+            _emitted = (context or {}).get("emitted_candidate") if isinstance(context, dict) else None
+            _front = _tc3.get("frontier") or []
+            _n = len((context or {}).get("candidates") or []) if isinstance(context, dict) else 0
+            if _tc3.get("assessable") is False:
+                _bal, _why3 = None, f"balance was not assessable: {_tc3.get('basis') or 'no basis given'}"
+            elif not _emitted:
+                _bal, _why3 = None, "no emitted draft was named, so nothing can be placed on the frontier"
+            else:
+                _bal = _emitted in _front
+                _why3 = (f"the emitted draft {_emitted!r} is dominated: the frontier over {_n} draft(s) is "
+                         f"{', '.join(_front)}")
+            _basis3 = (f"the emitted draft {_emitted!r} is on the frontier over {_n} draft(s) under the Owner's "
+                       f"recorded objectives" + (" - EVERY draft held is on it (they are identical, or each "
+                                                 "trades off against the others), so this placed nothing below "
+                                                 "another" if _n and len(_front) == _n else ""))
+        else:
+            _bal = _tc3.get("balanced")
+            _why3 = (_missing("balanced", tawazun_res) if _bal is None else
+                     "the emission was assessed as unbalanced for its audience")
         if _bal is not True:                              # the old default here approved on absence
             return self._blocked(
-                gates + [self._record(key, name, subject, "blocked",
-                                      _missing("balanced", tawazun_res) if _bal is None else
-                                      "the emission was assessed as unbalanced for its audience")],
-                attestations, 2, f"Gate 3 ({name}) Block: Cognitive load imbalance")
-        _rec = self._record(key, name, subject, "cleared", "balance affirmed by the engine")
+                gates + [self._record(key, name, subject, "blocked", _why3)],
+                attestations, 2, f"Gate 3 ({name}) Block: {_why3}")
+        _rec = self._record(key, name, subject, "cleared", _basis3)
         attestations[key] = self._attest_gate(emission, _rec)
         gates.append(_rec)
 

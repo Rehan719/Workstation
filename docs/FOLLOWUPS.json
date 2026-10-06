@@ -8745,10 +8745,32 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
+      "status": "done",
+      "closed_by": "W606",
+      "note": "",
+      "slot_source": "W604: P3.28 clause (3) asks that the loop can EMIT. After W604 gate 1 clears by coverage and the chain blocks at gate 2, because gates 2 and 3 need inputs no part of the avatar loop holds. Where those inputs would honestly come from is a decision about the constitution's own gates, not a build, so it waits on the Owner.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-10-06: option 3 - keep gates 2 and 3, and build the two records they read, written by a person. BUILT: avatars/core/ratifications.py (a learner's standing approval, scoped by MODE not content, revocable; a high-impact mode - emergency, inspector - needs the Owner's co-signature, so its quorum is two names; a message is never a signature) and avatars/core/balance_objectives.py (the Owner's goals over properties MEASURED from each draft's text: words, words per sentence, letters per word). Gate 3 now clears when the EMITTED draft is on the frontier over the drafts held. The loop and chat both supply these inputs through one helper. Routes under /api/v1/avatar for both records; the Settings page records and withdraws an approval and shows the goals. The heartbeat now keeps its loop between beats so gate 4 has a baseline. DRIVEN with the real engines through chat: no approval -> chain not run and said; approval, no goals -> withheld at gate 3 with gate 2 cleared; both recorded -> gates 1 to 5 clear; withdrawing the approval -> back to not run. Eleven blinds red. THE LOOP STILL DOES NOT EMIT: gate 6 withholds, for the reason FU-472 puts to the Owner."
+    },
+    {
+      "id": "FU-472",
+      "title": "RULING: clearance gate 6 withholds every reply because 16 of the 19 declared constitutional constraints cannot be checked, so the avatar still cannot speak",
+      "why": "MEASURED W606, through chat with the real engines, after FU-471 was built. With a learner's approval and the Owner's goals recorded, gates 1 to 5 all clear and gate 6 withholds. Gate 6 runs the enforcement pattern over the 19 declared constraints: 3 are assessed and pass (zero_placeholder, constitutional_compliance, hallucination_containment); 15 have NO INSTRUMENT anywhere in the repository (edge_first_sovereignty, causal_sovereignty, biomimetic_fidelity, genetic_immune_topology_integrity, statistical_rigor, legal_precision_hard, adversarial_co_evolution, trillion_token_provenance, human_ai_constitutional_co_sovereignty, oam_qkd_software_only, federated_consensus, commercial_integrity, first_principles_grounding, sincerity_integrity_loyalty, lob_fixpoint); 1 has an instrument that is not given its input (thermodynamic_accountability). The gate requires ALL to pass, so it can never clear. OPTIONS: (a) gate 6 decides BY COVERAGE, the rule gate 1 already follows under P3.28: it clears when every constraint that CAN be checked passed and none was violated, and the reply carries the list of constraints that were not checked as its stated limit - honest, and the avatar can speak; (b) build an instrument for each - many rounds, and several (lob_fixpoint, trillion_token_provenance, oam_qkd_software_only) name properties no instrument can check for a chat reply; (c) the Owner reviews the 16 and retires from the declared set the ones that do not apply to a reply, recorded as retired, and gate 6 keeps requiring all of the rest. RECOMMENDED: (a) now, with (c) as a later review - it applies the item's own rule to the last gate and keeps every unchecked constraint visible to the reader rather than hidden or deleted.",
+      "source": "W606 (measured end to end through chat with the real engines)",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/avatars/core/clearance_chain.py",
+        "agentic_core/validation/omni_enforcement_pattern_supreme.py",
+        "agentic_core/validation/constitutional_validators.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "W604: P3.28 clause (3) asks that the loop can EMIT. After W604 gate 1 clears by coverage and the chain blocks at gate 2, because gates 2 and 3 need inputs no part of the avatar loop holds. Where those inputs would honestly come from is a decision about the constitution's own gates, not a build, so it waits on the Owner."
+      "slot_source": "W606: after the Owner's FU-471 ruling, gates 1 to 5 clear an approved learner's reply and gate 6 withholds every one, because 16 of its 19 declared constraints cannot be checked. Whether a constitutional gate may decide by coverage, or which declared constraints stay declared, is a decision about the constitution, not a build."
     }
   ],
   "routes": [

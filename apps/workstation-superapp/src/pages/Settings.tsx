@@ -6,6 +6,7 @@ import { interfaceLanguages, useT } from '../lib/i18n';
 import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
 import { coverageFor, applyDocumentDirection } from '../lib/i18n';
 import { clearWorkspaceEverywhere } from '../lib/outputHistory';
+import AvatarClearancePanel from '../components/AvatarClearancePanel';
 import {
   PROFILE_FIELDS, MAX_FIELD_CHARS, EMPTY_PROFILE,
   getProfile, putProfile, clearProfile, type UserProfile,
@@ -306,6 +307,10 @@ export const Settings: React.FC = () => {
             <Trash2 size={14} /> Delete profile
           </Button>
         </div>
+      </Card>
+
+      <Card className="p-8 space-y-4">
+        <AvatarClearancePanel />
       </Card>
 
       <Card className="p-8 space-y-4 border-slate-900">

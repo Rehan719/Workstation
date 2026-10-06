@@ -30343,7 +30343,11 @@ def test_w533_the_loop_runs_and_a_withheld_emission_is_not_a_success():
     #  W604 (P3.28) — gate 1 now decides by coverage and CLEARS a screened emission, so the first block
     #  moved to gate 2, whose intent ratification has no signatures to count (an Owner ruling is open on
     #  where they would honestly come from). Still withheld, and the reason now names the next gate.
-    assert "Gate 2" in rec["withheld_reason"] and "not assessable" in rec["withheld_reason"], (
+    #  W606 (FU-471, option 3) — gate 2 now COUNTS recorded approvals, and none is recorded for the beat's
+    #  subject ("platform"), so it counts zero and the ratification fails; before the store existed it was
+    #  not assessable. Either way the beat is withheld at gate 2, which is the fact this leg protects.
+    assert "Gate 2" in rec["withheld_reason"] and (
+        "not assessable" in rec["withheld_reason"] or "failed ratification" in rec["withheld_reason"]), (
         rec["withheld_reason"])
     acts = [a for a in (beat.get("actions") or []) if "metabolic" in a]
     assert acts == ["metabolic_cycle_withheld"], ("a withheld cycle is indistinguishable from a delivered "
@@ -45089,3 +45093,121 @@ def test_w605_p326_dormancy_stops_the_beat_and_p323_nothing_outside_the_folder_i
     _s = client.get("/api/v1/law/bundle")
     assert _s.status_code == 200 and _s.json()["bundle_indexing_may_start"] is True, _s.text[:200]
     assert _s.json()["document_count"] == 1 and "text" not in _s.json(), _s.json()
+
+
+def test_w606_fu471_gates_two_and_three_read_records_a_person_made_and_chat_is_cleared_by_the_chain(client):
+    """FU-471 option 3 (Owner ruling 2026-10-06) and P3.28 clauses (3) and (5), as far as the chain allows.
+
+    Gate 2 counted signatures nothing supplied and gate 3 balanced over objectives nobody recorded, so both could
+    only withhold. Option 3: both read RECORDS a person made - a learner's standing approval (a message is never a
+    signature; a high-impact mode also needs the Owner) and the Owner's goals over the drafts actually held. Chat
+    replies of an approved learner go through the chain; everyone else's say the chain was not run.
+    """
+    import asyncio as _aio606
+    import pathlib as _pl606
+    import re as _re606
+
+    from agentic_core.avatars.core import balance_objectives as _bo606
+    from agentic_core.avatars.core import ratifications as _rat606
+
+    # ── the approval record: complete or refused; quorum 2 for a high-impact mode; revocable ────
+    assert _rat606.record("", "x", ["instructor"], "x")["refused"] == "incomplete"
+    _r = _rat606.record("w606-learner", "help me revise", ["instructor", "emergency"], "w606-learner")
+    assert _r["recorded"] and "co-signature" in _r["basis"], _r
+    _si = _rat606.signatures_for("w606-learner", "instructor")
+    assert _si["quorum_required"] == 1 and [s["signatory"] for s in _si["signatures"]] == ["w606-learner"], _si
+    _se = _rat606.signatures_for("w606-learner", "emergency")
+    assert _se["quorum_required"] == 2 and len({s["signatory"] for s in _se["signatures"]}) == 1, (
+        "a high-impact mode was satisfied by the learner alone", _se)
+    _rat606.cosign(_r["ratification"]["id"], "owner-w606")
+    assert {s["signatory"] for s in _rat606.signatures_for("w606-learner", "emergency")["signatures"]} == {
+        "w606-learner", _rat606.OWNER_SIGNATORY}
+    assert _rat606.signatures_for("somebody-else", "instructor")["signatures"] == [], (
+        "another learner's approval counted for this one")
+    _rat606.revoke(_r["ratification"]["id"], "w606-learner")
+    assert _rat606.signatures_for("w606-learner", "instructor")["signatures"] == [], "a revoked approval still counts"
+
+    # ── the goals record: only measured properties, each with a direction ──────────────────────
+    assert _bo606.set_objectives([{"name": "reading_age", "direction": "min"}], "owner")["refused"] == "invalid"
+    assert _bo606.set_objectives([{"name": "words"}], "owner")["refused"] == "invalid"
+    assert _bo606.measure("One two. Three four five!") == {"words": 5.0, "mean_sentence_words": 2.5,
+                                                           "mean_word_chars": 3.8}
+
+    # ── gate 3 decides by the EMITTED draft's place on the frontier ─────────────────────────────
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
+
+    class _UEG:
+        async def log_event(self, *a, **k):
+            return None
+
+    class _Orch:
+        def __init__(self, tawazun):
+            self._t = tawazun
+
+        async def consult(self, emission, ids):
+            return {"status": "SCREENED_NO_REFUSAL", "coverage": {"screened_by": ["probe"], "coverage_limit": "probe"}}
+
+        async def process_engine(self, eid, emission, ctx):
+            return {"niyyah": {"result": {"ratified": True}}, "tawazun": self._t}.get(eid, {})
+
+        async def verify_output(self, emission):
+            return {"verified": True}
+
+    _ctx3 = {"emitted_candidate": "emitted", "candidates": [{"id": "draft"}, {"id": "emitted"}]}
+    _dom = _aio606.run(ConstitutionalClearanceChain(_UEG(), _Orch({"result": {"assessable": True, "frontier": ["draft"]}}))
+                       .validate_emission({"id": "e", "text": "t"}, _ctx3))
+    assert _dom.gates[2]["verdict"] == "blocked" and "dominated" in _dom.gates[2]["basis"], _dom.gates[2]
+    _on = _aio606.run(ConstitutionalClearanceChain(_UEG(), _Orch({"result": {"assessable": True,
+                                                                         "frontier": ["draft", "emitted"]}}))
+                      .validate_emission({"id": "e", "text": "t"}, _ctx3))
+    assert _on.gates[2]["verdict"] == "cleared" and "EVERY draft held is on it" in _on.gates[2]["basis"], _on.gates[2]
+
+    # ── CHAT, END TO END with the real engines ──────────────────────────────────────────────────
+    _c0 = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week"}).json()
+    assert _c0["cleared"] is None and "chain was not run" in _c0["clearance_reason"], (
+        "an unapproved learner's reply did not say the chain was not run", _c0.get("clearance_reason"))
+    _sid = _c0["session_id"]
+    _rec = client.post("/api/v1/avatar/ratifications", json={"purpose": "revision help", "modes": ["instructor"]})
+    assert _rec.status_code == 200, _rec.text[:200]
+    _rid = _rec.json()["ratification"]["id"]
+    _c1 = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week", "session_id": _sid}).json()
+    if not _bo606.get()["objectives"]:
+        assert _c1["cleared"] is False and "Gate 3" in _c1["clearance_reason"], (
+            "with an approval but no goals, the reply was not withheld at gate 3", _c1["clearance_reason"])
+        assert _c1["clearance_gates"][1]["verdict"] == "cleared", ("gate 2 did not count the recorded approval",
+                                                                  _c1["clearance_gates"][1])
+    _put = client.put("/api/v1/avatar/balance-objectives",
+                      json={"objectives": [{"name": "mean_sentence_words", "direction": "min"}]})
+    assert _put.status_code == 200, _put.text[:200]
+    _c2 = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week", "session_id": _sid}).json()
+    _v2 = [g["verdict"] for g in _c2["clearance_gates"]]
+    assert _v2[:5] == ["cleared"] * 5, (
+        "with an approval and the goals recorded, gates 1 to 5 did not all clear on a later turn", _v2,
+        _c2["clearance_reason"])
+    if _c2["cleared"] is False:
+        assert _c2["response"].startswith("This reply was withheld") and "Gate 6" in _c2["clearance_reason"], (
+            "a withheld reply showed the draft, or was withheld somewhere other than the gate FU-472 names", _c2)
+    #  A REFUSAL STAYS REACHABLE: withdrawing the approval withholds at gate 2 again
+    client.post(f"/api/v1/avatar/ratifications/{_rid}/revoke")
+    _c3 = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week", "session_id": _sid}).json()
+    assert _c3["cleared"] is None, ("a withdrawn approval still had replies run as approved", _c3["cleared"])
+
+    # ── the heartbeat keeps its loop, so gate 4 has a baseline from the second beat ─────────────
+    from agentic_core.organism.heartbeat import OrganismHeartbeat
+    _h = OrganismHeartbeat()
+    _h.auto_metabolic, _h._metabolic_every = True, 1
+    _aio606.run(_h.beat())
+    _o1 = getattr(_h, "_metabolic_orch", None)
+    _aio606.run(_h.beat())
+    assert _o1 is not None and _h._metabolic_orch is _o1, "the heartbeat built a new loop, so drift never has a baseline"
+    assert getattr(_o1, "_drift_baseline", None) is not None, "the kept loop recorded no baseline"
+
+    # ── the page lets a learner record and withdraw, and shows the goals ────────────────────────
+    _root = _pl606.Path(__file__).resolve().parents[1]
+    _pn = (_root / "apps/workstation-superapp/src/components/AvatarClearancePanel.tsx").read_text(encoding="utf-8")
+    _pnc = _re606.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _pn, flags=_re606.S)
+    for _t in ("avatar-ratification-record", "avatar-ratifications", "avatar-balance-goals"):
+        assert f'data-testid="{_t}"' in _pnc, _t
+    assert "/api/v1/avatar/ratifications" in _pnc and "/revoke" in _pnc and "/api/v1/avatar/balance-objectives" in _pnc
+    _st = (_root / "apps/workstation-superapp/src/pages/Settings.tsx").read_text(encoding="utf-8")
+    assert "<AvatarClearancePanel />" in _st, "the panel is built and mounted nowhere"

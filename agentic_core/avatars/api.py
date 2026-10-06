@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import Response
 
-from agentic_core.auth.core import get_current_user
+from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -81,6 +81,13 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     session_id: str
     response: str
+    #  P3.28 clause (5) / FU-412 (W606) — whether the constitutional clearance chain cleared this reply. None
+    #  means the chain was NOT RUN (no approval is recorded for this learner and mode), which is said in
+    #  clearance_reason rather than left to read as a pass; False means it was withheld, and `response` then
+    #  carries the gate's reason, never the withheld draft.
+    cleared: Optional[bool] = None
+    clearance_reason: Optional[str] = None
+    clearance_gates: Optional[List[Dict[str, Any]]] = None
     image_understood: bool = False
     image_served_by: Optional[str] = None  # which resource analysed the image: "ollama" (in-house) | "openai" | None
     image_is_external: bool = False        # honest: was the image sent to an external provider?
@@ -344,6 +351,134 @@ async def create_session(user: dict | None = Depends(get_current_user)):
     )
 
 
+class RatificationRequest(BaseModel):
+    purpose: str
+    modes: List[str] = ["instructor"]
+    user_id: Optional[str] = None      # single-user mode only; under auth the caller is always the learner
+
+
+class ObjectivesRequest(BaseModel):
+    objectives: List[Dict[str, Any]]
+
+
+def _learner_id(user: dict | None, requested: Optional[str]) -> str:
+    """The same identity the chat route clears against: the signed-in username, else the session default."""
+    from agentic_core.auth.core import request_owner_id
+    return request_owner_id(user, requested or "demo_user")
+
+
+@router.post("/ratifications")
+async def record_ratification(req: RatificationRequest, user: dict | None = Depends(get_current_user)):
+    """FU-471 option 3 — a learner records, once, what they want the avatar for. Clearance gate 2 counts it."""
+    from agentic_core.avatars.core import ratifications as _rat
+    _uid = _learner_id(user, req.user_id)
+    res = _rat.record(_uid, req.purpose, req.modes, by=_uid)
+    if not res["recorded"]:
+        raise HTTPException(status_code=422, detail=res)
+    return res
+
+
+@router.get("/ratifications")
+async def list_ratifications(user_id: Optional[str] = None, user: dict | None = Depends(get_current_user)):
+    from agentic_core.avatars.core import ratifications as _rat
+    _uid = _learner_id(user, user_id)
+    rows = [r for r in (_rat._load().get("ratifications") or []) if r.get("user_id") == _uid]
+    return {"user_id": _uid, "ratifications": rows, "high_impact_modes": list(_rat.HIGH_IMPACT_MODES)}
+
+
+@router.post("/ratifications/{rid}/revoke")
+async def revoke_ratification(rid: str, user: dict | None = Depends(get_current_user)):
+    from agentic_core.avatars.core import ratifications as _rat
+    _row = next((r for r in (_rat._load().get("ratifications") or []) if r.get("id") == rid), None)
+    from agentic_core.auth.core import auth_enabled
+    if _row is None or (auth_enabled() and _row.get("user_id") != _learner_id(user, None)
+                        and (user or {}).get("role") != "admin"):
+        raise HTTPException(status_code=404, detail=f"ratification {rid} not found")
+    return _rat.revoke(rid, by=_learner_id(user, None))
+
+
+@router.post("/ratifications/{rid}/cosign")
+async def cosign_ratification(rid: str, admin: dict = Depends(require_admin)):
+    """The Owner co-signs a learner's approval, which a HIGH-IMPACT mode needs as its second signature."""
+    from agentic_core.avatars.core import ratifications as _rat
+    res = _rat.cosign(rid, by_owner=str(admin.get("username") or "owner"))
+    if not res.get("cosigned"):
+        raise HTTPException(status_code=404 if res.get("refused") == "not_found" else 422, detail=res)
+    return res
+
+
+@router.get("/balance-objectives")
+async def get_balance_objectives():
+    from agentic_core.avatars.core import balance_objectives as _bo
+    return {**_bo.get(), "measured": _bo.MEASURED, "directions": list(_bo.DIRECTIONS)}
+
+
+@router.put("/balance-objectives")
+async def put_balance_objectives(req: ObjectivesRequest, admin: dict = Depends(require_admin)):
+    """The Owner's goals for a reply's depth against its load, which clearance gate 3 balances over."""
+    from agentic_core.avatars.core import balance_objectives as _bo
+    res = _bo.set_objectives(req.objectives, by=str(admin.get("username") or "owner"))
+    if not res["recorded"]:
+        raise HTTPException(status_code=422, detail=res)
+    return res
+
+
+_CHAT_CHAIN = None
+
+
+def _chat_chain():
+    """One clearance chain for chat, built on first use with the same engines the loop consults."""
+    global _CHAT_CHAIN
+    if _CHAT_CHAIN is None:
+        from agentic_core.avatars.cognition.mushawara_bridge import AvatarCognitiveOrchestrator
+        from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
+        from agentic_core.ueg.logger import VSBUEGLogger
+        from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
+        _ueg = VSBUEGLogger()
+        _CHAT_CHAIN = ConstitutionalClearanceChain(_ueg, AvatarCognitiveOrchestrator(
+            _ueg, OmniEnforcementPatternSupreme({"fail_on_missing_validator": False}, {"task": "avatar_chat"})))
+    return _CHAT_CHAIN
+
+
+async def _clear_chat_answer(session: Dict[str, Any], owner: Optional[str], text: str) -> Dict[str, Any]:
+    """Run an approved learner's reply through the clearance chain (FU-471 option 3, P3.28 clause 5).
+
+    No approval recorded for this learner and mode -> the chain is NOT run and the reply says so (cleared None):
+    the hold continues for them, with no silent regression and no silent pass. Gate 4's state is the session
+    avatar's own recorded numbers, compared with the previous turn of this session.
+    """
+    from agentic_core.avatars.core import ratifications as _rat
+    from agentic_core.avatars.core.recirculation_orchestrator import clearance_inputs
+    _av = session.get("avatar")
+    _uid = str(owner or getattr(_av, "user_id", "") or "")
+    _mode = str(getattr(_av, "mode", "") or "instructor")
+    if not _rat.signatures_for(_uid, _mode)["ratification_ids"]:
+        return {"cleared": None, "gates": None,
+                "reason": (f"NOT cleared by the constitutional clearance chain: no approval is recorded for this "
+                           f"learner in mode {_mode!r}, so the chain was not run and this is the avatar's ordinary "
+                           f"answer. Record what you want the avatar for to have replies cleared")}
+    _ctx = clearance_inputs(_uid, _mode, {"emitted": text})
+    _cur: Dict[str, float] = {}
+    for _dom, _vals in (getattr(_av, "skill_profile", None) or {}).items():
+        for _k, _v in (_vals or {}).items():
+            if isinstance(_v, (int, float)) and not isinstance(_v, bool):
+                _cur[f"skill.{_dom}.{_k}"] = float(_v)
+    _e = getattr(_av, "energy_budget_j", None)
+    if isinstance(_e, (int, float)) and not isinstance(_e, bool):
+        _cur["energy_budget_j"] = float(_e)
+    _ctx.update(baseline=session.get("drift_baseline"), current=_cur, user_id=_uid)
+    try:
+        _res = await _chat_chain().validate_emission({"id": f"chat_{uuid.uuid4().hex[:10]}", "text": text}, _ctx)
+    except Exception as exc:  # noqa: BLE001 - a chain that could not run WITHHOLDS, it never passes
+        session["drift_baseline"] = _cur
+        return {"cleared": False, "gates": None,
+                "reason": f"the clearance chain could not run ({exc.__class__.__name__}: {str(exc)[:120]})"}
+    session["drift_baseline"] = _cur
+    return {"cleared": bool(_res.passed), "gates": getattr(_res, "gates", None),
+            "reason": (_res.reason if not _res.passed else
+                       "cleared by every gate of the constitutional clearance chain")}
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, user: dict | None = Depends(get_current_user)):
     # §17.5 invariant 1 (W343) — the avatar's identity-blind route was the widest memory-bleed
@@ -446,6 +581,12 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0,
                                     owner_id=_owner, augment=True)
     response_text = meta.get("output", "")
+    #  P3.28 clause (5) — THE HOLD IS RELEASED BY THE CHAIN, NOT AROUND IT. An approved learner's reply is
+    #  delivered only if the clearance chain clears it; otherwise the gate's reason is what they see.
+    _clr = await _clear_chat_answer(session, _owner, response_text)
+    if _clr["cleared"] is False:
+        response_text = ("This reply was withheld by the constitutional clearance chain: "
+                         f"{_clr['reason']}")
 
     history.append({"role": "user", "content": request.message})
     history.append({"role": "assistant", "content": response_text})
@@ -455,6 +596,9 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     return ChatResponse(
         session_id=session_id,
         response=response_text,
+        cleared=_clr["cleared"],
+        clearance_reason=_clr["reason"],
+        clearance_gates=_clr["gates"],
         image_understood=image_understood,
         image_served_by=image_served_by,
         image_is_external=image_is_external,
