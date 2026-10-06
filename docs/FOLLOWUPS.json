@@ -8260,6 +8260,85 @@
       "note": "",
       "slot_source": "Rides P3.2 (autonomy that starts) because it is about what establishment SETS UP for a new entity: the seeder creates objectives the platform cannot measure, which is the same subject as /establish switching tending on. Not routed to the KPI gate's own item - the gate is correct and this is about what it finds.",
       "tier": 2
+    },
+    {
+      "id": "FU-450",
+      "title": "The archive's four knowledge-index candidates, assessed: only text_indexer is real and it indexes FILES not passages",
+      "why": "The Owner asked whether earlier work on these features was already done and sitting in the archive. It was read, and the answer is mostly no. _archive/agentic_core/analysis/text_indexer.py is the one REAL artefact: a working lexical indexer, and its shape is reusable. But it indexes WHOLE FILES, recording no line, offset or passage location, so a citation built on it could name a document and never a place inside it - which is precisely the property P3.22 needs and the property the verifier built in W596 checks. Recover the shape, add locations. _archive/agentic_core/ai/rag_pipeline.py is NOT reusable: it returns a composed sentence claiming it found three relevant papers, with a literal SIM marker in the output. _archive/agentic_core/reactor/religion/qep_logic.py must NOT be recovered at all: it produces recitation scores from random.random with error positions from random.randint, which is both a fabrication and one of the six boundaries section 11 forbids, and it is the ancestor of the defect W403 deleted. It is unreachable today and should stay that way. STANDING HAZARD restated: the archived law corpus is SIMULATED - recover the SHAPE, never the corpus.",
+      "source": "W596 archive audit",
+      "found": "2026-10-06",
+      "files": [
+        "_archive/agentic_core/analysis/text_indexer.py",
+        "_archive/agentic_core/ai/rag_pipeline.py",
+        "_archive/agentic_core/reactor/religion/qep_logic.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.22",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.22 is the owned knowledge index; this is the measurement of what the archive offers it",
+      "tier": 3
+    },
+    {
+      "id": "FU-451",
+      "title": "GamifiedLearning is constructed by nothing and its only references are comments saying it was abandoned",
+      "why": "W439 found that the QEP award surface probed GamifiedLearning for get_learner_state and award_achievement, which do not exist, so every award fell to a fallback that claimed 'recorded' and persisted nothing. W439 fixed the surface by building a real persisted award store and stopped constructing the class. The class itself was left behind: agentic_core/religious_domain/learning/gamification.py still defines GamifiedLearning with award_nur_points and get_badges, and the only four references to the name anywhere in the live tree are COMMENTS in religious_domain/api.py recording that it is no longer used. So it is a module whose documentation is an explanation of why nobody calls it. NOT A DEFECT TODAY - nothing reaches it, so it tells no lie to anyone. It is registered rather than deleted on the spot because the repository's own lesson is that an import grep plus a green suite does NOT prove a file dead: infra-only references, runtime directory scans and names inside multi-word strings have each caused a real break here. REMEDY: confirm by the recovery audit and the do-not-archive map, then remove it, or give it a docstring saying plainly that it is retained unused and why.",
+      "source": "W596 archive audit",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/religious_domain/learning/gamification.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.10 is the open QEP learning item and this is a QEP learning module",
+      "tier": 3
+    },
+    {
+      "id": "FU-452",
+      "title": "agentic_core/simulation fabricates a civilisational forecast and imports a class that is not there",
+      "why": "Measured while preparing P3.24, which was going to add a module to agentic_core/simulation/ on the belief that the package was empty. It is not, and it holds three things. ONE: RealitySimulationEngine.simulate_future computes health_projection as empathy times one-minus-scarcity times 1.5 over caller defaults of 0.5, then returns prosperity_projection of plus 24 percent or minus 12 percent chosen by a threshold on empathy, and a stability_index that is either 0.94 or 0.42. Every one of those figures is invented, and a projected percentage selected by an if-statement is the precise shape P3.24's own clause forbids - no surface may carry a predicted outcome. TWO: both agentic_core/reactor/ecosystem/base.py line 33 and products/business_incubator/sdk/business_incubator.py line 6 import EnvironmentalSimulator from agentic_core.simulation.engine, where no such class is defined; it lives at products/digital_reactor/sdk/engine.py line 11. The first is inside get_digital_twin and would raise at call time; the second is at module level, so that SDK module cannot be imported at all. THREE: get_digital_twin has no callers anywhere in the live tree, which is the only reason the first has never fired. ALL THREE ARE UNREACHED, so nothing lies to anyone today. REMEDY, and it belongs with P3.24 rather than after it: make simulate_future REFUSE with its reason the way the staged module's forecast entry point does, rather than deleting it, so a caller learns the platform does not forecast instead of meeting a missing attribute; and point both imports at the module that actually defines the class. Adding an honest staged simulation BESIDE a fabricating one would leave a reader to pick, and they would reasonably take the older one for the platform's position.",
+      "source": "W596 P3.24 measurement",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/simulation/engine.py",
+        "agentic_core/reactor/ecosystem/base.py",
+        "products/business_incubator/sdk/business_incubator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.24 is the staged-simulation item and this is the package it would add to",
+      "tier": 3
+    },
+    {
+      "id": "FU-453",
+      "title": "A dict-shaped HTTPException detail reaches React as a child at four sites, where it throws",
+      "why": "Found by refuting this round's NEXT item before building it. A route may raise HTTPException with a dict detail - seven already do - and axios hands that object to the page unchanged. Four sites do setError(e.response.data.detail or a fallback) and then render the state value directly as a React child, and an object as a React child THROWS: the surface crashes rather than showing a poor message. The four are DomainTool.tsx lines 159 and 196, LawHub.tsx line 30, and VSBSpawnStudio.tsx line 494. I FIRST RECORDED THIS AS 22 SITES AND THAT WAS WRONG BY MORE THAN FIVE TIMES, which is worth writing down because it is the second count I inflated the same way in one night: the 22 occurrences of that expression split by SHAPE, and only the four above put the object into React state. About fifteen interpolate it into a template string, which stringifies to the object-Object text - ugly and useless to a reader, but not a crash - and three destructure it and guard with a typeof check, so they are already correct and VSBCockpit even unpacks the 422 validation array. A grep gives sites, not instances; the defect is what the site DOES with the value. NOTHING CRASHES TODAY: I checked each of the seven dict-detail routes against each of the ten files and none pair up. But the gated-curriculum refusal planned for P3.10 lands on a DomainTool endpoint and would be the first, so the class has to be closed with it rather than after it. REMEDY: one helper in lib/api.ts returning a string always - preferring the detail's own message field, then its JSON, then the caller's fallback, and unpacking a 422 list into readable reasons the way VSBCockpit already does - applied at every site with asserted counts, plus a guard asserting no page puts a raw detail into error state.",
+      "source": "W596 refutation of P3.10's own fix",
+      "found": "2026-10-06",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.10's 409 would be the first dict detail on a DomainTool endpoint, so the class blocks it",
+      "tier": 3
     }
   ],
   "routes": [

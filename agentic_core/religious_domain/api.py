@@ -840,6 +840,86 @@ async def award_xp(req: AwardRequest):
     return {"recorded": True, "achievement": req.achievement, "xp_awarded": req.xp, **state}
 
 
+@router.get("/leaderboard")
+async def qep_leaderboard(limit: int = 20):
+    """P3.9 — rank learners by the XP actually RECORDED for them, and say what that means.
+
+    The leaderboard this replaces (`qep_flagship.gamified_competition`, before W404) returned ten
+    synthetic rows with scores from `random.randint` and a rank drawn from a die. This reads the store.
+
+    EVERY FIGURE CARRIES ITS BASIS, which is this item's own guard for routes under /qep. In particular
+    the POPULATION is stated: these are the learners who have a recorded award, not a field of
+    competitors, and a board of two says it ranks two. A tie is named rather than silently broken.
+    """
+    rows = []
+    unreadable = []
+    for p in sorted(_GAMI_STORE.glob("*.json")):
+        try:
+            g = json.loads(p.read_text(encoding="utf-8"))
+        except Exception as e:                       # noqa: BLE001 — reported, never skipped silently
+            unreadable.append({"file": p.name, "why": e.__class__.__name__})
+            continue
+        _hist = [h for h in (g.get("history") or []) if isinstance(h, dict)]
+        rows.append({
+            "uid": p.stem,
+            "xp": int(g.get("xp", 0) or 0),
+            "achievements": len(g.get("achievements") or []),
+            "awards_recorded": len(_hist),
+            #  the sum of the learner's OWN history, so a reader can check `xp` against it rather than
+            #  trusting it. They can differ: history is capped at the last 500 awards while xp is a
+            #  running total, and saying so is better than quietly presenting one as proof of the other.
+            "xp_in_recorded_history": sum(int(h.get("xp", 0) or 0) for h in _hist),
+        })
+
+    #  a tie is ordered by uid for determinism, and NAMED below rather than passed off as a ranking
+    rows.sort(key=lambda r: (-r["xp"], r["uid"]))
+    #  THE LEARNERS IN A TIE, not the number of duplicate totals. `len(xps) - len(set(xps))` gives 1 for
+    #  two learners on 40 and one on 25, and the sentence below would then say "1 learner shares a total
+    #  with another" when TWO do. A count that is almost right about people is worse than no count.
+    _xps = [r["xp"] for r in rows]
+    _tied_totals = {x for x in _xps if _xps.count(x) > 1}
+    _ties = sum(1 for x in _xps if x in _tied_totals)
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+    _shown = rows[:max(0, int(limit))]
+
+    return {
+        "leaderboard": _shown,
+        "learners_ranked": len(rows),
+        "shown": len(_shown),
+        "formula": "xp = the sum of the xp on every award recorded for that learner",
+        "formula_basis": ("XP is only ever written by _award, which appends {achievement, xp, source, at} "
+                          "to the learner's history and adds the same xp to a running total. Nothing here "
+                          "scores a recitation, a memorisation attempt or any other performance - the "
+                          "ranking is of RECORDED AWARDS and of nothing else."),
+        #  THE CAP IS REPORTED, NOT DENIED. This sentence first read "not a top-N of a larger population"
+        #  unconditionally, while `_shown` slices to `limit` two lines above - so the moment more learners
+        #  had awards than the caller asked for, the basis asserted the opposite of what the code did.
+        #  The archived gamification.py held the same defect in its other half (a silent top-10 with no
+        #  sentence at all); a sentence that DENIES the cap is worse, because it answers the reader's
+        #  question wrongly instead of leaving it open. So the basis is computed from the two counts.
+        "truncated": len(_shown) < len(rows),
+        "population_basis": (
+            (f"{len(rows)} learner(s) have a recorded award on this deployment and {len(_shown)} are "
+             f"shown, so THIS IS A TOP-{len(_shown)} OF A LARGER POPULATION: the learners ranked below "
+             f"it exist and are not displayed. Raise `limit` to see them.")
+            if len(_shown) < len(rows) else
+            (f"every learner with a recorded award is shown: {len(rows)} on this deployment, none "
+             f"omitted. This is not a field of competitors - if two learners are ranked, two learners "
+             f"have awards.")),
+        "ties": _ties,
+        "tie_basis": (f"{_ties} learner(s) share an XP total with another; equal totals are ordered by uid "
+                      f"for a stable response, which is a deterministic order and NOT a ranking between "
+                      f"them" if _ties else "no two learners share an XP total, so every rank is distinct"),
+        "not_a_certification": ("a position here reflects recorded awards only. It is not an attainment, "
+                                "not a hifz certification, and no scholar has assessed it."),
+        **({"unreadable": unreadable,
+            "unreadable_basis": (f"{len(unreadable)} learner file(s) could not be read, so they are NOT in "
+                                 f"the ranking - which is not the same as their having no XP")}
+           if unreadable else {}),
+    }
+
+
 @router.get("/status")
 async def qep_status():
     """Platform status — component lines say what each ACTUALLY is (W439: they were constants —

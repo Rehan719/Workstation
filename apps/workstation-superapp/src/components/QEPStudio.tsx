@@ -45,10 +45,14 @@ export const QEPStudio: React.FC = () => {
   // constraints) and the translation availability were served but never shown to anyone.
   const [qepStatus, setQepStatus] = useState<any>(null);
   const [trStatus, setTrStatus] = useState<any>(null);
+  const [board, setBoard] = useState<any>(null);
   const loadCore = () => {
     setLoadErrs([]);
     getJson(`/api/v1/qep/hifz/progress/${UID}`, setProgress);
     getJson(`/api/v1/qep/gamification/${UID}`, setGami);
+    //  P3.9 — the leaderboard is FETCHED, because its formula and its population are 'shown' only
+    //  if a reader sees them. The pre-flight caught that no page fetched this route at all.
+    getJson('/api/v1/qep/leaderboard', setBoard);
     getJson('/api/v1/qep/status', setQepStatus);
     fetch('/api/v1/qep/translation/status')
       .then(r => (r.ok ? r.json() : Promise.reject()))
@@ -91,7 +95,10 @@ export const QEPStudio: React.FC = () => {
 
   const [reviewRef, setReviewRef] = useState<string | null>(null);
   const [reviewAyah, setReviewAyah] = useState<{ text_arabic: string; surah_name: string } | null>(null);
-  const [reviewResult, setReviewResult] = useState<{ new_interval_days: number; next_review_date: string; xp_awarded: number } | null>(null);
+  //  P3.9 — the route already returns the e-factor and the basis; the screen typed neither, so a
+  //  learner saw an interval with no indication of what it was computed from, and the one line
+  //  that matters - 'a review count, not a hifz certification' - never reached them.
+  const [reviewResult, setReviewResult] = useState<{ new_interval_days: number; next_review_date: string; xp_awarded: number; new_efactor?: number; memorised_basis?: string; total_ayaat_memorised?: number } | null>(null);
   const openReview = async (ref: string) => {
     setReviewRef(ref); setReviewAyah(null); setReviewResult(null); setRecall(null); setRecallText('');
     const [s, a] = ref.split(':');
@@ -148,6 +155,70 @@ export const QEPStudio: React.FC = () => {
       {err && <p className="text-vital text-xs font-bold">{err}</p>}
       {loadErrs.length > 0 && (
         <p className="text-amber-400 text-[10px] font-bold">{loadErrs.length} section(s) failed to load — {loadErrs.slice(0, 2).join(' · ')}</p>
+      )}
+
+      {/* P3.9 — THE LEADERBOARD, over PERSISTED XP. The only leaderboard this platform ever had was
+          ten rows from random.randint, deleted in W404. Everything shown here is read from the store, and
+          the formula, the population and any tie are shown with it - a board that hides how it ranked
+          implies a competition nobody can check. */}
+      {board && (
+        <Card className="p-4" data-testid="qep-leaderboard">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">leaderboard — recorded XP only</p>
+          {(board.leaderboard || []).length === 0 ? (
+            <p className="text-[10px] text-slate-500">No learner has a recorded award yet, so there is nothing to rank.</p>
+          ) : (
+            <div className="space-y-1">
+              {(board.leaderboard || []).map((r: any) => (
+                <div key={r.uid} className="text-[10px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black text-slate-300">#{r.rank} {r.uid}</span>
+                    <span className="text-slate-500">{r.xp} XP · {r.achievements} achievement(s)</span>
+                  </div>
+                  {/* The running total and the sum of the learner's own recorded history CAN differ —
+                      history keeps the last 500 awards while xp accumulates without limit. When they
+                      differ the displayed XP is no longer checkable against the history beneath it, and
+                      a reader deserves to be told that rather than discovering it. Shown only on a
+                      mismatch: on agreement the figure adds nothing. */}
+                  {typeof r.xp_in_recorded_history === 'number' && r.xp_in_recorded_history !== r.xp && (
+                    <p data-testid={`qep-leaderboard-history-${r.uid}`} className="text-[9px] text-amber-400/80 leading-relaxed">
+                      {r.awards_recorded} award(s) still in history sum to {r.xp_in_recorded_history} XP, not
+                      the {r.xp} shown — history keeps the most recent awards only, so the total above cannot
+                      be checked against it in full.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {/* HOW MANY OF HOW MANY, on the card. The response caps the rows at `limit`, so a reader
+              seeing ten names needs to know whether ten is the field or the top of it — the counts say
+              which, and `truncated` makes the cap a stated fact rather than something inferable only by
+              comparing two numbers. */}
+          <p data-testid="qep-leaderboard-population" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+            Showing {board.shown} of {board.learners_ranked} learner(s) with a recorded award
+            {board.truncated ? ' — this is the TOP of a larger ranking, not the whole field' : ' — all of them'}.
+          </p>
+          <p data-testid="qep-leaderboard-formula" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+            {board.formula}. {board.population_basis}
+          </p>
+          {/* the sentence that stops this reading as a performance ranking: nothing here scores a
+              recitation. It is the most important line on the card and it was API-only until the
+              pre-flight said so. */}
+          <p data-testid="qep-leaderboard-formula-basis" className="text-[9px] text-slate-600 mt-1 leading-relaxed">
+            {board.formula_basis}
+          </p>
+          {/* a learner file that could not be read is NOT a learner with no XP, and a board that
+              silently omits them is a board missing people */}
+          {board.unreadable_basis && (
+            <p data-testid="qep-leaderboard-unreadable" className="text-[9px] text-vital mt-1 leading-relaxed">
+              {board.unreadable_basis}
+            </p>
+          )}
+          {board.ties > 0 && (
+            <p data-testid="qep-leaderboard-ties" className="text-[9px] text-amber-400/80 mt-1 leading-relaxed">{board.tie_basis}</p>
+          )}
+          <p className="text-[9px] text-amber-400/80 italic mt-1 leading-relaxed">{board.not_a_certification}</p>
+        </Card>
       )}
 
       {/* gamification strip — REAL persisted awards only */}
@@ -253,9 +324,26 @@ export const QEPStudio: React.FC = () => {
                 ))}
               </div>
               {reviewResult && (
+                <>
+                {/* P3.9 — the SM-2 state a learner is entitled to see: the interval AND the e-factor it
+                    was computed with, so the schedule is checkable rather than asserted. */}
+                <p data-testid="hifz-efactor" className="text-[10px] text-slate-400 mb-1">
+                  e-factor {typeof reviewResult.new_efactor === 'number' ? reviewResult.new_efactor : '—'}
+                  {' '}· the SM-2 easiness this ayah now carries, which is what the interval is computed from
+                </p>
+                {/* P3.9 — AND THE BASIS, which is the one line that stops a review count reading as an
+                    attainment. The route has always returned it; no screen showed it. */}
+                {reviewResult.memorised_basis && (
+                  <p data-testid="hifz-memorised-basis" className="text-[10px] text-amber-400 mb-2 leading-relaxed">
+                    {typeof reviewResult.total_ayaat_memorised === 'number'
+                      ? `${reviewResult.total_ayaat_memorised} ayah/ayaat counted: ` : ''}
+                    {reviewResult.memorised_basis}
+                  </p>
+                )}
                 <p className="text-[10px] text-emerald-400 mb-2">
                   <CheckCircle2 size={10} className="inline mr-1" />next review in {reviewResult.new_interval_days} day(s) ({reviewResult.next_review_date}){reviewResult.xp_awarded > 0 && ` · +${reviewResult.xp_awarded} XP`}
                 </p>
+                </>
               )}
               <div className="pt-2 border-t border-slate-900">
                 <p className="text-[9px] font-black uppercase text-slate-500 mb-1">written recall check — TEXT only</p>

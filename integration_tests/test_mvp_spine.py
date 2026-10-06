@@ -42215,3 +42215,334 @@ def test_w595_p36_language_depth_reaches_the_surfaces_and_labels_what_it_cannot_
         assert "dictationLanguage" in _t, (
             f"{_rel} still takes the INTERFACE language for dictation, so the separate control does not "
             f"reach it", _rel)
+
+
+def test_w596_p39_the_memorisation_surface_and_a_leaderboard_over_recorded_xp(client):
+    """P3.9 — QEP composed: the real SM-2 state on screen, and a leaderboard over PERSISTED XP.
+
+    Measured before this round: `/hifz/review` already returned `new_efactor` and the
+    "a review count, not a hifz certification" basis, and the screen typed NEITHER — a learner saw an
+    interval with nothing saying what produced it, and the one line that stops a review count reading as
+    an attainment never reached them. And no leaderboard route existed at all; the only leaderboard this
+    platform ever had was ten synthetic rows with scores from `random.randint`, deleted in W404.
+    """
+    import pathlib as _pl39
+
+    # ── (1) THE SM-2 STATE A LEARNER SEES ───────────────────────────────────────────────────────
+    _sched = client.post("/api/v1/qep/hifz/schedule",
+                         json={"uid": "w596-learner", "surah_number": 1, "ayaat_range": [1, 3]})
+    assert _sched.status_code == 200, (_sched.status_code, _sched.text[:160])
+    _rev = client.post("/api/v1/qep/hifz/review",
+                       json={"uid": "w596-learner", "ayah_ref": "1:2", "quality": 4})
+    assert _rev.status_code == 200, (_rev.status_code, _rev.text[:160])
+    _rj = _rev.json()
+    for _f in ("new_interval_days", "new_efactor", "memorised_basis"):
+        assert _f in _rj, (f"the review response no longer carries {_f}, so the screen cannot show it", _f)
+    assert "not a hifz certification" in _rj["memorised_basis"], (
+        "the memorised count lost the line that stops it reading as an attainment", _rj["memorised_basis"])
+    #  and the SURFACE renders all three — the route having them is not a learner seeing them (FU-420)
+    _studio = (_pl39.Path(__file__).resolve().parents[1]
+               / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8")
+    assert "new_interval_days" in _studio, "the screen no longer shows the interval"
+    assert 'data-testid="hifz-efactor"' in _studio, (
+        "the e-factor is not rendered, so the schedule is asserted rather than checkable - the route has "
+        "returned it all along and no screen showed it")
+    assert 'data-testid="hifz-memorised-basis"' in _studio, (
+        "the 'a review count, not a hifz certification' basis is not rendered, so a review count reads as "
+        "an attainment on the one surface a learner reads")
+
+    # ── (2) A LEADERBOARD OVER RECORDED XP, WITH ITS FORMULA AND ITS POPULATION ─────────────────
+    #  SEEDED SO THAT XP ORDER AND ACHIEVEMENT ORDER DISAGREE. A blind that re-sorted the board by
+    #  `achievements` instead of `xp` went GREEN on the first seeding, because every learner had exactly
+    #  one achievement and both keys produced the same order - the leg could not tell the two apart.
+    #  yusuf now holds MORE achievements on LESS xp, so ranking by the wrong key is visible.
+    #  AND THE EXPECTED TOTALS ARE READ BACK FROM THE AWARD RESPONSE rather than assumed: awards
+    #  ACCUMULATE in a shared store, so `xp == 40` is false the second time this runs in one data dir -
+    #  which is what made four blinds report the wrong leg.
+    _expect39 = {}
+    for _uid, _awards in (("w596-amina", [("w596 review", 40)]),
+                          ("w596-yusuf", [("w596 review", 10), ("w596 streak", 10)]),
+                          ("w596-zayd", [("w596 review", 40)])):
+        for _ach, _xp in _awards:
+            _a = client.post("/api/v1/qep/gamification/award",
+                             json={"uid": _uid, "achievement": _ach, "xp": _xp})
+            assert _a.status_code == 200, (_a.status_code, _a.text[:140])
+            _expect39[_uid] = _a.json().get("xp")
+    assert _expect39["w596-amina"] > _expect39["w596-yusuf"], (
+        "the seeding no longer puts more XP on amina than yusuf, so the ranking leg below proves nothing",
+        _expect39)
+    #  an EXPLICIT high limit, not the route's default of 20. The award store is shared across the suite
+    #  and grows as other tests award XP, so the default would truncate once more than twenty learners
+    #  exist - and then this test's own three could fall off the board depending on what ran before it.
+    #  The cap is driven deliberately further down instead.
+    _lb = client.get("/api/v1/qep/leaderboard?limit=10000")
+    assert _lb.status_code == 200, (_lb.status_code, _lb.text[:160])
+    _b = _lb.json()
+    _mine = {r["uid"]: r for r in _b["leaderboard"] if str(r["uid"]).startswith("w596-")}
+    assert {"w596-amina", "w596-yusuf", "w596-zayd"} <= set(_mine), (
+        "the seeded learners are not ranked, so the board is not reading the store", sorted(_mine))
+    #  AND THE LEARNER FROM CLAUSE (1) IS ON THE BOARD TOO, which is a stronger fact than the seeds: that
+    #  learner was never awarded XP directly - the hifz REVIEW awarded it - so their presence proves the
+    #  board ranks XP earned by real study and not only XP handed to it by this test.
+    assert "w596-learner" in _mine and _mine["w596-learner"]["xp"] > 0, (
+        "XP earned by an actual review does not reach the leaderboard, so the board is not over the same "
+        "store the learning path writes", _mine.get("w596-learner"))
+    #  the board's figure is the store's own total, read back from the award response - not a constant
+    for _u39, _x39 in _expect39.items():
+        assert _mine[_u39]["xp"] == _x39, (
+            "the board's XP disagrees with the total the store returned when the award was recorded",
+            _u39, _mine[_u39]["xp"], _x39)
+    assert _mine["w596-amina"]["rank"] < _mine["w596-yusuf"]["rank"], (
+        "a learner with more recorded XP does not rank above one with less", _mine)
+    #  and the order is by XP, NOT by achievement count: yusuf holds more achievements on less xp, so a
+    #  board sorted by the wrong key puts yusuf first and this fires
+    assert _mine["w596-yusuf"]["achievements"] > _mine["w596-amina"]["achievements"], (
+        "the seeding no longer distinguishes the two sort keys, so this leg is vacuous", _mine)
+    assert _b["formula"] and "sum" in _b["formula"], (
+        "the ranking's formula is not returned, so a reader cannot check the order against the history",
+        _b.get("formula"))
+    assert "RECORDED AWARDS" in _b["formula_basis"] and "recitation" in _b["formula_basis"], (
+        "the formula basis does not say what is NOT being ranked - nothing here scores a recitation, and "
+        "a leaderboard that leaves that unsaid implies a performance ranking", _b.get("formula_basis"))
+    assert str(_b["learners_ranked"]) in _b["population_basis"], (
+        "the population is not stated, so a board of three implies a field of competitors - which is the "
+        "defect the ten synthetic rows W404 deleted had", _b.get("population_basis"))
+    #  a tie is NAMED, and counted in LEARNERS - two on 40 is two learners, not one duplicate total
+    assert _b["ties"] >= 2 and "ordered by uid" in _b["tie_basis"], (
+        "two learners on equal XP are presented as a ranking between them, or the tie count counts "
+        "duplicate totals rather than the learners in them", _b["ties"], _b.get("tie_basis"))
+    assert "not a hifz certification" in _b["not_a_certification"], (
+        "the board does not say a position is not an attainment")
+
+    # ── THE CAP IS REPORTED, NOT DENIED — driven with a limit BELOW the population ──────────────
+    #  This round's own pre-flight caught it: the population sentence read "not a top-N of a larger
+    #  population" unconditionally while the handler sliced to `limit`, so the basis asserted the
+    #  opposite of what the code did the moment anyone passed a small limit. The archived
+    #  gamification.py capped at ten and said nothing; a sentence that DENIES the cap is worse,
+    #  because it answers the reader's question wrongly rather than leaving it open.
+    _cap = client.get("/api/v1/qep/leaderboard?limit=1").json()
+    assert len(_cap["leaderboard"]) == 1 and _cap["learners_ranked"] >= 3, (
+        "the limit did not cap, so this leg cannot see whether a cap is reported", _cap.get("shown"),
+        _cap.get("learners_ranked"))
+    assert _cap["truncated"] is True, ("a capped board does not report that it is capped", _cap)
+    assert "TOP-1 OF A LARGER POPULATION" in _cap["population_basis"], (
+        "a capped board's population sentence does not say it is the top of a larger ranking - a reader "
+        "seeing one name cannot tell it from the whole field", _cap["population_basis"])
+    assert "not a top-N" not in _cap["population_basis"], (
+        "the capped board DENIES being a top-N while having sliced the rows, which is the defect the "
+        "pre-flight found in this round's own code", _cap["population_basis"])
+    #  and the uncapped board says so positively rather than staying silent
+    assert _b["truncated"] is False and "none omitted" in _b["population_basis"], (
+        "an uncapped board does not state that nothing was omitted, so a reader cannot distinguish it "
+        "from a capped one", _b.get("truncated"), _b.get("population_basis"))
+
+    # ── (2b) AND A READER SEES THE BOARD, ITS FORMULA AND ITS POPULATION ───────────────────────
+    #  "with its formula shown" is shown to a PERSON. The pre-flight caught that no page fetched this
+    #  route at all, which is the same thing the register refused to let P3.6 close with: a formula in a
+    #  payload is not a formula shown.
+    _studio39 = (_pl39.Path(__file__).resolve().parents[1]
+                 / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8")
+    assert "/api/v1/qep/leaderboard" in _studio39, (
+        "no page fetches the leaderboard, so its formula and its population are shown to nobody")
+    assert 'data-testid="qep-leaderboard"' in _studio39, "the board is not rendered"
+    assert 'data-testid="qep-leaderboard-formula"' in _studio39, (
+        "the formula is not rendered, so a reader cannot check how the board ranked")
+    assert "board.population_basis" in _studio39, (
+        "the population is not rendered, so a board of two implies a field of competitors")
+    #  the two COUNTS reach the reader as well, not only the sentence: "showing N of M", and the cap
+    #  named when there is one. The pre-flight's standing lead is a key produced and shown to nobody.
+    assert 'data-testid="qep-leaderboard-population"' in _studio39, (
+        "the card does not state how many of how many, so a reader seeing ten names cannot tell whether "
+        "ten is the field or the top of it")
+    assert "board.truncated" in _studio39 and "board.learners_ranked" in _studio39, (
+        "the cap and the ranked population do not reach the page, so the card cannot say which it shows",
+        "board.truncated" in _studio39, "board.learners_ranked" in _studio39)
+    #  and the per-learner history check, which exists precisely because it can DISAGREE with the total.
+    #  NOT a presence check on the field name: this round drove that blind and it came back VACUOUS,
+    #  because a JSX conditional names its field in BOTH the gate and the body - `{gate && <p>{field}</p>}`
+    #  - so disabling the gate leaves the name in the file. The GATE's own comparison is asserted, which
+    #  is the thing a disabled gate loses, and the testid catches deletion of the whole block.
+    assert "r.xp_in_recorded_history !== r.xp" in _studio39, (
+        "the page no longer compares the recorded history against the displayed total, so the two can "
+        "disagree - which they will once history is capped at its last awards - with nothing shown")
+    assert "qep-leaderboard-history-" in _studio39, (
+        "the line that reports a disagreement between a learner's displayed XP and the awards beneath it "
+        "is gone, so the XP shown beside their name cannot be checked")
+    assert 'data-testid="qep-leaderboard-formula-basis"' in _studio39, (
+        "the line saying what is NOT ranked - nothing here scores a recitation - is not rendered, so the "
+        "board reads as a performance ranking on the one surface a learner sees")
+    assert "board.unreadable_basis" in _studio39, (
+        "a learner file that could not be read is silently omitted from the board rather than disclosed")
+    assert "board.not_a_certification" in _studio39, (
+        "the screen does not say a position here is not an attainment")
+    assert "board.ties > 0" in _studio39, (
+        "the tie note is rendered unconditionally or not at all; it must appear exactly when there IS a "
+        "tie, or it is noise on every board")
+
+    # ── (3) THE ITEM'S OWN GUARD: NO FIGURE WITHOUT A BASIS, ON THE ROUTES IT TOUCHES ───────────
+    #  Driven on the RESPONSE, because a handler's source cannot show what a response carries. A figure is
+    #  a number that is not a count of something trivially self-describing, so the rule is applied as:
+    #  a response carrying any number must carry at least one basis-bearing string field.
+    _BASIS_WORDS = ("basis", "detail", "note", "why", "not_a_certification", "formula")
+    for _path, _get in (("/api/v1/qep/leaderboard", True),
+                        ("/api/v1/qep/gamification/w596-amina", True),
+                        ("/api/v1/qep/status", True)):
+        _r = client.get(_path) if _get else client.post(_path)
+        assert _r.status_code == 200, (_path, _r.status_code, _r.text[:140])
+        _body = _r.json()
+        if not isinstance(_body, dict):
+            continue
+        _nums = [k for k, v in _body.items()
+                 if isinstance(v, (int, float)) and not isinstance(v, bool)]
+        if not _nums:
+            continue
+        _bases = [k for k in _body if any(w in k.lower() for w in _BASIS_WORDS)]
+        assert _bases, (
+            f"{_path} returns figures {_nums} and NO basis field - the item's guard is that no route under "
+            f"/qep may return a figure without a basis string", _path, _nums, sorted(_body))
+
+    # ── NO QEP SURFACE IMPORTS random — the fabrication class cannot return by the same route ──────
+    #  W404 deleted qep_flagship's gamified_competition, which built a leaderboard from
+    #  random.randint: ten synthetic rows, invented scores, a rank drawn from a die. The archive audit
+    #  for this item found `import random` STILL at the top of that file, dead but available, in the one
+    #  file where reaching for a random number would recreate exactly what was deleted.
+    #  ASSERTED ON THE AST, NOT ON THE TEXT. That file's comments quote `random.randint(0, 5)` while
+    #  recording the removal - a substring check would match the comment that documents the fix and go
+    #  red on correct code, which is the trap this suite has hit before. An import is a BINDING, so the
+    #  binding is what is read.
+    import ast as _ast39
+    _qep_roots = (_pl39.Path(__file__).resolve().parents[1] / "agentic_core/reactor/religion",
+                  _pl39.Path(__file__).resolve().parents[1] / "agentic_core/religious_domain")
+    _rand_importers = []
+    _scanned39 = 0
+    for _rootq in _qep_roots:
+        for _py in sorted(_rootq.rglob("*.py")):
+            _scanned39 += 1
+            _tree39 = _ast39.parse(_py.read_text(encoding="utf-8"))
+            for _n39 in _ast39.walk(_tree39):
+                if isinstance(_n39, _ast39.Import) and any(a.name.split(".")[0] == "random"
+                                                           for a in _n39.names):
+                    _rand_importers.append(f"{_py.name}:{_n39.lineno} import random")
+                elif isinstance(_n39, _ast39.ImportFrom) and (_n39.module or "").split(".")[0] == "random":
+                    _rand_importers.append(f"{_py.name}:{_n39.lineno} from random import ...")
+    assert _scanned39 >= 5, (
+        "this leg scanned almost nothing, so it would pass on an empty tree", _scanned39)
+    assert _rand_importers == [], (
+        "a QEP surface module binds `random`, which is the one import that made the deleted leaderboard "
+        "possible - a figure about a learner's worship drawn from a random number generator. Nothing on "
+        "these surfaces has any legitimate need for one", _rand_importers)
+
+
+def test_w596_p321_the_verifier_refuses_on_a_checkable_check_and_never_on_a_score(client):
+    """P3.21 — each of the three verdicts reachable and asserted; a withheld output names the check that
+    failed; no float is read as a verdict anywhere in the chain.
+
+    The float half is the item's own emphasis: the roadmap proposed withholding whenever a
+    verifier-confidence number fell below a threshold, and this platform already carried three gates of
+    that shape - a quality pipeline starting at
+    0.90 and adding 0.05 per iteration without reading the content, a consultation contract REQUIRING a
+    float so every implementer returned 0.96, and a cognitive base class hard-coding 0.95 on success. A
+    threshold over an invented number is a gate that cannot refuse.
+    """
+    import pathlib as _pl321
+
+    from agentic_core.horizon import verifier as _v
+
+    _root321 = _pl321.Path(__file__).resolve().parents[1]
+    _doc = "agentic_core/horizon/verifier.py"
+    _first = (_root321 / _doc).read_text(encoding="utf-8").splitlines()[0]
+    _quote = _first[:24]
+
+    # ── (1) ALL THREE VERDICTS ARE REACHABLE, ON EVERY CHECK ────────────────────────────────────
+    _reached = {_v.MET: [], _v.UNMET: [], _v.NOT_ASSESSABLE: []}
+    _cases = [
+        (_v.check_citation_resolves, {"document": _doc}, _v.MET),
+        (_v.check_citation_resolves, {"document": "docs/does-not-exist-w596.md"}, _v.UNMET),
+        (_v.check_citation_resolves, {}, _v.NOT_ASSESSABLE),
+        (_v.check_quote_at_location, {"document": _doc, "line": 1, "quote": _quote}, _v.MET),
+        (_v.check_quote_at_location, {"document": _doc, "line": 2, "quote": _quote}, _v.UNMET),
+        (_v.check_quote_at_location, {"document": _doc, "quote": _quote}, _v.NOT_ASSESSABLE),
+        (_v.check_figure_in_source, {"document": _doc, "figure": "0.95"}, _v.MET),
+        (_v.check_figure_in_source, {"document": _doc, "figure": "987654321"}, _v.UNMET),
+        (_v.check_figure_in_source, {"document": _doc}, _v.NOT_ASSESSABLE),
+    ]
+    for _fn, _cite, _want in _cases:
+        _r = _fn(_cite)
+        assert _r["verdict"] == _want, (
+            f"{_fn.__name__} does not reach {_want} on {_cite!r} - a verdict that cannot be reached is a "
+            f"state this verifier only claims to have", _r)
+        assert _r["basis"], (f"{_fn.__name__} returned a verdict with no basis, so a reader cannot check "
+                             f"it", _r)
+        _reached[_want].append(_r["check"])
+    for _state, _hits in _reached.items():
+        assert len(_hits) == 3, (f"{_state} is not reachable on all three checks", _state, _hits)
+
+    # ── (2) A PATH OUTSIDE THE REPOSITORY IS NOT ASSESSABLE, NOT UNMET ─────────────────────────
+    #  Saying UNMET would imply the verifier looked and found nothing; it did not look at all.
+    _out = _v.check_citation_resolves({"document": "../../../etc/passwd"})
+    assert _out["verdict"] == _v.NOT_ASSESSABLE and "did NOT look" in _out["basis"], (
+        "a citation escaping the repository is answered as though the verifier had looked", _out)
+
+    # ── (3) AN UNMET WITHHOLDS AND NAMES THE CHECK; NOT ASSESSABLE DOES NEITHER ────────────────
+    _bad = _v.verify("an answer", [{"document": _doc, "line": 2, "quote": _quote}])
+    assert _bad["withheld"] is True and _bad["output"] is None, (
+        "an output whose citation failed a check is still served", _bad)
+    assert _bad["withheld_because"] and _bad["withheld_because"][0]["check"] == \
+        _v.CHECK_QUOTE, (
+        "the withheld output does not name the check that failed, so the author cannot correct it", _bad)
+    _ok = _v.verify("an answer", [{"document": _doc, "line": 1, "quote": _quote}])
+    assert _ok["withheld"] is False and _ok["output"] == "an answer", _ok
+    #  NOT ASSESSABLE neither withholds nor passes silently
+    #  ALL THREE CHECKS UNASSESSABLE needs a citation with no document at all. Citing a real document
+    #  with no quote makes check 1 MET - the citation DID resolve - so the overall verdict is correctly
+    #  MET there, and an earlier draft of this leg asserted otherwise against correct code.
+    _una = _v.verify("an answer", [{}])
+    assert _una["withheld"] is False, ("a check that could NOT be run withheld the output, which makes an "
+                                       "unmeasurable citation indistinguishable from a failed one", _una)
+    assert _una["verdict"] == _v.NOT_ASSESSABLE and "could NOT be assessed" in _una["withheld_basis"], (
+        "an output with no assessable check reports as though something passed", _una)
+
+    #  AND THE MIXED CASE: one check ran and passed while two could not be run. The headline says nothing
+    #  failed, and the basis must SAY how many were unassessable - otherwise a partly-checked output reads
+    #  as a fully-checked one.
+    _mixed = _v.verify("an answer", [{"document": _doc}])
+    assert _mixed["verdict"] == _v.MET and _mixed["counts"][_v.NOT_ASSESSABLE] == 2, (
+        "a citation that resolves but quotes nothing is not reported as one passed check and two that "
+        "could not be run", _mixed["counts"])
+    assert "could NOT be assessed" in _mixed["withheld_basis"], (
+        "a partly-checked output reads as fully checked, because the basis does not say how many checks "
+        "could not be run", _mixed["withheld_basis"])
+
+    # ── (4) NO FLOAT IS READ AS A VERDICT ANYWHERE IN THE CHAIN ────────────────────────────────
+    #  Asserted three ways, not by grepping for the roadmap's literal 0.8 - which would pass the moment
+    #  somebody wrote 0.75.
+    for _r in _bad["checks"] + _ok["checks"] + _una["checks"]:
+        assert _r["verdict"] in (_v.MET, _v.UNMET, _v.NOT_ASSESSABLE), (
+            "a verdict is not one of the three states, so something numeric has become one", _r)
+    def _floats(obj):
+        if isinstance(obj, float):
+            return [obj]
+        if isinstance(obj, dict):
+            return [f for v in obj.values() for f in _floats(v)]
+        if isinstance(obj, (list, tuple)):
+            return [f for v in obj for f in _floats(v)]
+        return []
+    for _resp in (_bad, _ok, _una, _mixed):
+        assert not _floats(_resp), (
+            "the verifier's response carries a float, and a number in a refusal path becomes a threshold - "
+            "which is the gate that cannot refuse this item exists to prevent", _floats(_resp))
+    _src321 = (_root321 / _doc).read_text(encoding="utf-8")
+    import re as _re321
+    _thresholds = _re321.findall(r"[<>]=?\s*0\.\d+|0\.\d+\s*[<>]=?", _src321)
+    assert not _thresholds, (
+        "the verifier compares a number against a threshold, so a score decides the verdict", _thresholds)
+
+    # ── (5) AND IT IS REACHABLE: the route withholds too ───────────────────────────────────────
+    _rr = client.post("/api/v1/horizon/verify",
+                      json={"output": "an answer",
+                            "citations": [{"document": _doc, "line": 2, "quote": _quote}]})
+    assert _rr.status_code == 200, (_rr.status_code, _rr.text[:160])
+    _rj = _rr.json()
+    assert _rj["withheld"] is True and _rj["output"] is None, (
+        "the route serves an output whose citation failed a check", _rj)
+    assert not _floats(_rj), ("the route's response carries a float", _floats(_rj))

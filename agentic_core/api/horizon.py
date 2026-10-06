@@ -136,6 +136,28 @@ async def horizon_screen(req: ScreenRequest,
     return _g.screen_all(req.text)
 
 
+class VerifyRequest(BaseModel):
+    output: str = ""
+    citations: list = []
+
+
+@router.post("/verify")
+async def horizon_verify(req: VerifyRequest):
+    """P3.21 — run the three checkable checks over an output's citations, and WITHHOLD on any UNMET.
+
+    Checkable checks only: does the citation resolve to a document in this repository, is the quoted text
+    at the cited line, does the cited figure appear in that document. Each returns MET / UNMET /
+    NOT ASSESSABLE with its basis, and an UNMET WITHHOLDS the output naming the check that failed.
+
+    THERE IS NO CONFIDENCE SCORE in this path. The roadmap proposed withholding when "verifier confidence
+    < 0.8"; a threshold over an invented number is a gate that cannot refuse, and this platform already
+    carried three of those. NOT ASSESSABLE is neither a pass nor a failure - it is reported so a check that
+    could not be run never reads as one that passed.
+    """
+    from agentic_core.horizon.verifier import verify as _verify
+    return _verify(req.output, req.citations)
+
+
 @router.get("/guardrails")
 async def horizon_guardrails(user: dict | None = Depends(get_current_user)) -> Dict[str, Any]:
     """The three gates, their coverage, and the distress route field SHOWN AS UNFILLED.
