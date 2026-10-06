@@ -29,6 +29,64 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger("organism.heartbeat")
 
 
+def screen_one_deliverable() -> Dict[str, Any]:
+    """§11 — screen ONE living deliverable per beat, least-recently-screened first. P3.2 clause (4).
+
+    FOUR STATES, and the last two are the ones a naive version collapses:
+      screened, clean    → `last_screened` set, verdict recorded
+      screened, flagged  → the verdict is RECORDED AND SHOWN; a flag a reader cannot see is not a screen
+      never screened     → `last_screened` absent, and the card SAYS "not screened yet" rather than blank
+      could not screen   → `last_screened` absent WITH a reason. This is NOT "never screened": a broken
+                           screen must not look like a young deliverable.
+
+    The rotation mirrors the VSB one deliberately — one per beat by least-recently-screened — so the cost
+    per beat is bounded and a fleet is covered over time rather than all at once.
+    """
+    from agentic_core.api.deliverables import _load as _dlv_load, _save as _dlv_save
+    from agentic_core.api.compliance import screen_compliance
+
+    try:
+        rows = _dlv_load() or []
+    except Exception as e:                   # noqa: BLE001 — reported, never read as "none to screen"
+        #  `deliverables` is None, NOT 0: the store could not be opened, so the count is UNKNOWN. Reporting
+        #  0 here would assert "no deliverable exists" about a store nobody could read.
+        return {"screened": None, "id": None, "verdict": None, "deliverables": None,
+                "could_not_run": f"the deliverable store could not be read ({e.__class__.__name__})",
+                "basis": ("NOT a statement that there are no deliverables: the store itself could not be "
+                          "read, and an empty answer here would be indistinguishable from an empty store")}
+    if not rows:
+        return {"screened": None, "id": None, "verdict": None, "deliverables": 0,
+                "could_not_run": None,
+                "basis": "no deliverable exists yet, so there was nothing to screen on this beat"}
+
+    #  least-recently-screened first; a deliverable never screened sorts to the front because "" < any date
+    target = sorted(rows, key=lambda d: str(d.get("last_screened") or ""))[0]
+    _text = " ".join(str(target.get(k) or "") for k in ("title", "brief", "kind", "content"))[:4000]
+    if not _text.strip():
+        target["last_screened_error"] = ("this deliverable carries no screenable text, so no verdict was "
+                                         "produced - which is NOT a clean screen")
+        _dlv_save(rows)
+        return {"screened": None, "id": target.get("id"), "verdict": None, "deliverables": len(rows),
+                "could_not_run": "the deliverable carries no screenable text",
+                "basis": ("recorded on the deliverable so a reader is not shown a blank where a verdict "
+                          "would go, and not shown a PASS that nothing earned")}
+
+    verdict = screen_compliance(_text)
+    #  `_now()` does NOT exist in this module — caught before applying. heartbeat.py's own idiom,
+    #  used at seven other sites, is time.strftime over time.gmtime.
+    target["last_screened"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    target["last_screened_verdict"] = verdict.get("overall")
+    target["last_screened_basis"] = (
+        f"screened on the circadian compliance beat; verdict {verdict.get('overall')!r}. One deliverable is "
+        f"screened per beat, least-recently-screened first, so a fleet is covered over time - a deliverable "
+        f"with no `last_screened` has NOT been reached yet and is not thereby clean.")
+    target.pop("last_screened_error", None)
+    _dlv_save(rows)
+    return {"screened": target.get("id"), "id": target.get("id"), "verdict": verdict.get("overall"),
+            "deliverables": len(rows), "could_not_run": None,
+            "basis": target["last_screened_basis"]}
+
+
 def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     """§11 — screen ONE living VSB over its current plan + registration text; persist per-VSB
     history (capped); a REGRESSION (prior non-fail → fail) registers with the immune system and
@@ -178,6 +236,15 @@ class OrganismHeartbeat:
         # calls is expensive, so this follows section 4's idiom for expensive work rather than section 1's
         # for cheap work. Off by default means no existing deployment changes behaviour.
         self.auto_metabolic = False
+        #  FU-461 — WHERE A FAILED BEAT STEP IS RECORDED. Twenty-two handlers in this file had a bare
+        #  `pass`, about fifteen of them immediately after an `actions.append(...)`: the step raised,
+        #  nothing was appended, and the beat reported a shorter actions list with no sign anything had
+        #  gone wrong. W589 fixed ONE of them (the cadence step, line ~340) and wrote the reason in place:
+        #  a swallowed exception made a step that CANNOT RUN indistinguishable from a step with nothing to
+        #  do, because both appended no action and left no trace.
+        #  ONE DICT, not a record field per step: most steps have no `self.last_*` to write to, and
+        #  inventing fifteen of them would be fifteen fields nobody reads.
+        self.last_step_failures: Dict[str, str] = {}
         self._beats_since_metabolic = 0
         self._metabolic_every = 10
         self.last_metabolic: Optional[Dict[str, Any]] = None
@@ -203,6 +270,11 @@ class OrganismHeartbeat:
         self.last_phase = phase
         self.last_beat = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         actions: List[str] = []
+        #  FU-461 — CLEARED HERE, not accumulated. A failure recorded on an earlier beat would otherwise be
+        #  reported as a failure of this one for the rest of the process's life, which is the stale-record
+        #  defect W589's cadence comment warns about two lines above its own fix. Assigned rather than
+        #  mutated so the attribute exists before any step can record into it.
+        self.last_step_failures = {}
 
         # 1. Pulse the central nervous system (the heartbeat itself)
         try:
@@ -469,8 +541,13 @@ class OrganismHeartbeat:
                 self.last_compliance = self._compliance_beat()
                 if self.last_compliance:
                     actions.append("compliance_rescreen")
-            except Exception:
-                pass
+            except Exception as _cr_err:
+                #  FU-461 — RECORDED, not swallowed. This handler is the one P3.2 clause (4)'s deliverable
+                #  screen runs inside: a bare `pass` here made "the compliance step had nothing due" and
+                #  "the compliance step could not run" the same observable, because both append no action
+                #  and leave no trace. NOT appended to `actions` — W589's rule, kept: an action is something
+                #  the beat DID, and claiming one for a failure would be the opposite defect.
+                self._step_failed("compliance_rescreen", _cr_err)
 
         # 2g. §P3.16 (W532) — THE RECIRCULATION LOOP, DRIVEN FROM THE BEAT. Paced and opt-in, because six
         #     stages with their engine calls is expensive. The SUBJECT IS THE ORGANISM: execute_cycle wants a
@@ -753,7 +830,20 @@ class OrganismHeartbeat:
         record = {"beat": self.beats, "phase": phase, "intensity": intensity,
                   "realisation": self.last_realisation, "health": health,
                   "self_recovery": self.last_recovery if "self_recovery" in actions else None,
-                  "actions": actions, "at": self.last_beat}
+                  "actions": actions, "at": self.last_beat,
+                  #  FU-461 — the steps that were ATTEMPTED AND FAILED on THIS beat, by name. ADDED beside
+                  #  `actions` rather than folded into it: `actions` keeps meaning what the beat did, so no
+                  #  existing reader's understanding of it changes. A shorter `actions` list on its own
+                  #  cannot distinguish a step with nothing due from a step that could not run, which is the
+                  #  whole reason this field exists.
+                  "steps_failed": dict(getattr(self, "last_step_failures", {}) or {}),
+                  "steps_failed_basis": (
+                      "steps attempted on this beat that raised, by name, cleared at the start of every "
+                      "beat so a failure never outlives the beat that had it. They are deliberately NOT in "
+                      "`actions`: an action is something the beat performed. Twenty-two handlers in this "
+                      "file swallowed their exception; FU-461 tracks the eleven still to convert, so an "
+                      "EMPTY steps_failed means no CONVERTED step failed - not that nothing failed."),
+                  }
         self._log.append(record)
         self._log = self._log[-100:]
         return record
@@ -971,6 +1061,15 @@ class OrganismHeartbeat:
     def stop(self) -> None:
         self.running = False
 
+    def _step_failed(self, step: str, err: BaseException) -> None:
+        """Record a beat step that was ATTEMPTED AND FAILED. It NEVER appends to `actions`.
+
+        W589's rule, kept: claiming an action for a failure would be the opposite defect. `actions` stays
+        the list of what the beat DID; this dict is what it TRIED AND COULD NOT DO. A reader comparing the
+        two can tell a quiet beat from a broken one, which a shorter actions list alone cannot express.
+        """
+        self.last_step_failures[step] = f"{err.__class__.__name__}: {err}"
+
     def _compliance_beat(self) -> Optional[Dict[str, Any]]:
         """§11 (W288) — re-screen the least-recently-screened LIVING VSB (round-robin).
         Returns a compact reading or None with no living VSBs."""
@@ -989,7 +1088,34 @@ class OrganismHeartbeat:
             logger.error("the VSB compliance history could not be read whole, so this rotation may be "
                          "choosing on incomplete timestamps: %s", _hist_why)
         target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
-        return screen_living_vsb(target.get("vsb_id"))
+        _vsb_res = screen_living_vsb(target.get("vsb_id"))
+        #  P3.2 clause (4) — THE BEAT EXTENDS TO LIVING DELIVERABLES, one per beat, least-recently-screened
+        #  first: the same rotation as the VSB one above, so the per-beat cost stays bounded and a fleet is
+        #  covered over time rather than all at once. Its own failure is RECORDED and never swallowed.
+        try:
+            _dlv_res = screen_one_deliverable()
+        except Exception as _dlv_err:        # noqa: BLE001 — recorded, never swallowed (FU-461's class)
+            _dlv_res = {"screened": None,
+                        "could_not_run": f"{_dlv_err.__class__.__name__}: {_dlv_err}"}
+        if isinstance(_vsb_res, dict):
+            #  `vsb_screened` and `vsb_basis` on BOTH returns, so a reader asking which VSB this beat
+            #  screened does not get undefined on the normal path and a value on the fallback one.
+            return {**_vsb_res, "vsb_screened": target.get("vsb_id"),
+                    "vsb_basis": "a living VSB was screened on this beat",
+                    "deliverable_screen": _dlv_res}
+        #  THE DELIVERABLE SCREEN IS NOT DISCARDED WHEN THE VSB HALF HAS NOTHING TO SAY.
+        #  `screen_living_vsb` is declared Optional and returns None when its target has left the roster
+        #  between the read above and the lookup inside it. Returning _vsb_res unchanged there would mean a
+        #  deliverable was screened, its verdict written to the record, and the beat reported NOTHING about
+        #  it - screened, persisted, and read by nobody, which is the reach class this plan keeps finding.
+        #  The `if not living: return None` path above is deliberately left alone: deliverables belong to
+        #  entities (§13), and making the beat append `compliance_rescreen` on a beat that screened nothing
+        #  would change what that action MEANS to the readers at :470 who treat it as "a VSB was screened".
+        return {"vsb_screened": None,
+                "vsb_basis": "no living VSB could be screened this beat (its target left the roster between "
+                             "the roster read and the screen), so the VSB half of this reading is absent "
+                             "rather than clean",
+                "deliverable_screen": _dlv_res}
 
     # §3 · §4.10 · §12 (W420) — the autonomy settings are DURABLE. Until now configure() wrote to
     # instance attributes only, so every one of these reverted to False on restart. A user who

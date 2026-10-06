@@ -1296,7 +1296,13 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     # Chief that is the digital twin of THIS VSB's owner (governs the AI CEO arms-length).
     try:
         from agentic_core.api import board as board_mod
-        entity["board"] = board_mod.board_for_owner(req.owner_id, f"Commercialise: {req.problem[:120]}")
+        #  P3.11 clause (4) — THE DOMAIN REACHES THE COMPOSITION. `domain` was added to board_for_owner
+        #  with an empty default so no existing caller changed, and the consequence was that NO caller
+        #  passed one: A.8's eight-attribute executive board was composed for nobody, including the
+        #  Religion-domain entity it was written for. A composition no caller requests is not a
+        #  composition, however correct the function is.
+        entity["board"] = board_mod.board_for_owner(req.owner_id, f"Commercialise: {req.problem[:120]}",
+                                                   domain=getattr(req, "domain", "") or "")
     except Exception:
         pass
     # Initialise the VSB's living economic metabolism in its selected legal/economic form.

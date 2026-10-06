@@ -69,6 +69,29 @@ ENTITY_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "waterfall": _norm({"owner": 0.00, "self_investment": 0.15, "capital_fund": 0.10,
                             "user_projects": 0.10, "charity": 0.65}),
     },
+    #  P3.11 clause (1) — THE QEP INSTANCE A.8 DESCRIBES, which is why it cannot be the generic template:
+    #  the default waqf_ltd_hybrid pays the owner 0.20, and A.8 says "100% donation and waqf-backed", so an
+    #  owner share contradicts it outright. The clause's own words: "a guard asserts its proportions differ
+    #  from the default, because inheriting the template is the defect".
+    #  OWNER 0.00 AND SELF_INVESTMENT 0.05 COME FROM A.8 AND ARE NOT CHOICES — no owner profit, and a
+    #  surplus cap of <=5% with reinvestment. The other three are a DEFENSIBLE DEFAULT INSIDE those
+    #  constraints and are labelled as such below, because A.8 gives constraints rather than five numbers
+    #  and presenting my split as the Owner's model would be the fabrication this plan exists to prevent.
+    "qep_waqf_trust": {
+        "name": "QEP Waqf Endowment + Not-for-Profit Trust (A.8)",
+        "distributes_profit": False,     # 100% donation and waqf-backed — the existing owner>0 check defends this
+        "capital_preserved": True,       # the Waqf Endowment Board secures PERPETUAL funding
+        "description": ("The Quran Education Platform's own economic model (vision A.8): a Waqf Endowment "
+                        "Board stewarding gifts alongside a Not-for-Profit Trust running the platform. FROM "
+                        "A.8 AND NOT ADJUSTABLE BY A ROUND: no owner profit (100% donation and waqf-backed) "
+                        "and a surplus cap of 5% with reinvestment. THE REMAINING THREE PROPORTIONS ARE A "
+                        "DEFAULT INSIDE THOSE CONSTRAINTS, not the Owner's stated figures: the endowment "
+                        "takes the largest retained share because A.8 charges it with perpetual funding, "
+                        "learners are the beneficiaries because the platform is free at the point of use, "
+                        "and the charity share is Zakat-eligible. Virtual WST only."),
+        "waterfall": _norm({"owner": 0.00, "self_investment": 0.05, "capital_fund": 0.35,
+                            "user_projects": 0.40, "charity": 0.20}),
+    },
     "waqf_ltd_hybrid": {
         "name": "Waqf-Ltd Hybrid (recommended)", "distributes_profit": True, "capital_preserved": True,
         "description": "Commercial earnings (Ltd) under endowment governance (Waqf) with a charitable waterfall — the recommended default for the Owner's vision.",

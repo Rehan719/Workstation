@@ -19,6 +19,7 @@ Checks
   returns    one function whose dict-literal returns carry different key sets
   selfmatch  a test assertion searching its own file for a literal it contains
   banned     a changed source comment quoting a literal some guard forbids
+  presence   a positive source check a COMMENT alone satisfies (the silent half of `banned`)
   order      a branch inserted ahead of an existing one in the same chain
 
 What it CANNOT see (W493, stated so no one trusts it further than it goes)
@@ -873,6 +874,103 @@ def check_banned(rev: str, files: list[str]) -> list[str]:
     return out
 
 
+#  W600 — any `var = <expr> / "some/path.ext").read_text(...)`, however the path root is spelled. Kept
+#  separate from SRC_READ_RE, whose narrowness (root|app|S) is deliberate for check_banned's literal scoping
+#  — and is also why check_banned could not see this round's files at all.
+#  `[^=]`, NOT `[^\n=]`: the read idiom this must catch SPANS LINES, so a character class excluding the
+#  newline can never match it. The first version of this leg used `[^\n=]` and flagged NOTHING on the very
+#  text it was written for - it would have shipped as an instrument that cannot fail, which is why it was
+#  driven against the pre-fix guard before being applied.
+ANY_SRC_READ_RE = re.compile(
+    r"""(?P<var>\w+)\s*=\s*\(?[^=]{0,300}?["'](?P<path>[\w./-]+\.(?:tsx|ts|jsx|js|py|md|json))["']"""
+    r"""\s*\)?\s*\.read_text""", re.S)
+
+
+def _in_comment_only(target: Path, lit: str) -> tuple:
+    """(comment_hits, code_hits) for `lit` in `target`, where a comment is a whole-line // or a /* */ block.
+
+    Conservative on purpose: only these two forms are treated as comments, so a `//` inside a URL or a string
+    is counted as CODE and the leg stays quiet rather than guessing.
+    """
+    try:
+        raw = target.read_text(encoding="utf-8")
+    except OSError:
+        return (0, 0)
+    blocks = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), raw, flags=re.S)
+    code_lines, comment_lines = [], []
+    for a, b in zip(raw.splitlines(), blocks.splitlines()):
+        if a.lstrip().startswith(("//", "#")):
+            comment_lines.append(a)
+        elif a != b:                      # part of this line was inside a /* */ block
+            comment_lines.append(a)
+            code_lines.append(b)
+        else:
+            code_lines.append(a)
+    return ("\n".join(comment_lines).count(lit), "\n".join(code_lines).count(lit))
+
+
+def check_presence(rev: str, files: list[str]) -> list[str]:
+    """A POSITIVE source presence check that a COMMENT alone can satisfy — it passes with the render deleted.
+
+    check_banned screens the opposite direction (a comment quoting a FORBIDDEN literal), which goes red and
+    costs a run. This one fails SILENTLY, which is worse: the guard reads its own documentation. W572 found
+    it, the remedy was written down as "strip comments first", and W600 broke it three times in one guard —
+    so it is mechanical now.
+    """
+    out = []
+    changed_tests = [f for f in files if f.endswith(".py") and "test_" in Path(f).name]
+    for tf_name in changed_tests or []:
+        tf = ROOT / tf_name
+        if not tf.exists():
+            continue
+        text = tf.read_text(encoding="utf-8")
+        direct = {m.group("var"): m.group("path") for m in ANY_SRC_READ_RE.finditer(text)}
+        if not direct:
+            continue
+        app_prefix = "apps/workstation-superapp/src/"
+        for m in ASSERT_IN_RE.finditer(text):
+            if m.group("neg") or " not in " in m.group(0):
+                continue                       # the negative direction is check_banned's
+            lit, var = m.group("lit"), m.group("var")
+            path = direct.get(var)
+            if not path or len(lit) < 8:
+                continue
+            target = None
+            for cand in (path, app_prefix + path):
+                if (ROOT / cand).exists():
+                    target = ROOT / cand
+                    break
+            if target is None:
+                continue
+            c_hits, k_hits = _in_comment_only(target, lit)
+            if not c_hits:
+                continue
+            #  A COMMENT-ONLY match is NOT automatically a defect: asserting that a file RECORDS a reason in
+            #  its own comment is a legitimate thing for a guard to do, and this repo does it deliberately
+            #  (a documented principle, a stated failure direction, a recorded error code). A repo-wide sweep
+            #  found 21 of these and about half are exactly that. Flagging all of them is noise, and noise is
+            #  how an instrument stops being used - so the comment-only case is reported ONLY when the
+            #  assertion's own message CLAIMS A SURFACE, because that is the pairing that lies to a reader.
+            tail = text[m.end():m.end() + 400].lower()
+            claims_surface = any(w in tail for w in (
+                "a reader", "the reader", "on the page", "renders", "rendered", "the surface",
+                "on screen", "a user sees", "the card", "displayed"))
+            if k_hits:
+                out.append(
+                    f"{tf_name}  `assert \"{lit[:48]}\" in {var}` reads {target.name} DIRECTLY, and that "
+                    f"literal appears {c_hits}x in a COMMENT as well as {k_hits}x in code - deleting the "
+                    f"code leaves the comment and this check still passes. Assert over a comment-stripped "
+                    f"copy, or assert the rendered expression instead of the phrase.")
+            elif claims_surface:
+                out.append(
+                    f"{tf_name}  `assert \"{lit[:48]}\" in {var}` is satisfied ONLY by a COMMENT in "
+                    f"{target.name} ({c_hits}x in comments, 0x in code), and its own message speaks about a "
+                    f"reader or a surface - so it asserts a documented sentence while claiming a rendered "
+                    f"one. Either assert what is rendered, or reword the message to say it checks the "
+                    f"source's own comment.")
+    return out
+
+
 def check_order(rev: str, files: list[str]) -> list[str]:
     """A branch inserted ahead of an existing one in the same chain. W492: making a failed screen HOLD
     a listing put `held` first and made the round's own error notice unreachable."""
@@ -1141,6 +1239,9 @@ CHECKS = {
     "returns": ("sibling returns with different key sets", check_returns),
     "selfmatch": ("a test assertion that matches its own text", check_selfmatch),
     "banned": ("a comment quoting a literal a guard forbids", check_banned),
+    # W600 — the INVERSION of `banned`, and the dangerous direction: `banned` goes RED and costs a run,
+    # while a presence check a comment can satisfy goes GREEN and costs the guard. Found 3x in one guard.
+    "presence": ("a positive source check a COMMENT alone can satisfy", check_presence),
     "order": ("a branch inserted ahead of an existing one", check_order),
     "planpins": ("an assertion pinned to plan state, which goes red when the plan advances",
                  check_plan_pins),

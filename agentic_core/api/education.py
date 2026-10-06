@@ -119,6 +119,18 @@ async def design_curriculum(req: CurriculumRequest):
         #  failed to flag it, and those are different facts. A reader who sees a curriculum served here
         #  should not infer that anything certified it as outside the scholar gate's scope.
         "religious_subject_screen": _screen,
+        #  FU-456 — THE RENDERED HALF. The structured key above is the record; until this round nothing on
+        #  any surface read it, so the sentence saying the subject was not cleared reached nobody while the
+        #  comment above claimed it travelled with the output. `screen_note` goes through DomainTool's
+        #  `withDisclosures`, the channel every domain surface already shares and the one that also writes
+        #  the saved history record - so the note travels with the TEXT, not as a badge beside it.
+        #  ONE LINE on purpose: the full basis is right for an audit trail and noise on a mathematics
+        #  curriculum.
+        "screen_note": ("Not reviewed as religious teaching content: this platform's subject screen did not "
+                        "flag it. The screen cannot certify a subject as secular - it can only flag one."
+                        if not _screen.get("flagged") else
+                        "Flagged as religious teaching content - a named human scholar must approve it "
+                        "before a learner sees it (R7 / §A.12.3)."),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 

@@ -42780,8 +42780,20 @@ def test_w597_p310_no_curriculum_without_a_named_scholar(client):
             "Owner's question and not this round's to answer", sorted(_sb))
         assert _sb["religious_subject_screen"]["flagged"] is False, _sb["religious_subject_screen"]
         assert "CANNOT certify" in _sb["religious_subject_screen"]["basis"], (
-            "a curriculum served here carries no statement that nothing cleared it, so a reader infers a "
-            "clearance that was never performed")
+            "the served curriculum's screen RECORD carries no statement that nothing cleared it",
+            _sb["religious_subject_screen"])
+        #  FU-456 — THE READER'S HALF, which this leg used to claim and not check. Its message spoke about a
+        #  reader inferring a clearance while the assertion read only the API payload, and `withDisclosures`
+        #  appended none of it: the instrument described a surface it did not check, which is the same defect
+        #  in the guard as in the code.
+        assert "cannot certify a subject as secular" in (_sb.get("screen_note") or "").lower(), (
+            "the response carries no ONE-LINE note for a reader, so the fact that nothing cleared this "
+            "subject exists only in a structured key no surface renders", _sb.get("screen_note"))
+        _dt456 = (_pl310.Path(__file__).resolve().parents[1]
+                  / "apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
+        assert "data?.screen_note" in _dt456, (
+            "the shared disclosure channel does not append screen_note, so the note reaches no reader and "
+            "is absent from the history record saveOutput persists from this same text")
 
         # ── (1c) WITH AN EMPTY ROSTER THE GATED PATH SERVES NO CONTENT AT ALL ────────────────────
         for _p310 in (_roster_p, _review_p):
@@ -43563,3 +43575,567 @@ def test_w598_p326_an_entity_records_its_lineage_or_says_it_has_none(client):
         "a creation path reaches enrich_vsb_entity without passing parent_vsb, so an entity born on that "
         "path records no lineage. This is the defect returning by a new route - the fix is one keyword at "
         "the call, not a change here", _missing)
+
+
+def test_w600_p32_autonomy_that_starts_and_says_so(client):
+    """P3.2 — all five clauses. Tending is per-entity, visible, and the beat reaches deliverables.
+
+    MEASURED BEFORE BUILDING: `auto_economy` and `auto_compliance` existed ONLY as global heartbeat levers
+    (organism/heartbeat.py), so "switches them on FOR THE NEW ENTITY" had nowhere to be recorded. They are
+    now facts about an entity, and tending requires BOTH — the organism beating with its lever on, and the
+    entity's own flag.
+    """
+    import pathlib as _pl600
+    import re as _re600
+
+    from agentic_core.economy import living_vsbs as _lv600
+
+    def _nc600(src: str) -> str:
+        """Source with its COMMENTS removed, for any presence assertion over a rendered file.
+
+        W600: three legs of this very guard were vacuous because the comment explaining a render quoted
+        the literal the assertion looked for, so a blind that deleted the RENDER left the COMMENT and the
+        check passed over a blank page. That is the W495 trap mirrored - there a comment supplied a BANNED
+        literal and matched its own guard; here it supplies a REQUIRED one and makes the guard unfailable.
+        Only whole-line `//` comments and `/* */` blocks are stripped, so a `//` inside a string or a URL
+        is left alone.
+        """
+        src = _re600.sub(r"/\*.*?\*/", "", src, flags=_re600.S)
+        return "\n".join("" if line.lstrip().startswith("//") else line
+                          for line in src.splitlines())
+
+    # ── (1) THE FLAGS ARE ON THE ENTITY, READ BACK FROM THE STORE ───────────────────────────────
+    #  From the STORE, not the establish response's own claim — the clause says so in as many words.
+    _r = client.post("/api/v1/genesis/establish",
+                     json={"problem": "W600 tending", "name": "W600 Tended", "domain": "enterprise"})
+    assert _r.status_code == 200, (_r.status_code, _r.text[:160])
+    _id = _r.json()["vsb_id"]
+    _rec = _lv600._load().get(_id) or {}
+    assert _rec.get("auto_economy") is True and _rec.get("auto_compliance") is True, (
+        "/establish did not switch both flags on FOR THE NEW ENTITY", _id,
+        {k: _rec.get(k) for k in ("auto_economy", "auto_compliance")})
+
+    # ── ABSENT MEANS ON — the invariant a W599 blind proved had no assertion behind it ──────────
+    #  Every entity already on the roster predates these fields. A default of False would silently stop the
+    #  organism tending ALL of them: a regression delivered as a feature.
+    _legacy = _lv600.tending({})
+    assert _legacy["flags"] == {"auto_economy": True, "auto_compliance": True}, (
+        "a record carrying NEITHER flag reads as not-tended", _legacy["flags"])
+    assert _legacy["absent"] == ["auto_economy", "auto_compliance"], (
+        "a legacy record does not report its flags as ABSENT, so 'on because it says so' and 'on because "
+        "nothing says otherwise' are indistinguishable", _legacy)
+    assert _lv600.tending({"auto_economy": False})["flags"]["auto_economy"] is False, (
+        "an entity that explicitly switched tending OFF is tended anyway")
+
+    # ── (2) A VISIBLE TENDING STATE, AND AN ENTITY WHOSE FLAGS ARE OFF DOES NOT SHOW IT ─────────
+    #  `living_statement()` with no record keeps the GLOBAL sentence its four existing callers receive; a
+    #  record makes the claim specific. Both halves are driven, because the clause's negative half is the
+    #  one a global sentence can never express.
+    _on = _lv600.living_statement({"auto_economy": True, "auto_compliance": True})
+    _off = _lv600.living_statement({"auto_economy": False, "auto_compliance": True})
+    assert "entity_tending" in _on and "entity_tending" in _off, (
+        "living_statement ignores the record it was given, so it says the same thing about every entity",
+        sorted(_on))
+    assert _off["entity_tending"]["tended"] is False, (
+        "an entity whose own flag is OFF is reported as tended", _off["entity_tending"])
+    assert "do not allow it" in _off["entity_tending"]["basis"], _off["entity_tending"]["basis"]
+    #  and the global sentence is UNCHANGED for a caller that passes nothing — four callers rely on it
+    assert "entity_tending" not in _lv600.living_statement(), (
+        "living_statement with no record now carries an entity claim, so its four existing callers say "
+        "something about an entity they never named")
+
+    # ── (3) THE COCKPIT RENDERS THE OPERATING STATE, and all four not-a-number states ───────────
+    _ck = (_pl600.Path(__file__).resolve().parents[1]
+           / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="cockpit-operating-state"' in _ck, (
+        "the Cockpit renders no operating state, so the clause's own failure case - a page showing 0 cycles "
+        "for an entity that has run - is not even reachable")
+    #  BOTH counts, because operating_cycles counts only what THIS ROSTER ran (W491/FU-192): an entity
+    #  cycled another way reads 0 there while ledger_cycles is non-zero, which IS the clause's failure case
+    #  `ledger_cycles` appears FOUR times in this file, so a name-presence check survives deleting the
+    #  render. Assert the rendered CONDITIONAL, which appears once and is what decides what a reader sees.
+    _ck_nc = _nc600(_ck)
+    assert "operating.operating_cycles" in _ck_nc, (
+        "the roster's own cycle tally is not rendered", "operating_cycles" in _ck_nc)
+    assert ("operating.ledger_cycles === null" in _ck_nc
+            and "operating.ledger_cycles === undefined" in _ck_nc), (
+        "the ledger count is rendered without distinguishing 'could not be read' from a number, so showing "
+        "operating_cycles alone - or a bare 0 - produces the clause's own stated failure case for an entity "
+        "cycled through any other path")
+    assert "posted in its ledger" in _ck_nc, (
+        "the ledger count itself is never printed, only its absence")
+    assert 'data-testid="cockpit-cycle-counts-basis"' in _ck, (
+        "the basis distinguishing the two counts is not rendered, so a reader cannot tell why they differ")
+    #  a ledger that could not be READ is not zero
+    #  THE GATE, not the field name: a JSX conditional names its field in BOTH the gate and the body, so
+    #  {false && ...} leaves the name in place and a presence check cannot see the disabled gate.
+    assert "{operating.ledger_cycles_unavailable && (" in _ck_nc, (
+        "an unreadable ledger renders as 0, asserting 'no cycles posted' about a ledger nobody could open - "
+        "or the gate that would say so has been disabled while its field name remains")
+    assert "The ledger count is NOT zero" in _ck_nc, (
+        "nothing states that an unreadable count is NOT zero, which is the whole distinction")
+    #  never operated is a FACT, not a blank
+    #  OVER THE COMMENT-STRIPPED SOURCE. The comment above this render quoted "NEVER OPERATED", so the
+    #  blind that deleted the rendered string left the comment and this check passed over a blank cell.
+    assert "NEVER OPERATED" in _ck_nc, (
+        "an entity that has never operated renders a blank cell, which reads as a missing value rather "
+        "than as a fact about the entity")
+    assert 'data-testid="cockpit-tending-flags"' in _ck, "the governing flags are not rendered"
+
+    # ── (4) THE BEAT REACHES DELIVERABLES, each carrying 'last screened' or saying it has none ──
+    from agentic_core.organism import heartbeat as _hb600
+    assert hasattr(_hb600, "screen_one_deliverable"), (
+        "the compliance beat does not extend to deliverables at all")
+    #  THE BEAT MUST CARRY IT, and this is the leg the first version of this guard lacked: it called the
+    #  screener directly and asserted `hasattr`, so a blind that stopped the BEAT calling it stayed green.
+    #  The clause says "its beat extends to living DELIVERABLES" - the subject is the beat, not the function.
+    _prev_ac4 = _hb600.heartbeat.auto_compliance
+    try:
+        _hb600.heartbeat.auto_compliance = True
+        _bd600 = client.post("/api/v1/heartbeat/beat")
+        assert _bd600.status_code == 200, (_bd600.status_code, _bd600.text[:160])
+        _lc600 = _hb600.heartbeat.last_compliance
+        assert isinstance(_lc600, dict) and "deliverable_screen" in _lc600, (
+            "a beat ran with auto_compliance ON and its compliance reading carries no deliverable_screen, "
+            "so the beat does NOT extend to deliverables - whatever the screener does when called directly",
+            type(_lc600).__name__, sorted(_lc600) if isinstance(_lc600, dict) else _lc600)
+        #  THE READING, NOT THE KEY. The key is written unconditionally, so `"deliverable_screen" in _lc600`
+        #  is true even when the screen never ran - a key present with a null value reports that the beat
+        #  reached the screen when it did not. Presence is not an outcome.
+        _ds600 = _lc600.get("deliverable_screen")
+        assert isinstance(_ds600, dict) and _ds600.get("basis"), (
+            "the beat's compliance reading carries a deliverable_screen key with no READING behind it, so a "
+            "beat that never reached the screen is indistinguishable from one that screened something",
+            _ds600)
+    finally:
+        _hb600.heartbeat.auto_compliance = _prev_ac4
+    _dres = _hb600.screen_one_deliverable()
+    #  THE CONTRACT, not a disjunction. The previous version of this leg accepted any ONE of three
+    #  conditions, so it could not tell the four states apart - which is the distinction clause (4) exists
+    #  for. The returns are shape-complete now (the pre-flight's [returns] leg found four different key sets
+    #  in this one function), so the key set is assertable and the three states live in the VALUES.
+    assert set(_dres) == {"screened", "id", "verdict", "deliverables", "could_not_run", "basis"}, (
+        "screen_one_deliverable's returns are not shape-complete, so a caller indexing one of these keys "
+        "raises on some paths and reads a value on others", sorted(_dres))
+    assert _dres["basis"], "a reading with no basis says nothing about what happened"
+    #  AN UNREADABLE STORE IS NOT AN EMPTY ONE: None means the count is unknown, 0 means there are none.
+    #  Collapsing them would assert 'no deliverable exists' about a store nobody could open.
+    assert _dres["deliverables"] is None or isinstance(_dres["deliverables"], int), _dres["deliverables"]
+    #  FORCED: the unreadable-store branch, which nothing drove until now. `_load` is imported INSIDE
+    #  screen_one_deliverable, so patching the module attribute is picked up on the next call.
+    #  The distinction being held is the whole point of the three states: a store that could not be READ
+    #  reports its count as UNKNOWN (None), never as 0, because 0 asserts "no deliverable exists" about a
+    #  store nobody could open. Asserting `None or isinstance(int)` admitted BOTH and held neither.
+    import agentic_core.api.deliverables as _dlvmod600
+    _prev_load600 = _dlvmod600._load
+    try:
+        def _boom600():
+            raise OSError("w600 forced: the deliverable store cannot be read")
+
+        _dlvmod600._load = _boom600
+        _unread600 = _hb600.screen_one_deliverable()
+    finally:
+        _dlvmod600._load = _prev_load600
+    assert _unread600["could_not_run"], (
+        "the store raised and the screen did not report that it could not run", _unread600)
+    assert _unread600["deliverables"] is None, (
+        "an UNREADABLE deliverable store reports its count as a number rather than as UNKNOWN - a 0 here "
+        "asserts 'no deliverable exists' about a store nobody could open, which is the certifies-an-absence "
+        "defect this reading exists to avoid", _unread600["deliverables"])
+    assert _unread600["screened"] is None and _unread600["verdict"] is None, _unread600
+    assert set(_unread600) == set(_dres), (
+        "the unreadable-store path returns a different key set from the normal one", sorted(_unread600))
+    if _dres["could_not_run"]:
+        assert _dres["screened"] is None and _dres["verdict"] is None, (
+            "the screen reports it COULD NOT RUN and also reports a verdict", _dres)
+    elif _dres["deliverables"]:
+        assert _dres["screened"] is not None, (
+            "deliverables exist, nothing could-not-run, and yet none was screened - the three states are "
+            "not exhaustive and a beat that did nothing looks like one that screened cleanly", _dres)
+    else:
+        assert _dres["deliverables"] == 0 and _dres["screened"] is None, (
+            "the store was read and empty, so nothing may be reported as screened", _dres)
+    #  and the CARD says it, on the surface a reader sees
+    _dl = (_pl600.Path(__file__).resolve().parents[1]
+           / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    #  COMMENT-STRIPPED for the same reason: my own comment explaining the four states quoted
+    #  "not screened yet", so the blind that emptied the rendered string left the comment behind.
+    _dl_nc = _nc600(_dl)
+    assert "not screened yet" in _dl_nc, (
+        "a deliverable with no screening renders a blank rather than saying it has none - the clause's own "
+        "words are 'never a blank'")
+    assert "That is not a clean verdict." in _dl_nc, (
+        "the card says a deliverable is unscreened without saying that is NOT a clean verdict, which is the "
+        "inference a reader would otherwise draw")
+    assert "COULD NOT BE SCREENED" in _dl_nc, (
+        "a deliverable whose screen FAILED is indistinguishable from one the beat has not reached yet")
+
+    # ── (4b) THE STEP'S OWN FAILURE IS OBSERVABLE (FU-461's mechanism, one site) ─────────────────
+    #  Clause (4)'s new beat step runs INSIDE the compliance handler at heartbeat.py:471, which swallowed
+    #  its exception with a bare `pass`. With that swallow in place the clause's delivery is UNOBSERVABLE:
+    #  the screen raising and the screen having nothing to do are the same observable, because both append
+    #  no action and leave no trace. An item cannot close on a bar whose delivery is invisible.
+    from agentic_core.organism import heartbeat as _hbmod600
+    #  THE MODULE ATTRIBUTE, not a bound copy: the route reads `_hb_mod.heartbeat` for exactly this reason
+    #  (W579/FU-359), and driving a copy would exercise a different object than the surface does.
+    _inst600 = _hbmod600.heartbeat
+    _prev_ac600 = _inst600.auto_compliance
+    try:
+        _inst600.auto_compliance = True
+
+        def _raise600():
+            raise RuntimeError("w600 forced compliance failure")
+
+        _inst600._compliance_beat = _raise600
+        _b600 = client.post("/api/v1/heartbeat/beat")
+        assert _b600.status_code == 200, (_b600.status_code, _b600.text[:160])
+        _rec600 = _b600.json()
+        _sf = _rec600.get("steps_failed") or {}
+        assert "compliance_rescreen" in _sf, (
+            "the compliance step RAISED and the beat recorded nothing about it, so a step that could not "
+            "run is still indistinguishable from a step with nothing due - and clause (4)'s deliverable "
+            "screen runs inside this very handler", _sf, _rec600.get("actions"))
+        assert "w600 forced compliance failure" in str(_sf["compliance_rescreen"]), (
+            "the recorded failure does not carry the real error, so a reader learns a step failed but not "
+            "why", _sf["compliance_rescreen"])
+        #  NOT CLAIMED AS AN ACTION. W589's rule, kept: an action is something the beat DID, and claiming
+        #  one for a failure would be the opposite defect.
+        assert "compliance_rescreen" not in (_rec600.get("actions") or []), (
+            "the beat claimed compliance_rescreen as an ACTION although the step failed",
+            _rec600.get("actions"))
+        #  CLEARED on the next beat, or a failure outlives the beat that had it and every later beat reads
+        #  as broken - the stale-record defect W589's own cadence comment warns about.
+        _inst600.__dict__.pop("_compliance_beat", None)
+        _b2600 = client.post("/api/v1/heartbeat/beat")
+        _rec2600 = _b2600.json()
+        assert "compliance_rescreen" not in (_rec2600.get("steps_failed") or {}), (
+            "a failure from an EARLIER beat is reported as a failure of this one, so the record never "
+            "clears", _rec2600.get("steps_failed"))
+        #  AND AN EMPTY RECORD MUST NOT READ AS "NOTHING FAILED" while eleven swallows remain unconverted:
+        #  a screen may refuse, never clear.
+        assert "not that nothing failed" in (_rec2600.get("steps_failed_basis") or ""), (
+            "an empty steps_failed reads as 'no step failed' although eleven handlers in this file still "
+            "swallow theirs (FU-461)", _rec2600.get("steps_failed_basis"))
+    finally:
+        _inst600.auto_compliance = _prev_ac600
+        _inst600.__dict__.pop("_compliance_beat", None)
+
+    # ── LINEAGE DEPTH (P3.26 clause (1)) — AND THIS IS *NOT* P3.2 CLAUSE (5) ────────────────────
+    #  P3.2 clause (5) is NOT MET and this guard does not claim it. The clause asks that a per-instance
+    #  LIVING-PLAN PILLAR be re-scored only when an instance has evolved >= 1 generation, driven at
+    #  generation 0 and asserting NO re-score. Measured W600: no per-instance pillar re-score exists
+    #  anywhere in agentic_core/ — every `pillar` is platform-level (api/living_plan.py, api/cognition.py,
+    #  api/integration_surface.py, api/transformation.py, api/v138/ceo.py). A "no re-score at generation 0"
+    #  assertion would therefore be vacuously true at EVERY generation: green because red is unreachable.
+    #
+    #  AND `generation` MEANS TWO DIFFERENT THINGS IN TWO STORES, which is the trap this block now guards:
+    #    · `vsb["generation"]` (api/vsb.py:2914 — the ONLY writer, inside the evolution-APPLY path after
+    #      Owner approval; W493 exists to stop a FILING cycle advancing it) = APPLIED EVOLUTIONS. That is
+    #      the measure clause (5) means.
+    #    · the living roster's `generation` (W599, below) = LINEAGE DEPTH from a parent.
+    #  A child established from a parent has evolved ZERO times and has lineage depth 1. Reading the
+    #  lineage field as the evolution count would re-score the pillar for an entity that never evolved —
+    #  precisely the defect clause (5) names. My own first version of this block did exactly that.
+    assert _rec.get("generation") == 0, (
+        "a founder-established entity is not lineage generation 0", _rec.get("generation"))
+    _child = client.post("/api/v1/genesis/establish",
+                         json={"problem": "W600 evolved", "name": "W600 Child",
+                               "domain": "enterprise", "parent_vsb": _id})
+    assert _child.status_code == 200, (_child.status_code, _child.text[:160])
+    _cid600 = _child.json()["vsb_id"]
+    _crec = _lv600._load().get(_cid600) or {}
+    assert _crec.get("generation") == 1, (
+        "a child is not one lineage generation deeper, so no lineage can be read from the roster",
+        _crec.get("generation"))
+    #  THE DISTINCTION, ASSERTED so nobody repeats the misreading: this child is lineage depth 1 and has
+    #  evolved NOT AT ALL. If these two ever read the same, one of them has taken the other's meaning.
+    #  THE ROSTER HALF FIRST, because it does not depend on the VSB store holding a record and so cannot go
+    #  vacuous: the field must SAY it is lineage.
+    assert "lineage" in str(_crec.get("lineage_basis") or "").lower(), (
+        "the roster's generation carries no basis saying it is LINEAGE DEPTH, so a reader cannot tell it "
+        "from vsb['generation'], which counts applied evolutions", _crec.get("lineage_basis"))
+    #  AND THE CROSS-STORE HALF, which is only assertable when the VSB store actually holds this entity.
+    #  Reported either way rather than passing silently on an absent record - an assertion that cannot run
+    #  is not an assertion that passed.
+    from agentic_core.api.vsb import _load_vsb as _lvsb600
+    _cv600 = _lvsb600(_cid600) or {}
+    if _cv600:
+        assert int(_cv600.get("generation", 0)) == 0, (
+            "a newly established child reports APPLIED EVOLUTIONS > 0 - it has evolved nothing, so either "
+            "the evolution counter advanced without an approved apply (the W493 defect) or the lineage "
+            "field has been read as the evolution count (the P3.2 clause (5) defect)",
+            _cv600.get("generation"), _crec.get("generation"))
+    else:
+        #  not a failure and not a pass: this entity is on the living roster and not in the VSB store, so
+        #  the two generations cannot be compared here. Said out loud so a later reader does not take this
+        #  leg's silence for agreement between the stores.
+        assert _crec, "the child is in neither store, so nothing about its lineage was recorded at all"
+
+
+def test_w600_p311_the_qep_vsb_has_an_economic_model_that_is_its_own(client):
+    """P3.11 — A.8's Waqf/Trust instance, not the generic template, with its three limits enforced.
+
+    A.8's own closing line was the item: "Status: unrealised. No QEP VSB exists; §12's entities carry the
+    generic template." Measured W598: 0 entities mentioned QEP, 9 templates, no qep_waqf_trust.
+
+    WHAT A.8 STATES AND IS THEREFORE NOT A ROUND'S TO ADJUST: no owner profit (100% donation and
+    waqf-backed) and a surplus cap of 5% with reinvestment. The other three proportions are a DEFAULT inside
+    those constraints and the template says so in its own description — presenting them as the Owner's
+    figures would be the fabrication this plan exists to prevent.
+    """
+    import pathlib as _pl600
+
+    from agentic_core.economy import qep_pricing as _qp
+    from agentic_core.economy.entities import ENTITY_TEMPLATES as _ET, get_template as _gt
+
+    # ── (1a) THE TEMPLATE EXISTS. A template never added is how this clause fails most quietly ──
+    #  `get_template` falls back to the DEFAULT for an unknown type, so a missing template does not raise:
+    #  it silently hands back the generic waterfall. This leg is not in the clause and is the reason the
+    #  clause's own wording is about PROPORTIONS.
+    assert "qep_waqf_trust" in _ET, (
+        "the QEP template is not registered, so get_template() silently returns the GENERIC template for it "
+        "- the entity would be established, registered, report its own entity_type, and carry the waterfall "
+        "A.8 contradicts", sorted(_ET))
+
+    # ── (1b) ITS PROPORTIONS DIFFER FROM THE DEFAULT, read from the template not the type string ─
+    _qep, _default = _gt("qep_waqf_trust"), _gt("waqf_ltd_hybrid")
+    assert _qep["waterfall"] != _default["waterfall"], (
+        "the QEP form inherited the generic waterfall, which is the defect this clause names",
+        _qep["waterfall"])
+    #  A.8's OWN FIGURES, asserted exactly: no owner profit, surplus capped at 5%
+    assert _qep["waterfall"]["owner"] == 0.0, (
+        "A.8 says 100% donation and waqf-backed, so an owner share contradicts it outright",
+        _qep["waterfall"]["owner"])
+    assert _qep["waterfall"]["self_investment"] == 0.05, (
+        "A.8's surplus cap is 5% with reinvestment", _qep["waterfall"]["self_investment"])
+    assert _qep["distributes_profit"] is False and _qep["capital_preserved"] is True, (
+        "the form does not declare itself non-distributing and capital-preserving, so the EXISTING refusals "
+        "at metabolism.py do not defend its owner share or its endowment", _qep)
+    #  and the description says which figures are A.8's and which are a default — the honesty half
+    assert "NOT ADJUSTABLE" in _qep["description"] and "DEFAULT INSIDE" in _qep["description"].upper(), (
+        "the template does not distinguish A.8's stated figures from the default chosen inside its "
+        "constraints, so my split reads as the Owner's model", _qep["description"][:200])
+
+    # ── (2) THREE FIGURES, EACH DRIVEN WITH A BREACHING VALUE AND REFUSED BY NAME ───────────────
+    _ok, _v = _qp.check_individual_price(5.0)
+    assert not _ok and "free-at-point-of-use" in _v[0], (
+        "an individual was charged and not refused; A.8 says FREE at the point of use, not reduced", _v)
+    assert _qp.check_individual_price(0.0)[0] is True, "a free individual price was refused"
+
+    _ok, _v = _qp.check_institutional_price(120.0, 100.0)
+    assert not _ok and "cost-plus-5%" in _v[0] and "105" in _v[0], (
+        "an institutional margin above cost+5% was accepted, or the refusal does not NAME the computed "
+        "ceiling so the person who hit it cannot correct it", _v)
+    assert _qp.check_institutional_price(105.0, 100.0)[0] is True, "the exact ceiling was refused"
+
+    _ok, _v = _qp.check_surplus(10.0, 100.0)
+    assert not _ok and "surplus cap" in _v[0], ("a surplus above 5% of revenue was accepted", _v)
+    assert _qp.check_surplus(5.0, 100.0)[0] is True, "a surplus exactly at the cap was refused"
+    #  zero revenue is NOT a breach: a period that earned nothing has no ratio to cap, and refusing it
+    #  would refuse an entity for having earned nothing
+    assert _qp.check_surplus(0.0, 0.0)[0] is True, (
+        "an entity with no revenue was reported as breaching the surplus cap")
+    #  AN UNASSESSED LIMIT IS NOT A CLEARED ONE
+    _all = _qp.check_all(individual_price=0.0)
+    assert _all["limits"]["institutional"]["ok"] is None, (
+        "a limit whose inputs were never supplied is reported as PASSED, so an unchecked figure reads as a "
+        "cleared one", _all["limits"]["institutional"])
+    assert "not a cleared one" in _all["basis"], _all["basis"]
+
+    # ── (3) TWO CHANNELS, AND THE BOOKS ARE WHAT THIS READS ────────────────────────────────────
+    _est = client.post("/api/v1/genesis/establish",
+                       json={"problem": "W600 the Quran Education Platform", "name": "W600 QEP",
+                             "domain": "religion", "entity_type": "qep_waqf_trust"})
+    assert _est.status_code == 200, (_est.status_code, _est.text[:160])
+    _qid = _est.json()["vsb_id"]
+    #  the ESTABLISHED entity carries the QEP waterfall, not the default — the silent-fallback check again,
+    #  this time on a real entity rather than on the template
+    _econ = (_est.json().get("established_vsb") or {}).get("economy") or _est.json().get("economy") or {}
+    if _econ.get("waterfall"):
+        assert _econ["waterfall"]["owner"] == 0.0, (
+            "the established QEP entity carries an owner share, so it silently got the generic template",
+            _econ["waterfall"])
+
+    from agentic_core.economy.ledger import VirtualLedger
+    _before = VirtualLedger(_qid).balances()
+    for _path600, _amount in (("/api/v1/qep/contribute/zakat", 250.0),
+                              ("/api/v1/qep/contribute/sponsor-a-student", 100.0)):
+        _c = client.post(_path600, json={"vsb_id": _qid, "amount_wst": _amount})
+        assert _c.status_code == 200, (_path600, _c.status_code, _c.text[:180])
+    #  READ THE BOOKS BACK, not the channel's own response: a route returning {"recorded": true} while
+    #  posting nothing is the W439 defect this platform already found once
+    _after = VirtualLedger(_qid).balances()
+    assert _after.get("revenue", 0.0) - _before.get("revenue", 0.0) == 350.0, (
+        "a contribution through the channels did not reach the entity's BOOKS; the routes answered but the "
+        "ledger did not move", _before.get("revenue"), _after.get("revenue"))
+    #  the Zakat channel must NOT rule on anyone's zakat obligation — §11 forbids the platform ruling on a
+    #  religious matter, and whether a donor's obligation is discharged is exactly such a ruling
+    _z = client.post("/api/v1/qep/contribute/zakat", json={"vsb_id": _qid, "amount_wst": 1.0}).json()
+    #  ASSERT THE REFUSAL, not the vocabulary. A word-level check on "designated" survives the §11 breach,
+    #  because the basis's own closing sentence contains the word whichever way the ruling goes.
+    assert "does NOT rule on whether" in str(_z), (
+        "the Zakat channel does not REFUSE to rule on whether the donor's obligation is discharged - that is "
+        "a religious ruling and §11 forbids this platform from making one", str(_z)[:260])
+    assert "designated" in str(_z).lower() and "scholar" in str(_z).lower(), (
+        "the Zakat channel does not distinguish a fund DESIGNATED Zakat-eligible from a discharged "
+        "obligation, or does not refer the donor to their own scholar", str(_z)[:260])
+    assert _z.get("rules_on") == [], (
+        "the channel does not state that it rules on nothing", _z.get("rules_on"))
+    #  Sponsor-a-Student names NO learner: no mechanism matches a contribution to an individual, so a
+    #  named student would be a claim with nothing behind it
+    _s = client.post("/api/v1/qep/contribute/sponsor-a-student",
+                     json={"vsb_id": _qid, "amount_wst": 1.0}).json()
+    assert _s.get("student_matched") is None and "NO LEARNER IS NAMED" in str(_s), (
+        "the sponsorship channel claims a matched learner, and nothing in this platform matches one", _s)
+
+    #  A CONTRIBUTION TO AN ENTITY THAT DOES NOT EXIST IS REFUSED, not recorded into fresh books.
+    #  `read_strict` answers a missing ledger file with new empty books, so VirtualLedger(<anything>)
+    #  succeeds - a channel without this check writes a ledger file for an id nobody established.
+    _no = client.post("/api/v1/qep/contribute/zakat",
+                      json={"vsb_id": "vsb-w600nosuch", "amount_wst": 5.0})
+    assert _no.status_code == 404, (
+        "a contribution was accepted for an entity that is on no roster, so the channel created books for "
+        "an id nobody established", _no.status_code, _no.text[:200])
+    #  and the path-shaped id is refused BY NAME: vsb_id is interpolated into a ledger path
+    _bad = client.post("/api/v1/qep/contribute/zakat",
+                       json={"vsb_id": "../../organism_config", "amount_wst": 5.0})
+    assert _bad.status_code in (400, 422), (
+        "a path segment in vsb_id was not refused, and it is interpolated into a ledger file path",
+        _bad.status_code, _bad.text[:200])
+
+    #  THE DECLARED-TAG CONSUMER, DRIVEN. Posting a tag outside POSTING_SOURCES makes
+    #  postings_by_source() report it under `unknown_sources` with declared: False, and
+    #  /api/v1/economy/board-pack surfaces that to a donor as "a source nobody recognises".
+    _split = VirtualLedger(_qid).postings_by_source()
+    _bysrc = {r["source"]: r for r in _split["by_source"]}
+    for _tag in ("qep_zakat", "qep_sponsor_a_student"):
+        assert _tag in _bysrc, (
+            f"the channel did not tag its posting {_tag}, so the money is in the books with nothing saying "
+            f"which channel brought it in", sorted(_bysrc))
+        assert _bysrc[_tag]["declared"] is True, (
+            f"{_tag} is emitted but NOT declared in POSTING_SOURCES, so a donor reading this entity's board "
+            f"pack is told its own channel is a source nobody recognises", _split["unknown_sources"])
+    assert [s for s in _split["unknown_sources"] if str(s).startswith("qep_")] == [], (
+        "a qep_ channel tag is undeclared", _split["unknown_sources"])
+
+    #  THE DONOR STATEMENT READS THE POSTINGS, NOT THE LEGACY ENTRIES. record() writes an entry carrying no
+    #  source at all - the tag goes on the balanced posting - so a statement built from `entries` reports
+    #  0.00 for every channel while the money sits in the books: silently empty, not honestly zero.
+    _st = client.get(f"/api/v1/qep/contribute/statement/{_qid}")
+    assert _st.status_code == 200, (_st.status_code, _st.text[:200])
+    _sj = _st.json()
+    assert _sj["contributions_by_channel_wst"].get("zakat") == 251.0, (
+        "the donor statement does not report the Zakat channel's real total; a statement built from the "
+        "legacy entries finds no source tag anywhere and reports zero",
+        _sj["contributions_by_channel_wst"])
+    assert _sj["contributions_by_channel_wst"].get("sponsor_a_student") == 101.0, (
+        _sj["contributions_by_channel_wst"])
+    #  WOULD-ALLOCATE IS NOT A RECORD OF DISTRIBUTIONS MADE, and says so
+    assert "not a record of distributions made" in _sj["allocation_basis"], _sj["allocation_basis"]
+    assert _sj["would_allocate_wst"]["owner"] == 0.0, (
+        "the donor statement shows an owner allocation for a 100%-donation waqf form",
+        _sj["would_allocate_wst"])
+    #  and a silently-defaulted template is DISCLOSED rather than shown under the right name
+    assert _sj["template_is_a_fallback"] is False, (
+        "the entity's waterfall is the GENERIC template standing in for its own, and the statement would "
+        "have shown the wrong figures under the right name", _sj["entity_type"], _sj["template_name"])
+
+    # ── (4) THE EIGHT-ATTRIBUTE EXECUTIVE BOARD, read from the COMPOSITION ─────────────────────
+    from agentic_core.api.board import board_for_owner as _bfo
+    _rel = _bfo("default", "QEP", domain="religion")
+    _exec = _rel.get("executive_board") or []
+    assert len(_exec) == 8, (
+        "the Religion-domain composition does not carry A.8's eight-pointed star", len(_exec))
+    for _a in ("Al-ʿAzīz", "Al-Wadūd", "Al-ʿAlīm", "Al-Khāliq",
+               "Al-ʿAdl", "Al-Ghaffār", "Al-Aḥad", "Al-Hādī"):
+        assert any(_a in str(d.get("attribute")) for d in _exec), (
+            f"the attribute {_a} is missing from the composed board", _a)
+    #  AN ADDITIONAL TIER, NOT A REPLACEMENT — a replacement would pass a naive "are the eight present"
+    #  check while deleting the governance tier other callers depend on
+    assert _rel.get("chief") and _rel.get("directors"), (
+        "the eight-attribute board REPLACED the standing chief and directors; A.8 lists it as an EXECUTIVE "
+        "board, separately from oversight", sorted(_rel))
+    #  and the names confer NO authority — recorded in the basis rather than left to be inferred
+    assert "confer no authority" in (_rel.get("executive_board_basis") or ""), (
+        "nothing records that the Divine Names title divisions and confer no authority on what a division "
+        "produces", _rel.get("executive_board_basis"))
+    #  another domain has NO executive board, and it is ABSENT rather than empty: an empty list would read
+    #  as "this domain has an executive board with nobody on it"
+    _ent = _bfo("default", "x", domain="enterprise")
+    assert "executive_board" not in _ent, (
+        "a non-Religion domain carries an executive_board key; empty is a different and false statement "
+        "from absent", _ent.get("executive_board"))
+
+    #  ── AND IT REACHES A REAL ENTITY. The legs above call board_for_owner DIRECTLY, which is exactly how
+    #  this clause was BUILT BUT UNREACHABLE: `domain` was added with an empty default so no existing caller
+    #  changed, and then not one of the three production callers passed a domain - so A.8's executive board
+    #  was composed for nobody, including the Religion-domain entity it was written for. A composition no
+    #  caller requests is not a composition. Found by the pre-flight's [keys] leg on this round's own work.
+    #  Read off the ENTITY RECORD rather than from the function, because both call sites sit inside
+    #  `except Exception: pass`: if the composition raised, the board would be silently ABSENT and a
+    #  direct-function assertion would still pass.
+    _rel_est = client.post("/api/v1/genesis/establish",
+                           json={"problem": "W600 QEP board reach", "name": "W600 QEP Board",
+                                 "domain": "religion", "entity_type": "qep_waqf_trust"})
+    assert _rel_est.status_code == 200, (_rel_est.status_code, _rel_est.text[:160])
+    _rel_id = _rel_est.json()["vsb_id"]
+    from agentic_core.api.vsb import _load_vsb as _lvsb_b600
+    _rel_rec = _lvsb_b600(_rel_id) or {}
+    _rel_board = (_rel_rec.get("board") or {})
+    if _rel_rec:
+        assert _rel_board, (
+            "an established entity carries NO board at all - both composition call sites sit inside "
+            "except-pass, so a raising composition leaves the entity governance-orphaned in silence",
+            sorted(_rel_rec)[:14])
+        assert len(_rel_board.get("executive_board") or []) == 8, (
+            "a RELIGION-domain entity established through /establish does not carry A.8's eight-attribute "
+            "executive board, so the composition reaches no entity however correct the function is",
+            len(_rel_board.get("executive_board") or []), sorted(_rel_board))
+        assert _rel_board.get("chief") and _rel_board.get("directors"), (
+            "the entity's standing board tier is gone", sorted(_rel_board))
+    #  THE SECOND COMPOSITION SITE. `enrich_vsb_entity` is the shared enrichment path (four callers, all of
+    #  which supply a domain - checked by reading each) and its board composition is a DIFFERENT line from
+    #  /establish's. Driven directly rather than through a route because the site sits inside an SSE
+    #  generator; what this holds is the PASS-THROUGH, which is the only link this round changed. It does not
+    #  claim a route reaches it - the /establish leg above is what holds the genesis path.
+    from agentic_core.api.vsb import enrich_vsb_entity as _enrich600
+    _e600 = {"vsb_id": "vsb-w600enrich", "name": "W600 Enrich"}
+    try:
+        _enrich600(_e600, owner_id="default", problem="W600 enrich reach", domain="religion",
+                   entity_type="qep_waqf_trust")
+    except Exception as _een:            # enrichment is best-effort by design; the board leg still applies
+        assert _e600.get("board"), (
+            "enrich_vsb_entity raised before composing a board, so an entity enriched through the shared "
+            "path is governance-orphaned", f"{type(_een).__name__}: {_een}")
+    assert len(((_e600.get("board") or {}).get("executive_board")) or []) == 8, (
+        "the shared enrichment path composes a board WITHOUT A8's executive tier for a religion-domain "
+        "entity, so every entity created through it - rather than through /establish - misses it",
+        sorted((_e600.get("board") or {})))
+    _e600b = {"vsb_id": "vsb-w600enrich2", "name": "W600 Enrich Ent"}
+    try:
+        _enrich600(_e600b, owner_id="default", problem="W600 enrich ent", domain="enterprise")
+    except Exception:
+        pass
+    if _e600b.get("board"):
+        assert "executive_board" not in _e600b["board"], (
+            "the shared path gives an enterprise entity an executive board, so the domain is not acting as "
+            "a discriminator there", _e600b["board"].get("executive_board"))
+
+    #  and an ENTERPRISE entity established the same way carries no executive board - absent, not empty
+    _ent_est = client.post("/api/v1/genesis/establish",
+                           json={"problem": "W600 enterprise board reach", "name": "W600 Ent Board",
+                                 "domain": "enterprise"})
+    assert _ent_est.status_code == 200, (_ent_est.status_code, _ent_est.text[:160])
+    _ent_rec = _lvsb_b600(_ent_est.json()["vsb_id"]) or {}
+    if _ent_rec.get("board"):
+        assert "executive_board" not in _ent_rec["board"], (
+            "an enterprise entity carries an executive_board; the domain is not reaching the composition "
+            "as a DISCRIMINATOR - it is being applied to everything", _ent_rec["board"].get("executive_board"))
+
+    # ── (5) VIRTUAL WST THROUGHOUT — no real-money rail is touched ──────────────────────────────
+    _src600 = (_pl600.Path(__file__).resolve().parents[1]
+               / "agentic_core/economy/qep_pricing.py").read_text(encoding="utf-8")
+    assert "Virtual WST" in _src600 or "virtual WST" in _src600, (
+        "the pricing module does not record that it is virtual WST only")
+    assert "stripe" not in _src600.lower() and "real_money" not in _src600.lower(), (
+        "the pricing module names a real-money rail")

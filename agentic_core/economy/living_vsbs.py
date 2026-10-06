@@ -55,7 +55,7 @@ def _save(d: Dict[str, Any]) -> None:
     atomic_write_json(_STORE, d)
 
 
-def living_statement() -> dict:
+def living_statement(rec: Optional[Dict[str, Any]] = None) -> dict:
     """W475 (ledger v4 R2.0) — what a newly registered entity is told about being tended, for EVERY writer (the
     blocking and streamed establishment, /vsb/spawn, the Studio): the present tense only when the heartbeat's economy
     lever is ON — it is off by default, so only the birth cycle ran and every founder was told otherwise."""
@@ -73,7 +73,37 @@ def living_statement() -> dict:
                                         "the heartbeat is stopped, so nothing beats although Self-run is on")
                                      + "), so only the birth cycle ran; enable Self-run and start the heartbeat on the "
                                      "Heartbeat page for the organism to tend this VSB"),
-            "autonomous_cycles": auto, "virtual": True}
+            "autonomous_cycles": auto, "virtual": True,
+            #  P3.2 clause (2) — TRUE OF THIS ENTITY, when one is given. `rec=None` keeps the global
+            #  sentence exactly as four existing callers already receive it; a record makes the claim
+            #  specific. An entity whose own flags are OFF is NOT tended even on a beating heartbeat with
+            #  the lever on, which is the half of the clause a global sentence can never express.
+            **({} if rec is None else {
+                "entity_tending": (lambda _t: {
+                    "tended": bool(auto and all(_t["flags"].values())),
+                    "organism_beating": auto,
+                    "entity_flags": _t["flags"],
+                    "flags_stated": _t["stated"],
+                    "flags_absent": _t["absent"],
+                    "basis": (
+                        ("the organism is tending THIS entity: its own flags allow it and the heartbeat is "
+                         "beating with the Self-run lever on. "
+                         if auto and all(_t["flags"].values()) else
+                         ("this entity is NOT being tended. "
+                          + ("Its own flags allow it, but " if all(_t["flags"].values()) else
+                             "Its own flags do not allow it"
+                             #  plural agreement: the four-state test of these sentences produced
+                             #  "(auto_economy, auto_compliance IS off)" before this, which is a sentence a
+                             #  reader sees. A basis string is code and gets tested like one.
+                             + ((lambda _off: " (" + ", ".join(_off)
+                                 + (" is off)" if len(_off) == 1 else " are off)"))(
+                                    [k for k, v in _t["flags"].items() if not v])
+                                if not all(_t["flags"].values()) else "")
+                             + (", and " if not auto else ". "))
+                          + ("the organism is not beating with its lever on. " if not auto else "")))
+                        + _t["basis"]),
+                })(tending(rec))}),
+            }
 
 
 def intake_note(what: str = "this") -> Dict[str, Any]:

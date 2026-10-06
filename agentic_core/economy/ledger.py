@@ -518,8 +518,13 @@ class VirtualLedger:
     # receiver's PENDING QUEUE, not the books, so no posting is written for it. A declared value with
     # no producer is the same defect one layer over - it tells a reader a source exists that cannot
     # appear - so it is out rather than aspirational.
+    #  P3.11 clause (3) — the two QEP contribution channels (vision A.8: Zakat-eligible funds and
+    #  Sponsor-a-Student). Declared here because `/api/v1/qep/contribute/*` EMITS them: a tag the routes
+    #  post without declaring reads to a donor as a source nobody recognises, and a tag declared without a
+    #  producer tells a reader a source exists that cannot appear (which is why transfer_repair was removed).
     POSTING_SOURCES = ("cycle_intake", "cycle_costs", "cycle_reserve", "cycle_distribution",
-                       "inter_vsb_transfer", "self_investment", "period_close")
+                       "inter_vsb_transfer", "self_investment", "period_close",
+                       "qep_zakat", "qep_sponsor_a_student")
 
     def postings_by_source(self) -> Dict[str, Any]:
         """Every posting split by WHAT MOVED THE MONEY. W506 (P2.7(8)).

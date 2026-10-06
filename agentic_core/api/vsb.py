@@ -2075,7 +2075,10 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
     # Board of Directors chaired by the Chief — the digital twin of THIS VSB's owner
     try:
         from agentic_core.api import board as board_mod
-        entity["board"] = board_mod.board_for_owner(owner_id, f"Commercialise: {problem[:120]}")
+        #  P3.11 clause (4) — the same reach fix. `domain` is already this function's own parameter, so the
+        #  entity's board is composed for the domain the entity was generated in rather than for none.
+        entity["board"] = board_mod.board_for_owner(owner_id, f"Commercialise: {problem[:120]}",
+                                                   domain=domain or "")
     except Exception:
         pass
     # Living economic metabolism in the selected legal/economic form (virtual WST only)

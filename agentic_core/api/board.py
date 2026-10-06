@@ -305,9 +305,64 @@ def _live_intelligence(scope: str) -> str:
     return "\n\nLIVE INTELLIGENCE (today's measured state — ground your directive in it):\n" + "\n".join(lines)
 
 
-def board_for_owner(owner_name: str, vision_summary: str = "") -> Dict[str, Any]:
-    """Compose a Board (with a Chief = digital twin of the given owner) for a VSB entity."""
+#  P3.11 clause (4) — A.8's EIGHT-POINTED STAR, as the Religion-domain EXECUTIVE tier.
+#  Transliterations and division names are A.8's own; the mandates describe what the division OWNS and
+#  deliberately claim no authority from the Name. A division called Knowledge does not make its output
+#  authoritative — it names who owns the area, and §11 plus the R7 scholar gate still govern what a learner
+#  reads. Recording that here rather than leaving it to be inferred is the point.
+EIGHT_ATTRIBUTE_BOARD: List[Dict[str, str]] = [
+    {"id": "exec_majesty", "attribute": "Al-ʿAzīz", "division": "Majesty",
+     "mandate": "Institutional standing and stewardship: the platform's integrity as an endowment."},
+    {"id": "exec_beauty", "attribute": "Al-Wadūd", "division": "Beauty",
+     "mandate": "The learner's experience — that studying here is a thing done with care, not processed."},
+    {"id": "exec_knowledge", "attribute": "Al-ʿAlīm", "division": "Knowledge",
+     "mandate": "Curriculum and scholarship liaison. Owns the AREA; rules on nothing — a named human "
+                "scholar approves religious teaching content before a learner sees it (A.12.3 / R7)."},
+    {"id": "exec_creation", "attribute": "Al-Khāliq", "division": "Creation",
+     "mandate": "Building what is taught with: tooling, surfaces, and the owned fabric that serves them."},
+    {"id": "exec_justice", "attribute": "Al-ʿAdl", "division": "Justice",
+     "mandate": "Fairness of access and of the finances: free at the point of use, the surplus cap, and "
+                "who is charged what."},
+    {"id": "exec_forgiveness", "attribute": "Al-Ghaffār", "division": "Forgiveness",
+     "mandate": "How the platform treats failure — a learner who lapses, a mistake in a record, a wrong "
+                "figure disclosed rather than quietly corrected."},
+    {"id": "exec_transcendence", "attribute": "Al-Aḥad", "division": "Transcendence",
+     "mandate": "The boundaries: what this platform will NOT do, including the six §11 refusals and the "
+                "Fitrah Spectrum deferral, which no round may schedule."},
+    {"id": "exec_guidance", "attribute": "Al-Hādī", "division": "Guidance",
+     "mandate": "Direction and sequencing — where the platform goes next, and saying plainly when it does "
+                "not know."},
+]
+
+EIGHT_ATTRIBUTE_BASIS = (
+    "vision A.8's eight-pointed star of Divine Attributes, each attribute leading a division. The names are "
+    "the Owner's own design and are used here as DIVISION TITLES: they identify who owns an area and confer "
+    "no authority on anything a division produces. Nothing composed by a division carries divine sanction, "
+    "§11's boundaries are unchanged, and religious teaching content still requires a named human scholar's "
+    "approval before a learner sees it. This tier sits BESIDE the standing board rather than replacing it — "
+    "A.8 lists it as an EXECUTIVE board, separately from the Waqf/Trust dual body and separately from "
+    "oversight (Board of Trustees, Sharia Supervisory Council, the four steering committees).")
+
+
+def board_for_owner(owner_name: str, vision_summary: str = "", domain: str = "") -> Dict[str, Any]:
+    """Compose a Board (with a Chief = digital twin of the given owner) for a VSB entity.
+
+    P3.11 clause (4) — `domain` is ADDED with an empty default, so every existing caller is unchanged and
+    only a caller that names a domain gets the extra tier. A Religion-domain entity additionally carries
+    A.8's eight-attribute EXECUTIVE board; the standing chief and directors are untouched, because A.8 lists
+    the eight separately from oversight and a replacement would delete the governance tier other callers
+    depend on.
+    """
+    _executive = (
+        {"executive_board": [dict(x) for x in EIGHT_ATTRIBUTE_BOARD],
+         "executive_board_basis": EIGHT_ATTRIBUTE_BASIS,
+         "executive_board_source": "vision A.8 (Owner-authored)"}
+        if str(domain or "").strip().lower() in ("religion", "religious") else
+        #  ABSENT rather than empty for every other domain: an empty list would read as "this domain has an
+        #  executive board with nobody on it", which is a different and false statement.
+        {})
     return {
+        **_executive,
         "owner": owner_name,
         "chief": {
             # W475 (ledger v4 R3.4) — no twin model is trained (/api/v1/twin/models holds none): the Chief is the

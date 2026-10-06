@@ -77,9 +77,16 @@ interface DomainToolProps {
  *
  * One function now, used by the save, the copy and every download format.
  */
+//  FU-456 — `screen_note` is appended here, in the channel every DomainTool surface already shares, so a
+//  route that returns a screen result renders it without its own wiring. It is appended to the TEXT rather
+//  than rendered beside it because this same text is what `saveOutput` persists: a note that is not in the
+//  body is absent from the saved record, which is the W490 rule (provenance travels with the output).
+//  Before this, `religious_subject_screen` was returned by the education route under a comment saying it
+//  travelled with the output, and nothing on any surface read it.
 const withDisclosures = (body: string, data: any): string =>
   (data?.score_summary ? `${data.score_summary}\n\n` : '')
   + body
+  + (data?.screen_note ? `\n\n[${data.screen_note}]` : '')
   + (data?.floor_note ? `\n\n[${data.floor_note}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 

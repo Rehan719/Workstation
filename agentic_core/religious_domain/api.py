@@ -1004,3 +1004,207 @@ async def qep_status():
             "Recitation is never scored — no phonetic model exists to score it",
         ],
     }
+
+
+# ── P3.11 clause (3) — A.8's two contribution channels, recorded against the entity's own books ──────
+#  A.8 (Owner-authored) names "Zakat-eligible funds" and "Sponsor-a-Student" among QEP's finances. Both are
+#  VIRTUAL WST: no real-money rail is touched here and none may be, which is the Owner's standing constraint.
+#
+#  WHAT NEITHER CHANNEL DOES, and both say so in their own response:
+#   · the Zakat channel does not rule on whether a donor's Zakat obligation is discharged. The charity share
+#     is DESIGNATED Zakat-eligible by A.8; whether a given contribution discharges an obligation is a
+#     religious ruling, which §11 forbids this platform from making. The donor is referred to their scholar.
+#   · Sponsor-a-Student names no learner, because no mechanism matches a contribution to an individual
+#     learner. Claiming a sponsored student would be the fabrication this whole plan exists to prevent.
+
+class ContributionRequest(BaseModel):
+    vsb_id: str = Field(..., min_length=1, max_length=64)
+    amount_wst: float = Field(..., gt=0)
+    donor_ref: str = ""
+
+
+_A8_FINANCE_BASIS = ("vision A.8 (Owner-authored): QEP is 100% donation and waqf-backed, free at the point "
+                     "of use for individuals, with Zakat-eligible funds and Sponsor-a-Student. Virtual WST "
+                     "only - no real-money rail is touched by this channel.")
+
+
+def _contribution_entity(vsb_id: str) -> dict:
+    """The entity a contribution is for, or an HTTP refusal. NEVER a ledger for an id nobody established.
+
+    `read_strict` answers a missing ledger file with new empty books, so `VirtualLedger(<anything>)` succeeds
+    and a channel that skipped this check would report a recorded donation against an entity that does not
+    exist - and would leave a ledger file behind as evidence for it.
+    """
+    #  the SAME pattern this file's W439 choke point uses, because vsb_id is interpolated into a ledger path
+    #  exactly as uid was into a store path. Not _safe_uid itself: its refusal names `uid`, and a refusal
+    #  naming a field the caller never sent cannot be acted on by the caller who hit it.
+    if not _UID_RE.fullmatch(vsb_id or ""):
+        raise HTTPException(status_code=400, detail={
+            "message": "vsb_id must match [A-Za-z0-9_-]{1,64}; it is interpolated into a ledger path, so a "
+                       "path segment is refused. Nothing was recorded.",
+            "vsb_id": vsb_id})
+    safe = vsb_id
+    rec = None
+    try:
+        from agentic_core.economy.living_vsbs import _load as _load_living
+        rec = (_load_living() or {}).get(safe)
+    except Exception as err:                        # the roster being unreadable is not "no such entity"
+        raise HTTPException(status_code=503, detail={
+            "message": f"the living roster could not be read, so it is not known whether {safe} exists; "
+                       f"nothing was recorded",
+            "error": f"{type(err).__name__}: {err}"})
+    if rec is None:
+        try:
+            from agentic_core.api.vsb import _load_vsb
+            rec = _load_vsb(safe)
+        except Exception:
+            rec = None
+    if not rec:
+        raise HTTPException(status_code=404, detail={
+            "message": f"no entity {safe} is on the living roster or in the VSB store, so a contribution "
+                       f"cannot be recorded against its books. Nothing was written.",
+            "vsb_id": safe})
+    return {"vsb_id": safe, "record": rec}
+
+
+def _record_contribution(vsb_id: str, amount_wst: float, channel: str, donor_ref: str = "") -> dict:
+    """Credit the entity's `revenue` account and REPORT THE BALANCE READ BACK, not the amount handed in.
+
+    This file's own W439 note records the defect this avoids: "every award fell to a fallback claiming
+    'recorded' while persisting nothing". A channel that returns the figure it was given cannot tell a
+    caller whether anything was persisted, so the balance below is re-read from the books after the write.
+    """
+    ent = _contribution_entity(vsb_id)
+    safe = ent["vsb_id"]
+    from agentic_core.economy.ledger import VirtualLedger
+    led = VirtualLedger(safe)
+    if led.load_error:
+        #  REFUSED where the caller can receive it: an unreadable ledger is not an empty one, and writing to
+        #  books that could not be read whole would destroy whatever is actually in them.
+        raise HTTPException(status_code=503, detail={
+            "message": f"{safe}'s ledger could not be read, so nothing was recorded. A contribution is "
+                       f"never written on top of books that could not be read whole.",
+            "load_error": led.load_error})
+    amount = round(float(amount_wst), 2)
+    memo = f"QEP contribution via {channel}" + (f" (donor ref {donor_ref})" if donor_ref else "")
+    try:
+        led.record("revenue", amount, memo=memo, kind="credit", source=f"qep_{channel}")
+    except Exception as err:
+        raise HTTPException(status_code=503, detail={
+            "message": f"the contribution could not be posted to {safe}'s books, so it did NOT happen; "
+                       f"nothing is held pending and the contribution should be made again",
+            "error": f"{type(err).__name__}: {err}"})
+    #  re-read: the balance below is what the books say, not what this function was told
+    after = VirtualLedger(safe).balances()
+    return {
+        "recorded": True,
+        "vsb_id": safe,
+        "channel": channel,
+        "amount_wst": amount,
+        "revenue_balance_wst": after.get("revenue"),
+        "currency": "WST (virtual)",
+        "memo": memo,
+        "balance_basis": ("revenue_balance_wst was RE-READ from the entity's ledger after the posting, so it "
+                         "is what the books say rather than the figure this request supplied"),
+        "distribution_basis": ("a contribution is credited to `revenue`, which the entity's next economic "
+                              "cycle distributes through its own waterfall (A.8: owner 0%, surplus capped "
+                              "at 5% with reinvestment). It is not allocated by this request."),
+        "a8_basis": _A8_FINANCE_BASIS,
+    }
+
+
+@router.post("/contribute/zakat")
+async def contribute_zakat(req: ContributionRequest):
+    """A Zakat-eligible contribution to a QEP entity. THIS PLATFORM RULES ON NOTHING.
+
+    A.8 designates QEP's charity funds Zakat-eligible. Whether a particular contribution discharges a
+    particular donor's Zakat obligation is a religious ruling - §11 forbids this platform from making one,
+    so the response states the designation, refuses the ruling, and refers the donor to their own scholar.
+    """
+    out = _record_contribution(req.vsb_id, req.amount_wst, "zakat", req.donor_ref)
+    out["zakat_basis"] = (
+        "A.8 DESIGNATED this entity's charity funds Zakat-eligible. This platform does NOT rule on whether "
+        "your Zakat obligation is discharged by this contribution: that is a religious ruling and no AI here "
+        "makes one. Ask your own scholar, who can weigh your circumstances and the eligibility of the "
+        "recipient. A designated fund and a discharged obligation are different facts.")
+    out["rules_on"] = []
+    return out
+
+
+@router.post("/contribute/sponsor-a-student")
+async def contribute_sponsor_a_student(req: ContributionRequest):
+    """Sponsor-a-Student (A.8). NO LEARNER IS NAMED, because nothing here matches one.
+
+    A.8 names Sponsor-a-Student as a channel. Reporting a sponsored learner would require a matching
+    mechanism, and none exists - so this says what the contribution DOES fund (the entity's books, which its
+    waterfall distributes to the user_projects and charity shares) and does not claim a student.
+    """
+    out = _record_contribution(req.vsb_id, req.amount_wst, "sponsor_a_student", req.donor_ref)
+    out["student_matched"] = None
+    out["sponsorship_basis"] = (
+        "NO LEARNER IS NAMED OR MATCHED to this contribution: no mechanism exists in this platform that "
+        "pairs a donation with an individual learner, and reporting one would be a claim with nothing behind "
+        "it. What this contribution does is fund the entity itself, whose waterfall directs the largest "
+        "shares to learner projects and charity, with no owner share at all. Because QEP is free at the "
+        "point of use, no learner is waiting on a sponsor to be able to study.")
+    return out
+
+
+@router.get("/contribute/statement/{vsb_id}")
+async def contribution_statement(vsb_id: str):
+    """A.8's transparent donor view: what came in by channel, and how the waterfall allocates it.
+
+    Reads the entity's OWN books and its OWN template. The allocation is what the waterfall WOULD direct;
+    the entity's cycle is what actually distributes, so the two are reported separately rather than one
+    presented as the other.
+    """
+    ent = _contribution_entity(vsb_id)
+    safe = ent["vsb_id"]
+    from agentic_core.economy.ledger import VirtualLedger
+    led = VirtualLedger(safe)
+    if led.load_error:
+        raise HTTPException(status_code=503, detail={
+            "message": f"{safe}'s ledger could not be read, so no donor statement can be produced. An "
+                       f"unreadable ledger is not an empty one and zero would be a false figure.",
+            "load_error": led.load_error})
+    #  READ THE POSTINGS, NOT THE LEGACY ENTRIES. `record()` writes an entry carrying ts/account/kind/amount/
+    #  memo/balance_after and NO SOURCE - the source tag goes on the balanced POSTING it makes. A statement
+    #  built from `entries` would therefore find no channel tag anywhere and report 0.00 for both channels
+    #  while the money sat in the books: a donor statement that is silently empty rather than honestly zero.
+    split = led.postings_by_source()
+    _qep_rows = [r for r in split.get("by_source", []) if str(r.get("source", "")).startswith("qep_")]
+    by_channel = {str(r["source"])[4:]: r["total_wst"] for r in _qep_rows}
+    _counts = {str(r["source"])[4:]: r["count"] for r in _qep_rows}
+    etype = ((ent["record"] or {}).get("economy") or {}).get("entity_type") or \
+        (ent["record"] or {}).get("entity_type") or ""
+    from agentic_core.economy.entities import ENTITY_TEMPLATES, get_template
+    tmpl = get_template(etype)
+    total = round(sum(by_channel.values()), 2)
+    return {
+        "vsb_id": safe,
+        "contributions_by_channel_wst": by_channel,
+        "contributions_by_channel_count": _counts,
+        "contributions_total_wst": total,
+        "contributions_count": sum(_counts.values()),
+        "revenue_balance_wst": led.balances().get("revenue"),
+        #  an undeclared tag is NOT folded into a channel: it would attribute money to a channel on the
+        #  strength of a prefix nobody declared, which is what `unknown_sources` exists to prevent
+        "undeclared_channel_tags": [s for s in split.get("unknown_sources", [])
+                                    if str(s).startswith("qep_")],
+        "untagged_postings": split.get("not_stated"),
+        "waterfall": dict(tmpl.get("waterfall") or {}),
+        "would_allocate_wst": {k: round(total * float(v), 2) for k, v in (tmpl.get("waterfall") or {}).items()},
+        "entity_type": etype,
+        "template_name": tmpl.get("name"),
+        "template_is_a_fallback": bool(etype) and etype not in ENTITY_TEMPLATES,
+        "allocation_basis": ("would_allocate_wst is what this entity's waterfall WOULD direct for the total "
+                            "contributed; it is not a record of distributions made. Only an economic cycle "
+                            "distributes, and a cycle run before some of these contributions arrived "
+                            "distributed less. The two are reported separately rather than one presented as "
+                            "the other."),
+        "template_basis": ("get_template() returns the DEFAULT template for an unrecognised entity_type, so "
+                           "template_is_a_fallback says whether this waterfall is the entity's own or the "
+                           "generic one standing in for it - a silent fallback would otherwise show the "
+                           "wrong figures under the right name."),
+        "a8_basis": _A8_FINANCE_BASIS,
+    }

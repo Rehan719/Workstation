@@ -139,6 +139,13 @@ export const VSBCockpit: React.FC = () => {
   const [objOrch, setObjOrch] = useState('');                 // objective id being delivered by the Chief
   const [objOrchResult, setObjOrchResult] = useState<Dict>({}); // tree result per objective id
   const [deliverables, setDeliverables] = useState<Dict[]>([]); // this VSB's living outputs (§13)
+  //  P3.2 clause (3) — THE OPERATING STATE, read from the server. Measured W598: this page showed none of
+  //  last_operated, operating_cycles or the governing flags, so the clause's own failure case ("a page that
+  //  shows 0 cycles for an entity that has run") was not even reachable — there was no cycle count to be
+  //  wrong. Fetched as its own call so an unreadable roster leaves this panel saying so rather than
+  //  blanking the cockpit around it.
+  const [operating, setOperating] = useState<Dict | null>(null);
+  const [operatingErr, setOperatingErr] = useState('');
   const [delivType, setDelivType] = useState('report');
   const [delivBrief, setDelivBrief] = useState('');
   const [delivProducing, setDelivProducing] = useState(false);
@@ -404,6 +411,29 @@ export const VSBCockpit: React.FC = () => {
     } catch (e: any) { setActErr(`Orchestration failed: ${detailText(e?.response?.data?.detail ?? 'backend unreachable')}`); }
     setObjOrch('');
   };
+
+  //  P3.2 clause (3) — the roster row for the entity on screen, with BOTH cycle counts and their basis.
+  useEffect(() => {
+    if (!selected) { setOperating(null); return; }
+    axios.get<Dict>('/api/v1/economy/living-vsbs', { validateStatus: () => true })
+      .then(r => {
+        if (r.status !== 200 || !r.data) {
+          setOperating(null);
+          setOperatingErr(`The living roster is not reporting (HTTP ${r.status}). That is a statement about `
+            + `reachability, not about whether this entity has operated.`);
+          return;
+        }
+        const rows: Dict[] = (r.data as any).living_vsbs || [];
+        const row = rows.find((v: any) => v.vsb_id === selected) || null;
+        setOperating(row ? { ...row, _counts_basis: (r.data as any).cycle_counts_basis } : null);
+        setOperatingErr(row ? '' : 'This entity is not on the living roster, so the organism is not tending '
+          + 'it — which is different from its having run no cycles.');
+      })
+      .catch(() => {
+        setOperating(null);
+        setOperatingErr('The living roster could not be reached.');
+      });
+  }, [selected]);
 
   // This VSB's living deliverables (§13) — its actual outputs, produced on the native fabric and
   // exportable in any of the in-house formats.
@@ -913,6 +943,18 @@ export const VSBCockpit: React.FC = () => {
                           {(() => { const b = provenanceBadge(d.served_by, d.is_external);
                             return <span className={`px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                         </p>
+                        {/* P3.2 clause (4) — "last screened <time>", and a deliverable with no screening
+                            SAYS so. FOUR states, not the three the clause names: the code produced a fourth
+                            (the screen could not RUN — no screenable text, an unreadable store), which must
+                            not collapse into "not screened yet". A broken screen is not a young
+                            deliverable, and the clause's own words are "never a blank". */}
+                        <p data-testid={`deliverable-screened-${d.id}`} className="text-[9px] text-slate-500 leading-relaxed">
+                          {d.last_screened
+                            ? `last screened ${String(d.last_screened)}${d.last_screened_verdict ? ` — ${String(d.last_screened_verdict)}` : ''}`
+                            : d.last_screened_error
+                              ? `COULD NOT BE SCREENED: ${String(d.last_screened_error)}`
+                              : 'not screened yet — the compliance beat screens one deliverable per beat and has not reached this one. That is not a clean verdict.'}
+                        </p>
                       </div>
                       {/* W338 — bearer-carrying export (a raw anchor 401s under auth) */}
                       <button type="button" onClick={async () => {
@@ -1105,6 +1147,63 @@ export const VSBCockpit: React.FC = () => {
                   one evolving daily. The cycle count and the applied generation are kept APART on
                   purpose — W493 was registered because a counter that advanced on FILING implied traits
                   had changed when nothing had. */}
+              {/* P3.2 clause (3) — WHAT THE ORGANISM HAS DONE TO THIS ENTITY. Measured W598: this page
+                  showed none of last_operated, operating_cycles or the governing flags, so the clause's own
+                  failure case ("a page showing 0 cycles for an entity that has run") was not even
+                  reachable — there was no cycle count here to be wrong. Every figure comes from the roster;
+                  each of the three not-a-number states is SAID rather than printed as a zero or a blank. */}
+              <Card className="p-6 border-slate-800" data-testid="cockpit-operating-state">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+                  What the organism has done to this entity
+                </h4>
+                {operatingErr && (
+                  <p data-testid="cockpit-operating-unavailable" className="text-[10px] text-amber-400/90 leading-relaxed">
+                    {operatingErr}
+                  </p>
+                )}
+                {operating && (
+                  <>
+                    {/* last_operated: None is NEVER OPERATED, not an empty cell */}
+                    <p data-testid="cockpit-last-operated" className="text-[11px] text-slate-200 font-bold">
+                      {operating.last_operated
+                        ? `Last operated ${String(operating.last_operated)}`
+                        : 'NEVER OPERATED — the organism has not run a cycle for this entity yet.'}
+                    </p>
+                    {/* BOTH counts: operating_cycles counts only what THIS roster ran, so showing it alone
+                        produces the clause's own failure case for an entity cycled another way. */}
+                    <p data-testid="cockpit-cycle-counts" className="text-[11px] text-slate-300 mt-1 font-medium">
+                      {Number(operating.operating_cycles ?? 0)} cycle(s) run by the autonomous roster
+                      {' · '}
+                      {operating.ledger_cycles === null || operating.ledger_cycles === undefined
+                        ? 'the ledger count could not be read'
+                        : `${Number(operating.ledger_cycles)} posted in its ledger`}
+                    </p>
+                    {/* a ledger that could not be READ is not zero, and it says why */}
+                    {operating.ledger_cycles_unavailable && (
+                      <p data-testid="cockpit-ledger-unavailable" className="text-[9px] text-vital mt-1 leading-relaxed">
+                        The ledger count is NOT zero — it could not be read: {String(operating.ledger_cycles_unavailable)}
+                      </p>
+                    )}
+                    <p data-testid="cockpit-cycle-counts-basis" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+                      {String(operating._counts_basis ?? operating.operating_cycles_basis ?? '')}
+                    </p>
+                    {/* the governing flags, per entity, with ABSENT distinguished from stated-off */}
+                    <p data-testid="cockpit-tending-flags" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                      Tending: auto_economy {operating.auto_economy === false ? 'OFF' : 'on'}
+                      {' · '}auto_compliance {operating.auto_compliance === false ? 'OFF' : 'on'}
+                      {operating.auto_economy === undefined && operating.auto_compliance === undefined
+                        ? ' — neither flag is recorded on this entity: it was registered before the fields '
+                          + 'existed, and absent is read as ON because the organism was already tending it.'
+                        : ''}
+                    </p>
+                    <p data-testid="cockpit-tending-basis" className="text-[9px] text-slate-600 mt-1 leading-relaxed">
+                      Tending needs BOTH: the organism beating with its own lever on, and this entity's flag.
+                      A flag on an entity the heartbeat is not running for tends nothing.
+                    </p>
+                  </>
+                )}
+              </Card>
+
               {detail && (
                 <Card className="p-6 border-emerald-500/20" data-testid="cockpit-evolution-timeline">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-3">Evolution so far</h4>
