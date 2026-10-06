@@ -243,30 +243,36 @@ class QEPFlagshipService:
                            "The curriculum listed is fixed syllabus content, not a measurement."),
             }
 
-    async def adaptive_ui_engine(self, user_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Feature 6: Adaptive UI/UX Engine — claims no readiness; see FU-445, which is the Owner's.
+    async def adaptive_ui_engine(self, user_id: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Feature 6: Adaptive UI — adaptation follows a SAVED PREFERENCE, and this refuses to infer one.
 
-        W593 — this asserted production readiness while being UNCALLABLE: the registered AI-CEO tool
-        passes one argument where this takes two, so every invocation raises TypeError. That is false
-        quite apart from the open question about the branch below, so the claim goes now and the branch
-        waits for the ruling. FU-445 states the choice: delete the sentiment branch and the registration,
-        or feed it the user's SAVED tone preference instead - adapting to an inferred emotional state is
-        one of the six things Appendix A.9 records §11 as forbidding, and this round's FU-433 put exactly
-        that on the roadmap card.
+        W594 (FU-445, Owner ruling 2026-10-05b R1) — THE SENTIMENT BRANCH IS GONE. It read
+        `context["sentiment"]` and set a calming simplified layout for "stressed" and a compact one for
+        "focused": an interface adapting to a person's inferred emotional state, which Appendix A.9.4
+        RATIFIES AS FORBIDDEN and which W593's FU-433 had just put on the roadmap card as "emotion is
+        never inferred". It was also UNCALLABLE - the registered tool passed one argument where the
+        method took two - so this removes a capability that never ran.
+
+        It refuses rather than disappearing: the tool name may still be reachable from a stored plan or a
+        cached tool list, and a missing attribute would surface as an AttributeError instead of an answer.
+
+        The permitted capability is already delivered elsewhere: AdaptiveUIProvider derives the tone from
+        the reader's SAVED `ui.tone` preference and the hubs render it as "TONE (saved pref.)". Nothing
+        here needs to duplicate it, and duplicating it would reintroduce a second place for the forbidden
+        reading to creep back into.
         """
-        user = self._get_user(user_id)
-        sentiment = context.get("sentiment", "neutral")
-
-        # Adaptation Logic
-        if sentiment == "stressed":
-            user["settings"]["theme"] = "Calming_Blue"
-            user["settings"]["layout"] = "Guided_Simplified"
-        elif sentiment == "focused":
-            user["settings"]["theme"] = "Deep_Sovereign"
-            user["settings"]["layout"] = "Expert_Compact"
-
-        self._save_data(self.data)
-        return {"theme": user["settings"]["theme"], "layout": user["settings"]["layout"], "font_size": "optimal"}
+        _asked = sorted((context or {}).keys())
+        return {
+            "adapted": False,
+            "theme": None,
+            "layout": None,
+            "detail": ("No adaptation is performed here. Layout and tone follow the reader's SAVED "
+                       "preference, read by AdaptiveUIProvider from the stored profile; this platform "
+                       "never infers a person's emotional state and never adapts an interface to one "
+                       "(a ratified boundary, Appendix A.9.4). The saved-preference path is the only "
+                       "one."),
+            "ignored_context_keys": _asked,
+        }
 
     async def community_features(self) -> Dict[str, Any]:
         """Feature 7: Community — reports only what this store actually records, which is none of it.
@@ -329,7 +335,12 @@ class QEPFlagshipService:
         }
 
     async def certifications(self, user_id: str, course_id: str) -> Dict[str, Any]:
-        """Issue a credential ONLY when the course was actually completed.
+        """Record a COMPLETION — never a credential, and only when the course was actually completed.
+
+        W594 (R9, Owner ruling 2026-10-05b on A.12.2) — the shape asserted an authority that does not
+        exist: `certificate_id`, `status: "ISSUED"`, and a `verify_url` that nothing serves. QEP issues
+        nothing in its own name until a recognised body is named; what it can honestly do is RECORD that
+        a completion happened, with the evidence, and say plainly that this is not a credential.
 
         W403 - this minted a certificate for any (user_id, course_id) with no check whatsoever,
         stamped it "valid_until": "PERPETUAL" and "status": "ISSUED", and signed it with a real
@@ -345,11 +356,17 @@ class QEPFlagshipService:
         completed = bool(progress and progress.get("completed"))
         if not completed:
             return {
-                "certificate_id": None,
-                "status": "NOT_EARNED",
-                "detail": ("No completion is recorded for this user on this course, so no "
-                           "certificate is issued. A signed credential asserting an achievement "
-                           "nobody completed would be verifiable and false."),
+                "completion_record_id": None,
+                "status": "NOT_RECORDED",
+                "is_credential": False,
+                #  shape-complete with the recorded branch: a reader indexing the evidence or the digest
+                #  on a learner who has not completed gets None rather than a KeyError, and None here
+                #  means "nothing was recorded", which is not the same as an empty record
+                "content_integrity": None,
+                "evidence": None,
+                "detail": ("No completion is recorded for this user on this course, so nothing is "
+                           "issued. A record asserting an achievement nobody completed would be "
+                           "verifiable and false."),
                 "course": course_id,
             }
 
@@ -372,11 +389,21 @@ class QEPFlagshipService:
         self._save_data(self.data)
 
         return {
-            "certificate_id": cert_id,
-            "status": "ISSUED",
+            "completion_record_id": cert_id,
+            "status": "RECORDED",
+            "is_credential": False,
             "content_integrity": integrity,
             "evidence": cert_data["evidence"],
-            "verify_url": f"/verify/{cert_id}",
+            "course": course_id,
+            #  W594 (R9) — NO verify_url. This returned f"/verify/{cert_id}", and nothing serves that
+            #  path: the platform's only verify routes are /api/v1/attestation/verify and
+            #  /api/v1/ueg/verify. A learner was handed a link to check their credential that 404s.
+            "detail": ("This is a RECORD OF COMPLETION, not a credential. No accredited body stands "
+                       "behind it: QEP issues nothing in its own name, because a certificate implies an "
+                       "authority and there is none (Owner ruling 2026-10-05b, A.12.2). It records that "
+                       "this course was completed, with the evidence it was recorded against, and the "
+                       "digest above detects alteration of that record - it is not a signature and does "
+                       "not prove who issued it."),
         }
 
     async def offline_global_access(self, user_id: str) -> Dict[str, Any]:

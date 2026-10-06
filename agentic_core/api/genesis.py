@@ -24,7 +24,8 @@ from agentic_core.auth.core import get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime_meta, _ai_mjm_lifecycle_meta, _usable, _selected_lenses
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 from agentic_core.api.vsb import _public_prose, _gate_block_reason, _gates_blocking, _LIFECYCLE_STAGE_IDS
-from agentic_core.taxonomy import REALM_LABELS, normalise_realm, realm_directive
+from agentic_core.taxonomy import (PRODUCT_LABELS, REALM_LABELS, normalise_product,
+                                   normalise_realm, realm_directive)
 from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/genesis", tags=["genesis-journey"])
@@ -133,6 +134,12 @@ class JourneyRequest(BaseModel):
     problem: str
     domain: str = "enterprise"
     realm: str = "enterprise"   # canonical: agentic_core.taxonomy.REALMS (§17.1, W311)
+    #  R4 (Owner ruling 2026-10-05b) — §17.1's THIRD AXIS reaches the journey. The grid is 4 Realms × 6
+    #  Domains × 4 Products and the Products axis had no code realisation at all: no constant, nothing
+    #  feeding Genesis. The 96-cell picker is deferred by the same ruling; what is built is the axis
+    #  itself, so a journey RECORDS which product shape was asked for instead of the dimension being
+    #  absent. Canonical: agentic_core.taxonomy.PRODUCTS.
+    product: str = "reactor"
     establish: bool = False     # §4→§5 — culminate the journey by ESTABLISHING the living VSB IDBO enterprise
     name: str = ""              # optional name for the established VSB
     review_gates: list = []     # W452 — Mode 3 gates set AT BIRTH (stage ids); a gated stage holds the birth-ship
@@ -705,6 +712,11 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "problem": req.problem,
         "domain": req.domain,
         "realm": req.realm,
+        #  R4 — the product axis is recorded, not inferred; an unknown value falls to the default
+        #  rather than being stored as given, so a reader never sees a product this platform has not
+        #  declared (taxonomy.PRODUCTS is the canon).
+        "product": normalise_product(getattr(req, "product", "reactor")),
+        "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
         "phase_1_conceptualisation": {"cognitive_cascade": cognitive, "mjm_assessment": mjm, "concept": concept},
         "stage_3_innovate_research": research,     # §4.3 — best/latest approaches across science·tech·business·ops·law
         "stage_5_model_simulate_rank": stage_5,   # §4.5 — candidate solutions modelled + evidence-ranked → best selected
@@ -763,6 +775,7 @@ class EstablishRequest(BaseModel):
     problem: str
     domain: str = "enterprise"
     realm: str = "enterprise"
+    product: str = "reactor"    # R4 — §17.1's Products axis; canonical: agentic_core.taxonomy.PRODUCTS
     name: str = ""
     concept: str = ""
     design: str = ""
@@ -1146,6 +1159,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "problem": req.problem,
         "domain": req.domain,
         "realm": req.realm,
+        #  R4 — the product axis is recorded, not inferred; an unknown value falls to the default
+        #  rather than being stored as given, so a reader never sees a product this platform has not
+        #  declared (taxonomy.PRODUCTS is the canon).
+        "product": normalise_product(getattr(req, "product", "reactor")),
+        "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
         "concept": req.concept[:1000],
         "design": req.design[:1000],
         "commercialisation": req.commercialisation[:1000],
@@ -1162,6 +1180,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "challenge": req.problem,
         "domain": req.domain,
         "realm": req.realm,
+        #  R4 — the product axis is recorded, not inferred; an unknown value falls to the default
+        #  rather than being stored as given, so a reader never sees a product this platform has not
+        #  declared (taxonomy.PRODUCTS is the canon).
+        "product": normalise_product(getattr(req, "product", "reactor")),
+        "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
         "scope": "commercialise",
         "owner_id": req.owner_id,
         # §4.8 (W496, FU-100) - derived below from the gates, the body-pending map and whether

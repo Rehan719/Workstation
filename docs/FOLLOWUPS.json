@@ -8172,11 +8172,14 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W594",
       "note": "",
       "slot_source": "These ARE P2.20's clauses (c), (d) and (f) still holding, which is what ACCEPT (1) turns on, so they ride P2.20 rather than being routed by subject. M1 v7 did not surface them: four of its six regions hit the ten-finding cap, so each of those regions' eleventh-worst finding is absent from the ledger - this is the measured cost of that cap.",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "R1, Owner ruling 2026-10-05b: DELETE the sentiment branch and the qep_adaptive_ui registration. Done. adaptive_ui_engine no longer reads context['sentiment'] and no longer sets a theme or layout from an inferred emotional state; the tool registration and its registry line are gone from ceo.py. The method REFUSES rather than disappearing, because the tool name may still be reachable from a stored plan or a cached tool list and a missing attribute would surface as an AttributeError instead of an answer - it returns adapted False with a detail stating that layout and tone follow the reader's SAVED preference, read by AdaptiveUIProvider from the stored profile, and that this platform never infers a person's emotional state (a ratified boundary, Appendix A.9.4). It also reports which context keys it ignored, so a caller still passing a sentiment can see that it was discarded rather than silently honoured. The permitted capability was already delivered, which is why the ruling was to delete rather than to wire: duplicating it would have created a second place for the forbidden reading to return to. The method was uncallable in any case - its registration passed one argument where it took two - so this removes a capability that never ran."
     },
     {
       "id": "FU-446",
@@ -8194,6 +8197,65 @@
       "closed_by": null,
       "note": "",
       "slot_source": "Rides P2.17 because FU-415 is the row that owns this class there - a function whose returns carry different key sets by path, so an unmeasurable or role-specific field reads as a missing one. Registered rather than fixed in W593: deciding what a role-specific payload should carry for the OTHER role is a design question, not a defect fix, and the round was already at its suite.",
+      "tier": 2
+    },
+    {
+      "id": "FU-447",
+      "title": "The vision's section 18 presents six decisions the Owner RATIFIED on 2026-09-29 as still awaiting a ruling",
+      "why": "docs/WORKSTATION_IDBO_WHOLE_VISION.md:905 heads six biomimetic decisions with 'none acted on until you rule' - the metabolic budget, what an entity may be selected ON, whether an entity may create an entity (mitosis/meiosis), what a VSB may retire itself over, whether a rescue channel should exist between entities, and whether an entity has a carrying capacity and an end. ALL SIX WERE RATIFIED BY THE OWNER ON 2026-09-29 (W512 scoping) and became plan items, which the DELIVERY PLAN records correctly and the VISION does not: selection is P3.27 (ratified 2026-09-29, DONE W584); mitosis/meiosis and governed dormancy are P3.26 TURNOVER; carrying capacity is folded into P3.2 with the metabolic budget, which P3.26 states as 'NOT THIS ITEM'; the metabolic budget is P3.2 with FU-308 carrying its measured 4x arithmetic gap; and the rescue channel was ruled NO, recorded in P3.27 as 'NOT THIS ITEM: a rescue channel... Rescue before selection means nothing ever fails'. WHY THIS IS TIER 1 AND NOT HOUSEKEEPING: the plan instructs every round to read this document as the Owner's canon, and on 2026-10-05 the Owner asked which decisions awaited them. Had the canon been read at face value, SIX ALREADY-RULED QUESTIONS would have been put back to the Owner as open - and asking an Owner to re-rule what they have ruled is a way of quietly undoing a ruling. Where the plan and the canon disagree about what is SETTLED, the canon is the one a reader trusts. THE FIX: record in section 18 that all six were ratified 2026-09-29 and name where each went, leaving the recommendations as history rather than as live questions.",
+      "source": "W594, found while reading the open decisions out of the canon rather than recalling them",
+      "found": "2026-10-06",
+      "files": [
+        "docs/WORKSTATION_IDBO_WHOLE_VISION.md"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.0",
+      "status": "done",
+      "closed_by": "W594",
+      "note": "",
+      "slot_source": "Rides P3.0 because P3.0 IS the item that carries the Owner rulings and their record; this is a defect in that record. It is not a new decision and must never be put to the Owner as one.",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Section 18 now records that all six decisions were RATIFIED 2026-09-29 and names where each one went, in a table: selection to P3.27 (done W584), mitosis/meiosis and governed dormancy to P3.26, carrying capacity and the metabolic budget to P3.2 (with FU-308's measured 4x arithmetic gap), and the rescue channel RULED NO with the reason P3.27 records - rescue before selection means nothing ever fails. The heading no longer says the six are unacted-on and awaiting a ruling. THE RECOMMENDATIONS ARE KEPT, deliberately: they are what the Owner ruled ON, and the reasoning behind a ruling is worth more than the verdict alone - deleting them would have lost why each was decided. AND THE CORRECTION NOTE DESCRIBES THE REMOVED WORDING RATHER THAN QUOTING IT: the first draft reproduced the stale sentence inside the note explaining its removal, which is the W495 trap - a record that carries the literal its own guard forbids matches itself. Verified: zero occurrences of the removed phrase remain in the file. No decision was re-opened and none was put to the Owner again."
+    },
+    {
+      "id": "FU-448",
+      "title": "OWNER: whether the scholar-review gate should also cover the five Religion RESEARCH tools, not only the learner curriculum",
+      "why": "A.12.3 requires a named scholar to approve AI-composed religious content BEFORE A LEARNER SEES IT, and names what it blocks: QEP features 5/6/7, all of A.7, P3.10 and the guidance surfaces. W594 built the gate and wired it to the LEARNER/CURRICULUM path - POST /api/v1/qep/tajweed/lesson, a lesson plan a learner studies from. IT DID NOT wire it to the five Religion RESEARCH tools (/fatwa-research, /hadith-study, /quran-tafsir, /halal-review, /interfaith). THE REASONING, which is the author's and not the Owner's: those five already withhold on the deterministic floor, already carry 'AI-assisted scholarly research only - NOT a fatwa and NOT a substitute for authenticated sources', and already refer the reader to a qualified Islamic scholar or mufti. A tool that says 'this is not a ruling, take it to a scholar' is a different act from teaching a learner a curriculum. THE COST OF THE STRICTER READING, measured: with an empty roster the gate withholds everything, so wiring those five would stop all five returning any content until a scholar is engaged. That is a real product consequence and deserves to be asked rather than assumed. IT IS CHEAP EITHER WAY: the gate exists and those routes already have a withholding path, so the stricter reading is a few lines per route. RECOMMENDATION: leave the research tools as they are, and revisit if a user is observed treating a research answer as a ruling.",
+      "source": "W594 R7 — the author's scope line, surfaced rather than buried",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/api/religion.py",
+        "agentic_core/api/scholar_review.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "An Owner decision: it is a question about what A.12.3 covers, and the stricter reading would stop five working surfaces returning anything. Not routed by subject because the cost falls on the Owner's product, not on a round.",
+      "tier": 3
+    },
+    {
+      "id": "FU-449",
+      "title": "Every entity is born with three template objectives carrying NO KPI, so §17.5's release gate blocks all listing until a founder sets them",
+      "why": "_seed_plan_from_journey gives every established entity three objectives - 'Validate the concept', 'Deliver the design', 'Launch to market' - each with an EMPTY kpi field. R5 (Owner ruling 2026-10-05b) made KPIs load-bearing: §17.5's gate blocks marketplace release until the owning VSB's objectives carry them. MEASURED CONSEQUENCE: every newly-born entity is now blocked from listing any product until a founder sets three KPIs by hand, which surfaced as a 409 in test_w586_p37 whose subject is repo reachability and not the gate. THE GATE IS NOT THE DEFECT and is not weakened: §17.5's invariant is a KPI gate before customer delivery, and blocking release on unmeasurable objectives is precisely what was ruled. What this exposes is that THE PLATFORM CREATES OBJECTIVES IT CANNOT MEASURE - an objective with no KPI is an unmeasurable claim at birth, which is the class this phase exists to remove. AND THE PLATFORM MUST NOT INVENT THE KPIs: a measure the platform makes up for a founder's objective is a fabricated figure, which is worse than asking for one, so the gate's message now names these three as platform-seeded so a founder knows whose omission it is. THE WORK: either establishment stops seeding objectives it cannot measure (asking the founder for a KPI as it asks for a name), or the seeded three are marked as drafts that do not gate - a decision about what establishment owes a founder, not a defect fix, which is why it is registered rather than done in W594.",
+      "source": "W594 — surfaced by R5's KPI gate blocking a guard whose subject was repo reachability",
+      "found": "2026-10-06",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "agentic_core/api/business_plan.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.2",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "Rides P3.2 (autonomy that starts) because it is about what establishment SETS UP for a new entity: the seeder creates objectives the platform cannot measure, which is the same subject as /establish switching tending on. Not routed to the KPI gate's own item - the gate is correct and this is about what it finds.",
       "tier": 2
     }
   ],

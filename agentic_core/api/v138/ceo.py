@@ -51,7 +51,6 @@ class ToolRegistry:
             "qep_competitions": self.qep_competitions,
             "qep_ar_vr_immersion": self.qep_ar_vr_immersion,
             "qep_learn_teach": self.qep_learn_teach,
-            "qep_adaptive_ui": self.qep_adaptive_ui,
             "qep_community": self.qep_community,
             "qep_analytics": self.qep_analytics,
             "qep_certifications": self.qep_certifications,
@@ -121,10 +120,6 @@ class ToolRegistry:
     async def qep_learn_teach(self, role: str = "Learner"):
         """v0.9: Learn-Teach Modules."""
         return await qep_flagship_service.learn_teach_module(role)
-
-    async def qep_adaptive_ui(self, user_profile: Dict[str, Any]):
-        """v0.9: Adaptive UI/UX Engine."""
-        return await qep_flagship_service.adaptive_ui_engine(user_profile)
 
     async def qep_community(self):
         """v0.9: Social Media & Community."""

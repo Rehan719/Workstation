@@ -9,6 +9,27 @@ from __future__ import annotations
 
 REALMS: tuple[str, ...] = ("enterprise", "learning", "developing", "scholarship")
 DOMAINS: tuple[str, ...] = ("religion", "science", "education", "law", "employment", "care")
+#  §17.1's THIRD AXIS — how work runs (W594, Owner ruling 2026-10-05b R4: build the axis, not "design
+#  intent"). The grid is 4 Realms × 6 Domains × 4 Products, and until now the Products axis had no code
+#  realisation at all: no constant, nothing feeding Genesis. The four facilities already exist in the
+#  fabric (§7) — the Laboratory runs as the Forge `laboratory` stage and the Synthesis Lab — so what was
+#  missing was the axis itself, declared the same way as the other two rather than in a new shape.
+#  THE 96-CELL PICKER IS DEFERRED by the same ruling: a constant is not a grid, and the labels below say
+#  what each product IS rather than implying a surface that selects between them.
+PRODUCTS: tuple[str, ...] = ("reactor", "incubator", "factory", "laboratory")
+PRODUCT_LABELS: dict[str, str] = {
+    "reactor": "Reactor — rapid AI generation",
+    "incubator": "Incubator — iterative development",
+    "factory": "Factory — production-grade delivery",
+    "laboratory": "Laboratory — experimental and research",
+}
+
+
+def normalise_product(value: str, default: str = "reactor") -> str:
+    """A product name, or the default. Mirrors `normalise_realm`'s signature so the three axes behave
+    alike - a caller that knows one of them knows all three, and a default is passed rather than baked in."""
+    v = str(value or "").strip().lower()
+    return v if v in PRODUCTS else default
 
 REALM_LABELS: dict[str, str] = {
     "enterprise": "Enterprise", "learning": "Learning",

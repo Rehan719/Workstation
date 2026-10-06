@@ -198,6 +198,53 @@ def _phase_sort_key(timeline: str):
     return None
 
 
+def kpi_release_gate(vsb_id: str) -> dict:
+    """§17.5 (R5) — may this entity RELEASE? Shape-complete, and it names what is missing.
+
+    The ruling's binding condition: REPORT WHAT IS MISSING, never a bare refusal. Three states, kept
+    apart on purpose because they send a founder to three different places:
+
+      · no plan / no objectives recorded  → nothing to measure against yet
+      · objectives recorded, some with no KPI → those objectives, by title
+      · every objective carries a KPI → released
+
+    A KPI is "set" when the objective's `kpi` field holds non-whitespace text. That is deliberately a
+    PRESENCE test and not a judgement about quality: this gate has no instrument for whether a KPI is a
+    good one, and pretending otherwise would be the over-claim this phase exists to remove.
+    """
+    try:
+        plan = _load(vsb_id)
+    except Exception as _e:                                  # noqa: BLE001 — an unreadable plan is SAID
+        return {"ok": False, "reason": "plan_unreadable", "objectives": 0, "missing": [],
+                "detail": (f"the business plan for this entity could not be read "
+                           f"({_e.__class__.__name__}), so whether its objectives carry KPIs is NOT "
+                           f"KNOWN - which is not the same as their being absent")}
+    objectives = [o for o in (plan.get("objectives") or []) if isinstance(o, dict)]
+    if not objectives:
+        return {"ok": False, "reason": "no_objectives", "objectives": 0, "missing": [],
+                "detail": ("this entity has no business-plan objectives recorded, so there is nothing to "
+                           "measure a release against yet. Add an objective with a KPI on the Business "
+                           "Plan before listing or exporting.")}
+    missing = [{"id": str(o.get("id") or ""), "title": str(o.get("title") or "")[:90]}
+               for o in objectives if not str(o.get("kpi") or "").strip()]
+    if missing:
+        return {"ok": False, "reason": "kpi_not_set", "objectives": len(objectives), "missing": missing,
+                "detail": ("§17.5 gates release on measurable objectives. "
+                           + f"{len(missing)} of {len(objectives)} objective(s) carry no KPI: "
+                           + "; ".join(m["title"] or m["id"] for m in missing)
+                           + ". Set a KPI on each before listing or exporting."
+                           + (" These three are the objectives this platform SEEDS at establishment "
+                              "(\"Validate the concept\", \"Deliver the design\", \"Launch to "
+                              "market\") and it does not invent KPIs for them - inventing a measure "
+                              "would be worse than asking for one."
+                              if {str(m.get("title")) for m in missing} >=
+                              {"Validate the concept", "Deliver the design", "Launch to market"}
+                              else ""))}
+    return {"ok": True, "reason": "kpi_set", "objectives": len(objectives), "missing": [],
+            "detail": (f"all {len(objectives)} objective(s) carry a KPI. This gate tests PRESENCE, not "
+                       f"whether a KPI is a good one - no instrument here judges that.")}
+
+
 def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
     """LIVING roadmap — derived from the plan's objectives (the Chief delivers Aims/Mission/Objectives
     via Strategy AND a living Roadmap). Time-phases the objectives, computes per-phase + overall

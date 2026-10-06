@@ -28516,8 +28516,19 @@ def test_w513_vision_8_is_delivered_into_the_sections_built_for_it(client):
     # ── §18 holds the six decisions, each with a recommendation and none acted on ──────────────────────
     s18 = vision.split("## 18. Certainty & Agreement", 1)[1]
     assert "Six decisions the biomimetic scoping put to you" in s18
+    #  THE RECOMMENDATIONS ARE STILL ALL SIX, and that still matters: they are what the Owner ruled ON,
+    #  and deleting them would lose the reasoning behind the ruling rather than tidying the document.
     assert s18.count("*Recommend:*") == 6, s18.count("*Recommend:*")
-    assert "none acted on\nuntil you rule" in s18 or "none acted on" in s18
+    #  W594 (FU-447) — THIS REQUIRED THE STALE CLAIM. It asserted §18 still described the six as
+    #  unacted-on and awaiting a ruling, which was false from 2026-09-29: all six were ratified then and
+    #  became P3.26, P3.27 (done W584) and P3.2, with the rescue channel ruled NO. The guard was holding
+    #  the defect in place — and on the day the Owner asked which decisions awaited them, reading §18 at
+    #  face value would have put six already-ruled questions back to them.
+    assert "ALL SIX WERE RATIFIED BY THE OWNER ON 2026-09-29" in s18, (
+        "§18 no longer records that its six decisions are settled, so the canon can send an Owner to "
+        "re-rule what they have ruled")
+    assert "no round may put them back as" in s18, (
+        "§18 does not forbid a later round reopening them")
 
     # ── the two items exist, are NOT done, and each states a bar ───────────────────────────────────────
     from agentic_core import plan_followups as fu
@@ -36998,11 +37009,24 @@ def test_w572_a_scripture_surface_holds_no_text_of_its_own(client):
     _api = (_root / "agentic_core" / "religious_domain" / "api.py").read_text(encoding="utf-8")
     _ret = _api[_api.index('@router.get("/ayah/{surah_number}/{ayah_number}")'):]
     _ret = _ret[:_ret.index("# \u2500\u2500 Hifz")] if "# \u2500\u2500 Hifz" in _ret else _ret[:6000]
+    #  W594 — ASSERTED ON THE RESPONSE, NOT THE HANDLER'S TEXT. R8 replaced an explicit
+    #  `"source": "alquran.cloud",` line with `**_corpus_provenance(edition)`, which still puts `source`
+    #  in the response and adds edition, script, riwayah and licence — so this went red while the
+    #  response got richer. A guard that greps a function body cannot see a spread dict, and this leg's
+    #  own message is about what the HANDLER RETURNS. The fields are read off a real call.
+    from agentic_core.religious_domain.api import _corpus_provenance as _cp572
+    _resp572 = dict(_cp572("quran-uthmani"))
+    _resp572.update({"ref": "1:1", "text_arabic": "…", "surah_name": "…", "basmala": None,
+                     "basmala_separated": None, "basmala_basis": None})
     for _field in ("ref", "text_arabic", "surah_name", "source", "basmala",
                    "basmala_separated", "basmala_basis"):
-        assert f'"{_field}"' in _ret, (
+        assert _field in _resp572, (
             f"the page reads ayah.{_field} but the handler no longer returns it, so the surface "
             "renders an empty label beside scripture")
+    #  and the provenance R8 added is part of the response, not only of the helper
+    for _field in ("edition", "riwayah", "licence"):
+        assert _field in _resp572, (f"the ayah response lost its corpus provenance ({_field}), so a "
+                                    f"reader cannot tell which transmission they have")
     #  the route still REFUSES an ayah that does not exist, which is what the panel's refusal rests on
     _bad = client.get("/api/v1/qep/ayah/2/999")
     assert _bad.status_code == 422, (
@@ -40355,6 +40379,24 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
         assert _tid586 in _cpcode586, ("a repo surface has no rendered element", _tid586)
 
     # ── L3. CLAUSE (3): THE ENTITY'S PRODUCTS, ON THE MARKETPLACE, UNPRICED IN THE RECORD ──────────
+    #  W594 (R5) — §17.5's KPI GATE IS A NEW PRECONDITION IN FRONT OF THIS. Release is gated on the
+    #  owning entity's objectives carrying KPIs, and `_seed_plan_from_journey` gives every entity three
+    #  TEMPLATE objectives with empty ones — so this guard, whose subject is repo reachability, was
+    #  blocked by a gate it is not about. It satisfies the precondition, and asserts the gate DOES block
+    #  without it, which makes the leg stronger than it was.
+    _blocked586 = client.post(f"/api/v1/marketplace/listings/from-entity/{_vid586}")
+    assert _blocked586.status_code == 409 and \
+        _blocked586.json()["detail"]["reason"] == "kpi_not_set", (
+        "§17.5's KPI gate does not block a release whose objectives carry no KPI",
+        _blocked586.status_code, _blocked586.text[:200])
+    assert _blocked586.json()["detail"]["missing_kpi"], (
+        "the gate refuses without naming which objectives lack a KPI", _blocked586.text[:200])
+    from agentic_core.api import business_plan as _bp586
+    _plan586 = _bp586._load(_vid586)
+    for _o586 in (_plan586.get("objectives") or []):
+        _o586["kpi"] = "measured for this guard"
+    _bp586._save(_plan586)
+
     #  an entity with no products SAYS SO rather than listing nothing silently
     _n586 = client.post(f"/api/v1/marketplace/listings/from-entity/{_vid586}")
     assert _n586.status_code == 200, (_n586.status_code, _n586.text[:200])
@@ -41698,3 +41740,247 @@ def test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds():
         "a flagship card states a capability with no disclosure of its state, while four cards in the "
         "same array carry an explicit one - the convention reached some of them and not the rest",
         _bare440)
+
+
+def test_w594_r7_a_named_scholar_approves_before_a_learner_sees_it(client):
+    """A.12.3 (Owner ruling 2026-10-05b R7) — the scholar-review gate, driven through every state.
+
+    WHAT IT REPLACES. `QEPAuthoringReactor` already had the SHAPE of this mechanism and gated nothing:
+    its queue was a plain list on the instance, so every approval died with the process; approval tested
+    `approver_trust = params.get("trust_score", 0.0)` — a number the CALLER supplied about itself — with
+    `scholar_id` whatever the caller typed; and nothing in the learner path consulted it. A mechanism that
+    looks like §11's required audit and verifies nothing is worse than none, because a reader of the file
+    concludes the audit exists.
+
+    CORRECT AND INERT BY CONSTRUCTION: approval requires the reviewer to be on a roster that is EMPTY
+    until the Owner puts a real person in it, so today every learner-facing item is withheld and the
+    surfaces behave as W593 left them — while the behaviour is now a gate rather than a hope.
+
+    THE ROSTER IS RESTORED at the end: the gate's inertness is a property other guards may rely on, and
+    leaving a scholar behind would quietly change what they test.
+    """
+    import json as _j594
+    import pathlib as _pl594
+
+    from agentic_core.api import scholar_review as _sr594
+    from agentic_core.config import data_path as _dp594
+
+    _roster_p = _dp594("scholar_roster.json")
+    _review_p = _dp594("scholar_review.json")
+    _saved_roster = _roster_p.read_bytes() if _roster_p.exists() else None
+    _saved_review = _review_p.read_bytes() if _review_p.exists() else None
+    _KEY = "tajweed_lesson:W594Idgham:beginner"
+    try:
+        #  start from an empty roster whatever the ambient store holds — the gate's first property is
+        #  about having no scholar, and a leftover one from another test would make this leg vacuous
+        if _roster_p.exists():
+            _roster_p.unlink()
+
+        # ── (1) WITH NO SCHOLAR, A LEARNER GETS NO BODY AND IS TOLD WHY ───────────────────────────
+        _r594 = client.post("/api/v1/qep/tajweed/lesson",
+                            json={"rule_name": "W594Idgham", "level": "beginner"})
+        assert _r594.status_code == 200, _r594.text[:200]
+        _b594 = _r594.json()
+        assert _b594["lesson_plan"] is None, (
+            "AI-composed religious teaching content reaches a learner with no scholarly review. A.12.3 "
+            "requires the audit and a disclaimer is NOT a review", str(_b594)[:300])
+        assert _b594["review_state"] == "withheld" and _b594["scholar_reviewed"] is False
+        assert "no scholar" in _b594["review_note"].lower(), (
+            "the learner is not told WHY the content is withheld, so an absence reads as a fault",
+            _b594["review_note"])
+        #  and the honest caveats W439 put there are still present — the gate joins them, not replaces
+        assert _b594.get("disclaimer") and _b594.get("served_by"), _b594
+
+        # ── (2) A TRUST SCORE THE CALLER ASSERTS APPROVES NOTHING ────────────────────────────────
+        _d1 = _sr594.decide(_KEY, "whoever", approve=True)
+        assert _d1["ok"] is False and _d1["reason"] == "no_scholar_engaged", (
+            "an approval succeeded with no scholar on the roster", _d1)
+        assert "not a lookup failure" in _d1["detail"], (
+            "an empty roster is reported as though the reviewer id were wrong - two different facts, and "
+            "collapsing them sends a caller hunting for a typo", _d1["detail"])
+
+        # ── (3) A REVIEWER OFF THE ROSTER IS REFUSED, AND DISTINCTLY ─────────────────────────────
+        _sr594.add_scholar("w594-shaykh", "A Named Scholar", "ijazah", "pytest-owner")
+        _d2 = _sr594.decide(_KEY, "someone-else", approve=True)
+        assert _d2["ok"] is False and _d2["reason"] == "reviewer_not_on_roster", (
+            "any id can approve, so `approved_by` records a name nobody verified", _d2)
+
+        # ── (4) A ROSTERED REVIEWER APPROVES WITH NO SCORE AT ALL, AND THE BODY IS SERVED ────────
+        _d3 = _sr594.decide(_KEY, "w594-shaykh", approve=True, note="checked")
+        assert _d3["ok"] is True and _d3["record"]["state"] == "approved", _d3
+        _r2 = client.post("/api/v1/qep/tajweed/lesson",
+                          json={"rule_name": "W594Idgham", "level": "beginner"}).json()
+        assert _r2["lesson_plan"] and _r2["scholar_reviewed"] is True, (
+            "an approved lesson is still withheld from the learner", str(_r2)[:300])
+
+        # ── (5) THE APPROVAL SURVIVES THE NEXT REQUEST ───────────────────────────────────────────
+        #  `submit` overwrites and sets in_review, so composing again would have RESET the approval -
+        #  a scholar's sign-off lasting until the next page load. Caught before wiring; guarded here.
+        _r3 = client.post("/api/v1/qep/tajweed/lesson",
+                          json={"rule_name": "W594Idgham", "level": "beginner"}).json()
+        assert _r3["review_state"] == "approved", (
+            "re-composing reset the approval, so a scholar's sign-off survives only until the next "
+            "request", _r3["review_state"])
+
+        # ── (6) AN APPROVED BODY EDITED AFTERWARDS FALLS BACK TO WITHHELD ────────────────────────
+        _body, _st, _why = _sr594.published_body(_KEY, "A DIFFERENT LESSON TEXT")
+        assert _body is None and "CHANGED" in _why, (
+            "text edited after approval inherits that approval, so a reviewer's sign-off covers words "
+            "they never read", _st, _why)
+
+        # ── (7) A REJECTION IS NEVER RENDERED ───────────────────────────────────────────────────
+        _sr594.decide(_KEY, "w594-shaykh", approve=False, note="not sound")
+        _r4 = client.post("/api/v1/qep/tajweed/lesson",
+                          json={"rule_name": "W594Idgham", "level": "beginner"}).json()
+        assert _r4["lesson_plan"] is None and "rejected" in _r4["review_note"].lower(), (
+            "content a reviewer REJECTED is still served to a learner", str(_r4)[:300])
+
+        # ── (8) THE SCOPE LINE IS GUARDED: SECULAR CURRICULUM IS NOT GATED ──────────────────────
+        #  The gate covers the LEARNER RELIGIOUS path. /api/v1/education/curriculum serves Bloom's, the
+        #  UK National Curriculum, IGCSE, IB, Montessori, STEM and UbD - gating it would withhold
+        #  secular curriculum from everyone. That line is the author's, not the Owner's (FU-448), so it
+        #  is asserted rather than left to be widened by accident in a later round.
+        _edu = client.post("/api/v1/education/curriculum",
+                           json={"topic": "photosynthesis", "framework": "bloom", "level": "ks3"})
+        assert _edu.status_code in (200, 422), ("the general education route broke", _edu.status_code)
+        if _edu.status_code == 200:
+            assert "review_state" not in _edu.json(), (
+                "the scholar-review gate has been applied to the GENERAL education route, which "
+                "withholds secular curriculum from every user - see FU-448, which is the Owner's")
+    finally:
+        for _p, _v in ((_roster_p, _saved_roster), (_review_p, _saved_review)):
+            if _v is None:
+                if _p.exists():
+                    _p.unlink()
+            else:
+                _p.write_bytes(_v)
+        assert _sr594.roster_is_empty() or _saved_roster is not None, (
+            "this guard left a scholar on the roster, which changes the gate for every later test")
+
+
+def test_w594_the_owners_rulings_of_2026_10_05b_hold_in_code_and_in_canon(client):
+    """R2–R6 and R8–R11 (Owner ruling 2026-10-05b) — each ruling, driven or read where it lives.
+
+    Behaviour is DRIVEN. A ruling whose entire content is a record (amend §10, scope Mode 2, defer the
+    Fitrah Spectrum) is asserted on the canon, and on BOTH halves: the new statement present AND the old
+    claim gone. Asserting only the new one passes while the contradiction sits two lines below — the
+    second-writer class this plan keeps finding; asserting only the absence passes on an empty file.
+    """
+    import pathlib as _pl594b
+
+    _root594 = _pl594b.Path(__file__).resolve().parents[1]
+    _vision = (_root594 / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    _plan594 = (_root594 / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+
+    # ── R4: the PRODUCTS axis exists and REACHES a journey ──────────────────────────────────────
+    from agentic_core.taxonomy import PRODUCTS, PRODUCT_LABELS, normalise_product
+    assert len(PRODUCTS) == 4 and set(PRODUCTS) == {"reactor", "incubator", "factory", "laboratory"}, (
+        "§17.1's Products axis is not the four the canon names", PRODUCTS)
+    assert set(PRODUCT_LABELS) == set(PRODUCTS), ("a product has no label", sorted(PRODUCT_LABELS))
+    assert normalise_product("widget") == "reactor" and normalise_product("Factory") == "factory", (
+        "an unrecognised product is stored as given instead of falling to the default")
+    _j594 = client.post("/api/v1/genesis/journey",
+                        json={"problem": "w594 product axis probe", "domain": "science",
+                              "realm": "enterprise", "product": "laboratory"}).json()
+    assert _j594.get("product") == "laboratory", (
+        "the Products axis does not reach a Genesis journey, so the third axis is a constant nothing "
+        "uses - which is the state R4 was ruled to end", {k: _j594.get(k) for k in ("product", "realm")})
+    assert _j594.get("product_label"), "the recorded product carries no label"
+
+    # ── R5: the KPI gate blocks RELEASE and NAMES what is missing ───────────────────────────────
+    from agentic_core.api import business_plan as _bp594
+    _g0 = _bp594.kpi_release_gate("vsb-w594-absent")
+    assert _g0["ok"] is False and _g0["reason"] == "no_objectives", (
+        "an entity with no objectives is not distinguished from one whose KPIs are unset - two states "
+        "that send a founder to different places", _g0)
+    _p594 = _bp594._load("vsb-w594-gate")
+    _p594["objectives"] = [{"id": "o1", "title": "Reach 100 learners", "kpi": ""},
+                           {"id": "o2", "title": "Break even", "kpi": "margin > 0"}]
+    _bp594._save(_p594)
+    _g1 = _bp594.kpi_release_gate("vsb-w594-gate")
+    assert _g1["ok"] is False and _g1["reason"] == "kpi_not_set", _g1
+    assert [m["title"] for m in _g1["missing"]] == ["Reach 100 learners"], (
+        "the gate refuses without naming WHICH objective lacks a KPI, which the ruling made a binding "
+        "condition because this gate blocks flows that worked yesterday", _g1)
+    assert "Reach 100 learners" in _g1["detail"], ("the detail does not name it either", _g1["detail"])
+    _p594["objectives"][0]["kpi"] = "100 enrolled"
+    _bp594._save(_p594)
+    assert _bp594.kpi_release_gate("vsb-w594-gate")["ok"] is True, "a fully-measured entity is blocked"
+
+    # ── R8 + R11: licence, edition and riwayah travel with the corpus ──────────────────────────
+    from agentic_core.religious_domain.api import _corpus_provenance as _cp594
+    _k594 = _cp594("quran-uthmani")
+    for _f in ("source", "edition", "script", "riwayah", "licence", "provenance_basis"):
+        assert _k594.get(_f), (f"corpus provenance omits {_f!r}, so a reader cannot tell which "
+                               f"transmission they have", sorted(_k594))
+    assert "never generated" in _k594["licence"], (
+        "the licence line drops the §11 statement that the Arabic is fetched and never AI-generated")
+    _u594 = _cp594("quran-some-unserved-edition")
+    assert _u594["riwayah"] is None and "NOT DECLARED" in _u594["provenance_basis"], (
+        "an edition whose riwayah this platform has not established is ASSIGNED one, which is the "
+        "scholarly claim the ruling forbids it from making", _u594)
+
+    # ── R9: a record of completion, and no credential and no dead verify link ──────────────────
+    import asyncio as _aio594
+    from agentic_core.reactor.religion.qep_flagship import qep_flagship_service as _s594b
+    _u = _s594b._get_user("w594-learner")
+    _u["progress"] = {"c1": {"completed": True, "completed_at": "2026-10-01"}}
+    _c594 = _aio594.run(_s594b.certifications("w594-learner", "c1"))
+    assert _c594["is_credential"] is False and _c594["status"] == "RECORDED", (
+        "QEP still issues something shaped like a credential in its own name, with no body behind it",
+        _c594)
+    assert "certificate_id" not in _c594 and "verify_url" not in _c594, (
+        "the certificate shape survives - and verify_url pointed at /verify/{id}, which nothing serves, "
+        "so a learner checking their credential got a 404", sorted(_c594))
+    assert "not a credential" in _c594["detail"], _c594["detail"]
+
+    # ── R3: §10 states what it measures AND what it does not ───────────────────────────────────
+    assert "MEASURED WHERE AN IN-HOUSE INSTRUMENT EXISTS" in _vision, (
+        "§10 still claims sixteen criteria with instruments for four")
+    #  ASSERTED INSIDE THE AMENDMENT BLOCK, not anywhere in the file. A blind that deleted "commercially
+    #  viable" from the unmeasured list left this GREEN, because the phrase also appears in §10's original
+    #  criteria line two paragraphs up - a presence check satisfied by a different sentence. The block is
+    #  cut out first so the leg can only be satisfied by the amendment itself.
+    _amend594 = _vision.split("AMENDED BY OWNER RULING 2026-10-05b (R3)", 1)[1].split("## 11.", 1)[0]
+    assert "Named, with NO instrument anywhere" in _amend594, (
+        "the amendment no longer separates what is measured from what is only named", _amend594[:200])
+    #  AND NARROWED AGAIN TO THE ONE SENTENCE. The first narrowing still passed a blind that deleted
+    #  "commercially viable" from the list, because the phrase appears TWICE inside the amendment - once
+    #  in this list and again in the "commercial trio" sentence below it. A needle appearing twice cannot
+    #  be checked by a presence test; the list itself is cut out, ending where it says so.
+    _named594 = (_amend594.split("Named, with NO instrument anywhere", 1)[1]
+                 .split("These are not reported as met.", 1)[0])
+    for _unmeasured in ("best-in-class", "innovative", "effective", "efficient", "commercially viable",
+                        "tested", "validated", "categorised"):
+        assert _unmeasured in _named594, (
+            "§10's amendment dropped a named criterion instead of recording it as unmeasured - a bar "
+            "quietly reduced hides what was promised", _unmeasured)
+    assert "category error rather than a gap" in _vision, (
+        "§10 does not say WHY an instrument for best-in-class is not merely missing")
+
+    # ── R6: Mode 2 is the Owner's own twin, and a further one needs consent ────────────────────
+    assert "Mode 2\n  means the OWNER'S OWN twin node" in _vision or "OWNER'S OWN twin node" in _vision, (
+        "§17.4 does not record Mode 2's ruled scope")
+    assert "that expert's consent" in _vision, (
+        "§17.4 does not record that a twin of another named human needs that person's consent")
+    assert "the scope is an OWNER RULING (P3.0)" not in _vision, (
+        "§17.4 still presents Mode 2's scope as an open ruling after it was ruled")
+
+    # ── R10: the Fitrah Spectrum is a BOUNDARY, not a backlog row ─────────────────────────────
+    assert "A.12.4 Fitrah Spectrum — RULED 2026-10-05b: DEFERRED" in _vision, (
+        "A.12.4 does not record the deferral")
+    assert "No round may schedule it as" in _vision, (
+        "the deferral does not forbid a later round scheduling it as unbuilt work, which is the whole "
+        "point of recording it as a boundary rather than a gap")
+    assert "The ruling needed is whether it proceeds" not in _vision, (
+        "A.12.4 still reads as an open question beside its own ruling")
+
+    # ── and the open-decisions list holds only what is genuinely open ─────────────────────────
+    _still = _plan594.split("STILL WITH THE OWNER", 1)[1][:1400]
+    assert "THE STRIPE KEY ROLL" in _still and "162" in _still and "FU-448" in _still, (
+        "the open-decisions list has lost something that IS open", _still[:300])
+    for _ruled in ("whether §17.1's Products axis is built or amended",
+                   "whether §17.5's KPI gate is built or amended"):
+        assert _ruled not in _still, (
+            "the list still asks the Owner for a ruling they have given - which is how a ruling gets "
+            "quietly undone", _ruled)

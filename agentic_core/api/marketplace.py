@@ -442,6 +442,22 @@ async def list_entity_products(vsb_id: str,
     #  ownership first: a caller may only list the products of an entity they own
     _require_vsb_attribution(vsb_id, user)
 
+    #  R5 (Owner ruling 2026-10-05b) — §17.5's KPI GATE. Nothing gated delivery on KPIs, so an entity
+    #  could put products on the marketplace with no measurable objective behind them. Listing is
+    #  RELEASE - making something available to others - so the gate sits here, after ownership and before
+    #  anything is published. Composing a deliverable is NOT gated: producing is not releasing, and
+    #  blocking composition would stop an entity working on anything before it had decided how to
+    #  measure it. BINDING CONDITION FROM THE RULING: the refusal names WHICH objectives lack a KPI,
+    #  because this gate blocks flows that worked yesterday and a bare refusal would read as a fault.
+    from agentic_core.api.business_plan import kpi_release_gate as _kpi_gate
+    _gate = _kpi_gate(vsb_id)
+    if not _gate["ok"]:
+        raise HTTPException(status_code=409, detail={
+            "error": "kpi_gate", "reason": _gate["reason"], "detail": _gate["detail"],
+            "objectives": _gate["objectives"], "missing_kpi": _gate["missing"],
+            "where": f"set a KPI on each objective at /api/v1/business-plan/{vsb_id}",
+        })
+
     #  the deliverables store is read through its OWN module, filtered here: that module's `_load`
     #  returns every row, and marketplace has a `_load` of its own, so it is called on the module rather
     #  than imported by name.

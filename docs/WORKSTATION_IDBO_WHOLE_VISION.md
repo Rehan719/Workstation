@@ -483,6 +483,21 @@ Every solution is: **specifically designed · modelled · simulated · optimised
 **verified · tested · validated**; delivered **end-to-end** with the **latest, most advanced** science,
 technology, operational and commercial capability; **cost-effective and efficient**.
 
+> **AMENDED BY OWNER RULING 2026-10-05b (R3): MEASURED WHERE AN IN-HOUSE INSTRUMENT EXISTS; THE RECORD
+> NAMES WHAT WAS NOT.** Sixteen criteria are named above and instruments exist for four. A bar that lists
+> sixteen and measures four is the over-claim this canon's honesty rule exists to remove — and a bar
+> quietly reduced to four would hide what was promised, so both halves are stated.
+>
+> **Measured, with an instrument:** modelled · simulated · ranked · optimised — and each is WITHHELD on a
+> tie or on identical candidates, with the reason, rather than attested (W449; the shipped EVIDENCE.md
+> carries the tie note).
+> **Named, with NO instrument anywhere:** best-in-class · innovative · effective · efficient ·
+> commercially viable · tested · validated · categorised. These are not reported as met. An instrument
+> for *best-in-class* or *innovative* would need a comparator set this platform does not have, which is a
+> category error rather than a gap; the ruling records the commercial trio (effective · efficient ·
+> commercially viable, from the BMS unit-economics estimate) as a SEPARATE later item, not as a promise
+> kept here.
+
 ## 11. Compliance, Safety & Ethics (continuously live)
 
 Continuously monitored and evaluated **live compliance** to **legal, regulatory, international, and
@@ -762,11 +777,23 @@ architecture). This is the exact structural skeleton the fine-grained vision han
   faith-content constitution binds it; specified in full in **Appendix A**).
 - **Products (how work runs):** Reactor (rapid AI generation) · Incubator (iterative development) ·
   Factory (production-grade delivery) · Laboratory (experimental/research). *Status (W446 audit): the
-  four facilities exist in the fabric (§7) but the Products AXIS has no code realisation — no
-  `PRODUCTS` constant in the taxonomy, no grid picker feeding Genesis; the Laboratory runs as the Forge
-  `laboratory` stage and the Synthesis Lab. OWNER RULING (delivery-plan P3.0): build the axis, or amend
-  this line to "design intent".*
+  four facilities exist in the fabric (§7) and the Products AXIS had no code realisation at all.
+  **RULED 2026-10-05b (R4): BUILD THE AXIS, not "design intent" — 4 Realms × 6 Domains × 4 Products is
+  canon, not decoration.** Built W594: `PRODUCTS` and `PRODUCT_LABELS` sit beside `REALMS` and `DOMAINS`
+  in the taxonomy with a `normalise_product` mirroring `normalise_realm`, and a Genesis journey takes and
+  RECORDS a product, with an unrecognised value falling to the default rather than being stored as given.
+  **The 96-cell grid picker is DEFERRED by the same ruling**: a constant is not a grid, and it waits for a
+  user who wants it.*
 - All 96 follow the same **Concept → Design → Build → Launch → Commercialise** stage-gated lifecycle.
+  **RULED 2026-10-05b (R2): option (C), NARROW — make the VSB stage advance, or rename it.** Not (A),
+  canonising five vocabularies into one gated lifecycle, which re-plumbs both entry pipelines; not (B),
+  correcting the canon to match code that was wrong. *Measured W594: the old `stage: "commercialise"`
+  literal written at birth is GONE — establishment now records `stage: "pending derivation"` and
+  `_derived_stage` computes the furthest §4 section composed WITH NO GAP, distinguishing a section that
+  was never provided from one awaiting the owned model, and all three readers consult it. What remains is
+  the VOCABULARY: that derived stage walks §4's sections (concept · design · operations ·
+  commercialisation), which is NOT the five-stage grid named on this line, and calling both "stage" is
+  what let eight vocabularies grow in the first place.*
   *Status (re-verified W446): no single gated lifecycle exists in the product — eight stage
   vocabularies run, and every established VSB holds `stage: "commercialise"` — 218 of 219 from a
   genesis literal, one from the spawn path's `stage: req.scope` — and no code path advances it
@@ -825,10 +852,13 @@ honesty), P3.3 (the cadence generators).*
 **17.4 The 3 Human–AI integration modes.**
 - **Mode 1** — Owner sets mission/values/ethical bounds → the IDBO executes everything else autonomously.
 - **Mode 2** — Expert → **Digital-Twin human node** (24/7 expertise without the expert present). *This is
-  the basis of the Chief = the founder's digital twin.* *Status (W446, ledger R3.8/R3.4): NOT BUILT — no
-  expert twin node exists; the Chief today is a constant values sentence plus the last five stored
-  instructions, invoked only by click (`/api/v1/twin/models` holds 0 models; per-VSB Chiefs are titled
-  "Digital Twin of default"). Delivery plan P3.4; the scope is an OWNER RULING (P3.0).*
+  the basis of the Chief = the founder's digital twin.* **SCOPED BY OWNER RULING 2026-10-05b (R6): Mode 2
+  means the OWNER'S OWN twin node, delivered W587 — the Chief is a twin built from the Owner's record, or
+  it says plainly that it is a role.** A twin of any OTHER named human expert is a later item and requires
+  **that expert's consent**: a digital twin of a named person raises consent and likeness questions a
+  build may not settle on their behalf, whereas the Owner's own twin carries the Owner's consent by
+  construction. *Prior status (W446, ledger R3.8/R3.4), kept as history: no expert twin node existed and
+  the Chief was a constant values sentence plus the last five stored instructions, invoked only by click.*
 - **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ◐ RECORDS DELIVERED (W126); **GATING DELIVERED W452** (every lifecycle mover — orchestrate, cascade, evolve, ship, the birth-ship, the heartbeat — consults `blocks_progress` and refuses with 409 while a gated stage is pending or rejected; gates can be set at birth). Still ◐: the journey runs every stage in one request before the entity exists, so a gate pauses the SHIP, not a stage mid-journey. The W126 delivery: per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
 
 **17.5 The 10 architecture invariants (absolute).** User isolation (scoped to user_id) · mandatory GaaS
@@ -904,9 +934,28 @@ updates (each verified in code, file:line evidence in the Round-7 audit journal)
 
 ## 18. Certainty & Agreement — what I am sure of, and what I want you to confirm
 
-**Six decisions the biomimetic scoping put to you (W512), with my recommendation on each — none acted on
-until you rule.** They are here rather than in the plan because each is a choice about what the organism IS,
-not about how a round delivers it.
+**Six decisions the biomimetic scoping put to you (W512), with the recommendation each was ruled on.
+ALL SIX WERE RATIFIED BY THE OWNER ON 2026-09-29 — they are SETTLED, and no round may put them back as
+open questions.** They are here rather than in the plan because each is a choice about what the organism
+IS, not about how a round delivers it; the recommendations are kept because they are what was ruled on,
+and the reasoning behind a ruling is worth more than the verdict alone.
+
+> **Corrected W594 (FU-447).** This heading said the six were unacted-on and awaiting a ruling, for
+> the thirty-odd rounds
+> after the ruling, so the canon presented six ratified decisions as pending while the delivery plan
+> recorded them correctly. On 2026-10-05 the Owner asked which decisions awaited them; read at face value
+> this section would have put six ALREADY-RULED questions back to them, and asking an Owner to re-rule
+> what they have ruled is a way of quietly undoing a ruling. Where the plan and this document disagree
+> about what is SETTLED, this document is the one a reader trusts, so it is the one that had to be fixed.
+>
+> | the question | ruled | where it went |
+> |---|---|---|
+> | 2 · what an entity may be selected ON | 2026-09-29 | **P3.27 — DONE W584.** Selection REFUSES while any measure is unmeasured, as the §11 screen refuses rather than clears |
+> | 3 · may an entity create an entity | 2026-09-29 | **P3.26 TURNOVER** — mitosis through Change Control, inheriting the parent's constitution verbatim; meiosis produces a CANDIDATE, not a birth |
+> | 4 · what a VSB may retire itself over | 2026-09-29 | **P3.26** — self-service dormancy, governed death, with the never-auto-retire set (unsettled obligations, a governance hold, a ruling, the QEP entity, the last entity in its realm × domain) |
+> | 6 · carrying capacity and an end | 2026-09-29 | **P3.2**, derived from the metabolic budget rather than set — P3.26 records it as "NOT THIS ITEM" |
+> | 1 · what the metabolic budget is measured in | 2026-09-29 | **P3.2**, with FU-308 carrying the measured arithmetic: min production 0.4 against max consumption 0.1, a 4× gap, so the organism cannot deplete by arithmetic rather than by labelling |
+> | 5 · should a rescue channel exist | 2026-09-29 | **RULED NO.** P3.27 records why: investment between entities is already built (§4 Stage 4 and the W507 arrival share), and routing rescue through a stage whose basis is competitive selection would corrupt that basis — "rescue before selection means nothing ever fails" |
 
 1. **What is the metabolic budget measured in?** *Recommend:* nothing new — the loop exists; wire the real
    circadian efficiency into `_update_atp` and raise the consumption coefficient above minimum production.
@@ -1418,29 +1467,59 @@ class. The retirement was right; its record was not.*
 
 ## A.12 Design decisions that block the build — Owner rulings
 
-None of these is engineering. Each blocks engineering, and each is the Owner's to make.
+None of these is engineering. Each blocks engineering, and each was the Owner's to make.
 
-**A.12.1 Corpus provenance.** No source is named for recitation audio, translations, the Hadith corpus or
-Tafsir; no licensing; no canonical edition; no *qirāʾāt* selection. The Qur'an Arabic source is settled
-(alquran.cloud, per §11). Everything else is not.
+> **ALL FIVE WERE RULED ON 2026-10-05b.** Each entry below records its ruling. They are SETTLED and no
+> round may put them back as open questions — the delivery plan's OWNER RULINGS 2026-10-05b block is the
+> record, and FU-447 is the row for what happens when this document says otherwise.
 
-**A.12.2 Certification authority.** Feature 13 issues certificates for completed modules. Under what
-authority, and reviewed by whom? A platform-issued certificate in Quranic study makes a claim about a
-person's standing. Until ruled, certification is not built — and the memorisation basis line ("a review
-count, not a hifz certification") is the correct posture meanwhile.
+**A.12.1 Corpus provenance — RULED 2026-10-05b: ONLY SOURCES WITH AN EXPLICIT LICENCE AND A NAMED
+CANONICAL EDITION.** Licence + edition + *qirāʾāt* are recorded with every stored item, and anything
+missing all three is WITHHELD. Sequenced by licensing difficulty: translations first, recitation audio
+last. The Qur'an Arabic source remains settled (alquran.cloud, per §11) and is never AI-generated.
+*Built W594 for the Qur'an corpus: `_corpus_provenance` carries source, edition, script, riwayah and
+licence on every ayah and surah response, and an edition whose riwayah this platform has not established
+reads NOT DECLARED rather than being assigned one — guessing a riwayah would be the scholarly claim the
+ruling forbids. Recitation audio, Hadith and Tafsir remain unsourced and therefore unserved.*
 
-**A.12.3 Curriculum ownership, and scholarly review of AI-generated religious content.** Noorani Qaida,
-Tajwīd, Quranic Arabic and Tafsir curricula are assumed by the feature set. Who authors them, and which
-scholarly authority approves them before a learner sees them? Relatedly and more urgently: **§11 requires
-scholar-led audit of AI and content, and no mechanism specifies how a generated tafsir explanation, dua
-suggestion or Hadith citation is reviewed *before* a user sees it.** This blocks A.6 features 5, 6 and 7 and
-all of A.7.
+**A.12.2 Certification authority — RULED 2026-10-05b: QEP ISSUES NO CERTIFICATE IN ITS OWN NAME.** A
+certificate implies a body standing behind it and there is none. A **record of completion** is issued
+instead, stating plainly that it is not a credential, until a recognised body is named.
+*Built W594: the issuing path returns `completion_record_id` with `status: "RECORDED"` and
+`is_credential: false`, and the `verify_url` is gone — it pointed at `/verify/{id}`, which nothing serves,
+so a learner clicking through to check their credential got a 404. The evidence gate from W403 stays
+(nothing is recorded without a recorded completion) and so does the line that the integrity digest is not
+a signature and does not prove who issued it.*
 
-**A.12.4 Fitrah Spectrum — build to the A.9.5 standard, or do not build.** The 99 aspects were never
-enumerated in any source. The ruling needed is whether it proceeds as a self-reported reflection aid at all.
+**A.12.3 Curriculum ownership and scholarly review — RULED 2026-10-05b: A NAMED HUMAN SCHOLAR APPROVES
+AI-COMPOSED RELIGIOUS CONTENT BEFORE A LEARNER SEES IT, ENFORCED AS A PIPELINE GATE.** Unreviewed content
+is **WITHHELD**, never shown with a disclaimer — a disclaimer is not a review, and §11 requires the audit.
+*Built W594 as `agentic_core/api/scholar_review.py`: draft → in review → approved by a NAMED reviewer →
+published, with the learner-facing surface rendering approved items only. Approval requires the reviewer
+to be on a scholar roster that is EMPTY until the Owner engages one, so the gate is correct and inert
+together: today every learner-facing item is withheld with that stated as the reason. An approval binds
+the exact text approved, so an edit afterwards falls back to withheld rather than inheriting a sign-off.
+It replaced a mechanism that had the SHAPE of this audit and verified nothing — `QEPAuthoringReactor`
+approved on a trust score the CALLER supplied about itself, kept its queue in memory, and was consulted by
+nothing in the learner path. SCOPE: the gate covers the learner/curriculum path. Whether it should also
+cover the five Religion research tools is FU-448, an open Owner decision — those five already withhold on
+the floor and already refer the reader to a qualified scholar.*
 
-**A.12.5 Tajwīd rule scope.** Which rules are taught and assessed in writing, and to what level of
-madhhab-specific variation. The sources use two rules as recurring examples and never define the set.
+**A.12.4 Fitrah Spectrum — RULED 2026-10-05b: DEFERRED, and recorded as a BOUNDARY, not a backlog
+row.** The 99 aspects were never enumerated in any source. The ruling asked was whether it proceeds as a
+self-reported reflection aid at all; the Owner deferred it on the stated reasoning that it carries the
+HIGHEST MISUSE RISK of any QEP feature and the least functional necessity. **No round may schedule it as
+unbuilt work.** If it is ever reopened, Ruling A.9.5 binds it absolutely and without exception: the Fitrah
+Spectrum is never a measurement, it is self-reported only, it is never scored, never compared between
+users, never stored as a trait, and no AI verdict is passed on any person’s spiritual state.
+
+**A.12.5 Tajwīd rule scope — RULED 2026-10-05b: DECLARE THE RIWAYAH AND SHOW IT**, rather than presenting
+one rule set as universal. The platform RECORDS which transmission its rules are stated for; it does not
+rule on which is authoritative.
+*Built W594: a tajwid lesson carries `riwayah` and a basis saying the rules are stated for the
+transmission of the edition this platform fetches, that rules VARY between transmissions and madhāhib, and
+that a rule for another transmission is not reported rather than adapted. Cheap to state because
+recitation is never scored (§11), so the rules are reference material and not a basis for judging anyone.*
 
 ## A.13 What the three prior attempts cost, as binding constraints
 
