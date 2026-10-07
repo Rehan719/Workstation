@@ -2694,6 +2694,15 @@ class RepoCascadeRequest(BaseModel):
     objective_id: str | None = None
 
 
+def _tier_text(v: Any, limit: int = 1500) -> Any:
+    """A tier's output as kept in the repo's run file: text trimmed, a per-role dict trimmed per role."""
+    if isinstance(v, dict):
+        return {str(k): _tier_text(x, 600) for k, x in list(v.items())[:12]}
+    if isinstance(v, list):
+        return [_tier_text(x, 600) for x in v[:12]]
+    return str(v if v is not None else "")[:limit]
+
+
 @router.post("/{vsb_id}/repo/cascade")
 async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | None = Depends(get_current_user)):
     """§13 (W291) — the repo's AI-swarm cascades are RE-RUNNABLE: execute the entity's stored
@@ -2719,8 +2728,12 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
     _sc = (stored.get("swarm_config") or {}) if isinstance(stored, dict) else {}
     _csuite = [k for k in _sc if k in _AGENTS and k != "CEO"]
     _coe = [str(x) for x in (_sc.get("CoE") or []) if isinstance(x, str)][:8]
+    #  W628 (FU-520) - the founder's problem travels with the run (the W434 lesson): the default mission named
+    #  only the enterprise, so 23 floor calls reasoned about a sentence and not about bees
+    _problem = str(vsb.get("challenge") or vsb.get("problem") or "").strip()
     run = await cascade_orchestration(CascadeRequest(
-        mission=req.mission or f"Operate and advance {vsb.get('name')} per its living plan",
+        mission=req.mission or (f"Operate and advance {vsb.get('name')} per its living plan"
+                                + (f" — for the problem it was founded on: {_problem[:400]}" if _problem else "")),
         domain=vsb.get("domain", "enterprise"),
         csuite_roles=_csuite, coe_specialisms=_coe,
         scope=vsb_id, objective_id=req.objective_id))
@@ -2734,6 +2747,8 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
                                 for f in (run.get("fabric_requisitions") or [])],
         "served_by": (run.get("ai_provenance") or {}).get("served_by"),
         "ran_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        #  W628 (FU-520) - what each tier PRODUCED is kept in the commit; the run file held none of it
+        "tier_outputs": {k: _tier_text(run.get(k)) for k in sorted(run) if k.startswith("level_")},
     }
     runs_dir = root / "resources" / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)

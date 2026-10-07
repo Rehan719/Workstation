@@ -35,6 +35,8 @@ from typing import Any, Dict, List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from agentic_core.api._strict_models import STRICT
+
 from agentic_core.auth.core import auth_enabled, get_current_user, request_owner_id
 
 from agentic_core.ai.gateway import gateway
@@ -619,6 +621,7 @@ def _ratifying_board(vsb_id: str | None) -> Dict[str, Any]:
 
 
 class RatificationDecision(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     decision: Literal["ratify", "refuse"]
     notes: str = ""
     # A ratification is the Owner's decision recorded by the Board, never incidental: required in BOTH auth modes
@@ -669,6 +672,7 @@ async def decide_ratification(cca_id: str, req: RatificationDecision,
 
 
 class ChiefInstruction(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     instruction: str
     owner: str = "Rehan"
     cascade_to_ceo: bool = True
@@ -863,6 +867,7 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
 
 
 class BoardDirective(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     topic: str
     domain: str = "enterprise"
     # §14 (W300) — deliberate for a specific entity's plan (a vsb_id) instead of the apex

@@ -86,6 +86,8 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from agentic_core.api._strict_models import STRICT
+
 from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import auth_enabled, get_current_user, request_owner_id, require_admin
 from agentic_core.organism.biobus import biobus
@@ -509,6 +511,7 @@ def _decision_fields(c: dict) -> dict:
 # ── Request models ────────────────────────────────────────────────────────────
 
 class ConfigChangeSpec(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     # W438 — the CCA's execution arm for organism configuration. Either one (section, key, value)
     # change or reset: true. Validated/coerced at SUBMIT time so an unappliable change can never
     # be approved, and APPLIED by /implement (which used to only mark, never execute).
@@ -593,6 +596,7 @@ _ROOT_FOR_FORECAST = Path(__file__).resolve().parents[2]
 
 
 class SubmitChangeRequest(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     title: str
     change_type: str = "config_minor"
     description: str
@@ -614,6 +618,7 @@ class SubmitChangeRequest(BaseModel):
 
 
 class ReviewDecision(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     # W459 — the override used to be free text: `override_decision: "implemented"` jumped a CRITICAL
     # change straight past approval with nothing applied and no pre-validation recorded, and any
     # other word was written into `status` outside the ChangeStatus vocabulary.
@@ -1052,6 +1057,7 @@ async def submit_change_route(req: SubmitChangeRequest,
 
 
 class ImmuneReconfigureRequest(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     # Default reads the LIVE immune threat. `simulate_threat` is an honest demonstration/test input
     # that exercises the defensive mapping without mutating global immune state.
     simulate_threat: str | None = None

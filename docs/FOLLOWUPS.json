@@ -4931,11 +4931,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W628",
       "note": "",
       "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "docs/DEPENDENCY_VERDICTS.md gives all 25 a verdict: 3 held for P4.4, 3 reached by the devcontainer Streamlit dashboard, 19 removable; removal rides a separate commit per the Owner ruling 2026-10-07b; blind red"
     },
     {
       "id": "FU-284",
@@ -5239,11 +5242,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.24",
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
+      "slot_source": "Owner ruling 2026-10-07b: P2.24 closes without it; it rides P5.1 as a named, scheduled follow-up (no code fix can close it: FU-301/FU-417 need a reproduction or cause, FU-399 is a multi-round conversion)",
       "tier": 2
     },
     {
@@ -7206,10 +7209,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W628",
       "note": "",
-      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "eight instruction-bearing request models forbid undeclared fields, listed with the reason in agentic_core/api/_strict_models.py; the rest stay tolerant on purpose; a misspelt commitment field now answers 422; blinds red"
     },
     {
       "id": "FU-399",
@@ -7223,11 +7229,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.24",
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
+      "slot_source": "Owner ruling 2026-10-07b: P2.24 closes without it; it rides P5.1 as a named, scheduled follow-up (no code fix can close it: FU-301/FU-417 need a reproduction or cause, FU-399 is a multi-round conversion)"
     },
     {
       "id": "FU-400",
@@ -7608,12 +7614,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.24",
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 2,
-      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
+      "slot_source": "Owner ruling 2026-10-07b: P2.24 closes without it; it rides P5.1 as a named, scheduled follow-up (no code fix can close it: FU-301/FU-417 need a reproduction or cause, FU-399 is a multi-round conversion)"
     },
     {
       "id": "FU-418",
@@ -8846,10 +8852,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W628",
       "note": "",
-      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "P3.23's roadmap row now states what is built: the retrieval + prompt + verifier composition exists for law only; GMP and QEP have their gates but no retrieval-with-citations, and it is not claimed; blind red"
     },
     {
       "id": "FU-475",
@@ -9821,11 +9830,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W628",
       "note": "",
       "slot_source": "ledger v9 R2.3 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the repo cascade's default mission carries the founder's problem, and the run file committed into the repo keeps each tier's output (tier_outputs); blinds red"
     },
     {
       "id": "FU-521",
@@ -10184,11 +10196,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W628",
       "note": "",
       "slot_source": "ledger v9 R5.4 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Products picker says the choice is recorded only and no stage runs differently by product yet; Projects export and card label the stored realm field as the Domain and domain as the Area; blinds red"
     },
     {
       "id": "FU-538",

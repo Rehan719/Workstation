@@ -694,6 +694,8 @@ export const GenesisJourney: React.FC = () => {
             ))}
           </div>
           <p className="text-[9px] text-slate-600 mt-1">{product ? PRODUCT_LABELS[product] : 'None chosen — the journey records that no product was chosen.'}</p>
+          {/* W628 (FU-537) — the choice is recorded with the journey and does not yet change how any stage runs */}
+          <p data-testid="genesis-product-record-only" className="text-[9px] text-amber-400/80 mt-1">Recorded only: the product is saved with this journey and its entity, but no stage runs differently by product yet.</p>
         </div>
         {/* §5 — one continuous workflow: optionally take the challenge all the way to a living VSB enterprise */}
         <div className="pt-2 flex flex-col @[560px]:flex-row @[560px]:items-end gap-3 flex-wrap">
