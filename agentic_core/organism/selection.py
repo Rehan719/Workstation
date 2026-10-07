@@ -95,9 +95,28 @@ def measure_entity(vsb_id: str) -> Dict[str, Any]:
             "basis": f"no entity {vsb_id!r} is on the living roster, so it has no economic record here"}
     else:
         dist = entry.get("last_distributable")
+        #  W618 (FU-509, M2 v8 R6.5) — THE ROSTER'S FIGURE IS SCOPED TO THE CYCLES THE ROSTER RAN. A cycle run
+        #  through any other path (POST /economy/cycle, a Genesis establish) is on the entity's books and not in
+        #  `last_distributable`, so selection reported 0.0 WST as "measured" profitability beside books holding a
+        #  305.83 WST distributable cycle. The books' own cycle count is compared with the roster's: when the
+        #  books hold more, the figure is said to be the roster's last, not the entity's latest.
+        _roster_cycles = int(entry.get("operating_cycles") or 0)
+        _books_cycles, _books_err = None, None
+        try:
+            from agentic_core.economy.ledger import VirtualLedger as _VL618
+            _books_cycles = _VL618(vsb_id)._cycles_posted().get("cycles_posted")
+        except Exception as _le:                                  # pragma: no cover - defensive
+            _books_err = f"{type(_le).__name__}: {_le}"
+        _stale = isinstance(_books_cycles, int) and _books_cycles > _roster_cycles
         out["measures"]["profitability"] = {
             "value": dist, "measured": not _unmeasured(dist),
-            "basis": (f"distributable profit of the entity's last operated cycle (virtual WST): {dist}"
+            "scope": "roster-operated cycles only",
+            "roster_cycles": _roster_cycles, "books_cycles": _books_cycles,
+            "basis": ((f"distributable profit of the last cycle the AUTONOMOUS ROSTER operated (virtual WST): {dist}"
+                       + (f". STALE AS THE ENTITY'S FIGURE: its books record {_books_cycles} cycle(s) and the roster "
+                          f"operated {_roster_cycles}, so a later cycle run by another path is not in this number"
+                          if _stale else "")
+                       + (f" (the books could not be read to compare: {_books_err})" if _books_err else ""))
                       if not _unmeasured(dist) else
                       "NOT MEASURED: no economic cycle has completed for this entity, so it has no "
                       "profitability record at all - which is not the same as a loss")}

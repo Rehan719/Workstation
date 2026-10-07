@@ -213,6 +213,17 @@ class CharityIntelligence:
         scored.sort(key=lambda x: x["score"], reverse=True)
         return scored[:top]
 
+    def _unfunded_priorities(self, grants: List[Dict[str, Any]], top: int) -> List[Dict[str, Any]]:
+        funded = {g["id"] for g in grants}
+        order = [c["id"] for c in self.ranked(top=10_000)]
+        names = {c["id"]: c.get("cause", c["id"]) for c in self._candidates()}
+        return [{"id": p, "cause": names.get(p, p),
+                 "rank": (order.index(p) + 1) if p in order else None,
+                 "why": (f"ranked {order.index(p) + 1} of {len(order)} on the editorial weights, below the "
+                         f"top-{top} cut, so it received nothing this cycle" if p in order else
+                         "not among the candidate causes, so it cannot be funded")}
+                for p in sorted(self.priorities) if p not in funded]
+
     def allocate(self, budget: float, top: int = 5) -> Dict[str, Any]:
         """Distribute ``budget`` (WST, virtual) across the top causes, weighted by score. EVERY
         grant's cause is screened through the unified compliance engine (Sharia/Halal · UK Legal ·
@@ -264,5 +275,10 @@ class CharityIntelligence:
             "priorities": sorted(self.priorities),
             "grants": grants,
             "excluded_by_compliance": excluded,
+            #  W618 (FU-505, M2 v8 R6.1) — A PRIORITY THE ALLOCATION NEVER REACHES IS NAMED. Dawah is one of the
+            #  Owner's four named causes and ranks last on the editorial weights, below the top-{top} cut, so it
+            #  received nothing on every cycle and no surface said so. Whether it SHOULD be funded is the
+            #  Owner's call (a weight, a floor, or a guaranteed share); this reports that it is not.
+            "priorities_unfunded": self._unfunded_priorities(grants, top),
             "disclaimer": "Virtual/simulated allocation — no real funds moved.",
         }

@@ -19,7 +19,8 @@ interface EntityType {
 interface Cycle {
   intake_revenue: number; homeostasis_reserves: number; operating_costs?: number; distributable_profit: number;
   circulation: Record<string, { amount_wst: number; role: string }>;
-  giving_back: { grants: { cause: string; amount_wst: number; score: number }[] } | null;
+  giving_back: { grants: { cause: string; amount_wst: number; score: number }[];
+    priorities_unfunded?: { id: string; cause: string; rank: number | null; why: string }[] } | null;
   metabolic_energy: number | null; entity_name: string; capital_preserved: boolean;
   energy_state?: string; reserve_rate_applied?: number;   // §8→§12 economic survival instinct
   metabolic_energy_basis?: string | null;   // W617 (FU-507) — null: the energy term was not measured
@@ -586,6 +587,12 @@ export const VSBEconomy: React.FC = () => {
           {cycle.giving_back && cycle.giving_back.grants.length > 0 && (
             <Card className="p-6 border-aura/30 bg-aura/5">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-aura mb-4 flex items-center gap-2"><Gift size={14} /> Intelligent Charitable Giving (nutrient-return loop)</h3>
+              {/* W618 (FU-505) — a named priority that received nothing is said, with why */}
+              {(cycle.giving_back.priorities_unfunded || []).length > 0 && (
+                <p className="text-[10px] font-bold text-amber-300 mb-3" data-testid="charity-priorities-unfunded">
+                  Your priority {cycle.giving_back.priorities_unfunded!.map(p => `${p.cause} (${p.why})`).join('; ')}. It is already a priority, so no setting on these pages changes this - a weight or a guaranteed share is an Owner ruling.
+                </p>
+              )}
               <div className="space-y-2">
                 {cycle.giving_back.grants.map((g, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900">

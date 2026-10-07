@@ -195,6 +195,19 @@ _CONTENT_LABELS = ("User", "Problem", "Challenge", "Objective", "Concept", "Desi
 _CARRIED_LABELS = ("Prior context", "Realm")
 
 
+#  W618 (FU-500, M2 v8 R5.1) — FIELDS WHOSE VALUE IS A BLOCK, NOT A LINE. The Law Document Analyser sends
+#  "DOCUMENT:\n<the user's document>" and the Care tools "Patient profile:\n  key: value …"; `_field` reads one
+#  line after a label and its labels are case-sensitive, so none of these reached the floor, which printed
+#  "(no salient terms extracted)" under "Red Flags" over a document it never read. A block runs to the next
+#  blank line.
+_BLOCK_LABELS = ("DOCUMENT", "Patient profile", "Patient observations/data (as recorded)")
+
+
+def _block(prompt: str, label: str, limit: int = 3000) -> str:
+    m = re.search(rf"(?m)^{re.escape(label)}\s*:[ \t]*\n?(.*?)(?:\n[ \t]*\n|\Z)", prompt, re.S)
+    return m.group(1).strip()[:limit] if m else ""
+
+
 def _content_parts(prompt: str, *, for_terms: bool = False) -> List[str]:
     """The prompt's content-field values, ONE PER FIELD, so nothing is read across a field boundary.
 
@@ -209,7 +222,8 @@ def _content_parts(prompt: str, *, for_terms: bool = False) -> List[str]:
     """
     labels = tuple(lab for lab in _CONTENT_LABELS
                    if not (for_terms and lab in _CARRIED_LABELS))
-    return [v for lab in labels if (v := _field(prompt, lab))]
+    return ([v for lab in labels if (v := _field(prompt, lab))]
+            + [b for lab in _BLOCK_LABELS if (b := _block(prompt, lab))])
 
 
 def _content(prompt: str) -> str:

@@ -1223,6 +1223,14 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         raise HTTPException(status_code=400, detail="Composition has no resources to run.")
 
     objective = req.objective or f"Execute the '{comp['name']}' configuration for {comp.get('usage_area', 'synthesis')}."
+    # W618 (FU-495, M2 v8 R4.1) — THE USER'S OBJECTIVE IS IN EVERY STAGE'S OWN INSTRUCTION. It reached the swarm
+    # only as `context`, which the orchestrator renders "Prior context:" - the label for a previous stage's output -
+    # so no stage read it, and a run with an objective returned the same output as one without. Labelled
+    # "Objective:", which every stage's subject and terms read. A defaulted objective is the platform's sentence and
+    # is not added under the user's label.
+    if req.objective:
+        for _st in stages:
+            _st["instruction"] += f"\nObjective: {req.objective}"
     from agentic_core.ai.native import orchestrator
     _t0 = time.time()
     res = await orchestrator.swarm("composition-run", stages, context=objective,

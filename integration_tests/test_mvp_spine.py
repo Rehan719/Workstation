@@ -46305,3 +46305,63 @@ def test_w617_p223_a_partial_surface_says_what_it_does_not_do(client):
     # ── FU-498: a fixed template is reported as one ──────────────────────────────────────────────────
     _vs = _string_constants((_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8"))
     assert "Agent hierarchy set for " not in _vs and "Swarm Configured (fixed template)" in _vs
+
+
+def test_w618_p223_the_floor_reads_what_the_tool_was_given(client):
+    """P2.23 (W618) — five of M2 v8's tier-2 rows. FU-500: the Law Document Analyser and the Care tools never
+    read the document or the patient data on the floor (block-valued, case-sensitive labels). FU-495: a
+    composition run never read the objective the user typed. FU-505: Dawah, an Owner priority, never funded
+    and never said. FU-509: a stale roster figure reported as the entity's measured profitability. FU-484:
+    the template apps never said they are a template."""
+    import uuid as _uu618
+    from agentic_core.ai.native.engine import native_engine as _ne618, _content_parts as _cp618
+
+    # ── FU-500: a block-valued field reaches the floor ──────────────────────────────────────────────
+    _doc = "DOCUMENT:\nThe tenant shall indemnify the landlord against all asbestos remediation costs.\nClause 9 waives notice.\n\nAnalyse it."
+    assert any("asbestos remediation" in p for p in _cp618(_doc)), _cp618(_doc)
+    r = client.post("/api/v1/law/analyse", json={"document_text": "The tenant shall indemnify the landlord against "
+                                                 "all asbestos remediation costs. Clause 9 waives the notice period."}).json()
+    _txt = str(r.get("analysis") or r)
+    assert "asbestos" in _txt.lower(), ("the analyser's floor output never read the document", _txt[:500])
+    _pp = "Patient profile:\n  mobility: uses a walking frame\n  history: two falls in March\n\nWrite the plan."
+    assert any("walking frame" in p for p in _cp618(_pp)), _cp618(_pp)
+
+    # ── FU-495: the objective is in every stage's instruction ───────────────────────────────────────
+    import inspect as _in618
+    from agentic_core.api import resource_fabric as _rf618
+    _rsrc = _in618.getsource(_rf618)
+    assert '_st["instruction"] += f"\\nObjective: {req.objective}"' in _rsrc
+    _out = _ne618.generate("As the «reactor» resource, apply your capabilities to advance the objective.\n"
+                           "Objective: affordable bread for a low-income neighbourhood\n")
+    assert "bread" in _out.lower(), ("a stage that carries the user's objective still does not read it", _out[:400])
+
+    # ── FU-505: an unfunded Owner priority is named ─────────────────────────────────────────────────
+    from agentic_core.economy.charity import CharityIntelligence
+    a = CharityIntelligence().allocate(105.0)
+    _funded = {g["id"] for g in a["grants"]}
+    _unf = {p["id"] for p in a["priorities_unfunded"]}
+    assert _unf == set(a["priorities"]) - _funded, (_unf, a["priorities"], _funded)
+    if "dawah" not in _funded:
+        assert "dawah" in _unf and "below the top-5 cut" in [p for p in a["priorities_unfunded"] if p["id"] == "dawah"][0]["why"]
+
+    # ── FU-509: profitability says it is the roster's figure, and when it is stale ──────────────────
+    from agentic_core.organism import selection as _sel618
+    from agentic_core.economy import living_vsbs as _lv618
+    _vid = f"w618-{_uu618.uuid4().hex[:6]}"
+    client.post("/api/v1/economy/cycle", json={"vsb_id": _vid, "revenue": 1000, "costs": 100})   # a cycle on the books
+    _orig = _lv618.list_living
+    try:
+        _lv618.list_living = lambda: {"living_vsbs": [{"vsb_id": _vid, "last_distributable": 0.0, "operating_cycles": 0}]}
+        _pm = _sel618.measure_entity(_vid)["measures"]["profitability"]
+    finally:
+        _lv618.list_living = _orig
+    assert _pm["scope"] == "roster-operated cycles only" and _pm["books_cycles"] >= 1 and _pm["roster_cycles"] == 0, _pm
+    assert "STALE AS THE ENTITY'S FIGURE" in _pm["basis"], ("a roster figure older than the books is reported as the "
+                                                             "entity's profitability", _pm["basis"])
+
+    # ── FU-484: the template apps say they are a template ───────────────────────────────────────────
+    from agentic_core.api.vsb import _entity_appdata
+    _d = _entity_appdata({"vsb_id": "vsb-w618", "name": "W618", "challenge": "probe", "domain": "enterprise"})
+    assert "standard template" in _d["template_note"] and "does not deliver the solution" in _d["template_note"]
+    _vsrc = _string_constants(_in618.getsource(__import__("agentic_core.api.vsb", fromlist=["x"])))
+    assert "esc(d.template_note || '')" in _vsrc

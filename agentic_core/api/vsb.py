@@ -964,7 +964,7 @@ _WEBAPP_APP_JS = r"""(async function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const title = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   function section(id) {
-    if (id === 'overview') return '<h2>' + esc(d.name) + '</h2><p class="muted">' + esc(d.domain) + ' · ' + esc(d.realm || '') + '</p><p>' + esc(d.challenge) + '</p><p>' + esc(d.concept || '') + '</p>';
+    if (id === 'overview') return '<p class="muted" id="template-note">' + esc(d.template_note || '') + '</p><h2>' + esc(d.name) + '</h2><p class="muted">' + esc(d.domain) + ' · ' + esc(d.realm || '') + '</p><p>' + esc(d.challenge) + '</p><p>' + esc(d.concept || '') + '</p>';
     if (id === 'plan') { const bp = d.business_plan || {}; return '<h2>Business Plan</h2>' + ['executive_summary', 'concept', 'problem_statement', 'vision', 'mission', 'strategy'].map((k) => bp[k] ? '<h3>' + title(k) + '</h3><p>' + esc(bp[k]) + '</p>' : '').join(''); }
     if (id === 'org') return '<h2>Organisation</h2><p>Chief → Board → AI CEO → C-Suite → Centres of Excellence → Build-to-Order</p><h3>AI CEO</h3><pre>' + esc(JSON.stringify((d.organisation || {}).ceo || {}, null, 2)) + '</pre>';
     if (id === 'resources') { const list = (d.resources || []).filter((r) => String(r).toLowerCase().includes(filter.toLowerCase())); return '<h2>Resources</h2><input id="rfilter" placeholder="Filter resources…" value="' + esc(filter) + '"><ul>' + (list.map((r) => '<li>' + esc(r) + '</li>').join('') || '<li class="muted">No resources.</li>') + '</ul>'; }
@@ -1044,6 +1044,12 @@ def _entity_appdata(vsb: dict) -> dict:
                           **{k: _public_prose(v)[:300] for k, v in _owner_written(vsb).items() if not k.startswith("_")}},
         "organisation": {"ceo": vsb.get("ceo_specification") or {}, "board": vsb.get("board") or {}},
         "resources": roles[:24],
+        #  W618 (FU-484, M2 v8 R2.4) — the web and phone apps are ONE fixed template, byte-identical across
+        #  entities apart from this data file, and they display the entity's own plan record; none of the
+        #  solution is delivered through them. The app now says so on its first screen.
+        "template_note": ("This app is the platform's standard template: it displays this entity's plan record "
+                          "(overview, plan, organisation, resources) and is the same app for every entity. It "
+                          "does not deliver the solution itself."),
     }
 
 

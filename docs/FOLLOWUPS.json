@@ -9049,11 +9049,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W618",
       "note": "",
       "slot_source": "ledger v8 R2.4 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the web and phone apps carry a template_note on their first screen: the platform's standard template, the same for every entity, displaying the plan record and not delivering the solution; blind red"
     },
     {
       "id": "FU-485",
@@ -9274,11 +9277,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W618",
       "note": "",
       "slot_source": "ledger v8 R4.1 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a composition run appends 'Objective: <the user's objective>' to every stage instruction (a defaulted objective is not put under the user's label); blind red"
     },
     {
       "id": "FU-496",
@@ -9372,11 +9378,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W618",
       "note": "",
       "slot_source": "ledger v8 R5.1 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "engine._BLOCK_LABELS reads block-valued fields (DOCUMENT, Patient profile, Patient observations) to the next blank line into the content and terms, so the law analyser and the care tools' floor output now reads what the user gave it; blind red"
     },
     {
       "id": "FU-501",
@@ -9471,11 +9480,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W618",
       "note": "",
       "slot_source": "ledger v8 R6.1 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "allocate() returns priorities_unfunded - each Owner priority that received nothing, with its rank and why; VSBEconomy says so, and that no setting changes it (an Owner ruling, registered); blind red"
     },
     {
       "id": "FU-506",
@@ -9543,11 +9555,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W618",
       "note": "",
       "slot_source": "ledger v8 R6.5 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "selection's profitability is scoped 'roster-operated cycles only', compares the books' cycle count with the roster's, and says STALE when the books hold later cycles; blind red"
     },
     {
       "id": "FU-510",
