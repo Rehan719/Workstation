@@ -1,0 +1,1226 @@
+[
+ {
+  "region": "R1",
+  "findings": [
+   {
+    "section": "The Genesis Model·Simulate·Rank card says compliance and safety were measured, right beside the same payload saying neither contributed anything",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "why_this_tier": "A founder running a journey sees two sentences on the §4.5 card (GenesisJourney.tsx:823 and :886). The first is the method: 'candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern ... Real measured proxies, never fabricated.' The second is the honesty line: 'Two of the five criteria §4.5 names are measured here (compliance, safety)'. In the same run, weights_applied is {compliance: null, safety: null}, the method itself says 'compliance and safety contributed NOTHING', and the §10 bar records simulated as 'not attested ... nothing was simulated apart'. The honesty line is a fixed string that asserts a measurement the run did not make, on the platform's flagship reached surface. That makes it tier 1. It is not tier 2, because this is a false statement and not an unstated shortfall: the line is the only sentence on the card that claims to say what was measured, and what it says is wrong.",
+    "vision_claim": "§10 as amended by R3: modelled, simulated, ranked and optimised are measured with an instrument and WITHHELD on a tie or identical candidates; nothing is reported as met without one. §15.5 and §15.6: honesty over polish, never fabricate.",
+    "observed": "POST /api/v1/genesis/journey {problem:'Halal meal-kit subscription for London families'} returned stage_5 with 3 byte-identical candidates (candidates_distinct=1) and a TIE at 0.771 resolved by list order. weights_applied was {form:1.0, compliance:null, safety:null}, and comparison_note correctly says 'the ranking below carries no information'. Yet honesty reads 'Two of the five criteria §4.5 names are measured here (compliance, safety)', and criteria_measured lists compliance and safety as measured. The quality bar in the same response records compliant and safe as met:null, 'not established'. GenesisJourney.tsx renders method, comparison_note, selection_basis and honesty together on one card.",
+    "evidence": "agentic_core/api/genesis.py:547 (the honesty string is unconditional; the method's 'Real measured proxies, never fabricated' sits about 30 lines above it). Live response saved from /api/v1/genesis/journey: stage_5_model_simulate_rank.honesty and weights_applied. Renderer: apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx:823,885-887.",
+    "disclosed_to_user": "Partly: comparison_note and selection_basis do state the tie and the identical candidates. But the card then says compliance and safety were measured, which contradicts both.",
+    "smallest_honest_fix": "Build honesty and criteria_measured from weights_applied: when compliance and safety are null, say 'none of the five criteria was measured; the ranking is form only'. When candidates_distinct==1, drop 'FORWARD-SIMULATED' and 'Real measured proxies' from method."
+   },
+   {
+    "section": "The QEP roadmap lists recitation analysis and verified credentials as 'Planned' and says no leaderboard backend exists, contradicting two ratified boundaries and the live leaderboard above it",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "why_this_tier": "On Religion > QEP Flagship, the 'Roadmap — modules not yet built' panel (QEPFlagshipFeatures.tsx) has a card 'AI Tajwīd Coach — planned — Planned: recitation analysis needs a phonetic model'. Clicking it says 'described in the platform plan but has no backend yet'. A.9.1 ratifies recitation scoring as a constitutional refusal that only an Owner ruling can reopen, so telling a learner it is planned is untrue. 'Certifications — Planned: verified digital credentials' contradicts A.12.2: QEP issues no certificate in its own name. 'Competitions — Planned: tournaments and leaderboards — no backend exists yet' contradicts the same tab: QEPStudio renders a live /api/v1/qep/leaderboard card a few hundred pixels higher, and QEPReligionHub's 'View Leaderboard' toast says the same false thing. These are false statements on a reached page about what the platform will and will not do with sacred text. That is tier 1, not an omission or an undisclosed gap.",
+    "vision_claim": "A.9.1: recitation is never scored, and this is a principled refusal, not a backlog entry. A.12.2: QEP issues no certificate, only a record of completion stating it is not a credential. §11 rule 3.",
+    "observed": "GET /api/v1/qep/leaderboard returns a real persisted board with formula, population and tie basis, and QEPStudio.tsx:164-221 renders it. QEPFlagshipFeatures.tsx:28,30,42 still frame recitation analysis and verified credentials as planned and say no leaderboard backend exists. QEPReligionHub.tsx:207 shows a 'Sovereign Reciters (preview)' competition card marked PLANNED, which is a recitation competition the constitution forbids. Its toast at :239 repeats 'No tournament or leaderboard backend exists yet'.",
+    "evidence": "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx:28,30,42,112; apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx:205-207,239; curl /api/v1/qep/leaderboard returned {leaderboard:[], formula:'xp = the sum of the xp on every award...', not_a_certification:...}.",
+    "disclosed_to_user": "No. The cards state the opposite of the ratified boundaries.",
+    "smallest_honest_fix": "Re-label the tajwid card as 'Refused by the constitution (A.9.1): recitation is never scored; written-recall is live'. Re-label credentials as 'No certificate is issued (A.12.2); a completion record is not a credential'. Point competitions at the live leaderboard. Remove the 'Sovereign Reciters' preview."
+   },
+   {
+    "section": "The Tajweed lesson panel calls a scholar-withheld lesson an 'outline' the learner should use, and never shows why nothing appears",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "why_this_tier": "POST /api/v1/qep/tajweed/lesson returns lesson_plan:null, review_state:'withheld' and a review_note explaining that no scholar has reviewed it. It also returns floor_note: 'the deterministic native floor served this — it is a structured OUTLINE composed from the request ... treat it as a study checklist'. QEPStudio.tsx types neither review_state nor review_note. The learner therefore sees chips 'served by native' and 'outline, not a lesson', then the floor_note telling them to treat 'this' outline as a checklist, then an empty box, then 'AI-assisted educational content'. The surface asserts that an outline was served when the scholar gate withheld it, so this is tier 1. It is an asserted outcome, not a blank. The A.12.3 gate itself works, but on this surface it is invisible and is described as its opposite.",
+    "vision_claim": "A.12.3 (ruled 2026-10-05b): unreviewed AI-composed religious content is WITHHELD, never shown with a disclaimer, and the learner-facing surface renders approved items or the reason. §11 rule 4: floor output is never presented as scholarship.",
+    "observed": "Live: {rule:'idgham', lesson_plan:null, review_state:'withheld', review_note:'This is not shown because no scholar has reviewed it...', floor_served:true, floor_note:'...it is a structured OUTLINE composed from the request ... treat it as a study checklist...'}. The LearnTeach curriculum panel does render review_note through /api/v1/qep/curriculum. The QEPStudio lesson panel does not.",
+    "evidence": "agentic_core/religious_domain/api.py:779-791 (floor_note is emitted even when _published is None); apps/workstation-superapp/src/components/QEPStudio.tsx:132,380-389.",
+    "disclosed_to_user": "No. The withholding reason exists only in the response body.",
+    "smallest_honest_fix": "Suppress floor_note when lesson_plan is null. Render review_state and review_note in QEPStudio, mirroring LearnTeachModule, for example: 'Withheld — no scholar has reviewed this lesson'."
+   },
+   {
+    "section": "The written-recall check gives a word-perfect recollection 49% because it counts Uthmani marks a keyboard cannot type, and the screen does not say so",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "The learner sees 'written similarity 49% (normalised Levenshtein)' and an amber line 'madd (kasra+ya) sequence present in reference, absent in attempt'. They typed the ayah word-for-word without harakat, which is how Arabic is normally typed. A completely different ayah scores 19%, and typing standard full tashkeel still loses to Uthmani glyphs (ٱ, dagger alif), reaching only 92%. The figure is genuinely computed and its scope line ('says NOTHING about recitation') is honest, so it is not tier 1. But the surface never says that diacritics and Uthmani orthography are scored character by character. The 'normalised' in its label suggests the text was normalised, and only length was. markers_basis is never rendered. That makes it an invisible shortfall, tier 2, rather than a disclosed one at tier 3.",
+    "vision_claim": "§11 rule 3: assessment is written-recall only, the learner's typed Arabic against the authoritative text, with its scope stated. A.6 feature 2.",
+    "observed": "POST /api/v1/qep/tajweed/analyse with the reference 'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ' returned 0.4865 for 'الحمد لله رب العالمين' (word-perfect, unvocalised), 0.9189 for a fully vocalised standard-script attempt, and 0.1892 for 'ملك يوم الدين' (a different ayah). Non-Arabic input is correctly refused. Separately, at API level only: a caller-supplied non-Qur'anic reference ('كلام غير قرآني') is compared and labelled qiraat:'Hafs' against 'the authoritative text'. The UI passes the sourced ayah, so learners do not reach this.",
+    "evidence": "agentic_core/religious_domain/tajwid/coach.py:87-103 (raw strip() only, with no orthographic normalisation) and :68-74 (qiraat Hafs, 'authoritative text' asserted for any caller string); apps/workstation-superapp/src/components/QEPStudio.tsx:356-361.",
+    "disclosed_to_user": "No. Only '(normalised Levenshtein)' with a tooltip, plus the recitation-scope line.",
+    "smallest_honest_fix": "Either compare on a skeleton with harakat and Uthmani marks folded, alongside a separate vocalisation figure, or state on screen: 'counts every diacritic and Uthmani mark; an unvocalised but word-perfect attempt scores about 50%'. Render markers_basis."
+   },
+   {
+    "section": "§11 compliance verdicts read 'no engine covers this area' and '(engine-backed)' in the same sentence",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "why_this_tier": "On the Compliance screen (ComplianceChecker.tsx:140 renders v.reason verbatim), in every deliverable record and on Genesis, a reader sees: 'no engine covers this area — keyword screen + employment-statute vocabulary matched nothing ... not legal advice (UK engine-backed · audit …)'. The Sharia row likewise reads '...matched nothing ... not a certification (engine-backed)'. The suffix means only that a code path executed, but it tells the reader an engine backs a verdict the same sentence says no engine produced. That is an untrue label on a reached surface, tier 1. The consequence is low: the status is 'review', never 'pass', so no clearance is granted. This is ranked below the defects above for that reason.",
+    "vision_claim": "§11: compliance engines (Halal/Sharia · UK-Legal · Regulatory · EHS · Ethical · Constitutional) integrated into every workflow; honesty constraints apply.",
+    "observed": "POST /api/v1/compliance/check {subject:'Workers will be paid below minimum wage and dismissed without notice'} returned overall 'review'. uk_legal says 'no engine covers this area ... (UK engine-backed · audit 6a2ad3aa…)'. ethical says 'human: not_assessed; ... (engine-backed)'. The UK screen did not flag a minimum-wage breach. The same rows appear in deliverable deliv-e27bc3c8's quality_assurance. The wider shortfall is disclosed honestly: every engine is a keyword or vocabulary screen, assessed_by is [], coverage_gaps names five frameworks, and /compliance/frameworks says 'a screen can refuse, not clear'.",
+    "evidence": "agentic_core/api/compliance.py:397,469,513 (the suffix is appended whenever the engine call does not raise, regardless of coverage 'none'); apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx:140.",
+    "disclosed_to_user": "The keyword-screen limitation is disclosed (tier-3 gap). The contradictory '(engine-backed)' label is not.",
+    "smallest_honest_fix": "Append '(engine-backed)' only when the row's coverage is 'engine'. Otherwise append '(engine ran; matched nothing)' or no suffix."
+   },
+   {
+    "section": "The QMS panel shows a green '0 failures' and 'non-conformance 0%' that can never move, because floor-served gates are never counted",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "VBSSystemsPanel.tsx:183-196 shows '0 gates run', '0 failures' (in the green 'ok' tone) and 'non-conformance 0% (platform-wide)'. After a real deliverable and a real Genesis journey on this deployment, gates_run is still 0, because a floor-served gate is 'not assessable' and is excluded. The rate is 0/0 rendered as 0%, so the QMS reads clean when it has assessed nothing. The adjacent '0 gates run' chip lets a careful reader work this out, so it is not a bare false figure (tier 1). But nothing on the panel says the gate cannot run while only the floor serves. That is tier 2, an invisible shortfall, rather than a disclosed tier 3.",
+    "vision_claim": "§10: every solution verified, tested and validated. §11: continuous live compliance and quality.",
+    "observed": "GET /api/v1/vbs/qms/defects after POST /deliverables/produce and POST /genesis/journey returned summary {gates_run:0, gate_failures:0, non_conformance_rate:0.0, what_if_gates:2}. Each delivery record carries qms_gate_passed:null with an honest qms_basis and qms_non_conformance_rate:0.0. Deliverables.tsx renders the null correctly as 'Living-QMS gate: —'. The QMS gate route correctly calls caller-typed figures 'what-if' and excludes them from the rate.",
+    "evidence": "apps/workstation-superapp/src/components/VBSSystemsPanel.tsx:183-196; live /api/v1/vbs/qms/defects summary; agentic_core/vbs/quality.py (floor deliveries not counted in gates_run).",
+    "disclosed_to_user": "Only through the tooltip ('0.0 with no history') and the separate gates-run count.",
+    "smallest_honest_fix": "When gates_run==0, render 'non-conformance — (no gate has assessed a delivery)' in the dim tone, and show failures in the dim tone rather than 'ok'."
+   },
+   {
+    "section": "The §10 bar records 'categorised' as met from the request's default labels, and its summary counts 18 items against a 16-item bar",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "The Deliverables chip shows '§10 bar: 0 measured · 1 attested · 2 screen-only · 15 not measured' for Genesis, and '0 · 0 · 2 · 16' for a plain deliverable. That is 18 counts against the 16 criteria the tooltip lists, because screen-only is also counted in not_measured. In the Genesis record the one 'attested' criterion is categorised: met:true, basis \"caller evidence: realm 'enterprise' × domain 'enterprise' categorisation\". Those are the request defaults the user never chose. The surface does label attested as 'a caller asserted it and nothing verified', which is why this is not tier 1. But the reader is not told that the 'caller' is the platform reading its own default labels. The R3 amendment says categorised has no instrument and is 'not reported as met'. So the shortfall is real and invisible: tier 2.",
+    "vision_claim": "§10 (R3 amendment): categorised is among the criteria named with NO instrument, and these are not reported as met.",
+    "observed": "From the live Genesis response, bar_measured = {measured:0, attested:1, not_measured:15, screen_only:2, summary:'0 measured · 1 attested · 2 screen-only · 15 not measured'} and criteria.categorised = {met:true, attested:true, source:'caller'}. The plain deliverable's summary is '0 measured · 0 attested · 2 screen-only · 16 not measured'.",
+    "evidence": "agentic_core/api/genesis.py:223 (ev['categorised'] set from realm × domain); agentic_core/vbs/quality.py:271-275 (not_measured = len(_n)+len(_s)); apps/workstation-superapp/src/pages/Deliverables.tsx:251-255.",
+    "disclosed_to_user": "Partly: 'attested' is defined as unverified. The default-label basis and the double count are not disclosed.",
+    "smallest_honest_fix": "Do not attest categorised from defaulted realm and domain values, or record it as met:null with the basis given. Make the summary partition the 16 (not_measured excluding screen_only)."
+   },
+   {
+    "section": "On the floor, Tafsir serves Exegesis, Asbab al-Nuzul and 'Key Lessons and Guidance' frames where its sibling tools withhold, contrary to the canon's statement that all five withhold",
+    "verdict": "DOC_OVERCLAIM",
+    "tier": 3,
+    "why_this_tier": "The reader of the Tafsir tab is told, in amber, 'the study notes below are a structured frame, not scholarship. Study this passage with a qualified teacher', and sees 'Withheld on the floor: Transliteration · Translation'. The shortfall is stated on the surface, so the reader is not misled about what they have, and the tier is 3. The overclaim is in the canon: A.12.3 says the five Religion research tools 'already withhold on the floor'. Fatwa, Hadith and Interfaith do withhold every scholarly section. Tafsir still emits five exegetical headings over term lists ('authoritative arabic / tafsir surah / not fetched'). One sentence is untrue: the disclaimer always says 'The Arabic is sourced from alquran.cloud', even when arabic_text is null. The UI shows the 'source unreachable' line directly beside it, so the reader is not misled.",
+    "vision_claim": "A.12.3 scope note: the five Religion research tools 'already withhold on the floor and already refer the reader to a qualified scholar'. §11 rule 4.",
+    "observed": "POST /api/v1/religion/quran-tafsir {surah:1, ayah_start:1, ayah_end:3} (source returned 403 in this sandbox, a network limit of the environment) returned arabic_text:null with an honest arabic_source, sections_withheld:['Transliteration','Translation'], and tafsir containing '## Context of Revelation (Asbab al-Nuzul)', '## Linguistic Analysis', '## Exegesis', '## Related Verses' and '## Key Lessons and Guidance', each a keyword-bigram frame. qms_gate_passed is null and compliance_overall is 'review'. Fatwa, hadith and interfaith withheld 7, 7 and 8 sections respectively. Ayah 1:8 is refused: 'surah 1 has 7 ayaat'.",
+    "evidence": "agentic_core/api/religion.py:296-303 (exegetical headings requested on the floor) and :358 (unconditional 'Arabic is sourced' disclaimer); apps/workstation-superapp/src/pages/domains/ReligionHub.tsx:172-187.",
+    "disclosed_to_user": "Yes, the floor frame is disclosed at the surface. The canon overstates the uniformity.",
+    "smallest_honest_fix": "Apply _withhold_sections to Tafsir's exegetical headings on the floor, as the sibling tools do, or correct A.12.3's scope note. Make the disclaimer's 'Arabic is sourced' clause conditional on arabic_text."
+   },
+   {
+    "section": "The faith-content refusals hold under execution: translation refuses, nonexistent ayaat refuse, hifz is real SM-2, the curriculum is scholar-gated, and the research tools withhold",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "why_this_tier": "Every boundary probed refused or withheld with a stated reason, verified by execution. No AI-generated Arabic, no recitation score, no floor translation, and no invented scholar or analytics figure was found on these routes.",
+    "vision_claim": "§11 rules 1-5; A.9.1-A.9.3 and A.9.6; A.6 feature 3 (memorisation); A.11; A.12.3 on the curriculum path.",
+    "observed": "POST /qep/translation/translate refused: 'the deterministic native floor cannot translate and its output will not be presented as a translation', and /translation/status shows translation_available:false, rendered as an amber chip before typing. /qep/hifz/schedule [1,9] on surah 1 refused ('range must lie within [1, 7]'), /hifz/review '1:9' refused, and /religion/quran-tafsir ayah 8 refused. /hifz/review '1:1' q=4 returned a real SM-2 result (efactor 2.5, next 2026-10-08) with memorised_basis 'a review count, not a hifz certification', which QEPStudio renders. /qep/curriculum is withheld with gate {scholars_on_roster:0}, and LearnTeachModule renders the review_note. The written-recall check refuses non-Arabic input. /qep/compliance/audit returns compliant:null with not_checked controls, rendered 'NOT ESTABLISHED'. /api/qep/analytics/overview returns measured:false. The leaderboard shows its formula and states that it is not a certification. QEPReligionHub's AI Coach shows 'Recitation assessment unavailable' with sourced text only and no fallback copy. The Arabic source was unreachable here (403 from the sandbox proxy), and /qep/ayah and /suwar returned honest 503 errors rather than any stored or generated text.",
+    "evidence": "Live curl responses from 127.0.0.1:8031 for each route named; agentic_core/religious_domain/api.py; apps/workstation-superapp/src/components/QEPStudio.tsx; apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx:93-193.",
+    "disclosed_to_user": "Yes.",
+    "smallest_honest_fix": "None needed."
+   },
+   {
+    "section": "Deliverables disclose floor service in every export format, and the QMS gate reports 'not assessable' instead of passing scaffold",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "why_this_tier": "Verified by execution across the record and all live export formats. Floor output is labelled as floor output wherever a reader meets it, and no green QMS or compliance pass sits over scaffold.",
+    "vision_claim": "§11 rule 4: every AI-served surface renders serving provenance (structured floor, not model analysis). §10 (R3 amendment): criteria without an instrument are not reported as met. A.11's 'QMS gate cannot fail on floor output' defect.",
+    "observed": "POST /api/v1/deliverables/produce returned qms_gate_passed:null ('not assessable — floor-served ...'), compliance overall 'review' with assessed_by:[] and coverage_gaps named, and every §10 criterion met:null except the screen-only pair. Exports in md, txt, html, slides, video-html and svg all carry 'structured floor — not model analysis: composed by the deterministic native structured engine'. docx and pdf are honestly refused as unsupported. qmsChip renders null as 'QMS —' (lib/api.ts:306), and DomainTool uses the same helper for the Religion tools. The Genesis bar withholds modelled, simulated, ranked and optimised on identical candidates with the reason. The only exception is the stage-5 honesty prose in finding 1.",
+    "evidence": "Live /api/v1/deliverables/produce (deliv-e27bc3c8) and /api/v1/deliverables/deliv-e27bc3c8/export?format=*; apps/workstation-superapp/src/lib/api.ts:301-312; apps/workstation-superapp/src/pages/Deliverables.tsx:234-284.",
+    "disclosed_to_user": "Yes.",
+    "smallest_honest_fix": "None needed."
+   }
+  ],
+  "verdicts": [
+   {
+    "index": 0,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced in code. genesis.py:547 emits the honesty string 'Two of the five criteria §4.5 names are measured here (compliance, safety)' every time, with no condition. Yet genesis.py:499-511 sets weights_applied to {form:1.0, compliance:None, safety:None}, and when no candidate's screen returned a compliance figure the method says 'compliance and safety contributed NOTHING'. criteria_measured (_CAND_MEASURED, lines 52-55) is also a constant. On this run the card therefore states as fact a measurement that its own payload says did not happen. That is an untrue assertion on the flagship reached surface, which is tier 1. It is not tier 2, because this is a false sentence and not a missing disclosure. The contradicting text nearby lessens the harm but does not make the claim true.",
+    "evidence": "agentic_core/api/genesis.py:52-55,499-511,545-550"
+   },
+   {
+    "index": 1,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Confirmed. QEPFlagshipFeatures.tsx:30 says 'Competitions — Planned: tournaments and leaderboards — no backend exists yet'. That is false: GET /api/v1/qep/leaderboard returns a live board with a ranked learner, a formula and a basis, and QEPStudio renders it on the same Religion page. QEPReligionHub.tsx:239 repeats the same false toast. Line 42 offers 'Planned: verified digital credentials', which contradicts the ruled A.12.2 ('QEP ISSUES NO CERTIFICATE IN ITS OWN NAME'). Line 28 lists the Tajwīd Coach's recitation analysis as 'Planned'. A.9.1 does allow an Owner to revisit that if a validated phonetic model is ever provisioned, so this card is the weakest of the three. A card labelled 'Planned' still misstates a boundary as a backlog item. The 'Sovereign Reciters' recitation tournament marked PLANNED is the same kind of problem. These are untrue statements about what exists and what will be built, on a reached page, so tier 1 stands. The leaderboard and credentials claims carry it even without the Tajwīd card.",
+    "evidence": "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx:28,30,42; apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx:205-207,239; live GET /api/v1/qep/leaderboard returned learners_ranked:1 with a formula; vision lines 1356-1362 and 1485-1487"
+   },
+   {
+    "index": 2,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Confirmed. religious_domain/api.py:779-791 returns lesson_plan from published_body. That is None while the scholar roster is empty, yet floor_note ('it is a structured OUTLINE ... treat it as a study checklist') is added whenever floor_served is true, whether or not anything was published. In QEPStudio.tsx:132 the type has no review_state or review_note, and lines 380-389 render the 'outline, not a lesson' chip, the floor_note and an empty lesson_plan box. The learner is told an outline was served when the scholar gate withheld it, and the real reason (no scholar review) is never shown. That is an asserted outcome the platform did not produce, not a blank, so it is tier 1 rather than tier 2.",
+    "evidence": "agentic_core/religious_domain/api.py:775-791; apps/workstation-superapp/src/components/QEPStudio.tsx:132,380-389"
+   },
+   {
+    "index": 3,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Reproduced live. POST /qep/tajweed/analyse with ayah_text 'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ' and recited_text 'الحمد لله رب العالمين' returned text_similarity 0.4865 plus a madd marker. coach.py:87-89 only strips whitespace, so it compares harakat and Uthmani glyphs character by character. The figure is genuinely computed and the scope line honestly says it covers written text, not recitation, so it is not tier 1. But no surface says that diacritics and Uthmani orthography count against the learner, and the label 'normalised' invites the opposite reading. A word-perfect recall shown as 49% is a shortfall the surface does not state, so tier 2 rather than tier 3.",
+    "evidence": "agentic_core/religious_domain/tajwid/coach.py:87-103; QEPStudio.tsx:124,356-361; live response text_similarity 0.4865"
+   },
+   {
+    "index": 4,
+    "refuted": true,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "The wording is reproduced, but the tier is wrong. POST /compliance/check does return 'no engine covers this area ... (engine-backed)' and 'human: not_assessed ... (engine-backed)'. In compliance.py:389-397 and 513, however, the suffix records that an engine call actually ran: the halal engine's audit_transaction and evaluate_ethics both executed. That is literally true provenance. 'No engine covers this area' is also true, because no engine rule covered it. Read together the sentence is clumsy, but it asserts no outcome that did not happen. The same line states the shortfall (no coverage, status review or not_assessed, never pass), and coverage:'none' travels with it. Nobody is told something was assessed or cleared. This is a labelling clarity defect inside a disclosed gap, so tier 3. It is not tier 1, because no untrue outcome is asserted, and not tier 2, because the shortfall is stated in the same sentence.",
+    "evidence": "agentic_core/api/compliance.py:386-399,509-513; live POST /api/v1/compliance/check verdicts"
+   },
+   {
+    "index": 5,
+    "refuted": true,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "The claim that the panel 'can never move' is refuted. The live /vbs/qms/defects summary now reads gates_run:3, and the code counts gates whenever coverage is declared and the output is not all floor (quality.py:406, orchestrator.py:672). In the 0/0 case the panel shows a '0 gates run' chip beside '0 failures' and the 0% rate, and the rate's tooltip says '0.0 with no history'. A reader is therefore shown that nothing was gated. That is a visible statement of the shortfall, so tier 3 rather than tier 2. The remaining gap is that rate_basis says 'across ALL deliveries' while floor deliveries are left out, and the panel never says so in words. That is a small disclosed-adjacent gap. It does not make the figure false.",
+    "evidence": "live GET /api/v1/vbs/qms/defects summary gates_run=3; agentic_core/vbs/qms.py:89-92; agentic_core/vbs/quality.py:395-410; VBSSystemsPanel.tsx:183-196"
+   },
+   {
+    "index": 6,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed in code. genesis.py:223 always sets ev['categorised'] from realm × domain, and both default to 'enterprise' (lines 147-148, 835-836). quality.py:261 then records it as met:True, source 'caller'. The vision (line 495) says categorised has no instrument and is 'not reported as met'. quality.py:271 counts screen-only items inside not_measured, so the summary adds up to 18 against a 16-item bar, as the live deliverable shows: '0 measured · 0 attested · 2 screen-only · 16 not measured'. The chip's tooltip defines attested as unverified, so this is not tier 1. Nothing tells the reader that the 'caller' was the platform's own default labels, or that the counts overlap. That is an invisible shortfall, tier 2.",
+    "evidence": "agentic_core/api/genesis.py:147-148,223; agentic_core/vbs/quality.py:257-279; live deliverable deliv-7ae235cc bar summary; vision line 494-495"
+   },
+   {
+    "index": 7,
+    "refuted": true,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "The DOC_OVERCLAIM verdict does not hold up. A.12.3 (vision line 1505) says the five tools 'already withhold on the floor and already refer the reader to a qualified scholar'. Tafsir does both: it never requests Transliteration or Translation on the floor (religion.py:296-299), it lists them in sections_withheld, and it refers the reader to a teacher. The canon does not say every section is withheld, so the sentence is not untrue. What remains is a real but disclosed asymmetry. On the floor Tafsir still asks for Exegesis, Asbab al-Nuzul and Key Lessons headings over keyword frames, while its siblings withhold everything, and the always-on 'The Arabic is sourced from alquran.cloud' disclaimer stays even when arabic_text is null. The surface labels the frame 'not scholarship' and shows the source-unreachable line, so the verdict is PARTIAL at tier 3, not a canon overclaim.",
+    "evidence": "agentic_core/api/religion.py:290-306,352-358; docs/WORKSTATION_IDBO_WHOLE_VISION.md:1504-1506"
+   },
+   {
+    "index": 8,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Spot-checked live. Translation refused with the floor reason. hifz/review '1:9' was refused ('does not name an ayah'), and '1:1' q=4 returned a real SM-2 result (efactor 2.5, next review 2026-10-08) with memorised_basis 'a review count, not a hifz certification'. POST /qep/curriculum returned curriculum:null with review_state 'withheld' and the scholar-review reason. The boundaries hold under execution. The QEP surface defects in findings 1 and 2 sit outside the refusal paths claimed here, so they do not undercut this verdict.",
+    "evidence": "live POST /api/v1/qep/translation/translate, /qep/hifz/review (1:9 and 1:1), /qep/curriculum"
+   },
+   {
+    "index": 9,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Reproduced. A fresh POST /deliverables/produce (deliv-7ae235cc) returned qms_gate_passed:null with basis 'not assessable — floor-served ... coverage cannot fail by construction', and gates_run did not move. The md export carries 'structured floor — not model analysis: composed by the deterministic native structured engine'. No green pass sits over the floor scaffold. The only exceptions are the separately reported Genesis honesty line (index 0) and the categorised attestation (index 6).",
+    "evidence": "live POST /api/v1/deliverables/produce -> deliv-7ae235cc; GET /api/v1/deliverables/deliv-7ae235cc/export?format=md; agentic_core/vbs/quality.py:395-410"
+   }
+  ],
+  "summary": "R1 (§10, §11 and Appendix A) was measured against a live backend at 127.0.0.1:8031 with AI_DISABLE_LOCAL=1. The first probe got no answer; a second instance I started failed to bind, so the original came up and was then used. GET / returned 404, so the built frontend was not being served. What a user sees is therefore reasoned from apps/workstation-superapp/src, not driven in a browser. alquran.cloud returned 403 through the sandbox proxy, so the Arabic-present paths could not be exercised; the routes' honest 503 and 'unreachable' disclosures were verified instead.\n\nOverall, the constitution holds where it is enforced in the backend. Translation refuses, ayah counts refuse, SM-2 is real with its basis shown, the curriculum is scholar-gated, the fatwa, hadith and interfaith tools withhold, and the QMS reports 'not assessable' rather than passing floor output. Deliverables label the floor in every export. The A.9 boundaries and A.12 rulings were treated as ratified, not as gaps.\n\nMost of the remaining gap is truth defects in UI copy and in fixed strings that drifted from the payloads beside them:\n- Genesis claims compliance and safety were 'measured' when neither contributed anything.\n- The QEP roadmap calls recitation analysis and verified credentials 'Planned' and says no leaderboard backend exists.\n- The Tajweed lesson panel describes a scholar-withheld lesson as an outline to use.\n- Compliance verdicts read 'no engine covers this area … (engine-backed)'.\n\nThe invisible shortfalls are:\n- The written-recall percentage counts diacritics and Uthmani marks.\n- The QMS shows 0% non-conformance over zero gates.\n- The §10 bar's counts do not reconcile, and categorised is attested from default labels.\n\nThe §11 compliance engines are all keyword or vocabulary screens, which is a large capability gap but is disclosed at the surface (tier 3). I HIT THE CAP OF TEN, so ten is not everything. Smaller items not given their own row:\n- At API level, /qep/tajweed/analyse labels any caller-supplied Arabic as Hafs 'authoritative text' (the UI is not affected).\n- The A.12.2 completion-record path in reactor/religion/qep_flagship.py is reachable only through AI-CEO tool dispatch, which never fires on the floor, so nobody reaches it.\n- Agentic_core/api/scholar_review.py has no router of its own; it is a library the curriculum and lesson routes call.\n- Each madhab row's 'Explore' button navigates to the QEP hub, not to anything about that school.\n- The halal floor still emits a 'Cross-Contamination Risks' frame (disclosed).",
+  "hit_the_cap": true
+ },
+ {
+  "region": "R2",
+  "findings": [
+   {
+    "section": "Repo, web-app and phone-app QMS gate records PASS and 'specifically designed: met' over its own template headings, on a repo whose Design and Commercialisation sections are blank",
+    "verdict": "STUB",
+    "tier": 1,
+    "severity": "high",
+    "why_this_tier": "compliance/QUALITY.md (a sealed record, visible in the Cockpit's repo file viewer) says 'QMS gate: PASS · Basis: QMS gate on real coverage/stub metrics', and the repo's bar_measured says 'specifically designed: met' and 'verified: met'. The same repo's BUSINESS_PLAN.md has an empty '## Design & Development' and an empty '## Commercialisation', OPERATIONS.md says 'Not provided', and the public site prints a 'Commercialisation' heading with nothing under it. That is a certification of something the gate could not assess, so tier 1. It is not tier 2, because the record does not just leave the gap unmentioned: it says the opposite. The floor-served journey VSB correctly shows NOT ASSESSABLE. This PASS appears whenever the body is not marked floor-served (served_by=unspecified, or a real model), because the gate's required sections are headings the generator writes itself.",
+    "vision_claim": "§13: the repo is 'quality-gated (§10), compliance-screened (§11), document-controlled and provenance-sealed throughout'. §15.6: never fabricate.",
+    "observed": "POST /api/v1/genesis/establish {problem, concept:'A same-day matching service…', review_gates:['design']} -> vsb-5a29050a87. I named it, approved the gate and shipped. The ship response gave webapp qms_gate_passed:true, mobile true, repo true. QUALITY.md: 'QMS gate: PASS'. bar_measured: specifically designed met:true ('delivery coverage 1.0 against the declared structure'), verified met:true. Design, Commercialisation and Operations are empty or 'Not provided'.",
+    "evidence": "agentic_core/api/vsb.py:381-385: the repo gate passes required sections ['Business Plan','Organisation','Identity','Executive Summary'] over the generator's own .md files, whose headings the template always writes. vsb.py:1037-1040: the web-app gate's input is built as f\"…Sections: Overview · Business Plan · Organisation · Resources.\" plus data.json, which contains the required section names by construction (the same at vsb.py:1177 for mobile). Seen in scratchpad data/vsb_repos/vsb-5a29050a87/compliance/QUALITY.md and BUSINESS_PLAN.md.",
+    "disclosed_to_user": "No. The basis line claims 'real coverage/stub metrics'.",
+    "smallest_honest_fix": "Make the repo, web-app and mobile gates measure the entity's own body fields (concept, design, commercialisation, operations), not the generator's headings. Record 'not assessable' or FAIL when any of those is empty or absent, as _verify_stage does for floor output."
+   },
+   {
+    "section": "Applying an evolution 'remediates the §11 posture across the plan' while changing nothing but a trait string, then advances the generation and scores the 'living' pillar met",
+    "verdict": "STUB",
+    "tier": 1,
+    "severity": "high",
+    "why_this_tier": "After apply, the response says applied:true, mutations_applied:1, 'generation_basis: advanced by this apply, because the traits actually changed', and the living-plan pillar 'Generate a living Enterprise IDBO (VSB)' gets status 'met … which is what makes it living'. The applied mutation is 'remediate the §11 screen posture … across the entity's plan and registration text', with expected_impact 'the screen returns to pass'. No plan or registration text changed: the blueprint still reads 'content pending', the repo diff is manifest.json only, and the next /evolve re-files the identical proposal. A field asserting an outcome the platform did not produce is tier 1.",
+    "vision_claim": "§4.10: Run · Defend · Heal · Learn · Improve · Grow — forever. The established VSB self-operates and forever evolves.",
+    "observed": "POST /vsb/vsb-d0ee901a57/evolve filed cca-d27e501bc9. POST /cca/{id}/review gave 'approved', decision_source health_threshold_rule (its own text says the blended figure 'cannot refuse below' ~0.5). POST /evolution/apply gave applied:true, generation 0->1, pillar met. epigenetic_traits.compliance_posture now holds the sentence 'remediate the §11 screen posture…'. The re-run /evolve proposed the same remediation again (cca-b418a9a736).",
+    "evidence": "agentic_core/api/vsb.py:2703-2710 (the proposal text and an expected_impact of 'returns to pass'). vsb.py ~2958-2970 (apply sets traits[t] = proposed_change and increments generation when the list is non-empty; nothing touches the plan or registration). compliance.py:547 _overall: keyword-only rows cannot produce 'pass', so the promised impact is unreachable for this subject.",
+    "disclosed_to_user": "Partly. The generation basis says it counts applied mutations, but nothing says the mutation is a label and not a remediation.",
+    "smallest_honest_fix": "Word compliance_posture as a recorded intent ('flag: posture under review'). Do not count trait-label writes as evolution for the generation or the living pillar unless some body or behaviour field actually changed. Drop the unreachable 'returns to pass' impact."
+   },
+   {
+    "section": "A VSB stays 'held — a review gate blocks progress: design pending' after the gate is approved and the body ships; the shipped README repeats it",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "medium",
+    "why_this_tier": "GET /vsb/vsb-5a29050a87 shows status 'held', status_basis 'a review gate blocks progress (Mode 3): design pending'. GET /review-gates for the same entity shows design 'approved', blocks_progress:false, and the ship succeeded a second later. The README regenerated by that ship prints '**Status:** held'. The Cockpit renders status_basis (VSBCockpit.tsx:698). The reader is told something untrue about their enterprise, so tier 1.",
+    "vision_claim": "§4 one gated lifecycle. §17.4 Mode 3 gates, with the status derived from the facts.",
+    "observed": "Gate approved at 01:27:08Z, shipped at 01:27:09Z. The status was never re-derived.",
+    "evidence": "_derived_status is called only at birth (agentic_core/api/vsb.py:2411; genesis.py:1354, 1547). The decision handler (vsb.py ~1990-2006) saves the gate and returns without re-deriving status or stage, and neither does ship.",
+    "disclosed_to_user": "No",
+    "smallest_honest_fix": "Call _derived_status/_derived_stage in the gate-decision, name and ship handlers before _save_vsb, or derive status on read."
+   },
+   {
+    "section": "There is no single gated lifecycle: four stage vocabularies co-exist, Projects never reaches a VSB, and 'gates' hold only the ship, not the stages they are named after",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "medium",
+    "why_this_tier": "A founder in ProjectsHub moves a project concept→prototype→commercialise and reaches 'commercialise' with no VSB created and nothing saying this is not the §4 lifecycle. The Genesis journey runs its stages in one call (concept, research, candidates, twin, design, develop, operations, commercial, plus derived stages). The review-gate lifecycle lists 8 different stages ('build', 'validate', 'genome', 'launch'), most with no corresponding journey step. The only place the mismatch is admitted is the developer route /api/v1/organism/lifecycle ('known vocabulary issue … Owner decision pending'). The shortfall is invisible where users are, so tier 2, not 3. It is not tier 1, because the gate panel itself states honestly that a gate blocks the movers (ship, evolve, cascades).",
+    "vision_claim": "§4: ONE continuous, intelligent, autonomous workflow, Describe → … → Run forever, each stage verified and validated.",
+    "observed": "projects/api.py STAGE_ORDER = concept, prototype, commercialise. vsb.py:64 _CONCEPT_TO_COMMERCIALISE_STAGES has 8 entries. The genesis journey has 6 fixed verified stages plus derived ones. The vision has 10. Gating 'research' or 'design' on a VSB holds ship, repo and evolve; it does not pause any stage, because the journey has already finished.",
+    "evidence": "agentic_core/projects/api.py:50; agentic_core/api/vsb.py:64-73; agentic_core/api/genesis.py:365-613; GET /api/v1/organism/lifecycle stages_note; apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx:62; GenesisJourney.tsx:1321.",
+    "disclosed_to_user": "Only on a developer API route, not on ProjectsHub or Genesis",
+    "smallest_honest_fix": "Label ProjectsHub as 'AI deliverable projects (not the §4 enterprise lifecycle)' and map the gate lifecycle's 8 ids onto the journey's stages, or record the Owner decision as the open item it is."
+   },
+   {
+    "section": "The 'Web app' and 'Phone app' are one fixed template, byte-identical across enterprises, that displays the entity's own plan record and delivers none of the solution",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "medium",
+    "why_this_tier": "The repo note says 'Generated from this entity's data: website, webapp, mobile. None of the three is a built, compiled or running app — they are source', and the footer says 'Living VSB IDBO web app'. Nothing tells the founder that the web app and PWA are a 4-tab viewer (Overview, Business Plan, Organisation, Resources) of their own record, identical for a varroa-monitoring service and a food-matching service. The 'not compiled/running' disclosure is true but does not cover the 'not bespoke' shortfall, so tier 2. It is not tier 1, because Owner ruling D1 ratified 'a real client-side interactive app', which this is.",
+    "vision_claim": "§13: a repository bespoke to the concept→commercialisation solution, integrating a Website, a Web app and a Phone app as the entity's public and operational surfaces.",
+    "observed": "diff of webapp/app.js for vsb-d0ee901a57 (Varroa Watch) and vsb-5a29050a87 (Same Day Halal Share): IDENTICAL once the name is removed. mobile/app.js: IDENTICAL. Only data.json differs. No mite-count entry, no surplus-matching flow.",
+    "evidence": "agentic_core/api/vsb.py _build_webapp_files (~line 980-1000) and the mobile builder. Scratchpad data/vsb_repos/*/webapp/app.js and mobile/app.js.",
+    "disclosed_to_user": "No (only 'not built/compiled/running' is said)",
+    "smallest_honest_fix": "Add a line to the repo note and the app footer: 'a generic viewer of this enterprise's record — it does not yet implement the solution's own user flows'."
+   },
+   {
+    "section": "Shipped EVIDENCE.md heads a tie between identical texts 'Selected Candidate (§4.5 evidence-ranked)' and prints 'simulated evidence: 0.815' for a simulation it says did not happen",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "low-medium",
+    "why_this_tier": "EVIDENCE.md reads '## Selected Candidate (§4.5 evidence-ranked) … score: 0.79 … simulated evidence: 0.815 (modelled 0.774; declared weights 60/40)'. A few lines later the same file says 'simulation pending the owned model … not a simulation' and 'TIE … NOT evidence; candidates_distinct=1 … no comparison happened'. The heading and the figure assert evidence-ranking and simulated evidence that the run did not produce; the 0.815 is a form score over floor text. I placed this at tier 1 rather than 3 because the assertive heading and figure are what the reader meets first. The in-file disclosure mitigates it, and a refuter could fairly argue it down to tier 3.",
+    "vision_claim": "§4.5: every candidate is modelled, simulated, optimised and ranked so the best is selected on evidence. §15.6: label simulation.",
+    "observed": "The varroa VSB repo EVIDENCE.md after a fully floor-served journey with 3 byte-identical candidates.",
+    "evidence": "agentic_core/api/vsb.py:158-166 writes the heading and the 'simulated evidence' line unconditionally. The journey's stage_5 shows candidates_distinct 1, tie.detected true, weights_applied form 1.0.",
+    "disclosed_to_user": "Contradicted within the same file",
+    "smallest_honest_fix": "When candidates_distinct<=1 or the twin was floor-served, title the section 'Carried candidate (no comparison possible)' and print the twin score as 'form score of floor text', not 'simulated evidence'."
+   },
+   {
+    "section": "The repo README says BUSINESS_PLAN.md contains Mission and Strategy, but it has neither, and the web and phone apps show a template 'Mission: Deliver: <problem>' that is not marked pending",
+    "verdict": "DOC_OVERCLAIM",
+    "tier": 1,
+    "severity": "low",
+    "why_this_tier": "README.md tells the reader '`BUSINESS_PLAN.md` — Executive Summary · Concept · Vision · Mission · Strategy'. The file has Executive Summary, Concept, Vision, Design & Development and Commercialisation, with no Mission or Strategy. That is an untrue statement about the deliverable, so tier 1 (minor consequence). Separately, the web app's Business Plan tab shows 'Mission: Deliver: Small-scale beekeepers … lose 30% of hives …'. That is engine-composed text presented as the enterprise's mission without the 'content pending' marker that §13's corollary requires.",
+    "vision_claim": "§15.9: the Chief-owned business plan opens Executive Summary · Concept · Vision, then Mission · Strategy · Aims · Objectives. §13 corollary: the founder's own words plus an honest pending state.",
+    "observed": "The repos of vsb-d0ee901a57 and vsb-929012f170 (BUSINESS_PLAN.md vs README.md), and webapp/data.json business_plan.mission.",
+    "evidence": "agentic_core/api/vsb.py:125 (README line). vsb.py:989 and 1346: \"mission\": f\"Deliver: {challenge}\".",
+    "disclosed_to_user": "No",
+    "smallest_honest_fix": "Generate the README's structure line from the headings actually written, and either mark Mission and Strategy 'pending the owned model' or omit them."
+   },
+   {
+    "section": "Genesis page shows 'Sovereign Journey Complete' even on a journey the §11 screen blocked, above 'No deliverable'",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "low",
+    "why_this_tier": "From reading the source (I did not drive a browser): the card at GenesisJourney.tsx:910-915 renders the heading 'Sovereign Journey Complete' unconditionally whenever a result exists. On a blocked run (I executed one: status 'blocked_by_screen', all 3 candidates vetoed) the paragraph under that heading reads 'No deliverable — the §11 screen vetoed every candidate…'. The heading is an untrue completion claim. Its consequence is low because the veto, the disabled Establish button and the blocked text are all shown correctly beside it.",
+    "vision_claim": "§15.6 honesty over polish; the §11 veto is architecturally binding.",
+    "observed": "The backend handles the veto correctly: status blocked_by_screen, selected None, nothing designed or established. Only the page's heading is wrong.",
+    "evidence": "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx:913. genesis.py:815-820. Executed POST /api/v1/genesis/journey with a casino/riba/alcohol problem.",
+    "disclosed_to_user": "The contradiction is visible on the page",
+    "smallest_honest_fix": "Show the heading 'Journey stopped by the §11 screen' when result.status === 'blocked_by_screen'."
+   },
+   {
+    "section": "Under the floor, Describe through Commercialise carries the user's own problem into every stage and says honestly that it is a term count, not analysis; the established body ships pending, not scaffold",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "severity": "info",
+    "why_this_tier": "Every limitation is stated at the surface. Stages read 'a term count, not an analysis'. The page header says 'The deterministic native floor served 14 of these calls'. Stage verification reads '0/0 verified · 6 floor-served, not assessable'. The identical candidates are replaced by the comparison_note. Develop says 'no bill of materials was produced and NO pass is recorded'. The VSB is 'body pending' with an amber 'Pending the owned model' line, and the export is headed 'structured floor — not model analysis'. A disclosed gap is tier 3, however large: no stage actually understands, researches or designs on this floor.",
+    "vision_claim": "§4.1-§4.9: multimodal Describe; Understand & Map; Innovate & Research; Design; Model/Simulate/Rank; Develop; Operational Intelligence; Establish; Output in any format.",
+    "observed": "W434 check, my count: all 14 gateway outputs contain the user's subject (concept varroa×10, beekeep×17; design varroa×6, mite×12; operations varroa×7; commercial varroa×5; each candidate and twin varroa×4-5). None was hijacked by the engine banner. The content is the request's frequent bigrams under the requested headings. Shipped body: of 4 sections, 0 are engine text (all 'content pending'); Vision is the founder's verbatim problem. Describe offers text, AttachDocument and DictateButton (GenesisJourney.tsx:652-657). Export to md/html/slides/txt/json/video-html/svg/png works; pptx/pdf/docx are listed as 'catalogue_not_yet_produced'.",
+    "evidence": "Scratchpad j1.json (journey), GET /api/v1/vsb/vsb-d0ee901a57, deliverable deliv-3ba6f350 export. genesis.py:113-137 and 795-800; GenesisJourney.tsx:748-757 and 828-834.",
+    "disclosed_to_user": "Yes, at every stage surface",
+    "smallest_honest_fix": "None needed for honesty. The capability gap closes only with an owned model."
+   },
+   {
+    "section": "The §13 repository mechanics work: git-versioned 27-file repo, allow-listed file read, zip, coherent ship, Mode-3 gate hold with a way out, and a §11 veto that stops establishment",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "severity": "info",
+    "why_this_tier": "Verified by execution, and every response tells the reader the truth about what it did. No tier.",
+    "vision_claim": "§13: the canonical output is a version-controlled repository of the VSB integrating Website, Web app and Phone app, re-runnable and document-controlled. §4.8: Establish.",
+    "observed": "Varroa VSB: 27 files, 74,511 bytes, git with 5 commits per ship (website/webapp/mobile/repo/ship). GET /repo/file?path=README.md returns 200. path=../../../etc/passwd is refused ('not a file this repo declares'). GET /repo/zip returns 200 application/zip with 27 files. Ship returns coherent_whole:true and surfaces_shipped [board_pack, mobile, repo, webapp, website]. A gated 'design' stage made ship return 409 with clear_by. After approval the ship succeeded. The website is 3 real pages, the PWA has a manifest and service worker. Birth stream events are honest ('Established - body pending', 'Self-run lever is off', 'no twin model is trained'). §4.10: the heartbeat beats and refreshes plan layers, served_by deterministic-floor. Autonomous economy cycles are OFF by default and the entity record says so.",
+    "evidence": "GET/POST /api/v1/vsb/{id}/repo, /repo/file, /repo/zip, /repo/ship, /review-gates/{stage}/decision, /genesis/establish/stream; /api/v1/heartbeat/beat. Scratchpad data/vsb_repos/vsb-d0ee901a57.",
+    "disclosed_to_user": "n/a",
+    "smallest_honest_fix": "n/a"
+   }
+  ],
+  "verdicts": [
+   {
+    "index": 0,
+    "refuted": false,
+    "corrected_verdict": "STUB",
+    "corrected_tier": 1,
+    "reason": "Reproduced live. GET /vsb/vsb-5a29050a87/repo/file?path=compliance/QUALITY.md returns 'QMS gate: PASS · Basis: QMS gate on real coverage/stub metrics (served_by=unspecified) · Delivery coverage: 1.0'. The same repo's BUSINESS_PLAN.md has empty '## Design & Development' and '## Commercialisation', and OPERATIONS.md says 'Not provided at establishment'. vsb.py:381-385 checks for four headings the generator writes itself, so the gate cannot fail on content. quality.py:205-210 then records 'specifically designed' and 'verified' as measured met from that coverage whenever served_by is not floor. Tier 1, not 2: the sealed record states a positive certification (PASS, coverage 1.0, stub_found false) of something it never assessed. It does not merely leave the gap unmentioned. The 'served_by=unspecified' note does not disclose that the sections are empty.",
+    "evidence": "Live QUALITY.md and BUSINESS_PLAN.md for vsb-5a29050a87; GET /repo quality_assurance shows delivery_coverage 1.0 with basis '4 declared section(s) checked', stub_found false; agentic_core/api/vsb.py:381-385; agentic_core/vbs/quality.py:202-210."
+   },
+   {
+    "index": 1,
+    "refuted": false,
+    "corrected_verdict": "STUB",
+    "corrected_tier": 1,
+    "reason": "Reproduced from the stored entity and the code. On vsb-d0ee901a57, generation is 1. epigenetic_traits.compliance_posture equals the proposal sentence 'remediate the §11 screen posture (currently 'review') across the entity's plan and registration text'. applied_mutations records expected_impact 'the screen returns to pass', and a new CCA (cca-b418a9a736) is pending, which means the same remediation was proposed again. apply_approved_evolution (vsb.py:2961-2967) does only traits[t] = proposed_change. Nothing rewrites the plan or the registration, and status is still 'body pending' with 4 sections. rescore_living_pillar then marks the pillar 'met … which is what makes it living'. The basis does say these are 'counts of what happened, not a grade'. But applied:true on a mutation phrased as a remediation, plus 'traits actually changed', tells the reader a remediation was applied when only a label was written. That is a stated outcome the platform did not produce, so tier 1. It is not tier 2, because this is an assertion and not an omission.",
+    "evidence": "GET /api/v1/vsb/vsb-d0ee901a57 (generation 1, traits, applied_mutations, evolution_pending_cca cca-b418a9a736); agentic_core/api/vsb.py:2703-2710, 2961-2967, 2820-2867, 3040-3047."
+   },
+   {
+    "index": 2,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced live. GET /vsb/vsb-5a29050a87 returns status 'held' with status_basis 'a review gate blocks progress (Mode 3): design pending'. In the same record, review_gates.decisions.design = approve at 2026-10-07T01:27:08Z. The shipped README.md prints '**Status:** held'. decide_review_gate (vsb.py:1988-2006) saves the decision and never calls _derived_status, and the only caller in vsb.py is establish (line 2411). This is tier 1: the user is shown a false statement about their own entity ('design pending' after they approved it), not merely a missing field.",
+    "evidence": "Live GET /vsb/vsb-5a29050a87 and /repo/file?path=README.md; agentic_core/api/vsb.py:1625-1660, 1988-2006, 2411."
+   },
+   {
+    "index": 3,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed. projects/api.py:50 has STAGE_ORDER concept/prototype/commercialise. vsb.py:64-73 lists 8 review-gate stages (intake, research, design, build, validate, commercialise, genome, launch). The genesis journey uses different stages again. ProjectsHub.tsx has no reference to genesis, establish, a VSB or §4, so nothing at the user surface says this ladder is not the §4 lifecycle. The only admission is the developer route /organism/lifecycle stages_note ('known vocabulary issue … Owner decision pending'). Tier 2 because the shortfall is invisible where users are. It is not tier 1, because no surface asserts the stages are unified.",
+    "evidence": "agentic_core/projects/api.py:49-50; agentic_core/api/vsb.py:64-73; ProjectsHub.tsx:18,62,355 with no genesis/VSB link; GET /api/v1/organism/lifecycle stages_note."
+   },
+   {
+    "index": 4,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Reproduced. In the scratchpad repos, webapp/app.js for vsb-d0ee901a57 and vsb-5a29050a87 diff to nothing once the names are removed, and mobile/app.js is byte-identical. Only data.json differs, so the app is a 4-tab viewer of the entity's own record and contains no solution functionality (no mite counting, no surplus matching). The repo discloses 'not built/compiled/running' but never says the apps are not bespoke. Tier 2 (an invisible shortfall). It is not tier 1, because nothing asserts solution features exist, and a client-side interactive viewer is a real app.",
+    "evidence": "diff of scratchpad data/vsb_repos/{vsb-d0ee901a57,vsb-5a29050a87}/webapp/app.js (empty after name strip) and mobile/app.js (identical)."
+   },
+   {
+    "index": 5,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced. EVIDENCE.md for vsb-d0ee901a57 reads '## Selected Candidate (§4.5 evidence-ranked) … simulated evidence: 0.815 (modelled 0.774; declared weights 60/40)'. Its own excerpt then says 'its output is a structured frame, not a simulation' and 'TIE … NOT evidence; candidates_distinct=1'. vsb.py:158-163 writes the heading and the 'simulated evidence' label unconditionally. I keep tier 1. The figure is labelled as simulated evidence for a simulation the file admits did not occur, and the heading asserts an evidence ranking over identical texts. The later disclosure contradicts these false labels but does not remove them. A self-contradicting record still states the false claim first, which is why this is not tier 3, as it would be if the shortfall were simply stated.",
+    "evidence": "scratchpad data/vsb_repos/vsb-d0ee901a57/EVIDENCE.md lines 3-11; agentic_core/api/vsb.py:157-166."
+   },
+   {
+    "index": 6,
+    "refuted": false,
+    "corrected_verdict": "DOC_OVERCLAIM",
+    "corrected_tier": 1,
+    "reason": "Reproduced. vsb.py:125 makes the README say '`BUSINESS_PLAN.md` — Executive Summary · Concept · Vision · Mission · Strategy'. The varroa BUSINESS_PLAN.md headings are Executive Summary, Concept, Vision, Design & Development and Commercialisation, with no Mission or Strategy. webapp/data.json business_plan.mission is 'Deliver: <founder problem>' with no pending marker, while executive_summary and concept in the same object do carry 'content pending the owned model'. app.js renders it as 'Mission'. This is an untrue statement about the deliverable's contents, plus engine-composed text presented as the mission. Tier 1, but low consequence.",
+    "evidence": "agentic_core/api/vsb.py:125, 989, 1346; scratchpad vsb-d0ee901a57/BUSINESS_PLAN.md headings; webapp/data.json business_plan; webapp/app.js:16."
+   },
+   {
+    "index": 7,
+    "refuted": true,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "The source matches: GenesisJourney.tsx:913 renders 'Sovereign Journey Complete' unconditionally (I read the source; I did not render it in a browser). But the tier is too harsh. The journey did run to its end and stop at the veto, so 'complete' overstates the polish rather than asserting an untrue outcome. The paragraph directly under the heading reads 'No deliverable — the §11 screen vetoed every candidate', the Establish button is disabled, and the backend records blocked_by_screen. The surface itself states the shortfall in the same card, so this is tier 3 (disclosed), not tier 1. It is a polish defect against §15.6, not a fabricated claim.",
+    "evidence": "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx:910-916 (heading, then {result.deliverable} directly beneath)."
+   },
+   {
+    "index": 8,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Spot-checked. The floor text says 'a term count, not an …' (ai/native/engine.py:395). GenesisJourney.tsx:750 renders 'The deterministic native floor served N of these calls', and :1051 has the amber floor-served note. The varroa webapp data.json marks executive_summary and concept 'content pending the owned model'. EVIDENCE.md stage verifications read 'not assessable (floor-served)'. The gap is stated at the surface, so tier 3 is right. One caveat: the Mission field is the exception, carried by finding 6.",
+    "evidence": "agentic_core/ai/native/engine.py:395; GenesisJourney.tsx:750,1051; scratchpad vsb-d0ee901a57/webapp/data.json and EVIDENCE.md."
+   },
+   {
+    "index": 9,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Mechanics reproduced live. A traversal path=../../../etc/passwd returns 404. /repo/zip returns 200 application/zip with 27 files (74,851 bytes). The varroa repo's git log has 16 commits. The review-gate 409 with clear_by exists in code (vsb.py:1846). Leaving it as DELIVERED for the repository MECHANICS only. The assessor's line 'every response tells the reader the truth' is overstated: the same repos carry the false README status (finding 2), the README Mission/Strategy claim (finding 6), the EVIDENCE.md 'simulated evidence' label (finding 5) and the QUALITY.md PASS (finding 0). Those are content-truth defects tiered separately, not failures of the versioning, read, zip or ship mechanics.",
+    "evidence": "Live GET /vsb/vsb-d0ee901a57/repo/file traversal returns 404; /repo/zip returns 200 with 27 files; git log in the scratchpad repo has 16 commits; agentic_core/api/vsb.py:1846."
+   }
+  ],
+  "summary": "R2 covers §4 (the lifecycle) and §13 (what the output is). Environment note: nothing was listening on 127.0.0.1:8031 in this container (curl exit 7), so I booted HEAD c8685dd myself. I used uvicorn agentic_core.app_mvp:app on 8031 with AI_DISABLE_LOCAL=1, auth off, a scratch DATA_DIR, and a minimal Python 3.12 venv (chromadb absent, so in-process fallback; 521 routes mounted). I ran: a full journey with establish (varroa beekeepers); a blocked journey (all candidates vetoed); a standalone /genesis/establish with founder-supplied concept and a design gate; a streamed establish; /vsb/spawn; ship, repo, file, zip, cascade, evolve; CCA approve and apply; and heartbeat beat. I read GenesisJourney.tsx, VSBCockpit.tsx and ProjectsHub.tsx from source; I could not drive a browser.\n\nThe W434 lesson holds. All 14 gateway outputs contain the user's own subject, and none is the engine's banner. On the floor, though, the content is the request's frequent terms under the requested headings, and every stage says so. The shipped body has 0 of 4 sections composed by the engine: all are honestly 'content pending'.\n\nDisclosure at the journey surface is strong:\n- floor-served count shown above the results\n- stages_verified '0/0 · 6 floor-served, not assessable'\n- identical candidates replaced by a note, with the tie stated\n- Develop records that no bill of materials was produced\n- the §11 veto stops design and establishment\n\nThe gaps that mislead are downstream of the journey, in the established entity:\n1. The repo, web-app and mobile QMS gates can only pass. They check headings the generator writes itself, and certified 'PASS / specifically designed: met' over a repo whose Design and Commercialisation sections are empty.\n2. An approved and applied 'evolution' that 'remediates the §11 posture across the plan' changes only a trait string. It still advances the generation and scores the 'living' pillar met. The CCA was approved by a health rule that its own text says cannot refuse.\n3. Status is derived only at birth, so a VSB whose gate was approved and which then shipped still reads 'held — design pending', including in its shipped README.\n\nThere is no single gated lifecycle. Projects (3 stages, never reaching a VSB), the Genesis journey (6+ stages), the gate lifecycle (8 stages) and the vision (10 stages) co-exist, and the mismatch is admitted only on a developer route. Mode-3 gates hold the movers (ship, evolve, cascades), not the stages.\n\nWhat an 'established' VSB contains and does:\n- a git repo of 27 files: identity/genome, business plan, organisation/board, cascades, sealed quality record, a 3-page site, and a generic 4-tab web app and PWA that are byte-identical across enterprises and implement none of the solution\n- a virtual WST economy with one zero-revenue birth cycle\n- a delivery swarm entry\n- a heartbeat that refreshes plan layers on the floor\n- self-run OFF by default, which is disclosed\n\nFurther items I found but left outside the ten:\n- the ship commit message reads 'seal None'\n- birth-time review gates are API-only (the UI sets them only after the body has shipped)\n- the §11 screen reads the prompt's own 'Sharia/halal' heading as the subject describing itself as halal\n- uk_legal reports jurisdiction 'UK / London' for a Wales subject\n- §4.8 has no modelled revenue or go-to-market on the floor (disclosed as pending)\n- GET /vsb list returns status_basis null\n\nI HIT THE CAP OF TEN; ten is not the size of the gap.",
+  "hit_the_cap": true
+ },
+ {
+  "region": "R3",
+  "findings": [
+   {
+    "section": "The §17.3 strategic cadence overwrites the Owner's own Strategy with floor-derived text, and the Business Plan page still marks it 'owner-edited'",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "high",
+    "why_this_tier": "The Business Plan page's Strategic Layer shows 'Strategy [owner-edited]' (the emerald chip's tooltip says 'set by the owner at 01:41:32Z') above the sentence 'Strategic position derived from the plan itself: 0 aim(s) and 3 objective(s) on the roadmap…'. Nobody wrote that sentence; the cadence module derived it, and it replaced the words the Owner wrote. The page credits the Owner with text the platform composed, which makes it an untrue statement on a page people reach, so tier 1. It is not tier 2: the problem is a false attribution, not a missing piece the page leaves out.",
+    "vision_claim": "§5/§15.9: the Chief-owned living Business Plan carries the founder's intent and is owner-editable. §17.3: the Strategic layer refreshes quarterly or on a market signal.",
+    "observed": "POST /business-plan/set wrote the strategy 'R3 PROBE OWNER STRATEGY…' on vsb-929012f170 and recorded owner_edits.strategy. POST /organism/cadence/refresh?layer=strategic&signal=… then replaced plan.strategy with the derived sentence. owner_edits.strategy stayed set. The displaced text survives only in refreshes[].replaced, which no UI renders. The same overwrite happens on the heartbeat's quarterly elapsed-time refresh and on any signal. cadence.refresh never checks owner_edits.",
+    "evidence": "agentic_core/organism/cadence.py:271 `plan[field] = composed[\"content\"]` (no owner_edits check). BusinessPlan.tsx:187 `<Field label=\"Strategy\" value={plan.strategy} edited={plan.owner_edits?.strategy} />`. Executed: GET /business-plan?scope=vsb-929012f170 returns that strategy with owner_edits {'strategy': '2026-10-07T01:41:32Z'}.",
+    "disclosed_to_user": "no — the page shows owner-edited over the derived text",
+    "smallest_honest_fix": "Have the cadence skip, or only append to, a field that has owner_edits[field], and clear the owner_edits marker whenever a refresh does write the field. Show the latest refresh's provenance next to Strategy."
+   },
+   {
+    "section": "The Board Pack's Constitutional layer ignores the Owner's recorded vision and mission and labels the founder's problem statement as the entity's vision",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "high",
+    "why_this_tier": "After the Owner set the vision 'every Welsh hive monitored affordably by 2028' in the Chief-owned plan, the freshly assembled, DCS-registered pack still states vision = the founder's problem statement word for word ('Small-scale beekeepers in rural Wales lose 30%…'), with vision_source 'not authored'. An authored vision does exist, so the Board's document gives the entity's vision wrongly. The pack is also billed as 'assembled fresh from live data'. That is an untrue statement in a reached record (the Genesis 'Assemble Board Pack' action, VSBEconomy), so tier 1. The narrative adds a second falsehood: it says the constitutional layer is derived from 'the platform's standing values line', while the values field itself says that line is NOT shown.",
+    "vision_claim": "§17.3 Board Pack: assembled fresh from live data, with a Constitutional layer of Mission·Vision·Values. §17.4 Mode 1: the Owner sets mission/values/ethical bounds.",
+    "observed": "POST /vsb/vsb-d0ee901a57/board-pack after /business-plan/set wrote vision and mission: constitutional.vision and constitutional.mission are still derived from vsb.challenge. No route writes a VSB's values, so values is permanently 'NOT DECLARED' and Mode 1's 'Owner sets values' cannot be done for a VSB. The same entity also carries two different visions: the plan's templated 'A self-running waqf_ltd_hybrid VSB IDBO…' and the pack's problem statement.",
+    "evidence": "agentic_core/api/vsb.py:1346 `constitutional = {\"mission\": f\"Deliver: {challenge}\"[:280], \"vision\": challenge, …}` (the business plan is never read). vsb.py:1389 narrative text. A grep for any writer of vsb['values'] finds none.",
+    "disclosed_to_user": "partly — each field names its source, but the source label 'not authored' is itself wrong once the Owner has authored one",
+    "smallest_honest_fix": "Read mission and vision from the scope's business plan when it has owner_edits or a model-written value, and fall back to the problem statement only otherwise, saying so. Add an owner route to declare VSB values. Remove 'and the platform's standing values line' from the narrative."
+   },
+   {
+    "section": "Floor boilerplate is stored as each tier's 'Development Action', and the Board page reports it as '6 tier edges under continual improvement'",
+    "verdict": "STUB",
+    "tier": 1,
+    "severity": "high",
+    "why_this_tier": "Under 'Recent Board Deliberations', the Board page shows 'live grounding: active Development Actions: 6 tier edges under continual improvement'. All six stored actions are the same generic floor text: '- Validate the structured outputs above… - Route richer generation to a model resource…'. The count asserts that improvement is under way when the platform produced none, so tier 1 rather than a disclosed gap. The cascade panel's heading 'Management appraisal & development (each tier develops the one below)' makes the same claim, although the pre blocks under it do carry the floor marker.",
+    "vision_claim": "§5: each tier manages, appraises and develops the tier below. The organisation is optimised for continual improvement.",
+    "observed": "POST /swarm/cascade: appraisals are floor frames ('Structured go-to-market frame for: .'). The '## Development Action' section, which is the floor's fixed Next-steps list, is persisted to tier_development.json and re-injected next cycle (development_applied names the prior run 3afe679ae6). POST /board/directive then reports dir_evolution live_grounding 'active Development Actions: 6 tier edges under continual improvement'.",
+    "evidence": "agentic_core/api/swarm.py:~868-883 persists _action whatever served it. agentic_core/api/board.py:888 `f\"active Development Actions: {len(dev)} tier edges under continual improvement\"`. BoardOfDirectors.tsx:378 renders live_grounding. The DATA_DIR tier_development.json has six identical floor actions.",
+    "disclosed_to_user": "no — the grounding line carries no floor qualifier",
+    "smallest_honest_fix": "Do not persist a development action from a floor-served appraisal (record 'no development set — floor-served'). Have the director grounding count only model-served actions and say how many were skipped."
+   },
+   {
+    "section": "The cascade files the floor's generic 'Next steps' bullets as proposed Products & Services catalogue items that can be priced and sold",
+    "verdict": "STUB",
+    "tier": 1,
+    "severity": "medium",
+    "why_this_tier": "The cascade response and the stored record (proposed_catalogue.json, GET /swarm/catalogue/proposed) list items 'Validate the structured outputs above against the stated objective.', 'Route richer generation to a model resource (local-first; external only' and 'Iterate via the orchestrator's cascade…' with status 'proposed'. These are presented as products the BTO proposed, and POST /catalogue/proposed/{run_id}/curate can attach a WST price and a vsb_id to them. The record asserts an output the platform did not produce, and for an API-only surface the response body and stored record are the reached form, so tier 1. It is not tier 3, because no field on the record says these are not products.",
+    "vision_claim": "§5: the BTO runs Build-to-Order plus the Products Catalogue.",
+    "observed": "Executed POST /swarm/cascade (run 45f1a8915a): catalogue_items_proposed holds the three floor Next-steps bullets. The regex harvests every capitalised bullet of the floor text. No UI lists the items, though the raw catalogue text (floor-marked) is shown in SwarmIntelligence.",
+    "evidence": "agentic_core/api/swarm.py:749-764 (bullet regex over products_services_catalogue, persisted with status 'proposed'). swarm.py:270 curate route. GET /api/v1/swarm/catalogue/proposed returns both runs with the same boilerplate items.",
+    "disclosed_to_user": "no",
+    "smallest_honest_fix": "When the catalogue tier is floor-served, file no items and record 'no catalogue proposed — floor-served', and refuse to curate an item from a floor-served run."
+   },
+   {
+    "section": "The Business Plan page heads a code-templated opening 'Chief's Opening' unconditionally, above an inner card that says the Chief wrote nothing",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "medium",
+    "why_this_tier": "For a VSB plan, the outer card's title is 'Chief's Opening — Executive Summary · Concept · Vision', and the page header says the plan is 'owned by your Chief'. The inner PlanOpening card is titled 'Plan opening — generated from your establish answers' and says 'code templates … not the Chief, and not a model'. The headline is wrong, but the same card corrects it, so it is not tier 1. It is not tier 3 either, because the headline still asserts the Chief authored the opening and only a reader who looks inside learns otherwise. W505 made the inner heading conditional for exactly this reason; the outer copy in BusinessPlan.tsx was missed.",
+    "vision_claim": "§5/§15.9: the plan opens with a Chief-framed Executive Summary · Concept · Vision, AI-generable in-house by the Chief.",
+    "observed": "GET /business-plan?scope=vsb-d0ee901a57: provenance.templated_fields lists executive_summary, vision, mission, strategy and concept, with opening_written_by 'code templates…'. On the floor, POST /generate writes nothing and says so (honest). The apex 'workstation' plan has an empty opening, and the card is hidden there.",
+    "evidence": "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx:163 (hard-coded h3) against components/PlanOpening.tsx:80-83 (conditional heading). Read from source; no browser was driven.",
+    "disclosed_to_user": "partly — inside the card",
+    "smallest_honest_fix": "Remove the outer h3, or derive it from the same allTemplated condition PlanOpening uses."
+   },
+   {
+    "section": "The §17.3 cadence says a market signal or KPI trigger 'would fire it regardless', but nothing observes either, and the cadence has no UI",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "medium",
+    "why_this_tier": "GET /organism/cadence answers 'not due: … A market signal would fire it regardless' and '… A KPI trigger would fire it regardless'. A reader takes that to mean the platform watches markets and KPIs. Nothing does: a signal arrives only as a manual ?signal= argument on POST /organism/cadence/refresh, and objectives' KPI fields are never evaluated. This is a partial capability the surface does not disclose, so tier 2. It is not tier 1, because a signal would indeed fire the layer if one were supplied; the shortfall is the missing observer.",
+    "vision_claim": "§17.3: Strategic (AI CEO; quarterly plus market signal); Action Plan (BTO; weekly plus KPI-triggered).",
+    "observed": "Elapsed-time refresh is DELIVERED. The heartbeat visits the apex and one rotating VSB each beat (last_beat beat 5, honest 'quiet cadence' basis), and each refresh is floor-derived and says so (served_by deterministic-floor). The vision's own §17.3 status note ('Strategic and Action-Plan cadence layers are MISSING') is stale and understates this. No component fetches /organism/cadence, so the refresh history and due state are API-only. The only reached form is the overwritten Strategy field (see finding 1).",
+    "evidence": "agentic_core/organism/cadence.py:24-26 ('supplied by whoever observed them'), :120 due reason. Grepping agentic_core for producers of a market or KPI signal finds only the POST route. No frontend file references organism/cadence.",
+    "disclosed_to_user": "no — the 'would fire it regardless' wording implies an observer",
+    "smallest_honest_fix": "Change the reason to say a signal fires the layer 'when supplied to POST /organism/cadence/refresh; nothing observes market or KPI signals yet'. Render the cadence state on the Business Plan page."
+   },
+   {
+    "section": "The Board's Action Planning has no resourced tasks or project management: a directive lands as at most one objective, with an empty timeline and a placeholder KPI",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "medium",
+    "why_this_tier": "The Board page offers 'Delegate a timelined action plan to the AI CEO'. On the floor, the result is one objective titled with the Owner's instruction, with KPI '(KPI to be set by the Board)' and an empty timeline (put under Unscheduled). Even with a model serving, the objective schema (title, kpi, timeline, owner_role, progress_pct, status, reviews) has no task, resource or assignment field, so 'resourced tasks and project management' cannot exist in any mode. Nothing on the surface says so, so tier 2 rather than 3. Nothing untrue is asserted about a run, so it is not tier 1.",
+    "vision_claim": "§5: the Board delivers via Action Planning with timelines, resourced tasks and project management, and delegates downward.",
+    "observed": "POST /board/chief/instruct and /board/directive run the Chief and AI CEO prompts. The C-Suite, CoE and BTO are never invoked on this path, yet the record's delegation_chain lists all six tiers, and the UI prints 'chain: Chief → Board → AI CEO → C-Suite → CoE → BTO'. The CEO's numbered action-plan tasks exist only as prose in ceo_action_plan.",
+    "evidence": "agentic_core/api/board.py:735-746 (fallback objective), :803 delegation_chain constant. BoardOfDirectors.tsx:298, :312. business_plan.py ObjectiveRequest has no tasks or resources.",
+    "disclosed_to_user": "no",
+    "smallest_honest_fix": "Change delegation_chain to the tiers that actually ran on this path (Chief → AI CEO). Add a task list (owner_role, resource, due) to objectives, or state on the checkbox that only objectives are tracked."
+   },
+   {
+    "section": "The cascade's governance tooltip says the delivery's content was NOT screened when the post-gate screened all nine tiers",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "low",
+    "why_this_tier": "The SwarmIntelligence 'intent gate: allowed' chip uses governance.scope as its title, and that reads: 'The delivery's content was NOT screened, so this verdict is not a judgement on what was produced.' The same object says content_screened: true, tiers_screened lists nine tiers, and content_chars is 19404. The tooltip's statement is false, so tier 1, but it understates the platform rather than overclaiming, so it ranks low.",
+    "vision_claim": "§5: Change Control governs all change at arm's length. §11: compliance is continuously live.",
+    "observed": "Executed POST /swarm/cascade: governance.screened = 'intent + domain + the delivered content of every tier', content_screened true, scope = INTENT_GATE_SCOPE ('…content was NOT screened…'). intent_gate_result supplies the scope text, and the later update() adds the content-screen facts without replacing it.",
+    "evidence": "agentic_core/api/swarm.py:999-1013, agentic_core/gaas/v5/__init__.py:24 and :37. SwarmIntelligence.tsx:290-294 (title={cascade.governance.scope}).",
+    "disclosed_to_user": "n/a — the tooltip says the opposite of what happened",
+    "smallest_honest_fix": "In the cascade's governance.update(), overwrite `scope` with a sentence describing the content post-gate."
+   },
+   {
+    "section": "The digital-twin Chief reports honestly whether it is a twin or a role, but 'Modelled twin' means one stored instruction pasted into a prompt, and the page header still says Mode 2 is planned",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "severity": "low",
+    "why_this_tier": "GET /board/chief/model says 'A ROLE, NOT A MODELLED TWIN: this Owner has written no instruction…', and the Board page shows the same in amber, which is honest and meets Owner ruling 2026-10-05b(R6). After one instruction the badge turns emerald 'Modelled twin — 1 instruction(s) you wrote', with the basis naming its inputs. The header says 'no digital-twin model is trained yet (Mode 2 is planned, P3.4)'. The shortfall against 'modelled, simulated and iterated' is visible to a reader through the counts and the header, so tier 3, not 2. Nothing is fabricated, so not tier 1.",
+    "vision_claim": "§5: the Chief is the Founder's Digital Twin, modelled, simulated and iterated, acting in presence and absence. §17.4 Mode 2 is scoped by R6 to the Owner's own twin or a stated role.",
+    "observed": "founder_model(): is_twin = (instructions + decisions) > 0, with the last five instructions and decisions injected as prompt text; nothing is simulated or iterated. In absence, the Chief is twin_directive_unprompted on the heartbeat, which restates the latest instruction only when the record changes.",
+    "evidence": "agentic_core/api/board.py:182-237 founder_model, :438 twin_directive_unprompted. BoardOfDirectors.tsx:107-121, :160-165. Executed GET /board/chief/model.",
+    "disclosed_to_user": "yes — counts and basis shown, and the header says no model is trained",
+    "smallest_honest_fix": "Rename the emerald state to 'Twin from your record (N inputs; not simulated)' and update the stale 'Mode 2 is planned' header to match R6/W587."
+   },
+   {
+    "section": "Arm's-length Change Control, Board ratification and Mode 3 review gates work as the vision states",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "severity": "none",
+    "why_this_tier": "Every decision states what made it. An auto-approval reads 'DECIDED BY RULE, NOT BY THE SERVING RESOURCE … the prose below … had NO bearing on the decision'. health_gate decides on the measured 40% of composite health and says why. The rollback_plan the change lacked is named. The ratification queue states its rule. A gated stage refuses movers with a named 409. Nothing a reader is shown overclaims.",
+    "vision_claim": "§5: Change Control is an arm's-length agency; a HIGH change approved by review waits for Board ratification on the Owner's direction. §17.4 Mode 3: optional human review gates refuse lifecycle movers.",
+    "observed": "GET /cca returns 2 changes with decision_source per row. GET /cca/cca-d27e501bc9 carries a full audit trail, method_check, scope_appraisal and reviewed_without. GET /board/ratifications is empty, with rule and routing stated. Setting a gate on vsb-929012f170 for commercialise made POST /swarm/cascade return 409 'review gate blocks progress … clear_by POST …/decision'; ungating cleared it. The Owner-controlled C-Suite selection (csuite_roles) is honoured in the cascade. Known and disclosed limit (§17.4): a gate pauses the ship, not a stage mid-journey.",
+    "evidence": "agentic_core/api/change_control.py:1431 review_change. agentic_core/api/board.py:599-655 ratifications. agentic_core/api/vsb.py:1942-1960 gates. Executed routes as listed.",
+    "disclosed_to_user": "yes",
+    "smallest_honest_fix": "none"
+   }
+  ],
+  "verdicts": [
+   {
+    "index": 0,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced. cadence.py:271 does plan[field] = composed['content'] and never reads owner_edits. Live GET /business-plan?scope=vsb-929012f170 returns strategy 'Strategic position derived from the plan itself: 0 aim(s) and 3 objective(s)...' while owner_edits={'strategy':'2026-10-07T01:41:32Z'}. BusinessPlan.tsx:187 passes edited=plan.owner_edits?.strategy, so the page puts the owner-edited chip on text the platform composed. That is a false attribution on a reached page, so tier 1. The displaced text is kept in refreshes[].replaced, but no UI shows it, and that does not make the chip true.",
+    "evidence": "agentic_core/organism/cadence.py:271; apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx:187; the live plan's refreshes list holds a strategy entry at 01:41:32Z."
+   },
+   {
+    "index": 1,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced. The vsb-d0ee901a57 plan holds the Owner-set vision 'every Welsh hive monitored affordably by 2028' with owner_edits.vision set. vsb.py:1346 still builds the pack's vision and mission from the challenge alone and never reads the plan. No writer of vsb['values'] exists. The source labels ('verbatim - not authored') are accurate about where the shown value came from. If that were all, this would be tier 2: an invisible shortfall where the authored vision is ignored. Tier 1 stands for a second reason. The floor narrative (vsb.py:1386-1390) says the constitutional layer is 'DERIVED from the founder's problem statement and the platform's standing values line', but W585 stopped putting that line in the values field. The stored pack therefore contains an untrue statement about its own construction.",
+    "evidence": "agentic_core/api/vsb.py:1342-1352 and 1386-1390. GET /business-plan?scope=vsb-d0ee901a57 shows the Owner's vision and mission with owner_edits."
+   },
+   {
+    "index": 2,
+    "refuted": false,
+    "corrected_verdict": "STUB",
+    "corrected_tier": 1,
+    "reason": "Reproduced. The live DATA_DIR tier_development.json has 6 entries, and all of them carry the same action text: the floor's 'Validate the structured outputs above... Route richer generation to a model resource...' list. swarm.py:877-884 persists whatever text served, with no served_by check. board.py:888 then reports 'active Development Actions: 6 tier edges under continual improvement' with no floor qualifier, and BoardOfDirectors.tsx:378 renders it as live grounding. A count that asserts improvement nobody produced is tier 1.",
+    "evidence": "In the live DATA_DIR tier_development.json, 6 keys share 1 distinct action. agentic_core/api/board.py:884-890; agentic_core/api/swarm.py:877-884."
+   },
+   {
+    "index": 3,
+    "refuted": false,
+    "corrected_verdict": "STUB",
+    "corrected_tier": 1,
+    "reason": "Reproduced. The live proposed_catalogue.json holds run 3afe679ae6 with status 'proposed' and items that are the floor's three Next-steps bullets. The regex at swarm.py:751-756 harvests any capitalised bullet, and the record has no served_by field. The record's raw text does begin with the native-engine marker, but the items field asserts offerings with no qualifier, and the curate route (swarm.py:270) never checks provenance before publishing a priced listing. On this API-only surface the stored record is the reached form, so tier 1. The raw marker is the reason it is not worse, and it does not make it tier 2: nothing says the items are not products.",
+    "evidence": "agentic_core/api/swarm.py:749-764 and 270-300. In the live DATA_DIR, proposed_catalogue.json items: 'Validate the structured outputs above against the stated objective.' and others."
+   },
+   {
+    "index": 4,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed from source; no browser was driven. BusinessPlan.tsx:162 hard-codes the h3 'Chief's Opening — Executive Summary · Concept · Vision' whenever any opening field or provenance exists. PlanOpening.tsx:80-83 makes its own heading conditional and reads 'Plan opening — generated from your establish answers' when every field is templated. The same card corrects the headline, so it is not tier 1. Only a reader who reads inside the card is corrected, so it is not tier 3.",
+    "evidence": "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx:158-162; apps/workstation-superapp/src/components/PlanOpening.tsx:76-83."
+   },
+   {
+    "index": 5,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Reproduced. Live GET /organism/cadence answers 'not due: 0.02 day(s)... A market signal would fire it regardless'. The only signal input is the ?signal= argument of POST /organism/cadence/refresh (organism_status.py:789-804), and the heartbeat calls refresh without one. The module docstring (cadence.py:24-26) admits that signals are 'supplied by whoever observed them', but the response never tells the reader so. No frontend file references organism/cadence. The conditional sentence is literally true, so it is not tier 1. The missing observer goes unsaid on the reached response body, so tier 2.",
+    "evidence": "agentic_core/organism/cadence.py:122; agentic_core/api/organism_status.py:789-804; grep finds no organism/cadence in apps/workstation-superapp/src."
+   },
+   {
+    "index": 6,
+    "refuted": true,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "The verdict stands but the tier is too kind. The assessor quoted the decisive fact and then tiered it 2. board.py:799 stamps every directive record with the constant delegation_chain ['Chief','Board','AI CEO','C-Suite','CoE','BTO'], although this path runs only the Chief and AI CEO prompts. BoardOfDirectors.tsx:312 prints it under the specific result: '<directive_id> · chain: Chief → Board → AI CEO → C-Suite → CoE → BTO'. Per the rules, a field asserting an outcome the platform did not produce (delegation through C-Suite, CoE and BTO) is tier 1, not an omission. The resourced-tasks gap is real and tier 2 by itself: ObjectiveRequest (business_plan.py:431-436) has only title, kpi, timeline and owner_role, and the floor fallback adds one objective. The false chain is what raises the finding to tier 1.",
+    "evidence": "agentic_core/api/board.py:799; apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx:312; agentic_core/api/business_plan.py:431-436; board.py:730-750 (one-objective fallback)."
+   },
+   {
+    "index": 7,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced in code. swarm.py:1001 calls intent_gate_result(status, checkpoint, node, arms_length=True) without content_screened. gaas/v5 sets scope to INTENT_GATE_SCOPE ('The delivery's content was NOT screened...') inside that call. Then swarm.py:1002-1014 update() sets content_screened True and tiers_screened after the fact. The W593 'scope derived last' fix covers only extras passed into the call, and this caller bypasses it. SwarmIntelligence.tsx:292 uses governance.scope as the chip's title, so the tooltip states something false. It understates rather than overclaims, so it ranks low, but by definition it is still tier 1.",
+    "evidence": "agentic_core/api/swarm.py:1000-1014; agentic_core/gaas/v5/__init__.py:24-26 and 46-58; apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx:292."
+   },
+   {
+    "index": 8,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Confirmed. Live GET /board/chief/model returns instructions.count 0, profile.declared_by_owner false and the source 'the platform's standing canon, identical for every Chief'. board.py:234 holds the 'A ROLE, NOT A MODELLED TWIN' sentence. BoardOfDirectors.tsx:110 shows 'Modelled twin — N instruction(s) you wrote' with the count, and :165 says no digital-twin model is trained. The shortfall against 'modelled, simulated, iterated' is readable at the surface through the counts and the header, so tier 3. Calling one pasted instruction a 'Modelled twin' is generous, but the count beside it discloses the basis, so it is not tier 2.",
+    "evidence": "agentic_core/api/board.py:234; apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx:110 and 165; live GET /api/v1/board/chief/model."
+   },
+   {
+    "index": 9,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Partly reproduced. Live GET /cca returns 2 changes. Live GET /board/ratifications returns pending [] with the rule and routing stated. vsb.py:1615 and 1641 produce the named 'review gate blocks progress (Mode 3)' refusal, and change_control.py:1658 holds the 'DECIDED BY RULE, NOT BY THE SERVING RESOURCE' disclosure. I did not re-run the gate-then-cascade 409 myself, but the code path exists and matches. Nothing shown overclaims. Tier 0.",
+    "evidence": "agentic_core/api/vsb.py:1615 and 1641; agentic_core/api/change_control.py:1658; live GET /api/v1/cca and /api/v1/board/ratifications."
+   }
+  ],
+  "summary": "R3 (§5, §17.3, §17.4) was measured against the live backend on :8031, with the UI reasoned from source; no browser was driven. The organisation chain exists end to end as API plus UI: Board status and charter, chief/model, the Board page, a nine-tier org cascade in the Swarm tab, the business plan with its living roadmap, the on-demand Board Pack, the CCA and ratifications, and Mode 3 gates. Floor provenance is disclosed almost everywhere. Change Control, Board ratification and Mode 3 gating are DELIVERED and honestly self-describing. The Chief's twin-or-role report meets Owner ruling R6. The §17.3 elapsed-time cadence is now real and heartbeat-driven, so the vision's own 'MISSING' note there is stale (an under-claim). The remaining gap is concentrated where floor or derived output is written into stores and later re-presented as something else. (1) The cadence overwrites an Owner-edited Strategy and leaves the 'owner-edited' mark on it (tier 1). (2) The Board Pack's Constitutional layer ignores the Owner's recorded vision and mission, and no route can set VSB values, so §17.4 Mode 1 cannot complete for a VSB (tier 1). (3) Floor boilerplate becomes each tier's 'Development Action', reported as '6 tier edges under continual improvement' (tier 1). (4) Floor 'Next steps' bullets are filed as proposed catalogue products (tier 1). (5) A false 'content NOT screened' tooltip on the cascade (tier 1, low). Tier 2: the unconditional 'Chief's Opening' heading; the cadence's market/KPI signals that nothing observes, with the cadence API-only; and Board Action Planning with no resourced tasks while delegation_chain lists tiers that never ran. HIT THE CAP: smaller items not given their own rows include the business plan's templated mission cut off mid-word ('…monitoring an'); a VSB carrying two different visions (plan template vs pack); stored cascade runs keeping delivery_coverage 1.0 beside a 'not assessable' basis; field_sources.strategy still reading 'establish_template' after the cadence replaced the strategy; and CEOChat recolouring its avatar by keyword 'sentiment' (cosmetic). State changes made by this measurement on the live data dir: a strategy edit plus a signal-forced strategic refresh on vsb-929012f170; vision and mission edits plus a fresh board pack on vsb-d0ee901a57; one extra org-cascade run (45f1a8915a) and one board directive on workstation; a review gate set and cleared on vsb-929012f170. Barred sources (§16, VISION_FIDELITY_LEDGER, AUTONOMOUS_PROGRESS, DONE markers) were not read. This task was a measurement and did not carry out the relayed W607–W612 build items.",
+  "hit_the_cap": true
+ },
+ {
+  "region": "R4",
+  "findings": [
+   {
+    "section": "The Native AI page's Quick swarm and workflow tree list words the user never wrote under the heading 'Terms most frequent in your request'",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "why_this_tier": "The reader sees a heading that names its source ('Terms most frequent in your request'), and under it are words the platform wrote. In the tree run that word is 'stated', taken from the floor's own placeholder '(domain: the stated domain)'. In the swarm run the words are 'key factors' and 'analyse', taken from the platform's default stage instruction. That is a false statement about where the words came from, on a surface people reach, so it is tier 1. It is not tier 2, because the output does more than leave something out. It asserts a source that is untrue. The floor marker does not excuse it: the marker says no model wrote the text, but it does not say the term list was counted over platform text. The floor's own frame node holds back the same list with the note 'any list here would be counted over the platform's own prompt and this heading would be false', which shows the downstream nodes are in the state the engine itself calls false.",
+    "vision_claim": "§6: bespoke, reconfigurable swarm cascades and workflow trees serve the user's goal. §15.6: honesty over polish, never fabricate.",
+    "observed": "POST /api/v1/native-ai/swarm {context:'community bakery pricing'} (the exact body NativeAI.tsx runSwarm sends): stage 1 printed 'The request concerns: Analyse the objective and key factors.' and listed '- key factors - analyse' under 'Terms most frequent in your request'. The user's context never appears in any stage. POST /api/v1/native-ai/tree {goal:'Launch a community bakery: research the market, design pricing, and plan compliance'}: research, design, implementation and risk each printed 'Subject:  (domain: the stated domain)'. The synthesise and review nodes printed 'Subject: (domain: the stated domain). (domain: the stated domain).' and listed '- stated' as a term from 'your request'. The goal does not appear in any node's output. A related symptom, same cause: in a Resource Fabric composition run, the Petri Dish and Native AI Swarm steps are both headed '## Reactor · Incubate + Experiment + Studio output'. Stage 1's header was carried forward and not stripped.",
+    "evidence": "agentic_core/ai/native/engine.py:171 _CONTENT_LABELS includes 'Subject', while :195 _CARRIED_LABELS holds only ('Prior context','Realm'). So the 'Subject:' line in an upstream node's output, which reaches the next prompt under 'Inputs from upstream nodes', is read as the user's subject and counted for terms. orchestrator.py:612-614 labels the user's goal 'Overall goal:' and the task 'Your task:'. Neither matches _SUBJECT_LABELS (engine.py:128); the 'Task' match is case-sensitive. native_ai.py:459 is the default instruction 'Analyse the objective and key factors.', which reaches the floor under the 'Task:' label (orchestrator.py swarm). engine.py:57 _CARRIED_ROLE_OUTPUT_RE allows only [A-Za-z0-9 &/\\-], so the '·' in 'Reactor · Incubate…' stops the carried header from being stripped. The UI renders both outputs as-is (NativeAI.tsx Trace / TreeView).",
+    "disclosed_to_user": "No. The floor marker is shown, and the tree's governance, validation and consensus blocks are correctly marked not-assessable. Nothing tells the reader that the term list came from platform text or that their goal was never read.",
+    "smallest_honest_fix": "Treat 'Inputs from upstream nodes' as a carried label, and strip carried 'Subject:' lines in _strip_carried. Add 'Overall goal'/'Goal' to _SUBJECT_LABELS and _CONTENT_LABELS. In swarm(), label the user's context as the subject on stage 1, not as 'Prior context'. Widen _CARRIED_ROLE_OUTPUT_RE to allow '·' and '«»'. Where the terms come only from a platform-default instruction, withhold the list as the frame node already does."
+   },
+   {
+    "section": "A Resource Fabric composition run never reads the objective the user typed, and nothing on the output says so",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "Each step reads 'Structured research frame for: As the «Petri Dish» resource (petri_dish), apply your capabilities…' with bullets such as 'Variable capabilities contained.' The user's objective is missing, and nothing says it was ignored. That is a shortfall the surface does not state, so tier 2. It is not tier 1: the frame names the platform's own instruction as its subject, so it does not claim to be about the user's objective, and the floor marker is present. It is not tier 3: no part of the response discloses that the objective was dropped.",
+    "vision_claim": "§7: users compose, reconfigure, re-run and re-use resources toward the enterprise they need, with every composed resource running its real engine on the user's objective.",
+    "observed": "I composed comp-782a5848 (reactor, petri_dish, native_swarm) and ran it twice through POST /api/v1/resources/compositions/{cid}/run, once with {objective:'affordable bread for a low-income neighbourhood'}, the body ResourceFabric.tsx:299 sends. The objective appears in no trace step and not in the final output. Every step's subject is the platform's resource instruction, and the 'Variable …' bullets are bigrams from the platform's capability list. real_resource_runs reports petri_dish 'outcome_phrase: ran its engine and produced this output' over an output of '(no salient terms extracted)'. Its viable:null basis is honest.",
+    "evidence": "resource_fabric.py:1217-1220 builds each stage instruction as 'As the «{name}» resource … apply your capabilities ({caps}) to advance the objective.' The objective goes into the swarm only as `context`, which orchestrator.swarm renders as 'Prior context:'. engine.py:195 excludes that label from the terms, and _SUBJECT_LABELS (:128) does not contain it. Live trace from both runs: identical output with and without an objective.",
+    "disclosed_to_user": "Partly. The floor-served provenance badge is shown (ResourceFabric.tsx:684), and quality_warning says 'nothing here certifies it'. Nothing says the objective was not read.",
+    "smallest_honest_fix": "Pass the objective under a subject label ('Objective:') in each stage prompt. When the floor serves and no user field was read, add a line saying the objective was recorded but not composed over."
+   },
+   {
+    "section": "The Synthesis Studio's 9-stage stream and the VSB it stores carry no served_by or is_external, though the code says every stage event does",
+    "verdict": "API_ONLY",
+    "tier": 2,
+    "why_this_tier": "The reached forms are the SSE body and the stored VSB record. Neither has a provenance field, and neither says provenance is missing, so the shortfall is invisible: tier 2. It is not tier 1, because in this environment each stage's text starts with the floor marker and so nothing untrue is shown. Once a local or external model serves, though, the stored stages would carry no record of which one, or whether it was external. It is not tier 3: the surface is reachable by API, and the code comment claims the opposite of what ships.",
+    "vision_claim": "§6: native, owned capability with external providers as optional accelerants, which requires provenance wherever output reaches a user, including SSE stage events and the durable record.",
+    "observed": "POST /api/v1/studio/synthesise {challenge:'Affordable bread for a low-income neighbourhood', domain:'food'} returned 20 events. Each 'complete' stage event has only the keys [stage, stage_key, stage_label, content, stage_num], and the 'done' event has none. GET /api/v1/studio/vsb/vsb-943fa194 contains 'served_by' 0 times. Every stored stage reads 'Subject:  (domain: the stated domain)' or 'frame for: .', so the user's challenge and the domain 'food' never appear. The entity is stored with status 'active'.",
+    "evidence": "agentic_core/api/synthesis_studio.py:303-306 computes _stage_served and _stage_ext and never uses them. The W506 comment just above says 'an SSE engine carries provenance on EVERY stage event'. The entity dict (~:309-325) stores 'stages': results as bare strings. No frontend file references /api/v1/studio/ (grep), so the route is API-only.",
+    "disclosed_to_user": "Only through the floor marker inside each stage's text. There is no structured field, and nothing says provenance is absent.",
+    "smallest_honest_fix": "Add served_by and is_external to each 'complete' event. Store a per-stage provenance map and an aggregate on the entity, as forge.py does with ai_provenance. Label the challenge and domain in _STAGE_PROMPTS so the floor reads them."
+   },
+   {
+    "section": "Streamed answers and the Primitive Console's completion, swarm and tree calls skip the constitutional checkpoint every gateway completion carries",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "These responses simply have no governance_checkpoint, and nothing tells the reader the gate did not run. That is an invisible shortfall: tier 2. It is not tier 1, because no field asserts that a check happened (an omission, not an assertion). It is not tier 3, because these are the platform's main AI surfaces (the CEO chat, the business-plan and synthesis streams, and the Native AI console), and none of them states the gap.",
+    "vision_claim": "§6: the native swarm, models and orchestration are integrated with the platform. §15.6: ethics architecturally binding. The gateway's own W505 claim: 'every gateway response carries its governance checkpoint'.",
+    "observed": "POST /api/v1/native-ai/complete returned only {output, served_by, is_external, resources_tried}: no governance_checkpoint, no response-screen verdict and no language verdict. /native-ai/swarm, /native-ai/tree and /native-ai/ensemble call the orchestrator directly in the same way. gateway.stream_meta, used by the CEO chat (ceo.py:527), the projects stream, the business plan (v310/business.py:98) and the synthesis stream (synthesis/api.py:446), applies validate_response but not the constitutional pre-gate or post-gate, and chains nothing to the UEG.",
+    "evidence": "gateway.py:285 query_meta calls _policy_verdict, _output_verdict, _record_checkpoint and screen_reason. gateway.py:527 stream_meta calls none of them. native_ai.py:435-438 /complete returns orchestrator.complete() unchanged. No governance_checkpoint field is rendered anywhere in apps/workstation-superapp/src (grep).",
+    "disclosed_to_user": "No.",
+    "smallest_honest_fix": "Route the Primitive Console's /complete through gateway.query_meta, or attach the same pre-gate, post-gate and checkpoint to it. Add the pre-gate and _record_checkpoint to stream_meta's terminal frame. Where a path stays ungated, return governance_checkpoint:{post_checked:false, reason}."
+   },
+   {
+    "section": "The 'Cardiovascular' dot on every page is host CPU headroom, and the page never says so",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "Every page shows a pulsing dot titled 'Cardiovascular', green and fast when the host is idle. The basis exists in the API and in code comments, but the reader sees only the anatomical name. That is an invisible relabelling: tier 2. It is not tier 1: the number is a real measurement, and W489 already removed the inverted 'healthy' and 'working' meanings. The platform's own quality record says plainly that there is 'no circulatory subsystem', which confirms the shortfall but is not shown here.",
+    "vision_claim": "§17.2 layer 4, Cardiovascular: dynamic resource allocation (distribute).",
+    "observed": "Shell.tsx:296 renders BiometricStatus on every page. Its dot has only title='Cardiovascular' (BiometricStatus.tsx:167,192), with colour and pulse speed taken from resource_flow = 100 − host CPU%. cardioDuration pulses fastest (0.8s) when the host is idle. The backend sends resource_flow_basis 'host CPU headroom … spare capacity, not workload' (app_mvp.py:655), and the shell never shows it. The real allocation function, homeostasis.assess capping admitted parallelism (homeostasis.py), runs and is reported on /native-ai/homeostasis, but under no cardiovascular name.",
+    "evidence": "vbs/quality.py LAYER_STATE['Cardiovascular'] = 'measurement_under_this_name … host CPU headroom, honestly measured, under an anatomical name — there is no circulatory subsystem'. The Introspection page labels the same figure 'Host CPU headroom', which is honest; the shell does not.",
+    "disclosed_to_user": "Not on the shell surface. It is disclosed on the Introspection page and in API fields.",
+    "smallest_honest_fix": "Change the dot's title to 'Host CPU headroom (shown as cardiovascular) — spare capacity, not workload'. Or point the dot at homeostasis max_parallel and posture, which is the real allocation."
+   },
+   {
+    "section": "VSB Spawn Studio reports 'Swarm Configured — agent hierarchy set for <domain>', but the hierarchy is a fixed template",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "The reader sees 'Configuring CEO + C-Suite + CoE for this domain…' and then 'Agent hierarchy set for food domain.' The record exists and the domain string is real. But the hierarchy is the same for every VSB, with only the domain word changing, and unlike its sibling stages this one does not say so. That is an invisible shortfall against §6's bespoke-per-solution swarm: tier 2. It is not tier 1, because the hierarchy was in fact recorded. It is not tier 3, because it is not disclosed, while the same stream labels the cognitive and MJM stages '(fixed markers)'.",
+    "vision_claim": "§6: the AI Agent Swarm cascade is synthesised, modelled and simulated bespoke to each solution's needs and to each founder.",
+    "observed": "POST /api/v1/vsb/spawn {challenge:'Affordable bread for low-income families', domain:'food'} (the call VSBSpawnStudio.tsx:181 makes) streamed 'swarm | Agent Swarm Config | Configuring CEO + C-Suite + CoE for this domain...' then 'swarm_complete | Swarm Configured | Agent hierarchy set for food domain.' The data is a constant dict: CFO 'Financial modelling and capital allocation', CTO 'Technical architecture and system health', CoE [Research, Design, Engineering, Science, Commercial, Compliance]. Only the CEO and CMO strings include the domain.",
+    "evidence": "agentic_core/api/vsb.py:2352-2361 is a hard-coded swarm_config. Compare the honest '(fixed markers)' labels on the cognitive and MJM events in the same stream, and the honest 'Constitutional gate NOT evaluated' and 'CEO Strategy Pending' events.",
+    "disclosed_to_user": "No. Sibling stages in the same stream are disclosed.",
+    "smallest_honest_fix": "Rename the event to 'Default agent hierarchy attached (the same template for every VSB; reconfigure it in the Resource Fabric or the Org Cascade)'. Or derive the hierarchy from the org-cascade csuite_roles and coe_specialisms the founder chose."
+   },
+   {
+    "section": "Users can reconfigure swarm cascades in the Native AI designer, the Resource Fabric and the Forge, but not in Build-to-Order, and the per-stage model choice has no control in the UI",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "why_this_tier": "The Build-to-Order page claims no cascade control, and the per-stage model field is an API-only surface nobody reaches through the UI. Both are gaps that no surface misstates, so tier 3. It is not tier 2, because no page claims the capability while lacking it.",
+    "vision_claim": "§6 and §7: users reconfigure the AI Agent Swarm cascades, workflows and pipelines in Synthesis Lab, Build-to-Order and Forge, and the platform models and simulates a configuration before commit.",
+    "observed": "DELIVERED parts, verified by execution: the NativeAI.tsx #cascade-designer defines, edits, runs and retires saved cascades (POST/PUT/DELETE /api/v1/resources/swarm*). /resources/compose/simulate models a configuration before commit (pipeline, incompatibilities, unset_params, organism capacity, commit_ready:false, saved:false). /forge/run accepts an ordered, configured stage list and returns ai_provenance. Gaps: BTOCatalog.tsx posts only components and product_resources to /bto/configure and /bto/build, with no stage or cascade control. SwarmStageSpec.model (resource_fabric.py:1569) is honoured by the engine and reported honestly, e.g. requests_not_honoured [{requested:'local', served_by:'native'}], but the designer's Stage type has only role and instruction.",
+    "evidence": "Live run: POST /resources/swarm/run with a stage {model:'local'} returned requests_not_honoured. NativeAI.tsx designer inputs are role and instruction only. BTOCatalog.tsx:75,98. forge.py:122-138.",
+    "disclosed_to_user": "Not applicable. No surface claims these capabilities.",
+    "smallest_honest_fix": "Add a per-stage model selector to the designer (auto, native, local, ollama:<name>). Give the Build-to-Order page a link to, or an embed of, the cascade designer, scoped to the BTO's delivery cascade."
+   },
+   {
+    "section": "In-house-first routing and floor disclosure are delivered across the Native AI status, models, resources, route, lifecycle and provenance badges",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "why_this_tier": "Every figure a reader sees on these surfaces is true for this environment, and each surface says plainly that the deterministic floor is serving. Nothing is missing that the vision requires here.",
+    "vision_claim": "§6 and §15.1: owned models, orchestration and swarm, with external providers as optional accelerants and never dependencies.",
+    "observed": "/native-ai/status returns posture 'in-house-first', external_allowed false, selection_order ['native'], is_real_model false, mode_measured 'deterministic_floor', and floor_note 'The deterministic native floor is serving — honest structured reasoning, NOT an LLM'. /resources marks anthropic and openai 'Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true'. /route records 'WANTED reflex_routing and FELL BACK to deterministic_logic' with the reason. /lifecycle reports 'llama3.2 configured but absent'. The tree reports qms_passed:null, integrated:null, decision and consensus 'not assessable', and planner 'deterministic_template', which TreeView badges 'planned by template'. Primitives (/entailment, /decide, /quorum, /entropy) each carry basis and limits. provenanceBadge (lib/api.ts:106) shows the floor as amber 'structured floor — not model analysis' and a null value as 'provenance not recorded'. The CEO chat, business plan and synthesis streams carry served_by and is_external in their done frame.",
+    "evidence": "Live curl of the routes above. gateway.py query_meta routes through native.orchestrator.complete. Residue (tier 3, nobody reaches it): ModelGateway's docstring still lists 'Priority order: 1. Anthropic Claude … 2. OpenAI … 3. Ollama', and the external-first `_call` method (gateway.py ~:399) has no caller anywhere in agentic_core (grep '\\._call(').",
+    "disclosed_to_user": "Yes, on every surface checked.",
+    "smallest_honest_fix": "None required for the verdict. Archive the dead `_call` cascade and correct the class docstring, per principle 10."
+   },
+   {
+    "section": "The nervous system's reflex arcs and the immune defence are wired and firing, and §17.2's own realisation map still says they are not",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "why_this_tier": "The system does what §17.2 says these layers should do, and its status surfaces report it accurately. The only error is in the canon document, which understates the system rather than overstating it. So this is no defect on any reached surface.",
+    "vision_claim": "§17.2 Nervous (sense → think → decide, reflex arcs) and Immune (defend). The §17.2 realisation map states 'reflex arcs: zero registered' and 'the defence route has no caller'.",
+    "observed": "/organism/nervous/status shows reflex_arcs_registered 2. /heartbeat/status shows reflex_arcs ['organism.reflex.health','organism.reflex.circuits'], reflex_reactions 2 and last_reflex {trigger:'native.homeostasis', result:{read:true, open_circuits:0}}, with defends_at 'HIGH'. heartbeat.respond_to_threat calls change_control.engage_immune_defence (a governed, revertible CCA change) when the threat reaches HIGH. One caveat: the arcs trigger on 8 'reflex' signals, and the homeostasis controller emits one on every non-'full' posture, which includes every off-peak hour. The reflexes therefore mostly respond to time of day. Their responders only read state, so nothing false is asserted.",
+    "evidence": "organism/heartbeat.py:961-966 REFLEX_ARCS and :1025-1052 register_reflexes, called from start(). heartbeat.py:977-1023 respond_to_threat. homeostasis.py fires the 'reflex' signal whenever posture != 'full'. Vision §17.2 realisation-map paragraph, lines ~822-830.",
+    "disclosed_to_user": "Yes. The status routes report counts, triggers and results accurately.",
+    "smallest_honest_fix": "Correct the §17.2 realisation map, which is canon and outside the barred §16. Make the reflex trigger a threat-class signal rather than the routine off-peak homeostasis notice."
+   },
+   {
+    "section": "Four of the seven biomimetic layers are only partly real (Genome, Respiratory, Endocrine, Cardiovascular), and the platform discloses this in every quality record",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "why_this_tier": "Every limit below is stated by the system where its output carries it: in LAYER_STATE inside the quality record, in the genome encoding_note, and in the atp_basis and conserving_posture_basis fields. A shortfall the surface itself states is tier 3, however large. The one shortfall here that is not disclosed, the shell's Cardiovascular dot, is reported separately at tier 2.",
+    "vision_claim": "§17.2: seven layers, namely Genome (VSB identity, arms-length controlled), Nervous, Immune, Cardiovascular, Respiratory (autonomous workflow cascade, Agent Hub), Musculoskeletal (digital facilities) and Endocrine (signal bus and coordination), plus homeostasis and a survival instinct.",
+    "observed": "Genome: /organism/genome/encode returned all ten traits at 0.5 with encoding_note 'not encoded — the deterministic floor … this vector is NOT an analysis of the entity'. It is a separate trait lab from the VSB GenomicRegistry that /vsb/spawn writes (vsb.py:2334), so there is not one identity. Respiratory: the Agent Hub bus at /hub/* records messages, and no executor is subscribed. LAYER_STATE marks the molecular TriadIntegrator 'code_unloadable'. Endocrine: the biobus is real as a bus, and the HomeostaticRegulator is 'code_exists_unreached'. Survival instinct: atp_measured false and conserving_posture_reachable false, each with the arithmetic stated. Musculoskeletal is delivered: all eight digital resources from §7 (engine, reactor, petri dish, incubator, laboratory, factory, generator, simulator) are among the 41 /api/v1/resources entries and run their engines in-process (reactor /api/v1/reactor/composite, petri /api/v1/petri/culture, both with duration_ms).",
+    "evidence": "agentic_core/vbs/quality.py:44-88 LAYER_STATE. Live /organism/genome/encode response, /native-ai/homeostasis, and the /resources listing (Counter: digital_resource 10, organism_system 8, process_intelligence 11). Vision §17.2 itself names these as open under P2.7/P3.",
+    "disclosed_to_user": "Yes: quality records, the genome encoding_note, and the homeostasis basis fields.",
+    "smallest_honest_fix": "Join the organism genome to the VSB GenomicRegistry so that one arms-length-controlled identity exists. Either subscribe an executor to the Agent Hub or rename the layer 'records'. Archive the unreached and unloadable modules (principle 10)."
+   }
+  ],
+  "verdicts": [
+   {
+    "index": 0,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "I reproduced this against the live backend. Swarm stage 1 lists 'key factors' and 'analyse' under 'Terms most frequent in your request'. Both words come from the platform's default instruction, and the user's context 'community bakery pricing' appears nowhere. In the tree run, synthesise and review list 'stated', which comes from the floor's placeholder '(domain: the stated domain)', and the goal appears in no node. The tree's own frame node withholds this list and says it 'would be counted over the platform's own prompt and this heading would be false'. So the platform itself calls the downstream nodes' state false. Tier 1: the heading tells the reader the words came from their request, and that is untrue on a surface people reach. It is not tier 2 because the output asserts something false, not merely leaves something out. The floor marker says no model wrote the text but does not say where the terms came from.",
+    "evidence": "Live POST /api/v1/native-ai/swarm and /api/v1/native-ai/tree at 127.0.0.1:8031. Tree nodes.synthesise.output contains '## Terms most frequent in your request ... - stated'. nodes.frame.output contains '_WITHHELD: ... this heading would be false._'"
+   },
+   {
+    "index": 1,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "I reproduced this. In comp-782a5848's run, the objective 'affordable bread for a low-income neighbourhood' is only echoed in the top-level 'objective' field. No trace step and no final output contains 'bread'. Each step reads 'Structured research frame for: As the «Petri Dish» resource ... apply your capabilities', with 'Variable ...' bullets built from the capability list. The petri and swarm steps also carry the leftover header '## Reactor · Incubate + Experiment + Studio output'. The reactor's real_resource_run output is 'Structured option frame for: .', with an empty subject. Tier 2: the shortfall is real and nothing says the objective was dropped. It is not tier 1, because the frame names the platform's instruction as its subject rather than claiming to be about the objective, and these bullets are not presented as 'your request'. It is not tier 3, because the only disclosures are the floor badge and quality_warning, and neither states the omission.",
+    "evidence": "Live POST /api/v1/resources/compositions/comp-782a5848/run (run cr-6919787a): the trace outputs contain no 'bread'. real_resource_runs[0].output reads 'Structured option frame for: .'."
+   },
+   {
+    "index": 2,
+    "refuted": false,
+    "corrected_verdict": "API_ONLY",
+    "corrected_tier": 3,
+    "reason": "I confirmed the facts but moved the tier down to 3. synthesis_studio.py computes _stage_served and _stage_ext and never uses them, and the code comment just above says provenance is carried on every stage event. My live stream had 20 events, and the 'complete' events carry only content/stage/stage_key/stage_label/stage_num. The stored VSB record (GET /studio/vsb/vsb-f55d957a) has no served_by. However, no file in apps/workstation-superapp/src calls /api/v1/studio: SynthesisStudio.tsx calls /synthesis/stream and /synthesis/generate, and the only VSB spawn the UI makes goes to /vsb/spawn. The assessor's own verdict, API_ONLY, means no UI reaches it, and the tier definitions put 'a surface nobody reaches' at tier 3. Each stage's text begins with the floor marker, so no reader is told anything untrue, which rules out tier 1. Tier 2 would need a surface that real people reach. Not raised by the assessor: the stage prompts also never carry the challenge ('Subject:  (domain: the stated domain)', 'frame for: .'), so the stored 'active' VSB holds nine stages that never read the user's challenge. That too is undisclosed but unreached.",
+    "evidence": "agentic_core/api/synthesis_studio.py ~:303-306 (unused _stage_served/_stage_ext). Live SSE from POST /api/v1/studio/synthesise. grep for 'api/v1/studio' in apps/workstation-superapp/src returns no hits."
+   },
+   {
+    "index": 3,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed. POST /native-ai/complete returns only the keys [output, served_by, is_external, resources_tried]. native_ai.py /complete passes orchestrator.complete() straight through. In gateway.py, _policy_verdict and _record_checkpoint are called only inside query_meta (lines ~311 and ~368), while stream_meta's _final applies only validate_response. So the constitutional pre-gate and post-gate, and the checkpoint record, are skipped on the stream and native-console paths. Tier 2: the gate is missing and nothing on these surfaces says so. It is not tier 1, because no field asserts that a check ran (this is an omission). It is not tier 3, because the CEO chat, business-plan and synthesis streams are heavily used surfaces that do not disclose the gap.",
+    "evidence": "agentic_core/ai/gateway.py: _policy_verdict/_record_checkpoint are used at ~:311 and ~:368 (query_meta only); stream_meta._final calls validate_response only. Live /api/v1/native-ai/complete keys."
+   },
+   {
+    "index": 4,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed from source; I did not drive a browser. BiometricStatus.tsx renders the dot with only title='Cardiovascular' (lines 167 and 192). Its colour comes from cardioClass, which is green above 80% CPU headroom, and its pulse from cardioDuration, which is fastest (0.8s) when the host is idle. The shell shows no basis. vbs/quality.py LAYER_STATE says plainly that there is 'no circulatory subsystem'. Tier 2: an anatomical relabel that the surface does not explain. It is not tier 1, because the number is a real measurement and W489 removed the 'healthy' and 'working' meanings, so the dot asserts no allocation outcome. It is not tier 3, because the basis is disclosed only on other surfaces.",
+    "evidence": "apps/workstation-superapp/src/components/BiometricStatus.tsx:59-73,167,192; rendered from components/layout/Shell.tsx. agentic_core/vbs/quality.py LAYER_STATE['Cardiovascular']."
+   },
+   {
+    "index": 5,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed in code. In vsb.py, the Stage 6 swarm_config is a constant dict in which only the CEO and CMO strings interpolate req.domain. The stream then announces 'Configuring CEO + C-Suite + CoE for this domain...' and 'Agent hierarchy set for {domain} domain.' Tier 2: the hierarchy is the same template for every VSB, with no disclosure, while sibling stages in the same stream label their fixed content. It is not tier 1, because a hierarchy was in fact recorded and the domain string is real, so 'set for food domain' is weak rather than false. It is not tier 3, because it is undisclosed on a page users reach (VSBSpawnStudio.tsx:181).",
+    "evidence": "agentic_core/api/vsb.py ~:2352-2361 (hard-coded swarm_config); apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx:181."
+   },
+   {
+    "index": 6,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Mostly confirmed, with one correction to the evidence. BTOCatalog.tsx posts only to /bto/configure and /bto/build and has no stage or cascade control. But it renders FabricLink (BTOCatalog.tsx:135), which goes to /resource-fabric, the Composer, so a Build-to-Order user can reach reconfiguration one hop away; Forge and SynthesisStudio carry the same link. The designer's Stage type is {role, instruction} (NativeAI.tsx:19), so per-stage model choice has no UI. A related defect: EditCascade reloads saved stages as {role, instruction} only and PUTs them back, so editing a cascade saved through the API with stage.model silently drops that field. That is a minor tier-3 data-loss path on a rarely reached combination. Tier 3: no surface claims the missing capability. Tier 2 would require a page claiming per-stage model control or BTO cascade control.",
+    "evidence": "apps/workstation-superapp/src/pages/BTOCatalog.tsx:75,98,135; components/FabricLink.tsx; pages/developers/NativeAI.tsx:19 and the EditCascade stage mapping (~:48-71)."
+   },
+   {
+    "index": 7,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Verified live. /native-ai/status returns is_real_model:false, mode_measured 'deterministic_floor', external_allowed:false and the floor_note 'NOT an LLM'. /native-ai/resources marks the external providers 'Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true'. lib/api.ts provenanceBadge has the third state ('provenance not recorded') and the amber floor label. grep for '._call(' in agentic_core returns no callers, so the external-first path is dead residue. Delivered, so tier 0. The in-house-first routing and its disclosure are true for this environment. The content defects on the same Native AI surfaces are tiered separately in findings 0 and 3.",
+    "evidence": "Live /api/v1/native-ai/status and /native-ai/resources; apps/workstation-superapp/src/lib/api.ts ~:106-125; grep '\\._call(' agentic_core returns nothing."
+   },
+   {
+    "index": 8,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Verified live. /organism/nervous/status shows reflex_arcs_registered:2. /heartbeat/status shows arcs ['organism.reflex.health','organism.reflex.circuits'], reflex_reactions:4, a last_reflex triggered by native.homeostasis, and defends_at 'HIGH'. heartbeat.py:977 respond_to_threat imports and calls change_control.engage_immune_defence (line 1009), and the heartbeat loop calls it at :312. Vision lines 826-828 still say 'reflex arcs: zero registered' and 'the defence route has no caller'. That is a stale canon statement understating the system, and no reached surface is affected. Tier 0, since the system delivers what §17.2 says. The assessor's caveat stands: the reflexes mostly fire on the off-peak homeostasis posture and their responders only read state.",
+    "evidence": "Live /api/v1/organism/nervous/status and /api/v1/heartbeat/status; agentic_core/organism/heartbeat.py:312,977-1009; docs/WORKSTATION_IDBO_WHOLE_VISION.md:826-828."
+   },
+   {
+    "index": 9,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Verified. LAYER_STATE in vbs/quality.py marks Genome 'implemented_not_on_this_path', Cardiovascular 'measurement_under_this_name', Endocrine 'code_exists_unreached' (with the regulator described as proportional only and imported by nothing) and Respiratory 'code_unloadable' (ModuleNotFoundError). A live /organism/genome/encode returned every trait at 0.5 with encoded:false, every trait listed under trait_provenance.defaulted, and encoding_note 'not encoded — the deterministic floor ... cannot declare trait values'. Tier 3: each limit is stated where its output appears, and OrganismAnatomy.tsx reaches the layer-state data. The one undisclosed piece, the shell's dot, is finding 4 at tier 2. It is not tier 2 because the surfaces state these shortfalls themselves.",
+    "evidence": "agentic_core/vbs/quality.py:43-88 LAYER_STATE; live POST /api/v1/organism/genome/encode {entity_name:'bakery'}; apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx references layer state."
+   }
+  ],
+  "summary": "R4 (§6 + §7 + §17.2), measured at HEAD c8685dd against the live backend on :8031. The frontend dist is NOT built in this environment: /, /native-ai and /resource-fabric all return 404. So every statement about what a user sees is reasoned from apps/workstation-superapp/src, and the routes behind it were executed with the exact bodies the pages send.\n\nIn-house-first is genuinely delivered. The gateway and orchestrator route local model → native floor → opt-in external. The status, models, resources, route and lifecycle surfaces, plus every provenance badge, say honestly that the floor is serving. The not-assessable verdicts on the tree's QMS, validation, decision and consensus blocks are correct.\n\nUser reconfiguration is real in three places: the Native AI cascade designer (define, edit, run, retire), Resource Fabric compose with simulate-before-commit, and Forge staged pipelines. It is absent from Build-to-Order. The per-stage model choice exists in the API but has no UI control.\n\nThe main gap is the floor-reading seam. Cascades carry platform text between stages, and the engine then reads that text as the user's request. The Quick swarm and the workflow tree print 'Terms most frequent in your request' over words the user never wrote ('stated', 'key factors'), and the user's goal or objective is dropped entirely in the tree, the swarm, composition runs and the Studio cascade. That makes a tier-1 truth defect plus a tier-2 silent omission.\n\nProvenance on SSE events and durable records holds for the intelligence, CEO-chat, business-plan, synthesis-stream and Forge surfaces. It fails for /api/v1/studio/synthesise, an API-only 9-stage stream whose stage events and stored VSB carry no served_by, despite a code comment saying they do. Streamed answers and the Primitive Console's /complete, /swarm and /tree skip the constitutional checkpoint that query_meta applies.\n\nOf the seven layers: Immune is real, and its defence is now wired. Nervous is real, with 2 reflex arcs registered and firing. §17.2's own realisation map is stale here: it says zero arcs and no defence caller. Musculoskeletal is real: all eight facilities run their engines. Genome is a trait lab, not the VSB identity. Respiratory is a records-only bus, and its molecular module cannot be imported. Endocrine is real as a bus, but its regulator is unreached. Cardiovascular is host CPU headroom under an anatomical name. The system discloses all of this except the shell's Cardiovascular dot.\n\nI HIT THE CAP OF TEN, and ten is not everything. Unreported or lower-ranked items:\n- The /vsb/spawn stream's genome_complete event says 'stored locally' on the failure branch, where nothing appears to be stored locally (not verified by execution).\n- Forge persists only aggregate provenance, not per stage, and GET /forge/runs drops provenance entirely.\n- orchestrator.swarm calls homeostasis with requested_parallel=1, so every sequential swarm and composition run reports posture 'protected' ('organism is defending itself') whatever the organism's state. That posture is returned in the API body, not rendered.\n- The tree page's copy says 'autonomously decomposes' even while the planner is the fixed template. The planner badge does disclose this.",
+  "hit_the_cap": true
+ },
+ {
+  "region": "R5",
+  "findings": [
+   {
+    "section": "The Religion hub's QEP roadmap card says leaderboards have 'no backend', directly below a working leaderboard on the same tab",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "low",
+    "why_this_tier": "A reader on /religion, QEP tab, sees QEPStudio's 'leaderboard — recorded XP only' card (served live by GET /api/v1/qep/leaderboard, which returned a ranked learner with its formula). Further down the same tab, under 'Roadmap — modules not yet built (honestly labelled)', the Competitions card says 'Planned: tournaments and leaderboards — no backend exists yet.' That sentence is false, and the reader can see it is false on the same screen. It understates rather than overstates, and that is the only reason this is low severity. It is still tier 1 because the surface states something untrue about the system, which is more than the tier-2 case of a shortfall left unstated.",
+    "vision_claim": "A.6 feature 4: XP is real and persisted, and the P3.9 leaderboard is shown over persisted XP. §15 principle 6: honesty over polish.",
+    "observed": "GET /api/v1/qep/leaderboard returns {leaderboard:[{uid:'u1',xp:5,rank:1}], formula, population_basis, ties}. QEPStudio.tsx:160-185 renders it. QEPFlagshipFeatures.tsx:30 hard-codes the Competitions description as 'no backend exists yet', and ReligionHub.tsx:109/125 mounts both components in the same QEP tab.",
+    "evidence": "curl /api/v1/qep/leaderboard (live). apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx:30. apps/workstation-superapp/src/pages/domains/ReligionHub.tsx:97-126. apps/workstation-superapp/src/components/QEPStudio.tsx:160-185.",
+    "disclosed_to_user": "No. The card contradicts the surface above it.",
+    "smallest_honest_fix": "Change the Competitions card to: 'Leaderboard over recorded XP is live (above). Time-bound competitions, regional boards and badges are not built.'"
+   },
+   {
+    "section": "The Law Document Analyser and two Care tools never read the user's document or patient data on the floor, and print '(no salient terms extracted)' under headings like 'Red Flags'",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "high",
+    "why_this_tier": "I pasted a contract containing 'The Tenant waives all statutory rights' and '7 days notice for any reason' into POST /api/v1/law/analyse. It returned 'Subject:  (domain: the stated domain)', then 'Key Clauses … - (no salient terms extracted)', 'Red Flags … - (no salient terms extracted)', and 'Legal Risks: Exposure on the stated context.' The amber 'structured floor — not model analysis' badge says the floor served it, so this is not tier 1. Nothing says the document itself was never read: the floor counts only labelled fields, and the DOCUMENT: block is not one. A reader can take 'Red Flags: (no salient terms extracted)' to mean their contract was screened and nothing was found. That shortfall is never stated, which puts it at tier 2 rather than the disclosed tier 3. The floor's own non-sections branch already withholds with an explanation ('WITHHELD: the request carries no labelled field…'), and that branch is not used here.",
+    "vision_claim": "§3A offering 1: users bring their own data to every tool. §15.6: never fabricate, and label what the floor is.",
+    "observed": "law/analyse puts the document under an unlabelled 'DOCUMENT:' block, so _content_parts() finds nothing and _bullets() falls back to '(no salient terms extracted)'. care/care-plan ('over:  (domain…') and care/risk-assess ('Clinical Interpretation … (no salient terms extracted)') show the same empty subject and terms. On risk-assess, the deterministic NEWS2 score is computed correctly (SpO2 91 = 3, SBP 95 = 2, pulse 115 = 2, temp 38.5 = 1, total 8, band 'high', resp_rate disclosed as missing), but the narrative beside it ignores it. Its 'Recommended Actions' reads 'Generate ≥3 distinct variants… values-fit (halal/beneficence)' for an emergency-band patient. 16 other domain tools I probed did not show the empty-subject defect.",
+    "evidence": "Live POSTs to /api/v1/law/analyse, /api/v1/care/care-plan and /api/v1/care/risk-assess. agentic_core/api/law.py:155-200 (prompt builds 'DOCUMENT:\\n{text}'). agentic_core/ai/native/engine.py:171-196 (_CONTENT_LABELS has no 'Document'), :408 (fallback string).",
+    "disclosed_to_user": "Partly. The floor badge and the 'not findings' line are shown. The fact that the document was never read is not.",
+    "smallest_honest_fix": "Label the document field (for example 'Document:'), or have the sections branch use the same WITHHELD sentence as the no-sections branch when the term list is empty. Never print '(no salient terms extracted)' under a findings heading."
+   },
+   {
+    "section": "The saved profile is never applied to any of the 35 domain-tool calls once authentication is on, while Settings tells the user it shapes what the platform generates",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "medium",
+    "why_this_tier": "Settings → About you tells the user: 'Used to shape what the platform generates for you.' None of the 35 ai_text(...) calls in the domain routers passes owner_id. profile_owner() returns None under AUTH_ENABLED, so no profile reaches any domain tool on an authenticated deployment. ai_text also drops the gateway's profile_applied flag, so no domain-tool result tells the user whether the profile was used; only the avatar and SynthesisStudio show it. This deployment runs AUTH off, so the profile does apply here (single-user 'default') and the sentence is true today. That is why this is tier 2, an invisible shortfall that flips with a §14 switch, and not tier 1. I verified it by reading source, not by executing under auth.",
+    "vision_claim": "§9: personalised to each user's instructions, requests, history, preferences and needs (the W428 explicit profile). The ai_text docstring: 'Domain routers thread the authenticated user's id.'",
+    "observed": "grep: 0 of 35 ai_text( calls in agentic_core/api/*.py pass owner_id. agentic_core/ai/user_context.py:49-52 returns None under auth with no owner_id. _ai_provenance.py builds a provenance dict without profile_applied. Live: setting a profile then calling /employment/cv gave a byte-identical floor CV with no profile field in the response (expected on the floor, and not disclosed).",
+    "evidence": "agentic_core/api/_ai_provenance.py:36-90. agentic_core/ai/user_context.py:41-55,111-131. agentic_core/ai/gateway.py:339,409. apps/workstation-superapp/src/pages/Settings.tsx (About you card).",
+    "disclosed_to_user": "No. No domain tool says whether the profile was applied.",
+    "smallest_honest_fix": "Thread get_current_user's id through ai_text in the six domain routers, carry profile_applied into ai_provenance, and show it on DomainTool the way ConversationPanel already does."
+   },
+   {
+    "section": "The fourth §17.1 axis (Products) is reachable from no surface, and every Genesis journey records product 'reactor' that nobody chose",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "severity": "medium",
+    "why_this_tier": "The 4 Realms × 6 Domains part of the grid is exposed: GenesisJourney.tsx shows realm and domain pickers from lib/taxonomy.ts, Settings seeds defaults, and the backend and frontend vocabularies match. The 96-cell picker is deferred by Owner ruling R4 and is not reported as a gap here. The Products axis, though, appears nowhere in the frontend: taxonomy.ts has no PRODUCTS, and GenesisJourney never sends 'product'. So every journey's response and stored record says product:'reactor', product_label:'Reactor', next to a code comment saying a journey 'RECORDS which product shape was asked for'. The record asserts a choice nobody made, and nothing marks it as a default. This is tier 2 rather than tier 1 because no page renders the field. It is not tier 3, because the stored record does not say the value is defaulted.",
+    "vision_claim": "§17.1: 4 Realms × 6 Domains × 4 Products. 'a Genesis journey takes and RECORDS a product'.",
+    "observed": "agentic_core/taxonomy.py:19 defines PRODUCTS and genesis.py:154,764 default and record it. apps/workstation-superapp/src/lib/taxonomy.ts has only REALMS and DOMAINS. grep finds no 'product' in GenesisJourney.tsx. Separately, normalise_domain passes free text through, so GET /api/v1/vsb lists an entity with domain:'food', outside the six.",
+    "evidence": "agentic_core/taxonomy.py:10-32,105-110. agentic_core/api/genesis.py:145-155,755-766. apps/workstation-superapp/src/lib/taxonomy.ts:1-18. apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx:173-199,664-680. Live GET /api/v1/vsb.",
+    "disclosed_to_user": "No",
+    "smallest_honest_fix": "Add PRODUCTS to taxonomy.ts with a four-button picker in Genesis, or record product_basis:'default — not chosen' when the request omitted it."
+   },
+   {
+    "section": "The avatar's floor reply lists 'Terms most frequent in your request' that the user never typed, and gives non-Latin-script users a false reason for withholding the list",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "severity": "low",
+    "why_this_tier": "Two sentences on the reached avatar panel are untrue. (a) I asked 'How is my enterprise doing? What is its revenue?' with vsb_id set. The list under the heading 'Terms most frequent in your request' included 'low-income families', which came from the VSB grounding block and not from the user. The heading exists precisely to claim the words are the user's own (W593). (b) For an Arabic message ('ما هي الصلاة؟') the section reads 'WITHHELD: the request carries no labelled field for this engine to count'. The request does carry a labelled field: English messages in the same field get terms. The real cause is that the term extractor does not count Arabic script. Both are small, but each is a stated falsehood and not just a missing detail.",
+    "vision_claim": "§9: enterprise-aware, accessible in all languages. §15.6: never fabricate.",
+    "observed": "Live POST /api/v1/avatar/chat with vsb_id=vsb-4a151bacec returned the 'low-income families' term. The Arabic message returned the WITHHELD line with that reason, and its language_note honestly said 'Answered in English…'. The grounding labels from avatars/api.py _vsb_grounding are counted as request fields because only 'Prior context' and 'Realm' are in _CARRIED_LABELS.",
+    "evidence": "Live /api/v1/avatar/chat. agentic_core/avatars/api.py:207-240,563-569. agentic_core/ai/native/engine.py:171-196,265-282.",
+    "disclosed_to_user": "No. Both statements are presented as fact.",
+    "smallest_honest_fix": "Add the grounding block's labels to _CARRIED_LABELS. When the user field is present but yields no terms, say 'no countable terms in this script', not 'no labelled field'."
+   },
+   {
+    "section": "The avatar is platform-wide, honest about image, voice and language on the floor, and guides navigation, but enterprise awareness and Chief interaction stop at the prompt",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "severity": "medium",
+    "why_this_tier": "What a reader is told is accurate. Every reply carries 'structured floor — not model analysis'. An image gets 'The image was received but not read — no vision model was available' (backend image_status 'no_vision_model', with a measured hardware reason). A non-English preference gets 'Answered in English: the structured floor cannot translate'. A floor reply with no profile gets 'profile: not usable by the floor'. Suggested-area chips worked (/domains for 'cv', /vsb-cockpit for 'my enterprise'). The shortfalls are disclosed by the floor badge, which makes this tier 3 and not tier 2: a CEO-context answer is grounded_in the VSB but answers 'What is its revenue?' with a heading frame. Not disclosed, but minor: the avatar has no Chief context (Chief instruction exists only as text in VSB Cockpit via /api/v1/board/chief/instruct), and spoken replies use speechSynthesis without setting utterance.lang, so the language preference does not reach voice output.",
+    "vision_claim": "§9: an enterprise-aware avatar with multimodal (text, voice, image) interaction with the AI CEO and the Chief, guidance and navigation, and honesty-bound multimodality.",
+    "observed": "GET /avatar/status reports effective_serving_mode 'deterministic floor' with its basis. /avatar/speak returns 503 with 'browser speechSynthesis is the in-house path — nothing was sent externally'. AvatarWidget is mounted in Shell.tsx. The route→context map in useAvatarSession.ts has ceo/domains/coe… and no 'chief'. clearance_reason in the body names mode 'instructor' even on a CEO chat (API only; not rendered).",
+    "evidence": "Live /api/v1/avatar/{status,chat,speak}. apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx:60-160. apps/workstation-superapp/src/hooks/useAvatarSession.ts:59-80,176-190,220-262. apps/workstation-superapp/src/components/layout/Shell.tsx:11-13.",
+    "disclosed_to_user": "Yes for floor, image and language. No for the missing Chief mode and voice language.",
+    "smallest_honest_fix": "Set utterance.lang from prefs. Add a 'chief' avatar context routed to the Chief model, or state on the panel that the Chief is reached from VSB Cockpit."
+   },
+   {
+    "section": "All six Domains serve real, honestly floor-labelled tools with in-place refinement, but parity is uneven, two tools are API-only, and the front door promises 'best-in-class capability on demand'",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "severity": "medium",
+    "why_this_tier": "I executed a tool in every domain: religion/quran-tafsir, science/hypothesis, education/lesson-plan, law/analyse, employment/cv and care/care-plan, plus 19 more. Every result carries ai_provenance served_by 'native' and qms_gate_passed null with the basis 'not assessable — floor-served', and DomainTool renders the amber 'structured floor — not model analysis' badge with the provenance line in copies and downloads. That is a disclosed capability gap, tier 3. Real non-floor substance: NEWS2 is computed correctly from the RCP table; halal-review withholds status and runs a 34-term screen that says 'an ingredient it did not match is NOT thereby acceptable'; tafsir withholds translation and transliteration and refuses to show Arabic it could not fetch; /api/v1/refine preserves the draft verbatim under a labelled 'Refinement additions (in-house structured floor…)'. Gaps: Science has 3 registered tools against Employment's 7 (the parity directive); POST /science/hypothesis and /religion/interfaith exist with no UI caller; floor frames misfire (Salary Negotiation's 'Market Positioning' gets a go-to-market 'CAC… Moat' frame). DomainsHub tells the reader 'Get best-in-class capability on demand inside your domain' with no note that the floor is serving now. That copy is aspirational, and the per-result badge corrects it.",
+    "vision_claim": "§3A offering 1: domain-specific in-house-AI tools of comparable scope; iterative refinement in place; bring your own data; My Work and export.",
+    "observed": "/api/v1/employment/services lists 6 services. toolRegistry.ts: Religion 5, Science 3, Education 4, Law 3, Care 4, Employment 7 (26 in total). /{religion,science,education,law,care}/services return 404, so only Employment has a services index. AttachDocument (pdfjs-dist, in-browser) feeds DomainTool and Genesis.",
+    "evidence": "Live POSTs to 25 domain endpoints. apps/workstation-superapp/src/lib/toolRegistry.ts:20-64. apps/workstation-superapp/src/pages/domains/DomainsHub.tsx:40-58. apps/workstation-superapp/src/components/DomainTool.tsx:171-230,287-320. apps/workstation-superapp/src/lib/api.ts:106-200.",
+    "disclosed_to_user": "Yes at every result (floor badge and QMS basis). Not on the DomainsHub front door.",
+    "smallest_honest_fix": "Wire Hypothesis and Interfaith into their hubs (or archive the routes). Add a live 'serving now: structured floor' line to DomainsHub from /avatar/status's effective_serving_mode."
+   },
+   {
+    "section": "The QEP flagship delivers its A.6 core honestly and respects every A.9 boundary; parent and teacher roles, classes, community and competitions remain unbuilt",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "severity": "medium",
+    "why_this_tier": "Every QEP surface I executed says what it does and does not do, so the remaining gaps are disclosed (tier 3). DELIVERED: hifz SM-2 (range validation '1 has 7 ayaat — range must lie within [1, 7]'; progress 'a review count, not a hifz certification'). Written recall (normalised Levenshtein 0.342, 'says NOTHING about recitation'). Gamification XP with level and streak formulas, and the leaderboard with formula and population. Translation refuses with 503 (A.9.3). /qep/curriculum is WITHHELD because 'no scholar has reviewed it' (A.12.3 gate, roster empty). /api/qep/analytics/overview returns measured:false. Compliance audit returns compliant:null when controls cannot run. The Quran text routes return 'Quran API unavailable: 403 Forbidden' in this sandbox, and tafsir says 'the Arabic is never AI-generated, so none is shown'. That is honest; it is not a defect. I report none of the six A.9 boundaries as gaps, and none of the A.12 rulings. Not built and labelled 'planned': A.6 #1 parent and teacher roles, #6 educator classes, #7 community and Ask-a-Scholar, #8 video, #9 AR/VR, #11. #14 exists only as a simulated-WST donor statement. Minor items: the XAI panel shows '+0.4'-style contributions that are display weights (labelled amber as 'not the engine's internal arithmetic'), and the compliance check 'Recommendation weights normalised: pass' validates weights that drive only those display numbers. POST /qep/tajweed/analyse labels a caller-supplied reference text 'qiraat: Hafs' (API only; the UI feeds it the fetched text).",
+    "vision_claim": "Appendix A.1/A.6: QEP as the Religion domain's offering-1 flagship, composed from platform resources, with the fifteen-feature register.",
+    "observed": "Executed /api/v1/qep/{status,suwar,ayah,surah,hifz/schedule,hifz/progress,tajweed/analyse,translation/status,translation/translate,curriculum,gamification,leaderboard,xai/explanations,adaptation/registry,compliance/audit} and /api/qep/analytics/overview.",
+    "evidence": "agentic_core/api/qep_intelligence.py:101-175. apps/workstation-superapp/src/components/QEPStudio.tsx. apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx:27-45. apps/workstation-superapp/src/pages/domains/ReligionHub.tsx:97-126.",
+    "disclosed_to_user": "Yes",
+    "smallest_honest_fix": "None is needed for honesty beyond finding 1. The next depth step is the A.6 #1 teacher and parent roles, which unblock #6 and #15."
+   },
+   {
+    "section": "Interface translation covers 67 chrome strings in four languages plus English, across 7 of 112 components, and says so",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "severity": "low",
+    "why_this_tier": "Settings tells the reader, for Arabic: 'The interface is translated (67 strings), and the layout switches to right-to-left. Translation covers interface chrome, not every screen, and AI-generated content is still produced in English.' That is accurate. Only 7 of 112 .tsx files call useT(), so most screens stay English, and the disclosure says as much. The language dropdown is trimmed to languages that have dictionaries (P3.6). Dictation has its own wider list, with the honest note that browser support is 'its own capability, which this platform cannot check'. Guidance and tone are disclosed as saved but driving nothing, and font scale applies app-wide. A disclosed gap, so tier 3.",
+    "vision_claim": "§9 and §15.7: accessible to all, in all languages, adaptive and personalised.",
+    "observed": "lib/i18n.tsx: DICTS {en(25), ar, fr, es, ur (67 each)} and RTL for ar/ur/fa/he. locales/en.json is a 2-section stub. Settings.tsx:114-215 holds the coverage and preferences disclosures.",
+    "evidence": "apps/workstation-superapp/src/lib/i18n.tsx:14-407. apps/workstation-superapp/src/pages/Settings.tsx:114-215. grep -rln 'useT()' gives 7 of 112 tsx files.",
+    "disclosed_to_user": "Yes",
+    "smallest_honest_fix": "Extend useT() to the six domain hubs and DomainTool first, since that is where a non-English user works."
+   },
+   {
+    "section": "No surface shows which of the §14 democratisation switches the Owner has flipped",
+    "verdict": "MISSING",
+    "tier": 3,
+    "severity": "low",
+    "why_this_tier": "§14 says democratisation is 'measurable as which switches the Owner has flipped'. No endpoint or page lists SELF_SERVE_SIGNUP, AUTH_ENABLED, AI_ALLOW_EXTERNAL, REAL_MONEY_ENABLED, managed Postgres or hosting state together. The flags exist in code (auth/core.py), and fragments appear separately (avatar/status reports external_use_permitted:false; Login.tsx and AIToolsCatalogue mention the flags). Nothing claims the platform is 'available to all', so no reader is misled. It is a gap nobody reaches, tier 3.",
+    "vision_claim": "§14: each switch measurable, with its pre-flight built and proven before it is offered (delivery-plan P4).",
+    "observed": "The OpenAPI paths contain no preflight, switch, flags or readiness route. SELF_SERVE_SIGNUP appears only in agentic_core/auth/core.py and the constitution.",
+    "evidence": "/openapi.json path scan. grep -rln SELF_SERVE_SIGNUP across agentic_core and apps/workstation-superapp/src.",
+    "disclosed_to_user": "Not applicable. Nothing is shown.",
+    "smallest_honest_fix": "Add a read-only GET /api/v1/platform/switches returning each flag's state and its pre-flight status, rendered on the System or Governance page."
+   }
+  ],
+  "verdicts": [
+   {
+    "index": 0,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced. GET /api/v1/qep/leaderboard live returns 2 ranked learners with a formula. QEPFlagshipFeatures.tsx:30 hard-codes 'Planned: tournaments and leaderboards — no backend exists yet.' ReligionHub.tsx:109 and :125 mount QEPStudio and QEPFlagshipFeatures in the same tab. The sentence about the system is false and it is on a reached page, so this is tier 1, not tier 2: it states something untrue rather than leaving a shortfall unsaid. It is an understatement, so it misleads little, but that affects severity, not tier.",
+    "evidence": "curl /api/v1/qep/leaderboard; QEPFlagshipFeatures.tsx:30; ReligionHub.tsx:8-9,109,125"
+   },
+   {
+    "index": 1,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Reproduced live. POST /api/v1/law/analyse (the field is document_text) with 'The Tenant waives all statutory rights…' returned 'Subject:  (domain: the stated domain)' and '(no salient terms extracted)' under Key Clauses, Missing Provisions and Red Flags. law.py:168 puts the text under an unlabelled 'DOCUMENT:' line, and _CONTENT_LABELS (engine.py:171) has no 'Document' entry. The floor provenance (served_by native, qms 'not assessable — floor-served') and the 'not findings about them' line are disclosed, which keeps this off tier 1. Nothing says the document was never read, which keeps it off tier 3. I did not re-run the care probes; the law case alone carries the finding.",
+    "evidence": "Live POST /api/v1/law/analyse; agentic_core/api/law.py:166-185; agentic_core/ai/native/engine.py:171-195"
+   },
+   {
+    "index": 2,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed by source, with one count corrected: there are 34 ai_text( call sites in agentic_core/api/*.py, not 35, and 0 of them pass owner_id. Under auth, profile_owner() (user_context.py:41-55) returns owner_id or None, so no domain tool receives a profile. ai_text's provenance dict has no profile_applied key. Settings.tsx:239 says 'Used to shape what the platform generates for you.' With AUTH off, the 'default' fallback applies, so the sentence is not false on this deployment. That is why this is tier 2 and not tier 1. The shortfall is never stated, which is why it is not tier 3. I did not execute this under auth.",
+    "evidence": "grep ai_text( agentic_core/api/*.py = 34, owner_id 0; agentic_core/api/_ai_provenance.py:36-90; agentic_core/ai/user_context.py:41-55; Settings.tsx:238-241"
+   },
+   {
+    "index": 3,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed. genesis.py:154 defaults product to 'reactor', and :764-765 return product and product_label. lib/taxonomy.ts has REALMS and DOMAINS but no PRODUCTS. There are 0 'product' hits in GenesisJourney.tsx. Live GET /api/v1/vsb lists domains ['care','education','food','science'], so 'food' sits outside the six. The record asserts a product shape nobody chose and does not mark it as a default. No page renders the field, so this is not tier 1. The record does not disclose the default, so it is not tier 3.",
+    "evidence": "agentic_core/api/genesis.py:145-155,755-766; apps/workstation-superapp/src/lib/taxonomy.ts; live GET /api/v1/vsb"
+   },
+   {
+    "index": 4,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced both. (a) POST /api/v1/avatar/chat with vsb_id=vsb-4a151bacec and the message 'How is my enterprise doing? What is its revenue?' listed 'low-income families' under 'Terms most frequent in your request', whose subtitle says it is 'counted only over the fields the request itself carries'. The user never typed those words. (b) 'ما هي الصلاة؟' returned 'WITHHELD: the request carries no labelled field for this engine to count…', while 'What is prayer?' in the same field returned the term 'what prayer'. So the stated reason is false: the field is present, and the extractor does not count Arabic script. Both are untrue statements on a reached surface, which is tier 1.",
+    "evidence": "Live POST /api/v1/avatar/chat x3; engine.py:195 _CARRIED_LABELS = ('Prior context','Realm')"
+   },
+   {
+    "index": 5,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Confirmed. /avatar/status reports 'deterministic floor' with its basis. /avatar/speak returns 503. AvatarWidget is mounted at Shell.tsx:288. grep for 'chief' in useAvatarSession.ts and the avatar components finds nothing. SpeechSynthesisUtterance (useAvatarSession.ts:183) sets no .lang, although dictation sets rec.lang at :285. Floor replies are disclosed as English, so the default voice language is consistent with what is spoken, which makes the voice point minor. The floor, image and language limits are disclosed, so this is tier 3. The missing Chief mode is the one undisclosed part, but it is an omission and asserts nothing, so it does not lift the finding to tier 2.",
+    "evidence": "Live /api/v1/avatar/status, /speak (503); useAvatarSession.ts:183,285; Shell.tsx:288"
+   },
+   {
+    "index": 6,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Confirmed. toolRegistry.ts counts 5/3/4/3/4/7 (26 in total). /{religion,science,education,law,care}/services return 404 and only employment returns 200. There is no frontend caller for science/hypothesis or religion/interfaith. DomainsHub.tsx:49 reads 'Get best-in-class capability on demand inside your domain'. That line is aspirational, while each registry card states its floor limits and every result carries the floor badge, so the shortfall is disclosed where the user acts: tier 3. It is not tier 2, because the card text and result badges state the floor directly.",
+    "evidence": "apps/workstation-superapp/src/lib/toolRegistry.ts:20-64; DomainsHub.tsx:49; curl /api/v1/*/services; grep found no hypothesis/interfaith callers"
+   },
+   {
+    "index": 7,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Spot-checked. /qep/status reports honest component states ('NO recitation assessment'). /qep/translation/translate returns 503 with the reason 'output will not be presented as a translation' (A.9 boundary respected). GET /qep/curriculum returns 405 (it is POST), so I did not reproduce the WITHHELD body. The roadmap cards label the unbuilt features 'Planned' with reasons. The gaps are disclosed, so this is tier 3. The one false card (Competitions) is carried separately as finding 0. The 'AI Assistant — no reasoning resource is wired here' card sits beside a platform-wide avatar; it is a disclosed-planned item, not a new defect.",
+    "evidence": "curl /api/v1/qep/status, /qep/translation/translate (503); QEPFlagshipFeatures.tsx:27-45"
+   },
+   {
+    "index": 8,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Confirmed. 7 of 112 .tsx files call useT(). Settings.tsx:149 renders the dictionary-derived string count and says translation covers interface chrome only. The disclosure is accurate, so the gap is disclosed: tier 3.",
+    "evidence": "grep -rl 'useT()' = 7 of 112 tsx; Settings.tsx:149"
+   },
+   {
+    "index": 9,
+    "refuted": false,
+    "corrected_verdict": "MISSING",
+    "corrected_tier": 3,
+    "reason": "Confirmed. The live /openapi.json has no path containing preflight, switch, flag, readiness or democrat. Nothing claims the switches are flipped, so no reader is misled. A capability nobody reaches is tier 3.",
+    "evidence": "live /openapi.json path scan returned []"
+   }
+  ],
+  "summary": "R5 measured against a live HEAD c8685dd backend (floor-only, AUTH off). I executed 25+ domain endpoints across all six Domains, the avatar's status, chat (text, image, Arabic, VSB-grounded), speak and refine, 16 QEP routes, the profile and the catalogue, and read the hubs, DomainTool, ConversationPanel, Settings, taxonomy and toolRegistry source. I cannot drive a browser, so what the UI renders is reasoned from source.\n\nThe overall picture is that the honesty discipline holds. Every floor-served domain result and avatar reply is badged 'structured floor — not model analysis', QMS reads 'not assessable', and image, language and profile states are each stated. QEP respects all six A.9 boundaries (recitation never scored, translation refused, curriculum withheld pending a scholar, analytics measured:false), and NEWS2 is computed correctly. The remaining gaps are mostly disclosed (tier 3).\n\nTruth defects (tier 1, both low severity): the QEP roadmap card says leaderboards have 'no backend' beneath a live leaderboard, and the avatar's floor term list counts VSB-grounding words as 'your request' and gives Arabic users a false withholding reason.\n\nInvisible shortfalls (tier 2): Law Analyser and Care plan/risk never read the pasted document or patient data on the floor and print '(no salient terms extracted)' under 'Red Flags'; the saved profile reaches no domain tool once auth is on (0 of 35 ai_text calls pass owner_id, and no result carries profile_applied); the Products axis is absent from every UI and each journey silently records 'reactor'.\n\nThe Realm × Domain part of the grid is exposed and consistent between backend and frontend.\n\nI hit the cap of 10, and this is not everything. Lesser items not given their own rows: POST /qep/tajweed/analyse labels caller-supplied reference text 'qiraat: Hafs'; the XAI 'Recommendation weights normalised: pass' control guards weights that drive only display numbers; avatar clearance_reason names mode 'instructor' on a CEO chat (API body only); only Employment has a /services index (the other five return 404); the salary tool's floor misapplies a go-to-market frame; the avatar's empty-state copy says replies are 'tailored to the context'; spoken replies ignore the language preference; and a VSB carries domain 'food', outside the six, because normalise_domain passes free text through.",
+  "hit_the_cap": true
+ },
+ {
+  "region": "R6",
+  "findings": [
+   {
+    "section": "The vision-realisation, heartbeat-coverage and cognition-wiring surfaces report the live heartbeat, economy, GaaS gate, Board and Sovereign Evolution Office as not mounted (12% coverage, 0 of 13 tiers wired)",
+    "verdict": "PARTIAL",
+    "tier": 1,
+    "why_this_tier": "A reader is told something untrue about the system on surfaces people actually open. GET /api/v1/transformation lists 'Continuous heartbeat (scheduler)': met=false, 'Economy engine live': false, 'gaas.v5 gate live': false, and calls the pillar 'One self-running, self-healing, self-improving organism' 'seed', 0%. The Heartbeat page shows 'API coverage (not delivery) 12%', and /api/v1/cognition/wiring returns connected 0/13, coherence 0.0. All of those routes answered in this same session. Coverage is disclosed as API-surface coverage rather than delivery, and that label is honest, but the coverage figure itself is wrong. That makes it a false assertion, not an undisclosed shortfall, so tier 1 and not tier 2. auto_align routes these invented gaps to the Board as directives.",
+    "vision_claim": "§8 / W482 naming invariant: a quantity may carry a name only when computed by that law, and a surface reports what it measured. §15.6: never fabricate.",
+    "observed": "_routes() in agentic_core/api/transformation.py:34 and agentic_core/api/cognition.py:25 builds {r.path for r in app.routes}. In the running process app.routes holds 85 '_IncludedRouter' objects with path '' plus 10 plain routes, giving 11 distinct paths with none under /api/v1/heartbeat, /economy, /gaas or /board. So every _has(prefix) check is False even though openapi.json lists 521 paths. Measured overall_realisation is 0.121. Only the store-count checks (VSB entities, ledgers, resources ≥10) pass. The heartbeat records this figure on every beat (transformation_tick). /api/v1/plan/state api_routes=95 is the same miscount.",
+    "evidence": "curl /api/v1/transformation gives 11 pillars, all route checks false. curl /api/v1/cognition/wiring gives 0 13 0.0. In the server's venv, app.routes Counter is {'_IncludedRouter':85,'APIRoute':5,'Route':4,'APIWebSocketRoute':1}. The installed fastapi is 0.142.2; requirements.txt pins fastapi==0.129.2 and pyproject has ^0.129.0. The fault therefore appears on the version actually installed, and the code has no guard that fails loudly when it reads zero routes.",
+    "disclosed_to_user": "No. The UI labels the figure 'API coverage (not delivery)', which is honest about what it measures, but nothing tells the reader the route census itself came back empty.",
+    "smallest_honest_fix": "Derive routes from app.openapi()['paths'] (or walk router.routes recursively). Return assessable:false with a reason when the census is empty, instead of scoring zero. Pin or check the FastAPI version at boot."
+   },
+   {
+    "section": "Charity allocation never funds Dawah, one of the Owner's four named causes, and the surface does not say so",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "Each cycle response shows 'priorities': ['clean_water','conflict_relief','dawah','orphan_sponsorship'] and says the weights are 'encoding the Owner's 2026-06-21 directive'. The grants then go to five causes, including famine_food and emergency_health, which the Owner did not name, and Dawah gets nothing. No line says that a prioritised cause fell outside the top five. That is an invisible shortfall in honouring the directive (tier 2). It is not tier 1 because no field asserts that Dawah was funded. The Charity Directives page also offers 'Require 100% of the charity allocation to reach the cause (no deductions)'. That control only filters on a curated category flag; the API itself reports donation_100pct_verified='not_checked', and the page never shows that.",
+    "vision_claim": "§12: donates intelligently to causes by real-world urgency (WATER · Orphan · Conflict/disaster · Dawah; 100%-donation-only), with Owner-set directives honoured.",
+    "observed": "In agentic_core/economy/charity.py, ranked(top=5) sorts by score; Owner priorities get a +0.12 boost. Dawah scores 0.8482 even with the boost and ranks 7th of 7, behind un-prioritised famine_food (0.8987) and emergency_health (0.8642). allocate() funds only the top five. Every grant's compliance verdict is 'review'.",
+    "evidence": "POST /api/v1/economy/cycle {vsb_id:r6-probe-a, revenue:1000, costs:100} gives a charity budget of 105.0 WST split across clean_water 22.12, conflict_relief 22.12, orphan 21.77, famine 19.88 and emergency_health 19.11, with dawah absent. GET /charity/candidates ranks dawah last at 0.8482. The checkbox label is at CharityDirectives.tsx around line 175.",
+    "disclosed_to_user": "Partly. Weights are labelled as curated, but nowhere is it said that a prioritised cause got no grant, or that the 100% rule is not verified.",
+    "smallest_honest_fix": "Guarantee every Owner-priority cause a slot (or report 'priority X received 0 because ...' on the cycle and on the page). Relabel the checkbox as 'only causes flagged 100%-donation (unverified)'."
+   },
+   {
+    "section": "The Heartbeat page does not show which beat steps failed or what the cadence could not run, although the API now records both",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "A reader of Recent Beats sees '#4 MAINTENANCE REST pulse · homeostasis · transformation_tick' and nothing else. If a step raised, it is missing from the actions list with no failure mark, so the page reports only what the beat did. Since W611, /heartbeat/status carries steps_failed per beat and last_cadence.could_not_run, so the API is honest. The surface a person reaches is not, which is an invisible shortfall (tier 2). It is not tier 1 because a missing step is an omission, not a false assertion.",
+    "vision_claim": "§8: the organism runs itself and is continuously monitored; the brief asks whether a beat reports what it could not do.",
+    "observed": "HeartbeatMonitor.tsx renders b.actions, self_recovery and coverage for each beat; it never reads steps_failed or last_cadence (grep finds no match anywhere in src). /api/v1/organism/cadence has no UI caller. The metabolic-cycle failure and last_vsb_failed are rendered.",
+    "evidence": "On the live status, recent[].steps_failed={} with steps_failed_basis, and last_cadence.nothing_was_due=true. Running grep -rn steps_failed over apps/workstation-superapp/src returns nothing. These conclusions come from reading the source; no browser was driven.",
+    "disclosed_to_user": "No (API only).",
+    "smallest_honest_fix": "Render steps_failed as a red chip on each beat row, and add a cadence line (refreshed, could_not_run, nothing_was_due) to the Heartbeat card."
+   },
+   {
+    "section": "The VSB Economy page shows a simulated 'Metabolic Energy 100%' in the green 'good' tone, with a tooltip saying energy is low and reserves were raised",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "The tile reads 'Metabolic Energy 100%' in green. The amber line under it reads '§8→§12 survival instinct: not_adjusted_term_unmeasured — the reserve was NOT adjusted: the metabolic term is a simulator...'. Its tooltip says 'the living organism's energy is low, so the economic organism conserves more (raises reserves)', and neither half of that happened. Because the visible text discloses the simulation, an attentive reader is not misled, which keeps this below tier 1. The tile itself carries no disclosure, though, and the VSB Cockpit prints 'Metabolic energy: 1' with no basis at all, so the shortfall is invisible where the figure appears (tier 2).",
+    "vision_claim": "§8→§12 survival instinct; W512: the metabolic loop cannot deplete by arithmetic; label simulation (§15.6).",
+    "observed": "The cycle response has metabolic_energy 1.0, energy_state 'not_adjusted_term_unmeasured — ...' and no metabolic_energy_basis field. VSBEconomy.tsx:534 renders the tile with tone='good'; lines 536-539 render the 'survival instinct' line with the tooltip above whenever energy_state !== 'healthy'. VSBCockpit.tsx:1100 lists 'Metabolic energy' bare.",
+    "evidence": "POST /api/v1/economy/cycle {vsb_id:r6-probe-a, revenue:10} returns {'metabolic_energy':1.0,'energy_state':'not_adjusted_term_unmeasured — ...','metabolic_energy_basis':None}. /native-ai/homeostasis returns atp_can_fall:false and conserving_posture_reachable:false.",
+    "disclosed_to_user": "Partly: in the adjacent line, not on the tile, not in the Cockpit, and contradicted by the tooltip.",
+    "smallest_honest_fix": "Show the tile as 'simulated: cannot deplete' in neutral tone, drop or correct the tooltip, and carry energy_state into the Cockpit."
+   },
+   {
+    "section": "The 'mandatory GaaS gate on every output' invariant is not held: no global gate exists, and ungated outputs do not say they were ungated",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "A typical ungated output carries no field such as 'not GaaS-screened', so a reader cannot tell a gated output from an ungated one. That is an invisible shortfall (tier 2). The vision's own §17.5 status line admits only 8 of 57 modules are gated, but that admission sits in a document, not on the surfaces that serve outputs.",
+    "vision_claim": "§17.5 invariant 2: mandatory GaaS gate on every output.",
+    "observed": "app_mvp.py has CORS plus one @app.middleware('http') (_horizon_observe), which observes and records and explicitly 'DOES NOT GATE'. There is no response-level GaaS middleware. Gating is per-route opt-in. I did not re-count the 8/57 figure route by route.",
+    "evidence": "agentic_core/app_mvp.py lines 117-160 (the middleware comment reads 'OBSERVES AND RECORDS AND DOES NOT GATE'); there are no other add_middleware or middleware declarations.",
+    "disclosed_to_user": "No (only in the vision document).",
+    "smallest_honest_fix": "Add a response middleware that stamps gaas_screened: true or false on JSON outputs (gating where cheap), so the claim is checkable on every output."
+   },
+   {
+    "section": "Selection reports a stale roster figure of 0.0 WST as 'measured' profitability while the entity's books show a 305.83 WST distributable cycle",
+    "verdict": "PARTIAL",
+    "tier": 2,
+    "why_this_tier": "GET /organism/selection/vsb-d0ee901a57 shows profitability value 0.0, measured:true, basis 'distributable profit of the entity's last operated cycle: 0.0'. Seconds earlier the board pack for the same entity showed total_distributed_wst 305.83 from a cycle run through /economy/cycle. The basis wording ('operated cycle') is technically true, so this is not a fabrication (not tier 1). A reader still gets an outdated value labelled measured, with no note that cycles from other paths are invisible to it, which is tier 2. Selection refuses anyway, so the consequence is currently small.",
+    "vision_claim": "§8 / W512: profitability is one of four continuously monitored measures that selection reads.",
+    "observed": "selection.py:97 reads living_vsbs.json last_distributable, which only roster-run cycles update (living_vsbs.py:1020). Manual or API cycles post to the ledger but leave the roster value at 0.0, which was recorded by a zero-revenue boot cycle at 01:25.",
+    "evidence": "The roster row for vsb-d0ee901a57 has last_distributable 0.0 and operating_cycles 1. The board pack shows distribution totalling 305.83 after my probe cycle.",
+    "disclosed_to_user": "No (the basis does not say other cycle paths are excluded).",
+    "smallest_honest_fix": "Read profitability from the ledger's last intake cycle, or state in the basis that only roster-run cycles count and give the ledger's figure alongside."
+   },
+   {
+    "section": "The organism beats but does not regulate, turn over or select, and each refusal is stated at the surface",
+    "verdict": "PARTIAL",
+    "tier": 3,
+    "why_this_tier": "Every gap is stated to the reader. /native-ai/homeostasis says atp_can_fall:false and gives the arithmetic. Homeostasis adjustments say 'effective: false ... nothing in this codebase reads defer_non_urgent'. Selection returns NOT_ASSESSABLE and names user_satisfaction and founder_alignment as unmeasured. Retirement-check refuses every entity because 'named_in_a_ruling' is not assessable, since data/governance/protected_entities.json does not exist. Self-healing returns 'no circuit has carried a call yet'. All five autonomy levers are OFF by default, which the Heartbeat page says. These are disclosed capability gaps, so tier 3, not 2.",
+    "vision_claim": "§8: ever self-managing, improving, growing, evolving, healing; defends itself, learns and improves.",
+    "observed": "The heartbeat is running: 8 beats, steps pulse, homeostasis, cadence_refresh and transformation_tick, with 2 reflex arcs that fired. auto_economy, auto_evolve, auto_align, auto_compliance and auto_metabolic are all false. last_heal, last_evolution and last_self_healing are null. Composite health 1.0 is decided on the 40%-measured immune term and says so. The genome mean_fitness is null, with the reason stated.",
+    "evidence": "curl /heartbeat/status, /organism/status, /organism/self-healing/status, POST /organism/homeostasis, GET /organism/selection/vsb-d0ee901a57 and GET /economy/living-vsbs/vsb-d0ee901a57/retirement-check (refused:true, not_assessable:['named_in_a_ruling']).",
+    "disclosed_to_user": "Yes, on each surface.",
+    "smallest_honest_fix": "None needed for honesty. The capability work is W608/W609 (never-retire rules, then retirement through Change Control) and the P3 regulate/select items."
+   },
+   {
+    "section": "The virtual double-entry books balance across a cycle, an inter-VSB transfer and a period close, and the six-stage waterfall computes as approved",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "why_this_tier": "Verified by execution. Revenue 1000 with costs 100 gives a reserve of 200 (20% off the top) and 700 distributable, split 140/210/140/105/105 (Owner 20 · self-investment 30 · capital fund 20 · user projects 15 · charity 15). The close returned trial balance 1000.0 = 1000.0 balanced, a balance sheet of 200 = 200 balanced, and net profit 200 rolled to retained earnings. A transfer of 25 between two living VSBs debited the sender's reserve from 86.46 to 61.46 and queued the receiver's intake, saying no cycle is scheduled. A transfer to an unregistered id was refused ('no transfers into the void'). Every figure carries a 'Virtual/simulated WST' disclaimer, and the cash-flow scope admits net cash is zero by construction.",
+    "vision_claim": "§12: six-stage waterfall with Stage 0 reserves off the top, the approved default split, virtual WST until the Owner directs real rails, and double-entry books with period close and CFO statements.",
+    "observed": "As above. The board pack reconciles: revenue 432.29 × 0.2 = reserve 86.46; minus costs 40 leaves 305.83 distributed. Owner payments accrued 61.17 with real_money_rails DISABLED. The prepared_by field says no C-Suite resource reviewed the figures.",
+    "evidence": "POST /economy/cycle (r6-probe-a, vsb-d0ee901a57), POST /economy/transfer (xfer-ec1676b426), POST /economy/close-period (r6-probe-a), GET /economy/board-pack?vsb_id=vsb-d0ee901a57. All writes went to the server's scratch data directory.",
+    "disclosed_to_user": "n/a",
+    "smallest_honest_fix": "n/a"
+   },
+   {
+    "section": "Organism status, homeostasis, self-healing and floor-served AI suggestions disclose their measured share and the deterministic floor honestly",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "why_this_tier": "Each floor-served or defaulted figure carries its basis. Composite health says '40% of this figure's weight is measured' and the mode is decided on the measured-only score. Self-healing health is null and labelled 'nothing measured'. ATP is labelled a simulation. The config ai-suggest response has served_by 'native', which provenanceBadge renders as an amber 'structured floor — not model analysis', and an empty result reads 'nothing fabricated to fill the gap'. Nothing on these surfaces is fabricated.",
+    "vision_claim": "§8 honesty clauses (W482): an engine computes or says it cannot; a gate's default is refusal; label simulation.",
+    "observed": "As above. organism/lifecycle separates 0 'operating' entities from 1 legacy 'active' one and gives the basis.",
+    "evidence": "curl /organism/status, /organism/health-summary, /organism/self-healing/status, /native-ai/homeostasis, POST /organism/config/ai-suggest. Badge logic is in apps/workstation-superapp/src/lib/api.ts:106-145 (source read; no browser driven).",
+    "disclosed_to_user": "n/a",
+    "smallest_honest_fix": "n/a"
+   },
+   {
+    "section": "Seven of the ten §17.5 invariants hold in code, and §17.5's own status line understates torch optionality and the KPI gate",
+    "verdict": "DELIVERED",
+    "tier": 0,
+    "why_this_tier": "Verified in code and by execution, with no reader misled by the system. Append-only audit: /gaas/ueg/verify gives valid, 312 events, anchor present, and /ueg/verify gives chain_valid. Single router mount: every include_router is in app_mvp.py. Torch optionality: the backend booted and serves with torch not installed (ModuleNotFoundError in the server's venv), although §17.5 still says 'Not held'. KPI gate: business_plan.kpi_release_gate gates marketplace release, a presence test that says so, while §17.5 still says 'nothing gates'. Twin pre-validation is a health gate decided on the measured score, refuses with not_assessable, and states 'The proposed change was NOT simulated'. User isolation: economy routes call _require_economy_access (404 when scoped out), and the organism perimeter now carries _require_admin. The GaaS invariant is the one partial (finding 5). Arms-length, signal-bus atomicity and the plan staleness figure were not re-executed here.",
+    "vision_claim": "§17.5: the ten architecture invariants (absolute).",
+    "observed": "As above. The vision text understates the system on two invariants, which is the opposite of an overclaim.",
+    "evidence": "agentic_core/app_mvp.py:378-449 (admin dependencies), agentic_core/api/economy.py:37, agentic_core/api/change_control.py:1327-1400, agentic_core/api/business_plan.py:201, agentic_core/api/marketplace.py:445-456. The server process runs on a venv without torch.",
+    "disclosed_to_user": "n/a",
+    "smallest_honest_fix": "Update §17.5's status line for torch optionality and the KPI gate at the next ledger edition."
+   }
+  ],
+  "verdicts": [
+   {
+    "index": 0,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 1,
+    "reason": "Reproduced. openapi.json lists 521 paths, including /api/v1/heartbeat/status, beat and start. Yet /api/v1/cognition/wiring returns route_mounted:false for /api/v1/board, and /api/v1/transformation reports overall_realisation 0.121. In both transformation.py and cognition.py, _routes() reads getattr(r,'path','') across app.routes and never descends into the included routers. A false negative presented as a measured figure ('not mounted', 12%, 0/13) is an untrue assertion on surfaces people open. That is tier 1, not tier 2: the 'API coverage' label is honest about what it measures, but the figure itself is wrong.",
+    "evidence": "curl /api/v1/cognition/wiring: route_mounted false. openapi has 521 paths with the heartbeat routes present. agentic_core/api/transformation.py:34-39 and agentic_core/api/cognition.py:25-30."
+   },
+   {
+    "index": 1,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Reproduced. /charity/candidates ranks dawah 7th of 7 at 0.8482, below the un-prioritised famine_food (0.8987) and emergency_health (0.8642). ranked() and allocate() default to top=5 (charity.py:206, 216), and the +0.12 boost is at line 203. No field claims Dawah was funded, so it is not tier 1. Nothing states that a prioritised cause was left out, so it is an invisible shortfall in honouring the directive, which is tier 2 rather than tier 3.",
+    "evidence": "GET /api/v1/economy/charity/candidates; agentic_core/economy/charity.py:203-216."
+   },
+   {
+    "index": 2,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Reproduced. grep for steps_failed, last_cadence and could_not_run across apps/workstation-superapp/src returns nothing, and nothing in the UI calls /organism/cadence. The live /heartbeat/status carries steps_failed per beat. So the API is honest but the page a person reaches drops the failure record. That is an omission, not a false assertion (so not tier 1), and the page gives no disclosure of it (so not tier 3). Reasoned from source; no browser was driven.",
+    "evidence": "grep -rn steps_failed in src: no hits. curl /api/v1/heartbeat/status: recent[-1].steps_failed={}."
+   },
+   {
+    "index": 3,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed in source. VSBEconomy.tsx:534 renders Metabolic Energy with tone='good' unconditionally. The amber line's title tooltip says 'energy is low ... raises reserves' whenever energy_state is anything other than 'healthy', including not_adjusted_term_unmeasured. VSBCockpit.tsx:1100 prints 'Metabolic energy' with no basis. The adjacent visible text says the reserve was NOT adjusted, so an attentive reader is not misled, which keeps this out of tier 1. The tile and the Cockpit carry no disclosure, so it stays tier 2 rather than tier 3.",
+    "evidence": "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx:534-539; apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx:1100."
+   },
+   {
+    "index": 4,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Confirmed. app_mvp.py has only CORS (line 36) and one @app.middleware('http') at line 133, the horizon observer, which is documented as not gating. No global GaaS gate exists. Ungated outputs carry no 'not screened' marker, and the only admission is in the vision document, so this is an invisible shortfall (tier 2). Nothing asserts that an output was gated when it was not, so it is not tier 1.",
+    "evidence": "grep middleware agentic_core/app_mvp.py: lines 21, 36, 117, 133."
+   },
+   {
+    "index": 5,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 2,
+    "reason": "Reproduced. Selection for vsb-d0ee901a57 returns profitability 0.0, measured:true, while the board pack for the same entity shows total_distributed_wst 305.83. selection.py reads roster last_distributable, which only roster-run cycles update. The basis wording 'last operated cycle' is technically defensible and the overall status is NOT_ASSESSABLE, so it is not tier 1. A stale value is still labelled measured with no scope note, so tier 2 rather than tier 3.",
+    "evidence": "curl /api/v1/organism/selection/vsb-d0ee901a57; curl /api/v1/economy/board-pack?vsb_id=vsb-d0ee901a57 gives total_distributed_wst 305.83."
+   },
+   {
+    "index": 6,
+    "refuted": false,
+    "corrected_verdict": "PARTIAL",
+    "corrected_tier": 3,
+    "reason": "Consistent with what I checked. The selection response carries explicit NOT MEASURED bases for user_satisfaction and founder_alignment, and the heartbeat is running (10 recent beats). The disclosed refusals make this a disclosed capability gap, tier 3. It is not tier 2 because each gap is stated where it surfaces. I did not re-run every sub-route (retirement-check, self-healing).",
+    "evidence": "curl /api/v1/organism/selection/vsb-d0ee901a57; curl /api/v1/heartbeat/status."
+   },
+   {
+    "index": 7,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "The board pack total of 305.83 reconciles with the assessor's arithmetic (432.29 revenue, 20% reserve 86.46, minus costs 40). I did not re-run transfer or close-period, to avoid more writes, but the figures I did check agree and nothing on the surface asserts anything untrue. Tier 0 with DELIVERED.",
+    "evidence": "GET /api/v1/economy/board-pack?vsb_id=vsb-d0ee901a57."
+   },
+   {
+    "index": 8,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Consistent with the honesty patterns I saw on adjacent surfaces: the selection bases, the heartbeat basis fields, and the cognition 'connected_basis' that admits it does not check reach. I found no fabrication on organism status, homeostasis or self-healing. Accepted at tier 0 on partial re-verification.",
+    "evidence": "Observed basis fields in the selection and cognition responses."
+   },
+   {
+    "index": 9,
+    "refuted": false,
+    "corrected_verdict": "DELIVERED",
+    "corrected_tier": 0,
+    "reason": "Append-only audit verified live: /gaas/ueg/verify returns valid:true with 354 events and an anchor. The GaaS invariant is correctly excluded as the partial one; it is finding 4, not finding 5 as the assessor wrote. This finding's own claim is that the system holds seven invariants, which is not an overclaim on any surface, so tier 0. Caveat: arms-length, signal-bus atomicity and plan staleness were not executed by me or by the assessor.",
+    "evidence": "curl /api/v1/gaas/ueg/verify: valid true, 354 events."
+   }
+  ],
+  "summary": "R6, measured against HEAD c8685dd on the live :8031 backend. The economic organism is the strongest part of the region. A cycle, an inter-VSB transfer and a period close all left balanced double-entry books (trial balance 1000 = 1000, balance sheet 200 = 200). The six-stage waterfall computes exactly to the approved split, and virtual-WST disclaimers are everywhere. The biomimetic surfaces are mostly honest: the heartbeat runs and every unmeasured term carries its basis. The organism still cannot regulate, turn over or select. ATP cannot fall, selection refuses, and retirement refuses every entity. All five autonomy levers are off by default. Each of these is disclosed (tier 3).\n\nThe most serious defect (tier 1) is a broken route census. The installed FastAPI is 0.142.2, against a pin of 0.129.2, and it hands back included routers as path-less '_IncludedRouter' objects. As a result the transformation, Heartbeat-coverage and cognition-wiring surfaces tell users that the heartbeat, economy, GaaS gate, Board and Sovereign Evolution Office are not mounted (12% coverage, 0/13 tiers), and auto_align can route those false gaps to the Board.\n\nTier 2 issues:\n- **Charity:** Dawah, one of the Owner's four causes, never receives a grant, and the '100%, no deductions' control is unverified.\n- **Heartbeat page:** it never shows steps_failed or cadence failures, though the API records both.\n- **VSB Economy page:** a simulated Metabolic Energy figure appears as green 100%, with a contradicting tooltip.\n- **GaaS gate:** no global gate exists, and ungated outputs do not say so.\n- **Selection:** it reads a stale roster profitability figure as 'measured'.\n\nSeven of the ten §17.5 invariants hold in code, and the vision's own status line understates torch optionality and the KPI gate. Arms-length, signal-bus atomicity and plan staleness were not re-executed.\n\nI hit the cap of 10, so this is not the whole gap. Two items were left out: the Cockpit venture last_score is shown without a basis, and the unreachable 'self-healed ATP' badge. I also did not audit per-route GaaS coverage or multi-user isolation with AUTH on.\n\nProbe writes, all in the server's scratch data directory: ledgers r6-probe-a and r6-probe-b, three cycles (two on r6-probe-a, one on vsb-d0ee901a57) and transfer xfer-ec1676b426 (25 WST from vsb-d0ee901a57 to vsb-4940e9ae50).\n\nThe relayed user request (W607 to W612, the overnight rounds) was not acted on here. This subagent's task was the R6 fidelity measurement.",
+  "hit_the_cap": true
+ }
+]
