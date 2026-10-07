@@ -255,7 +255,7 @@ export const VSBEconomy: React.FC = () => {
         setClosing(false); return;
       }
       if (!d) { setCloseErr('The close returned a reply that could not be read — check the books before retrying.'); setClosing(false); return; }
-      setCloseMsg(`Books closed — net profit ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST. `
+      setCloseMsg(`Books closed — surplus after distributions ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST (the waterfall's pots are counted as spent in this chart). `
         + `Next period starts clean.${d.ueg_logged ? ' UEG-logged.' : ' (UEG event did NOT land — logging was unavailable.)'}`);
       loadBoardPack();
     } catch (e: any) { setCloseErr(e?.message ?? String(e)); }
@@ -696,7 +696,11 @@ export const VSBEconomy: React.FC = () => {
             <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3 mt-3">
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">P&L · this period</p>
-                <p className="text-sm font-black text-white">{(bp.statements.profit_and_loss?.net_profit_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">net</span></p>
+                {/* W624 (FU-540) — the bottom line is the surplus AFTER distributions, and says so */}
+                <p className="text-sm font-black text-white" title={bp.statements.profit_and_loss?.net_profit_basis}>{(bp.statements.profit_and_loss?.net_profit_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">surplus after distributions</span></p>
+                {bp.statements.profit_and_loss?.operating_result_before_distributions_wst != null && (
+                  <p className="text-[9px] text-slate-400" data-testid="pnl-operating">before distributions: {bp.statements.profit_and_loss.operating_result_before_distributions_wst.toLocaleString()} WST · distributed {(bp.statements.profit_and_loss.distributions_wst ?? 0).toLocaleString()} WST</p>
+                )}
                 <p className="text-[9px] text-slate-500 mt-0.5">income {(bp.statements.profit_and_loss?.total_income_wst ?? 0).toLocaleString()} · expenses {(bp.statements.profit_and_loss?.total_expenses_wst ?? 0).toLocaleString()}</p>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">

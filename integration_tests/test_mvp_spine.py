@@ -46642,3 +46642,54 @@ def test_w623_p224_the_surface_names_what_was_produced(client, monkeypatch):
     assert "intelligently autonomous" not in _r and "not yet operating" in _r, _r[:200]
     _r2 = _build_repo_files({"vsb_id": "vsb-w623", "name": "W623", "challenge": "probe", "status": "operating"})["README.md"]
     assert "operating: the organism runs its economic cycles" in _r2
+
+
+def test_w624_p224_the_last_three_tier1_rows(client):
+    """P2.24 (W624) — FU-524: the Chief's twin count was the five-row display slice, ignored scope and owner, and
+    read a corrupt store as "no instruction written" (and every writer then replaced the store with one row).
+    FU-523: the Board Pack's pending narrative described sources its own layers contradict. FU-540: the CFO's
+    "net profit" is the surplus after the waterfall's distributions, which this chart books as expenses."""
+    import json as _j624
+    import uuid as _uu624
+    from agentic_core.api import board as _b624
+    _saved = _b624._STORE.read_bytes() if _b624._STORE.exists() else None
+    try:
+        rows = [{"instruction": f"w624 a{i}", "business_plan_scope": "vsb:w624-a", "owner": "o1", "created_at": f"2026-10-07T00:00:{i:02d}Z"} for i in range(7)]
+        rows += [{"instruction": "w624 b", "business_plan_scope": "vsb:w624-b", "owner": "o2"},
+                 {"instruction": "w624 twin", "business_plan_scope": "vsb:w624-a", "unprompted": True}]
+        _b624._STORE.write_text(_j624.dumps(rows), encoding="utf-8")
+        m = _b624.founder_model(scope="vsb:w624-a")
+        assert m["instructions"]["count"] == 7 and len(m["instructions"]["recent"]) == 5, (
+            "the count is the display slice, or counts other scopes / the twin's own restatements", m["instructions"]["count"])
+        assert _b624.founder_model(scope="vsb:w624-a", owner="o2")["instructions"]["count"] == 0
+        assert client.get("/api/v1/board/chief/model", params={"scope": "vsb:w624-b"}).json()["instructions"]["count"] == 1
+        _b624._STORE.write_text("{not json", encoding="utf-8")
+        mc = _b624.founder_model()
+        assert mc["instructions"]["readable"] is False and mc["instructions"]["count"] is None, mc["instructions"]
+        r = client.post("/api/v1/board/chief/instruct", json={"instruction": "w624 over a corrupt store", "scope": "vsb:w624-c"})
+        assert r.status_code == 503, (r.status_code, r.text[:200])
+        assert _b624._STORE.read_text(encoding="utf-8") == "{not json", "a writer replaced a corrupt store with one row"
+    finally:
+        if _saved is None:
+            _b624._STORE.unlink(missing_ok=True)
+        else:
+            _b624._STORE.write_bytes(_saved)
+
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w624 a halal bakery", "name": f"W624 {_uu624.uuid4().hex[:4]}",
+                                                         "domain": "enterprise", "concept": "c", "design": "d",
+                                                         "commercialisation": "m"}).json()
+    pk = client.post(f"/api/v1/vsb/{est['vsb_id']}/board-pack").json()
+    nar = str(pk.get("narrative") or (pk.get("pack") or {}).get("narrative") or "")
+    if nar.startswith("narrative pending"):
+        assert "standing values line" not in nar and "Constitutional layer: mission" in nar, nar[:400]
+        assert ("values NOT DECLARED" in nar) or ("declared by this entity" in nar), nar[:400]
+
+    _vid = f"w624-{_uu624.uuid4().hex[:6]}"
+    client.post("/api/v1/economy/cycle", json={"vsb_id": _vid, "revenue": 1000, "costs": 100})
+    from agentic_core.economy.ledger import VirtualLedger
+    pl = VirtualLedger(_vid).statements()["profit_and_loss"]
+    assert pl["net_profit_basis"].startswith("SURPLUS AFTER WATERFALL DISTRIBUTIONS"), pl.get("net_profit_basis")
+    assert abs(pl["operating_result_before_distributions_wst"] - pl["distributions_wst"] - pl["net_profit_wst"]) < 0.02, pl
+    import pathlib as _pl624
+    _ec = _code_only((_pl624.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8"))
+    assert "surplus after distributions" in _ec and "operating_result_before_distributions_wst" in _ec

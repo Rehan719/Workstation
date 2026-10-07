@@ -9858,11 +9858,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W624",
       "note": "",
       "slot_source": "ledger v9 R3.0 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Board Pack's pending narrative is composed from the constitutional layer's own sources and values state, and points the strategic/action layers at their stated sources; blind red"
     },
     {
       "id": "FU-524",
@@ -9876,11 +9879,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W624",
       "note": "",
       "slot_source": "ledger v9 R3.1 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "founder_model counts EVERY Owner instruction (recent shows five), filters by scope and owner (also on GET /board/chief/model), reads the store strictly (a corrupt store is readable=False with count None), and every board writer refuses (503) rather than appending to an empty read; four blinds red"
     },
     {
       "id": "FU-525",
@@ -10189,11 +10195,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W624",
       "note": "",
       "slot_source": "ledger v9 R6.1 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the P&L labels its bottom line SURPLUS AFTER WATERFALL DISTRIBUTIONS with the reason (distribution pots typed as expenses, no liability account, unpaid owner share booked as paid) and adds operating_result_before_distributions and distributions; VSBEconomy shows both; the chart migration is not done; blind red"
     },
     {
       "id": "FU-541",

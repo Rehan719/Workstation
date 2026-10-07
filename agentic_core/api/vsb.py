@@ -1476,11 +1476,19 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # live data". The constitutional layer is DERIVED from the founder's problem plus a constant values
     # line, and the strategic layer is empty whenever no CEO specification was composed - which is the
     # same condition that makes this narrative pending in the first place.
-    narrative = (("narrative pending the owned model — this board pack has not been composed. The "
-                  "operational snapshot below is live; the constitutional layer is DERIVED from the "
-                  "founder's problem statement and the platform's standing values line; the strategic "
-                  "and action layers are present only if this entity carries a CEO specification and a "
-                  "board (each says which below)")
+    #  W624 (FU-523, M1 v9 R3.0) — THE PENDING NARRATIVE IS COMPOSED FROM THE LAYERS IT INTRODUCES. It was a literal
+    #  written before W585 and W615 and never updated, so it told the reader the constitutional layer came from
+    #  "the platform's standing values line" (which W585 stopped showing) beside a values field reading NOT
+    #  DECLARED, and from the founder's problem when the Owner had written a mission. It now reads each source.
+    _c = constitutional
+    narrative = (("narrative pending the owned model — this board pack has not been composed. The operational "
+                  "snapshot below is live. Constitutional layer: mission " + str(_c.get("mission_source"))
+                  + "; vision " + str(_c.get("vision_source")) + "; values "
+                  + ("declared by this entity" if _c.get("values_declared") else
+                     "NOT DECLARED - this entity has declared none and no platform line stands in for them")
+                  + ". The strategic and action-plan layers each state their own source below: a CEO "
+                    "specification, or the latest §17.3 cadence refresh, which is DERIVED from the plan's own "
+                    "state and is not an analysis.")
                  if sb == "native" else _public_prose(meta.get("output", "") or "").strip())
 
     from agentic_core.vbs.quality import assure_delivery

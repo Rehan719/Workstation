@@ -90,6 +90,25 @@ def _load() -> List[Dict[str, Any]]:
     return []
 
 
+def _load_strict() -> List[Dict[str, Any]]:
+    """W624 (FU-524, M1 v9 R3.1) — the board store read WHOLE or refused. `_load` answers a corrupt store with [],
+    which is right for a reader that only displays, and wrong for two kinds of caller: the founder model, which
+    then reported a corrupt store as "no instruction written", and every WRITER, which appended to that [] and
+    atomically replaced the Owner's whole directive history with one row. Those use this."""
+    from agentic_core.config import read_json_strict
+    return read_json_strict(_STORE, list, expect=list)
+
+
+def _load_for_write() -> List[Dict[str, Any]]:
+    from agentic_core.config import StoreUnavailable
+    try:
+        return _load_strict()
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"the board store could not be read whole ({e}), so nothing was written: appending to an empty read "
+            f"would replace every directive on record with this one"))
+
+
 def _save(rows: List[Dict[str, Any]]) -> None:
     from agentic_core.config import atomic_write_json
     atomic_write_json(_STORE, rows)
@@ -180,7 +199,7 @@ def _owner_decisions(limit: int = 5) -> List[Dict[str, Any]]:
     return out
 
 
-def founder_model() -> Dict[str, Any]:
+def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dict[str, Any]:
     """The Chief's founder model as a STRUCTURE: three inputs, each counted and each naming its source.
 
     P3.4 clause (1). A Chief with NO instructions and NO decisions is reported as a ROLE and not as a
@@ -195,20 +214,28 @@ def founder_model() -> Dict[str, Any]:
     """
     instructions: List[Dict[str, Any]] = []
     instructions_readable = True
+    n_i_all: "int | None" = None
     try:
         #  ONLY THE OWNER'S OWN WORDS. A directive the twin issued unprompted carries an `instruction`
         #  too - its restatement of what the Owner last asked for - and counting that as a new input
         #  would make the model read its own output back as its principal's record: the count would rise
         #  without the Owner saying anything, and the beat's idempotence would never hold. A row with no
         #  marker predates the unprompted path and IS the Owner's.
-        for r in [x for x in _load()
-                  if x.get("instruction") and not x.get("unprompted")][-5:]:
+        #  W624 (FU-524) — THE COUNT IS EVERY INSTRUCTION, the recent list is the last five. The count was taken
+        #  from the five-row display slice, so it could never exceed 5; it ignored scope and owner, so one
+        #  entity's Chief counted every entity's instructions; and the read swallowed a corrupt store as [].
+        _own = [x for x in _load_strict()
+                if x.get("instruction") and not x.get("unprompted")
+                and (scope is None or x.get("business_plan_scope") == scope)
+                and (owner is None or x.get("owner") == owner)]
+        n_i_all = len(_own)
+        for r in _own[-5:]:
             instructions.append({"at": str(r.get("created_at") or "")[:19],
                                  "instruction": str(r.get("instruction"))[:200]})
     except Exception:
         instructions_readable = False
     decisions = _owner_decisions()
-    n_i, n_d = len(instructions), len(decisions)
+    n_i, n_d = (n_i_all or 0), len(decisions)
     is_twin = (n_i + n_d) > 0
 
     return {
@@ -218,8 +245,11 @@ def founder_model() -> Dict[str, Any]:
             #  NOT this Owner's declaration: a shared constant cannot be one
             "declared_by_owner": False,
         },
-        "instructions": {"count": n_i, "recent": instructions,
-                         "source": "the board store's instruction rows",
+        "instructions": {"count": (n_i_all if instructions_readable else None), "recent": instructions,
+                         "scope": scope, "owner": owner,
+                         "source": ("the board store's instruction rows"
+                                    + (f" for scope {scope!r}" if scope else " across every scope")
+                                    + (f" and owner {owner!r}" if owner else "")),
                          "readable": instructions_readable},
         "decisions": {"count": n_d, "recent": decisions,
                       "source": "the Owner's ratify/refuse decisions recorded by the Board in Change Control"},
@@ -520,7 +550,7 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     try:
-        rows = _load()
+        rows = _load_for_write()
         rows.append(dict(out))
         _save(rows)
     except Exception:
@@ -529,14 +559,14 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
 
 
 @router.get("/chief/model")
-async def chief_model():
+async def chief_model(scope: "str | None" = None, owner: "str | None" = None):
     """The Chief's founder model and its BASIS — which inputs it was built from, and how many.
 
     P3.4 clause (3): every twin output is rendered with its basis. The model itself is the thing a reader
     needs in order to know whether the Chief speaking to them is a modelled twin or a role, so it is a
     surface of its own rather than a field buried in a directive's response.
     """
-    m = founder_model()
+    m = founder_model(scope=scope, owner=owner)
     return {
         **m,
         "method": ("a Chief is a MODELLED TWIN only when the Owner has written an instruction or made a "
@@ -805,7 +835,7 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
                                    "are NOT invoked by a directive; the org cascade runs them."),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    rows = _load()
+    rows = _load_for_write()
     rows.append(record)
     _save(rows)
 
@@ -979,7 +1009,7 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     # W270 — board deliberations PERSIST (previously the resolution evaporated at response time).
-    rows = _load()
+    rows = _load_for_write()
     rows.append(record)
     _save(rows)
     return record
