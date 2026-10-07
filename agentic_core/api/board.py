@@ -957,6 +957,7 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
         "## Board Position (the resolved direction)\n"
         "## Directive to the AI CEO (what to execute)\n"
         "## Guardrails (governance / arms-length constraints)", "board_directive", provenance)
+    from agentic_core.vbs.quality import floor_served as _floor623
     record = {
         "kind": "board_directive",
         "topic": req.topic,
@@ -967,7 +968,14 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
         "directors_engaged": [d["id"] for d in directors],
         "ai_provenance": provenance,     # §6 — apex provenance (W270)
         "chaired_by": "Chief (the Owner's charter and instructions)",
-        "status": "resolved",
+        #  W623 (FU-527, M1 v9 R3.4) — THE STATUS IS WHAT HAPPENED. Every deliberation was stored "resolved", so a
+        #  board whose directors and Chief were all served by the deterministic floor - frames composed from the
+        #  topic, no director weighing anything - read as a decided question. A floor-served board FRAMED the
+        #  topic; only a model-served one deliberated.
+        "status": ("framed_floor_not_deliberated" if _floor623(provenance.get("served_by")) else "resolved"),
+        "status_basis": (("every director and the Chief were served by the deterministic floor, so the topic was "
+                          "FRAMED, not deliberated: nothing here weighed it") if _floor623(provenance.get("served_by"))
+                         else "a served model composed the directors' inputs and the resolution"),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     # W270 — board deliberations PERSIST (previously the resolution evaporated at response time).

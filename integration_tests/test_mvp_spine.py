@@ -17463,7 +17463,9 @@ def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkey
     from agentic_core.api import board as _board
     t = _board.board_for_owner("default")["chief"]["title"]
     assert "Digital Twin of" not in t and "the founder" in t and "no twin model" in t, t
-    assert "no digital-twin model is trained" in (root / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(encoding="utf-8")
+    # W623 (FU-528) — the header renders the Chief's computed standing (twin or role, with its basis) instead of a fixed
+    # "no digital-twin model is trained", which became false once P3.4 built the twin and sat beside a "Modelled twin" label
+    assert 'data-testid="chief-standing-header">{chiefStanding()}' in (root / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(encoding="utf-8")
     # (refutation) every Board surface, not only the per-VSB title and the header
     bs = client.get("/api/v1/board/status").json()
     assert "Digital Twin" not in bs["chief"]["title"] and not any("Digital Twin" in h for h in bs["hierarchy"]), bs["chief"]
@@ -24643,8 +24645,14 @@ def test_w505_p23_avatar_and_profile_honesty(client):
     assert _prof.status_code in (200, 201), _prof.text
     r3 = client.post("/api/v1/avatar/chat", json={
         "message": "what should I measure first?", "context": "general", "session_id": "w505-p23c"}).json()
-    assert r3.get("profile_applied") is True, \
-        f"a stored profile shaped the answer and the reply says it did not: {r3.get('profile_applied')}"
+    # W623 (FU-533, M1 v9 R5.0) — applied means READ: on the floor the profile reaches the prompt and the floor does not
+    # read it, so the reply says so; a model-served reply says it was applied.
+    if r3.get("served_by") in (None, "native"):
+        assert r3.get("profile_applied") is False and r3.get("profile_state") == "not_usable_by_floor", (
+            r3.get("profile_applied"), r3.get("profile_state"))
+    else:
+        assert r3.get("profile_applied") is True, \
+            f"a stored profile shaped the answer and the reply says it did not: {r3.get('profile_applied')}"
     # and asking in English must NOT produce the note — a reason for something that did not happen
     r2 = client.post("/api/v1/avatar/chat", json={
         "message": "same question", "context": "general", "session_id": "w505-p23b"}).json()
@@ -46561,3 +46569,76 @@ def test_w622_p224_a_qep_channel_credits_only_a_qep_entity(client):
                                                        "entity_type": "qep_waqf_trust"}).json()["vsb_id"]
     ok = client.post("/api/v1/qep/contribute/zakat", json={"vsb_id": q, "amount_wst": 1.0})
     assert ok.status_code == 200, ok.text[:300]
+
+
+def test_w623_p224_the_surface_names_what_was_produced(client, monkeypatch):
+    """P2.24 (W623) — seven of M1 v9's eleven tier-1 rows. FU-533 a floor reply reported the profile as applied;
+    FU-534 a journey with nothing established was announced as "the user's own VSB IDBO"; FU-517 the Genesis
+    page credited six engines the backend does not run; FU-527 every board deliberation was "resolved"; FU-528
+    the Board page said no twin exists beside a "Modelled twin" label; FU-539 a cycle said investees were not
+    credited when they were; FU-518 every README called its enterprise "intelligently autonomous"."""
+    import asyncio as _a623
+    import pathlib as _pl623
+    import uuid as _uu623
+    _root = _pl623.Path(__file__).resolve().parents[1]
+    _src = lambda p: _code_only((_root / p).read_text(encoding="utf-8"))
+
+    # ── FU-533: a profile that reached the prompt of a FLOOR reply did not shape it ─────────────────
+    from agentic_core.ai import user_context as _uc623
+    monkeypatch.setattr(_uc623, "preamble_state", lambda o: {"preamble": "About the person: a baker.\n",
+                                                            "state": "applied", "basis": "applied"})
+    from agentic_core.ai.gateway import gateway as _gw623
+    meta = _a623.run(_gw623.query_meta("w623 hello", agent="w623", owner_id="someone"))
+    if meta.get("served_by") == "native":
+        assert meta["profile_applied"] is False and meta["profile_state"] == "not_usable_by_floor", (
+            "a floor reply still reports that the profile shaped it", meta.get("profile_state"))
+    monkeypatch.undo()
+
+    # ── FU-534 / FU-517: the journey says what exists; the page says what runs ─────────────────────
+    j = client.post("/api/v1/genesis/journey", json={"problem": f"w623 bakery {_uu623.uuid4().hex[:5]}"}).json()
+    assert j["enterprise_established"] is False and j["deliverable"].startswith("A journey record"), j["deliverable"]
+    _gj = _src("apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx")
+    assert "Sovereign Journey Complete" not in _gj and "Journey Complete — Record Only (no enterprise established)" in _gj
+    assert "six cognitive engines" not in _gj and "one cognitive-lens prompt (six lenses)" in _gj
+
+    # ── FU-527 / FU-528: a floor-served board framed the topic; the header reads the Chief's standing ─
+    d = client.post("/api/v1/board/directive", json={"topic": "w623 open a second bakery"}).json()
+    _st = (d.get("record") or d).get("status") if isinstance(d, dict) else None
+    from agentic_core.api.board import _load as _bl623
+    _rec = [r for r in _bl623() if r.get("topic") == "w623 open a second bakery"][-1]
+    from agentic_core.vbs.quality import floor_served
+    if floor_served((_rec.get("ai_provenance") or {}).get("served_by")):
+        assert _rec["status"] == "framed_floor_not_deliberated", ("a floor-served board is stored as resolved", _rec["status"])
+    _bd = _src("apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx")
+    assert "Mode 2 is planned, P3.4" not in _bd and 'data-testid="chief-standing-header">{chiefStanding()}' in _bd
+    assert "framed by the floor — not deliberated" in _bd
+
+    # ── FU-539: each position's funding state agrees with what the round credited ──────────────────
+    _vid = f"w623-{_uu623.uuid4().hex[:6]}"
+    #  DRIVE THE PRECONDITION: a live investee exists and the investor funds at a non-zero share, so a position is
+    #  actually credited - without both the leg holds trivially (nothing funded, nothing to contradict)
+    client.post("/api/v1/genesis/establish", json={"problem": "w623 investee bakery", "name": f"W623 Investee {_uu623.uuid4().hex[:4]}",
+                                                  "domain": "care"})
+    from agentic_core.economy.ventures import set_venture_funding_share
+    set_venture_funding_share(_vid, 0.5)
+    cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": _vid, "revenue": 2000, "costs": 100}).json()
+    cyc = cyc.get("cycle", cyc)
+    vi = cyc.get("venture_investment") or {}
+    from agentic_core.economy.ventures import _load_portfolio
+    _last = ((_load_portfolio().get(_vid) or {}).get("last_funding") or {})
+    _funded = {f.get("id") for f in (_last.get("funded") or [])}
+    for p in (vi.get("positions") or []):
+        assert (p.get("funding_state") == "funded") == (p.get("id") in _funded), (
+            "a position's funding state contradicts what the round credited", p.get("id"), p.get("funding_state"))
+    assert _funded, ("no position was credited, so this leg measured nothing", vi.get("positions"), _last)
+    assert any(p.get("funding_state") == "funded" for p in (vi.get("positions") or [])), (
+        "a credited position is reported as unfunded", vi.get("positions"))
+    assert "position(s) were credited" in vi.get("funding_basis", ""), vi.get("funding_basis")
+
+    # ── FU-518: the README tagline comes from the derived status ───────────────────────────────────
+    from agentic_core.api.vsb import _build_repo_files
+    _r = _build_repo_files({"vsb_id": "vsb-w623", "name": "W623", "challenge": "probe",
+                            "status": "registered - not operating"})["README.md"]
+    assert "intelligently autonomous" not in _r and "not yet operating" in _r, _r[:200]
+    _r2 = _build_repo_files({"vsb_id": "vsb-w623", "name": "W623", "challenge": "probe", "status": "operating"})["README.md"]
+    assert "operating: the organism runs its economic cycles" in _r2

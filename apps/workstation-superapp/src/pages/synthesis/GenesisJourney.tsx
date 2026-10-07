@@ -550,8 +550,9 @@ export const GenesisJourney: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           One progressive, intelligently-autonomous workflow that takes a problem from
           <span className="text-highlight"> Conceptualisation → Design &amp; Development → Commercialisation</span> —
-          composing the six cognitive engines, MJM, the design and business engines, and the constitutional
-          gate into your own living VSB blueprint.
+          {/* W623 (FU-517, M1 v9 R2.0) — what the backend actually runs, as /genesis/status reports it */}
+          through one cognitive-lens prompt (six lenses), one MJM prompt, the journey's stage prompts and the
+          gaas.v5 intent gate — a blueprint you can establish as a living VSB.
         </p>
       </header>
 
@@ -932,7 +933,12 @@ export const GenesisJourney: React.FC = () => {
           <Card className="p-6 border-highlight/30 bg-highlight/5">
             <div className="flex items-center gap-3 mb-3">
               <ShieldCheck size={18} className="text-highlight" />
-              <h3 className="font-black text-highlight uppercase tracking-widest text-sm">Sovereign Journey Complete</h3>
+              {/* W623 (FU-534) — the heading names what the journey produced, not a sovereign enterprise it may not have */}
+              <h3 className="font-black text-highlight uppercase tracking-widest text-sm" data-testid="journey-complete-heading">
+                {(result as any).status === 'blocked_by_screen' ? 'Journey Stopped — vetoed by the §11 screen'
+                  : (result as any).enterprise_established ? 'Journey Complete — Enterprise Established'
+                  : 'Journey Complete — Record Only (no enterprise established)'}
+              </h3>
             </div>
             <p className="text-sm text-slate-300 leading-relaxed">{result.deliverable}</p>
             <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -1104,7 +1110,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                     </button>
                   </div>
                   <p className="text-[9px] text-slate-500 mt-2 leading-relaxed">
-                    Its plan already opens with an Executive Summary · Concept · Vision, seeded from this journey.
+                    Its plan opens with TEMPLATED Executive Summary · Concept · Vision fields built from your request — edit them to make them yours.
                   </p>
                   {birthStages.length > 0 && (
                     <div className="mt-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">

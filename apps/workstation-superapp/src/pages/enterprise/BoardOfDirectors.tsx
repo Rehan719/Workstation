@@ -161,9 +161,11 @@ export const BoardOfDirectors: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The apex governance tier — above the AI CEO. Chaired by your <span className="text-highlight">Chief</span>,
           standing for you ({status?.represents_owner ?? 'the Owner'}) in your presence and absence and directing the
-          whole organism on your behalf. Today the Chief is your standing charter plus your last instructions, served
-          on the owned fabric — no digital-twin model is trained yet (Mode 2 is planned, P3.4).
+          whole organism on your behalf.
         </p>
+        {/* W623 (FU-528, M1 v9 R3.5) — this said "no digital-twin model… Mode 2 is planned" while the same page labelled
+            the Chief a modelled twin. The header now renders the one reading the page already computes. */}
+        <div className="mt-2 max-w-2xl" data-testid="chief-standing-header">{chiefStanding()}</div>
       </header>
 
       {loadErr && (
@@ -369,6 +371,12 @@ export const BoardOfDirectors: React.FC = () => {
               <Card key={i} className="p-5 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-500">{d.kind ?? 'chief_instruction'}</span>
+                  {(d as any).status && (
+                    <span data-testid="deliberation-status" title={(d as any).status_basis}
+                      className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${(d as any).status === 'resolved' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                      {(d as any).status === 'resolved' ? 'resolved' : 'framed by the floor — not deliberated'}
+                    </span>
+                  )}
                   <p className="text-sm font-black text-white">{d.topic ?? d.instruction}</p>
                   <span className="text-[8px] text-slate-600 ml-auto">{d.created_at}</span>
                 </div>

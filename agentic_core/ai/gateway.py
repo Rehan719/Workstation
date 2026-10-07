@@ -422,8 +422,15 @@ class ModelGateway:
                     "the deterministic floor served this, so its structured prose was withheld from the "
                     "recall pool - it is the engine's own framing, not prior knowledge. Your own "
                     "message was kept."),
-                "profile_applied": bool(_preamble),
-                "profile_state": _pstate["state"], "profile_basis": _pstate["basis"],
+                #  W623 (FU-533, M1 v9 R5.0) — APPLIED MEANS READ. The preamble is prepended for every server, and
+                #  the deterministic floor does not read a profile: it composes from labelled fields. So a floor reply
+                #  reported profile_applied=True and the avatar showed "your saved profile shaped this answer". A
+                #  profile reached the prompt; it shaped the answer only when a model served it.
+                "profile_applied": bool(_preamble) and not self._is_floor(served_by),
+                "profile_state": ("not_usable_by_floor" if (_preamble and self._is_floor(served_by)) else _pstate["state"]),
+                "profile_basis": (("your saved profile reached the prompt, but the deterministic floor served this and "
+                                   "it does not read a profile, so the profile did NOT shape this answer")
+                                  if (_preamble and self._is_floor(served_by)) else _pstate["basis"]),
                 # W505 (P2.6) — every gateway response carries its governance checkpoint: what the gate
                 # decided before and after, and whether the constitutional ledger actually recorded it.
                 "governance_checkpoint": _chk}
@@ -615,7 +622,7 @@ class ModelGateway:
             _log(full if ok else _NOTICE.strip(), served_by)
             return {"done": True, "served_by": served_by, "is_external": is_external,
                     "output": full if ok else _NOTICE.strip(),
-                    "guardrail_passed": ok, "profile_applied": bool(_preamble),
+                    "guardrail_passed": ok, "profile_applied": bool(_preamble) and not self._is_floor(served_by),
                     "governance_checkpoint": _record_checkpoint(agent, _pre, _output_verdict(full),
                                                                 screened=not ok)}
 

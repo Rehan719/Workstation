@@ -120,6 +120,15 @@ def _owner_written(vsb: dict) -> dict:
     return out
 
 
+def _autonomy_phrase(vsb: dict) -> str:
+    """W623 (FU-518) — the entity's operating state in words, read from its derived status, never a constant."""
+    st = str(vsb.get("status") or "").strip()
+    return {"operating": "operating: the organism runs its economic cycles",
+            "held": "held: a review gate blocks progress",
+            "body pending": "body pending: sections still await the owned model",
+            }.get(st, f"{st or 'status not derived'}: not yet operating on its own")
+
+
 def _build_repo_files(vsb: dict) -> dict:
     """Build the bespoke repo file-set (path -> content) from REAL VSB entity data."""
     name = vsb.get("name") or vsb.get("vsb_id")
@@ -129,7 +138,10 @@ def _build_repo_files(vsb: dict) -> dict:
     concept, design, commercial = bp["concept"], bp["design"], bp["commercialisation"]
     f: dict = {}
     f["README.md"] = (
-        f"# {name}\n\n> Living, intelligently autonomous VSB IDBO enterprise — bespoke to: {challenge}\n\n"
+        #  W623 (FU-518, M1 v9 R2.1) — the tagline says what the entity IS, from its derived status. "Living,
+        #  intelligently autonomous" was a constant on every repository, including one whose own record says
+        #  nothing operates it (Self-run off).
+        f"# {name}\n\n> VSB IDBO enterprise — {_autonomy_phrase(vsb)} — bespoke to: {challenge}\n\n"
         f"- **Domain:** {domain} · **Realm:** {realm} · **Entity:** `{vsb.get('vsb_id')}`\n"
         # §4 (W573, M1 R2.1) - THE README IS A READER, and it shipped "Stage: commercialise" into
         # every repository a founder downloads. It now prints the derived stage and, where none is

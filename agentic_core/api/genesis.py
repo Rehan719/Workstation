@@ -849,8 +849,16 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # "Concept → Commercialisation" is the completion claim in its plainest form.
         "deliverable": ("No deliverable — the §11 screen vetoed every candidate, so the journey "
                         "stopped after Stage 5 and nothing was designed or commercialised" if _blocked else
-                        "The user's own VSB IDBO — Concept → Commercialisation"
-                        + (" → established living enterprise" if established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")) else "")),
+                        #  W623 (FU-534, M1 v9 R5.1) — THE DELIVERABLE NAMES WHAT EXISTS. This said "The user's own VSB
+                        #  IDBO" whether or not anything was established, and the page headed it "Sovereign Journey
+                        #  Complete". Without establishment the journey leaves a RECORD, not an enterprise; and when
+                        #  every agent was floor-served its stages are frames, which the sentence now says too.
+                        (("The user's own VSB IDBO — Concept → Commercialisation → established living enterprise"
+                          if (established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")))
+                          else "A journey record, Concept → Commercialisation — NO enterprise was established")
+                         + (" — frames only: every stage was served by the deterministic floor, so no stage was "
+                            "composed by a model" if (_sba and all(str(v) == "native" for v in _sba.values())) else ""))),
+        "enterprise_established": bool(established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error"))),
         # W485 — a journey whose every candidate was vetoed did not complete.
         "status": ("blocked_by_screen" if _blocked else "complete"),
         **({"blocked_by_screen": {

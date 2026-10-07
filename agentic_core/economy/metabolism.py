@@ -321,6 +321,33 @@ class EconomicMetabolism:
                 cands = real_candidates(exclude_vsb=self.vsb_id)
                 ventures_alloc = VentureIntelligence(cands or None).allocate(splits["user_projects"])
                 record_positions(self.vsb_id, ventures_alloc)
+                #  W623 (FU-539, M1 v9 R6.0) — THE FUNDING STATE IS READ BACK, NOT ASSUMED. allocate() is written
+                #  before anything is funded and stamps every position "recorded_unfunded"; record_positions then
+                #  credits the live investees, and the cycle returned the stamp - telling the reader the investees
+                #  were NOT credited when every one was. The state now comes from this round's own outcome.
+                try:
+                    from agentic_core.economy.ventures import _load_portfolio as _lp623
+                    _last = ((_lp623().get(self.vsb_id) or {}).get("last_funding") or {})
+                    _fund = {f.get("id"): f for f in (_last.get("funded") or [])}
+                    _unf = {u.get("id"): u for u in (_last.get("unfunded") or [])}
+                    for _pos in (ventures_alloc.get("positions") or []):
+                        _pid = str(_pos.get("id") or "")
+                        if _pid in _fund:
+                            _pos.update(funding_state="funded", funding_basis=(
+                                f"{_fund[_pid].get('amount_wst')} WST credited to the investee's intake this cycle"))
+                        elif _pid in _unf:
+                            _pos.update(funding_state="recorded_unfunded",
+                                        funding_basis=str(_unf[_pid].get("why") or "not credited"))
+                    _n = len(ventures_alloc.get("positions") or [])
+                    _nf = sum(1 for p in (ventures_alloc.get("positions") or []) if p.get("funding_state") == "funded")
+                    if _last:
+                        ventures_alloc["funding_state"] = ("funded" if _n and _nf == _n else
+                                                           "partly_funded" if _nf else "recorded_unfunded")
+                        ventures_alloc["funding_basis"] = (f"{_nf} of {_n} position(s) were credited to their investee "
+                                                           f"this cycle; each position states its own reason")
+                except Exception as _ve:                     # noqa: BLE001 - the stamp is then explicitly stale
+                    ventures_alloc["funding_basis"] = (f"the funding outcome could not be read back "
+                                                       f"({type(_ve).__name__}), so this state is the pre-funding stamp")
         except StoreUnavailable as e:
             # W472 (refutation) — the stage was distributed; the positions were NOT recorded, and the report says so
             ventures_alloc = {"positions_recorded": False, "reason": str(e), "allocation": ventures_alloc}

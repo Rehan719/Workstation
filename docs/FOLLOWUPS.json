@@ -9744,11 +9744,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W623",
       "note": "",
       "slot_source": "ledger v9 R2.0 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Genesis header names what runs (one cognitive-lens prompt, one MJM prompt, stage prompts, the gaas.v5 intent gate) and the establish card calls the plan opening templated; blind red"
     },
     {
       "id": "FU-518",
@@ -9762,11 +9765,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W623",
       "note": "",
       "slot_source": "ledger v9 R2.1 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the README tagline comes from the derived status (vsb._autonomy_phrase), never the constant 'Living, intelligently autonomous'; blind red"
     },
     {
       "id": "FU-519",
@@ -9924,11 +9930,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W623",
       "note": "",
       "slot_source": "ledger v9 R3.4 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a board deliberation whose directors and Chief were all floor-served is stored 'framed_floor_not_deliberated' with a basis; the Board page shows the status; blind red"
     },
     {
       "id": "FU-528",
@@ -9943,11 +9952,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W623",
       "note": "",
       "slot_source": "ledger v9 R3.5 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Board header renders chiefStanding() (twin or role, with its basis) instead of the static 'no digital-twin model' sentence; blind red"
     },
     {
       "id": "FU-529",
@@ -10040,11 +10052,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W623",
       "note": "",
       "slot_source": "ledger v9 R5.0 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "gateway: profile_applied is true only when a model served the reply; a floor reply carries profile_state not_usable_by_floor and says the profile did not shape it; blind red"
     },
     {
       "id": "FU-534",
@@ -10058,11 +10073,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W623",
       "note": "",
       "slot_source": "ledger v9 R5.1 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the journey's deliverable names what exists ('A journey record ... NO enterprise was established', '— frames only' when every stage was floor-served) with enterprise_established; the page heading follows it; two blinds red"
     },
     {
       "id": "FU-535",
@@ -10149,11 +10167,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W623",
       "note": "",
       "slot_source": "ledger v9 R6.0 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "after funding, each position's funding_state is read back from the round's last_funding and the cycle's top-level state/basis count what was credited; blind red after the leg was made to drive a live investee"
     },
     {
       "id": "FU-540",
