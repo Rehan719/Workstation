@@ -1,9 +1,8 @@
 # Deployment Runbook — Workstation IDBO
 
-The current architecture: **FastAPI backend on Render** + **Vite/React frontend on Vercel**. The
-backend is configured by [`render.yaml`](../render.yaml); the frontend by
-[`apps/workstation-superapp/vercel.json`](../apps/workstation-superapp/vercel.json), which rewrites
-`/api/*` to the Render service. CI ([`.github/workflows/spine.yml`](../.github/workflows/spine.yml))
+The architecture as configured: **FastAPI backend on Render** ([`render.yaml`](../render.yaml)). The Vite/React
+frontend's Vercel deployment is **retired** (Owner, 2026-10-07; config archived), and **Google Cloud Platform**
+with development / beta / release channels is the planned target (see "Frontend" below). CI ([`.github/workflows/spine.yml`](../.github/workflows/spine.yml))
 boots the backend + runs the integration suite and builds the frontend on every push.
 
 > Older guides under `_archive/docs/deployment/`, `_archive/docs/deployment_guide.md`, and `_archive/docs/DEPLOY_QEP.md` are kept
@@ -71,11 +70,24 @@ uvicorn agentic_core.app_mvp:app --port 8000       # GET / now serves the app
 (Render/any host), a managed Postgres, an external AI key (per-token), Stripe **live** mode (real money +
 fees). Nothing chargeable is triggered autonomously.
 
-## Frontend (Vercel)
+## Frontend — Vercel RETIRED; Google Cloud planned (Owner, 2026-10-07)
 
-- Root: `apps/workstation-superapp` (npm workspace). Build `npm run build` → `dist` (Vite).
-- `vercel.json` already rewrites `/api/(.*)` → `https://workstation-api.onrender.com/api/$1` and
-  serves the SPA. If your Render URL differs, update that destination.
+- **Vercel is retired.** The Vercel project still attached to the GitHub repo points at `src/qep_frontend`, a
+  folder that no longer exists, which is why its check has failed on every commit since 2026-08-30. The repo's
+  `vercel.json` is archived at `_archive/deployment/vercel/workstation-superapp.vercel.json`. **To silence the check**,
+  the Owner disconnects it in the Vercel account: Project → Settings → Git → Disconnect. Alternatively, uninstall
+  the Vercel app from the GitHub repository (GitHub → Settings → Integrations → Applications → Vercel). Nothing in
+  this repository can do that.
+- **Planned target: Google Cloud Platform (free tier)**, with three channels:
+  - **development**: every push to the working branch;
+  - **beta**: a tag or a `beta` branch;
+  - **release**: `main` after a reviewed merge.
+
+  Likely shape, not yet built or costed: the static `dist/` on Firebase Hosting or Cloud Storage, the FastAPI
+  backend on Cloud Run (free tier), each channel with its own service and URL, deployed by a GitHub Actions
+  workflow using Workload Identity Federation (no stored keys). Building it is a P4 item and needs the Owner's GCP
+  project.
+- Build: root `apps/workstation-superapp` (npm workspace), `npm run build` → `dist` (Vite).
 
 ## Payments & money safety (READ BEFORE LAUNCH)
 

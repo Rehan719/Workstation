@@ -42,7 +42,14 @@ npx tsc --noEmit` (and `npm run build`, which passes).
 
 ## 2. State at handover
 
-> **UPDATED after W632 (2026-10-07).** Done: P2.26 and P2.27, closed by the W632 re-run, which issued **ledger v11**:
+> **UPDATED after W634 (2026-10-07). START HERE: `docs/RESUME_ON_MY_MACHINE.md` holds the one prompt to paste.**
+> State: **W634 issued ledger v12**, with Tier-1 **6** and Tier-2 **8**. **P2.30** (six tier-1) and **P2.31** (eight
+> tier-2) are open, FU-574..587. W635, which fixes all fourteen, was in progress in the cloud: if `git log` has no W635,
+> work those rows again from the register. Each row's `why` ends with the auditor's SMALLEST HONEST FIX.
+> Vercel is RETIRED (Owner): `vercel.json` is archived, and Google Cloud free tier with dev/beta/release channels is the
+> plan (`docs/DEPLOYMENT.md`). Disconnecting the Vercel project in the Owner's Vercel account silences the red check.
+>
+> **Earlier update, after W632 (2026-10-07).** Done: P2.26 and P2.27, closed by the W632 re-run, which issued **ledger v11**:
 > Tier-1 **4**, Tier-2 **10**, all NEW surfaces (every v10 row was fixed in W630/W631). **P2.28** carries the four, **P2.29**
 > the ten: `python scripts/followups.py list --slot P2.28` and `--slot P2.29`. Each row's `why` ends with the auditor's
 > SMALLEST HONEST FIX.
