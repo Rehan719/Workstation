@@ -8974,11 +8974,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R2.1 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the compliance_posture proposal says applying it sets a trait only - no text edited, no screen re-run - and that a keyword screen cannot return pass; ACCEPT 4; blind red"
     },
     {
       "id": "FU-482",
@@ -9073,11 +9076,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R2.6 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "BUSINESS_PLAN.md and the web/phone apps carry Vision/Mission/Strategy only when the Owner wrote them and head the problem as 'Founder's Problem Statement'; the README's section list is read from BUSINESS_PLAN.md's own headings; three blinds red"
     },
     {
       "id": "FU-487",
@@ -9091,11 +9097,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R3.0 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "cadence.refresh records a refresh of an Owner-edited field as a PROPOSAL (applied=False) and leaves the Owner's text; cadence.latest serves only applied refreshes; BusinessPlan shows the proposal; three blinds red"
     },
     {
       "id": "FU-488",
@@ -9109,11 +9118,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R3.1 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Board Pack's mission and vision come from the Owner-written business plan when present (vsb._owner_written), sourced as such; the derivation is the named fallback; blind red"
     },
     {
       "id": "FU-489",
@@ -9128,11 +9140,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R3.2 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "floor-served appraisals are not stored as Development Actions and every stored one carries served_by; the Board counts only model-written ones and names the rest; two blinds red"
     },
     {
       "id": "FU-490",
@@ -9146,11 +9161,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R3.3 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a floor-served catalogue tier files its raw text with no items, status not_proposed_floor_served and the reason; blind red"
     },
     {
       "id": "FU-491",
@@ -9222,11 +9240,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R4.0 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the term heading names what it is counted over ('this prompt's labelled fields') and says the fields can hold platform-composed text, so no surface claims 'your request'; ACCEPT 4 - the claim removed, mechanism-wide; blind red"
     },
     {
       "id": "FU-495",
@@ -9391,11 +9412,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W615",
       "note": "",
       "slot_source": "ledger v8 R5.4 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "same heading fix in the shared engine (the avatar's floor reply), and the withheld reason is the true one: a non-Latin request is told the tokeniser counts Latin-script words only; blind red"
     },
     {
       "id": "FU-504",

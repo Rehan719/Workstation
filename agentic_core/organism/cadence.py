@@ -157,7 +157,9 @@ def history(scope: str, layer: Optional[str] = None) -> List[Dict[str, Any]]:
 
 
 def latest(scope: str, layer: str) -> Optional[Dict[str, Any]]:
-    rows = history(scope, layer)
+    #  W615 (FU-487) — the latest refresh that was WRITTEN. A proposal kept beside an Owner's edit is in the
+    #  history, but it is not the layer's content, and the Board Pack assembles its strategic layer from this.
+    rows = [r for r in history(scope, layer) if r.get("applied", True) is not False]
     return rows[-1] if rows else None
 
 
@@ -236,7 +238,7 @@ def refresh(scope: str, layer: str, *, now: Optional[float] = None, signal: Opti
         verdict = due(layer, last_refresh_at(plan, layer), now=now, signal=signal)
         if not verdict["due"] and not force:
             return {"refreshed": False, "layer": layer, "scope": scope, "due": verdict,
-                    "basis": verdict["reason"]}
+                    "entry": None, "proposed": False, "basis": verdict["reason"]}
 
         if content is not None:
             composed = {"content": str(content),
@@ -268,12 +270,28 @@ def refresh(scope: str, layer: str, *, now: Optional[float] = None, signal: Opti
             "is_external": composed["is_external"],
             "provenance_basis": composed["provenance_basis"],
         }
-        plan[field] = composed["content"]
+        #  W615 (FU-487, M1 v8 R3.0) — THE OWNER'S OWN WORDS ARE NEVER OVERWRITTEN BY A CADENCE. The refresh
+        #  replaced plan[field] whatever its source, so a Strategy the Owner wrote was replaced by floor-derived
+        #  text while `owner_edits.strategy` stayed set and the page still badged it "owner-edited". A field
+        #  the Owner edited is theirs: the refresh is RECORDED as a proposal (so the layer is not re-proposed
+        #  every beat) and the plan is left as the Owner wrote it.
+        _owner_edited = bool((plan.get("owner_edits") or {}).get(field))
+        entry["applied"] = not _owner_edited
+        entry["withheld_reason"] = (("the Owner edited this field, so the cadence PROPOSES and does not "
+                                     "overwrite it; the Owner's text stands") if _owner_edited else None)
+        if not _owner_edited:
+            plan[field] = composed["content"]
         plan.setdefault("refreshes", []).append(entry)
         plan["updated_at"] = _stamp(now)
         atomic_write_json(_plan_path(scope), plan)
 
+    if _owner_edited:
+        return {"refreshed": False, "layer": layer, "scope": scope, "entry": entry, "due": verdict,
+                "proposed": True,
+                "basis": (f"{layer} composed and RECORDED AS A PROPOSAL: the Owner edited the plan's {field!r} "
+                          f"field, so it was not overwritten. Trigger: {entry['trigger']} - {entry['reason']}")}
     return {"refreshed": True, "layer": layer, "scope": scope, "entry": entry, "due": verdict,
+            "proposed": False,
             "basis": (f"{layer} refreshed and written to the plan's {field!r} field, with a history "
                       f"entry keeping what it replaced. Trigger: {entry['trigger']} - {entry['reason']}")}
 

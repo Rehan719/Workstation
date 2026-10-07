@@ -185,6 +185,15 @@ export const BusinessPlan: React.FC = () => {
             </div>
             {plan.mission && <Field label="Mission" value={plan.mission} edited={plan.owner_edits?.mission} />}
             {plan.strategy && <Field label="Strategy" value={plan.strategy} edited={plan.owner_edits?.strategy} />}
+            {/* W615 (FU-487) — a cadence refresh never overwrites the Owner's edit; it is kept as a proposal */}
+            {(() => {
+              const prop = ((plan as any).refreshes || []).filter((r: any) => r.plan_field === 'strategy' && r.applied === false).slice(-1)[0];
+              return prop ? (
+                <p className="text-[10px] text-amber-300/80 mt-1" data-testid="cadence-proposal" title={String(prop.content || '')}>
+                  The strategic cadence proposed a revision on {String(prop.at).slice(0, 10)} ({String(prop.served_by)}); {String(prop.withheld_reason)}.
+                </p>
+              ) : null;
+            })()}
             {plan.aims?.length > 0 && (
               <div className="mt-3">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Aims</p>

@@ -579,6 +579,19 @@ def test_develop_actions_apply_cycle_over_cycle(client):
     assert set(r1["appraisals"].keys()) == {
         "chief_appraises_board", "board_appraises_ceo", "ceo_appraises_csuite",
         "csuite_appraises_coe", "ceo_appraises_bto", "bto_appraises_build"}   # all six edges
+    # W615 (FU-489) — a FLOOR-served appraisal's Development Action is boilerplate and is no longer stored, so
+    # on the floor round 1 seeds nothing. The apply loop itself is still driven: model-written actions are
+    # seeded exactly as round 1 stores them when a model serves, and the next cycle must apply every one.
+    import json as _j269
+    from agentic_core.config import data_path as _dp269, atomic_write_json as _aw269
+    _store = _dp269("tier_development.json")
+    _dev = _j269.loads(_store.read_text(encoding="utf-8")) if _store.exists() else {}
+    if set((r1.get("ai_provenance") or {}).get("served_by") or {}) <= {"native"}:
+        assert not [k for k, v in _dev.items() if isinstance(v, dict) and v.get("run_id") == r1["run_id"]]
+    for _k in r1["appraisals"]:
+        _dev[_k] = {"action": f"model-written development action for {_k}", "run_id": r1["run_id"],
+                    "served_by": "ollama", "at": "2026-10-07T00:00:00Z"}
+    _aw269(_store, _dev)
     r2 = client.post("/api/v1/swarm/cascade", json={
         "mission": "w269 develop loop contract round 2", "domain": "enterprise"}).json()
     da = r2["development_applied"]
@@ -1740,7 +1753,11 @@ def test_delegate_standard_catalogue_landing_and_stage_models(client):
         "mission": "w282 catalogue landing contract", "domain": "enterprise"}).json()
     assert isinstance(r["catalogue_items_proposed"], list)
     pc = client.get("/api/v1/swarm/catalogue/proposed").json()["proposed"]
-    assert pc[0]["run_id"] == r["run_id"] and pc[0]["status"] == "proposed"
+    # W615 (FU-490) — a floor-served catalogue tier files its raw text and NO offerings
+    _floor282 = set((r.get("ai_provenance") or {}).get("served_by") or {}) <= {"native"}
+    assert pc[0]["run_id"] == r["run_id"] and pc[0]["status"] == ("not_proposed_floor_served" if _floor282 else "proposed")
+    if _floor282:
+        assert pc[0]["items"] == [] and "NOT filed as offerings" in pc[0]["items_basis"]
     assert pc[0]["raw"]                                       # raw preserved even when items parse 0
     import asyncio as _aio
     from agentic_core.ai.native.orchestrator import orchestrator
@@ -19571,7 +19588,8 @@ def test_w489_a_reading_is_measured_or_it_is_not_a_reading(client):
     assert "grounded in the input above" not in floor and "grounded in the input's salient terms" not in floor
     from agentic_core.ai.native.engine import native_engine as _ne489
     _rendered489 = _ne489.generate("Problem: varroa mites destroy beehives over winter in Somerset\n")
-    assert "## Terms most frequent in your request" in _rendered489, (
+    # W615 (FU-494) — the heading names what the list is counted over, not whose words they are
+    assert "## Terms most frequent in this prompt's labelled fields" in _rendered489, (
         "the floor no longer heads the list as a frequency count of the request", _rendered489[:400])
     assert "not an analysis of the subject" in _rendered489, (
         "the floor stopped disclosing that the list is a word count rather than a judgement",
@@ -46071,3 +46089,99 @@ def test_w614_p222_a_status_is_derived_again_when_its_facts_change(client):
     client.post(f"/api/v1/vsb/{vid}/repo/ship")
     _readme = (_v614._REPO_STORE / vid / "README.md").read_text(encoding="utf-8")
     assert "**Status:** held" not in _readme, ("the shipped README printed a status the ship did not derive", _readme[:400])
+
+
+def test_w615_p222c_floor_text_is_not_filed_as_the_users_or_the_owners(client):
+    """P2.22(c) + (d) (W615) — eight of M1 v8's tier-1 rows, one shape: text the floor produced, or the platform
+    composed, presented or filed as the user's own words, the Owner's own words, or an entity's own content.
+
+    FU-494/FU-503: the term list's heading claimed "your request" over fields the engine cannot attribute, and
+    an Arabic request was told it had no labelled field. FU-487: the §17.3 cadence overwrote an Owner-edited
+    Strategy. FU-489/FU-490: floor boilerplate filed as Development Actions and catalogue offerings. FU-488 /
+    FU-486: the Board Pack, BUSINESS_PLAN.md and the apps headed the founder's problem as the vision, and the
+    README promised sections the plan file lacked. FU-481: an evolution promised a remediation it cannot make.
+    """
+    import json as _j615
+    import pathlib as _pl615
+    import uuid as _uu615
+    _root = _pl615.Path(__file__).resolve().parents[1]
+
+    # ── FU-494 / FU-503: the term list says what it is counted over ─────────────────────────────────
+    from agentic_core.ai.native.engine import native_engine as _ne615
+    _t = _ne615.generate("Task: Analyse the objective and key factors.\n")
+    assert "most frequent in your request" not in _t, _t[:400]
+    assert "## Terms most frequent in this prompt's labelled fields" in _t and "not necessarily your words" in _t, _t[:500]
+    _ar = _ne615.generate("User: الحمد لله رب العالمين\n")
+    assert "Latin-script" in _ar and "carries no labelled field" not in _ar, (
+        "a request in another script is told it has no labelled field", _ar[:500])
+
+    # ── FU-487: the cadence never overwrites the Owner's own Strategy ────────────────────────────────
+    from agentic_core.organism import cadence as _cad615
+    _scope = f"vsb:w615-{_uu615.uuid4().hex[:6]}"
+    client.post("/api/v1/business-plan/set", json={"scope": _scope, "strategy": "W615 OWNER STRATEGY: two sites by spring"})
+    _res = _cad615.refresh(_scope, "strategic", force=True)
+    _plan = client.get("/api/v1/business-plan", params={"scope": _scope}).json()
+    _plan = _plan.get("plan") or _plan
+    assert _plan["strategy"] == "W615 OWNER STRATEGY: two sites by spring", ("the cadence overwrote the Owner's strategy", _plan["strategy"][:200])
+    assert _res["refreshed"] is False and _res["proposed"] is True and _res["entry"]["applied"] is False, _res.get("basis")
+    assert _cad615.latest(_scope, "strategic") is None, "an unapplied proposal is served as the layer's latest refresh"
+    _bp = _code_only((_root / "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx").read_text(encoding="utf-8"))
+    assert "r.applied === false" in _bp and "prop.withheld_reason" in _bp
+
+    # ── FU-489 / FU-490: a floor-served tier files no offering and no development action ────────────
+    from agentic_core.config import data_path as _dp615
+    r = client.post("/api/v1/swarm/cascade", json={"mission": f"w615 bakery {_uu615.uuid4().hex[:6]}", "domain": "enterprise"}).json()
+    _cat = [c for c in _j615.loads(_dp615("proposed_catalogue.json").read_text(encoding="utf-8")) if c.get("run_id") == r["run_id"]]
+    assert _cat, "the cascade filed no catalogue record"
+    _served = r.get("ai_provenance", r.get("provenance", {})).get("served_by") or {}
+    if set(_served) <= {"native"}:
+        assert _cat[-1]["items"] == [] and _cat[-1]["status"] == "not_proposed_floor_served", _cat[-1]
+        _dev = _j615.loads(_dp615("tier_development.json").read_text(encoding="utf-8")) if _dp615("tier_development.json").exists() else {}
+        assert not [k for k, v in _dev.items() if isinstance(v, dict) and v.get("run_id") == r["run_id"]], (
+            "a floor-served appraisal was stored as a Development Action")
+    from agentic_core.api import board as _bd615
+    from agentic_core.config import atomic_write_json as _aw615
+    _store615 = _dp615("tier_development.json")
+    _saved615 = _store615.read_bytes() if _store615.exists() else None
+    try:
+        _aw615(_store615, {"edge_model": {"action": "a", "run_id": "x", "served_by": "ollama"},
+                           "edge_floor": {"action": "b", "run_id": "x", "served_by": "native"},
+                           "edge_old": {"action": "c", "run_id": "x"}})
+        _line = _bd615._director_grounding("dir_evolution")
+        assert "1 tier edge(s)" in _line and "2 other stored action(s)" in _line and "NOT counted" in _line, (
+            "the Board counts floor-written or unattributed actions as improvement", _line)
+    finally:
+        if _saved615 is None:
+            _store615.unlink(missing_ok=True)
+        else:
+            _store615.write_bytes(_saved615)
+
+    # ── FU-488 / FU-486: the Owner's mission and vision, or the problem named as a problem ──────────
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w615 a halal bakery for shift workers", "domain": "enterprise", "owner_id": "pytest",
+        "name": f"W615 Bakery {_uu615.uuid4().hex[:4]}"}).json()
+    vid = est["vsb_id"]
+    from agentic_core.api.vsb import _build_repo_files, _load_vsb
+    _files = _build_repo_files(_load_vsb(vid))
+    _bpmd, _readme = _files["BUSINESS_PLAN.md"], _files["README.md"]
+    assert "## Vision" not in _bpmd and "## Founder's Problem Statement" in _bpmd, _bpmd[:600]
+    import re as _re615
+    _heads = " · ".join(_re615.findall(r"(?m)^## (.+)$", _bpmd))
+    assert f"`BUSINESS_PLAN.md` — {_heads}" in _readme, ("the README lists sections the plan file lacks", _heads)
+    _scope_v = _load_vsb(vid).get("business_plan_scope") or vid
+    client.post("/api/v1/business-plan/set", json={"scope": _scope_v, "vision": "W615 OWNER VISION: bread at 4am",
+                                                   "mission": "W615 OWNER MISSION: feed the night shift"})
+    _pack = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+    _con = _pack.get("constitutional") or (_pack.get("layers") or {}).get("constitutional") or {}
+    assert _con.get("vision") == "W615 OWNER VISION: bread at 4am", ("the pack ignores the Owner's vision", _con)
+    assert _con.get("vision_source") == "written by the Owner in the business plan", _con.get("vision_source")
+    _files2 = _build_repo_files(_load_vsb(vid))
+    assert "## Vision\nW615 OWNER VISION: bread at 4am" in _files2["BUSINESS_PLAN.md"]
+    from agentic_core.api.vsb import _entity_appdata as _webapp_data
+    _bpd = _webapp_data(_load_vsb(vid))["business_plan"]
+    assert _bpd.get("vision") == "W615 OWNER VISION: bread at 4am" and "problem_statement" in _bpd, _bpd
+
+    # ── FU-481: the evolution proposal says what applying it does ───────────────────────────────────
+    _vsrc = _string_constants((_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8"))
+    assert "the screen returns to pass; distributions are never held" not in _vsrc
+    assert "the plan and registration text are NOT edited and the screen is NOT re-run" in _vsrc

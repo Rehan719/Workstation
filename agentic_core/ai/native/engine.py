@@ -284,14 +284,29 @@ class NativeReasoningEngine:
             #  a heading that says "in your request" would be false. Withholding is the house move: W489
             #  renamed this heading and dropped "grounded in the input", W498 made the hadith tool withhold
             #  bigram-filled sections, and the halal tool already withholds three.
-            _termsec = (f"## Terms most frequent in your request\n"
+            #  W615 (FU-494, FU-503, M1 v8 R4.0 R5.4) — THE HEADING STOPS CLAIMING WHOSE WORDS THESE ARE.
+            #  "most frequent in YOUR REQUEST" was a claim this engine cannot check: a labelled field reaches it
+            #  the same way whether the user typed it, the platform composed it (the Native AI page's default
+            #  "Task: Analyse the objective and key factors"), an upstream node produced it ("Subject:" in a
+            #  workflow tree), or it is the entity's own grounding (the avatar's Objectives line). W593 fixed
+            #  this by excluding labels, one at a time, and v8 found it on two more surfaces, because a label
+            #  list can never know provenance. So the claim is removed rather than chased (ACCEPT 4): the list
+            #  is named for what it is counted over, and says that is not necessarily the user's words.
+            #  AND THE WITHHELD REASON IS THE TRUE ONE. A request in Arabic carries a labelled field; it was
+            #  withheld because the tokeniser counts Latin-script words only, and was told "no labelled field".
+            _has_fields = bool(_term_parts)
+            _termsec = (f"## Terms most frequent in this prompt's labelled fields\n"
                         f"_Extracted by counting words and adjacent pairs — not an analysis of "
-                        f"the subject, and counted only over the fields the request itself carries._\n"
+                        f"the subject. The fields can hold text the platform composed (an instruction, a "
+                        f"previous step's output, the entity's own records), so these are not necessarily "
+                        f"your words._\n"
                         f"{self._bullets(terms, 6)}\n\n" if terms else
-                        f"## Terms most frequent in your request\n"
-                        f"_WITHHELD: the request carries no labelled field for this engine to count, so any "
-                        f"list here would be counted over the platform's own prompt and this heading would "
-                        f"be false._\n\n")
+                        f"## Terms most frequent in this prompt's labelled fields\n"
+                        + (f"_WITHHELD: the labelled fields hold no word this engine can count — it counts "
+                           f"Latin-script words only, so text in another script yields no list. Nothing "
+                           f"was counted in its place._\n\n" if _has_fields else
+                           f"_WITHHELD: the prompt carries no labelled field for this engine to count, so any "
+                           f"list here would be counted over the platform's own prompt._\n\n"))
             body = (
                 f"{lead}## Understanding\n{_understanding}"
                 # W489 (sweep S4.6, C3) — "Key factors" named an analysis nobody performed. The bullets

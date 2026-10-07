@@ -99,6 +99,27 @@ def _repo_slug(s: str) -> str:
     return out.strip("-")[:40] or "vsb"
 
 
+def _owner_written(vsb: dict) -> dict:
+    """W615 (FU-486, FU-488, M1 v8 R2.6 R3.1) — the mission / vision / strategy the OWNER wrote in this entity's
+    business plan, and nothing else. Three surfaces (the repo's BUSINESS_PLAN.md, the web and phone apps' plan
+    tab, the Board Pack's Constitutional layer) printed the founder's problem statement under "Vision" and
+    "Deliver: <problem>" under "Mission", and none read the plan the Owner edits. Establishment seeds a
+    templated vision ("A self-running … VSB IDBO"), so only an OWNER-EDITED field stands as the entity's own.
+    Returns {field: text}, plus `_unreadable` when the plan could not be read whole."""
+    out: dict = {}
+    try:
+        from agentic_core.api.business_plan import _load as _bp_load615
+        plan = _bp_load615(vsb.get("business_plan_scope") or vsb.get("vsb_id")) or {}
+    except Exception as exc:
+        return {"_unreadable": f"{type(exc).__name__}: {exc}"}
+    edits = plan.get("owner_edits") or {}
+    for field in ("mission", "vision", "strategy"):
+        text = str(plan.get(field) or "").strip()
+        if text and edits.get(field):
+            out[field] = text
+    return out
+
+
 def _build_repo_files(vsb: dict) -> dict:
     """Build the bespoke repo file-set (path -> content) from REAL VSB entity data."""
     name = vsb.get("name") or vsb.get("vsb_id")
@@ -122,7 +143,7 @@ def _build_repo_files(vsb: dict) -> dict:
         "document-control seal are recorded in `compliance/QUALITY.md`.\n\n"
         "## Structure\n"
         "- `IDENTITY.md` · `genome.json` — genome / identity\n"
-        "- `BUSINESS_PLAN.md` — Executive Summary · Concept · Vision · Mission · Strategy\n"
+        "- `BUSINESS_PLAN.md` — " + "{BP_SECTIONS}" + "\n"
         "- `ORGANISATION.md` — Chief → Board → AI CEO → C-Suite → CoE → Build-to-Order\n"
         "- `resources/cascades.json` — native AI-swarm cascades (reconfigurable, re-runnable)\n"
         "- `compliance/QUALITY.md` — live compliance + quality record (see `manifest.json`)\n"
@@ -222,10 +243,21 @@ def _build_repo_files(vsb: dict) -> dict:
     f["genome.json"] = json.dumps({"vsb_id": vsb.get("vsb_id"), "name": name, "domain": domain,
                                    "realm": realm, "generation": vsb.get("generation"),
                                    "genome_spec": vsb.get("genome_spec")}, indent=2)
+    #  W615 (FU-486) — Vision, Mission and Strategy appear only when the Owner wrote them; the founder's problem
+    #  statement is headed as what it is. The README's list of sections is then READ FROM THIS FILE, so the two
+    #  cannot disagree (it promised Mission and Strategy sections this file never had).
+    _ow = _owner_written(vsb)
     f["BUSINESS_PLAN.md"] = (f"# Business Plan — {name}\n\n## Executive Summary\n{(concept or challenge)[:1200]}\n\n"
-                             f"## Concept\n{concept[:2000]}\n\n## Vision\n{challenge}\n\n"
-                             f"## Design & Development\n{str(design)[:2000]}\n\n"
+                             f"## Concept\n{concept[:2000]}\n\n"
+                             + "".join(f"## {k.title()}\n{_ow[k][:2000]}\n\n" for k in ("vision", "mission", "strategy") if _ow.get(k))
+                             + ("" if _ow.get("vision") else
+                                f"## Founder's Problem Statement\n{challenge}\n\n_No vision has been written by "
+                                f"the Owner; this is the problem the entity was founded on, not a vision._\n\n")
+                             + f"## Design & Development\n{str(design)[:2000]}\n\n"
                              f"## Commercialisation\n{str(commercial)[:2000]}\n")
+    import re as _re615
+    f["README.md"] = f["README.md"].replace("{BP_SECTIONS}", " · ".join(
+        _re615.findall(r"(?m)^## (.+)$", f["BUSINESS_PLAN.md"])))
     f["ORGANISATION.md"] = (f"# Organisation — {name}\n\nChief → Board → AI CEO → C-Suite → Centres of "
                             f"Excellence → Build-to-Order.\n\n## AI CEO\n```json\n"
                             f"{json.dumps(vsb.get('ceo_specification') or {}, indent=2)[:2000]}\n```\n\n"
@@ -929,7 +961,7 @@ _WEBAPP_APP_JS = r"""(async function () {
   const title = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   function section(id) {
     if (id === 'overview') return '<h2>' + esc(d.name) + '</h2><p class="muted">' + esc(d.domain) + ' · ' + esc(d.realm || '') + '</p><p>' + esc(d.challenge) + '</p><p>' + esc(d.concept || '') + '</p>';
-    if (id === 'plan') { const bp = d.business_plan || {}; return '<h2>Business Plan</h2>' + ['executive_summary', 'concept', 'vision', 'mission', 'strategy'].map((k) => bp[k] ? '<h3>' + title(k) + '</h3><p>' + esc(bp[k]) + '</p>' : '').join(''); }
+    if (id === 'plan') { const bp = d.business_plan || {}; return '<h2>Business Plan</h2>' + ['executive_summary', 'concept', 'problem_statement', 'vision', 'mission', 'strategy'].map((k) => bp[k] ? '<h3>' + title(k) + '</h3><p>' + esc(bp[k]) + '</p>' : '').join(''); }
     if (id === 'org') return '<h2>Organisation</h2><p>Chief → Board → AI CEO → C-Suite → Centres of Excellence → Build-to-Order</p><h3>AI CEO</h3><pre>' + esc(JSON.stringify((d.organisation || {}).ceo || {}, null, 2)) + '</pre>';
     if (id === 'resources') { const list = (d.resources || []).filter((r) => String(r).toLowerCase().includes(filter.toLowerCase())); return '<h2>Resources</h2><input id="rfilter" placeholder="Filter resources…" value="' + esc(filter) + '"><ul>' + (list.map((r) => '<li>' + esc(r) + '</li>').join('') || '<li class="muted">No resources.</li>') + '</ul>'; }
     return '';
@@ -1002,8 +1034,10 @@ def _entity_appdata(vsb: dict) -> dict:
     return {
         "name": name, "domain": domain, "realm": realm, "challenge": challenge,
         "concept": concept[:1500],
+        #  W615 (FU-486) — vision / mission only when the Owner wrote them; the problem statement is named as one
         "business_plan": {"executive_summary": (concept or challenge)[:600], "concept": concept[:800],
-                          "vision": challenge, "mission": f"Deliver: {challenge}"[:300]},
+                          "problem_statement": challenge,
+                          **{k: _public_prose(v)[:300] for k, v in _owner_written(vsb).items() if not k.startswith("_")}},
         "organisation": {"ceo": vsb.get("ceo_specification") or {}, "board": vsb.get("board") or {}},
         "resources": roles[:24],
     }
@@ -1360,12 +1394,21 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     if isinstance(_own_values, (list, tuple)):
         _own_values = " · ".join(str(v).strip() for v in _own_values if str(v).strip()) or None
     _own_values = str(_own_values).strip() if _own_values else None
-    constitutional = {"mission": f"Deliver: {challenge}"[:280], "vision": challenge,
+    #  W615 (FU-488) — the Owner's recorded mission and vision come first; the derivation is the named fallback
+    _ow615 = _owner_written(vsb)
+    _why615 = (f" (the business plan could not be read: {_ow615['_unreadable']})" if _ow615.get("_unreadable")
+               else "; the business plan holds no Owner-written {}")
+    constitutional = {"mission": (_ow615.get("mission") or f"Deliver: {challenge}")[:280],
+                      "vision": (_ow615.get("vision") or challenge)[:280],
                       "values": _own_values if _own_values else
                                 "NOT DECLARED - this entity has declared no values of its own",
                       "values_declared": bool(_own_values),
-                      "mission_source": "derived from the founder's problem statement - not authored",
-                      "vision_source": "the founder's problem statement, verbatim - not authored",
+                      "mission_source": ("written by the Owner in the business plan" if _ow615.get("mission") else
+                                         "derived from the founder's problem statement - not authored"
+                                         + _why615.replace("{}", "mission")),
+                      "vision_source": ("written by the Owner in the business plan" if _ow615.get("vision") else
+                                        "the founder's problem statement, verbatim - not authored"
+                                        + _why615.replace("{}", "vision")),
                       "values_source": (("declared by this entity itself" if _own_values else
                                          "this entity has declared no values of its own, and the "
                                          "platform's standing values line is NOT shown in their place - "
@@ -2739,11 +2782,21 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
             from agentic_core.economy.living_vsbs import _latest_screen
             _scr = _latest_screen(vsb_id)
             if _scr and _scr not in ("pass", "unreadable") and len(proposals) < 3:   # W472 — 'unreadable' is no posture
+                #  W615 (FU-481, M1 v8 R2.1) — THE PROPOSAL SAYS WHAT APPLYING IT DOES. It promised to "remediate
+                #  the §11 posture across the plan and registration text" with the impact "the screen returns to
+                #  pass", and applying it sets ONE TRAIT STRING: no plan or registration text is edited and no
+                #  screen is re-run. Nor can the promised impact happen for this subject — every §11 framework is a
+                #  keyword screen, which can refuse a subject but never clear one, so "pass" is unreachable. The
+                #  claim is removed rather than built (ACCEPT 4): the trait records the Owner's intent to remediate,
+                #  and the text says that is all it is.
                 proposals.append({
                     "trait": "compliance_posture",
-                    "proposed_change": (f"remediate the §11 screen posture (currently '{_scr}') "
-                                        "across the entity's plan and registration text"),
-                    "expected_impact": "the screen returns to pass; distributions are never held",
+                    "proposed_change": (f"record the intent to remediate the §11 screen posture (currently "
+                                        f"'{_scr}'). Applying this sets this trait only: the plan and "
+                                        "registration text are NOT edited and the screen is NOT re-run"),
+                    "expected_impact": ("none measurable from applying it: the screen changes only when the "
+                                        "entity's text is edited and screened again, and a keyword screen can "
+                                        "refuse a subject but not clear it, so it cannot return 'pass' here"),
                     "basis": "latest §11 compliance screen (evidence-based, owned)"})
         except Exception:
             pass

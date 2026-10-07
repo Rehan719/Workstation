@@ -460,6 +460,8 @@ async def cascade_orchestration(req: CascadeRequest,
                       f"{str(ident.get('last_appraisal', ''))[:220]}")
         return dev_txt + id_txt
 
+    _served_by_agent: dict = {}
+
     async def _q(prompt: str, agent: str) -> str:
         _qt0 = time.time()
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what
@@ -471,6 +473,7 @@ async def cascade_orchestration(req: CascadeRequest,
         sb = res.get("served_by", "native")
         provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
         provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+        _served_by_agent[agent] = sb      # W615 — who served EACH tier, so a floor tier's text is not filed as content
         # §5 (W268) — every tier call accrues a REAL operational-excellence row, so appraisals (and
         # the learning loop) judge against measured outcomes, not just same-run prose. Best-effort.
         try:
@@ -755,10 +758,22 @@ async def cascade_orchestration(req: CascadeRequest,
             if _nm and not _nm.lower().startswith(("one-line", "type (", "primary", "be specific", "list ")):
                 catalogue_items.append(_nm)
         catalogue_items = list(dict.fromkeys(catalogue_items))[:8]
+        #  W615 (FU-490, M1 v8 R3.3) — A FLOOR-SERVED CATALOGUE PROPOSES NOTHING. The bullet regex ran over
+        #  whatever served the tier, so the floor's generic "Next steps" were filed as proposed offerings a
+        #  curator could price and publish. The floor composes headings over the request; it does not design
+        #  an offering. The raw text is still kept, and the record says why it carries no items.
+        from agentic_core.vbs.quality import floor_served as _floor615
+        _cat_floor = _floor615(_served_by_agent.get("cascade_catalogue"))
+        if _cat_floor:
+            catalogue_items = []
         _cat_store = data_path("proposed_catalogue.json")
         _cat = read_json_strict(_cat_store, list, expect=list)      # W472 (FU-053) — refused, never replaced
         _cat.append({"run_id": run_id, "mission": req.mission[:160], "domain": req.domain,
-                     "status": "proposed", "items": catalogue_items,
+                     "status": ("not_proposed_floor_served" if _cat_floor else "proposed"),
+                     "items": catalogue_items,
+                     "items_basis": (("the deterministic floor served the catalogue tier, so its bullets are "
+                                      "generic steps and are NOT filed as offerings") if _cat_floor else
+                                     "item names parsed from the served model's catalogue"),
                      "raw": products_services_catalogue[:2000],
                      "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
         atomic_write_json(_cat_store, _cat[-50:])
@@ -879,8 +894,14 @@ async def cascade_orchestration(req: CascadeRequest,
         for _k, _text in appraisals.items():
             _parts = _re.split(r"##\s*Development Action[^\n]*\n?", str(_text), maxsplit=1, flags=_re.I)
             _action = (_parts[1] if len(_parts) > 1 else str(_text)).strip()[:600]
-            if _action:
-                _prior_dev[_k] = {"action": _action, "run_id": run_id,
+            #  W615 (FU-489, M1 v8 R3.2) — a floor-served appraisal's "Development Action" is the floor's own
+            #  boilerplate, identical on every tier, and storing it made the Board count "6 tier edges under
+            #  continual improvement". It is not stored as a development action; who served it travels with
+            #  every stored one, so the Board can count only what a model wrote.
+            from agentic_core.vbs.quality import floor_served as _floor615
+            _dev_sb = _served_by_agent.get(f"appraise_{_k}")
+            if _action and not _floor615(_dev_sb):
+                _prior_dev[_k] = {"action": _action, "run_id": run_id, "served_by": _dev_sb,
                                   "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
             # §5 (W281) — accumulate the tier's persistent identity from this run's REAL appraisal
             _prev_id = _tier_ident.get(_k) or {}

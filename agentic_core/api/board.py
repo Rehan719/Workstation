@@ -891,7 +891,15 @@ def _director_grounding(did: str, scope: str = "workstation") -> str:
             from agentic_core.config import data_path, read_json_reported
             dev, _why = read_json_reported(data_path("tier_development.json"), {})
             dev = dev if isinstance(dev, dict) else {}
-            return (f"active Development Actions: {len(dev)} tier edges under continual improvement"
+            #  W615 (FU-489) — only a model-written action counts as improvement. Rows stored before W615 carry
+            #  no served_by, and a floor-written one is boilerplate; both are named and not counted.
+            from agentic_core.vbs.quality import floor_served as _fl615
+            _model = [k for k, v in dev.items() if isinstance(v, dict) and v.get("served_by")
+                      and not _fl615(v.get("served_by"))]
+            _other = len(dev) - len(_model)
+            return (f"Development Actions written by a served model: {len(_model)} tier edge(s)"
+                    + (f"; {_other} other stored action(s) are floor-written or of unrecorded provenance and "
+                       f"are NOT counted as improvement" if _other else "")
                     + (f" (INCOMPLETE — the development record could not be read whole: {_why}; the "
                        f"true number is at least this)" if _why else ""))
     except Exception as exc:
