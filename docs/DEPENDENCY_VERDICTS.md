@@ -53,17 +53,20 @@ lock, and `requirements.txt` is re-exported from it with the repository's toolin
 its own commit, with the full suite and CI run against it. If the lock cannot be regenerated, nothing is removed
 and the reason is recorded here.
 
-## Removal, W628b
+## W628b reverted — the removal failed CI's fresh install (2026-10-07)
 
-Removed from `pyproject.toml`: the 19 REMOVABLE rows above. `poetry lock` regenerated the lock and
-`poetry export` re-exported `requirements.txt`, which went from about 293 to 187 lines.
+CI on 978a0af, a fresh install from the new `requirements.txt`, went red on two tests. That is the case this
+separate commit existed to catch, so it was reverted alone. The verdict table above stands, with one
+correction: **firebase-admin is NOT archive-only**.
 
-**What re-locking found.** Eight packages that live code imports or loads had never been declared. They were
-present only as transitive dependencies of removed packages, or because of a hand edit to `requirements.txt`.
-Each is now declared in `pyproject.toml` at its existing pin:
+1. `test_w575_p24_the_scatter_closes_on_each_row_it_reproduced` raised `ModuleNotFoundError: firebase_admin`.
+   Live code reaches it by a path the import scan did not see: a dynamic import, or archived code that the
+   test loads.
+2. `test_w506_p27_the_platform_boots_with_torch_absent` failed inside scipy. The test sets
+   `sys.modules['torch'] = None`, and scipy's array-API helper then reads `.Tensor` off `None`. With the old set
+   installed, the boot never reached that scipy path. One of the removed packages was altering the import route,
+   and which one is not yet established.
 
-- `fpdf2`, `openpyxl`, `python-docx`, `python-pptx` and `pypdf`: the deliverable exports and document extraction
-- `passlib` and `python-jose`: auth
-- `python-multipart`: FastAPI form logins
-
-Removing first and declaring afterwards would have broken login and every export.
+**Next attempt, for the local session.** Remove in two halves, and run the full suite on a FRESH venv built only
+from the new `requirements.txt` before pushing. Hold firebase-admin back until whatever reaches it is found. Then
+bisect the torch-absent boot failure across the remaining removals.
