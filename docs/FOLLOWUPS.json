@@ -4930,11 +4930,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20",
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
       "tier": 3
     },
     {
@@ -5239,11 +5239,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20",
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
       "tier": 2
     },
     {
@@ -5369,11 +5369,11 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20",
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
       "tier": 2
     },
     {
@@ -7202,11 +7202,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20"
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
     },
     {
       "id": "FU-399",
@@ -7220,11 +7220,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20"
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
     },
     {
       "id": "FU-400",
@@ -7583,11 +7583,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20",
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
       "tier": 3
     },
     {
@@ -7602,12 +7602,12 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
       "tier": 2,
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20"
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
     },
     {
       "id": "FU-418",
@@ -8515,11 +8515,11 @@
       ],
       "severity": "high",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20",
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
       "tier": 1
     },
     {
@@ -8836,11 +8836,11 @@
       ],
       "severity": "medium",
       "owner_gated": false,
-      "slot": "P2.22",
+      "slot": "P2.24",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20"
+      "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22"
     },
     {
       "id": "FU-475",
@@ -9621,11 +9621,604 @@
       "closed_by": null,
       "note": "",
       "tier": 3
+    },
+    {
+      "id": "FU-512",
+      "title": "Sponsor-a-Student and Zakat routes post to any entity and tell the donor it has no owner share, when the entity actually pays its owner 20%",
+      "why": "MILESTONE M1 ledger v9 (R1.0), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: A.8: QEP is 100% donation and waqf-backed, with no owner profit, Zakat-eligible funds and Sponsor-a-Student. §11 forbids fabricating claims. OBSERVED: I ran POST /api/v1/qep/contribute/sponsor-a-student {vsb_id:'vsb-e8e6348cf7' (Varroa Watch, domain science, entity_type waqf_ltd_hybrid), amount_wst:0.01}. It returned recorded:true with sponsorship_basis '...fund the entity itself, whose waterfall directs the largest shares to learner projects and charity, with no owner share at all' and distribution_basis '(A.8: owner 0%, surplus capped at 5% with reinvestment)'. GET /qep/contribute/statement/vsb-e8e6348cf7 then returned waterfall {owner:0.2, self_investment:0.3, capital_fund:0.2, user_projects:0.15, charity:0.15}, template 'Waqf-Ltd Hybrid'. _contribution_entity() checks only that the entity exists, never that it is a qep_waqf_trust. The Zakat route has the same gap, and its zakat_basis says 'A.8 DESIGNATED this entity's charity funds Zakat-eligible' about any entity at all. EVIDENCE: agentic_core/religious_domain/api.py:1039-1075 (_contribution_entity has no entity_type check), :1117-1119 (distribution_basis hardcodes 'owner 0%'), :1133-1137 (zakat_basis), :1152-1157 (sponsorship_basis 'no owner share at all'). agentic_core/economy/entities.py:95-98 (waqf_ltd_hybrid uses _DEFAULT, owner 0.20). Executed live; the probe left a 0.01 WST virtual credit with donor_ref 'R1-audit-probe' on vsb-e8e6348cf7.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/economy/entities.py",
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R1.0 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-513",
+      "title": "Tafsir quietly replaces a surah that does not exist with a real one (200 becomes 114, 0 becomes 1) and clips the ayah range without a note",
+      "why": "MILESTONE M2 ledger v9 (R1.1), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §11 rule 2: 'nonexistent ayaat are refused against the real 114-surah ayah-count table; a truncated range is disclosed as the covered range, never claimed whole.' A.9.2 says the same. OBSERVED: POST /api/v1/religion/quran-tafsir {surah:200, ayah_start:1} returned HTTP 200, reference 'Surah 114:1', no note. {surah:0} returned 'Surah 1:1'. {surah:2, ayah_start:-5} returned 'Surah 2:1'. {surah:1, ayah_start:3, ayah_end:99} returned 'Surah 1:3-7' with range_note null (a range_note appears only for the 10-ayah cap). By contrast /qep/ayah/115/1 refuses with 'Surah number must be 1-114', /qep/ayah/1/8 refuses, /qep/hifz/schedule refuses [1,9] for surah 1, and /qep/hifz/review refuses '1:8'. Tafsir is the one sacred-text route that clamps instead of refusing. EVIDENCE: agentic_core/api/religion.py:233-235 (surah = max(1, min(req.surah,114)); ayah_start = max(1, …)), :259 (ayah_end silently min'd to the surah's count). Only ayah_start beyond the count is refused (:254-258). The UI field is type 'text' (apps/workstation-superapp/src/pages/domains/ReligionHub.tsx:190), so a user can enter any value.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/religion.py",
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R1.1 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-514",
+      "title": "Compliance verdicts say '(engine-backed)' right next to 'no engine covers this area' and 'nothing here read this subject'",
+      "why": "MILESTONE M2 ledger v9 (R1.2), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §11: live compliance engines (Halal/Sharia · UK-Legal · Regulatory · EHS · Ethical · Constitutional) integrated into every workflow, honestly labelled. OBSERVED: Every /api/v1/compliance/check and every deliverable record shows uk_legal 'review', coverage 'none', reason 'no engine covers this area — keyword screen + employment-statute vocabulary matched nothing … (UK engine-backed · audit …)'. ethical shows 'not_assessed', coverage none, '…value: not_assessed (engine-backed)'. sharia_halal shows coverage none, 'no engine covers this area … (engine-backed)'. ComplianceChecker.tsx renders the chip 'nothing here read this subject' and that reason on the same row. The suffix means only that the engine's code ran without raising an error, not that it assessed anything. EVIDENCE: agentic_core/api/compliance.py:397, :469, :513 (suffix appended whenever the engine call does not raise, whatever the coverage). apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx:138-140. Reproduced on four subjects, including 'A bakery in Leeds'.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/compliance.py",
+        "apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R1.2 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-515",
+      "title": "Exported deliverables say nothing about compliance not being established or about the 0-of-16 quality bar unless the verdict was FAIL",
+      "why": "MILESTONE M2 ledger v9 (R1.3), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §11 compliance is woven into every workflow and §10 says every deliverable is verified, tested and validated. The UI tooltip says 'every export carries the verdict on page one'. OBSERVED: For deliv-26f61394 (compliance overall 'review', all five areas in coverage_gaps), GET /export?format=md, html and svg each carry 'structured floor — not model analysis' and the content, with no compliance line and no §10 line. _compliance_stamp() returns None unless overall == 'fail'. EVIDENCE: agentic_core/api/deliverables.py:529-541 (_compliance_stamp only on 'fail'), :548-552 (subtitle). apps/workstation-superapp/src/pages/Deliverables.tsx:217 (tooltip 'every export carries the verdict on page one', shown only on FAIL rows).",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/deliverables.py",
+        "apps/workstation-superapp/src/pages/Deliverables.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R1.3 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-516",
+      "title": "The QMS reports 'non-conformance 0%' and a green '0 failures' when no delivery gate has ever run, and floor deliveries never run one",
+      "why": "MILESTONE M2 ledger v9 (R1.4), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §10: verified · tested · validated; a living QMS with a defect loop. OBSERVED: GET /api/v1/vbs/qms/defects returned gates_run 0, gate_failures 0, non_conformance_rate 0.0, after I had produced two deliverables, a Genesis journey and five religion tool runs. Only what-if gates (4) were recorded, and those are excluded from the rate. Every deliverable record embeds qms_non_conformance_rate 0.0. EVIDENCE: apps/workstation-superapp/src/components/VBSSystemsPanel.tsx:183-196 (green 'failures' chip when 0; 'non-conformance N% (platform-wide)'). The deliverable payload has qms_non_conformance_rate 0.0 with qms_defects.gates_run 0.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "apps/workstation-superapp/src/components/VBSSystemsPanel.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R1.4 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-517",
+      "title": "The Genesis page tells every user it composes 'six cognitive engines, MJM, the design and business engines', which the backend says it does not do, and it says the plan was 'seeded from this journey' when code templates wrote it",
+      "why": "MILESTONE M1 ledger v9 (R2.0), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §4: one continuous workflow of 'cascade pipeline trees of AI agent swarms, models, resources and tools'. §15.9: the Chief-owned Business Plan opens with Executive Summary · Concept · Vision, framed by the Chief. OBSERVED: GET /api/v1/genesis/status says 'cognitive lenses (one prompt headed by 6 …)' and 'MJM (one prompt …)'. The comment in genesis.py:192-193 (W479) says the journey 'never calls the DDPIE or BDP pipelines'. The same page's Phase 1 card is titled 'Cognitive lenses (one prompt, 6 lenses)', which contradicts its own header. For vsb-e8e6348cf7 the business plan's provenance reads field_sources = establish_template for executive_summary, concept, vision, mission and strategy. Its opening_written_by reads 'code templates filled from the establish request — not the Chief, and not a model'. Its concept is 'content pending the owned model'. Nothing from the journey's stages is in the plan. EVIDENCE: apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx:553 and :1107; agentic_core/api/genesis.py:186-201 and :1130; curl /api/v1/business-plan?scope=vsb-e8e6348cf7 → provenance.templated_fields",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R2.0 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-518",
+      "title": "The README shipped in every VSB repository calls the enterprise 'Living, intelligently autonomous' while the entity's own record says nothing operates it",
+      "why": "MILESTONE M1 ledger v9 (R2.1), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §13: the repo is a 'living, intelligently autonomous enterprise'. §13 W446: the honest scope is that the platform generates and version-controls the surfaces but does not host or run them, and a floor-served body ships as an honest pending state. OBSERVED: README.md of vsb-e8e6348cf7 has the tagline above, with 'Status: body pending' and 'no stage reached' two lines below it. The web/*.html footers read 'Living VSB IDBO enterprise · generated in-house on Workstation's own AI fabric'. GET /api/v1/economy/living-vsbs → autonomous_cycles false, 'OFF — the heartbeat's Self-run lever is off'. The GenesisJourney 'Operate' step honestly reads 'Not operating', so the page and the shipped file disagree. EVIDENCE: agentic_core/api/vsb.py:132 (README tagline), :690 (site footer), :2213 and genesis.py:1130 (templated 'self-running' vision); repo file README.md via GET /api/v1/vsb/vsb-e8e6348cf7/repo/file?path=README.md",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R2.1 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-519",
+      "title": "Attached documents and the whole problem description never reach any lifecycle stage: on the floor every stage is composed from the first line of the problem only",
+      "why": "MILESTONE M2 ledger v9 (R2.2), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §4.1 Describe is multimodal: text, voice, image and uploaded data (research reports, reviews, data, media, sites, apps, models). §3A: users bring their own data to Genesis Describe. OBSERVED: Executed POST /api/v1/genesis/journey with the problem 'Community allotment co-operative plan.' followed by an attached survey block (212 households, Leeds, rainwater harvesting, greywater, hosepipe bans). Across concept, research, design, operations and commercialisation the counts were rainwater 0, greywater 0, hosepipe 0, leeds 0, 212 0. 'allotment', from the first line only, appeared 11-18 times per stage. Two causes: genesis.py:297-299 truncates the problem to 400 characters in the prefix shared by every stage, and the floor takes the first line after the 'Problem:' label. The Offering-1→2 bridge ('PRIOR DOMAIN WORK … build on this', GenesisJourney.tsx:185-198) is lost the same way. AttachDocument accepts text and PDF only (AttachDocument.tsx:118), so image and media input are absent. Voice dictation exists. EVIDENCE: agentic_core/api/genesis.py:297-299; apps/workstation-superapp/src/components/AttachDocument.tsx:118; GenesisJourney.tsx:661-664 and :770-776; live journey output term counts listed above",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/components/AttachDocument.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R2.2 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-520",
+      "title": "'Run the repo's cascade' runs 23 floor calls about a mission sentence rather than the founder's problem, keeps none of their output, and reports a commit",
+      "why": "MILESTONE M2 ledger v9 (R2.3), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §4.10 / §13: the repo's AI-swarm cascades are re-runnable and continue to research, build, operate, improve and evolve under the founder's intent. OBSERVED: POST /api/v1/vsb/vsb-e8e6348cf7/repo/cascade → served_by {native: 23}. The run file written into the repo, resources/runs/<id>.json, holds run_id, mission, stored_config, quality, plan_binding null, fabric_requisitions (two status_reads), served_by and ran_at. It holds no output from the Chief, CEO, C-Suite, CoE, BTO or BTO-order tiers. Running the same cascade directly (/api/v1/swarm/cascade) shows the CEO tier's subject: 'Structured go-to-market frame for: \"Operate and advance Varroa Watch per its living plan\"', 'Positioning wedge from living plan'. It contains zero terms from the beekeeper's problem ('bee' count 0), only the enterprise name. The W434 lesson, that the subject must travel with every stage, is not applied on this run-forever leg. EVIDENCE: agentic_core/api/vsb.py:2690-2711 (mission default, summary discards level_* outputs); apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx:1413-1414; git show --stat HEAD in the vsb repo shows only resources/runs/2e3d8d20a9.json",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R2.3 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-521",
+      "title": "The streamed establish, which the Genesis 'Establish VSB IDBO Entity' button uses, records a first economy cycle that ran as an error and drops it from the 'every step really happened' birth record",
+      "why": "MILESTONE M2 ledger v9 (R2.4), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §4.8: establishment instantiates the living VSB. The W309 birth is 'alive' and watchable. OBSERVED: POST /api/v1/genesis/establish/stream for 'Bradford Table2' gave birth_vitals.first_cycle {error: \"'str' object has no attribute 'get'\"} and no 'First Economy Cycle' event. The same input through blocking POST /genesis/establish gave first_cycle {outcome: 'ran', governance: 'passed'}. /economy/living-vsbs lists vsb-b2c5b21b19 with operating_cycles 1. Cause: genesis.py:1625 calls (_fc.get(\"governance\") or {}).get(\"status\"), and governance is the string 'passed'. The exception path then overwrites the real cycle result. EVIDENCE: agentic_core/api/genesis.py:1615-1635; live responses for vsb-c2998525c0 and vsb-b2c5b21b19 (stream) vs vsb-e43ab6ac15 and vsb-e0030410a7 (blocking)",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/genesis.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R2.4 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-522",
+      "title": "The §13 repository is real, version-controlled and downloadable, but its Website, Web app and Phone app are three unconnected folders labelled 'integrated'",
+      "why": "MILESTONE M2 ledger v9 (R2.5), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §13: the canonical output is a repository shipped as a coherent, version-controlled whole that integrates a Website, a Web app and a Phone app as the entity's public and operational surfaces. OBSERVED: DELIVERED parts, verified by execution: 27 real files. git history: website → webapp → mobile → repo → ship commits, 12 after evolve and cascade. GET /repo/zip returns a 30 KB zip with all 27 files. /repo/file serves declared files and refuses '../../../etc/passwd' and '.git/config' with 404 (manifest allow-list). The PWA has a manifest.webmanifest and a caching service worker. A pending Mode-3 gate refuses ship, website and repo with 409 naming the gate. Shortfall: grep of href across web/*.html, webapp/index.html and mobile/index.html finds only index/about/solution/styles/icon/manifest, with no cross-surface link. Ship manifest says website file_count 3, but web/ holds 5 files. EVIDENCE: GET /api/v1/vsb/vsb-e8e6348cf7/repo, /repo/zip, /repo/file, /repo/ship; webapp/data.json template_note; GenesisJourney.tsx:1151",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R2.5 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-523",
+      "title": "The Board Pack's narrative contradicts its own layers, and the pack shows two different visions",
+      "why": "MILESTONE M1 ledger v9 (R3.0), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §17.3 Board Pack (on-demand): assembled fresh from live data, DCS-registered. §15.6 honesty over polish. OBSERVED: POST /api/v1/vsb/vsb-e8e6348cf7/board-pack (v3) returned layers.constitutional.vision = the founder's problem statement, with vision_source 'the business plan holds no Owner-written vision'. In the same pack, layers.strategic.content says 'vision on record: A self-running waqf_ltd_hybrid VSB IDBO that commercialises this solution beneficently.' That is the establish code template (business-plan provenance.templated_fields includes vision), presented as the vision on record. Both layers get an emerald 'content' chip (layers_present lists all four). The strategic layer is a count of objectives ('0 aim(s) and 4 objective(s)'), not the position, growth and resource posture §17.3 describes. The 'nothing here is an analysis' basis from the refresh record is not carried into the pack's layer basis. EVIDENCE: agentic_core/api/vsb.py:1467-1471 (narrative literal, written before W585 and never updated) vs vsb.py:1421-1433 (values NOT DECLARED) and 1538-1543 (layers from _cadence_latest). Curl output saved from POST board-pack; GET /api/v1/business-plan?scope=vsb-e8e6348cf7 provenance.templated_fields=[executive_summary,vision,mission,strategy,concept]. GenesisJourney.tsx:1269-1279 (emerald chip for holds==='content'), 1329 (narrative render).",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R3.0 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-524",
+      "title": "The Chief's 'Modelled twin' figure is capped at five instructions, ignores scope and owner, and reports a corrupt store as 'no instruction written'",
+      "why": "MILESTONE M1 ledger v9 (R3.1), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §5 / §17.4 Mode 2 (Owner ruling 2026-10-05b): the Chief is a twin built from the Owner's record, or it says plainly that it is a role. OBSERVED: GET /api/v1/board/chief/model went from is_modelled_twin false / 'A ROLE, NOT A MODELLED TWIN' to 'MODELLED TWIN: built from 1 instruction(s)' after one POST /board/chief/instruct, so the role/twin switch works. But founder_model() counts rows from every scope and every owner in board_directives.json, including VSB-scoped instructions. The route takes no user, so with auth on, any user's last five instruction texts are returned as 'the Owner's'. EVIDENCE: agentic_core/api/board.py:204-212 ([-5:] then n_i=len(instructions); no owner or scope filter), board.py:84-90 (_load swallows JSONDecodeError and returns []), board.py:808-810 (rows=_load(); append; _save). GET /board/chief/model before and after instruct.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R3.1 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-525",
+      "title": "'Chief: AI-Generate' never gives the Chief the founder's own description, so a VSB's plan opening would be drafted from Workstation's own vision",
+      "why": "MILESTONE M2 ledger v9 (R3.2), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §5 / §15.9: the Executive Summary / Concept / Vision can be AI-generated in-house by the Chief from the founder's description, then owner-edited. OBSERVED: POST /api/v1/business-plan/generate {scope:'workstation'} returned served_by native, written [], reason 'structured floor — not model analysis; nothing was written to the plan'. That is honest floor handling. The prompt construction ignores the scoped plan's own executive_summary/challenge and grounds only on a fixed Workstation sentence plus the existing strategy. EVIDENCE: agentic_core/api/business_plan.py:592-605 (prompt), BusinessPlan.tsx:71 (body: JSON.stringify({ scope })). PlanOpening.tsx marks templated fields correctly (provenance.opening_written_by).",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R3.2 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-526",
+      "title": "The AI CEO says it 'answers from the record' and chips 'grounded in 1 directive · 1 objective' on an answer that contains neither",
+      "why": "MILESTONE M2 ledger v9 (R3.3), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §5 AI CEO receives the action plan and integrates the living management systems; §15.6 never fabricate. OBSERVED: POST /api/v138/ceo/chat returned served_by native, grounding {directives:1, objectives:1, plan_score:0.3}, grounding_conflicts [], and content with no reference to dir-661d5224 or obj-5032fa74. Also, the thumbs-up/down 'Helpful' buttons store only local state and sit in an opacity-0 group-hover container whose ancestor has no 'group' class, so they never show. EVIDENCE: agentic_core/api/v138/ceo.py:500-537 (grounding facts emitted regardless of whether the server used them; _ungrounded_sections checks only empty-count sections), CEOChat.tsx:13, 292, 305-321.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/v138/ceo.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R3.3 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-527",
+      "title": "Every Board deliberation is stored as 'status: resolved', whatever the directors produced",
+      "why": "MILESTONE M1 ledger v9 (R3.4), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict API_ONLY at TIER 1 after independent refutation (survived). THE VISION CLAIM: §5 Board of specialist Directors receive the strategy and deliver via Action Planning with timelines, resourced tasks and project management. OBSERVED: POST /board/directive {topic:'Capital allocation for the Bradford halal meal-prep cooperative'} engaged dir_finance only. Its live_grounding was 'recent operational rows: 100, success rate 1.0', which is operational telemetry, not capital. The response gave served_by native×2 and status 'resolved'. The Board page then shows these rows under 'Recent Board Deliberations' with no provenance chip; the floor marker is visible only inline in the first 400 characters. No timelines or resourced tasks are produced, and nothing in the UI starts a deliberation. EVIDENCE: agentic_core/api/board.py:930-975 (\"status\": \"resolved\" literal at :970), cognition.py:176-177 (sole internal caller), BoardOfDirectors.tsx:364-386.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R3.4 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-528",
+      "title": "The Board page still says 'no digital-twin model… Mode 2 is planned, P3.4' while the same page labels the Chief a 'Modelled twin'",
+      "why": "MILESTONE M1 ledger v9 (R3.5), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §17.4 Mode 2 scoped to the Owner's own twin node, delivered W587: 'the Chief is a twin built from the Owner's record, or it says plainly that it is a role'. OBSERVED: GET /board/chief/model reports is_modelled_twin true after one instruction. The Chief's standing renders only inside a directive result (line 347); on page load the only standing statement a reader sees is the stale header. EVIDENCE: apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx:161-166, 107-123, 347; SwarmIntelligence.tsx:360; agentic_core/api/swarm.py:365-371.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R3.5 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-529",
+      "title": "Studio /synthesise works out each stage's provenance, never sends it, and saves floor scaffolds as an active VSB with no provenance",
+      "why": "MILESTONE M2 ledger v9 (R4.0), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (corrected). THE VISION CLAIM: §6/§15.6: provenance is honest wherever output reaches a user, including SSE stage events and the durable record; never fabricate; label simulation. OBSERVED: I ran POST /api/v1/studio/synthesise with challenge 'R4 audit probe: community bakery cooperative'. I got 20 SSE events (init, 9×start, 9×complete, done) and none had served_by or is_external. GET /api/v1/studio/vsb/vsb-62de1c4c shows 'ai_provenance' absent and status 'active'. 'bakery' and 'cooperative' appear in 0 of the 9 stored stage bodies. The handler computes _stage_served and _stage_ext (synthesis_studio.py:303-304), right under a comment that says 'an SSE engine carries provenance on EVERY stage event', and then yields an event without them (line 306). The floor-body rule that vsb.py:2397-2410 applies elsewhere ('content pending the owned model') is not applied here either. No frontend file calls /api/v1/studio/synthesise (grep of apps/workstation-superapp/src returns nothing), so it is API-only. Its non-streaming twin run_lab_cascade is reached through the fabric's synthesis_studio resource. EVIDENCE: agentic_core/api/synthesis_studio.py:298-306,333; curl SSE capture; curl /api/v1/studio/vsb/vsb-62de1c4c",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/synthesis_studio.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R4.0 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-530",
+      "title": "The native floor silently drops the user's subject whenever it is labelled 'CHALLENGE:', 'Overall goal:' or left unlabelled, then tells the reader the request had no subject",
+      "why": "MILESTONE M2 ledger v9 (R4.1), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §6: native, owned capability that genuinely serves the request. §15.6: honesty over polish. OBSERVED: _field() in engine.py:107-113 is a case-sensitive regex over a fixed label list. I checked by running it: _subject('CHALLENGE: community bakery cooperative') returns '', _subject('Challenge: community bakery cooperative') returns the text, and the tree node prompt ('Overall goal: …', 'Your task: … Goal: …') returns ''. Running it live: POST /native-ai/tree {goal:'Launch a bakery cooperative in Leeds'} gave a final with no word of the goal in it. Studio's 9 stages use 'CHALLENGE:' and lost the challenge in all 9. POST /native-ai/complete {prompt:'Write a mission statement for a bakery cooperative'} answered 'The request carries no labelled subject'. EVIDENCE: agentic_core/ai/native/engine.py:107-168; agentic_core/ai/native/orchestrator.py:608-614; agentic_core/api/synthesis_studio.py:97; live /native-ai/tree and /native-ai/complete responses",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/ai/native/engine.py",
+        "agentic_core/ai/native/orchestrator.py",
+        "agentic_core/api/synthesis_studio.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R4.1 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-531",
+      "title": "Saved-cascade runs, workflow trees, ensembles and fabric compositions bypass the constitutional pre-gate and response screen that /complete and /swarm apply",
+      "why": "MILESTONE M2 ledger v9 (R4.2), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §6: orchestration integrated with the platform and governed. §11 (by reference): ethics architecturally binding on every action. OBSERVED: native_ai.py:435-447 (/complete) and :462-479 (/swarm) call console_pre_gate and console_post_gate. /tree (:810), /ensemble (:427) and resource_fabric.py run_swarm (:1776) call the orchestrator directly with no gate. The orchestrator has no policy or screen_reason call (grep returns none). I ran POST /api/v1/resources/swarm/run {swarm_id:'swarm-0885f05f'}: the response keys include audit and homeostasis but no governance_checkpoint. EVIDENCE: agentic_core/api/native_ai.py:427-447,462-479,810-816; agentic_core/api/resource_fabric.py:1776-1863; agentic_core/ai/native/orchestrator.py (no gate)",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/ai/native/orchestrator.py",
+        "agentic_core/api/native_ai.py",
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R4.2 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-532",
+      "title": "Every VSB gets the same four-stage delivery swarm, not one synthesised for its solution, and no cascade is ever optimised, yet §6 marks this mandate DELIVERED",
+      "why": "MILESTONE M2 ledger v9 (R4.3), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict DOC_OVERCLAIM at TIER 2 after independent refutation (survived). THE VISION CLAIM: §6: 'The AI Agent Swarm cascade is synthesised, modelled and simulated bespoke to each solution's needs … and bespoke to each founder'; 'Optimised cascades … synthesised, verified, tested and validated'. OBSERVED: GET /api/v1/resources/swarm lists 6 VSB delivery swarms (Varroa Guard, Varroa Watch, Halal Home Cooked ×2, Bradford Table ×2), all with stages [ai-ceo, c-suite, centre-of-excellence, build-to-order] and identical instructions. They are hard-coded in genesis.py:_attach_delivery_swarm, whose docstring says 'OWN bespoke'. No code searches, scores or optimises cascade configurations: grep for optimi* finds only the resource allocator and minimax. The founder twin is honestly disclosed as 'no twin model is trained'. EVIDENCE: agentic_core/api/genesis.py:895-925; curl /api/v1/resources/swarm; apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx:727-741; docs/WORKSTATION_IDBO_WHOLE_VISION.md §6 DELIVERED block",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R4.3 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-533",
+      "title": "The avatar tells the user their saved profile shaped a reply that the floor composed without reading it",
+      "why": "MILESTONE M1 ledger v9 (R5.0), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §9: the experience is dynamically and intelligently personalised to each user's instructions, history and preferences. §15.6: honesty over polish, never fabricate. The W428 explicit profile is the substrate for this. OBSERVED: I wrote a profile through PUT /api/v1/user/profile (about_you 'I am a beekeeper in Yorkshire', goals 'protect my hives from varroa mites'), then sent POST /api/v1/avatar/chat {message:'What should I do this week?'}. The response had served_by 'native', profile_applied true, profile_state 'applied' and profile_basis 'your saved profile was applied'. Its body's term list held only 'what' and 'week': no beekeeper, Yorkshire, hive or varroa terms. The floor did not read the profile. I deleted the profile afterwards to restore the state. EVIDENCE: agentic_core/ai/gateway.py:355-356 prepends _preamble to the prompt. Line 425 then returns 'profile_applied': bool(_preamble) whatever served_by is, and the stream path at line 618 does the same. agentic_core/avatars/api.py:645 passes it through. apps/workstation-superapp/src/hooks/useAvatarSession.ts:262 maps it to profileApplied. components/avatar/ConversationPanel.tsx renders the emerald 'profile: applied — your saved profile shaped this answer' when profileApplied===true. The amber 'not usable by the floor' line renders only when profileApplied===false && servedBy==='native', so it can never show here.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/avatars/api.py",
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R5.0 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-534",
+      "title": "The Genesis journey announces 'Sovereign Journey Complete — The user's own VSB IDBO' when no enterprise was established and all 8 stages were floor term-counts",
+      "why": "MILESTONE M1 ledger v9 (R5.1), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §3A offering 2 / §1: end-to-end Concept → Commercialisation that establishes a living VSB IDBO Enterprise. §15.6: never fabricate. OBSERVED: I ran POST /api/v1/genesis/journey {problem:'Elderly people in Bradford struggle to get halal home-cooked meals delivered', domain:'care', realm:'enterprise', product:'factory'}. It returned in 0.68s with status 'complete', deliverable \"The user's own VSB IDBO — Concept → Commercialisation\", established_vsb null, stages_floor_served 8, stages_verified '0/0', and engines_used [Inkashaf, Samajh, Soch, Aqal, Hoshiyari, Iman, MJM, gaas.v5]. Every stage body is a 'most frequent terms, not findings' frame. EVIDENCE: agentic_core/api/genesis.py:850-855: deliverable is \"The user's own VSB IDBO — Concept → Commercialisation\" whenever the screen did not block, and ' → established living enterprise' is appended only when establishment ran. The base string therefore claims a VSB even with establish=false. status is 'complete' unless blocked. GET /api/v1/genesis/status itself says the lenses are 'one prompt headed by 6'. GenesisJourney.tsx:932-941 renders the 'Sovereign Journey Complete' card with result.deliverable and one badge per engines_used entry.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/genesis.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R5.1 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-535",
+      "title": "The avatar silently grounds 'my enterprise' questions on the user's least-recently-touched VSB, not the latest one",
+      "why": "MILESTONE M2 ledger v9 (R5.2), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §9: an enterprise-aware avatar for multimodal interaction with the AI CEO and the Chief, with guidance and navigation through any platform area. OBSERVED: GET /api/v1/vsb returns 6 entities, most recently modified first (Halal Home Cooked … Varroa Guard Cooperative). The hook takes rows[rows.length-1], which is the oldest (Varroa Guard Cooperative), although its comment says 'most recent owned entity'. With vsb_id given, avatar chat returned grounded_in 'vsb-e43ab6ac15', and its floor term list mixed in that entity's record terms ('halal home-cooked', 'elderly people'). It still could not answer 'what stage is my enterprise at and who sits on its board' from the record it holds, although that answer is deterministic data (has_board: true). EVIDENCE: agentic_core/api/vsb.py:2107 sorts _VSB_STORE by st_mtime with reverse=True. apps/workstation-superapp/src/hooks/useAvatarSession.ts:39-47 sets _groundingVsb = rows[rows.length - 1].vsb_id. A grep for grounded_in/groundedIn under apps/workstation-superapp/src returns nothing, so the UI never shows it.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R5.2 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-536",
+      "title": "Five non-Religion domains' floor output carries disclaimers describing research, guidance and marking that did not happen, and headings like 'Relevant Law' and 'Who to Notify' filled with word counts",
+      "why": "MILESTONE M2 ledger v9 (R5.3), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §3A offering 1: immediate, usable, in-house-AI-mediated working capability in all six domains, with tool sets of comparable scope, under §15.6 honesty. OBSERVED: Executed on the floor: /law/research (deposit question), /education/lesson-plan, /education/feedback, /employment/cv, /employment/salary-negotiation, /care/safeguarding, /care/risk-assess and /science/hypothesis. All return full headed sections ('Relevant Law', 'Conclusion', 'Likely Category', 'Who to Notify', 'Target Range', 'Strengths') whose bodies are term lists ('Exposure on tear.'). Science, Education and Employment responses carry no floor_note or disclaimer key at all. Religion's fatwa, hadith, halal and interfaith tools instead return sections_withheld plus a floor_note saying 'NO research was performed'. There is no global serving-mode banner, and a grep for effective_serving_mode in src finds nothing. DomainsHub promises 'best-in-class capability on demand'. EVIDENCE: agentic_core/api/law.py:194-197 and 243-246 hold static 'AI-generated' disclaimers regardless of served_by. apps/workstation-superapp/src/components/DomainTool.tsx:303 renders the amber badge via lib/api.ts provenanceBadge and :347 renders result.disclaimer. pages/domains/ScienceHub.tsx:63,79,93 hold the pre-run descriptions. lib/toolRegistry.ts was rewritten for Religion (W498) but not for the other five domains.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/law.py",
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R5.3 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-537",
+      "title": "The 4×6×4 grid is not one vocabulary in the product: the Products picker changes nothing, and Projects store domains as 'realm'",
+      "why": "MILESTONE M2 ledger v9 (R5.4), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §17.1: 4 Realms × 6 Domains × 4 Products is canon, not decoration (R4: build the axis). Products are how work runs. OBSERVED: agentic_core/taxonomy.py holds REALMS, DOMAINS and PRODUCTS, mirrored in src/lib/taxonomy.ts. Genesis accepts and records product (I verified that product 'factory' returned product_source 'chosen by the caller'). A grep for req.product across agentic_core finds no reader beyond the record, and every stage of the 'factory' journey was the same floor frame. The domain hubs open projects with realm=science&domain=research, realm=law&domain=policy, realm=care&domain=service and realm=religion&domain=content, none of which are canon. ProjectsHub exports and lists these as Realm/Domain. EVIDENCE: agentic_core/api/genesis.py:153,795-799,1272-1277 only record the product. apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx:688-695 is the picker, with no note that the choice is record-only. pages/domains/{Science,Law,Care,Religion,Education}Hub.tsx pass navigate('/projects?realm=<domain>&domain=<non-canon>'). pages/projects/ProjectsHub.tsx:227,367 render 'Realm: law | Domain: policy'.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/genesis.py",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R5.4 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-538",
+      "title": "The QEP hub is headed 'Advanced AI Flagship • v1.0' while most of A.6's fifteen features are absent and the hub never says so",
+      "why": "MILESTONE M2 ledger v9 (R5.5), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: Appendix A.1/A.6: QEP is the Religion domain's flagship, with fifteen core features across four roles (learner, teacher, parent, admin). OBSERVED: Present: feature 2 narrowed correctly, 3 (real SM-2), 4 (XP plus a leaderboard with its formula), 9 (planned and labelled), 12 (an adaptation registry), 13 (translation refusal) and 15 (analytics reporting measured:false). Also the A.8 donor statement. Absent with no on-hub statement: feature 1's parent and teacher roles (no such role in agentic_core/auth), 6 educator platform, 7 community, 8 video, 11, 14's tiered billing, and 10's guidance companion beyond the generic avatar. Curricula (feature 5) are withheld pending a scholar, which is ruled (A.12.3) and disclosed, and is not counted here. EVIDENCE: pages/domains/QEPReligionHub.tsx:17 holds the header 'Quran Education Platform • Advanced AI Flagship • v1.0', and :19-27 has five tabs only. A grep for parent/teacher roles in agentic_core/auth finds nothing. The /api/v1/qep/* route list in openapi has no class, enrolment, forum or session routes.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R5.5 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-539",
+      "title": "An economy cycle's response says the venture investees were NOT credited, but every one of them was credited",
+      "why": "MILESTONE M1 ledger v9 (R6.0), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §12: the VSB 'reinvests in its own growth and in users', using virtual money that is honestly labelled. The 6-stage waterfall's user_projects stage seeds offspring ventures. OBSERVED: POST /api/v1/economy/cycle {vsb_id:'r6-audit-c', revenue:500} returned venture_investment.funding_state='recorded_unfunded' on all 5 positions (12.1/12.1/12.1/12.1/11.6 WST). It named live entities: vsb-c2998525c0, vsb-e43ab6ac15, vsb-e0030410a7, vsb-b2c5b21b19, vsb-0c43a33798. Right after, GET /economy/ventures/portfolio?vsb_id=r6-audit-c returned funding_state='funded', funded_total_wst=60.0, and last_funding.funded listed all five, with unfunded=[]. The same cycle can be run on an ad-hoc, unregistered id (r6-audit-a, r6-audit-c), so a simulation id credits real living entities while telling the caller it did not. EVIDENCE: agentic_core/economy/ventures.py:158-200. allocate() hard-codes funding_state 'recorded_unfunded' and _UNFUNDED_BASIS on every position and at the top level. The funding arm (ventures.py:424-447) then calls transfers.credit_venture_intake for each live position. _funding_disclosure (ventures.py:509-532) derives 'funded' correctly, but only portfolio() uses it. metabolism.py:352 puts the hard-coded allocate() result into the cycle response.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/economy/ventures.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R6.0 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-540",
+      "title": "The CFO statements book the entity's retained funds and the Owner's unpaid share as expenses, so 'net profit', 'retained earnings' and the balance sheet are misstated",
+      "why": "MILESTONE M1 ledger v9 (R6.1), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation (survived). THE VISION CLAIM: §12: 'double-entry books with period close and CFO statements', and 'pays the Owner an adjustable profit share'. OBSERVED: Cycle r6-audit-a: revenue 1000, costs 100, reserves 200, distributable 700. Transfer of 50 out, payout of 40 to the Owner, then close-period. P&L: distribution_owner 140, distribution_self_investment 210, distribution_capital_fund 140, user_projects 105, charity 105 and transfer_out 50 are all listed as EXPENSES, giving net_profit_wst 150. Balance sheet: assets {reserve_fund:150}, liabilities {}, balanced:true. owner-payments: accrued 140, paid 40, balance_wst 100. The 40 payout posted nothing to the double-entry books. The cycle response itself reported distributable_profit 700 for the same period. EVIDENCE: agentic_core/economy/ledger.py:296-311. CHART has no liability account at all, and every distribution_* is typed 'expense'. _COMPAT_POSTING (ledger.py:315-324) posts each pot as Dr distribution_* / Cr cash, so an unpaid Owner accrual is booked as cash already paid. owner_payments.payout (owner_payments.py:245-268) writes only to its own store. The UI string is at apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx:258 and :700-705.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/economy/ledger.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.24",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R6.1 is tier 1: P2.24 carries the v9 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-541",
+      "title": "The KPI release gate refuses one listing route, while the same entity lists a priced product through another route and ships with no KPI check",
+      "why": "MILESTONE M2 ledger v9 (R6.2), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §17.5 invariant 10: 'KPI gate before customer delivery'. OBSERVED: POST /api/v1/marketplace/listings/from-entity/vsb-62de1c4c returned 409 kpi_gate ('3 of 3 objective(s) carry no KPI'). POST /api/v1/marketplace/listings {name:'R6 audit KPI-gate probe', price_wst:25, vsb_id:'vsb-62de1c4c'} returned status 'active', priced:true. The probe listing id 468dc44a841e is left in the store. kpi_release_gate has exactly one caller in the tree. EVIDENCE: agentic_core/api/business_plan.py:201-245 (gate, including the 'before listing or exporting' text). agentic_core/api/marketplace.py:452 is the only call site. create_listing at marketplace.py:371-418 has no gate. vsb.py:2552 ship_vsb_repo has no KPI reference.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/business_plan.py",
+        "agentic_core/api/marketplace.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R6.2 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-542",
+      "title": "The organism's immune quarantine latches on and holds self-healing indefinitely, while every organism surface reads NOMINAL",
+      "why": "MILESTONE M2 ledger v9 (R6.3), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §8: the organism 'defends itself, learns and improves', is 'ever self-managing ... healing', with homeostasis loops (immune↔nervous↔metabolic). OBSERVED: GET /heartbeat/status: last_immune_defence {at 06:28:24Z, threat CRITICAL, status implemented, reconfiguration organism.immune_quarantine=true, reversible, revert_with ...}. GET /organism/config 18 minutes later: organism.immune_quarantine true. GET /organism/status: threat NOMINAL, errors_in_window 0. POST /heartbeat/beat returned actions [pulse, homeostasis, transformation_tick] and steps_failed {}. It mentions neither the hold nor the respond_to_energy why_not. EVIDENCE: agentic_core/organism/heartbeat.py:977-1022. respond_to_threat engages the defence and nothing ever calls revert_immune_defence: its only callers are the rollback_plan string and the admin route at change_control.py:1273. heartbeat.py:924-942 discards attempt_heal's quarantine_hold. self_healing.py:186-192 holds healing. immune.py:66-77 sets CRITICAL on an absolute count of 10 errors. A grep for 'quarantine|last_immune_defence' in apps/workstation-superapp/src finds no matches.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R6.3 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-543",
+      "title": "A living entity's record says it is 'operated by the organism' while the heartbeat's economy lever is off, so nothing operates it",
+      "why": "MILESTONE M2 ledger v9 (R6.4), measured 2026-10-07 against HEAD 18f3fcc on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation (survived). THE VISION CLAIM: §8/§1: each VSB 'forever runs ... itself'; the organism operates its living children. OBSERVED: GET /economy/living-vsbs: vsb-62de1c4c 'Food Solution' has lifecycle_basis 'juvenile: operated by the organism', auto_economy true, operating_cycles 0, last_operated null. GET /heartbeat/status has auto_economy false. The transfer response elsewhere states correctly that 'autonomous economy cycles are OFF'. EVIDENCE: agentic_core/economy/living_vsbs.py:178-190 and :345-346 (the basis is a constant keyed on state, never on the heartbeat lever). apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx:1190-1240.",
+      "source": "W621 M1/M2 v9 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/economy/living_vsbs.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.25",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v9 R6.4 is tier 2: P2.25 carries the v9 tier-2 findings",
+      "tier": 2
     }
   ],
   "routes": [
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -9633,40 +10226,40 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "handed from P3.12 via P2.20; handed from P3.12 via P3.23; handed from P3.12 via P3.28; handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "note": "handed from P3.12 via P2.22; handed from P3.12 via P2.20; handed from P3.12 via P3.23; handed from P3.12 via P3.28; handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
       "handed_from": "P3.12"
     },
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "handed from P3.14 via P2.20; handed from P3.14 via P3.23; handed from P3.14 via P3.28; handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
+      "note": "handed from P3.14 via P2.22; handed from P3.14 via P2.20; handed from P3.14 via P3.23; handed from P3.14 via P3.28; handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
       "handed_from": "P3.14"
     },
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [
         "agentic_core/avatars/core/recirculation_orchestrator.py",
         "agentic_core/avatars/cognition/"
       ],
       "words": [],
-      "note": "handed from P3.16 via P2.20; handed from P3.16 via P3.23; handed from P3.16 via P3.28; handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
+      "note": "handed from P3.16 via P2.22; handed from P3.16 via P2.20; handed from P3.16 via P3.23; handed from P3.16 via P3.28; handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
       "handed_from": "P3.16"
     },
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [],
       "words": [
         "attestation",
         "post-quantum"
       ],
-      "note": "handed from P3.15 via P2.20; handed from P3.15 via P3.23; handed from P3.15 via P3.28; handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
+      "note": "handed from P3.15 via P2.22; handed from P3.15 via P2.20; handed from P3.15 via P3.23; handed from P3.15 via P3.28; handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
       "handed_from": "P3.15"
     },
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [
         "agentic_core/biomimicry/minimisation/",
         "core/transcendent_subsystems/",
@@ -9674,11 +10267,11 @@
         "agentic_core/validation/"
       ],
       "words": [],
-      "note": "handed from P3.17 via P2.20; handed from P3.17 via P3.23; handed from P3.17 via P3.28; handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
+      "note": "handed from P3.17 via P2.22; handed from P3.17 via P2.20; handed from P3.17 via P3.23; handed from P3.17 via P3.28; handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
       "handed_from": "P3.17"
     },
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [
         "agentic_core/avatars/"
       ],
@@ -9686,21 +10279,21 @@
         "avatar",
         "profile applied"
       ],
-      "note": "handed from P2.3 via P2.20; handed from P2.3 via P3.23; handed from P2.3 via P3.28; handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
+      "note": "handed from P2.3 via P2.22; handed from P2.3 via P2.20; handed from P2.3 via P3.23; handed from P2.3 via P3.28; handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
       "handed_from": "P2.3"
     },
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [
         "agentic_core/organism/",
         "agentic_core/optimizer/"
       ],
       "words": [],
-      "note": "handed from P2.7 via P2.20; handed from P2.7 via P3.26; handed from P2.7 via P3.2; handed from P2.7; the organism and its heartbeat",
+      "note": "handed from P2.7 via P2.22; handed from P2.7 via P2.20; handed from P2.7 via P3.26; handed from P2.7 via P3.2; handed from P2.7; the organism and its heartbeat",
       "handed_from": "P2.7"
     },
     {
-      "slot": "P2.22",
+      "slot": "P2.24",
       "files": [
         "requirements.txt",
         "pyproject.toml",
@@ -9716,7 +10309,7 @@
         "pins",
         "distribution"
       ],
-      "note": "handed from P3.26 via P2.20; handed from P3.26; W588: the dependency DECLARATION area, narrowed from W583's words after they collided. W583 gave this route the bare words dependency and dependencies, and a route word is matched as a whole phrase inside a row's TITLE - so it also matched P2.18's governance route, whose words are auth dependency governance verdict circuit breaker evolution. followups.py done P2.18 --retire-routes then REFUSED with \"P3.26 claims [change_control.py, governance pages, board.py] - title word dependency\", which would have blocked P2.18's closure on a false claim. The same generic-word hazard W586 recorded for value, outcome and benefit: a word common enough to be useful is common enough to capture somebody else's area. The words are now phrases that only a manifest row carries. P3.26 clause (7) remains the mechanism that answers this area: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why, which is what 25 declared dependencies that no module imports needs - not a round quietly deleting a pin from a lock CI installs from.",
+      "note": "handed from P3.26 via P2.22; handed from P3.26 via P2.20; handed from P3.26; W588: the dependency DECLARATION area, narrowed from W583's words after they collided. W583 gave this route the bare words dependency and dependencies, and a route word is matched as a whole phrase inside a row's TITLE - so it also matched P2.18's governance route, whose words are auth dependency governance verdict circuit breaker evolution. followups.py done P2.18 --retire-routes then REFUSED with \"P3.26 claims [change_control.py, governance pages, board.py] - title word dependency\", which would have blocked P2.18's closure on a false claim. The same generic-word hazard W586 recorded for value, outcome and benefit: a word common enough to be useful is common enough to capture somebody else's area. The words are now phrases that only a manifest row carries. P3.26 clause (7) remains the mechanism that answers this area: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why, which is what 25 declared dependencies that no module imports needs - not a round quietly deleting a pin from a lock CI installs from.",
       "handed_from": "P3.26"
     }
   ],
