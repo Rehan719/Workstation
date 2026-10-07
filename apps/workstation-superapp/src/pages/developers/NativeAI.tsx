@@ -15,7 +15,15 @@ interface Status {
 }
 interface Capability { name: string; endpoint: string; kind: string; source: string; in_house: boolean; description: string }
 interface SwarmStep { step: number; role: string; served_by: string; output: string }
-interface SwarmRun { agent: string; stages: number; trace: SwarmStep[]; final: string; any_external: boolean }
+interface Checkpoint { pre_allowed?: boolean; post_checked?: boolean; post_compliant?: boolean; recorded?: boolean; refused_reason?: string; violations?: string[] }
+interface SwarmRun { agent: string; stages: number; trace: SwarmStep[]; final: string; any_external: boolean; governance_checkpoint?: Checkpoint }
+// W619 (FU-496) — the governance checkpoint, shown where the result is read. No surface rendered it before.
+const CheckpointChip: React.FC<{ c?: Checkpoint }> = ({ c }) => !c ? null : (
+  <span data-testid="governance-checkpoint" className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${c.pre_allowed === false || c.post_compliant === false ? 'bg-vital/20 text-vital' : 'bg-slate-900 text-slate-400'}`}
+        title={c.violations?.length ? `violations: ${c.violations.join(', ')}` : (c.refused_reason || '')}>
+    {c.pre_allowed === false ? 'gate: refused' : c.post_compliant === false ? 'gate: output non-compliant' : 'gate: checked'}{c.recorded === false ? ' · NOT recorded' : ''}
+  </span>
+);
 interface Stage { role: string; instruction: string }
 interface TreeNodeDef { id: string; role: string; depends_on: string[] }
 interface TreeNodeResult extends TreeNodeDef { served_by: string; is_external: boolean; output: string }
@@ -56,6 +64,7 @@ function Trace({ run }: { run: SwarmRun }) {
       <div className="flex items-center gap-2 mb-2">
         <span className="text-[9px] font-black uppercase text-slate-400">{run.stages} stages</span>
         {(() => { const b = provenanceMapBadge(provenanceMapFromTrace(run.trace), run.any_external); return <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+        <CheckpointChip c={run.governance_checkpoint} />
       </div>
       <div className="space-y-2">
         {run.trace.map(s => (
@@ -469,7 +478,7 @@ export const NativeAI: React.FC = () => {
   const [cPrompt, setCPrompt] = useState('Outline a halal, zero-waste weekly meal plan for an elderly resident');
   const [cModel, setCModel] = useState<string>('auto');
   const [modelTiers, setModelTiers] = useState<{ id: string; label: string; kind: string }[]>([]);
-  const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[] } | null>(null);
+  const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[]; governance_checkpoint?: Checkpoint } | null>(null);
   const [completing, setCompleting] = useState(false);
   const runComplete = async () => {
     if (!cPrompt.trim()) return;
@@ -824,6 +833,7 @@ export const NativeAI: React.FC = () => {
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   {(() => { const b = provenanceBadge(cRes.served_by, cRes.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                   {cRes.resources_tried && <span className="text-[8px] font-mono text-slate-600">tried: {cRes.resources_tried.join(' → ')}</span>}
+                  <CheckpointChip c={cRes.governance_checkpoint} />
                 </div>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">{cRes.output}</p>
               </div>

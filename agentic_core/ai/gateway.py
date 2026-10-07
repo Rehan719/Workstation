@@ -86,6 +86,20 @@ def _record_checkpoint(agent: str, pre: dict, post: dict, screened: bool) -> dic
             chk["gate_unavailable"] = src[key]
     return chk
 
+def console_pre_gate(agent: str) -> "dict | None":
+    """W619 (FU-496, M2 v8 R4.3) — the pre-gate for a call that reaches the orchestrator WITHOUT the gateway (the
+    Native AI console's completion and swarm). None when allowed; the chained halt record when refused."""
+    pre = _policy_verdict(agent, {"intent": agent, "domain": "ai_gateway"})
+    return None if pre.get("allowed", True) else _record_halt(agent, pre)
+
+
+def console_post_gate(agent: str, output: str) -> dict:
+    """The checkpoint such a call carries: the same post-validation and the same ledger event a gateway
+    completion records, so "every completion carries its governance checkpoint" holds for these too."""
+    pre = _policy_verdict(agent, {"intent": agent, "domain": "ai_gateway"})
+    return _record_checkpoint(agent, pre, _output_verdict(output or ""), screened=False)
+
+
 def language_verdict(requested: str | None, served_by: str, is_floor: bool) -> dict:
     """P3.6 clause (2) — was the output delivered in the requested language, or is that NOT KNOWN?
 
@@ -544,6 +558,15 @@ class ModelGateway:
         back in by name) + tenant-stamped
         writes, matching query_meta."""
         await self._rate_limiter.acquire()
+        # W619 (FU-496, M2 v8 R4.3) — THE STREAM PATH IS GATED AS query_meta IS. stream_meta applied the response
+        # guardrail and neither the constitutional pre-gate nor the post-checkpoint, so the CEO chat, the projects
+        # stream, the business plan and the synthesis stream produced completions with no governance record.
+        _pre = _policy_verdict(agent, {"intent": agent, "domain": "ai_gateway"})
+        if not _pre.get("allowed", True):
+            yield {"done": True, "served_by": "constitutional_policy_gate", "is_external": False,
+                   "output": f"[CONSTITUTIONAL REFUSAL] {_pre.get('reason')}", "guardrail_passed": None,
+                   "profile_applied": False, "governance_checkpoint": _record_halt(agent, _pre)}
+            return
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
         from agentic_core.ai.user_context import load_preamble
         _preamble = load_preamble(owner_id)
@@ -592,7 +615,9 @@ class ModelGateway:
             _log(full if ok else _NOTICE.strip(), served_by)
             return {"done": True, "served_by": served_by, "is_external": is_external,
                     "output": full if ok else _NOTICE.strip(),
-                    "guardrail_passed": ok, "profile_applied": bool(_preamble)}
+                    "guardrail_passed": ok, "profile_applied": bool(_preamble),
+                    "governance_checkpoint": _record_checkpoint(agent, _pre, _output_verdict(full),
+                                                                screened=not ok)}
 
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")

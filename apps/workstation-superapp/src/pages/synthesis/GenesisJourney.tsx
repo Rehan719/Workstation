@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { qmsChip, provenanceMapBadge, complianceChip, layerTitle } from '../../lib/api';
-import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
+import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
 import { openExport } from '../../lib/download';
@@ -197,6 +197,8 @@ export const GenesisJourney: React.FC = () => {
   });
   const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'science'; return DOMAINS.includes(d) ? d : 'science'; });
   const [realm, setRealm] = useState(() => { const r = sp.get('realm') || 'enterprise'; return REALMS.includes(r) ? r : 'enterprise'; });
+  // W619 (FU-502) — the Products axis is chosen here; null means none chosen, and then none is sent
+  const [product, setProduct] = useState<string | null>(() => { const p = sp.get('product'); return p && (PRODUCTS as readonly string[]).includes(p) ? p : null; });
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<JourneyResult | null>(null);
@@ -266,9 +268,9 @@ export const GenesisJourney: React.FC = () => {
         // §5 — when "establish on completion" is on, ONE continuous workflow takes the challenge all the way
         // to a living VSB enterprise (W222 seam); else the journey stops at the blueprint (two-step establish).
         body: JSON.stringify(establishOnComplete
-          ? { problem, domain, realm, establish: true, entity_type: entityType,
+          ? { problem, domain, realm, establish: true, entity_type: entityType, ...(product ? { product } : {}),
               ...(enterpriseName.trim() ? { name: enterpriseName.trim() } : {}) }   // W450 — the founder's name, when given
-          : { problem, domain, realm }),
+          : { problem, domain, realm, ...(product ? { product } : {}) }),
       });
       if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
       const data = await res.json();
@@ -680,6 +682,16 @@ export const GenesisJourney: React.FC = () => {
               ))}
             </div>
           </div>
+        </div>
+        <div>
+          <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Product (optional)</label>
+          <div className="flex flex-wrap gap-2" data-testid="genesis-product-picker">
+            {PRODUCTS.map(p => (
+              <button key={p} type="button" onClick={() => setProduct(product === p ? null : p)} title={PRODUCT_LABELS[p]}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${product === p ? 'bg-highlight/20 text-highlight border border-highlight/40' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-white'}`}>{p}</button>
+            ))}
+          </div>
+          <p className="text-[9px] text-slate-600 mt-1">{product ? PRODUCT_LABELS[product] : 'None chosen — the journey records that no product was chosen.'}</p>
         </div>
         {/* §5 — one continuous workflow: optionally take the challenge all the way to a living VSB enterprise */}
         <div className="pt-2 flex flex-col @[560px]:flex-row @[560px]:items-end gap-3 flex-wrap">

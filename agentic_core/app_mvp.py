@@ -143,6 +143,23 @@ async def _horizon_observe(request, call_next):
         set_request_language((request.headers.get("accept-language") or "").split(",")[0])
     except Exception:          # noqa: BLE001 - a missing header must never fail a request
         pass
+    #  W619 (FU-501) — the authenticated caller, resolved from the bearer token this layer already sees, so the
+    #  domain tools (which declare no user dependency) apply THAT person's own profile. Resolution never fails a
+    #  request and never grants anything: an unresolvable token leaves no user, and the route's own auth
+    #  dependency, where it has one, still decides access.
+    try:
+        from agentic_core.api._ai_provenance import set_request_user
+        set_request_user("")
+        _authz = request.headers.get("authorization") or ""
+        if _authz.lower().startswith("bearer "):
+            from agentic_core.auth.core import auth_enabled as _ae619, _decode_token as _dt619, _get_user as _gu619
+            if _ae619():
+                _sub = (_dt619(_authz.split(" ", 1)[1].strip()) or {}).get("sub")
+                _u = _gu619(_sub) if _sub else None
+                if _u and _u.get("username"):
+                    set_request_user(_u["username"])
+    except Exception:          # noqa: BLE001 - an invalid token is the route's 401 to give, not this layer's
+        pass
     _status, _raised = None, None
     # W558 (P2.15) — the clock is here because this is the only layer that brackets the handler. A
     # monotonic clock, not a wall clock, so a system time change cannot produce a negative duration.

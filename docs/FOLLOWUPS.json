@@ -9296,11 +9296,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W619",
       "note": "",
       "slot_source": "ledger v8 R4.3 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "stream_meta runs the constitutional pre-gate and records a post-checkpoint in its terminal frame; the Native AI console's /complete and /swarm get the same pre-gate and checkpoint (gateway.console_pre_gate/console_post_gate); NativeAI.tsx renders a CheckpointChip on both results; four blinds red"
     },
     {
       "id": "FU-497",
@@ -9402,11 +9405,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W619",
       "note": "",
       "slot_source": "ledger v8 R5.2 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the HTTP middleware resolves the bearer token into a request-user contextvar (never failing or granting), and ai_text - the seam all six domain tools call - passes that caller as owner_id, so their own profile applies under auth; two blinds red"
     },
     {
       "id": "FU-502",
@@ -9423,11 +9429,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W619",
       "note": "",
       "slot_source": "ledger v8 R5.3 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "taxonomy.ts carries PRODUCTS; GenesisJourney has a product picker (none by default) and sends it on both journey requests; every journey record carries product_source saying whether it was chosen; two blinds red"
     },
     {
       "id": "FU-503",
@@ -9586,6 +9595,23 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "delegation_chain names the tiers whose prompts ran (Chief, AI CEO), with a basis; the Board page labels it 'ran:'; two blinds red"
+    },
+    {
+      "id": "FU-511",
+      "title": "Dawah, one of the Owner's four named charity priorities, ranks last on the editorial weights and is never funded - a weight, a floor or a guaranteed share is the Owner's call",
+      "why": "W618 (FU-505) made the shortfall visible (priorities_unfunded, shown on VSBEconomy). Whether the allocation SHOULD fund it is not a defect to fix: the cause weights are editorial values encoding the Owner's 2026-06-21 directive, dawah carries urgency 0.55 against 0.80-0.97 for the others, and being a priority already gives it the boost the directives page can apply. Options: (a) raise its curated weight; (b) a guaranteed minimum share for each Owner priority; (c) leave as is - the shortfall is now stated. Recommendation: (b), because it honours every named priority without editing the editorial scores.",
+      "source": "W618",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/economy/charity.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3
     }
   ],
   "routes": [

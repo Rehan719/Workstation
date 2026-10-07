@@ -21,6 +21,25 @@ from agentic_core.ai.gateway import gateway
 _REQUEST_LANGUAGE: "contextvars.ContextVar[str]" = contextvars.ContextVar("ws_request_language", default="")
 
 
+#  W619 (FU-501, M2 v8 R5.2) — THE AUTHENTICATED CALLER, CAPTURED THE SAME WAY. The six domain routers declare
+#  no user dependency, so with authentication on `ai_text` was called with owner_id=None, `profile_owner`
+#  returned None ("an unidentified caller gets NO profile") and the saved profile reached none of the 35 tools,
+#  while Settings says it shapes what the platform generates. The middleware resolves the bearer token it
+#  already sees into this; a token that does not resolve leaves it empty, which is the old behaviour.
+_REQUEST_USER: "contextvars.ContextVar[str]" = contextvars.ContextVar("ws_request_user", default="")
+
+
+def set_request_user(username: str) -> None:
+    _REQUEST_USER.set(str(username or "").strip())
+
+
+def request_user() -> str:
+    try:
+        return _REQUEST_USER.get()
+    except LookupError:          # pragma: no cover
+        return ""
+
+
 def set_request_language(value: str) -> None:
     """Called by the HTTP middleware, once per request."""
     _REQUEST_LANGUAGE.set(str(value or "").strip())
@@ -57,6 +76,7 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         from agentic_core.taxonomy import normalise_realm, realm_directive
         prompt = f"{realm_directive(normalise_realm(realm))}\n\n{prompt}"
     t0 = time.monotonic()
+    owner_id = owner_id or request_user() or None     # W619 (FU-501) — the authenticated caller, when there is one
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
                                    owner_id=owner_id, augment=augment,
                                    #  P3.6 clause (2) — the request's own language, so the output can be

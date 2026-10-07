@@ -46365,3 +46365,73 @@ def test_w618_p223_the_floor_reads_what_the_tool_was_given(client):
     assert "standard template" in _d["template_note"] and "does not deliver the solution" in _d["template_note"]
     _vsrc = _string_constants(_in618.getsource(__import__("agentic_core.api.vsb", fromlist=["x"])))
     assert "esc(d.template_note || '')" in _vsrc
+
+
+def test_w619_p223_every_completion_carries_its_checkpoint_and_the_callers_profile(client, monkeypatch):
+    """P2.23 (W619) — FU-496: streamed answers and the Native AI console's completion and swarm skipped the
+    constitutional checkpoint every gateway completion carries, and no page rendered one. FU-501: with
+    authentication on, the saved profile reached none of the domain tools, because they declare no user and
+    the gateway was called with owner_id=None."""
+    import asyncio as _a619
+    import pathlib as _pl619
+
+    # ── FU-496: the stream's terminal frame and the console calls carry a checkpoint ────────────────
+    from agentic_core.ai.gateway import gateway as _gw619
+
+    async def _drain():
+        last = None
+        async for ev in _gw619.stream_meta("w619 stream probe", agent="w619_stream"):
+            last = ev
+        return last
+    done = _a619.run(_drain())
+    assert done and done.get("done") is True, done
+    chk = done.get("governance_checkpoint") or {}
+    assert chk.get("pre_allowed") is True and chk.get("post_checked") is True, ("a streamed completion carries no "
+                                                                               "governance checkpoint", chk)
+    c = client.post("/api/v1/native-ai/complete", json={"prompt": "w619 console probe", "agent": "w619_console"}).json()
+    assert (c.get("governance_checkpoint") or {}).get("post_checked") is True, c.get("governance_checkpoint")
+    s = client.post("/api/v1/native-ai/swarm", json={"agent": "w619_swarm", "context": "w619",
+                                                     "stages": [{"role": "a", "instruction": "Task: plan a w619 bakery"}]}).json()
+    assert (s.get("governance_checkpoint") or {}).get("post_checked") is True, s.get("governance_checkpoint")
+    _ui = _code_only((_pl619.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    assert "<CheckpointChip c={run.governance_checkpoint} />" in _ui and "<CheckpointChip c={cRes.governance_checkpoint} />" in _ui
+
+    # ── FU-501: under auth, a domain tool is called with THE CALLER as owner ────────────────────────
+    from agentic_core.auth import core as _ac619
+    if not _ac619._AUTH_DEPS_OK:
+        import pytest as _pt619
+        _pt619.skip("auth crypto deps not installed")
+    users = _ac619._load_users()
+    users["w619-user"] = {"user_id": "w619-user", "username": "w619-user",
+                          "hashed_password": _ac619._pwd_ctx.hash("pw-w619"), "role": "user",
+                          "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    _ac619._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    tok = client.post("/api/v1/auth/token", data={"username": "w619-user", "password": "pw-w619"}).json()["access_token"]
+    seen = []
+    _orig = _gw619.query_meta
+
+    async def _spy(prompt, *a, **kw):
+        seen.append(kw.get("owner_id"))
+        return await _orig(prompt, *a, **kw)
+    monkeypatch.setattr(_gw619, "query_meta", _spy)
+    client.post("/api/v1/law/analyse", json={"document_text": "w619 a short lease clause"},
+                headers={"Authorization": f"Bearer {tok}"})
+    assert "w619-user" in seen, ("an authenticated domain-tool call reached the gateway without its caller, so the "
+                                 "caller's profile cannot apply", seen)
+    seen.clear()
+    client.post("/api/v1/law/analyse", json={"document_text": "w619 another clause"},
+                headers={"Authorization": "Bearer not-a-token"})
+    assert "w619-user" not in seen, ("an invalid token resolved to a user", seen)
+
+    # ── FU-502: the product axis is chosen on the page, and a default says it is one ────────────────
+    import uuid as _uu619
+    monkeypatch.delenv("AUTH_ENABLED", raising=False)
+    j1 = client.post("/api/v1/genesis/journey", json={"problem": f"w619 bakery {_uu619.uuid4().hex[:5]}", "product": "factory"}).json()
+    j2 = client.post("/api/v1/genesis/journey", json={"problem": f"w619 bakery {_uu619.uuid4().hex[:5]}"}).json()
+    import json as _jj619
+    assert '"product_source": "chosen by the caller"' in _jj619.dumps(j1) and '"factory"' in _jj619.dumps(j1)
+    assert '"product_source": "the default - no product was chosen"' in _jj619.dumps(j2)
+    _gj = _code_only((_pl619.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "PRODUCTS.map(p =>" in _gj and _gj.count("...(product ? { product } : {})") == 2, (
+        "the page sends the chosen product on only one of its two journey requests")

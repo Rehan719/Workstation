@@ -794,6 +794,10 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         #  declared (taxonomy.PRODUCTS is the canon).
         "product": normalise_product(getattr(req, "product", "reactor")),
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
+        #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
+        #  model default, and no surface could send another value, so the record read as a choice nobody made.
+        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+                           else "the default - no product was chosen"),
         "phase_1_conceptualisation": {"cognitive_cascade": cognitive, "mjm_assessment": mjm, "concept": concept},
         "stage_3_innovate_research": research,     # §4.3 — best/latest approaches across science·tech·business·ops·law
         "stage_5_model_simulate_rank": stage_5,   # §4.5 — candidate solutions modelled + evidence-ranked → best selected
@@ -1268,6 +1272,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         #  declared (taxonomy.PRODUCTS is the canon).
         "product": normalise_product(getattr(req, "product", "reactor")),
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
+        #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
+        #  model default, and no surface could send another value, so the record read as a choice nobody made.
+        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+                           else "the default - no product was chosen"),
         "concept": req.concept[:1000],
         "design": req.design[:1000],
         "commercialisation": req.commercialisation[:1000],
@@ -1289,6 +1297,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         #  declared (taxonomy.PRODUCTS is the canon).
         "product": normalise_product(getattr(req, "product", "reactor")),
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
+        #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
+        #  model default, and no surface could send another value, so the record read as a choice nobody made.
+        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+                           else "the default - no product was chosen"),
         "scope": "commercialise",
         "owner_id": req.owner_id,
         # §4.8 (W496, FU-100) - derived below from the gates, the body-pending map and whether

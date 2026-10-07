@@ -434,8 +434,16 @@ async def native_ensemble(req: EnsembleRequest):
 
 @router.post("/complete")
 async def native_complete(req: CompleteRequest):
+    # W619 (FU-496) — the console reaches the orchestrator directly, so it gets the gateway's gates here
+    from agentic_core.ai.gateway import console_pre_gate, console_post_gate
+    _halt = console_pre_gate(req.agent)
+    if _halt:
+        return {"output": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}",
+                "served_by": "constitutional_policy_gate", "is_external": False, "resources_tried": [],
+                "governance_checkpoint": _halt}
     res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
                                       prefer_external=req.prefer_external, prefer=req.model)
+    res["governance_checkpoint"] = console_post_gate(req.agent, res.get("output", ""))
     return res
 
 
@@ -460,7 +468,13 @@ async def native_swarm(req: SwarmRequest):
             {"role": "designer", "instruction": "Design the approach from the analysis."},
             {"role": "synthesiser", "instruction": "Synthesise the final recommendation."},
         ]
+    from agentic_core.ai.gateway import console_pre_gate, console_post_gate
+    _halt = console_pre_gate(req.agent)
+    if _halt:
+        return {"agent": req.agent, "stages": 0, "trace": [], "any_external": False, "homeostasis": None,
+                "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external)
+    res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     return res
 
 
